@@ -108,7 +108,18 @@ fi
 # -------------------------
 if [[ ! -d "$PROJECT_ROOT/.git" ]]; then
   echo "Error: PROJECT_ROOT is not a git repository: $PROJECT_ROOT"
-  echo "git apply requires a git repo as the target."
+  echo "  git apply requires a git repo as the target. Initialise it first:"
+  echo "    git -C '$PROJECT_ROOT' init"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  exit 1
+fi
+
+if ! git -C "$PROJECT_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  echo "Error: git repository has no commits: $PROJECT_ROOT"
+  echo "  Create an initial commit first:"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
   exit 1
 fi
 

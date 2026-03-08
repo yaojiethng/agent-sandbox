@@ -62,14 +62,6 @@ if [[ "$COMMIT_COUNT" -gt 1 ]]; then
 fi
 
 # -------------------------
-# Remove gitignored files
-# -------------------------
-# The bundle captured everything including files that would normally be
-# gitignored (e.g. .env). Remove them so the agent cannot read secrets.
-git clean -fdX --quiet
-echo "Gitignored files removed from sandbox."
-
-# -------------------------
 # Copy brief into sandbox root
 # -------------------------
 if [[ -f "$WORKSPACE_DIR/brief.md" ]]; then

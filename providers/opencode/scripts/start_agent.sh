@@ -190,17 +190,38 @@ if [[ $(git -C "$PROJECT_ROOT" ls-files --others --exclude-standard | wc -l) -gt
 fi
 
 if [[ "$DIRTY" == true ]]; then
-  # Temp commit captures full working tree state (patch C + uncommitted changes).
-  # Immediately reset so host history is not affected.
-  git -C "$PROJECT_ROOT" add -A
+  # Temp commit captures working tree state excluding gitignored files,
+  # so secrets (e.g. .env) never enter the bundle.
+  # Stage tracked modifications, then add untracked non-ignored files.
+  git -C "$PROJECT_ROOT" add -u
+  git -C "$PROJECT_ROOT" ls-files --others --exclude-standard -z \
+    | xargs -0 -r git -C "$PROJECT_ROOT" add --
   git -C "$PROJECT_ROOT" commit -m "agent-sandbox: bundle snapshot" --quiet
-  git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
-    HEAD --depth=2 --quiet
+
+  # Bundle the last 2 commits (patch C + temp snapshot) using rev-list range.
+  # Guard: if repo only has 1 commit, HEAD~2 does not exist — bundle all.
+  REPO_DEPTH=$(git -C "$PROJECT_ROOT" rev-list --count HEAD)
+  if [[ "$REPO_DEPTH" -ge 2 ]]; then
+    git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+      HEAD "^HEAD~2" --quiet
+  else
+    git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+      HEAD --quiet
+  fi
+
   git -C "$PROJECT_ROOT" reset HEAD~1 --mixed --quiet
-  echo "  Bundle tip: HEAD + uncommitted changes (temp commit reset)"
+  echo "  Bundle tip: HEAD + uncommitted changes (gitignored files excluded)"
 else
-  git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
-    HEAD --depth=1 --quiet
+  # Bundle only HEAD using rev-list range.
+  # Guard: if repo only has 1 commit, HEAD~1 does not exist — bundle all.
+  REPO_DEPTH=$(git -C "$PROJECT_ROOT" rev-list --count HEAD)
+  if [[ "$REPO_DEPTH" -ge 1 ]]; then
+    git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+      HEAD "^HEAD~1" --quiet
+  else
+    git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+      HEAD --quiet
+  fi
   echo "  Bundle tip: HEAD (working tree clean)"
 fi
 
