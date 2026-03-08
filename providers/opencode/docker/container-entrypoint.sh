@@ -19,49 +19,70 @@ CHANGES_DIR="$WORKSPACE_DIR/changes"
 
 AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
 
-mkdir -p "$SANDBOX_DIR" "$CHANGES_DIR"
+mkdir -p "$CHANGES_DIR"
+
+BUNDLE_FILE="$WORKSPACE_DIR/repo.bundle"
 
 # -------------------------
-# Copy project/ into sandbox/
-# Copies all mounted content except .workspace (already rw, no copy needed)
+# Clone from bundle
 # -------------------------
-
-# Subdirectories
-for ITEM in "$PROJECT_DIR"/*/; do
-  NAME="$(basename "$ITEM")"
-  [[ "$NAME" == ".workspace" ]] && continue
-  cp -r "$ITEM" "$SANDBOX_DIR/$NAME"
-done
-
-# Root-level files
-for ITEM in "$PROJECT_DIR"/*; do
-  [[ -f "$ITEM" ]] || continue
-  cp "$ITEM" "$SANDBOX_DIR/$(basename "$ITEM")"
-done
-
-# Copy brief into sandbox root so the agent can read it from its working directory
-if [[ -f "$PROJECT_DIR/.workspace/brief.md" ]]; then
-  cp "$PROJECT_DIR/.workspace/brief.md" "$SANDBOX_DIR/brief.md"
+if [[ ! -f "$BUNDLE_FILE" ]]; then
+  echo "Error: repo.bundle not found in .workspace — was start_agent.sh run correctly?"
+  exit 1
 fi
 
-# -------------------------
-# Git Init
-# -------------------------
+echo "Cloning from bundle..."
+git clone --quiet "$BUNDLE_FILE" "$SANDBOX_DIR"
+
 cd "$SANDBOX_DIR"
 
-if [[ ! -d ".git" ]]; then
-  git init -b development >/dev/null 2>&1
+git config user.email "agent@sandbox"
+git config user.name "agent-sandbox"
+git config core.fileMode false
 
-  # Commit the initial sandbox state as the baseline.
-  # git diff --cached compares against HEAD — without this commit, HEAD
-  # does not exist and the diff is always empty.
-  git config user.email "agent@sandbox" >/dev/null
-  git config user.name "agent-sandbox" >/dev/null
-  git add -A
-  git commit -m "sandbox: initial state" --quiet
+# -------------------------
+# Record bundle root hash
+# -------------------------
+# The bundle contains 1 commit (clean HEAD) or 2 commits (HEAD + temp snapshot).
+# In both cases the bundle root is the oldest commit — this is the common
+# ancestor used for diffing at exit.
+BUNDLE_ROOT=$(git rev-list --max-parents=0 HEAD)
+echo "Bundle root: $BUNDLE_ROOT"
 
-  git checkout -b agent_branch --quiet
+# -------------------------
+# Reset to expose uncommitted changes
+# -------------------------
+# If the bundle has 2 commits, the tip is the temp snapshot commit.
+# Reset HEAD~1 so the agent sees the original working tree state:
+# bundle root (patch C) as HEAD + uncommitted changes as dirty working tree.
+COMMIT_COUNT=$(git rev-list --count HEAD)
+if [[ "$COMMIT_COUNT" -gt 1 ]]; then
+  echo "Resetting temp snapshot commit to restore working tree state..."
+  git reset HEAD~1 --mixed --quiet
 fi
+
+# -------------------------
+# Remove gitignored files
+# -------------------------
+# The bundle captured everything including files that would normally be
+# gitignored (e.g. .env). Remove them so the agent cannot read secrets.
+git clean -fdX --quiet
+echo "Gitignored files removed from sandbox."
+
+# -------------------------
+# Copy brief into sandbox root
+# -------------------------
+if [[ -f "$WORKSPACE_DIR/brief.md" ]]; then
+  cp -p "$WORKSPACE_DIR/brief.md" "$SANDBOX_DIR/brief.md"
+fi
+
+# -------------------------
+# Checkout working branch
+# -------------------------
+# Branch name is 'development'. Parameterisation for multi-agent workflows
+# is deferred to M4.
+git checkout -b development --quiet
+echo "Checked out branch: development"
 
 # -------------------------
 # Diff Staging Function
@@ -70,13 +91,18 @@ stage_diffs() {
   echo "Staging diffs..."
 
   cd "$SANDBOX_DIR"
-  git add -A || true
 
-  if ! git diff --cached --quiet; then
-    git diff --cached > "$CHANGES_DIR/patch.diff" || true
-    echo "Diff written to .workspace/changes/patch.diff"
-  else
+  # Commit any uncommitted agent changes so they appear in the diff.
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    git add -A
+    git commit -m "agent-sandbox: uncommitted changes on exit" --quiet || true
+  fi
+
+  if git diff --quiet "$BUNDLE_ROOT"..HEAD; then
     echo "No changes detected."
+  else
+    git diff "$BUNDLE_ROOT"..HEAD > "$CHANGES_DIR/patch.diff" || true
+    echo "Diff written to .workspace/changes/patch.diff"
   fi
 }
 

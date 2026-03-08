@@ -112,7 +112,7 @@ fi
 cd "$PROJECT_ROOT"
 
 echo "Applying patch: $PATCH_FILE"
-git apply --allow-empty "$PATCH_FILE"
+git -c core.fileMode=false apply --allow-empty --3way "$PATCH_FILE"
 
 echo ""
 echo "Done. Patch applied to working tree on current branch."

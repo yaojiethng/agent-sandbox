@@ -156,11 +156,59 @@ if [[ ! -d "$PROJECT_ROOT" ]]; then
 fi
 
 # -------------------------
+# Git validation + bundle creation
+# -------------------------
+
+# PROJECT_ROOT must be a git repo with at least one commit for the bundle workflow.
+if [[ ! -d "$PROJECT_ROOT/.git" ]]; then
+  echo "Error: PROJECT_ROOT is not a git repository: $PROJECT_ROOT"
+  echo "  Initialise it first:"
+  echo "    git -C '$PROJECT_ROOT' init"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  exit 1
+fi
+
+if ! git -C "$PROJECT_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  echo "Error: git repository has no commits: $PROJECT_ROOT"
+  echo "  Create an initial commit first:"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  exit 1
+fi
+
+mkdir -p "$PROJECT_ROOT/.workspace/changes"
+
+echo "Creating bundle snapshot..."
+
+# Determine if working tree is dirty (staged, unstaged, or untracked changes)
+DIRTY=false
+if ! git -C "$PROJECT_ROOT" diff --quiet 2>/dev/null; then DIRTY=true; fi
+if ! git -C "$PROJECT_ROOT" diff --cached --quiet 2>/dev/null; then DIRTY=true; fi
+if [[ $(git -C "$PROJECT_ROOT" ls-files --others --exclude-standard | wc -l) -gt 0 ]]; then
+  DIRTY=true
+fi
+
+if [[ "$DIRTY" == true ]]; then
+  # Temp commit captures full working tree state (patch C + uncommitted changes).
+  # Immediately reset so host history is not affected.
+  git -C "$PROJECT_ROOT" add -A
+  git -C "$PROJECT_ROOT" commit -m "agent-sandbox: bundle snapshot" --quiet
+  git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+    HEAD --depth=2 --quiet
+  git -C "$PROJECT_ROOT" reset HEAD~1 --mixed --quiet
+  echo "  Bundle tip: HEAD + uncommitted changes (temp commit reset)"
+else
+  git -C "$PROJECT_ROOT" bundle create "$PROJECT_ROOT/.workspace/repo.bundle" \
+    HEAD --depth=1 --quiet
+  echo "  Bundle tip: HEAD (working tree clean)"
+fi
+
+# -------------------------
 # Mount construction
 # -------------------------
 
 # .workspace is always rw — implicit, never declared in MOUNTS
-mkdir -p "$PROJECT_ROOT/.workspace/changes"
 MOUNT_ARGS=(-v "$PROJECT_ROOT/.workspace:$CONTAINER_PROJECT_BASE/.workspace:rw")
 
 # Parse MOUNTS=folder:permission,folder:permission

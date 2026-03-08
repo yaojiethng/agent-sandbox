@@ -1,6 +1,6 @@
 ---
 Architecture Status: Implemented
-Milestone: M1.5 — Single Container Agent
+Milestone: M1.5 — Interactive Virtual Workspace
 Last Verified: 2026-03
 ---
 
@@ -36,9 +36,9 @@ Harness is built around a small set of architectural invariants.
 
 ### Safety Model
 
-- Code execution occurs in **Safe** or **Unsafe** modes.
-- Safe mode enforces strict filesystem and execution isolation.
-- Unsafe mode allows broader execution for trusted environments.
+- Code execution occurs in **Standard** or **Safe** modes.
+- Standard mode allows network access for AI provider communication.
+- Safe mode enforces no-network execution (reserved, not yet implemented — see M6).
 
 ### Change Control
 
@@ -58,7 +58,6 @@ Harness is built around a small set of architectural invariants.
 | Security guarantees and threat model | [security.md](docs/architecture/security.md) |
 | Setup and environment configuration | [quickstart.md](docs/development/quickstart.md) |
 | Contribution workflow | [contributors.md](contributors.md) |
-| Past and future development milestones | [roadmap.md](docs/development/roadmap.md) |
 
 ### Documentation Policy
 
@@ -70,8 +69,8 @@ Do not place TODOs or speculative features in architecture docs.
 
 This repository separates concerns into three categories:
 
-- **Workflow** → What currently happens  
-- **Security** → What is guaranteed  
+- **Workflow** → What currently happens
+- **Security** → What is guaranteed
 - **Roadmap** → What may happen later
 
 Future design work and planned features are tracked in the roadmap rather than architecture documentation.
