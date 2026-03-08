@@ -1,33 +1,48 @@
 # Dockerfile
 FROM ubuntu:24.04
 
-# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH=/usr/local/bin:$PATH
 
-# Install required packages
+# -------------------------
+# System packages (root)
+# -------------------------
 RUN apt-get update && apt-get install -y \
-    bash curl git ca-certificates 
-RUN apt-get install -y python3 python3-pip nodejs npm \
+    bash curl git ca-certificates \
+    python3 python3-pip nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g opencode-ai
-
-# Copy entrypoint script
+# -------------------------
+# Entrypoint (root, before USER switch)
+# -------------------------
 COPY container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
 RUN chmod +x /usr/local/bin/container-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]
 
-# Create a non-root user for the agent
+# -------------------------
+# Non-root user
+# -------------------------
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
 
-# Create project/ and sandbox/ as agentuser so file mounts are not blocked by ownership.
-# project/ must exist and be owned by agentuser before Docker mounts files into it at runtime.
+# -------------------------
+# npm global install as agentuser
+# -------------------------
+# By default, npm installs globals to /usr/lib/node_modules (root-owned).
+# Redirecting NPM_CONFIG_PREFIX to a user-owned directory allows non-root
+# global installs. Any future `npm install -g` as a non-root user needs
+# these two ENV lines set beforehand.
+ENV NPM_CONFIG_PREFIX=/home/agentuser/.npm-global
+ENV PATH=/home/agentuser/.npm-global/bin:$PATH
+
+RUN npm install -g opencode-ai
+
+# -------------------------
+# Working directories
+# -------------------------
+# project/ and sandbox/ created as agentuser so Docker file mounts are not
+# blocked by ownership at runtime.
 RUN mkdir -p /home/agentuser/project /home/agentuser/sandbox
 
-# COPY --chown=agentuser:agentuser config/opencode.json /home/agentuser/.config/opencode/config.json
-# COPY agent /home/agentuser/agent
-
 WORKDIR /home/agentuser/sandbox
+ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]
 CMD ["opencode"]
