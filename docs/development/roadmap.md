@@ -12,7 +12,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 |---|---|
 | [M1 — Barebones Agent Container](#m1-barebones-agent-container) | Complete |
 | [M1.1 — Interactive Virtual Workspace / Serve Mode](#m11--interactive-virtual-workspace--serve-mode) | Complete |
-| [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | In progress |
+| [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | Complete |
 | [M1.3 — Quickstart & Onboarding Workflow](#m13--quickstart--onboarding-workflow) | Not started |
 | [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
 | [M3 — Metadata Seeding](#m3-metadata-seeding) | Not started |
@@ -44,23 +44,9 @@ OpenCode runs in server mode inside the container, accessible from the host on a
 
 ### **M1.2 — Sandbox File Isolation & Diff Workflow**
 
-*In progress.*
+*Complete.*
 
-Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes. Project files now enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; submodules are detected and rejected with a clear error. Diff pipeline documentation updated and `lib/diff.sh` extracted; apply scripts moved to `scripts/` and consume `staged.diff`; `Makefile` updated with `SCRIPTS`/`PROVIDER_SCRIPTS` split.
-
-#### Operation 2 — Diff: sandbox changes → staged artifact
-
-##### Implementation
-
-- [x] `lib/diff.sh`: `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave`
-- [x] `tests/test_diff.sh`: unit tests for all four functions
-- [x] `scripts/apply_workspace_inplace.sh`: moved from provider scripts; consumes `staged.diff`; validates git state before apply
-- [x] `scripts/apply_workspace_to_branch.sh`: moved from provider scripts; consumes `staged.diff`; checks out named branch before apply
-- [x] `tests/test_apply.sh`: missing diff, bad git state, clean apply inplace, clean apply to branch; path resolution covered by clean apply tests
-- [x] `Makefile`: `SCRIPTS`/`PROVIDER_SCRIPTS` split; apply targets use `$(CURDIR)`; help text updated
-- [x] `container-entrypoint.sh`: source `lib/diff.sh`; wire `diff_on_exit` as EXIT trap; wire `diff_on_autosave` into autosave loop
-- [x] `Dockerfile`: copy `lib/diff.sh` into image
-- [ ] Validate end-to-end: agent edits → `staged.diff` → apply script → clean apply on host
+Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; gitignored files are excluded by construction and submodules are rejected with a clear error. Agent changes are captured via a modular diff pipeline in `lib/diff.sh`, producing `staged.diff` on exit and `autosave.diff` on interval. Apply scripts in `scripts/` consume `staged.diff` and apply cleanly to the host repository via `git apply --3way`.
 
 ---
 

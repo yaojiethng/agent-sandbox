@@ -17,7 +17,7 @@ Never clean up completions you just marked. Never mark completions without clean
 
 ## Rules
 
-**Completed milestones** — replace task list with a single outcome paragraph. Keep `*Complete.*`. Remove all checklist items.
+**Completed milestones** — mark `*Complete.*`, replace any remaining task list with a single outcome paragraph, and update the Milestone Summary table. If all subsections were already collapsed during the milestone, the description paragraph stands — just mark complete and update the table. Remove all checklist items.
 
 **Completed subsections** — add a conceptual outcome sentence to the milestone description, then remove the subsection header and checklist. The sentence must describe what the system can now do, not which files changed. File changes are visible in git history; the roadmap preserves conceptual outcomes.
 

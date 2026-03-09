@@ -11,8 +11,9 @@
 PROJECT        := agent-sandbox
 MACHINE        ?= wsl
 BRANCH         ?= agent_branch
-SCRIPTS        := ./scripts
-PROVIDER_SCRIPTS := ./providers/opencode/scripts  # deprecated — migrate targets to SCRIPTS
+SCRIPTS          := ./scripts
+# PROVIDER_SCRIPTS is deprecated — migrate container targets to SCRIPTS as provider scripts are consolidated
+PROVIDER_SCRIPTS := ./providers/opencode/scripts
 
 # Build machine flag if MACHINE is set
 ifdef MACHINE

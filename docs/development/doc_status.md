@@ -91,4 +91,4 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|
 | `readme.md` | 🟢 Cold | System invariants and entry point. Should rarely need updating. |
 | `contributors.md` | 🟢 Cold | Contribution rules. Update only when workflow or security model changes. |
-| `agent-context-brief.md` | 🟡 Warm | Update when agent collaboration protocol evolves. |
+| `agent_context_brief.md` | 🟡 Warm | Update when agent collaboration protocol evolves. |
