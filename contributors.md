@@ -22,40 +22,40 @@ Welcome to the OpenCode repository! This document provides guidelines for contri
   - Parent agent: `parent_<task_id>`  
   - Child agent: `child_<task_id>_<child_id>`  
 
-For full details, see [Agent Lifecycle Compliance](docs/SOPS.md#7-agent-lifecycle-compliance).
+For full details, see [Agent Lifecycle Compliance](docs/operations/standard_operating_procedures.md#7-agent-lifecycle-compliance).
 
 ---
 
 ## 3. Security and Secrets
 
-- Secrets must reside in dedicated `.secret` files.  
-- Agents receive secrets explicitly; they should never be preloaded in the workspace.  
-- All secret access must be audited.  
-- Network outputs are untrusted and must be validated before use.  
+- Secrets must reside in dedicated `.secret` files.
+- Agents receive secrets explicitly; they should never be preloaded in the workspace.
+- All secret access must be audited.
+- Network outputs are untrusted and must be validated before use.
 
-See [Secrets Handling](docs/SOPS.md#2-secrets-handling) and [Network Access Rules](docs/SOPS.md#3-network-access-rules) for detailed SOPs.
+See [Secrets Handling](docs/operations/standard_operating_procedures.md#2-secrets-handling) and [Network Access Rules](docs/operations/standard_operating_procedures.md#3-network-access-rules) for detailed SOPs.
 
 ---
 
 ## 4. Workspace and Repository Management
 
-- Protect key branches with branch protection rules.  
-- All merges should follow PR review and CI/CD validation.  
-- Manual interventions should be minimal and logged.  
-- Workspace integrity must be maintained; accidental overwrites are prohibited.  
+- Protect key branches with branch protection rules.
+- All merges should follow PR review and CI/CD validation.
+- Manual interventions should be minimal and logged.
+- Workspace integrity must be maintained; accidental overwrites are prohibited.
 
-See [Child Agent Output Handling](docs/SOPS.md#1-child-agent-output-handling) and [Human / Operational Protocols](docs/SOPS.md#5-human--operational-protocols) for operational procedures.
+See [Child Agent Output Handling](docs/operations/standard_operating_procedures.md#1-child-agent-output-handling) and [Human / Operational Protocols](docs/operations/standard_operating_procedures.md#5-human--operational-protocols) for operational procedures.
 
 ---
 
 ## 5. Container and Dependency Guidelines
 
-- Use only verified and minimal dependencies.  
-- Reproducible container builds are required.  
-- Containers must run unprivileged with minimal capabilities.  
-- Do not mount sensitive host directories.  
+- Use only verified and minimal dependencies.
+- Reproducible container builds are required.
+- Containers must run unprivileged with minimal capabilities.
+- Do not mount sensitive host directories.
 
-Refer to [Container Build & Deployment](docs/SOPS.md#6-container-build--deployment) for SOP compliance.
+Refer to [Container Build & Deployment](docs/operations/standard_operating_procedures.md#6-container-build--deployment) for SOP compliance.
 
 ---
 

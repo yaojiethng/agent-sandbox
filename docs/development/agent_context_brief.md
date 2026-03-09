@@ -80,3 +80,5 @@ The workflow is the procedural realization of the collaboration protocol. It wil
 | [`docs/development/doc-status.md`](docs/development/doc-status.md) | Frozen layer status and document temperature |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Document structure, folder ownership, enforcement rules |
 | [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Roadmap update sequence, cleanup rules, summary guidelines |
+
+Read `documentation_policy.md` and `roadmap_policy.md` before any documentation or roadmap task.

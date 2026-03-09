@@ -13,7 +13,7 @@ PROJECT_ROOT   := $(CURDIR)
 AGENT_BRIEF    := docs/development/agent_context_brief.md
 ENV_FILE       := .env
 
-PREFIX         ?= ~/.local/bin/
+PREFIX         ?= /usr/local/bin
 
 # -------------------------
 # Container targets
@@ -50,6 +50,15 @@ dry-run:
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
+.PHONY: rebuild
+rebuild:
+	-agent-sandbox rebuild start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve
+
 # -------------------------
 # Workspace targets
 # -------------------------
@@ -85,11 +94,12 @@ help:
 	@echo "Usage: make <target> [PREFIX=<path>]"
 	@echo ""
 	@echo "Container:"
-	@echo "  build        — build Docker image"
+	@echo "  build        — build Docker image only"
 	@echo "  start        — start container (builds if image missing)"
 	@echo "  serve        — start container in serve mode (builds if image missing)"
 	@echo "  dry-run      — liveness check only (builds if image missing)"
-	@echo "  Use --rebuild with start/serve/dry-run to force a rebuild"
+	@echo "  rebuild      — force rebuild then start in serve mode"
+	@echo "  Use: agent-sandbox rebuild <start|dry-run> ... for other modes"
 	@echo ""
 	@echo "Workspace:"
 	@echo "  apply              — apply staged.diff to current branch"

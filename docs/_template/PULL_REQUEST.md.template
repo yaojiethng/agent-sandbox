@@ -49,7 +49,6 @@ If architecture or behavior changed:
 - [ ] `OpenCode_Agent_Workflow.md` reviewed and updated (if required)
 - [ ] `SECURITY.md` reviewed and updated (if required)
 - [ ] `roadmap.md` updated (if milestone progression occurred)
-- [ ] `GLOSSARY.md` updated (if new terminology introduced)
 - [ ] No cross-layer leakage introduced
 - [ ] No duplicated definitions introduced
 - [ ] Only minimal necessary edits were made

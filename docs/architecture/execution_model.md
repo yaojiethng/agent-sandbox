@@ -24,10 +24,17 @@ make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
 | `start` | `providers/opencode/start_agent.sh standard` |
 | `dry-run` | `providers/opencode/start_agent.sh dry-run` |
 | `build` | `providers/opencode/build_agent.sh` |
-| `apply` | `scripts/apply_workspace.sh` |
-| `apply-branch` | `scripts/apply_workspace.sh --branch=<n>` |
+| `apply` | `scripts/apply_workspace.sh [--branch=<n>]` |
+| `rebuild` | `build_agent.sh` then re-execs wrapper with remaining args |
 
-For `start`, `dry-run`, and `serve` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. Passing `--rebuild` forces a build regardless of image state.
+For `start` and `dry-run` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. To force a rebuild before any subcommand, prefix with `rebuild`:
+
+```
+agent-sandbox rebuild start   --name=<n> --root=<path> ...
+agent-sandbox rebuild dry-run --name=<n> --root=<path> ...
+```
+
+`rebuild` extracts `--name` and `--root` from the passthrough args, runs `build_agent.sh`, then re-execs the wrapper with the original subcommand and flags. The `--rebuild` flag is not supported; `rebuild` as a subcommand is the only force-build path.
 
 ---
 
@@ -47,7 +54,7 @@ start_agent.sh <mode> --name=<project_name> --root=<path> [--brief=<rel>] [--env
 | `--env` | No | Path to `.env` file, relative to `PROJECT_ROOT` |
 | `--serve` | No | Start OpenCode in serve mode |
 
-`--rebuild` is handled by the wrapper before `start_agent.sh` is called and is never passed through to it.
+`--rebuild` is not a flag on `start_agent.sh`. Force rebuilds are handled by the `rebuild` subcommand in the wrapper before `start_agent.sh` is called.
 
 The `Makefile` defines `PROJECT_ROOT` as `$(CURDIR)` — the directory containing the Makefile — so the correct root is always resolved without manual configuration. `AGENT_BRIEF` and `ENV_FILE` are relative paths resolved against `PROJECT_ROOT` inside `start_agent.sh`.
 
@@ -126,12 +133,7 @@ On container exit, an EXIT trap runs `stage_diffs`:
 
 An autosave loop runs `stage_diffs` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
 
-On the host, two scripts apply the patch:
-
-- `apply_workspace_inplace.sh` — applies to the current branch without committing.
-- `apply_workspace_to_branch.sh` — checks out a named branch and applies.
-
-Both use `git apply --3way` to handle conflicts. Both validate that `PROJECT_ROOT` is a git repository with at least one commit before applying.
+On the host, `scripts/apply_workspace.sh` applies the patch to the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_ROOT` is a git repository with at least one commit before applying.
 
 ---
 

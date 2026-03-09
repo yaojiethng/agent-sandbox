@@ -14,6 +14,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M1.1 — Interactive Virtual Workspace / Serve Mode](#m11--interactive-virtual-workspace--serve-mode) | Complete |
 | [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | Complete |
 | [M1.3 — Invocation Cleanup & Onboarding Workflow](#m13--invocation-cleanup--onboarding-workflow) | Complete |
+| [M1.4 — Image Staleness Detection](#m14--image-staleness-detection) | Not started |
 | [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
 | [M3 — Metadata Seeding](#m3-metadata-seeding) | Not started |
 | [M4 — Multi-Agent Branch Management](#m4-multi-agent-branch-management) | Not started |
@@ -55,6 +56,18 @@ Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, cons
 *Complete.*
 
 The per-project conf file is removed; project identity and paths are defined in the project-side `Makefile` with `PROJECT_ROOT` as `$(CURDIR)`. The `agent-sandbox` CLI wrapper in `scripts/agent-sandbox.sh` dispatches to provider scripts and apply scripts, handles build-if-missing and `--rebuild`, and is installed via `make install`. `start_agent.sh` and `build_agent.sh` are single-purpose scripts with named flag interfaces; the apply scripts are merged into `apply_workspace.sh` with an optional `--branch` flag. Provider scripts and Dockerfile are flattened under `providers/opencode/`. The operator onboarding workflow and `docs/development/quickstart.md` are written; `providers/opencode/quickstart.md` serves as a debug and command reference for the OpenCode provider.
+
+---
+
+### **M1.4 — Image Staleness Detection**
+
+**Objective:** Automatically detect stale container images before a run and warn the operator, so that source changes are never silently ignored. See [m1_4-discussion.md](../development/m1_4-discussion.md) for design decisions.
+
+- [ ] Add `lib/image.sh` — centralised digest computation from all `lib/` files plus provider-specific file list
+- [ ] Add `providers/opencode/image-files.txt` — relative-path-from-root list of provider-specific digest inputs
+- [ ] Update `build_agent.sh` — compute and attach digest as Docker image label
+- [ ] Update `agent-sandbox.sh` — staleness check before `start` and `dry-run`; warn-then-continue; rebuild failure must surface staleness warning as last line
+- [ ] Update `execution_model.md` — document digest label, staleness check, shared-lib assumption, and `image-files.txt` convention
 
 ---
 

@@ -40,3 +40,11 @@ apply:
 	agent-sandbox apply \
 	  --root=$(PROJECT_ROOT) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
+
+rebuild:
+	-agent-sandbox rebuild start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve

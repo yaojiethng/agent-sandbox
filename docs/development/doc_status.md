@@ -79,12 +79,6 @@ Temperature reflects the stability of what a document describes — not how care
 | `documentation_policy.md` | 🟢 Cold | Frozen policy. Only changes if the documentation model itself changes. |
 | `roadmap_policy.md` | 🟢 Cold | Roadmap update and cleanup rules. Only changes if the maintenance model changes. |
 
-### References (`docs/references/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `glossary.md` | 🟡 Warm | Update when new terms are introduced or definitions change. |
-
 ### Root
 
 | Document | Temp | Notes |
