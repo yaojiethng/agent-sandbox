@@ -1,6 +1,6 @@
 # M1.2 Discussion — Sandbox File Isolation & Diff Workflow
 
-Design history and implementation notes for M1.2. This is a working reference document — not architecture documentation. Implementation decisions that stabilise should be reflected in `agent_runtime.md`.
+Design history and implementation notes for M1.2. This is a working reference document — not architecture documentation. Implementation decisions that stabilise should be reflected in [`../architecture/execution_model.md`](../architecture/execution_model.md)..
 
 ---
 

@@ -79,16 +79,10 @@ Temperature reflects the stability of what a document describes — not how care
 | `documentation_policy.md` | 🟢 Cold | Frozen policy. Only changes if the documentation model itself changes. |
 | `roadmap_policy.md` | 🟢 Cold | Roadmap update and cleanup rules. Only changes if the maintenance model changes. |
 
-### References (`docs/references/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `glossary.md` | 🟡 Warm | Update when new terms are introduced or definitions change. |
-
 ### Root
 
 | Document | Temp | Notes |
 |---|---|---|
 | `readme.md` | 🟢 Cold | System invariants and entry point. Should rarely need updating. |
 | `contributors.md` | 🟢 Cold | Contribution rules. Update only when workflow or security model changes. |
-| `agent_context_brief.md` | 🟡 Warm | Update when agent collaboration protocol evolves. |
+| `agent-context-brief.md` | 🟡 Warm | Update when agent collaboration protocol evolves. |
