@@ -44,38 +44,19 @@ if [[ -f "$BOOTSTRAP_DIR/brief.md" ]]; then
 fi
 
 # -------------------------
-# Diff staging function
+# Diff pipeline
 # -------------------------
-stage_diffs() {
-  echo "Staging diffs..."
+source /lib/diff.sh
 
-  cd "$SANDBOX_DIR"
+# On exit: commit any pending changes and write staged.diff.
+trap 'diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"' EXIT
 
-  # Commit any uncommitted agent changes so they appear in the diff.
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    git add -A
-    git commit -m "agent-sandbox: uncommitted changes on exit" --quiet || true
-  fi
-
-  if git diff --quiet "$BASELINE_SHA"..HEAD; then
-    echo "No changes detected."
-  else
-    git diff "$BASELINE_SHA"..HEAD > "$CHANGES_DIR/patch.diff" || true
-    echo "Diff written to .workspace/changes/patch.diff"
-  fi
-}
-
-# Always stage diffs on exit
-trap stage_diffs EXIT
-
-# -------------------------
-# Optional autosave
-# -------------------------
+# Optional autosave: write autosave.diff on interval without committing.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      stage_diffs
+      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"
     done
   ) &
 fi

@@ -46,18 +46,21 @@ OpenCode runs in server mode inside the container, accessible from the host on a
 
 *In progress.*
 
-Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes. Project files now enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; submodules are detected and rejected with a clear error.
+Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes. Project files now enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; submodules are detected and rejected with a clear error. Diff pipeline documentation updated and `lib/diff.sh` extracted; apply scripts moved to `scripts/` and consume `staged.diff`; `Makefile` updated with `SCRIPTS`/`PROVIDER_SCRIPTS` split.
 
 #### Operation 2 — Diff: sandbox changes → staged artifact
 
-- [ ] `lib/diff.sh`: extract `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave`
-- [ ] `diff_on_exit` writes `staged.diff`; `diff_on_autosave` writes `autosave.diff`; autosave toggled by `AUTOSAVE_INTERVAL`
-- [ ] `container-entrypoint.sh`: source `lib/diff.sh`, wire exit trap and autosave loop
-- [ ] `Dockerfile`: copy `lib/diff.sh` into image
-- [ ] `tests/test_diff.sh`: test `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave` in isolation
-- [ ] Validate end-to-end: agent edits → `staged.diff` → `make apply` → clean apply on host
-- [ ] Confirm `staged.diff` paths resolve correctly relative to `PROJECT_ROOT`
-- [ ] Test apply on clean host working tree
+##### Implementation
+
+- [x] `lib/diff.sh`: `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave`
+- [x] `tests/test_diff.sh`: unit tests for all four functions
+- [x] `scripts/apply_workspace_inplace.sh`: moved from provider scripts; consumes `staged.diff`; validates git state before apply
+- [x] `scripts/apply_workspace_to_branch.sh`: moved from provider scripts; consumes `staged.diff`; checks out named branch before apply
+- [x] `tests/test_apply.sh`: missing diff, bad git state, clean apply inplace, clean apply to branch; path resolution covered by clean apply tests
+- [x] `Makefile`: `SCRIPTS`/`PROVIDER_SCRIPTS` split; apply targets use `$(CURDIR)`; help text updated
+- [x] `container-entrypoint.sh`: source `lib/diff.sh`; wire `diff_on_exit` as EXIT trap; wire `diff_on_autosave` into autosave loop
+- [x] `Dockerfile`: copy `lib/diff.sh` into image
+- [ ] Validate end-to-end: agent edits → `staged.diff` → apply script → clean apply on host
 
 ---
 
