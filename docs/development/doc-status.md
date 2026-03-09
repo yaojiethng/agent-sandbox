@@ -20,9 +20,9 @@ Layer names and responsibilities are defined in [`architecture/system_overview.m
 |---|---|---|
 | 0 | Infrastructure | Frozen at M1 |
 | 1 | Execution Mechanics | Frozen at M1.1 (serve mode); in progress M1.2 |
-| 2 | Security Model | In progress M1.2 |
-| 3 | Human Workflow | Not started |
-| 4 | Orchestration | Not started |
+| 2 | Orchestration | Not started |
+
+Security Model and Human Workflow are design constraints and system invariants, not implementation layers. They do not appear in the freeze table.
 
 ---
 
@@ -61,15 +61,15 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Notes |
 |---|---|---|
 | `system_overview.md` | 🟡 Warm | Update when major architectural components change. |
-| `agent_runtime.md` | 🟡 Warm | Update when container lifecycle changes. Last updated: M1.2. |
-| `security.md` | 🟢 Cold | Trust boundaries and invariants are settled. Changes signal a design-level shift. |
+| `execution_model.md` | 🔴 Hot | Active implementation document. Evolves with each Execution Mechanics milestone. Last updated: M1.2. |
+| `security.md` | 🟢 Cold | Design constraint and trust boundary spec. Changes signal a design-level shift. |
 | `threat_model_stride.md` | 🟢 Cold | STRIDE analysis is implementation-agnostic. Revisit at major threat surface changes. |
 
 ### Concepts (`docs/concepts/`)
 
 | Document | Temp | Notes |
 |---|---|---|
-| `agent_workflow.md` | 🟡 Warm | Update when operator workflow changes. Last updated: M1.2. |
+| `agent_workflow.md` | 🟢 Cold | Staging principles and operator workflow. Changes signal a shift in core workflow design. |
 
 ### Operations (`docs/operations/`)
 

@@ -10,8 +10,8 @@ Each document belongs to **exactly one** of the following categories:
 
 | Folder | Purpose |
 |---|---|
-| `architecture/` | Stable system design |
-| `concepts/` | Conceptual model |
+| `architecture/` | Implementation design and decisions |
+| `concepts/` | Conceptual model and principles |
 | `operations/` | How to run the system |
 | `development/` | Contributor workflow |
 | `references/` | Glossary and schemas |
@@ -20,7 +20,19 @@ Each document belongs to **exactly one** of the following categories:
 
 ## Layer Model
 
-The system is organized into five architectural layers. The layer model and bottom-up stabilization principle are defined in [`architecture/system_overview.md`](../architecture/system_overview.md). Current layer freeze status is tracked in [`doc-status.md`](doc-status.md).
+The implementation stack has three layers. Lower layers must stabilize before higher layers evolve — refactors are always bottom-up.
+
+| Layer | Name | Responsibility |
+|---|---|---|
+| 0 | Infrastructure | Docker runtime, filesystem, container environment |
+| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
+| 2 | Orchestration | Coordination between multiple agents |
+
+Two elements frame the stack without belonging to it:
+
+**Security Model** — a design constraint specified before implementation and applied to all layers. Architecture documents must satisfy the security spec; the spec does not depend on them.
+
+**Human Workflow** — the outer frame of the system. The operator initiates every run and has final authority over all outputs. This is a system invariant, not a build layer.
 
 ---
 
@@ -85,6 +97,18 @@ A bridge document exists solely to connect two other documents that could refere
 ### `roadmap.md`
 
 `roadmap.md` lives in `development/` and serves as the designated destination for future language and TODO items removed from architecture documents. It is organized by milestone, where each milestone represents a feature completion boundary.
+
+---
+
+### Root document audience
+
+Two root documents serve distinct audiences and must not duplicate each other.
+
+**`readme.md`** — written for humans and agents alike. Contains system invariants, the architecture layer model, the documentation guide path, and the conceptual separation of workflow/security/roadmap. This is the entry point for anyone new to the repository.
+
+**`agent-context-brief.md`** — written for the agent specifically. Contains the collaboration protocol, role definition, output format rules, and constraints that govern how the agent engages with the operator. References `readme.md` and `system_overview.md` for system invariants and architecture — it does not restate them.
+
+If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs agent behaviour specifically, it belongs in `agent-context-brief.md` and must not be duplicated elsewhere.
 
 ---
 

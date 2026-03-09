@@ -19,15 +19,19 @@ These guarantees hold across all agent runs:
 
 ## Architecture Layer Model
 
-The system is organized into five layers. Lower layers must stabilize before higher layers evolve — refactors are always bottom-up.
+The implementation stack has three layers with a strict bottom-up stabilization rule: lower layers must stabilize before higher layers evolve, and refactors are always bottom-up.
 
 | Layer | Name | Responsibility |
 |---|---|---|
 | 0 | Infrastructure | Docker runtime, filesystem, container environment |
 | 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
-| 2 | Security Model | Isolation rules, filesystem access restrictions |
-| 3 | Human Workflow | Task release, review loop, diff approval |
-| 4 | Orchestration | Coordination between multiple agents |
+| 2 | Orchestration | Coordination between multiple agents |
+
+Two elements frame the stack without belonging to it:
+
+**Security Model** — a design constraint applied to all implementation layers. The security spec is written before implementation and used to harden each layer against the threat model. It is not a build layer; it is a specification that the implementation must satisfy.
+
+**Human Workflow** — the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
 
 Current layer freeze status is tracked in [`docs/development/doc-status.md`](../development/doc-status.md).
 
@@ -37,13 +41,13 @@ Current layer freeze status is tracked in [`docs/development/doc-status.md`](../
 
 **Container runtime** — each agent runs inside a Docker container built from a minimal Ubuntu image with Node, Git, and the OpenCode agent installed. The container is ephemeral and discarded after each run.
 
-**Project mount** — the host project repository is mounted into the container read-only. The agent cannot write to the host filesystem.
+**`.bootstrap/`** — a read-only input channel mounted into the container before the agent starts. Contains the pre-built project snapshot and the agent brief. The snapshot is constructed on the host by `start_agent.sh` before the container launches; the container never has direct access to `PROJECT_ROOT`.
 
-**Sandbox** — on startup, the entrypoint copies project files into an isolated `sandbox/` directory inside the container. The agent works exclusively in the sandbox. Files excluded by `.gitignore` are never copied in.
+**Sandbox** — a writable, container-local copy of the project snapshot. The entrypoint copies `.bootstrap/snapshot/` into `sandbox/` on startup. The agent works exclusively in the sandbox.
 
-**Workspace** — `.workspace/` is a read-write directory mounted from the host. It is the only persistent output channel between the container and the host. Agent changes are written here as `patch.diff` on exit.
+**`.workspace/`** — a read-write directory mounted from the host. The sole persistent output channel between container and host. Agent changes are written here as `patch.diff` on exit.
 
-**Diff and apply** — the entrypoint records a git baseline in the sandbox before the agent runs. On exit, it produces a `patch.diff` capturing all agent changes. The operator applies this diff to the host repository manually using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`.
+**Diff and apply** — the entrypoint records a git baseline in `sandbox/` before the agent runs. On exit, it produces `patch.diff` capturing all agent changes. The operator applies this diff to the host repository manually using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`.
 
 **Per-project config** — each project has a config directory under `projects/<project>/` containing machine-agnostic settings, machine-specific overrides, and a `.env` for runtime variables. This allows the same harness to run against different projects and machines without modifying core scripts.
 
@@ -53,7 +57,7 @@ Current layer freeze status is tracked in [`docs/development/doc-status.md`](../
 
 | Topic | Document |
 |---|---|
-| Container lifecycle and sandbox preparation | [agent_runtime.md](agent_runtime.md) |
+| Container lifecycle, snapshot pipeline, mount shape | [execution_model.md](execution_model.md) |
 | End-to-end operator workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security guarantees and trust boundaries | [security.md](security.md) |
 | STRIDE threat analysis | [threat_model_stride.md](threat_model_stride.md) |

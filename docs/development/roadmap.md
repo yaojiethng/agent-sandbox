@@ -44,26 +44,45 @@ OpenCode runs in server mode inside the container, accessible from the host on a
 
 *In progress.*
 
-Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured and validated as a diff.
+Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes.
 
-The git bundle workflow (originally M1.6) was designed and partially implemented but rejected. It required creating temporary commits on the host repository during every agent run, which mutated the user's working tree and caused state parity failures between the container and host. The current approach — mounting `PROJECT_ROOT` read-only and copying files via `git ls-files` inside the entrypoint — achieves the same isolation and diff goals without touching the host repo. See `agent_runtime.md` for full details.
+#### Documentation — Update before code changes
+
+- [x] Resolve document ownership: `agent_runtime.md` renamed to `execution_model.md`; owns container internals (entrypoint sequence, snapshot pipeline, mount shape); `agent_workflow.md` owns operator-facing workflow (staging principles, review loop)
+- [x] Migrate internal container behaviour from `agent_workflow.md` sections 2.3 and 3.2 into `execution_model.md`
+- [x] Update `agent_workflow.md` mount table to reflect `.bootstrap/` + `.workspace/` mount shape; internal container mechanics removed
+- [x] Write `execution_model.md`: `.bootstrap/` input channel, snapshot pipeline function boundaries, validation gates, mount shape, diff pipeline, entrypoint sequence
+- [x] Update `security.md` trust boundaries and invariants to reflect that `PROJECT_ROOT` is no longer mounted at container runtime
+- [x] Update `doc-status.md`: `execution_model.md` at 🔴 Hot, `agent_workflow.md` reclassified to 🟢 Cold, layer table revised to three implementation layers
+- [x] Update `system_overview.md`: revised layer model, major components updated for `.bootstrap/`
+- [x] Update `documentation-guidelines.md`: revised layer model, root document audience convention added
+- [x] Update `readme.md`: revised layer model
+- [x] Update `m1_2-discussion.md`: full modularization design decisions recorded
+
+#### Operation 1 — Snapshot: host repo → sandbox (refactor)
 
 - [x] `PROJECT_ROOT` mounted read-only; `.workspace` mounted read-write
 - [x] Per-directory `MOUNTS`/`FILES` config removed — full repo mount replaces manual parity maintenance
 - [x] Sandbox populated via `git ls-files` — `.gitignore` respected, secrets excluded
 - [x] Baseline git commit in `sandbox/` before agent runs
-- [x] `patch.diff` generated on exit via `git diff <baseline>..HEAD`
 - [x] Autosave checkpoints during session
+- [ ] Introduce `.bootstrap/` as read-only input channel for snapshot and brief
+- [ ] Migrate `brief.md` mount from `.workspace/brief.md` to `.bootstrap/brief.md` in `start_agent.sh`
+- [ ] Extract snapshot functions into `lib/snapshot.sh`: `snapshot_enumerate_files`, `snapshot_copy_files`, `snapshot_validate`, `snapshot_copy_to_sandbox`, `snapshot_init_git`
+- [ ] `start_agent.sh`: call `snapshot_enumerate_files` + `snapshot_copy_files` → `.bootstrap/snapshot/`; run `snapshot_validate` (gate 1) before container starts; remove `PROJECT_ROOT` from runtime mount args
+- [ ] `container-entrypoint.sh`: source `lib/snapshot.sh`; run `snapshot_validate` (gate 2); call `snapshot_copy_to_sandbox` then `snapshot_init_git`
+- [ ] Write `tests/test_snapshot_host.sh` — enumerate + copy against fixture repo; covers gitignored file exclusion, symlink handling, untracked-only repo, dirty working tree
+- [ ] Write `tests/test_snapshot_container.sh` — validate + copy_to_sandbox + init_git against fixture snapshot dir
+- [ ] Confirm agent cannot read `.workspace` contents (mount shape enforces this after refactor — verify)
+- [ ] Verify behaviour with submodules (document or handle)
+
+#### Operation 2 — Diff: sandbox changes → patch applied to host repo
+
+- [x] `patch.diff` generated on exit via `git diff <baseline>..HEAD`
 - [x] `apply_workspace_inplace.sh` and `apply_workspace_to_branch.sh` — git validation before apply
 - [ ] Validate end-to-end: agent edits → `patch.diff` → `make apply` → clean apply on host
 - [ ] Confirm `patch.diff` paths resolve correctly relative to `PROJECT_ROOT`
-- [ ] Test with dirty and clean host working tree
-- [ ] Verify untracked-only repo copies correctly into sandbox
-- [ ] Verify behaviour with submodules (document or handle)
-- [ ] Verify symlink handling
-- [ ] Confirm agent cannot read `.workspace` contents via the ro mount
-- [ ] Confirm gitignored files are absent from `sandbox/` after copy
-- [ ] Confirm `brief.md` present in `sandbox/` when `AGENT_BRIEF` is set
+- [ ] Test apply on clean host working tree
 
 ---
 

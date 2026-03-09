@@ -28,19 +28,19 @@ The system includes the following explicit trust boundaries:
 1. Host OS ↔ WSL
 2. WSL ↔ Docker daemon
 3. Docker daemon ↔ Container
-4. Container ↔ Mounted project directories
+4. Container ↔ Mounted directories (`.bootstrap/`, `.workspace/`)
 5. Agent runtime ↔ Project files within the container
 
 Within the container:
 
-- `project/` (`PROJECT_ROOT`, less gitignored files) is mounted read-only
-- `project/.workspace/` is mounted read-write, shadowing the ro mount at that path
-- All durable outputs must pass through `.workspace/`
-- The agent works exclusively in `sandbox/`, a copy of non-ignored project files made at startup
+- `.bootstrap/` is mounted read-only — contains the pre-built project snapshot and agent brief
+- `.workspace/` is mounted read-write — the sole output channel from the container to the host
+- `PROJECT_ROOT` is not mounted at container runtime
+- The agent works exclusively in `sandbox/`, a container-local copy of `.bootstrap/snapshot/` made at startup
 
-**The agent runtime is explicitly untrusted.** The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. The read-only mount on `project/` prevents the agent runtime from writing to the host repository, but it does not prevent the agent runtime from reading everything visible in `project/`. Gitignore controls what is copied into `sandbox/`, but files present in `PROJECT_ROOT` and not gitignored remain readable to the agent via the mount.
+**The agent runtime is explicitly untrusted.** The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. `PROJECT_ROOT` is not mounted into the container, so the agent runtime cannot read host repository files directly. The agent's view of the project is limited to what was enumerated by `git ls-files` on the host and copied into `.bootstrap/snapshot/` before the container started.
 
-This means gitignore is a necessary but not sufficient control for secrets. Sensitive files must not exist in `PROJECT_ROOT` at all if they should not be visible to the agent runtime. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
+Gitignore controls what enters the snapshot. Sensitive files gitignored on the host are excluded from the snapshot and therefore never visible to the agent runtime. Sensitive files must not exist in `PROJECT_ROOT` at all if there is any risk of them being unintentionally tracked. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
 
 ---
 
@@ -48,12 +48,12 @@ This means gitignore is a necessary but not sufficient control for secrets. Sens
 
 The following invariants must hold:
 
-- The container must not modify `project/` directly — it is mounted read-only.
-- The container must not access host filesystem paths outside defined mounts.
+- `PROJECT_ROOT` must not be mounted into the container at runtime.
+- The container must not access host filesystem paths outside `.bootstrap/` and `.workspace/`.
 - The container must not have access to the Docker socket.
 - Repository mutation must occur only on the host after human review.
 - Agent-produced changes must be staged as `patch.diff` before application.
-- Gitignored files (including secrets) must never be copied into `sandbox/`.
+- Gitignored files (including secrets) must never be copied into `.bootstrap/snapshot/` or `sandbox/`.
 
 Validation procedures for these invariants are defined in operational documentation.
 

@@ -54,7 +54,17 @@ Harness is built around a small set of architectural invariants.
 
 ### Architecture Layers
 
-The system is decomposed into five layers — Infrastructure, Execution Mechanics, Security Model, Human Workflow, and Orchestration — where lower layers must stabilize before higher layers evolve. See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
+The implementation stack has three layers where lower layers must stabilize before higher layers evolve:
+
+| Layer | Name | Responsibility |
+|---|---|---|
+| 0 | Infrastructure | Docker runtime, filesystem, container environment |
+| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
+| 2 | Orchestration | Coordination between multiple agents |
+
+Two elements frame the stack without belonging to it: the **Security Model**, which is a design constraint specified before implementation and applied to all layers; and the **Human Workflow**, which is a system invariant — the operator initiates every run and has final authority over all outputs.
+
+See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
 
 ## Documentation Guide
 
