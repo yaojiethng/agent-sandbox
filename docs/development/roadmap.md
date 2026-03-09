@@ -2,7 +2,7 @@
 
 This roadmap defines milestones, incremental goals, and tasks for the agent-sandbox project. It is designed to allow stepwise development and learning, with progress tracking for agents or humans.
 
-Maintenance rules — task granularity, cleanup on completion, section removal — are defined in [`docs/operations/roadmap_maintenance.md`](../operations/roadmap_maintenance.md).
+Maintenance rules — task granularity, cleanup on completion, section removal — are defined in [`docs/development/roadmap_policy.md`](../development/roadmap_policy.md).
 
 ---
 
@@ -46,22 +46,17 @@ OpenCode runs in server mode inside the container, accessible from the host on a
 
 *In progress.*
 
-Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes.
+Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes. Project files now enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; submodules are detected and rejected with a clear error.
 
-#### Operation 1 — Snapshot: host repo → sandbox (refactor)
+#### Operation 2 — Diff: sandbox changes → staged artifact
 
-- [ ] Introduce `.bootstrap/` as read-only input channel; migrate `brief.md` from `.workspace/`
-- [ ] `lib/snapshot.sh`: extract snapshot functions (`snapshot_enumerate_files`, `snapshot_copy_files`, `snapshot_validate`, `snapshot_copy_to_sandbox`, `snapshot_init_git`)
-- [ ] `start_agent.sh`: implement host-side snapshot pipeline (enumerate, copy, validate gate 1)
-- [ ] `container-entrypoint.sh`: implement container-side unpack (validate gate 2, copy to sandbox, init git)
-- [ ] `tests/test_snapshot_host.sh`: enumerate + copy tests (gitignore exclusion, symlinks, untracked-only repo, dirty working tree)
-- [ ] `tests/test_snapshot_container.sh`: validate + copy + init tests against fixture snapshot
-- [ ] Verify submodule behaviour (document or handle)
-
-#### Operation 2 — Diff: sandbox changes → patch applied to host repo
-
-- [ ] Validate end-to-end: agent edits → `patch.diff` → `make apply` → clean apply on host
-- [ ] Confirm `patch.diff` paths resolve correctly relative to `PROJECT_ROOT`
+- [ ] `lib/diff.sh`: extract `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave`
+- [ ] `diff_on_exit` writes `staged.diff`; `diff_on_autosave` writes `autosave.diff`; autosave toggled by `AUTOSAVE_INTERVAL`
+- [ ] `container-entrypoint.sh`: source `lib/diff.sh`, wire exit trap and autosave loop
+- [ ] `Dockerfile`: copy `lib/diff.sh` into image
+- [ ] `tests/test_diff.sh`: test `diff_commit_pending`, `diff_generate`, `diff_on_exit`, `diff_on_autosave` in isolation
+- [ ] Validate end-to-end: agent edits → `staged.diff` → `make apply` → clean apply on host
+- [ ] Confirm `staged.diff` paths resolve correctly relative to `PROJECT_ROOT`
 - [ ] Test apply on clean host working tree
 
 ---
@@ -148,6 +143,12 @@ The operator-facing setup experience has not been fully defined. This milestone 
 - M2 introduces structured autonomy
 - Manual review remains mandatory until automation is formally trusted
 - This roadmap is a living document and may evolve as implementation matures
+
+---
+
+## Known Limitations
+
+- **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
 ---
 
