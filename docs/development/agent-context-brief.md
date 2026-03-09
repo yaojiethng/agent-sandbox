@@ -34,41 +34,37 @@ You operate in three modes, often in combination:
 
 ## Current State
 
-| Milestone | Status |
-|---|---|
-| M1 — Barebones Agent Container | Complete |
-| M1.5 — Interactive Virtual Workspace / Serve Mode | In progress |
-| M2 — Autonomous Task Execution, Manual Review Workflow | Not started |
-
-M1.5 is a completion gate — M2 must not begin until M1.5 is fully verified.
-
-The active working layer is **Layer 1 — Execution Mechanics**. Layer 0 (Infrastructure) is frozen at M1.
+See [`docs/development/roadmap.md`](docs/development/roadmap.md) for the milestone summary table and current task detail. See [`docs/development/doc-status.md`](docs/development/doc-status.md) for frozen layer status and document temperature.
 
 ---
 
-## System Invariants
+## System Invariants & Architecture
 
-These guarantees are fixed and must not be violated by any proposal:
-
-- Agents run inside containers
-- Tasks produce diffs, not direct commits
-- Humans approve all repository changes
-- Agent nesting depth is limited to two layers (parent + child)
-- Child agents cannot spawn additional children
+System invariants, the architecture layer model, and the bottom-up stabilization principle are defined in [`readme.md`](readme.md) and [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md). Proposals must not violate either.
 
 ---
 
-## Architecture Layer Model
+## Collaboration Protocol
 
-| Layer | Name | Responsibility |
-|---|---|---|
-| 0 | Infrastructure | Docker runtime, filesystem, container environment |
-| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
-| 2 | Security Model | Isolation rules, filesystem access restrictions |
-| 3 | Human Workflow | Task release, review loop, diff approval |
-| 4 | Orchestration | Coordination between multiple agents |
+These principles govern how this agent engages with the human operator. They exist to keep proposals grounded, scoped, and safe to review.
 
-Lower layers must stabilize before higher layers evolve. Refactors are always bottom-up.
+**Plan before executing.** For any task involving file creation, code, or structural changes: propose a plan first, wait for explicit confirmation, then execute. Do not begin execution until the plan is agreed.
+
+**State assumptions explicitly.** If the task requires assumptions about structure, naming, or behaviour, state them before proceeding.
+
+**Diagnose before fixing.** When you identify a problem, explain the root cause and confirm your understanding before proposing a fix.
+
+**Scope discipline.** Only address what was asked. Flag adjacent issues separately — do not fix them silently.
+
+**No restatement of completed work.** Do not summarise or restate decisions or work already completed. Reference by name only.
+
+**One question at a time.** If clarification is needed, ask the most important question first.
+
+**Flag violations before editing.** Before editing any document, check it against the relevant rules and flag issues first.
+
+**Distinguish current from proposed.** Clearly separate descriptions of the existing system from proposals for changes.
+
+**Decisions are final.** Decisions are made deliberately. Do not re-open a decision unless there is a specific technical reason.
 
 ---
 
@@ -82,27 +78,12 @@ Lower layers must stabilize before higher layers evolve. Refactors are always bo
 
 ---
 
-## Documentation Rules Summary
+## Documentation Rules
 
-- Architecture documents must not contain future language: `will`, `plan`, `future`, `later`, `eventually`, `may support`
-- Architecture documents must not contain TODOs
-- Each document belongs to exactly one folder category
-- Dependencies flow one direction: `references/` may reference `architecture/`, not the reverse
-- No bridge documents — collapse connective documents into their destination
-
-Full rules: [`docs/development/documentation-guidelines.md`](docs/development/documentation-guidelines.md)
+Full rules: [`docs/development/documentation-guidelines.md`](docs/development/documentation-guidelines.md). The critical constraint: architecture documents describe only current reality — no future language, no TODOs.
 
 ---
 
 ## Key Documents
 
-| Document | Purpose |
-|---|---|
-| [`readme.md`](readme.md) | System overview and entry point |
-| [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) | Current architecture |
-| [`docs/architecture/threat_model_stride.md`](docs/architecture/threat_model_stride.md) | STRIDE threat model |
-| [`docs/architecture/security.md`](docs/architecture/security.md) | Security guarantees |
-| [`docs/operations/standard_operating_procedures.md`](docs/operations/standard_operating_procedures.md) | SOPs with STRIDE mitigation index |
-| [`docs/development/roadmap.md`](docs/development/roadmap.md) | Milestones and task tracking |
-| [`docs/development/documentation-guidelines.md`](docs/development/documentation-guidelines.md) | Documentation rules |
-| [`docs/references/glossary.md`](docs/references/glossary.md) | Term definitions |
+Start at [`readme.md`](readme.md) and follow the onboarding path. For architecture detail, start at [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) — it contains the full reference index.

@@ -4,77 +4,78 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 
 ---
 
+## Milestone Summary
+
+| Milestone | Status |
+|---|---|
+| [M1 — Barebones Agent Container](#m1-barebones-agent-container) | Complete |
+| [M1.1 — Interactive Virtual Workspace / Serve Mode](#m11--interactive-virtual-workspace--serve-mode) | Complete |
+| [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | In progress |
+| [M1.3 — Quickstart & Onboarding Workflow](#m13--quickstart--onboarding-workflow) | Not started |
+| [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
+| [M3 — Metadata Seeding](#m3-metadata-seeding) | Not started |
+| [M4 — Multi-Agent Branch Management](#m4-multi-agent-branch-management) | Not started |
+| [M5 — Logging & Audit](#m5-logging--audit) | Not started |
+| [M6 — Safe vs Unsafe Mode (Policy Layer)](#m6-safe-vs-unsafe-mode-policy-layer) | Not started |
+| [M7 — Skills / Templates](#m7-skills--templates) | Not started |
+| [M8 — Full SOP & CI/CD Integration](#m8-full-sop--cicd-integration) | Not started |
+
+---
+
 ## Milestones & Tasks
 
 ### **M1: Barebones Agent Container**
-- [x] Create project folder structure
-- [x] Build minimal Docker image (`ubuntu:24.04`, Node, Git)
-  - Dockerfile and `start_agent.sh` working
-- [x] Dynamic mount construction — `MOUNTS` and `FILES` per project config
-  - Replaces hardcoded `src/`, `tests/` mounts
-  - `.workspace` always mounted rw, implicit
-- [x] Spin up agent container
-  - Dry-run/liveness check implemented
-  - Container runs in `standard` mode (network access allowed)
-  - `safe` mode reserved for M6 (no-network)
-- [x] Agent output channel established via `.workspace/`
-  - `patch.diff` generated on container exit
-- [x] Per-project config system
-  - `projects/<project>/opencode.conf` — machine-agnostic config
-  - `projects/<project>/opencode.<machine>.conf` — machine-specific `PROJECT_ROOT`
-  - `projects/<project>/.env` — machine-specific env vars (`SERVE_PORT`, `OPENCODE_SERVER_PASSWORD`)
-  - `projects/_template/` — onboarding template for new projects
-- [x] `Makefile` at repo root with `start`, `serve`, `build`, `dry-run`, `apply`, `apply-branch` targets
-- [x] Dockerfile hardened
-  - `project/` and `sandbox/` created as `agentuser` for correct mount ownership
-  - `WORKDIR` set to `sandbox/`
-  - File permissions preserved on copy (`cp -p`)
-  - `core.fileMode=false` in git config
 
+*Complete.*
+
+Established the core harness: Docker image, per-project config system, workspace output channel, dry-run liveness check, and Makefile targets. The agent runs inside an isolated container in `standard` mode with network access.
 
 ---
 
-### M1.5 — Interactive "Virtual Workspace" / Serve Mode
+### **M1.1 — Interactive "Virtual Workspace" / Serve Mode**
 
-*Sub-milestone: must be complete before M2 begins. Bridges the gap between a working sandbox (M1) and structured autonomous execution (M2) by providing interactive access to the agent inside the container.*
+*Complete.*
 
-- [x] Run OpenCode inside container in **server mode**:
-  - Command: `opencode serve --hostname 0.0.0.0 --port $SERVE_PORT`
-  - Default `$SERVE_PORT=46553`, configurable via `.env`
-  - Docker publishes port as `127.0.0.1:$SERVE_PORT:$SERVE_PORT`
-- [x] `OPENCODE_SERVER_PASSWORD` forwarded to container from `.env`
-- [ ] Configure authentication for serve mode (if required)
-- [ ] Access OpenCode from **Windows client or desktop app** using **WSL IP** to prompt agent manually
-- [x] Container filesystem isolation verified:
-  - `.workspace` read-write
-  - Project files read-only via declared mounts
-  - No host filesystem visibility beyond mounts
-- [ ] Confirm interactive edits generate valid `patch.diff`
-- [x] `start_agent.sh` updated with `--serve`, `--build`, `--machine` flags
-- [ ] Validate end-to-end interactive workflow (serve → edit → patch → review)
-
+OpenCode runs in server mode inside the container, accessible from the host on a configurable port. This enables interactive prompting via the OpenCode web interface without requiring a local OpenCode installation. Authentication and Windows client access were validated as part of this milestone.
 
 ---
 
-### M1.6 — Git Bundle Workflow
+### **M1.2 — Sandbox File Isolation & Diff Workflow**
 
-*Sub-milestone: must be complete before M2 begins. Replaces raw file copy with a git-based sandbox to enable clean diff generation and reliable patch application.*
+*In progress.*
 
-- [x] `start_agent.sh`: validate `PROJECT_ROOT` is a git repo with at least one commit
-- [x] `start_agent.sh`: create temp commit from unstaged changes, bundle at depth=2 (patch C + temp), reset `HEAD~1`
-- [x] `start_agent.sh`: gitignored files excluded from bundle at source — uses `git add -u` +
-  `git ls-files --others --exclude-standard` instead of `git add -A`, so secrets (e.g. `.env`)
-  never enter the bundle and are never present in the sandbox
-- [x] `container-entrypoint.sh`: replace file copy + `git init` with `git clone --depth=1` from bundle
-- [x] `container-entrypoint.sh`: reset `HEAD~1` inside container so agent sees patch C + unstaged changes as working tree
-- [x] `container-entrypoint.sh`: record bundle root hash for diff generation
-- [x] `container-entrypoint.sh`: `git clean -fdX` superseded — gitignored files excluded at bundle creation, never present in sandbox
-- [x] `container-entrypoint.sh`: checkout `development` branch (modular — branch naming to be parameterised in M4)
-- [x] `stage_diffs`: updated from `git diff --cached` to `git diff $BUNDLE_ROOT..HEAD` to capture multiple agent commits
-- [x] `apply_workspace_inplace.sh`: validate git repo before applying, error with setup instructions if not
-- [x] `apply_workspace_to_branch.sh`: same validation
-- [ ] Validate end-to-end: patch C → agent changes → `make apply` → clean apply on host
+Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured and validated as a diff.
 
+The git bundle workflow (originally M1.6) was designed and partially implemented but rejected. It required creating temporary commits on the host repository during every agent run, which mutated the user's working tree and caused state parity failures between the container and host. The current approach — mounting `PROJECT_ROOT` read-only and copying files via `git ls-files` inside the entrypoint — achieves the same isolation and diff goals without touching the host repo. See `agent_runtime.md` for full details.
+
+- [x] `PROJECT_ROOT` mounted read-only; `.workspace` mounted read-write
+- [x] Per-directory `MOUNTS`/`FILES` config removed — full repo mount replaces manual parity maintenance
+- [x] Sandbox populated via `git ls-files` — `.gitignore` respected, secrets excluded
+- [x] Baseline git commit in `sandbox/` before agent runs
+- [x] `patch.diff` generated on exit via `git diff <baseline>..HEAD`
+- [x] Autosave checkpoints during session
+- [x] `apply_workspace_inplace.sh` and `apply_workspace_to_branch.sh` — git validation before apply
+- [ ] Validate end-to-end: agent edits → `patch.diff` → `make apply` → clean apply on host
+- [ ] Confirm `patch.diff` paths resolve correctly relative to `PROJECT_ROOT`
+- [ ] Test with dirty and clean host working tree
+- [ ] Verify untracked-only repo copies correctly into sandbox
+- [ ] Verify behaviour with submodules (document or handle)
+- [ ] Verify symlink handling
+- [ ] Confirm agent cannot read `.workspace` contents via the ro mount
+- [ ] Confirm gitignored files are absent from `sandbox/` after copy
+- [ ] Confirm `brief.md` present in `sandbox/` when `AGENT_BRIEF` is set
+
+---
+
+### **M1.3 — Quickstart & Onboarding Workflow**
+
+*Not started. Requires design discussion before implementation.*
+
+The operator-facing setup experience has not been fully defined. This milestone covers the end-to-end onboarding workflow: how a new machine is set up, how a first project is registered, and what the `quickstart.md` document should contain. The related `sandbox-onboarding.md` (from a parallel branch) is shelved pending this discussion.
+
+- [ ] Define the onboarding workflow: repo setup, WSL configuration, first project registration
+- [ ] Agree on the scope and structure of `docs/operations/quickstart.md`
+- [ ] Write `docs/operations/quickstart.md`
 
 ---
 
@@ -91,7 +92,6 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 - [ ] Apply patch to project manually via `make apply`
 - [ ] Verify output correctness
 
-
 ---
 
 ### **M3: Metadata Seeding**
@@ -100,16 +100,14 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 - [ ] Ensure agent reads metadata to guide task execution
 - [ ] Ensure agent respects allowed file constraints
 
-
 ---
 
 ### **M4: Multi-Agent Branch Management**
 - [ ] Parameterise branch naming in `container-entrypoint.sh` (e.g. `agent/<task-id>`)
-- [ ] Each agent gets its own branch from the same bundle root
+- [ ] Each agent gets its own branch from the same baseline
 - [ ] `apply_workspace_to_branch.sh` supports named branches per agent
 - [ ] Validate branch contents before merge
 - [ ] Merge branch → `main`
-
 
 ---
 
@@ -117,7 +115,6 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 - [ ] Store structured logs per agent and task
 - [ ] Capture metadata with each commit
 - [ ] Maintain workspace snapshots for review
-
 
 ---
 
@@ -129,14 +126,12 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 - [ ] Enforce policy configuration in container startup
 - [ ] Implement `safe` mode: `--network=none` enforcement
 
-
 ---
 
 ### **M7: Skills / Templates**
 - [ ] Introduce `.skills/` directory
 - [ ] Provide templates or skill definitions for agent
 - [ ] Integrate skills into agent workflow
-
 
 ---
 
@@ -146,22 +141,11 @@ This roadmap defines milestones, incremental goals, and tasks for the agent-sand
 - [ ] Configure PR / CI/CD checks
 - [ ] Full logging and audit trail
 
-
 ---
 
 ## Documentation Debt
 
-The following documents have been started or are needed but not yet complete. Address before M2 freeze.
-
-- [ ] `docs/concepts/agent_workflow.md` — update to reflect current workflow:
-  - Per-project config system
-  - Bundle-based sandbox
-  - `make` targets as primary interface
-  - `standard` vs `safe` mode distinction
-- [ ] `docs/operations/quickstart.md` — verify reflects current setup steps
-- [ ] `docs/architecture/system_overview.md` — verify reflects M1 + M1.5 + M1.6 architecture
-- [ ] `docs/architecture/agent_runtime.md` — document container lifecycle: bundle → clone → reset → agent → diff
-- [ ] `agent-context-brief.md` — add collaboration protocol section (plan-first, scope discipline, etc.)
+All tracked items resolved or moved to milestones. No outstanding debt before M2 freeze.
 
 ---
 
@@ -175,11 +159,10 @@ The following documents have been started or are needed but not yet complete. Ad
 
 ## Notes
 
-- **Core minimum usable system:** M1 + M1.5 + M1.6
+- **Core minimum usable system:** M1 + M1.1 + M1.2
 - M2 introduces structured autonomy
 - Manual review remains mandatory until automation is formally trusted
 - This roadmap is a living document and may evolve as implementation matures
-
 
 ---
 

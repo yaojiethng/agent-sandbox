@@ -1,6 +1,6 @@
 ---
 Architecture Status: Implemented
-Milestone: M1.5 — Interactive Virtual Workspace
+Milestone: M1.2 — Sandbox File Isolation & Diff Workflow
 Last Verified: 2026-03
 ---
 
@@ -23,6 +23,7 @@ The following guarantees define the harness architecture:
 - Tasks produce diffs instead of direct commits
 - Humans approve repository changes
 - Agent nesting depth is limited to two layers
+- Child agents cannot spawn additional children
 
 ## Key Concepts
 
@@ -51,19 +52,22 @@ Harness is built around a small set of architectural invariants.
 - Execution occurs inside containerized environments.
 - Containers ensure deterministic tooling and dependency environments.
 
+### Architecture Layers
+
+The system is decomposed into five layers — Infrastructure, Execution Mechanics, Security Model, Human Workflow, and Orchestration — where lower layers must stabilize before higher layers evolve. See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
+
 ## Documentation Guide
 
-| Topic | Document |
-|------|---------|
-| Security guarantees and threat model | [security.md](docs/architecture/security.md) |
-| Setup and environment configuration | [quickstart.md](docs/development/quickstart.md) |
-| Contribution workflow | [contributors.md](contributors.md) |
+Start here and follow the path in order. Architecture documents describe the system as it currently exists — future work belongs in the roadmap, not in architecture docs.
 
-### Documentation Policy
+| Step | Document | Purpose |
+|---|---|---|
+| 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
+| 2 | [doc-status.md](docs/development/doc-status.md) | Current milestone, frozen layers, document temperature map |
+| 3 | [documentation-guidelines.md](docs/development/documentation-guidelines.md) | Documentation rules and structure (read once) |
+| 4 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
 
-Architecture documents describe the system as it currently exists.
-Future design work belongs in [roadmap.md](docs/development/roadmap.md).
-Do not place TODOs or speculative features in architecture docs.
+For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 
 ## Conceptual Separation
 

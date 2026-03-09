@@ -6,14 +6,14 @@ This document summarizes the threat entities, impacted assets, STRIDE categoriza
 
 It defines trust boundaries, threat assumptions, and security invariants.
 
-Operational workflow details are defined in `OpenCode_Agent_Workflow.md`.
+Operational workflow details are defined in [`concepts/agent_workflow.md`](../concepts/agent_workflow.md).
 
 ---
 
 ## Scope
 
 - Local, single-user environment
-- OpenCode agents may read, generate, and execute code inside containers
+- Agent Runtimes may read, generate, and execute code inside containers
 - Isolation is enforced via Docker, mount permissions, and OS primitives
 - Host repository integrity must be protected from direct container mutation
 
@@ -25,18 +25,22 @@ This document defines the security properties of that model.
 
 The system includes the following explicit trust boundaries:
 
-1. Host OS ↔ WSL  
-2. WSL ↔ Docker daemon  
-3. Docker daemon ↔ Container  
-4. Container ↔ Mounted project directories  
+1. Host OS ↔ WSL
+2. WSL ↔ Docker daemon
+3. Docker daemon ↔ Container
+4. Container ↔ Mounted project directories
+5. Agent runtime ↔ Project files within the container
 
 Within the container:
 
-- `src/` and `tests/` are mounted read-only
-- `.workspace/` is mounted read-write
+- `project/` (`PROJECT_ROOT`, less gitignored files) is mounted read-only
+- `project/.workspace/` is mounted read-write, shadowing the ro mount at that path
 - All durable outputs must pass through `.workspace/`
+- The agent works exclusively in `sandbox/`, a copy of non-ignored project files made at startup
 
-The container is considered a partially trusted execution environment.
+**The agent runtime is explicitly untrusted.** The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. The read-only mount on `project/` prevents the agent runtime from writing to the host repository, but it does not prevent the agent runtime from reading everything visible in `project/`. Gitignore controls what is copied into `sandbox/`, but files present in `PROJECT_ROOT` and not gitignored remain readable to the agent via the mount.
+
+This means gitignore is a necessary but not sufficient control for secrets. Sensitive files must not exist in `PROJECT_ROOT` at all if they should not be visible to the agent runtime. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
 
 ---
 
@@ -44,11 +48,12 @@ The container is considered a partially trusted execution environment.
 
 The following invariants must hold:
 
-- The container must not modify host `src/` or `tests/` directly.
+- The container must not modify `project/` directly — it is mounted read-only.
 - The container must not access host filesystem paths outside defined mounts.
 - The container must not have access to the Docker socket.
-- Repository mutation must occur only on the host after review.
-- Agent-produced changes must be staged before application.
+- Repository mutation must occur only on the host after human review.
+- Agent-produced changes must be staged as `patch.diff` before application.
+- Gitignored files (including secrets) must never be copied into `sandbox/`.
 
 Validation procedures for these invariants are defined in operational documentation.
 
@@ -58,7 +63,7 @@ Validation procedures for these invariants are defined in operational documentat
 
 - Docker provides namespace and filesystem isolation.
 - Containers are ephemeral.
-- Only `.workspace/` persists agent outputs.
+- Only `.workspace/` persists agent outputs across runs.
 - Network access may be enabled depending on execution mode.
 
 Network policy details are defined by configuration, not by this document.
@@ -83,13 +88,13 @@ Residual risk is acknowledged.
 
 | Threat Entity | STRIDE | Mitigations (link to SOP) |
 |---------------|--------|---------------------------|
-| Resource Exhaustion | D: High, R: Medium, T: Medium | [API / Billable Resource Control](SOPS.md#4-api--billable-resource-control), [Child Agent Output Handling](SOPS.md#1-child-agent-output-handling), [Container Build & Deployment](SOPS.md#6-container-build--deployment) |
-| Orchestration / Agent Runtime Compromise | T/I/D/E: High | [Child Agent Output Handling](SOPS.md#1-child-agent-output-handling), [Secrets Handling](SOPS.md#2-secrets-handling), [Container Build & Deployment](SOPS.md#6-container-build--deployment), [Agent Lifecycle Compliance](SOPS.md#7-agent-lifecycle-compliance) |
-| Container Misconfiguration / Image Compromise | T/E/I: High | [Container Build & Deployment](SOPS.md#6-container-build--deployment), [Agent Lifecycle Compliance](SOPS.md#7-agent-lifecycle-compliance) |
-| External Network Threats | T/I: High | [Network Access Rules](SOPS.md#3-network-access-rules), [Child Agent Output Handling](SOPS.md#1-child-agent-output-handling), [Secrets Handling](SOPS.md#2-secrets-handling) |
-| Package / Dependency Compromise | T/I/E: High | [Container Build & Deployment](SOPS.md#6-container-build--deployment), [Secrets Handling](SOPS.md#2-secrets-handling), [Agent Lifecycle Compliance](SOPS.md#7-agent-lifecycle-compliance) |
-| Secrets / Sensitive Data Leakage | I: High | [Secrets Handling](SOPS.md#2-secrets-handling), [Child Agent Output Handling](SOPS.md#1-child-agent-output-handling), [Network Access Rules](SOPS.md#3-network-access-rules) |
-| Human / Operational Misuse | T/R: High | [Human / Operational Protocols](SOPS.md#5-human--operational-protocols), [Container Build & Deployment](SOPS.md#6-container-build--deployment), [Child Agent Output Handling](SOPS.md#1-child-agent-output-handling), [Agent Lifecycle Compliance](SOPS.md#7-agent-lifecycle-compliance) |
+| Resource Exhaustion | D: High, R: Medium, T: Medium | [API / Billable Resource Control](../operations/standard_operating_procedures.md#4-api--billable-resource-control), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment) |
+| Orchestration / Agent Runtime Compromise | T/I/D/E: High | [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| Container Misconfiguration / Image Compromise | T/E/I: High | [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| External Network Threats | T/I: High | [Network Access Rules](../operations/standard_operating_procedures.md#3-network-access-rules), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) |
+| Package / Dependency Compromise | T/I/E: High | [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| Secrets / Sensitive Data Leakage | I: High | [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Network Access Rules](../operations/standard_operating_procedures.md#3-network-access-rules) |
+| Human / Operational Misuse | T/R: High | [Human / Operational Protocols](../operations/standard_operating_procedures.md#5-human--operational-protocols), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
 
 ---
 
@@ -112,7 +117,7 @@ Current model:
 - Outbound network access may be enabled to allow AI provider communication.
 - No implicit firewalling is provided by this document.
 
-Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are tracked in `TODO.md`.
+Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are tracked in `roadmap.md`.
 
 ---
 
