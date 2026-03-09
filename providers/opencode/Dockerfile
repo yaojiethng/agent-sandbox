@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 # -------------------------
 # Entrypoint and libs (root, before USER switch)
 # -------------------------
-COPY providers/opencode/docker/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+COPY providers/opencode/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
 COPY lib/snapshot.sh /lib/snapshot.sh
 COPY lib/diff.sh /lib/diff.sh
 RUN chmod +x /usr/local/bin/container-entrypoint.sh

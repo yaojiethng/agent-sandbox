@@ -1,0 +1,42 @@
+# Makefile — <project-name>
+# Runs agent-sandbox against this project.
+# Requires agent-sandbox CLI installed: make install (agent-sandbox repo)
+
+PROJECT_NAME := <project-name>
+PROJECT_ROOT := $(CURDIR)
+AGENT_BRIEF  := agent_context_brief.md
+ENV_FILE     := .env
+
+.PHONY: start serve build dry-run apply
+
+build:
+	agent-sandbox build \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT)
+
+start:
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
+
+serve:
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve
+
+dry-run:
+	agent-sandbox dry-run \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
+
+apply:
+	agent-sandbox apply \
+	  --root=$(PROJECT_ROOT) \
+	  $(if $(BRANCH),--branch=$(BRANCH),)

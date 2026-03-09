@@ -6,6 +6,55 @@ Implementation decisions are recorded here alongside the design they produce. Op
 
 ---
 
+## CLI Wrapper
+
+`scripts/agent-sandbox.sh` is a dispatch wrapper installed onto the host as the `agent-sandbox` CLI. It is the interface used by onboarded projects — they call `agent-sandbox <subcommand>` from their own Makefile without any knowledge of the agent-sandbox repo layout.
+
+Installation is performed once from the agent-sandbox repo:
+
+```
+make install              # installs to /usr/local/bin/agent-sandbox
+make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
+```
+
+`make install` substitutes the repo path into the wrapper at install time, so the installed binary has `AGENT_SANDBOX_REPO` baked in. The source file in the repo (`scripts/agent-sandbox.sh`) contains a placeholder and is never executed directly.
+
+| Subcommand | Delegates to |
+|---|---|
+| `start` | `providers/opencode/start_agent.sh standard` |
+| `dry-run` | `providers/opencode/start_agent.sh dry-run` |
+| `build` | `providers/opencode/build_agent.sh` |
+| `apply` | `scripts/apply_workspace.sh` |
+| `apply-branch` | `scripts/apply_workspace.sh --branch=<n>` |
+
+For `start`, `dry-run`, and `serve` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. Passing `--rebuild` forces a build regardless of image state.
+
+---
+
+## Invocation Model
+
+`start_agent.sh` is invoked by the project-side `Makefile`. Project identity and paths are defined as variables in the Makefile and passed as named flags — there is no separate conf file.
+
+```
+start_agent.sh <mode> --name=<project_name> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | Yes | Project display name; used for Docker image naming (`opencode-agent-<name>`) |
+| `--root` | Yes | Absolute WSL/Linux path to the project root on the host |
+| `--brief` | No | Path to agent brief, relative to `PROJECT_ROOT` |
+| `--env` | No | Path to `.env` file, relative to `PROJECT_ROOT` |
+| `--serve` | No | Start OpenCode in serve mode |
+
+`--rebuild` is handled by the wrapper before `start_agent.sh` is called and is never passed through to it.
+
+The `Makefile` defines `PROJECT_ROOT` as `$(CURDIR)` — the directory containing the Makefile — so the correct root is always resolved without manual configuration. `AGENT_BRIEF` and `ENV_FILE` are relative paths resolved against `PROJECT_ROOT` inside `start_agent.sh`.
+
+Machine-specific variables (`SERVE_PORT`, `OPENCODE_SERVER_PASSWORD`) live in a `.env` file at the project root, gitignored on the host. They are never committed and never enter the snapshot.
+
+---
+
 ## Mount Shape
 
 Two host directories are mounted into the container. Neither gives the agent access to `PROJECT_ROOT` directly.

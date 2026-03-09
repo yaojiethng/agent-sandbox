@@ -45,9 +45,9 @@ Current layer freeze status is tracked in [`docs/development/doc-status.md`](../
 
 **Sandbox** — a writable, container-local copy of the project snapshot. The entrypoint copies `.bootstrap/snapshot/` into `sandbox/` on startup. The agent works exclusively in the sandbox.
 
-**`.workspace/`** — a read-write directory mounted from the host. The sole persistent output channel between container and host. Agent changes are written here as `patch.diff` on exit.
+**`.workspace/`** — a read-write directory mounted from the host. The sole persistent output channel between container and host. Agent changes are written here as `staged.diff` on exit; `autosave.diff` is written periodically during a session if autosave is enabled.
 
-**Diff and apply** — the entrypoint records a git baseline in `sandbox/` before the agent runs. On exit, it produces `patch.diff` capturing all agent changes. The operator applies this diff to the host repository manually using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`.
+**Diff and apply** — the entrypoint records a git baseline in `sandbox/` before the agent runs. On exit, it produces `staged.diff` capturing all agent changes. The operator applies this diff to the host repository manually using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`.
 
 **Per-project config** — each project has a config directory under `projects/<project>/` containing machine-agnostic settings, machine-specific overrides, and a `.env` for runtime variables. This allows the same harness to run against different projects and machines without modifying core scripts.
 
@@ -62,4 +62,3 @@ Current layer freeze status is tracked in [`docs/development/doc-status.md`](../
 | Security guarantees and trust boundaries | [security.md](security.md) |
 | STRIDE threat analysis | [threat_model_stride.md](threat_model_stride.md) |
 | Standard operating procedures | [../operations/standard_operating_procedures.md](../operations/standard_operating_procedures.md) |
-| Term definitions | [../references/glossary.md](../references/glossary.md) |

@@ -1,50 +1,54 @@
 # Makefile — agent-sandbox
-# Usage: make <target> [MACHINE=<suffix>]
+# Usage: make <target>
 #
 # Examples:
-#   make start MACHINE=wsl
-#   make serve MACHINE=wsl
-#   make dry-run MACHINE=wsl
-#   make apply MACHINE=wsl
-#   make apply-branch BRANCH=agent_branch_1 MACHINE=wsl
+#   make start
+#   make serve
+#   make dry-run
+#   make apply
+#   make apply BRANCH=my-branch
 
-PROJECT        := agent-sandbox
-MACHINE        ?= wsl
-BRANCH         ?= agent_branch
-SCRIPTS          := ./scripts
-# PROVIDER_SCRIPTS is deprecated — migrate container targets to SCRIPTS as provider scripts are consolidated
-PROVIDER_SCRIPTS := ./providers/opencode/scripts
+PROJECT_NAME   := agent-sandbox
+PROJECT_ROOT   := $(CURDIR)
+AGENT_BRIEF    := docs/development/agent_context_brief.md
+ENV_FILE       := .env
 
-# Build machine flag if MACHINE is set
-ifdef MACHINE
-MACHINE_FLAG := --machine=$(MACHINE)
-else
-MACHINE_FLAG :=
-endif
+PREFIX         ?= ~/.local/bin/
 
 # -------------------------
 # Container targets
 # -------------------------
 
+.PHONY: build
+build:
+	agent-sandbox build \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT)
+
 .PHONY: start
 start:
-	$(PROVIDER_SCRIPTS)/start_agent.sh $(PROJECT) standard $(MACHINE_FLAG)
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
 
 .PHONY: serve
 serve:
-	$(PROVIDER_SCRIPTS)/start_agent.sh $(PROJECT) standard --serve $(MACHINE_FLAG)
-
-.PHONY: build
-build:
-	$(PROVIDER_SCRIPTS)/start_agent.sh $(PROJECT) standard --build $(MACHINE_FLAG)
-
-.PHONY: serve-build
-serve-build:
-	$(PROVIDER_SCRIPTS)/start_agent.sh $(PROJECT) standard --serve --build $(MACHINE_FLAG)
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve
 
 .PHONY: dry-run
 dry-run:
-	$(PROVIDER_SCRIPTS)/start_agent.sh $(PROJECT) dry-run --build $(MACHINE_FLAG)
+	agent-sandbox dry-run \
+	  --name=$(PROJECT_NAME) \
+	  --root=$(PROJECT_ROOT) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
 
 # -------------------------
 # Workspace targets
@@ -52,11 +56,25 @@ dry-run:
 
 .PHONY: apply
 apply:
-	$(SCRIPTS)/apply_workspace_inplace.sh $(CURDIR) $(CURDIR)/.workspace
+	agent-sandbox apply \
+	  --root=$(PROJECT_ROOT) \
+	  $(if $(BRANCH),--branch=$(BRANCH),)
 
-.PHONY: apply-branch
-apply-branch:
-	$(SCRIPTS)/apply_workspace_to_branch.sh $(CURDIR) $(CURDIR)/.workspace $(BRANCH)
+# -------------------------
+# Install
+# -------------------------
+
+.PHONY: install
+install:
+	@sed 's|@@AGENT_SANDBOX_REPO@@|$(CURDIR)|g' scripts/agent-sandbox.sh \
+	  > $(PREFIX)/agent-sandbox
+	@chmod +x $(PREFIX)/agent-sandbox
+	@echo "Installed agent-sandbox to $(PREFIX)/agent-sandbox"
+
+.PHONY: uninstall
+uninstall:
+	@rm -f $(PREFIX)/agent-sandbox
+	@echo "Removed $(PREFIX)/agent-sandbox"
 
 # -------------------------
 # Help
@@ -64,19 +82,22 @@ apply-branch:
 
 .PHONY: help
 help:
-	@echo "Usage: make <target> [MACHINE=<suffix>] [BRANCH=<n>]"
+	@echo "Usage: make <target> [PREFIX=<path>]"
 	@echo ""
 	@echo "Container:"
-	@echo "  start        — start container in standard mode"
-	@echo "  serve        — start container in serve mode"
-	@echo "  build        — build image and start container"
-	@echo "  serve-build  — build image and start container in serve mode"
-	@echo "  dry-run      — liveness check only"
+	@echo "  build        — build Docker image"
+	@echo "  start        — start container (builds if image missing)"
+	@echo "  serve        — start container in serve mode (builds if image missing)"
+	@echo "  dry-run      — liveness check only (builds if image missing)"
+	@echo "  Use --rebuild with start/serve/dry-run to force a rebuild"
 	@echo ""
 	@echo "Workspace:"
-	@echo "  apply        — apply staged.diff to current branch inplace"
-	@echo "  apply-branch — apply staged.diff to BRANCH (default: agent_branch)"
+	@echo "  apply              — apply staged.diff to current branch"
+	@echo "  apply BRANCH=<n>   — apply staged.diff to named branch (created if needed)"
+	@echo ""
+	@echo "Install:"
+	@echo "  install      — install agent-sandbox CLI to PREFIX (default: /usr/local/bin)"
+	@echo "  uninstall    — remove agent-sandbox CLI from PREFIX"
 	@echo ""
 	@echo "Options:"
-	@echo "  MACHINE=<suffix>  use opencode.<suffix>.conf (e.g. MACHINE=wsl)"
-	@echo "  BRANCH=<n>        branch name for apply-branch (default: agent_branch)"
+	@echo "  PREFIX=<path>   install location (default: /usr/local/bin)"

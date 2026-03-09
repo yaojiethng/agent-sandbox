@@ -13,7 +13,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M1 — Barebones Agent Container](#m1-barebones-agent-container) | Complete |
 | [M1.1 — Interactive Virtual Workspace / Serve Mode](#m11--interactive-virtual-workspace--serve-mode) | Complete |
 | [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | Complete |
-| [M1.3 — Quickstart & Onboarding Workflow](#m13--quickstart--onboarding-workflow) | Not started |
+| [M1.3 — Invocation Cleanup & Onboarding Workflow](#m13--invocation-cleanup--onboarding-workflow) | Complete |
 | [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
 | [M3 — Metadata Seeding](#m3-metadata-seeding) | Not started |
 | [M4 — Multi-Agent Branch Management](#m4-multi-agent-branch-management) | Not started |
@@ -50,15 +50,11 @@ Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, cons
 
 ---
 
-### **M1.3 — Quickstart & Onboarding Workflow**
+### **M1.3 — Invocation Cleanup & Onboarding Workflow**
 
-*Not started. Requires design discussion before implementation.*
+*Complete.*
 
-The operator-facing setup experience has not been fully defined. This milestone covers the end-to-end onboarding workflow: how a new machine is set up, how a first project is registered, and what the `quickstart.md` document should contain. The related `sandbox-onboarding.md` (from a parallel branch) is shelved pending this discussion.
-
-- [ ] Define the onboarding workflow: repo setup, WSL configuration, first project registration
-- [ ] Agree on the scope and structure of `docs/operations/quickstart.md`
-- [ ] Write `docs/operations/quickstart.md`
+The per-project conf file is removed; project identity and paths are defined in the project-side `Makefile` with `PROJECT_ROOT` as `$(CURDIR)`. The `agent-sandbox` CLI wrapper in `scripts/agent-sandbox.sh` dispatches to provider scripts and apply scripts, handles build-if-missing and `--rebuild`, and is installed via `make install`. `start_agent.sh` and `build_agent.sh` are single-purpose scripts with named flag interfaces; the apply scripts are merged into `apply_workspace.sh` with an optional `--branch` flag. Provider scripts and Dockerfile are flattened under `providers/opencode/`. The operator onboarding workflow and `docs/development/quickstart.md` are written; `providers/opencode/quickstart.md` serves as a debug and command reference for the OpenCode provider.
 
 ---
 

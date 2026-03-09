@@ -54,6 +54,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|
 | `doc-status.md` | 🔴 Hot | This file. Update on every milestone transition. |
 | `roadmap.md` | 🔴 Hot | Updated continuously as tasks complete. |
+| `quickstart.md` | 🟡 Warm | Operator onboarding guide. Verify on each milestone. |
 
 ### Architecture (`docs/architecture/`)
 
@@ -75,7 +76,6 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Notes |
 |---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | Update when security mitigations or operational procedures change. |
-| `quickstart.md` | 🟡 Warm | Verify on each milestone. Not yet confirmed against M1.2. |
 | `documentation_policy.md` | 🟢 Cold | Frozen policy. Only changes if the documentation model itself changes. |
 | `roadmap_policy.md` | 🟢 Cold | Roadmap update and cleanup rules. Only changes if the maintenance model changes. |
 
