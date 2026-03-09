@@ -1,4 +1,4 @@
-# Documentation Guidelines
+# Documentation Policy
 
 Documentation describes the **current system reality**. It must remain concise, readable, and purpose-specific. Future work belongs in `roadmap.md`.
 
@@ -70,7 +70,7 @@ Move all TODO items to `roadmap.md` or the issue tracker. Architecture documents
 Every pull request must answer: **"Does this change system behaviour?"**
 
 - **Yes** — update the relevant architecture document before merging.
-- **No** — no architecture documentation changes required.
+- **No** — no documentation changes required.
 
 This question must appear in the pull request template as a required checkbox.
 
@@ -106,7 +106,7 @@ Two root documents serve distinct audiences and must not duplicate each other.
 
 **`readme.md`** — written for humans and agents alike. Contains system invariants, the architecture layer model, the documentation guide path, and the conceptual separation of workflow/security/roadmap. This is the entry point for anyone new to the repository.
 
-**`agent-context-brief.md`** — written for the agent specifically. Contains the collaboration protocol, role definition, output format rules, and constraints that govern how the agent engages with the operator. References `readme.md` and `system_overview.md` for system invariants and architecture — it does not restate them.
+**`agent-context-brief.md`** — written for the agent specifically. Contains the collaboration protocol, role definition, output format rules, and operating workflow. References `readme.md` and `system_overview.md` for system invariants and architecture — it does not restate them.
 
 If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs agent behaviour specifically, it belongs in `agent-context-brief.md` and must not be duplicated elsewhere.
 
