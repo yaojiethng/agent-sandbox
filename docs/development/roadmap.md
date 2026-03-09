@@ -62,14 +62,12 @@ The per-project conf file is removed; project identity and paths are defined in 
 
 **Objective:** Move from interactive prompting to structured task execution.
 
-- [ ] Define Task Brief format
-- [ ] Define agent execution lifecycle (single task run)
-- [ ] Standardize patch validation workflow
+- [ ] Define Task Brief format (`TASK.md` — per-run brief passed alongside `agent_context_brief.md`)
+- [ ] Define agent execution lifecycle for a single task run
 - [ ] Support multi-task execution model
-- [ ] Introduce patch history instead of single `patch.diff`
-- [ ] Review `.workspace/patch.diff` manually
-- [ ] Apply patch to project manually via `make apply`
-- [ ] Verify output correctness
+- [ ] Patch history — `apply_workspace.sh` archives `staged.diff` with a timestamp before applying; replaces single overwritten diff with a retrievable history
+- [ ] Atomic install for `make install` — write to temp file, verify, then `mv` into place
+- [ ] Pre-snapshot validation gate — configurable per-project check run by `start_agent.sh` before building `.bootstrap/`; fail fast before the container starts
 
 ---
 
@@ -84,7 +82,7 @@ The per-project conf file is removed; project identity and paths are defined in 
 ### **M4: Multi-Agent Branch Management**
 - [ ] Parameterise branch naming in `container-entrypoint.sh` (e.g. `agent/<task-id>`)
 - [ ] Each agent gets its own branch from the same baseline
-- [ ] `apply_workspace_to_branch.sh` supports named branches per agent
+- [ ] `apply_workspace.sh --branch=<n>` supports named branches per agent
 - [ ] Validate branch contents before merge
 - [ ] Merge branch → `main`
 
@@ -135,6 +133,10 @@ The per-project conf file is removed; project identity and paths are defined in 
 
 - **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
+- **Stale git index causes cryptic snapshot failures** — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. Fix with `git rm --cached <file>` followed by a commit. A future hardening pass should add existence validation in `snapshot_enumerate_files` to produce a clear error rather than a mid-pipeline `cp` failure.
+
+- **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_ROOT` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
+
 ---
 
 ## Future Security & Network Hardening (Roadmap Only)
@@ -146,6 +148,7 @@ The following are planned improvements and are not yet enforced:
 - Introduce outbound proxy or domain filtering
 - Enforce resource ceilings more strictly
 - Add automated isolation validation checks
+- Snapshot from a clean git ref rather than working tree — operator designates a commit SHA or tag; a dirty or broken working tree has no effect on what the agent sees
 
 Security guarantees and current threat model are defined in [`docs/architecture/security.md`](../architecture/security.md).
 

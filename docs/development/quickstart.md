@@ -173,7 +173,53 @@ cat .workspace/changes/staged.diff
 
 ---
 
-## Pre-flight checklist
+## Recovery
+
+If a bad diff has been applied and the project repo is in a broken state:
+
+**1. Reset the branch**
+
+```sh
+# Discard all uncommitted changes
+git -C <PROJECT_ROOT> checkout -- .
+
+# Or reset to a specific known-good commit
+git -C <PROJECT_ROOT> reset --hard <commit-sha>
+```
+
+**2. Clear the workspace**
+
+```sh
+rm -rf <PROJECT_ROOT>/.workspace/changes/
+mkdir -p <PROJECT_ROOT>/.workspace/changes/
+```
+
+This discards any staged or autosave diffs from the bad run.
+
+**3. Clear the snapshot**
+
+```sh
+rm -rf <PROJECT_ROOT>/.bootstrap/
+```
+
+The snapshot is rebuilt fresh on the next `make start` or `make dry-run`.
+
+**4. Verify**
+
+```sh
+make dry-run
+```
+
+A passing dry-run confirms the snapshot pipeline is clean and the container starts correctly.
+
+---
+
+**If tracked files are missing from disk** (causing `cp: cannot stat` errors during snapshot):
+
+```sh
+git rm --cached <file>
+git commit -m "remove missing file from index"
+```
 
 Before running the agent for the first time:
 
