@@ -6,15 +6,14 @@
 #   make serve
 #   make dry-run
 #   make apply
-#   make apply-branch BRANCH=agent_branch_1
+#   make apply BRANCH=my-branch
 
 PROJECT_NAME   := agent-sandbox
 PROJECT_ROOT   := $(CURDIR)
 AGENT_BRIEF    := docs/development/agent_context_brief.md
 ENV_FILE       := .env
 
-BRANCH         ?= agent_branch
-PREFIX         ?= /usr/local/bin
+PREFIX         ?= ~/.local/bin/
 
 # -------------------------
 # Container targets
@@ -57,13 +56,9 @@ dry-run:
 
 .PHONY: apply
 apply:
-	agent-sandbox apply --root=$(PROJECT_ROOT)
-
-.PHONY: apply-branch
-apply-branch:
-	agent-sandbox apply-branch \
+	agent-sandbox apply \
 	  --root=$(PROJECT_ROOT) \
-	  --branch=$(BRANCH)
+	  $(if $(BRANCH),--branch=$(BRANCH),)
 
 # -------------------------
 # Install
@@ -87,7 +82,7 @@ uninstall:
 
 .PHONY: help
 help:
-	@echo "Usage: make <target> [BRANCH=<n>] [PREFIX=<path>]"
+	@echo "Usage: make <target> [PREFIX=<path>]"
 	@echo ""
 	@echo "Container:"
 	@echo "  build        — build Docker image"
@@ -97,13 +92,12 @@ help:
 	@echo "  Use --rebuild with start/serve/dry-run to force a rebuild"
 	@echo ""
 	@echo "Workspace:"
-	@echo "  apply        — apply staged.diff to current branch inplace"
-	@echo "  apply-branch — apply staged.diff to BRANCH (default: agent_branch)"
+	@echo "  apply              — apply staged.diff to current branch"
+	@echo "  apply BRANCH=<n>   — apply staged.diff to named branch (created if needed)"
 	@echo ""
 	@echo "Install:"
 	@echo "  install      — install agent-sandbox CLI to PREFIX (default: /usr/local/bin)"
 	@echo "  uninstall    — remove agent-sandbox CLI from PREFIX"
 	@echo ""
 	@echo "Options:"
-	@echo "  BRANCH=<n>      branch name for apply-branch (default: agent_branch)"
 	@echo "  PREFIX=<path>   install location (default: /usr/local/bin)"

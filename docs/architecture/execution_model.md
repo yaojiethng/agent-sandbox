@@ -24,8 +24,8 @@ make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
 | `start` | `providers/opencode/start_agent.sh standard` |
 | `dry-run` | `providers/opencode/start_agent.sh dry-run` |
 | `build` | `providers/opencode/build_agent.sh` |
-| `apply` | `scripts/apply_workspace_inplace.sh` |
-| `apply-branch` | `scripts/apply_workspace_to_branch.sh` |
+| `apply` | `scripts/apply_workspace.sh` |
+| `apply-branch` | `scripts/apply_workspace.sh --branch=<n>` |
 
 For `start`, `dry-run`, and `serve` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. Passing `--rebuild` forces a build regardless of image state.
 

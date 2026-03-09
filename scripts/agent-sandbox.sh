@@ -5,8 +5,7 @@
 #   agent-sandbox start         --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve] [--rebuild]
 #   agent-sandbox dry-run       --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--rebuild]
 #   agent-sandbox build         --name=<n> --root=<path> [--no-cache]
-#   agent-sandbox apply         --root=<path>
-#   agent-sandbox apply-branch  --root=<path> --branch=<n>
+#   agent-sandbox apply         --root=<path> [--branch=<n>]
 
 set -euo pipefail
 
@@ -103,25 +102,14 @@ case "$SUBCOMMAND" in
       echo "Error: --root is required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace_inplace.sh" \
-      "$PROJECT_ROOT" \
-      "$PROJECT_ROOT/.workspace"
-    ;;
-
-  apply-branch)
-    if [[ -z "$PROJECT_ROOT" || -z "$BRANCH" ]]; then
-      echo "Error: --root and --branch are required"
-      exit 1
-    fi
-    "$SCRIPTS/apply_workspace_to_branch.sh" \
-      "$PROJECT_ROOT" \
-      "$PROJECT_ROOT/.workspace" \
-      "$BRANCH"
+    "$SCRIPTS/apply_workspace.sh" \
+      --root="$PROJECT_ROOT" \
+      ${BRANCH:+--branch="$BRANCH"}
     ;;
 
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: start, dry-run, build, apply, apply-branch"
+    echo "Valid subcommands: start, dry-run, build, apply"
     exit 1
     ;;
 esac
