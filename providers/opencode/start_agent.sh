@@ -1,62 +1,63 @@
 #!/usr/bin/env bash
-# start-agent.sh
+# start_agent.sh
 # Usage:
-#   ./start-agent.sh <project_name> <mode:standard|safe|dry-run> [--serve] [--build] [--machine=<suffix>]
+#   ./start_agent.sh <mode> --name=<project_name> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]
 #
 # Modes:
 #   standard   — normal execution, network access allowed
-#   safe       — reserved for no-network execution (M6, not yet implemented)
 #   dry-run    — liveness check only, no agent started
 #
-# Project config is read from:
-#   projects/<project_name>/opencode.conf             (default)
-#   projects/<project_name>/opencode.<suffix>.conf    (if --machine=<suffix> is provided)
+# Required flags:
+#   --name=<project_name>   display name; used for image naming
+#   --root=<path>           absolute WSL/Linux path to the project on the host
 #
-# Optional env file:
-#   projects/<project_name>/.env                      (sourced if present)
-#   Supported env vars: SERVE_PORT (default: 46553)
-#
-# Config keys:
-#   PROJECT_NAME   — display name (optional, defaults to <project_name>)
-#   PROJECT_ROOT   — absolute WSL/Linux path to the project on the host
-#   AGENT_BRIEF    — path to brief.md, relative to the conf file (optional)
-#
-# PROJECT_ROOT is mounted read-only into the container. The entrypoint copies
-# tracked and untracked non-ignored files into sandbox/ using git ls-files,
-# so .gitignore is respected at copy time.
+# Optional flags:
+#   --brief=<rel>           path to agent brief, relative to PROJECT_ROOT
+#   --env=<rel>             path to .env file, relative to PROJECT_ROOT
+#                           supported env vars: SERVE_PORT (default: 46553)
+#                                               OPENCODE_SERVER_PASSWORD
+#   --serve                 start OpenCode in serve mode
 #
 # Note: PROJECT_ROOT must be a git repository with at least one commit.
-#       PROJECT_ROOT typically differs per machine — use opencode.<machine>.conf
-#       for machine-specific overrides.
-#
-# Container mount base path: /home/agentuser/project/
+#       The Docker image must already exist — run agent-sandbox build first.
 
 set -euo pipefail
 
 # -------------------------
+# Paths
+# -------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# REPO_ROOT assumes this script lives at providers/opencode/
+# If the script moves, update the relative path below accordingly.
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# -------------------------
 # Args
 # -------------------------
-PROJECT="${1:-}"
-MODE="${2:-}"
-shift 2 || true
+MODE="${1:-}"
+shift || true
 
-if [[ -z "$PROJECT" || -z "$MODE" ]]; then
-  echo "Usage: $0 <project_name> <mode:standard|safe|dry-run> [--serve] [--build] [--machine=<suffix>]"
+if [[ -z "$MODE" ]]; then
+  echo "Usage: $0 <mode:standard|dry-run> --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]"
   exit 1
 fi
 
 # -------------------------
 # Flag parsing (order agnostic)
 # -------------------------
+PROJECT_NAME=""
+PROJECT_ROOT=""
+AGENT_BRIEF=""
+ENV_REL=""
 SERVE=false
-BUILD=false
-MACHINE=""
 
 for ARG in "$@"; do
   case "$ARG" in
-    --serve) SERVE=true ;;
-    --build) BUILD=true ;;
-    --machine=*) MACHINE="${ARG#--machine=}" ;;
+    --name=*)  PROJECT_NAME="${ARG#--name=}" ;;
+    --root=*)  PROJECT_ROOT="${ARG#--root=}" ;;
+    --brief=*) AGENT_BRIEF="${ARG#--brief=}" ;;
+    --env=*)   ENV_REL="${ARG#--env=}" ;;
+    --serve)   SERVE=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -64,52 +65,20 @@ for ARG in "$@"; do
   esac
 done
 
-# -------------------------
-# Config loading
-# -------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# REPO_ROOT assumes this script lives at providers/opencode/scripts/
-# If the script moves, update the relative path below accordingly.
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-
-if [[ -n "$MACHINE" ]]; then
-  CONF_FILE="$REPO_ROOT/projects/$PROJECT/opencode.$MACHINE.conf"
-  if [[ ! -f "$CONF_FILE" ]]; then
-    echo "Error: machine config file not found: $CONF_FILE"
-    exit 1
-  fi
-else
-  CONF_FILE="$REPO_ROOT/projects/$PROJECT/opencode.conf"
-  if [[ ! -f "$CONF_FILE" ]]; then
-    echo "Error: config file not found: $CONF_FILE"
-    exit 1
-  fi
+if [[ -z "$PROJECT_NAME" || -z "$PROJECT_ROOT" ]]; then
+  echo "Error: --name and --root are required"
+  exit 1
 fi
-
-PROJECT_NAME=""
-PROJECT_ROOT=""
-AGENT_BRIEF=""
-
-while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-  [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
-  KEY="${KEY//[$'\r\n\t ']/}"
-  VALUE="${VALUE//[$'\r\n']/}"
-  VALUE="${VALUE#"${VALUE%%[! ]*}"}"   # strip leading spaces
-  VALUE="${VALUE%"${VALUE##*[! ]}"}"   # strip trailing spaces
-  case "$KEY" in
-    PROJECT_NAME)  PROJECT_NAME="$VALUE" ;;
-    PROJECT_ROOT)  PROJECT_ROOT="$VALUE" ;;
-    AGENT_BRIEF)   AGENT_BRIEF="$VALUE"  ;;
-  esac
-done < "$CONF_FILE"
-
-PROJECT_NAME="${PROJECT_NAME:-$PROJECT}"
 
 # -------------------------
 # Env loading
 # -------------------------
-ENV_FILE="$REPO_ROOT/projects/$PROJECT/.env"
-if [[ -f "$ENV_FILE" ]]; then
+if [[ -n "$ENV_REL" ]]; then
+  ENV_FILE="$PROJECT_ROOT/$ENV_REL"
+  if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Error: env file not found: $ENV_FILE"
+    exit 1
+  fi
   # Source only simple KEY=VALUE lines, skip comments and blanks
   while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
     [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
@@ -134,11 +103,6 @@ validate_wsl_path() {
     exit 1
   fi
 }
-
-if [[ -z "$PROJECT_ROOT" ]]; then
-  echo "Error: PROJECT_ROOT is not set in $CONF_FILE"
-  exit 1
-fi
 
 validate_wsl_path "PROJECT_ROOT" "$PROJECT_ROOT"
 
@@ -200,8 +164,7 @@ echo "Snapshot ready."
 # Brief resolution
 # -------------------------
 if [[ -n "$AGENT_BRIEF" ]]; then
-  CONF_DIR="$(dirname "$CONF_FILE")"
-  BRIEF_PATH="$(cd "$CONF_DIR" && realpath "$AGENT_BRIEF")"
+  BRIEF_PATH="$(cd "$PROJECT_ROOT" && realpath "$AGENT_BRIEF")"
 
   validate_wsl_path "AGENT_BRIEF" "$BRIEF_PATH"
 
@@ -224,17 +187,16 @@ MOUNT_ARGS=(
   -v "$PROJECT_ROOT/.workspace:/home/agentuser/.workspace:rw"
 )
 
-IMAGE_NAME="opencode-agent-$PROJECT"
-DOCKERFILE="$REPO_ROOT/providers/opencode/docker/Dockerfile"
+IMAGE_NAME="opencode-agent-$PROJECT_NAME"
 
 # -------------------------
-# Build logic
+# Image check
 # -------------------------
 IMAGE_EXISTS=$(docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && echo yes || echo no)
-
-if [[ "$BUILD" == true || "$IMAGE_EXISTS" != yes ]]; then
-  echo "Building Docker image: $IMAGE_NAME"
-  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" "$REPO_ROOT"
+if [[ "$IMAGE_EXISTS" != yes ]]; then
+  echo "Error: Docker image not found: $IMAGE_NAME"
+  echo "  Build it first: make build"
+  exit 1
 fi
 
 # -------------------------
@@ -254,17 +216,12 @@ case "$MODE" in
     exit 0
     ;;
 
-  safe)
-    echo "Safe mode (no-network) is reserved for M6 and not yet implemented."
-    exit 0
-    ;;
-
   standard)
     echo "Starting container: $PROJECT_NAME"
     ;;
 
   *)
-    echo "Unknown mode: $MODE. Valid modes: standard, safe, dry-run"
+    echo "Unknown mode: $MODE. Valid modes: standard, dry-run"
     exit 1
     ;;
 esac
@@ -275,8 +232,8 @@ esac
 CMD=("opencode")
 PORT_ARGS=()
 ENV_ARGS=()
-
 ECHO_ENV_ARGS=()
+
 if [[ -n "${OPENCODE_SERVER_PASSWORD:-}" ]]; then
   ENV_ARGS+=(-e "OPENCODE_SERVER_PASSWORD=$OPENCODE_SERVER_PASSWORD")
   ECHO_ENV_ARGS+=(-e "OPENCODE_SERVER_PASSWORD=***")
