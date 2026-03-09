@@ -33,8 +33,6 @@
 
 set -euo pipefail
 
-CONTAINER_PROJECT_BASE="/home/agentuser/project"
-
 # -------------------------
 # Args
 # -------------------------
@@ -176,22 +174,27 @@ if [[ ! -f "$PROJECT_ROOT/.gitignore" ]]; then
 fi
 
 # -------------------------
-# Workspace setup
+# Bootstrap setup
 # -------------------------
+BOOTSTRAP_DIR="$PROJECT_ROOT/.bootstrap"
+SNAPSHOT_DIR="$BOOTSTRAP_DIR/snapshot"
+
 mkdir -p "$PROJECT_ROOT/.workspace/changes"
+mkdir -p "$SNAPSHOT_DIR"
 
 # -------------------------
-# Mount construction
+# Snapshot pipeline (host side)
 # -------------------------
+# Enumerates and copies project files into .bootstrap/snapshot/.
+# git ls-files runs on the host — the container never touches PROJECT_ROOT directly.
+source "$REPO_ROOT/lib/snapshot.sh"
 
-# PROJECT_ROOT is mounted read-only — the entrypoint copies files into sandbox/.
-# .workspace is mounted read-write — it is the agent's output channel.
-# The rw .workspace bind-mount shadows the ro .workspace inside PROJECT_ROOT,
-# so the agent cannot read .workspace contents (e.g. .env) via the ro mount.
-MOUNT_ARGS=(
-  -v "$PROJECT_ROOT:$CONTAINER_PROJECT_BASE:ro"
-  -v "$PROJECT_ROOT/.workspace:$CONTAINER_PROJECT_BASE/.workspace:rw"
-)
+echo "Building snapshot..."
+(cd "$PROJECT_ROOT" && snapshot_enumerate_files "$PROJECT_ROOT") \
+  | (cd "$PROJECT_ROOT" && snapshot_copy_files "$PROJECT_ROOT" "$SNAPSHOT_DIR")
+
+snapshot_validate "$SNAPSHOT_DIR"
+echo "Snapshot ready."
 
 # -------------------------
 # Brief resolution
@@ -207,11 +210,22 @@ if [[ -n "$AGENT_BRIEF" ]]; then
     exit 1
   fi
 
-  MOUNT_ARGS+=(-v "$BRIEF_PATH:$CONTAINER_PROJECT_BASE/.workspace/brief.md:ro")
+  cp "$BRIEF_PATH" "$BOOTSTRAP_DIR/brief.md"
 fi
 
+# -------------------------
+# Mount construction
+# -------------------------
+# .bootstrap is mounted read-only — input channel: snapshot and brief.
+# .workspace is mounted read-write — output channel: patch, logs.
+# PROJECT_ROOT is not mounted — the agent has no direct access to the host repo.
+MOUNT_ARGS=(
+  -v "$BOOTSTRAP_DIR:/home/agentuser/.bootstrap:ro"
+  -v "$PROJECT_ROOT/.workspace:/home/agentuser/.workspace:rw"
+)
+
 IMAGE_NAME="opencode-agent-$PROJECT"
-DOCKERFILE_DIR="$REPO_ROOT/providers/opencode/docker"
+DOCKERFILE="$REPO_ROOT/providers/opencode/docker/Dockerfile"
 
 # -------------------------
 # Build logic
@@ -220,7 +234,7 @@ IMAGE_EXISTS=$(docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && echo yes ||
 
 if [[ "$BUILD" == true || "$IMAGE_EXISTS" != yes ]]; then
   echo "Building Docker image: $IMAGE_NAME"
-  docker build -t "$IMAGE_NAME" "$DOCKERFILE_DIR"
+  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" "$REPO_ROOT"
 fi
 
 # -------------------------
@@ -228,12 +242,15 @@ fi
 # -------------------------
 case "$MODE" in
   dry-run)
-    echo "Running dry-run (liveness check)..."
-    echo "+ docker run --rm ${MOUNT_ARGS[*]} $IMAGE_NAME bash -c 'mkdir -p project/.workspace/changes && echo PASS > project/.workspace/changes/liveness.txt'"
+    echo "Running dry-run..."
     docker run --rm \
       "${MOUNT_ARGS[@]}" \
+      -v "$REPO_ROOT/scripts/dry_run.sh:/dry_run.sh:ro" \
       "$IMAGE_NAME" \
-      bash -c 'mkdir -p project/.workspace/changes && echo PASS > project/.workspace/changes/liveness.txt'
+      bash /dry_run.sh
+    echo "PASS" > "$PROJECT_ROOT/.workspace/changes/liveness.txt"
+    echo ""
+    echo "=== liveness: PASS ==="
     exit 0
     ;;
 

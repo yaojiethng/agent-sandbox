@@ -13,9 +13,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------
-# Entrypoint (root, before USER switch)
+# Entrypoint and libs (root, before USER switch)
 # -------------------------
-COPY container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+COPY providers/opencode/docker/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+COPY lib/snapshot.sh /lib/snapshot.sh
 RUN chmod +x /usr/local/bin/container-entrypoint.sh
 
 # -------------------------
@@ -39,9 +40,12 @@ RUN npm install -g opencode-ai
 # -------------------------
 # Working directories
 # -------------------------
-# project/ and sandbox/ created as agentuser so Docker file mounts are not
-# blocked by ownership at runtime.
-RUN mkdir -p /home/agentuser/project /home/agentuser/sandbox
+# sandbox/ is container-local — agent works here.
+# .bootstrap/ and .workspace/ are mount points — created as agentuser
+# so Docker bind mounts are not blocked by ownership at runtime.
+RUN mkdir -p /home/agentuser/sandbox \
+             /home/agentuser/.bootstrap \
+             /home/agentuser/.workspace
 
 WORKDIR /home/agentuser/sandbox
 ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]

@@ -12,9 +12,10 @@ exec 1>&2
 
 ROOT="/home/agentuser"
 
-PROJECT_DIR="$ROOT/project"
+BOOTSTRAP_DIR="$ROOT/.bootstrap"
+SNAPSHOT_DIR="$BOOTSTRAP_DIR/snapshot"
 SANDBOX_DIR="$ROOT/sandbox"
-WORKSPACE_DIR="$PROJECT_DIR/.workspace"
+WORKSPACE_DIR="$ROOT/.workspace"
 CHANGES_DIR="$WORKSPACE_DIR/changes"
 
 AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
@@ -22,41 +23,24 @@ AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
 mkdir -p "$CHANGES_DIR"
 
 # -------------------------
-# Copy project into sandbox
+# Snapshot pipeline (container side)
 # -------------------------
-# Uses git ls-files to enumerate files, so .gitignore is respected.
-# Copies both tracked files (--cached) and untracked non-ignored files (--others).
-# .workspace is excluded — it is the output channel, not agent input.
-echo "Copying project files into sandbox..."
+source /lib/snapshot.sh
 
-cd "$PROJECT_DIR"
+# Gate 2 — confirm mounted snapshot is intact before unpacking.
+snapshot_validate "$SNAPSHOT_DIR"
 
-git ls-files --cached --others --exclude-standard -z \
-  | grep -zv '^\.workspace/' \
-  | (cd "$PROJECT_DIR" && xargs -0 -r cp --parents -t "$SANDBOX_DIR/")
+# Copy snapshot into container-local sandbox/ and initialise git baseline.
+snapshot_copy_to_sandbox "$SNAPSHOT_DIR" "$SANDBOX_DIR"
+BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR")
 
-# -------------------------
-# Initialise sandbox git repo
-# -------------------------
-# A local git repo in sandbox/ produces the patch.diff on exit.
-# The initial commit records the baseline state before the agent runs.
-cd "$SANDBOX_DIR"
-
-git init --quiet
-git config user.email "agent@sandbox"
-git config user.name "agent-sandbox"
-git config core.fileMode false
-
-git add -A
-git commit -m "agent-sandbox: baseline" --quiet
-
-echo "Sandbox ready."
+echo "Sandbox ready. Baseline: $BASELINE_SHA"
 
 # -------------------------
 # Copy brief into sandbox root
 # -------------------------
-if [[ -f "$WORKSPACE_DIR/brief.md" ]]; then
-  cp -p "$WORKSPACE_DIR/brief.md" "$SANDBOX_DIR/brief.md"
+if [[ -f "$BOOTSTRAP_DIR/brief.md" ]]; then
+  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/brief.md"
 fi
 
 # -------------------------
@@ -73,12 +57,10 @@ stage_diffs() {
     git commit -m "agent-sandbox: uncommitted changes on exit" --quiet || true
   fi
 
-  BASELINE=$(git rev-list --max-parents=0 HEAD)
-
-  if git diff --quiet "$BASELINE"..HEAD; then
+  if git diff --quiet "$BASELINE_SHA"..HEAD; then
     echo "No changes detected."
   else
-    git diff "$BASELINE"..HEAD > "$CHANGES_DIR/patch.diff" || true
+    git diff "$BASELINE_SHA"..HEAD > "$CHANGES_DIR/patch.diff" || true
     echo "Diff written to .workspace/changes/patch.diff"
   fi
 }

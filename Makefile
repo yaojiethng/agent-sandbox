@@ -42,7 +42,7 @@ serve-build:
 
 .PHONY: dry-run
 dry-run:
-	$(SCRIPTS)/start_agent.sh $(PROJECT) dry-run $(MACHINE_FLAG)
+	$(SCRIPTS)/start_agent.sh $(PROJECT) dry-run --build $(MACHINE_FLAG)
 
 # -------------------------
 # Workspace targets

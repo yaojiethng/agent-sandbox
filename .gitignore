@@ -9,6 +9,7 @@ output/
 /projects/
 .skills/
 .workspace/
+.bootstrap/
 
 # === Python ===
 __pycache__/
