@@ -20,22 +20,18 @@
 #   PROJECT_NAME   — display name (optional, defaults to <project_name>)
 #   PROJECT_ROOT   — absolute WSL/Linux path to the project on the host
 #   AGENT_BRIEF    — path to brief.md, relative to the conf file (optional)
-#   MOUNTS         — comma-separated list of <folder>:<permission> pairs
-#                    e.g. MOUNTS=src:ro,tests:ro
-#                    .workspace is always mounted rw and must not be listed here
-#   FILES          — comma-separated list of <file>:<permission> pairs
-#                    e.g. FILES=readme.md:ro,contributors.md:ro
-#                    for individual files at PROJECT_ROOT that are not in a mounted folder
 #
-# Note: PROJECT_ROOT typically differs per machine. All other keys are usually
-#       machine-agnostic and can be shared in opencode.conf.
+# PROJECT_ROOT is mounted read-only into the container. The entrypoint copies
+# tracked and untracked non-ignored files into sandbox/ using git ls-files,
+# so .gitignore is respected at copy time.
+#
+# Note: PROJECT_ROOT must be a git repository with at least one commit.
+#       PROJECT_ROOT typically differs per machine — use opencode.<machine>.conf
+#       for machine-specific overrides.
 #
 # Container mount base path: /home/agentuser/project/
-# Each MOUNTS entry maps $PROJECT_ROOT/<folder> → /home/agentuser/project/<folder>
 
 set -euo pipefail
-
-CONTAINER_PROJECT_BASE="/home/agentuser/project"
 
 # -------------------------
 # Args
@@ -93,8 +89,6 @@ fi
 PROJECT_NAME=""
 PROJECT_ROOT=""
 AGENT_BRIEF=""
-MOUNTS=""
-FILES=""
 
 while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
   [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
@@ -106,8 +100,6 @@ while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
     PROJECT_NAME)  PROJECT_NAME="$VALUE" ;;
     PROJECT_ROOT)  PROJECT_ROOT="$VALUE" ;;
     AGENT_BRIEF)   AGENT_BRIEF="$VALUE"  ;;
-    MOUNTS)        MOUNTS="$VALUE"       ;;
-    FILES)         FILES="$VALUE"        ;;
   esac
 done < "$CONF_FILE"
 
@@ -156,69 +148,53 @@ if [[ ! -d "$PROJECT_ROOT" ]]; then
 fi
 
 # -------------------------
-# Mount construction
+# Git validation
 # -------------------------
+if [[ ! -d "$PROJECT_ROOT/.git" ]]; then
+  echo "Error: PROJECT_ROOT is not a git repository: $PROJECT_ROOT"
+  echo "  Initialise it first:"
+  echo "    git -C '$PROJECT_ROOT' init"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  exit 1
+fi
 
-# .workspace is always rw — implicit, never declared in MOUNTS
+if ! git -C "$PROJECT_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  echo "Error: git repository has no commits: $PROJECT_ROOT"
+  echo "  Create an initial commit first:"
+  echo "    git -C '$PROJECT_ROOT' add -A"
+  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  exit 1
+fi
+
+if [[ ! -f "$PROJECT_ROOT/.gitignore" ]]; then
+  echo "Warning: no .gitignore found in $PROJECT_ROOT"
+  echo "  All untracked files will be copied into the sandbox."
+  echo "  Consider adding a .gitignore to exclude secrets, build artifacts, etc."
+fi
+
+# -------------------------
+# Bootstrap setup
+# -------------------------
+BOOTSTRAP_DIR="$PROJECT_ROOT/.bootstrap"
+SNAPSHOT_DIR="$BOOTSTRAP_DIR/snapshot"
+
 mkdir -p "$PROJECT_ROOT/.workspace/changes"
-MOUNT_ARGS=(-v "$PROJECT_ROOT/.workspace:$CONTAINER_PROJECT_BASE/.workspace:rw")
+mkdir -p "$SNAPSHOT_DIR"
 
-# Parse MOUNTS=folder:permission,folder:permission
-if [[ -n "$MOUNTS" ]]; then
-  IFS=',' read -ra MOUNT_ENTRIES <<< "$MOUNTS"
-  for ENTRY in "${MOUNT_ENTRIES[@]}"; do
-    FOLDER="${ENTRY%%:*}"
-    PERMISSION="${ENTRY##*:}"
-    FOLDER="${FOLDER//[$'\r\n\t ']/}"
-    PERMISSION="${PERMISSION//[$'\r\n\t ']/}"
+# -------------------------
+# Snapshot pipeline (host side)
+# -------------------------
+# Enumerates and copies project files into .bootstrap/snapshot/.
+# git ls-files runs on the host — the container never touches PROJECT_ROOT directly.
+source "$REPO_ROOT/lib/snapshot.sh"
 
-    if [[ "$FOLDER" == ".workspace" ]]; then
-      echo "Error: .workspace must not be listed in MOUNTS — it is always mounted rw."
-      exit 1
-    fi
+echo "Building snapshot..."
+(cd "$PROJECT_ROOT" && snapshot_enumerate_files "$PROJECT_ROOT") \
+  | (cd "$PROJECT_ROOT" && snapshot_copy_files "$PROJECT_ROOT" "$SNAPSHOT_DIR")
 
-    if [[ "$PERMISSION" != "ro" && "$PERMISSION" != "rw" ]]; then
-      echo "Error: invalid permission '$PERMISSION' for mount '$FOLDER'. Use ro or rw."
-      exit 1
-    fi
-
-    HOST_PATH="$PROJECT_ROOT/$FOLDER"
-    CONTAINER_PATH="$CONTAINER_PROJECT_BASE/$FOLDER"
-
-    if [[ ! -d "$HOST_PATH" ]]; then
-      echo "Error: mount source does not exist: $HOST_PATH"
-      exit 1
-    fi
-
-    MOUNT_ARGS+=(-v "$HOST_PATH:$CONTAINER_PATH:$PERMISSION")
-  done
-fi
-
-# Parse FILES=file:permission,file:permission
-if [[ -n "$FILES" ]]; then
-  IFS=',' read -ra FILE_ENTRIES <<< "$FILES"
-  for ENTRY in "${FILE_ENTRIES[@]}"; do
-    FILENAME="${ENTRY%%:*}"
-    PERMISSION="${ENTRY##*:}"
-    FILENAME="${FILENAME//[$'\r\n\t ']/}"
-    PERMISSION="${PERMISSION//[$'\r\n\t ']/}"
-
-    if [[ "$PERMISSION" != "ro" && "$PERMISSION" != "rw" ]]; then
-      echo "Error: invalid permission '$PERMISSION' for file '$FILENAME'. Use ro or rw."
-      exit 1
-    fi
-
-    HOST_PATH="$PROJECT_ROOT/$FILENAME"
-    CONTAINER_PATH="$CONTAINER_PROJECT_BASE/$FILENAME"
-
-    if [[ ! -f "$HOST_PATH" ]]; then
-      echo "Error: file mount source does not exist: $HOST_PATH"
-      exit 1
-    fi
-
-    MOUNT_ARGS+=(-v "$HOST_PATH:$CONTAINER_PATH:$PERMISSION")
-  done
-fi
+snapshot_validate "$SNAPSHOT_DIR"
+echo "Snapshot ready."
 
 # -------------------------
 # Brief resolution
@@ -234,11 +210,22 @@ if [[ -n "$AGENT_BRIEF" ]]; then
     exit 1
   fi
 
-  MOUNT_ARGS+=(-v "$BRIEF_PATH:$CONTAINER_PROJECT_BASE/.workspace/brief.md:ro")
+  cp "$BRIEF_PATH" "$BOOTSTRAP_DIR/brief.md"
 fi
 
+# -------------------------
+# Mount construction
+# -------------------------
+# .bootstrap is mounted read-only — input channel: snapshot and brief.
+# .workspace is mounted read-write — output channel: patch, logs.
+# PROJECT_ROOT is not mounted — the agent has no direct access to the host repo.
+MOUNT_ARGS=(
+  -v "$BOOTSTRAP_DIR:/home/agentuser/.bootstrap:ro"
+  -v "$PROJECT_ROOT/.workspace:/home/agentuser/.workspace:rw"
+)
+
 IMAGE_NAME="opencode-agent-$PROJECT"
-DOCKERFILE_DIR="$REPO_ROOT/providers/opencode/docker"
+DOCKERFILE="$REPO_ROOT/providers/opencode/docker/Dockerfile"
 
 # -------------------------
 # Build logic
@@ -247,7 +234,7 @@ IMAGE_EXISTS=$(docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && echo yes ||
 
 if [[ "$BUILD" == true || "$IMAGE_EXISTS" != yes ]]; then
   echo "Building Docker image: $IMAGE_NAME"
-  docker build -t "$IMAGE_NAME" "$DOCKERFILE_DIR"
+  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" "$REPO_ROOT"
 fi
 
 # -------------------------
@@ -255,12 +242,15 @@ fi
 # -------------------------
 case "$MODE" in
   dry-run)
-    echo "Running dry-run (liveness check)..."
-    echo "+ docker run --rm ${MOUNT_ARGS[*]} $IMAGE_NAME bash -c 'mkdir -p project/.workspace/changes && echo PASS > project/.workspace/changes/liveness.txt'"
+    echo "Running dry-run..."
     docker run --rm \
       "${MOUNT_ARGS[@]}" \
+      -v "$REPO_ROOT/scripts/dry_run.sh:/dry_run.sh:ro" \
       "$IMAGE_NAME" \
-      bash -c 'mkdir -p project/.workspace/changes && echo PASS > project/.workspace/changes/liveness.txt'
+      bash /dry_run.sh
+    echo "PASS" > "$PROJECT_ROOT/.workspace/changes/liveness.txt"
+    echo ""
+    echo "=== liveness: PASS ==="
     exit 0
     ;;
 
@@ -286,7 +276,6 @@ CMD=("opencode")
 PORT_ARGS=()
 ENV_ARGS=()
 
-# Forward server password if set
 ECHO_ENV_ARGS=()
 if [[ -n "${OPENCODE_SERVER_PASSWORD:-}" ]]; then
   ENV_ARGS+=(-e "OPENCODE_SERVER_PASSWORD=$OPENCODE_SERVER_PASSWORD")

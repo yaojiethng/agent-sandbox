@@ -31,7 +31,7 @@ The sandbox ensures:
 The workflow responsible for dispatching tasks and managing agent execution.
 
 See:  
-[Orchestration Model](../concepts/orchestration.md)
+[Orchestration Model](../concepts/autonomous_agent_loop.md)
 
 The orchestrator:
 
@@ -65,7 +65,7 @@ The runtime includes:
 An automated system capable of performing software development tasks.
 
 See:  
-[Agents](../concepts/agents.md)
+[Agents](../concepts/autonomous_agent_loop.md)
 
 Typical capabilities include:
 
@@ -176,7 +176,7 @@ This mode is intended only for controlled development environments.
 An orchestration agent responsible for dispatching tasks.
 
 See:  
-[Orchestration Model](../concepts/orchestration.md)
+[Orchestration Model](../concepts/autonomous_agent_loop.md)
 
 Responsibilities may include:
 
@@ -190,7 +190,7 @@ Responsibilities may include:
 An execution agent responsible for implementing a specific task.
 
 See:  
-[Agents](../concepts/agents.md)
+[Agents](../concepts/autonomous_agent_loop.md)
 
 Child agents:
 

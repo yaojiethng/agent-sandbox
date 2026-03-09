@@ -1,6 +1,6 @@
 ---
 Architecture Status: Implemented
-Milestone: M1.5 — Single Container Agent
+Milestone: M1.2 — Sandbox File Isolation & Diff Workflow
 Last Verified: 2026-03
 ---
 
@@ -23,6 +23,7 @@ The following guarantees define the harness architecture:
 - Tasks produce diffs instead of direct commits
 - Humans approve repository changes
 - Agent nesting depth is limited to two layers
+- Child agents cannot spawn additional children
 
 ## Key Concepts
 
@@ -36,9 +37,9 @@ Harness is built around a small set of architectural invariants.
 
 ### Safety Model
 
-- Code execution occurs in **Safe** or **Unsafe** modes.
-- Safe mode enforces strict filesystem and execution isolation.
-- Unsafe mode allows broader execution for trusted environments.
+- Code execution occurs in **Standard** or **Safe** modes.
+- Standard mode allows network access for AI provider communication.
+- Safe mode enforces no-network execution (reserved, not yet implemented — see M6).
 
 ### Change Control
 
@@ -51,27 +52,39 @@ Harness is built around a small set of architectural invariants.
 - Execution occurs inside containerized environments.
 - Containers ensure deterministic tooling and dependency environments.
 
+### Architecture Layers
+
+The implementation stack has three layers where lower layers must stabilize before higher layers evolve:
+
+| Layer | Name | Responsibility |
+|---|---|---|
+| 0 | Infrastructure | Docker runtime, filesystem, container environment |
+| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
+| 2 | Orchestration | Coordination between multiple agents |
+
+Two elements frame the stack without belonging to it: the **Security Model**, which is a design constraint specified before implementation and applied to all layers; and the **Human Workflow**, which is a system invariant — the operator initiates every run and has final authority over all outputs.
+
+See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
+
 ## Documentation Guide
 
-| Topic | Document |
-|------|---------|
-| Security guarantees and threat model | [security.md](docs/architecture/security.md) |
-| Setup and environment configuration | [quickstart.md](docs/development/quickstart.md) |
-| Contribution workflow | [contributors.md](contributors.md) |
-| Past and future development milestones | [roadmap.md](docs/development/roadmap.md) |
+Start here and follow the path in order. Architecture documents describe the system as it currently exists — future work belongs in the roadmap, not in architecture docs.
 
-### Documentation Policy
+| Step | Document | Purpose |
+|---|---|---|
+| 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
+| 2 | [doc-status.md](docs/development/doc-status.md) | Current milestone, frozen layers, document temperature map |
+| 3 | [documentation-guidelines.md](docs/development/documentation-guidelines.md) | Documentation rules and structure (read once) |
+| 4 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
 
-Architecture documents describe the system as it currently exists.
-Future design work belongs in [roadmap.md](docs/development/roadmap.md).
-Do not place TODOs or speculative features in architecture docs.
+For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 
 ## Conceptual Separation
 
 This repository separates concerns into three categories:
 
-- **Workflow** → What currently happens  
-- **Security** → What is guaranteed  
+- **Workflow** → What currently happens
+- **Security** → What is guaranteed
 - **Roadmap** → What may happen later
 
 Future design work and planned features are tracked in the roadmap rather than architecture documentation.

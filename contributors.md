@@ -61,17 +61,21 @@ Refer to [Container Build & Deployment](docs/SOPS.md#6-container-build--deployme
 
 ## 6. Documentation and Communication
 
-- High-level overviews should be placed in `README.md`.  
-- Security and mitigations are in `SECURITY.md`.  
-- Operational SOPs are in `SOPS.md`.  
-- Contributors should link to these documents rather than duplicating guidance.  
-- Update documentation when workflow, security, or operational procedures change.  
+- All contributors must follow the documentation policy before making any changes to documents or architecture.
+- All contributors must follow the roadmap policy before updating the roadmap.
+- Update documentation when workflow, security, or operational procedures change.
+- Link to existing documents rather than duplicating guidance.
+
+See [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) and [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
 
 ---
 
 ## 7. References
 
-- [Security & Threat Model](docs/SECURITY.md)  
-- [Operational SOPs](docs/SOPS.md)  
-- [README / Quickstart](README.md)  
+- [Security & Threat Model](docs/architecture/security.md)
+- [STRIDE Threat Model](docs/architecture/threat_model_stride.md)
+- [Operational SOPs](docs/operations/standard_operating_procedures.md)
+- [Documentation Policy](docs/operations/documentation_policy.md)
+- [Roadmap Policy](docs/operations/roadmap_policy.md)
+- [README / Quickstart](readme.md)
 - Branch protection and CI/CD policies (internal)

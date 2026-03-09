@@ -9,6 +9,7 @@ output/
 /projects/
 .skills/
 .workspace/
+.bootstrap/
 
 # === Python ===
 __pycache__/
@@ -63,3 +64,5 @@ Thumbs.db
 *.swp
 *.swo
 *.lnk
+*.url
+

@@ -16,5 +16,8 @@ docker logs -f opencode-agent-agent-sandbox
 
 cat -A /mnt/m/Projects/dotfiles/agent-sandbox/projects/agent-sandbox/opencode.wsl.conf
 sed -i 's/\r//' /mnt/m/Projects/dotfiles/agent-sandbox/projects/agent-sandbox/opencode.wsl.conf
+
+# debug makefile
+make --debug=basic build 
 ```
 

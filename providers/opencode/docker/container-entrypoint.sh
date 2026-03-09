@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # container-entrypoint.sh
-# Sandbox + Git staging + autosave
+# Sandbox setup + diff staging + autosave
 
 set -euo pipefail
 
@@ -12,85 +12,51 @@ exec 1>&2
 
 ROOT="/home/agentuser"
 
-PROJECT_DIR="$ROOT/project"
+BOOTSTRAP_DIR="$ROOT/.bootstrap"
+SNAPSHOT_DIR="$BOOTSTRAP_DIR/snapshot"
 SANDBOX_DIR="$ROOT/sandbox"
-WORKSPACE_DIR="$PROJECT_DIR/.workspace"
+WORKSPACE_DIR="$ROOT/.workspace"
 CHANGES_DIR="$WORKSPACE_DIR/changes"
 
 AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
 
-mkdir -p "$SANDBOX_DIR" "$CHANGES_DIR"
+mkdir -p "$CHANGES_DIR"
 
 # -------------------------
-# Copy project/ into sandbox/
-# Copies all mounted content except .workspace (already rw, no copy needed)
+# Snapshot pipeline (container side)
 # -------------------------
+source /lib/snapshot.sh
 
-# Subdirectories
-for ITEM in "$PROJECT_DIR"/*/; do
-  NAME="$(basename "$ITEM")"
-  [[ "$NAME" == ".workspace" ]] && continue
-  cp -r "$ITEM" "$SANDBOX_DIR/$NAME"
-done
+# Gate 2 — confirm mounted snapshot is intact before unpacking.
+snapshot_validate "$SNAPSHOT_DIR"
 
-# Root-level files
-for ITEM in "$PROJECT_DIR"/*; do
-  [[ -f "$ITEM" ]] || continue
-  cp "$ITEM" "$SANDBOX_DIR/$(basename "$ITEM")"
-done
+# Copy snapshot into container-local sandbox/ and initialise git baseline.
+snapshot_copy_to_sandbox "$SNAPSHOT_DIR" "$SANDBOX_DIR"
+BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR")
 
-# Copy brief into sandbox root so the agent can read it from its working directory
-if [[ -f "$PROJECT_DIR/.workspace/brief.md" ]]; then
-  cp "$PROJECT_DIR/.workspace/brief.md" "$SANDBOX_DIR/brief.md"
+echo "Sandbox ready. Baseline: $BASELINE_SHA"
+
+# -------------------------
+# Copy brief into sandbox root
+# -------------------------
+if [[ -f "$BOOTSTRAP_DIR/brief.md" ]]; then
+  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/brief.md"
 fi
 
 # -------------------------
-# Git Init
+# Diff pipeline
 # -------------------------
-cd "$SANDBOX_DIR"
+source /lib/diff.sh
 
-if [[ ! -d ".git" ]]; then
-  git init -b development >/dev/null 2>&1
+# On exit: commit any pending changes and write staged.diff.
+trap 'diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"' EXIT
 
-  # Commit the initial sandbox state as the baseline.
-  # git diff --cached compares against HEAD — without this commit, HEAD
-  # does not exist and the diff is always empty.
-  git config user.email "agent@sandbox" >/dev/null
-  git config user.name "agent-sandbox" >/dev/null
-  git add -A
-  git commit -m "sandbox: initial state" --quiet
-
-  git checkout -b agent_branch --quiet
-fi
-
-# -------------------------
-# Diff Staging Function
-# -------------------------
-stage_diffs() {
-  echo "Staging diffs..."
-
-  cd "$SANDBOX_DIR"
-  git add -A || true
-
-  if ! git diff --cached --quiet; then
-    git diff --cached > "$CHANGES_DIR/patch.diff" || true
-    echo "Diff written to .workspace/changes/patch.diff"
-  else
-    echo "No changes detected."
-  fi
-}
-
-# Always stage diffs on exit
-trap stage_diffs EXIT
-
-# -------------------------
-# Optional Autosave
-# -------------------------
+# Optional autosave: write autosave.diff on interval without committing.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      stage_diffs
+      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"
     done
   ) &
 fi
