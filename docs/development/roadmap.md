@@ -63,11 +63,11 @@ The per-project conf file is removed; project identity and paths are defined in 
 
 **Objective:** Automatically detect stale container images before a run and warn the operator, so that source changes are never silently ignored. See [m1_4-discussion.md](../development/m1_4-discussion.md) for design decisions.
 
-- [ ] Add `lib/image.sh` — centralised digest computation from all `lib/` files plus provider-specific file list
-- [ ] Add `providers/opencode/image-files.txt` — relative-path-from-root list of provider-specific digest inputs
-- [ ] Update `build_agent.sh` — compute and attach digest as Docker image label
-- [ ] Update `agent-sandbox.sh` — staleness check before `start` and `dry-run`; warn-then-continue; rebuild failure must surface staleness warning as last line
-- [ ] Update `execution_model.md` — document digest label, staleness check, shared-lib assumption, and `image-files.txt` convention
+- [x] Add `lib/image.sh` — centralised digest computation from all `lib/` files plus provider-specific file list
+- [x] Add `providers/opencode/image-files.txt` — relative-path-from-root list of provider-specific digest inputs
+- [x] Update `build_agent.sh` — compute and attach digest as Docker image label
+- [x] Update `agent-sandbox.sh` — staleness check before `start` and `dry-run`; warn-then-continue; rebuild failure must surface staleness warning as last line
+- [x] Update `execution_model.md` — document digest label, staleness check, shared-lib assumption, and `image-files.txt` convention
 
 ---
 

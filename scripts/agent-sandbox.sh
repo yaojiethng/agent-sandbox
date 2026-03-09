@@ -18,6 +18,8 @@ PROVIDER="$AGENT_SANDBOX_REPO/providers/opencode"
 SUBCOMMAND="${1:-}"
 shift || true
 
+STALE_MSG="agent-sandbox: image may be stale — source files have changed since last build. Run: agent-sandbox rebuild <subcommand> to rebuild."
+
 if [[ -z "$SUBCOMMAND" ]]; then
   echo "Usage: agent-sandbox <start|dry-run|build|apply|rebuild> <flags>"
   exit 1
@@ -45,8 +47,12 @@ if [[ "$SUBCOMMAND" == "rebuild" ]]; then
     echo "Error: rebuild requires --name and --root"
     exit 1
   fi
+  _STALE_MSG="$STALE_MSG"
   echo "Rebuilding image: opencode-agent-$_NAME"
-  "$PROVIDER/build_agent.sh" --name="$_NAME" --root="$_ROOT"
+  if ! "$PROVIDER/build_agent.sh" --name="$_NAME" --root="$_ROOT"; then
+    echo "$_STALE_MSG"
+    exit 1
+  fi
   exec "$0" "$@"
 fi
 
@@ -68,13 +74,29 @@ for ARG in "$@"; do
 done
 
 # -------------------------
-# Build helper
+# Preflight — build-if-missing, then staleness check
 # -------------------------
-maybe_build() {
+preflight() {
   local IMAGE_NAME="opencode-agent-$PROJECT_NAME"
+
+  # Build if image does not exist
   if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Image not found, building: $IMAGE_NAME"
     "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --root="$PROJECT_ROOT"
+    return
+  fi
+
+  # Staleness check — compare current digest against label on existing image
+  source "$AGENT_SANDBOX_REPO/lib/image.sh"
+  local CURRENT_DIGEST IMAGE_DIGEST
+  CURRENT_DIGEST=$(image_compute_digest "$AGENT_SANDBOX_REPO" "opencode")
+  IMAGE_DIGEST=$(docker inspect \
+    --format '{{ index .Config.Labels "agent-sandbox.digest" }}' \
+    "$IMAGE_NAME" 2>/dev/null || true)
+
+  if [[ "$CURRENT_DIGEST" != "$IMAGE_DIGEST" ]]; then
+    # Emit warning last so it is not buried — run proceeds regardless
+    echo "$STALE_MSG"
   fi
 }
 
@@ -87,7 +109,7 @@ case "$SUBCOMMAND" in
       echo "Error: --name and --root are required"
       exit 1
     fi
-    maybe_build
+    preflight
     "$PROVIDER/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
       --root="$PROJECT_ROOT" \
@@ -99,7 +121,7 @@ case "$SUBCOMMAND" in
       echo "Error: --name and --root are required"
       exit 1
     fi
-    maybe_build
+    preflight
     "$PROVIDER/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
       --root="$PROJECT_ROOT" \

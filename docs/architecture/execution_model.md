@@ -21,13 +21,13 @@ make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
 
 | Subcommand | Delegates to |
 |---|---|
-| `start` | `providers/opencode/start_agent.sh standard` |
-| `dry-run` | `providers/opencode/start_agent.sh dry-run` |
+| `start` | `providers/opencode/start_agent.sh standard` — staleness check before invocation |
+| `dry-run` | `providers/opencode/start_agent.sh dry-run` — staleness check before invocation |
 | `build` | `providers/opencode/build_agent.sh` |
 | `apply` | `scripts/apply_workspace.sh [--branch=<n>]` |
 | `rebuild` | `build_agent.sh` then re-execs wrapper with remaining args |
 
-For `start` and `dry-run` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. To force a rebuild before any subcommand, prefix with `rebuild`:
+For `start` and `dry-run` the wrapper runs two pre-flight checks before invoking `start_agent.sh`. First, if the project image does not exist, it calls `build_agent.sh` automatically and notifies the operator. Second, if the image exists but is stale — detected by comparing the current source digest against the label embedded in the image — it warns the operator and continues. The staleness warning is always the last line emitted before the run proceeds, so it is not lost in build output. If a rebuild triggered by staleness fails, the staleness warning is re-emitted as the final line before exit. See [Image Digest & Staleness](#image-digest--staleness) for the digest mechanism. To force a rebuild before any subcommand, prefix with `rebuild`:
 
 ```
 agent-sandbox rebuild start   --name=<n> --root=<path> ...
@@ -35,6 +35,45 @@ agent-sandbox rebuild dry-run --name=<n> --root=<path> ...
 ```
 
 `rebuild` extracts `--name` and `--root` from the passthrough args, runs `build_agent.sh`, then re-execs the wrapper with the original subcommand and flags. The `--rebuild` flag is not supported; `rebuild` as a subcommand is the only force-build path.
+
+---
+
+## Image Digest & Staleness
+
+The harness embeds a content digest in each built image and checks it at run time to detect when source files have changed since the image was last built.
+
+### Digest computation
+
+`lib/image.sh` defines `image_compute_digest`, which computes a SHA-256 digest over two sets of files:
+
+- All files in `lib/` — shared across all providers by convention
+- Provider-specific files listed in `providers/<provider>/image-files.txt`, one relative-path-from-root per line
+
+Both sets are concatenated in a deterministic order before hashing. The file list in `image-files.txt` must cover every file copied into the image by the provider's Dockerfile — omissions produce a digest that does not reflect all image inputs.
+
+### Build-time label
+
+`build_agent.sh` sources `lib/image.sh`, calls `image_compute_digest`, and passes the result as a Docker build label:
+
+```
+--label agent-sandbox.digest=<sha>
+```
+
+The label is embedded in the image at build time and retrievable via `docker inspect`.
+
+### Start-time staleness check
+
+Before invoking `start_agent.sh` for `start` or `dry-run`, the wrapper:
+
+1. Recomputes the digest from current source files using `image_compute_digest`
+2. Reads the `agent-sandbox.digest` label from the existing image via `docker inspect`
+3. If the digests differ, emits a staleness warning and continues
+
+The staleness warning is always the last line emitted before the run proceeds. If a rebuild is triggered and fails, the warning is re-emitted as the final line before exit, ensuring it is visible regardless of build output volume.
+
+### Shared-lib assumption
+
+All providers share `lib/`. The digest always includes the full contents of `lib/` regardless of which provider is in use. Provider-specific inputs are additive via `image-files.txt`.
 
 ---
 

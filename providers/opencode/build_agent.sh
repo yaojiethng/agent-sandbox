@@ -45,6 +45,15 @@ DOCKERFILE="$REPO_ROOT/providers/opencode/Dockerfile"
 # -------------------------
 # Build
 # -------------------------
+
+# Compute digest before build so it reflects the source files being built
+source "$REPO_ROOT/lib/image.sh"
+DIGEST=$(image_compute_digest "$REPO_ROOT" "opencode")
+
 echo "Building Docker image: $IMAGE_NAME"
-docker build $NO_CACHE -t "$IMAGE_NAME" -f "$DOCKERFILE" "$REPO_ROOT"
+docker build $NO_CACHE \
+  --label "agent-sandbox.digest=$DIGEST" \
+  -t "$IMAGE_NAME" \
+  -f "$DOCKERFILE" \
+  "$REPO_ROOT"
 echo "Build complete: $IMAGE_NAME"
