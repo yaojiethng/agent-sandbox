@@ -2,6 +2,8 @@
 
 This roadmap defines milestones, incremental goals, and tasks for the agent-sandbox project. It is designed to allow stepwise development and learning, with progress tracking for agents or humans.
 
+Maintenance rules — task granularity, cleanup on completion, section removal — are defined in [`docs/operations/roadmap_maintenance.md`](../operations/roadmap_maintenance.md).
+
 ---
 
 ## Milestone Summary
@@ -46,40 +48,18 @@ OpenCode runs in server mode inside the container, accessible from the host on a
 
 Establishes how project files enter the sandbox, how secrets are excluded, and how agent changes are captured as a diff and applied back to the host repo. See [`docs/development/m1.2-discussion.md`](m1_2-discussion.md) for design history and implementation notes.
 
-#### Documentation — Update before code changes
-
-- [x] Resolve document ownership: `agent_runtime.md` renamed to `execution_model.md`; owns container internals (entrypoint sequence, snapshot pipeline, mount shape); `agent_workflow.md` owns operator-facing workflow (staging principles, review loop)
-- [x] Migrate internal container behaviour from `agent_workflow.md` sections 2.3 and 3.2 into `execution_model.md`
-- [x] Update `agent_workflow.md` mount table to reflect `.bootstrap/` + `.workspace/` mount shape; internal container mechanics removed
-- [x] Write `execution_model.md`: `.bootstrap/` input channel, snapshot pipeline function boundaries, validation gates, mount shape, diff pipeline, entrypoint sequence
-- [x] Update `security.md` trust boundaries and invariants to reflect that `PROJECT_ROOT` is no longer mounted at container runtime
-- [x] Update `doc-status.md`: `execution_model.md` at 🔴 Hot, `agent_workflow.md` reclassified to 🟢 Cold, layer table revised to three implementation layers
-- [x] Update `system_overview.md`: revised layer model, major components updated for `.bootstrap/`
-- [x] Update `documentation-guidelines.md`: revised layer model, root document audience convention added
-- [x] Update `readme.md`: revised layer model
-- [x] Update `m1_2-discussion.md`: full modularization design decisions recorded
-
 #### Operation 1 — Snapshot: host repo → sandbox (refactor)
 
-- [x] `PROJECT_ROOT` mounted read-only; `.workspace` mounted read-write
-- [x] Per-directory `MOUNTS`/`FILES` config removed — full repo mount replaces manual parity maintenance
-- [x] Sandbox populated via `git ls-files` — `.gitignore` respected, secrets excluded
-- [x] Baseline git commit in `sandbox/` before agent runs
-- [x] Autosave checkpoints during session
-- [ ] Introduce `.bootstrap/` as read-only input channel for snapshot and brief
-- [ ] Migrate `brief.md` mount from `.workspace/brief.md` to `.bootstrap/brief.md` in `start_agent.sh`
-- [ ] Extract snapshot functions into `lib/snapshot.sh`: `snapshot_enumerate_files`, `snapshot_copy_files`, `snapshot_validate`, `snapshot_copy_to_sandbox`, `snapshot_init_git`
-- [ ] `start_agent.sh`: call `snapshot_enumerate_files` + `snapshot_copy_files` → `.bootstrap/snapshot/`; run `snapshot_validate` (gate 1) before container starts; remove `PROJECT_ROOT` from runtime mount args
-- [ ] `container-entrypoint.sh`: source `lib/snapshot.sh`; run `snapshot_validate` (gate 2); call `snapshot_copy_to_sandbox` then `snapshot_init_git`
-- [ ] Write `tests/test_snapshot_host.sh` — enumerate + copy against fixture repo; covers gitignored file exclusion, symlink handling, untracked-only repo, dirty working tree
-- [ ] Write `tests/test_snapshot_container.sh` — validate + copy_to_sandbox + init_git against fixture snapshot dir
-- [ ] Confirm agent cannot read `.workspace` contents (mount shape enforces this after refactor — verify)
-- [ ] Verify behaviour with submodules (document or handle)
+- [ ] Introduce `.bootstrap/` as read-only input channel; migrate `brief.md` from `.workspace/`
+- [ ] `lib/snapshot.sh`: extract snapshot functions (`snapshot_enumerate_files`, `snapshot_copy_files`, `snapshot_validate`, `snapshot_copy_to_sandbox`, `snapshot_init_git`)
+- [ ] `start_agent.sh`: implement host-side snapshot pipeline (enumerate, copy, validate gate 1)
+- [ ] `container-entrypoint.sh`: implement container-side unpack (validate gate 2, copy to sandbox, init git)
+- [ ] `tests/test_snapshot_host.sh`: enumerate + copy tests (gitignore exclusion, symlinks, untracked-only repo, dirty working tree)
+- [ ] `tests/test_snapshot_container.sh`: validate + copy + init tests against fixture snapshot
+- [ ] Verify submodule behaviour (document or handle)
 
 #### Operation 2 — Diff: sandbox changes → patch applied to host repo
 
-- [x] `patch.diff` generated on exit via `git diff <baseline>..HEAD`
-- [x] `apply_workspace_inplace.sh` and `apply_workspace_to_branch.sh` — git validation before apply
 - [ ] Validate end-to-end: agent edits → `patch.diff` → `make apply` → clean apply on host
 - [ ] Confirm `patch.diff` paths resolve correctly relative to `PROJECT_ROOT`
 - [ ] Test apply on clean host working tree
@@ -162,20 +142,6 @@ The operator-facing setup experience has not been fully defined. This milestone 
 
 ---
 
-## Documentation Debt
-
-All tracked items resolved or moved to milestones. No outstanding debt before M2 freeze.
-
----
-
-## Progress Tracking
-
-- [ ] Each milestone can be marked as complete
-- [ ] Individual tasks under each milestone can be checked off as done
-- [ ] Agents can read this file to determine the **next actionable task**
-
----
-
 ## Notes
 
 - **Core minimum usable system:** M1 + M1.1 + M1.2
@@ -199,12 +165,10 @@ Security guarantees and current threat model are defined in [`docs/architecture/
 
 ### Governance Hardening
 
-Implementation checklist for [`docs/development/documentation-guidelines.md`](documentation-guidelines.md). Levels represent progressive enforcement maturity.
-- [x] Level 1 — Structural Separation (Layered docs)
-- [ ] Level 2 — Review Discipline (PR template + checklist)
-- Level 3 — Change Classification Matrix
-  - Explicit classification of doc changes.
-- Level 4 — Layer Mutation Restrictions
-  - Agents cannot mutate foundational layers.
-- Level 5 — Architecture Freeze Policy
-  - Milestone-based invariant locking.
+Progressive enforcement maturity for the documentation and architecture governance model. Each level builds on the previous.
+
+- [x] Level 1 — Structural Separation — folder ownership, temperature classification, root document audience separation
+- [ ] Level 2 — Review Discipline — PR template with required "does this change system behaviour?" checkbox
+- [ ] Level 3 — Temperature & Freeze Policy — hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
+- [ ] Level 4 — Change Classification Matrix — explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
+- [ ] Level 5 — Automated Enforcement — CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
