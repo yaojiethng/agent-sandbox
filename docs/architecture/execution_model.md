@@ -13,9 +13,11 @@ Implementation decisions are recorded here alongside the design they produce. Op
 Installation is performed once from the agent-sandbox repo:
 
 ```
-make install              # installs to /usr/local/bin/agent-sandbox
-make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
+make install                       # installs to /usr/local/bin/agent-sandbox
+make install INSTALL_DIR=~/bin     # installs to ~/bin/agent-sandbox
 ```
+
+The install directory is resolved in order: `INSTALL_DIR` argument to `make install`, then `INSTALL_DIR` in the repo's `.env` file, then `/usr/local/bin` as the default. This allows machine-specific install paths to be set once in `.env` without repeating them on every `make install` invocation.
 
 `make install` substitutes the repo path into the wrapper at install time, so the installed binary has `AGENT_SANDBOX_REPO` baked in. The source file in the repo (`scripts/agent-sandbox.sh`) contains a placeholder and is never executed directly.
 

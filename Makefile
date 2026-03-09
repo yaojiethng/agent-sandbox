@@ -8,12 +8,14 @@
 #   make apply
 #   make apply BRANCH=my-branch
 
+SHELL := /bin/bash
+
 PROJECT_NAME   := agent-sandbox
 PROJECT_ROOT   := $(CURDIR)
 AGENT_BRIEF    := docs/development/agent_context_brief.md
 ENV_FILE       := .env
 
-PREFIX         ?= /usr/local/bin
+
 
 # -------------------------
 # Container targets
@@ -75,15 +77,31 @@ apply:
 
 .PHONY: install
 install:
-	@sed 's|@@AGENT_SANDBOX_REPO@@|$(CURDIR)|g' scripts/agent-sandbox.sh \
-	  > $(PREFIX)/agent-sandbox
-	@chmod +x $(PREFIX)/agent-sandbox
-	@echo "Installed agent-sandbox to $(PREFIX)/agent-sandbox"
+	@_INSTALL_DIR="$(INSTALL_DIR)"; \
+	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
+	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
+	fi; \
+	if [[ -z "$$_INSTALL_DIR" ]]; then \
+	  _INSTALL_DIR="/usr/local/bin"; \
+	fi; \
+	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
+	sed 's|@@AGENT_SANDBOX_REPO@@|$(CURDIR)|g' scripts/agent-sandbox.sh \
+	  > "$$_INSTALL_DIR/agent-sandbox"; \
+	chmod +x "$$_INSTALL_DIR/agent-sandbox"; \
+	echo "Installed agent-sandbox to $$_INSTALL_DIR/agent-sandbox"
 
 .PHONY: uninstall
 uninstall:
-	@rm -f $(PREFIX)/agent-sandbox
-	@echo "Removed $(PREFIX)/agent-sandbox"
+	@_INSTALL_DIR="$(INSTALL_DIR)"; \
+	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
+	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
+	fi; \
+	if [[ -z "$$_INSTALL_DIR" ]]; then \
+	  _INSTALL_DIR="/usr/local/bin"; \
+	fi; \
+	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
+	rm -f "$$_INSTALL_DIR/agent-sandbox"; \
+	echo "Removed $$_INSTALL_DIR/agent-sandbox"
 
 # -------------------------
 # Help
@@ -106,8 +124,11 @@ help:
 	@echo "  apply BRANCH=<n>   — apply staged.diff to named branch (created if needed)"
 	@echo ""
 	@echo "Install:"
-	@echo "  install      — install agent-sandbox CLI to PREFIX (default: /usr/local/bin)"
-	@echo "  uninstall    — remove agent-sandbox CLI from PREFIX"
+	@echo "  install                    — install agent-sandbox CLI"
+	@echo "  install INSTALL_DIR=<path> — install to specified directory"
+	@echo "  uninstall                  — remove agent-sandbox CLI"
 	@echo ""
-	@echo "Options:"
-	@echo "  PREFIX=<path>   install location (default: /usr/local/bin)"
+	@echo "Install directory resolution (in order):"
+	@echo "  1. INSTALL_DIR=<path> argument"
+	@echo "  2. INSTALL_DIR in .env"
+	@echo "  3. /usr/local/bin (default)"
