@@ -65,7 +65,7 @@ echo "Sandbox ready. Baseline: $BASELINE_SHA"
 # Copy brief into sandbox root
 # -------------------------
 if [[ -f "$BOOTSTRAP_DIR/brief.md" ]]; then
-  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/brief.md"
+  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/AGENTS.md"
 fi
 
 # -------------------------

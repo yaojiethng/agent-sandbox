@@ -63,10 +63,11 @@ Refer to [Container Build & Deployment](docs/operations/standard_operating_proce
 
 - All contributors must follow the documentation policy before making any changes to documents or architecture.
 - All contributors must follow the roadmap policy before updating the roadmap.
+- All contributors must follow the task policy before beginning any new task.
 - Update documentation when workflow, security, or operational procedures change.
 - Link to existing documents rather than duplicating guidance.
 
-See [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) and [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
+See [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md), [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), and [`docs/operations/task_policy.md`](docs/operations/task_policy.md).
 
 ---
 
@@ -77,5 +78,7 @@ See [`docs/operations/documentation_policy.md`](docs/operations/documentation_po
 - [Operational SOPs](docs/operations/standard_operating_procedures.md)
 - [Documentation Policy](docs/operations/documentation_policy.md)
 - [Roadmap Policy](docs/operations/roadmap_policy.md)
+- [Task Policy](docs/operations/task_policy.md)
+- [Task Lifecycle](docs/concepts/task_lifecycle.md)
 - [README / Quickstart](readme.md)
 - Branch protection and CI/CD policies (internal)

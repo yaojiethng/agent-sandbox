@@ -10,79 +10,116 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 
 | Milestone | Status |
 |---|---|
-| [M1 — Barebones Agent Container](#m1-barebones-agent-container) | Complete |
-| [M1.1 — Interactive Virtual Workspace / Serve Mode](#m11--interactive-virtual-workspace--serve-mode) | Complete |
-| [M1.2 — Sandbox File Isolation & Diff Workflow](#m12--sandbox-file-isolation--diff-workflow) | Complete |
-| [M1.3 — Invocation Cleanup & Onboarding Workflow](#m13--invocation-cleanup--onboarding-workflow) | Complete |
-| [M1.4 — Image Staleness Detection](#m14--image-staleness-detection) | Not started |
+| M1 — Barebones Agent Container | [Complete — see changelog](changelog.md) |
+| M1.1 — Interactive Virtual Workspace / Serve Mode | [Complete — see changelog](changelog.md) |
+| M1.2 — Sandbox File Isolation & Diff Workflow | [Complete — see changelog](changelog.md) |
+| M1.3 — Invocation Cleanup & Onboarding Workflow | [Complete — see changelog](changelog.md) |
+| M1.4 — Image Staleness Detection | [Complete — see changelog](changelog.md) |
+| [M1.5 — Serve Mode & Apply Workflow](#m15--serve-mode--apply-workflow) | Not started |
+| [M1.6 — Session Persistence & Agent Configuration](#m16--session-persistence--agent-configuration) | Not started |
+| **Single-Agent Coordination** | |
 | [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
+| **Multi-Agent Coordination** | |
 | [M3 — Metadata Seeding](#m3-metadata-seeding) | Not started |
-| [M4 — Multi-Agent Branch Management](#m4-multi-agent-branch-management) | Not started |
-| [M5 — Logging & Audit](#m5-logging--audit) | Not started |
+| [M4 — Agent-Assigned Branch Management](#m4-agent-assigned-branch-management) | Not started |
+| **Multi-Agent Orchestration** | |
+| [M5.1 — Task Dispatch](#m51-task-dispatch) | Not started |
+| [M5.2 — Constraint Enforcement](#m52-constraint-enforcement) | Not started |
+| [M5.3 — Review & CI/CD Integration](#m53-review--cicd-integration) | Not started |
+| **Standalone** | |
 | [M6 — Safe vs Unsafe Mode (Policy Layer)](#m6-safe-vs-unsafe-mode-policy-layer) | Not started |
 | [M7 — Skills / Templates](#m7-skills--templates) | Not started |
-| [M8 — Full SOP & CI/CD Integration](#m8-full-sop--cicd-integration) | Not started |
 
 ---
 
-## Milestones & Tasks
+## Upcoming Milestones
 
-### **M1: Barebones Agent Container**
+### **M1.5 — Serve Mode & Apply Workflow**
 
-*Complete.*
+**Objective:** Fix a serve mode bug and redesign the apply workflow to preserve agent commit history.
 
-Established the core harness: Docker image, per-project config system, workspace output channel, dry-run liveness check, and Makefile targets. The agent runs inside an isolated container in `standard` mode with network access.
+#### Bug 1 — Rebuild serve mode restarts on first Ctrl-C
+
+- [ ] Diagnose: determine whether the restart is caused by signal interception in the container or by the build step unintentionally starting the server
+- [ ] Fix restart behaviour so Ctrl-C shuts down cleanly without a second start
+
+#### Workflow Adjustment — Apply workflow loses agent commit history
+
+Current behaviour: the diff pipeline squashes all agent changes into a single `patch.diff` on exit, discarding checkpoint commits made inside the container.
+
+Target behaviour:
+- Container exports full commit history from `sandbox/` using `git format-patch` (or equivalent replayable format) rather than a unified diff
+- `apply` creates a checkpoint branch from current host HEAD before touching anything
+- Agent commits are replayed onto a new named branch (e.g. `agent/<task-id>`), leaving the original branch intact
+- Operator ends up with two branches: original state and agent's work
+- To revert: return to checkpoint branch; to keep: merge or cherry-pick as desired
+
+Open consideration — patch history: once commits are preserved natively via replay, archiving `patch.diff` with a timestamp may be redundant. Needs to be reasoned out during implementation — decide whether a diff archive is still useful alongside a replayable commit history.
+
+Tasks:
+- [ ] Brainstorm and agree on export format (`git format-patch` vs bundle vs other)
+- [ ] Parameterise agent branch naming (e.g. `agent/<task-id>`) — single-agent case only; multi-agent coordination stays in M4
+- [ ] Update diff pipeline in `lib/diff.sh` — replace `patch.diff` output with replayable commit export
+- [ ] Update `apply_workspace.sh` — checkpoint branch creation, replay commits onto named branch
+- [ ] Resolve patch history consideration — archive or drop
+- [ ] Update `agent_workflow.md` — document new apply workflow and checkpoint/revert pattern
+- [ ] Update `execution_model.md` — document new output format replacing `patch.diff`
 
 ---
 
-### **M1.1 — Interactive "Virtual Workspace" / Serve Mode**
+## User Stories
 
-*Complete.*
+Active investigations not yet promoted to milestones. Full reasoning and open questions in the linked documents.
 
-OpenCode runs in server mode inside the container, accessible from the host on a configurable port. This enables interactive prompting via the OpenCode web interface without requiring a local OpenCode installation. Authentication and Windows client access were validated as part of this milestone.
-
----
-
-### **M1.2 — Sandbox File Isolation & Diff Workflow**
-
-*Complete.*
-
-Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts — the agent never has direct access to `PROJECT_ROOT`. The snapshot pipeline is modular and tested; gitignored files are excluded by construction and submodules are rejected with a clear error. Agent changes are captured via a modular diff pipeline in `lib/diff.sh`, producing `staged.diff` on exit and `autosave.diff` on interval. Apply scripts in `scripts/` consume `staged.diff` and apply cleanly to the host repository via `git apply --3way`.
+- [Website Dev Project Onboarding](story_website_dev.md) — port exposure, live reload, XSS risk assessment, safe browse protocol
+- [Obsidian Vault Onboarding](../../workflow/knowledge-vault/story.md) — investigation complete; tooling and onboarding guide; checkpoint scripts, vault-init, and LFS test suite produced; integration validation pending (phase 4). Full detail in [knowledge-vault/roadmap](../../workflow/knowledge-vault/roadmap.md).
 
 ---
 
-### **M1.3 — Invocation Cleanup & Onboarding Workflow**
+## Documentation
 
-*Complete.*
-
-The per-project conf file is removed; project identity and paths are defined in the project-side `Makefile` with `PROJECT_ROOT` as `$(CURDIR)`. The `agent-sandbox` CLI wrapper in `scripts/agent-sandbox.sh` dispatches to provider scripts and apply scripts, handles build-if-missing and `--rebuild`, and is installed via `make install`. `start_agent.sh` and `build_agent.sh` are single-purpose scripts with named flag interfaces; the apply scripts are merged into `apply_workspace.sh` with an optional `--branch` flag. Provider scripts and Dockerfile are flattened under `providers/opencode/`. The operator onboarding workflow and `docs/development/quickstart.md` are written; `providers/opencode/quickstart.md` serves as a debug and command reference for the OpenCode provider.
+- [ ] Extract completed milestones to a changelog document; add link from roadmap — do this during the next task cleanup and consolidation pass
+- [ ] Update `roadmap_policy.md` to document the changelog extraction process
 
 ---
 
-### **M1.4 — Image Staleness Detection**
+### **M1.6 — Session Persistence & Agent Configuration**
 
-**Objective:** Automatically detect stale container images before a run and warn the operator, so that source changes are never silently ignored. See [m1_4-discussion.md](../development/m1_4-discussion.md) for design decisions.
+**Objective:** Preserve OpenCode session history across container runs, and enable plan-mode write access for documentation and progressive planning workflows.
 
-- [x] Add `lib/image.sh` — centralised digest computation from all `lib/` files plus provider-specific file list
-- [x] Add `providers/opencode/image-files.txt` — relative-path-from-root list of provider-specific digest inputs
-- [x] Update `build_agent.sh` — compute and attach digest as Docker image label
-- [x] Update `agent-sandbox.sh` — staleness check before `start` and `dry-run`; warn-then-continue; rebuild failure must surface staleness warning as last line
-- [x] Update `execution_model.md` — document digest label, staleness check, shared-lib assumption, and `image-files.txt` convention
+#### Session DB persistence
+
+OpenCode stores all session history in a SQLite database at `~/.local/share/opencode/opencode.db` inside the container. This is currently discarded on container exit. The fix is to mount a host path into the container at that location so the DB survives across runs.
+
+- [ ] Identify host-side storage location for session DB (per-project or global)
+- [ ] Add mount for `~/.local/share/opencode/` into container mount shape
+- [ ] Update `execution_model.md` — document session DB mount as a third container mount
+- [ ] Verify DB survives container restart and is correctly re-attached on next run
+
+#### Plan mode write access & stage-then-apply loop
+
+OpenCode's plan mode disables `write`, `edit`, and `patch` by default. Tool access is fully configurable per agent via `opencode.json`, so a custom agent with scoped write access (e.g. to `.opencode/plans/` and `docs/`) can be defined without harness changes. The stage-then-apply loop — where the agent progressively commits intermediate states within a single run — is achievable via agent config and `git commit` permissions.
+
+- [ ] Define a custom plan agent in `opencode.json` with write access scoped to plan and doc paths
+- [ ] Configure `git commit` permissions for the plan agent to enable in-session checkpointing
+- [ ] Document agent config approach in `providers/opencode/quickstart.md`
 
 ---
 
 ### **M2: Autonomous Task Execution, Manual Review Workflow**
 
-**Objective:** Move from interactive prompting to structured task execution.
+**Objective:** Move from interactive prompting to structured single-task execution with enough logging to verify the agent is doing useful work.
 
 - [ ] Define Task Brief format (`TASK.md` — per-run brief passed alongside `agent_context_brief.md`)
 - [ ] Define agent execution lifecycle for a single task run
-- [ ] Support multi-task execution model
-- [ ] Patch history — `apply_workspace.sh` archives `staged.diff` with a timestamp before applying; replaces single overwritten diff with a retrievable history
 - [ ] Atomic install for `make install` — write to temp file, verify, then `mv` into place
 - [ ] Pre-snapshot validation gate — configurable per-project check run by `start_agent.sh` before building `.bootstrap/`; fail fast before the container starts
+- [ ] Store structured logs per agent and task run
+- [ ] Capture metadata with each commit (agent_id, task_id, timestamp) — prerequisite for trusting autonomous output
 
 ---
+
+## Multi-Agent Coordination
 
 ### **M3: Metadata Seeding**
 - [ ] Define `.workspace/metadata.json` format:
@@ -92,21 +129,51 @@ The per-project conf file is removed; project identity and paths are defined in 
 
 ---
 
-### **M4: Multi-Agent Branch Management**
-- [ ] Parameterise branch naming in `container-entrypoint.sh` (e.g. `agent/<task-id>`)
+### **M4: Agent-Assigned Branch Management**
+
+**Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
+
 - [ ] Each agent gets its own branch from the same baseline
 - [ ] `apply_workspace.sh --branch=<n>` supports named branches per agent
 - [ ] Validate branch contents before merge
 - [ ] Merge branch → `main`
+- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling — see Deferred Decisions
 
 ---
 
-### **M5: Logging & Audit**
-- [ ] Store structured logs per agent and task
-- [ ] Capture metadata with each commit
-- [ ] Maintain workspace snapshots for review
+## Multi-Agent Orchestration
+
+### **M5.1: Task Dispatch**
+
+**Objective:** Extend the execution model to support coordinated dispatch of multiple task briefs across agents. Design precedes implementation — `execution_model.md` must be updated before any code changes.
+
+- [ ] Design multi-task coordination model — how multiple task briefs are dispatched, sequenced, and tracked across agents
+- [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
+- [ ] Implement dispatch mechanism in harness
 
 ---
+
+### **M5.2: Constraint Enforcement**
+
+**Objective:** Enforce SOP constraints on agent dispatch and output. Partial enforcement may exist earlier from features built in prior milestones; this milestone brings it to a complete and auditable state.
+
+- [ ] Implement automated SOP enforcement scripts covering agent lifecycle, output handling, and secrets
+- [ ] Enforce allowed file and task constraints at dispatch time (builds on M3 metadata)
+- [ ] Validate agent outputs against constraints before branch merge
+
+---
+
+### **M5.3: Review & CI/CD Integration**
+
+**Objective:** Automate review of agent-produced changes and integrate with CI/CD pipelines.
+
+- [ ] Configure PR / CI/CD checks on agent branches
+- [ ] Automated validation of branch contents before merge
+- [ ] Full structured audit trail per agent run, task, and commit
+
+---
+
+## Standalone
 
 ### **M6: Safe vs Unsafe Mode (Policy Layer)**
 - [ ] Introduce `.config/workflow.yaml`
@@ -125,11 +192,11 @@ The per-project conf file is removed; project identity and paths are defined in 
 
 ---
 
-### **M8: Full SOP & CI/CD Integration**
-- [ ] Implement automated SOP enforcement scripts
-- [ ] Validate changes automatically before merge
-- [ ] Configure PR / CI/CD checks
-- [ ] Full logging and audit trail
+## Deferred Decisions
+
+### Checkpoint tooling — promote to harness scripts/
+
+The checkpoint scripts produced in the vault onboarding story (`workflow/knowledge-vault/scripts/`) are project-agnostic by design. A decision to promote them to `scripts/` as first-class harness tooling is deferred. If promoted: integration testing against at least one non-vault workflow is required before the scripts are treated as general infrastructure.
 
 ---
 
