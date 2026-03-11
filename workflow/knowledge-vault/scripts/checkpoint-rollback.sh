@@ -8,9 +8,9 @@
 # can inspect the result before committing further.
 #
 # Usage:
-#   bash .vault/scripts/checkpoint-rollback.sh --vault=<path> [--checkpoint=<ref>]
+#   bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]
 #
-# --vault        Path to vault root (required)
+# --root         Path to vault root (required)
 # --checkpoint   Branch or tag to roll back to (default: checkpoint/latest)
 
 set -euo pipefail
@@ -23,14 +23,14 @@ CHECKPOINT_REF="checkpoint/latest"
 
 for arg in "$@"; do
   case "$arg" in
-    --vault=*)       VAULT_DIR="${arg#--vault=}" ;;
+    --root=*)       VAULT_DIR="${arg#--root=}" ;;
     --checkpoint=*)  CHECKPOINT_REF="${arg#--checkpoint=}" ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$VAULT_DIR" ]]; then
-  echo "Usage: bash .vault/scripts/checkpoint-rollback.sh --vault=<path> [--checkpoint=<ref>]" >&2
+  echo "Usage: bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]" >&2
   exit 1
 fi
 

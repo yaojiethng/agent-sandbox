@@ -8,9 +8,9 @@
 # Sorted lexicographically (ISO date prefix ensures correct order).
 #
 # Usage:
-#   bash .vault/scripts/checkpoint-prune.sh --vault=<path> --keep=<n>
+#   bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>
 #
-# --vault   Path to vault root (required)
+# --root    Path to vault root (required)
 # --keep    Number of most recent checkpoint branches to keep (required)
 
 set -euo pipefail
@@ -23,14 +23,14 @@ KEEP=""
 
 for arg in "$@"; do
   case "$arg" in
-    --vault=*) VAULT_DIR="${arg#--vault=}" ;;
+    --root=*) VAULT_DIR="${arg#--root=}" ;;
     --keep=*)  KEEP="${arg#--keep=}" ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$VAULT_DIR" || -z "$KEEP" ]]; then
-  echo "Usage: bash .vault/scripts/checkpoint-prune.sh --vault=<path> --keep=<n>" >&2
+  echo "Usage: bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>" >&2
   exit 1
 fi
 

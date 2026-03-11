@@ -11,9 +11,9 @@
 # checkpoint is self-contained from the local cache. No remote push.
 #
 # Usage:
-#   bash .vault/scripts/checkpoint-create.sh --vault=<path> [--label=<name>]
+#   bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<name>]
 #
-# --vault   Path to vault root (required)
+# --root    Path to vault root (required)
 # --label   Optional suffix appended to branch name: checkpoint/YYYY-MM-DD-<label>
 
 set -euo pipefail
@@ -26,14 +26,14 @@ LABEL=""
 
 for arg in "$@"; do
   case "$arg" in
-    --vault=*)  VAULT_DIR="${arg#--vault=}" ;;
+    --root=*)  VAULT_DIR="${arg#--root=}" ;;
     --label=*)  LABEL="${arg#--label=}" ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$VAULT_DIR" ]]; then
-  echo "Usage: bash .vault/scripts/checkpoint-create.sh --vault=<path> [--label=<name>]" >&2
+  echo "Usage: bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<name>]" >&2
   exit 1
 fi
 
@@ -105,4 +105,4 @@ echo ""
 echo "Checkpoint created: $BRANCH"
 echo "  SHA: $CURRENT_SHA"
 echo ""
-echo "To roll back: bash .vault/scripts/checkpoint-rollback.sh --vault=<path> --checkpoint=${BRANCH}"
+echo "To roll back: bash .vault/scripts/checkpoint-rollback.sh --root=<path> --checkpoint=${BRANCH}"

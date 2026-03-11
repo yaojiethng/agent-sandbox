@@ -54,6 +54,12 @@ fi
 VAULT_DIR="$(cd "$VAULT_DIR" && pwd)"
 
 # -------------------------
+# Cleanup on exit
+# -------------------------
+cleanup() { rm -rf "$SCRATCH_DIR"; }
+trap cleanup EXIT
+
+# -------------------------
 # Test helpers
 # -------------------------
 PASS=0
@@ -82,58 +88,35 @@ section "Setup"
 log "Vault source:  $VAULT_DIR"
 log "Scratch dir:   $SCRATCH_DIR"
 
-rm -rf "$SCRATCH_DIR"
-mkdir -p "$SCRATCH_DIR"
-
 export GIT_AUTHOR_NAME="vault-lfs-test"
 export GIT_AUTHOR_EMAIL="vault-lfs-test@local"
 export GIT_COMMITTER_NAME="vault-lfs-test"
 export GIT_COMMITTER_EMAIL="vault-lfs-test@local"
 
+rm -rf "$SCRATCH_DIR"
+rsync -a --exclude='.git' --exclude='.workspace' "$VAULT_DIR/" "$SCRATCH_DIR/" 2>/dev/null \
+  || { cp -r "$VAULT_DIR/." "$SCRATCH_DIR/"; log "rsync unavailable, used cp"; }
+log "Vault content copied to scratch"
+
+INIT_SCRIPT="$(cd "${SCRIPT_DIR}/../scripts" && pwd)/vault-init.sh"
+if [[ ! -f "$INIT_SCRIPT" ]]; then
+  echo "ERROR: vault-init.sh not found at $INIT_SCRIPT" >&2; exit 1
+fi
+
+section "Initializing scratch vault"
+bash "$INIT_SCRIPT" --vault="$SCRATCH_DIR"
+
+cd "$SCRATCH_DIR"
+BASELINE_SHA=$(git rev-parse HEAD)
+log "Baseline SHA: ${BASELINE_SHA:0:8}"
+
 # -------------------------
-# Classify extensions (lib/classify.sh)
+# Classify extensions from scratch vault (lib/classify.sh)
 # -------------------------
 section "Discovering file types in vault"
 
-classify_extensions "$VAULT_DIR"
+classify_extensions "$SCRATCH_DIR"
 print_classification
-
-# -------------------------
-# Generate config files (lib/gitattributes.sh)
-# -------------------------
-GITATTRIBUTES_FILE="/tmp/vault-lfs-test-gitattributes"
-GITIGNORE_FILE="/tmp/vault-lfs-test-gitignore"
-
-generate_gitattributes "$GITATTRIBUTES_FILE"
-generate_gitignore "$GITIGNORE_FILE"
-
-# -------------------------
-# Phase 1: Initialize scratch vault
-# -------------------------
-section "Phase 1 — Initialize scratch vault"
-
-rsync -a --exclude='.git' --exclude='.workspace' "$VAULT_DIR/" "$SCRATCH_DIR/" 2>/dev/null \
-  || { cp -r "$VAULT_DIR/." "$SCRATCH_DIR/"; log "rsync unavailable, used cp"; }
-
-cp "$GITATTRIBUTES_FILE" "$SCRATCH_DIR/.gitattributes"
-cp "$GITIGNORE_FILE" "$SCRATCH_DIR/.gitignore"
-log "Vault content copied to scratch"
-
-cd "$SCRATCH_DIR"
-
-git init --quiet
-git lfs install --local
-log "git + LFS initialized"
-log ".gitattributes written"
-log ".gitignore written"
-log "--- .gitattributes content ---"
-while IFS= read -r line; do log "  $line"; done < "$SCRATCH_DIR/.gitattributes"
-log "--- end ---"
-
-git add -A
-git commit --quiet -m "init: baseline vault state"
-BASELINE_SHA=$(git rev-parse HEAD)
-log "Baseline commit: $BASELINE_SHA"
 
 # -------------------------
 # Test 0: .gitattributes content validation

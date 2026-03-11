@@ -39,7 +39,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at providers/opencode/
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-IMAGE_NAME="opencode-agent-$PROJECT_NAME"
+IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
 DOCKERFILE="$REPO_ROOT/providers/opencode/Dockerfile"
 
 # -------------------------

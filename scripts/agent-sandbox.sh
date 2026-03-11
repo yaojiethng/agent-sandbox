@@ -6,7 +6,8 @@
 #   agent-sandbox dry-run       --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>]
 #   agent-sandbox build         --name=<n> --root=<path> [--no-cache]
 #   agent-sandbox apply         --root=<path> [--branch=<n>]
-#   agent-sandbox rebuild <subcommand> <flags>  — force rebuild then dispatch
+#   agent-sandbox onboard       <workflow> <flags>  — one-time project onboarding
+#   agent-sandbox rebuild       <subcommand> <flags>  — force rebuild then dispatch
 
 set -euo pipefail
 
@@ -21,7 +22,7 @@ shift || true
 STALE_MSG="agent-sandbox: image may be stale — source files have changed since last build. Run: agent-sandbox rebuild <subcommand> to rebuild."
 
 if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <start|dry-run|build|apply|rebuild> <flags>"
+  echo "Usage: agent-sandbox <start|dry-run|build|apply|onboard|rebuild> <flags>"
   exit 1
 fi
 
@@ -149,9 +150,13 @@ case "$SUBCOMMAND" in
       ${BRANCH:+--branch="$BRANCH"}
     ;;
 
+  onboard)
+    "$SCRIPTS/onboard.sh" "$@"
+    ;;
+
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: start, dry-run, build, apply, rebuild"
+    echo "Valid subcommands: start, dry-run, build, apply, onboard, rebuild"
     exit 1
     ;;
 esac

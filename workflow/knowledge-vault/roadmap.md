@@ -1,8 +1,6 @@
 # Story Roadmap — Obsidian Vault Onboarding
 
-Tracks investigation, implementation, and future work for onboarding an Obsidian vault into agent-sandbox. Linked from `story_obsidian_vault.md`.
-
-Promote to a named milestone when investigation is complete and the onboarding guide is validated.
+Tracks investigation, implementation, and validation for onboarding an Obsidian vault into agent-sandbox. Linked from `story_obsidian_vault.md`.
 
 ---
 
@@ -10,103 +8,72 @@ Promote to a named milestone when investigation is complete and the onboarding g
 
 | Phase | Status |
 |---|---|
-| Investigation | Complete ✓ |
-| Onboarding guide | Complete ✓ |
-| LFS + checkpoint system | Complete ✓ |
-| Future migration use cases | Deferred |
+| 1 — Investigation | Complete ✓ |
+| 2 — Onboarding guide | Complete ✓ |
+| 3 — Implementation | Complete ✓ |
+| 4 — Agent-Sandbox Workflow Onboarding | Complete ✓ |
+| 5 — Knowledge Store Modification Workflow | Not started |
 
 ---
 
-## Phase 1 — Investigation
+## Phase 1 — Investigation *Complete.*
 
-Resolves open questions before the onboarding guide is written. Each item below must reach a decision before the guide is drafted.
-
-### Binary file handling — Complete
-- LFS pointer storage verified for all binary types (docx, jpeg, pdf)
-- Text files including unknown extensions (.pine) correctly bypass LFS
-- `git diff -M` rename detection works for both text moves and LFS pointer moves
-- `--binary` flag with LFS produces pointer text not raw blobs — safe to add to harness
-- `git apply --3way` succeeds on LFS-containing diff
-- `git checkout` restores LFS binaries from local cache correctly
-- **Harness patch complete:** `lib/diff.sh` `diff_generate` patched with `--binary -M` flags
-
-### Git LFS design — Complete
-- Extension-based tracking via `.gitattributes` glob patterns confirmed working
-- Auto-classification approach validated: known binary list as fast path; unknown extensions probed via `git diff --numstat`; text extensions never LFS-tracked
-- Known text extensions (`KNOWN_TEXT_EXTENSIONS`) needed to prevent false positives from binary probe on executables — add `.sh .py .rb .js .ts .css .html` at minimum
-- `git checkout` old commit restores correct LFS attachment state from local cache — confirmed
-- Sync behavior on non-LFS devices: document as operator-verified manual check in guide (cannot be automated)
-
-### Checkpoint system design — Complete
-- `checkpoint/<date>` branches confirmed as correct model
-- `checkpoint/latest` as force-updated tag confirmed
-- LFS objects covered by local cache; `git lfs fetch --all` before checkpoint creation is the pre-migration gate
-- Checkpoint rollback restores attachment state — confirmed via Test 8
-
-### `vault-lfs-test.sh` — Complete
-- 30/30 tests passing against real vault content
-- Auto-classification validated: known binary, known text, probed unknown all working correctly
-- `-filter -diff -merge` override confirmed as correct syntax (not `!filter`) for known-text extensions
-- LFS pointer detection must check `head -1` only — files containing the LFS version string in their own content cause false positives with full-content grep
-- Init sequence ordering (`.gitattributes` committed before other files) not required — attribute resolution works correctly at `git add` time
-
-### `.gitattributes` and `.gitignore` — Decided, templates to be written in Phase 2
-- `.gitattributes`: auto-generated from vault scan on each run; known binary list + detected binary extras in separate annotated section
-- `.gitignore`: see decisions above; templates produced as part of `vault-init.sh`
-- Plugin binary tracking: off by default; operator opts in
-
-### Obsidian Sync coexistence — Confirmed
-- Exclude `.git/` from Sync settings: confirmed required
-- Desktop-only git operations: confirmed
-- Pause-apply-resume protocol: confirmed
-- Sync behavior on non-LFS devices: document as operator-verified manual check
+Confirmed that the standard agent-sandbox diff model works for vault use with one harness patch. LFS is the correct mechanism for binary attachment tracking; extension-based `.gitattributes` glob patterns with auto-classification handle vault file diversity without manual maintenance. The checkpoint system uses dated branches plus a `checkpoint/latest` force-tag as the rollback target. Obsidian Sync coexistence is resolved operationally via pause-apply-resume; no harness changes required. The `--binary -M` patch to `lib/diff.sh` is required for correct binary diff output.
 
 ---
 
-## Phase 2 — Onboarding Guide (`onboarding.md`) — Complete ✓
+## Phase 2 — Onboarding Guide *Complete.*
 
-Deliverable: `workflow/knowledge-vault/onboarding.md`. Tooling lives in `workflow/knowledge-vault/` in agent-sandbox; operators copy it into `.vault/` at the vault root. Standalone doc; does not extend `sandbox-onboarding.md` (different audience and purpose).
-
-- [x] Prerequisites — designated desktop machine, git and LFS install, Obsidian Sync exclude `.git/` step
-- [x] Vault git init — `vault-init.sh` usage, `.gitignore` + `.gitattributes` templates, initial commit
-- [x] Backup file handling — `app.backup.json` + `appearance.backup.json` seeding pattern
-- [x] agent-sandbox integration — Makefile and `agent_context_brief.md` for the vault
-- [x] Migration workflow — pause Sync → checkpoint → run agent → review diff → apply → resume Sync
-- [x] Checkpoint system — create, rollback, prune
-- [x] `.gitattributes` implementation notes and known quirks
-- [x] Plugin tracking as optional configuration
+Produced `workflow/knowledge-vault/onboarding.md`. Covers Sync setup, tooling copy, init, checkpoint creation, agent-sandbox integration, migration workflow, backup file behavior, `.gitattributes` implementation notes, and plugin tracking as an optional configuration. Written for operators and agents.
 
 ---
 
-## Phase 3 — Scripts — Complete ✓
+## Phase 3 — Implementation *Complete.*
 
-Deliverables live in `workflow/knowledge-vault/` (lib, scripts, tests). Modularized: `vault-init.sh` and `vault-lfs-test.sh` both source shared logic from `lib/classify.sh` and `lib/gitattributes.sh`.
-
-- [x] `lib/classify.sh` — extension discovery, binary probe, `classify_extensions`, `print_classification`
-- [x] `lib/gitattributes.sh` — `generate_gitattributes`, `generate_gitignore`
-- [x] `vault-init.sh` — idempotent; git init + LFS on first run; regenerates `.gitattributes` on every run; backup file seeding; baseline commit `init: <vault-name> YYYY-MM-DD`
-- [x] `vault-lfs-test.sh` — sources lib; 30/30 tests passing; scratch-only, never modifies original vault
-- [x] `checkpoint-create.sh` — `git lfs fetch --all`, create `checkpoint/YYYY-MM-DD[-label]` branch, force-update `checkpoint/latest` tag
-- [x] `checkpoint-rollback.sh` — restore from named branch or `checkpoint/latest`; rollback commit, no history rewrite
-- [x] `checkpoint-prune.sh --keep=<N>` — keep N most recent dated branches; prompt before delete; never touch `checkpoint/latest`
+Tooling lives in `workflow/knowledge-vault/`. `.vault/` is a machine-local symlink rather than a committed copy, eliminating dual-maintenance. `vault-init.sh` rolls back `.git` on failure, leaving no partial state. `vault-prepare.sh` sequences init and baseline checkpoint as the operator-facing preparation step. `snapshot_copy_files` was hardened for filenames with spaces and leading dashes, and skips symlinks cleanly. The checkpoint scripts are project-agnostic (`--root` flag); `checkpoint-test.sh` validates all three against a scratch repo.
 
 ---
 
-## Future Use Cases
+## Phase 4 — Agent-Sandbox Workflow Onboarding *Complete.*
 
-Deferred. Each should become a user story or milestone task when ready.
+`agent-sandbox onboard knowledge-vault --vault=<path>` is the single operator entry point for vault onboarding. `scripts/onboard.sh` dispatches by workflow name to `workflow/<n>/scripts/onboard.sh`, making the pattern extensible without modifying the dispatcher. The knowledge-vault onboard script validates the target, warns if Sync is active, enforces idempotency, places a machine-local `.vault` symlink, generates a pre-filled Makefile from `lib/_templates/Makefile.template` with vault-specific targets (`initialize`, `checkpoint`, `rollback`, `checkpoint-prune`), and places an `agents.md` brief starter. The apply/checkpoint workflow is confirmed as a manual operator step: create a checkpoint before each session, apply the diff after review, roll back to the previous checkpoint if rejected.
 
-### Attachment format migration (webp conversion)
-Agent produces a conversion script (`cwebp` / `ffmpeg`) + text patch updating note links. LFS sees pointer changes for renamed/deleted objects and new pointers for `.webp` files. Requires checkpoint before running.
+---
 
-### Remove unreferenced attachments
-Agent walks vault text corpus, builds link graph, diffs against attachment directory, produces a reviewed deletion script. Pure filesystem op. Requires checkpoint before running.
+## Phase 5 — Knowledge Store Modification Workflow
 
-### OCR screenshots to text notes
-Agent produces `.md` notes with extracted text per screenshot, plus optional image archival script. Requires `tesseract` in container. Text output is standard patch; image ops are filesystem script. Requires checkpoint; output volume may be large.
+This phase defines the framework for agent-assisted vault operations and validates the end-to-end workflow. The agent has standard project posture inside the container: read/write access to the sandbox copy of vault files. Checkpointing is an operator step performed outside the container before `make start`. The agent does not have access to `.vault/` tooling or checkpoint scripts from inside the container — the sandbox contains vault content only.
 
-### PDF / epub handling
-Future: extract text, summarize, convert to note format. No pipeline changes needed — extension list in `.gitattributes` already covers tracking. Agent task definition deferred.
+### Open design question
 
-### Generalized checkpoint/backup system
-Current design is vault-local. Future: configurable backup target (local path, remote URL) via `.env` or Makefile var; prune policy via `-n` flag. Consider whether this generalizes to all agent-sandbox projects, not just vaults.
+- **Agent provider** — OpenCode has significant limitations working with large volumes of markdown files. Claude Code is likely the correct provider for knowledge store work. This needs investigation before validation tasks can be completed. See user story: *Claude Code provider integration*.
+
+### Validation tasks
+
+- End-to-end sandbox validation — snapshot pipeline captures vault with LFS pointers and `.gitattributes` correctly
+- `lib/diff.sh` `--binary -M` patch verified correct for agent run against vault
+- `agent-sandbox apply` correctly handles vault diff on host
+
+Proposed shape: controlled agent task against an initialised vault, verify diff, apply, verify vault state. Manual integration test initially.
+
+### Deferred
+
+- Whether to automate pre-session checkpoint creation (e.g. as part of `make start`) — revisit after manual workflow is validated.
+
+---
+
+## Potential User Stories
+
+Each should become a scoped investigation or milestone task when ready.
+
+- **Claude Code provider integration** — OpenCode is not well-suited to large markdown vaults. Investigate Claude Code as the agent provider for knowledge store work; determine harness changes required. Prerequisite for Phase 5 validation tasks.
+- **Attachment format migration** — agent produces conversion script + link-update patch (e.g. webp conversion via `cwebp`/`ffmpeg`)
+- **Remove unreferenced attachments** — agent builds link graph, produces reviewed deletion script
+- **OCR screenshots to text notes** — requires `tesseract` in container; text output is standard patch
+- **PDF / epub handling** — extract, summarize, convert to note format; no pipeline changes needed
+
+---
+
+## Deferred — Harness-level checkpoint tooling
+
+The checkpoint scripts are project-agnostic by design (`--root` flag, no vault-specific logic). A decision to promote them from `workflow/knowledge-vault/scripts/` to the main harness `scripts/` directory is deferred to the agent-sandbox roadmap.

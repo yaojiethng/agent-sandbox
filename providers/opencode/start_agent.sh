@@ -187,7 +187,7 @@ MOUNT_ARGS=(
   -v "$PROJECT_ROOT/.workspace:/home/agentuser/.workspace:rw"
 )
 
-IMAGE_NAME="opencode-agent-$PROJECT_NAME"
+IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
 
 # -------------------------
 # Image check

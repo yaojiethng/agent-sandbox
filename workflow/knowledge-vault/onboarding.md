@@ -1,6 +1,6 @@
 # Knowledge Vault Onboarding
 
-This document covers onboarding an Obsidian vault into git with LFS, setting up checkpoints, and integrating with agent-sandbox. Written for operators and agents.
+This document covers preparing an Obsidian vault for use with agent-sandbox. There are two distinct phases: **onboarding** (file setup, run once via CLI) and **initialization** (git + LFS preparation, run via `make initialize`). Both must complete before using `make start`.
 
 ---
 
@@ -16,69 +16,73 @@ During migrations: pause Sync before applying a diff, resume after committing.
 
 ## Setup
 
-### 1. Copy tooling into vault
+### 1. Set git identity
 
-Copy `workflow/knowledge-vault/` from agent-sandbox into `.vault/` at the vault root:
+Initialization creates a commit. If git identity is not configured, it will fail. Set it once globally if you haven't already:
 
 ```bash
-cp -r workflow/knowledge-vault/ /path/to/vault/.vault/
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
 ```
 
-The `.vault/` directory is vault tooling, not vault content. Add it to `.gitignore` if you do not want it tracked, or commit it if you want the tooling versioned with the vault.
+### 2. Onboard
 
-### 2. Validate LFS behavior (recommended before first init)
+Run once from any directory. Pass the vault root as `--vault`:
 
-Runs against a scratch copy — original vault is never modified. Confirms extension classification and diff pipeline are correct for this vault's file types.
+```bash
+agent-sandbox onboard knowledge-vault --vault=/path/to/vault
+```
+
+This places three files at the vault root:
+- `Makefile` — pre-filled with vault name and paths
+- `agents.md` — agent brief starter template (fill this in before `make start`)
+- `.vault` — symlink to the vault tooling in the agent-sandbox repo (machine-local, gitignored after initialization)
+
+The command warns if Obsidian Sync appears active and exits without changes if onboarding has already run.
+
+### 3. Fill in agents.md
+
+Open `agents.md` at the vault root and fill in the vault description, constraints, and current task scope. `make start` will fail if this file is missing.
+
+### 4. Initialize
+
+```bash
+cd /path/to/vault && make initialize
+```
+
+Initializes git + LFS, creates the baseline commit, and creates the first checkpoint. Re-run this if it fails — it rolls back any partial state on failure and is safe to retry.
+
+If initialization fails and the cause is unclear, run the LFS test suite to diagnose file classification issues:
 
 ```bash
 bash .vault/tests/vault-lfs-test.sh --vault=/path/to/vault
 ```
 
-If any extension is misclassified, correct it in `.vault/lib/classify.sh` (`KNOWN_BINARY_EXTENSIONS` or `KNOWN_TEXT_EXTENSIONS`) before proceeding.
-
-### 3. Initialize the vault
-
-```bash
-bash .vault/scripts/vault-init.sh --vault=/path/to/vault
-```
-
-First run: classifies extensions, writes `.gitattributes`, runs `git init` and `git lfs install`, writes `.gitignore`, handles backup files (see [Backup Files](#backup-files)), creates baseline commit `init: <vault-name> YYYY-MM-DD`.
-
-Subsequent runs: regenerates `.gitattributes` only and stages it for review. `.gitignore` is never modified after first run.
-
-### 4. Create initial checkpoint
-
-```bash
-bash .vault/scripts/checkpoint-create.sh --vault=/path/to/vault
-```
-
-Creates `checkpoint/YYYY-MM-DD` branch and updates `checkpoint/latest` tag. Run this before any migration.
-
-### 5. Integrate with agent-sandbox
-
-Create `Makefile` and `agent_context_brief.md` at the vault root per `docs/operations/sandbox-onboarding.md`. The brief should describe vault structure, naming conventions, and current task scope.
+The vault is now `make start`-ready.
 
 ---
 
 ## Checkpoint Reference
 
+Checkpoints are dated git branches used as rollback points. Create one before every agent session.
+
 **Create**
 ```bash
-bash .vault/scripts/checkpoint-create.sh --vault=<path> [--label=<suffix>]
+bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<suffix>]
 ```
-Requires clean working tree. Fetches LFS objects locally before branching.
+Requires a clean working tree.
 
 **Roll back**
 ```bash
-bash .vault/scripts/checkpoint-rollback.sh --vault=<path> [--checkpoint=<ref>]
+bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]
 ```
 Defaults to `checkpoint/latest`. Creates a rollback commit — does not rewrite history.
 
 **Prune**
 ```bash
-bash .vault/scripts/checkpoint-prune.sh --vault=<path> --keep=<n>
+bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>
 ```
-Keeps N most recent checkpoint branches. Prompts before deleting. Never touches `checkpoint/latest`.
+Keeps N most recent checkpoint branches. Prompts before deleting.
 
 **List**
 ```bash
@@ -103,31 +107,13 @@ Migration plans, agent briefs, and scripts go in `.vault/migrations/`.
 
 ## Backup Files
 
-`vault-init.sh` manages `.obsidian/app.json` and `.obsidian/appearance.json`:
+`make initialize` (via `vault-init.sh`) manages `.obsidian/app.json` and `.obsidian/appearance.json`:
 
 | Condition | Behavior |
 |---|---|
-| Live exists, backup missing | Creates backup from live — operator stages and commits |
+| Live exists, backup missing | Creates backup from live |
 | Live missing, backup exists | Seeds live from backup — included in init commit |
 | Both exist | Skips |
 | Neither exists | Skips |
 
 Backup files (`*.backup.json`) are committed to git. Live files are gitignored — they diverge per device and are seeded from backups on new machines.
-
----
-
-## .gitattributes — Implementation Notes
-
-- Regenerated on every `vault-init.sh` run. Staged automatically; review and commit as part of normal workflow.
-- Unknown extensions are probed with `git diff --numstat /dev/null <file>`. Binary result → LFS; text result → tracked normally.
-- LFS pointer files are text internally. `--binary` in the diff pipeline produces pointer text, not raw binary blobs — this is correct behavior.
-- Both lowercase and uppercase variants of each extension are emitted (e.g. `*.jpg` and `*.JPG`).
-- Known text extensions receive an explicit `-filter` override. This takes precedence over any `filter=lfs` rule and prevents false LFS classification of executable scripts or files with unusual byte sequences.
-
----
-
-## Optional Configuration
-
-**Track plugin versions**
-
-By default `.obsidian/plugins/` is gitignored. Plugin binaries are re-downloaded automatically by Obsidian. To lock a known-good plugin state before a migration, remove the `.obsidian/plugins/` line from `.gitignore` and commit. Revert after the migration if version locking is no longer needed.

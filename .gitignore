@@ -9,6 +9,7 @@ output/
 /projects/
 .workspace/
 .bootstrap/
+.vault
 
 # === Python ===
 __pycache__/
