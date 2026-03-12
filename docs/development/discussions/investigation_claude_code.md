@@ -2,13 +2,14 @@
 
 **Status:** In progress. Open questions remain on integration model and wrapper evaluation.
 
+**Direction:** Direction 1 — Provider replacement  
 **Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
 
 ---
 
 > **Required reading before this document:**
-> - [`docs/architecture/execution_model.md`](../../docs/architecture/execution_model.md) — container lifecycle, mount shape, and entrypoint sequence.
-> - [`docs/architecture/security.md`](../../docs/architecture/security.md) — trust boundaries and security invariants.
+> - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) — container lifecycle, mount shape, and entrypoint sequence.
+> - [`docs/architecture/security.md`](../architecture/security.md) — trust boundaries and security invariants.
 > - [story_provider_knowledge_store.md](story_provider_knowledge_store.md) — investigation questions this report answers.
 
 ---
@@ -52,10 +53,10 @@ Claude Code is an npm package (`@anthropic-ai/claude-code`), installed globally 
 - **`lib/snapshot.sh`, `lib/diff.sh`, `lib/image.sh`** — fully reusable unchanged.
 - **`scripts/apply_workspace.sh`** — fully reusable unchanged.
 - **`build_agent.sh`** — reusable with a different Dockerfile path.
-- **`start_agent.sh`** — shared sections (snapshot construction, mount building, env loading) are the target of M1.7 extraction. Provider-specific section is the `docker run` invocation args and mode dispatch.
-- **`container-entrypoint.sh`** — shared sections (snapshot init, diff trap, autosave) are the target of M1.7 extraction. Provider-specific section is the final `exec` step — replace `opencode serve ...` with the chosen Claude Code invocation per mode.
+- **`start_agent.sh`** — shared sections (snapshot construction, mount building, env loading) are M2.3 extraction targets. Provider-specific section is the `docker run` invocation args and mode dispatch.
+- **`container-entrypoint.sh`** — shared sections (snapshot init, diff trap, autosave) are M2.3 extraction targets. Provider-specific section is the final `exec` step — replace `opencode serve ...` with the chosen Claude Code invocation per mode.
 
-M1.7 dependency confirmed: the provider interface must be defined before a Claude Code provider can be built cleanly.
+Provider interface definition is M2.3 (Reasoning Layer Modularisation) scope. M1.7 was superseded by M2.3.
 
 ### 5. Sandbox constraint compatibility
 
@@ -95,7 +96,7 @@ Relevant findings for when M2 is reached:
 
 ## Next Steps
 
-1. Decide integration model for `serve` — wrapper or unsupported
+1. Decide integration model for `serve` — wrapper or unsupported (M2.3 prerequisite decision)
 2. If wrapper: complete evaluation of candidates
-3. Complete M1.7 — build `providers/claude-code/` against the formalised interface
-4. Validate document repository suitability against a live vault (KV5)
+3. M2.3 — define reasoning layer interface; build `providers/claude-code/` against it
+4. Validate document repository suitability (capability layer live test, M2.1+)

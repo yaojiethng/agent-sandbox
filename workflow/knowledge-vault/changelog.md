@@ -1,3 +1,15 @@
+## Milestone Summary
+
+| Milestone | Status |
+|---|---|
+| KV1 — Investigation | Complete |
+| KV2 — Onboarding Guide | Complete |
+| KV3 — Implementation | Complete |
+| KV4 — Agent-Sandbox Workflow Onboarding | Complete |
+| KV5 — Knowledge Store Modification Workflow | Promoted to [M2.1](../../docs/development/roadmap.md) |
+
+---
+
 ## KV1 — Investigation
 
 *The standard agent-sandbox diff model was confirmed to work for Obsidian vault use with minimal harness changes.*

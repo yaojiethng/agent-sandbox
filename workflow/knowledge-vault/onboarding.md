@@ -1,5 +1,7 @@
 # Knowledge Vault Onboarding
 
+> **Note:** This guide reflects the M1.4 harness layout. The M1.5 directory restructuring will move harness artefacts (`.bootstrap/`, `.workspace/`, `Makefile`, `.env`) out of the vault root into a sibling `SANDBOX_DIR`. Vault content remains untouched. This guide will be updated after M1.5 is implemented. Until then, the workflow described here is correct.
+
 This document covers preparing an Obsidian vault for use with agent-sandbox. There are two distinct phases: **onboarding** (file setup, run once via CLI) and **initialization** (git + LFS preparation, run via `make initialize`). Both must complete before using `make start`.
 
 ---

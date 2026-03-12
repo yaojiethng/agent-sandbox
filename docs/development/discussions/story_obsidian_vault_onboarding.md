@@ -1,8 +1,8 @@
 # User Story — Obsidian Vault Onboarding
 
-> **SUPERSEDED.** This story is closed. KV1–KV4 are complete — see [`kv-changelog.md`](kv-changelog.md) for the completion record. KV5 (agent modification workflow) has been promoted to **M2.1** in the main agent-sandbox roadmap under the two-layer architecture. See [`docs/development/roadmap.md`](../../docs/development/roadmap.md) — M2.1, and [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) for the architectural context. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](README.md).
+**Status:** Superseded — made obsolete by the two-layer architecture decision. See Resolution section.
 
-**Status:** Superseded — see above.
+> **Superseded.** The single-container model described in this story's open questions is no longer the target architecture. The agent modification workflow (KV5) now proceeds under the two-layer model (reasoning layer / capability layer) as **M2.1** in the main roadmap. See [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md) and [`docs/development/roadmap.md`](../development/roadmap.md) — M2.1. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](../../workflow/knowledge-vault/README.md).
 
 ---
 
@@ -97,7 +97,7 @@ The standard workflow likely works as-is. One possible gap: if the vault contain
 
 ---
 
-## Outcomes
+## Outcomes (KV1–KV4)
 
 All investigation tasks resolved. Outputs in `workflow/knowledge-vault/`:
 
@@ -106,8 +106,45 @@ All investigation tasks resolved. Outputs in `workflow/knowledge-vault/`:
 - `scripts/vault-init.sh` — idempotent vault git + LFS init
 - `scripts/checkpoint-create.sh`, `checkpoint-rollback.sh`, `checkpoint-prune.sh`
 - `tests/vault-lfs-test.sh` — 30/30 passing against real vault content
-- `lib/diff.sh` patch — `--binary -M` flags added to `diff_generate`
+- `lib/diff.sh` — `--binary -M` flags added to `diff_generate` (correctness fix; identified as required in KV1)
 
-Decisions and implementation notes recorded in `story_obsidian_vault_roadmap.md`.
+Full completion record in [`workflow/knowledge-vault/changelog.md`](../../workflow/knowledge-vault/changelog.md).
 
-To promote to a named milestone: pull future use cases from the roadmap into tasks when a specific migration is ready to implement.
+---
+
+## Resolution
+
+**Status at closure:** Superseded by the two-layer architecture decision.
+
+### What was decided
+
+The investigation through KV1–KV4 validated that the standard agent-sandbox diff model works for vault use with correctness patches (`--binary -M`, `snapshot_copy_files` space/symlink handling). The core workflow — operator checkpoints before a session, agent modifies vault content in sandbox, operator reviews diff, applies, resumes Sync — is sound and continues to operate.
+
+KV5 (agent modification workflow at scale) was blocked on the OpenCode file navigation problem. The investigation initially framed this as a provider selection question. The broader MCP server investigation revealed it is an architectural question: the right fix is to give any agent a better tool interface via a capability layer, not to find a better agent.
+
+The two-layer architecture (reasoning layer / capability layer) was adopted as the target architecture. Under this model:
+- Vault access is mediated by a Dockerized MCP server with vault-specific tools
+- The agent calls tools rather than reading files directly
+- Any MCP-compatible reasoning layer works — provider selection is decoupled from the vault tool interface
+- The OpenCode file navigation problem is dissolved architecturally
+
+### Where the work went
+
+| Thread | Destination |
+|---|---|
+| KV5 — agent modification workflow | Promoted to **M2.1** in the main roadmap (capability layer prototype: vault) |
+| Provider selection question | Reframed as reasoning layer candidate evaluation; continues as M2 prerequisite work in `investigation_claude_code.md` and peer investigation docs |
+| Operator input channel | Implemented in M1.5 directory restructuring as `SANDBOX_DIR/input/` |
+| Checkpoint branch pattern | Validated through KV4; formalisation deferred to M2.4 (apply workflow redesign) |
+| Vault-specific future use cases (attachment migration, OCR, etc.) | Retained as pending use cases in this story; not yet scoped into milestones |
+
+### Pending use cases (not yet milestones)
+
+The following vault workflows were identified during the investigation but are not yet scoped for implementation. They require M2.1 (capability layer) to be complete before they can be designed:
+
+- **Attachment format migration** — agent produces conversion script + link-update patch (e.g. webp via `cwebp`/`ffmpeg`)
+- **Remove unreferenced attachments** — agent builds link graph, produces reviewed deletion script
+- **OCR screenshots to text notes** — requires `tesseract` in capability layer container; output is a standard patch
+- **PDF / epub handling** — extract, summarise, convert to note format
+
+When any of these is ready to implement, pull the relevant tasks into a milestone from here.

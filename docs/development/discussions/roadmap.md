@@ -16,7 +16,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M1.3 — Invocation Cleanup & Onboarding Workflow | [Complete — see changelog](changelog.md) |
 | M1.4 — Image Staleness Detection | [Complete — see changelog](changelog.md) |
 | [M1.5 — Workflow Convergence & Directory Restructuring](#m15--workflow-convergence--directory-restructuring) | In progress |
-| M1.7 — Provider Modularisation | Superseded by M2 — see [investigation_mcp_server.md](investigation_mcp_server.md) Conclusion |
+| M1.7 — Provider Modularisation | Superseded by M2 — see [investigation_mcp_server.md](../discussions/investigation_mcp_server.md) Conclusion |
 | **Two-Layer Architecture** | |
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | Not started |
 | **Single-Agent Coordination** | |
@@ -40,7 +40,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 
 **Objective:** Close the M1.x architecture by completing the directory restructuring and operator input channel, resolving open user stories, and recording the workflow convergence decision. M1.5 closes when the directory restructuring is implemented and documented, the input channel is in place, and all story resolution tasks are marked complete or explicitly deferred to M2.
 
-Serve mode fix is complete. Two-layer architecture decision is recorded — conceptual model in [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md), full reasoning in [`investigation_mcp_server.md`](investigation_mcp_server.md).
+Serve mode fix is complete. Two-layer architecture decision is recorded — conceptual model in [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md), full reasoning in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md).
 
 #### Directory restructuring
 
@@ -90,9 +90,9 @@ The entrypoint copies contents of `.bootstrap/` and `.input/` into `sandbox/` at
 
 #### Story resolution
 
-- [x] Resolve [Obsidian Vault Onboarding](discussions/story_obsidian_vault_onboarding.md) — KV1–KV4 complete. KV5 (agent modification workflow) requires two-layer architecture; promoted to M2.1. Harness-agnostic directory prerequisite addressed in directory restructuring above.
-- [x] Resolve [Website Dev Project Onboarding](story_website_dev.md) — port exposure, live reload, XSS risk assessment. Deferred to M2.2 as a bash-enabled capability layer use case. No M1.5 implementation required; open questions are M2.2 scope.
-- [x] Resolve [Knowledge Store Provider](story_provider_knowledge_store.md) — investigation complete; two-layer architecture adopted; work promoted to M2. Story closed.
+- [x] Resolve [Obsidian Vault Onboarding](../discussions/story_obsidian_vault_onboarding.md) — KV1–KV4 complete. KV5 (agent modification workflow) requires two-layer architecture; promoted to M2.1. Harness-agnostic directory prerequisite addressed in directory restructuring above.
+- [x] Resolve [Website Dev Project Onboarding](../discussions/story_website_dev.md) — port exposure, live reload, XSS risk assessment. Deferred to M2.2 as a bash-enabled capability layer use case. No M1.5 implementation required; open questions are M2.2 scope.
+- [x] Resolve [Knowledge Store Provider](../discussions/story_provider_knowledge_store.md) — investigation complete; two-layer architecture adopted; work promoted to M2. Story closed.
 
 #### Workflow convergence gate
 
@@ -124,8 +124,8 @@ The sandbox-onboarding skill currently produces a Makefile placed at `PROJECT_RO
 
 **Objective:** Separate the harness into a reasoning layer (agent container, MCP client) and a capability layer (MCP server container, project tool interface). This is the foundational architectural change that enables vault workflows, webapp workflows, provider swapping, and autonomous task execution. All M1.x architecture documents are hot during this milestone and updated sub-milestone by sub-milestone.
 
-Conceptual model: [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md)  
-Design rationale: [`investigation_mcp_server.md`](investigation_mcp_server.md) — Conclusion
+Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)  
+Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion
 
 ---
 
@@ -186,7 +186,7 @@ Design rationale: [`investigation_mcp_server.md`](investigation_mcp_server.md) �
 - [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
 - [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config, MCP client configuration
 - [ ] Validate OpenCode provider conforms after refactor
-- [ ] Deferred breakdown: Claude Code provider integration — full task list after M2.3 shared logic extraction is complete and investigation_claude_code.md open questions are resolved
+- [ ] Deferred breakdown: Claude Code provider integration — full task list after M2.3 shared logic extraction is complete and [investigation_claude_code.md](../discussions/investigation_claude_code.md) open questions are resolved
 
 ---
 

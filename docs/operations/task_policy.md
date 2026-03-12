@@ -47,11 +47,60 @@ For the full description of each stage, see [`task_lifecycle.md`](../concepts/ta
 
 Not every pain point is ready to become a task. When a use case requires investigation before a design can be agreed — open questions about feasibility, threat surface, or workflow fit — capture it as a user story first.
 
+### Where they live
+
 User stories live in `docs/development/` with the prefix `story_` (e.g. `story_website_dev.md`). They are investigation documents, not architecture. No live links from architecture or concepts documents are required.
 
-A user story contains: the context, the pain points, open questions and current thinking, constraints, and next steps. It is not a task list — it is a reasoning record. When investigation is complete and a design is agreed, the relevant tasks are pulled into a milestone and the story is left as background reading.
+Workflow-specific stories that predate the `story_` convention (e.g. `workflow/knowledge-vault/story.md`) are kept in place as historical records. New stories always follow the `story_` convention.
 
-User stories are referenced from the roadmap under the **User Stories** section with a single line and a short description. They do not get milestone entries until they are ready for implementation.
+### Required sections
+
+A user story accumulates sections as it progresses. Not all sections are present from the start — they are added as the investigation advances.
+
+| Section | When added | Purpose |
+|---|---|---|
+| **Context** | At creation | What the use case is and why it matters |
+| **Pain Points** | At creation | The concrete problems being investigated |
+| **Investigation Findings** | During investigation | What was discovered; may be iterative |
+| **Open Questions** | During investigation | Unresolved questions blocking progress |
+| **Constraints** | At creation or during investigation | Non-negotiable requirements any solution must satisfy |
+| **Resolution** | At closure | What was decided, where the work went, why |
+
+A story is a reasoning record, not a task list. The **Resolution** section is what makes a closed story navigable — it must be complete before the story is marked closed.
+
+### Lifecycle states
+
+Stories carry a **Status** line immediately after the title.
+
+| Status | Meaning |
+|---|---|
+| `Investigation in progress` | Active — open questions, investigation ongoing |
+| `Resolved` | Closed — Resolution section complete; work promoted to milestone or explicitly deferred |
+| `Superseded` | Closed — made obsolete by a broader architectural decision; Resolution section points to the superseding document |
+
+### Graduation criteria
+
+A story graduates to milestone tasks when:
+- The pain point is fully understood
+- All open questions are resolved
+- A concrete solution approach is agreed
+- The tasks are scoped enough to enter the stage sequence
+
+When a story graduates, the relevant tasks are added to the roadmap. The story document stays in place as background reading and is marked `Resolved`. Tasks are not duplicated back into the story.
+
+### Closure convention
+
+When closing a story:
+1. Add a `## Resolution` section covering: the decision reached, where the work went (milestone reference or explicit deferral), and why
+2. Update the **Status** line to `Resolved` or `Superseded`
+3. Remove the story from the roadmap **User Stories** list
+4. If the story is superseded by a broader decision, add a blockquote marker at the top pointing to the superseding document
+
+A closed story is never deleted. It is the reasoning record for the decision.
+
+### Roadmap reference
+
+Open stories are listed in the roadmap **User Stories** section with a single line and a short description. Closed stories are removed from this list — the story document itself is the permanent record.
 
 ---
 
