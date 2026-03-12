@@ -29,7 +29,7 @@ build:
 
 .PHONY: start
 start:
-	-agent-sandbox start \
+	agent-sandbox start \
 	  --name=$(PROJECT_NAME) \
 	  --root=$(PROJECT_ROOT) \
 	  --brief=$(AGENT_BRIEF) \
@@ -37,7 +37,7 @@ start:
 
 .PHONY: serve
 serve:
-	-agent-sandbox start \
+	agent-sandbox start \
 	  --name=$(PROJECT_NAME) \
 	  --root=$(PROJECT_ROOT) \
 	  --brief=$(AGENT_BRIEF) \
@@ -54,7 +54,7 @@ dry-run:
 
 .PHONY: rebuild
 rebuild:
-	-agent-sandbox rebuild start \
+	agent-sandbox rebuild start \
 	  --name=$(PROJECT_NAME) \
 	  --root=$(PROJECT_ROOT) \
 	  --brief=$(AGENT_BRIEF) \

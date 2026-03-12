@@ -15,8 +15,9 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M1.2 — Sandbox File Isolation & Diff Workflow | [Complete — see changelog](changelog.md) |
 | M1.3 — Invocation Cleanup & Onboarding Workflow | [Complete — see changelog](changelog.md) |
 | M1.4 — Image Staleness Detection | [Complete — see changelog](changelog.md) |
-| [M1.5 — Serve Mode & Apply Workflow](#m15--serve-mode--apply-workflow) | Not started |
+| [M1.5 — Workflow Convergence](#m15--workflow-convergence) | Blocked |
 | [M1.6 — Session Persistence & Agent Configuration](#m16--session-persistence--agent-configuration) | Not started |
+| [M1.7 — Provider Modularisation](#m17--provider-modularisation) | Not started |
 | **Single-Agent Coordination** | |
 | [M2 — Autonomous Task Execution, Manual Review Workflow](#m2-autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -34,16 +35,67 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 
 ## Upcoming Milestones
 
-### **M1.5 — Serve Mode & Apply Workflow**
+### **M1.5 — Workflow Convergence**
 
-**Objective:** Fix a serve mode bug and redesign the apply workflow to preserve agent commit history.
+**Objective:** This milestone closes when the apply workflow redesign (M1.6) and the checkpoint branch pattern have been evaluated against each other and a decision reached on the unified apply convention. Story resolution and provider readiness are prerequisites tracked as tasks within this milestone.
 
-#### Bug 1 — Rebuild serve mode restarts on first Ctrl-C
+**Blocked on:**
+- [ ] M1.6 [Apply workflow redesign](#m16--session-persistence--agent-configuration) — apply workflow redesign must be complete before the checkpoint pattern can be evaluated against it
+- [ ] M1.7 [Provider modularisation](#m17--provider-modularisation) — complete investigation and record outcome; prerequisite for KV5
 
-- [ ] Diagnose: determine whether the restart is caused by signal interception in the container or by the build step unintentionally starting the server
-- [ ] Fix restart behaviour so Ctrl-C shuts down cleanly without a second start
+#### Serve mode fix
 
-#### Workflow Adjustment — Apply workflow loses agent commit history
+- [x] Diagnose: determine whether the restart is caused by signal interception in the container or by the build step unintentionally starting the server
+- [x] Fix restart behaviour so Ctrl-C shuts down cleanly without a second start
+
+#### Story resolution
+
+Active investigations not yet promoted to milestones. Full reasoning and open questions in the linked documents.
+- [ ] Resolve [Obsidian Vault Onboarding](../../workflow/knowledge-vault/story.md) — complete through KV4; KV5 (knowledge store modification workflow) pending provider investigation. Full detail in [knowledge-vault/roadmap](../../workflow/knowledge-vault/roadmap.md). Validate KV5 end-to-end once provider modularisation is complete
+  - [ ] Prerequisite: make project directory harness-agnostic — separate `.bootstrap/`, `.workspace/`, and harness config from the project repo so vault content and harness artefacts can be committed independently and harness noise does not appear in the vault's git tree
+- [ ] Resolve [Website Dev Project Onboarding](story_website_dev.md) — port exposure, live reload, XSS risk assessment
+
+#### Provider readiness
+
+- [ ] Validate selected knowledge store provider integrates correctly after M1.7 modularisation (see [story_provider_knowledge_store.md](story_provider_knowledge_store.md))
+
+#### Workflow convergence gate
+
+- [ ] Evaluate M1.6 apply workflow redesign against checkpoint branch pattern (see Deferred Decisions)
+- [ ] Record decision on unified apply convention; update or close deferred decision entry
+
+---
+
+## Deferred Decisions
+
+### Checkpoint tooling — promote to harness scripts/
+
+The checkpoint scripts produced in the vault onboarding story (`workflow/knowledge-vault/scripts/`) are project-agnostic by design. A decision to promote them to `scripts/` as first-class harness tooling is deferred. If promoted: integration testing against at least one non-vault workflow is required before the scripts are treated as general infrastructure.
+
+### Checkpoint branch pattern — adopt as harness-level apply convention
+
+The vault workflow established a checkpoint branch pattern: create a dated branch from current HEAD before each agent session; apply the diff after review; roll back to the checkpoint branch if the diff is rejected. This pattern is operationally validated through KV4. A decision to formalise it as the standard `apply` convention across all harness workflows — replacing the current inplace/branch flag — is deferred until the apply workflow redesign in M1.6 is complete. The M1.6 apply redesign (replayable commit export, named agent branch) should be evaluated alongside this pattern to determine whether they compose or whether one supersedes the other.
+
+### Pre-session checkpoint automation
+
+Whether to automate checkpoint creation before each agent session (e.g. as part of `make start`) is deferred until the manual checkpoint workflow is validated at scale. Currently an explicit operator step. Revisit after M1.6 apply workflow is stable.
+
+---
+
+### **M1.6 — Session Persistence & Agent Configuration**
+
+**Objective:** Preserve OpenCode session history across container runs, and preserve agent commit history through the apply workflow.
+
+#### Session DB persistence
+
+OpenCode stores all session history in a SQLite database at `~/.local/share/opencode/opencode.db` inside the container. This is currently discarded on container exit. The fix is to mount a host path into the container at that location so the DB survives across runs.
+
+- [ ] Identify host-side storage location for session DB (per-project or global)
+- [ ] Add mount for `~/.local/share/opencode/` into container mount shape
+- [ ] Update `execution_model.md` — document session DB mount as a third container mount
+- [ ] Verify DB survives container restart and is correctly re-attached on next run
+
+#### Apply workflow — preserve agent commit history
 
 Current behaviour: the diff pipeline squashes all agent changes into a single `patch.diff` on exit, discarding checkpoint commits made inside the container.
 
@@ -56,7 +108,6 @@ Target behaviour:
 
 Open consideration — patch history: once commits are preserved natively via replay, archiving `patch.diff` with a timestamp may be redundant. Needs to be reasoned out during implementation — decide whether a diff archive is still useful alongside a replayable commit history.
 
-Tasks:
 - [ ] Brainstorm and agree on export format (`git format-patch` vs bundle vs other)
 - [ ] Parameterise agent branch naming (e.g. `agent/<task-id>`) — single-agent case only; multi-agent coordination stays in M4
 - [ ] Update diff pipeline in `lib/diff.sh` — replace `patch.diff` output with replayable commit export
@@ -67,42 +118,42 @@ Tasks:
 
 ---
 
-## User Stories
+### **M1.7 — Provider Modularisation**
 
-Active investigations not yet promoted to milestones. Full reasoning and open questions in the linked documents.
+**Objective:** Formalise the provider interface by naming the execution modes, drawing an explicit boundary between shared harness logic and provider-specific invocation, and verifying the OpenCode provider conforms. Prerequisite for Claude Code provider integration.
 
-- [Website Dev Project Onboarding](story_website_dev.md) — port exposure, live reload, XSS risk assessment, safe browse protocol
-- [Obsidian Vault Onboarding](../../workflow/knowledge-vault/story.md) — investigation complete; tooling and onboarding guide; checkpoint scripts, vault-init, and LFS test suite produced; integration validation pending (phase 4). Full detail in [knowledge-vault/roadmap](../../workflow/knowledge-vault/roadmap.md).
+See user story: [Knowledge Store Provider](story_provider_knowledge_store.md) — identify a provider with adequate support for document repositories; determine harness modularisation requirements. Prerequisite for KV5 validation tasks.
 
----
+#### Execution mode formalisation
 
-## Documentation
+The harness supports three execution modes. These were previously implicit in the OpenCode invocation but must be named and defined as part of the provider interface so that any conforming provider can implement them:
 
-- [ ] Extract completed milestones to a changelog document; add link from roadmap — do this during the next task cleanup and consolidation pass
-- [ ] Update `roadmap_policy.md` to document the changelog extraction process
+| Mode | Description | Provider responsibility |
+|---|---|---|
+| `serve` | Interactive terminal wrapped in a webapp; operator connects via browser on an exposed port | Start agent in web-server mode, bind to `0.0.0.0:<port>` |
+| `start` | Interactive terminal via direct TTY (`docker run -it`) | Start agent in interactive terminal mode |
+| `dry-run` | Liveness check only; no agent interaction | Start agent, confirm it initialises, exit cleanly |
+| `headless` | Non-interactive with task passing | Reserved — not yet implemented. M2 target. |
 
----
+`headless` must be defined as a reserved keyword in the provider interface so that the interface does not need to be redesigned when M2 is reached, and so that conforming providers can declare it as unsupported rather than simply not handling it.
 
-### **M1.6 — Session Persistence & Agent Configuration**
+- [ ] Document execution modes in `execution_model.md` — once complete, the mode table above should be removed from this roadmap entry and the roadmap should reference the document instead
 
-**Objective:** Preserve OpenCode session history across container runs, and enable plan-mode write access for documentation and progressive planning workflows.
+#### Shared logic extraction
 
-#### Session DB persistence
+Currently, `providers/opencode/start_agent.sh` and `container-entrypoint.sh` mix provider-specific invocation logic with shared harness behaviour (snapshot pipeline, mount construction, env loading, diff trap, autosave). Adding a second provider requires this boundary to be drawn explicitly.
 
-OpenCode stores all session history in a SQLite database at `~/.local/share/opencode/opencode.db` inside the container. This is currently discarded on container exit. The fix is to mount a host path into the container at that location so the DB survives across runs.
+- [ ] Audit `providers/opencode/start_agent.sh` — identify and extract shared logic into `lib/` (snapshot, mount construction, env loading); leave only OpenCode-specific invocation per mode in the provider
+- [ ] Audit `container-entrypoint.sh` — extract shared container startup sequence (snapshot init, diff trap, autosave) into a sourced lib; leave only the provider exec step in the provider entrypoint
 
-- [ ] Identify host-side storage location for session DB (per-project or global)
-- [ ] Add mount for `~/.local/share/opencode/` into container mount shape
-- [ ] Update `execution_model.md` — document session DB mount as a third container mount
-- [ ] Verify DB survives container restart and is correctly re-attached on next run
+#### Provider interface definition
 
-#### Plan mode write access & stage-then-apply loop
+- [ ] Define the provider interface: what a conforming `providers/<n>/` directory must contain — required scripts, mode declarations (including `headless` as reserved), and entrypoint contract for each supported mode
+- [ ] Document provider interface in `execution_model.md`
 
-OpenCode's plan mode disables `write`, `edit`, and `patch` by default. Tool access is fully configurable per agent via `opencode.json`, so a custom agent with scoped write access (e.g. to `.opencode/plans/` and `docs/`) can be defined without harness changes. The stage-then-apply loop — where the agent progressively commits intermediate states within a single run — is achievable via agent config and `git commit` permissions.
+#### Validation
 
-- [ ] Define a custom plan agent in `opencode.json` with write access scoped to plan and doc paths
-- [ ] Configure `git commit` permissions for the plan agent to enable in-session checkpointing
-- [ ] Document agent config approach in `providers/opencode/quickstart.md`
+- [ ] Validate OpenCode provider conforms to the interface and passes all three modes (`serve`, `start`, `dry-run`) after refactor
 
 ---
 
@@ -194,9 +245,9 @@ OpenCode's plan mode disables `write`, `edit`, and `patch` by default. Tool acce
 
 ## Deferred Decisions
 
-### Checkpoint tooling — promote to harness scripts/
+### Plan mode write access — OpenCode agent configuration
 
-The checkpoint scripts produced in the vault onboarding story (`workflow/knowledge-vault/scripts/`) are project-agnostic by design. A decision to promote them to `scripts/` as first-class harness tooling is deferred. If promoted: integration testing against at least one non-vault workflow is required before the scripts are treated as general infrastructure.
+OpenCode's plan mode disables `write`, `edit`, and `patch` by default. Tool access is fully configurable per agent via `opencode.json`, so a custom agent with scoped write access (e.g. to `.opencode/plans/` and `docs/`) can be defined without harness changes. The stage-then-apply loop — where the agent progressively commits intermediate states within a single run — is achievable via agent config and `git commit` permissions. Deferred: no concrete workflow pain point has been identified that requires this yet. Revisit when a planning or documentation workflow demands it.
 
 ---
 
