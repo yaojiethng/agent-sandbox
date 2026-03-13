@@ -104,6 +104,110 @@ Open stories are listed in the roadmap **User Stories** section with a single li
 
 ---
 
+## Investigation Documents
+
+Investigation documents live in `docs/discussions/` with the prefix `investigation_`. They are the working record for a specific option within a user story — one investigation per candidate, each linked to a parent story.
+
+### Required sections
+
+Investigations follow a fixed section sequence. The fixed order makes section-level navigation by header grep reliable without reading the full file.
+
+| Section | When added | Purpose |
+|---|---|---|
+| **Status line** | At creation | One line immediately after the title: current status, key blocker or outcome |
+| **Direction + Parent story** | At creation | Which investigation direction this belongs to; link to parent story |
+| **Required reading** | At creation | Prerequisite documents; links only, no prose |
+| **Summary** | At creation | What this option is and how it works; 2–4 sentences |
+| **Architecture / Findings** | During investigation | What was discovered; may be iterative subsections |
+| **Open Questions** | During investigation | Unresolved questions blocking a recommendation |
+| **Constraints** | At creation or during investigation | Non-negotiable requirements |
+| **Next Steps** | During investigation | Immediate actions; replaced by Resolution at closure |
+| **Resolution / Conclusion** | At closure | Decision reached, where work went, why |
+
+### Lifecycle states
+
+| Status | Meaning |
+|---|---|
+| `Not started` | Stub — structure created, investigation not begun |
+| `In progress` | Active — open questions remain |
+| `Resolved` | Closed — Conclusion/Resolution section complete; work promoted or absorbed |
+| `Superseded` | Closed — made obsolete by a broader decision; redirect to superseding document |
+
+---
+
+## Agent Working Discipline
+
+### Read discipline — grep before opening
+
+Before opening any file in full, run a targeted search to confirm the file contains relevant content and identify the specific lines needed. Full reads are only justified when the entire file is the subject of the work.
+
+**For change passes across multiple files:**
+```bash
+grep -rn "TERM" path/to/scope/
+```
+Build the complete change list from grep output. Open only files that appear in results, and use `view_range` to read only the relevant lines.
+
+**For section navigation within a known file:**
+```bash
+grep -n "^##" filename.md
+```
+Use the section map to target `view_range` rather than reading from the top.
+
+A full file read without a prior grep is a signal the discipline is not being applied.
+
+### When full reads are justified
+
+- The file is the direct subject of the current task (e.g. rewriting a section)
+- The file is under 40 lines
+- The file is being read for the first time in a session and its structure is unknown
+
+---
+
+## Session Handover
+
+A handover is a session log, not a document. It records what was done and what comes next — enough for a new agent to continue without re-reading the session history. It is not part of the documentation system and is not subject to documentation policy.
+
+If handover conventions grow to cover retention, review process, or tooling, extract to a dedicated `handover_policy.md`. For now this section is sufficient.
+
+### File naming
+
+```
+YYYYMMDD_agent_handover.md
+```
+
+Stored at the repo root alongside `agent_context_brief.md`. Multiple handovers accumulate — do not overwrite previous ones. The most recent date is the active handover.
+
+### Required sections
+
+```markdown
+# Agent Handover
+
+**Session date:** YYYY-MM-DD
+**Milestone:** <milestone ID and name>
+**Session type:** <Implementation | Documentation | Housekeeping | Investigation>
+
+## Completed this session
+<table: file | one-line change summary>
+
+## Next task
+<exact task reference from roadmap>
+<files needed from operator if known>
+<grep to run at session start if applicable>
+
+## Watch out for
+<max three items>
+```
+
+### Rules
+
+- **Completed this session** is a table, not prose. One row per file. If no files changed, write "No file changes this session."
+- **Next task** points to the roadmap by section — do not restate the task list. The roadmap is the source of truth.
+- **Watch out for** is capped at three items. More than three is a signal the session was not scoped tightly enough; record the rest in the relevant document instead.
+- Do not summarise decisions or reasoning — that belongs in the documents where decisions were recorded. The handover trusts the next agent to read `doc_status.md` and follow links.
+- Handover does not replace: story Resolution sections, roadmap task checkboxes, or changelog entries.
+
+---
+
 ## References
 
 | Document | Purpose |

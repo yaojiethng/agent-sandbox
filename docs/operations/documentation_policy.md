@@ -13,7 +13,8 @@ Each document belongs to **exactly one** of the following categories:
 | `architecture/` | Implementation design and decisions |
 | `concepts/` | Conceptual model and principles |
 | `operations/` | How to run the system |
-| `development/` | Contributor workflow |
+| `development/` | Contributor workflow, policy, and active planning |
+| `discussions/` | Investigation and story documents — reasoning records, not current system description |
 
 ---
 
@@ -39,7 +40,7 @@ Two elements frame the stack without belonging to it:
 
 Architecture stabilizes per milestone. Once a milestone completes, its layers are frozen. If a lower layer requires modification, refactor **bottom-up** — update dependent layers afterward. Never introduce top-down changes without validating lower layers first.
 
-Current milestone status and frozen layer inventory are maintained in [`doc-status.md`](doc-status.md).
+Current milestone status and frozen layer inventory are maintained in [`doc_status.md`](doc_status.md).
 
 ---
 
@@ -93,15 +94,43 @@ A bridge document exists solely to connect two other documents that could refere
 
 ---
 
-### Root document audience
+### Agent-facing documents
 
-Two root documents serve distinct audiences and must not duplicate each other.
+Four documents govern agent behaviour. Each answers a distinct question and must not duplicate the others.
 
-**`readme.md`** — written for humans and agents alike. Contains system invariants, the architecture layer model, the documentation guide path, and the conceptual separation of workflow/security/roadmap. This is the entry point for anyone new to the repository.
+**`readme.md`** — written for humans and agents alike. System invariants, architecture layer model, documentation guide path, and conceptual separation of workflow/security/roadmap. Entry point for anyone new to the repository.
 
-**`agent-context-brief.md`** — written for the agent specifically. Contains the collaboration protocol, role definition, output format rules, and operating workflow. References `readme.md` and `system_overview.md` for system invariants and architecture — it does not restate them.
+**`agent_context_brief.md`** — written for all agents regardless of provider. Collaboration protocol, role definition, read discipline, output format rules, and operating workflow. References `readme.md` for system invariants — does not restate them.
 
-If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs agent behaviour specifically, it belongs in `agent-context-brief.md` and must not be duplicated elsewhere.
+**`agents.md`** — provider-specific notes. Capabilities and limitations of the current agent interface (Claude Chat, OpenCode, etc.). Swapped out when the provider changes. Must not contain protocol rules that belong in `agent_context_brief.md`.
+
+**`YYYYMMDD_agent_handover.md`** — session log, not a document. Ephemeral — records what was done and what is next. Not subject to this policy. See `task_policy.md` — Session Handover for format rules.
+
+If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs all agents, it belongs in `agent_context_brief.md`. If it is provider-specific, it belongs in `agents.md`. None of these files duplicate each other.
+
+---
+
+## Document Header Format
+
+All documents in `docs/` must open with a consistent header block so that status and scope are visible without reading the file body, and so that `grep -n "^##"` reliably returns a usable section map.
+
+**Standard opening sequence:**
+
+```
+# <Title>
+<blank line>
+**Status:** <value>         ← stories and investigations only
+**Location:** <path>        ← only if the file has been moved or renamed
+<blank line>
+> **Superseded / Resolved.** <one sentence pointing to the authoritative document.>
+```
+
+Rules:
+
+- `**Status:**` must be the first line after the title on all `story_` and `investigation_` documents. No preamble before it.
+- Superseded and resolved documents must have a blockquote redirect immediately after the status line, naming the target document explicitly.
+- Architecture, concepts, and policy documents do not carry a status line — they are governed by the freeze table in `project_index.md`.
+- Top-level sections use `##`. Subsections use `###`. Use `####` only inside long task lists where grouping is genuinely needed — not for general document structure.
 
 ---
 

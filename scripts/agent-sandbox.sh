@@ -2,10 +2,10 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox start         --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]
-#   agent-sandbox dry-run       --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox build         --name=<n> --root=<path> [--no-cache]
-#   agent-sandbox apply         --root=<path> [--branch=<n>]
+#   agent-sandbox start         --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]
+#   agent-sandbox dry-run       --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox build         --name=<n> --project=<path> [--no-cache]
+#   agent-sandbox apply         --project=<path> --sandbox=<path> [--branch=<n>]
 #   agent-sandbox onboard       <workflow> <flags>  — one-time project onboarding
 #   agent-sandbox rebuild       <subcommand> <flags>  — force rebuild then dispatch
 
@@ -32,25 +32,25 @@ fi
 # Must be handled before flag parsing so it works with any subcommand.
 if [[ "$SUBCOMMAND" == "rebuild" ]]; then
   if [[ -z "${1:-}" ]]; then
-    echo "Usage: agent-sandbox rebuild <start|dry-run> --name=<n> --root=<path> ..."
+    echo "Usage: agent-sandbox rebuild <start|dry-run> --name=<n> --project=<path> ..."
     exit 1
   fi
-  # Extract --name and --root from remaining args for the build step.
+  # Extract --name and --project from remaining args for the build step.
   _NAME=""
-  _ROOT=""
+  _PROJECT=""
   for _ARG in "$@"; do
     case "$_ARG" in
-      --name=*) _NAME="${_ARG#--name=}" ;;
-      --root=*) _ROOT="${_ARG#--root=}" ;;
+      --name=*)    _NAME="${_ARG#--name=}" ;;
+      --project=*) _PROJECT="${_ARG#--project=}" ;;
     esac
   done
-  if [[ -z "$_NAME" || -z "$_ROOT" ]]; then
-    echo "Error: rebuild requires --name and --root"
+  if [[ -z "$_NAME" || -z "$_PROJECT" ]]; then
+    echo "Error: rebuild requires --name and --project"
     exit 1
   fi
   _STALE_MSG="$STALE_MSG"
   echo "Rebuilding image: opencode-agent-$_NAME"
-  if ! "$PROVIDER/build_agent.sh" --name="$_NAME" --root="$_ROOT"; then
+  if ! "$PROVIDER/build_agent.sh" --name="$_NAME" --project="$_PROJECT"; then
     echo "$_STALE_MSG"
     exit 1
   fi
@@ -61,16 +61,18 @@ fi
 # Flag parsing (shared)
 # -------------------------
 PROJECT_NAME=""
-PROJECT_ROOT=""
+PROJECT_DIR=""
+SANDBOX_DIR=""
 BRANCH=""
 PASSTHROUGH=()
 
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*)   PROJECT_NAME="${ARG#--name=}" ;;
-    --root=*)   PROJECT_ROOT="${ARG#--root=}" ;;
-    --branch=*) BRANCH="${ARG#--branch=}" ;;
-    *)          PASSTHROUGH+=("$ARG") ;;
+    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
+    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+    --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+    --branch=*)  BRANCH="${ARG#--branch=}" ;;
+    *)           PASSTHROUGH+=("$ARG") ;;
   esac
 done
 
@@ -83,7 +85,7 @@ preflight() {
   # Build if image does not exist
   if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Image not found, building: $IMAGE_NAME"
-    "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --root="$PROJECT_ROOT"
+    "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR"
     return
   fi
 
@@ -106,47 +108,50 @@ preflight() {
 # -------------------------
 case "$SUBCOMMAND" in
   start)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_ROOT" ]]; then
-      echo "Error: --name and --root are required"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+      echo "Error: --name and --project are required"
       exit 1
     fi
     preflight
     "$PROVIDER/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
-      --root="$PROJECT_ROOT" \
+      --project="$PROJECT_DIR" \
+      ${SANDBOX_DIR:+--sandbox="$SANDBOX_DIR"} \
       "${PASSTHROUGH[@]}"
     ;;
 
   dry-run)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_ROOT" ]]; then
-      echo "Error: --name and --root are required"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+      echo "Error: --name and --project are required"
       exit 1
     fi
     preflight
     "$PROVIDER/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
-      --root="$PROJECT_ROOT" \
+      --project="$PROJECT_DIR" \
+      ${SANDBOX_DIR:+--sandbox="$SANDBOX_DIR"} \
       "${PASSTHROUGH[@]}"
     ;;
 
   build)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_ROOT" ]]; then
-      echo "Error: --name and --root are required"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+      echo "Error: --name and --project are required"
       exit 1
     fi
     "$PROVIDER/build_agent.sh" \
       --name="$PROJECT_NAME" \
-      --root="$PROJECT_ROOT" \
+      --project="$PROJECT_DIR" \
       "${PASSTHROUGH[@]}"
     ;;
 
   apply)
-    if [[ -z "$PROJECT_ROOT" ]]; then
-      echo "Error: --root is required"
+    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --project and --sandbox are required"
       exit 1
     fi
     "$SCRIPTS/apply_workspace.sh" \
-      --root="$PROJECT_ROOT" \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR" \
       ${BRANCH:+--branch="$BRANCH"}
     ;;
 
