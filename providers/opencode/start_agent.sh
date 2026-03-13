@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> --name=<project_name> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]
+#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]
 #
 # Modes:
 #   standard   — normal execution, network access allowed
@@ -9,19 +9,28 @@
 #
 # Required flags:
 #   --name=<project_name>   display name; used for image naming
-#   --root=<path>           absolute WSL/Linux path to the project on the host
+#   --project=<path>        absolute WSL/Linux path to the project directory on the host
 #
 # Optional flags:
-#   --brief=<rel>           path to agent brief, relative to PROJECT_ROOT
-#   --env=<rel>             path to .env file, relative to PROJECT_ROOT
+#   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
+#                           defaults to <parent-of-PROJECT_DIR>/<project-dir-name>-sandbox
+#   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR
+#   --env=<rel>             path to .env file, relative to SANDBOX_DIR
 #                           supported env vars: SERVE_PORT (default: 46553)
 #                                               OPENCODE_SERVER_PASSWORD
 #   --serve                 start OpenCode in serve mode
 #
-# Note: PROJECT_ROOT must be a git repository with at least one commit.
+# Note: PROJECT_DIR must be a git repository with at least one commit.
 #       The Docker image must already exist — run agent-sandbox build first.
 
 set -euo pipefail
+
+# -------------------------
+# Directory name definitions
+# Single source of truth — passed to container as env vars
+# -------------------------
+AGENT_INPUT_DIR_NAME=".agent-input"
+AGENT_WORKSPACE_DIR_NAME=".workspace"
 
 # -------------------------
 # Paths
@@ -38,7 +47,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run> --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]"
+  echo "Usage: $0 <mode:standard|dry-run> --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]"
   exit 1
 fi
 
@@ -46,18 +55,20 @@ fi
 # Flag parsing (order agnostic)
 # -------------------------
 PROJECT_NAME=""
-PROJECT_ROOT=""
+PROJECT_DIR=""
+SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=""
 SERVE=false
 
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*)  PROJECT_NAME="${ARG#--name=}" ;;
-    --root=*)  PROJECT_ROOT="${ARG#--root=}" ;;
-    --brief=*) AGENT_BRIEF="${ARG#--brief=}" ;;
-    --env=*)   ENV_REL="${ARG#--env=}" ;;
-    --serve)   SERVE=true ;;
+    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
+    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+    --sandbox=*) SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
+    --brief=*)   AGENT_BRIEF="${ARG#--brief=}" ;;
+    --env=*)     ENV_REL="${ARG#--env=}" ;;
+    --serve)     SERVE=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -65,16 +76,25 @@ for ARG in "$@"; do
   esac
 done
 
-if [[ -z "$PROJECT_NAME" || -z "$PROJECT_ROOT" ]]; then
-  echo "Error: --name and --root are required"
+if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+  echo "Error: --name and --project are required"
   exit 1
+fi
+
+# -------------------------
+# SANDBOX_DIR derivation
+# -------------------------
+if [[ -n "$SANDBOX_DIR_OVERRIDE" ]]; then
+  SANDBOX_DIR="$SANDBOX_DIR_OVERRIDE"
+else
+  SANDBOX_DIR="$(dirname "$PROJECT_DIR")/$(basename "$PROJECT_DIR")-sandbox"
 fi
 
 # -------------------------
 # Env loading
 # -------------------------
 if [[ -n "$ENV_REL" ]]; then
-  ENV_FILE="$PROJECT_ROOT/$ENV_REL"
+  ENV_FILE="$SANDBOX_DIR/$ENV_REL"
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: env file not found: $ENV_FILE"
     exit 1
@@ -104,58 +124,61 @@ validate_wsl_path() {
   fi
 }
 
-validate_wsl_path "PROJECT_ROOT" "$PROJECT_ROOT"
+validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
+validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 
-if [[ ! -d "$PROJECT_ROOT" ]]; then
-  echo "Error: PROJECT_ROOT does not exist: $PROJECT_ROOT"
+if [[ ! -d "$PROJECT_DIR" ]]; then
+  echo "Error: PROJECT_DIR does not exist: $PROJECT_DIR"
   exit 1
 fi
 
 # -------------------------
 # Git validation
 # -------------------------
-if [[ ! -d "$PROJECT_ROOT/.git" ]]; then
-  echo "Error: PROJECT_ROOT is not a git repository: $PROJECT_ROOT"
+if [[ ! -d "$PROJECT_DIR/.git" ]]; then
+  echo "Error: PROJECT_DIR is not a git repository: $PROJECT_DIR"
   echo "  Initialise it first:"
-  echo "    git -C '$PROJECT_ROOT' init"
-  echo "    git -C '$PROJECT_ROOT' add -A"
-  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  echo "    git -C '$PROJECT_DIR' init"
+  echo "    git -C '$PROJECT_DIR' add -A"
+  echo "    git -C '$PROJECT_DIR' commit -m 'initial'"
   exit 1
 fi
 
-if ! git -C "$PROJECT_ROOT" rev-parse HEAD >/dev/null 2>&1; then
-  echo "Error: git repository has no commits: $PROJECT_ROOT"
+if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
+  echo "Error: git repository has no commits: $PROJECT_DIR"
   echo "  Create an initial commit first:"
-  echo "    git -C '$PROJECT_ROOT' add -A"
-  echo "    git -C '$PROJECT_ROOT' commit -m 'initial'"
+  echo "    git -C '$PROJECT_DIR' add -A"
+  echo "    git -C '$PROJECT_DIR' commit -m 'initial'"
   exit 1
 fi
 
-if [[ ! -f "$PROJECT_ROOT/.gitignore" ]]; then
-  echo "Warning: no .gitignore found in $PROJECT_ROOT"
+if [[ ! -f "$PROJECT_DIR/.gitignore" ]]; then
+  echo "Warning: no .gitignore found in $PROJECT_DIR"
   echo "  All untracked files will be copied into the sandbox."
   echo "  Consider adding a .gitignore to exclude secrets, build artifacts, etc."
 fi
 
 # -------------------------
-# Bootstrap setup
+# Sandbox directory setup
 # -------------------------
-BOOTSTRAP_DIR="$PROJECT_ROOT/.bootstrap"
-SNAPSHOT_DIR="$BOOTSTRAP_DIR/snapshot"
+AGENT_INPUT_DIR="$SANDBOX_DIR/$AGENT_INPUT_DIR_NAME"
+AGENT_WORKSPACE_DIR="$SANDBOX_DIR/$AGENT_WORKSPACE_DIR_NAME"
+SNAPSHOT_DIR="$AGENT_INPUT_DIR/snapshot"
 
-mkdir -p "$PROJECT_ROOT/.workspace/changes"
+mkdir -p "$AGENT_WORKSPACE_DIR/changes"
 mkdir -p "$SNAPSHOT_DIR"
+mkdir -p "$AGENT_INPUT_DIR/input"
 
 # -------------------------
 # Snapshot pipeline (host side)
 # -------------------------
-# Enumerates and copies project files into .bootstrap/snapshot/.
-# git ls-files runs on the host — the container never touches PROJECT_ROOT directly.
+# Enumerates and copies project files into .agent-input/snapshot/.
+# git ls-files runs on the host — the container never touches PROJECT_DIR directly.
 source "$REPO_ROOT/lib/snapshot.sh"
 
 echo "Building snapshot..."
-(cd "$PROJECT_ROOT" && snapshot_enumerate_files "$PROJECT_ROOT") \
-  | (cd "$PROJECT_ROOT" && snapshot_copy_files "$PROJECT_ROOT" "$SNAPSHOT_DIR")
+(cd "$PROJECT_DIR" && snapshot_enumerate_files "$PROJECT_DIR") \
+  | (cd "$PROJECT_DIR" && snapshot_copy_files "$PROJECT_DIR" "$SNAPSHOT_DIR")
 
 snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."
@@ -164,7 +187,7 @@ echo "Snapshot ready."
 # Brief resolution
 # -------------------------
 if [[ -n "$AGENT_BRIEF" ]]; then
-  BRIEF_PATH="$(cd "$PROJECT_ROOT" && realpath "$AGENT_BRIEF")"
+  BRIEF_PATH="$(cd "$SANDBOX_DIR" && realpath "$AGENT_BRIEF")"
 
   validate_wsl_path "AGENT_BRIEF" "$BRIEF_PATH"
 
@@ -173,18 +196,24 @@ if [[ -n "$AGENT_BRIEF" ]]; then
     exit 1
   fi
 
-  cp "$BRIEF_PATH" "$BOOTSTRAP_DIR/brief.md"
+  cp "$BRIEF_PATH" "$AGENT_INPUT_DIR/brief.md"
 fi
 
 # -------------------------
-# Mount construction
+# Mount and env construction
 # -------------------------
-# .bootstrap is mounted read-only — input channel: snapshot and brief.
+# .agent-input is mounted read-only — input channel: snapshot, brief, operator files.
 # .workspace is mounted read-write — output channel: patch, logs.
-# PROJECT_ROOT is not mounted — the agent has no direct access to the host repo.
+# PROJECT_DIR is not mounted — the agent has no direct access to the host repo.
 MOUNT_ARGS=(
-  -v "$BOOTSTRAP_DIR:/home/agentuser/.bootstrap:ro"
-  -v "$PROJECT_ROOT/.workspace:/home/agentuser/.workspace:rw"
+  -v "$AGENT_INPUT_DIR:/home/agentuser/$AGENT_INPUT_DIR_NAME:ro"
+  -v "$AGENT_WORKSPACE_DIR:/home/agentuser/$AGENT_WORKSPACE_DIR_NAME:rw"
+)
+
+# Pass directory name definitions to the container so both sides share one source of truth
+ENV_DIR_ARGS=(
+  -e "AGENT_INPUT_DIR_NAME=$AGENT_INPUT_DIR_NAME"
+  -e "AGENT_WORKSPACE_DIR_NAME=$AGENT_WORKSPACE_DIR_NAME"
 )
 
 IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
@@ -207,10 +236,11 @@ case "$MODE" in
     echo "Running dry-run..."
     docker run --rm \
       "${MOUNT_ARGS[@]}" \
-      -v "$REPO_ROOT/scripts/dry_run.sh:/dry_run.sh:ro" \
+      "${ENV_DIR_ARGS[@]}" \
+      -v "$REPO_ROOT/providers/opencode/dry_run.sh:/dry_run.sh:ro" \
       "$IMAGE_NAME" \
       bash /dry_run.sh
-    echo "PASS" > "$PROJECT_ROOT/.workspace/changes/liveness.txt"
+    echo "PASS" > "$AGENT_WORKSPACE_DIR/changes/liveness.txt"
     echo ""
     echo "=== liveness: PASS ==="
     exit 0
@@ -248,9 +278,10 @@ fi
 # -------------------------
 # Run container
 # -------------------------
-echo "+ docker run -it --rm ${MOUNT_ARGS[*]} ${PORT_ARGS[*]+"${PORT_ARGS[*]}"} ${ECHO_ENV_ARGS[*]+"${ECHO_ENV_ARGS[*]}"} --name $IMAGE_NAME $IMAGE_NAME ${CMD[*]}"
+echo "+ docker run -it --rm ${MOUNT_ARGS[*]} ${PORT_ARGS[*]+"${PORT_ARGS[*]}"} ${ECHO_ENV_ARGS[*]+"${ECHO_ENV_ARGS[*]}"} ${ENV_DIR_ARGS[*]} --name $IMAGE_NAME $IMAGE_NAME ${CMD[*]}"
 docker run -it --rm \
   "${MOUNT_ARGS[@]}" \
+  "${ENV_DIR_ARGS[@]}" \
   ${PORT_ARGS[@]+"${PORT_ARGS[@]}"} \
   ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
   --name "$IMAGE_NAME" \

@@ -16,9 +16,9 @@ This prevents uncontrolled mutation of the repository.
 
 ### 2. Staging
 
-Agents perform all modifications inside a container-local sandbox. On exit, changes are captured as a diff and written to `.workspace/changes/patch.diff`. No changes are applied directly to the working tree.
+Agents perform all modifications inside a container-local sandbox. On exit, changes are captured as a diff and written to `.workspace/changes/staged.diff`. No changes are applied directly to the working tree.
 
-All modifications must pass through a human review and approval step before reaching the repository. `patch.diff` is the primary artifact for proposed source changes.
+All modifications must pass through a human review and approval step before reaching the repository. `staged.diff` is the primary artifact for proposed source changes.
 
 ### 3. Reproducibility
 
@@ -28,18 +28,26 @@ Each agent run is reproducible via a container image version, a specific project
 
 ## Host Directory Structure
 
+The harness uses two sibling directories under a common working directory. The project repository is kept clean — no harness files are placed inside it.
+
 ```
-PROJECT_ROOT/
-├── (project files)
-├── .bootstrap/          ← input channel: snapshot and brief (read-only mount)
-│   ├── snapshot/
-│   └── brief.md
-└── .workspace/          ← output channel: patch and logs (read-write mount)
-    └── changes/
-        └── patch.diff
+WORKDIR/
+├── project-dir/              ← PROJECT_DIR (git repo, clean)
+└── project-dir-sandbox/      ← SANDBOX_DIR (harness workspace, not committed)
+    ├── Makefile
+    ├── .env
+    ├── .agent-input/         ← input channel (managed by harness and operator)
+    │   ├── snapshot/         ← project snapshot, built at run time
+    │   ├── brief.md          ← agent brief, copied from --brief path
+    │   └── input/            ← operator-placed task files
+    └── .workspace/           ← output channel
+        └── changes/
+            └── staged.diff
 ```
 
-`.bootstrap/` and `.workspace/` are managed by the harness. They should be gitignored and must not be committed to the repository.
+`SANDBOX_DIR` is set explicitly in the project Makefile. By convention it is named `<project-dir-name>-sandbox` and lives alongside `PROJECT_DIR`, but any absolute path is valid.
+
+`.agent-input/` and `.workspace/` are managed by the harness. They should not be committed.
 
 ---
 
@@ -47,10 +55,10 @@ PROJECT_ROOT/
 
 | Host path | Container path | Mode | Purpose |
 |---|---|---|---|
-| `PROJECT_ROOT/.bootstrap/` | `/home/agentuser/.bootstrap/` | read-only | Snapshot and brief |
-| `PROJECT_ROOT/.workspace/` | `/home/agentuser/.workspace/` | read-write | Agent output |
+| `SANDBOX_DIR/.agent-input/` | `/home/agentuser/.agent-input/` | read-only | Snapshot, brief, operator input files |
+| `SANDBOX_DIR/.workspace/` | `/home/agentuser/.workspace/` | read-write | Agent output |
 
-`PROJECT_ROOT` itself is not mounted at container runtime. The agent never has direct access to the host repository.
+`PROJECT_DIR` itself is not mounted at container runtime. The agent never has direct access to the host repository.
 
 ---
 
@@ -58,21 +66,34 @@ PROJECT_ROOT/
 
 ### Before a run
 
-1. Ensure `PROJECT_ROOT` is a git repository with at least one commit.
-2. Ensure `.gitignore` is present and covers secrets, build artifacts, and `.workspace/`.
-3. Optionally prepare a `brief.md` and reference it via `AGENT_BRIEF` in the project config.
-4. Run `start_agent.sh <project> <mode>`. The harness builds the snapshot, validates it, and starts the container.
+1. Ensure `PROJECT_DIR` is a git repository with at least one commit.
+2. Ensure `.gitignore` is present in `PROJECT_DIR` and covers secrets and build artifacts.
+3. Ensure `SANDBOX_DIR` exists alongside `PROJECT_DIR`.
+4. Optionally prepare a brief and place it at the path referenced by `AGENT_BRIEF` in the Makefile (relative to `SANDBOX_DIR`).
+5. Optionally place task files, path lists, or additional context in `SANDBOX_DIR/.agent-input/input/`. The agent will read these alongside the project snapshot.
+6. Run `make start` (or `make serve`). The harness builds the snapshot, validates it, and starts the container.
 
 ### During a run
 
-The agent works inside the container. `.workspace/changes/patch.diff` is updated periodically via the autosave loop and on container exit. The operator does not need to intervene unless the run needs to be stopped.
+The agent works inside the container. `SANDBOX_DIR/.workspace/changes/staged.diff` is updated periodically via the autosave loop and on container exit. The operator does not need to intervene unless the run needs to be stopped.
 
 ### After a run
 
-1. Inspect `.workspace/changes/patch.diff`.
+1. Inspect `SANDBOX_DIR/.workspace/changes/staged.diff`.
 2. Review the proposed changes.
-3. If approved: apply using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`, then commit.
-4. If rejected: discard `.workspace/` contents. The host repository is unchanged.
+3. If approved: run `make apply` (optionally with `BRANCH=<name>`), then commit.
+4. If rejected: discard `SANDBOX_DIR/.workspace/` contents. The host repository is unchanged.
+5. Clear or update `SANDBOX_DIR/.agent-input/input/` before the next run if task files are no longer relevant.
+
+---
+
+## Input Channel Lifecycle
+
+`SANDBOX_DIR/.agent-input/input/` is the operator input channel. It is:
+
+- **Written by the operator** before the run — task files, file path lists, supplementary briefs, or any files the agent should read during the session.
+- **Read by the agent** during the run — contents are copied into `sandbox/` at container startup and available as ordinary files.
+- **Managed by the operator** between runs — the operator clears, replaces, or leaves files in `input/` as appropriate before the next run. The harness does not clear it automatically.
 
 ---
 
@@ -81,8 +102,8 @@ The agent works inside the container. `.workspace/changes/patch.diff` is updated
 Changes are written back to the repository only when:
 
 - The container has exited.
-- `patch.diff` has been reviewed and approved.
-- The operator applies the patch manually on the host.
+- `staged.diff` has been reviewed and approved.
+- The operator applies the patch manually on the host using `make apply`.
 
 The agent never executes `git commit`, `git push`, or writes directly to the host repository. All repository mutation occurs outside the container, initiated by the operator.
 
