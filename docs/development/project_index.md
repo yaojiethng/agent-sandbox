@@ -1,0 +1,108 @@
+# Project Index
+
+Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
+
+For the session-scoped hot file list, see [`doc_status.md`](doc_status.md).
+
+---
+
+## Architecture Layers
+
+Layer names and responsibilities are defined in `docs/architecture/system_overview.md`.
+
+| Layer | Name | Status |
+|---|---|---|
+| 0 | Infrastructure | Frozen at M1 |
+| 1 | Execution Mechanics | Frozen at M1.2; changes expected in M1.5 and M2 |
+| 2 | Orchestration | Not started |
+
+Security Model and Human Workflow are design constraints and system invariants — they do not map to implementation layers and are not freeze-tracked here.
+
+---
+
+## Document Registry
+
+Temperature reflects the stability of what a document describes — not how carefully it was written.
+
+**🔴 Hot** — changes continuously  
+**🟡 Warm** — changes per milestone  
+**🟢 Cold** — frozen policy or settled invariants; changes signal design instability
+
+### Root
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `readme.md` | 🟢 Cold | M1 | System invariants and entry point. Should rarely need updating. |
+| `contributors.md` | 🟢 Cold | M1 | Contribution rules. Update only when workflow or security model changes. |
+| `agent_context_brief.md` | 🟡 Warm | M1.5 | Agent collaboration protocol. Update when working practices evolve. |
+
+### Development (`docs/development/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `doc_status.md` | 🔴 Hot | M1.5 | Session-scoped hot file list. Updated at every milestone boundary. |
+| `project_index.md` | 🟡 Warm | M1.5 | This file. Updated when files are added, removed, or freeze status changes. |
+| `roadmap.md` | 🔴 Hot | M1.5 | Active milestone tasks and milestone summary table. |
+| `roadmap_future.md` | 🟡 Warm | M1.5 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
+| `task_policy.md` | 🟡 Warm | M1.5 | Task working principles and story/investigation conventions. |
+| `roadmap_policy.md` | 🟢 Cold | M1 | Roadmap maintenance rules. Only changes if the maintenance model changes. |
+| `documentation_policy.md` | 🟢 Cold | M1 | Documentation structure rules. Only changes if the doc model changes. |
+
+### Discussions (`docs/discussions/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `story_obsidian_vault_onboarding.md` | 🟢 Cold | M1.5 | Superseded. Reasoning record only. |
+| `story_provider_knowledge_store.md` | 🟢 Cold | M1.5 | Resolved. Reasoning record only. |
+| `story_claude_code.md` | 🟢 Cold | M1.5 | Superseded. Findings carry into M2. |
+| `investigation_mcp_server.md` | 🟢 Cold | M1.5 | Resolved. Design document for M2.1. Do not edit; reference only. |
+| `investigation_claude_code.md` | 🟡 Warm | M1.5 | In progress. Resumes in M2.3. |
+| `investigation_claude_desktop.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
+| `investigation_claude_desktop_mcp.md` | 🟢 Cold | M1.5 | Superseded by `investigation_mcp_server.md`. Redirect only. |
+| `investigation_hermes.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
+| `investigation_pi.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
+| `investigation_workspace_input_channel.md` | 🟢 Cold | M1.5 | Resolved. Operator input channel implemented in M1.5. |
+
+### Architecture (`docs/architecture/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
+| `execution_model.md` | 🔴 Hot | M1.5 | Active implementation document. Updated in M1.5 (directory restructuring, input channel). |
+| `security.md` | 🟡 Warm | M1.5 | Design constraint and trust boundary spec. Input channel adds a new mount — verify no new invariants required. |
+| `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
+
+### Concepts (`docs/concepts/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `agent_workflow.md` | 🔴 Hot | M1.5 | Operator workflow and directory layout. Updated in M1.5. |
+| `task_lifecycle.md` | 🟡 Warm | M1 | Task lifecycle model. TASK.md section is a stub pending M2.5. |
+| `two_layer_model.md` | 🟢 Cold | M1.5 | Canonical two-layer architecture definition. Do not edit; reference only. |
+
+### Operations (`docs/operations/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
+
+### Knowledge Vault Workflow (`workflow/knowledge-vault/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `README.md` | 🟢 Cold | M1.5 | Entry point. Hot task note added. No further changes until M2.1. |
+| `changelog.md` | 🟢 Cold | M1.5 | KV1–KV4 completion record. Append-only; no edits to existing entries. |
+| `onboarding.md` | 🟢 Cold | M1.5 | Forward-compatibility note added. No further changes until M2.1. |
+| `story.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to `docs/discussions/story_obsidian_vault_onboarding.md`. |
+| `roadmap.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to README + changelog + main roadmap. |
+
+---
+
+## Architecture Layer Boundary Check
+
+Before making a change to any Layer 0 or frozen Layer 1 document, confirm:
+1. The current milestone explicitly calls for changes to that layer
+2. The change is recorded in the milestone's task list in `roadmap.md`
+3. If the milestone does not call for it — stop and flag as out of scope
+
+Undocumented changes to frozen layers are the primary source of drift between implementation and documentation.

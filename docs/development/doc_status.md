@@ -1,90 +1,47 @@
 # Documentation Status
 
-This is the hot file for the agent-sandbox documentation system. It tracks current milestone state, frozen architecture layers, and the expected change frequency of every document in the repo. Update this file whenever a milestone completes or a document's status changes.
+Session-scoped hot file list for the current milestone. Cold files are not listed — absence from this list means the file is not expected to change this milestone.
 
-For documentation rules and structure, see [`documentation-guidelines.md`](documentation-guidelines.md). That file is frozen policy — this file is live state.
-
----
-
-## Current Milestone
-
-See [`roadmap.md`](roadmap.md) for the milestone summary table, task-level detail, and completion criteria.
+For a full project file index with freeze status and architecture layer assignments, see [`project_index.md`](project_index.md).
 
 ---
 
-## Frozen Architecture Layers
+## Current Milestone: M1.5 — Workflow Convergence & Directory Restructuring
 
-Layer names and responsibilities are defined in [`architecture/system_overview.md`](../architecture/system_overview.md).
-
-| Layer | Name | Status |
-|---|---|---|
-| 0 | Infrastructure | Frozen at M1 |
-| 1 | Execution Mechanics | Frozen at M1.1 (serve mode); in progress M1.2 |
-| 2 | Orchestration | Not started |
-
-Security Model and Human Workflow are design constraints and system invariants, not implementation layers. They do not appear in the freeze table.
+Task list and completion criteria: [`roadmap.md`](roadmap.md) — M1.5 section.
 
 ---
 
-## Document Discovery Flow
+## Hot Files
 
-New contributors and agents should read documents in this order:
+Files expected to change this milestone. Read fresh at session start. Use `grep -n "^##"` to get section map before reading content.
 
-1. [`readme.md`](../../readme.md) — system overview and invariants
-2. [`contributors.md`](../../contributors.md) — contribution rules and secrets handling
-3. **This file** — current state, what's frozen, what's changing
-4. [`documentation-guidelines.md`](documentation-guidelines.md) — documentation rules (read once, rarely revisit)
-5. [`roadmap.md`](roadmap.md) — current tasks and open questions
-
-From there, follow links into `architecture/` for implementation detail as needed.
+| File | Why hot | Relevant section |
+|---|---|---|
+| `scripts/start_agent.sh` | Primary implementation target — `PROJECT_ROOT` → `PROJECT_DIR`, `SANDBOX_DIR` derivation, mount updates | Variable declarations block, `docker run` invocation, mount construction |
+| `scripts/agent-sandbox.sh` | CLI wrapper — `--root` flag rename to `--project` | Flag parsing section |
+| `providers/opencode/build_agent.sh` | May reference `PROJECT_ROOT` — confirm and update | Variable declarations |
+| `container-entrypoint.sh` | Input channel — copy `input/` contents into `sandbox/` at startup | Startup/init section |
+| `lib/snapshot.sh` | Path derivation — `PROJECT_ROOT` references | Path variable block |
+| `docs/architecture/execution_model.md` | New directory layout, updated terminology, updated mount shape table | Directory layout section, mount shape table |
+| `docs/concepts/agent_workflow.md` | Updated operator directory layout and pre-run setup instructions | Pre-run setup section |
 
 ---
 
-## Document Temperature Map
+## Warm Files
 
-Temperature reflects the stability of what a document describes — not how carefully it was written or how important it is. A cold document covers principles or invariants that are deliberately settled; frequent changes to a cold document are a signal that something is wrong in the design. A warm document tracks active implementation and evolves with milestones. A hot document is expected to change continuously and should always be read fresh.
+Referenced this milestone but not expected to change unless implementation reveals a need.
 
-**🔴 Hot** — changes continuously
-**🟡 Warm** — changes per milestone
-**🟢 Cold** — frozen policy or settled invariants; changes signal design instability
+| File | Why warm |
+|---|---|
+| `lib/diff.sh` | May reference project paths — confirm clean via grep before session ends |
+| `lib/image.sh` | Same as above |
+| `docs/architecture/security.md` | Input channel adds a new mount — confirm no new invariants required |
 
-### Development (`docs/development/`)
+---
 
-| Document | Temp | Notes |
-|---|---|---|
-| `doc-status.md` | 🔴 Hot | This file. Update on every milestone transition. |
-| `roadmap.md` | 🔴 Hot | Updated continuously as tasks complete. |
-| `quickstart.md` | 🟡 Warm | Operator onboarding guide. Verify on each milestone. |
+## Notes
 
-### Architecture (`docs/architecture/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `system_overview.md` | 🟡 Warm | Update when major architectural components change. |
-| `execution_model.md` | 🔴 Hot | Active implementation document. Evolves with each Execution Mechanics milestone. Last updated: M1.2. |
-| `security.md` | 🟢 Cold | Design constraint and trust boundary spec. Changes signal a design-level shift. |
-| `threat_model_stride.md` | 🟢 Cold | STRIDE analysis is implementation-agnostic. Revisit at major threat surface changes. |
-
-### Concepts (`docs/concepts/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `agent_workflow.md` | 🟢 Cold | Staging principles and operator workflow. Changes signal a shift in core workflow design. |
-| `task_lifecycle.md` | 🟡 Warm | Task lifecycle model. Awaiting M2 — TASK.md section is a stub pending M2 design or organic workflow discovery. |
-
-### Operations (`docs/operations/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `standard_operating_procedures.md` | 🟡 Warm | Update when security mitigations or operational procedures change. |
-| `documentation_policy.md` | 🟢 Cold | Frozen policy. Only changes if the documentation model itself changes. |
-| `roadmap_policy.md` | 🟢 Cold | Roadmap update and cleanup rules. Only changes if the maintenance model changes. |
-| `task_policy.md` | 🟡 Warm | Task working principles. Awaiting M2 — at least one change expected when TASK.md is defined. |
-
-### Root
-
-| Document | Temp | Notes |
-|---|---|---|
-| `readme.md` | 🟢 Cold | System invariants and entry point. Should rarely need updating. |
-| `contributors.md` | 🟢 Cold | Contribution rules. Update only when workflow or security model changes. |
-| `agent_context_brief.md` | 🟡 Warm | Update when agent collaboration protocol evolves. |
+- `execution_model.md` and `agent_workflow.md` are updated last — after all script changes are confirmed working
+- `lib/` files: run `grep -rn "PROJECT_ROOT" lib/` at session start; only open files that appear in results
+- Do not touch `docs/development/roadmap.md` mid-session; update task checkboxes in a single pass at session end

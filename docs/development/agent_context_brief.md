@@ -4,8 +4,6 @@
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute inside containers, their outputs are staged as diffs, and a human operator reviews and commits all changes. The agent runtime is explicitly untrusted.
 
-Currently supported provider: **OpenCode**
-
 ---
 
 ## Role
@@ -60,7 +58,27 @@ The workflow is the procedural realization of the collaboration protocol. It wil
 
 ---
 
-## Output Format
+## Read Discipline
+
+Before opening any file in full, establish what you need from it first.
+
+**To find which files contain a term across the repo:**
+```bash
+grep -rn "TERM" path/
+```
+Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`.
+
+**To get a section map of a file before reading it:**
+```bash
+grep -n "^##" filename.md
+```
+Then use `view_range` to read only the sections you need.
+
+A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
+
+---
+
+
 
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 
@@ -72,14 +90,21 @@ The workflow is the procedural realization of the collaboration protocol. It wil
 
 ## References
 
-| Document | Purpose |
-|---|---|
-| [`readme.md`](readme.md) | System invariants, layer model, onboarding path |
-| [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) | Architecture detail and full document index |
-| [`docs/development/roadmap.md`](docs/development/roadmap.md) | Current milestone and task detail |
-| [`docs/development/doc-status.md`](docs/development/doc-status.md) | Frozen layer status and document temperature |
-| [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Document structure, folder ownership, enforcement rules |
-| [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Roadmap update sequence, cleanup rules, summary guidelines |
-| [`docs/operations/task_policy.md`](docs/operations/task_policy.md) | Task working principles and stage sequence |
+Read these in order at session start. Each answers a distinct question — do not skip.
 
-Read `documentation_policy.md` and `roadmap_policy.md` before any documentation or roadmap task. Read `task_policy.md` before beginning any new task.
+| Document | Question it answers |
+|---|---|
+| [`readme.md`](readme.md) | What is this system? |
+| this file | How do I work here? |
+| [`agents.md`](agents.md) | What can I do in this specific interface? |
+| [`docs/development/doc_status.md`](docs/development/doc_status.md) | What should I read this milestone? |
+| [`agent_handover.md`](agent_handover.md) | What was happening when the last session ended? |
+
+Policy documents — read before the relevant task type, not at session start:
+
+| Document | Read before |
+|---|---|
+| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
+| [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
+| [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
+| [`docs/development/task_policy.md`](docs/development/task_policy.md) | Any new task, story, or investigation |
