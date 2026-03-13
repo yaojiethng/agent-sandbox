@@ -97,3 +97,12 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Introduce `.skills/` directory
 - [ ] Provide templates or skill definitions for agent
 - [ ] Integrate skills into agent workflow
+
+
+---
+
+## Deferred (Unplanned)
+
+### Capability Layer — Live Mount
+
+The current model standardises on a sandbox copy in the capability layer container for all workflows. A live mount of the host project directory directly into the capability layer container is a potential UX improvement — changes would be visible on the host immediately during a session rather than after the operator applies the diff. This may also be useful for coding workflows where incremental visibility is valuable. Deferred until the copy pattern has been validated at scale and a concrete use case justifies the added complexity in the diff pipeline.

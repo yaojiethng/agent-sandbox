@@ -44,9 +44,6 @@ Temperature reflects the stability of what a document describes — not how care
 | `project_index.md` | 🟡 Warm | M1.5 | This file. Updated when files are added, removed, or freeze status changes. |
 | `roadmap.md` | 🔴 Hot | M1.5 | Active milestone tasks and milestone summary table. |
 | `roadmap_future.md` | 🟡 Warm | M1.5 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
-| `task_policy.md` | 🟡 Warm | M1.5 | Task working principles and story/investigation conventions. |
-| `roadmap_policy.md` | 🟢 Cold | M1 | Roadmap maintenance rules. Only changes if the maintenance model changes. |
-| `documentation_policy.md` | 🟢 Cold | M1 | Documentation structure rules. Only changes if the doc model changes. |
 
 ### Discussions (`docs/discussions/`)
 
@@ -69,7 +66,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
 | `execution_model.md` | 🔴 Hot | M1.5 | Active implementation document. Updated in M1.5 (directory restructuring, input channel). |
-| `security.md` | 🟡 Warm | M1.5 | Design constraint and trust boundary spec. Input channel adds a new mount — verify no new invariants required. |
+| `security.md` | 🟡 Warm | M1.5 | Design constraint and trust boundary spec. Input channel mount verified; no new invariants required. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
 ### Concepts (`docs/concepts/`)
@@ -85,6 +82,27 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last milestone | Notes |
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
+| `task_policy.md` | 🟡 Warm | M1.5 | Task working principles and story/investigation conventions. |
+| `roadmap_policy.md` | 🟢 Cold | M1.5 | Roadmap maintenance rules. Updated M1.5 to add milestone promotion convention. |
+| `documentation_policy.md` | 🟢 Cold | M1 | Documentation structure rules. Only changes if the doc model changes. |
+
+### Scripts (`scripts/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
+| `apply_workspace.sh` | 🟡 Warm | M1.5 | Applies staged.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
+| `agent-sandbox.sh` | 🟡 Warm | M1.5 | CLI dispatch wrapper. Installed to host via `make install`. |
+| `onboard.sh` | 🟢 Cold | M1.3 | Dispatches onboard subcommand to workflow-specific script. |
+
+### Lib (`lib/`)
+
+| Document | Temp | Last milestone | Notes |
+|---|---|---|---|
+| `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
+| `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
+| `image.sh` | 🟢 Cold | M1.4 | Image digest computation for staleness detection. |
+| `_template/Makefile.template` | 🟡 Warm | M1.5 | Project Makefile template. Updated for PROJECT_DIR/SANDBOX_DIR layout. |
 
 ### Knowledge Vault Workflow (`workflow/knowledge-vault/`)
 

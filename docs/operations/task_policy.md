@@ -190,7 +190,7 @@ Stored at the repo root alongside `agent_context_brief.md`. Multiple handovers a
 <table: file | one-line change summary>
 
 ## Next task
-<exact task reference from roadmap>
+<milestone section heading from roadmap>
 <files needed from operator if known>
 <grep to run at session start if applicable>
 
@@ -201,7 +201,7 @@ Stored at the repo root alongside `agent_context_brief.md`. Multiple handovers a
 ### Rules
 
 - **Completed this session** is a table, not prose. One row per file. If no files changed, write "No file changes this session."
-- **Next task** points to the roadmap by section — do not restate the task list. The roadmap is the source of truth.
+- **Next task** points to the milestone section in the roadmap — include the section heading so the agent can find it immediately. The agent reads the full milestone entry at session start: open decisions, task list, whatever is currently there. The handover does not filter or summarise the milestone. If the milestone entry is incomplete, that is fine — the agent determines what to do from what is there.
 - **Watch out for** is capped at three items. More than three is a signal the session was not scoped tightly enough; record the rest in the relevant document instead.
 - Do not summarise decisions or reasoning — that belongs in the documents where decisions were recorded. The handover trusts the next agent to read `doc_status.md` and follow links.
 - Handover does not replace: story Resolution sections, roadmap task checkboxes, or changelog entries.
