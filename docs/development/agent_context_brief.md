@@ -98,7 +98,7 @@ Read these in order at session start. Each answers a distinct question — do no
 | this file | How do I work here? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
 | [`docs/development/doc_status.md`](docs/development/doc_status.md) | What should I read this milestone? |
-| [`agent_handover.md`](agent_handover.md) | What was happening when the last session ended? |
+| `YYYYMMDD_agent_handover.md` | What was happening when the last session ended? — filename is date-prefixed per `task_policy.md`; find the most recent date at repo root |
 
 Policy documents — read before the relevant task type, not at session start:
 

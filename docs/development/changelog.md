@@ -43,3 +43,13 @@ The per-project conf file was removed in favour of named flags defined in the pr
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
 
 A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `lib/image.sh` and covers all `lib/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
+
+---
+
+## M1.5 — Workflow Convergence & Directory Restructuring
+
+*The harness now separates the project repository from harness artefacts into sibling directories, keeping the project's git tree clean, and provides a dedicated operator input channel for passing task files and briefs to the agent before a run.*
+
+Harness artefacts — snapshot, brief, workspace output — moved from `PROJECT_ROOT` into a sibling `SANDBOX_DIR`, eliminating harness pollution of the project git tree. The `.bootstrap/` directory was renamed `.agent-input/` and expanded to serve as the unified input channel: snapshot, brief, and operator-placed task files all enter the container through a single read-only mount. Directory names are defined once in `start_agent.sh` and passed to the container as environment variables, giving both host and container scripts a single source of truth. The `apply` subcommand now takes explicit `--project` and `--sandbox` flags, with the Makefile defining both paths so the operator workflow is unchanged. Open user stories (vault onboarding, website dev, knowledge store provider) were resolved or explicitly deferred to M2, and the workflow convergence decision was recorded. The onboarding skill was updated to reflect the new directory layout and modularised so that future convention changes require only variable updates.
+
+---
