@@ -70,6 +70,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Notes |
 |---|---|---|
 | `agent_workflow.md` | 🟢 Cold | Staging principles and operator workflow. Changes signal a shift in core workflow design. |
+| `task_lifecycle.md` | 🟡 Warm | Task lifecycle model. Awaiting M2 — TASK.md section is a stub pending M2 design or organic workflow discovery. |
 
 ### Operations (`docs/operations/`)
 
@@ -78,12 +79,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `standard_operating_procedures.md` | 🟡 Warm | Update when security mitigations or operational procedures change. |
 | `documentation_policy.md` | 🟢 Cold | Frozen policy. Only changes if the documentation model itself changes. |
 | `roadmap_policy.md` | 🟢 Cold | Roadmap update and cleanup rules. Only changes if the maintenance model changes. |
-
-### References (`docs/references/`)
-
-| Document | Temp | Notes |
-|---|---|---|
-| `glossary.md` | 🟡 Warm | Update when new terms are introduced or definitions change. |
+| `task_policy.md` | 🟡 Warm | Task working principles. Awaiting M2 — at least one change expected when TASK.md is defined. |
 
 ### Root
 

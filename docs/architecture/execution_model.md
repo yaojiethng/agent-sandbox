@@ -13,21 +13,69 @@ Implementation decisions are recorded here alongside the design they produce. Op
 Installation is performed once from the agent-sandbox repo:
 
 ```
-make install              # installs to /usr/local/bin/agent-sandbox
-make install PREFIX=~/bin # installs to ~/bin/agent-sandbox
+make install                       # installs to /usr/local/bin/agent-sandbox
+make install INSTALL_DIR=~/bin     # installs to ~/bin/agent-sandbox
 ```
+
+The install directory is resolved in order: `INSTALL_DIR` argument to `make install`, then `INSTALL_DIR` in the repo's `.env` file, then `/usr/local/bin` as the default. This allows machine-specific install paths to be set once in `.env` without repeating them on every `make install` invocation.
 
 `make install` substitutes the repo path into the wrapper at install time, so the installed binary has `AGENT_SANDBOX_REPO` baked in. The source file in the repo (`scripts/agent-sandbox.sh`) contains a placeholder and is never executed directly.
 
 | Subcommand | Delegates to |
 |---|---|
-| `start` | `providers/opencode/start_agent.sh standard` |
-| `dry-run` | `providers/opencode/start_agent.sh dry-run` |
+| `start` | `providers/opencode/start_agent.sh standard` — staleness check before invocation |
+| `dry-run` | `providers/opencode/start_agent.sh dry-run` — staleness check before invocation |
 | `build` | `providers/opencode/build_agent.sh` |
-| `apply` | `scripts/apply_workspace.sh` |
-| `apply-branch` | `scripts/apply_workspace.sh --branch=<n>` |
+| `apply` | `scripts/apply_workspace.sh [--branch=<n>]` |
+| `rebuild` | `build_agent.sh` then re-execs wrapper with remaining args |
 
-For `start`, `dry-run`, and `serve` the wrapper checks whether the project image exists before invoking `start_agent.sh`. If the image is missing it calls `build_agent.sh` automatically and notifies the operator. Passing `--rebuild` forces a build regardless of image state.
+For `start` and `dry-run` the wrapper runs two pre-flight checks before invoking `start_agent.sh`. First, if the project image does not exist, it calls `build_agent.sh` automatically and notifies the operator. Second, if the image exists but is stale — detected by comparing the current source digest against the label embedded in the image — it warns the operator and continues. The staleness warning is always the last line emitted before the run proceeds, so it is not lost in build output. If a rebuild triggered by staleness fails, the staleness warning is re-emitted as the final line before exit. See [Image Digest & Staleness](#image-digest--staleness) for the digest mechanism. To force a rebuild before any subcommand, prefix with `rebuild`:
+
+```
+agent-sandbox rebuild start   --name=<n> --root=<path> ...
+agent-sandbox rebuild dry-run --name=<n> --root=<path> ...
+```
+
+`rebuild` extracts `--name` and `--root` from the passthrough args, runs `build_agent.sh`, then re-execs the wrapper with the original subcommand and flags. The `--rebuild` flag is not supported; `rebuild` as a subcommand is the only force-build path.
+
+---
+
+## Image Digest & Staleness
+
+The harness embeds a content digest in each built image and checks it at run time to detect when source files have changed since the image was last built.
+
+### Digest computation
+
+`lib/image.sh` defines `image_compute_digest`, which computes a SHA-256 digest over two sets of files:
+
+- All files in `lib/` — shared across all providers by convention
+- Provider-specific files listed in `providers/<provider>/image-files.txt`, one relative-path-from-root per line
+
+Both sets are concatenated in a deterministic order before hashing. The file list in `image-files.txt` must cover every file copied into the image by the provider's Dockerfile — omissions produce a digest that does not reflect all image inputs.
+
+### Build-time label
+
+`build_agent.sh` sources `lib/image.sh`, calls `image_compute_digest`, and passes the result as a Docker build label:
+
+```
+--label agent-sandbox.digest=<sha>
+```
+
+The label is embedded in the image at build time and retrievable via `docker inspect`.
+
+### Start-time staleness check
+
+Before invoking `start_agent.sh` for `start` or `dry-run`, the wrapper:
+
+1. Recomputes the digest from current source files using `image_compute_digest`
+2. Reads the `agent-sandbox.digest` label from the existing image via `docker inspect`
+3. If the digests differ, emits a staleness warning and continues
+
+The staleness warning is always the last line emitted before the run proceeds. If a rebuild is triggered and fails, the warning is re-emitted as the final line before exit, ensuring it is visible regardless of build output volume.
+
+### Shared-lib assumption
+
+All providers share `lib/`. The digest always includes the full contents of `lib/` regardless of which provider is in use. Provider-specific inputs are additive via `image-files.txt`.
 
 ---
 
@@ -47,7 +95,7 @@ start_agent.sh <mode> --name=<project_name> --root=<path> [--brief=<rel>] [--env
 | `--env` | No | Path to `.env` file, relative to `PROJECT_ROOT` |
 | `--serve` | No | Start OpenCode in serve mode |
 
-`--rebuild` is handled by the wrapper before `start_agent.sh` is called and is never passed through to it.
+`--rebuild` is not a flag on `start_agent.sh`. Force rebuilds are handled by the `rebuild` subcommand in the wrapper before `start_agent.sh` is called.
 
 The `Makefile` defines `PROJECT_ROOT` as `$(CURDIR)` — the directory containing the Makefile — so the correct root is always resolved without manual configuration. `AGENT_BRIEF` and `ENV_FILE` are relative paths resolved against `PROJECT_ROOT` inside `start_agent.sh`.
 
@@ -126,12 +174,7 @@ On container exit, an EXIT trap runs `stage_diffs`:
 
 An autosave loop runs `stage_diffs` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
 
-On the host, two scripts apply the patch:
-
-- `apply_workspace_inplace.sh` — applies to the current branch without committing.
-- `apply_workspace_to_branch.sh` — checks out a named branch and applies.
-
-Both use `git apply --3way` to handle conflicts. Both validate that `PROJECT_ROOT` is a git repository with at least one commit before applying.
+On the host, `scripts/apply_workspace.sh` applies the patch to the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_ROOT` is a git repository with at least one commit before applying.
 
 ---
 

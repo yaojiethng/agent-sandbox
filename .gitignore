@@ -7,9 +7,9 @@ venv/
 env/
 output/
 /projects/
-.skills/
 .workspace/
 .bootstrap/
+.vault
 
 # === Python ===
 __pycache__/

@@ -2,10 +2,12 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox start         --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve] [--rebuild]
-#   agent-sandbox dry-run       --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--rebuild]
+#   agent-sandbox start         --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>] [--serve]
+#   agent-sandbox dry-run       --name=<n> --root=<path> [--brief=<rel>] [--env=<rel>]
 #   agent-sandbox build         --name=<n> --root=<path> [--no-cache]
 #   agent-sandbox apply         --root=<path> [--branch=<n>]
+#   agent-sandbox onboard       <workflow> <flags>  — one-time project onboarding
+#   agent-sandbox rebuild       <subcommand> <flags>  — force rebuild then dispatch
 
 set -euo pipefail
 
@@ -17,9 +19,42 @@ PROVIDER="$AGENT_SANDBOX_REPO/providers/opencode"
 SUBCOMMAND="${1:-}"
 shift || true
 
+STALE_MSG="agent-sandbox: image may be stale — source files have changed since last build. Run: agent-sandbox rebuild <subcommand> to rebuild."
+
 if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <start|dry-run|build|apply|apply-branch> <flags>"
+  echo "Usage: agent-sandbox <start|dry-run|build|apply|onboard|rebuild> <flags>"
   exit 1
+fi
+
+# -------------------------
+# Rebuild — force build then re-exec with remaining args
+# -------------------------
+# Must be handled before flag parsing so it works with any subcommand.
+if [[ "$SUBCOMMAND" == "rebuild" ]]; then
+  if [[ -z "${1:-}" ]]; then
+    echo "Usage: agent-sandbox rebuild <start|dry-run> --name=<n> --root=<path> ..."
+    exit 1
+  fi
+  # Extract --name and --root from remaining args for the build step.
+  _NAME=""
+  _ROOT=""
+  for _ARG in "$@"; do
+    case "$_ARG" in
+      --name=*) _NAME="${_ARG#--name=}" ;;
+      --root=*) _ROOT="${_ARG#--root=}" ;;
+    esac
+  done
+  if [[ -z "$_NAME" || -z "$_ROOT" ]]; then
+    echo "Error: rebuild requires --name and --root"
+    exit 1
+  fi
+  _STALE_MSG="$STALE_MSG"
+  echo "Rebuilding image: opencode-agent-$_NAME"
+  if ! "$PROVIDER/build_agent.sh" --name="$_NAME" --root="$_ROOT"; then
+    echo "$_STALE_MSG"
+    exit 1
+  fi
+  exec "$0" "$@"
 fi
 
 # -------------------------
@@ -28,33 +63,41 @@ fi
 PROJECT_NAME=""
 PROJECT_ROOT=""
 BRANCH=""
-REBUILD=false
 PASSTHROUGH=()
 
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*)        PROJECT_NAME="${ARG#--name=}" ;;
-    --root=*)        PROJECT_ROOT="${ARG#--root=}" ;;
-    --branch=*)      BRANCH="${ARG#--branch=}" ;;
-    --rebuild)   REBUILD=true ;;
-    *)               PASSTHROUGH+=("$ARG") ;;
+    --name=*)   PROJECT_NAME="${ARG#--name=}" ;;
+    --root=*)   PROJECT_ROOT="${ARG#--root=}" ;;
+    --branch=*) BRANCH="${ARG#--branch=}" ;;
+    *)          PASSTHROUGH+=("$ARG") ;;
   esac
 done
 
 # -------------------------
-# Build helper
+# Preflight — build-if-missing, then staleness check
 # -------------------------
-maybe_build() {
+preflight() {
   local IMAGE_NAME="opencode-agent-$PROJECT_NAME"
-  local IMAGE_EXISTS
-  IMAGE_EXISTS=$(docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && echo yes || echo no)
 
-  if [[ "$REBUILD" == true ]]; then
-    echo "Force-building image: $IMAGE_NAME"
-    "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --root="$PROJECT_ROOT"
-  elif [[ "$IMAGE_EXISTS" != yes ]]; then
+  # Build if image does not exist
+  if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Image not found, building: $IMAGE_NAME"
     "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --root="$PROJECT_ROOT"
+    return
+  fi
+
+  # Staleness check — compare current digest against label on existing image
+  source "$AGENT_SANDBOX_REPO/lib/image.sh"
+  local CURRENT_DIGEST IMAGE_DIGEST
+  CURRENT_DIGEST=$(image_compute_digest "$AGENT_SANDBOX_REPO" "opencode")
+  IMAGE_DIGEST=$(docker inspect \
+    --format '{{ index .Config.Labels "agent-sandbox.digest" }}' \
+    "$IMAGE_NAME" 2>/dev/null || true)
+
+  if [[ "$CURRENT_DIGEST" != "$IMAGE_DIGEST" ]]; then
+    # Emit warning last so it is not buried — run proceeds regardless
+    echo "$STALE_MSG"
   fi
 }
 
@@ -67,7 +110,7 @@ case "$SUBCOMMAND" in
       echo "Error: --name and --root are required"
       exit 1
     fi
-    maybe_build
+    preflight
     "$PROVIDER/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
       --root="$PROJECT_ROOT" \
@@ -79,7 +122,7 @@ case "$SUBCOMMAND" in
       echo "Error: --name and --root are required"
       exit 1
     fi
-    maybe_build
+    preflight
     "$PROVIDER/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
       --root="$PROJECT_ROOT" \
@@ -107,9 +150,13 @@ case "$SUBCOMMAND" in
       ${BRANCH:+--branch="$BRANCH"}
     ;;
 
+  onboard)
+    "$SCRIPTS/onboard.sh" "$@"
+    ;;
+
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: start, dry-run, build, apply"
+    echo "Valid subcommands: start, dry-run, build, apply, onboard, rebuild"
     exit 1
     ;;
 esac

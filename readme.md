@@ -75,7 +75,8 @@ Start here and follow the path in order. Architecture documents describe the sys
 | 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
 | 2 | [doc-status.md](docs/development/doc-status.md) | Current milestone, frozen layers, document temperature map |
 | 3 | [documentation-guidelines.md](docs/development/documentation-guidelines.md) | Documentation rules and structure (read once) |
-| 4 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
+| 4 | [task_policy.md](docs/operations/task_policy.md) | Task working principles and stage sequence (read once) |
+| 5 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 

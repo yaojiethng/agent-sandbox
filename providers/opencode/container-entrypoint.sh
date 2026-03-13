@@ -30,9 +30,34 @@ source /lib/snapshot.sh
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
 snapshot_validate "$SNAPSHOT_DIR"
 
-# Copy snapshot into container-local sandbox/ and initialise git baseline.
+# Clear any previous sandbox state to prevent stale git index issues.
+# cd back to ROOT first — snapshot_init_git changes cwd and rm -rf would
+# otherwise leave the shell in a deleted directory on the next run.
+rm -rf "$SANDBOX_DIR"
+cd "$ROOT"
+
+# Copy snapshot into container-local sandbox/.
 snapshot_copy_to_sandbox "$SNAPSHOT_DIR" "$SANDBOX_DIR"
-BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR")
+
+# Confirm files landed — catch silent copy failures before init.
+file_count=$(find "$SANDBOX_DIR" -type f | wc -l)
+if [[ "$file_count" -eq 0 ]]; then
+  echo "Error: sandbox is empty after copy — snapshot may be missing files." >&2
+  echo "  Snapshot dir: $SNAPSHOT_DIR" >&2
+  echo "  Run: ls -la $SNAPSHOT_DIR" >&2
+  exit 1
+fi
+echo "Copied $file_count file(s) into sandbox."
+
+# Initialise git baseline. Failure here means the container cannot start.
+# Command substitution runs snapshot_init_git in a subshell, containing its
+# internal cd. The explicit cd "$ROOT" afterward guards against any cwd leak.
+BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR") || {
+  echo "Error: sandbox git initialisation failed — container cannot start." >&2
+  echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
+  exit 1
+}
+cd "$ROOT"
 
 echo "Sandbox ready. Baseline: $BASELINE_SHA"
 
@@ -40,7 +65,7 @@ echo "Sandbox ready. Baseline: $BASELINE_SHA"
 # Copy brief into sandbox root
 # -------------------------
 if [[ -f "$BOOTSTRAP_DIR/brief.md" ]]; then
-  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/brief.md"
+  cp -p "$BOOTSTRAP_DIR/brief.md" "$SANDBOX_DIR/AGENTS.md"
 fi
 
 # -------------------------
