@@ -5,7 +5,7 @@
 # Creates a scratch copy of the vault, runs verification tests, and
 # reports results. The original vault is never modified.
 #
-# Sources classification and .gitattributes generation from .vault/lib/
+# Sources classification and .gitattributes generation from .vault/libs/
 # so tests run against the same implementation used by vault-init.sh.
 #
 # Usage:
@@ -22,7 +22,7 @@ set -uo pipefail
 # Locate lib relative to this script
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$(cd "${SCRIPT_DIR}/../lib" && pwd)"
+LIB_DIR="$(cd "${SCRIPT_DIR}/../libs" && pwd)"
 
 source "${LIB_DIR}/classify.sh"
 source "${LIB_DIR}/gitattributes.sh"
@@ -111,7 +111,7 @@ BASELINE_SHA=$(git rev-parse HEAD)
 log "Baseline SHA: ${BASELINE_SHA:0:8}"
 
 # -------------------------
-# Classify extensions from scratch vault (lib/classify.sh)
+# Classify extensions from scratch vault (libs/classify.sh)
 # -------------------------
 section "Discovering file types in vault"
 
@@ -312,7 +312,7 @@ else
 
     if echo "$diff_without" | grep -q "Binary files differ"; then
       fail "Without --binary: binary silently dropped from diff"
-      log "  ACTION REQUIRED: patch lib/diff.sh — add --binary -M to diff_generate"
+      log "  ACTION REQUIRED: patch libs/diff.sh — add --binary -M to diff_generate"
     elif echo "$diff_without" | grep -q "git-lfs"; then
       ok "Without --binary: LFS pointer still appears (pointer files are text — fine)"
     else

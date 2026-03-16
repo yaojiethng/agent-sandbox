@@ -102,11 +102,11 @@ The standard workflow likely works as-is. One possible gap: if the vault contain
 All investigation tasks resolved. Outputs in `workflow/knowledge-vault/`:
 
 - `onboarding.md` — operator and agent-facing onboarding guide
-- `lib/classify.sh`, `lib/gitattributes.sh` — shared classification and generation logic
+- `libs/classify.sh`, `libs/gitattributes.sh` — shared classification and generation logic
 - `scripts/vault-init.sh` — idempotent vault git + LFS init
 - `scripts/checkpoint-create.sh`, `checkpoint-rollback.sh`, `checkpoint-prune.sh`
 - `tests/vault-lfs-test.sh` — 30/30 passing against real vault content
-- `lib/diff.sh` — `--binary -M` flags added to `diff_generate` (correctness fix; identified as required in KV1)
+- `libs/diff.sh` — `--binary -M` flags added to `diff_generate` (correctness fix; identified as required in KV1)
 
 Full completion record in [`workflow/knowledge-vault/changelog.md`](../../workflow/knowledge-vault/changelog.md).
 

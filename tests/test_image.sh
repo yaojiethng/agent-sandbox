@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_image.sh — Tests for lib/image.sh image_compute_digest.
+# tests/test_image.sh — Tests for libs/image.sh image_compute_digest.
 #
 # Uses a temporary directory to simulate the repo layout.
 # Each test is self-contained; the fixture is rebuilt per test.
@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/lib/image.sh"
+source "$REPO_ROOT/libs/image.sh"
 
 # ---------------------------------------------------------------------------
 # Test harness
@@ -70,9 +70,9 @@ make_fixture() {
     local dir
     dir=$(mktemp -d)
 
-    mkdir -p "$dir/lib"
-    echo "lib-content-a" > "$dir/lib/a.sh"
-    echo "lib-content-b" > "$dir/lib/b.sh"
+    mkdir -p "$dir/libs"
+    echo "lib-content-a" > "$dir/libs/a.sh"
+    echo "lib-content-b" > "$dir/libs/b.sh"
 
     mkdir -p "$dir/providers/opencode"
     echo "entrypoint-content" > "$dir/providers/opencode/container-entrypoint.sh"
@@ -120,7 +120,7 @@ echo "-- Digest sensitivity --"
 REPO=$(make_fixture)
 d1=$(image_compute_digest "$REPO" "opencode")
 
-echo "lib-content-changed" > "$REPO/lib/a.sh"
+echo "lib-content-changed" > "$REPO/libs/a.sh"
 d2=$(image_compute_digest "$REPO" "opencode")
 assert_not_equal "digest changes when lib file changes" "$d1" "$d2"
 
@@ -168,20 +168,20 @@ assert_exit_nonzero "fails when listed file does not exist" \
     image_compute_digest "$REPO" "opencode"
 cleanup "$REPO"
 
-# --- Error: empty lib/ ---
+# --- Error: empty libs/ ---
 
 REPO=$(make_fixture)
-rm "$REPO/lib/"*.sh
-assert_exit_nonzero "fails when lib/ is empty" \
+rm "$REPO/libs/"*.sh
+assert_exit_nonzero "fails when libs/ is empty" \
     image_compute_digest "$REPO" "opencode"
 cleanup "$REPO"
 
 # --- Error: missing required arguments ---
 
 assert_exit_nonzero "fails when REPO arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/lib/image.sh && image_compute_digest'
+    bash -c 'source '"$REPO_ROOT"'/libs/image.sh && image_compute_digest'
 assert_exit_nonzero "fails when PROVIDER arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/lib/image.sh && image_compute_digest "/some/path"'
+    bash -c 'source '"$REPO_ROOT"'/libs/image.sh && image_compute_digest "/some/path"'
 
 # --- image-files.txt: blank lines and comments are ignored ---
 

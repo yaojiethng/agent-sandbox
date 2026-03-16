@@ -72,7 +72,7 @@ Start here and follow the path in order. Architecture documents describe the sys
 
 | Step | Document | Purpose |
 |---|---|---|
-| 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
+| 1 | [contributors.md](docs/development/contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
 | 2 | [doc-status.md](docs/development/doc-status.md) | Current milestone, frozen layers, document temperature map |
 | 3 | [documentation-guidelines.md](docs/development/documentation-guidelines.md) | Documentation rules and structure (read once) |
 | 4 | [task_policy.md](docs/operations/task_policy.md) | Task working principles and stage sequence (read once) |

@@ -118,7 +118,7 @@ fragile and unreadable. If the script moves, every derived path breaks.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKFLOW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${WORKFLOW_DIR}/../.." && pwd)"
-TEMPLATE_DIR="${REPO_ROOT}/lib/_templates"
+TEMPLATE_DIR="${REPO_ROOT}/libs/_templates"
 ```
 
 Each variable is derived from the one above. A layout change requires

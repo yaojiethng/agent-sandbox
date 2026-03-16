@@ -50,7 +50,7 @@ Claude Code is an npm package (`@anthropic-ai/claude-code`), installed globally 
 
 ### 4. Harness reuse
 
-- **`lib/snapshot.sh`, `lib/diff.sh`, `lib/image.sh`** — fully reusable unchanged.
+- **`libs/snapshot.sh`, `libs/diff.sh`, `libs/image.sh`** — fully reusable unchanged.
 - **`scripts/apply_workspace.sh`** — fully reusable unchanged.
 - **`build_agent.sh`** — reusable with a different Dockerfile path.
 - **`start_agent.sh`** — shared sections (snapshot construction, mount building, env loading) are M2.3 extraction targets. Provider-specific section is the `docker run` invocation args and mode dispatch.

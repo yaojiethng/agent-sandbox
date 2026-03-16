@@ -22,7 +22,7 @@ Files expected to change this milestone. Read fresh at session start. Use `grep 
 | `scripts/agent-sandbox.sh` | CLI wrapper — `--root` flag rename to `--project` | Flag parsing section |
 | `providers/opencode/build_agent.sh` | May reference `PROJECT_ROOT` — confirm and update | Variable declarations |
 | `container-entrypoint.sh` | Input channel — copy `input/` contents into `sandbox/` at startup | Startup/init section |
-| `lib/snapshot.sh` | Path derivation — `PROJECT_ROOT` references | Path variable block |
+| `libs/snapshot.sh` | Path derivation — `PROJECT_ROOT` references | Path variable block |
 | `docs/architecture/execution_model.md` | New directory layout, updated terminology, updated mount shape table | Directory layout section, mount shape table |
 | `docs/concepts/agent_workflow.md` | Updated operator directory layout and pre-run setup instructions | Pre-run setup section |
 
@@ -34,8 +34,8 @@ Referenced this milestone but not expected to change unless implementation revea
 
 | File | Why warm |
 |---|---|
-| `lib/diff.sh` | May reference project paths — confirm clean via grep before session ends |
-| `lib/image.sh` | Same as above |
+| `libs/diff.sh` | May reference project paths — confirm clean via grep before session ends |
+| `libs/image.sh` | Same as above |
 | `docs/architecture/security.md` | Input channel adds a new mount — confirm no new invariants required |
 
 ---
@@ -43,5 +43,5 @@ Referenced this milestone but not expected to change unless implementation revea
 ## Notes
 
 - `execution_model.md` and `agent_workflow.md` are updated last — after all script changes are confirmed working
-- `lib/` files: run `grep -rn "PROJECT_ROOT" lib/` at session start; only open files that appear in results
+- `libs/` files: run `grep -rn "PROJECT_ROOT" libs/` at session start; only open files that appear in results
 - Do not touch `docs/development/roadmap.md` mid-session; update task checkboxes in a single pass at session end

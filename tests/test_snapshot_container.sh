@@ -7,7 +7,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$REPO_ROOT/lib/snapshot.sh"
+source "$REPO_ROOT/libs/snapshot.sh"
 
 PASS=0
 FAIL=0

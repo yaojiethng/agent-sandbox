@@ -63,8 +63,8 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Depends on:** M2.1 two-container foundation.
 
 **Tasks:**
-- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `lib/`; leave only OpenCode-specific invocation
-- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `lib/` or shared location
+- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
+- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
 - [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
 - [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
 - [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config

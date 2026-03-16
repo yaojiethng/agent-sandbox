@@ -42,11 +42,11 @@
 
 Task list in `docs/development/roadmap.md` — M1.5 section. All implementation tasks are unchecked. Start with `start_agent.sh`.
 
-Files needed from operator: `scripts/start_agent.sh` (or `providers/opencode/start_agent.sh`), `scripts/agent-sandbox.sh`, `build_agent.sh`, `container-entrypoint.sh`, `lib/snapshot.sh`, `lib/image.sh`.
+Files needed from operator: `scripts/start_agent.sh` (or `providers/opencode/start_agent.sh`), `scripts/agent-sandbox.sh`, `build_agent.sh`, `container-entrypoint.sh`, `libs/snapshot.sh`, `libs/image.sh`.
 
 Run at session start:
 ```bash
-grep -rn "PROJECT_ROOT\|--root" scripts/ lib/ providers/
+grep -rn "PROJECT_ROOT\|--root" scripts/ libs/ providers/
 ```
 
 ---

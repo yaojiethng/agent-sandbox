@@ -95,7 +95,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `agent-sandbox.sh` | 🟡 Warm | M1.5 | CLI dispatch wrapper. Installed to host via `make install`. |
 | `onboard.sh` | 🟢 Cold | M1.3 | Dispatches onboard subcommand to workflow-specific script. |
 
-### Lib (`lib/`)
+### Lib (`libs/`)
 
 | Document | Temp | Last milestone | Notes |
 |---|---|---|---|

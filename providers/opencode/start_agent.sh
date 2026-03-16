@@ -174,7 +174,7 @@ mkdir -p "$AGENT_INPUT_DIR/input"
 # -------------------------
 # Enumerates and copies project files into .agent-input/snapshot/.
 # git ls-files runs on the host — the container never touches PROJECT_DIR directly.
-source "$REPO_ROOT/lib/snapshot.sh"
+source "$REPO_ROOT/libs/snapshot.sh"
 
 echo "Building snapshot..."
 (cd "$PROJECT_DIR" && snapshot_enumerate_files "$PROJECT_DIR") \

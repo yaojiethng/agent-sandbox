@@ -10,14 +10,14 @@ ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update && apt-get install -y \
     bash curl git ca-certificates \
     python3 python3-pip nodejs npm \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/libs/apt/lists/*
 
 # -------------------------
 # Entrypoint and libs (root, before USER switch)
 # -------------------------
 COPY providers/opencode/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
-COPY lib/snapshot.sh /lib/snapshot.sh
-COPY lib/diff.sh /lib/diff.sh
+COPY libs/snapshot.sh /libs/snapshot.sh
+COPY libs/diff.sh /libs/diff.sh
 RUN chmod +x /usr/local/bin/container-entrypoint.sh
 
 # -------------------------
@@ -29,7 +29,7 @@ USER agentuser
 # -------------------------
 # npm global install as agentuser
 # -------------------------
-# By default, npm installs globals to /usr/lib/node_modules (root-owned).
+# By default, npm installs globals to /usr/libs/node_modules (root-owned).
 # Redirecting NPM_CONFIG_PREFIX to a user-owned directory allows non-root
 # global installs. Any future `npm install -g` as a non-root user needs
 # these two ENV lines set beforehand.

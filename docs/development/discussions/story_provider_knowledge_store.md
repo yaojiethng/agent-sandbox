@@ -82,7 +82,7 @@ All provider candidate investigations (Direction 1) must answer:
 1. **Execution model** — does the provider support `start` and `dry-run`? Does it have a native serve/web mode, or does it require a third-party wrapper for `serve`? Is there a viable `headless` invocation path for M2?
 2. **Authentication** — what mechanism does the provider use in a containerised environment? Can it be injected via environment variable without interactive setup?
 3. **Dockerfile and image** — what does the provider require to install in a minimal Ubuntu container? Are there additional system dependencies beyond what the current image provides?
-4. **Harness reuse** — which components of `providers/opencode/` are reusable? Does anything in `lib/` or `scripts/` need to change?
+4. **Harness reuse** — which components of `providers/opencode/` are reusable? Does anything in `libs/` or `scripts/` need to change?
 5. **Sandbox constraint compatibility** — can the provider confine file operations to `sandbox/` without host access?
 6. **Document repository suitability** — can the provider navigate and edit large flat or nested markdown structures effectively? Does it handle binary file awareness correctly?
 

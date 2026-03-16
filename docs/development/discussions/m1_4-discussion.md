@@ -38,8 +38,8 @@ the image — the Dockerfile and anything `COPY`ed into it:
 
 ```sh
 DIGEST=$(cat providers/opencode/Dockerfile \
-              lib/snapshot.sh \
-              lib/diff.sh \
+              libs/snapshot.sh \
+              libs/diff.sh \
               providers/opencode/container-entrypoint.sh \
          | sha256sum | cut -d' ' -f1)
 
@@ -55,8 +55,8 @@ current source files and compares it against the label on the existing image:
 
 ```sh
 CURRENT_DIGEST=$(cat providers/opencode/Dockerfile \
-                      lib/snapshot.sh \
-                      lib/diff.sh \
+                      libs/snapshot.sh \
+                      libs/diff.sh \
                       providers/opencode/container-entrypoint.sh \
                  | sha256sum | cut -d' ' -f1)
 
@@ -73,7 +73,7 @@ fi
 ### Key constraints
 
 - The digest file list must be **identical** in `build_agent.sh` and the
-  staleness check. Centralise it — either a shared `lib/image.sh` helper or
+  staleness check. Centralise it — either a shared `libs/image.sh` helper or
   a variable defined once and reused in both scripts.
 - The check belongs in the **CLI wrapper** (`agent-sandbox.sh`), which already
   owns build-if-missing logic. `start_agent.sh` hard-fails if the image is
@@ -91,16 +91,16 @@ fi
 |---|---|
 | `build_agent.sh` | Compute digest; pass as `--label agent-sandbox.digest=<sha>` |
 | `agent-sandbox.sh` | Staleness check before `start`, `dry-run`; rebuild if stale |
-| `lib/image.sh` (new, optional) | Centralise digest computation if shared logic grows |
+| `libs/image.sh` (new, optional) | Centralise digest computation if shared logic grows |
 
 ---
 
 ## Design Decisions
 
-1. **File list:** Hardcoded in `lib/image.sh`. Dynamic derivation from `COPY`
+1. **File list:** Hardcoded in `libs/image.sh`. Dynamic derivation from `COPY`
    instructions adds parsing complexity for little benefit given the file list
-   is short and changes infrequently. `lib/image.sh` computes the digest from
-   all files in `lib/` plus a provider-supplied `image-files.txt`.
+   is short and changes infrequently. `libs/image.sh` computes the digest from
+   all files in `libs/` plus a provider-supplied `image-files.txt`.
 
 2. **Stale image behaviour:** Warn-then-continue. The problem being solved is
    discovery — the operator not knowing a rebuild is needed. `--rebuild`
@@ -116,7 +116,7 @@ fi
 ## Next Steps
 
 1. ~~Add M1.4 to roadmap with objective and task list.~~ ✓
-2. ~~Agree on file list centralisation approach (inline vs `lib/image.sh`).~~ ✓ — see Design Decisions above
+2. ~~Agree on file list centralisation approach (inline vs `libs/image.sh`).~~ ✓ — see Design Decisions above
 3. Implement `build_agent.sh` digest label.
 4. Implement staleness check in `agent-sandbox.sh`.
 5. Update `execution_model.md` — document the digest label, staleness check,

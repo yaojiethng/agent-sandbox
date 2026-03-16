@@ -118,9 +118,9 @@ The snapshot operation is split across host and container:
 
 `snapshot_validate` is intentionally narrow: structural correctness only. It confirms presence and shape, not behavioural properties. Behavioural assertions (symlink handling, dirty working tree, untracked-only repos) belong in the test suite.
 
-**`lib/snapshot.sh`**
+**`libs/snapshot.sh`**
 
-All snapshot functions are extracted into `lib/snapshot.sh` and sourced by both `start_agent.sh` and `container-entrypoint.sh`. This enables test harnesses to source the lib directly and call functions against fixture inputs without running the full scripts.
+All snapshot functions are extracted into `libs/snapshot.sh` and sourced by both `start_agent.sh` and `container-entrypoint.sh`. This enables test harnesses to source the lib directly and call functions against fixture inputs without running the full scripts.
 
 ### Test Structure
 

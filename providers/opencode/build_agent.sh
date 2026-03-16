@@ -47,7 +47,7 @@ DOCKERFILE="$REPO_ROOT/providers/opencode/Dockerfile"
 # -------------------------
 
 # Compute digest before build so it reflects the source files being built
-source "$REPO_ROOT/lib/image.sh"
+source "$REPO_ROOT/libs/image.sh"
 DIGEST=$(image_compute_digest "$REPO_ROOT" "opencode")
 
 echo "Building Docker image: $IMAGE_NAME"

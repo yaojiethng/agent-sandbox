@@ -48,16 +48,16 @@ The harness embeds a content digest in each built image and checks it at run tim
 
 ### Digest computation
 
-`lib/image.sh` defines `image_compute_digest`, which computes a SHA-256 digest over two sets of files:
+`libs/image.sh` defines `image_compute_digest`, which computes a SHA-256 digest over two sets of files:
 
-- All files in `lib/` — shared across all providers by convention
+- All files in `libs/` — shared across all providers by convention
 - Provider-specific files listed in `providers/<provider>/image-files.txt`, one relative-path-from-root per line
 
 Both sets are concatenated in a deterministic order before hashing. The file list in `image-files.txt` must cover every file copied into the image by the provider's Dockerfile — omissions produce a digest that does not reflect all image inputs.
 
 ### Build-time label
 
-`build_agent.sh` sources `lib/image.sh`, calls `image_compute_digest`, and passes the result as a Docker build label:
+`build_agent.sh` sources `libs/image.sh`, calls `image_compute_digest`, and passes the result as a Docker build label:
 
 ```
 --label agent-sandbox.digest=<sha>
@@ -77,7 +77,7 @@ The staleness warning is always the last line emitted before the run proceeds. I
 
 ### Shared-lib assumption
 
-All providers share `lib/`. The digest always includes the full contents of `lib/` regardless of which provider is in use. Provider-specific inputs are additive via `image-files.txt`.
+All providers share `libs/`. The digest always includes the full contents of `libs/` regardless of which provider is in use. Provider-specific inputs are additive via `image-files.txt`.
 
 ---
 
@@ -187,7 +187,7 @@ The capability layer owns `sandbox/` and exposes it via a shared volume. This se
 
 The snapshot pipeline replicates the host repository state into the capability layer sandbox without touching the host. It runs in two stages: host-side preparation before the containers start, and capability-layer-side unpacking at container startup.
 
-All snapshot functions are defined in `lib/snapshot.sh` and sourced by both `start_agent.sh` and the capability layer entrypoint.
+All snapshot functions are defined in `libs/snapshot.sh` and sourced by both `start_agent.sh` and the capability layer entrypoint.
 
 ### Stage 1 — Host side (`start_agent.sh`)
 

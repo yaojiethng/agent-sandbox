@@ -66,7 +66,7 @@ WORKDIR/
 
 - [ ] Update `start_agent.sh` — derive `SANDBOX_DIR` from `PROJECT_DIR` by convention (overridable); write `.bootstrap/` and `.workspace/` into `SANDBOX_DIR`; rename internal variables from `PROJECT_ROOT` to `PROJECT_DIR`
 - [ ] Update `--root` flag to `--project` on `start_agent.sh` and the CLI wrapper
-- [ ] Update `lib/` path derivation where `PROJECT_ROOT` is referenced
+- [ ] Update `libs/` path derivation where `PROJECT_ROOT` is referenced
 - [ ] Update `execution_model.md` — new directory layout, updated terminology, updated mount shape table
 - [ ] Update `agent_workflow.md` — updated operator directory layout and pre-run setup instructions
 - [ ] Note: onboarding skill update is a separate follow-on task; it must be written to be modular so future directory convention changes do not require a full skill rewrite
@@ -181,7 +181,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Depends on:** M2.1 harness integration pattern established (so extraction reflects the correct two-container boundary).
 
 **Tasks:**
-- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, MCP server lifecycle) into `lib/`; leave only OpenCode-specific invocation
+- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, MCP server lifecycle) into `libs/`; leave only OpenCode-specific invocation
 - [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step
 - [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
 - [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config, MCP client configuration

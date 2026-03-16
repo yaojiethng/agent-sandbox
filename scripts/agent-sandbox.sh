@@ -90,7 +90,7 @@ preflight() {
   fi
 
   # Staleness check — compare current digest against label on existing image
-  source "$AGENT_SANDBOX_REPO/lib/image.sh"
+  source "$AGENT_SANDBOX_REPO/libs/image.sh"
   local CURRENT_DIGEST IMAGE_DIGEST
   CURRENT_DIGEST=$(image_compute_digest "$AGENT_SANDBOX_REPO" "opencode")
   IMAGE_DIGEST=$(docker inspect \

@@ -33,7 +33,7 @@ mkdir -p "$CHANGES_DIR"
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source /lib/snapshot.sh
+source /libs/snapshot.sh
 
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
 snapshot_validate "$SNAPSHOT_DIR"
@@ -93,7 +93,7 @@ fi
 # -------------------------
 # Diff pipeline
 # -------------------------
-source /lib/diff.sh
+source /libs/diff.sh
 
 # On exit: commit any pending changes and write staged.diff.
 trap 'diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"' EXIT

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # tests/test_diff.sh
-# Tests for lib/diff.sh
+# Tests for libs/diff.sh
 #
 # Each test function creates its own fixture under /tmp.
 # Tests are independent — no shared state between them.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/diff.sh"
+source "$SCRIPT_DIR/../libs/diff.sh"
 
 PASS=0
 FAIL=0
