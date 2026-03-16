@@ -76,9 +76,9 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 ## References
 
-`readme.md` is always injected and describes system invariants. Read it once per milestone, not every session.
+Read these in order at session start. Each answers a distinct question — do not skip.
 
-All other documents in the session-start table must be read at the start of every session, in order. **Before proceeding, verify you have access to each required document. If a required document is missing, surface it immediately — do not begin the session without it.**
+**Before proceeding, verify you have access to each required document. If a required document is missing, surface it immediately — do not begin the session without it.**
 
 ### Session start — always
 
@@ -86,9 +86,9 @@ All other documents in the session-start table must be read at the start of ever
 |---|---|
 | [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | What is the session workflow and which step am I at? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
+| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the current sub-milestone and what are the pending tasks? |
 
 ### Session start — major loop only
 
@@ -96,18 +96,8 @@ Read these in addition to the above when opening a major loop planning session (
 
 | Document | Question it answers |
 |---|---|
-| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the promoted milestone and what sub-milestones are defined? |
 | [`docs/development/roadmap_future.md`](docs/development/roadmap_future.md) | What sub-milestones are planned but not yet active? |
 | [`docs/development/changelog.md`](docs/development/changelog.md) | Is the prior milestone fully closed? |
-
-### Session end — minor loop (Steps 9a and 9b)
-
-These are not read at session start. Prompt for them at session close.
-
-| Document | Used for |
-|---|---|
-| [`docs/development/roadmap.md`](docs/development/roadmap.md) | Mark completed tasks; read next sub-milestone entry to seed next handover |
-| [`docs/development/project_index.md`](docs/development/project_index.md) | Update `Last touched in` for all files changed this session |
 
 ###  Policy documents — read before the relevant task type, not at session start
 
