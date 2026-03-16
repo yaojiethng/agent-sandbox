@@ -46,15 +46,9 @@ These principles are stable. The operating workflow and policy documents are the
 
 ## Operating Workflow
 
-The workflow is the procedural realization of the collaboration protocol. It will be refined as the project evolves.
+The session workflow is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Read it at session start. It defines the minor loop (session execution) and the major loop (milestone planning), with entry and exit conditions for each step.
 
-1. **Discuss conceptual requirements** — reason about current behaviour, what needs to change, and why. Surface tensions before proposing solutions.
-2. **Agree on implementation** — function boundaries, file locations, naming, design decisions. Do not begin until agreed.
-3. **Scan for documentation changes** — identify which documents need updating. Add as a documentation task in the roadmap milestone before touching code.
-4. **Perform documentation changes** — update architecture, concepts, and security documents as identified.
-5. **Perform code changes** — implement against the agreed design.
-6. **Update roadmap** — clean previous update first, then mark new completions. See `roadmap_policy.md`.
-7. **Finalize milestone** — collapse completed subsections into conceptual outcome sentences. Keep implementation detail out; it belongs in git history.
+The principles in this brief are stable. The workflow document evolves as the project matures — the principles do not.
 
 ---
 
@@ -97,8 +91,7 @@ Read these in order at session start. Each answers a distinct question — do no
 | [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
-| [`docs/development/doc_status.md`](docs/development/doc_status.md) | What should I read this milestone? |
-| `YYYYMMDD_agent_handover.md` | What was happening when the last session ended? — filename is date-prefixed per `task_policy.md`; find the most recent date at repo root |
+| `YYYYMMDD_agent_handover.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
 
 Policy documents — read before the relevant task type, not at session start:
 
@@ -107,4 +100,4 @@ Policy documents — read before the relevant task type, not at session start:
 | [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
-| [`docs/development/task_policy.md`](docs/development/task_policy.md) | Any new task, story, or investigation |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any new task, story, investigation, or milestone transition |
