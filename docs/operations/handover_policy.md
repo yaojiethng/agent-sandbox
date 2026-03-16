@@ -14,15 +14,39 @@ A well-written handover means the next session starts oriented. A missing or inc
 
 ---
 
-## File Naming
+## File Naming Standard
 
 ```
-YYYYMMDD_agent_handover.md
+YYYYMMDD-NN-TYPE-description_handover.md
 ```
 
-Stored at the repo root alongside `agent_context_brief.md`. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date is the active handover.
+| Component | Rule |
+|---|---|
+| `YYYYMMDD` | Session date |
+| `NN` | Two-digit session index, reset daily. Derived at session start: list existing handovers for today's date, take `max + 1`. First session of the day is `01`. |
+| `TYPE` | Session type shortform (see table below) |
+| `description` | Brief task description. Use underscores for spaces and periods. No other special characters. |
 
-If two sessions occur on the same date, append a suffix: `YYYYMMDD_b_agent_handover.md`.
+Example: `20260316-02-workflow-policy_audit_handover.md`
+
+Stored at the repo root alongside `agent_context_brief.md`. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
+
+---
+
+## Session Types
+
+Each session has a type that reflects its dominant activity. The type appears in the handover header and in the filename shortform.
+
+| Session type | Shortform | Scope |
+|---|---|---|
+| Design | `design` | Minor loop Step 2 + Step 3 (design and conceptual docs) |
+| Spec | `spec` | Minor loop Step 4 + Step 5 (spec and architecture docs) |
+| Implementation | `impl` | Minor loop Step 8 |
+| Story | `story` | Major loop — problem framing |
+| Investigation | `study` | Major loop — candidate evaluation |
+| Planning | `plan` | Major loop — milestone scoping |
+| Workflow | `workflow` | Policy changes, governance, audit |
+| Housekeeping | `chore` | Stale links, linting, index cleanup |
 
 ---
 
@@ -45,7 +69,7 @@ A handover has three moments:
 
 **Session date:** YYYY-MM-DD
 **Milestone:** <sub-milestone ID and name — e.g. M2.1 — General Capability Layer Prototype>
-**Session type:** <Design | Spec | Implementation | Documentation | Housekeeping | Investigation>
+**Session type:** <Design | Spec | Implementation | Story | Investigation | Planning | Workflow | Housekeeping>
 
 ## Objective
 <One sentence: what this session is trying to achieve. Copied from the roadmap entry.>

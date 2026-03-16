@@ -2,7 +2,7 @@
 
 Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
 
-The session-scoped hot file list lives in the active handover document (`YYYYMMDD_agent_handover.md` at repo root).
+The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*_handover.md` at repo root).
 
 ---
 
@@ -32,18 +32,19 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `readme.md` | 🟢 Cold | M1 | System invariants and entry point. Should rarely need updating. |
-| `contributors.md` | 🟢 Cold | M1 | Contribution rules. Update only when workflow or security model changes. |
-| `agent_context_brief.md` | 🟡 Warm | M1.5 | Agent collaboration protocol. Update when working practices evolve. |
+| `readme.md` | 🟢 Cold | M2 | System invariants and entry point. Should rarely need updating. |
+| `contributors.md` | 🟢 Cold | M2 | Contribution rules. Update only when workflow or security model changes. |
+| `agent_context_brief.md` | 🟡 Warm | M2 | Agent collaboration protocol. Update when working practices evolve. |
 
 ### Development (`docs/development/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `doc_status.md` — retired | — | M1.5 | Replaced by handover Hot files section. Delete from repo. |
-| `project_index.md` | 🟡 Warm | M1.5 | This file. Updated when files are added, removed, or freeze status changes. |
+| `doc_status.md` — retired | — | M1.5 | Replaced by handover Hot files section. Deleted. |
+| `project_index.md` | 🟡 Warm | M2 | This file. Updated when files are added, removed, or freeze status changes. |
 | `roadmap.md` | 🔴 Hot | M1.5 | Active milestone tasks and milestone summary table. |
 | `roadmap_future.md` | 🟡 Warm | M1.5 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
+| `changelog.md` | 🟡 Warm | M1.5 | Completed milestone records. Append-only. |
 
 ### Discussions (`docs/discussions/`)
 
@@ -74,7 +75,8 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `agent_workflow.md` | 🔴 Hot | M1.5 | Operator workflow and directory layout. Updated in M1.5. |
-| `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces task_lifecycle.md. Do not edit until M3. |
+| `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
+| `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M1.5 | Canonical two-layer architecture definition. Do not edit; reference only. |
 
 ### Operations (`docs/operations/`)
@@ -87,8 +89,9 @@ Temperature reflects the stability of what a document describes — not how care
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
 | `story_policy.md` | 🟡 Warm | M2 | Story lifecycle: creation, graduation, closure. |
 | `investigation_policy.md` | 🟡 Warm | M2 | Investigation lifecycle: structure, states, recommendation, closure. |
-| `roadmap_policy.md` | 🟢 Cold | M1.5 | Roadmap maintenance rules. Updated M1.5 to add milestone promotion convention. |
-| `documentation_policy.md` | 🟢 Cold | M1 | Documentation structure rules. Only changes if the doc model changes. |
+| `roadmap_policy.md` | 🟢 Cold | M2 | Roadmap maintenance rules. Session-boundary update model. |
+| `documentation_policy.md` | 🟢 Cold | M2 | Documentation structure rules. Only changes if the doc model changes. |
+| `task_policy.md` — retired | — | M2 | Replaced by `iteration_policy.md`. Deleted. |
 
 ### Scripts (`scripts/`)
 

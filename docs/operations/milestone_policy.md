@@ -101,7 +101,7 @@ The major loop closes when:
 - M2.1 (or the first active sub-milestone) has a complete, confirmed roadmap entry
 - All stories that could be resolved have been resolved and graduated
 - All stories that cannot be resolved (deferred dependencies) are explicitly flagged in the roadmap entry for the sub-milestone whose session will resolve them
-- `doc_status.md` has been updated to reflect the new active milestone and its hot files
+- The next handover stub has been created and its Hot files section populated
 
 At this point, minor loop sessions may begin.
 

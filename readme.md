@@ -1,4 +1,4 @@
-> **Current milestone status:** see the active `YYYYMMDD_agent_handover.md` at repo root.
+> **Current milestone status:** see the active handover at repo root (most recent `YYYYMMDD-NN-*.md`).
 
 # Autonomous Coding Agent Sandbox
 

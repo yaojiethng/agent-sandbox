@@ -84,10 +84,11 @@ All other documents in the session-start table must be read at the start of ever
 
 | Document | Question it answers |
 |---|---|
+| [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
 | [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | What is the session workflow and which step am I at? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
-| `YYYYMMDD_agent_handover.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
+| `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
 
 ### Session start — major loop only
 
@@ -108,10 +109,11 @@ These are not read at session start. Prompt for them at session close.
 | [`docs/development/roadmap.md`](docs/development/roadmap.md) | Mark completed tasks; read next sub-milestone entry to seed next handover |
 | [`docs/development/project_index.md`](docs/development/project_index.md) | Update `Last touched in` for all files changed this session |
 
-### On demand — read before the relevant task type only
+###  Policy documents — read before the relevant task type, not at session start
 
 | Document | Read before |
 |---|---|
+| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
-| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any new task, story, investigation, or milestone transition |
