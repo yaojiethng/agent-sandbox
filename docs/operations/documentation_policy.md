@@ -121,7 +121,7 @@ Four documents govern agent behaviour. Each answers a distinct question and must
 
 **`agents.md`** — provider-specific notes. Capabilities and limitations of the current agent interface (Claude Chat, OpenCode, etc.). Swapped out when the provider changes. Must not contain protocol rules that belong in `agent_context_brief.md`.
 
-**`YYYYMMDD-NN-TYPE-description_handover.md`** — session log, not a document. Ephemeral — records what was done and what is next. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
+**`handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Ephemeral — records what was done and what is next. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
 
 If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs all agents, it belongs in `agent_context_brief.md`. If it is provider-specific, it belongs in `agents.md`. None of these files duplicate each other.
 

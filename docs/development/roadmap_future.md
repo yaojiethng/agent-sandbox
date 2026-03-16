@@ -8,6 +8,82 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
+## M2.2 — Reasoning Layer Modularisation
+
+**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure. The provider interface under the two-layer model is the MCP protocol — per-provider work is limited to container configuration and mode support.
+
+**Depends on:** M2.1 two-container foundation.
+
+**Tasks:**
+- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
+- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
+- [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
+- [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
+- [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config
+- [ ] Validate OpenCode provider conforms after refactor
+- [ ] Deferred breakdown: Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
+
+**Deferred from M2.1:**
+- Modularise `start_agent.sh` across providers — provider-specific extraction kept in place during M2.1
+- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`) — cross-cuts M2.1 and M2.2
+
+---
+
+## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+
+**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.
+
+**Depends on:** M2.1.
+
+**Open decisions (resolve before implementation):**
+- Checkpoint branch pattern — formalise as the standard `apply` convention. The vault workflow established a checkpoint branch pattern (dated branch from HEAD before each session; apply diff after review; roll back if rejected) validated through KV4. Determine whether this pattern composes with or supersedes the current `patch.diff` model.
+- Checkpointing method — evaluate snapshotting from a clean git ref rather than working tree (operator designates a commit SHA or tag; a dirty or broken working tree has no effect on what the agent sees).
+- Pre-session checkpoint automation — evaluate automating checkpoint creation before each session (e.g. as part of `make start`). Defer if manual workflow has not been validated at scale by this milestone.
+
+**Tasks:**
+- [ ] Confirm checkpoint branch pattern as the standard apply convention
+- [ ] Agree on export format (`git format-patch` vs bundle vs other)
+- [ ] Parameterise agent branch naming (`agent/<task-id>`) — single-agent case
+- [ ] Implement diff pipeline in capability layer (exit trap, post-session script)
+- [ ] Update `apply_workspace.sh` — checkpoint branch creation, replay commits
+- [ ] Resolve patch history: archive `patch.diff` or drop in favour of replayable commit history
+- [ ] Resolve checkpointing method — clean git ref vs working tree snapshot
+- [ ] Decide pre-session checkpoint automation — implement or explicitly defer
+- [ ] Update `agent_workflow.md` and `execution_model.md`
+
+---
+
+## M2.4 — Session Persistence (Reasoning Layer)
+
+**Objective:** Preserve OpenCode session history across container runs. Provider-specific to the OpenCode reasoning layer; scoped here as a reasoning layer concern separate from the capability layer.
+
+**Depends on:** M2.2 (reasoning layer modularisation, so session DB mount is cleanly scoped to the provider).
+
+**Tasks:**
+- [ ] Identify host-side storage location for session DB (per-project, in `SANDBOX_DIR`)
+- [ ] Add mount for `~/.local/share/opencode/` into reasoning layer container
+- [ ] Update `execution_model.md` — document session DB mount
+- [ ] Verify DB survives container restart and is correctly re-attached on next run
+
+---
+
+## M2.5 — Vault Capability Layer Prototype
+
+**Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
+
+**Depends on:** M2.1 two-container foundation, M2.2 modularised provider scripts, M2.3 apply workflow.
+
+**Tasks:**
+- [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) candidates table)
+- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
+- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
+- [ ] Validate binary file handling (vault attachments) under selected MCP server
+- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
+- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
+
+---
+
 ## M3 — Autonomous Task Execution, Manual Review Workflow
 
 **Objective:** Move from interactive prompting to structured single-task execution with enough logging to verify the agent is doing useful work. Requires the two-layer foundation from M2.

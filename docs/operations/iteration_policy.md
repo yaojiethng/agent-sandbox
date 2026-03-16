@@ -70,13 +70,20 @@ The major loop closes when M2.1 (the first sub-milestone) has a complete roadmap
 
 ## Minor Loop — Session Workflow
 
-A session targets one sub-milestone. Each step has an entry condition and an exit condition. A step does not advance until its exit condition is met and the operator has confirmed.
+A session targets one sub-milestone but need not span the full step sequence. A session covers a step range appropriate to its type:
+
+- A **design** session covers Steps 2–3 (design + conceptual docs)
+- A **spec** session covers Steps 4–5 (spec + architecture docs)
+- An **implementation** session covers Step 7
+- Steps 6 (acceptance criteria) attaches to whichever session precedes implementation
+
+Steps 1 and 8a–8b always run: Step 1 opens every session, Steps 8–9 close every session, regardless of which step range the session covers. Each step has an entry condition and an exit condition. A step does not advance until its exit condition is met and the operator has confirmed.
 
 ### Step 1 — Open the handover
 
 **Entry:** Session begins.
-**Action:** Create or update the handover document for this session. First, compact any fully-checked subsections from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 1. Then populate the handover from the current milestone entry: milestone ID, objective, open decisions, task list. If a prior handover exists for this sub-milestone, read it first — it is the authoritative record of where the last session ended.
-**Exit:** Handover is populated and active. The agent knows exactly where it is and what remains.
+**Action:** Create the handover document for this session. First, compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 1. Then read the roadmap to identify pending work. Write the session objective (scoped to this session, not the sub-milestone). Write the Scope section referencing roadmap task groups by name. If a prior handover exists, read it — transfer any pushed acceptance criteria and deferred items.
+**Exit:** Handover is populated and active. The agent knows what this session targets and what is blocking.
 
 See [`handover_policy.md`](handover_policy.md) for format and population rules.
 
@@ -84,13 +91,13 @@ See [`handover_policy.md`](handover_policy.md) for format and population rules.
 
 **Entry:** Handover is open.
 **Skip condition:** The milestone entry in `roadmap.md` already contains resolved open decisions and an agreed conceptual approach with recorded rationale. A task list alone does not satisfy the skip condition — rationale must be present.
-**Action:** Gather conceptual requirements. Surface tensions. Ask the operator any clarifying questions (one at a time). Agree on the design. Record all decisions in the handover and in the relevant discussion document. If a deferred story surfaces here — a design question flagged during the major loop as depending on this sub-milestone's implementation decisions — resolve it now before proceeding.
+**Action:** Gather conceptual requirements. Surface tensions. Ask the operator any clarifying questions (one at a time). Agree on the design. Record all decisions in the roadmap under the active sub-milestone entry and in the relevant discussion document. Note decisions in the handover's Decisions table with pointers to where they are recorded. If a deferred story surfaces here — a design question flagged during the major loop as depending on this sub-milestone's implementation decisions — resolve it now before proceeding.
 **Exit:** All open design questions are resolved and recorded. Operator has confirmed the conceptual approach. No unresolved questions remain.
 
 ### Step 3 — Update conceptual documentation
 
 **Entry:** Design is confirmed.
-**Action:** Identify which documents in `docs/concepts/` need updating to reflect the agreed design per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals. Update the handover task list to record which documents were changed.
+**Action:** Identify which documents in `docs/concepts/` need updating to reflect the agreed design per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals.
 **Exit:** Operator has reviewed and confirmed all conceptual document changes. No conceptual document describes a state that contradicts the agreed design.
 
 ### Step 4 — Spec
@@ -102,38 +109,32 @@ See [`handover_policy.md`](handover_policy.md) for format and population rules.
 ### Step 5 — Update architecture documentation
 
 **Entry:** Spec is confirmed.
-**Action:** Identify which documents in `docs/architecture/` need updating to reflect the confirmed spec per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals. Update the handover task list to record which documents were changed.
+**Action:** Identify which documents in `docs/architecture/` need updating to reflect the confirmed spec per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals.
 **Exit:** Operator has reviewed and confirmed all architecture document changes. No architecture document describes a state that contradicts the confirmed spec.
 
 ### Step 6 — Define acceptance criteria
 
-**Entry:** Architecture documentation is confirmed.
-**Action:** Define what a correct implementation looks like. For library functions: unit tests covering meaningful branching, error handling, and external dependencies. For scripts and entrypoints: explicit acceptance test steps — what the operator will run, what output they will observe, what constitutes pass and fail. Record criteria in the handover.
+**Entry:** Architecture documentation is confirmed (or design is confirmed, if this session spans design through implementation).
+**Action:** Define what a correct implementation looks like, scoped to this session's deliverables. For library functions: unit tests covering meaningful branching, error handling, and external dependencies. For scripts and entrypoints: explicit acceptance test steps — what the operator will run, what output they will observe, what constitutes pass and fail. Record criteria in the handover. If acceptance criteria were pushed from a prior session, carry them forward and confirm they still apply.
 **Exit:** Operator has confirmed the acceptance criteria. Implementation will not begin without them.
 
-### Step 7 — Update handover with acceptance criteria
+### Step 7 — Implementation
 
 **Entry:** Acceptance criteria are confirmed.
-**Action:** Add the acceptance criteria as a named section in the handover document. Confirm the handover now reflects: milestone, open task list, agreed design, confirmed spec, documentation changes made, and acceptance criteria.
-**Exit:** Handover is complete as a pre-implementation record.
-
-### Step 8 — Implementation
-
-**Entry:** Handover is complete as a pre-implementation record.
 **Action:** Produce code against the confirmed spec. Tests are produced alongside implementation. If a gap or adjacent issue is found, flag it in the handover and defer — do not resolve it silently. All outputs are proposals for operator review.
-**Exit:** All implementation tasks in the handover are complete. Tests pass. Operator has reviewed and confirmed the implementation against the acceptance criteria.
+**Exit:** All implementation tasks targeted this session are complete. Tests pass. Operator has reviewed and confirmed the implementation against the acceptance criteria.
 
-### Step 9a — Close the session
+### Step 8 — Close the session
 
-**Entry:** Implementation is confirmed.
-**Action:** Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 9a. Confirm no tasks remain in scope that are incomplete without an explicit deferral note. Update the handover to record what was completed this session per [`handover_policy.md`](handover_policy.md) — Session close. Update `project_index.md` per the Index Maintenance section below. If any tasks are deferred, record them with a reason — they are not silently dropped.
+**Entry:** Session step range is complete (implementation confirmed, or design/spec confirmed if this is not an implementation session).
+**Action:** Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 8. Confirm no tasks remain in scope that are incomplete without an explicit deferral note. Update the handover to record what was completed this session per [`handover_policy.md`](handover_policy.md) — Session close. Mark each acceptance criterion as accepted or pushed to next session. Update `project_index.md` per the Index Maintenance section below. If any tasks are deferred, record them with a reason — they are not silently dropped.
 **Exit:** Roadmap is updated. Handover reflects a true and complete record of the session. `project_index.md` is current. No incomplete tasks remain in scope without an explicit note.
 
-### Step 9b — Seed the next session
+### Step 9 — Seed the next session
 
 **Entry:** Current session is closed.
-**Action:** Identify the next sub-milestone. Read its roadmap entry. Note any open design questions that will need resolution at session start. Populate the next handover stub per [`handover_policy.md`](handover_policy.md) — Session seed: milestone ID, known open questions, any watch-out items from this session. If the completed sub-milestone was the last in the major milestone, flag that a major loop is required before the next session.
-**Exit:** Next handover stub exists and is actionable. The next agent session can begin without reconstructing state from scratch.
+**Action:** Identify the next session's scope from the roadmap. List any blocking design questions explicitly in the Next session section — these are concrete blockers, not general notes. Populate the next session orientation per [`handover_policy.md`](handover_policy.md) — Session seed. If the completed sub-milestone was the last in the major milestone, flag that a major loop is required before the next session.
+**Exit:** Next session section is actionable. The next agent session can begin without reconstructing state from scratch.
 
 ---
 
@@ -158,7 +159,7 @@ Two documents serve as the project's file registry. Each has a defined owner and
 - Populate the Hot files section from the roadmap task list
 - No changes to `project_index.md` at this step
 
-**At minor loop Step 9a (session close):**
+**At minor loop Step 8 (session close):**
 - Update `project_index.md`: for every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
 - If new files were created during the session, add them to `project_index.md`
 - If files were deleted, remove them from `project_index.md`

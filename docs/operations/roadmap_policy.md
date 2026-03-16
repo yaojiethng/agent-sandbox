@@ -10,12 +10,18 @@ The roadmap is not updated continuously during a session. It is touched at two d
 
 **Minor loop Step 1 (session open):**
 1. Read `roadmap.md`
-2. Compact any fully-checked subsections from the previous session — collapse into a conceptual outcome sentence, remove the header and checklist
-3. Read the remaining task list into the handover
+2. Compact any fully-completed task groups from the previous session — replace the group header and checklist with a conceptual outcome sentence describing what the system can now do
+3. Read the remaining task list as the session's pending work; do not copy it into the handover
 
-**Minor loop Step 9a (session close):**
+**Minor loop Step 8 (session close):**
 1. Mark all tasks completed this session with `[x]`
 2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
+
+**Sub-milestone transition (Trigger B — sub-milestone complete):**
+1. Compact all remaining checked task groups in the completed sub-milestone
+2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
+3. Promote the next sub-milestone's section into `roadmap.md` with scope paragraph and task list
+4. Non-current sub-milestones retain scope paragraphs only — no accumulated deferrals from prior sub-milestones
 
 **Major loop close (Trigger A — milestone complete):**
 1. Read `roadmap.md` and `changelog.md`
@@ -24,7 +30,7 @@ The roadmap is not updated continuously during a session. It is touched at two d
 4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
 5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
 
-**The separation between Step 9a and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 9a marks, the next Step 1 compacts.
+**The separation between Step 8 and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 8 marks, the next Step 1 compacts.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -34,7 +40,13 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the changelog instead of the milestone anchor.
 
-**Completed subsections** — add a conceptual outcome sentence to the milestone description, then remove the subsection header and checklist. The sentence must describe what the system can now do, not which files changed. File changes are visible in git history; the roadmap preserves conceptual outcomes.
+**Completed task groups** — replace the group header and checklist with a conceptual outcome sentence describing what the system can now do. Individual task completion is recorded in session handovers; the roadmap preserves group-level outcomes only.
+
+**Decisions** — design decisions made during a session are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; session handovers log which decisions were made per session.
+
+**Active sub-milestone task list** — the active sub-milestone carries a full task checklist grouped by functional area. This is the canonical task list; the handover references it, does not copy it.
+
+**Non-active sub-milestones** — carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active. Deferred items from prior sub-milestones are filed in `roadmap_future.md`, not accumulated in the scope paragraph.
 
 **Task granularity** — identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 

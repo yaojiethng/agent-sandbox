@@ -46,79 +46,93 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Split the current single container into a capability layer container and a reasoning layer container. Prove the two-container model works end-to-end with a sandbox-only configuration (no MCP server) against a generic coding project. This is the foundation all subsequent M2 sub-milestones build on.
 
+Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.md), [`execution_model.md`](../architecture/execution_model.md), [`security.md`](../architecture/security.md), [`agent_workflow.md`](../concepts/agent_workflow.md), [`quickstart.md`](../operations/quickstart.md).
+
+**Decisions:**
+
+| Decision | Rationale | Recorded in |
+|---|---|---|
+| Docker Compose per project: `start_agent.sh` writes `docker-compose.yml` + `.env` into `SANDBOX_DIR` from template | Declarative orchestration replaces imperative `docker run`; `.env` separates machine-specific from project-specific | `tool_interface.md` |
+| Image naming: `<project>-agent-sandbox` (capability), `<project>-opencode-agent` (reasoning) | Docker Compose accepts hyphens natively | `tool_interface.md` |
+| Compose baked vs `.env` split: structure baked, host paths + credentials in `.env` | Stable project structure vs machine-specific runtime are different concerns | `tool_interface.md` |
+| Mode overrides: base compose has no ports; serve/dry-run add via `-f` flags | Ports not exposed when not in serve mode | `tool_interface.md` |
+| Build command: `make build [sandbox\|agent\|all]` | Granular rebuild; staleness integrated per-image | `tool_interface.md` |
+| Two-image staleness: separate `image-files.txt`, check both, warn separately | Images go stale independently | `tool_interface.md` |
+| Capability Dockerfile in `SANDBOX_DIR`, project-controlled; default template in `libs/_template/` | Projects control their own dev environment | `tool_interface.md` |
+| Dry-run guarantees: both containers start, reasoning writes to sandbox, graceful termination, diff written | Defines what a successful dry-run proves | `tool_interface.md` |
+| Dogfood first: agent-sandbox's own repo gets real compose file before template is produced | Template derived from working version, not the reverse | This roadmap |
+| `start_agent.sh` remains entry point: gains `docker compose up/down` | Compose handles container orchestration only; all other behaviour retained | This roadmap |
+
+**Documentation — completed.** Architecture docs (`tool_interface.md`, `execution_model.md`, `security.md`), conceptual docs (`agent_workflow.md`), operator docs (`quickstart.md`), and project index updated to reflect the two-container model, mount shape, trust boundaries, and naming conventions.
+
 **Tasks:**
-- [ ] Define capability layer Dockerfile: base image, snapshot pipeline (stage 2), `sandbox/` init, diff pipeline on exit, shared Docker volume
-- [ ] Define reasoning layer Dockerfile: remove local `sandbox/`; add `sandbox/` volume mount from capability layer; `.agent-input/` and `.workspace/` mounts unchanged
-- [ ] Split entrypoints: capability layer entrypoint owns snapshot init, git baseline, diff on exit, autosave loop; reasoning layer entrypoint owns brief/input copy into `sandbox/`, agent exec
-- [ ] Update `start_agent.sh`: manage two-container lifecycle — start capability layer first, start reasoning layer after, stop reasoning layer on session end, stop capability layer after (triggering diff)
-- [ ] Configure shared Docker volume and container networking in harness
-- [ ] Validate end-to-end with a generic coding project: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
-- [ ] Update `security.md` — trust boundary table for two containers
-- [ ] Update `agent_workflow.md` — operator workflow with two containers
+
+### Capability layer container
+- [ ] `libs/_template/dockerfile-default.sandbox` — default capability layer Dockerfile template
+- [ ] `Dockerfile.sandbox` — generated into `SANDBOX_DIR` from default template; project can override; compose references project-level file
+- [ ] `scripts/sandbox-entrypoint.sh` — capability layer entrypoint: snapshot validate (gate 2), copy snapshot to `sandbox/`, git init + baseline SHA, EXIT trap → diff pipeline, autosave loop, `wait`
+
+### Reasoning layer container
+- [ ] `providers/opencode/Dockerfile` — set working dir to `/home/agentuser/project/`, place `AGENTS.md` via Dockerfile, remove snapshot/diff libs, no CMD default
+- [ ] `providers/opencode/container-entrypoint.sh` — assess whether still needed; if brief injection moves to Dockerfile and no other startup steps remain, eliminate; document decision
+
+### Orchestration & lifecycle
+- [ ] `docker-compose.yml` in agent-sandbox's own `SANDBOX_DIR` — dogfood version; created first, template derived from it
+- [ ] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood
+- [ ] `libs/_template/docker-compose.serve.yml.template` — serve mode override (ports block)
+- [ ] `libs/_template/docker-compose.dry-run.yml.template` — dry-run mode override
+- [ ] `providers/opencode/start_agent.sh` — two-container lifecycle via `docker compose up/down`; writes compose + `.env` + mode overrides into `SANDBOX_DIR` from templates; snapshot pipeline writes to `SANDBOX_DIR/.snapshot/`; preserves git checkpoint, validation, env loading; `make build [sandbox|agent|all]` dispatch
+
+### Path alignment
+- [ ] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
+- [ ] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `.workspace/changes/`); grep and confirm
+
+### Build & staleness
+- [ ] `libs/image.sh` — separate `image-files.txt` per image (capability in `SANDBOX_DIR`, reasoning in `providers/opencode/`), per-image staleness check, per-image rebuild, warn separately; update tests
+
+### Dry-run
+- [ ] `scripts/dry_run.sh` — catalogue existing checks; confirm which to preserve, which to drop; update for two-container dry-run
+
+### Validation
+- [ ] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
+
+**Acceptance criteria:**
+- `make start` brings up two containers via `docker compose up`; capability layer starts first (service dependency)
+- Agent modifies a file in `sandbox/`; `staged.diff` appears in `SANDBOX_DIR/.workspace/changes/` after session ends
+- `make apply` applies the diff cleanly to the host repo
+- `make serve` exposes port via compose override
+- `make dry-run` runs both containers, reasoning writes to sandbox, graceful termination, diff written
+- Capability layer exits cleanly and triggers diff pipeline
+- Reasoning layer cannot see `SANDBOX_DIR/.snapshot/`; capability layer cannot see `.workspace/agent-input/` or `.workspace/agent-output/`
+- `make build sandbox|agent|all` builds correct images; staleness warns per-image
+
+**Deferred to M2.2+:**
+- Modularise `start_agent.sh` across providers — provider-specific extraction is M2.2 scope
+- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`) — cross-cuts M2.1 and M2.2
 
 #### M2.2 — Reasoning Layer Modularisation
 
-**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure. The provider interface under the two-layer model is the MCP protocol — per-provider work is limited to container configuration and mode support.
+**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure.
 
-**Depends on:** M2.1 two-container foundation.
-
-**Tasks:**
-- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
-- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
-- [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
-- [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
-- [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config
-- [ ] Validate OpenCode provider conforms after refactor
-- [ ] Deferred breakdown: Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
+**Depends on:** M2.1. **Scope:** Audit and split `start_agent.sh` and `container-entrypoint.sh` into shared libs vs provider-specific invocation. Document execution modes formally. Define conforming provider interface. Validate OpenCode conforms. Claude Code provider integration deferred until shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved.
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.
 
-**Depends on:** M2.1.
-
-**Open decisions (resolve before implementation):**
-- Checkpoint branch pattern — formalise as the standard `apply` convention. The vault workflow established a checkpoint branch pattern (dated branch from HEAD before each session; apply diff after review; roll back if rejected) validated through KV4. Determine whether this pattern composes with or supersedes the current `patch.diff` model.
-- Checkpointing method — evaluate snapshotting from a clean git ref rather than working tree (operator designates a commit SHA or tag; a dirty or broken working tree has no effect on what the agent sees).
-- Pre-session checkpoint automation — evaluate automating checkpoint creation before each session (e.g. as part of `make start`). Defer if manual workflow has not been validated at scale by this milestone.
-
-**Tasks:**
-- [ ] Confirm checkpoint branch pattern as the standard apply convention
-- [ ] Agree on export format (`git format-patch` vs bundle vs other)
-- [ ] Parameterise agent branch naming (`agent/<task-id>`) — single-agent case
-- [ ] Implement diff pipeline in capability layer (exit trap, post-session script)
-- [ ] Update `apply_workspace.sh` — checkpoint branch creation, replay commits
-- [ ] Resolve patch history: archive `patch.diff` or drop in favour of replayable commit history
-- [ ] Resolve checkpointing method — clean git ref vs working tree snapshot
-- [ ] Decide pre-session checkpoint automation — implement or explicitly defer
-- [ ] Update `agent_workflow.md` and `execution_model.md`
+**Depends on:** M2.1. **Scope:** Formalise checkpoint branch pattern as standard apply convention (composing with or superseding `patch.diff` model). Resolve checkpointing method (clean git ref vs working tree). Evaluate pre-session checkpoint automation. Implement diff pipeline in capability layer. Update `apply_workspace.sh` for checkpoint branches.
 
 #### M2.4 — Session Persistence (Reasoning Layer)
 
-**Objective:** Preserve OpenCode session history across container runs. Provider-specific to the OpenCode reasoning layer; scoped here as a reasoning layer concern separate from the capability layer.
+**Objective:** Preserve OpenCode session history across container runs.
 
-**Depends on:** M2.2 (reasoning layer modularisation, so session DB mount is cleanly scoped to the provider).
-
-**Tasks:**
-- [ ] Identify host-side storage location for session DB (per-project, in `SANDBOX_DIR`)
-- [ ] Add mount for `~/.local/share/opencode/` into reasoning layer container
-- [ ] Update `execution_model.md` — document session DB mount
-- [ ] Verify DB survives container restart and is correctly re-attached on next run
+**Depends on:** M2.2. **Scope:** Provider-specific reasoning layer concern. Identify host-side storage, add session DB mount, verify persistence across restarts.
 
 #### M2.5 — Vault Capability Layer Prototype
 
-**Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
+**Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
-**Depends on:** M2.1 two-container foundation, M2.2 modularised provider scripts, M2.3 apply workflow.
-
-**Tasks:**
-- [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) candidates table)
-- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
-- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
-- [ ] Validate binary file handling (vault attachments) under selected MCP server
-- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
-- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
+**Depends on:** M2.1, M2.2, M2.3. **Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
 
 ---
 
