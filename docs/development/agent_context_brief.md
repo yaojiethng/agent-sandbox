@@ -44,14 +44,6 @@ These principles are stable. The operating workflow and policy documents are the
 
 ---
 
-## Operating Workflow
-
-The session workflow is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Read it at session start. It defines the minor loop (session execution) and the major loop (milestone planning), with entry and exit conditions for each step.
-
-The principles in this brief are stable. The workflow document evolves as the project matures — the principles do not.
-
----
-
 ## Read Discipline
 
 Before opening any file in full, establish what you need from it first.
@@ -72,7 +64,7 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 ---
 
-
+## Output Format
 
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 
@@ -84,20 +76,42 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 ## References
 
-Read these in order at session start. Each answers a distinct question — do not skip.
+`readme.md` is always injected and describes system invariants. Read it once per milestone, not every session.
+
+All other documents in the session-start table must be read at the start of every session, in order. **Before proceeding, verify you have access to each required document. If a required document is missing, surface it immediately — do not begin the session without it.**
+
+### Session start — always
 
 | Document | Question it answers |
 |---|---|
-| [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | What is the session workflow and which step am I at? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
 | `YYYYMMDD_agent_handover.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
 
-Policy documents — read before the relevant task type, not at session start:
+### Session start — major loop only
+
+Read these in addition to the above when opening a major loop planning session (triggered after a major milestone closes).
+
+| Document | Question it answers |
+|---|---|
+| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the promoted milestone and what sub-milestones are defined? |
+| [`docs/development/roadmap_future.md`](docs/development/roadmap_future.md) | What sub-milestones are planned but not yet active? |
+| [`docs/development/changelog.md`](docs/development/changelog.md) | Is the prior milestone fully closed? |
+
+### Session end — minor loop (Steps 9a and 9b)
+
+These are not read at session start. Prompt for them at session close.
+
+| Document | Used for |
+|---|---|
+| [`docs/development/roadmap.md`](docs/development/roadmap.md) | Mark completed tasks; read next sub-milestone entry to seed next handover |
+| [`docs/development/project_index.md`](docs/development/project_index.md) | Update `Last touched in` for all files changed this session |
+
+### On demand — read before the relevant task type only
 
 | Document | Read before |
 |---|---|
-| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any new task, story, investigation, or milestone transition |
+| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |

@@ -51,48 +51,62 @@ A handover has three moments:
 <One sentence: what this session is trying to achieve. Copied from the roadmap entry.>
 
 ## Open design questions
-<Any questions that must be resolved before the session can advance to spec.
-If none, write "None — design confirmed." Do not leave this section blank.>
+<Questions that must be resolved before the session can advance to spec.
+If none, write the canonical marker.>
+
+None.
 
 ## Task list
 <Copied from the roadmap entry at session open. Updated as tasks complete.
-Format: checkbox list. Each item identifies a file and a nature of change, or a discussion that must occur.>
 
-- [ ] <file or discussion — nature of change>
+Group tasks by functional change area — a short heading that names the capability or mechanism
+being built, followed by the file-level items that deliver it. Each item identifies a file and
+a nature of change, or a discussion that must occur.
+
+Order groups by dependency: implementation groups first (in dependency order among themselves),
+documentation and index updates after all implementation groups, validation last. This mirrors
+the iteration policy sequence: implementation → documentation → acceptance.>
+
+### <Capability or mechanism name>
+- [ ] <file — nature of change>
 - [x] <completed item>
 
+### Documentation updates
+- [ ] <file — nature of change>
+
+### Validation
+- [ ] <acceptance test step>
+
 ## Hot files
-<Files in scope for this session. Each entry is a markdown link to the file, with a one-line note
-on why it is in scope. Populated at Step 1 from the task list. Updated at Step 9a as tasks complete
-or new files enter scope. This section replaces doc_status.md — it is the active file list
-for the current session.>
+<Files in scope for this session. Each entry is a markdown link with a one-line note on why it
+is in scope. Populated at Step 1 from the task list. Updated at Step 9a as tasks complete or
+new files enter scope.>
 
 | File | Why in scope |
 |---|---|
 | [`path/to/file.md`](path/to/file.md) | <one-line reason> |
 
 ## Decisions made this session
-<Table: decision | rationale | where recorded>
-If no decisions were made, write "No decisions this session."
+<Table: decision | rationale | where recorded. If none, write the canonical marker.>
 
-| Decision | Rationale | Recorded in |
-|---|---|---|
+None.
 
 ## Acceptance criteria
-<Added at Step 7. What the operator will run or observe to confirm the implementation is correct.
-If not yet defined, write "Not yet defined.">
+<What the operator will run or observe to confirm the implementation is correct.
+Added at Step 7. If not yet defined, write the canonical marker.>
+
+Not yet defined.
 
 ## Completed this session
-<Table: file | one-line change summary.
-If no files changed, write "No file changes this session.">
+<Table: file | one-line change summary. If no files changed, write the canonical marker.>
 
-| File | Change |
-|---|---|
+No file changes this session.
 
 ## Deferred items
-<Anything that was in scope but is not complete. Each item must have an explicit reason for deferral
-and a note on where it goes next (next session, next sub-milestone, flagged in roadmap).
-If nothing is deferred, write "Nothing deferred.">
+<Items that were in scope but are not complete. Each item must have an explicit reason for
+deferral and a note on where it goes next. If nothing is deferred, write the canonical marker.>
+
+None.
 
 ## Next session
 <Sub-milestone ID and name for the next session.>
@@ -102,15 +116,33 @@ If nothing is deferred, write "Nothing deferred.">
 
 ---
 
+## Canonical Null Markers
+
+When a section has nothing to record, write the canonical marker and nothing else. Do not explain why the section is empty — if a decision was made that affects the section, record it in the Decisions table or the relevant document.
+
+| Section | Canonical marker |
+|---|---|
+| Open design questions | `None.` |
+| Decisions made this session | `None.` |
+| Acceptance criteria | `Not yet defined.` |
+| Completed this session | `No file changes this session.` |
+| Deferred items | `None.` |
+
+Explanation of *why* a section is empty is noise. "None — design confirmed. Implementation-time decisions are task list items, not open design questions." says nothing a reader needs. `None.` says everything.
+
+---
+
 ## Population Rules
 
 ### At session open (Step 1)
 
 - Copy the milestone ID and objective from the roadmap entry verbatim.
-- Copy the task list from the roadmap entry. If the task list is incomplete (the sub-milestone was not fully scoped), note this explicitly and treat the design step as mandatory.
+- Copy the task list from the roadmap entry. Group by functional change area with a short heading per group. Order groups: implementation first (in dependency order), documentation and index updates after, validation last. If the task list in the roadmap is ungrouped, apply grouping when copying into the handover.
+- If the task list is incomplete (the sub-milestone was not fully scoped), note this explicitly in Open design questions and treat the design step as mandatory.
 - Read the prior handover if one exists. Transfer any deferred items into the current task list or open questions section. Do not re-litigate deferred decisions — they are recorded where they were made.
 - Populate the Hot files section: for each task list item that identifies a file, add a markdown link and a one-line reason. Files that are warm (referenced but not expected to change) may be listed with a note.
 - Set Session type to the dominant activity expected this session.
+- For all nullable sections with nothing yet to record, write the canonical marker — not a blank section, not an explanation.
 
 ### During the session
 
@@ -121,9 +153,9 @@ If nothing is deferred, write "Nothing deferred.">
 ### At session close (Step 9a)
 
 - Every task in the task list must be either checked or deferred with a reason. No task is silently dropped.
-- The Completed this session table must be accurate. One row per file changed.
+- The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
-- The Deferred items section must be complete before the handover is considered closed.
+- The Deferred items section must be complete before the handover is considered closed. If nothing is deferred, write the canonical marker.
 
 ### At session seed (Step 9b)
 
@@ -139,7 +171,8 @@ If nothing is deferred, write "Nothing deferred.">
 - **Completed means confirmed.** A task is checked only after the operator has reviewed and confirmed the output — not when the agent has produced it.
 - **Deferrals are explicit.** "We ran out of time" is not a deferral reason. The reason must name the blocker: dependency, open question, scope change, operator decision.
 - **The handover is not a summary of decisions.** Decisions live in the documents where they were made. The handover points to those documents — it does not reproduce their content.
-- **Watch-out items are capped at three.** More than three is a signal the session was not scoped tightly enough. Excess items belong in the relevant document, not the handover.
+- **Next session watch-out items are capped at three.** More than three is a signal the session was not scoped tightly enough. Excess items belong in the relevant document, not the handover.
+- **Empty sections use canonical markers.** A blank section is ambiguous — it could mean nothing to record, or a forgotten section. Write the canonical marker. Never leave a nullable section blank and never explain why it is empty.
 
 ---
 

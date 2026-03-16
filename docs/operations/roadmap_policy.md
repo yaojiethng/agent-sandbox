@@ -4,34 +4,27 @@ Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future
 
 ---
 
-## Update Sequence
+## When the Roadmap Is Touched
 
-Every update follows this order:
+The roadmap is not updated continuously during a session. It is touched at two defined moments in the minor loop and once at major loop close. Do not update it outside these moments.
 
-1. **Clean up the previous update** — summarise fully-checked subsections into a conceptual outcome sentence in the milestone description and remove them; extract fully-checked milestones to the changelog; remove empty headers.
-2. **Mark new completions** — check off tasks completed in this update. Leave them in place for the next update to clean up.
-
-Never clean up completions you just marked. Never mark completions without cleaning up first.
-
----
-
-## Procedure
-
-Two trigger modes. Identify which applies before acting.
-
-**Trigger A — Completion pass** (a milestone just finished):
-1. Read `roadmap.md` and `changelog.md`
-2. Write changelog entry for the completed milestone (see Changelog Format)
-3. Output entry as a `changelog` fenced block for operator to append
-4. Remove the milestone section from `roadmap.md` Upcoming Milestones
-5. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
-6. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
-
-**Trigger B — Update pass** (tasks completed within an in-progress milestone):
+**Minor loop Step 1 (session open):**
 1. Read `roadmap.md`
-2. Clean up previous update: collapse any fully-checked subsections into a conceptual outcome sentence; remove their headers and checklists
-3. Mark newly completed tasks with `[x]`
-4. If all tasks in the milestone are now checked, treat as Trigger A on the next pass — do not combine cleanup and extraction in the same update
+2. Compact any fully-checked subsections from the previous session — collapse into a conceptual outcome sentence, remove the header and checklist
+3. Read the remaining task list into the handover
+
+**Minor loop Step 9a (session close):**
+1. Mark all tasks completed this session with `[x]`
+2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
+
+**Major loop close (Trigger A — milestone complete):**
+1. Read `roadmap.md` and `changelog.md`
+2. Write and output the changelog entry for the completed milestone (see Changelog Format)
+3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
+4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
+5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
+
+**The separation between Step 9a and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 9a marks, the next Step 1 compacts.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 

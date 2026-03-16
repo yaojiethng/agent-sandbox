@@ -49,7 +49,7 @@ See [`milestone_policy.md`](milestone_policy.md) for the full process governing 
 ### Steps
 
 **1. Close the prior major milestone**
-Follow `roadmap_policy.md` Trigger A: write the changelog entry, extract the milestone, promote the next milestone from `roadmap_future.md`. Confirm all sub-milestone entries are complete in the changelog before proceeding.
+Follow [`roadmap_policy.md`](roadmap_policy.md) — Trigger A: write the changelog entry, extract the milestone, promote the next milestone from `roadmap_future.md`. Confirm all sub-milestone entries are complete in the changelog before proceeding.
 
 **2. Orient to the next major milestone**
 Read the promoted milestone section in `roadmap.md`. Identify: which sub-milestones are fully scoped, which have open design questions, and which depend on earlier sub-milestone implementation decisions and cannot yet be scoped.
@@ -61,7 +61,7 @@ For each area where the design is not settled, open a `story_` document in `docs
 For each story where candidate approaches need evaluation, open one `investigation_` document per candidate in `docs/discussions/`. See [`investigation_policy.md`](investigation_policy.md). Investigations run until a recommendation can be made.
 
 **5. Resolve stories to roadmap entries**
-When a story's open questions are resolved, graduate it: close the story with a Resolution section, and write the corresponding sub-milestone entry into `roadmap_future.md` (or directly into `roadmap.md` if the sub-milestone is next). Unresolvable stories — those that depend on earlier implementation decisions — are explicitly deferred, noted in the story, and flagged for the relevant minor loop session.
+When a story's open questions are resolved, graduate it: close the story with a Resolution section per [`story_policy.md`](story_policy.md) — Closure, and write the corresponding sub-milestone entry into `roadmap_future.md` (or directly into `roadmap.md` if the sub-milestone is next) per [`roadmap_policy.md`](roadmap_policy.md). Unresolvable stories — those that depend on earlier implementation decisions — are explicitly deferred, noted in the story, and flagged for the relevant minor loop session.
 
 **6. Confirm the milestone is ready to session**
 The major loop closes when M2.1 (the first sub-milestone) has a complete roadmap entry with an objective, resolved design decisions, and a task list. Subsequent sub-milestones may still have open items — that is expected. The loop does not require all sub-milestones to be fully scoped before sessioning begins.
@@ -75,7 +75,7 @@ A session targets one sub-milestone. Each step has an entry condition and an exi
 ### Step 1 — Open the handover
 
 **Entry:** Session begins.
-**Action:** Create or update the handover document for this session. Populate it from the current milestone entry in `roadmap.md`: milestone ID, objective, open decisions, task list. If a prior handover exists for this sub-milestone, read it first — it is the authoritative record of where the last session ended.
+**Action:** Create or update the handover document for this session. First, compact any fully-checked subsections from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 1. Then populate the handover from the current milestone entry: milestone ID, objective, open decisions, task list. If a prior handover exists for this sub-milestone, read it first — it is the authoritative record of where the last session ended.
 **Exit:** Handover is populated and active. The agent knows exactly where it is and what remains.
 
 See [`handover_policy.md`](handover_policy.md) for format and population rules.
@@ -90,7 +90,7 @@ See [`handover_policy.md`](handover_policy.md) for format and population rules.
 ### Step 3 — Update conceptual documentation
 
 **Entry:** Design is confirmed.
-**Action:** Identify which documents in `docs/concepts/` need updating to reflect the agreed design. Produce updates as proposals. Update the handover task list to record which documents were changed.
+**Action:** Identify which documents in `docs/concepts/` need updating to reflect the agreed design per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals. Update the handover task list to record which documents were changed.
 **Exit:** Operator has reviewed and confirmed all conceptual document changes. No conceptual document describes a state that contradicts the agreed design.
 
 ### Step 4 — Spec
@@ -102,7 +102,7 @@ See [`handover_policy.md`](handover_policy.md) for format and population rules.
 ### Step 5 — Update architecture documentation
 
 **Entry:** Spec is confirmed.
-**Action:** Identify which documents in `docs/architecture/` need updating to reflect the confirmed spec. Produce updates as proposals. Update the handover task list to record which documents were changed.
+**Action:** Identify which documents in `docs/architecture/` need updating to reflect the confirmed spec per [`documentation_policy.md`](documentation_policy.md). Produce updates as proposals. Update the handover task list to record which documents were changed.
 **Exit:** Operator has reviewed and confirmed all architecture document changes. No architecture document describes a state that contradicts the confirmed spec.
 
 ### Step 6 — Define acceptance criteria
@@ -126,13 +126,13 @@ See [`handover_policy.md`](handover_policy.md) for format and population rules.
 ### Step 9a — Close the session
 
 **Entry:** Implementation is confirmed.
-**Action:** Mark all completed tasks in the roadmap per `roadmap_policy.md`. Confirm no tasks remain in scope that are incomplete without an explicit deferral note. Update the handover to record what was completed this session. If any tasks are deferred, record them with a reason — they are not silently dropped.
-**Exit:** Roadmap is updated. Handover reflects a true and complete record of the session. No incomplete tasks remain in scope without an explicit note.
+**Action:** Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Step 9a. Confirm no tasks remain in scope that are incomplete without an explicit deferral note. Update the handover to record what was completed this session per [`handover_policy.md`](handover_policy.md) — Session close. Update `project_index.md` per the Index Maintenance section below. If any tasks are deferred, record them with a reason — they are not silently dropped.
+**Exit:** Roadmap is updated. Handover reflects a true and complete record of the session. `project_index.md` is current. No incomplete tasks remain in scope without an explicit note.
 
 ### Step 9b — Seed the next session
 
 **Entry:** Current session is closed.
-**Action:** Identify the next sub-milestone. Read its roadmap entry. Note any open design questions that will need resolution at session start. Populate the next handover stub: milestone ID, known open questions, any watch-out items from this session. If the completed sub-milestone was the last in the major milestone, flag that a major loop is required before the next session.
+**Action:** Identify the next sub-milestone. Read its roadmap entry. Note any open design questions that will need resolution at session start. Populate the next handover stub per [`handover_policy.md`](handover_policy.md) — Session seed: milestone ID, known open questions, any watch-out items from this session. If the completed sub-milestone was the last in the major milestone, flag that a major loop is required before the next session.
 **Exit:** Next handover stub exists and is actionable. The next agent session can begin without reconstructing state from scratch.
 
 ---
