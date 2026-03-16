@@ -1,6 +1,6 @@
 # Roadmap Policy
 
-Policy rules for `docs/development/roadmap.md` and `docs/development/changelog.md`.
+Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future.md`, and `docs/development/changelog.md`.
 
 ---
 
@@ -25,6 +25,7 @@ Two trigger modes. Identify which applies before acting.
 3. Output entry as a `changelog` fenced block for operator to append
 4. Remove the milestone section from `roadmap.md` Upcoming Milestones
 5. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
+6. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
 
 **Trigger B — Update pass** (tasks completed within an in-progress milestone):
 1. Read `roadmap.md`
@@ -47,6 +48,21 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 **Persistent sections** — Milestone Summary table, Upcoming Milestones, Known Limitations, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 
 **Empty sections** — remove immediately.
+
+---
+
+## Milestone Promotion
+
+Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focused on the active milestone. When a milestone completes (Trigger A), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
+
+**Promotion steps:**
+1. Move the milestone section from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones`
+2. Update the Milestone Summary table row in `roadmap.md`: add anchor link, set status to `In progress`
+3. Remove the section from `roadmap_future.md`
+
+**Which milestone to promote:** the next incomplete milestone in the Milestone Summary table order. If the next milestone has sub-milestones (e.g. M2.1, M2.2), promote the parent section and all sub-milestone sections together as a single block.
+
+`roadmap_future.md` is a planning document, not a historical record — sections may be rewritten freely as understanding evolves. The changelog is the permanent record.
 
 ---
 

@@ -141,3 +141,5 @@ Rules:
 3. Preserve existing structure unless it is directly invalidated.
 
 Do not rewrite entire documents when a targeted section change is sufficient. Add new documents only when they serve a distinct structural purpose that no existing document covers.
+
+Before drafting any output destined for a repo file, identify the destination folder and verify the content against the rules for that folder. Content describing what the system does not yet do belongs in `roadmap.md`, not in `concepts/` or `architecture/`. Producing a draft and checking it afterward is a policy violation — the check comes first.

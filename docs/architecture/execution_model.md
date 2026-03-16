@@ -1,8 +1,10 @@
 # Execution Model
 
-This document describes how a single agent run executes: how project files enter the container, how the sandbox is prepared, how agent changes are captured, and how outputs are returned to the host. It covers the snapshot pipeline, mount shape, entrypoint sequence, and diff workflow.
+This document describes how a single agent run executes: how project files enter the containers, how the sandbox is prepared, how agent changes are captured, and how outputs are returned to the host. It covers the snapshot pipeline, mount shape, entrypoint sequence, and diff workflow.
 
-Implementation decisions are recorded here alongside the design they produce. Operator-facing workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md).
+The system runs two containers per session: the capability layer container (holds `sandbox/`, runs optional MCP server) and the reasoning layer container (runs the agent, accesses working content via volume mount). The harness starts the capability layer before the reasoning layer and stops it after.
+
+Implementation decisions are recorded here alongside the design they produce. Operator-facing workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md). The conceptual model for the two-layer architecture is in [`../concepts/two_layer_model.md`](../concepts/two_layer_model.md).
 
 ---
 
@@ -96,6 +98,14 @@ WORKDIR/
     └── .workspace/           ← output channel (agent output)
         └── changes/
             └── staged.diff
+
+Capability layer container
+└── sandbox/                  ← copy of working content; volume-shared to reasoning layer
+
+Reasoning layer container
+├── .agent-input/ mount       ← RO: snapshot, brief, operator input
+├── .workspace/ mount         ← RW: reporting workspace
+└── sandbox/ mount            ← RW: shared volume from capability layer
 ```
 
 `SANDBOX_DIR` defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox`. It is set explicitly in the project Makefile and passed to all subcommands.
@@ -104,10 +114,11 @@ WORKDIR/
 
 | Term | Meaning |
 |---|---|
-| `PROJECT_DIR` | The project git repository. Never mounted into the container at runtime. |
+| `PROJECT_DIR` | The project git repository. Never mounted into either container at runtime. |
 | `SANDBOX_DIR` | Harness-owned sibling directory. Contains all harness artefacts. |
-| `.agent-input/` | Read-only input channel mounted into the container. Contains snapshot, brief, and operator input files. |
-| `.workspace/` | Read-write output channel mounted into the container. Contains agent output. |
+| `.agent-input/` | Read-only input channel mounted into the reasoning layer container. Contains snapshot, brief, and operator input files. |
+| `.workspace/` | Read-write output channel mounted into the reasoning layer container. Contains agent output. |
+| `sandbox/` | Working content copy. Owned by the capability layer container; mounted into the reasoning layer container at the same path. |
 
 ---
 
@@ -121,7 +132,7 @@ start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] 
 
 | Flag | Required | Description |
 |---|---|---|
-| `--name` | Yes | Project display name; used for Docker image naming (`opencode-agent-<name>`) |
+| `--name` | Yes | Project display name; used for Docker image naming (`opencode-agent-<n>`) |
 | `--project` | Yes | Absolute WSL/Linux path to the project directory on the host |
 | `--sandbox` | No | Absolute WSL/Linux path to the sandbox directory; defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox` |
 | `--brief` | No | Path to agent brief, relative to `SANDBOX_DIR` |
@@ -147,30 +158,36 @@ These are passed to the container as environment variables (`-e AGENT_INPUT_DIR_
 
 ## Mount Shape
 
-Three host directories are mounted into the container. None gives the agent access to `PROJECT_DIR` directly.
+The capability layer container and reasoning layer container are connected via a named Docker volume. The host mounts `.agent-input/` and `.workspace/` into the reasoning layer container only.
 
-| Host path | Container path | Mode | Purpose |
-|---|---|---|---|
-| `SANDBOX_DIR/.agent-input/` | `/home/agentuser/.agent-input/` | read-only | Input channel: snapshot, brief, operator files |
-| `SANDBOX_DIR/.workspace/` | `/home/agentuser/.workspace/` | read-write | Output channel: patch, logs |
+| Source | Container | Path | Mode | Purpose |
+|---|---|---|---|---|
+| `SANDBOX_DIR/.agent-input/` | Reasoning layer | `/home/agentuser/.agent-input/` | read-only | Input channel: snapshot, brief, operator files |
+| `SANDBOX_DIR/.workspace/` | Reasoning layer | `/home/agentuser/.workspace/` | read-write | Output channel: diff, logs |
+| Named Docker volume | Capability layer | `sandbox/` | read-write | Working content; capability layer owns this volume |
+| Named Docker volume | Reasoning layer | `sandbox/` | read-write | Working content access for the agent |
 
-`PROJECT_DIR` itself is not mounted at container runtime. The snapshot is fully constructed on the host before the container starts.
+`PROJECT_DIR` is not mounted into either container at runtime. The snapshot is fully constructed on the host before either container starts.
 
 ### Why `.agent-input/` is read-only
 
-The snapshot and operator input files are inputs prepared before the run. The container must not modify them — doing so would break the reproducibility guarantee and could mask the baseline state used for diff generation. The entrypoint copies `.agent-input/snapshot/` into a container-local `sandbox/` before the agent runs; all agent writes go to `sandbox/`, not to the mount.
+The snapshot and operator input files are inputs prepared before the run. The reasoning layer container must not modify them — doing so would break the reproducibility guarantee and could mask the baseline state used for diff generation.
 
-### Why `.workspace/` is the sole output channel
+### Why `.workspace/` is the sole reporting output channel
 
-Restricting agent output to a single known directory enforces the staging invariant: no agent change reaches the host repository without passing through `.workspace/` and receiving human review.
+Restricting agent reporting output to a single known directory enforces the staging invariant: no agent change reaches the host repository without passing through `.workspace/` and receiving human review.
+
+### Why working content lives in the capability layer
+
+The capability layer owns `sandbox/` and exposes it via a shared volume. This separation means the capability layer can be configured independently of the reasoning layer — an MCP server can be added to the capability layer without changing the reasoning layer container or its mounts. The reasoning layer accesses `sandbox/` the same way regardless of whether a capability layer MCP server is present.
 
 ---
 
 ## Snapshot Pipeline
 
-The snapshot pipeline replicates the host repository state into the container sandbox without touching the host. It runs in two stages: host-side preparation before the container starts, and container-side unpacking inside the entrypoint.
+The snapshot pipeline replicates the host repository state into the capability layer sandbox without touching the host. It runs in two stages: host-side preparation before the containers start, and capability-layer-side unpacking at container startup.
 
-All snapshot functions are defined in `lib/snapshot.sh` and sourced by both `start_agent.sh` and `container-entrypoint.sh`.
+All snapshot functions are defined in `lib/snapshot.sh` and sourced by both `start_agent.sh` and the capability layer entrypoint.
 
 ### Stage 1 — Host side (`start_agent.sh`)
 
@@ -180,13 +197,13 @@ The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync
 
 **`snapshot_copy_files`** reads the file list from stdin and copies files into `.agent-input/snapshot/` using `cp --parents` to preserve directory structure.
 
-**`snapshot_validate` (gate 1)** runs after copy, before the container starts. Checks that `.agent-input/snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
+**`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.agent-input/snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
 
-### Stage 2 — Container side (`container-entrypoint.sh`)
+### Stage 2 — Capability layer side (capability layer entrypoint)
 
 **`snapshot_validate` (gate 2)** runs first, against the mounted `.agent-input/snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
 
-**`snapshot_copy_to_sandbox`** copies `.agent-input/snapshot/` into `sandbox/` inside the container. `sandbox/` is container-local and writable — this is where the agent works.
+**`snapshot_copy_to_sandbox`** copies `.agent-input/snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is backed by the shared Docker volume and is the working content the reasoning layer accesses at the same path.
 
 **`snapshot_init_git`** initialises a git repository in `sandbox/` and records a baseline commit. The baseline SHA is stored for diff generation on exit.
 
@@ -196,7 +213,7 @@ The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync
 
 The agent brief (`brief.md`) is an optional task description passed to the agent at run time. It is resolved by `start_agent.sh` from the `AGENT_BRIEF` config key relative to `SANDBOX_DIR`, and copied into `.agent-input/brief.md`.
 
-The entrypoint copies `brief.md` from `.agent-input/` into `sandbox/AGENTS.md` so the agent can read it alongside the project files.
+The reasoning layer entrypoint copies `brief.md` from `.agent-input/` into `sandbox/AGENTS.md` so the agent can read it alongside the project files.
 
 ---
 
@@ -209,7 +226,7 @@ The operator input channel allows task files, path lists, and additional briefs 
 - Read by agent during the run (available in `sandbox/`)
 - Operator clears or overwrites `input/` before the next run
 
-The input channel is part of the `.agent-input/` read-only mount. No additional mount is required.
+The input channel is part of the `.agent-input/` read-only mount on the reasoning layer. No additional mount is required.
 
 ---
 
@@ -221,33 +238,58 @@ The input channel is part of the `.agent-input/` read-only mount. No additional 
 
 ## Diff Pipeline
 
-On container exit, an EXIT trap runs `stage_diffs`:
+On capability layer container exit, an EXIT trap runs the diff pipeline:
 
 1. Any uncommitted changes in `sandbox/` are staged and committed.
 2. `git diff <baseline>..HEAD` is computed against the baseline SHA recorded at startup.
 3. The result is written to `.workspace/changes/staged.diff`.
 
-An autosave loop runs `stage_diffs` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
+The diff runs in the capability layer container against `sandbox/` — not in the reasoning layer container. The reasoning layer container exits first; the harness then stops the capability layer container, triggering the EXIT trap and diff generation.
+
+An autosave loop writes `autosave.diff` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
 
 On the host, `scripts/apply_workspace.sh` applies the patch to the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_DIR` is a git repository with at least one commit before applying.
 
 ---
 
+## Container Lifecycle
+
+The harness manages two containers per session. Start order and stop order are fixed.
+
+**Start sequence:**
+1. Build `.agent-input/snapshot/` on the host (snapshot pipeline stage 1)
+2. Start capability layer container — runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
+3. Start reasoning layer container — mounts `.agent-input/`, `.workspace/`, and `sandbox/` (shared volume from capability layer)
+4. Reasoning layer entrypoint copies brief and operator input into `sandbox/`, then hands off to the agent
+
+**Stop sequence:**
+1. Reasoning layer container exits (agent completes or is interrupted)
+2. Harness stops capability layer container — EXIT trap runs diff pipeline, writes `staged.diff` to `.workspace/changes/`
+
+The capability layer container must be running before the reasoning layer container starts, and must not be stopped until after the reasoning layer container exits.
+
+---
+
 ## Entrypoint Sequence
 
+**Capability layer entrypoint:**
 ```
-container-entrypoint.sh
   1. snapshot_validate (gate 2)         — confirm .agent-input/snapshot/ is intact
-  2. snapshot_copy_to_sandbox           — copy snapshot into container-local sandbox/
-  3. snapshot_init_git                  — git init + baseline commit; container readiness gate
-  4. copy brief.md into sandbox/        — if present in .agent-input/
-  5. copy input/ contents into sandbox/ — if .agent-input/input/ is non-empty
-  6. register EXIT trap → stage_diffs   — ensures diff is captured on any exit
-  7. start autosave loop                — if AUTOSAVE_INTERVAL > 0
-  8. exec agent                         — hand off to OpenCode
+  2. snapshot_copy_to_sandbox           — copy snapshot into sandbox/ (shared volume)
+  3. snapshot_init_git                  — git init + baseline commit; records baseline SHA
+  4. register EXIT trap → diff pipeline — ensures diff is captured on any exit
+  5. start autosave loop                — if AUTOSAVE_INTERVAL > 0
+  6. wait                               — stays running while reasoning layer is active
 ```
 
-Steps 1–3 must succeed before the agent starts. Any failure exits the container without starting the agent.
+**Reasoning layer entrypoint:**
+```
+  1. copy brief.md into sandbox/        — if present in .agent-input/
+  2. copy input/ contents into sandbox/ — if .agent-input/input/ is non-empty
+  3. exec agent                         — hand off to OpenCode
+```
+
+Steps 1–3 of the capability layer entrypoint must succeed before the reasoning layer container starts. Any failure exits the capability layer container without starting the reasoning layer.
 
 ---
 
@@ -255,6 +297,7 @@ Steps 1–3 must succeed before the agent starts. Any failure exits the containe
 
 | Topic | Document |
 |---|---|
+| Two-layer conceptual model | [../concepts/two_layer_model.md](../concepts/two_layer_model.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
 | Operator-facing workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security guarantees and trust boundaries | [security.md](security.md) |

@@ -237,7 +237,7 @@ case "$MODE" in
     docker run --rm \
       "${MOUNT_ARGS[@]}" \
       "${ENV_DIR_ARGS[@]}" \
-      -v "$REPO_ROOT/providers/opencode/dry_run.sh:/dry_run.sh:ro" \
+      -v "$REPO_ROOT/scripts/dry_run.sh:/dry_run.sh:ro" \
       "$IMAGE_NAME" \
       bash /dry_run.sh
     echo "PASS" > "$AGENT_WORKSPACE_DIR/changes/liveness.txt"
