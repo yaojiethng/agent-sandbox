@@ -79,8 +79,8 @@ make_fixture() {
     echo "dockerfile-content"  > "$dir/providers/opencode/Dockerfile"
 
     cat > "$dir/providers/opencode/image-files.txt" <<EOF
-providers/opencode/Dockerfile
-providers/opencode/container-entrypoint.sh
+Dockerfile
+container-entrypoint.sh
 EOF
 
     echo "$dir"
@@ -102,12 +102,12 @@ echo "-- Happy path --"
 
 REPO=$(make_fixture)
 
-digest=$(image_compute_digest "$REPO" "opencode")
-assert_exit_zero    "returns exit 0"          image_compute_digest "$REPO" "opencode"
+digest=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
+assert_exit_zero    "returns exit 0"          image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 assert_equal        "output is 64 hex chars"  64 "${#digest}"
-assert_exit_zero    "idempotent on re-run"     image_compute_digest "$REPO" "opencode"
+assert_exit_zero    "idempotent on re-run"     image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 
-digest2=$(image_compute_digest "$REPO" "opencode")
+digest2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_equal        "same inputs produce same digest" "$digest" "$digest2"
 
 cleanup "$REPO"
@@ -118,10 +118,10 @@ echo ""
 echo "-- Digest sensitivity --"
 
 REPO=$(make_fixture)
-d1=$(image_compute_digest "$REPO" "opencode")
+d1=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
 echo "lib-content-changed" > "$REPO/libs/a.sh"
-d2=$(image_compute_digest "$REPO" "opencode")
+d2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_not_equal "digest changes when lib file changes" "$d1" "$d2"
 
 cleanup "$REPO"
@@ -129,10 +129,10 @@ cleanup "$REPO"
 # --- Digest changes when provider file changes ---
 
 REPO=$(make_fixture)
-d1=$(image_compute_digest "$REPO" "opencode")
+d1=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
 echo "entrypoint-changed" > "$REPO/providers/opencode/container-entrypoint.sh"
-d2=$(image_compute_digest "$REPO" "opencode")
+d2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_not_equal "digest changes when provider file changes" "$d1" "$d2"
 
 cleanup "$REPO"
@@ -140,11 +140,11 @@ cleanup "$REPO"
 # --- Digest changes when image-files.txt adds a new file ---
 
 REPO=$(make_fixture)
-d1=$(image_compute_digest "$REPO" "opencode")
+d1=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
 echo "extra-content" > "$REPO/providers/opencode/extra.sh"
-echo "providers/opencode/extra.sh" >> "$REPO/providers/opencode/image-files.txt"
-d2=$(image_compute_digest "$REPO" "opencode")
+echo "extra.sh" >> "$REPO/providers/opencode/image-files.txt"
+d2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_not_equal "digest changes when image-files.txt adds a file" "$d1" "$d2"
 
 cleanup "$REPO"
@@ -157,15 +157,15 @@ echo "-- Error cases --"
 REPO=$(make_fixture)
 rm "$REPO/providers/opencode/image-files.txt"
 assert_exit_nonzero "fails when image-files.txt is missing" \
-    image_compute_digest "$REPO" "opencode"
+    image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 cleanup "$REPO"
 
 # --- Error: listed file does not exist ---
 
 REPO=$(make_fixture)
-echo "providers/opencode/nonexistent.sh" >> "$REPO/providers/opencode/image-files.txt"
+echo "nonexistent.sh" >> "$REPO/providers/opencode/image-files.txt"
 assert_exit_nonzero "fails when listed file does not exist" \
-    image_compute_digest "$REPO" "opencode"
+    image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 cleanup "$REPO"
 
 # --- Error: empty libs/ ---
@@ -173,14 +173,14 @@ cleanup "$REPO"
 REPO=$(make_fixture)
 rm "$REPO/libs/"*.sh
 assert_exit_nonzero "fails when libs/ is empty" \
-    image_compute_digest "$REPO" "opencode"
+    image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 cleanup "$REPO"
 
 # --- Error: missing required arguments ---
 
 assert_exit_nonzero "fails when REPO arg is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/image.sh && image_compute_digest'
-assert_exit_nonzero "fails when PROVIDER arg is missing" \
+assert_exit_nonzero "fails when IMAGE_FILES_TXT arg is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/image.sh && image_compute_digest "/some/path"'
 
 # --- image-files.txt: blank lines and comments are ignored ---
@@ -191,19 +191,19 @@ echo "-- image-files.txt parsing --"
 REPO=$(make_fixture)
 cat > "$REPO/providers/opencode/image-files.txt" <<EOF
 # This is a comment
-providers/opencode/Dockerfile
+Dockerfile
 
-providers/opencode/container-entrypoint.sh
+container-entrypoint.sh
 EOF
 
 assert_exit_zero "blank lines and comments in image-files.txt are ignored" \
-    image_compute_digest "$REPO" "opencode"
+    image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 
-d_clean=$(image_compute_digest "$REPO" "opencode")
+d_clean=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
 # Digest should equal one produced from a clean image-files.txt with same files
 REPO2=$(make_fixture)
-d_plain=$(image_compute_digest "$REPO2" "opencode")
+d_plain=$(image_compute_digest "$REPO2" "$REPO2/providers/opencode/image-files.txt")
 assert_equal "digest matches equivalent clean image-files.txt" "$d_clean" "$d_plain"
 
 cleanup "$REPO"

@@ -1,0 +1,52 @@
+# docker-compose.yml
+# Generated at onboarding time for project: {{PROJECT_NAME}}
+#
+# Runtime variables are written to .env in SANDBOX_DIR by start_agent.sh
+# before each session. Do not commit .env.
+#
+# Build:
+#   make build sandbox   — builds agent-sandbox-{{PROJECT_NAME}}
+#   make build agent     — builds opencode-agent-{{PROJECT_NAME}}
+#   make build all       — builds both
+
+services:
+  sandbox:
+    image: agent-sandbox-{{PROJECT_NAME}}
+    container_name: {{PROJECT_NAME}}-sandbox
+    volumes:
+      - ${SNAPSHOT_DIR}:/home/agentuser/.snapshot:ro
+      - ${CHANGES_DIR}:/home/agentuser/.workspace/changes:rw
+      - sandbox_content:/home/agentuser/sandbox:rw
+    environment:
+      - SNAPSHOT_DIR_NAME=.snapshot
+      - WORKSPACE_DIR_NAME=.workspace
+      - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/agentuser/.workspace/changes/sandbox-ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+    restart: "no"
+
+  agent:
+    image: opencode-agent-{{PROJECT_NAME}}
+    container_name: {{PROJECT_NAME}}-agent
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    volumes:
+      - ${AGENT_INPUT_DIR}:/home/agentuser/project/.workspace/agent-input:ro
+      - ${AGENT_OUTPUT_DIR}:/home/agentuser/project/.workspace/agent-output:rw
+      - sandbox_content:/home/agentuser/project/sandbox:rw
+    environment:
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${SERVE_PORT:-46553}:${SERVE_PORT:-46553}"
+    stdin_open: true
+    tty: true
+    restart: "no"
+
+volumes:
+  sandbox_content:
+    name: {{PROJECT_NAME}}-sandbox-content

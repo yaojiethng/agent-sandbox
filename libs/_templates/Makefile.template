@@ -1,0 +1,81 @@
+# Makefile — <project-name>
+# Runs agent-sandbox against this project.
+# Requires agent-sandbox CLI installed: make install (agent-sandbox repo)
+
+PROJECT_NAME := <project-name>
+PROJECT_DIR  := <absolute-wsl-path-to-project>
+SANDBOX_DIR  := <absolute-wsl-path-to-sandbox>
+AGENT_BRIEF  := agents.md
+ENV_FILE     := .env
+
+.PHONY: start serve build-agent build-sandbox build-all dry-run apply rebuild-start rebuild-serve rebuild-dry-run
+
+build-agent:
+	agent-sandbox build agent \
+	  --name=$(PROJECT_NAME)
+
+build-sandbox:
+	agent-sandbox build sandbox \
+	  --name=$(PROJECT_NAME) \
+	  --sandbox=$(SANDBOX_DIR)
+
+build-all:
+	agent-sandbox build all \
+	  --name=$(PROJECT_NAME) \
+	  --sandbox=$(SANDBOX_DIR)
+
+start:
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
+
+serve:
+	-agent-sandbox start \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve
+
+dry-run:
+	agent-sandbox dry-run \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
+
+apply:
+	agent-sandbox apply \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(BRANCH),--branch=$(BRANCH),)
+
+rebuild-start:
+	-agent-sandbox rebuild start \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
+
+rebuild-serve:
+	-agent-sandbox rebuild start \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE) \
+	  --serve
+
+rebuild-dry-run:
+	agent-sandbox rebuild dry-run \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  --brief=$(AGENT_BRIEF) \
+	  --env=$(ENV_FILE)
