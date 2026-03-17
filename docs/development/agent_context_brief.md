@@ -24,6 +24,8 @@ You do not modify the repository. All outputs are proposals; the operator review
 
 These principles are stable. The operating workflow and policy documents are their realizations — they will evolve; the principles do not.
 
+**Handover first.** The first output of every session is the handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt.
+
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
 **State assumptions explicitly.** State them before proceeding, not after.
