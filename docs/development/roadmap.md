@@ -84,11 +84,13 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 - [ ] `providers/opencode/start_agent.sh` — two-container lifecycle via `docker compose up/down`; writes compose + `.env` + mode overrides into `SANDBOX_DIR` from templates; snapshot pipeline writes to `SANDBOX_DIR/.snapshot/`; preserves git checkpoint, validation, env loading; `make build [sandbox|agent|all]` dispatch
 
 ### Path alignment
-- [ ] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
-- [ ] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `.workspace/changes/`); grep and confirm
+- [x] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
+- [x] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `.workspace/changes/`); grep and confirm
 
 ### Build & staleness
-- [ ] `libs/image.sh` — separate `image-files.txt` per image (capability in `SANDBOX_DIR`, reasoning in `providers/opencode/`), per-image staleness check, per-image rebuild, warn separately; update tests
+- [x] `libs/image.sh` — take path to `image-files.txt`, update tests.
+- [ ] Create an `image-files.txt` for each image (capability in `SANDBOX_DIR`, reasoning in `providers/opencode/`)
+- [ ] Container build step: per-image staleness check, per-image rebuild, warn separately
 
 ### Dry-run
 - [ ] `scripts/dry_run.sh` — catalogue existing checks; confirm which to preserve, which to drop; update for two-container dry-run

@@ -32,6 +32,7 @@ Libs-only: `diff.sh`, `image.sh`, `snapshot.sh` and their test files. All other 
 | `snapshot.sh` needs no changes | Header already correct, all paths are args — no hardcoded dir names | This handover |
 | `image.sh` needs no functional changes | Interface already takes absolute `IMAGE_FILES_TXT` path; two-image staleness is a caller concern | This handover |
 | `test_image.sh` was stale against `image.sh` interface | Tests passed provider name string where function expects absolute path; fixture paths used repo-root-relative where function resolves file-location-relative | This handover |
+| `handover_policy.md` missing roadmap handoff at session close | Agent following handover population rules at close missed the parallel roadmap update because the handoff only existed in `iteration_policy.md` Step 8 | `handover_policy.md`, `agent_context_brief.md` |
 
 ## Completed this session
 
@@ -39,6 +40,9 @@ Libs-only: `diff.sh`, `image.sh`, `snapshot.sh` and their test files. All other 
 |---|---|
 | `libs/diff.sh` | 3 comment lines: `container-entrypoint.sh` → `sandbox-entrypoint.sh (capability layer)` |
 | `tests/test_image.sh` | All `image_compute_digest` calls updated from `"opencode"` to absolute `image-files.txt` path; fixture paths fixed to file-location-relative; stale `PROVIDER` label → `IMAGE_FILES_TXT` |
+| `docs/operations/handover_policy.md` | Added roadmap update handoff as first item in "At session close (Step 8)" population rules |
+| `agent_context_brief.md` | Broadened `iteration_policy.md` trigger to include any session (minor loop open/close) |
+| `roadmap.md` | Marked `snapshot.sh` and `diff.sh` tasks complete; noted `image.sh` tests updated |
 
 ## Deferred items
 

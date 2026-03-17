@@ -106,4 +106,4 @@ Read these in addition to the above when opening a major loop planning session (
 | [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any new task, story, investigation, or milestone transition |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session (minor loop open/close), new task, story, investigation, or milestone transition |

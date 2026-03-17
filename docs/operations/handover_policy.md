@@ -153,6 +153,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ### At session close (Step 8)
 
+- Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Minor loop Step 8. This is done alongside the handover update, not after it.
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
