@@ -13,12 +13,12 @@
 #   source /libs/dirs.sh
 #   # Then use $AGENT_INPUT_DIR_NAME, $SANDBOX_DIR_NAME, etc.
 
-# Input channel: snapshot, brief, operator-placed task files.
+# Input channel: brief, operator-placed task files.
 # Bind-mounted read-only into the reasoning layer container from SANDBOX_DIR.
+# Future: replaced by workspace/input/ once .agent-input/ rename is complete.
 AGENT_INPUT_DIR_NAME="${AGENT_INPUT_DIR_NAME:-.agent-input}"
 
-# Snapshot subdirectory within the input channel.
-# Bind-mounted read-only into the capability layer container from SANDBOX_DIR.
+# Snapshot input: bind-mounted read-only into the capability layer container.
 SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
 
 # Working content directory: owned by the capability layer container.
@@ -27,6 +27,12 @@ SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
 # running, the reasoning layer cannot attach to this directory.
 SANDBOX_DIR_NAME="${SANDBOX_DIR_NAME:-sandbox}"
 
-# Output channel: diff, logs. Bind-mounted read-write into the reasoning layer
-# container from SANDBOX_DIR.
+# Diff output subdirectory: bind-mounted read-write into the capability layer only.
+# The diff pipeline writes staged.diff and autosave.diff here and nowhere else.
+# The capability layer mounts only this subdirectory — not the workspace parent.
+# Writing outside this directory from the capability layer is a bug.
+CHANGES_DIR_NAME="${CHANGES_DIR_NAME:-workspace/changes}"
+
+# Workspace directory: bind-mounted read-write into the reasoning layer.
+# Temporary — will narrow to workspace/input/ once .agent-input/ rename is complete.
 WORKSPACE_DIR_NAME="${WORKSPACE_DIR_NAME:-.workspace}"

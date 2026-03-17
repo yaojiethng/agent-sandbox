@@ -6,31 +6,37 @@
 # throwaway container to simulate the reasoning layer writing to sandbox/.
 #
 # Usage:
-#   ./test_capability_layer.sh <repo-root> <snapshot-dir>
+#   ./test_capability_layer.sh <repo-root> <sandbox-dir>
 #
-#   <repo-root>     absolute path to the agent-sandbox repo
-#   <snapshot-dir>  absolute path to a pre-built .snapshot/ directory
+#   <repo-root>    absolute path to the agent-sandbox repo (build context)
+#   <sandbox-dir>  absolute path to SANDBOX_DIR — must contain:
+#                    Dockerfile.sandbox
+#                    .snapshot/   (pre-built snapshot)
+#                    .workspace/changes/  (created by this script if absent)
 #
 # Example:
-#   ./test_capability_layer.sh ~/agent-sandbox ~/agent-sandbox-sandbox/.snapshot
+#   ./test_capability_layer.sh ~/agent-sandbox ~/myproject-sandbox
 #
 # Requirements:
 #   - Docker running
-#   - Dockerfile.sandbox built (or pass IMAGE_NAME to use an existing image)
-#   - A pre-built .snapshot/ directory (run snapshot pipeline stage 1 first,
-#     or copy an existing one)
-
-set -euo pipefail
+#   - A pre-built .snapshot/ inside SANDBOX_DIR
+#
+# Note: intentionally no set -euo pipefail — test scripts must handle failures
+# explicitly so that failures produce diagnostic output rather than silent exit.
 
 # -------------------------
 # Args and config
 # -------------------------
-REPO_ROOT="${1:?Usage: $0 <repo-root> <snapshot-dir>}"
-SNAPSHOT_DIR="${2:?Usage: $0 <repo-root> <snapshot-dir>}"
+REPO_ROOT="$(cd "${1:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
+SANDBOX_DIR="$(cd "${2:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
+
+SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
+WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
+DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 IMAGE_NAME="${IMAGE_NAME:-agent-sandbox-sandbox-test}"
 CONTAINER_NAME="capability-layer-test-$$"
-WORKSPACE_DIR="$(mktemp -d)"
+BUILD_LOG=""
 
 PASS=0
 FAIL=0
@@ -55,8 +61,8 @@ cleanup() {
   echo ""
   echo "Cleaning up..."
   docker stop "$CONTAINER_NAME" &>/dev/null || true
-  docker rm "$CONTAINER_NAME" &>/dev/null || true
-  rm -rf "$WORKSPACE_DIR"
+  docker rm -v "$CONTAINER_NAME" &>/dev/null || true
+  rm -f "$BUILD_LOG"
 }
 trap cleanup EXIT
 
@@ -65,16 +71,23 @@ trap cleanup EXIT
 # -------------------------
 echo "=== Capability Layer Functional Test ==="
 echo "Repo root:    $REPO_ROOT"
+echo "Sandbox dir:  $SANDBOX_DIR"
 echo "Snapshot dir: $SNAPSHOT_DIR"
-echo "Workspace:    $WORKSPACE_DIR"
+echo "Workspace:    $WORKSPACE_CHANGES_DIR"
+echo "Dockerfile:   $DOCKERFILE"
 echo ""
 
 echo "--- Preflight ---"
+
+check "Dockerfile.sandbox exists in sandbox dir" \
+  test -f "$DOCKERFILE"
 
 check "snapshot dir exists and is non-empty" \
   bash -c "[[ -d '$SNAPSHOT_DIR' && -n \"\$(ls -A '$SNAPSHOT_DIR')\" ]]"
 
 check "docker is running" docker info
+
+mkdir -p "$WORKSPACE_CHANGES_DIR"
 
 # -------------------------
 # Build
@@ -83,12 +96,25 @@ echo ""
 echo "--- Build ---"
 
 echo "  Building $IMAGE_NAME from $REPO_ROOT..."
-if docker build -q -f "$REPO_ROOT/Dockerfile.sandbox" -t "$IMAGE_NAME" "$REPO_ROOT" &>/dev/null; then
+BUILD_LOG=$(mktemp)
+DOCKER_BUILDKIT=1 docker build \
+  --progress=plain \
+  -f "$DOCKERFILE" \
+  -t "$IMAGE_NAME" \
+  "$REPO_ROOT" >"$BUILD_LOG" 2>&1
+BUILD_EXIT=$?
+if [[ $BUILD_EXIT -eq 0 ]]; then
   pass "docker build succeeded"
 else
   fail "docker build failed — aborting"
+  echo ""
+  echo "  Build output:"
+  cat "$BUILD_LOG" | sed 's/^/    /'
+  echo ""
+  rm -f "$BUILD_LOG"
   exit 1
 fi
+rm -f "$BUILD_LOG"
 
 check "sandbox-entrypoint.sh present in image" \
   docker run --rm "$IMAGE_NAME" test -f /usr/local/bin/sandbox-entrypoint.sh
@@ -99,27 +125,45 @@ check "libs/snapshot.sh present in image" \
 check "libs/diff.sh present in image" \
   docker run --rm "$IMAGE_NAME" test -f /libs/diff.sh
 
+check "libs/dirs.sh present in image" \
+  docker run --rm "$IMAGE_NAME" test -f /libs/dirs.sh
+
 # -------------------------
 # Startup
 # -------------------------
 echo ""
 echo "--- Startup ---"
 
-mkdir -p "$WORKSPACE_DIR/changes"
-
 echo "  Starting capability layer container..."
-docker run -d \
+START_OUTPUT=$(docker run -d \
   --name "$CONTAINER_NAME" \
   --volume "$SNAPSHOT_DIR:/home/agentuser/.snapshot:ro" \
-  --volume "$WORKSPACE_DIR:/home/agentuser/.workspace" \
+  --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/changes" \
   --env AUTOSAVE_INTERVAL=0 \
-  "$IMAGE_NAME" > /dev/null
+  "$IMAGE_NAME" 2>&1)
+START_EXIT=$?
+if [[ $START_EXIT -ne 0 ]]; then
+  fail "docker run failed — aborting"
+  echo ""
+  echo "  docker run output:"
+  echo "$START_OUTPUT" | sed 's/^/    /'
+  echo ""
+  exit 1
+fi
 
 # Give the entrypoint time to complete init before checking
 sleep 3
 
 check "container is running after init" \
   bash -c "[[ \"\$(docker inspect -f '{{.State.Running}}' '$CONTAINER_NAME')\" == 'true' ]]"
+
+# If container exited early, print logs to help diagnose
+if [[ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]]; then
+  echo ""
+  echo "  Container logs:"
+  docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+  echo ""
+fi
 
 check "sandbox is non-empty (copy succeeded)" \
   bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
@@ -160,13 +204,13 @@ check "container exits with code 0" \
   bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$CONTAINER_NAME')\" == '0' ]]"
 
 check "staged.diff written to workspace" \
-  test -f "$WORKSPACE_DIR/changes/staged.diff"
+  test -f "$WORKSPACE_CHANGES_DIR/staged.diff"
 
 check "staged.diff is non-empty" \
-  bash -c "[[ -s '$WORKSPACE_DIR/changes/staged.diff' ]]"
+  bash -c "[[ -s '$WORKSPACE_CHANGES_DIR/staged.diff' ]]"
 
 check "staged.diff contains the mutated file" \
-  grep -q "capability_test.txt" "$WORKSPACE_DIR/changes/staged.diff"
+  grep -q "capability_test.txt" "$WORKSPACE_CHANGES_DIR/staged.diff"
 
 # -------------------------
 # Diff integrity
@@ -185,7 +229,7 @@ git add -A
 git commit -q -m "baseline"
 
 check "staged.diff applies cleanly to snapshot" \
-  git apply --check "$WORKSPACE_DIR/changes/staged.diff"
+  git apply --check "$WORKSPACE_CHANGES_DIR/staged.diff"
 
 rm -rf "$APPLY_DIR"
 
@@ -198,12 +242,11 @@ echo "--- Failure cases ---"
 EMPTY_SNAPSHOT="$(mktemp -d)"
 FAIL_CONTAINER="capability-layer-fail-$$"
 FAIL_WORKSPACE="$(mktemp -d)"
-mkdir -p "$FAIL_WORKSPACE/changes"
 
 docker run -d \
   --name "$FAIL_CONTAINER" \
   --volume "$EMPTY_SNAPSHOT:/home/agentuser/.snapshot:ro" \
-  --volume "$FAIL_WORKSPACE:/home/agentuser/.workspace" \
+  --volume "$FAIL_WORKSPACE:/home/agentuser/workspace/changes" \
   "$IMAGE_NAME" > /dev/null || true
 
 sleep 2
@@ -211,7 +254,7 @@ sleep 2
 check "container exits non-zero when .snapshot/ is empty (gate 2)" \
   bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$FAIL_CONTAINER' 2>/dev/null)\" != '0' ]]"
 
-docker rm "$FAIL_CONTAINER" &>/dev/null || true
+docker rm -v "$FAIL_CONTAINER" &>/dev/null || true
 rm -rf "$EMPTY_SNAPSHOT" "$FAIL_WORKSPACE"
 
 # -------------------------
