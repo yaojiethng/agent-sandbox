@@ -69,7 +69,8 @@ rebuild:
 .PHONY: apply
 apply:
 	agent-sandbox apply \
-	  --root=$(PROJECT_ROOT) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
 
 # -------------------------

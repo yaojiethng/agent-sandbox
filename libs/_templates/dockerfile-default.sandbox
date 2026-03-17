@@ -35,13 +35,18 @@ USER agentuser
 # -------------------------
 # sandbox/ is owned by this container. The reasoning layer accesses it
 # exclusively via --volumes-from — if this container is not running,
-# the reasoning layer cannot start. No named volume is used; sandbox/
-# starts clean from the image on every container run.
+# the reasoning layer cannot start.
+# VOLUME promotes sandbox/ to an anonymous Docker volume at container
+# creation time, which is what makes --volumes-from work. It is not a
+# named volume — it is removed with docker rm -v (or compose down -v)
+# after each session so it does not persist across runs.
 # .snapshot/ and .workspace/ are bind-mounted from SANDBOX_DIR on the host.
 # All directories created as agentuser so mounts are not blocked by ownership.
 RUN mkdir -p /home/agentuser/sandbox \
              /home/agentuser/.snapshot \
              /home/agentuser/.workspace
+
+VOLUME /home/agentuser/sandbox
 
 WORKDIR /home/agentuser
 

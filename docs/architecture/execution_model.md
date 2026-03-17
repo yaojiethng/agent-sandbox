@@ -179,9 +179,13 @@ Restricting agent reporting output to a single known directory enforces the stag
 
 ### Why `--volumes-from` rather than a named volume
 
-A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, requiring the entrypoint to clear it on startup, and any container could mount the volume regardless of whether the capability layer is running.
+A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, and any container could mount the volume regardless of whether the capability layer is running.
 
-`--volumes-from` ties the sandbox lifecycle to the capability layer container. The reasoning layer can only access `sandbox/` while the capability layer container exists. If the capability layer is not running, `--volumes-from` fails and the reasoning layer cannot start — enforcing the ownership invariant at the Docker level rather than in application code. Each session uses a fresh capability layer container, so `sandbox/` always starts clean from the image with no stale content to clear.
+`--volumes-from` ties the sandbox lifecycle to the capability layer container. The reasoning layer can only access `sandbox/` while the capability layer container exists. If the capability layer is not running, `--volumes-from` fails and the reasoning layer cannot start — enforcing the ownership invariant at the Docker level.
+
+**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only exposes directories via `--volumes-from` if they are declared as volumes in the Dockerfile (`VOLUME /home/agentuser/sandbox`). Without this declaration the directory exists only in the container's writable layer and is invisible to other containers. The `VOLUME` instruction promotes `sandbox/` to an anonymous Docker volume at container creation time.
+
+The anonymous volume persists until explicitly removed. The harness removes it with `docker rm -v` after each session (compose uses `down -v`). This keeps the lifecycle clean: each session starts with a fresh anonymous volume initialised from the image, and the previous session's volume is deleted on teardown. The content of `sandbox/` at container creation is always the empty directory from the image — the entrypoint then copies the snapshot in.
 
 ---
 
