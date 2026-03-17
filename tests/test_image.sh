@@ -75,12 +75,13 @@ make_fixture() {
     echo "lib-content-b" > "$dir/libs/b.sh"
 
     mkdir -p "$dir/providers/opencode"
-    echo "entrypoint-content" > "$dir/providers/opencode/container-entrypoint.sh"
+    mkdir -p "$dir/scripts"
+    echo "entrypoint-content" > "$dir/scripts/container-entrypoint.sh"
     echo "dockerfile-content"  > "$dir/providers/opencode/Dockerfile"
 
     cat > "$dir/providers/opencode/image-files.txt" <<EOF
-Dockerfile
-container-entrypoint.sh
+providers/opencode/Dockerfile
+scripts/container-entrypoint.sh
 EOF
 
     echo "$dir"
@@ -131,7 +132,7 @@ cleanup "$REPO"
 REPO=$(make_fixture)
 d1=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
-echo "entrypoint-changed" > "$REPO/providers/opencode/container-entrypoint.sh"
+echo "entrypoint-changed" > "$REPO/scripts/container-entrypoint.sh"
 d2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_not_equal "digest changes when provider file changes" "$d1" "$d2"
 
@@ -143,7 +144,7 @@ REPO=$(make_fixture)
 d1=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 
 echo "extra-content" > "$REPO/providers/opencode/extra.sh"
-echo "extra.sh" >> "$REPO/providers/opencode/image-files.txt"
+echo "providers/opencode/extra.sh" >> "$REPO/providers/opencode/image-files.txt"
 d2=$(image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt")
 assert_not_equal "digest changes when image-files.txt adds a file" "$d1" "$d2"
 
@@ -163,7 +164,7 @@ cleanup "$REPO"
 # --- Error: listed file does not exist ---
 
 REPO=$(make_fixture)
-echo "nonexistent.sh" >> "$REPO/providers/opencode/image-files.txt"
+echo "providers/opencode/nonexistent.sh" >> "$REPO/providers/opencode/image-files.txt"
 assert_exit_nonzero "fails when listed file does not exist" \
     image_compute_digest "$REPO" "$REPO/providers/opencode/image-files.txt"
 cleanup "$REPO"
@@ -191,9 +192,9 @@ echo "-- image-files.txt parsing --"
 REPO=$(make_fixture)
 cat > "$REPO/providers/opencode/image-files.txt" <<EOF
 # This is a comment
-Dockerfile
+providers/opencode/Dockerfile
 
-container-entrypoint.sh
+scripts/container-entrypoint.sh
 EOF
 
 assert_exit_zero "blank lines and comments in image-files.txt are ignored" \

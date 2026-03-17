@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
-# container-entrypoint.sh
-# Sandbox setup + diff staging + autosave
+# container-entrypoint.sh (reasoning layer)
+# Brief injection, operator input copy, agent exec.
+#
+# Sequence:
+#   1. copy brief.md into sandbox/        — if present in .agent-input/
+#   2. copy input/ contents into sandbox/ — if .agent-input/input/ is non-empty
+#   3. exec agent                         — hand off to OpenCode
+#
+# Snapshot unpacking, git baseline, and diff pipeline are handled by the
+# capability layer container (sandbox-entrypoint.sh). This entrypoint assumes
+# sandbox/ is already populated and git-initialised by the time it runs.
+#
+# Environment variables (all have defaults defined in libs/dirs.sh,
+# override via docker run -e or compose .env):
+#   AGENT_INPUT_DIR_NAME   — name of the input channel directory  (default: .agent-input)
+#   SANDBOX_DIR_NAME       — name of the sandbox directory        (default: sandbox)
 
 set -euo pipefail
 
@@ -12,68 +26,19 @@ exec 1>&2
 
 ROOT="/home/agentuser"
 
-# -------------------------
-# Directory names from env
-# Defined in start_agent.sh and passed via -e at docker run time.
-# -------------------------
-AGENT_INPUT_DIR_NAME="${AGENT_INPUT_DIR_NAME:-.agent-input}"
-AGENT_WORKSPACE_DIR_NAME="${AGENT_WORKSPACE_DIR_NAME:-.workspace}"
+# Directory name defaults — single source of truth.
+# Override via environment variables without rebuilding the image.
+source /libs/dirs.sh
 
 AGENT_INPUT_DIR="$ROOT/$AGENT_INPUT_DIR_NAME"
-AGENT_WORKSPACE_DIR="$ROOT/$AGENT_WORKSPACE_DIR_NAME"
-
-SNAPSHOT_DIR="$AGENT_INPUT_DIR/snapshot"
-SANDBOX_DIR="$ROOT/sandbox"
-CHANGES_DIR="$AGENT_WORKSPACE_DIR/changes"
-
-AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
-
-mkdir -p "$CHANGES_DIR"
-
-# -------------------------
-# Snapshot pipeline (container side)
-# -------------------------
-source /libs/snapshot.sh
-
-# Gate 2 — confirm mounted snapshot is intact before unpacking.
-snapshot_validate "$SNAPSHOT_DIR"
-
-# Clear any previous sandbox state to prevent stale git index issues.
-# cd back to ROOT first — snapshot_init_git changes cwd and rm -rf would
-# otherwise leave the shell in a deleted directory on the next run.
-rm -rf "$SANDBOX_DIR"
-cd "$ROOT"
-
-# Copy snapshot into container-local sandbox/.
-snapshot_copy_to_sandbox "$SNAPSHOT_DIR" "$SANDBOX_DIR"
-
-# Confirm files landed — catch silent copy failures before init.
-file_count=$(find "$SANDBOX_DIR" -type f | wc -l)
-if [[ "$file_count" -eq 0 ]]; then
-  echo "Error: sandbox is empty after copy — snapshot may be missing files." >&2
-  echo "  Snapshot dir: $SNAPSHOT_DIR" >&2
-  echo "  Run: ls -la $SNAPSHOT_DIR" >&2
-  exit 1
-fi
-echo "Copied $file_count file(s) into sandbox."
-
-# Initialise git baseline. Failure here means the container cannot start.
-# Command substitution runs snapshot_init_git in a subshell, containing its
-# internal cd. The explicit cd "$ROOT" afterward guards against any cwd leak.
-BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR") || {
-  echo "Error: sandbox git initialisation failed — container cannot start." >&2
-  echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
-  exit 1
-}
-cd "$ROOT"
-
-echo "Sandbox ready. Baseline: $BASELINE_SHA"
+SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
 
 # -------------------------
 # Copy brief into sandbox root
 # -------------------------
 if [[ -f "$AGENT_INPUT_DIR/brief.md" ]]; then
   cp -p "$AGENT_INPUT_DIR/brief.md" "$SANDBOX_DIR/AGENTS.md"
+  echo "Brief copied to sandbox/AGENTS.md."
 fi
 
 # -------------------------
@@ -91,25 +56,8 @@ if [[ -d "$AGENT_INPUT_DIR/input" ]]; then
 fi
 
 # -------------------------
-# Diff pipeline
+# Execute agent
 # -------------------------
-source /libs/diff.sh
-
-# On exit: commit any pending changes and write staged.diff.
-trap 'diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"' EXIT
-
-# Optional autosave: write autosave.diff on interval without committing.
-if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
-  (
-    while true; do
-      sleep "$AUTOSAVE_INTERVAL"
-      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"
-    done
-  ) &
-fi
-
-# -------------------------
-# Execute OpenCode
-# -------------------------
-# Run without exec so the EXIT trap fires in this shell when OpenCode exits.
-"$@"
+# exec replaces this shell — no EXIT trap needed here.
+# The capability layer container owns the diff pipeline.
+exec "$@"

@@ -1,0 +1,58 @@
+# dockerfile-default.sandbox
+# Default capability layer Dockerfile template.
+# Copy into SANDBOX_DIR as Dockerfile.sandbox and customise as needed.
+# Docker Compose references the project-level Dockerfile.sandbox.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# -------------------------
+# System packages (root)
+# -------------------------
+# No Node/npm/opencode — the capability layer owns the sandbox and diff
+# pipeline only. The reasoning layer container handles agent invocation.
+RUN apt-get update && apt-get install -y \
+    bash git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------------------------
+# Entrypoint and libs (root, before USER switch)
+# -------------------------
+COPY scripts/sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
+COPY libs/snapshot.sh /libs/snapshot.sh
+COPY libs/diff.sh /libs/diff.sh
+COPY libs/dirs.sh /libs/dirs.sh
+RUN chmod +x /usr/local/bin/sandbox-entrypoint.sh
+
+# -------------------------
+# Non-root user
+# -------------------------
+RUN useradd -m -u 1001 -s /bin/bash agentuser
+USER agentuser
+
+# -------------------------
+# Working directories
+# -------------------------
+# sandbox/ is owned by this container. The reasoning layer accesses it
+# exclusively via --volumes-from — if this container is not running,
+# the reasoning layer cannot start. No named volume is used; sandbox/
+# starts clean from the image on every container run.
+# .snapshot/ and .workspace/ are bind-mounted from SANDBOX_DIR on the host.
+# All directories created as agentuser so mounts are not blocked by ownership.
+RUN mkdir -p /home/agentuser/sandbox \
+             /home/agentuser/.snapshot \
+             /home/agentuser/.workspace
+
+WORKDIR /home/agentuser
+
+# -------------------------
+# Health check
+# -------------------------
+# Checks that sandbox/.git exists — confirming snapshot copy and git init
+# completed successfully. Compose uses this to gate reasoning layer startup:
+# the reasoning layer service should declare depends_on with condition
+# service_healthy so it does not start until this check passes.
+HEALTHCHECK --interval=2s --timeout=5s --start-period=30s --retries=5 \
+  CMD test -d /home/agentuser/sandbox/.git
+
+ENTRYPOINT ["/usr/local/bin/sandbox-entrypoint.sh"]

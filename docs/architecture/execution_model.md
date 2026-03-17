@@ -100,12 +100,12 @@ WORKDIR/
             └── staged.diff
 
 Capability layer container
-└── sandbox/                  ← copy of working content; volume-shared to reasoning layer
+└── sandbox/                  ← owned by capability layer; exposed to reasoning layer via --volumes-from
 
 Reasoning layer container
 ├── .agent-input/ mount       ← RO: snapshot, brief, operator input
 ├── .workspace/ mount         ← RW: reporting workspace
-└── sandbox/ mount            ← RW: shared volume from capability layer
+└── sandbox/                  ← RW: from capability layer via --volumes-from; fails if capability layer not running
 ```
 
 `SANDBOX_DIR` defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox`. It is set explicitly in the project Makefile and passed to all subcommands.
@@ -118,7 +118,7 @@ Reasoning layer container
 | `SANDBOX_DIR` | Harness-owned sibling directory. Contains all harness artefacts. |
 | `.agent-input/` | Read-only input channel mounted into the reasoning layer container. Contains snapshot, brief, and operator input files. |
 | `.workspace/` | Read-write output channel mounted into the reasoning layer container. Contains agent output. |
-| `sandbox/` | Working content copy. Owned by the capability layer container; mounted into the reasoning layer container at the same path. |
+| `sandbox/` | Working content copy. Owned by the capability layer container; exposed to the reasoning layer via `--volumes-from`. Not a named volume — lifecycle is tied to the capability layer container. |
 
 ---
 
@@ -145,27 +145,27 @@ Machine-specific variables (`SERVE_PORT`, `OPENCODE_SERVER_PASSWORD`) live in a 
 
 ### Directory name definitions
 
-`start_agent.sh` defines two variables that control the names of the harness-managed directories:
+Directory name defaults are defined in `libs/dirs.sh` and sourced by both entrypoints. All names are overridable via environment variables — set them in the compose `.env` file or via `docker run -e` without rebuilding images.
 
-```bash
-AGENT_INPUT_DIR_NAME=".agent-input"
-AGENT_WORKSPACE_DIR_NAME=".workspace"
-```
-
-These are passed to the container as environment variables (`-e AGENT_INPUT_DIR_NAME=...`, `-e AGENT_WORKSPACE_DIR_NAME=...`) so that `container-entrypoint.sh` and `dry_run.sh` derive all paths from the same definitions. The Dockerfile hardcodes these names for `mkdir` — if the names are changed in `start_agent.sh`, the Dockerfile must be updated to match and the image rebuilt.
+| Variable | Default | Used by |
+|---|---|---|
+| `AGENT_INPUT_DIR_NAME` | `.agent-input` | Reasoning layer (`container-entrypoint.sh`) |
+| `SNAPSHOT_DIR_NAME` | `.snapshot` | Capability layer (`sandbox-entrypoint.sh`) |
+| `SANDBOX_DIR_NAME` | `sandbox` | Both entrypoints |
+| `WORKSPACE_DIR_NAME` | `.workspace` | Capability layer (`sandbox-entrypoint.sh`) |
 
 ---
 
 ## Mount Shape
 
-The capability layer container and reasoning layer container are connected via a named Docker volume. The host mounts `.agent-input/` and `.workspace/` into the reasoning layer container only.
+The capability layer container owns `sandbox/` as a container-local directory. The reasoning layer accesses it via `--volumes-from`, which mounts all volumes from the capability layer container directly. Host bind mounts for `.agent-input/` and `.workspace/` go to the reasoning layer only.
 
 | Source | Container | Path | Mode | Purpose |
 |---|---|---|---|---|
 | `SANDBOX_DIR/.agent-input/` | Reasoning layer | `/home/agentuser/.agent-input/` | read-only | Input channel: snapshot, brief, operator files |
 | `SANDBOX_DIR/.workspace/` | Reasoning layer | `/home/agentuser/.workspace/` | read-write | Output channel: diff, logs |
-| Named Docker volume | Capability layer | `sandbox/` | read-write | Working content; capability layer owns this volume |
-| Named Docker volume | Reasoning layer | `sandbox/` | read-write | Working content access for the agent |
+| Capability layer container (`--volumes-from`) | Capability layer | `/home/agentuser/sandbox/` | read-write | Working content; owned by capability layer |
+| Capability layer container (`--volumes-from`) | Reasoning layer | `/home/agentuser/sandbox/` | read-write | Working content access for the agent |
 
 `PROJECT_DIR` is not mounted into either container at runtime. The snapshot is fully constructed on the host before either container starts.
 
@@ -177,9 +177,11 @@ The snapshot and operator input files are inputs prepared before the run. The re
 
 Restricting agent reporting output to a single known directory enforces the staging invariant: no agent change reaches the host repository without passing through `.workspace/` and receiving human review.
 
-### Why working content lives in the capability layer
+### Why `--volumes-from` rather than a named volume
 
-The capability layer owns `sandbox/` and exposes it via a shared volume. This separation means the capability layer can be configured independently of the reasoning layer — an MCP server can be added to the capability layer without changing the reasoning layer container or its mounts. The reasoning layer accesses `sandbox/` the same way regardless of whether a capability layer MCP server is present.
+A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, requiring the entrypoint to clear it on startup, and any container could mount the volume regardless of whether the capability layer is running.
+
+`--volumes-from` ties the sandbox lifecycle to the capability layer container. The reasoning layer can only access `sandbox/` while the capability layer container exists. If the capability layer is not running, `--volumes-from` fails and the reasoning layer cannot start — enforcing the ownership invariant at the Docker level rather than in application code. Each session uses a fresh capability layer container, so `sandbox/` always starts clean from the image with no stale content to clear.
 
 ---
 
@@ -203,7 +205,7 @@ The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync
 
 **`snapshot_validate` (gate 2)** runs first, against the mounted `.agent-input/snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
 
-**`snapshot_copy_to_sandbox`** copies `.agent-input/snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is backed by the shared Docker volume and is the working content the reasoning layer accesses at the same path.
+**`snapshot_copy_to_sandbox`** copies `.agent-input/snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is a container-local directory owned by the capability layer; the reasoning layer accesses it via `--volumes-from` at the same path.
 
 **`snapshot_init_git`** initialises a git repository in `sandbox/` and records a baseline commit. The baseline SHA is stored for diff generation on exit.
 
@@ -259,27 +261,30 @@ The harness manages two containers per session. Start order and stop order are f
 **Start sequence:**
 1. Build `.agent-input/snapshot/` on the host (snapshot pipeline stage 1)
 2. Start capability layer container — runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
-3. Start reasoning layer container — mounts `.agent-input/`, `.workspace/`, and `sandbox/` (shared volume from capability layer)
+3. Start reasoning layer container with `--volumes-from <capability-layer>` — attaches to capability layer's `sandbox/`, mounts `.agent-input/` and `.workspace/` from host
 4. Reasoning layer entrypoint copies brief and operator input into `sandbox/`, then hands off to the agent
 
 **Stop sequence:**
-1. Reasoning layer container exits (agent completes or is interrupted)
-2. Harness stops capability layer container — EXIT trap runs diff pipeline, writes `staged.diff` to `.workspace/changes/`
+1. Reasoning layer container exits (agent completes or is interrupted).
+2. Harness stops the capability layer container via `docker stop`, which sends SIGTERM to PID 1 (`sandbox-entrypoint.sh`).
+3. The TERM trap in `sandbox-entrypoint.sh` calls `exit 0`, which triggers the EXIT trap.
+4. The EXIT trap runs the diff pipeline — commits any pending changes in `sandbox/`, writes `staged.diff` to `.workspace/changes/`.
 
-The capability layer container must be running before the reasoning layer container starts, and must not be stopped until after the reasoning layer container exits.
+The capability layer container must be running before the reasoning layer container starts, and must not be stopped until after the reasoning layer container exits. The TERM trap ensures `docker stop` produces a clean exit code so the EXIT trap fires reliably regardless of shutdown path.
 
 ---
 
 ## Entrypoint Sequence
 
-**Capability layer entrypoint:**
+**Capability layer entrypoint (`sandbox-entrypoint.sh`):**
 ```
-  1. snapshot_validate (gate 2)         — confirm .agent-input/snapshot/ is intact
-  2. snapshot_copy_to_sandbox           — copy snapshot into sandbox/ (shared volume)
+  1. snapshot_validate (gate 2)         — confirm .snapshot/ is intact
+  2. snapshot_copy_to_sandbox           — copy snapshot into sandbox/ (clean at container start; no named volume)
   3. snapshot_init_git                  — git init + baseline commit; records baseline SHA
-  4. register EXIT trap → diff pipeline — ensures diff is captured on any exit
-  5. start autosave loop                — if AUTOSAVE_INTERVAL > 0
-  6. wait                               — stays running while reasoning layer is active
+  4. register EXIT trap → diff pipeline — fires on any exit; commits pending changes, writes staged.diff
+  5. register TERM trap → exit 0        — docker stop sends SIGTERM to PID 1; clean exit ensures EXIT trap fires
+  6. start autosave loop                — if AUTOSAVE_INTERVAL > 0
+  7. wait                               — stays running while reasoning layer is active
 ```
 
 **Reasoning layer entrypoint:**

@@ -11,10 +11,11 @@
 SHELL := /bin/bash
 
 PROJECT_NAME   := agent-sandbox
-PROJECT_ROOT   := $(CURDIR)
+PROJECT_DIR    := $(CURDIR)
+SANDBOX_DIR    := $(CURDIR)/sandbox
 AGENT_BRIEF    := docs/development/agent_context_brief.md
 ENV_FILE       := .env
-
+INSTALL_DIR	   := ~/.local/bin
 
 
 # -------------------------

@@ -9,6 +9,7 @@ output/
 /projects/
 .workspace/
 .bootstrap/
+.snapshot/
 .vault
 
 # === Python ===

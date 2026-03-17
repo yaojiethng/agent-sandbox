@@ -16,11 +16,9 @@
 #   $2  IMAGE_FILES_TXT    — absolute path to an image-files.txt
 #
 # File resolution in image-files.txt:
-#   Paths are resolved relative to the directory containing image-files.txt.
-#   Reasoning layer: $REPO_ROOT/providers/opencode/image-files.txt
-#                    -> paths relative to $REPO_ROOT/providers/opencode/
-#   Capability layer: $SANDBOX_DIR/image-files.txt
-#                    -> paths relative to $SANDBOX_DIR/
+#   Paths are resolved relative to the repository root (AGENT_SANDBOX_REPO).
+#   Reasoning layer example: scripts/container-entrypoint.sh
+#   Capability layer example: scripts/sandbox-entrypoint.sh
 #
 # Conventions:
 #   Reasoning layer: $REPO_ROOT/providers/opencode/image-files.txt
@@ -38,8 +36,9 @@ image_compute_digest() {
     local image_files_txt="${2:?image_compute_digest: IMAGE_FILES_TXT is required}"
 
     local lib_dir="$repo/libs"
-    local base_dir
-    base_dir="$(dirname "$image_files_txt")"
+    # Paths in image-files.txt are resolved relative to repo root, not
+    # relative to the image-files.txt location. This keeps entries readable
+    # and consistent regardless of where image-files.txt lives.
 
     # Collect libs/ files — sorted for determinism
     local lib_files=()
@@ -62,7 +61,7 @@ image_compute_digest() {
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip blank lines and comments
         [[ -z "$line" || "$line" == \#* ]] && continue
-        local abs="$base_dir/$line"
+        local abs="$repo/$line"
         if [[ ! -f "$abs" ]]; then
             echo "image_compute_digest: listed file does not exist: $abs" >&2
             return 1
