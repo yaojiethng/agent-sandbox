@@ -158,12 +158,19 @@ Directory name defaults are defined in `libs/dirs.sh` and sourced by both entryp
 
 ## Mount Shape
 
-The capability layer container owns `sandbox/` as a container-local directory. The reasoning layer accesses it via `--volumes-from`, which mounts all volumes from the capability layer container directly. Host bind mounts for `.agent-input/` and `.workspace/` go to the reasoning layer only.
+Neither container mounts the `workspace/` parent directory. Each container gets only the subdirectory it owns:
+
+- The capability layer mounts `$SANDBOX_DIR/.workspace/changes/` — the diff pipeline writes `staged.diff` here and nowhere else in the workspace tree.
+- The reasoning layer mounts `$SANDBOX_DIR/.agent-input/` (input channel, read-only) and `$SANDBOX_DIR/.workspace/` (output channel, read-write). The workspace parent mount is temporary — it will narrow to `$SANDBOX_DIR/.workspace/input/` once the `.agent-input/` → `workspace/input/` rename is implemented (scoped as a separate task).
+
+Subdirectory mounts enforce the ownership boundary at the filesystem level: the capability layer literally cannot write to `workspace/input/` because it is not mounted, and the reasoning layer literally cannot write to `workspace/changes/` for the same reason. Any future capability layer code path (dry-run, liveness checks) must write only to `workspace/changes/` or a dedicated subdirectory — writing to the workspace parent must be treated as a bug.
 
 | Source | Container | Path | Mode | Purpose |
 |---|---|---|---|---|
-| `SANDBOX_DIR/.agent-input/` | Reasoning layer | `/home/agentuser/.agent-input/` | read-only | Input channel: snapshot, brief, operator files |
-| `SANDBOX_DIR/.workspace/` | Reasoning layer | `/home/agentuser/.workspace/` | read-write | Output channel: diff, logs |
+| `SANDBOX_DIR/.snapshot/` | Capability layer | `/home/agentuser/.snapshot/` | read-only | Snapshot input for sandbox init |
+| `SANDBOX_DIR/.workspace/changes/` | Capability layer | `/home/agentuser/workspace/changes/` | read-write | Diff pipeline output: staged.diff, autosave.diff |
+| `SANDBOX_DIR/.agent-input/` | Reasoning layer | `/home/agentuser/.agent-input/` | read-only | Input channel: brief, operator files (temporary — see workspace/input/ below) |
+| `SANDBOX_DIR/.workspace/` | Reasoning layer | `/home/agentuser/workspace/` | read-write | Agent output (temporary — narrows to workspace/input/ once rename complete) |
 | Capability layer container (`--volumes-from`) | Capability layer | `/home/agentuser/sandbox/` | read-write | Working content; owned by capability layer |
 | Capability layer container (`--volumes-from`) | Reasoning layer | `/home/agentuser/sandbox/` | read-write | Working content access for the agent |
 

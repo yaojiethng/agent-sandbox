@@ -11,15 +11,16 @@ Continue M2.1 implementation: harden container files produced in prior session, 
 Continuation of capability layer container and shared harness task groups from prior session. No new task groups entered scope. Orchestration & lifecycle, build & context, dry-run, and end-to-end validation remain deferred.
 
 ## Acceptance criteria
-- `VOLUME /home/agentuser/sandbox` declared in capability layer Dockerfiles; `--volumes-from` works correctly — **produced, awaiting operator commit**
-- Capability layer mounts `workspace/changes/` only (not workspace parent); `sandbox-entrypoint.sh` writes only to `CHANGES_DIR` — **produced, awaiting operator commit**
-- `libs/dirs.sh` replaces `WORKSPACE_DIR_NAME` with `CHANGES_DIR_NAME`; `WORKSPACE_DIR_NAME` retained for reasoning layer with temporary note — **produced, awaiting operator commit**
-- `test_capability_layer.sh` signature updated to `<repo-root> <sandbox-dir>`; all mounts corrected; `set -euo pipefail` removed; build output surfaces on failure — **produced, awaiting operator commit**
-- `context/` model and always-build decisions recorded in roadmap; `image-files.txt` staleness model superseded — **produced, awaiting operator commit**
-- Base reasoning image (`opencode-base`) scoped in M2.2 — **recorded in roadmap**
-- `.agent-input/` → `workspace/input/` rename scoped as path alignment task — **recorded in roadmap**
-- `execution_model.md` mount shape section reflects subdirectory ownership model — **produced, awaiting operator commit**
-- `agent_context_brief.md` Handover first rule added — **produced, awaiting operator commit**
+- `VOLUME /home/agentuser/sandbox` declared in capability layer Dockerfiles; `--volumes-from` works correctly — **accepted**
+- Capability layer mounts `workspace/changes/` only (not workspace parent); `sandbox-entrypoint.sh` writes only to `CHANGES_DIR` — **accepted**
+- `libs/dirs.sh` replaces `WORKSPACE_DIR_NAME` with `CHANGES_DIR_NAME`; `WORKSPACE_DIR_NAME` retained for reasoning layer with temporary note — **accepted**
+- `test_capability_layer.sh` signature updated to `<repo-root> <sandbox-dir>`; all mounts corrected; `set -euo pipefail` removed; build output surfaces on failure — **accepted**
+- `context/` model and always-build decisions recorded in roadmap; `image-files.txt` staleness model superseded — **accepted**
+- Base reasoning image (`opencode-base`) scoped in M2.2 — **accepted**
+- `.agent-input/` → `workspace/input/` rename scoped as path alignment task — **accepted**
+- `execution_model.md` mount shape section reflects subdirectory ownership model — **accepted**
+- `agent_context_brief.md` Handover first rule added — **accepted**
+- `test_capability_layer.sh` all checks passing — **accepted, confirmed by operator**
 
 ## Hot files
 
@@ -46,8 +47,10 @@ Continuation of capability layer container and shared harness task groups from p
 | `.agent-input/` → `workspace/input/` rename scoped but not implemented | Rename confirmed as target model; reasoning layer workspace mount narrows from parent to subdirectory once done; deferred to keep M2.1 scope contained | Roadmap path alignment task |
 | `context/` model replaces `image-files.txt`; `docker build` always runs on `make start` | `image-files.txt` maintenance burden grows with user-managed capability layers and multiple providers; Docker cache provides ~1s no-op when nothing changed | Roadmap M2.1 decisions |
 | Base reasoning image (`opencode-base`) deferred to M2.2 | Slow layers (apt-get, npm install) extractable once M2.1 Dockerfile confirmed project-agnostic; M2.1 constraint: no project-specific content in reasoning Dockerfile | Roadmap M2.2 scope |
-| `set -euo pipefail` must not be used in test scripts | Variable assignment with failing command triggers `set -e` → cleanup trap fires → silent exit with no diagnostic; test scripts must handle all failures explicitly | `test_capability_layer.sh` comment |
-| Test script takes `<repo-root> <sandbox-dir>` not `<repo-root> <snapshot-dir>` | `Dockerfile.sandbox` lives in `SANDBOX_DIR`, not repo root; snapshot and workspace are also under `SANDBOX_DIR`; repo root is build context only | `test_capability_layer.sh` |
+| Signal handling in bash PID 1 containers — correct pattern is `sleep infinity & wait $!` | `wait` with no jobs returns immediately; `sleep infinity` as foreground receives SIGTERM directly bypassing bash traps; `sleep infinity &` + `wait $!` keeps bash as signal receiver so TERM trap fires correctly | `sandbox-entrypoint.sh`, `execution_model.md` |
+| `--entrypoint` flag required to run commands in image with ENTRYPOINT set | Without `--entrypoint`, arguments are passed to the entrypoint not executed directly; `docker run image test -f path` runs the entrypoint with `test -f path` as args, not `test` | `test_capability_layer.sh` |
+| Test script must not use `set -euo pipefail` | Variable assignment with failing command triggers silent exit via cleanup trap; test scripts must handle all failures explicitly | `test_capability_layer.sh` |
+| Test script args must be resolved to absolute paths | Docker bind mounts require absolute paths; relative paths cause daemon rejection | `test_capability_layer.sh` |
 
 ## Completed this session
 
@@ -56,10 +59,10 @@ Continuation of capability layer container and shared harness task groups from p
 | `libs/_template/dockerfile-default.sandbox` | `VOLUME` declaration added; `mkdir -p` updated to `workspace/changes/` + `.snapshot/`; comment updated |
 | `Dockerfile.sandbox` | Same as above |
 | `libs/dirs.sh` | `WORKSPACE_DIR_NAME` replaced with `CHANGES_DIR_NAME` (default `workspace/changes`); `WORKSPACE_DIR_NAME` retained for reasoning layer with temporary note |
-| `scripts/sandbox-entrypoint.sh` | Uses `CHANGES_DIR_NAME` from dirs.sh; `find -mindepth 1 -delete` removed; `--volumes-from` comments; header updated |
+| `scripts/sandbox-entrypoint.sh` | Uses `CHANGES_DIR_NAME` from dirs.sh; `find -mindepth 1 -delete` removed; `--volumes-from` comments; `sleep infinity & wait $!` for correct signal handling in PID 1 bash container |
 | `providers/opencode/Dockerfile` | `sandbox/` removed from `mkdir -p`; comment explains `--volumes-from` ownership |
-| `docs/architecture/execution_model.md` | Mount shape section rewritten: subdirectory model, `--volumes-from` rationale, `VOLUME` explanation, updated table |
-| `tests/test_capability_layer.sh` | Signature `<repo-root> <sandbox-dir>`; mounts corrected; `set -euo pipefail` removed; build output surfaced; `VOLUME` model; `WORKSPACE_CHANGES_DIR` throughout |
+| `docs/architecture/execution_model.md` | Mount shape section rewritten: subdirectory model, `--volumes-from` rationale, `VOLUME` explanation, updated table; entrypoint step 7 updated to `sleep infinity & wait $!` |
+| `tests/test_capability_layer.sh` | Signature `<repo-root> <sandbox-dir>`; absolute path resolution; mounts corrected; `set -euo pipefail` removed; build output surfaced; `--entrypoint` for image content checks; `NO_CACHE` option; `WORKSPACE_CHANGES_DIR` throughout; HEALTHCHECK poll replaces `sleep 3`; random `RUN_ID` for container names; `docker rmi` in cleanup; all checks passing |
 | `agent_context_brief.md` | Handover first added as first principle in Collaboration Protocol |
 | `roadmap.md` | `context/` model decisions added; staleness decision superseded; build & context task group replaces build & staleness; base image task in M2.2; workspace/input rename task in path alignment; dry-run write path constraint noted; acceptance criteria corrected |
 
@@ -67,7 +70,7 @@ Continuation of capability layer container and shared harness task groups from p
 
 | Item | Reason | Next |
 |---|---|---|
-| Orchestration & lifecycle (compose files, `start_agent.sh` rewrite) | Capability layer smoke test must pass first | Next session, after operator confirms `test_capability_layer.sh` passes |
+| Orchestration & lifecycle (compose files, `start_agent.sh` rewrite) | Deferred to separate sessions; capability layer validated | Next session |
 | Build & context (`libs/build.sh`, `context/` dirs, layer reorder) | Depends on compose shape being confirmed | Next session |
 | `.agent-input/` → `workspace/input/` rename | Scoped; deferred to keep M2.1 contained; reasoning layer workspace mount narrows once complete | Path alignment task, next session or dedicated session |
 | Dry-run update (`scripts/dry_run.sh`) | Not provided; write path constraint noted in roadmap; depends on lifecycle being settled | Next session |
@@ -77,8 +80,6 @@ Continuation of capability layer container and shared harness task groups from p
 
 ## Next session
 **M2.1 — General Capability Layer Prototype** (continue — orchestration & lifecycle).
-
-**Prerequisite:** Operator runs `bash tests/test_capability_layer.sh <repo-root> <sandbox-dir>` and confirms all checks pass. Do not begin compose work until this passes.
 
 **Scope:** Orchestration & lifecycle task group — dogfood `docker-compose.yml` first, then templates, then `start_agent.sh` two-container lifecycle rewrite.
 

@@ -35,7 +35,8 @@ WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 IMAGE_NAME="${IMAGE_NAME:-agent-sandbox-sandbox-test}"
-CONTAINER_NAME="capability-layer-test-$$"
+RUN_ID="$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+CONTAINER_NAME="cap-layer-test-${RUN_ID}"
 BUILD_LOG=""
 
 PASS=0
@@ -62,6 +63,7 @@ cleanup() {
   echo "Cleaning up..."
   docker stop "$CONTAINER_NAME" &>/dev/null || true
   docker rm -v "$CONTAINER_NAME" &>/dev/null || true
+  docker rmi "$IMAGE_NAME" &>/dev/null || true
   rm -f "$BUILD_LOG"
 }
 trap cleanup EXIT
@@ -99,12 +101,14 @@ echo "  Building $IMAGE_NAME from $REPO_ROOT..."
 BUILD_LOG=$(mktemp)
 DOCKER_BUILDKIT=1 docker build \
   --progress=plain \
+  ${NO_CACHE:+--no-cache} \
   -f "$DOCKERFILE" \
   -t "$IMAGE_NAME" \
   "$REPO_ROOT" >"$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 if [[ $BUILD_EXIT -eq 0 ]]; then
-  pass "docker build succeeded"
+  IMAGE_ID=$(docker inspect --format='{{.Id}}' "$IMAGE_NAME" 2>/dev/null | cut -c1-19)
+  pass "docker build succeeded ($IMAGE_ID)"
 else
   fail "docker build failed — aborting"
   echo ""
@@ -117,16 +121,16 @@ fi
 rm -f "$BUILD_LOG"
 
 check "sandbox-entrypoint.sh present in image" \
-  docker run --rm "$IMAGE_NAME" test -f /usr/local/bin/sandbox-entrypoint.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /usr/local/bin/sandbox-entrypoint.sh
 
 check "libs/snapshot.sh present in image" \
-  docker run --rm "$IMAGE_NAME" test -f /libs/snapshot.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/snapshot.sh
 
 check "libs/diff.sh present in image" \
-  docker run --rm "$IMAGE_NAME" test -f /libs/diff.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/diff.sh
 
 check "libs/dirs.sh present in image" \
-  docker run --rm "$IMAGE_NAME" test -f /libs/dirs.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/dirs.sh
 
 # -------------------------
 # Startup
@@ -151,19 +155,39 @@ if [[ $START_EXIT -ne 0 ]]; then
   exit 1
 fi
 
-# Give the entrypoint time to complete init before checking
-sleep 3
+# Wait for capability layer to report healthy — sandbox/.git exists,
+# init is complete. Uses the HEALTHCHECK declared in Dockerfile.sandbox
+# rather than a fixed sleep, so this is robust on slow machines.
+echo "  Waiting for container to become healthy..."
+HEALTH_TIMEOUT=60
+HEALTH_ELAPSED=0
+while true; do
+  STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)
+  if [[ "$STATUS" == "healthy" ]]; then
+    break
+  fi
+  if [[ "$STATUS" == "unhealthy" ]]; then
+    fail "container became unhealthy — aborting"
+    echo ""
+    echo "  Container logs:"
+    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    echo ""
+    exit 1
+  fi
+  if [[ $HEALTH_ELAPSED -ge $HEALTH_TIMEOUT ]]; then
+    fail "container did not become healthy within ${HEALTH_TIMEOUT}s — aborting"
+    echo ""
+    echo "  Container logs:"
+    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    echo ""
+    exit 1
+  fi
+  sleep 2
+  HEALTH_ELAPSED=$((HEALTH_ELAPSED + 2))
+done
 
-check "container is running after init" \
-  bash -c "[[ \"\$(docker inspect -f '{{.State.Running}}' '$CONTAINER_NAME')\" == 'true' ]]"
-
-# If container exited early, print logs to help diagnose
-if [[ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]]; then
-  echo ""
-  echo "  Container logs:"
-  docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
-  echo ""
-fi
+check "container is healthy after init" \
+  bash -c "[[ \"\$(docker inspect -f '{{.State.Health.Status}}' '$CONTAINER_NAME')\" == 'healthy' ]]"
 
 check "sandbox is non-empty (copy succeeded)" \
   bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
@@ -240,7 +264,7 @@ echo ""
 echo "--- Failure cases ---"
 
 EMPTY_SNAPSHOT="$(mktemp -d)"
-FAIL_CONTAINER="capability-layer-fail-$$"
+FAIL_CONTAINER="cap-layer-fail-${RUN_ID}"
 FAIL_WORKSPACE="$(mktemp -d)"
 
 docker run -d \

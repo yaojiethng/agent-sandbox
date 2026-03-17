@@ -126,4 +126,12 @@ fi
 # --volumes-from. If the capability layer is not running, the reasoning
 # layer cannot start. The harness stops this container after the
 # reasoning layer exits.
-wait
+#
+# sleep infinity runs in the background; wait blocks the shell on it.
+# This keeps bash as PID 1 and the signal-receiving process — SIGTERM
+# from docker stop is delivered to bash, the TERM trap fires, exit 0
+# triggers the EXIT trap, and the diff pipeline runs.
+# Plain `sleep infinity` as a foreground process receives the signal
+# directly and exits, bypassing the bash trap entirely.
+sleep infinity &
+wait $!
