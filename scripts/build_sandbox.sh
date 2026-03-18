@@ -48,8 +48,8 @@ fi
 # Paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# REPO_ROOT assumes this script lives at providers/opencode/
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# REPO_ROOT assumes this script lives at scripts/
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 IMAGE_NAME="agent-sandbox-${PROJECT_NAME,,}"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"

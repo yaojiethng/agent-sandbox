@@ -1,28 +1,55 @@
 # Makefile — <project-name>
 # Runs agent-sandbox against this project.
-# Requires agent-sandbox CLI installed: make install (agent-sandbox repo)
+# Requires agent-sandbox CLI installed on the host:
+#   make install  (from the agent-sandbox repo)
+#
+# PROJECT_DIR and SANDBOX_DIR are read from .env in the same directory as
+# this Makefile. Both are written by: agent-sandbox onboard general
+#
+# If .env is missing, run:
+#   agent-sandbox onboard general --name=<n> --project=<path> --sandbox=<path>
+#
+# Paths must be WSL/Linux format. To convert a Windows path:
+#   wslpath 'C:\Users\you\Projects\my-project'
+
+-include .env
+export
 
 PROJECT_NAME := <project-name>
-PROJECT_DIR  := <absolute-wsl-path-to-project>
-SANDBOX_DIR  := <absolute-wsl-path-to-sandbox>
+PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard general --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
+SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard general --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 AGENT_BRIEF  := agents.md
 ENV_FILE     := .env
 
-.PHONY: start serve build-agent build-sandbox build-all dry-run apply rebuild-start rebuild-serve rebuild-dry-run
+.PHONY: build build-sandbox build-agent build-all
+.PHONY: start serve dry-run apply
+.PHONY: rebuild rebuild-start rebuild-serve rebuild-dry-run
 
-build-agent:
-	agent-sandbox build agent \
-	  --name=$(PROJECT_NAME)
+# -------------------------
+# Build
+# -------------------------
+
+build: build-all
 
 build-sandbox:
 	agent-sandbox build sandbox \
 	  --name=$(PROJECT_NAME) \
 	  --sandbox=$(SANDBOX_DIR)
 
+build-agent:
+	agent-sandbox build agent \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR)
+
 build-all:
 	agent-sandbox build all \
 	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
+
+# -------------------------
+# Run
+# -------------------------
 
 start:
 	-agent-sandbox start \
@@ -33,13 +60,12 @@ start:
 	  --env=$(ENV_FILE)
 
 serve:
-	-agent-sandbox start \
+	-agent-sandbox serve \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  --serve
+	  --env=$(ENV_FILE)
 
 dry-run:
 	agent-sandbox dry-run \
@@ -49,11 +75,21 @@ dry-run:
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
+# -------------------------
+# Apply
+# -------------------------
+
 apply:
 	agent-sandbox apply \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
+
+# -------------------------
+# Rebuild (force rebuild all images, then start)
+# -------------------------
+
+rebuild: rebuild-start
 
 rebuild-start:
 	-agent-sandbox rebuild start \
@@ -64,13 +100,12 @@ rebuild-start:
 	  --env=$(ENV_FILE)
 
 rebuild-serve:
-	-agent-sandbox rebuild start \
+	-agent-sandbox rebuild serve \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  --serve
+	  --env=$(ENV_FILE)
 
 rebuild-dry-run:
 	agent-sandbox rebuild dry-run \

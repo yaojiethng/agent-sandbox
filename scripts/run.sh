@@ -25,7 +25,7 @@
 #
 # TODO: start_agent.sh and run.sh overlap in responsibility. When
 # start_agent.sh is refactored into a pure pre-flight script, run.sh
-# becomes the sole compose entry point and start_agent.sh calls it.
+# becomes the sole compose entry point, not start_agent.sh.
 
 set -euo pipefail
 
@@ -171,7 +171,24 @@ fi
 # -------------------------
 docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
 
-echo "+ docker compose up (sandbox → agent)"
-docker compose "${COMPOSE_ARGS[@]}" up --abort-on-container-exit --exit-code-from agent
+if [[ "$SERVE" == true ]]; then
+  echo "+ docker compose up --detach (sandbox → agent)"
+  docker compose "${COMPOSE_ARGS[@]}" up -d
+  echo "Agent running in serve mode. Stop with: docker compose down -v"
+else
+  echo "+ starting sandbox..."
+  docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
 
-docker compose "${COMPOSE_ARGS[@]}" down -v
+  SANDBOX_CONTAINER="agent-sandbox-${PROJECT_NAME,,}"
+  echo "+ waiting for sandbox to be healthy..."
+  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
+    sleep 1
+  done
+  echo "+ sandbox healthy."
+
+  echo "+ attaching to agent (TUI)..."
+  docker compose "${COMPOSE_ARGS[@]}" run --rm agent
+
+  echo "+ tearing down..."
+  docker compose "${COMPOSE_ARGS[@]}" down -v
+fi

@@ -68,6 +68,8 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 ## Output Format
 
+All document, code, and file outputs are proposals. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface. Never provide file edits as inline chat prose unless a diff is explicitly requested — prefer editing the file directly.
+
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 
 **Code** — Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.

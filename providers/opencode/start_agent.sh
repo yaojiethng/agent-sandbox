@@ -16,12 +16,11 @@
 #                           defaults to <parent-of-PROJECT_DIR>/<project-dir-name>-sandbox
 #   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR;
 #                           copied into SANDBOX_DIR/.workspace/input/brief.md
-#   --env=<rel>             path to .env file, relative to SANDBOX_DIR
-#                           supported env vars: SERVE_PORT (default: 46553)
-#                                               OPENCODE_SERVER_PASSWORD
-#   --serve                 apply docker-compose.serve.yml overlay (adds port binding and serve subcommand)
+#   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
+#   --serve                 apply docker-compose.serve.yml overlay
 #
-# Note: PROJECT_DIR must be a git repository with at least one commit.
+# Expects SANDBOX_DIR to have been prepared by: agent-sandbox onboard general
+# If .env is missing, onboarding has not been run — error with instructions.
 
 set -euo pipefail
 
@@ -44,13 +43,13 @@ if [[ -z "$MODE" ]]; then
 fi
 
 # -------------------------
-# Flag parsing (order agnostic)
+# Flag parsing
 # -------------------------
 PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
-ENV_REL=""
+ENV_REL=".env"
 SERVE=false
 
 for ARG in "$@"; do
@@ -83,26 +82,6 @@ else
 fi
 
 # -------------------------
-# Env loading
-# -------------------------
-if [[ -n "$ENV_REL" ]]; then
-  ENV_FILE="$SANDBOX_DIR/$ENV_REL"
-  if [[ ! -f "$ENV_FILE" ]]; then
-    echo "Error: env file not found: $ENV_FILE"
-    exit 1
-  fi
-  # Source only simple KEY=VALUE lines, skip comments and blanks
-  while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-    [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
-    KEY="${KEY//[$'\r\n\t ']/}"
-    VALUE="${VALUE//[$'\r\n']/}"
-    VALUE="${VALUE#"${VALUE%%[! ]*}"}"
-    VALUE="${VALUE%"${VALUE##*[! ]}"}"
-    export "$KEY=$VALUE"
-  done < "$ENV_FILE"
-fi
-
-# -------------------------
 # Path validation
 # -------------------------
 validate_wsl_path() {
@@ -123,6 +102,49 @@ if [[ ! -d "$PROJECT_DIR" ]]; then
   echo "Error: PROJECT_DIR does not exist: $PROJECT_DIR"
   exit 1
 fi
+
+# -------------------------
+# .env loading
+# -------------------------
+ENV_FILE="$SANDBOX_DIR/$ENV_REL"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Error: .env not found: $ENV_FILE"
+  echo "  SANDBOX_DIR has not been onboarded. Run:"
+  echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+  exit 1
+fi
+
+# Source only simple KEY=VALUE lines; skip comments and blanks
+while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
+  [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
+  KEY="${KEY//[$'\r\n\t ']/}"
+  VALUE="${VALUE//[$'\r\n']/}"
+  VALUE="${VALUE#"${VALUE%%[! ]*}"}"
+  VALUE="${VALUE%"${VALUE##*[! ]}"}"
+  export "$KEY=$VALUE"
+done < "$ENV_FILE"
+
+# -------------------------
+# Required .env var validation
+# -------------------------
+REQUIRED_ENV_VARS=(
+  SNAPSHOT_DIR
+  CHANGES_DIR
+  INPUT_DIR
+  OUTPUT_DIR
+  SANDBOX_IMAGE_NAME
+  AGENT_IMAGE_NAME
+)
+
+for VAR in "${REQUIRED_ENV_VARS[@]}"; do
+  if [[ -z "${!VAR:-}" ]]; then
+    echo "Error: required variable '$VAR' is missing from $ENV_FILE"
+    echo "  Re-run onboarding to regenerate .env:"
+    echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+    exit 1
+  fi
+done
 
 # -------------------------
 # Git validation
@@ -151,16 +173,8 @@ if [[ ! -f "$PROJECT_DIR/.gitignore" ]]; then
 fi
 
 # -------------------------
-# Sandbox directory setup
+# Workspace directory setup
 # -------------------------
-# Capability layer input/output dirs
-SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
-
-# Reasoning layer input/output dirs
-INPUT_DIR="$SANDBOX_DIR/.workspace/input"
-OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
-
 mkdir -p "$SNAPSHOT_DIR"
 mkdir -p "$CHANGES_DIR"
 mkdir -p "$INPUT_DIR"
@@ -195,35 +209,14 @@ if [[ -n "$AGENT_BRIEF" ]]; then
 fi
 
 # -------------------------
-# Write compose .env
-# -------------------------
-# start_agent.sh writes the .env file before each session so compose picks
-# up current host paths and credentials. The .env is not committed.
-# Image names — single source of truth for compose and build scripts.
-# build_agent.sh must derive names using the same convention.
-SANDBOX_IMAGE_NAME="agent-sandbox-${PROJECT_NAME,,}"
-AGENT_IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
-
-cat > "$SANDBOX_DIR/.env" <<EOF
-SNAPSHOT_DIR=${SNAPSHOT_DIR}
-CHANGES_DIR=${CHANGES_DIR}
-INPUT_DIR=${INPUT_DIR}
-OUTPUT_DIR=${OUTPUT_DIR}
-SANDBOX_IMAGE_NAME=${SANDBOX_IMAGE_NAME}
-AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}
-AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
-OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
-SERVE_PORT=${SERVE_PORT:-46553}
-EOF
-
-# -------------------------
 # Compose file resolution
 # -------------------------
 COMPOSE_FILE="$SANDBOX_DIR/docker-compose.yml"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "Error: compose file not found: $COMPOSE_FILE"
-  echo "  Place docker-compose.yml in SANDBOX_DIR before running."
+  echo "  Re-run onboarding to restore missing files:"
+  echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
   exit 1
 fi
 
@@ -252,9 +245,6 @@ case "$MODE" in
       -f "$DRY_RUN_OVERLAY"
     )
 
-    # Bring up both containers then exec dry_run.sh in the agent container.
-    # DRY_RUN_SCRIPT is passed as an env var so the overlay's volume
-    # interpolation resolves to the correct host path.
     DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
       docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" up -d
 
@@ -295,19 +285,13 @@ fi
 # Run
 # -------------------------
 # Tear down any previous session containers and volumes before starting.
-# -v removes the anonymous sandbox volume so each session starts clean.
 docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
 
 if [[ "$SERVE" == true ]]; then
-  # Serve mode: detached, no TTY needed — OpenCode runs as a server.
   echo "+ docker compose up --detach (sandbox → agent)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
   echo "Agent running in serve mode. Stop with: docker compose down -v"
 else
-  # Standard mode: start sandbox detached, then attach terminal directly to
-  # the agent container via compose run. This passes the TTY through cleanly
-  # so the OpenCode TUI takes over the terminal, matching the old docker run -it
-  # behaviour. compose up multiplexes logs and does not pass the TTY through.
   echo "+ starting sandbox..."
   docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
 
@@ -323,11 +307,6 @@ else
   echo "+ attaching to agent (TUI)..."
   docker compose "${COMPOSE_ARGS[@]}" run --rm agent
 
-  # -------------------------
-  # Teardown
-  # -------------------------
-  # Agent container was removed by --rm. Stop sandbox and remove the
-  # anonymous sandbox volume so the next session starts clean.
   echo "+ tearing down..."
   docker compose "${COMPOSE_ARGS[@]}" down -v
 fi

@@ -1,52 +1,52 @@
 # docker-compose.yml
 # Generated at onboarding time for project: {{PROJECT_NAME}}
 #
-# Runtime variables are written to .env in SANDBOX_DIR by start_agent.sh
-# before each session. Do not commit .env.
+# Runtime variables are read from .env in SANDBOX_DIR (written once by
+# `agent-sandbox onboard`, not rewritten each session). Do not commit .env.
 #
-# Build:
-#   make build sandbox   — builds agent-sandbox-{{PROJECT_NAME}}
-#   make build agent     — builds opencode-agent-{{PROJECT_NAME}}
-#   make build all       — builds both
+# Image naming convention (set in .env by onboard):
+#   capability layer: agent-sandbox-{{PROJECT_NAME}}
+#   reasoning layer:  opencode-agent-{{PROJECT_NAME}}
+#
+# Start/stop is managed by start_agent.sh via docker compose up/down.
+# Do not invoke this file directly in normal operation.
 
 services:
   sandbox:
-    image: agent-sandbox-{{PROJECT_NAME}}
+    image: ${SANDBOX_IMAGE_NAME}
     container_name: {{PROJECT_NAME}}-sandbox
     volumes:
       - ${SNAPSHOT_DIR}:/home/agentuser/.snapshot:ro
-      - ${CHANGES_DIR}:/home/agentuser/.workspace/changes:rw
-      - sandbox_content:/home/agentuser/sandbox:rw
+      - ${CHANGES_DIR}:/home/agentuser/workspace/changes:rw
     environment:
       - SNAPSHOT_DIR_NAME=.snapshot
-      - WORKSPACE_DIR_NAME=.workspace
+      - SANDBOX_DIR_NAME=sandbox
+      - CHANGES_DIR_NAME=workspace/changes
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
     healthcheck:
-      test: ["CMD", "test", "-f", "/home/agentuser/.workspace/changes/sandbox-ready"]
+      test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s
       timeout: 5s
       retries: 15
-      start_period: 5s
+      start_period: 10s
     restart: "no"
 
   agent:
-    image: opencode-agent-{{PROJECT_NAME}}
+    image: ${AGENT_IMAGE_NAME}
     container_name: {{PROJECT_NAME}}-agent
     depends_on:
       sandbox:
         condition: service_healthy
+    volumes_from:
+      - sandbox
     volumes:
-      - ${AGENT_INPUT_DIR}:/home/agentuser/project/.workspace/agent-input:ro
-      - ${AGENT_OUTPUT_DIR}:/home/agentuser/project/.workspace/agent-output:rw
-      - sandbox_content:/home/agentuser/project/sandbox:rw
+      - ${INPUT_DIR}:/home/agentuser/workspace/input:ro
+      - ${OUTPUT_DIR}:/home/agentuser/workspace/output:rw
     environment:
+      - INPUT_DIR_NAME=workspace/input
+      - OUTPUT_DIR_NAME=workspace/output
+      - SANDBOX_DIR_NAME=sandbox
       - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
-    ports:
-      - "127.0.0.1:${SERVE_PORT:-46553}:${SERVE_PORT:-46553}"
     stdin_open: true
     tty: true
     restart: "no"
-
-volumes:
-  sandbox_content:
-    name: {{PROJECT_NAME}}-sandbox-content
