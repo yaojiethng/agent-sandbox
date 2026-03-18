@@ -54,7 +54,7 @@ Before opening any file in full, establish what you need from it first.
 ```bash
 grep -rn "TERM" path/
 ```
-Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`.
+Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`. If a file is not present in uploads, request it before proceeding — do not infer its content from memory.
 
 **To get a section map of a file before reading it:**
 ```bash
@@ -82,7 +82,7 @@ All document, code, and file outputs are proposals. The operator reviews, approv
 
 Read these in order at session start. Each answers a distinct question — do not skip.
 
-**Before proceeding, verify you have access to each required document. If a required document is missing, surface it immediately — do not begin the session without it.**
+**Before proceeding, verify you have access to each required document. A missing file is a blocking condition — do not proceed with inferred or reconstructed content. If a required document is absent, surface it immediately and wait.**
 
 ### Session start — always
 
