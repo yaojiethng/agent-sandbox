@@ -15,14 +15,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------
-# Entrypoint (root, before USER switch)
+# Shared libs (root, before USER switch)
 # -------------------------
-# snapshot.sh and diff.sh are not copied here — they belong to the
-# capability layer image only. container-entrypoint.sh lives in scripts/
-# as it is provider-agnostic.
-COPY scripts/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+# dirs.sh is sourced by dry_run.sh inside the container.
+# No entrypoint script — opencode is exec'd directly via ENTRYPOINT.
+# Serve args and dry-run invocation are handled by compose overlays.
 COPY libs/dirs.sh /libs/dirs.sh
-RUN chmod +x /usr/local/bin/container-entrypoint.sh
 
 # -------------------------
 # Non-root user
@@ -49,10 +47,12 @@ RUN npm install -g opencode-ai
 # capability layer container via --volumes-from. Pre-creating it would
 # shadow the capability layer's directory. If the capability layer is not
 # running, --volumes-from fails and this container cannot start.
-# .agent-input/ and .workspace/ are bind-mounted from SANDBOX_DIR on the
-# host; created here as agentuser so mounts are not blocked by ownership.
-RUN mkdir -p /home/agentuser/.agent-input \
-             /home/agentuser/.workspace
+#
+# workspace/input/ and workspace/output/ are bind-mounted from SANDBOX_DIR
+# on the host; created here as agentuser so mounts are not blocked by
+# ownership.
+RUN mkdir -p /home/agentuser/workspace/input \
+             /home/agentuser/workspace/output
 
 WORKDIR /home/agentuser/sandbox
 
@@ -66,5 +66,8 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]
-CMD ["opencode"]
+# opencode is exec'd directly. Subcommand and args are passed via compose:
+#   standard: no override — runs as `opencode` with no args
+#   serve:    docker-compose.serve.yml sets command: ["serve", ...]
+#   dry-run:  docker compose exec agent bash /dry_run.sh  (bypasses entrypoint)
+ENTRYPOINT ["opencode"]

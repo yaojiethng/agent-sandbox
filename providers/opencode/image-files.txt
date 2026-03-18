@@ -3,4 +3,3 @@
 # One relative-path-from-repo-root per line.
 # All files in libs/ are included automatically by libs/image.sh.
 providers/opencode/Dockerfile
-providers/opencode/container-entrypoint.sh

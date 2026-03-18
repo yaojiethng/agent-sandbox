@@ -18,7 +18,12 @@ NO_CACHE=""
 for ARG in "$@"; do
   case "$ARG" in
     --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --root=*)    ;; # accepted but not needed — build context is always REPO_ROOT
+    --root=*)      ;; # accepted but not needed
+    --project=*)   ;; # accepted but not needed
+    --sandbox=*)   ;; # accepted but not needed — build context is always REPO_ROOT
+    --brief=*)     ;; # accepted but not needed
+    --env=*)       ;; # accepted but not needed
+    --serve)       ;; # accepted but not needed
     --no-cache)  NO_CACHE="--no-cache" ;;
     *)
       echo "Unknown flag: $ARG"
@@ -48,7 +53,8 @@ DOCKERFILE="$REPO_ROOT/providers/opencode/Dockerfile"
 
 # Compute digest before build so it reflects the source files being built
 source "$REPO_ROOT/libs/image.sh"
-DIGEST=$(image_compute_digest "$REPO_ROOT" "opencode")
+IMAGE_FILES_TXT="$REPO_ROOT/providers/opencode/image-files.txt"
+DIGEST=$(image_compute_digest "$REPO_ROOT" "$IMAGE_FILES_TXT")
 
 echo "Building Docker image: $IMAGE_NAME"
 docker build $NO_CACHE \

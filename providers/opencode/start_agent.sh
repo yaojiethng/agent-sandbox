@@ -14,30 +14,22 @@
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
 #                           defaults to <parent-of-PROJECT_DIR>/<project-dir-name>-sandbox
-#   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR
+#   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR;
+#                           copied into SANDBOX_DIR/.workspace/input/brief.md
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR
 #                           supported env vars: SERVE_PORT (default: 46553)
 #                                               OPENCODE_SERVER_PASSWORD
-#   --serve                 start OpenCode in serve mode
+#   --serve                 apply docker-compose.serve.yml overlay (adds port binding and serve subcommand)
 #
 # Note: PROJECT_DIR must be a git repository with at least one commit.
-#       The Docker image must already exist — run agent-sandbox build first.
 
 set -euo pipefail
-
-# -------------------------
-# Directory name definitions
-# Single source of truth — passed to container as env vars
-# -------------------------
-AGENT_INPUT_DIR_NAME=".agent-input"
-AGENT_WORKSPACE_DIR_NAME=".workspace"
 
 # -------------------------
 # Paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at providers/opencode/
-# If the script moves, update the relative path below accordingly.
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # -------------------------
@@ -161,19 +153,22 @@ fi
 # -------------------------
 # Sandbox directory setup
 # -------------------------
-AGENT_INPUT_DIR="$SANDBOX_DIR/$AGENT_INPUT_DIR_NAME"
-AGENT_WORKSPACE_DIR="$SANDBOX_DIR/$AGENT_WORKSPACE_DIR_NAME"
-SNAPSHOT_DIR="$AGENT_INPUT_DIR/snapshot"
+# Capability layer input/output dirs
+SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
+CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
 
-mkdir -p "$AGENT_WORKSPACE_DIR/changes"
+# Reasoning layer input/output dirs
+INPUT_DIR="$SANDBOX_DIR/.workspace/input"
+OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
+
 mkdir -p "$SNAPSHOT_DIR"
-mkdir -p "$AGENT_INPUT_DIR/input"
+mkdir -p "$CHANGES_DIR"
+mkdir -p "$INPUT_DIR"
+mkdir -p "$OUTPUT_DIR"
 
 # -------------------------
 # Snapshot pipeline (host side)
 # -------------------------
-# Enumerates and copies project files into .agent-input/snapshot/.
-# git ls-files runs on the host — the container never touches PROJECT_DIR directly.
 source "$REPO_ROOT/libs/snapshot.sh"
 
 echo "Building snapshot..."
@@ -196,37 +191,46 @@ if [[ -n "$AGENT_BRIEF" ]]; then
     exit 1
   fi
 
-  cp "$BRIEF_PATH" "$AGENT_INPUT_DIR/brief.md"
+  cp "$BRIEF_PATH" "$INPUT_DIR/brief.md"
 fi
 
 # -------------------------
-# Mount and env construction
+# Write compose .env
 # -------------------------
-# .agent-input is mounted read-only — input channel: snapshot, brief, operator files.
-# .workspace is mounted read-write — output channel: patch, logs.
-# PROJECT_DIR is not mounted — the agent has no direct access to the host repo.
-MOUNT_ARGS=(
-  -v "$AGENT_INPUT_DIR:/home/agentuser/$AGENT_INPUT_DIR_NAME:ro"
-  -v "$AGENT_WORKSPACE_DIR:/home/agentuser/$AGENT_WORKSPACE_DIR_NAME:rw"
-)
+# start_agent.sh writes the .env file before each session so compose picks
+# up current host paths and credentials. The .env is not committed.
+# Image names — single source of truth for compose and build scripts.
+# build_agent.sh must derive names using the same convention.
+SANDBOX_IMAGE_NAME="agent-sandbox-${PROJECT_NAME,,}"
+AGENT_IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
 
-# Pass directory name definitions to the container so both sides share one source of truth
-ENV_DIR_ARGS=(
-  -e "AGENT_INPUT_DIR_NAME=$AGENT_INPUT_DIR_NAME"
-  -e "AGENT_WORKSPACE_DIR_NAME=$AGENT_WORKSPACE_DIR_NAME"
-)
-
-IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
+cat > "$SANDBOX_DIR/.env" <<EOF
+SNAPSHOT_DIR=${SNAPSHOT_DIR}
+CHANGES_DIR=${CHANGES_DIR}
+INPUT_DIR=${INPUT_DIR}
+OUTPUT_DIR=${OUTPUT_DIR}
+SANDBOX_IMAGE_NAME=${SANDBOX_IMAGE_NAME}
+AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}
+AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
+OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+SERVE_PORT=${SERVE_PORT:-46553}
+EOF
 
 # -------------------------
-# Image check
+# Compose file resolution
 # -------------------------
-IMAGE_EXISTS=$(docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && echo yes || echo no)
-if [[ "$IMAGE_EXISTS" != yes ]]; then
-  echo "Error: Docker image not found: $IMAGE_NAME"
-  echo "  Build it first: make build"
+COMPOSE_FILE="$SANDBOX_DIR/docker-compose.yml"
+
+if [[ ! -f "$COMPOSE_FILE" ]]; then
+  echo "Error: compose file not found: $COMPOSE_FILE"
+  echo "  Place docker-compose.yml in SANDBOX_DIR before running."
   exit 1
 fi
+
+COMPOSE_ARGS=(
+  --project-directory "$SANDBOX_DIR"
+  -f "$COMPOSE_FILE"
+)
 
 # -------------------------
 # Mode handling
@@ -234,20 +238,38 @@ fi
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    docker run --rm \
-      "${MOUNT_ARGS[@]}" \
-      "${ENV_DIR_ARGS[@]}" \
-      -v "$REPO_ROOT/scripts/dry_run.sh:/dry_run.sh:ro" \
-      "$IMAGE_NAME" \
-      bash /dry_run.sh
-    echo "PASS" > "$AGENT_WORKSPACE_DIR/changes/liveness.txt"
+    DRY_RUN_OVERLAY="$SANDBOX_DIR/docker-compose.dry-run.yml"
+    if [[ ! -f "$DRY_RUN_OVERLAY" ]]; then
+      echo "Error: dry-run overlay not found: $DRY_RUN_OVERLAY"
+      echo "  Place docker-compose.dry-run.yml in SANDBOX_DIR for dry-run mode."
+      exit 1
+    fi
+    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
+
+    DRY_RUN_COMPOSE_ARGS=(
+      --project-directory "$SANDBOX_DIR"
+      -f "$COMPOSE_FILE"
+      -f "$DRY_RUN_OVERLAY"
+    )
+
+    # Bring up both containers then exec dry_run.sh in the agent container.
+    # DRY_RUN_SCRIPT is passed as an env var so the overlay's volume
+    # interpolation resolves to the correct host path.
+    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
+      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" up -d
+
+    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
+      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh
+
+    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
+      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" down -v
     echo ""
     echo "=== liveness: PASS ==="
     exit 0
     ;;
 
   standard)
-    echo "Starting container: $PROJECT_NAME"
+    echo "Starting agent: $PROJECT_NAME"
     ;;
 
   *)
@@ -257,33 +279,30 @@ case "$MODE" in
 esac
 
 # -------------------------
-# Command construction
+# Serve mode overlay
 # -------------------------
-CMD=("opencode")
-PORT_ARGS=()
-ENV_ARGS=()
-ECHO_ENV_ARGS=()
-
-if [[ -n "${OPENCODE_SERVER_PASSWORD:-}" ]]; then
-  ENV_ARGS+=(-e "OPENCODE_SERVER_PASSWORD=$OPENCODE_SERVER_PASSWORD")
-  ECHO_ENV_ARGS+=(-e "OPENCODE_SERVER_PASSWORD=***")
-fi
-
 if [[ "$SERVE" == true ]]; then
-  PORT="${SERVE_PORT:-46553}"
-  CMD=("opencode" "serve" "--hostname" "0.0.0.0" "--port" "$PORT")
-  PORT_ARGS=(-p "127.0.0.1:$PORT:$PORT")
+  SERVE_OVERLAY="$SANDBOX_DIR/docker-compose.serve.yml"
+  if [[ ! -f "$SERVE_OVERLAY" ]]; then
+    echo "Error: serve overlay not found: $SERVE_OVERLAY"
+    echo "  Place docker-compose.serve.yml in SANDBOX_DIR for serve mode."
+    exit 1
+  fi
+  COMPOSE_ARGS+=(-f "$SERVE_OVERLAY")
 fi
 
 # -------------------------
-# Run container
+# Run
 # -------------------------
-echo "+ docker run -it --rm ${MOUNT_ARGS[*]} ${PORT_ARGS[*]+"${PORT_ARGS[*]}"} ${ECHO_ENV_ARGS[*]+"${ECHO_ENV_ARGS[*]}"} ${ENV_DIR_ARGS[*]} --name $IMAGE_NAME $IMAGE_NAME ${CMD[*]}"
-docker run -it --rm \
-  "${MOUNT_ARGS[@]}" \
-  "${ENV_DIR_ARGS[@]}" \
-  ${PORT_ARGS[@]+"${PORT_ARGS[@]}"} \
-  ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
-  --name "$IMAGE_NAME" \
-  "$IMAGE_NAME" \
-  "${CMD[@]}"
+# Tear down any previous session containers and volumes before starting.
+# -v removes the anonymous sandbox volume so each session starts clean.
+docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+
+echo "+ docker compose up (sandbox → agent)"
+docker compose "${COMPOSE_ARGS[@]}" up --abort-on-container-exit --exit-code-from agent
+
+# -------------------------
+# Teardown
+# -------------------------
+# Stop and remove containers; -v removes the anonymous sandbox volume.
+docker compose "${COMPOSE_ARGS[@]}" down -v

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # build_sandbox.sh
 # Usage:
-#   ./build_sandbox.sh --name=<project_name> --sandbox=<path>
+#   ./build_sandbox.sh --name=<project_name> --sandbox=<path> [--no-cache]
 #
 # Builds the capability layer Docker image for a project.
 # The Dockerfile is expected at SANDBOX_DIR/Dockerfile.sandbox.
@@ -15,11 +15,13 @@ set -euo pipefail
 # -------------------------
 PROJECT_NAME=""
 SANDBOX_DIR=""
+NO_CACHE=""
 
 for ARG in "$@"; do
   case "$ARG" in
     --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
     --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+    --no-cache)  NO_CACHE="--no-cache" ;;
     # Accepted but not needed — tolerated so callers can pass full flag sets
     --project=*) ;;
     --brief=*)   ;;
@@ -62,7 +64,7 @@ fi
 # Build
 # -------------------------
 echo "Building capability layer image: $IMAGE_NAME"
-docker build --no-cache \
+docker build $NO_CACHE \
   -t "$IMAGE_NAME" \
   -f "$DOCKERFILE" \
   "$REPO_ROOT"

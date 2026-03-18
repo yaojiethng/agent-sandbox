@@ -13,7 +13,7 @@ SHELL := /bin/bash
 PROJECT_NAME   := agent-sandbox
 PROJECT_DIR    := $(CURDIR)
 SANDBOX_DIR    := $(CURDIR)/sandbox
-AGENT_BRIEF    := docs/development/agent_context_brief.md
+AGENT_BRIEF    := $(CURDIR)/docs/development/agent_context_brief.md
 ENV_FILE       := .env
 INSTALL_DIR	   := ~/.local/bin
 
@@ -26,13 +26,15 @@ INSTALL_DIR	   := ~/.local/bin
 build:
 	agent-sandbox build \
 	  --name=$(PROJECT_NAME) \
-	  --root=$(PROJECT_ROOT)
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR)
 
 .PHONY: start
 start:
 	agent-sandbox start \
 	  --name=$(PROJECT_NAME) \
-	  --root=$(PROJECT_ROOT) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
@@ -40,7 +42,8 @@ start:
 serve:
 	agent-sandbox start \
 	  --name=$(PROJECT_NAME) \
-	  --root=$(PROJECT_ROOT) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE) \
 	  --serve
@@ -49,7 +52,8 @@ serve:
 dry-run:
 	agent-sandbox dry-run \
 	  --name=$(PROJECT_NAME) \
-	  --root=$(PROJECT_ROOT) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
@@ -57,7 +61,8 @@ dry-run:
 rebuild:
 	agent-sandbox rebuild start \
 	  --name=$(PROJECT_NAME) \
-	  --root=$(PROJECT_ROOT) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE) \
 	  --serve
