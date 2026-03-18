@@ -1,0 +1,13 @@
+# docker-compose.dry-run.yml
+# Overlay for dry-run mode. Apply on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.dry-run.yml ...
+#
+# Adds the dry_run.sh bind mount to the agent service.
+# TODO: when context/ restructuring lands, dry_run.sh will be copied into
+# the agent image; remove this overlay and the DRY_RUN_SCRIPT .env var at
+# that point — the only two touch points.
+
+services:
+  agent:
+    volumes:
+      - ${DRY_RUN_SCRIPT}:/dry_run.sh:ro

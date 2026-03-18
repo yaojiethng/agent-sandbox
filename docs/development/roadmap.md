@@ -87,28 +87,30 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 - [x] `libs/image.sh` — path resolution changed to repo-root-relative; `tests/test_image.sh` fixture updated to match
 
 ### Orchestration & lifecycle
-- [ ] `docker-compose.yml` in agent-sandbox's own `SANDBOX_DIR` — dogfood version; created first, template derived from it
-- [ ] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood
-- [ ] `libs/_template/docker-compose.serve.yml.template` — serve mode override (ports block)
-- [ ] `libs/_template/docker-compose.dry-run.yml.template` — dry-run mode override
-- [ ] `providers/opencode/start_agent.sh` — two-container lifecycle via `docker compose up/down`; writes compose + `.env` + mode overrides into `SANDBOX_DIR` from templates; snapshot pipeline writes to `SANDBOX_DIR/.snapshot/`; preserves git checkpoint, validation, env loading; `make build [sandbox|agent|all]` dispatch
+- [x] `docker-compose.yml` in agent-sandbox's own `SANDBOX_DIR` — dogfood version; created first, template derived from it
+- [x] `libs/_template/docker-compose.serve.yml.template` — serve mode overlay: `command: ["serve", ...]` + ports block; derived from dogfood `docker-compose.serve.yml`
+- [x] `libs/_template/docker-compose.dry-run.yml.template` — dry-run mode overlay: `dry_run.sh` bind mount; derived from dogfood `docker-compose.dry-run.yml`
+- [ ] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood; `{{PROJECT_NAME}}` and `{{PROVIDER}}` substitution
+- [x] `providers/opencode/start_agent.sh` — two-container lifecycle; writes `.env` with image names and paths; snapshot to `.snapshot/`; serve via overlay; standard mode via `compose run` for TUI pass-through; sandbox health poll before agent attach
+- [x] `providers/opencode/run.sh` — new: compose invocation entry point; `--rebuild` flag builds both images; TUI fix; sandbox health poll
+- [x] `providers/opencode/build_sandbox.sh` — new: capability layer image build; always `--no-cache`
 - [ ] `Makefile` (project-side template) — update targets to support `make build sandbox|agent|all`; `make start`, `make serve`, `make dry-run` invoke compose via `agent-sandbox` CLI; `make apply` unchanged
-- [ ] `scripts/agent-sandbox.sh` — update dispatch table for two-image model: `build` subcommand gains `sandbox|agent|all` variants; `start`/`dry-run` always call `docker build` before compose up (cache hit if nothing changed); staleness pre-flight and digest check removed
+- [ ] `scripts/agent-sandbox.sh` — update dispatch table for two-image model: `build` subcommand gains `sandbox|agent|all` variants; `start`/`dry-run` always call `docker build` before compose up (cache hit if nothing changed); staleness pre-flight and digest check removed (see `libs/image.sh` deletion in Build & context)
 
 ### Path alignment
 - [x] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
 - [x] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `workspace/changes/`); grep and confirm
-- [ ] `.agent-input/` → `workspace/input/` rename — reasoning layer input channel moves under `workspace/` to match capability layer convention; affects `container-entrypoint.sh`, `Dockerfile` (reasoning layer), `dirs.sh` (`AGENT_INPUT_DIR_NAME` default), `start_agent.sh` (snapshot pipeline write path), compose templates, operator docs; reasoning layer mount narrows from `$SANDBOX_DIR/.workspace/` (parent) to `$SANDBOX_DIR/.workspace/input/` (subdirectory) once complete
+- [x] `.agent-input/` → `workspace/input/` rename — reasoning layer input channel moves under `workspace/`; `workspace/output/` added as reasoning layer output channel; `container-entrypoint.sh` deleted; `dirs.sh` updated (`AGENT_INPUT_DIR_NAME`, `WORKSPACE_DIR_NAME` removed; `INPUT_DIR_NAME`, `OUTPUT_DIR_NAME` added); `start_agent.sh` snapshot pipeline writes to `.snapshot/`; `Dockerfile` mkdir updated; `execution_model.md` updated
 
 ### Build & context
 - [ ] `libs/build.sh` — `build_context` function: populates a `context/` directory for a given image from known source locations; replaces `image-files.txt`; missing file is a hard error (natural backpressure)
 - [ ] `providers/opencode/context/` — reasoning layer build context directory; populated by `build_context` before `docker build`
 - [ ] `SANDBOX_DIR/context/` — capability layer build context directory; populated by `build_context` before `docker build`; capability layer Dockerfile updated to `COPY context/ /libs/` equivalent
 - [ ] `providers/opencode/Dockerfile` — reorder layers: apt-get → npm install → `COPY context/` → ENTRYPOINT; ensures slow layers are cached above fast-changing layer
-- [ ] `libs/image.sh` and `tests/test_image.sh` — delete; digest mechanism replaced by Docker cache
+- [ ] `libs/image.sh` and `tests/test_image.sh` — delete; digest mechanism replaced by Docker cache; `scripts/agent-sandbox.sh` staleness pre-flight and digest check must be removed at the same time (both reference `libs/image.sh` — deletion is not complete until `agent-sandbox.sh` no longer sources it)
 
 ### Dry-run
-- [ ] `scripts/dry_run.sh` — catalogue existing checks; confirm which to preserve, which to drop; update for two-container dry-run; any capability layer output must write to `workspace/changes/` only — writing to the workspace parent is a bug per the mount shape model
+- [x] `scripts/dry_run.sh` — updated for two-container model; sources `libs/dirs.sh` for dir names; checks `workspace/input/` and `workspace/output/` mounts; writes liveness to `workspace/output/liveness.txt`; bind-mounted via dry-run overlay
 
 ### Validation
 - [x] `tests/test_capability_layer.sh` — standalone capability layer functional test; startup via HEALTHCHECK poll (not sleep); mutation via `--volumes-from`; shutdown + diff pipeline; gate 2 failure case; random run ID; image cleanup on exit — **all checks passing, confirmed by operator**

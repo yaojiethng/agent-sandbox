@@ -109,3 +109,4 @@ Read these in addition to the above when opening a major loop planning session (
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
 | [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session (minor loop open/close), new task, story, investigation, or milestone transition |
+| [`handover_policy.md`](docs/operations/iteration_policy.md) | Any session (minor loop open/close), Creating or updating handover, maintaining session continuity across compact operations |
