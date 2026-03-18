@@ -66,8 +66,8 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
-| `execution_model.md` | 🔴 Hot | M2.1 | Active implementation document. Updated in M2.1 (two-container model, mount shape, directory layout). |
-| `tool_interface.md` | 🟡 Warm | M2.1 | External contract: command shapes, naming, mount guarantees, Compose generation. |
+| `execution_model.md` | 🟡 Warm | M2.1 | Two-container model, mount shape, build context model, snapshot and diff pipelines. |
+| `tool_interface.md` | 🟡 Warm | M2.1 | External contract: command shapes, naming, mount guarantees, build inputs, Compose generation. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
@@ -85,7 +85,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
-| `quickstart.md` | 🟡 Warm | M2.1 | Onboarding and running guide. Updated for SANDBOX_DIR layout, two-image build, operator input channel. |
+| `quickstart.md` | 🟡 Warm | M2.1 | Onboarding and running guide. Rewritten for two-container model and `agent-sandbox onboard` CLI. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
@@ -102,7 +102,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
 | `apply_workspace.sh` | 🟡 Warm | M1.5 | Applies staged.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
 | `agent-sandbox.sh` | 🟡 Warm | M1.5 | CLI dispatch wrapper. Installed to host via `make install`. |
-| `onboard.sh` | 🟢 Cold | M1.3 | Dispatches onboard subcommand to workflow-specific script. |
+| `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
 
 ### Lib (`libs/`)
 
@@ -110,8 +110,16 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
-| `image.sh` | 🟢 Cold | M1.4 | Image digest computation for staleness detection. |
-| `_template/Makefile.template` | 🟡 Warm | M1.5 | Project Makefile template. Updated for PROJECT_DIR/SANDBOX_DIR layout. |
+| `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
+| `_template/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
+| `_template/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
+
+### Tests (`tests/`)
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
+| `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
 
 ### Knowledge Vault Workflow (`workflow/knowledge-vault/`)
 

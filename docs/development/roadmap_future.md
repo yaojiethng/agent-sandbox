@@ -8,27 +8,6 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-## M2.2 — Reasoning Layer Modularisation
-
-**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure. The provider interface under the two-layer model is the MCP protocol — per-provider work is limited to container configuration and mode support.
-
-**Depends on:** M2.1 two-container foundation.
-
-**Tasks:**
-- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
-- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
-- [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
-- [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
-- [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config
-- [ ] Validate OpenCode provider conforms after refactor
-- [ ] Deferred breakdown: Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
-
-**Deferred from M2.1:**
-- Modularise `start_agent.sh` across providers — provider-specific extraction kept in place during M2.1
-- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`) — cross-cuts M2.1 and M2.2
-
----
-
 ## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.

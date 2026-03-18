@@ -18,6 +18,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M1.5 — Workflow Convergence & Directory Restructuring | [Complete — see changelog](changelog.md) |
 | **Two-Layer Architecture** | |
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
+| M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -42,112 +43,6 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
 Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion
 
-#### M2.1 — General Capability Layer Prototype
-
-**Objective:** Split the current single container into a capability layer container and a reasoning layer container. Prove the two-container model works end-to-end with a sandbox-only configuration (no MCP server) against a generic coding project. This is the foundation all subsequent M2 sub-milestones build on.
-
-Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.md), [`execution_model.md`](../architecture/execution_model.md), [`security.md`](../architecture/security.md), [`agent_workflow.md`](../concepts/agent_workflow.md), [`quickstart.md`](../operations/quickstart.md).
-
-**Decisions:**
-
-| Decision | Rationale | Recorded in |
-|---|---|---|
-| Docker Compose per project: `start_agent.sh` writes `docker-compose.yml` + `.env` into `SANDBOX_DIR` from template | Declarative orchestration replaces imperative `docker run`; `.env` separates machine-specific from project-specific | `tool_interface.md` |
-| Image naming: `<project>-agent-sandbox` (capability), `<project>-opencode-agent` (reasoning) | Docker Compose accepts hyphens natively | `tool_interface.md` |
-| Compose baked vs `.env` split: structure baked, host paths + credentials in `.env` | Stable project structure vs machine-specific runtime are different concerns | `tool_interface.md` |
-| Mode overrides: base compose has no ports; serve/dry-run add via `-f` flags | Ports not exposed when not in serve mode | `tool_interface.md` |
-| Build command: `make build [sandbox\|agent\|all]` | Granular rebuild per image | `tool_interface.md` |
-| ~~Two-image staleness: separate `image-files.txt`, check both, warn separately~~ | ~~Images go stale independently~~ | Superseded — see context/ model below |
-| Capability Dockerfile in `SANDBOX_DIR`, project-controlled; default template in `libs/_template/` | Projects control their own dev environment | `tool_interface.md` |
-| Dry-run guarantees: both containers start, reasoning writes to sandbox, graceful termination, diff written | Defines what a successful dry-run proves | `tool_interface.md` |
-| Dogfood first: agent-sandbox's own repo gets real compose file before template is produced | Template derived from working version, not the reverse | This roadmap |
-| `start_agent.sh` remains entry point: gains `docker compose up/down` | Compose handles container orchestration only; all other behaviour retained | This roadmap |
-| `context/` model replaces `image-files.txt` for build inputs | `image-files.txt` requires active maintenance per image and breaks as capability layers become user-managed and providers multiply; `context/` directory is the single source of build inputs — if a file is missing the container errors at runtime, providing natural backpressure with no manifest to maintain | This roadmap |
-| `docker build` runs on every `make start`; Docker cache handles unchanged layers | Eliminates staleness warning and digest check entirely — Docker's content-addressed cache is a cache hit in ~1s when nothing changed; operator never needs to think about stale images | This roadmap |
-| `COPY context/` must be the last layer before `ENTRYPOINT` in reasoning layer Dockerfile | Keeps slow layers (apt-get, npm install) above the fast-changing layer; entrypoint/script changes do not invalidate npm install cache | This roadmap |
-| opencode-ai version left unpinned in base image | Tool is evolving rapidly; operator always wants latest; base image rebuilt explicitly when version change is desired | This roadmap |
-| Reasoning layer Dockerfile must not bake in project-specific content | Enables M2.2 base image extraction — slow layers (apt-get, npm install) must be separable from project-specific layers (`COPY context/`, `ENTRYPOINT`) | This roadmap |
-
-**Documentation — completed.** Architecture docs (`tool_interface.md`, `execution_model.md`, `security.md`), conceptual docs (`agent_workflow.md`), operator docs (`quickstart.md`), and project index updated to reflect the two-container model, mount shape, trust boundaries, naming conventions, and `build_context` model.
-
-**Tasks:**
-
-### Capability layer container
-- [x] `libs/_template/dockerfile-default.sandbox` — default capability layer Dockerfile template; `VOLUME /home/agentuser/sandbox`; mounts `workspace/changes/` only
-- [x] `Dockerfile.sandbox` — dogfood capability layer Dockerfile; same as template; confirmed building and passing all tests
-- [x] `scripts/sandbox-entrypoint.sh` — capability layer entrypoint: snapshot validate (gate 2), copy snapshot to `sandbox/`, git init + baseline SHA, EXIT trap → diff pipeline, TERM trap → exit 0, autosave loop, `sleep infinity & wait $!`
-
-### Reasoning layer container
-- [x] `providers/opencode/Dockerfile` — COPY path updated to `scripts/`; `libs/dirs.sh` added; snapshot/diff libs removed; HEALTHCHECK added
-- [x] `scripts/container-entrypoint.sh` — moved from `providers/opencode/`; generic across providers; sources `libs/dirs.sh`; brief injection and input copy retained
-
-### Shared harness
-- [x] `libs/dirs.sh` — single source of truth for all directory name defaults; sourced by both entrypoints
-- [x] `providers/opencode/image-files.txt` — entries updated to repo-root-relative paths; reflects `scripts/` move and `libs/dirs.sh`
-- [x] `libs/image.sh` — path resolution changed to repo-root-relative; `tests/test_image.sh` fixture updated to match
-
-### Orchestration & lifecycle
-- [x] `docker-compose.yml` in agent-sandbox's own `SANDBOX_DIR` — dogfood version; created first, template derived from it
-- [x] `libs/_template/docker-compose.serve.yml.template` — serve mode overlay: `command: ["serve", ...]` + ports block; derived from dogfood `docker-compose.serve.yml`
-- [x] `libs/_template/docker-compose.dry-run.yml.template` — dry-run mode overlay: `dry_run.sh` bind mount; derived from dogfood `docker-compose.dry-run.yml`
-- [x] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood; `{{PROJECT_NAME}}` and `{{PROVIDER}}` substitution
-- [x] `providers/opencode/start_agent.sh` — two-container lifecycle; reads `.env` (ownership transferred to onboard); snapshot to `.snapshot/`; serve via overlay; standard mode via `compose run` for TUI pass-through; sandbox health poll before agent attach
-- [x] `providers/opencode/run.sh` — new: compose invocation entry point; `--rebuild` flag builds both images; TUI fix; sandbox health poll
-- [x] `providers/opencode/build_sandbox.sh` — new: capability layer image build; always `--no-cache`
-- [x] `Makefile` (project-side template) — update targets to support `make build sandbox|agent|all`; `make start`, `make serve`, `make dry-run` invoke compose via `agent-sandbox` CLI; `make apply` unchanged
-- [x] `scripts/agent-sandbox.sh` — update dispatch table for two-image model: `build` subcommand gains `sandbox|agent|all` variants; `start`/`dry-run` always call `docker build` before compose up (cache hit if nothing changed); staleness pre-flight and digest check removed (see `libs/image.sh` deletion in Build & context)
-
-### Path alignment
-- [x] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
-- [x] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `workspace/changes/`); grep and confirm
-- [x] `.agent-input/` → `workspace/input/` rename — reasoning layer input channel moves under `workspace/`; `workspace/output/` added as reasoning layer output channel; `container-entrypoint.sh` deleted; `dirs.sh` updated (`AGENT_INPUT_DIR_NAME`, `WORKSPACE_DIR_NAME` removed; `INPUT_DIR_NAME`, `OUTPUT_DIR_NAME` added); `start_agent.sh` snapshot pipeline writes to `.snapshot/`; `Dockerfile` mkdir updated; `execution_model.md` updated
-
-### Onboarding
-- [x] `workflow/general/scripts/onboard.sh` — new; copies all template files into SANDBOX_DIR, creates `.workspace/` dirs, writes `.env` once with derived paths and operator stubs, writes `agents.md` stub, prompts for missing flags, validates WSL/Linux paths
-
-### Documentation
-- [x] `docs/operations/tool_interface.md` — new; operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
-- [x] `docs/architecture/execution_model.md` — remove CLI Wrapper and Image Digest & Staleness sections (staleness removed); update Directory Layout and terminology to current paths; focus on mount shape, snapshot pipeline, entrypoint sequence, diff pipeline, container lifecycle
-- [x] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
-
-### Build & context
-- [x] `libs/build_context.sh` — `build_context` function: creates `mktemp -d` build context, copies required files flat, prints path to stdout; caller cleans up; ERR trap removes partial context on failure; hard error on missing file; replaces `image-files.txt`
-- [x] `providers/opencode/build_sandbox.sh` — sources `libs/build_context.sh`; calls `build_context sandbox`; computes digest from temp dir contents; builds with `--label agent-sandbox.digest`; template version staleness check for `Dockerfile.sandbox`, `docker-compose.yml`, `Makefile`; warns with `agent-sandbox onboard --refresh` command
-- [x] `providers/opencode/build_agent.sh` — sources `libs/build_context.sh`; calls `build_context agent`; same temp dir and digest pattern; replaces `libs/image.sh` sourcing and `image-files.txt`
-- [x] `providers/opencode/Dockerfile` — `COPY libs/dirs.sh` updated to `COPY dirs.sh` (flat temp dir layout)
-- [x] `libs/_template/dockerfile-default.sandbox` — individual `COPY libs/` and `COPY scripts/` paths updated to flat filenames matching temp dir layout; template version tag added
-- [x] `libs/image.sh` and `tests/test_image.sh` — deleted; digest mechanism replaced by `build_context` + temp dir hash
-- [x] `providers/opencode/image-files.txt` — deleted; superseded by `build_context`
-
-### Template versioning
-- [x] `libs/_template/dockerfile-default.sandbox`, `libs/_template/docker-compose.yml.template`, `libs/_template/Makefile.template` — `# agent-sandbox template version: 1` tag added to each; version travels with file when copied at onboard time
-- [x] `scripts/onboard.sh` — reads version from each template at copy time; records `DOCKERFILE_SANDBOX_VERSION`, `COMPOSE_VERSION`, `MAKEFILE_VERSION` in `.env`; `--refresh` flag: updates versioned template files and version lines in `.env` without touching `agents.md`, operator `.env` vars, or `.workspace/`
-- [x] `Makefile` (repo-level) — `make onboard` and `make refresh` targets added; target the dogfood `sandbox/` directory
-
-### Tests
-- [x] `tests/test_build_context.sh` — property-based tests for `build_context`; covers output contract, file contents per image type, content fidelity, isolation, digest determinism, caller cleanup responsibility, and error cases
-- [x] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
-- [x] `scripts/dry_run.sh` — updated for two-container model; sources `libs/dirs.sh` for dir names; checks `workspace/input/` and `workspace/output/` mounts; writes liveness to `workspace/output/liveness.txt`; bind-mounted via dry-run overlay
-
-### Validation
-- [x] `tests/test_capability_layer.sh` — standalone capability layer functional test; startup via HEALTHCHECK poll (not sleep); mutation via `--volumes-from`; shutdown + diff pipeline; gate 2 failure case; random run ID; image cleanup on exit — **all checks passing, confirmed by operator**
-- [x] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
-
-**Acceptance criteria:**
-- `make start` brings up two containers via `docker compose up`; capability layer starts first (service dependency)
-- Agent modifies a file in `sandbox/`; `staged.diff` appears in `SANDBOX_DIR/.workspace/changes/` after session ends
-- `make apply` applies the diff cleanly to the host repo
-- `make serve` exposes port via compose override
-- `make dry-run` runs both containers, reasoning writes to sandbox, graceful termination, diff written
-- Capability layer exits cleanly and triggers diff pipeline
-- Capability layer container has no mount on `SANDBOX_DIR/.workspace/` parent — only `SANDBOX_DIR/.workspace/changes/`; reasoning layer has no mount on `SANDBOX_DIR/.snapshot/`
-- `make start` calls `docker build` before compose up; second `make start` with no file changes completes build step in under 5 seconds (cache hit)
-- `make build sandbox|agent|all` builds correct images from `context/` directories
-
-**Deferred to M2.2+:**
-- Modularise `start_agent.sh` across providers — provider-specific extraction is M2.2 scope
-- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`) — cross-cuts M2.1 and M2.2
-
 #### M2.2 — Reasoning Layer Modularisation
 
 **Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure. Introduce a base reasoning image that amortises slow build steps across all projects.
@@ -155,6 +50,36 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 **Depends on:** M2.1. **Scope:** Audit and split `start_agent.sh` and `container-entrypoint.sh` into shared libs vs provider-specific invocation. Document execution modes formally. Define conforming provider interface. Validate OpenCode conforms. Claude Code provider integration deferred until shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved.
 
 **Base reasoning image:** Extract slow layers from the reasoning layer Dockerfile into a shared `opencode-base` image (apt-get, npm install, useradd). Per-project reasoning images use `FROM opencode-base` and only add `COPY context/` + `ENTRYPOINT` — making per-project builds near-instant. Base image is built once per host and rebuilt only when opencode-ai or system packages change. M2.1 constraint: reasoning layer Dockerfile must not bake in project-specific content (already enforced — recorded in M2.1 decisions).
+
+**Deferred from M2.1:**
+- Modularise `start_agent.sh` across providers
+- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`)
+
+**Tasks:**
+
+### Shared logic extraction
+- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
+- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
+- [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
+
+### Provider interface
+- [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
+- [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config
+- [ ] Validate OpenCode provider conforms after refactor
+
+### Base image
+- [ ] Extract slow layers (apt-get, npm install, useradd) from `providers/opencode/Dockerfile` into a shared `opencode-base` image
+- [ ] Update per-project reasoning layer Dockerfile to `FROM opencode-base`; verify per-project builds are near-instant after base image is built
+- [ ] Document base image build and rebuild workflow in `quickstart.md`
+
+### Deferred breakdown
+- [ ] Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
+- [ ] Claude Desktop provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_desktop.md`](../discussions/investigation_claude_desktop.md) open questions are resolved
+
+**Acceptance criteria:**
+- `make build agent` completes in under 10 seconds for a project after `opencode-base` is built on the host
+- A second provider can be added by creating `providers/<name>/` with a Dockerfile and mode support — no changes to shared libs required
+- OpenCode provider passes `make dry-run` after refactor
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 

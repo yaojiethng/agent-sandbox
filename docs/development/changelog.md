@@ -53,3 +53,11 @@ A SHA-256 digest of all build inputs is embedded as a Docker image label at buil
 Harness artefacts — snapshot, brief, workspace output — moved from `PROJECT_ROOT` into a sibling `SANDBOX_DIR`, eliminating harness pollution of the project git tree. The `.bootstrap/` directory was renamed `.agent-input/` and expanded to serve as the unified input channel: snapshot, brief, and operator-placed task files all enter the container through a single read-only mount. Directory names are defined once in `start_agent.sh` and passed to the container as environment variables, giving both host and container scripts a single source of truth. The `apply` subcommand now takes explicit `--project` and `--sandbox` flags, with the Makefile defining both paths so the operator workflow is unchanged. Open user stories (vault onboarding, website dev, knowledge store provider) were resolved or explicitly deferred to M2, and the workflow convergence decision was recorded. The onboarding skill was updated to reflect the new directory layout and modularised so that future convention changes require only variable updates.
 
 ---
+
+## M2.1 — General Capability Layer Prototype
+
+*The harness now runs two containers per session: a capability layer that owns the sandbox and diff pipeline, and a reasoning layer that runs the agent — proving the two-container model end-to-end against a real coding project.*
+
+The single container was split into two. The capability layer initialises `sandbox/` from the project snapshot, records a baseline git commit, and writes `staged.diff` on exit via an EXIT trap. The reasoning layer attaches to `sandbox/` through Docker's `--volumes-from` mechanism and cannot start if the capability layer is not healthy — enforcing the ownership boundary at the infrastructure level. Docker Compose manages the two-container lifecycle; Compose files are generated from templates at each run. Build context for each image is assembled into a `mktemp` directory by `build_context` and discarded after the build, replacing the `image-files.txt` manifest. Onboarded template files carry a version tag; `build_sandbox.sh` detects stale installed files and prints a targeted refresh command. `make onboard` and `make refresh` targets in the repo Makefile handle the dogfood sandbox.
+
+---
