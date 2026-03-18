@@ -1,4 +1,5 @@
 # dockerfile-default.sandbox
+# agent-sandbox template version: 1
 # Default capability layer Dockerfile template.
 # Copy into SANDBOX_DIR as Dockerfile.sandbox and customise as needed.
 # Docker Compose references the project-level Dockerfile.sandbox.

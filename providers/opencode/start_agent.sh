@@ -19,7 +19,7 @@
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
 #   --serve                 apply docker-compose.serve.yml overlay
 #
-# Expects SANDBOX_DIR to have been prepared by: agent-sandbox onboard general
+# Expects SANDBOX_DIR to have been prepared by: agent-sandbox onboard
 # If .env is missing, onboarding has not been run — error with instructions.
 
 set -euo pipefail
@@ -111,7 +111,7 @@ ENV_FILE="$SANDBOX_DIR/$ENV_REL"
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Error: .env not found: $ENV_FILE"
   echo "  SANDBOX_DIR has not been onboarded. Run:"
-  echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+  echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
   exit 1
 fi
 
@@ -141,7 +141,7 @@ for VAR in "${REQUIRED_ENV_VARS[@]}"; do
   if [[ -z "${!VAR:-}" ]]; then
     echo "Error: required variable '$VAR' is missing from $ENV_FILE"
     echo "  Re-run onboarding to regenerate .env:"
-    echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+    echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
     exit 1
   fi
 done
@@ -216,7 +216,7 @@ COMPOSE_FILE="$SANDBOX_DIR/docker-compose.yml"
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "Error: compose file not found: $COMPOSE_FILE"
   echo "  Re-run onboarding to restore missing files:"
-  echo "    agent-sandbox onboard general --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+  echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
   exit 1
 fi
 

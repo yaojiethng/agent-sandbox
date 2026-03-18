@@ -42,12 +42,36 @@ uninstall:
 	echo "Removed $$_INSTALL_DIR/agent-sandbox"
 
 # -------------------------
+# Onboard / refresh dogfood sandbox
+# -------------------------
+
+SANDBOX_DIR := $(CURDIR)/sandbox
+PROJECT_NAME := agent-sandbox
+
+.PHONY: onboard
+onboard:
+	agent-sandbox onboard \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(CURDIR) \
+	  --sandbox=$(SANDBOX_DIR)
+
+.PHONY: refresh
+refresh:
+	agent-sandbox onboard --refresh \
+	  --name=$(PROJECT_NAME) \
+	  --sandbox=$(SANDBOX_DIR)
+
+# -------------------------
 # Help
 # -------------------------
 
 .PHONY: help
 help:
 	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Onboard / refresh:"
+	@echo "  onboard                    — onboard the dogfood sandbox/ directory"
+	@echo "  refresh                    — update stale template files in sandbox/"
 	@echo ""
 	@echo "Install:"
 	@echo "  install                    — install agent-sandbox CLI"

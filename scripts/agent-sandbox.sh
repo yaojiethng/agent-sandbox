@@ -2,7 +2,7 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox onboard  general --name=<n> --project=<path> --sandbox=<path>
+#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [sandbox|agent|all] --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox start    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>] [--serve]
 #   agent-sandbox serve    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>]

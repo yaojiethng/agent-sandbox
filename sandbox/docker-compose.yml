@@ -1,4 +1,5 @@
 # docker-compose.yml
+# agent-sandbox template version: 1
 # Generated at onboarding time for project: agent-sandbox
 #
 # Runtime variables are read from .env in SANDBOX_DIR (written once by

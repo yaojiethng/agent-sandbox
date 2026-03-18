@@ -62,6 +62,30 @@ if [[ ! -f "$DOCKERFILE" ]]; then
 fi
 
 # -------------------------
+# Template version checks
+# -------------------------
+check_template_version() {
+  local label="$1" template="$2" installed="$3" name="$4"
+  local tmpl_ver inst_ver
+  tmpl_ver=$(grep -m1 "^# agent-sandbox template version:" "$template" 2>/dev/null | awk '{print $NF}' || true)
+  inst_ver=$(grep -m1 "^# agent-sandbox template version:" "$installed" 2>/dev/null | awk '{print $NF}' || true)
+  if [[ -n "$tmpl_ver" && "$inst_ver" != "$tmpl_ver" ]]; then
+    echo "Warning: $label is based on template version ${inst_ver:-unknown}, current template is version ${tmpl_ver}."
+    echo "  Your $name may be out of date."
+    echo "  To refresh: agent-sandbox onboard --name=${PROJECT_NAME} --sandbox=${SANDBOX_DIR}"
+    echo ""
+  fi
+}
+
+TEMPLATES="$REPO_ROOT/libs/_templates"
+check_template_version "Dockerfile.sandbox" \
+  "$TEMPLATES/dockerfile-default.sandbox" "$SANDBOX_DIR/Dockerfile.sandbox" "Dockerfile.sandbox"
+check_template_version "docker-compose.yml" \
+  "$TEMPLATES/docker-compose.yml.template" "$SANDBOX_DIR/docker-compose.yml" "docker-compose.yml"
+check_template_version "Makefile" \
+  "$TEMPLATES/Makefile.template" "$SANDBOX_DIR/Makefile" "Makefile"
+
+# -------------------------
 # Build context
 # -------------------------
 source "$REPO_ROOT/libs/build_context.sh"

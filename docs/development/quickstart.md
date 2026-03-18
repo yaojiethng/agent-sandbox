@@ -44,7 +44,7 @@ which agent-sandbox
 Run the onboard command from anywhere, passing the project name, project path, and the path where the sandbox directory should be created:
 
 ```sh
-agent-sandbox onboard general \
+agent-sandbox onboard \
   --name=<project-name> \
   --project=/absolute/path/to/<project-dir> \
   --sandbox=/absolute/path/to/<project-dir>-sandbox

@@ -73,7 +73,7 @@ The harness guarantees the following mount shape for every run. Onboarded projec
 New projects are onboarded using the `agent-sandbox onboard` command, which creates and populates `SANDBOX_DIR` from templates:
 
 ```sh
-agent-sandbox onboard general --name=<project> --project=<path> --sandbox=<path>
+agent-sandbox onboard --name=<project> --project=<path> --sandbox=<path>
 ```
 
 This copies all required template files, creates `.workspace/` subdirectories, writes `.env` with derived path variables and operator stubs, and produces an `agents.md` stub. The operator fills in `agents.md` and reviews `.env` before the first run.
