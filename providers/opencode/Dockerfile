@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y \
 # dirs.sh is sourced by dry_run.sh inside the container.
 # No entrypoint script — opencode is exec'd directly via ENTRYPOINT.
 # Serve args and dry-run invocation are handled by compose overlays.
-COPY libs/dirs.sh /libs/dirs.sh
+# Build context is a temp directory populated by build_context in libs/build.sh;
+# files are copied flat so paths here match the temp dir layout.
+COPY dirs.sh /libs/dirs.sh
 
 # -------------------------
 # Non-root user

@@ -18,10 +18,12 @@ RUN apt-get update && apt-get install -y \
 # -------------------------
 # Entrypoint and libs (root, before USER switch)
 # -------------------------
-COPY scripts/sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
-COPY libs/snapshot.sh /libs/snapshot.sh
-COPY libs/diff.sh /libs/diff.sh
-COPY libs/dirs.sh /libs/dirs.sh
+# Build context is a temp directory populated by build_context in libs/build.sh;
+# files are copied flat so paths here match the temp dir layout.
+COPY sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
+COPY snapshot.sh /libs/snapshot.sh
+COPY diff.sh /libs/diff.sh
+COPY dirs.sh /libs/dirs.sh
 RUN chmod +x /usr/local/bin/sandbox-entrypoint.sh
 
 # -------------------------

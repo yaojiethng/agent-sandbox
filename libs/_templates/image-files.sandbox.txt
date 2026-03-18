@@ -1,7 +1,0 @@
-# image-files.txt — capability layer image digest inputs
-# Paths are relative to this file's location (SANDBOX_DIR).
-# Add any file that, if changed, should invalidate the capability layer image.
-# libs/ (shared harness code) is always included automatically.
-#
-# Minimum: Dockerfile.sandbox must always be listed.
-Dockerfile.sandbox

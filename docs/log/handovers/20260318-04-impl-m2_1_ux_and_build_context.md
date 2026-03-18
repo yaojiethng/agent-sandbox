@@ -5,7 +5,7 @@
 **Session type:** Implementation
 
 ## Objective
-Complete M2.1 implementation: UX layer (`libs/_template/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template), onboarding (`workflow/general/scripts/onboard.sh`, `.env` ownership transfer), build & context model (`libs/build.sh`, `context/` directories, Dockerfile layer reorder), and `libs/image.sh` + `tests/test_image.sh` deletion. End-to-end validation is the exit gate.
+Complete M2.1 implementation: UX layer (`libs/_template/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template), onboarding (`workflow/general/scripts/onboard.sh`, `.env` ownership transfer), build & context model (`libs/build_context.sh`, `context/` directories, Dockerfile layer reorder), and `libs/image.sh` + `tests/test_image.sh` deletion. End-to-end validation is the exit gate.
 
 ## Scope
 
@@ -14,7 +14,7 @@ Orchestration & lifecycle (partial), onboarding (new).
 
 ### Remaining — pushed to next session
 - Documentation: `docs/operations/tool_interface.md` (new), `docs/architecture/execution_model.md` (update), `docs/operations/quickstart.md` (rewrite)
-- Build & context: `libs/build.sh`, `providers/opencode/context/`, `SANDBOX_DIR/context/`, `providers/opencode/Dockerfile` layer reorder
+- Build & context: `libs/build_context.sh`, `providers/opencode/context/`, `SANDBOX_DIR/context/`, `providers/opencode/Dockerfile` layer reorder
 - Cleanup: `libs/image.sh` + `tests/test_image.sh` deletion
 - Validation: end-to-end test
 
@@ -42,7 +42,7 @@ Carried from M2.1 roadmap — sub-milestone gate:
 | [`workflow/general/scripts/onboard.sh`](workflow/general/scripts/onboard.sh) | Completed — new file; full SANDBOX_DIR setup from templates |
 | [`providers/opencode/start_agent.sh`](providers/opencode/start_agent.sh) | Completed — reads .env instead of writing it |
 | [`Makefile`](Makefile) | Completed — dogfood; build-* variants, rebuild targets corrected |
-| [`libs/build.sh`](libs/build.sh) | Next — `build_context` function replacing `image-files.txt` |
+| [`libs/build_context.sh`](libs/build_context.sh) | Next — `build_context` function replacing `image-files.txt` |
 | `providers/opencode/context/` | Next — reasoning layer build context directory |
 | `SANDBOX_DIR/context/` | Next — capability layer build context directory |
 | [`providers/opencode/Dockerfile`](providers/opencode/Dockerfile) | Next — layer reorder: slow layers above `COPY context/` |
@@ -81,7 +81,7 @@ Carried from M2.1 roadmap — sub-milestone gate:
 | `docs/operations/tool_interface.md` | New doc; operator-facing CLI/Makefile reference; scoped to include `context/` model as target state | Next session (first — docs before implementation) |
 | `docs/architecture/execution_model.md` | Remove stale CLI Wrapper and Image Digest sections; update paths and terminology | Next session |
 | `docs/operations/quickstart.md` | Full rewrite; currently describes M1.x single-container flow | Next session |
-| `libs/build.sh` + `context/` directories | Build & context group; after docs confirmed | Next session |
+| `libs/build_context.sh` + `context/` directories | Build & context group; after docs confirmed | Next session |
 | `providers/opencode/Dockerfile` layer reorder | Depends on `context/` model being defined | Next session |
 | `libs/image.sh` + `tests/test_image.sh` deletion | Unblocked — `agent-sandbox.sh` no longer sources `libs/image.sh` | Next session (first implementation task) |
 | End-to-end validation | Requires build & context complete | Next session (closes M2.1) |
@@ -99,7 +99,7 @@ Carried from M2.1 roadmap — sub-milestone gate:
    - `docs/operations/quickstart.md` — full rewrite; currently describes M1.x single-container flow with wrong paths and old onboarding steps; rewrite against two-container model and `onboard` CLI.
 2. **Implementation** (after docs confirmed):
    - Delete `libs/image.sh` and `tests/test_image.sh` — unblocked, no dependencies
-   - `libs/build.sh` — `build_context` function; hard error on missing file
+   - `libs/build_context.sh` — `build_context` function; hard error on missing file
    - `providers/opencode/context/` and `SANDBOX_DIR/context/` directories
    - `providers/opencode/Dockerfile` layer reorder
 3. **End-to-end validation → sub-milestone close**

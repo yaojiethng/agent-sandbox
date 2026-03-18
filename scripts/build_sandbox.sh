@@ -5,8 +5,9 @@
 #
 # Builds the capability layer Docker image for a project.
 # The Dockerfile is expected at SANDBOX_DIR/Dockerfile.sandbox.
-# Build context is always REPO_ROOT (not SANDBOX_DIR) so that shared
-# libs/ and scripts/ are available to COPY instructions.
+# build_context populates a temp directory with the required files;
+# docker build uses the temp directory as build context and tags the
+# image with a digest of the context contents.
 
 set -euo pipefail
 
@@ -61,11 +62,22 @@ if [[ ! -f "$DOCKERFILE" ]]; then
 fi
 
 # -------------------------
+# Build context
+# -------------------------
+source "$REPO_ROOT/libs/build_context.sh"
+
+CONTEXT_DIR=$(build_context sandbox "$REPO_ROOT")
+trap 'rm -rf "$CONTEXT_DIR"' EXIT
+
+DIGEST=$(find "$CONTEXT_DIR" -type f | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+
+# -------------------------
 # Build
 # -------------------------
 echo "Building capability layer image: $IMAGE_NAME"
 docker build $NO_CACHE \
+  --label "agent-sandbox.digest=$DIGEST" \
   -t "$IMAGE_NAME" \
   -f "$DOCKERFILE" \
-  "$REPO_ROOT"
+  "$CONTEXT_DIR"
 echo "Build complete: $IMAGE_NAME"

@@ -71,7 +71,7 @@ Continuation of capability layer container and shared harness task groups from p
 | Item | Reason | Next |
 |---|---|---|
 | Orchestration & lifecycle (compose files, `start_agent.sh` rewrite) | Deferred to separate sessions; capability layer validated | Next session |
-| Build & context (`libs/build.sh`, `context/` dirs, layer reorder) | Depends on compose shape being confirmed | Next session |
+| Build & context (`libs/build_context.sh`, `context/` dirs, layer reorder) | Depends on compose shape being confirmed | Next session |
 | `.agent-input/` → `workspace/input/` rename | Scoped; deferred to keep M2.1 contained; reasoning layer workspace mount narrows once complete | Path alignment task, next session or dedicated session |
 | Dry-run update (`scripts/dry_run.sh`) | Not provided; write path constraint noted in roadmap; depends on lifecycle being settled | Next session |
 | End-to-end validation | Requires all containers and compose built | After orchestration complete |

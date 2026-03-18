@@ -111,7 +111,7 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 - [ ] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
 
 ### Build & context
-- [ ] `libs/build.sh` — `build_context` function: populates a `context/` directory for a given image from known source locations; replaces `image-files.txt`; missing file is a hard error (natural backpressure)
+- [ ] `libs/build_context.sh` — `build_context` function: populates a `context/` directory for a given image from known source locations; replaces `image-files.txt`; missing file is a hard error (natural backpressure)
 - [ ] `providers/opencode/context/` — reasoning layer build context directory; populated by `build_context` before `docker build`
 - [ ] `SANDBOX_DIR/context/` — capability layer build context directory; populated by `build_context` before `docker build`; capability layer Dockerfile updated to `COPY context/ /libs/` equivalent
 - [ ] `providers/opencode/Dockerfile` — reorder layers: apt-get → npm install → `COPY context/` → ENTRYPOINT; ensures slow layers are cached above fast-changing layer
