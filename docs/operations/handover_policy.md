@@ -79,8 +79,7 @@ A handover has three moments:
 do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
 
 ## Acceptance criteria
-<Criteria carried from prior session + any defined this session. At session close, mark each
-as accepted or pushed to next session. Both must be visible under this header.>
+<Criteria carried from prior session + any defined this session. Each criterion is an operator-runnable check — an action or command, expected output or behaviour, and pass/fail condition. Not file state. At session close, mark each as accepted or pushed to next session. Both must be visible under this header.>
 
 Not yet defined.
 
@@ -151,6 +150,10 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - Record new acceptance criteria as they are defined. Carry forward any criteria from prior sessions that remain in scope.
 - Update Deferred items immediately when something is flagged out of scope — do not accumulate them at session end.
 
+### At Step 6 — Define acceptance criteria
+
+- Replace `Not yet defined.` with the confirmed criteria before the step exits. The null marker must not be present when implementation begins — a session that enters Step 7 with `Not yet defined.` in place has skipped the gate.
+
 ### At session close (Step 8)
 
 - Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Minor loop Step 8. This is done alongside the handover update, not after it.
@@ -176,6 +179,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - **The handover is not a summary of decisions.** Decisions live in the documents where they were made (roadmap, architecture docs). The handover points to those documents — it does not reproduce their content.
 - **The handover does not duplicate the task list.** The roadmap is the canonical task list. The handover's Scope section references roadmap task groups by name; its Completed section records what was done this session.
 - **Acceptance criteria carry forward and are visibly resolved.** At session close, every criterion under the Acceptance criteria header is either marked accepted or explicitly pushed to next session. The operator must be able to see both outcomes without reading the prior handover.
+- **Acceptance criteria are operator-runnable checks.** Each criterion describes an action or command the operator performs and an outcome they can observe — expected output, behaviour, or timing. Criteria that describe file contents, internal state, or task completion belong in the Completed table or the task checklist — not under Acceptance criteria.
 - **Next session blockers are concrete.** Blocking design questions in the Next session section are specific questions the next agent must resolve, not general notes. Cap at three items total (blockers + watch-out items combined).
 - **Empty sections use canonical markers.** A blank section is ambiguous — it could mean nothing to record, or a forgotten section. Write the canonical marker. Never leave a nullable section blank and never explain why it is empty.
 

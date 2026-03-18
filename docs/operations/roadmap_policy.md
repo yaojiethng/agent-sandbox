@@ -8,22 +8,22 @@ Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future
 
 The roadmap is not updated continuously during a session. It is touched at two defined moments in the minor loop and once at major loop close. Do not update it outside these moments.
 
-**Minor loop Step 1 (session open):**
+### Session open (Step 1)
 1. Read `roadmap.md`
 2. Compact any fully-completed task groups from the previous session — replace the group header and checklist with a conceptual outcome sentence describing what the system can now do
 3. Read the remaining task list as the session's pending work; do not copy it into the handover
 
-**Minor loop Step 8 (session close):**
+### Session close (Step 8)
 1. Mark all tasks completed this session with `[x]`
 2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
 
-**Sub-milestone transition (Trigger B — sub-milestone complete):**
+### Sub-milestone transition (Trigger B)
 1. Compact all remaining checked task groups in the completed sub-milestone
 2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
 3. Promote the next sub-milestone's section into `roadmap.md` with scope paragraph and task list
 4. Non-current sub-milestones retain scope paragraphs only — no accumulated deferrals from prior sub-milestones
 
-**Major loop close (Trigger A — milestone complete):**
+### Major loop close (Trigger A)
 1. Read `roadmap.md` and `changelog.md`
 2. Write and output the changelog entry for the completed milestone (see Changelog Format)
 3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
@@ -45,6 +45,8 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 **Decisions** — design decisions made during a session are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; session handovers log which decisions were made per session.
 
 **Active sub-milestone task list** — the active sub-milestone carries a full task checklist grouped by functional area. This is the canonical task list; the handover references it, does not copy it.
+
+**Acceptance criteria** — the active sub-milestone carries an `**Acceptance criteria:**` block listing the end-to-end operator checks that must pass before the sub-milestone is considered complete. The task list records what is built; acceptance criteria record what the operator can verify once it is built. Criteria describe what the operator runs and observes — not what files contain or what tasks are checked off. A criterion that duplicates a task checklist item is not an acceptance criterion.
 
 **Non-active sub-milestones** — carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active. Deferred items from prior sub-milestones are filed in `roadmap_future.md`, not accumulated in the scope paragraph.
 
