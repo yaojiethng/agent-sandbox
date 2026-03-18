@@ -8,79 +8,6 @@ Implementation decisions are recorded here alongside the design they produce. Op
 
 ---
 
-## CLI Wrapper
-
-`scripts/agent-sandbox.sh` is a dispatch wrapper installed onto the host as the `agent-sandbox` CLI. It is the interface used by onboarded projects — they call `agent-sandbox <subcommand>` from their own Makefile without any knowledge of the agent-sandbox repo layout.
-
-Installation is performed once from the agent-sandbox repo:
-
-```
-make install                       # installs to /usr/local/bin/agent-sandbox
-make install INSTALL_DIR=~/bin     # installs to ~/bin/agent-sandbox
-```
-
-The install directory is resolved in order: `INSTALL_DIR` argument to `make install`, then `INSTALL_DIR` in the repo's `.env` file, then `/usr/local/bin` as the default. This allows machine-specific install paths to be set once in `.env` without repeating them on every `make install` invocation.
-
-`make install` substitutes the repo path into the wrapper at install time, so the installed binary has `AGENT_SANDBOX_REPO` baked in. The source file in the repo (`scripts/agent-sandbox.sh`) contains a placeholder and is never executed directly.
-
-| Subcommand | Delegates to |
-|---|---|
-| `start` | `providers/opencode/start_agent.sh standard` — staleness check before invocation |
-| `dry-run` | `providers/opencode/start_agent.sh dry-run` — staleness check before invocation |
-| `build` | `providers/opencode/build_agent.sh` |
-| `apply` | `scripts/apply_workspace.sh --project=<n> --sandbox=<n> [--branch=<n>]` |
-| `rebuild` | `build_agent.sh` then re-execs wrapper with remaining args |
-
-For `start` and `dry-run` the wrapper runs two pre-flight checks before invoking `start_agent.sh`. First, if the project image does not exist, it calls `build_agent.sh` automatically and notifies the operator. Second, if the image exists but is stale — detected by comparing the current source digest against the label embedded in the image — it warns the operator and continues. The staleness warning is always the last line emitted before the run proceeds, so it is not lost in build output. If a rebuild triggered by staleness fails, the staleness warning is re-emitted as the final line before exit. See [Image Digest & Staleness](#image-digest--staleness) for the digest mechanism. To force a rebuild before any subcommand, prefix with `rebuild`:
-
-```
-agent-sandbox rebuild start   --name=<n> --project=<path> ...
-agent-sandbox rebuild dry-run --name=<n> --project=<path> ...
-```
-
-`rebuild` extracts `--name` and `--project` from the passthrough args, runs `build_agent.sh`, then re-execs the wrapper with the original subcommand and flags. The `--rebuild` flag is not supported; `rebuild` as a subcommand is the only force-build path.
-
----
-
-## Image Digest & Staleness
-
-The harness embeds a content digest in each built image and checks it at run time to detect when source files have changed since the image was last built.
-
-### Digest computation
-
-`libs/image.sh` defines `image_compute_digest`, which computes a SHA-256 digest over two sets of files:
-
-- All files in `libs/` — shared across all providers by convention
-- Provider-specific files listed in `providers/<provider>/image-files.txt`, one relative-path-from-root per line
-
-Both sets are concatenated in a deterministic order before hashing. The file list in `image-files.txt` must cover every file copied into the image by the provider's Dockerfile — omissions produce a digest that does not reflect all image inputs.
-
-### Build-time label
-
-`build_agent.sh` sources `libs/image.sh`, calls `image_compute_digest`, and passes the result as a Docker build label:
-
-```
---label agent-sandbox.digest=<sha>
-```
-
-The label is embedded in the image at build time and retrievable via `docker inspect`.
-
-### Start-time staleness check
-
-Before invoking `start_agent.sh` for `start` or `dry-run`, the wrapper:
-
-1. Recomputes the digest from current source files using `image_compute_digest`
-2. Reads the `agent-sandbox.digest` label from the existing image via `docker inspect`
-3. If the digests differ, emits a staleness warning and continues
-
-The staleness warning is always the last line emitted before the run proceeds. If a rebuild is triggered and fails, the warning is re-emitted as the final line before exit, ensuring it is visible regardless of build output volume.
-
-### Shared-lib assumption
-
-All providers share `libs/`. The digest always includes the full contents of `libs/` regardless of which provider is in use. Provider-specific inputs are additive via `image-files.txt`.
-
----
-
 ## Directory Layout
 
 The harness separates the project repository from harness artefacts into sibling directories under a common working directory. This keeps the project's git tree clean — no harness files ever appear in the project repo.
@@ -91,24 +18,27 @@ WORKDIR/
 └── project-dir-sandbox/      ← SANDBOX_DIR (harness workspace, not committed)
     ├── Makefile
     ├── .env
-    ├── .agent-input/         ← input channel (built at run time)
-    │   ├── snapshot/         ← project snapshot built by harness
-    │   ├── brief.md          ← agent brief (copied from --brief path)
-    │   └── input/            ← operator-placed task files and briefs
-    └── .workspace/           ← output channel (agent output)
-        └── changes/
+    ├── Dockerfile.sandbox     ← capability layer Dockerfile (project-controlled)
+    ├── docker-compose.yml     ← generated by start_agent.sh from template
+    ├── .snapshot/             ← project snapshot (built at run time by harness)
+    └── .workspace/            ← harness I/O channels
+        ├── input/       ← operator-placed task briefs and addenda (RO to agent)
+        ├── output/      ← agent progress and serialised data (RW, no binaries)
+        └── changes/           ← diff output
             └── staged.diff
 
-Capability layer container
-└── sandbox/                  ← owned by capability layer; exposed to reasoning layer via --volumes-from
+Capability layer container (CWD: /home/agentuser/)
+├── .snapshot/ mount          ← RO: project snapshot from host
+├── workspace/changes/ mount  ← RW: diff output
+└── sandbox/                  ← shared Docker volume; working content
 
-Reasoning layer container
-├── .agent-input/ mount       ← RO: snapshot, brief, operator input
-├── .workspace/ mount         ← RW: reporting workspace
+Reasoning layer container (CWD: /home/agentuser/project/)
+├── .input/ mount            ← RO: task briefs, operator addenda
+├── .workspace/output/ mount ← RW: agent progress (no binaries)
 └── sandbox/                  ← RW: from capability layer via --volumes-from; fails if capability layer not running
 ```
 
-`SANDBOX_DIR` defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox`. It is set explicitly in the project Makefile and passed to all subcommands.
+`SANDBOX_DIR` defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox`. It is set in `.env` by `agent-sandbox onboard` and read by the project-side Makefile via `-include .env`.
 
 ### Terminology
 
@@ -116,32 +46,20 @@ Reasoning layer container
 |---|---|
 | `PROJECT_DIR` | The project git repository. Never mounted into either container at runtime. |
 | `SANDBOX_DIR` | Harness-owned sibling directory. Contains all harness artefacts. |
-| `.agent-input/` | Read-only input channel mounted into the reasoning layer container. Contains snapshot, brief, and operator input files. |
-| `.workspace/` | Read-write output channel mounted into the reasoning layer container. Contains agent output. |
-| `sandbox/` | Working content copy. Owned by the capability layer container; exposed to the reasoning layer via `--volumes-from`. Not a named volume — lifecycle is tied to the capability layer container. |
+| `.snapshot/` | Read-only snapshot of the project, built on the host before each run. Mounted into the capability layer container. |
+| `.workspace/` | Harness I/O directory with three subdirectories, each mounted separately into the appropriate container. |
+| `.workspace/input/` | Operator input channel. Mounted read-only into the reasoning layer. Task briefs and addenda placed here by the operator before a run. |
+| `.workspace/output/` | Agent output channel. Mounted read-write into the reasoning layer. Agent progress and serialised data; no binary files. |
+| `.workspace/changes/` | Diff output channel. Mounted read-write into the capability layer. Contains `staged.diff` and `autosave.diff`. |
+| `sandbox/` | Working content copy. Backed by a shared Docker volume owned by the capability layer; mounted into both containers at different paths. |
 
 ---
 
 ## Invocation Model
 
-`start_agent.sh` is invoked by the project-side `Makefile`. Project identity and paths are defined as variables in the Makefile and passed as named flags — there is no separate conf file.
+`start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. Project identity and paths are defined in `.env` in `SANDBOX_DIR`, written once by `agent-sandbox onboard` and read by the Makefile via `-include .env`. Machine-specific variables (`SERVE_PORT`, `OPENCODE_SERVER_PASSWORD`) are set manually in `.env` by the operator.
 
-```
-start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]
-```
-
-| Flag | Required | Description |
-|---|---|---|
-| `--name` | Yes | Project display name; used for Docker image naming (`opencode-agent-<n>`) |
-| `--project` | Yes | Absolute WSL/Linux path to the project directory on the host |
-| `--sandbox` | No | Absolute WSL/Linux path to the sandbox directory; defaults to `<parent-of-PROJECT_DIR>/<project-dir-name>-sandbox` |
-| `--brief` | No | Path to agent brief, relative to `SANDBOX_DIR` |
-| `--env` | No | Path to `.env` file, relative to `SANDBOX_DIR` |
-| `--serve` | No | Start OpenCode in serve mode |
-
-The `Makefile` defines `PROJECT_DIR` and `SANDBOX_DIR` explicitly as absolute paths. `AGENT_BRIEF` and `ENV_FILE` are relative paths resolved against `SANDBOX_DIR` inside `start_agent.sh`.
-
-Machine-specific variables (`SERVE_PORT`, `OPENCODE_SERVER_PASSWORD`) live in a `.env` file in `SANDBOX_DIR`, gitignored. They are never committed and never enter the snapshot.
+`start_agent.sh` reads `.env` on invocation and validates that required variables are present. If `.env` is missing, it exits with instructions to run `agent-sandbox onboard`.
 
 ### Directory name definitions
 
@@ -149,7 +67,7 @@ Directory name defaults are defined in `libs/dirs.sh` and sourced by both entryp
 
 | Variable | Default | Used by |
 |---|---|---|
-| `AGENT_INPUT_DIR_NAME` | `.agent-input` | Reasoning layer (`container-entrypoint.sh`) |
+| `AGENT_INPUT_DIR_NAME` | `.input` | Reasoning layer (`container-entrypoint.sh`) |
 | `SNAPSHOT_DIR_NAME` | `.snapshot` | Capability layer (`sandbox-entrypoint.sh`) |
 | `SANDBOX_DIR_NAME` | `sandbox` | Both entrypoints |
 | `WORKSPACE_DIR_NAME` | `.workspace` | Capability layer (`sandbox-entrypoint.sh`) |
@@ -161,28 +79,32 @@ Directory name defaults are defined in `libs/dirs.sh` and sourced by both entryp
 Neither container mounts the `workspace/` parent directory. Each container gets only the subdirectory it owns:
 
 - The capability layer mounts `$SANDBOX_DIR/.workspace/changes/` — the diff pipeline writes `staged.diff` here and nowhere else in the workspace tree.
-- The reasoning layer mounts `$SANDBOX_DIR/.agent-input/` (input channel, read-only) and `$SANDBOX_DIR/.workspace/` (output channel, read-write). The workspace parent mount is temporary — it will narrow to `$SANDBOX_DIR/.workspace/input/` once the `.agent-input/` → `workspace/input/` rename is implemented (scoped as a separate task).
+- The reasoning layer mounts `$SANDBOX_DIR/.workspace/input/` (input channel, read-only) and `$SANDBOX_DIR/.workspace/output/` (output channel, read-write).
 
-Subdirectory mounts enforce the ownership boundary at the filesystem level: the capability layer literally cannot write to `workspace/input/` because it is not mounted, and the reasoning layer literally cannot write to `workspace/changes/` for the same reason. Any future capability layer code path (dry-run, liveness checks) must write only to `workspace/changes/` or a dedicated subdirectory — writing to the workspace parent must be treated as a bug.
+Subdirectory mounts enforce the ownership boundary at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted, and the reasoning layer cannot write to `workspace/changes/` for the same reason. Any future capability layer code path (dry-run, liveness checks) must write only to `workspace/changes/` or a dedicated subdirectory — writing to the workspace parent must be treated as a bug.
 
 | Source | Container | Path | Mode | Purpose |
 |---|---|---|---|---|
 | `SANDBOX_DIR/.snapshot/` | Capability layer | `/home/agentuser/.snapshot/` | read-only | Snapshot input for sandbox init |
 | `SANDBOX_DIR/.workspace/changes/` | Capability layer | `/home/agentuser/workspace/changes/` | read-write | Diff pipeline output: staged.diff, autosave.diff |
-| `SANDBOX_DIR/.agent-input/` | Reasoning layer | `/home/agentuser/.agent-input/` | read-only | Input channel: brief, operator files (temporary — see workspace/input/ below) |
-| `SANDBOX_DIR/.workspace/` | Reasoning layer | `/home/agentuser/workspace/` | read-write | Agent output (temporary — narrows to workspace/input/ once rename complete) |
+| `SANDBOX_DIR/.workspace/input/` | Reasoning layer | `/home/agentuser/.input/` | read-only | Input channel: brief, operator files |
+| `SANDBOX_DIR/.workspace/output/` | Reasoning layer | `/home/agentuser/project/.workspace/output/` | read-write | Agent output channel (no binaries) |
 | Capability layer container (`--volumes-from`) | Capability layer | `/home/agentuser/sandbox/` | read-write | Working content; owned by capability layer |
-| Capability layer container (`--volumes-from`) | Reasoning layer | `/home/agentuser/sandbox/` | read-write | Working content access for the agent |
+| Capability layer container (`--volumes-from`) | Reasoning layer | `/home/agentuser/project/sandbox/` | read-write | Working content access for the agent |
 
 `PROJECT_DIR` is not mounted into either container at runtime. The snapshot is fully constructed on the host before either container starts.
 
-### Why `.agent-input/` is read-only
+### Why `.snapshot/` is read-only and capability-layer-only
 
-The snapshot and operator input files are inputs prepared before the run. The reasoning layer container must not modify them — doing so would break the reproducibility guarantee and could mask the baseline state used for diff generation.
+The snapshot is an input prepared before the run. Mounting it read-only prevents either container from modifying the baseline. Only the capability layer needs it — it copies the snapshot into `sandbox/` at startup and does not reference it again.
 
-### Why `.workspace/` is the sole reporting output channel
+### Why `.workspace/` subdirectories are mounted separately
 
-Restricting agent reporting output to a single known directory enforces the staging invariant: no agent change reaches the host repository without passing through `.workspace/` and receiving human review.
+Each subdirectory has a different trust level and a different container owner. `input/` is operator-written and agent-read (reasoning layer, read-only). `output/` is agent-written (reasoning layer, read-write). `changes/` is harness-written (capability layer, read-write — diff pipeline). Mounting them separately enforces these boundaries — the reasoning layer cannot write to `changes/` and the capability layer cannot read `input/`.
+
+### Why `output/` prohibits binaries
+
+`output/` is the reasoning layer's persistent output channel to the host. Restricting it to text and serialised data (no binaries) limits the attack surface — a compromised agent cannot write executable files that the operator might inadvertently run on the host. Binary outputs, if needed, must go through `sandbox/` and the diff pipeline.
 
 ### Why `--volumes-from` rather than a named volume
 
@@ -208,15 +130,15 @@ All snapshot functions are defined in `libs/snapshot.sh` and sourced by both `st
 
 The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync) because it respects `.gitignore` without requiring any mutation of the host repository. A git bundle approach was evaluated and rejected: it required a temporary commit on the host (`git add -A && git commit --no-verify`), which mutated HEAD, the staging area, and commit history, violating the invariant that the harness must not modify the host repo.
 
-**`snapshot_copy_files`** reads the file list from stdin and copies files into `.agent-input/snapshot/` using `cp --parents` to preserve directory structure.
+**`snapshot_copy_files`** reads the file list from stdin and copies files into `.snapshot/` using `cp --parents` to preserve directory structure.
 
-**`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.agent-input/snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
+**`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
 
 ### Stage 2 — Capability layer side (capability layer entrypoint)
 
-**`snapshot_validate` (gate 2)** runs first, against the mounted `.agent-input/snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
+**`snapshot_validate` (gate 2)** runs first, against the mounted `.snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
 
-**`snapshot_copy_to_sandbox`** copies `.agent-input/snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is a container-local directory owned by the capability layer; the reasoning layer accesses it via `--volumes-from` at the same path.
+**`snapshot_copy_to_sandbox`** copies `.snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is backed by the shared Docker volume and is the working content the reasoning layer accesses via the same volume.
 
 **`snapshot_init_git`** initialises a git repository in `sandbox/` and records a baseline commit. The baseline SHA is stored for diff generation on exit.
 
@@ -224,28 +146,30 @@ The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync
 
 ## Agent Brief
 
-The agent brief (`brief.md`) is an optional task description passed to the agent at run time. It is resolved by `start_agent.sh` from the `AGENT_BRIEF` config key relative to `SANDBOX_DIR`, and copied into `.agent-input/brief.md`.
+The agent brief is an optional task description passed to the agent at run time. It is resolved by `start_agent.sh` from the `AGENT_BRIEF` config key relative to `SANDBOX_DIR`, and placed into `.workspace/input/` before the containers start.
 
-The reasoning layer entrypoint copies `brief.md` from `.agent-input/` into `sandbox/AGENTS.md` so the agent can read it alongside the project files.
+The reasoning layer mounts `.workspace/input/` read-only. The agent reads the brief directly from there alongside any other operator-placed task files. `agents.md` — the static agent context file — is placed into the reasoning layer image via the Dockerfile.
 
 ---
 
 ## Operator Input Channel
 
-The operator input channel allows task files, path lists, and additional briefs to be passed to the agent before a run. Files placed in `SANDBOX_DIR/.agent-input/input/` are copied into `sandbox/` at container startup alongside the project snapshot. The agent reads them as ordinary files; it cannot write back to this channel.
+The operator input channel allows task files, path lists, and additional briefs to be passed to the agent before a run. Files placed in `SANDBOX_DIR/.workspace/input/` are mounted read-only into the reasoning layer container. The agent reads them as ordinary files; it cannot write back to this channel.
 
 **Lifecycle:**
-- Written by operator before the run (placed in `SANDBOX_DIR/.agent-input/input/`)
-- Read by agent during the run (available in `sandbox/`)
+- Written by operator before the run (placed in `SANDBOX_DIR/.workspace/input/`)
+- Read by agent during the run (available at `.input/` inside the reasoning layer)
 - Operator clears or overwrites `input/` before the next run
 
-The input channel is part of the `.agent-input/` read-only mount on the reasoning layer. No additional mount is required.
+The input channel is a separate mount into the reasoning layer only. The capability layer container has no access to it.
 
 ---
 
-## `.agent-input/` Lifecycle
+## Harness Directory Lifecycle
 
-`.agent-input/` is overwritten on each run: `snapshot/` is rebuilt from `PROJECT_DIR`, `brief.md` is re-copied from `--brief`, and the operator manages `input/` manually. `.agent-input/` is not archived or cleaned up between runs.
+`.snapshot/` is overwritten on each run: rebuilt from `PROJECT_DIR` by `start_agent.sh` before the containers start. It is not archived or cleaned up between runs.
+
+`.workspace/` subdirectories have different lifecycles. `changes/` is overwritten by the diff pipeline on each run. `output/` accumulates agent-written files across the session and is cleared by the operator between runs if desired. `input/` is operator-managed — the harness places the brief there but does not clear or overwrite operator-placed files.
 
 ---
 
@@ -267,13 +191,14 @@ On the host, `scripts/apply_workspace.sh` applies the patch to the current branc
 
 ## Container Lifecycle
 
-The harness manages two containers per session. Start order and stop order are fixed.
+The harness manages two containers per session via Docker Compose. Start order is enforced by service dependencies; stop order is fixed.
 
 **Start sequence:**
-1. Build `.agent-input/snapshot/` on the host (snapshot pipeline stage 1)
-2. Start capability layer container — runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
-3. Start reasoning layer container with `--volumes-from <capability-layer>` — attaches to capability layer's `sandbox/`, mounts `.agent-input/` and `.workspace/` from host
-4. Reasoning layer entrypoint copies brief and operator input into `sandbox/`, then hands off to the agent
+1. Build `.snapshot/` on the host (snapshot pipeline stage 1)
+2. Write `docker-compose.yml`, `.env`, and any mode overrides into `SANDBOX_DIR` from templates
+3. `docker compose up` — capability layer starts first (service dependency), runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
+4. Reasoning layer container starts with `--volumes-from <capability-layer>` — attaches to capability layer's `sandbox/`, mounts `.workspace/input/` and `.workspace/output/` from host
+5. Reasoning layer entrypoint hands off to the agent
 
 **Stop sequence:**
 1. Reasoning layer container exits (agent completes or is interrupted).
@@ -287,10 +212,10 @@ The capability layer container must be running before the reasoning layer contai
 
 ## Entrypoint Sequence
 
-**Capability layer entrypoint (`sandbox-entrypoint.sh`):**
+**Capability layer entrypoint** (`scripts/sandbox-entrypoint.sh`):
 ```
   1. snapshot_validate (gate 2)         — confirm .snapshot/ is intact
-  2. snapshot_copy_to_sandbox           — copy snapshot into sandbox/ (clean at container start; no named volume)
+  2. snapshot_copy_to_sandbox           — copy .snapshot/ into sandbox/ (clean at container start; no named volume)
   3. snapshot_init_git                  — git init + baseline commit; records baseline SHA
   4. register EXIT trap → diff pipeline — fires on any exit; commits pending changes, writes staged.diff
   5. register TERM trap → exit 0        — docker stop sends SIGTERM to PID 1; clean exit ensures EXIT trap fires
@@ -299,11 +224,8 @@ The capability layer container must be running before the reasoning layer contai
 ```
 
 **Reasoning layer entrypoint:**
-```
-  1. copy brief.md into sandbox/        — if present in .agent-input/
-  2. copy input/ contents into sandbox/ — if .agent-input/input/ is non-empty
-  3. exec agent                         — hand off to OpenCode
-```
+
+The reasoning layer entrypoint hands off directly to `opencode`. `agents.md` is placed via the Dockerfile. The agent brief and operator input files are accessible via the `.workspace/input/` read-only mount — no copy step is required.
 
 Steps 1–3 of the capability layer entrypoint must succeed before the reasoning layer container starts. Any failure exits the capability layer container without starting the reasoning layer.
 
@@ -316,5 +238,6 @@ Steps 1–3 of the capability layer entrypoint must succeed before the reasoning
 | Two-layer conceptual model | [../concepts/two_layer_model.md](../concepts/two_layer_model.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
 | Operator-facing workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
+| External contract and naming conventions | [tool_interface.md](tool_interface.md) |
 | Security guarantees and trust boundaries | [security.md](security.md) |
 | Standard operating procedures | [../operations/standard_operating_procedures.md](../operations/standard_operating_procedures.md) |

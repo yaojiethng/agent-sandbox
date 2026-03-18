@@ -2,7 +2,7 @@
 
 Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
 
-The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `handovers/`).
+The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*_handover.md` at repo root).
 
 ---
 
@@ -66,15 +66,16 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
-| `execution_model.md` | 🔴 Hot | M1.5 | Active implementation document. Updated in M1.5 (directory restructuring, input channel). |
-| `security.md` | 🟡 Warm | M1.5 | Design constraint and trust boundary spec. Input channel mount verified; no new invariants required. |
+| `execution_model.md` | 🔴 Hot | M2.1 | Active implementation document. Updated in M2.1 (two-container model, mount shape, directory layout). |
+| `tool_interface.md` | 🟡 Warm | M2.1 | External contract: command shapes, naming, mount guarantees, Compose generation. |
+| `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
 ### Concepts (`docs/concepts/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `agent_workflow.md` | 🔴 Hot | M1.5 | Operator workflow and directory layout. Updated in M1.5. |
+| `agent_workflow.md` | 🟢 Cold | M2.1 | Design principles, invariants, UX flow names. Rescoped to pure conceptual; operational detail moved to quickstart and tool_interface. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M1.5 | Canonical two-layer architecture definition. Do not edit; reference only. |
@@ -84,6 +85,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
+| `quickstart.md` | 🟡 Warm | M2.1 | Onboarding and running guide. Updated for SANDBOX_DIR layout, two-image build, operator input channel. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |

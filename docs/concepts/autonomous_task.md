@@ -16,7 +16,7 @@ The interactive workflow governs how briefs are produced. The autonomous workflo
 
 ## TASK.md
 
-The artifact that crosses the boundary is `TASK.md` — a per-run brief placed in `SANDBOX_DIR/.agent-input/input/` before the container starts. It carries the agreed scope, constraints, and expected outputs into the container. The agent reads it alongside `agent_context_brief.md`.
+The artifact that crosses the boundary is `TASK.md` — a per-run brief placed in `SANDBOX_DIR/.workspace/input/` before the container starts. It carries the agreed scope, constraints, and expected outputs into the container. The agent reads it alongside `agent_context_brief.md`.
 
 `TASK.md` is the runtime expression of a task that has already completed the interactive workflow's design and spec stages. It does not replace those stages — it is produced by them.
 

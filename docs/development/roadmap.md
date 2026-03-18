@@ -105,8 +105,8 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 ### Onboarding
 - [x] `workflow/general/scripts/onboard.sh` — new; copies all template files into SANDBOX_DIR, creates `.workspace/` dirs, writes `.env` once with derived paths and operator stubs, writes `agents.md` stub, prompts for missing flags, validates WSL/Linux paths
 
-### Documentation
-- [ ] `docs/operations/tool_interface.md` — new; operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
+### Documentation Updates
+- [ ] `docs/operations/tool_interface.md` — operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
 - [ ] `docs/architecture/execution_model.md` — remove CLI Wrapper and Image Digest & Staleness sections (staleness removed); update Directory Layout and terminology to current paths; focus on mount shape, snapshot pipeline, entrypoint sequence, diff pipeline, container lifecycle
 - [ ] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
 
