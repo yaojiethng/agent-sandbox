@@ -58,7 +58,7 @@ A handover has three moments:
 
 **Active** — updated throughout the session as tasks complete, decisions are made, and scope changes are noted.
 
-**Closed** — finalised at session end (Steps 9a and 9b of the minor loop). Records what was completed, marks deferrals explicitly, and seeds the next session.
+**Closed** — finalised at session end (Steps 8 and 9 of the minor loop). Records what was completed, marks deferrals explicitly, and seeds the next session.
 
 ---
 
@@ -111,6 +111,7 @@ None.
 
 ## Next session
 <Sub-milestone ID and name for the next session.>
+<Whether Trigger B has been run or is pending — omit if mid-milestone.>
 <Blocking design questions the next agent must resolve before advancing.>
 <Known watch-out items (capped at three).>
 <Grep or file reads to run at session start, if known.>
@@ -137,6 +138,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ### At session open (Step 1)
 
+- **Trigger B recovery check:** if the prior handover's Next session names a different sub-milestone than the one currently active in `roadmap.md`, [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has not run. Run it now before compacting or creating this handover.
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
 - Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy the roadmap task list.
 - Read the prior handover if one exists. Transfer any acceptance criteria pushed to this session. Transfer any deferred items into the Scope or Deferred sections as appropriate. Do not re-litigate deferred decisions — they are recorded where they were made.
@@ -156,7 +158,8 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ### At session close (Step 8)
 
-- Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md) — Minor loop Step 8. This is done alongside the handover update, not after it.
+- Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). This is done alongside the handover update, not after it.
+- If all sub-milestone tasks are now complete and acceptance criteria are met, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover.
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
@@ -165,6 +168,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 ### At session seed (Step 9)
 
 - Identify the next session's scope from the roadmap.
+- If this was the final session of a sub-milestone, note in Next session whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
 - List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
 - Populate Next session with enough orientation that the next agent does not need to read this session's history.
 - If the completed sub-milestone was the last in the major milestone, write "Major loop required before next session" in Next session and leave the sub-milestone ID blank.
@@ -190,4 +194,4 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 | Document | Purpose |
 |---|---|
 | [`iteration_policy.md`](iteration_policy.md) | Session workflow — when handover is created, updated, and closed |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — task checkbox discipline |
+| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — task checkbox discipline and Trigger B |

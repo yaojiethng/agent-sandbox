@@ -23,7 +23,7 @@ agent-sandbox workflow
     ├── 5. Architecture docs           documentation_policy.md
     ├── 6. Acceptance criteria         handover_policy.md — At Step 6
     ├── 7. Implementation              —
-    ├── 8. Close session               roadmap_policy.md — Session close
+    ├── 8. Close session               roadmap_policy.md — Session close + Trigger B if final session
     └── 9. Seed next session           handover_policy.md — At session seed
 ```
 
@@ -114,15 +114,15 @@ A step does not advance until its exit condition is met and the operator has con
 
 | Step | Entry condition | Action | Exit condition |
 |---|---|---|---|
-| **1 — Open handover** | Session begins | Compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md) — Session open. Create and populate handover per [`handover_policy.md`](handover_policy.md) — At session open. Read roadmap for pending work. | Handover active. Session target and blockers known. |
-| **2 — Design** | Handover open. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md) — Rules. Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
+| **1 — Open handover** | Session begins | Check whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has run: if the prior handover names a new sub-milestone but the roadmap still shows the previous sub-milestone as active, Trigger B has not run — run it now before proceeding. Then compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). Create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). Read roadmap for pending work. | Handover active. Session target and blockers known. |
+| **2 — Design** | Handover open. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md#rules). Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
 | **3 — Conceptual docs** | Design confirmed | Update `docs/concepts/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No concepts document contradicts the agreed design. |
 | **4 — Spec** | Conceptual docs confirmed | Specify files, interfaces, naming, mount shape. Scope is fixed here — adjacent issues are flagged in the handover and deferred, not resolved. | Operator confirmed spec in full. No open interface or naming questions. |
 | **5 — Architecture docs** | Spec confirmed | Update `docs/architecture/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No architecture document contradicts the confirmed spec. |
-| **6 — Acceptance criteria** | Architecture docs confirmed (or design confirmed if session spans design through implementation) | Define criteria per [`handover_policy.md`](handover_policy.md) — Step 6. | Operator confirmed criteria. `Not yet defined.` replaced. Implementation will not begin without confirmed criteria. |
+| **6 — Acceptance criteria** | Architecture docs confirmed (or design confirmed if session spans design through implementation) | Define criteria per [`handover_policy.md`](handover_policy.md#at-step-6--define-acceptance-criteria). | Operator confirmed criteria. `Not yet defined.` replaced. Implementation will not begin without confirmed criteria. |
 | **7 — Implementation** | Acceptance criteria confirmed | Produce code against confirmed spec. Tests alongside implementation. Flag and defer any gap or adjacent issue — do not resolve silently. All outputs are proposals. | All targeted tasks complete. Tests pass. Operator confirmed against acceptance criteria. |
-| **8 — Close session** | Session step range complete | Mark completed tasks per [`roadmap_policy.md`](roadmap_policy.md) — Session close. Update handover per [`handover_policy.md`](handover_policy.md) — At session close. Update `project_index.md` per [Index Maintenance](#index-maintenance). | Roadmap updated. Handover complete. No incomplete tasks without explicit deferral. |
-| **9 — Seed next session** | Session closed | Identify next scope from roadmap. Populate handover Next session per [`handover_policy.md`](handover_policy.md) — At session seed. If sub-milestone was last in major milestone, flag that major loop is required. | Next session section actionable. |
+| **8 — Close session** | Session step range complete | Mark completed tasks per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). If all sub-milestone tasks are now complete and acceptance criteria met, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover. Update handover per [`handover_policy.md`](handover_policy.md#at-session-close-step-8). Update `project_index.md` per [Index Maintenance](#index-maintenance). | Roadmap updated. Trigger B run if applicable. Handover complete. No incomplete tasks without explicit deferral. |
+| **9 — Seed next session** | Session closed | Identify next scope from roadmap. Populate handover Next session per [`handover_policy.md`](handover_policy.md#at-session-seed-step-9). If sub-milestone was last in major milestone, flag that major loop is required. | Next session section actionable. |
 
 ---
 
