@@ -1,16 +1,12 @@
 # docker-compose.yml
-# Dogfood compose file for the agent-sandbox project itself.
-# Lives in SANDBOX_DIR (sibling to the project repo, not committed to it).
+# Generated at onboarding time for project: agent-sandbox
 #
-# Runtime variables are written to .env in SANDBOX_DIR by start_agent.sh
-# before each session. Do not commit .env.
+# Runtime variables are read from .env in SANDBOX_DIR (written once by
+# `agent-sandbox onboard`, not rewritten each session). Do not commit .env.
 #
-# Image naming convention (derived by start_agent.sh, written to .env):
-#   capability layer: agent-sandbox-{{PROJECT_NAME}}
-#   reasoning layer:  opencode-agent-{{PROJECT_NAME}}
-#
-# Image names are never hardcoded here — always sourced from .env so that
-# the single definition in start_agent.sh is the only place they exist.
+# Image naming convention (set in .env by onboard):
+#   capability layer: agent-sandbox-agent-sandbox
+#   reasoning layer:  opencode-agent-agent-sandbox
 #
 # Start/stop is managed by start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
@@ -18,7 +14,7 @@
 services:
   sandbox:
     image: ${SANDBOX_IMAGE_NAME}
-    container_name: ${SANDBOX_IMAGE_NAME}
+    container_name: agent-sandbox-sandbox
     volumes:
       - ${SNAPSHOT_DIR}:/home/agentuser/.snapshot:ro
       - ${CHANGES_DIR}:/home/agentuser/workspace/changes:rw
@@ -37,7 +33,7 @@ services:
 
   agent:
     image: ${AGENT_IMAGE_NAME}
-    container_name: ${AGENT_IMAGE_NAME}
+    container_name: agent-sandbox-agent
     depends_on:
       sandbox:
         condition: service_healthy

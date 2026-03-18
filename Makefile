@@ -1,82 +1,13 @@
 # Makefile — agent-sandbox
-# Usage: make <target>
+# This Makefile covers repo-level operations only: installing and uninstalling
+# the agent-sandbox CLI.
 #
-# Examples:
-#   make start
-#   make serve
-#   make dry-run
-#   make apply
-#   make apply BRANCH=my-branch
+# To run agent-sandbox against this project, use the sandbox Makefile:
+#   make -C sandbox <target>
+#   make -C sandbox help
 
-SHELL := /bin/bash
-
-PROJECT_NAME   := agent-sandbox
-PROJECT_DIR    := $(CURDIR)
-SANDBOX_DIR    := $(CURDIR)/sandbox
-AGENT_BRIEF    := $(CURDIR)/docs/development/agent_context_brief.md
-ENV_FILE       := .env
-INSTALL_DIR	   := ~/.local/bin
-
-
-# -------------------------
-# Container targets
-# -------------------------
-
-.PHONY: build
-build:
-	agent-sandbox build \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
-
-.PHONY: start
-start:
-	agent-sandbox start \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE)
-
-.PHONY: serve
-serve:
-	agent-sandbox start \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  --serve
-
-.PHONY: dry-run
-dry-run:
-	agent-sandbox dry-run \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE)
-
-.PHONY: rebuild
-rebuild:
-	agent-sandbox rebuild start \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  --serve
-
-# -------------------------
-# Workspace targets
-# -------------------------
-
-.PHONY: apply
-apply:
-	agent-sandbox apply \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  $(if $(BRANCH),--branch=$(BRANCH),)
+SHELL      := /bin/bash
+INSTALL_DIR := ~/.local/bin
 
 # -------------------------
 # Install
@@ -116,19 +47,7 @@ uninstall:
 
 .PHONY: help
 help:
-	@echo "Usage: make <target> [PREFIX=<path>]"
-	@echo ""
-	@echo "Container:"
-	@echo "  build        — build Docker image only"
-	@echo "  start        — start container (builds if image missing)"
-	@echo "  serve        — start container in serve mode (builds if image missing)"
-	@echo "  dry-run      — liveness check only (builds if image missing)"
-	@echo "  rebuild      — force rebuild then start in serve mode"
-	@echo "  Use: agent-sandbox rebuild <start|dry-run> ... for other modes"
-	@echo ""
-	@echo "Workspace:"
-	@echo "  apply              — apply staged.diff to current branch"
-	@echo "  apply BRANCH=<n>   — apply staged.diff to named branch (created if needed)"
+	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Install:"
 	@echo "  install                    — install agent-sandbox CLI"
@@ -139,3 +58,7 @@ help:
 	@echo "  1. INSTALL_DIR=<path> argument"
 	@echo "  2. INSTALL_DIR in .env"
 	@echo "  3. /usr/local/bin (default)"
+	@echo ""
+	@echo "To run agent-sandbox against this project:"
+	@echo "  make -C sandbox <target>"
+	@echo "  make -C sandbox help"

@@ -1,11 +1,7 @@
-# Dockerfile.sandbox (capability layer)
-# Generated into SANDBOX_DIR for the agent-sandbox project.
-# Build context must be the agent-sandbox repo root:
-#   docker build -f Dockerfile.sandbox <path-to-repo-root>
-# or via docker compose, which sets build context in the compose file.
-#
-# To customise the capability layer for this project, edit this file directly.
-# The default template lives at libs/_template/dockerfile-default.sandbox.
+# dockerfile-default.sandbox
+# Default capability layer Dockerfile template.
+# Copy into SANDBOX_DIR as Dockerfile.sandbox and customise as needed.
+# Docker Compose references the project-level Dockerfile.sandbox.
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive

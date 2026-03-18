@@ -1,28 +1,33 @@
 # Makefile — agent-sandbox
-# Usage: make <target>
+# Runs agent-sandbox against this project.
+# Requires agent-sandbox CLI installed on the host:
+#   make install  (from the agent-sandbox repo)
 #
-# Examples:
-#   make start
-#   make serve
-#   make dry-run
-#   make apply
-#   make apply BRANCH=my-branch
+# PROJECT_DIR and SANDBOX_DIR are read from .env in the same directory as
+# this Makefile. Both are written by: agent-sandbox onboard general
+#
+# If .env is missing, run:
+#   agent-sandbox onboard general --name=<n> --project=<path> --sandbox=<path>
+#
+# Paths must be WSL/Linux format. To convert a Windows path:
+#   wslpath 'C:\Users\you\Projects\my-project'
 
-SHELL := /bin/bash
+-include .env
+export
 
-PROJECT_NAME   := agent-sandbox
-PROJECT_DIR    := $(CURDIR)/..
-SANDBOX_DIR    := $(CURDIR)
-AGENT_BRIEF    := agents.md
-ENV_FILE       := .env
-INSTALL_DIR    := ~/.local/bin
+PROJECT_NAME := agent-sandbox
+PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard general --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
+SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard general --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
+AGENT_BRIEF  := agents.md
+ENV_FILE     := .env
 
+.PHONY: build build-sandbox build-agent build-all
+.PHONY: start serve dry-run apply
+.PHONY: rebuild rebuild-start rebuild-serve rebuild-dry-run
 
 # -------------------------
 # Build
 # -------------------------
-
-.PHONY: build build-sandbox build-agent build-all
 
 build: build-all
 
@@ -45,8 +50,6 @@ build-all:
 # -------------------------
 # Run
 # -------------------------
-
-.PHONY: start serve dry-run
 
 start:
 	-agent-sandbox start \
@@ -76,8 +79,6 @@ dry-run:
 # Apply
 # -------------------------
 
-.PHONY: apply
-
 apply:
 	agent-sandbox apply \
 	  --project=$(PROJECT_DIR) \
@@ -87,8 +88,6 @@ apply:
 # -------------------------
 # Rebuild (force rebuild all images, then start)
 # -------------------------
-
-.PHONY: rebuild rebuild-start rebuild-serve rebuild-dry-run
 
 rebuild: rebuild-start
 
@@ -115,74 +114,3 @@ rebuild-dry-run:
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
-
-# -------------------------
-# Workspace
-# -------------------------
-
-# -------------------------
-# Install
-# -------------------------
-
-.PHONY: install uninstall
-
-install:
-	@_INSTALL_DIR="$(INSTALL_DIR)"; \
-	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
-	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
-	fi; \
-	if [[ -z "$$_INSTALL_DIR" ]]; then \
-	  _INSTALL_DIR="/usr/local/bin"; \
-	fi; \
-	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
-	sed 's|@@AGENT_SANDBOX_REPO@@|$(CURDIR)|g' scripts/agent-sandbox.sh \
-	  > "$$_INSTALL_DIR/agent-sandbox"; \
-	chmod +x "$$_INSTALL_DIR/agent-sandbox"; \
-	echo "Installed agent-sandbox to $$_INSTALL_DIR/agent-sandbox"
-
-uninstall:
-	@_INSTALL_DIR="$(INSTALL_DIR)"; \
-	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
-	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
-	fi; \
-	if [[ -z "$$_INSTALL_DIR" ]]; then \
-	  _INSTALL_DIR="/usr/local/bin"; \
-	fi; \
-	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
-	rm -f "$$_INSTALL_DIR/agent-sandbox"; \
-	echo "Removed $$_INSTALL_DIR/agent-sandbox"
-
-# -------------------------
-# Help
-# -------------------------
-
-.PHONY: help
-
-help:
-	@echo "Usage: make <target>"
-	@echo ""
-	@echo "Build:"
-	@echo "  build            — build both images (alias for build-all)"
-	@echo "  build-sandbox    — build capability layer image only"
-	@echo "  build-agent      — build reasoning layer image only"
-	@echo "  build-all        — build both images"
-	@echo ""
-	@echo "Run:"
-	@echo "  start            — start session (builds if images missing)"
-	@echo "  serve            — start in serve mode (builds if images missing)"
-	@echo "  dry-run          — liveness check (builds if images missing)"
-	@echo ""
-	@echo "Rebuild (force rebuild all images, then run):"
-	@echo "  rebuild          — force rebuild then start (alias for rebuild-start)"
-	@echo "  rebuild-start    — force rebuild then start"
-	@echo "  rebuild-serve    — force rebuild then serve"
-	@echo "  rebuild-dry-run  — force rebuild then dry-run"
-	@echo ""
-	@echo "Workspace:"
-	@echo "  apply              — apply staged.diff to current branch"
-	@echo "  apply BRANCH=<n>   — apply staged.diff to named branch"
-	@echo ""
-	@echo "Install:"
-	@echo "  install                    — install agent-sandbox CLI"
-	@echo "  install INSTALL_DIR=<path> — install to specified directory"
-	@echo "  uninstall                  — remove agent-sandbox CLI"
