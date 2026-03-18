@@ -90,17 +90,25 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 - [x] `docker-compose.yml` in agent-sandbox's own `SANDBOX_DIR` — dogfood version; created first, template derived from it
 - [x] `libs/_template/docker-compose.serve.yml.template` — serve mode overlay: `command: ["serve", ...]` + ports block; derived from dogfood `docker-compose.serve.yml`
 - [x] `libs/_template/docker-compose.dry-run.yml.template` — dry-run mode overlay: `dry_run.sh` bind mount; derived from dogfood `docker-compose.dry-run.yml`
-- [ ] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood; `{{PROJECT_NAME}}` and `{{PROVIDER}}` substitution
-- [x] `providers/opencode/start_agent.sh` — two-container lifecycle; writes `.env` with image names and paths; snapshot to `.snapshot/`; serve via overlay; standard mode via `compose run` for TUI pass-through; sandbox health poll before agent attach
+- [x] `libs/_template/docker-compose.yml.template` — compose template for onboarded projects; derived from dogfood; `{{PROJECT_NAME}}` and `{{PROVIDER}}` substitution
+- [x] `providers/opencode/start_agent.sh` — two-container lifecycle; reads `.env` (ownership transferred to onboard); snapshot to `.snapshot/`; serve via overlay; standard mode via `compose run` for TUI pass-through; sandbox health poll before agent attach
 - [x] `providers/opencode/run.sh` — new: compose invocation entry point; `--rebuild` flag builds both images; TUI fix; sandbox health poll
 - [x] `providers/opencode/build_sandbox.sh` — new: capability layer image build; always `--no-cache`
-- [ ] `Makefile` (project-side template) — update targets to support `make build sandbox|agent|all`; `make start`, `make serve`, `make dry-run` invoke compose via `agent-sandbox` CLI; `make apply` unchanged
-- [ ] `scripts/agent-sandbox.sh` — update dispatch table for two-image model: `build` subcommand gains `sandbox|agent|all` variants; `start`/`dry-run` always call `docker build` before compose up (cache hit if nothing changed); staleness pre-flight and digest check removed (see `libs/image.sh` deletion in Build & context)
+- [x] `Makefile` (project-side template) — update targets to support `make build sandbox|agent|all`; `make start`, `make serve`, `make dry-run` invoke compose via `agent-sandbox` CLI; `make apply` unchanged
+- [x] `scripts/agent-sandbox.sh` — update dispatch table for two-image model: `build` subcommand gains `sandbox|agent|all` variants; `start`/`dry-run` always call `docker build` before compose up (cache hit if nothing changed); staleness pre-flight and digest check removed (see `libs/image.sh` deletion in Build & context)
 
 ### Path alignment
 - [x] `libs/snapshot.sh` — update all `.agent-input/` path references to `.snapshot/`
 - [x] `libs/diff.sh` — verify no path changes needed (operates on `sandbox/` and `workspace/changes/`); grep and confirm
 - [x] `.agent-input/` → `workspace/input/` rename — reasoning layer input channel moves under `workspace/`; `workspace/output/` added as reasoning layer output channel; `container-entrypoint.sh` deleted; `dirs.sh` updated (`AGENT_INPUT_DIR_NAME`, `WORKSPACE_DIR_NAME` removed; `INPUT_DIR_NAME`, `OUTPUT_DIR_NAME` added); `start_agent.sh` snapshot pipeline writes to `.snapshot/`; `Dockerfile` mkdir updated; `execution_model.md` updated
+
+### Onboarding
+- [x] `workflow/general/scripts/onboard.sh` — new; copies all template files into SANDBOX_DIR, creates `.workspace/` dirs, writes `.env` once with derived paths and operator stubs, writes `agents.md` stub, prompts for missing flags, validates WSL/Linux paths
+
+### Documentation
+- [ ] `docs/operations/tool_interface.md` — new; operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
+- [ ] `docs/architecture/execution_model.md` — remove CLI Wrapper and Image Digest & Staleness sections (staleness removed); update Directory Layout and terminology to current paths; focus on mount shape, snapshot pipeline, entrypoint sequence, diff pipeline, container lifecycle
+- [ ] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
 
 ### Build & context
 - [ ] `libs/build.sh` — `build_context` function: populates a `context/` directory for a given image from known source locations; replaces `image-files.txt`; missing file is a hard error (natural backpressure)
