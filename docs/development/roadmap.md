@@ -68,7 +68,7 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 | opencode-ai version left unpinned in base image | Tool is evolving rapidly; operator always wants latest; base image rebuilt explicitly when version change is desired | This roadmap |
 | Reasoning layer Dockerfile must not bake in project-specific content | Enables M2.2 base image extraction — slow layers (apt-get, npm install) must be separable from project-specific layers (`COPY context/`, `ENTRYPOINT`) | This roadmap |
 
-**Documentation — completed.** Architecture docs (`tool_interface.md`, `execution_model.md`, `security.md`), conceptual docs (`agent_workflow.md`), operator docs (`quickstart.md`), and project index updated to reflect the two-container model, mount shape, trust boundaries, and naming conventions.
+**Documentation — completed.** Architecture docs (`tool_interface.md`, `execution_model.md`, `security.md`), conceptual docs (`agent_workflow.md`), operator docs (`quickstart.md`), and project index updated to reflect the two-container model, mount shape, trust boundaries, naming conventions, and `build_context` model.
 
 **Tasks:**
 
@@ -105,24 +105,33 @@ Architecture docs updated: [`tool_interface.md`](../architecture/tool_interface.
 ### Onboarding
 - [x] `workflow/general/scripts/onboard.sh` — new; copies all template files into SANDBOX_DIR, creates `.workspace/` dirs, writes `.env` once with derived paths and operator stubs, writes `agents.md` stub, prompts for missing flags, validates WSL/Linux paths
 
-### Documentation Updates
-- [ ] `docs/operations/tool_interface.md` — operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
-- [ ] `docs/architecture/execution_model.md` — remove CLI Wrapper and Image Digest & Staleness sections (staleness removed); update Directory Layout and terminology to current paths; focus on mount shape, snapshot pipeline, entrypoint sequence, diff pipeline, container lifecycle
-- [ ] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
+### Documentation
+- [x] `docs/operations/tool_interface.md` — new; operator-facing CLI and Makefile reference, build semantics, SANDBOX_DIR structure, `.env` ownership, container naming, onboarding flow; scoped to include `context/` model as target state
+- [x] `docs/architecture/execution_model.md` — remove CLI Wrapper and Image Digest & Staleness sections (staleness removed); update Directory Layout and terminology to current paths; focus on mount shape, snapshot pipeline, entrypoint sequence, diff pipeline, container lifecycle
+- [x] `docs/operations/quickstart.md` — full rewrite against two-container model and `onboard` CLI; currently describes M1.x single-container flow
 
 ### Build & context
-- [ ] `libs/build_context.sh` — `build_context` function: populates a `context/` directory for a given image from known source locations; replaces `image-files.txt`; missing file is a hard error (natural backpressure)
-- [ ] `providers/opencode/context/` — reasoning layer build context directory; populated by `build_context` before `docker build`
-- [ ] `SANDBOX_DIR/context/` — capability layer build context directory; populated by `build_context` before `docker build`; capability layer Dockerfile updated to `COPY context/ /libs/` equivalent
-- [ ] `providers/opencode/Dockerfile` — reorder layers: apt-get → npm install → `COPY context/` → ENTRYPOINT; ensures slow layers are cached above fast-changing layer
-- [ ] `libs/image.sh` and `tests/test_image.sh` — delete; digest mechanism replaced by Docker cache; `scripts/agent-sandbox.sh` staleness pre-flight and digest check must be removed at the same time (both reference `libs/image.sh` — deletion is not complete until `agent-sandbox.sh` no longer sources it)
+- [x] `libs/build_context.sh` — `build_context` function: creates `mktemp -d` build context, copies required files flat, prints path to stdout; caller cleans up; ERR trap removes partial context on failure; hard error on missing file; replaces `image-files.txt`
+- [x] `providers/opencode/build_sandbox.sh` — sources `libs/build_context.sh`; calls `build_context sandbox`; computes digest from temp dir contents; builds with `--label agent-sandbox.digest`; template version staleness check for `Dockerfile.sandbox`, `docker-compose.yml`, `Makefile`; warns with `agent-sandbox onboard --refresh` command
+- [x] `providers/opencode/build_agent.sh` — sources `libs/build_context.sh`; calls `build_context agent`; same temp dir and digest pattern; replaces `libs/image.sh` sourcing and `image-files.txt`
+- [x] `providers/opencode/Dockerfile` — `COPY libs/dirs.sh` updated to `COPY dirs.sh` (flat temp dir layout)
+- [x] `libs/_template/dockerfile-default.sandbox` — individual `COPY libs/` and `COPY scripts/` paths updated to flat filenames matching temp dir layout; template version tag added
+- [x] `libs/image.sh` and `tests/test_image.sh` — deleted; digest mechanism replaced by `build_context` + temp dir hash
+- [x] `providers/opencode/image-files.txt` — deleted; superseded by `build_context`
 
-### Dry-run
+### Template versioning
+- [x] `libs/_template/dockerfile-default.sandbox`, `libs/_template/docker-compose.yml.template`, `libs/_template/Makefile.template` — `# agent-sandbox template version: 1` tag added to each; version travels with file when copied at onboard time
+- [x] `scripts/onboard.sh` — reads version from each template at copy time; records `DOCKERFILE_SANDBOX_VERSION`, `COMPOSE_VERSION`, `MAKEFILE_VERSION` in `.env`; `--refresh` flag: updates versioned template files and version lines in `.env` without touching `agents.md`, operator `.env` vars, or `.workspace/`
+- [x] `Makefile` (repo-level) — `make onboard` and `make refresh` targets added; target the dogfood `sandbox/` directory
+
+### Tests
+- [x] `tests/test_build_context.sh` — property-based tests for `build_context`; covers output contract, file contents per image type, content fidelity, isolation, digest determinism, caller cleanup responsibility, and error cases
+- [x] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
 - [x] `scripts/dry_run.sh` — updated for two-container model; sources `libs/dirs.sh` for dir names; checks `workspace/input/` and `workspace/output/` mounts; writes liveness to `workspace/output/liveness.txt`; bind-mounted via dry-run overlay
 
 ### Validation
 - [x] `tests/test_capability_layer.sh` — standalone capability layer functional test; startup via HEALTHCHECK poll (not sleep); mutation via `--volumes-from`; shutdown + diff pipeline; gate 2 failure case; random run ID; image cleanup on exit — **all checks passing, confirmed by operator**
-- [ ] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
+- [x] End-to-end test: agent runs, modifies files in `sandbox/`, `staged.diff` lands in `.workspace/changes/`, diff applies cleanly to host repo
 
 **Acceptance criteria:**
 - `make start` brings up two containers via `docker compose up`; capability layer starts first (service dependency)
