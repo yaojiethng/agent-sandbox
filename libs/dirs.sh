@@ -11,12 +11,7 @@
 #
 # Usage:
 #   source /libs/dirs.sh
-#   # Then use $AGENT_INPUT_DIR_NAME, $SANDBOX_DIR_NAME, etc.
-
-# Input channel: brief, operator-placed task files.
-# Bind-mounted read-only into the reasoning layer container from SANDBOX_DIR.
-# Future: replaced by workspace/input/ once .agent-input/ rename is complete.
-AGENT_INPUT_DIR_NAME="${AGENT_INPUT_DIR_NAME:-.agent-input}"
+#   # Then use $SNAPSHOT_DIR_NAME, $SANDBOX_DIR_NAME, etc.
 
 # Snapshot input: bind-mounted read-only into the capability layer container.
 SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
@@ -33,6 +28,10 @@ SANDBOX_DIR_NAME="${SANDBOX_DIR_NAME:-sandbox}"
 # Writing outside this directory from the capability layer is a bug.
 CHANGES_DIR_NAME="${CHANGES_DIR_NAME:-workspace/changes}"
 
-# Workspace directory: bind-mounted read-write into the reasoning layer.
-# Temporary — will narrow to workspace/input/ once .agent-input/ rename is complete.
-WORKSPACE_DIR_NAME="${WORKSPACE_DIR_NAME:-.workspace}"
+# Reasoning layer input channel: bind-mounted read-only into the reasoning layer.
+# Contains brief.md and operator-placed task files (flat layout — no subdirectory).
+INPUT_DIR_NAME="${INPUT_DIR_NAME:-workspace/input}"
+
+# Reasoning layer output channel: bind-mounted read-write into the reasoning layer.
+# Agent logs, chat history, liveness output, and other provider-written artefacts.
+OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-workspace/output}"

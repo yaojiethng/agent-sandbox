@@ -53,7 +53,7 @@ image_compute_digest() {
 
     # Collect image-specific files — paths resolved relative to image-files.txt location
     if [[ ! -f "$image_files_txt" ]]; then
-        echo "image_compute_digest: missing $image_files_txt" >&2
+        echo "image_compute_digest: image-files.txt not found at expected path: $image_files_txt" >&2
         return 1
     fi
 
@@ -63,7 +63,7 @@ image_compute_digest() {
         [[ -z "$line" || "$line" == \#* ]] && continue
         local abs="$repo/$line"
         if [[ ! -f "$abs" ]]; then
-            echo "image_compute_digest: listed file does not exist: $abs" >&2
+            echo "image_compute_digest: file listed in $(basename $image_files_txt) does not exist: $abs" >&2
             return 1
         fi
         image_files+=("$abs")
