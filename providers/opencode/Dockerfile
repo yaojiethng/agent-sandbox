@@ -1,4 +1,6 @@
-# Dockerfile
+# Dockerfile (reasoning layer)
+# Runs the agent (OpenCode). Snapshot unpacking and diff pipeline are
+# handled by the capability layer container (Dockerfile.sandbox).
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,12 +15,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------
-# Entrypoint and libs (root, before USER switch)
+# Shared libs (root, before USER switch)
 # -------------------------
-COPY providers/opencode/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
-COPY lib/snapshot.sh /lib/snapshot.sh
-COPY lib/diff.sh /lib/diff.sh
-RUN chmod +x /usr/local/bin/container-entrypoint.sh
+# dirs.sh is sourced by dry_run.sh inside the container.
+# No entrypoint script — opencode is exec'd directly via ENTRYPOINT.
+# Serve args and dry-run invocation are handled by compose overlays.
+# Build context is a temp directory populated by build_context in libs/build.sh;
+# files are copied flat so paths here match the temp dir layout.
+COPY dirs.sh /libs/dirs.sh
 
 # -------------------------
 # Non-root user
@@ -41,13 +45,31 @@ RUN npm install -g opencode-ai
 # -------------------------
 # Working directories
 # -------------------------
-# sandbox/ is container-local — agent works here.
-# .bootstrap/ and .workspace/ are mount points — created as agentuser
-# so Docker bind mounts are not blocked by ownership at runtime.
-RUN mkdir -p /home/agentuser/sandbox \
-             /home/agentuser/.bootstrap \
-             /home/agentuser/.workspace
+# sandbox/ is NOT pre-created here — it is provided exclusively by the
+# capability layer container via --volumes-from. Pre-creating it would
+# shadow the capability layer's directory. If the capability layer is not
+# running, --volumes-from fails and this container cannot start.
+#
+# workspace/input/ and workspace/output/ are bind-mounted from SANDBOX_DIR
+# on the host; created here as agentuser so mounts are not blocked by
+# ownership.
+RUN mkdir -p /home/agentuser/workspace/input \
+             /home/agentuser/workspace/output
 
 WORKDIR /home/agentuser/sandbox
-ENTRYPOINT ["/usr/local/bin/container-entrypoint.sh"]
-CMD ["opencode"]
+
+# -------------------------
+# Health check
+# -------------------------
+# Checks that sandbox/.git exists — confirming the capability layer has
+# completed snapshot init before the agent starts. This is a defence-in-depth
+# check; the primary gate is the compose depends_on: service_healthy condition
+# on the capability layer container.
+HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
+  CMD test -d /home/agentuser/sandbox/.git
+
+# opencode is exec'd directly. Subcommand and args are passed via compose:
+#   standard: no override — runs as `opencode` with no args
+#   serve:    docker-compose.serve.yml sets command: ["serve", ...]
+#   dry-run:  docker compose exec agent bash /dry_run.sh  (bypasses entrypoint)
+ENTRYPOINT ["opencode"]

@@ -1,0 +1,53 @@
+# docker-compose.yml
+# agent-sandbox template version: 1
+# Generated at onboarding time for project: {{PROJECT_NAME}}
+#
+# Runtime variables are read from .env in SANDBOX_DIR (written once by
+# `agent-sandbox onboard`, not rewritten each session). Do not commit .env.
+#
+# Image naming convention (set in .env by onboard):
+#   capability layer: agent-sandbox-{{PROJECT_NAME}}
+#   reasoning layer:  opencode-agent-{{PROJECT_NAME}}
+#
+# Start/stop is managed by start_agent.sh via docker compose up/down.
+# Do not invoke this file directly in normal operation.
+
+services:
+  sandbox:
+    image: ${SANDBOX_IMAGE_NAME}
+    container_name: {{PROJECT_NAME}}-sandbox
+    volumes:
+      - ${SNAPSHOT_DIR}:/home/agentuser/.snapshot:ro
+      - ${CHANGES_DIR}:/home/agentuser/workspace/changes:rw
+    environment:
+      - SNAPSHOT_DIR_NAME=.snapshot
+      - SANDBOX_DIR_NAME=sandbox
+      - CHANGES_DIR_NAME=workspace/changes
+      - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
+    healthcheck:
+      test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    restart: "no"
+
+  agent:
+    image: ${AGENT_IMAGE_NAME}
+    container_name: {{PROJECT_NAME}}-agent
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    volumes_from:
+      - sandbox
+    volumes:
+      - ${INPUT_DIR}:/home/agentuser/workspace/input:ro
+      - ${OUTPUT_DIR}:/home/agentuser/workspace/output:rw
+    environment:
+      - INPUT_DIR_NAME=workspace/input
+      - OUTPUT_DIR_NAME=workspace/output
+      - SANDBOX_DIR_NAME=sandbox
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+    stdin_open: true
+    tty: true
+    restart: "no"

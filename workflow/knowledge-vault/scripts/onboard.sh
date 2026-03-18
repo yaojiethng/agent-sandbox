@@ -4,7 +4,7 @@
 # One-time onboarding for an Obsidian vault into agent-sandbox.
 #
 # Places at vault root:
-#   Makefile       — pre-filled from lib/_templates/Makefile.template
+#   Makefile       — pre-filled from libs/_templates/Makefile.template
 #   agents.md      — agent brief starter (operator fills in before make start)
 #   .vault         — relative symlink to this workflow directory
 #
@@ -18,7 +18,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKFLOW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${WORKFLOW_DIR}/../.." && pwd)"
-TEMPLATE_DIR="${REPO_ROOT}/lib/_templates"
+TEMPLATE_DIR="${REPO_ROOT}/libs/_templates"
 
 # -------------------------
 # Args

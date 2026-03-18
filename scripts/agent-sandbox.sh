@@ -2,12 +2,13 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox start         --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]
-#   agent-sandbox dry-run       --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox build         --name=<n> --project=<path> [--no-cache]
-#   agent-sandbox apply         --project=<path> --sandbox=<path> [--branch=<n>]
-#   agent-sandbox onboard       <workflow> <flags>  — one-time project onboarding
-#   agent-sandbox rebuild       <subcommand> <flags>  — force rebuild then dispatch
+#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
+#   agent-sandbox build    [sandbox|agent|all] --name=<n> --project=<path> --sandbox=<path>
+#   agent-sandbox start    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>] [--serve]
+#   agent-sandbox serve    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox dry-run  --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox rebuild  [start|dry-run|serve] --name=<n> --project=<path> --sandbox=<path> [flags]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
 
 set -euo pipefail
 
@@ -19,42 +20,9 @@ PROVIDER="$AGENT_SANDBOX_REPO/providers/opencode"
 SUBCOMMAND="${1:-}"
 shift || true
 
-STALE_MSG="agent-sandbox: image may be stale — source files have changed since last build. Run: agent-sandbox rebuild <subcommand> to rebuild."
-
 if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <start|dry-run|build|apply|onboard|rebuild> <flags>"
+  echo "Usage: agent-sandbox <onboard|build|start|dry-run|rebuild|apply> <flags>"
   exit 1
-fi
-
-# -------------------------
-# Rebuild — force build then re-exec with remaining args
-# -------------------------
-# Must be handled before flag parsing so it works with any subcommand.
-if [[ "$SUBCOMMAND" == "rebuild" ]]; then
-  if [[ -z "${1:-}" ]]; then
-    echo "Usage: agent-sandbox rebuild <start|dry-run> --name=<n> --project=<path> ..."
-    exit 1
-  fi
-  # Extract --name and --project from remaining args for the build step.
-  _NAME=""
-  _PROJECT=""
-  for _ARG in "$@"; do
-    case "$_ARG" in
-      --name=*)    _NAME="${_ARG#--name=}" ;;
-      --project=*) _PROJECT="${_ARG#--project=}" ;;
-    esac
-  done
-  if [[ -z "$_NAME" || -z "$_PROJECT" ]]; then
-    echo "Error: rebuild requires --name and --project"
-    exit 1
-  fi
-  _STALE_MSG="$STALE_MSG"
-  echo "Rebuilding image: opencode-agent-$_NAME"
-  if ! "$PROVIDER/build_agent.sh" --name="$_NAME" --project="$_PROJECT"; then
-    echo "$_STALE_MSG"
-    exit 1
-  fi
-  exec "$0" "$@"
 fi
 
 # -------------------------
@@ -66,40 +34,66 @@ SANDBOX_DIR=""
 BRANCH=""
 PASSTHROUGH=()
 
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --branch=*)  BRANCH="${ARG#--branch=}" ;;
-    *)           PASSTHROUGH+=("$ARG") ;;
-  esac
-done
+parse_flags() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --branch=*)  BRANCH="${ARG#--branch=}" ;;
+      *)           PASSTHROUGH+=("$ARG") ;;
+    esac
+  done
+}
 
 # -------------------------
-# Preflight — build-if-missing, then staleness check
+# Build helpers
+# -------------------------
+build_sandbox_image() {
+  if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: build sandbox requires --name and --sandbox"
+    exit 1
+  fi
+  "$SCRIPTS/build_sandbox.sh" \
+    --name="$PROJECT_NAME" \
+    --sandbox="$SANDBOX_DIR"
+}
+
+build_agent_image() {
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+    echo "Error: build agent requires --name and --project"
+    exit 1
+  fi
+  "$PROVIDER/build_agent.sh" \
+    --name="$PROJECT_NAME" \
+    --project="$PROJECT_DIR"
+}
+
+build_all_images() {
+  build_sandbox_image
+  build_agent_image
+}
+
+# -------------------------
+# Preflight — build both images if either is absent
 # -------------------------
 preflight() {
-  local IMAGE_NAME="opencode-agent-$PROJECT_NAME"
+  local SANDBOX_IMAGE="agent-sandbox-${PROJECT_NAME,,}"
+  local AGENT_IMAGE="opencode-agent-${PROJECT_NAME,,}"
+  local MISSING=false
 
-  # Build if image does not exist
-  if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
-    echo "Image not found, building: $IMAGE_NAME"
-    "$PROVIDER/build_agent.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR"
-    return
+  if ! docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1; then
+    echo "Image not found: $SANDBOX_IMAGE"
+    MISSING=true
+  fi
+  if ! docker image inspect "$AGENT_IMAGE" >/dev/null 2>&1; then
+    echo "Image not found: $AGENT_IMAGE"
+    MISSING=true
   fi
 
-  # Staleness check — compare current digest against label on existing image
-  source "$AGENT_SANDBOX_REPO/lib/image.sh"
-  local CURRENT_DIGEST IMAGE_DIGEST
-  CURRENT_DIGEST=$(image_compute_digest "$AGENT_SANDBOX_REPO" "opencode")
-  IMAGE_DIGEST=$(docker inspect \
-    --format '{{ index .Config.Labels "agent-sandbox.digest" }}' \
-    "$IMAGE_NAME" 2>/dev/null || true)
-
-  if [[ "$CURRENT_DIGEST" != "$IMAGE_DIGEST" ]]; then
-    # Emit warning last so it is not buried — run proceeds regardless
-    echo "$STALE_MSG"
+  if [[ "$MISSING" == true ]]; then
+    echo "Building all images..."
+    build_all_images
   fi
 }
 
@@ -107,44 +101,127 @@ preflight() {
 # Dispatch
 # -------------------------
 case "$SUBCOMMAND" in
+
+  onboard)
+    exec "$SCRIPTS/onboard.sh" "$@"
+    ;;
+
+  build)
+    # Optional variant as next positional arg: sandbox | agent | all
+    # No variant (or explicit 'all') builds both.
+    BUILD_VARIANT="${1:-all}"
+    case "$BUILD_VARIANT" in
+      sandbox|agent|all) shift || true ;;
+      --*) BUILD_VARIANT="all" ;;  # no variant given, flags follow immediately
+      *)
+        echo "Unknown build variant: $BUILD_VARIANT"
+        echo "Usage: agent-sandbox build [sandbox|agent|all] --name=<n> --project=<path> --sandbox=<path>"
+        exit 1
+        ;;
+    esac
+    parse_flags "$@"
+    case "$BUILD_VARIANT" in
+      sandbox) build_sandbox_image ;;
+      agent)   build_agent_image ;;
+      all)     build_all_images ;;
+    esac
+    ;;
+
   start)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
-      echo "Error: --name and --project are required"
+    parse_flags "$@"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
     preflight
     "$PROVIDER/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
-      ${SANDBOX_DIR:+--sandbox="$SANDBOX_DIR"} \
+      --sandbox="$SANDBOX_DIR" \
+      "${PASSTHROUGH[@]}"
+    ;;
+
+  serve)
+    parse_flags "$@"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name, --project, and --sandbox are required"
+      exit 1
+    fi
+    preflight
+    "$PROVIDER/start_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR" \
+      --serve \
       "${PASSTHROUGH[@]}"
     ;;
 
   dry-run)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
-      echo "Error: --name and --project are required"
+    parse_flags "$@"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
     preflight
     "$PROVIDER/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
-      ${SANDBOX_DIR:+--sandbox="$SANDBOX_DIR"} \
+      --sandbox="$SANDBOX_DIR" \
       "${PASSTHROUGH[@]}"
     ;;
 
-  build)
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
-      echo "Error: --name and --project are required"
+  rebuild)
+    # Variant is required: start | dry-run | serve
+    REBUILD_MODE="${1:-}"
+    case "$REBUILD_MODE" in
+      start|dry-run|serve) shift || true ;;
+      "")
+        echo "Error: rebuild requires a mode: start, dry-run, or serve"
+        echo "Usage: agent-sandbox rebuild <start|dry-run|serve> --name=<n> --project=<path> --sandbox=<path> [flags]"
+        exit 1
+        ;;
+      *)
+        echo "Unknown rebuild mode: $REBUILD_MODE"
+        echo "Usage: agent-sandbox rebuild <start|dry-run|serve> --name=<n> --project=<path> --sandbox=<path> [flags]"
+        exit 1
+        ;;
+    esac
+    parse_flags "$@"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: rebuild requires --name, --project, and --sandbox"
       exit 1
     fi
-    "$PROVIDER/build_agent.sh" \
-      --name="$PROJECT_NAME" \
-      --project="$PROJECT_DIR" \
-      "${PASSTHROUGH[@]}"
+    echo "Rebuilding all images..."
+    build_all_images
+    # Re-dispatch to the target mode
+    case "$REBUILD_MODE" in
+      start)
+        exec "$0" start \
+          --name="$PROJECT_NAME" \
+          --project="$PROJECT_DIR" \
+          --sandbox="$SANDBOX_DIR" \
+          "${PASSTHROUGH[@]}"
+        ;;
+      serve)
+        exec "$0" start \
+          --name="$PROJECT_NAME" \
+          --project="$PROJECT_DIR" \
+          --sandbox="$SANDBOX_DIR" \
+          --serve \
+          "${PASSTHROUGH[@]}"
+        ;;
+      dry-run)
+        exec "$0" dry-run \
+          --name="$PROJECT_NAME" \
+          --project="$PROJECT_DIR" \
+          --sandbox="$SANDBOX_DIR" \
+          "${PASSTHROUGH[@]}"
+        ;;
+    esac
     ;;
 
   apply)
+    parse_flags "$@"
     if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
       echo "Error: --project and --sandbox are required"
       exit 1
@@ -155,13 +232,9 @@ case "$SUBCOMMAND" in
       ${BRANCH:+--branch="$BRANCH"}
     ;;
 
-  onboard)
-    "$SCRIPTS/onboard.sh" "$@"
-    ;;
-
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: start, dry-run, build, apply, onboard, rebuild"
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, rebuild, apply"
     exit 1
     ;;
 esac

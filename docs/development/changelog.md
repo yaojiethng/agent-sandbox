@@ -26,7 +26,7 @@ OpenCode runs in server mode inside the container, exposed on a configurable por
 
 *The agent works on a snapshot of the project and cannot access or modify the host repository directly; all changes are captured as a reviewable diff.*
 
-Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts. Gitignored files are excluded by construction; submodules are rejected with a clear error. Agent changes are captured by a modular diff pipeline (`lib/diff.sh`), producing `staged.diff` on exit and `autosave.diff` on interval. Apply scripts consume `staged.diff` and write back to the host via `git apply --3way`.
+Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, constructed before the container starts. Gitignored files are excluded by construction; submodules are rejected with a clear error. Agent changes are captured by a modular diff pipeline (`libs/diff.sh`), producing `staged.diff` on exit and `autosave.diff` on interval. Apply scripts consume `staged.diff` and write back to the host via `git apply --3way`.
 
 ---
 
@@ -42,7 +42,7 @@ The per-project conf file was removed in favour of named flags defined in the pr
 
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
 
-A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `lib/image.sh` and covers all `lib/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
+A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `libs/image.sh` and covers all `libs/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
 
 ---
 

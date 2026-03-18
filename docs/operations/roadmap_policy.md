@@ -4,34 +4,33 @@ Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future
 
 ---
 
-## Update Sequence
+## When the Roadmap Is Touched
 
-Every update follows this order:
+The roadmap is not updated continuously during a session. It is touched at two defined moments in the minor loop and once at major loop close. Do not update it outside these moments.
 
-1. **Clean up the previous update** — summarise fully-checked subsections into a conceptual outcome sentence in the milestone description and remove them; extract fully-checked milestones to the changelog; remove empty headers.
-2. **Mark new completions** — check off tasks completed in this update. Leave them in place for the next update to clean up.
-
-Never clean up completions you just marked. Never mark completions without cleaning up first.
-
----
-
-## Procedure
-
-Two trigger modes. Identify which applies before acting.
-
-**Trigger A — Completion pass** (a milestone just finished):
-1. Read `roadmap.md` and `changelog.md`
-2. Write changelog entry for the completed milestone (see Changelog Format)
-3. Output entry as a `changelog` fenced block for operator to append
-4. Remove the milestone section from `roadmap.md` Upcoming Milestones
-5. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
-6. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
-
-**Trigger B — Update pass** (tasks completed within an in-progress milestone):
+### Session open (Step 1)
 1. Read `roadmap.md`
-2. Clean up previous update: collapse any fully-checked subsections into a conceptual outcome sentence; remove their headers and checklists
-3. Mark newly completed tasks with `[x]`
-4. If all tasks in the milestone are now checked, treat as Trigger A on the next pass — do not combine cleanup and extraction in the same update
+2. Compact any fully-completed task groups from the previous session — replace the group header and checklist with a conceptual outcome sentence describing what the system can now do
+3. Read the remaining task list as the session's pending work; do not copy it into the handover
+
+### Session close (Step 8)
+1. Mark all tasks completed this session with `[x]`
+2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
+
+### Sub-milestone transition (Trigger B)
+1. Compact all remaining checked task groups in the completed sub-milestone
+2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
+3. Promote the next sub-milestone's section into `roadmap.md` with scope paragraph and task list
+4. Non-current sub-milestones retain scope paragraphs only — no accumulated deferrals from prior sub-milestones
+
+### Major loop close (Trigger A)
+1. Read `roadmap.md` and `changelog.md`
+2. Write and output the changelog entry for the completed milestone (see Changelog Format)
+3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
+4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
+5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
+
+**The separation between Step 8 and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 8 marks, the next Step 1 compacts.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -41,7 +40,15 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the changelog instead of the milestone anchor.
 
-**Completed subsections** — add a conceptual outcome sentence to the milestone description, then remove the subsection header and checklist. The sentence must describe what the system can now do, not which files changed. File changes are visible in git history; the roadmap preserves conceptual outcomes.
+**Completed task groups** — replace the group header and checklist with a conceptual outcome sentence describing what the system can now do. Individual task completion is recorded in session handovers; the roadmap preserves group-level outcomes only.
+
+**Decisions** — design decisions made during a session are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; session handovers log which decisions were made per session.
+
+**Active sub-milestone task list** — the active sub-milestone carries a full task checklist grouped by functional area. This is the canonical task list; the handover references it, does not copy it.
+
+**Acceptance criteria** — the active sub-milestone carries an `**Acceptance criteria:**` block listing the end-to-end operator checks that must pass before the sub-milestone is considered complete. The task list records what is built; acceptance criteria record what the operator can verify once it is built. Criteria describe what the operator runs and observes — not what files contain or what tasks are checked off. A criterion that duplicates a task checklist item is not an acceptance criterion.
+
+**Non-active sub-milestones** — carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active. Deferred items from prior sub-milestones are filed in `roadmap_future.md`, not accumulated in the scope paragraph.
 
 **Task granularity** — identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 

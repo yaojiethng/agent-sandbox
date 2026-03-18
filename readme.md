@@ -1,8 +1,4 @@
----
-Architecture Status: Implemented
-Milestone: M1.2 — Sandbox File Isolation & Diff Workflow
-Last Verified: 2026-03
----
+> **Current milestone status:** see the active handover in `handovers/` (most recent `YYYYMMDD-NN-*.md`).
 
 # Autonomous Coding Agent Sandbox
 
@@ -73,9 +69,9 @@ Start here and follow the path in order. Architecture documents describe the sys
 | Step | Document | Purpose |
 |---|---|---|
 | 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
-| 2 | [doc-status.md](docs/development/doc-status.md) | Current milestone, frozen layers, document temperature map |
-| 3 | [documentation-guidelines.md](docs/development/documentation-guidelines.md) | Documentation rules and structure (read once) |
-| 4 | [task_policy.md](docs/operations/task_policy.md) | Task working principles and stage sequence (read once) |
+| 2 | [project_index.md](docs/development/project_index.md) | Full file registry, freeze status, architecture layer assignments |
+| 3 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
+| 4 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
 | 5 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).

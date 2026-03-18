@@ -1,49 +1,55 @@
 #!/usr/bin/env bash
 # dry_run.sh
-# Diagnostic checks run inside the container during a dry-run.
-# Prints all output to stdout. Does not write to .workspace.
-# Mounted and executed by start_agent.sh; can be reused in other contexts.
+# Diagnostic checks run inside the agent container during a dry-run.
+# Prints all output to stdout.
+# Bind-mounted at /dry_run.sh via the dry-run compose overlay.
 #
-# Expects env vars set by start_agent.sh:
-#   AGENT_INPUT_DIR_NAME     — name of the input directory (e.g. .agent-input)
-#   AGENT_WORKSPACE_DIR_NAME — name of the workspace directory (e.g. .workspace)
+# Checks:
+#   - identity (user, uid)
+#   - workspace/input mount ownership and contents
+#   - workspace/output mount ownership and writability
+#   - sandbox/.git exists (capability layer completed init)
+#   - snapshot .gitignore present (sanity check on snapshot quality)
+#   - brief.md present in workspace/input/
 
 set -euo pipefail
 
 ROOT="/home/agentuser"
-AGENT_INPUT_DIR_NAME="${AGENT_INPUT_DIR_NAME:-.agent-input}"
-AGENT_WORKSPACE_DIR_NAME="${AGENT_WORKSPACE_DIR_NAME:-.workspace}"
 
-AGENT_INPUT_DIR="$ROOT/$AGENT_INPUT_DIR_NAME"
-AGENT_WORKSPACE_DIR="$ROOT/$AGENT_WORKSPACE_DIR_NAME"
+source /libs/dirs.sh
+
+INPUT_DIR="$ROOT/$INPUT_DIR_NAME"
+OUTPUT_DIR="$ROOT/$OUTPUT_DIR_NAME"
+SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
 
 echo "=== identity ==="
 id
 
 echo ""
-echo "=== $AGENT_INPUT_DIR_NAME mount ownership ==="
-stat "$AGENT_INPUT_DIR"
+echo "=== workspace/input mount ==="
+stat "$INPUT_DIR"
 
 echo ""
-echo "=== $AGENT_WORKSPACE_DIR_NAME mount ownership ==="
-stat "$AGENT_WORKSPACE_DIR"
+echo "=== workspace/output mount ==="
+stat "$OUTPUT_DIR"
 
 echo ""
-echo "=== snapshot contents ==="
-ls -p "$AGENT_INPUT_DIR/snapshot" 2>&1 || echo "no snapshot found"
-
-echo ""
-echo "=== .gitignore present in snapshot ==="
-ls "$AGENT_INPUT_DIR/snapshot/.gitignore" 2>&1 || echo "no .gitignore in snapshot"
+echo "=== workspace/input contents ==="
+ls -p "$INPUT_DIR" 2>&1 || echo "workspace/input is empty"
 
 echo ""
 echo "=== brief present ==="
-ls "$AGENT_INPUT_DIR/brief.md" 2>&1 || echo "no brief.md"
+ls "$INPUT_DIR/brief.md" 2>&1 || echo "no brief.md in workspace/input/"
 
 echo ""
-echo "=== operator input files ==="
-if [[ -d "$AGENT_INPUT_DIR/input" ]]; then
-  ls -p "$AGENT_INPUT_DIR/input" 2>&1 || echo "input/ directory is empty"
-else
-  echo "no input/ directory"
-fi
+echo "=== sandbox/.git present (capability layer ready) ==="
+test -d "$SANDBOX_DIR/.git" && echo "sandbox/.git found" || echo "ERROR: sandbox/.git missing — capability layer may not have completed init"
+
+echo ""
+echo "=== .gitignore present in sandbox ==="
+ls "$SANDBOX_DIR/.gitignore" 2>&1 || echo "no .gitignore in sandbox"
+
+echo ""
+echo "=== workspace/output write check ==="
+LIVENESS_FILE="$OUTPUT_DIR/liveness.txt"
+echo "PASS" > "$LIVENESS_FILE" && echo "liveness.txt written to workspace/output/" || echo "ERROR: could not write to workspace/output/"

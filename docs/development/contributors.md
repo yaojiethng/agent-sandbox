@@ -63,7 +63,7 @@ Before making any documentation or roadmap change, read the relevant policy:
 
 - [`docs/operations/documentation_policy.md`](documentation_policy.md) — document structure, folder ownership, enforcement rules
 - [`docs/operations/roadmap_policy.md`](roadmap_policy.md) — roadmap update sequence and cleanup rules
-- [`docs/operations/task_policy.md`](task_policy.md) — task working principles, story and investigation conventions
+- [`docs/operations/iteration_policy.md`](iteration_policy.md) — session workflow, milestone planning, story and investigation conventions
 
 ---
 
@@ -75,6 +75,6 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/architecture/security.md`](../architecture/security.md) | Security model and trust boundaries |
 | [`docs/architecture/threat_model_stride.md`](../architecture/threat_model_stride.md) | STRIDE threat model |
 | [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) | Operational SOPs |
-| [`docs/operations/task_policy.md`](task_policy.md) | Task policy |
+| [`docs/operations/iteration_policy.md`](iteration_policy.md) | Session workflow and milestone planning |
 | [`docs/operations/roadmap_policy.md`](roadmap_policy.md) | Roadmap policy |
-| [`docs/concepts/task_lifecycle.md`](../concepts/task_lifecycle.md) | Task lifecycle |
+| [`docs/concepts/autonomous_task.md`](../concepts/autonomous_task.md) | Autonomous task lifecycle (M3) |

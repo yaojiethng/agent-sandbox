@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # build_agent.sh
 # Usage:
-#   ./build_agent.sh --name=<project_name> --root=<path> [--no-cache]
+#   ./build_agent.sh --name=<project_name> [--no-cache]
 #
-# Builds the Docker image for a project. Does not start the container.
-# Called directly by agent-sandbox build, or by agent-sandbox start/dry-run
-# when the image is missing or --force-build is set.
+# Builds the reasoning layer Docker image for a project.
+# build_context populates a temp directory with the required files;
+# docker build uses the temp directory as build context and tags the
+# image with a digest of the context contents.
 
 set -euo pipefail
 
@@ -18,7 +19,12 @@ NO_CACHE=""
 for ARG in "$@"; do
   case "$ARG" in
     --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --root=*)    ;; # accepted but not needed — build context is always REPO_ROOT
+    --root=*)      ;; # accepted but not needed
+    --project=*)   ;; # accepted but not needed
+    --sandbox=*)   ;; # accepted but not needed — build context is always REPO_ROOT
+    --brief=*)     ;; # accepted but not needed
+    --env=*)       ;; # accepted but not needed
+    --serve)       ;; # accepted but not needed
     --no-cache)  NO_CACHE="--no-cache" ;;
     *)
       echo "Unknown flag: $ARG"
@@ -43,17 +49,22 @@ IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
 DOCKERFILE="$REPO_ROOT/providers/opencode/Dockerfile"
 
 # -------------------------
+# Build context
+# -------------------------
+source "$REPO_ROOT/libs/build_context.sh"
+
+CONTEXT_DIR=$(build_context agent "$REPO_ROOT")
+trap 'rm -rf "$CONTEXT_DIR"' EXIT
+
+DIGEST=$(find "$CONTEXT_DIR" -type f | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+
+# -------------------------
 # Build
 # -------------------------
-
-# Compute digest before build so it reflects the source files being built
-source "$REPO_ROOT/lib/image.sh"
-DIGEST=$(image_compute_digest "$REPO_ROOT" "opencode")
-
 echo "Building Docker image: $IMAGE_NAME"
 docker build $NO_CACHE \
   --label "agent-sandbox.digest=$DIGEST" \
   -t "$IMAGE_NAME" \
   -f "$DOCKERFILE" \
-  "$REPO_ROOT"
+  "$CONTEXT_DIR"
 echo "Build complete: $IMAGE_NAME"

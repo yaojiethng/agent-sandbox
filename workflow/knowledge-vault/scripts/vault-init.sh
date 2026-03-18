@@ -25,7 +25,7 @@ set -euo pipefail
 # Locate lib relative to this script
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$(cd "${SCRIPT_DIR}/../lib" && pwd)"
+LIB_DIR="$(cd "${SCRIPT_DIR}/../libs" && pwd)"
 
 source "${LIB_DIR}/classify.sh"
 source "${LIB_DIR}/gitattributes.sh"

@@ -41,32 +41,49 @@ which agent-sandbox
 
 ## 2. Onboard a project
 
-For each project you want to run under agent-sandbox, you need three things in
-the project repository:
+Run the onboard command from anywhere, passing the project name, project path, and the path where the sandbox directory should be created:
 
-### `Makefile`
-
-Copy `Makefile.template` from the agent-sandbox repo into the project root and
-set the three variables at the top:
-
-```makefile
-PROJECT_NAME := <project-name>
-PROJECT_ROOT := $(CURDIR)
-AGENT_BRIEF  := agent_context_brief.md
-ENV_FILE     := .env
+```sh
+agent-sandbox onboard \
+  --name=<project-name> \
+  --project=/absolute/path/to/<project-dir> \
+  --sandbox=/absolute/path/to/<project-dir>-sandbox
 ```
 
-`PROJECT_ROOT` is always `$(CURDIR)` — do not change it.
+By convention the sandbox directory is named `<project-dir>-sandbox` and sits alongside the project repository. The command creates the sandbox directory if it does not exist, copies all template files, creates the `.workspace/` subdirectories, and writes `.env` with derived path variables.
 
-### `agent_context_brief.md`
+After onboarding, the sandbox directory contains:
 
-Create this file at the project root. It is passed to the agent at the start of
-every session. It should describe the project, its conventions, and what good
-output looks like. It does not need to describe how the sandbox works — the agent
-already knows that.
+```
+<project-dir>-sandbox/
+├── Makefile              ← delegates to agent-sandbox CLI; reads PROJECT_DIR/SANDBOX_DIR from .env
+├── .env                  ← written by onboard; machine-specific variables
+├── Dockerfile.sandbox    ← capability layer Dockerfile; customise as needed
+└── .workspace/
+    ├── input/            ← place task briefs here before a run
+    ├── output/           ← agent writes progress and data here
+    └── changes/          ← staged.diff and autosave.diff written here
+```
+
+### Complete the setup
+
+**1. Edit `.env`**
+
+`onboard` writes `SERVE_PORT` and `OPENCODE_SERVER_PASSWORD` as stubs. Set them before the first run:
+
+```sh
+SERVE_PORT=46553
+OPENCODE_SERVER_PASSWORD=<your-password>
+```
+
+All path variables (`PROJECT_DIR`, `SANDBOX_DIR`, `SNAPSHOT_DIR`, etc.) are derived and written automatically — do not edit them.
+
+**2. Create `agents.md` in the project repo**
+
+`onboard` writes a stub at `SANDBOX_DIR/agents.md`. Move or copy it into `PROJECT_DIR` and fill it in — it is passed to the agent at the start of every session:
 
 ```markdown
-# Agent Context Brief — <project-name>
+# agents.md — <project-name>
 
 ## Project
 <what the project is, what it does, its current state>
@@ -78,30 +95,18 @@ already knows that.
 <what a correct output looks like>
 ```
 
-### `.env`
+**3. Ensure `.gitignore` covers secrets**
 
-Create this file at the project root. It holds machine-specific variables and
-is never committed.
-
-```sh
-SERVE_PORT=46553
-OPENCODE_SERVER_PASSWORD=<your-password>
-```
-
-### `.gitignore`
-
-Ensure the following are gitignored in the project repo:
+In the project repo, confirm `.env` is gitignored. If the sandbox directory sits inside the project tree, also add:
 
 ```
-.env
 .workspace/
-.bootstrap/
+.snapshot/
 ```
 
-### Git requirement
+**4. Ensure the project is a git repository**
 
-The project must be a git repository with at least one commit before agent-sandbox
-can run against it:
+The project must have at least one commit before agent-sandbox can run against it:
 
 ```sh
 git init
@@ -111,20 +116,40 @@ git commit -m "initial"
 
 ---
 
-## 3. Build the image
+## 3. Build the images
 
-From the project root:
+From the sandbox directory:
 
 ```sh
-make build
+# Build both capability and reasoning layer images
+make build all
+
+# Build only the capability layer (sandbox) image
+make build sandbox
+
+# Build only the reasoning layer (agent) image
+make build agent
 ```
 
-This builds the Docker image for the project. Only needed once, or after updating
-the agent-sandbox Dockerfile.
+`make start`, `make serve`, and `make dry-run` call `docker build` automatically before starting containers. Docker's cache produces a hit in under 5 seconds when source files are unchanged. Explicit builds via `make build` are only needed before the first run, or after editing `Dockerfile.sandbox`.
 
 ---
 
-## 4. Run the agent
+## 4. Prepare inputs (optional)
+
+Before a run, place task files, briefs, or additional context in the operator input channel:
+
+```sh
+cp my-task.md <sandbox-dir>/.workspace/input/
+```
+
+The agent reads these as read-only files alongside any brief. Clear or replace them between runs as needed.
+
+---
+
+## 5. Run the agent
+
+All commands are run from the sandbox directory.
 
 **Interactive mode** — agent runs in the terminal:
 
@@ -138,7 +163,7 @@ make start
 make serve
 ```
 
-**Liveness check** — confirms the container starts and the sandbox is healthy:
+**Liveness check** — confirms both containers start and the sandbox is healthy:
 
 ```sh
 make dry-run
@@ -147,13 +172,13 @@ make dry-run
 To force a rebuild before starting:
 
 ```sh
-make start -- --rebuild
-make serve -- --rebuild
+make rebuild start
+make rebuild serve
 ```
 
 ---
 
-## 5. Apply changes
+## 6. Apply changes
 
 After the agent completes its run, review and apply the diff:
 
@@ -181,17 +206,17 @@ If a bad diff has been applied and the project repo is in a broken state:
 
 ```sh
 # Discard all uncommitted changes
-git -C <PROJECT_ROOT> checkout -- .
+git -C <PROJECT_DIR> checkout -- .
 
 # Or reset to a specific known-good commit
-git -C <PROJECT_ROOT> reset --hard <commit-sha>
+git -C <PROJECT_DIR> reset --hard <commit-sha>
 ```
 
 **2. Clear the workspace**
 
 ```sh
-rm -rf <PROJECT_ROOT>/.workspace/changes/
-mkdir -p <PROJECT_ROOT>/.workspace/changes/
+rm -rf <SANDBOX_DIR>/.workspace/changes/
+mkdir -p <SANDBOX_DIR>/.workspace/changes/
 ```
 
 This discards any staged or autosave diffs from the bad run.
@@ -199,7 +224,7 @@ This discards any staged or autosave diffs from the bad run.
 **3. Clear the snapshot**
 
 ```sh
-rm -rf <PROJECT_ROOT>/.bootstrap/
+rm -rf <SANDBOX_DIR>/.snapshot/
 ```
 
 The snapshot is rebuilt fresh on the next `make start` or `make dry-run`.
@@ -210,7 +235,7 @@ The snapshot is rebuilt fresh on the next `make start` or `make dry-run`.
 make dry-run
 ```
 
-A passing dry-run confirms the snapshot pipeline is clean and the container starts correctly.
+A passing dry-run confirms the snapshot pipeline is clean and both containers start correctly.
 
 ---
 
@@ -221,13 +246,17 @@ git rm --cached <file>
 git commit -m "remove missing file from index"
 ```
 
+---
+
+## Pre-run checklist
+
 Before running the agent for the first time:
 
 - [ ] `agent-sandbox` CLI is installed (`which agent-sandbox`)
-- [ ] `Makefile` is present at project root with correct `PROJECT_NAME`
-- [ ] `agent_context_brief.md` is present at project root
-- [ ] `.env` is present and gitignored
-- [ ] `.workspace/` and `.bootstrap/` are gitignored
+- [ ] `agent-sandbox onboard` has been run; sandbox directory exists alongside the project repo
+- [ ] `agents.md` is present in the project repo and filled in
+- [ ] `.env` is present in sandbox directory; `SERVE_PORT` and `OPENCODE_SERVER_PASSWORD` are set
+- [ ] `.env` is gitignored in the project repo
 - [ ] Project is a git repository with at least one commit
 - [ ] Docker is running (`docker info`)
-- [ ] Image is built (`make build`)
+- [ ] Images are built (`make build all`)

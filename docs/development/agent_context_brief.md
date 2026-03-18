@@ -24,6 +24,8 @@ You do not modify the repository. All outputs are proposals; the operator review
 
 These principles are stable. The operating workflow and policy documents are their realizations — they will evolve; the principles do not.
 
+**Handover first.** The first output of every session is the handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt.
+
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
 **State assumptions explicitly.** State them before proceeding, not after.
@@ -44,20 +46,6 @@ These principles are stable. The operating workflow and policy documents are the
 
 ---
 
-## Operating Workflow
-
-The workflow is the procedural realization of the collaboration protocol. It will be refined as the project evolves.
-
-1. **Discuss conceptual requirements** — reason about current behaviour, what needs to change, and why. Surface tensions before proposing solutions.
-2. **Agree on implementation** — function boundaries, file locations, naming, design decisions. Do not begin until agreed.
-3. **Scan for documentation changes** — identify which documents need updating. Add as a documentation task in the roadmap milestone before touching code.
-4. **Perform documentation changes** — update architecture, concepts, and security documents as identified.
-5. **Perform code changes** — implement against the agreed design.
-6. **Update roadmap** — clean previous update first, then mark new completions. See `roadmap_policy.md`.
-7. **Finalize milestone** — collapse completed subsections into conceptual outcome sentences. Keep implementation detail out; it belongs in git history.
-
----
-
 ## Read Discipline
 
 Before opening any file in full, establish what you need from it first.
@@ -66,7 +54,7 @@ Before opening any file in full, establish what you need from it first.
 ```bash
 grep -rn "TERM" path/
 ```
-Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`.
+Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`. If a file is not present in uploads, request it before proceeding — do not infer its content from memory.
 
 **To get a section map of a file before reading it:**
 ```bash
@@ -78,7 +66,9 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 ---
 
+## Output Format
 
+All document, code, and file outputs are proposals. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface. Never provide file edits as inline chat prose unless a diff is explicitly requested — prefer editing the file directly.
 
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 
@@ -92,19 +82,33 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 Read these in order at session start. Each answers a distinct question — do not skip.
 
+**Before proceeding, verify you have access to each required document. A missing file is a blocking condition — do not proceed with inferred or reconstructed content. If a required document is absent, surface it immediately and wait.**
+
+### Session start — always
+
 | Document | Question it answers |
 |---|---|
 | [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
-| [`docs/development/doc_status.md`](docs/development/doc_status.md) | What should I read this milestone? |
-| `YYYYMMDD_agent_handover.md` | What was happening when the last session ended? — filename is date-prefixed per `task_policy.md`; find the most recent date at repo root |
+| `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
+| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the current sub-milestone and what are the pending tasks? |
 
-Policy documents — read before the relevant task type, not at session start:
+### Session start — major loop only
+
+Read these in addition to the above when opening a major loop planning session (triggered after a major milestone closes).
+
+| Document | Question it answers |
+|---|---|
+| [`docs/development/roadmap_future.md`](docs/development/roadmap_future.md) | What sub-milestones are planned but not yet active? |
+| [`docs/development/changelog.md`](docs/development/changelog.md) | Is the prior milestone fully closed? |
+
+###  Policy documents — read before the relevant task type, not at session start
 
 | Document | Read before |
 |---|---|
 | [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
-| [`docs/development/task_policy.md`](docs/development/task_policy.md) | Any new task, story, or investigation |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session (minor loop open/close), new task, story, investigation, or milestone transition |
+| [`handover_policy.md`](docs/operations/handover_policy.md) | Any session (minor loop open/close), Creating or updating handover, maintaining session continuity across compact operations |
