@@ -291,6 +291,7 @@ if [[ "$SERVE" == true ]]; then
   echo "+ docker compose up --detach (sandbox → agent)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
   echo "Agent running in serve mode. Stop with: docker compose down -v"
+  echo "server listening on http://0.0.0.0:${SERVE_PORT}"
 else
   echo "+ starting sandbox..."
   docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
