@@ -30,6 +30,29 @@ sandbox_image_name() {
   echo "agent-sandbox-${PROJECT,,}"
 }
 
+# Container names match image names — one session per project at a time.
+# container_name: is set in the compose template to enforce this.
+
+# agent_container_name <provider> <project_name>
+agent_container_name() { agent_image_name "$1" "$2"; }
+
+# sandbox_container_name <project_name>
+sandbox_container_name() { sandbox_image_name "$1"; }
+
+# sandbox_container_name <project_name>
+# Returns: <project>-sandbox (lowercased) — matches container_name in compose template
+sandbox_container_name() {
+  local PROJECT="${1:?sandbox_container_name requires project name}"
+  echo "${PROJECT,,}-sandbox"
+}
+
+# agent_container_name <provider> <project_name>
+# Returns: <project>-agent (lowercased) — matches container_name in compose template
+agent_container_name() {
+  local PROJECT="${2:?agent_container_name requires project name}"
+  echo "${PROJECT,,}-agent"
+}
+
 # -------------------------
 # Build helpers
 # -------------------------

@@ -5,17 +5,18 @@
 # Runtime variables are read from .env in SANDBOX_DIR (written once by
 # `agent-sandbox onboard`, not rewritten each session). Do not commit .env.
 #
-# Image naming convention (set in .env by onboard):
+# Image and container naming convention (computed by libs/containers.sh):
 #   capability layer: agent-sandbox-{{PROJECT_NAME}}
-#   reasoning layer:  opencode-agent-{{PROJECT_NAME}}
+#   reasoning layer:  <provider>-agent-{{PROJECT_NAME}}
 #
-# Start/stop is managed by start_agent.sh via docker compose up/down.
+# Container names match image names — one session per project at a time.
+# Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
 
 services:
   sandbox:
     image: ${SANDBOX_IMAGE_NAME}
-    container_name: {{PROJECT_NAME}}-sandbox
+    container_name: ${SANDBOX_IMAGE_NAME}
     volumes:
       - ${SNAPSHOT_DIR}:/home/agentuser/.snapshot:ro
       - ${CHANGES_DIR}:/home/agentuser/workspace/changes:rw
@@ -34,7 +35,7 @@ services:
 
   agent:
     image: ${AGENT_IMAGE_NAME}
-    container_name: {{PROJECT_NAME}}-agent
+    container_name: ${AGENT_IMAGE_NAME}
     depends_on:
       sandbox:
         condition: service_healthy

@@ -154,6 +154,39 @@ The reasoning layer Dockerfile is provider-specific and lives in `providers/<pro
 
 ---
 
+## Capability Layer Contract
+
+The capability layer makes the following guarantees to the reasoning layer. These must hold regardless of how `Dockerfile.sandbox` is customised — they are the interface the reasoning layer depends on.
+
+### Readiness signal
+
+The capability layer **must** declare a `HEALTHCHECK` in `Dockerfile.sandbox`. The check **must** verify that `sandbox/` is fully initialised — at minimum, that `sandbox/.git` exists, confirming the snapshot has been unpacked and the git baseline committed.
+
+The reasoning layer treats a healthy status as the signal that `sandbox/` is ready to access. The harness enforces this in two ways:
+
+- **`docker compose up`**: the `depends_on: condition: service_healthy` declaration on the agent service prevents the reasoning layer container from starting until the capability layer reports healthy.
+- **`docker compose run`**: `depends_on` conditions are not applied. The harness polls `docker inspect` on the capability layer container by name until health status is `healthy` before attaching the agent.
+
+A capability layer that does not declare a `HEALTHCHECK`, or whose check does not verify `sandbox/` initialisation, breaks the readiness contract and may cause the reasoning layer to attach before working content is available.
+
+### Volume ownership
+
+The capability layer **must** declare `sandbox/` as a `VOLUME` in `Dockerfile.sandbox`. This promotes `sandbox/` to a Docker anonymous volume, making it accessible to the reasoning layer via `--volumes-from`. Without this declaration, `sandbox/` exists only in the capability layer's writable layer and is invisible to other containers.
+
+The anonymous volume is created fresh at each session start and destroyed on teardown (`docker compose down -v`). The reasoning layer can only access `sandbox/` while the capability layer container is running — if the capability layer exits, the volume becomes inaccessible.
+
+### Sandbox initialisation
+
+Before reporting healthy, the capability layer **must** have:
+
+1. Copied `.snapshot/` into `sandbox/`
+2. Initialised a git repository in `sandbox/`
+3. Committed a baseline — the diff pipeline computes `staged.diff` against this SHA on exit
+
+The reasoning layer may assume all three conditions hold when it attaches.
+
+---
+
 ## Dry-Run Guarantees
 
 A successful `make dry-run` proves:

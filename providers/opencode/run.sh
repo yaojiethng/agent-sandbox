@@ -154,10 +154,11 @@ else
 
   # Poll until sandbox is healthy before attaching the agent.
   # depends_on: service_healthy only applies to compose up, not compose run.
-  # Use compose ps -q to get the container ID — avoids depending on Compose's
-  # <project>-<service>-<index> naming convention.
+  # Container name is pinned via container_name: in the compose template — no
+  # Compose-generated suffix. Resolved from the same convention as the template.
+  SANDBOX_CONTAINER="$(sandbox_container_name "$PROJECT_NAME")"
   echo "+ waiting for sandbox to be healthy..."
-  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose "${COMPOSE_ARGS[@]}" ps -q sandbox)" 2>/dev/null)" == "healthy" ]]; do
+  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
     sleep 1
   done
   echo "+ sandbox healthy."
