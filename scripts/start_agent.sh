@@ -18,6 +18,10 @@
 #                           copied into SANDBOX_DIR/.workspace/input/brief.md
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
 #
+# This script is designed to be executed, not sourced. It exports variables
+# for docker compose and the provider run script, then replaces itself via
+# exec — exports do not leak back into the caller's shell.
+#
 # Expects SANDBOX_DIR to have been prepared by: agent-sandbox onboard
 # If .env is missing, onboarding has not been run — error with instructions.
 
@@ -115,7 +119,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 # Source only simple KEY=VALUE lines; skip comments and blanks.
-# Variables are exported so docker compose and the provider run script inherit them.
+# Variables are exported for docker compose and the provider run script.
 while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
   [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
   KEY="${KEY//[$'\r\n\t ']/}"
@@ -143,6 +147,17 @@ for VAR in "${REQUIRED_ENV_VARS[@]}"; do
     exit 1
   fi
 done
+
+# -------------------------
+# Image name derivation
+# -------------------------
+# SANDBOX_IMAGE_NAME and AGENT_IMAGE_NAME are not stored in .env — they are
+# derived from PROJECT_NAME and PROVIDER_NAME via containers.sh. They are
+# exported here so docker compose can interpolate them from the environment.
+source "$REPO_ROOT/libs/containers.sh"
+
+export SANDBOX_IMAGE_NAME; SANDBOX_IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
+export AGENT_IMAGE_NAME;   AGENT_IMAGE_NAME="$(agent_image_name "$PROVIDER_NAME" "$PROJECT_NAME")"
 
 # -------------------------
 # Git validation
@@ -209,8 +224,7 @@ fi
 # -------------------------
 # Dispatch to provider
 # -------------------------
-source "$REPO_ROOT/libs/containers.sh"
-
+# containers.sh is already sourced above; preflight uses the derived image names.
 preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
 
 PROVIDER_RUN="$REPO_ROOT/providers/$PROVIDER_NAME/run.sh"

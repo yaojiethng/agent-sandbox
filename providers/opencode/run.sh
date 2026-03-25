@@ -12,7 +12,7 @@
 #   dry-run    — liveness check only
 #   headless   — reserved, not yet implemented
 #
-# Expects .env variables (SANDBOX_IMAGE_NAME, SERVE_PORT, etc.) to be
+# Expects .env variables (AUTOSAVE_INTERVAL, SERVE_PORT, etc.) to be
 # present in the environment, exported by scripts/start_agent.sh.
 
 set -euo pipefail
@@ -59,6 +59,15 @@ done
 if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
   echo "Error: --name and --sandbox are required"
   exit 1
+fi
+
+# -------------------------
+# SERVE_PORT resolution
+# -------------------------
+SERVE_PORT_DEFAULT=46553
+if [[ -z "${SERVE_PORT:-}" ]]; then
+  echo "Warning: SERVE_PORT is not set in .env — falling back to default ($SERVE_PORT_DEFAULT)"
+  SERVE_PORT="$SERVE_PORT_DEFAULT"
 fi
 
 # -------------------------

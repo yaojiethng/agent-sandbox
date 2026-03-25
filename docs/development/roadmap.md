@@ -82,12 +82,18 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - [x] Validate OpenCode provider conforms: `make dry-run` passes after refactor
 
 ### Refactoring
-- [ ] `onboard.sh` — use `libs/containers.sh` naming functions for image name generation; remove any hardcoded name construction
-- [ ] `scripts/start_agent.sh` — pass required variables as explicit args to `run.sh` instead of exporting `.env` variables into the environment
+- [x] `onboard.sh` — use `libs/containers.sh` naming functions for image name generation; remove any hardcoded name construction
+- [x] `scripts/start_agent.sh` — pass required variables as explicit args to `run.sh` instead of exporting `.env` variables into the environment
+- [ ] `onboard.sh` multi-provider support — add `--provider` flag and provider-scoped onboard behaviour (e.g. per-provider `.env` vars, provider-specific template selection). Depends on provider investigation outcomes. 
+
+### Compose template refactor
+- [ ] Make compose templates provider-agnostic — current templates are scoped to OpenCode only; prerequisite for `serve` mode on any second provider (Claude Code Remote Control, Hermes/Open WebUI)
 
 ### Deferred breakdown
-- [ ] Claude Code provider integration — open `investigation_claude_code.md`; full task list after investigation resolves open questions
-- [ ] Claude Desktop provider integration — open `investigation_claude_desktop.md`; full task list after investigation resolves open questions
+- [ ] Claude Code provider integration — investigation resolved; `start`, `dry-run`, `serve` (Remote Control, requires claude.ai subscription auth); full task list at implementation time
+- [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
+- [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
+- [ ] Hermes provider integration — investigation resolved; `start`, `dry-run`, `serve` (Open WebUI via compose template); `terminal.backend: local` required; full task list at implementation time
 
 **Acceptance criteria:**
 - A second provider can be added by creating `providers/<n>/` with `build.sh`, `run.sh`, and a Dockerfile — no changes to `scripts/` or `libs/` required

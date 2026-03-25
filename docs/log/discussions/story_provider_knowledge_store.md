@@ -40,12 +40,12 @@ Swap OpenCode for a provider with better out-of-the-box support for large markdo
 
 | Candidate | Status | Report |
 |---|---|---|
-| Claude Code | In progress | [investigation_claude_code.md](investigation_claude_code.md) |
-| Claude Desktop | Not started | [investigation_claude_desktop.md](investigation_claude_desktop.md) |
-| Hermes | Not started | [investigation_hermes.md](investigation_hermes.md) |
-| Pi | Not started | [investigation_pi.md](investigation_pi.md) |
+| Claude Code | Resolved — viable; `start`/`dry-run`/`serve` supported; `serve` via Remote Control (first-party, requires claude.ai subscription auth) | [investigation_claude_code.md](investigation_claude_code.md) |
+| Claude Desktop | Resolved — viable, pending prototype | [investigation_claude_desktop.md](investigation_claude_desktop.md) |
+| Hermes | Resolved — viable; `start`/`dry-run`/`serve` supported; `serve` via Open WebUI compose service; persistent memory differentiates for vault workflows | [investigation_hermes.md](investigation_hermes.md) |
+| Pi | Resolved — viable; `start`/`dry-run` supported; `serve` unsupported (RPC bridge or open-source web UI is a viable future path) | [investigation_pi.md](investigation_pi.md) |
 
-**Note on Claude Desktop:** If Claude Desktop is selected, it can potentially replace the agent harness entirely — no harness container, just Claude Desktop connected to a Dockerized MCP server. This eliminates harness integration work but weakens security guarantees and creates platform lock-in. It is a distinct sub-case of Direction 1 and is covered in the MCP server investigation below.
+**Note on Claude Desktop:** If Claude Desktop is selected, it replaces the agent harness as the reasoning layer — no harness container, just Claude Desktop connected to a Dockerised MCP filesystem server pointed at the existing `SANDBOX_DIR` paths. The investigation confirms that all harness invariants (snapshot isolation, `PROJECT_DIR` separation, diff-and-review via `make apply`) are preserved without codebase changes. Session lifecycle management becomes manual (`make sandbox` / `make apply`) rather than automated. Security guarantees are equivalent to the standard harness model. Platform dependency on Anthropic's desktop product is acknowledged. A prototype is required before adoption.
 
 Provider investigations answer a standard set of questions defined in [Investigation Questions](#investigation-questions).
 
