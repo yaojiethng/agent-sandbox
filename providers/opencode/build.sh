@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# build_agent.sh
+# build.sh
 # Usage:
-#   ./build_agent.sh --name=<project_name> [--no-cache]
+#   ./build.sh --name=<project_name> [--no-cache]
 #
 # Builds the reasoning layer Docker image for a project.
 # build_context populates a temp directory with the required files;

@@ -2,12 +2,12 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox build    [sandbox|agent|all] --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox start    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>] [--serve]
-#   agent-sandbox serve    --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox dry-run  --name=<n> --project=<path> --sandbox=<path> [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox rebuild  [start|dry-run|serve] --name=<n> --project=<path> --sandbox=<path> [flags]
+#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path> [--provider=<n>]
+#   agent-sandbox build    [sandbox|<provider>|all] --name=<n> --project=<path> --sandbox=<path> [--provider=<n>]
+#   agent-sandbox start    --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox serve    --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox dry-run  --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
+#   agent-sandbox rebuild  [start|dry-run|serve] --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [flags]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
 
 set -euo pipefail
@@ -15,7 +15,8 @@ set -euo pipefail
 AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
-PROVIDER="$AGENT_SANDBOX_REPO/providers/opencode"
+
+source "$AGENT_SANDBOX_REPO/libs/containers.sh"
 
 SUBCOMMAND="${1:-}"
 shift || true
@@ -32,69 +33,20 @@ PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR=""
 BRANCH=""
+PROVIDER_NAME="opencode"   # default provider; override with --provider=<n>
 PASSTHROUGH=()
 
 parse_flags() {
   for ARG in "$@"; do
     case "$ARG" in
-      --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --branch=*)  BRANCH="${ARG#--branch=}" ;;
-      *)           PASSTHROUGH+=("$ARG") ;;
+      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --branch=*)   BRANCH="${ARG#--branch=}" ;;
+      --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+      *)            PASSTHROUGH+=("$ARG") ;;
     esac
   done
-}
-
-# -------------------------
-# Build helpers
-# -------------------------
-build_sandbox_image() {
-  if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: build sandbox requires --name and --sandbox"
-    exit 1
-  fi
-  "$SCRIPTS/build_sandbox.sh" \
-    --name="$PROJECT_NAME" \
-    --sandbox="$SANDBOX_DIR"
-}
-
-build_agent_image() {
-  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
-    echo "Error: build agent requires --name and --project"
-    exit 1
-  fi
-  "$PROVIDER/build_agent.sh" \
-    --name="$PROJECT_NAME" \
-    --project="$PROJECT_DIR"
-}
-
-build_all_images() {
-  build_sandbox_image
-  build_agent_image
-}
-
-# -------------------------
-# Preflight — build both images if either is absent
-# -------------------------
-preflight() {
-  local SANDBOX_IMAGE="agent-sandbox-${PROJECT_NAME,,}"
-  local AGENT_IMAGE="opencode-agent-${PROJECT_NAME,,}"
-  local MISSING=false
-
-  if ! docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1; then
-    echo "Image not found: $SANDBOX_IMAGE"
-    MISSING=true
-  fi
-  if ! docker image inspect "$AGENT_IMAGE" >/dev/null 2>&1; then
-    echo "Image not found: $AGENT_IMAGE"
-    MISSING=true
-  fi
-
-  if [[ "$MISSING" == true ]]; then
-    echo "Building all images..."
-    build_all_images
-  fi
 }
 
 # -------------------------
@@ -107,23 +59,27 @@ case "$SUBCOMMAND" in
     ;;
 
   build)
-    # Optional variant as next positional arg: sandbox | agent | all
+    # Variant is: sandbox | <provider> | all
+    # sandbox    — build capability layer image only
+    # <provider> — build reasoning layer image for the named provider (e.g. opencode)
+    # all        — build both (uses --provider value for reasoning layer)
     # No variant (or explicit 'all') builds both.
     BUILD_VARIANT="${1:-all}"
     case "$BUILD_VARIANT" in
-      sandbox|agent|all) shift || true ;;
+      sandbox|all) shift || true ;;
       --*) BUILD_VARIANT="all" ;;  # no variant given, flags follow immediately
       *)
-        echo "Unknown build variant: $BUILD_VARIANT"
-        echo "Usage: agent-sandbox build [sandbox|agent|all] --name=<n> --project=<path> --sandbox=<path>"
-        exit 1
+        # Treat any other non-flag value as a provider name
+        PROVIDER_NAME="$BUILD_VARIANT"
+        shift || true
+        BUILD_VARIANT="provider"
         ;;
     esac
     parse_flags "$@"
     case "$BUILD_VARIANT" in
-      sandbox) build_sandbox_image ;;
-      agent)   build_agent_image ;;
-      all)     build_all_images ;;
+      sandbox)  build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" ;;
+      provider) build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" ;;
+      all)      build_all     "$PROVIDER_NAME" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" ;;
     esac
     ;;
 
@@ -133,11 +89,11 @@ case "$SUBCOMMAND" in
       echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
-    preflight
-    "$PROVIDER/start_agent.sh" standard \
+    "$SCRIPTS/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
+      --provider="$PROVIDER_NAME" \
       "${PASSTHROUGH[@]}"
     ;;
 
@@ -147,12 +103,11 @@ case "$SUBCOMMAND" in
       echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
-    preflight
-    "$PROVIDER/start_agent.sh" standard \
+    "$SCRIPTS/start_agent.sh" serve \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
-      --serve \
+      --provider="$PROVIDER_NAME" \
       "${PASSTHROUGH[@]}"
     ;;
 
@@ -162,11 +117,11 @@ case "$SUBCOMMAND" in
       echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
-    preflight
-    "$PROVIDER/start_agent.sh" dry-run \
+    "$SCRIPTS/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
+      --provider="$PROVIDER_NAME" \
       "${PASSTHROUGH[@]}"
     ;;
 
@@ -192,29 +147,15 @@ case "$SUBCOMMAND" in
       exit 1
     fi
     echo "Rebuilding all images..."
-    build_all_images
+    build_all "$PROVIDER_NAME" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" --no-cache
     # Re-dispatch to the target mode
     case "$REBUILD_MODE" in
-      start)
-        exec "$0" start \
+      start|serve|dry-run)
+        exec "$0" "$REBUILD_MODE" \
           --name="$PROJECT_NAME" \
           --project="$PROJECT_DIR" \
           --sandbox="$SANDBOX_DIR" \
-          "${PASSTHROUGH[@]}"
-        ;;
-      serve)
-        exec "$0" start \
-          --name="$PROJECT_NAME" \
-          --project="$PROJECT_DIR" \
-          --sandbox="$SANDBOX_DIR" \
-          --serve \
-          "${PASSTHROUGH[@]}"
-        ;;
-      dry-run)
-        exec "$0" dry-run \
-          --name="$PROJECT_NAME" \
-          --project="$PROJECT_DIR" \
-          --sandbox="$SANDBOX_DIR" \
+          --provider="$PROVIDER_NAME" \
           "${PASSTHROUGH[@]}"
         ;;
     esac

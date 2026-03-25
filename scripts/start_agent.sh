@@ -1,23 +1,22 @@
 #!/usr/bin/env bash
-# start_agent.sh
+# scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]
+#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>]
 #
 # Modes:
 #   standard   — normal execution, network access allowed
 #   dry-run    — liveness check only, no agent started
+#   serve      — OpenCode in server mode, port exposed at SERVE_PORT
 #
 # Required flags:
-#   --name=<project_name>   display name; used for image naming
+#   --name=<project_name>   display name; used for log output
 #   --project=<path>        absolute WSL/Linux path to the project directory on the host
 #
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
-#                           defaults to <parent-of-PROJECT_DIR>/<project-dir-name>-sandbox
 #   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR;
 #                           copied into SANDBOX_DIR/.workspace/input/brief.md
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
-#   --serve                 apply docker-compose.serve.yml overlay
 #
 # Expects SANDBOX_DIR to have been prepared by: agent-sandbox onboard
 # If .env is missing, onboarding has not been run — error with instructions.
@@ -28,8 +27,8 @@ set -euo pipefail
 # Paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# REPO_ROOT assumes this script lives at providers/opencode/
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# REPO_ROOT assumes this script lives at scripts/
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # -------------------------
 # Args
@@ -38,7 +37,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run> --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--serve]"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>]"
   exit 1
 fi
 
@@ -50,16 +49,16 @@ PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=".env"
-SERVE=false
+PROVIDER_NAME="opencode"   # default provider; override with --provider=<n>
 
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*) SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
-    --brief=*)   AGENT_BRIEF="${ARG#--brief=}" ;;
-    --env=*)     ENV_REL="${ARG#--env=}" ;;
-    --serve)     SERVE=true ;;
+    --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
+    --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
+    --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
+    --brief=*)    AGENT_BRIEF="${ARG#--brief=}" ;;
+    --env=*)      ENV_REL="${ARG#--env=}" ;;
+    --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -115,7 +114,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-# Source only simple KEY=VALUE lines; skip comments and blanks
+# Source only simple KEY=VALUE lines; skip comments and blanks.
+# Variables are exported so docker compose and the provider run script inherit them.
 while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
   [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
   KEY="${KEY//[$'\r\n\t ']/}"
@@ -209,105 +209,18 @@ if [[ -n "$AGENT_BRIEF" ]]; then
 fi
 
 # -------------------------
-# Compose file resolution
+# Dispatch to provider
 # -------------------------
-COMPOSE_FILE="$SANDBOX_DIR/docker-compose.yml"
+source "$REPO_ROOT/libs/containers.sh"
 
-if [[ ! -f "$COMPOSE_FILE" ]]; then
-  echo "Error: compose file not found: $COMPOSE_FILE"
-  echo "  Re-run onboarding to restore missing files:"
-  echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+
+PROVIDER_RUN="$REPO_ROOT/providers/$PROVIDER_NAME/run.sh"
+
+if [[ ! -f "$PROVIDER_RUN" ]]; then
+  echo "Error: provider run script not found: $PROVIDER_RUN"
+  echo "  Is '$PROVIDER_NAME' a valid provider under providers/?"
   exit 1
 fi
 
-COMPOSE_ARGS=(
-  --project-directory "$SANDBOX_DIR"
-  -f "$COMPOSE_FILE"
-)
-
-# -------------------------
-# Mode handling
-# -------------------------
-case "$MODE" in
-  dry-run)
-    echo "Running dry-run..."
-    DRY_RUN_OVERLAY="$SANDBOX_DIR/docker-compose.dry-run.yml"
-    if [[ ! -f "$DRY_RUN_OVERLAY" ]]; then
-      echo "Error: dry-run overlay not found: $DRY_RUN_OVERLAY"
-      echo "  Place docker-compose.dry-run.yml in SANDBOX_DIR for dry-run mode."
-      exit 1
-    fi
-    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
-
-    DRY_RUN_COMPOSE_ARGS=(
-      --project-directory "$SANDBOX_DIR"
-      -f "$COMPOSE_FILE"
-      -f "$DRY_RUN_OVERLAY"
-    )
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" up -d
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" down -v
-    echo ""
-    echo "=== liveness: PASS ==="
-    exit 0
-    ;;
-
-  standard)
-    echo "Starting agent: $PROJECT_NAME"
-    ;;
-
-  *)
-    echo "Unknown mode: $MODE. Valid modes: standard, dry-run"
-    exit 1
-    ;;
-esac
-
-# -------------------------
-# Serve mode overlay
-# -------------------------
-if [[ "$SERVE" == true ]]; then
-  SERVE_OVERLAY="$SANDBOX_DIR/docker-compose.serve.yml"
-  if [[ ! -f "$SERVE_OVERLAY" ]]; then
-    echo "Error: serve overlay not found: $SERVE_OVERLAY"
-    echo "  Place docker-compose.serve.yml in SANDBOX_DIR for serve mode."
-    exit 1
-  fi
-  COMPOSE_ARGS+=(-f "$SERVE_OVERLAY")
-fi
-
-# -------------------------
-# Run
-# -------------------------
-# Tear down any previous session containers and volumes before starting.
-docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
-
-if [[ "$SERVE" == true ]]; then
-  echo "+ docker compose up --detach (sandbox → agent)"
-  docker compose "${COMPOSE_ARGS[@]}" up -d
-  echo "Agent running in serve mode. Stop with: docker compose down -v"
-  echo "server listening on http://0.0.0.0:${SERVE_PORT}"
-else
-  echo "+ starting sandbox..."
-  docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
-
-  # Poll until sandbox is healthy before attaching the agent.
-  # depends_on: service_healthy only applies to compose up, not compose run.
-  SANDBOX_CONTAINER="${SANDBOX_IMAGE_NAME}"
-  echo "+ waiting for sandbox to be healthy..."
-  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
-    sleep 1
-  done
-  echo "+ sandbox healthy."
-
-  echo "+ attaching to agent (TUI)..."
-  docker compose "${COMPOSE_ARGS[@]}" run --rm agent
-
-  echo "+ tearing down..."
-  docker compose "${COMPOSE_ARGS[@]}" down -v
-fi
+exec "$PROVIDER_RUN" "$MODE" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --provider="$PROVIDER_NAME"
