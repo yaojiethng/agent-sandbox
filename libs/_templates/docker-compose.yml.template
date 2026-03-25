@@ -48,7 +48,7 @@ services:
       - INPUT_DIR_NAME=workspace/input
       - OUTPUT_DIR_NAME=workspace/output
       - SANDBOX_DIR_NAME=sandbox
-      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
     stdin_open: true
     tty: true
     restart: "no"
+    

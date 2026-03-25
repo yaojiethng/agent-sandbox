@@ -121,10 +121,10 @@ case "$MODE" in
     ;;
 
   serve)
-    SERVE_OVERLAY="$SANDBOX_DIR/docker-compose.serve.yml"
+    SERVE_OVERLAY="$SCRIPT_DIR/docker-compose.serve.yml"
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Place docker-compose.serve.yml in SANDBOX_DIR for serve mode."
+      echo "  Expected at providers/opencode/docker-compose.serve.yml in the agent-sandbox repo."
       exit 1
     fi
     COMPOSE_ARGS+=(-f "$SERVE_OVERLAY")
