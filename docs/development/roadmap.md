@@ -64,24 +64,33 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Tasks:**
 
 ### Documentation
-- [ ] Update `docs/architecture/execution_model.md` — add execution modes section (`serve`, `standard`, `dry-run`, `headless` reserved); update `start_agent.sh` references to `scripts/start_agent.sh`; add `providers/opencode/run.sh` reference
-- [ ] Update `docs/architecture/tool_interface.md` — update `start_agent.sh` references to `scripts/start_agent.sh`; add `providers/opencode/run.sh` to command shapes; update `build agent` to reference `providers/opencode/build.sh`
-- [ ] Define conforming provider interface in `execution_model.md`: what `build.sh` and `run.sh` must supply, mode support declaration
+- [x] Update `docs/architecture/execution_model.md` — provider interface section; `scripts/start_agent.sh` path references; `providers/opencode/run.sh` reference
+- [x] Update `docs/architecture/tool_interface.md` — execution modes section; path references; corrected command shapes; container naming table; corrected `.env` table
+- [x] Define conforming provider interface in `execution_model.md`
 
 ### Shared logic extraction
-- [ ] Move `providers/opencode/start_agent.sh` to `scripts/start_agent.sh`; strip compose invocation block; dispatch to `providers/opencode/run.sh` at end
-- [ ] Create `providers/opencode/run.sh` — absorb compose file check, mode dispatch, serve overlay assembly, all `docker compose` calls from old `start_agent.sh`
-- [ ] Rename `providers/opencode/build_agent.sh` to `providers/opencode/build.sh`
+- [x] Move `providers/opencode/start_agent.sh` to `scripts/start_agent.sh`; strip compose block; dispatch to `providers/opencode/run.sh`
+- [x] Create `providers/opencode/run.sh`
+- [x] Rename `providers/opencode/build_agent.sh` to `providers/opencode/build.sh`
+
+### Container lifecycle library
+- [x] Create `libs/containers.sh` — image/container naming, build helpers, preflight
+- [x] Update `scripts/agent-sandbox.sh` — source `containers.sh`; provider-agnostic build dispatch; `--provider` flag; drop inline helpers
+- [x] Update `libs/_template/docker-compose.yml.template` — `container_name` pinned to image name; no Compose index suffix
 
 ### Provider interface validation
-- [ ] Validate OpenCode provider conforms: `make dry-run` passes after refactor
+- [x] Validate OpenCode provider conforms: `make dry-run` passes after refactor
+
+### Refactoring
+- [ ] `onboard.sh` — use `libs/containers.sh` naming functions for image name generation; remove any hardcoded name construction
+- [ ] `scripts/start_agent.sh` — pass required variables as explicit args to `run.sh` instead of exporting `.env` variables into the environment
 
 ### Deferred breakdown
-- [ ] Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
-- [ ] Claude Desktop provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_desktop.md`](../discussions/investigation_claude_desktop.md) open questions are resolved
+- [ ] Claude Code provider integration — open `investigation_claude_code.md`; full task list after investigation resolves open questions
+- [ ] Claude Desktop provider integration — open `investigation_claude_desktop.md`; full task list after investigation resolves open questions
 
 **Acceptance criteria:**
-- A second provider can be added by creating `providers/<name>/` with `build.sh`, `run.sh`, and a Dockerfile — no changes to `scripts/` or `libs/` required
+- A second provider can be added by creating `providers/<n>/` with `build.sh`, `run.sh`, and a Dockerfile — no changes to `scripts/` or `libs/` required
 - OpenCode provider passes `make dry-run` after refactor
 - `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/opencode/run.sh`
 

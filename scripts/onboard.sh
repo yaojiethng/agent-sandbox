@@ -288,9 +288,6 @@ fi
 # -------------------------
 # .env
 # -------------------------
-SANDBOX_IMAGE_NAME="agent-sandbox-${PROJECT_NAME,,}"
-AGENT_IMAGE_NAME="opencode-agent-${PROJECT_NAME,,}"
-
 SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
 CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
 INPUT_DIR="$SANDBOX_DIR/.workspace/input"
@@ -326,8 +323,6 @@ SNAPSHOT_DIR=${SNAPSHOT_DIR}
 CHANGES_DIR=${CHANGES_DIR}
 INPUT_DIR=${INPUT_DIR}
 OUTPUT_DIR=${OUTPUT_DIR}
-SANDBOX_IMAGE_NAME=${SANDBOX_IMAGE_NAME}
-AGENT_IMAGE_NAME=${AGENT_IMAGE_NAME}
 
 # --- Template versions (set at onboard time) ---
 # Used by build scripts to detect stale onboarded files.

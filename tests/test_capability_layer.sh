@@ -34,7 +34,7 @@ SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
 WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
-IMAGE_NAME="${IMAGE_NAME:-agent-sandbox-sandbox-test}"
+IMAGE_NAME="${IMAGE_NAME:-test-sandbox-agent-sandbox}"
 RUN_ID="$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n')"
 CONTAINER_NAME="cap-layer-test-${RUN_ID}"
 BUILD_LOG=""

@@ -52,7 +52,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-IMAGE_NAME="agent-sandbox-${PROJECT_NAME,,}"
+source "$REPO_ROOT/libs/containers.sh"
+
+IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 if [[ ! -f "$DOCKERFILE" ]]; then

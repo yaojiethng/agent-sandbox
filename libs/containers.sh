@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # libs/containers.sh
 # Shared container lifecycle library for agent-sandbox.
-# Sourced by scripts/start_agent.sh, providers/opencode/run.sh, and scripts/agent-sandbox.sh.
 #
 # Provides:
 #   agent_image_name   — compute reasoning layer image name from provider + project
@@ -24,10 +23,10 @@ agent_image_name() {
 }
 
 # sandbox_image_name <project_name>
-# Returns: agent-sandbox-<project> (lowercased)
+# Returns: sandbox-<project> (lowercased)
 sandbox_image_name() {
   local PROJECT="${1:?sandbox_image_name requires project name}"
-  echo "agent-sandbox-${PROJECT,,}"
+  echo "sandbox-${PROJECT,,}"
 }
 
 # Container names match image names — one session per project at a time.

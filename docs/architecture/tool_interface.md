@@ -21,12 +21,14 @@ Each project produces two container images:
 
 ## Container Naming
 
-Containers follow the same pattern with a `-1` suffix appended by Docker Compose:
+Container names match image names exactly. `container_name:` is set explicitly in the compose template — Docker Compose does not append an index suffix.
 
 | Container | Name |
 |---|---|
-| Capability layer | `<project>-agent-sandbox-1` |
-| Reasoning layer | `<project>-opencode-agent-1` |
+| Capability layer | `sandbox-<project>` |
+| Reasoning layer | `<provider>-agent-<project>` |
+
+This means only one session per project can run at a time. `docker inspect`, `docker logs`, and `docker stop` address containers by name directly without going through Compose.
 
 ---
 
@@ -139,7 +141,6 @@ The `.env` file in `SANDBOX_DIR` is written once by `agent-sandbox onboard` and 
 | `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/changes` | Harness — written by the capability layer diff pipeline |
 | `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` | Operator — populated before a run; harness places the brief here |
 | `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` | Agent — written during a run; cleared by operator between runs |
-| `SANDBOX_IMAGE_NAME` | `<project>-agent-sandbox` | Harness — derived from `PROJECT_NAME`; built by `scripts/build_sandbox.sh` |
 | `AGENT_IMAGE_NAME` | `<project>-opencode-agent` | Harness — derived from `PROJECT_NAME`; built by `providers/opencode/build.sh` |
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
 | `OPENCODE_SERVER_PASSWORD` | Operator-supplied | Operator — authentication for serve mode |
