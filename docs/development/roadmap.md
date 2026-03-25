@@ -45,41 +45,45 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 #### M2.2 — Reasoning Layer Modularisation
 
-**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure. Introduce a base reasoning image that amortises slow build steps across all projects.
+**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure.
 
-**Depends on:** M2.1. **Scope:** Audit and split `start_agent.sh` and `container-entrypoint.sh` into shared libs vs provider-specific invocation. Document execution modes formally. Define conforming provider interface. Validate OpenCode conforms. Claude Code provider integration deferred until shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved.
+**Depends on:** M2.1. **Scope:** Move `start_agent.sh` to `scripts/` as the provider-agnostic entry point. Define the provider interface (`build.sh` and `run.sh` under `providers/<name>/`). Rename `build_agent.sh` to `build.sh`. Validate OpenCode conforms. Base image split and Claude Code/Desktop provider integrations are deferred.
 
-**Base reasoning image:** Extract slow layers from the reasoning layer Dockerfile into a shared `opencode-base` image (apt-get, npm install, useradd). Per-project reasoning images use `FROM opencode-base` and only add `COPY context/` + `ENTRYPOINT` — making per-project builds near-instant. Base image is built once per host and rebuilt only when opencode-ai or system packages change. M2.1 constraint: reasoning layer Dockerfile must not bake in project-specific content (already enforced — recorded in M2.1 decisions).
-
-**Deferred from M2.1:**
-- Modularise `start_agent.sh` across providers
-- Decouple agent-sandbox's own sandboxing from tool implementation (`make install` vs `make start`)
+**Design decisions:**
+- `scripts/start_agent.sh` is the provider-agnostic entry point: pre-flight, `.env` loading, snapshot pipeline, brief resolution, then dispatches to `providers/<name>/run.sh`. All harness-level checks run here once; provider scripts receive exported env vars and do not re-derive paths or image names. Rationale: isolates harness concerns from provider invocation; a second provider sources the same pre-flight by calling `start_agent.sh`.
+- Provider interface is `build.sh` (image build) and `run.sh` (container invocation) under `providers/<name>/`. Each is independently invokable. `start_agent.sh` calls only `run.sh`; the operator calls `build.sh` explicitly via `make build`. Rationale: build and run have different trigger points; no wrapper needed.
+- `providers/opencode/build_agent.sh` renamed to `providers/opencode/build.sh`. Rationale: aligns with provider interface naming; no functional change.
+- `scripts/build_sandbox.sh` unchanged. Rationale: already at correct location; capability layer build is project-controlled via `Dockerfile.sandbox` in `SANDBOX_DIR`.
+- Compose file existence check moves from `start_agent.sh` to `providers/opencode/run.sh`. Rationale: provider-specific knowledge.
+- Base image split deferred. BuildKit layer cache sufficient for reasoning layer builds; no `--no-cache` issue on reasoning side. Revisit if operators report slow builds.
+- `dirs.sh` unchanged. Removing it would break the host/container sync contract for `dry_run.sh`.
+- Mode vocabulary (`standard`, `dry-run`, `serve`) standardised in harness docs. Each provider declares supported modes in `run.sh` and errors clearly on unsupported mode. `start_agent.sh` passes mode through without validating it.
+- `container-entrypoint.sh` was deleted in M2.1 — audit task is resolved; no action.
+- Checkpoint scripts in `workflow/knowledge-vault/scripts/` deferred — integration testing against a non-vault workflow required before promotion.
 
 **Tasks:**
 
+### Documentation
+- [ ] Update `docs/architecture/execution_model.md` — add execution modes section (`serve`, `standard`, `dry-run`, `headless` reserved); update `start_agent.sh` references to `scripts/start_agent.sh`; add `providers/opencode/run.sh` reference
+- [ ] Update `docs/architecture/tool_interface.md` — update `start_agent.sh` references to `scripts/start_agent.sh`; add `providers/opencode/run.sh` to command shapes; update `build agent` to reference `providers/opencode/build.sh`
+- [ ] Define conforming provider interface in `execution_model.md`: what `build.sh` and `run.sh` must supply, mode support declaration
+
 ### Shared logic extraction
-- [ ] Audit `providers/opencode/start_agent.sh` — extract shared logic (snapshot, mount construction, env loading, container lifecycle) into `libs/`; leave only OpenCode-specific invocation
-- [ ] Audit `container-entrypoint.sh` — extract shared startup sequence into sourced lib; leave only provider exec step; move from `providers/opencode/` to `libs/` or shared location
-- [ ] Evaluate checkpoint scripts in `workflow/knowledge-vault/scripts/` for promotion to `scripts/` as first-class harness tooling; integration testing against at least one non-vault workflow required before treating as general infrastructure
+- [ ] Move `providers/opencode/start_agent.sh` to `scripts/start_agent.sh`; strip compose invocation block; dispatch to `providers/opencode/run.sh` at end
+- [ ] Create `providers/opencode/run.sh` — absorb compose file check, mode dispatch, serve overlay assembly, all `docker compose` calls from old `start_agent.sh`
+- [ ] Rename `providers/opencode/build_agent.sh` to `providers/opencode/build.sh`
 
-### Provider interface
-- [ ] Document execution modes formally in `execution_model.md`: `serve`, `start`, `dry-run`, `headless` (reserved)
-- [ ] Define what a conforming reasoning layer provider must supply: mode support declarations, container config
-- [ ] Validate OpenCode provider conforms after refactor
-
-### Base image
-- [ ] Extract slow layers (apt-get, npm install, useradd) from `providers/opencode/Dockerfile` into a shared `opencode-base` image
-- [ ] Update per-project reasoning layer Dockerfile to `FROM opencode-base`; verify per-project builds are near-instant after base image is built
-- [ ] Document base image build and rebuild workflow in `quickstart.md`
+### Provider interface validation
+- [ ] Validate OpenCode provider conforms: `make dry-run` passes after refactor
 
 ### Deferred breakdown
 - [ ] Claude Code provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_code.md`](../discussions/investigation_claude_code.md) open questions are resolved
 - [ ] Claude Desktop provider integration — full task list after M2.2 shared logic extraction is complete and [`investigation_claude_desktop.md`](../discussions/investigation_claude_desktop.md) open questions are resolved
 
 **Acceptance criteria:**
-- `make build agent` completes in under 10 seconds for a project after `opencode-base` is built on the host
-- A second provider can be added by creating `providers/<name>/` with a Dockerfile and mode support — no changes to shared libs required
+- A second provider can be added by creating `providers/<name>/` with `build.sh`, `run.sh`, and a Dockerfile — no changes to `scripts/` or `libs/` required
 - OpenCode provider passes `make dry-run` after refactor
+- `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/opencode/run.sh`
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
