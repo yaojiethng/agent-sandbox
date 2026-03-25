@@ -8,6 +8,7 @@ env/
 output/
 .workspace/
 .snapshot/
+.sandbox/
 .vault
 
 # === Python ===
