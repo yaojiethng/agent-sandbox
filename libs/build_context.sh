@@ -66,32 +66,3 @@ _build_context_copy() {
 
     cp "$src" "$dst"
 }
-
-# check_template_version <label> <template_file> <installed_file> <display_name> <project_name> <sandbox_dir>
-#
-# Compares the "# agent-sandbox template version: N" comment in an installed
-# file against the current template. Emits a warning and refresh instructions
-# if they differ. Called at build time so the operator is notified before
-# building a potentially inconsistent image.
-#
-# Only meaningful for operator-installed files in SANDBOX_DIR (e.g.
-# Dockerfile.sandbox) — repo-controlled files are always current by definition.
-check_template_version() {
-    local label="$1"
-    local template="$2"
-    local installed="$3"
-    local display_name="$4"
-    local project_name="$5"
-    local sandbox_dir="$6"
-
-    local tmpl_ver inst_ver
-    tmpl_ver=$(grep -m1 "^# agent-sandbox template version:" "$template" 2>/dev/null | awk '{print $NF}' || true)
-    inst_ver=$(grep -m1 "^# agent-sandbox template version:" "$installed" 2>/dev/null | awk '{print $NF}' || true)
-
-    if [[ -n "$tmpl_ver" && "$inst_ver" != "$tmpl_ver" ]]; then
-        echo "Warning: $label is based on template version ${inst_ver:-unknown}, current template is version ${tmpl_ver}."
-        echo "  Your $display_name may be out of date."
-        echo "  To refresh: agent-sandbox onboard --refresh --name=${project_name} --sandbox=${sandbox_dir}"
-        echo ""
-    fi
-}

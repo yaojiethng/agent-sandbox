@@ -224,15 +224,21 @@ fi
 # -------------------------
 # Compose file generation
 # -------------------------
-# docker-compose.yml is generated fresh from the template on every run.
-# It is single-use and not persisted between runs — the file in SANDBOX_DIR
-# is always overwritten. This ensures the compose configuration always
-# reflects the current harness version without requiring a manual refresh.
+# A single fully-merged compose file is generated fresh on every run into a
+# tmpfile. It is never written to SANDBOX_DIR. Image names and other
+# harness-derived values are baked in at generation time; .env secrets and
+# path variables are preserved as ${VAR} for Docker Compose to resolve at
+# runtime from the exported environment.
 #
-# The serve and dry-run overlays are provider-specific and live in
-# providers/<name>/ in the repo — they are never written to SANDBOX_DIR.
-COMPOSE_TEMPLATE="$REPO_ROOT/libs/_templates/docker-compose.yml.template"
-COMPOSE_OUT="$SANDBOX_DIR/docker-compose.yml"
+# File list is mode-aware:
+#   standard  — base template only
+#   dry-run   — base template + libs/docker-compose.dry-run.yml
+#   serve     — base template + providers/<n>/docker-compose.serve.yml
+source "$REPO_ROOT/libs/compose.sh"
+
+COMPOSE_TEMPLATE="$REPO_ROOT/libs/docker-compose.yml"
+DRY_RUN_OVERLAY="$REPO_ROOT/libs/docker-compose.dry-run.yml"
+SERVE_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.serve.yml"
 
 if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   echo "Error: compose template not found: $COMPOSE_TEMPLATE"
@@ -240,7 +246,32 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   exit 1
 fi
 
-sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" "$COMPOSE_TEMPLATE" > "$COMPOSE_OUT"
+COMPOSE_FILES=("$COMPOSE_TEMPLATE")
+
+case "$MODE" in
+  dry-run)
+    if [[ ! -f "$DRY_RUN_OVERLAY" ]]; then
+      echo "Error: dry-run overlay not found: $DRY_RUN_OVERLAY"
+      echo "  The agent-sandbox repo may be incomplete or out of date."
+      exit 1
+    fi
+    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
+    export DRY_RUN_SCRIPT
+    COMPOSE_FILES+=("$DRY_RUN_OVERLAY")
+    ;;
+  serve)
+    if [[ ! -f "$SERVE_OVERLAY" ]]; then
+      echo "Error: serve overlay not found: $SERVE_OVERLAY"
+      echo "  Expected at providers/$PROVIDER_NAME/docker-compose.serve.yml in the agent-sandbox repo."
+      exit 1
+    fi
+    COMPOSE_FILES+=("$SERVE_OVERLAY")
+    ;;
+esac
+
+COMPOSE_OUT="$(mktemp --suffix=.yml)"
+
+compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"
 
 # -------------------------
 # Dispatch to provider
@@ -256,4 +287,4 @@ if [[ ! -f "$PROVIDER_RUN" ]]; then
   exit 1
 fi
 
-exec "$PROVIDER_RUN" "$MODE" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --provider="$PROVIDER_NAME"
+exec "$PROVIDER_RUN" "$MODE" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --provider="$PROVIDER_NAME" --compose-file="$COMPOSE_OUT"

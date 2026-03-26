@@ -25,10 +25,7 @@
 #     wslpath 'C:\Users\you\Projects\my-project'
 #
 # What this script produces in SANDBOX_DIR:
-#   docker-compose.yml           — from template, PROJECT_NAME substituted
-#   docker-compose.serve.yml     — serve overlay
 #   docker-compose.dry-run.yml   — dry-run overlay
-#   Dockerfile.sandbox           — default capability layer Dockerfile
 #   Makefile                     — from template, PROJECT_NAME substituted
 #   agents.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
@@ -64,10 +61,9 @@ Usage: agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
                           (will be created if it does not exist).
                           Example: /mnt/c/Users/you/Projects/my-project-sandbox
 
-  --refresh               Update stale template files (Dockerfile.sandbox,
-                          docker-compose.yml, Makefile) in an existing SANDBOX_DIR
-                          without a full re-onboard. Preserves .env operator
-                          values and agents.md. Run after a harness update.
+  --refresh               Update stale template files (Makefile) in an existing
+                          SANDBOX_DIR without a full re-onboard. Preserves .env
+                          operator values and agents.md. Run after a harness update.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
@@ -174,9 +170,6 @@ fi
 # Template presence check
 # -------------------------
 REQUIRED_TEMPLATES=(
-  "docker-compose.yml.template"
-  "docker-compose.dry-run.yml.template"
-  "dockerfile-default.sandbox"
   "Makefile.template"
 )
 
@@ -221,25 +214,6 @@ echo "Sandbox directory: $SANDBOX_DIR"
 template_version() {
   grep -m1 "^# agent-sandbox template version:" "$1" | awk '{print $NF}'
 }
-
-# -------------------------
-# Compose files
-# -------------------------
-COMPOSE_VERSION=$(template_version "$TEMPLATES/docker-compose.yml.template")
-sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
-  "$TEMPLATES/docker-compose.yml.template" \
-  > "$SANDBOX_DIR/docker-compose.yml"
-echo "  Created: docker-compose.yml"
-
-cp "$TEMPLATES/docker-compose.dry-run.yml.template" "$SANDBOX_DIR/docker-compose.dry-run.yml"
-echo "  Created: docker-compose.dry-run.yml"
-
-# -------------------------
-# Dockerfile.sandbox
-# -------------------------
-DOCKERFILE_SANDBOX_VERSION=$(template_version "$TEMPLATES/dockerfile-default.sandbox")
-cp "$TEMPLATES/dockerfile-default.sandbox" "$SANDBOX_DIR/Dockerfile.sandbox"
-echo "  Created: Dockerfile.sandbox"
 
 # -------------------------
 # Makefile
@@ -295,8 +269,6 @@ if [[ "$REFRESH" == true ]]; then
   ENV_FILE="$SANDBOX_DIR/.env"
   if [[ -f "$ENV_FILE" ]]; then
     sed -i \
-      -e "s/^DOCKERFILE_SANDBOX_VERSION=.*/DOCKERFILE_SANDBOX_VERSION=${DOCKERFILE_SANDBOX_VERSION}/" \
-      -e "s/^COMPOSE_VERSION=.*/COMPOSE_VERSION=${COMPOSE_VERSION}/" \
       -e "s/^MAKEFILE_VERSION=.*/MAKEFILE_VERSION=${MAKEFILE_VERSION}/" \
       "$ENV_FILE"
     echo "  Updated: .env (template versions)"
@@ -325,8 +297,6 @@ OUTPUT_DIR=${OUTPUT_DIR}
 # --- Template versions (set at onboard time) ---
 # Used by build scripts to detect stale onboarded files.
 # To refresh: agent-sandbox onboard --refresh --name=${PROJECT_NAME} --project=${PROJECT_DIR} --sandbox=${SANDBOX_DIR}
-DOCKERFILE_SANDBOX_VERSION=${DOCKERFILE_SANDBOX_VERSION}
-COMPOSE_VERSION=${COMPOSE_VERSION}
 MAKEFILE_VERSION=${MAKEFILE_VERSION}
 
 # --- Operator configuration (review and adjust before first run) ---
@@ -358,14 +328,14 @@ if [[ "$REFRESH" == true ]]; then
   echo ""
   echo "Template files updated to current versions."
   echo "Rebuild images to apply changes:"
-  echo "  make -C $SANDBOX_DIR build-all"
+  echo "  make -C $SANDBOX_DIR build"
 else
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
   echo "  1. Edit $SANDBOX_DIR/agents.md — add project context for the agent"
   echo "  2. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
-  echo "  3. Run: make -C $SANDBOX_DIR build-all"
+  echo "  3. Run: make -C $SANDBOX_DIR build"
   echo "  4. Run: make -C $SANDBOX_DIR dry-run"
   echo ""
   echo "To start a session: make -C $SANDBOX_DIR start"

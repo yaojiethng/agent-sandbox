@@ -70,43 +70,16 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Tasks:**
 
-### Documentation
-- [x] Update `docs/architecture/execution_model.md` — provider interface section; `scripts/start_agent.sh` path references; `providers/<n>/run.sh` reference
-- [x] Update `docs/architecture/tool_interface.md` — execution modes section; path references; corrected command shapes; container naming table; corrected `.env` table
-- [x] Define conforming provider interface in `execution_model.md`
+Architecture documents updated to reflect the provider interface, `start_agent.sh` path, and `run.sh` dispatch pattern.
 
-### Shared logic extraction
-- [x] Move `providers/opencode/start_agent.sh` to `scripts/start_agent.sh`; strip compose block; dispatch to `providers/opencode/run.sh`
-- [x] Create `providers/opencode/run.sh`
-- [x] Rename `providers/opencode/build_agent.sh` to `providers/opencode/build.sh`
+Shared harness logic extracted: `scripts/start_agent.sh` is the provider-agnostic entry point; `libs/containers.sh` owns image naming and preflight; `libs/compose.sh` owns compose generation, args construction, dry-run sequence, teardown, and sandbox health polling.
 
-### Container lifecycle library
-- [x] Create `libs/containers.sh` — image/container naming, build helpers, preflight
-- [x] Update `scripts/agent-sandbox.sh` — `--rebuild` flag; no default provider; `build` iterates providers glob; `require_run_args`/`rebuild_if_requested` helpers; `rebuild` subcommand removed
-- [x] Update `libs/docker-compose.yml` — `OPENCODE_SERVER_PASSWORD` removed from agent environment block; `container_name` pinned to image name
+Provider interface established: `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` under `providers/<n>/`. OpenCode and Hermes both conform. `run.sh` receives a pre-generated compose file and drives `docker compose` calls directly via harness functions.
 
-### Provider interface validation
-- [x] Validate OpenCode provider conforms: `make dry-run PROVIDER=opencode` passes after refactor
+Compose files are no longer written to `SANDBOX_DIR`. A single fully-merged compose file is generated into a tmpfile on each run by `compose_generate`, with image names and host paths baked in and operator secrets preserved as `${VAR}`. `onboard.sh` no longer produces `docker-compose.yml` or `Dockerfile.sandbox`; `build_sandbox.sh` no longer checks template versions.
 
-### Refactoring
-- [x] `onboard.sh` — provider-agnostic; iterates `providers/*/env.example` for `.env` stubs; no `--provider` flag
-- [x] `scripts/start_agent.sh` — pass required variables as explicit args to `run.sh` instead of exporting `.env` variables into the environment
-- [x] `scripts/agent-sandbox.sh` — `PROVIDER=` Make variable; `REBUILD=1` flag; build iterates providers glob
+`make stop` stops all session containers and volumes by compose project label, derived from `--name` rather than `SANDBOX_DIR` basename.
 
-### Compose template refactor
-- [x] Move serve overlay to `providers/<n>/docker-compose.serve.yml` — static file in repo, not generated into `SANDBOX_DIR`; `providers/opencode/run.sh` updated to reference it from `$SCRIPT_DIR/`
-- [x] Delete `libs/_templates/docker-compose.serve.yml.template`
-- [x] Create `providers/opencode/docker-compose.serve.yml` — OpenCode serve overlay with `OPENCODE_SERVER_PASSWORD`
-- [x] Create `providers/opencode/.env.example` — `OPENCODE_SERVER_PASSWORD=` stub
-
-### Hermes provider integration
-- [x] Create `providers/hermes/Dockerfile` — Hermes image; `terminal.backend: local` set in config at build time
-- [x] Create `providers/hermes/build.sh` — provider interface
-- [x] Create `providers/hermes/run.sh` — `standard`, `dry-run`, `serve` modes
-- [x] Create `providers/hermes/docker-compose.serve.yml` — Open WebUI companion service
-- [x] Create `providers/hermes/.env.example` — placeholder
-- [x] Validate: `make dry-run PROVIDER=hermes` passes
-- [x] Validate: `make serve PROVIDER=hermes` launches Open WebUI
 
 ### Deferred breakdown
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
@@ -178,7 +151,6 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
 
 - **multi-service project composition:** -- Some projects run multiple services (e.g. a web app with a database and a test container). In these cases the operator may need to define additional containers alongside the harness-managed sandbox and agent services. A composition mechanism that allows operator-defined services to be merged with the harness-generated base is a future design task. See `roadmap.md` for the deferred discussion.
-
 ---
 
 ### Governance Hardening

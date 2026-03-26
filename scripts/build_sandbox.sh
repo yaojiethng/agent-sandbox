@@ -55,33 +55,18 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/libs/containers.sh"
 
 IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
-DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
+DOCKERFILE="$REPO_ROOT/libs/sandbox.Dockerfile"
 
 if [[ ! -f "$DOCKERFILE" ]]; then
-  echo "Error: Dockerfile.sandbox not found: $DOCKERFILE"
-  echo "  Place Dockerfile.sandbox in SANDBOX_DIR before building."
+  echo "Error: sandbox Dockerfile not found: $DOCKERFILE"
+  echo "  The agent-sandbox repo may be incomplete or out of date."
   exit 1
 fi
 
 # -------------------------
-# Template version check
-# -------------------------
-# Checks that Dockerfile.sandbox in SANDBOX_DIR is based on the current
-# template. Dockerfile.sandbox is operator-installed and affects image
-# contents — a stale version may produce an inconsistent image.
-# docker-compose.yml and Makefile are not checked here: compose files are
-# generated fresh from templates on each run; Makefile staleness is a manual
-# operator concern (run agent-sandbox onboard --refresh after harness updates).
-source "$REPO_ROOT/libs/build_context.sh"
-
-TEMPLATES="$REPO_ROOT/libs/_templates"
-check_template_version "Dockerfile.sandbox" \
-  "$TEMPLATES/dockerfile-default.sandbox" "$SANDBOX_DIR/Dockerfile.sandbox" \
-  "Dockerfile.sandbox" "$PROJECT_NAME" "$SANDBOX_DIR"
-
-# -------------------------
 # Build context
 # -------------------------
+source "$REPO_ROOT/libs/build_context.sh"
 CONTEXT_DIR=$(build_context sandbox "$REPO_ROOT")
 trap 'rm -rf "$CONTEXT_DIR"' EXIT
 
