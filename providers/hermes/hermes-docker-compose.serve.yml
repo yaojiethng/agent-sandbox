@@ -1,0 +1,26 @@
+# providers/hermes/docker-compose.serve.yml
+# Serve mode overlay for the Hermes provider.
+# Referenced directly by providers/hermes/run.sh — not copied to SANDBOX_DIR.
+# Apply on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f <repo>/providers/hermes/docker-compose.serve.yml up
+#
+# Adds Open WebUI as a companion service connected to the Hermes agent container.
+# SERVE_PORT is read from .env in SANDBOX_DIR (default 46553).
+
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ${AGENT_IMAGE_NAME}-open-webui
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SERVE_PORT:-46553}:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      - WEBUI_AUTH=false
+    restart: "no"
+
+volumes:
+  open-webui-data:
