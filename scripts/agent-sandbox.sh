@@ -2,13 +2,17 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Usage:
-#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path> [--provider=<n>]
-#   agent-sandbox build    [sandbox|<provider>|all] --name=<n> --project=<path> --sandbox=<path> [--provider=<n>]
-#   agent-sandbox start    --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox serve    --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox dry-run  --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [--brief=<rel>] [--env=<rel>]
-#   agent-sandbox rebuild  [start|dry-run|serve] --name=<n> --project=<path> --sandbox=<path> [--provider=<n>] [flags]
+#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
+#   agent-sandbox build    [--target=<targets>] --name=<n> --project=<path> --sandbox=<path>
+#   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
+#   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
+#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
+#
+# --target accepts: all, sandbox, <provider>, or comma-separated combinations
+#   agent-sandbox build --target=all
+#   agent-sandbox build --target=hermes
+#   agent-sandbox build --target=hermes,sandbox
 
 set -euo pipefail
 
@@ -22,7 +26,7 @@ SUBCOMMAND="${1:-}"
 shift || true
 
 if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <onboard|build|start|dry-run|rebuild|apply> <flags>"
+  echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|apply> <flags>"
   exit 1
 fi
 
@@ -33,7 +37,8 @@ PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR=""
 BRANCH=""
-PROVIDER_NAME="opencode"   # default provider; override with --provider=<n>
+PROVIDER_NAME=""
+REBUILD=false
 PASSTHROUGH=()
 
 parse_flags() {
@@ -44,9 +49,30 @@ parse_flags() {
       --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
       --branch=*)   BRANCH="${ARG#--branch=}" ;;
       --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+      --rebuild)    REBUILD=true ;;
       *)            PASSTHROUGH+=("$ARG") ;;
     esac
   done
+}
+
+require_run_args() {
+  local SUBCOMMAND="$1"
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --name, --project, and --sandbox are required"
+    exit 1
+  fi
+  if [[ -z "$PROVIDER_NAME" ]]; then
+    echo "Error: --provider is required. Example: agent-sandbox $SUBCOMMAND --provider=hermes ..."
+    exit 1
+  fi
+}
+
+rebuild_if_requested() {
+  if [[ "$REBUILD" == true ]]; then
+    echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
+    build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" --no-cache
+    build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" --no-cache
+  fi
 }
 
 # -------------------------
@@ -59,36 +85,58 @@ case "$SUBCOMMAND" in
     ;;
 
   build)
-    # Variant is: sandbox | <provider> | all
-    # sandbox    — build capability layer image only
-    # <provider> — build reasoning layer image for the named provider (e.g. opencode)
-    # all        — build both (uses --provider value for reasoning layer)
-    # No variant (or explicit 'all') builds both.
-    BUILD_VARIANT="${1:-all}"
-    case "$BUILD_VARIANT" in
-      sandbox|all) shift || true ;;
-      --*) BUILD_VARIANT="all" ;;  # no variant given, flags follow immediately
-      *)
-        # Treat any other non-flag value as a provider name
-        PROVIDER_NAME="$BUILD_VARIANT"
-        shift || true
-        BUILD_VARIANT="provider"
-        ;;
-    esac
-    parse_flags "$@"
-    case "$BUILD_VARIANT" in
-      sandbox)  build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" ;;
-      provider) build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" ;;
-      all)      build_all     "$PROVIDER_NAME" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" ;;
-    esac
+    BUILD_TARGET=""
+    TARGET_FLAG_SEEN=false
+    REMAINING=()
+    for ARG in "$@"; do
+      case "$ARG" in
+        --target=*)
+          TARGET_FLAG_SEEN=true
+          BUILD_TARGET="${ARG#--target=}"
+          ;;
+        *) REMAINING+=("$ARG") ;;
+      esac
+    done
+    parse_flags "${REMAINING[@]}"
+
+    # --target= with no value is an error
+    if [[ "$TARGET_FLAG_SEEN" == true && -z "$BUILD_TARGET" ]]; then
+      echo "Error: --target requires a value. Use --target=all, --target=sandbox, or --target=<provider>[,<provider>]"
+      exit 1
+    fi
+
+    # --target absent or --target=all → build everything
+    if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
+      build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+      for BUILD_SCRIPT in "$AGENT_SANDBOX_REPO/providers/"*/build.sh; do
+        [[ -f "$BUILD_SCRIPT" ]] || continue
+        "$BUILD_SCRIPT" --name="$PROJECT_NAME"
+      done
+    else
+      # Split comma-separated list; build sandbox first if present
+      IFS=',' read -ra BUILD_TARGETS <<< "$BUILD_TARGET"
+      WANT_SANDBOX=false
+      PROVIDER_TARGETS=()
+      for T in "${BUILD_TARGETS[@]}"; do
+        if [[ "$T" == "sandbox" ]]; then
+          WANT_SANDBOX=true
+        else
+          PROVIDER_TARGETS+=("$T")
+        fi
+      done
+      if [[ "$WANT_SANDBOX" == true ]]; then
+        build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+      fi
+      for P in "${PROVIDER_TARGETS[@]}"; do
+        build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
+      done
+    fi
     ;;
 
   start)
     parse_flags "$@"
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name, --project, and --sandbox are required"
-      exit 1
-    fi
+    require_run_args start
+    rebuild_if_requested
     "$SCRIPTS/start_agent.sh" standard \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
@@ -99,10 +147,8 @@ case "$SUBCOMMAND" in
 
   serve)
     parse_flags "$@"
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name, --project, and --sandbox are required"
-      exit 1
-    fi
+    require_run_args serve
+    rebuild_if_requested
     "$SCRIPTS/start_agent.sh" serve \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
@@ -113,52 +159,14 @@ case "$SUBCOMMAND" in
 
   dry-run)
     parse_flags "$@"
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name, --project, and --sandbox are required"
-      exit 1
-    fi
+    require_run_args dry-run
+    rebuild_if_requested
     "$SCRIPTS/start_agent.sh" dry-run \
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
       --provider="$PROVIDER_NAME" \
       "${PASSTHROUGH[@]}"
-    ;;
-
-  rebuild)
-    # Variant is required: start | dry-run | serve
-    REBUILD_MODE="${1:-}"
-    case "$REBUILD_MODE" in
-      start|dry-run|serve) shift || true ;;
-      "")
-        echo "Error: rebuild requires a mode: start, dry-run, or serve"
-        echo "Usage: agent-sandbox rebuild <start|dry-run|serve> --name=<n> --project=<path> --sandbox=<path> [flags]"
-        exit 1
-        ;;
-      *)
-        echo "Unknown rebuild mode: $REBUILD_MODE"
-        echo "Usage: agent-sandbox rebuild <start|dry-run|serve> --name=<n> --project=<path> --sandbox=<path> [flags]"
-        exit 1
-        ;;
-    esac
-    parse_flags "$@"
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: rebuild requires --name, --project, and --sandbox"
-      exit 1
-    fi
-    echo "Rebuilding all images..."
-    build_all "$PROVIDER_NAME" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" --no-cache
-    # Re-dispatch to the target mode
-    case "$REBUILD_MODE" in
-      start|serve|dry-run)
-        exec "$0" "$REBUILD_MODE" \
-          --name="$PROJECT_NAME" \
-          --project="$PROJECT_DIR" \
-          --sandbox="$SANDBOX_DIR" \
-          --provider="$PROVIDER_NAME" \
-          "${PASSTHROUGH[@]}"
-        ;;
-    esac
     ;;
 
   apply)
@@ -175,7 +183,7 @@ case "$SUBCOMMAND" in
 
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, rebuild, apply"
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, apply"
     exit 1
     ;;
 esac

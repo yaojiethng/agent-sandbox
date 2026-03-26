@@ -5,6 +5,13 @@
 # Based on the upstream Docker PR: NousResearch/hermes-agent#1841
 # Applies reviewer suggestions: layered apt, --no-cache-dir, npm ci,
 # pinned base image, combined RUN steps for smaller layers.
+#
+# Installation approach follows the official install script:
+# https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh
+# Key alignments:
+#   - uv used for Python dependency management instead of pip directly
+# Note: mini-swe-agent submodule was removed in hermes-agent#2804 — all terminal
+# backends are now inlined. Plain git clone is sufficient; no submodule init needed.
 FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,13 +30,21 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------
+# Install uv (fast Python package manager)
+# -------------------------
+RUN pip install uv --break-system-packages --no-cache-dir
+
+# -------------------------
 # Install Hermes from source (root)
 # -------------------------
 RUN git clone https://github.com/NousResearch/hermes-agent /opt/hermes
 WORKDIR /opt/hermes
 
-RUN pip install -e ".[all]" --break-system-packages --no-cache-dir && \
-    pip install -e "./mini-swe-agent" --break-system-packages --no-cache-dir
+RUN uv venv venv --python 3.11
+ENV VIRTUAL_ENV=/opt/hermes/venv
+ENV PATH="/opt/hermes/venv/bin:$PATH"
+
+RUN uv pip install -e ".[all]" --no-cache-dir
 
 RUN npm ci && \
     npx playwright install --with-deps chromium
@@ -79,6 +94,8 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# hermes chat is exec'd directly.
-# dry-run: docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
-ENTRYPOINT ["hermes", "chat"]
+# No CMD — subcommand is injected by run.sh per mode:
+#   standard: docker compose run --rm agent chat
+#   serve:    command: ["api"] in docker-compose.serve.yml
+#   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
+ENTRYPOINT ["hermes"]

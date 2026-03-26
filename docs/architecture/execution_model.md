@@ -218,7 +218,7 @@ Steps 1–3 of the capability layer entrypoint must succeed before the reasoning
 
 A conforming reasoning layer provider supplies two scripts under `providers/<name>/`:
 
-**`build.sh`** — builds the reasoning layer Docker image. Must accept `--name=<project>` and `--no-cache`. Produces an image named `<provider>-agent-<project>`. Called by the operator via `make build PROVIDER=<n>` or `make build`; never called by `scripts/start_agent.sh`.
+**`build.sh`** — builds the reasoning layer Docker image. Must accept `--name=<project>` and `--no-cache`. Produces an image named `<provider>-agent-<project>`. Called by the operator via `make build TARGET=<n>` or `make build`; never called by `scripts/start_agent.sh`.
 
 **`run.sh`** — handles container invocation. Called by `scripts/start_agent.sh` after pre-flight completes. Receives the execution mode and sandbox directory as arguments. Responsibilities: compose file validation, mode dispatch, overlay assembly, all `docker compose` calls (up, run, exec, down). Must error clearly if asked for an unsupported mode.
 

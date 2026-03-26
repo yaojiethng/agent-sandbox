@@ -39,8 +39,8 @@ All commands are invoked via `make` targets in the project-side Makefile, which 
 | Command | Effect |
 |---|---|
 | `make build` | Build capability layer image + all provider images |
-| `make build PROVIDER=hermes` | Build capability layer image + hermes provider image only |
-| `make build PROVIDER=hermes,sandbox` | Build hermes provider image + capability layer image only |
+| `make build TARGET=hermes` | Build hermes provider image only |
+| `make build TARGET=hermes,sandbox` | Build hermes provider image + capability layer image |
 | `make start PROVIDER=<n>` | Check images exist; `docker compose up` (standard mode) |
 | `make serve PROVIDER=<n>` | Check images exist; `docker compose up` with provider serve overlay |
 | `make dry-run PROVIDER=<n>` | Check images exist; `docker compose up` with dry-run overlay; liveness check |

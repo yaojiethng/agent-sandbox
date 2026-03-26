@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# providers/hermes/run.sh
-# Handles compose invocation for the Hermes provider.
+# providers/opencode/run.sh
+# Handles compose invocation for the OpenCode provider.
 # Called by scripts/start_agent.sh after pre-flight completes.
 #
 # Usage:
 #   ./run.sh <mode> --name=<project_name> --sandbox=<path>
 #
 # Modes:
-#   standard   — Hermes TUI attached to terminal
-#   serve      — Open WebUI launched as a companion service via compose overlay
+#   standard   — OpenCode TUI attached to terminal
+#   serve      — OpenCode in server mode, port exposed at SERVE_PORT
 #   dry-run    — liveness check only
+#   headless   — reserved, not yet implemented
 #
 # Expects .env variables (AUTOSAVE_INTERVAL, SERVE_PORT, etc.) to be
 # present in the environment, exported by scripts/start_agent.sh.
@@ -20,7 +21,7 @@ set -euo pipefail
 # Paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# REPO_ROOT assumes this script lives at providers/hermes/
+# REPO_ROOT assumes this script lives at providers/opencode/
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$REPO_ROOT/libs/containers.sh"
@@ -41,12 +42,13 @@ fi
 # -------------------------
 PROJECT_NAME=""
 SANDBOX_DIR=""
+PROVIDER_NAME="opencode"
 
 for ARG in "$@"; do
   case "$ARG" in
     --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
     --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --provider=*) ;; # accepted but not needed — we are the provider
+    --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -122,7 +124,7 @@ case "$MODE" in
     SERVE_OVERLAY="$SCRIPT_DIR/docker-compose.serve.yml"
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at providers/hermes/docker-compose.serve.yml in the agent-sandbox repo."
+      echo "  Expected at providers/opencode/docker-compose.serve.yml in the agent-sandbox repo."
       exit 1
     fi
     COMPOSE_ARGS+=(-f "$SERVE_OVERLAY")
@@ -130,6 +132,11 @@ case "$MODE" in
 
   standard)
     # No overlay needed
+    ;;
+
+  headless)
+    echo "Error: headless mode is reserved and not yet implemented"
+    exit 1
     ;;
 
   *)
@@ -145,15 +152,20 @@ esac
 docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
 
 if [[ "$MODE" == "serve" ]]; then
-  echo "Starting agent: $PROJECT_NAME (serve mode — Open WebUI)"
+  echo "Starting agent: $PROJECT_NAME (serve mode — Hermes API + Open WebUI)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
-  echo "Agent running. Open WebUI available at http://127.0.0.1:${SERVE_PORT}"
+  echo "Open WebUI available at http://127.0.0.1:${SERVE_PORT}"
+  echo "Hermes API available at http://127.0.0.1:8642/v1"
   echo "Stop with: docker compose -f $COMPOSE_FILE -f $SCRIPT_DIR/docker-compose.serve.yml down -v"
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
   docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
 
+  # Poll until sandbox is healthy before attaching the agent.
+  # depends_on: service_healthy only applies to compose up, not compose run.
+  # Container name is pinned via container_name: in the compose template — no
+  # Compose-generated suffix. Resolved from the same convention as the template.
   SANDBOX_CONTAINER="$(sandbox_container_name "$PROJECT_NAME")"
   echo "+ waiting for sandbox to be healthy..."
   until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
@@ -162,7 +174,7 @@ else
   echo "+ sandbox healthy."
 
   echo "+ attaching to agent (TUI)..."
-  docker compose "${COMPOSE_ARGS[@]}" run --rm agent
+  docker compose "${COMPOSE_ARGS[@]}" run --rm agent chat
 
   echo "+ tearing down..."
   docker compose "${COMPOSE_ARGS[@]}" down -v

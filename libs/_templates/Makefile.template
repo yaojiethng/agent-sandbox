@@ -1,5 +1,5 @@
 # Makefile — <project-name>
-# agent-sandbox template version: 2
+# agent-sandbox template version: 3
 # Runs agent-sandbox against this project.
 # Requires agent-sandbox CLI installed on the host:
 #   make install  (from the agent-sandbox repo)
@@ -13,14 +13,19 @@
 # Paths must be WSL/Linux format. To convert a Windows path:
 #   wslpath 'C:\Users\you\Projects\my-project'
 #
-# PROVIDER SELECTION
-#   Pass a provider name as a trailing argument to select a reasoning layer.
-#   Default provider is opencode.
+# PROVIDER
+#   Required for all run targets. Pass as a Make variable.
+#   Example: make start PROVIDER=hermes
 #
-#   make start            → opencode (default)
-#   make start hermes     → hermes
-#   make serve hermes     → hermes in serve mode
-#   make dry-run hermes   → hermes dry-run
+# REBUILD
+#   Optional. Set to rebuild required containers before running.
+#   Example: make start PROVIDER=hermes REBUILD=1
+#
+# BUILD TARGETS
+#   make build                        — builds sandbox + all providers
+#   make build TARGET=all             — explicit alias for build-all
+#   make build TARGET=hermes          — builds hermes provider only
+#   make build TARGET=hermes,sandbox  — builds hermes and sandbox
 
 -include .env
 export
@@ -30,39 +35,23 @@ PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run:
 SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 AGENT_BRIEF  := agents.md
 ENV_FILE     := .env
+PROVIDER     ?=
+REBUILD      ?=
+TARGET       ?=
 
-# Provider passthrough — trailing argument after the target name.
-# e.g. make start hermes → --provider=hermes
-# If not supplied, start_agent.sh defaults to opencode.
-PROVIDER     := $(wordlist 2,99,$(MAKECMDGOALS))
-PROVIDER_ARG := $(if $(PROVIDER),--provider=$(PROVIDER),)
+REBUILD_FLAG  = $(if $(REBUILD),--rebuild,)
+PROVIDER_FLAG = $(if $(PROVIDER),--provider=$(PROVIDER),)
+TARGET_FLAG   = --target=$(if $(TARGET),$(TARGET),all)
 
-# Suppress "no rule to make target '<provider>'" for passthrough words.
-%:
-	@:
-
-.PHONY: build build-sandbox build-agent build-all
-.PHONY: start serve dry-run apply
-.PHONY: rebuild rebuild-start rebuild-serve rebuild-dry-run
+.PHONY: build start serve dry-run apply
 
 # -------------------------
 # Build
 # -------------------------
 
-build: build-all
-
-build-sandbox:
-	agent-sandbox build sandbox \
-	  --name=$(PROJECT_NAME) \
-	  --sandbox=$(SANDBOX_DIR)
-
-build-agent:
-	agent-sandbox build agent \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR)
-
-build-all:
-	agent-sandbox build all \
+build:
+	agent-sandbox build \
+	  $(TARGET_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
@@ -72,31 +61,34 @@ build-all:
 # -------------------------
 
 start:
-	-agent-sandbox start \
+	agent-sandbox start \
+	  $(PROVIDER_FLAG) \
+	  $(REBUILD_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
+	  --env=$(ENV_FILE)
 
 serve:
-	-agent-sandbox serve \
+	agent-sandbox serve \
+	  $(PROVIDER_FLAG) \
+	  $(REBUILD_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
+	  --env=$(ENV_FILE)
 
 dry-run:
 	agent-sandbox dry-run \
+	  $(PROVIDER_FLAG) \
+	  $(REBUILD_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
+	  --env=$(ENV_FILE)
 
 # -------------------------
 # Apply
@@ -107,36 +99,4 @@ apply:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
-
-# -------------------------
-# Rebuild (force rebuild all images, then start)
-# -------------------------
-
-rebuild: rebuild-start
-
-rebuild-start:
-	-agent-sandbox rebuild start \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
-
-rebuild-serve:
-	-agent-sandbox rebuild serve \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
-
-rebuild-dry-run:
-	agent-sandbox rebuild dry-run \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
-	  --env=$(ENV_FILE) \
-	  $(PROVIDER_ARG)
+	  
