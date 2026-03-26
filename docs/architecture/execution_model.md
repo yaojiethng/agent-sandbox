@@ -177,8 +177,8 @@ The harness manages two containers per session via Docker Compose. Start order i
 
 **Start sequence:**
 1. `scripts/start_agent.sh` runs pre-flight: validates paths, loads `.env`, runs snapshot pipeline stage 1, resolves brief
-2. `scripts/start_agent.sh` dispatches to `providers/opencode/run.sh`, passing mode and sandbox dir
-3. `providers/opencode/run.sh` writes `docker-compose.yml` and any mode overrides into `SANDBOX_DIR` from templates; invokes `docker compose`
+2. `scripts/start_agent.sh` dispatches to `providers/<n>/run.sh`, passing mode and sandbox dir
+3. `providers/<n>/run.sh` writes `docker-compose.yml` and `docker-compose.dry-run.yml` into `SANDBOX_DIR` from templates; assembles compose args with serve overlay sourced from `providers/<n>/docker-compose.serve.yml` in the repo if mode is `serve`; invokes `docker compose`
 4. Capability layer starts first (service dependency), runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
 5. Reasoning layer container starts with `--volumes-from <capability-layer>` — attaches to capability layer's `sandbox/`, mounts `.workspace/input/` and `.workspace/output/` from host
 6. Reasoning layer hands off to the agent
@@ -208,7 +208,7 @@ The capability layer container must be running before the reasoning layer contai
 
 **Reasoning layer entrypoint:**
 
-The reasoning layer has no entrypoint script. `opencode` is exec'd directly via `ENTRYPOINT ["opencode"]` in the Dockerfile. `agents.md` is placed via the Dockerfile. The agent brief and operator input files are accessible via the `workspace/input/` read-only mount — no copy step is required.
+The reasoning layer entrypoint is provider-specific. It is defined in `providers/<n>/Dockerfile` via the `ENTRYPOINT` instruction. The agent brief and operator input files are accessible via the `workspace/input/` read-only mount — no copy step is required.
 
 Steps 1–3 of the capability layer entrypoint must succeed before the reasoning layer container starts. Any failure exits the capability layer container without starting the reasoning layer.
 
@@ -218,9 +218,13 @@ Steps 1–3 of the capability layer entrypoint must succeed before the reasoning
 
 A conforming reasoning layer provider supplies two scripts under `providers/<name>/`:
 
-**`build.sh`** — builds the reasoning layer Docker image. Must accept `--name=<project>` and `--no-cache`. Produces an image named `<provider>-agent-<project>`. Called explicitly by the operator via `make build agent`; never called by `scripts/start_agent.sh`.
+**`build.sh`** — builds the reasoning layer Docker image. Must accept `--name=<project>` and `--no-cache`. Produces an image named `<provider>-agent-<project>`. Called by the operator via `make build PROVIDER=<n>` or `make build`; never called by `scripts/start_agent.sh`.
 
 **`run.sh`** — handles container invocation. Called by `scripts/start_agent.sh` after pre-flight completes. Receives the execution mode and sandbox directory as arguments. Responsibilities: compose file validation, mode dispatch, overlay assembly, all `docker compose` calls (up, run, exec, down). Must error clearly if asked for an unsupported mode.
+
+**`docker-compose.serve.yml`** — static serve mode overlay. Referenced directly by `run.sh` via an absolute path into the agent-sandbox repo. Not copied to `SANDBOX_DIR`. Contains only provider-specific serve configuration — port bindings, additional services, provider credentials.
+
+**`.env.example`** — provider-specific `.env` stubs. Appended to the project's `.env` by `agent-sandbox onboard`. Documents and seeds any variables the provider requires (e.g. `OPENCODE_SERVER_PASSWORD=`).
 
 `scripts/start_agent.sh` is provider-agnostic. It owns: flag parsing, path validation, `.env` loading, git validation, workspace directory setup, snapshot pipeline, and brief resolution. It exports all `.env` variables into the environment before calling `run.sh` — provider scripts receive image names, host paths, and port config without re-deriving them.
 

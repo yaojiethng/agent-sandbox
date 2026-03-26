@@ -51,11 +51,18 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Design decisions:**
 - `scripts/start_agent.sh` is the provider-agnostic entry point: pre-flight, `.env` loading, snapshot pipeline, brief resolution, then dispatches to `providers/<name>/run.sh`. All harness-level checks run here once; provider scripts receive exported env vars and do not re-derive paths or image names. Rationale: isolates harness concerns from provider invocation; a second provider sources the same pre-flight by calling `start_agent.sh`.
-- Provider interface is `build.sh` (image build) and `run.sh` (container invocation) under `providers/<name>/`. Each is independently invokable. `start_agent.sh` calls only `run.sh`; the operator calls `build.sh` explicitly via `make build`. Rationale: build and run have different trigger points; no wrapper needed.
+- Provider interface is `build.sh`, `run.sh`, `docker-compose.serve.yml`, and `.env.example` under `providers/<name>/`. Each is independently managed. `start_agent.sh` calls only `run.sh`; the operator calls `build.sh` explicitly via `make build`. Rationale: build and run have different trigger points; no wrapper needed.
 - `providers/opencode/build_agent.sh` renamed to `providers/opencode/build.sh`. Rationale: aligns with provider interface naming; no functional change.
 - `scripts/build_sandbox.sh` unchanged. Rationale: already at correct location; capability layer build is project-controlled via `Dockerfile.sandbox` in `SANDBOX_DIR`.
-- Compose file existence check moves from `start_agent.sh` to `providers/opencode/run.sh`. Rationale: provider-specific knowledge.
-- Base image split deferred. BuildKit layer cache sufficient for reasoning layer builds; no `--no-cache` issue on reasoning side. Revisit if operators report slow builds.
+- Serve overlay moves to `providers/<n>/docker-compose.serve.yml` — static file in repo, not copied to `SANDBOX_DIR`. Rationale: provider-specific; no project-specific values; operator never manages it.
+- Provider `.env` stubs sourced from `providers/<n>/.env.example` — iterated by `onboard.sh` at onboard time. Rationale: adding a provider requires no changes to `onboard.sh`.
+- `onboard.sh` has no `--provider` flag — onboarding is project setup, provider selected at run time. Rationale: clean separation of concerns.
+- Provider selection via Make variables (`PROVIDER=hermes`) not trailing words. Rationale: idiomatic Make; no goals-string parsing needed.
+- `--rebuild` is a flag on run targets (`REBUILD=1`), not a separate subcommand. Rationale: scoped to containers required for the run target; simpler command surface.
+- `build` with no `PROVIDER` iterates `providers/*/build.sh` glob. Rationale: adding a provider requires no changes to `agent-sandbox.sh`.
+- `make build-all`, `make build-sandbox`, `make build-agent` removed — superseded by `make build PROVIDER=<n>`.
+- Hermes is the one additional provider for M2.2. Pi and Claude Desktop remain informal future candidates, not committed roadmap items.
+- Base image split deferred. BuildKit layer cache sufficient for reasoning layer builds. Revisit if operators report slow builds.
 - `dirs.sh` unchanged. Removing it would break the host/container sync contract for `dry_run.sh`.
 - Mode vocabulary (`standard`, `dry-run`, `serve`) standardised in harness docs. Each provider declares supported modes in `run.sh` and errors clearly on unsupported mode. `start_agent.sh` passes mode through without validating it.
 - `container-entrypoint.sh` was deleted in M2.1 — audit task is resolved; no action.
@@ -64,7 +71,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Tasks:**
 
 ### Documentation
-- [x] Update `docs/architecture/execution_model.md` — provider interface section; `scripts/start_agent.sh` path references; `providers/opencode/run.sh` reference
+- [x] Update `docs/architecture/execution_model.md` — provider interface section; `scripts/start_agent.sh` path references; `providers/<n>/run.sh` reference
 - [x] Update `docs/architecture/tool_interface.md` — execution modes section; path references; corrected command shapes; container naming table; corrected `.env` table
 - [x] Define conforming provider interface in `execution_model.md`
 
@@ -75,30 +82,46 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 ### Container lifecycle library
 - [x] Create `libs/containers.sh` — image/container naming, build helpers, preflight
-- [x] Update `scripts/agent-sandbox.sh` — source `containers.sh`; provider-agnostic build dispatch; `--provider` flag; drop inline helpers
-- [x] Update `libs/_template/docker-compose.yml.template` — `container_name` pinned to image name; no Compose index suffix
+- [x] Update `scripts/agent-sandbox.sh` — `--rebuild` flag; no default provider; `build` iterates providers glob; `require_run_args`/`rebuild_if_requested` helpers; `rebuild` subcommand removed
+- [x] Update `libs/_templates/docker-compose.yml.template` — `OPENCODE_SERVER_PASSWORD` removed from agent environment block; `container_name` pinned to image name
 
 ### Provider interface validation
-- [x] Validate OpenCode provider conforms: `make dry-run` passes after refactor
+- [x] Validate OpenCode provider conforms: `make dry-run PROVIDER=opencode` passes after refactor
 
 ### Refactoring
-- [x] `onboard.sh` — use `libs/containers.sh` naming functions for image name generation; remove any hardcoded name construction
+- [x] `onboard.sh` — provider-agnostic; iterates `providers/*/env.example` for `.env` stubs; no `--provider` flag
 - [x] `scripts/start_agent.sh` — pass required variables as explicit args to `run.sh` instead of exporting `.env` variables into the environment
-- [ ] `onboard.sh` multi-provider support — add `--provider` flag and provider-scoped onboard behaviour (e.g. per-provider `.env` vars, provider-specific template selection). Depends on provider investigation outcomes. 
+- [x] `scripts/agent-sandbox.sh` — `PROVIDER=` Make variable; `REBUILD=1` flag; build iterates providers glob
 
 ### Compose template refactor
-- [ ] Make compose templates provider-agnostic — current templates are scoped to OpenCode only; prerequisite for `serve` mode on any second provider (Claude Code Remote Control, Hermes/Open WebUI)
+- [x] Move serve overlay to `providers/<n>/docker-compose.serve.yml` — static file in repo, not generated into `SANDBOX_DIR`; `providers/opencode/run.sh` updated to reference it from `$SCRIPT_DIR/`
+- [x] Delete `libs/_templates/docker-compose.serve.yml.template`
+- [x] Create `providers/opencode/docker-compose.serve.yml` — OpenCode serve overlay with `OPENCODE_SERVER_PASSWORD`
+- [x] Create `providers/opencode/.env.example` — `OPENCODE_SERVER_PASSWORD=` stub
+
+### Hermes provider integration
+- [x] Create `providers/hermes/Dockerfile` — Hermes image; `terminal.backend: local` set in config at build time
+- [x] Create `providers/hermes/build.sh` — provider interface
+- [x] Create `providers/hermes/run.sh` — `standard`, `dry-run`, `serve` modes
+- [x] Create `providers/hermes/docker-compose.serve.yml` — Open WebUI companion service
+- [x] Create `providers/hermes/.env.example` — placeholder
+- [ ] Validate: `make dry-run PROVIDER=hermes` passes
+- [ ] Validate: `make serve PROVIDER=hermes` launches Open WebUI
 
 ### Deferred breakdown
-- [ ] Claude Code provider integration — investigation resolved; `start`, `dry-run`, `serve` (Remote Control, requires claude.ai subscription auth); full task list at implementation time
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
 - [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
-- [ ] Hermes provider integration — investigation resolved; `start`, `dry-run`, `serve` (Open WebUI via compose template); `terminal.backend: local` required; full task list at implementation time
+- [ ] Open WebUI ↔ Hermes API connection in serve mode — serve overlay launches Open WebUI but connection to Hermes backend needs follow-up once Hermes API surface is confirmed
 
 **Acceptance criteria:**
-- A second provider can be added by creating `providers/<n>/` with `build.sh`, `run.sh`, and a Dockerfile — no changes to `scripts/` or `libs/` required
-- OpenCode provider passes `make dry-run` after refactor
-- `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/opencode/run.sh`
+- `make dry-run PROVIDER=opencode` passes after refactor
+- `make dry-run PROVIDER=hermes` passes
+- `make serve PROVIDER=opencode` resolves serve overlay from `providers/opencode/` (not `SANDBOX_DIR`)
+- `agent-sandbox onboard` produces `.env` with stubs from all `providers/*/env.example`; no `docker-compose.serve.yml` in `SANDBOX_DIR`
+- `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
+- `make build` builds sandbox + all providers
+- A second provider can be added under `providers/<n>/` with `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required
+- `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/<n>/run.sh`
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
