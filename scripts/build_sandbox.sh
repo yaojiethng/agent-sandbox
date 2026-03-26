@@ -64,34 +64,24 @@ if [[ ! -f "$DOCKERFILE" ]]; then
 fi
 
 # -------------------------
-# Template version checks
+# Template version check
 # -------------------------
-check_template_version() {
-  local label="$1" template="$2" installed="$3" name="$4"
-  local tmpl_ver inst_ver
-  tmpl_ver=$(grep -m1 "^# agent-sandbox template version:" "$template" 2>/dev/null | awk '{print $NF}' || true)
-  inst_ver=$(grep -m1 "^# agent-sandbox template version:" "$installed" 2>/dev/null | awk '{print $NF}' || true)
-  if [[ -n "$tmpl_ver" && "$inst_ver" != "$tmpl_ver" ]]; then
-    echo "Warning: $label is based on template version ${inst_ver:-unknown}, current template is version ${tmpl_ver}."
-    echo "  Your $name may be out of date."
-    echo "  To refresh: agent-sandbox onboard --name=${PROJECT_NAME} --sandbox=${SANDBOX_DIR}"
-    echo ""
-  fi
-}
+# Checks that Dockerfile.sandbox in SANDBOX_DIR is based on the current
+# template. Dockerfile.sandbox is operator-installed and affects image
+# contents — a stale version may produce an inconsistent image.
+# docker-compose.yml and Makefile are not checked here: compose files are
+# generated fresh from templates on each run; Makefile staleness is a manual
+# operator concern (run agent-sandbox onboard --refresh after harness updates).
+source "$REPO_ROOT/libs/build_context.sh"
 
 TEMPLATES="$REPO_ROOT/libs/_templates"
 check_template_version "Dockerfile.sandbox" \
-  "$TEMPLATES/dockerfile-default.sandbox" "$SANDBOX_DIR/Dockerfile.sandbox" "Dockerfile.sandbox"
-check_template_version "docker-compose.yml" \
-  "$TEMPLATES/docker-compose.yml.template" "$SANDBOX_DIR/docker-compose.yml" "docker-compose.yml"
-check_template_version "Makefile" \
-  "$TEMPLATES/Makefile.template" "$SANDBOX_DIR/Makefile" "Makefile"
+  "$TEMPLATES/dockerfile-default.sandbox" "$SANDBOX_DIR/Dockerfile.sandbox" \
+  "Dockerfile.sandbox" "$PROJECT_NAME" "$SANDBOX_DIR"
 
 # -------------------------
 # Build context
 # -------------------------
-source "$REPO_ROOT/libs/build_context.sh"
-
 CONTEXT_DIR=$(build_context sandbox "$REPO_ROOT")
 trap 'rm -rf "$CONTEXT_DIR"' EXIT
 

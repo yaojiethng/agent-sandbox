@@ -222,6 +222,27 @@ if [[ -n "$AGENT_BRIEF" ]]; then
 fi
 
 # -------------------------
+# Compose file generation
+# -------------------------
+# docker-compose.yml is generated fresh from the template on every run.
+# It is single-use and not persisted between runs — the file in SANDBOX_DIR
+# is always overwritten. This ensures the compose configuration always
+# reflects the current harness version without requiring a manual refresh.
+#
+# The serve and dry-run overlays are provider-specific and live in
+# providers/<name>/ in the repo — they are never written to SANDBOX_DIR.
+COMPOSE_TEMPLATE="$REPO_ROOT/libs/_templates/docker-compose.yml.template"
+COMPOSE_OUT="$SANDBOX_DIR/docker-compose.yml"
+
+if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
+  echo "Error: compose template not found: $COMPOSE_TEMPLATE"
+  echo "  The agent-sandbox repo may be incomplete or out of date."
+  exit 1
+fi
+
+sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" "$COMPOSE_TEMPLATE" > "$COMPOSE_OUT"
+
+# -------------------------
 # Dispatch to provider
 # -------------------------
 # containers.sh is already sourced above; preflight uses the derived image names.
