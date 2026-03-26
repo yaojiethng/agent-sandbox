@@ -2,7 +2,7 @@
 
 **Status:** Superseded — made obsolete by the two-layer architecture decision. See Resolution section.
 
-> **Superseded.** The single-container model described in this story's open questions is no longer the target architecture. The agent modification workflow (KV5) now proceeds under the two-layer model (reasoning layer / capability layer) as **M2.1** in the main roadmap. See [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md) and [`docs/development/roadmap.md`](../development/roadmap.md) — M2.1. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](../../workflow/knowledge-vault/README.md).
+> **Superseded.** The single-container model described in this story's open questions is no longer the target architecture. The agent modification workflow (KV5) now proceeds under the two-layer model (reasoning layer / capability layer) as **M2.1** in the main roadmap. See [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md) and [`docs/devlog/roadmap.md`](../development/roadmap.md) — M2.1. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](../../workflow/knowledge-vault/README.md).
 
 ---
 

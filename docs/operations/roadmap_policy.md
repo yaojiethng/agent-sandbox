@@ -1,6 +1,6 @@
 # Roadmap Policy
 
-Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future.md`, and `docs/development/changelog.md`.
+Policy rules for `docs/devlog/roadmap.md`, `docs/devlog/roadmap_future.md`, and `docs/devlog/changelog.md`.
 
 ---
 
@@ -79,7 +79,7 @@ Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focuse
 
 ## Changelog Format
 
-Changelog entries live in `docs/development/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
+Changelog entries live in `docs/devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
 
 ### Entry structure
 

@@ -141,8 +141,9 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - **Trigger B recovery check:** if the prior handover's Next session names a different sub-milestone than the one currently active in `roadmap.md`, [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has not run. Run it now before compacting or creating this handover.
 - **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
-- Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy the roadmap task list.
-- Read the prior handover if one exists. Transfer any acceptance criteria pushed to this session. Transfer any deferred items into the Scope or Deferred sections as appropriate. Do not re-litigate deferred decisions — they are recorded where they were made.
+- Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
+- Read the prior handover if one exists. Transfer only acceptance criteria that were explicitly pushed to this session — accepted criteria from the prior session are not carried forward. Transfer any deferred items into the Scope or Deferred sections as appropriate. Do not re-litigate deferred decisions — they are recorded where they were made.
+- Reset the Completed this session table to the null marker. It records only files changed in the current session — never carried from a prior handover.
 - Populate the Hot files section: for each task in the roadmap groups targeted this session, add a markdown link and a one-line reason.
 - Set Session type to the dominant activity expected this session.
 - For all nullable sections with nothing yet to record, write the canonical marker — not a blank section, not an explanation.
@@ -150,7 +151,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 ### During the session
 
 - Record decisions in the Decisions table as they are made, with the document where the decision was recorded. If a decision is only in chat, it does not exist for the next session.
-- Record new acceptance criteria as they are defined. Carry forward any criteria from prior sessions that remain in scope.
+- Record new acceptance criteria as they are defined. Pushed (unresolved) criteria from prior sessions are already present in the handover from session open — do not re-copy them.
 - Update Deferred items immediately when something is flagged out of scope — do not accumulate them at session end.
 
 ### At Step 6 — Define acceptance criteria
@@ -183,7 +184,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - **Deferrals are explicit.** "We ran out of time" is not a deferral reason. The reason must name the blocker: dependency, open question, scope change, operator decision.
 - **The handover is not a summary of decisions.** Decisions live in the documents where they were made (roadmap, architecture docs). The handover points to those documents — it does not reproduce their content.
 - **The handover does not duplicate the task list.** The roadmap is the canonical task list. The handover's Scope section references roadmap task groups by name; its Completed section records what was done this session.
-- **Acceptance criteria carry forward and are visibly resolved.** At session close, every criterion under the Acceptance criteria header is either marked accepted or explicitly pushed to next session. The operator must be able to see both outcomes without reading the prior handover.
+- **Accepted criteria do not carry forward; pushed criteria do.** At session close, every criterion is either marked accepted (stays in the closed handover, not copied to the next) or explicitly pushed to the next session (transferred at session open). The operator must be able to see both outcomes in the current handover without reading the prior one.
 - **Acceptance criteria are operator-runnable checks.** Each criterion describes an action or command the operator performs and an outcome they can observe — expected output, behaviour, or timing. Criteria that describe file contents, internal state, or task completion belong in the Completed table or the task checklist — not under Acceptance criteria.
 - **Next session blockers are concrete.** Blocking design questions in the Next session section are specific questions the next agent must resolve, not general notes. Cap at three items total (blockers + watch-out items combined).
 - **Empty sections use canonical markers.** A blank section is ambiguous — it could mean nothing to record, or a forgotten section. Write the canonical marker. Never leave a nullable section blank and never explain why it is empty.

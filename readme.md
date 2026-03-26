@@ -72,7 +72,7 @@ Start here and follow the path in order. Architecture documents describe the sys
 | 2 | [project_index.md](docs/development/project_index.md) | Full file registry, freeze status, architecture layer assignments |
 | 3 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
 | 4 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
-| 5 | [roadmap.md](docs/development/roadmap.md) | Current tasks, open validation items, planned milestones |
+| 5 | [roadmap.md](docs/devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 
