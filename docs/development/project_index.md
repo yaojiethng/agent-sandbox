@@ -66,8 +66,8 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
-| `execution_model.md` | 🟡 Warm | M2.1 | Two-container model, mount shape, build context model, snapshot and diff pipelines. |
-| `tool_interface.md` | 🟡 Warm | M2.1 | External contract: command shapes, naming, mount guarantees, build inputs, Compose generation. |
+| `execution_model.md` | 🟡 Warm | M2.2 | Two-container model, mount shape rationale, compose generation, snapshot and diff pipelines, provider interface implementation. |
+| `tool_interface.md` | 🟡 Warm | M2.2 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
@@ -85,6 +85,8 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
+| `provider_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to adding a new reasoning layer provider. References tool_interface.md for contract and execution_model.md for mechanics. |
+| `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, agents.md authoring, and verification. |
 | `quickstart.md` | 🟡 Warm | M2.1 | Onboarding and running guide. Rewritten for two-container model and `agent-sandbox onboard` CLI. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |

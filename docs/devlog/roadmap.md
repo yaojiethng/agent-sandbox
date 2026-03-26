@@ -49,25 +49,6 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Depends on:** M2.1. **Scope:** Move `start_agent.sh` to `scripts/` as the provider-agnostic entry point. Define the provider interface (`build.sh` and `run.sh` under `providers/<name>/`). Rename `build_agent.sh` to `build.sh`. Validate OpenCode conforms. Base image split and Claude Code/Desktop provider integrations are deferred.
 
-**Design decisions:**
-- `scripts/start_agent.sh` is the provider-agnostic entry point: pre-flight, `.env` loading, snapshot pipeline, brief resolution, then dispatches to `providers/<name>/run.sh`. All harness-level checks run here once; provider scripts receive exported env vars and do not re-derive paths or image names. Rationale: isolates harness concerns from provider invocation; a second provider sources the same pre-flight by calling `start_agent.sh`.
-- Provider interface is `build.sh`, `run.sh`, `docker-compose.serve.yml`, and `.env.example` under `providers/<name>/`. Each is independently managed. `start_agent.sh` calls only `run.sh`; the operator calls `build.sh` explicitly via `make build`. Rationale: build and run have different trigger points; no wrapper needed.
-- `providers/opencode/build_agent.sh` renamed to `providers/opencode/build.sh`. Rationale: aligns with provider interface naming; no functional change.
-- `scripts/build_sandbox.sh` unchanged. Rationale: already at correct location; capability layer build is project-controlled via `Dockerfile.sandbox` in `SANDBOX_DIR`.
-- Serve overlay moves to `providers/<n>/docker-compose.serve.yml` — static file in repo, not copied to `SANDBOX_DIR`. Rationale: provider-specific; no project-specific values; operator never manages it.
-- Provider `.env` stubs sourced from `providers/<n>/.env.example` — iterated by `onboard.sh` at onboard time. Rationale: adding a provider requires no changes to `onboard.sh`.
-- `onboard.sh` has no `--provider` flag — onboarding is project setup, provider selected at run time. Rationale: clean separation of concerns.
-- Provider selection via Make variables (`PROVIDER=hermes`) not trailing words. Rationale: idiomatic Make; no goals-string parsing needed.
-- `--rebuild` is a flag on run targets (`REBUILD=1`), not a separate subcommand. Rationale: scoped to containers required for the run target; simpler command surface.
-- `build` with no `PROVIDER` iterates `providers/*/build.sh` glob. Rationale: adding a provider requires no changes to `agent-sandbox.sh`.
-- `make build-all`, `make build-sandbox`, `make build-agent` removed — superseded by `make build PROVIDER=<n>`.
-- Hermes is the one additional provider for M2.2. Pi and Claude Desktop remain informal future candidates, not committed roadmap items.
-- Base image split deferred. BuildKit layer cache sufficient for reasoning layer builds. Revisit if operators report slow builds.
-- `dirs.sh` unchanged. Removing it would break the host/container sync contract for `dry_run.sh`.
-- Mode vocabulary (`standard`, `dry-run`, `serve`) standardised in harness docs. Each provider declares supported modes in `run.sh` and errors clearly on unsupported mode. `start_agent.sh` passes mode through without validating it.
-- `container-entrypoint.sh` was deleted in M2.1 — audit task is resolved; no action.
-- Checkpoint scripts in `workflow/knowledge-vault/scripts/` deferred — integration testing against a non-vault workflow required before promotion.
-
 **Tasks:**
 
 Architecture documents updated to reflect the provider interface, `start_agent.sh` path, and `run.sh` dispatch pattern.
@@ -146,11 +127,11 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
 
-- **`make build hermes` and `make rebuild dry-run hermes` do not build the correct image** — the Makefile `build-agent` target calls `agent-sandbox build agent` without forwarding the provider passthrough word, so `hermes` is ignored and the default provider (`opencode`) is built instead, producing `opencode-agent-<project>` rather than `hermes-agent-<project>`. Additionally, `make rebuild dry-run hermes` passes `--provider=dry-run hermes` due to how `$(wordlist 2,99,$(MAKECMDGOALS))` captures all trailing words — this is malformed and will error. Both the Makefile `build` targets and the `rebuild` provider passthrough need fixes to correctly support multi-word invocations. — `docker-compose.yml` is generated from a single harness template. Projects that run multiple services (e.g. a web app with a database and test containers) currently have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template.
+- **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
 
 - **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
 
-- **multi-service project composition:** -- Some projects run multiple services (e.g. a web app with a database and a test container). In these cases the operator may need to define additional containers alongside the harness-managed sandbox and agent services. A composition mechanism that allows operator-defined services to be merged with the harness-generated base is a future design task. See `roadmap.md` for the deferred discussion.
+
 ---
 
 ### Governance Hardening
