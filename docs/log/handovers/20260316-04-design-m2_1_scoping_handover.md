@@ -32,7 +32,7 @@ M2.1 design scoping — resolve Docker Compose orchestration model, image naming
 | Mode overrides via `-f` flags | Ports not exposed when not in serve mode | `roadmap.md` M2.1 → `tool_interface.md` |
 | `make build [sandbox\|agent\|all]` dispatch | Granular rebuild; staleness integrated per-image | `roadmap.md` M2.1 → `tool_interface.md` |
 | Two-image staleness: separate `image-files.txt`, warn separately | Images go stale independently | `roadmap.md` M2.1 → `tool_interface.md` |
-| Capability Dockerfile in `SANDBOX_DIR`, default template in `libs/_template/` | Projects control their own dev environment | `roadmap.md` M2.1 → `tool_interface.md` |
+| Capability Dockerfile in `SANDBOX_DIR`, default template in `libs/_templates/` | Projects control their own dev environment | `roadmap.md` M2.1 → `tool_interface.md` |
 | Dry-run minimum guarantees | Defines what a successful dry-run proves | `roadmap.md` M2.1 → `tool_interface.md` |
 | Dogfood first: agent-sandbox's own compose before template | Template derived from working version | `roadmap.md` M2.1 |
 | `start_agent.sh` remains entry point | Compose handles container orchestration only | `roadmap.md` M2.1 |

@@ -111,8 +111,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
-| `_template/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
-| `_template/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
+| `_templates/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
+| `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 
 ### Tests (`tests/`)
 

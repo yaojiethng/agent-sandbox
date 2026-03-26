@@ -28,9 +28,9 @@ Documentation group, build & context group, template versioning, end-to-end vali
 | [`providers/opencode/build_sandbox.sh`](providers/opencode/build_sandbox.sh) | build_context integration + template version check |
 | [`providers/opencode/build_agent.sh`](providers/opencode/build_agent.sh) | build_context integration |
 | [`providers/opencode/Dockerfile`](providers/opencode/Dockerfile) | Flat COPY paths |
-| [`libs/_template/dockerfile-default.sandbox`](libs/_template/dockerfile-default.sandbox) | Flat COPY paths + version tag |
-| [`libs/_template/docker-compose.yml.template`](libs/_template/docker-compose.yml.template) | Version tag |
-| [`libs/_template/Makefile.template`](libs/_template/Makefile.template) | Version tag |
+| [`libs/_templates/dockerfile-default.sandbox`](libs/_templates/dockerfile-default.sandbox) | Flat COPY paths + version tag |
+| [`libs/_templates/docker-compose.yml.template`](libs/_templates/docker-compose.yml.template) | Version tag |
+| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | Version tag |
 | [`scripts/onboard.sh`](scripts/onboard.sh) | Template version recording + --refresh flag |
 | [`Makefile`](Makefile) | make onboard / make refresh targets |
 | [`tests/test_build_context.sh`](tests/test_build_context.sh) | New — property-based tests |
@@ -47,7 +47,7 @@ Documentation group, build & context group, template versioning, end-to-end vali
 | Decision | Rationale | Recorded in |
 |---|---|---|
 | `build_context` uses `mktemp -d` rather than a persistent `context/` directory | No repo artefacts; no `.gitignore` entries needed; temp dir lifecycle is self-contained | `execution_model.md`, `tool_interface.md` |
-| Dockerfile `COPY` paths are flat, matching temp dir layout | Decouples Dockerfile from repo directory structure | `providers/opencode/Dockerfile`, `libs/_template/dockerfile-default.sandbox` |
+| Dockerfile `COPY` paths are flat, matching temp dir layout | Decouples Dockerfile from repo directory structure | `providers/opencode/Dockerfile`, `libs/_templates/dockerfile-default.sandbox` |
 | Template version tag embedded in each onboarded template file | Version travels with the file; `build_sandbox.sh` greps both installed and current template to detect staleness | `scripts/onboard.sh`, `providers/opencode/build_sandbox.sh` |
 | `onboard --refresh` updates versioned template files and `.env` version lines only | Preserves operator-set values and `agents.md`; targeted refresh without full re-onboard | `scripts/onboard.sh` |
 
@@ -59,9 +59,9 @@ Documentation group, build & context group, template versioning, end-to-end vali
 | `docs/architecture/execution_model.md` | Removed CLI Wrapper and Image Digest sections; rewrote Invocation Model; added `output/` row to Mount Shape; added Build Context Model section |
 | `docs/operations/quickstart.md` | Rewrote onboarding around `agent-sandbox onboard`; corrected brief filename, workspace listing, Recovery path |
 | `libs/build_context.sh` | New: `build_context`; sandbox and agent types; mktemp; ERR trap; hard error on missing file |
-| `libs/_template/dockerfile-default.sandbox` | Flat COPY paths; template version tag (`version: 1`) |
-| `libs/_template/docker-compose.yml.template` | Template version tag (`version: 1`) |
-| `libs/_template/Makefile.template` | Template version tag (`version: 1`) |
+| `libs/_templates/dockerfile-default.sandbox` | Flat COPY paths; template version tag (`version: 1`) |
+| `libs/_templates/docker-compose.yml.template` | Template version tag (`version: 1`) |
+| `libs/_templates/Makefile.template` | Template version tag (`version: 1`) |
 | `providers/opencode/Dockerfile` | Flat COPY path for `dirs.sh` |
 | `providers/opencode/build_sandbox.sh` | build_context integration; digest label; template version staleness check; corrected REPO_ROOT |
 | `providers/opencode/build_agent.sh` | build_context integration; replaces image.sh sourcing and image-files.txt |

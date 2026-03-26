@@ -5,7 +5,7 @@
 **Session type:** Implementation
 
 ## Objective
-Complete M2.1 implementation: UX layer (`libs/_template/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template), onboarding (`workflow/general/scripts/onboard.sh`, `.env` ownership transfer), build & context model (`libs/build_context.sh`, `context/` directories, Dockerfile layer reorder), and `libs/image.sh` + `tests/test_image.sh` deletion. End-to-end validation is the exit gate.
+Complete M2.1 implementation: UX layer (`libs/_templates/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template), onboarding (`workflow/general/scripts/onboard.sh`, `.env` ownership transfer), build & context model (`libs/build_context.sh`, `context/` directories, Dockerfile layer reorder), and `libs/image.sh` + `tests/test_image.sh` deletion. End-to-end validation is the exit gate.
 
 ## Scope
 
@@ -36,8 +36,8 @@ Carried from M2.1 roadmap — sub-milestone gate:
 
 | File | Why in scope |
 |---|---|
-| [`libs/_template/docker-compose.yml.template`](libs/_template/docker-compose.yml.template) | Completed — rebuilt from dogfood |
-| [`libs/_template/Makefile.template`](libs/_template/Makefile.template) | Completed — reads PROJECT_DIR/SANDBOX_DIR from .env via -include |
+| [`libs/_templates/docker-compose.yml.template`](libs/_templates/docker-compose.yml.template) | Completed — rebuilt from dogfood |
+| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | Completed — reads PROJECT_DIR/SANDBOX_DIR from .env via -include |
 | [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | Completed — two-image build, rebuild interface, serve subcommand, staleness removed |
 | [`workflow/general/scripts/onboard.sh`](workflow/general/scripts/onboard.sh) | Completed — new file; full SANDBOX_DIR setup from templates |
 | [`providers/opencode/start_agent.sh`](providers/opencode/start_agent.sh) | Completed — reads .env instead of writing it |
@@ -66,8 +66,8 @@ Carried from M2.1 roadmap — sub-milestone gate:
 
 | File | Change |
 |---|---|
-| `libs/_template/docker-compose.yml.template` | Rebuilt from dogfood; `{{PROJECT_NAME}}` in container_name only; no ports in base; volumes_from pattern; env vars match dirs.sh |
-| `libs/_template/Makefile.template` | `-include .env` / `export`; PROJECT_DIR/SANDBOX_DIR from .env; `?= $(error ...)` fallbacks; build-* variants; rebuild targets corrected; serve uses `agent-sandbox serve` |
+| `libs/_templates/docker-compose.yml.template` | Rebuilt from dogfood; `{{PROJECT_NAME}}` in container_name only; no ports in base; volumes_from pattern; env vars match dirs.sh |
+| `libs/_templates/Makefile.template` | `-include .env` / `export`; PROJECT_DIR/SANDBOX_DIR from .env; `?= $(error ...)` fallbacks; build-* variants; rebuild targets corrected; serve uses `agent-sandbox serve` |
 | `scripts/agent-sandbox.sh` | Full rewrite: two-image build with sandbox/agent/all variants; serve as top-level subcommand; rebuild builds all then re-execs mode; preflight checks both images; staleness check and libs/image.sh sourcing removed |
 | `scripts/onboard.sh` | New file: copies all template files, creates .workspace/ dirs, writes .env once, writes agents.md stub, prompts for missing flags, validates WSL/Linux paths, -h/--help usage block |
 | `providers/opencode/start_agent.sh` | .env write block removed; reads .env and validates required vars; errors with onboard instructions if .env missing; compose logic retained in full; run.sh handoff removed |

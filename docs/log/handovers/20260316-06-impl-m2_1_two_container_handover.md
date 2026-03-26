@@ -26,7 +26,7 @@ Carried from M2.1 roadmap entry:
 | File | Why in scope |
 |---|---|
 | [`scripts/sandbox-entrypoint.sh`](scripts/sandbox-entrypoint.sh) | New — capability layer entrypoint |
-| [`libs/_template/dockerfile-default.sandbox`](libs/_template/dockerfile-default.sandbox) | New — default capability Dockerfile template |
+| [`libs/_templates/dockerfile-default.sandbox`](libs/_templates/dockerfile-default.sandbox) | New — default capability Dockerfile template |
 | [`providers/opencode/Dockerfile`](providers/opencode/Dockerfile) | Reasoning layer changes |
 | [`providers/opencode/container-entrypoint.sh`](providers/opencode/container-entrypoint.sh) | Assess for elimination |
 | [`providers/opencode/start_agent.sh`](providers/opencode/start_agent.sh) | Two-container lifecycle, compose generation |
@@ -34,7 +34,7 @@ Carried from M2.1 roadmap entry:
 | [`libs/diff.sh`](libs/diff.sh) | Verify — grep only |
 | [`libs/image.sh`](libs/image.sh) | Two-image staleness |
 | [`scripts/dry_run.sh`](scripts/dry_run.sh) | Two-container dry-run |
-| [`libs/_template/docker-compose.yml.template`](libs/_template/docker-compose.yml.template) | New — compose template |
+| [`libs/_templates/docker-compose.yml.template`](libs/_templates/docker-compose.yml.template) | New — compose template |
 
 ## Decisions made this session
 

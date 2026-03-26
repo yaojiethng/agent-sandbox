@@ -62,7 +62,7 @@ Key constraints:
 
 ### 1. `Makefile`
 
-Follow `libs/_template/Makefile.template` exactly. Set the three variables at the top. Place in `SANDBOX_DIR`.
+Follow `libs/_templates/Makefile.template` exactly. Set the three variables at the top. Place in `SANDBOX_DIR`.
 
 <!-- Variable definitions — update here if naming conventions change -->
 ```

@@ -23,7 +23,7 @@ Capability layer container task group, reasoning layer container task group, and
 
 | File | Why in scope |
 |---|---|
-| [`libs/_template/dockerfile-default.sandbox`](libs/_template/dockerfile-default.sandbox) | New: capability layer Dockerfile template |
+| [`libs/_templates/dockerfile-default.sandbox`](libs/_templates/dockerfile-default.sandbox) | New: capability layer Dockerfile template |
 | [`Dockerfile.sandbox`](Dockerfile.sandbox) | New: dogfood project-level capability layer Dockerfile (lives in SANDBOX_DIR) |
 | [`scripts/sandbox-entrypoint.sh`](scripts/sandbox-entrypoint.sh) | New: capability layer entrypoint |
 | [`providers/opencode/container-entrypoint.sh`](providers/opencode/container-entrypoint.sh) | Stripped to reasoning layer responsibilities only |
@@ -45,7 +45,7 @@ Capability layer container task group, reasoning layer container task group, and
 
 | File | Change |
 |---|---|
-| `libs/_template/dockerfile-default.sandbox` | New: capability layer Dockerfile template; Ubuntu base, bash/git only, copies sandbox-entrypoint.sh + libs |
+| `libs/_templates/dockerfile-default.sandbox` | New: capability layer Dockerfile template; Ubuntu base, bash/git only, copies sandbox-entrypoint.sh + libs |
 | `Dockerfile.sandbox` | New: dogfood capability layer Dockerfile for agent-sandbox SANDBOX_DIR; identical to template with build context note |
 | `scripts/sandbox-entrypoint.sh` | New: capability layer entrypoint; full sequence per execution_model.md including TERM trap |
 | `providers/opencode/container-entrypoint.sh` | Stripped from ~120 lines to ~50; removed snapshot/diff/git/autosave; brief + input copy + exec only |

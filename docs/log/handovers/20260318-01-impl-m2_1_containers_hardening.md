@@ -26,7 +26,7 @@ Continuation of capability layer container and shared harness task groups from p
 
 | File | Why in scope |
 |---|---|
-| [`libs/_template/dockerfile-default.sandbox`](libs/_template/dockerfile-default.sandbox) | VOLUME declaration added; working dirs updated to `workspace/changes/` |
+| [`libs/_templates/dockerfile-default.sandbox`](libs/_templates/dockerfile-default.sandbox) | VOLUME declaration added; working dirs updated to `workspace/changes/` |
 | [`Dockerfile.sandbox`](Dockerfile.sandbox) | Same as above |
 | [`libs/dirs.sh`](libs/dirs.sh) | `WORKSPACE_DIR_NAME` → `CHANGES_DIR_NAME`; ownership comments updated |
 | [`scripts/sandbox-entrypoint.sh`](scripts/sandbox-entrypoint.sh) | Uses `CHANGES_DIR_NAME`; stale content clear removed; `--volumes-from` comments |
@@ -56,7 +56,7 @@ Continuation of capability layer container and shared harness task groups from p
 
 | File | Change |
 |---|---|
-| `libs/_template/dockerfile-default.sandbox` | `VOLUME` declaration added; `mkdir -p` updated to `workspace/changes/` + `.snapshot/`; comment updated |
+| `libs/_templates/dockerfile-default.sandbox` | `VOLUME` declaration added; `mkdir -p` updated to `workspace/changes/` + `.snapshot/`; comment updated |
 | `Dockerfile.sandbox` | Same as above |
 | `libs/dirs.sh` | `WORKSPACE_DIR_NAME` replaced with `CHANGES_DIR_NAME` (default `workspace/changes`); `WORKSPACE_DIR_NAME` retained for reasoning layer with temporary note |
 | `scripts/sandbox-entrypoint.sh` | Uses `CHANGES_DIR_NAME` from dirs.sh; `find -mindepth 1 -delete` removed; `--volumes-from` comments; `sleep infinity & wait $!` for correct signal handling in PID 1 bash container |

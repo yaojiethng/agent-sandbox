@@ -74,7 +74,7 @@ Orchestration & lifecycle task group. `.agent-input/` rename scoped into this se
 
 | Item | Reason | Next |
 |---|---|---|
-| `libs/_template/docker-compose.yml.template` | Base compose template for onboarded projects; derive from confirmed dogfood | Next session |
+| `libs/_templates/docker-compose.yml.template` | Base compose template for onboarded projects; derive from confirmed dogfood | Next session |
 | `scripts/agent-sandbox.sh` full rewrite | `build sandbox|agent|all` variants; staleness pre-flight removal; `libs/image.sh` deletion is co-requisite | Build & context session |
 | `Makefile` (project-side template) update | Depends on `agent-sandbox.sh` shape | Next session |
 | `libs/build_context.sh` and `context/` dirs | `libs/image.sh` + `tests/test_image.sh` deletion included | Build & context session |
@@ -85,7 +85,7 @@ Orchestration & lifecycle task group. `.agent-input/` rename scoped into this se
 ## Next session
 **M2.1 — General Capability Layer Prototype** (continue — UX layer + base compose template).
 
-**Scope:** `libs/_template/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template update, `start_agent.sh` pre-flight refactor.
+**Scope:** `libs/_templates/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template update, `start_agent.sh` pre-flight refactor.
 
 **Watch-out items:**
 1. `agent-sandbox.sh` must pass `--project-directory $SANDBOX_DIR` to all compose invocations so compose finds the right files regardless of cwd.

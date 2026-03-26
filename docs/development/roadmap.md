@@ -83,7 +83,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 ### Container lifecycle library
 - [x] Create `libs/containers.sh` — image/container naming, build helpers, preflight
 - [x] Update `scripts/agent-sandbox.sh` — `--rebuild` flag; no default provider; `build` iterates providers glob; `require_run_args`/`rebuild_if_requested` helpers; `rebuild` subcommand removed
-- [x] Update `libs/_templates/docker-compose.yml.template` — `OPENCODE_SERVER_PASSWORD` removed from agent environment block; `container_name` pinned to image name
+- [x] Update `libs/docker-compose.yml` — `OPENCODE_SERVER_PASSWORD` removed from agent environment block; `container_name` pinned to image name
 
 ### Provider interface validation
 - [x] Validate OpenCode provider conforms: `make dry-run PROVIDER=opencode` passes after refactor
@@ -105,13 +105,13 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - [x] Create `providers/hermes/run.sh` — `standard`, `dry-run`, `serve` modes
 - [x] Create `providers/hermes/docker-compose.serve.yml` — Open WebUI companion service
 - [x] Create `providers/hermes/.env.example` — placeholder
-- [ ] Validate: `make dry-run PROVIDER=hermes` passes
-- [ ] Validate: `make serve PROVIDER=hermes` launches Open WebUI
+- [x] Validate: `make dry-run PROVIDER=hermes` passes
+- [x] Validate: `make serve PROVIDER=hermes` launches Open WebUI
 
 ### Deferred breakdown
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
 - [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
-- [ ] Open WebUI ↔ Hermes API connection in serve mode — serve overlay launches Open WebUI but connection to Hermes backend needs follow-up once Hermes API surface is confirmed
+- [ ] Open WebUI ↔ Hermes API connection in serve mode — serve overlay launches Open WebUI, connection to Hermes backend and agent configuration needs follow-up 
 
 **Acceptance criteria:**
 - `make dry-run PROVIDER=opencode` passes after refactor
@@ -168,6 +168,16 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **Stale git index causes cryptic snapshot failures** — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. Fix with `git rm --cached <file>` followed by a commit. A future hardening pass should add existence validation in `snapshot_enumerate_files` to produce a clear error rather than a mid-pipeline `cp` failure.
 
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
+
+- **Snapshot breaks on uncommitted moves and deletes** — `snapshot_enumerate_files` uses `git ls-files` which reflects the committed index, not the working tree. If files have been moved or deleted but the changes are not yet staged, `git ls-files` still lists the old paths. `snapshot_copy_files` will fail with `cp: cannot stat` for deleted files, or copy the old path instead of the new path for moves. Fix by staging and committing (or at minimum staging) changes before running the harness.
+
+- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
+
+- **`make build hermes` and `make rebuild dry-run hermes` do not build the correct image** — the Makefile `build-agent` target calls `agent-sandbox build agent` without forwarding the provider passthrough word, so `hermes` is ignored and the default provider (`opencode`) is built instead, producing `opencode-agent-<project>` rather than `hermes-agent-<project>`. Additionally, `make rebuild dry-run hermes` passes `--provider=dry-run hermes` due to how `$(wordlist 2,99,$(MAKECMDGOALS))` captures all trailing words — this is malformed and will error. Both the Makefile `build` targets and the `rebuild` provider passthrough need fixes to correctly support multi-word invocations. — `docker-compose.yml` is generated from a single harness template. Projects that run multiple services (e.g. a web app with a database and test containers) currently have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template.
+
+- **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
+
+- **multi-service project composition:** -- Some projects run multiple services (e.g. a web app with a database and a test container). In these cases the operator may need to define additional containers alongside the harness-managed sandbox and agent services. A composition mechanism that allows operator-defined services to be merged with the harness-generated base is a future design task. See `roadmap.md` for the deferred discussion.
 
 ---
 

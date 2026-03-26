@@ -37,7 +37,7 @@ Steps 2–7. All task groups complete except provider interface validation:
 | [`providers/opencode/build.sh`](providers/opencode/build.sh) | Renamed from `build_agent.sh` |
 | [`libs/containers.sh`](libs/containers.sh) | New — image/container naming, build helpers, preflight |
 | [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | Sources `containers.sh`; `--provider` flag; provider-agnostic build dispatch |
-| [`libs/_template/docker-compose.yml.template`](libs/_template/docker-compose.yml.template) | `container_name` pinned to image name; no Compose index suffix |
+| [`libs/_templates/docker-compose.yml.template`](libs/_templates/docker-compose.yml.template) | `container_name` pinned to image name; no Compose index suffix |
 
 ## Decisions made this session
 
@@ -65,7 +65,7 @@ Steps 2–7. All task groups complete except provider interface validation:
 | `providers/opencode/build.sh` | Renamed from `build_agent.sh` — no logic changes |
 | `libs/containers.sh` | New file — `agent_image_name`, `sandbox_image_name`, `agent_container_name`, `sandbox_container_name`, `build_agent`, `build_sandbox`, `build_all`, `preflight` |
 | `scripts/agent-sandbox.sh` | Sources `containers.sh`; `--provider` flag (default `opencode`); build subcommand uses `sandbox\|<provider>\|all` vocabulary; inline helpers removed; `serve` mode no longer passes `--serve` flag |
-| `libs/_template/docker-compose.yml.template` | `container_name` set to `${SANDBOX_IMAGE_NAME}` / `${AGENT_IMAGE_NAME}`; no Compose index suffix; header comment updated |
+| `libs/_templates/docker-compose.yml.template` | `container_name` set to `${SANDBOX_IMAGE_NAME}` / `${AGENT_IMAGE_NAME}`; no Compose index suffix; header comment updated |
 
 ## Deferred items
 

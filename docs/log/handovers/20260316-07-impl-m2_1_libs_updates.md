@@ -62,7 +62,7 @@ Libs-only: `diff.sh`, `image.sh`, `snapshot.sh` and their test files. All other 
 All libs are confirmed ready. Next session scope: **capability layer container only** — Dockerfile and entrypoint. This layer is self-contained and can be built, run, and tested standalone before any reasoning layer or orchestration changes.
 
 **Scope:**
-1. `libs/_template/dockerfile-default.sandbox` — capability layer Dockerfile template
+1. `libs/_templates/dockerfile-default.sandbox` — capability layer Dockerfile template
 2. `scripts/sandbox-entrypoint.sh` — capability layer entrypoint (sources `snapshot.sh` and `diff.sh`; runs entrypoint sequence per `execution_model.md`)
 3. Manual test: build image, `docker run` with mounted `.snapshot/` and `.workspace/`, verify `staged.diff` output
 
