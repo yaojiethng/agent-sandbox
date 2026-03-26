@@ -39,11 +39,49 @@ For multi-file outputs (e.g. a compaction pass touching several roadmap sections
 
 ---
 
+## Session open convention
+
+Every session begins with a session open message from the operator, sent **before any task prompt**. This separates session initialisation from task work and ensures Step 1 housekeeping runs reliably.
+
+**Operator template:**
+
+```
+Session open. Uploaded: <file1>, <file2>, .... Focus: <optional — task group or area to prioritise this session>.
+```
+
+**Components:**
+
+- `Session open.` — the signal that this is a session open, not a mid-session prompt.
+- `Uploaded:` — required. Lists every file uploaded to this conversation. The agent uses this to check against required reading and ask for anything missing before proceeding.
+- `Focus:` — optional. Names the task group or area to prioritise if the roadmap task list is long. Does not override the roadmap — it narrows which task groups the agent scopes to this session. Omit if the full remaining task list is the target.
+
+**Examples:**
+
+```
+Session open. Uploaded: handover, roadmap.
+```
+
+```
+Session open. Uploaded: handover, roadmap, security.md. Focus: capability layer MCP configuration.
+```
+
+**If the operator omits the session open message** and sends a task prompt directly, the agent must not act on the prompt immediately. Instead:
+1. Acknowledge the task.
+2. Run Step 1 housekeeping (Trigger B recovery check, compaction, handover creation) per [`handover_policy.md`](handover_policy.md#at-session-open-step-1).
+3. Confirm Step 1 is complete, then proceed with the task.
+
+**If the operator omits the uploaded files list**, ask for it before proceeding. Do not infer which files are present from the conversation — the operator's explicit list is the authoritative record for this session.
+
+---
+
 ## Session start
 
-At session start, check which files have been uploaded to the conversation. Required reading files that are absent must be requested before proceeding — do not begin session work without them.
+At session start, on receipt of the session open message:
 
-The most recent handover (`YYYYMMDD-NN-TYPE-*.md`) and `roadmap.md` are the minimum required uploads for any implementation or workflow session.
+1. Check the uploaded files list against required reading. The most recent handover (`YYYYMMDD-NN-TYPE-*.md`) and `roadmap.md` are the minimum required uploads for any implementation or workflow session. Name any missing files and ask for them before proceeding.
+2. Run Step 1 housekeeping per [`handover_policy.md`](handover_policy.md#at-session-open-step-1): Trigger B recovery check, roadmap compaction, handover creation.
+3. If a Focus was given, use it to scope the Hot files section to the named task group(s). If no Focus was given, scope to the full remaining task list.
+4. Confirm Step 1 is complete before accepting any task prompt.
 
 ---
 

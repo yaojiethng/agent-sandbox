@@ -139,6 +139,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 ### At session open (Step 1)
 
 - **Trigger B recovery check:** if the prior handover's Next session names a different sub-milestone than the one currently active in `roadmap.md`, [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has not run. Run it now before compacting or creating this handover.
+- **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
 - Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy the roadmap task list.
 - Read the prior handover if one exists. Transfer any acceptance criteria pushed to this session. Transfer any deferred items into the Scope or Deferred sections as appropriate. Do not re-litigate deferred decisions — they are recorded where they were made.
