@@ -4,7 +4,7 @@
 # Called by scripts/start_agent.sh after pre-flight and compose generation.
 #
 # Usage:
-#   ./run.sh <mode> --name=<project_name> --sandbox=<path> --provider=<n> --compose-file=<path>
+#   ./run.sh <mode> --name=<project_name> --sandbox=<path> --compose-file=<path>
 #
 # Modes:
 #   standard   — OpenCode TUI attached to terminal
@@ -34,7 +34,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --provider=<n> --compose-file=<path>"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --compose-file=<path>"
   exit 1
 fi
 
@@ -50,7 +50,6 @@ for ARG in "$@"; do
   case "$ARG" in
     --name=*)         PROJECT_NAME="${ARG#--name=}" ;;
     --sandbox=*)      SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --provider=*)     PROVIDER_NAME="${ARG#--provider=}" ;;
     --compose-file=*) COMPOSE_FILE="${ARG#--compose-file=}" ;;
     *)
       echo "Unknown flag: $ARG"

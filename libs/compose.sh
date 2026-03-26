@@ -182,7 +182,7 @@ compose_sandbox_wait() {
   local container
   container="$(sandbox_container_name "$project_name")"
 
-  echo "+ waiting for sandbox to be healthy..."
+  echo "+ waiting for $container to be healthy..."
   until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null)" == "healthy" ]]; do
     sleep 1
   done
