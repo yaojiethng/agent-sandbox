@@ -1,10 +1,8 @@
 # Execution Model
 
-This document describes how a single agent run executes: how project files enter the containers, how the sandbox is prepared, how agent changes are captured, and how outputs are returned to the host. It covers the snapshot pipeline, compose generation, mount shape rationale, entrypoint sequence, and diff workflow.
+This document describes the structure of a single agent run: the directory layout, how the harness is invoked, and where the implementation detail for each mechanism lives.
 
-The system runs two containers per session: the capability layer container (holds `sandbox/`, runs optional MCP server) and the reasoning layer container (runs the agent, accesses working content via volume mount). The harness starts the capability layer before the reasoning layer and stops it after.
-
-Implementation decisions are recorded here alongside the design they produce. Operator-facing workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md). The conceptual model for the two-layer architecture is in [`../concepts/two_layer_model.md`](../concepts/two_layer_model.md). The external contract — image naming, mount shape guarantees, execution modes — is in [`tool_interface.md`](tool_interface.md).
+The conceptual model for the two-layer architecture is in [`../concepts/two_layer_model.md`](../concepts/two_layer_model.md). The external contract — image naming, mount shape guarantees, execution modes — is in [`tool_interface.md`](tool_interface.md).
 
 ---
 
@@ -34,220 +32,37 @@ Reasoning layer container (CWD: /home/agentuser/)
 └── sandbox/                   ← RW Docker volume: shared from capability layer via --volumes-from
 ```
 
-### Host path variables
-
-Host path variables are defined in [`tool_interface.md` — `.env` Runtime Variables](tool_interface.md#env-runtime-variables). `scripts/start_agent.sh` reads them from `SANDBOX_DIR/.env` at run time and validates that all required variables are present before proceeding.
+Host path variables are defined in [`tool_interface.md` — `.env` Runtime Variables](tool_interface.md#env-runtime-variables).
 
 ---
 
 ## Invocation Model
 
-`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. Project identity and paths are defined in `.env` in `SANDBOX_DIR`, written once by `agent-sandbox onboard` and read by the Makefile via `-include .env`.
+`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It reads `.env` from `SANDBOX_DIR`, validates required variables, then orchestrates the session: snapshot pipeline, compose generation, and provider dispatch. If `.env` is missing, it exits with instructions to run `agent-sandbox onboard`.
 
-`scripts/start_agent.sh` reads `.env` on invocation and validates that required variables are present. If `.env` is missing, it exits with instructions to run `agent-sandbox onboard`.
+Container paths are fixed by the harness and not configurable via `.env`. The full mount shape is in [`tool_interface.md` — Mount Shape Guarantees](tool_interface.md#mount-shape-guarantees).
 
-### Container paths
-
-Paths inside the containers are fixed by the harness. They do not vary per project and are not configurable via `.env`. The full mount shape — host paths, container paths, modes, and owners — is defined in [`tool_interface.md` — Mount Shape Guarantees](tool_interface.md#mount-shape-guarantees).
+`scripts/start_agent.sh` is provider-agnostic. It exports all `.env` variables before calling `providers/<n>/run.sh` — provider scripts receive image names, host paths, and port config without re-deriving them. The provider interface is defined in [`tool_interface.md` — Provider Interface](tool_interface.md#provider-interface); the implementation guide is in [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md).
 
 ---
 
-## Mount Shape Rationale
+## Mechanisms
 
-Neither container mounts the `workspace/` parent directory. Each container gets only the subdirectory it owns:
+**Sandbox lifecycle** — how project content enters the sandbox, how the agent's changes are captured, and how they are returned to the host. Covers the snapshot pipeline (both stages), git baseline, input channels, diff pipeline, autosave, and apply workflow. See [`sandbox_lifecycle.md`](sandbox_lifecycle.md).
 
-- The capability layer mounts `$SANDBOX_DIR/.workspace/changes/` — the diff pipeline writes `staged.diff` here and nowhere else in the workspace tree.
-- The reasoning layer mounts `$SANDBOX_DIR/.workspace/input/` (input channel, read-only) and `$SANDBOX_DIR/.workspace/output/` (output channel, read-write).
-
-Subdirectory mounts enforce the ownership boundary at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted, and the reasoning layer cannot write to `workspace/changes/` for the same reason. Any future capability layer code path (dry-run, liveness checks) must write only to `workspace/changes/` or a dedicated subdirectory — writing to the workspace parent must be treated as a bug.
-
-### Why `.snapshot/` is read-only and capability-layer-only
-
-The snapshot is an input prepared before the run. Mounting it read-only prevents either container from modifying the baseline. Only the capability layer needs it — it copies the snapshot into `sandbox/` at startup and does not reference it again.
-
-### Why `.workspace/` subdirectories are mounted separately
-
-Each subdirectory has a different trust level and a different container owner. `input/` is operator-written and agent-read (reasoning layer, read-only). `output/` is agent-written (reasoning layer, read-write). `changes/` is harness-written (capability layer, read-write — diff pipeline). Mounting them separately enforces these boundaries — the reasoning layer cannot write to `changes/` and the capability layer cannot read `input/`.
-
-### Why `output/` prohibits binaries
-
-`output/` is the reasoning layer's persistent output channel to the host. Restricting it to text and serialised data (no binaries) limits the attack surface — a compromised agent cannot write executable files that the operator might inadvertently run on the host. Binary outputs, if needed, must go through `sandbox/` and the diff pipeline.
-
-### Why `--volumes-from` rather than a named volume
-
-A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, and any container could mount the volume regardless of whether the capability layer is running.
-
-`--volumes-from` ties the sandbox lifecycle to the capability layer container. The reasoning layer can only access `sandbox/` while the capability layer container exists. If the capability layer is not running, `--volumes-from` fails and the reasoning layer cannot start — enforcing the ownership invariant at the Docker level.
-
-**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only exposes directories via `--volumes-from` if they are declared as volumes in the Dockerfile (`VOLUME /home/agentuser/sandbox`). Without this declaration the directory exists only in the container's writable layer and is invisible to other containers. The `VOLUME` instruction promotes `sandbox/` to an anonymous Docker volume at container creation time.
-
-The anonymous volume persists until explicitly removed. The harness removes it with `docker rm -v` after each session (compose uses `down -v`). This keeps the lifecycle clean: each session starts with a fresh anonymous volume initialised from the image, and the previous session's volume is deleted on teardown. The content of `sandbox/` at container creation is always the empty directory from the image — the entrypoint then copies the snapshot in.
-
----
-
-## Docker Compose Generation
-
-`scripts/start_agent.sh` generates the compose configuration on each run. Compose files are written to a tmpfile — they are never written to `SANDBOX_DIR` and are not operator-managed.
-
-**Tmpfile generation:** `compose_generate` in `libs/compose.sh` merges the base template with any mode overlay using `docker compose config --no-interpolate`, bakes image names and host paths into the result, and preserves operator secrets as `${VAR}` for runtime resolution. The merged file is written to a tmpfile and its path passed to `run.sh` via `--compose-file`. The tmpfile is deleted by a trap in `run.sh` on exit.
-
-**Baked vs `${VAR}` split:** Image names, container names, service dependencies, volume definitions, and internal mount paths are baked at generation time — they are stable per project and do not vary between runs. Machine-specific values — host paths, ports, credentials — are preserved as `${VARIABLE}` and resolved from `.env` at runtime by Docker Compose.
-
-**Why host paths are baked:** `docker compose config --no-interpolate` relativises unresolved path variables against the staging directory. Baking host paths at generation time — after reading `.env` — avoids this relativisation and produces correct absolute paths in the merged file.
-
-**Why explicit `type: bind`:** Docker Compose misclassifies `${VAR}` sources as named volumes in short volume syntax. All volume mounts use explicit `type: bind` syntax to prevent this.
-
-**Mode composition:**
-
-- `make start PROVIDER=<n>` → base compose only
-- `make serve PROVIDER=<n>` → base compose + `providers/<n>/docker-compose.serve.yml`
-- `make dry-run PROVIDER=<n>` → base compose + `libs/docker-compose.dry-run.yml`
-
-The serve overlay is a static file in the repo under `providers/<n>/` — it is never generated or written to `SANDBOX_DIR`. The dry-run overlay is sourced from `libs/docker-compose.dry-run.yml` and merged at generation time.
-
-**Deferred — multi-service project composition:** Some projects run multiple services (e.g. a web app with a database and a test container). A composition mechanism allowing operator-defined services to be merged with the harness-generated base is a future design task. See `roadmap.md` for the deferred discussion.
-
----
-
-## Snapshot Pipeline
-
-The snapshot pipeline replicates the host repository state into the capability layer sandbox without touching the host. It runs in two stages: host-side preparation before the containers start, and capability-layer-side unpacking at container startup.
-
-All snapshot functions are defined in `libs/snapshot.sh` and sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
-
-### Stage 1 — Host side (`scripts/start_agent.sh`)
-
-**`snapshot_enumerate_files`** runs `git ls-files --cached --others --exclude-standard` inside `PROJECT_DIR`. This covers tracked files and untracked non-ignored files. Gitignored files — including secrets and `.env` — are excluded by definition. A warning is emitted if no `.gitignore` is present.
-
-The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync) because it respects `.gitignore` without requiring any mutation of the host repository. A git bundle approach was evaluated and rejected: it required a temporary commit on the host (`git add -A && git commit --no-verify`), which mutated HEAD, the staging area, and commit history, violating the invariant that the harness must not modify the host repo.
-
-**`snapshot_copy_files`** reads the file list from stdin and copies files into `.snapshot/` using `cp --parents` to preserve directory structure.
-
-**`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
-
-### Stage 2 — Capability layer side (capability layer entrypoint)
-
-**`snapshot_validate` (gate 2)** runs first, against the mounted `.snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
-
-**`snapshot_copy_to_sandbox`** copies `.snapshot/` into `sandbox/` inside the capability layer container. `sandbox/` is backed by the shared Docker volume and is the working content the reasoning layer accesses via the same volume.
-
-**`snapshot_init_git`** initialises a git repository in `sandbox/` and records a baseline commit. The baseline SHA is stored for diff generation on exit.
-
----
-
-## Agent Brief
-
-The agent brief is an optional task description passed to the agent at run time. It is resolved by `scripts/start_agent.sh` from the `AGENT_BRIEF` config key relative to `SANDBOX_DIR`, and placed into `.workspace/input/` before the containers start.
-
-The reasoning layer mounts `.workspace/input/` read-only. The agent reads the brief directly from there alongside any other operator-placed task files. `agents.md` — the static agent context file — is placed into the reasoning layer image via the Dockerfile.
-
----
-
-## Operator Input Channel
-
-The operator input channel allows task files, path lists, and additional briefs to be passed to the agent before a run. Files placed in `SANDBOX_DIR/.workspace/input/` are mounted read-only into the reasoning layer container. The agent reads them as ordinary files; it cannot write back to this channel.
-
-**Lifecycle:**
-- Written by operator before the run (placed in `SANDBOX_DIR/.workspace/input/`)
-- Read by agent during the run (available at `workspace/input/` inside the reasoning layer)
-- Operator clears or overwrites `input/` before the next run
-
-The input channel is a separate mount into the reasoning layer only. The capability layer container has no access to it.
-
----
-
-## Harness Directory Lifecycle
-
-`.snapshot/` is overwritten on each run: rebuilt from `PROJECT_DIR` by `scripts/start_agent.sh` before the containers start. It is not archived or cleaned up between runs.
-
-`.workspace/` subdirectories have different lifecycles. `changes/` is overwritten by the diff pipeline on each run. `output/` accumulates agent-written files across the session and is cleared by the operator between runs if desired. `input/` is operator-managed — the harness places the brief there but does not clear or overwrite operator-placed files.
-
----
-
-## Diff Pipeline
-
-On capability layer container exit, an EXIT trap runs the diff pipeline:
-
-1. Any uncommitted changes in `sandbox/` are staged and committed.
-2. `git diff <baseline>..HEAD` is computed against the baseline SHA recorded at startup.
-3. The result is written to `.workspace/changes/staged.diff`.
-
-The diff runs in the capability layer container against `sandbox/` — not in the reasoning layer container. The reasoning layer container exits first; the harness then stops the capability layer container, triggering the EXIT trap and diff generation.
-
-An autosave loop writes `autosave.diff` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
-
-On the host, `scripts/apply_workspace.sh` applies the patch to the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_DIR` is a git repository with at least one commit before applying.
-
----
-
-## Container Lifecycle
-
-The harness manages two containers per session via Docker Compose. Start order is enforced by service dependencies; stop order is fixed.
-
-**Start sequence:**
-1. `scripts/start_agent.sh` runs pre-flight: validates paths, loads `.env`, runs snapshot pipeline stage 1, resolves brief
-2. `scripts/start_agent.sh` generates a merged compose tmpfile via `compose_generate` in `libs/compose.sh`; dispatches to `providers/<n>/run.sh`, passing mode and `--compose-file`
-3. `providers/<n>/run.sh` assembles compose args — appending the serve overlay from `providers/<n>/docker-compose.serve.yml` if mode is `serve` — then invokes `docker compose`
-4. Capability layer starts first (service dependency), runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
-5. Reasoning layer container starts with `--volumes-from <capability-layer>` — attaches to capability layer's `sandbox/`, mounts `.workspace/input/` and `.workspace/output/` from host
-6. Reasoning layer hands off to the agent
-
-**Stop sequence:**
-1. Reasoning layer container exits (agent completes or is interrupted).
-2. Harness stops the capability layer container via `docker stop`, which sends SIGTERM to PID 1 (`sandbox-entrypoint.sh`).
-3. The TERM trap in `sandbox-entrypoint.sh` calls `exit 0`, which triggers the EXIT trap.
-4. The EXIT trap runs the diff pipeline — commits any pending changes in `sandbox/`, writes `staged.diff` to `.workspace/changes/`.
-
-The capability layer container must be running before the reasoning layer container starts, and must not be stopped until after the reasoning layer container exits. The TERM trap ensures `docker stop` produces a clean exit code so the EXIT trap fires reliably regardless of shutdown path.
-
----
-
-## Entrypoint Sequence
-
-**Capability layer entrypoint** (`scripts/sandbox-entrypoint.sh`):
-```
-  1. snapshot_validate (gate 2)         — confirm .snapshot/ is intact
-  2. snapshot_copy_to_sandbox           — copy .snapshot/ into sandbox/ (clean at container start; no named volume)
-  3. snapshot_init_git                  — git init + baseline commit; records baseline SHA
-  4. register EXIT trap → diff pipeline — fires on any exit; commits pending changes, writes staged.diff
-  5. register TERM trap → exit 0        — docker stop sends SIGTERM to PID 1; clean exit ensures EXIT trap fires
-  6. start autosave loop                — if AUTOSAVE_INTERVAL > 0
-  7. wait                               — stays running while reasoning layer is active
-```
-
-**Reasoning layer entrypoint:**
-
-The reasoning layer entrypoint is provider-specific. It is defined in `providers/<n>/Dockerfile` via the `ENTRYPOINT` instruction. The agent brief and operator input files are accessible via the `workspace/input/` read-only mount — no copy step is required.
-
-Steps 1–3 of the capability layer entrypoint must succeed before the reasoning layer container starts. Any failure exits the capability layer container without starting the reasoning layer.
-
----
-
-## Provider Interface
-
-A conforming reasoning layer provider supplies files under `providers/<n>/` as defined in [`tool_interface.md` — Provider Interface](tool_interface.md#provider-interface). For a step-by-step guide to adding a provider, see [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md).
-
-`scripts/start_agent.sh` is provider-agnostic. It owns: flag parsing, path validation, `.env` loading, git validation, workspace directory setup, snapshot pipeline, compose generation, and brief resolution. It exports all `.env` variables into the environment before calling `run.sh` — provider scripts receive image names, host paths, and port config without re-deriving them.
-
-The capability layer build is handled by `scripts/build_sandbox.sh`, which is shared across providers. It always builds from `libs/sandbox.Dockerfile` in the repo. Execution modes (`standard`, `dry-run`, `serve`) are defined in [`tool_interface.md`](tool_interface.md#execution-modes).
+**Container model** — how Docker implements the two-layer architecture. Covers compose generation, mount shape rationale, container lifecycle (start and stop sequences), and entrypoint sequences. See [`container_model.md`](container_model.md).
 
 ---
 
 ## Staleness Detection
 
-The harness uses two distinct mechanisms to detect potentially out-of-date components. Each targets a different category of file and fires at a different point in the workflow.
+The harness uses two mechanisms to detect potentially out-of-date components.
 
-### Template version check — operator-installed files
+**Template version check — operator-installed files:** The capability layer Dockerfile is repo-owned (`libs/sandbox.Dockerfile`) and never copied to `SANDBOX_DIR` — this staleness vector is eliminated. The `Makefile` is seeded at onboard time but not version-checked at run time — staleness is a manual operator concern. See `roadmap.md` for a planned versioning approach.
 
-`scripts/build_sandbox.sh` previously compared a version comment in an operator-installed `Dockerfile.sandbox` against the current template. The capability layer Dockerfile is now repo-owned (`libs/sandbox.Dockerfile`) and never copied to `SANDBOX_DIR` — there is no operator-installed file to check and this staleness vector is eliminated.
+**Docker layer cache — repo-controlled files:** `build_context.sh` assembles a deterministic build context from a fixed set of repo files. Docker hashes each layer's inputs at build time — if any input has changed since the last build, Docker invalidates that layer and all downstream layers. No separate digest comparison is required.
 
-The template version check mechanism remains in the codebase for `Makefile` version tracking via `.env`, but no automated comparison is performed at build or run time. The `Makefile` is seeded at onboard time and not version-checked at run time — staleness is a manual operator concern. See `roadmap.md` for a planned versioning approach.
-
-### Docker layer cache — repo-controlled files
-
-`build_context.sh` assembles a deterministic build context from a fixed set of repo files (e.g. `libs/dirs.sh`, `libs/snapshot.sh`). Docker hashes each layer's inputs at build time. If any input file has changed since the last build, Docker invalidates that layer and all subsequent layers, triggering a rebuild of the affected content. No separate digest comparison is required — the layer cache is the staleness mechanism for repo-controlled files.
-
-A `agent-sandbox.digest` label is embedded in each image at build time, recording a hash of the build context contents. This label is not currently read back at run time — it is available for future tooling if a run-time staleness warning is needed. The layer cache makes such a check redundant for normal operation.
+A `agent-sandbox.digest` label is embedded in each image at build time, recording a hash of the build context. It is not read back at run time but is available for future tooling.
 
 ---
 
@@ -256,9 +71,9 @@ A `agent-sandbox.digest` label is embedded in each image at build time, recordin
 | Topic | Document |
 |---|---|
 | Two-layer conceptual model | [../concepts/two_layer_model.md](../concepts/two_layer_model.md) |
+| Sandbox lifecycle | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
+| Container model | [container_model.md](container_model.md) |
+| External contract | [tool_interface.md](tool_interface.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
 | Operator-facing workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
-| External contract and naming conventions | [tool_interface.md](tool_interface.md) |
-| Adding a new provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |
-| Security guarantees and trust boundaries | [security.md](security.md) |
-| Standard operating procedures | [../operations/standard_operating_procedures.md](../operations/standard_operating_procedures.md) |
+| Security guarantees | [security.md](security.md) |

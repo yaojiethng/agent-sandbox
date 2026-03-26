@@ -63,19 +63,21 @@ Compose files are no longer written to `SANDBOX_DIR`. A single fully-merged comp
 
 
 ### Deferred breakdown
+- [ ] Open WebUI ↔ Hermes API connection in serve mode:
+  - Hermes requires provider credentials in `HERMES_HOME/.hermes/.env` inside the container. `HERMES_HOME` is ephemeral — credentials must be injected via `SANDBOX_DIR/.env` and the serve overlay. Tasks: document variables in `providers/hermes/.env.example`; inject via serve overlay into agent service environment.
+  - Investigate whether Hermes accepts a static config file for provider/model configuration (pre-sets default model so operator does not need to configure in UI on each serve start). If yes: determine format, add pre-prepared file to provider, mount or copy via overlay.
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
 - [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
-- [ ] Open WebUI ↔ Hermes API connection in serve mode — serve overlay launches Open WebUI, connection to Hermes backend and agent configuration needs follow-up 
 
 **Acceptance criteria:**
-- `make dry-run PROVIDER=opencode` passes after refactor
-- `make dry-run PROVIDER=hermes` passes
-- `make serve PROVIDER=opencode` resolves serve overlay from `providers/opencode/` (not `SANDBOX_DIR`)
-- `agent-sandbox onboard` produces `.env` with stubs from all `providers/*/env.example`; no `docker-compose.serve.yml` in `SANDBOX_DIR`
-- `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
-- `make build` builds sandbox + all providers
-- A second provider can be added under `providers/<n>/` with `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required
-- `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/<n>/run.sh`
+- [x] `make dry-run PROVIDER=opencode` passes after refactor
+- [x] `make dry-run PROVIDER=hermes` passes
+- [x] `make serve PROVIDER=opencode` resolves serve overlay from `providers/opencode/` (not `SANDBOX_DIR`)
+- [x] `agent-sandbox onboard` produces `.env` with stubs from all `providers/*/env.example`; no `docker-compose.serve.yml` in `SANDBOX_DIR`
+- [x] `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/<n>/run.sh`
+- [x] `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
+- [x] `make build` builds sandbox + all providers
+- [ ] A second provider can be added under `providers/<n>/` with `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required (confirmed structurally; proven empirically when a third provider is added)
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 

@@ -28,6 +28,9 @@ Carried from prior session (04):
 - [x] `make dry-run PROVIDER=hermes` passes
 - [x] `agent-sandbox onboard` on a fresh directory does not produce `docker-compose.yml` or `Dockerfile.sandbox` in `SANDBOX_DIR`
 - [x] Architecture documents in scope describe the system as built
+- [x] `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
+- [x] `make build` builds sandbox + all providers
+- [ ] A second provider can be added with no changes to `scripts/` or `libs/` — confirmed structurally; proven empirically when a third provider is added
 - [ ] Claude Desktop provider integration complete
 - [ ] Pi provider integration complete
 - [ ] Open WebUI ↔ Hermes API connection confirmed in serve mode
@@ -41,7 +44,10 @@ Added this session:
 
 | File | Why in scope |
 |---|---|
-| [`docs/architecture/execution_model.md`](docs/architecture/execution_model.md) | Conformance pass; absorbed compose generation content; M2.2 divergences fixed |
+| [`docs/architecture/execution_model.md`](docs/architecture/execution_model.md) | Reduced to index document; mechanism detail delegated to new documents |
+| [`docs/architecture/sandbox_lifecycle.md`](docs/architecture/sandbox_lifecycle.md) | New — snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
+| [`docs/architecture/container_model.md`](docs/architecture/container_model.md) | New — compose generation, mount rationale, container lifecycle, entrypoint sequences |
+| [`docs/concepts/two_layer_model.md`](docs/concepts/two_layer_model.md) | Status updated; Architecture Documents table updated to reflect new document set |
 | [`docs/architecture/tool_interface.md`](docs/architecture/tool_interface.md) | Scope fix — Docker Compose Generation removed; Capability Layer Contract trimmed; onboarding note fixed |
 | [`docs/operations/provider_onboarding_guide.md`](docs/operations/provider_onboarding_guide.md) | New — step-by-step provider onboarding guide |
 | [`docs/operations/project_onboarding_guide.md`](docs/operations/project_onboarding_guide.md) | New — operator guide for onboarding a project |
@@ -59,18 +65,23 @@ Added this session:
 | `tool_interface.md` Onboarding section collapsed to link | Full procedure now in `project_onboarding_guide.md`; reference card retains required-files table only | `tool_interface.md` |
 | M2.2 Design decisions block removed from roadmap | All durable facts promoted to architecture documents; transient rationale has served its purpose | `roadmap.md` |
 | `make build hermes` bug entry removed from Known Limitations | Superseded by M2.2 build target refactor — confirmed resolved by operator | `roadmap.md` |
+| `execution_model.md` split into `sandbox_lifecycle.md` and `container_model.md` | Snapshot/diff and compose/mount are two coherent concerns that change independently; `execution_model.md` becomes a short index | `execution_model.md`, `sandbox_lifecycle.md`, `container_model.md` |
+| `two_layer_model.md` cleaned up | M2 is implemented, not in progress; Architecture Documents table updated to current document set | `two_layer_model.md` |
 
 ## Completed this session
 
 | File | Change |
 |---|---|
-| `docs/architecture/execution_model.md` | Absorbed Docker Compose Generation; fixed M2.2 divergences (compose files removed from directory tree, duplicate step 3 collapsed, duplicate heading removed); removed duplicate mount table; provider interface section points to `provider_onboarding_guide.md` |
+| `docs/architecture/execution_model.md` | Reduced to index — directory layout, invocation model, staleness detection, mechanism pointers |
+| `docs/architecture/sandbox_lifecycle.md` | New — snapshot pipeline (both stages), git baseline, diff pipeline, autosave, input channels, apply workflow; fork-and-join framing |
+| `docs/architecture/container_model.md` | New — compose generation (tmpfile model, baked vs ${VAR}, mode composition, rationale), mount shape rationale, container lifecycle, entrypoint sequences |
+| `docs/concepts/two_layer_model.md` | Status line updated (M2 implemented, not in progress); context block updated; Architecture Documents table replaced with current document set |
 | `docs/architecture/tool_interface.md` | Docker Compose Generation section removed; Capability Layer Contract trimmed to guarantees only; onboarding note contradiction fixed; references updated |
 | `docs/operations/provider_onboarding_guide.md` | Renamed from `provider_guide.md`; title updated |
 | `docs/development/roadmap.md` | M2.2 Design decisions block removed; Known Limitations: stale build bug removed, duplicate multi-service entry removed, malformed entry cleaned |
 | `docs/architecture/tool_interface.md` | Stripped to reference card — orientation prose removed; Onboarding section collapsed to link; Capability Layer Dockerfile section removed; Execution Modes and `.env` intro prose removed |
 | `docs/operations/project_onboarding_guide.md` | New — reworked from skill; operator-facing; covers prerequisites, onboard command, agents.md authoring, verification checklist |
-| `docs/development/project_index.md` | `execution_model.md` and `tool_interface.md` descriptions updated to M2.2; `provider_onboarding_guide.md` and `project_onboarding_guide.md` entries added |
+| `docs/development/project_index.md` | `execution_model.md` description updated; `sandbox_lifecycle.md`, `container_model.md` entries added; `two_layer_model.md` last-touched updated to M2.2 |
 
 ## Deferred items
 
@@ -78,13 +89,13 @@ None.
 
 ## Next session
 
-M2.2 — Reasoning Layer Modularisation (provider integrations: Claude Desktop, Pi, Open WebUI ↔ Hermes).
+M2.2 — Reasoning Layer Modularisation (Open WebUI ↔ Hermes serve mode connection).
 
-Trigger B has not run. Three acceptance criteria remain open. Docs audit is complete.
+Trigger B has not run. Three acceptance criteria remain open; Claude Desktop and Pi deferred beyond next session.
 
-Blocking questions to resolve before implementation:
-1. **Claude Desktop** — confirm the integration pattern before writing `run.sh` (e.g. MCP server in capability layer container, Desktop app on host connecting to it).
-2. **Open WebUI ↔ Hermes** — is this a serve overlay config change or a missing env variable (see deferred Hermes serve mode model configuration from session 04)?
+Next session focus — Open WebUI ↔ Hermes:
+- Hermes requires provider credentials in `HERMES_HOME/.hermes/.env` inside the container. `HERMES_HOME` is ephemeral. Fix: document variables in `providers/hermes/.env.example`; inject via serve overlay into agent service environment.
+- Investigate whether Hermes accepts a static config file for provider/model configuration before implementing — if yes, pre-prepare and mount/copy via overlay so operator does not need to configure the model in the UI on each serve start.
 
 Watch-out items:
 1. Delete `libs/_templates/docker-compose.yml.template` and `libs/_templates/docker-compose.dry-run.yml.template` from disk — superseded.

@@ -66,7 +66,9 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
-| `execution_model.md` | 🟡 Warm | M2.2 | Two-container model, mount shape rationale, compose generation, snapshot and diff pipelines, provider interface implementation. |
+| `execution_model.md` | 🟡 Warm | M2.2 | Index document: directory layout, invocation model. Delegates mechanism detail to sandbox_lifecycle.md and container_model.md. |
+| `sandbox_lifecycle.md` | 🟡 Warm | M2.2 | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow. |
+| `container_model.md` | 🟡 Warm | M2.2 | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences. |
 | `tool_interface.md` | 🟡 Warm | M2.2 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
@@ -78,7 +80,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `agent_workflow.md` | 🟢 Cold | M2.1 | Design principles, invariants, UX flow names. Rescoped to pure conceptual; operational detail moved to quickstart and tool_interface. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
-| `two_layer_model.md` | 🟢 Cold | M1.5 | Canonical two-layer architecture definition. Do not edit; reference only. |
+| `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
 
 ### Operations (`docs/operations/`)
 

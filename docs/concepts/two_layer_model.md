@@ -1,10 +1,10 @@
 # Two-Layer Architecture — Reasoning and Capability Layers
 
-**Status:** Adopted. This is the target architecture for agent-sandbox as of M1.5. Implementation proceeds in M2.
+**Status:** Adopted. Implemented in M2.
 
 ---
 
-> **Context:** This document records the conceptual model and the decision. Implementation details — container lifecycle, mount shape, diff pipeline — are in [`execution_model.md`](../architecture/execution_model.md), updated per M2 sub-milestone. The reasoning behind this decision is in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion section.
+> **Context:** This document records the conceptual model and the decision. Implementation details are distributed across [`execution_model.md`](../architecture/execution_model.md), [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md), and [`container_model.md`](../architecture/container_model.md). The reasoning behind this decision is in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion section.
 
 ---
 
@@ -50,12 +50,14 @@ The diff pipeline runs post-session against the sandbox in the capability layer 
 
 ## Architecture Documents
 
-The following documents describe the M1.x fused model and are updated incrementally as M2 sub-milestones are implemented:
+The following documents implement this conceptual model:
 
-| Document | What changes in M2 |
+| Document | Responsibility |
 |---|---|
-| `execution_model.md` | Two-container lifecycle, mount shape, snapshot pipeline, diff pipeline |
-| `security.md` | Trust boundary table, new container, updated invariants |
-| `agent_workflow.md` | Operator workflow with two containers |
+| [`execution_model.md`](../architecture/execution_model.md) | Directory layout, invocation model, index to mechanism documents |
+| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
+| [`container_model.md`](../architecture/container_model.md) | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences |
+| [`tool_interface.md`](../architecture/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
+| [`security.md`](../architecture/security.md) | Trust boundaries and security invariants |
 
-These documents are **hot** during M2. Changes require checking against this conceptual model before being accepted.
+Changes to any of these documents should be checked against this conceptual model before being accepted.
