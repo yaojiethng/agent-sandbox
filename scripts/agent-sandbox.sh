@@ -7,6 +7,7 @@
 #   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
+#   agent-sandbox stop     --sandbox=<path>
 #   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
 #
 # --target accepts: all, sandbox, <provider>, or comma-separated combinations
@@ -26,7 +27,7 @@ SUBCOMMAND="${1:-}"
 shift || true
 
 if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|apply> <flags>"
+  echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|apply> <flags>"
   exit 1
 fi
 
@@ -169,6 +170,15 @@ case "$SUBCOMMAND" in
       "${PASSTHROUGH[@]}"
     ;;
 
+  stop)
+    parse_flags "$@"
+    if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name and --sandbox are required"
+      exit 1
+    fi
+    exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+    ;;
+
   apply)
     parse_flags "$@"
     if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
@@ -183,7 +193,7 @@ case "$SUBCOMMAND" in
 
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, apply"
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply"
     exit 1
     ;;
 esac

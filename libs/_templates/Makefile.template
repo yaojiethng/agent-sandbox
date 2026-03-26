@@ -26,6 +26,9 @@
 #   make build TARGET=all             — explicit alias for build-all
 #   make build TARGET=hermes          — builds hermes provider only
 #   make build TARGET=hermes,sandbox  — builds hermes and sandbox
+#
+# STOP
+#   make stop                         — stop and remove all session containers and volumes
 
 -include .env
 export
@@ -43,7 +46,7 @@ REBUILD_FLAG  = $(if $(REBUILD),--rebuild,)
 PROVIDER_FLAG = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG   = --target=$(if $(TARGET),$(TARGET),all)
 
-.PHONY: build start serve dry-run apply
+.PHONY: build start serve dry-run stop apply
 
 # -------------------------
 # Build
@@ -91,6 +94,15 @@ dry-run:
 	  --env=$(ENV_FILE)
 
 # -------------------------
+# Stop
+# -------------------------
+
+stop:
+	agent-sandbox stop \
+	  --name=$(PROJECT_NAME) \
+	  --sandbox=$(SANDBOX_DIR)
+
+# -------------------------
 # Apply
 # -------------------------
 
@@ -99,4 +111,3 @@ apply:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
-	  

@@ -25,6 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$REPO_ROOT/libs/containers.sh"
+source "$REPO_ROOT/libs/compose.sh"
 
 # -------------------------
 # Args
@@ -82,10 +83,7 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-COMPOSE_ARGS=(
-  --project-directory "$SANDBOX_DIR"
-  -f "$COMPOSE_FILE"
-)
+compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_FILE"
 
 # -------------------------
 # Mode dispatch
@@ -100,23 +98,7 @@ case "$MODE" in
       exit 1
     fi
     DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
-
-    DRY_RUN_COMPOSE_ARGS=(
-      --project-directory "$SANDBOX_DIR"
-      -f "$COMPOSE_FILE"
-      -f "$DRY_RUN_OVERLAY"
-    )
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" up -d
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" down -v
-    echo ""
-    echo "=== liveness: PASS ==="
+    compose_dry_run "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_FILE" "$DRY_RUN_OVERLAY" "$DRY_RUN_SCRIPT"
     exit 0
     ;;
 
@@ -148,29 +130,19 @@ esac
 # -------------------------
 # Run
 # -------------------------
-# Tear down any previous session containers and volumes before starting.
-docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+compose_teardown
 
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
-  echo "Agent running in serve mode. Stop with: docker compose down -v"
-  echo "server listening on http://0.0.0.0:${SERVE_PORT}"
+  echo "Agent running in serve mode. Stop with: make stop"
+  echo "Server listening on http://0.0.0.0:${SERVE_PORT}"
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
   docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
 
-  # Poll until sandbox is healthy before attaching the agent.
-  # depends_on: service_healthy only applies to compose up, not compose run.
-  # Container name is pinned via container_name: in the compose template — no
-  # Compose-generated suffix. Resolved from the same convention as the template.
-  SANDBOX_CONTAINER="$(sandbox_container_name "$PROJECT_NAME")"
-  echo "+ waiting for sandbox to be healthy..."
-  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
-    sleep 1
-  done
-  echo "+ sandbox healthy."
+  compose_sandbox_wait "$PROJECT_NAME"
 
   echo "+ attaching to agent (TUI)..."
   docker compose "${COMPOSE_ARGS[@]}" run --rm agent

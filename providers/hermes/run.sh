@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# providers/opencode/run.sh
-# Handles compose invocation for the OpenCode provider.
+# providers/hermes/run.sh
+# Handles compose invocation for the Hermes provider.
 # Called by scripts/start_agent.sh after pre-flight completes.
 #
 # Usage:
 #   ./run.sh <mode> --name=<project_name> --sandbox=<path>
 #
 # Modes:
-#   standard   — OpenCode TUI attached to terminal
-#   serve      — OpenCode in server mode, port exposed at SERVE_PORT
+#   standard   — Hermes chat TUI attached to terminal
+#   serve      — Hermes in API mode, Open WebUI exposed at SERVE_PORT
 #   dry-run    — liveness check only
 #   headless   — reserved, not yet implemented
 #
@@ -21,10 +21,11 @@ set -euo pipefail
 # Paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# REPO_ROOT assumes this script lives at providers/opencode/
+# REPO_ROOT assumes this script lives at providers/hermes/
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$REPO_ROOT/libs/containers.sh"
+source "$REPO_ROOT/libs/compose.sh"
 
 # -------------------------
 # Args
@@ -42,7 +43,7 @@ fi
 # -------------------------
 PROJECT_NAME=""
 SANDBOX_DIR=""
-PROVIDER_NAME="opencode"
+PROVIDER_NAME="hermes"
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -82,10 +83,7 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-COMPOSE_ARGS=(
-  --project-directory "$SANDBOX_DIR"
-  -f "$COMPOSE_FILE"
-)
+compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_FILE"
 
 # -------------------------
 # Mode dispatch
@@ -100,23 +98,7 @@ case "$MODE" in
       exit 1
     fi
     DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
-
-    DRY_RUN_COMPOSE_ARGS=(
-      --project-directory "$SANDBOX_DIR"
-      -f "$COMPOSE_FILE"
-      -f "$DRY_RUN_OVERLAY"
-    )
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" up -d
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh
-
-    DRY_RUN_SCRIPT="$DRY_RUN_SCRIPT" \
-      docker compose "${DRY_RUN_COMPOSE_ARGS[@]}" down -v
-    echo ""
-    echo "=== liveness: PASS ==="
+    compose_dry_run "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_FILE" "$DRY_RUN_OVERLAY" "$DRY_RUN_SCRIPT"
     exit 0
     ;;
 
@@ -124,7 +106,7 @@ case "$MODE" in
     SERVE_OVERLAY="$SCRIPT_DIR/docker-compose.serve.yml"
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at providers/opencode/docker-compose.serve.yml in the agent-sandbox repo."
+      echo "  Expected at providers/hermes/docker-compose.serve.yml in the agent-sandbox repo."
       exit 1
     fi
     COMPOSE_ARGS+=(-f "$SERVE_OVERLAY")
@@ -148,30 +130,20 @@ esac
 # -------------------------
 # Run
 # -------------------------
-# Tear down any previous session containers and volumes before starting.
-docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+compose_teardown
 
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode — Hermes API + Open WebUI)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
   echo "Open WebUI available at http://127.0.0.1:${SERVE_PORT}"
   echo "Hermes API available at http://127.0.0.1:8642/v1"
-  echo "Stop with: docker compose -f $COMPOSE_FILE -f $SCRIPT_DIR/docker-compose.serve.yml down -v"
+  echo "Stop with: make stop"
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
   docker compose "${COMPOSE_ARGS[@]}" up -d sandbox
 
-  # Poll until sandbox is healthy before attaching the agent.
-  # depends_on: service_healthy only applies to compose up, not compose run.
-  # Container name is pinned via container_name: in the compose template — no
-  # Compose-generated suffix. Resolved from the same convention as the template.
-  SANDBOX_CONTAINER="$(sandbox_container_name "$PROJECT_NAME")"
-  echo "+ waiting for sandbox to be healthy..."
-  until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$SANDBOX_CONTAINER" 2>/dev/null)" == "healthy" ]]; do
-    sleep 1
-  done
-  echo "+ sandbox healthy."
+  compose_sandbox_wait "$PROJECT_NAME"
 
   echo "+ attaching to agent (TUI)..."
   docker compose "${COMPOSE_ARGS[@]}" run --rm agent chat
