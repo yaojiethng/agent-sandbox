@@ -3,30 +3,44 @@
 # Shared container lifecycle library for agent-sandbox.
 #
 # Provides:
-#   agent_image_name   — compute reasoning layer image name from provider + project
-#   sandbox_image_name — compute capability layer image name from project
-#   build_agent        — build the reasoning layer image for a given provider + project
-#   build_sandbox      — build the capability layer image for a given project
-#   build_all          — build both images
-#   preflight          — verify both images exist; error with instructions if not
+#   agent_base_image_name  — compute reasoning layer base image name from provider
+#   agent_image_name       — compute reasoning layer image name from provider + project
+#   sandbox_image_name     — compute capability layer image name from project
+#   agent_container_name   — alias for agent_image_name
+#   sandbox_container_name — alias for sandbox_image_name
+#   build_context_sandbox  — populate a temp dir with sandbox build context files
+#   build_context_agent    — populate a temp dir with agent build context files
+#   build_image            — compute digest and run docker build
+#   build_agent            — build the reasoning layer images for a given provider + project
+#   build_sandbox          — build the capability layer image for a given project
+#   build_all              — build both images
+#   preflight              — verify both images exist; error with instructions if not
 
 # -------------------------
 # Naming conventions
 # -------------------------
 
+# agent_base_image_name <provider>
+# Returns: <provider>-base (lowercased)
+# Base images contain stable install layers and are not project-specific.
+agent_base_image_name() {
+  local provider="${1:?agent_base_image_name requires provider}"
+  echo "${provider,,}-base"
+}
+
 # agent_image_name <provider> <project_name>
 # Returns: <provider>-agent-<project> (lowercased)
 agent_image_name() {
-  local PROVIDER="${1:?agent_image_name requires provider}"
-  local PROJECT="${2:?agent_image_name requires project name}"
-  echo "${PROVIDER}-agent-${PROJECT,,}"
+  local provider="${1:?agent_image_name requires provider}"
+  local project="${2:?agent_image_name requires project name}"
+  echo "${provider}-agent-${project,,}"
 }
 
 # sandbox_image_name <project_name>
 # Returns: sandbox-<project> (lowercased)
 sandbox_image_name() {
-  local PROJECT="${1:?sandbox_image_name requires project name}"
-  echo "sandbox-${PROJECT,,}"
+  local project="${1:?sandbox_image_name requires project name}"
+  echo "sandbox-${project,,}"
 }
 
 # Container names match image names — one session per project at a time.
@@ -39,51 +53,124 @@ agent_container_name() { agent_image_name "$1" "$2"; }
 sandbox_container_name() { sandbox_image_name "$1"; }
 
 # -------------------------
+# Build context
+# -------------------------
+
+# _build_context_copy <src> <dst>
+# Copies a single file into the build context. Hard error if src is missing.
+_build_context_copy() {
+  local src="$1"
+  local dst="$2"
+
+  if [[ ! -f "$src" ]]; then
+    echo "build_context: missing required file: $src" >&2
+    return 1
+  fi
+
+  cp "$src" "$dst"
+}
+
+# build_context_sandbox <repo_root>
+# Creates and populates a temp dir with files required for a sandbox image build.
+# Prints the temp dir path to stdout. Caller is responsible for cleanup.
+build_context_sandbox() {
+  local repo_root="${1:?build_context_sandbox requires repo_root}"
+  local context_dir
+  context_dir=$(mktemp -d)
+  trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
+
+  _build_context_copy "$repo_root/scripts/sandbox-entrypoint.sh" "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/snapshot.sh"              "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/diff.sh"                  "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/dirs.sh"                  "$context_dir/" || return 1
+
+  echo "$context_dir"
+}
+
+# build_context_agent <repo_root>
+# Creates and populates a temp dir with files required for an agent image build.
+# Prints the temp dir path to stdout. Caller is responsible for cleanup.
+build_context_agent() {
+  local repo_root="${1:?build_context_agent requires repo_root}"
+  local context_dir
+  context_dir=$(mktemp -d)
+  trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
+
+  _build_context_copy "$repo_root/libs/dirs.sh" "$context_dir/" || return 1
+
+  echo "$context_dir"
+}
+
+# -------------------------
 # Build helpers
 # -------------------------
 
-# build_agent <provider> <project_name> <repo_root> [--no-cache]
-build_agent() {
-  local PROVIDER="${1:?build_agent requires provider}"
-  local PROJECT="${2:?build_agent requires project name}"
-  local REPO_ROOT="${3:?build_agent requires repo root}"
-  local NO_CACHE="${4:-}"
+# build_image <image_name> <dockerfile> <context_dir> <no_cache> [docker build args...]
+# Computes a digest of the context and runs docker build.
+build_image() {
+  local image_name="${1:?build_image requires image_name}"
+  local dockerfile="${2:?build_image requires dockerfile}"
+  local context_dir="${3:?build_image requires context_dir}"
+  local no_cache="${4:-}"
+  shift 4
 
-  local BUILD_SCRIPT="$REPO_ROOT/providers/$PROVIDER/build.sh"
-  if [[ ! -f "$BUILD_SCRIPT" ]]; then
-    echo "Error: build script not found for provider '$PROVIDER': $BUILD_SCRIPT"
+  local digest
+  digest=$(find "$context_dir" -type f | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+
+  echo "Building image: $image_name"
+  docker build $no_cache \
+    --label "agent-sandbox.digest=$digest" \
+    -t "$image_name" \
+    -f "$dockerfile" \
+    "$@" \
+    "$context_dir"
+  echo "Build complete: $image_name"
+}
+
+# build_agent <provider> <project_name> <repo_root> [--no-cache]
+# Delegates to build_container.sh which builds base then provider image.
+build_agent() {
+  local provider="${1:?build_agent requires provider}"
+  local project="${2:?build_agent requires project name}"
+  local repo_root="${3:?build_agent requires repo root}"
+  local no_cache="${4:-}"
+
+  local build_script="$repo_root/scripts/build_container.sh"
+  if [[ ! -f "$build_script" ]]; then
+    echo "Error: build_container.sh not found: $build_script" >&2
     exit 1
   fi
 
-  "$BUILD_SCRIPT" --name="$PROJECT" ${NO_CACHE:+--no-cache}
+  "$build_script" --type=agent --provider="$provider" --name="$project" ${no_cache:+--no-cache}
 }
 
 # build_sandbox <project_name> <sandbox_dir> <repo_root> [--no-cache]
+# Delegates to build_container.sh which builds the capability layer image.
 build_sandbox() {
-  local PROJECT="${1:?build_sandbox requires project name}"
-  local SANDBOX_DIR="${2:?build_sandbox requires sandbox dir}"
-  local REPO_ROOT="${3:?build_sandbox requires repo root}"
-  local NO_CACHE="${4:-}"
+  local project="${1:?build_sandbox requires project name}"
+  local sandbox_dir="${2:?build_sandbox requires sandbox dir}"
+  local repo_root="${3:?build_sandbox requires repo root}"
+  local no_cache="${4:-}"
 
-  local BUILD_SCRIPT="$REPO_ROOT/scripts/build_sandbox.sh"
-  if [[ ! -f "$BUILD_SCRIPT" ]]; then
-    echo "Error: build_sandbox.sh not found: $BUILD_SCRIPT"
+  local build_script="$repo_root/scripts/build_container.sh"
+  if [[ ! -f "$build_script" ]]; then
+    echo "Error: build_container.sh not found: $build_script" >&2
     exit 1
   fi
 
-  "$BUILD_SCRIPT" --name="$PROJECT" --sandbox="$SANDBOX_DIR" ${NO_CACHE:+--no-cache}
+  "$build_script" --type=sandbox --name="$project" --sandbox="$sandbox_dir" ${no_cache:+--no-cache}
 }
 
 # build_all <provider> <project_name> <sandbox_dir> <repo_root> [--no-cache]
 build_all() {
-  local PROVIDER="$1"
-  local PROJECT="$2"
-  local SANDBOX_DIR="$3"
-  local REPO_ROOT="$4"
-  local NO_CACHE="${5:-}"
+  local provider="$1"
+  local project="$2"
+  local sandbox_dir="$3"
+  local repo_root="$4"
+  local no_cache="${5:-}"
 
-  build_sandbox "$PROJECT" "$SANDBOX_DIR" "$REPO_ROOT" "$NO_CACHE"
-  build_agent   "$PROVIDER" "$PROJECT" "$REPO_ROOT" "$NO_CACHE"
+  build_sandbox "$project" "$sandbox_dir" "$repo_root" "$no_cache"
+  build_agent   "$provider" "$project" "$repo_root" "$no_cache"
 }
 
 # -------------------------
@@ -93,26 +180,26 @@ build_all() {
 # preflight <provider> <project_name> <repo_root>
 # Checks that both images exist. Errors with build instructions if not.
 preflight() {
-  local PROVIDER="${1:?preflight requires provider}"
-  local PROJECT="${2:?preflight requires project name}"
-  local REPO_ROOT="${3:?preflight requires repo root}"
+  local provider="${1:?preflight requires provider}"
+  local project="${2:?preflight requires project name}"
+  local repo_root="${3:?preflight requires repo root}"
 
-  local SANDBOX_IMAGE; SANDBOX_IMAGE=$(sandbox_image_name "$PROJECT")
-  local AGENT_IMAGE;   AGENT_IMAGE=$(agent_image_name "$PROVIDER" "$PROJECT")
-  local MISSING=false
+  local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
+  local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
+  local missing=false
 
-  if ! docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1; then
-    echo "Image not found: $SANDBOX_IMAGE"
-    MISSING=true
+  if ! docker image inspect "$sandbox_image" >/dev/null 2>&1; then
+    echo "Image not found: $sandbox_image"
+    missing=true
   fi
-  if ! docker image inspect "$AGENT_IMAGE" >/dev/null 2>&1; then
-    echo "Image not found: $AGENT_IMAGE"
-    MISSING=true
+  if ! docker image inspect "$agent_image" >/dev/null 2>&1; then
+    echo "Image not found: $agent_image"
+    missing=true
   fi
 
-  if [[ "$MISSING" == true ]]; then
+  if [[ "$missing" == true ]]; then
     echo "One or more required images are missing. Build them with:"
-    echo "  agent-sandbox build all --name=$PROJECT --sandbox=<path>"
+    echo "  agent-sandbox build all --name=$project --sandbox=<path>"
     exit 1
   fi
 }

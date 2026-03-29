@@ -1,6 +1,6 @@
 # Provider Onboarding Guide
 
-Step-by-step guide to adding a new reasoning layer provider to agent-sandbox. A provider is a self-contained directory under `providers/<n>/` that supplies the build script, serve overlay, and `.env` stubs for one reasoning layer agent.
+Step-by-step guide to adding a new reasoning layer provider to agent-sandbox. A provider is a self-contained directory under `providers/<n>/` that supplies the Dockerfiles, serve overlay, and `.env` stubs for one reasoning layer agent.
 
 The provider interface contract is defined in [`../architecture/tool_interface.md` — Provider Interface](../architecture/tool_interface.md#provider-interface). This guide walks through implementing that contract. Refer to [`../architecture/execution_model.md`](../architecture/execution_model.md) for implementation detail on how the harness calls provider scripts.
 
@@ -12,7 +12,7 @@ The provider interface contract is defined in [`../architecture/tool_interface.m
 
 Two directories contain scripts in the agent-sandbox repo. Understanding the distinction matters when deciding where provider-specific logic belongs:
 
-**`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh` and `run_agent.sh` live here.
+**`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh`, `run_agent.sh`, and `build_container.sh` live here.
 
 **`libs/`** — reusable utility functions. Sourced by scripts and providers alike. No top-level control flow — only named functions. `compose.sh`, `containers.sh`, `snapshot.sh` live here.
 
@@ -27,8 +27,8 @@ A conforming provider supplies four required files and up to two optional files:
 **Required:**
 ```
 providers/<n>/
-├── Dockerfile                    ← reasoning layer image definition
-├── build.sh                      ← builds the reasoning layer image
+├── base.Dockerfile               ← stable install layers; tagged <provider>-base
+├── provider.Dockerfile           ← provider layer inheriting from base; tagged <provider>-agent-<project>
 ├── docker-compose.serve.yml      ← serve mode overlay
 └── .env.example                  ← provider-specific .env stubs
 ```
@@ -40,7 +40,7 @@ providers/<n>/
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
-None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
+None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time. Providers do not supply a `build.sh` — the harness builds all images via `scripts/build_container.sh`.
 
 ---
 
@@ -50,39 +50,62 @@ None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox 
 mkdir providers/<n>
 ```
 
-Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`, `claude-desktop`). This name becomes the `<provider>` component in image and container names (`<provider>-agent-<project>`).
+Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`, `claude-desktop`). This name becomes the `<provider>` component in image and container names (`<provider>-base`, `<provider>-agent-<project>`).
 
 ---
 
-## Step 2 — Write the Dockerfile
+## Step 2 — Write `base.Dockerfile`
 
-The Dockerfile defines the reasoning layer image. It must:
+`base.Dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
-- Install the agent runtime and any dependencies it requires
-- Set `ENTRYPOINT` appropriately for the agent (see note below)
-- Not include project-specific content — the image is shared across all projects using this provider
+The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build_container.sh` skips the base build if the image already exists unless `--no-cache` is passed.
 
-The agent command is supplied at runtime via `docker compose run --rm agent "<command>"` for standard mode, and via `command:` in `docker-compose.serve.yml` for serve mode. A common pattern is `ENTRYPOINT ["bash", "-c"]` so the command string is injected directly. Providers that have a fixed entrypoint (e.g. `ENTRYPOINT ["opencode"]`) pass the subcommand as the Docker Compose command instead.
+```dockerfile
+# providers/<n>/base.Dockerfile
+FROM <base-os>
+
+# System packages, runtimes, agent install
+RUN ...
+```
+
+The base image ends as root. User creation and runtime configuration belong in `provider.Dockerfile`.
+
+**Reference:** `providers/opencode/base.Dockerfile`, `providers/hermes/base.Dockerfile`
+
+---
+
+## Step 3 — Write `provider.Dockerfile`
+
+`provider.Dockerfile` inherits from `<provider>-base` and adds the fast-changing provider layer: shared libs, user creation, runtime config, working directories, healthcheck, and entrypoint. It is tagged `<provider>-agent-<project>`.
+
+```dockerfile
+# providers/<n>/provider.Dockerfile
+ARG BASE_IMAGE=<provider>-base
+FROM ${BASE_IMAGE}
+
+COPY dirs.sh /libs/dirs.sh
+
+RUN useradd -m -u 1001 -s /bin/bash agentuser
+USER agentuser
+
+RUN mkdir -p /home/agentuser/workspace/input \
+             /home/agentuser/workspace/output
+
+WORKDIR /home/agentuser/sandbox
+
+HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
+  CMD test -d /home/agentuser/sandbox/.git
+
+ENTRYPOINT ["<agent-command>"]
+```
+
+The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
+
+The agent command is supplied at runtime via `docker compose run --rm agent "<command>"` for standard mode, and via `command:` in `docker-compose.serve.yml` for serve mode.
 
 The agent brief and operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
-**Reference:** `providers/opencode/Dockerfile`, `providers/hermes/Dockerfile`
-
----
-
-## Step 3 — Write `build.sh`
-
-`build.sh` builds the reasoning layer image. It is called by the operator via `make build TARGET=<n>` or `make build` (which iterates all providers). It is never called by `scripts/start_agent.sh`.
-
-Required behaviour:
-- Accept `--name=<project>` — the project name; used to construct the image name `<provider>-agent-<project>`
-- Accept `--no-cache` — passed through to `docker build`
-- Produce an image named `<provider>-agent-<project>`
-- Exit non-zero with a clear message on failure
-
-`scripts/build_sandbox.sh` handles the capability layer build separately — `build.sh` is only responsible for the reasoning layer image.
-
-**Reference:** `providers/opencode/build.sh`
+**Reference:** `providers/opencode/provider.Dockerfile`, `providers/hermes/provider.Dockerfile`
 
 ---
 
@@ -172,7 +195,7 @@ make dry-run PROVIDER=<n>
 ```
 
 A passing dry-run confirms:
-- The reasoning layer image builds without error
+- Both images build without error (`<provider>-base` and `<provider>-agent-<project>`)
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access `sandbox/` via the shared volume
 - Both containers terminate gracefully
@@ -192,7 +215,7 @@ Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) an
 
 ## Step 9 — Register the provider
 
-No changes to `scripts/` or `libs/` are required. The harness discovers providers by glob (`providers/*/build.sh`). Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
+No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.Dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 
 Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to append the new provider's stubs to their `.env`.
 

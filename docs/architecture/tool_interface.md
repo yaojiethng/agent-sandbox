@@ -11,9 +11,10 @@ Internal implementation is in [`execution_model.md`](execution_model.md). Operat
 | Image | Name pattern | Purpose |
 |---|---|---|
 | Capability layer | `sandbox-<project>` | Sandbox, snapshot pipeline, diff pipeline |
+| Reasoning layer base | `<provider>-base` | Stable install layers; not project-specific |
 | Reasoning layer | `<provider>-agent-<project>` | Agent runtime (provider-specific) |
 
-`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`).
+`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`). Base images contain no project-specific content and are built once per provider; the reasoning layer image inherits from the base and is built per project.
 
 ---
 
@@ -129,13 +130,16 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 
 A conforming provider supplies the following under `providers/<n>/` in the repo:
 
-| File | Purpose |
-|---|---|
-| `build.sh` | Builds the reasoning layer Docker image |
-| `run.sh` | Handles all container invocation for this provider |
-| `Dockerfile` | Reasoning layer image definition |
-| `docker-compose.serve.yml` | Static serve mode overlay; referenced directly by `run.sh` |
-| `.env.example` | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
+| File | Required | Purpose |
+|---|---|---|
+| `build.sh` | Yes | Builds the base image (if missing or `--no-cache`) then the reasoning layer image |
+| `run.sh` | Yes | Handles all container invocation for this provider |
+| `base.Dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
+| `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
+| `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run.sh` |
+| `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
+| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars, pre-creates host-side files |
+| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes; used when a provider requires mounts or env vars beyond the base compose template |
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 

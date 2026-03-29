@@ -1,21 +1,15 @@
-# Dockerfile (reasoning layer)
-# Runs the agent (OpenCode). Snapshot unpacking and diff pipeline are
-# handled by the capability layer container (Dockerfile.sandbox).
-FROM ubuntu:24.04
-
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH=/usr/local/bin:$PATH
-
-# -------------------------
-# System packages (root)
-# -------------------------
-RUN apt-get update && apt-get install -y \
-    bash curl git ca-certificates \
-    python3 python3-pip nodejs npm \
-    && rm -rf /var/lib/apt/lists/*
+# providers/opencode/provider.Dockerfile
+# Reasoning layer image for the OpenCode provider.
+# Inherits stable install layers from opencode-base (see base.Dockerfile).
+# Tagged as opencode-agent-<project>. Built by scripts/build_container.sh --type=agent --provider=opencode.
+#
+# Rebuilt when provider interface, shared libs, or project-specific content changes.
+# Slow install layers (apt, npm, opencode-ai) live in base.Dockerfile.
+ARG BASE_IMAGE=opencode-base
+FROM ${BASE_IMAGE}
 
 # -------------------------
-# Shared libs (root, before USER switch)
+# Shared libs
 # -------------------------
 # dirs.sh is sourced by dry_run.sh inside the container.
 # No entrypoint script — opencode is exec'd directly via ENTRYPOINT.
@@ -29,18 +23,6 @@ COPY dirs.sh /libs/dirs.sh
 # -------------------------
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
-
-# -------------------------
-# npm global install as agentuser
-# -------------------------
-# By default, npm installs globals to /usr/lib/node_modules (root-owned).
-# Redirecting NPM_CONFIG_PREFIX to a user-owned directory allows non-root
-# global installs. Any future `npm install -g` as a non-root user needs
-# these two ENV lines set beforehand.
-ENV NPM_CONFIG_PREFIX=/home/agentuser/.npm-global
-ENV PATH=/home/agentuser/.npm-global/bin:$PATH
-
-RUN npm install -g opencode-ai
 
 # -------------------------
 # Working directories

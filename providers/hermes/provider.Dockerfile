@@ -1,7 +1,7 @@
 # providers/hermes/provider.Dockerfile
 # Reasoning layer image for the Hermes provider.
-# Inherits stable install layers from hermes-base.
-# Tagged as hermes-agent-<project>.
+# Inherits stable install layers from hermes-base (see base.Dockerfile).
+# Tagged as hermes-agent-<project>. Built by scripts/build_container.sh --type=agent --provider=hermes.
 #
 # Rebuilt when provider interface, config, or project-specific content changes.
 # Slow install layers (apt, uv, Hermes source, Playwright) live in base.Dockerfile.
@@ -28,7 +28,10 @@ USER agentuser
 # providers/hermes/docker-compose.hermes.yml — the image-layer directory
 # is the fallback only; the bind mounts take precedence.
 ENV HERMES_HOME=/home/agentuser/.hermes
-RUN mkdir -p "$HERMES_HOME"
+RUN mkdir -p "$HERMES_HOME" && \
+    cp /opt/hermes/cli-config.yaml.example "$HERMES_HOME/config.yaml" && \
+    echo "terminal:" >> "$HERMES_HOME/config.yaml" && \
+    echo "  backend: local" >> "$HERMES_HOME/config.yaml"
 
 # -------------------------
 # Working directories

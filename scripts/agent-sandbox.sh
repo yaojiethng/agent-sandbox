@@ -109,9 +109,10 @@ case "$SUBCOMMAND" in
     # --target absent or --target=all → build everything
     if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
       build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
-      for BUILD_SCRIPT in "$AGENT_SANDBOX_REPO/providers/"*/build.sh; do
-        [[ -f "$BUILD_SCRIPT" ]] || continue
-        "$BUILD_SCRIPT" --name="$PROJECT_NAME"
+      for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/providers/"*/base.Dockerfile; do
+        [[ -f "$BASE_DOCKERFILE" ]] || continue
+        DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
+        build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
       done
     else
       # Split comma-separated list; build sandbox first if present

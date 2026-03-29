@@ -1,7 +1,8 @@
 # providers/hermes/base.Dockerfile
 # Stable install layers for the Hermes reasoning layer.
-# Built once; rebuilt only when system packages, runtimes, or agent source change.
+# Built once per provider; rebuilt only when system packages, runtimes, or agent source change.
 # Tagged as hermes-base (no project suffix — contains no project-specific content).
+# Built by scripts/build_container.sh --type=agent --provider=hermes.
 #
 # Based on the upstream Docker PR: NousResearch/hermes-agent#1841
 # Applies reviewer suggestions: layered apt, --no-cache-dir, npm ci,
