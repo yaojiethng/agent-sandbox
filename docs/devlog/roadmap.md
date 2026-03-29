@@ -63,7 +63,7 @@ Compose files are no longer written to `SANDBOX_DIR`. A single fully-merged comp
 
 
 ### Deferred breakdown
-- [ ] Open WebUI ↔ Hermes API connection in serve mode:
+- [x] Open WebUI ↔ Hermes API connection in serve mode:
   - Hermes requires provider credentials in `HERMES_HOME/.hermes/.env` inside the container. `HERMES_HOME` is ephemeral — credentials must be injected via `SANDBOX_DIR/.env` and the serve overlay. Tasks: document variables in `providers/hermes/.env.example`; inject via serve overlay into agent service environment.
   - Investigate whether Hermes accepts a static config file for provider/model configuration (pre-sets default model so operator does not need to configure in UI on each serve start). If yes: determine format, add pre-prepared file to provider, mount or copy via overlay.
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time

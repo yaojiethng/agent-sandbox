@@ -127,13 +127,13 @@ build_image() {
   echo "Build complete: $image_name"
 }
 
-# build_agent <provider> <project_name> <repo_root> [--no-cache]
+# build_agent <provider> <project_name> <repo_root> [--rebuild-base]
 # Delegates to build_container.sh which builds base then provider image.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
   local repo_root="${3:?build_agent requires repo root}"
-  local no_cache="${4:-}"
+  local rebuild_base="${4:-}"
 
   local build_script="$repo_root/scripts/build_container.sh"
   if [[ ! -f "$build_script" ]]; then
@@ -141,16 +141,15 @@ build_agent() {
     exit 1
   fi
 
-  "$build_script" --type=agent --provider="$provider" --name="$project" ${no_cache:+--no-cache}
+  "$build_script" --type=agent --provider="$provider" --name="$project" ${rebuild_base:+--rebuild-base}
 }
 
-# build_sandbox <project_name> <sandbox_dir> <repo_root> [--no-cache]
+# build_sandbox <project_name> <sandbox_dir> <repo_root>
 # Delegates to build_container.sh which builds the capability layer image.
 build_sandbox() {
   local project="${1:?build_sandbox requires project name}"
   local sandbox_dir="${2:?build_sandbox requires sandbox dir}"
   local repo_root="${3:?build_sandbox requires repo root}"
-  local no_cache="${4:-}"
 
   local build_script="$repo_root/scripts/build_container.sh"
   if [[ ! -f "$build_script" ]]; then
@@ -158,19 +157,19 @@ build_sandbox() {
     exit 1
   fi
 
-  "$build_script" --type=sandbox --name="$project" --sandbox="$sandbox_dir" ${no_cache:+--no-cache}
+  "$build_script" --type=sandbox --name="$project" --sandbox="$sandbox_dir"
 }
 
-# build_all <provider> <project_name> <sandbox_dir> <repo_root> [--no-cache]
+# build_all <provider> <project_name> <sandbox_dir> <repo_root>
+# Always rebuilds base and provider images.
 build_all() {
   local provider="$1"
   local project="$2"
   local sandbox_dir="$3"
   local repo_root="$4"
-  local no_cache="${5:-}"
 
-  build_sandbox "$project" "$sandbox_dir" "$repo_root" "$no_cache"
-  build_agent   "$provider" "$project" "$repo_root" "$no_cache"
+  build_sandbox "$project" "$sandbox_dir" "$repo_root"
+  build_agent   "$provider" "$project" "$repo_root" "--rebuild-base"
 }
 
 # -------------------------

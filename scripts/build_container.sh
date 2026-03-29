@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # scripts/build_container.sh
 # Usage:
-#   build_container.sh --type=sandbox --name=<project> --sandbox=<path> [--no-cache]
-#   build_container.sh --type=agent   --name=<project> --provider=<n>   [--no-cache]
+#   build_container.sh --type=sandbox --name=<project> --sandbox=<path> [--rebuild-base]
+#   build_container.sh --type=agent   --name=<project> --provider=<n>   [--rebuild-base]
 #
 # Builds Docker images for agent-sandbox.
 #
 # sandbox: builds the capability layer image (sandbox-<project>)
-# agent:   builds the reasoning layer base image (<provider>-base) if missing
-#          or --no-cache is set, then the provider image (<provider>-agent-<project>)
+# agent:   builds the reasoning layer provider image (<provider>-agent-<project>),
+#          and the base image (<provider>-base) if it does not exist or --rebuild-base is set.
+#
+# Default behaviour: base image is skipped if it already exists; provider image is always rebuilt.
+# --rebuild-base:    forces a full rebuild of both base and provider with --no-cache.
 #
 # All naming conventions are derived from libs/containers.sh.
 # All build context population is delegated to libs/containers.sh.
@@ -31,15 +34,15 @@ local_type=""
 local_name=""
 local_provider=""
 local_sandbox=""
-local_no_cache=""
+local_rebuild_base=""
 
 for arg in "$@"; do
   case "$arg" in
-    --type=*)     local_type="${arg#--type=}" ;;
-    --name=*)     local_name="${arg#--name=}" ;;
-    --provider=*) local_provider="${arg#--provider=}" ;;
-    --sandbox=*)  local_sandbox="${arg#--sandbox=}" ;;
-    --no-cache)   local_no_cache="--no-cache" ;;
+    --type=*)        local_type="${arg#--type=}" ;;
+    --name=*)        local_name="${arg#--name=}" ;;
+    --provider=*)    local_provider="${arg#--provider=}" ;;
+    --sandbox=*)     local_sandbox="${arg#--sandbox=}" ;;
+    --rebuild-base)  local_rebuild_base="--no-cache" ;;
     *)
       echo "Unknown flag: $arg" >&2
       exit 1
@@ -76,7 +79,7 @@ if [[ "$local_type" == "sandbox" ]]; then
   local_context="$(build_context_sandbox "$REPO_ROOT")"
   trap 'rm -rf "$local_context"' EXIT
 
-  build_image "$local_image" "$local_dockerfile" "$local_context" "$local_no_cache"
+  build_image "$local_image" "$local_dockerfile" "$local_context" ""
   exit 0
 fi
 
@@ -107,15 +110,15 @@ if [[ "$local_type" == "agent" ]]; then
   local_context="$(build_context_agent "$REPO_ROOT")"
   trap 'rm -rf "$local_context"' EXIT
 
-  # Build base image if missing or --no-cache
-  if ! docker image inspect "$local_base_image" >/dev/null 2>&1 || [[ -n "$local_no_cache" ]]; then
-    build_image "$local_base_image" "$local_base_dockerfile" "$local_context" "$local_no_cache"
+  # Build base image if missing or --rebuild-base
+  if ! docker image inspect "$local_base_image" >/dev/null 2>&1 || [[ -n "$local_rebuild_base" ]]; then
+    build_image "$local_base_image" "$local_base_dockerfile" "$local_context" "$local_rebuild_base"
   else
     echo "Base image exists, skipping: $local_base_image"
   fi
 
-  # Build provider image, inheriting from base
-  build_image "$local_provider_image" "$local_provider_dockerfile" "$local_context" "$local_no_cache" \
+  # Always build provider image
+  build_image "$local_provider_image" "$local_provider_dockerfile" "$local_context" "" \
     --build-arg "BASE_IMAGE=$local_base_image"
   exit 0
 fi

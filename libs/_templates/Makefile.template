@@ -18,14 +18,21 @@
 #   Example: make start PROVIDER=hermes
 #
 # REBUILD
-#   Optional. Set to rebuild required containers before running.
+#   Optional. Rebuilds provider image before running (base skipped if exists).
 #   Example: make start PROVIDER=hermes REBUILD=1
+#
+# REBUILD_BASE
+#   Optional. Forces a full rebuild of the base and provider images.
+#   Use when system packages or the agent runtime version has changed.
+#   Example: make build REBUILD_BASE=1
+#   Example: make start PROVIDER=hermes REBUILD=1 REBUILD_BASE=1
 #
 # BUILD TARGETS
 #   make build                        — builds sandbox + all providers
 #   make build TARGET=all             — explicit alias for build-all
 #   make build TARGET=hermes          — builds hermes provider only
 #   make build TARGET=hermes,sandbox  — builds hermes and sandbox
+#   make build REBUILD_BASE=1         — forces full rebuild including base images
 #
 # STOP
 #   make stop                         — stop and remove all session containers and volumes
@@ -40,11 +47,13 @@ AGENT_BRIEF  := agents.md
 ENV_FILE     := .env
 PROVIDER     ?=
 REBUILD      ?=
+REBUILD_BASE ?=
 TARGET       ?=
 
-REBUILD_FLAG  = $(if $(REBUILD),--rebuild,)
-PROVIDER_FLAG = $(if $(PROVIDER),--provider=$(PROVIDER),)
-TARGET_FLAG   = --target=$(if $(TARGET),$(TARGET),all)
+REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
+REBUILD_BASE_FLAG = $(if $(REBUILD_BASE),--rebuild-base,)
+PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
+TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 
 .PHONY: build start serve dry-run stop apply
 
@@ -55,6 +64,7 @@ TARGET_FLAG   = --target=$(if $(TARGET),$(TARGET),all)
 build:
 	agent-sandbox build \
 	  $(TARGET_FLAG) \
+	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
@@ -67,6 +77,7 @@ start:
 	agent-sandbox start \
 	  $(PROVIDER_FLAG) \
 	  $(REBUILD_FLAG) \
+	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -77,6 +88,7 @@ serve:
 	agent-sandbox serve \
 	  $(PROVIDER_FLAG) \
 	  $(REBUILD_FLAG) \
+	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -87,6 +99,7 @@ dry-run:
 	agent-sandbox dry-run \
 	  $(PROVIDER_FLAG) \
 	  $(REBUILD_FLAG) \
+	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

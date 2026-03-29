@@ -40,6 +40,7 @@ SANDBOX_DIR=""
 BRANCH=""
 PROVIDER_NAME=""
 REBUILD=false
+REBUILD_BASE=false
 PASSTHROUGH=()
 
 parse_flags() {
@@ -49,8 +50,9 @@ parse_flags() {
       --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
       --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
       --branch=*)   BRANCH="${ARG#--branch=}" ;;
-      --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-      --rebuild)    REBUILD=true ;;
+      --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
+      --rebuild)       REBUILD=true ;;
+      --rebuild-base)  REBUILD_BASE=true ;;
       *)            PASSTHROUGH+=("$ARG") ;;
     esac
   done
@@ -71,8 +73,8 @@ require_run_args() {
 rebuild_if_requested() {
   if [[ "$REBUILD" == true ]]; then
     echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
-    build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" --no-cache
-    build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" --no-cache
+    build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+    build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $([ "$REBUILD_BASE" == true ] && echo "--rebuild-base")
   fi
 }
 
@@ -87,6 +89,7 @@ case "$SUBCOMMAND" in
 
   build)
     BUILD_TARGET=""
+    REBUILD_BASE_FLAG=""
     TARGET_FLAG_SEEN=false
     REMAINING=()
     for ARG in "$@"; do
@@ -95,6 +98,7 @@ case "$SUBCOMMAND" in
           TARGET_FLAG_SEEN=true
           BUILD_TARGET="${ARG#--target=}"
           ;;
+        --rebuild-base) REBUILD_BASE_FLAG="--rebuild-base" ;;
         *) REMAINING+=("$ARG") ;;
       esac
     done
@@ -112,7 +116,7 @@ case "$SUBCOMMAND" in
       for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/providers/"*/base.Dockerfile; do
         [[ -f "$BASE_DOCKERFILE" ]] || continue
         DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
-        build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
+        build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
       done
     else
       # Split comma-separated list; build sandbox first if present
@@ -130,7 +134,7 @@ case "$SUBCOMMAND" in
         build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
       fi
       for P in "${PROVIDER_TARGETS[@]}"; do
-        build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
+        build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
       done
     fi
     ;;
