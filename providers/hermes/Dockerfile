@@ -64,15 +64,11 @@ USER agentuser
 # Hermes config (agentuser)
 # -------------------------
 # HERMES_HOME is where Hermes writes config, sessions, and memories.
-# We point it at a user-owned directory inside the container — there is
-# no host-mounted data volume in this setup. The harness manages isolation
-# via the capability layer sandbox; Hermes state is ephemeral per session.
+# Pointed at a user-owned directory inside the container.
+# config.yaml and .env are bind-mounted from the host at runtime via
+# providers/hermes/docker-compose.hermes.yml — the image-layer directory
+# is the fallback only; the bind mounts take precedence.
 ENV HERMES_HOME=/home/agentuser/.hermes
-RUN mkdir -p "$HERMES_HOME"
-
-# Bootstrap config so Hermes starts without interactive setup.
-# terminal.backend: local disables Hermes's own Docker sandbox — the
-# harness handles isolation; Hermes must not try to spawn containers.
 RUN mkdir -p "$HERMES_HOME" && \
     cp /opt/hermes/cli-config.yaml.example "$HERMES_HOME/config.yaml" && \
     echo "terminal:" >> "$HERMES_HOME/config.yaml" && \
@@ -94,8 +90,10 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# No CMD — subcommand is injected by run.sh per mode:
-#   standard: docker compose run --rm agent chat
-#   serve:    command: ["api"] in docker-compose.serve.yml
-#   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
-ENTRYPOINT ["hermes"]
+# ENTRYPOINT uses bash -c so the command string is injected by run_agent.sh
+# per mode via docker compose run --rm agent "<command>":
+#   standard: "hermes chat"
+#   serve:    command: ["hermes", "api"] in docker-compose.serve.yml
+# On first run without config, hermes redirects to setup — operator completes
+# setup interactively and exits to bash, then runs hermes chat manually.
+ENTRYPOINT ["bash", "-c"]

@@ -1,28 +1,30 @@
 # OpenCode Provider — Quick Reference
 
-Operator cheat sheet for working with the OpenCode provider. Commands for debugging,
-inspecting container state, and troubleshooting common issues.
+Day-to-day command reference and troubleshooting for the OpenCode provider. All commands run from `SANDBOX_DIR`.
 
 ---
 
 ## Build & run
 
 ```sh
-# Build image
+# Build all images
 make build
 
+# Build OpenCode provider image only
+make build TARGET=opencode
+
 # Start agent (interactive)
-make start
+make start PROVIDER=opencode
 
 # Start in serve mode (web UI)
-make serve
-
-# Force rebuild, then start
-make start --rebuild
-make serve --rebuild
+make serve PROVIDER=opencode
 
 # Liveness check
-make dry-run
+make dry-run PROVIDER=opencode
+
+# Rebuild images then start
+make start PROVIDER=opencode REBUILD=1
+make serve PROVIDER=opencode REBUILD=1
 ```
 
 ---
@@ -30,12 +32,25 @@ make dry-run
 ## Apply changes
 
 ```sh
+# Review the diff first
+cat .workspace/changes/staged.diff
+
 # Apply to current branch
 make apply
 
-# Apply to named branch (created if missing)
-make apply BRANCH=my-branch
+# Apply to a named branch (created if it does not exist)
+make apply BRANCH=<branch-name>
 ```
+
+---
+
+## Stop
+
+```sh
+make stop
+```
+
+Stops all session containers and removes the sandbox volume.
 
 ---
 
@@ -45,15 +60,17 @@ make apply BRANCH=my-branch
 # List running containers
 docker ps
 
-# Attach a shell to a running container
-docker exec -it opencode-agent-<project-name> bash
+# Attach a shell to the running agent container
+docker exec -it opencode-agent-<PROJECT_NAME> bash
 
-# Stream container logs (entrypoint output goes to stderr)
-docker logs -f opencode-agent-<project-name>
+# Stream container logs
+docker logs -f opencode-agent-<PROJECT_NAME>
 
 # Run a throwaway shell in the image without starting the agent
-docker run --rm -it opencode-agent-<project-name> bash
+docker run --rm -it opencode-agent-<PROJECT_NAME> bash
 ```
+
+`<PROJECT_NAME>` is the value of `PROJECT_NAME` in `SANDBOX_DIR/Makefile`.
 
 ---
 
@@ -64,26 +81,34 @@ docker run --rm -it opencode-agent-<project-name> bash
 docker images | grep opencode-agent
 
 # Remove image (forces rebuild on next run)
-docker rmi opencode-agent-<project-name>
-
-# Remove all opencode-agent images
-docker images | grep opencode-agent | awk '{print $3}' | xargs docker rmi
+docker rmi opencode-agent-<PROJECT_NAME>
 ```
 
 ---
 
-## Snapshot & workspace inspection
+## Workspace inspection
 
 ```sh
-# Check snapshot contents before container starts
-ls -la <PROJECT_ROOT>/.bootstrap/snapshot/
-
-# Check workspace output after run
-ls -la <PROJECT_ROOT>/.workspace/changes/
-cat <PROJECT_ROOT>/.workspace/changes/staged.diff
+# Check staged diff after a run
+cat .workspace/changes/staged.diff
 
 # Check autosave diff mid-session
-cat <PROJECT_ROOT>/.workspace/changes/autosave.diff
+cat .workspace/changes/autosave.diff
+
+# Check snapshot contents before a run
+ls -la .snapshot/
+```
+
+---
+
+## Operator input channel
+
+```sh
+# Place task files before a run
+cp my-task.md .workspace/input/
+
+# Clear input between runs
+rm .workspace/input/*
 ```
 
 ---
@@ -91,32 +116,55 @@ cat <PROJECT_ROOT>/.workspace/changes/autosave.diff
 ## Troubleshooting
 
 **Container exits immediately**
-Check entrypoint output: `docker logs opencode-agent-<project-name>`
-Gate 2 snapshot validation likely failed — inspect `.bootstrap/snapshot/`.
+Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause — check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
-**staged.diff is empty after run**
-Agent made no changes, or the EXIT trap did not fire. Check container logs.
-If the container was killed rather than exited cleanly, the trap may not have run.
+**`staged.diff` is empty after run**
+Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
 
-**`make apply` reports nothing to apply**
-`staged.diff` is missing or empty. Confirm the agent run completed cleanly.
+**`make start` errors: PROVIDER not set**
+`PROVIDER` is required: `make start PROVIDER=opencode`.
 
-**Image not found error on `make start`**
-Run `make build` first. `start` does not build automatically if the image is absent
-without the wrapper detecting it — confirm `agent-sandbox` CLI is installed: `which agent-sandbox`.
+**Image not found**
+Run `make build` before the first start. Images are not built automatically unless `REBUILD=1` is passed.
 
-**WSL path errors**
-All paths must be Linux format. Convert with:
+**`cp: cannot stat` during snapshot**
+Tracked files are missing from disk. Fix:
 ```sh
-wslpath 'C:\your\path'
+git -C <PROJECT_DIR> rm --cached <file>
+git -C <PROJECT_DIR> commit -m "remove missing file from index"
 ```
 
-**Line ending issues in conf or script files**
+**WSL path errors**
+All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
+
+**Line ending issues in scripts or config files**
 ```sh
 sed -i 's/\r//' <file>
 ```
 
-**Debug Makefile expansion**
+---
+
+## Recovery
+
+If a bad diff has been applied and the project repo is in a broken state:
+
 ```sh
-make --debug=basic <target>
+# Reset to a known-good commit
+git -C <PROJECT_DIR> reset --hard <commit-sha>
+
+# Clear workspace and snapshot
+rm -rf .workspace/changes/ .snapshot/
+mkdir -p .workspace/changes/
+
+# Verify
+make dry-run PROVIDER=opencode
 ```
+
+---
+
+## References
+
+| Document | Purpose |
+|---|---|
+| [`../../docs/operations/quickstart.md`](../../docs/operations/quickstart.md) | First-run setup guide |
+| [`../../docs/architecture/tool_interface.md`](../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |

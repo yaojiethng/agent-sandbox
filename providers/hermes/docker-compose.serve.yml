@@ -1,18 +1,16 @@
 # providers/hermes/docker-compose.serve.yml
 # Serve mode overlay for the Hermes provider.
-# Referenced directly by providers/hermes/run.sh — not copied to SANDBOX_DIR.
-# Apply on top of docker-compose.yml:
-#   docker compose -f docker-compose.yml -f <repo>/providers/hermes/docker-compose.serve.yml up
+# Merged by scripts/run_agent.sh on top of docker-compose.yml and
+# docker-compose.hermes.yml when mode is serve.
+# Never copied to SANDBOX_DIR.
 #
-# Starts Hermes in API server mode (hermes api) and launches Open WebUI
-# as a companion service connected to the Hermes agent container.
+# Starts Hermes in API server mode and launches Open WebUI as a companion
+# service connected to the Hermes agent container.
 # SERVE_PORT is read from .env in SANDBOX_DIR (default 46553).
 
 services:
   agent:
-    command: ["api"]
-#    ports:
-#      - "127.0.0.1:8642:8642"
+    command: ["hermes", "api"]
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ${AGENT_IMAGE_NAME}-open-webui

@@ -81,7 +81,9 @@ Added this session:
 | `docs/development/roadmap.md` | M2.2 Design decisions block removed; Known Limitations: stale build bug removed, duplicate multi-service entry removed, malformed entry cleaned |
 | `docs/architecture/tool_interface.md` | Stripped to reference card — orientation prose removed; Onboarding section collapsed to link; Capability Layer Dockerfile section removed; Execution Modes and `.env` intro prose removed |
 | `docs/operations/project_onboarding_guide.md` | New — reworked from skill; operator-facing; covers prerequisites, onboard command, agents.md authoring, verification checklist |
-| `docs/development/project_index.md` | `execution_model.md` description updated; `sandbox_lifecycle.md`, `container_model.md` entries added; `two_layer_model.md` last-touched updated to M2.2 |
+| `docs/development/project_index.md` | `execution_model.md` description updated; `sandbox_lifecycle.md`, `container_model.md` entries added; `two_layer_model.md` last-touched updated to M2.2; `quickstart.md` description updated; Providers section added with `opencode/quickstart.md` |
+| `docs/operations/quickstart.md` | Rewritten — first-run setup only; stale build commands, sandbox tree, and agents.md location corrected |
+| `providers/opencode/quickstart.md` | Rewritten — day-to-day reference; updated for M2.2 command syntax; recovery and troubleshooting retained |
 
 ## Deferred items
 
