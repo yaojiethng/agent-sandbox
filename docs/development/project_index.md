@@ -66,8 +66,10 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
-| `execution_model.md` | 🟡 Warm | M2.1 | Two-container model, mount shape, build context model, snapshot and diff pipelines. |
-| `tool_interface.md` | 🟡 Warm | M2.1 | External contract: command shapes, naming, mount guarantees, build inputs, Compose generation. |
+| `execution_model.md` | 🟡 Warm | M2.2 | Index document: directory layout, invocation model. Delegates mechanism detail to sandbox_lifecycle.md and container_model.md. |
+| `sandbox_lifecycle.md` | 🟡 Warm | M2.2 | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow. |
+| `container_model.md` | 🟡 Warm | M2.2 | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences. |
+| `tool_interface.md` | 🟡 Warm | M2.2 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
@@ -78,14 +80,16 @@ Temperature reflects the stability of what a document describes — not how care
 | `agent_workflow.md` | 🟢 Cold | M2.1 | Design principles, invariants, UX flow names. Rescoped to pure conceptual; operational detail moved to quickstart and tool_interface. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
-| `two_layer_model.md` | 🟢 Cold | M1.5 | Canonical two-layer architecture definition. Do not edit; reference only. |
+| `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
 
 ### Operations (`docs/operations/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
-| `quickstart.md` | 🟡 Warm | M2.1 | Onboarding and running guide. Rewritten for two-container model and `agent-sandbox onboard` CLI. |
+| `provider_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to adding a new reasoning layer provider. References tool_interface.md for contract and execution_model.md for mechanics. |
+| `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, agents.md authoring, and verification. |
+| `quickstart.md` | 🟡 Warm | M2.2 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
@@ -111,8 +115,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
-| `_template/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
-| `_template/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
+| `_templates/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
+| `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 
 ### Tests (`tests/`)
 
@@ -120,6 +124,12 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
 | `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
+
+### Providers (`providers/`)
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `providers/opencode/quickstart.md` | 🟡 Warm | M2.2 | Day-to-day command reference and troubleshooting for the OpenCode provider. |
 
 ### Knowledge Vault Workflow (`workflow/knowledge-vault/`)
 

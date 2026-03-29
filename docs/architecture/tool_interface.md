@@ -1,142 +1,148 @@
 # Tool Interface
 
-This document defines the external contract between the agent-sandbox harness and onboarded projects. It specifies what an onboarded project must provide, what the harness guarantees in return, and the naming and generation conventions that bind them together.
+External contract between the agent-sandbox harness and onboarded projects: what the harness guarantees, what a project must provide, and the naming conventions that bind them.
 
-Operator-facing workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md). Internal implementation is in [`execution_model.md`](execution_model.md).
+Internal implementation is in [`execution_model.md`](execution_model.md). Operator workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md).
 
 ---
 
 ## Image Naming
 
-Each project produces two container images:
-
 | Image | Name pattern | Purpose |
 |---|---|---|
-| Capability layer | `<project>-agent-sandbox` | Sandbox, snapshot pipeline, diff pipeline |
-| Reasoning layer | `<project>-opencode-agent` | Agent runtime (provider-specific suffix) |
+| Capability layer | `sandbox-<project>` | Sandbox, snapshot pipeline, diff pipeline |
+| Reasoning layer base | `<provider>-base` | Stable install layers; not project-specific |
+| Reasoning layer | `<provider>-agent-<project>` | Agent runtime (provider-specific) |
 
-`<project>` is the value of `PROJECT_NAME` defined in the project-side Makefile. Hyphens are used throughout — Docker Compose accepts them natively. The reasoning layer suffix changes when the provider changes (e.g. `<project>-claude-agent` for a Claude Code provider).
+`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`). Base images contain no project-specific content and are built once per provider; the reasoning layer image inherits from the base and is built per project.
 
 ---
 
 ## Container Naming
 
-Containers follow the same pattern with a `-1` suffix appended by Docker Compose:
+Container names match image names exactly — `container_name:` is set explicitly; Docker Compose does not append an index suffix. One session per project can run at a time. `docker inspect`, `docker logs`, and `docker stop` address containers by name directly.
 
 | Container | Name |
 |---|---|
-| Capability layer | `<project>-agent-sandbox-1` |
-| Reasoning layer | `<project>-opencode-agent-1` |
+| Capability layer | `sandbox-<project>` |
+| Reasoning layer | `<provider>-agent-<project>` |
 
 ---
 
 ## Command Shapes
 
-All commands are invoked via `make` targets in the project-side Makefile, which delegates to `agent-sandbox <subcommand>`.
-
 | Command | Effect |
 |---|---|
-| `make start` | Build both images, write Compose files, `docker compose up` (standard mode) |
-| `make serve` | Build both images, write Compose files, `docker compose up` with serve mode override (ports exposed) |
-| `make dry-run` | Build both images, write Compose files, `docker compose up` with dry-run override; both containers start, reasoning writes to sandbox, graceful termination, diff written |
-| `make stop` | `docker compose down`; triggers capability layer EXIT trap and diff pipeline |
+| `make build` | Build capability layer image + all provider images |
+| `make build TARGET=<n>` | Build named provider image only |
+| `make build TARGET=<n>,sandbox` | Build named provider image + capability layer image |
+| `make start PROVIDER=<n>` | Check images exist; start in standard mode |
+| `make serve PROVIDER=<n>` | Check images exist; start with provider serve overlay |
+| `make dry-run PROVIDER=<n>` | Check images exist; liveness check; tear down |
+| `make start PROVIDER=<n> REBUILD=1` | Rebuild capability layer + provider images, then start |
 | `make apply` | Apply `staged.diff` to host repo; optional `BRANCH=<n>` |
-| `make build sandbox` | Build capability layer image only |
-| `make build agent` | Build reasoning layer image only |
-| `make build all` | Build both images |
-| `make rebuild start` | Force rebuild of both images, then start |
-| `make rebuild serve` | Force rebuild of both images, then serve |
-| `make rebuild dry-run` | Force rebuild of both images, then dry-run |
 
-`make start`, `make serve`, and `make dry-run` always call `docker build` before compose up. Docker's content-addressed cache produces a cache hit in under 5 seconds when source files are unchanged — no separate staleness check is required.
+`make start`, `make serve`, and `make dry-run` require `PROVIDER` and error clearly if absent. Builds are not triggered unless `REBUILD=1` is passed.
+
+---
+
+## Execution Modes
+
+| Mode | Make target | Effect |
+|---|---|---|
+| `standard` | `make start PROVIDER=<n>` | Normal execution; agent TUI attaches to terminal |
+| `serve` | `make serve PROVIDER=<n>` | Provider-specific serve mode (see below) |
+| `dry-run` | `make dry-run PROVIDER=<n>` | Liveness check only; no agent interaction |
+| `headless` | — | Reserved; not yet implemented |
+
+**Serve mode is provider-specific.** The serve overlay lives in `providers/<n>/docker-compose.serve.yml` in the repo — never copied to `SANDBOX_DIR`.
+
+| Provider | Serve behaviour |
+|---|---|
+| `opencode` | OpenCode runs in server mode; port exposed at `SERVE_PORT` on `127.0.0.1`; `OPENCODE_SERVER_PASSWORD` controls authentication |
+| `hermes` | Open WebUI launched as a companion service; port exposed at `SERVE_PORT` on `127.0.0.1` |
 
 ---
 
 ## Mount Shape Guarantees
 
-The harness guarantees the following mount shape for every run. Onboarded projects may depend on these paths being present and having the stated access modes.
-
-| Host path | Capability layer | Reasoning layer | Mode | Purpose |
+| Host path (`$VAR`) | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
-| `SANDBOX_DIR/.snapshot/` | `/home/agentuser/.snapshot/` | — | RO | Project snapshot input |
-| `SANDBOX_DIR/.workspace/input/` | — | `/home/agentuser/.input/` | RO | Task briefs, operator addenda |
-| `SANDBOX_DIR/.workspace/output/` | — | `/home/agentuser/project/.workspace/output/` | RW | Agent progress, serialised data (no binaries) |
-| `SANDBOX_DIR/.workspace/changes/` | `/home/agentuser/workspace/changes/` | — | RW | Diff output |
-| Shared Docker volume | `/home/agentuser/sandbox/` | `/home/agentuser/project/sandbox/` | RW | Working content |
+| `$SNAPSHOT_DIR` | `/home/agentuser/.snapshot/` | — | RO | Harness — rebuilt before each run |
+| `$CHANGES_DIR` | `/home/agentuser/workspace/changes/` | — | RW | Harness — diff pipeline output |
+| `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
+| `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
+| Docker anonymous volume | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker — owned by capability layer; shared via `--volumes-from` |
 
-`PROJECT_DIR` is never mounted into either container.
+`PROJECT_DIR` is never mounted. `sandbox/` is created by Docker at session start and destroyed on teardown (`down -v`). The reasoning layer can only access it while the capability layer is running.
 
 ---
 
 ## Onboarding
 
-New projects are onboarded using the `agent-sandbox onboard` command, which creates and populates `SANDBOX_DIR` from templates:
-
-```sh
-agent-sandbox onboard --name=<project> --project=<path> --sandbox=<path>
-```
-
-This copies all required template files, creates `.workspace/` subdirectories, writes `.env` with derived path variables and operator stubs, and produces an `agents.md` stub. The operator fills in `agents.md` and reviews `.env` before the first run.
+See [`../operations/project_onboarding_guide.md`](../operations/project_onboarding_guide.md) for the full onboarding procedure.
 
 An onboarded project provides the following in `SANDBOX_DIR`:
 
-| File | Required | Source | Purpose |
-|---|---|---|---|
-| `Makefile` | Yes | Template (copied by onboard) | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands; reads `PROJECT_DIR` and `SANDBOX_DIR` from `.env` |
-| `.env` | Yes | Written by onboard | Machine-specific runtime variables (gitignored, never committed) |
-| `agents.md` | Yes | Stub written by onboard | Agent context brief; describes the project, conventions, and expected outputs |
-| `Dockerfile.sandbox` | No | Template (copied by onboard) | Capability layer Dockerfile; customise to add project-specific dependencies |
-
-The harness generates `docker-compose.yml` and mode override files into `SANDBOX_DIR` from templates on each run. These generated files are not committed — they are recreated from templates on every invocation.
-
----
-
-## Docker Compose Generation
-
-`start_agent.sh` writes the Compose configuration into `SANDBOX_DIR` at each run, not at onboarding time. This ensures the Compose files always reflect the current harness version, even if the harness is updated between runs.
-
-**Generated files:**
-
-| File | Source template | Purpose |
+| File | Source | Purpose |
 |---|---|---|
-| `docker-compose.yml` | `libs/_template/docker-compose.yml.template` | Base configuration: images, volumes, service dependencies, internal mounts |
-| `docker-compose.serve.yml` | `libs/_template/docker-compose.serve.yml.template` | Serve mode override: adds ports block |
-| `docker-compose.dry-run.yml` | `libs/_template/docker-compose.dry-run.yml.template` | Dry-run mode override |
+| `Makefile` | Copied from template by onboard | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands |
+| `.env` | Written by onboard | Machine-specific runtime variables; never committed |
+| `agents.md` | Stub written by onboard; operator-completed | Agent context brief |
 
-**Baked vs `.env` split:** The base Compose file bakes stable project structure — image names, container names, service dependencies, volume definitions, internal mount paths. Machine-specific values — host paths, ports, credentials — are referenced as `${VARIABLE}` and resolved from `.env` at runtime.
-
-**Mode composition:** The base `docker-compose.yml` has no ports exposed. Mode overrides are applied via `-f` flags:
-
-- `make start` → `docker compose -f docker-compose.yml up`
-- `make serve` → `docker compose -f docker-compose.yml -f docker-compose.serve.yml up`
-- `make dry-run` → `docker compose -f docker-compose.yml -f docker-compose.dry-run.yml up`
+`docker-compose.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are never written to `SANDBOX_DIR`. Compose files are generated as tmpfiles per run. The serve overlay and capability layer Dockerfile are repo-owned.
 
 ---
 
 ## `.env` Runtime Variables
 
-The `.env` file in `SANDBOX_DIR` is written once by `agent-sandbox onboard` and supplies machine-specific values to the generated Compose files. The harness reads these at run time; they are never baked into images. The operator sets `SERVE_PORT` and `OPENCODE_SERVER_PASSWORD` manually; all path variables are derived from `PROJECT_DIR` and `SANDBOX_DIR` and written by onboard.
-
-| Variable | Purpose | Example |
+| Variable | Default | Owner |
 |---|---|---|
-| `PROJECT_DIR` | Absolute path to the project git repository | `/home/user/myproject` |
-| `SANDBOX_DIR` | Absolute path to the sandbox directory | `/home/user/myproject-sandbox` |
-| `SNAPSHOT_DIR` | Host path to `.snapshot/` | `${SANDBOX_DIR}/.snapshot` |
-| `CHANGES_DIR` | Host path to `.workspace/changes/` | `${SANDBOX_DIR}/.workspace/changes` |
-| `AGENT_INPUT_DIR` | Host path to `.workspace/input/` | `${SANDBOX_DIR}/.workspace/input` |
-| `AGENT_OUTPUT_DIR` | Host path to `.workspace/output/` | `${SANDBOX_DIR}/.workspace/output` |
-| `SERVE_PORT` | Host port for serve mode | `46553` |
-| `OPENCODE_SERVER_PASSWORD` | Authentication for serve mode | `<password>` |
+| `PROJECT_DIR` | Operator-supplied at onboard | Operator |
+| `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
+| `SNAPSHOT_DIR` | `$SANDBOX_DIR/.snapshot` | Harness — rebuilt before each run |
+| `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/changes` | Harness — diff pipeline output |
+| `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` | Operator — populated before a run |
+| `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` | Agent — written during a run |
+| `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
+| `AUTOSAVE_INTERVAL` | `60` | Operator |
+
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `libs/containers.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
 
 ---
 
-## Capability Layer Dockerfile
+## Capability Layer Contract
 
-The capability layer image is project-controlled. Each project provides a `Dockerfile.sandbox` in `SANDBOX_DIR` — seeded from the default template by `agent-sandbox onboard`. Projects customise it to install project-specific dependencies, tools, or runtimes.
+Guarantees the capability layer makes to the reasoning layer. Enforced by the harness — a conforming provider does not need to re-verify them.
 
-If `Dockerfile.sandbox` is absent when `make build sandbox` runs, the harness copies `libs/_template/dockerfile-default.sandbox` into `SANDBOX_DIR` as a working default. The Compose file always references the project-level `Dockerfile.sandbox` — the template is a seed, not a fallback at runtime.
+**Readiness signal:** When the capability layer reports healthy, `sandbox/` is fully initialised. The reasoning layer may treat a healthy status as the unconditional signal to proceed.
 
-The reasoning layer Dockerfile is provider-specific and lives in `providers/<provider>/Dockerfile`. It is not project-controlled.
+**Volume ownership:** `sandbox/` is a Docker anonymous volume owned by the capability layer. The reasoning layer accesses it via `--volumes-from`. Created fresh at session start; destroyed on teardown. Inaccessible if the capability layer is not running.
+
+**Sandbox initialisation:** Before reporting healthy, the capability layer will have:
+1. Copied `.snapshot/` into `sandbox/`
+2. Initialised a git repository in `sandbox/`
+3. Committed a baseline SHA — the diff pipeline computes `staged.diff` against this on exit
+
+---
+
+## Provider Interface
+
+A conforming provider supplies the following under `providers/<n>/` in the repo:
+
+| File | Required | Purpose |
+|---|---|---|
+| `base.Dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
+| `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
+| `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
+| `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
+| `config/` | Optional | Default config files seeded into `AGENT_HOME` at container start if absent; `env.stub` is seeded as `.env` |
+| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes; used when a provider requires env vars beyond the base compose template |
+| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars, pre-creates host-side directories |
+
+Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle via `scripts/build_container.sh` and `scripts/run_agent.sh`. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context — providers do not author it.
+
+See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 
 ---
 
@@ -158,7 +164,8 @@ A dry-run does not prove agent correctness — it proves the harness infrastruct
 
 | Topic | Document |
 |---|---|
-| Internal implementation details | [execution_model.md](execution_model.md) |
-| Design principles and invariants | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
-| Security model and trust boundaries | [security.md](security.md) |
-| Onboarding and running guide | [../operations/quickstart.md](../operations/quickstart.md) |
+| Internal implementation | [execution_model.md](execution_model.md) |
+| Operator workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
+| Security model | [security.md](security.md) |
+| Onboarding a project | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
+| Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |

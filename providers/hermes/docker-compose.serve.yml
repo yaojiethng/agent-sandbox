@@ -1,0 +1,35 @@
+# providers/hermes/docker-compose.serve.yml
+# Serve mode overlay for the Hermes provider.
+# Merged by scripts/run_agent.sh on top of docker-compose.yml and
+# docker-compose.hermes.yml when mode is serve.
+#
+# Starts Hermes in API server mode and launches Open WebUI as a companion
+# service connected to the Hermes agent container.
+# SERVE_PORT is read from .env in SANDBOX_DIR (default 46553).
+
+services:
+  agent:
+    command: ["gateway"]
+    environment:
+      - API_SERVER_ENABLED=true
+      - API_SERVER_PORT=8642
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_KEY=none
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ${AGENT_IMAGE_NAME}-open-webui
+    depends_on:
+      sandbox:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SERVE_PORT:-46553}:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      - WEBUI_AUTH=false
+      - OPENAI_API_BASE_URL=http://agent:8642/v1
+      - OPENAI_API_KEY=none
+      - ENABLE_OLLAMA_API=false
+    restart: "no"
+volumes:
+  open-webui-data:

@@ -1,0 +1,15 @@
+# libs/docker-compose.dry-run.yml
+# Dry-run overlay for agent-sandbox.
+# Merged at generation time by compose_generate — not operator-visible.
+#
+# Adds the dry_run.sh bind mount to the agent service.
+# DRY_RUN_SCRIPT is resolved by start_agent.sh before compose_generate is
+# called and baked into the generated compose file — not a runtime variable.
+
+services:
+  agent:
+    volumes:
+      - type: bind
+        source: {{DRY_RUN_SCRIPT}}
+        target: /dry_run.sh
+        read_only: true

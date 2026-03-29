@@ -1,0 +1,20 @@
+# providers/pi/docker-compose.serve.yml
+# Pi has no native web UI or remote control equivalent.
+# serve mode is not supported for this provider.
+#
+# Operators wanting a browser interface should use the hermes or opencode provider instead.
+#
+# If serve mode is invoked (make serve PROVIDER=pi), the agent container will start
+# but Pi will run in its default interactive mode rather than a serve mode.
+# The run_agent.sh harness will emit a warning before starting.
+#
+# Future paths if serve becomes a requirement:
+#   1. RPC bridge — wrap Pi's --mode rpc over stdio with a thin HTTP adapter
+#   2. Open-source web UI that speaks to the RPC bridge
+# Neither is recommended without a specific use case driving it.
+
+services:
+  agent:
+    command: ["pi"]
+    environment:
+      - PI_SERVE_UNSUPPORTED=1

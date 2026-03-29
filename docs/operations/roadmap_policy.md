@@ -1,6 +1,6 @@
 # Roadmap Policy
 
-Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future.md`, and `docs/development/changelog.md`.
+Policy rules for `docs/devlog/roadmap.md`, `docs/devlog/roadmap_future.md`, and `docs/devlog/changelog.md`.
 
 ---
 
@@ -16,19 +16,23 @@ The roadmap is not updated continuously during a session. It is touched at two d
 ### Session close (Step 8)
 1. Mark all tasks completed this session with `[x]`
 2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
+3. If all tasks in the sub-milestone are now complete and acceptance criteria are met, run [Sub-milestone close (Trigger B)](#sub-milestone-close-trigger-b) before closing the handover
 
-### Sub-milestone transition (Trigger B)
-1. Compact all remaining checked task groups in the completed sub-milestone
+### Sub-milestone close (Trigger B)
+
+Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. It runs at Step 8, after tasks are marked and before the handover is closed. If the chat boundary falls before Trigger B has run, the next session's Step 1 must run it before compacting or creating the new handover — the roadmap will still show the completed sub-milestone as active, which is the signal that Trigger B has not run.
+
+1. **Remove** the completed sub-milestone section from `roadmap.md` entirely — do not collapse it to outcome sentences, remove it. This mirrors how Trigger A removes completed major milestones: the sub-milestone is gone from the active roadmap, not summarised within it.
 2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
 3. Promote the next sub-milestone's section into `roadmap.md` with scope paragraph and task list
 4. Non-current sub-milestones retain scope paragraphs only — no accumulated deferrals from prior sub-milestones
 
 ### Major loop close (Trigger A)
 1. Read `roadmap.md` and `changelog.md`
-2. Write and output the changelog entry for the completed milestone (see Changelog Format)
+2. Write and output the changelog entry for the completed milestone (see [Changelog Format](#changelog-format))
 3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
 4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
-5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see Milestone Promotion below)
+5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion) below)
 
 **The separation between Step 8 and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 8 marks, the next Step 1 compacts.
 
@@ -75,7 +79,7 @@ Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focuse
 
 ## Changelog Format
 
-Changelog entries live in `docs/development/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
+Changelog entries live in `docs/devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
 
 ### Entry structure
 

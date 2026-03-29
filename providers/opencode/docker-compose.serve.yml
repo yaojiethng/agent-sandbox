@@ -1,0 +1,16 @@
+# providers/opencode/docker-compose.serve.yml
+# Serve mode overlay for the OpenCode provider.
+# Referenced directly by providers/opencode/run.sh — not copied to SANDBOX_DIR.
+# Apply on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f <repo>/providers/opencode/docker-compose.serve.yml up
+#
+# OPENCODE_SERVER_PASSWORD is read from .env in SANDBOX_DIR (written at onboard
+# time, never committed). Leave empty to disable authentication.
+
+services:
+  agent:
+    command: ["serve", "--hostname", "0.0.0.0", "--port", "${SERVE_PORT:-46553}"]
+    ports:
+      - "127.0.0.1:${SERVE_PORT:-46553}:${SERVE_PORT:-46553}"
+    environment:
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}

@@ -92,7 +92,7 @@ Read these in order at session start. Each answers a distinct question — do no
 | this file | How do I work here? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
-| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the current sub-milestone and what are the pending tasks? |
+| [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? |
 
 ### Session start — major loop only
 
@@ -100,8 +100,8 @@ Read these in addition to the above when opening a major loop planning session (
 
 | Document | Question it answers |
 |---|---|
-| [`docs/development/roadmap_future.md`](docs/development/roadmap_future.md) | What sub-milestones are planned but not yet active? |
-| [`docs/development/changelog.md`](docs/development/changelog.md) | Is the prior milestone fully closed? |
+| [`docs/devlog/roadmap_future.md`](docs/devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
+| [`docs/devlog/changelog.md`](docs/devlog/changelog.md) | Is the prior milestone fully closed? |
 
 ###  Policy documents — read before the relevant task type, not at session start
 

@@ -1,0 +1,14 @@
+# providers/hermes/docker-compose.hermes.yml
+# Provider overlay for the Hermes provider. Applied in all modes (standard and serve).
+# Merged by scripts/run_agent.sh before the mode overlay.
+#
+# Provider config (config.yaml, .env) is seeded into AGENT_HOME by
+# provider-entrypoint.sh at container start — not mounted. See sandbox_lifecycle.md.
+
+services:
+  agent:
+    environment:
+      - HERMES_HOME=/home/agentuser/.hermes
+      - ANTHROPIC_TOKEN=${ANTHROPIC_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - HERMES_MAX_ITERATIONS=${HERMES_MAX_ITERATIONS}

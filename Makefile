@@ -45,21 +45,29 @@ uninstall:
 # Onboard / refresh dogfood sandbox
 # -------------------------
 
-SANDBOX_DIR := $(CURDIR)/sandbox
+SANDBOX_DIR  :=
 PROJECT_NAME := agent-sandbox
 
 .PHONY: onboard
 onboard:
+	@if [[ -z "$(SANDBOX_DIR)" ]]; then \
+	  echo "Error: SANDBOX_DIR is required. Usage: make onboard SANDBOX_DIR=<path>"; \
+	  exit 1; \
+	fi
 	agent-sandbox onboard \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(CURDIR) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --sandbox=$(abspath $(SANDBOX_DIR))
 
 .PHONY: refresh
 refresh:
+	@if [[ -z "$(SANDBOX_DIR)" ]]; then \
+	  echo "Error: SANDBOX_DIR is required. Usage: make refresh SANDBOX_DIR=<path>"; \
+	  exit 1; \
+	fi
 	agent-sandbox onboard --refresh \
 	  --name=$(PROJECT_NAME) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --sandbox=$(abspath $(SANDBOX_DIR))
 
 # -------------------------
 # Help
@@ -70,8 +78,8 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Onboard / refresh:"
-	@echo "  onboard                    — onboard the dogfood sandbox/ directory"
-	@echo "  refresh                    — update stale template files in sandbox/"
+	@echo "  onboard SANDBOX_DIR=<path>        — onboard the specified sandbox directory"
+	@echo "  refresh SANDBOX_DIR=<path>        — update stale template files in the specified sandbox directory"
 	@echo ""
 	@echo "Install:"
 	@echo "  install                    — install agent-sandbox CLI"

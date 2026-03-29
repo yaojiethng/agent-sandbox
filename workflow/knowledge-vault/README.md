@@ -7,7 +7,7 @@ Entry point for the Obsidian vault workflow in agent-sandbox. Read this first.
 > **Hot task — M2.1 in progress.**
 > The KV workflow is affected by an active architecture change. The two-layer model (reasoning layer / capability layer) changes how agent access to the vault works — vault files will be accessed via MCP tools rather than a direct sandbox copy. The operator workflow (checkpoint, run, review, apply) is unchanged, but the harness internals change significantly.
 >
-> - [`docs/development/roadmap.md`](../../docs/development/roadmap.md) — M2.1 for the full task list
+> - [`docs/devlog/roadmap.md`](../../docs/devlog/roadmap.md) — M2.1 for the full task list
 > - [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) for the architectural rationale
 >
 > Until M2.1 is complete, the current workflow (KV1–KV4) operates as documented in [`onboarding.md`](onboarding.md).
@@ -36,7 +36,7 @@ This is the primary operator reference. Start here.
 
 | Document | Purpose |
 |---|---|
-| [`docs/development/roadmap.md`](../../docs/development/roadmap.md) | Main harness roadmap — M2.1 is the next milestone affecting this workflow |
+| [`docs/devlog/roadmap.md`](../../docs/devlog/roadmap.md) | Main harness roadmap — M2.1 is the next milestone affecting this workflow |
 | [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) | Why M2.1 looks the way it does — reasoning vs capability layer separation |
 | [`docs/development/investigation_mcp_server.md`](../../docs/development/investigation_mcp_server.md) | MCP server investigation: architecture, candidates, two-workspace model |
 

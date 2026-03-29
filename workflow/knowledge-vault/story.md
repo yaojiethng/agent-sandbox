@@ -1,6 +1,6 @@
 # User Story — Obsidian Vault Onboarding
 
-> **SUPERSEDED.** This story is closed. KV1–KV4 are complete — see [`kv-changelog.md`](kv-changelog.md) for the completion record. KV5 (agent modification workflow) has been promoted to **M2.1** in the main agent-sandbox roadmap under the two-layer architecture. See [`docs/development/roadmap.md`](../../docs/development/roadmap.md) — M2.1, and [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) for the architectural context. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](README.md).
+> **SUPERSEDED.** This story is closed. KV1–KV4 are complete — see [`kv-changelog.md`](kv-changelog.md) for the completion record. KV5 (agent modification workflow) has been promoted to **M2.1** in the main agent-sandbox roadmap under the two-layer architecture. See [`docs/devlog/roadmap.md`](../../docs/devlog/roadmap.md) — M2.1, and [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) for the architectural context. For the current vault workflow entry point, see [`workflow/knowledge-vault/README.md`](README.md).
 
 **Status:** Superseded — see above.
 
