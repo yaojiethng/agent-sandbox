@@ -1,0 +1,17 @@
+# providers/pi/docker-compose.pi.yml
+# Provider overlay — merged in all modes (standard, serve, dry-run).
+# Sets Pi-specific environment variables and injects API keys from the host .env.
+
+services:
+  agent:
+    environment:
+      # Suppress Pi's version check on every startup — reduces noise in containers.
+      - PI_SKIP_VERSION_CHECK=1
+      # API keys — injected from host .env; only set if non-empty.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Default provider/model selection (optional).
+      - PI_DEFAULT_PROVIDER=${PI_DEFAULT_PROVIDER:-}
+      - PI_DEFAULT_MODEL=${PI_DEFAULT_MODEL:-}
