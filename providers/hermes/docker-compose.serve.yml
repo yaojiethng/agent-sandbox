@@ -10,7 +10,7 @@
 
 services:
   agent:
-    command: ["hermes", "api"]
+    command: ["gateway"]
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ${AGENT_IMAGE_NAME}-open-webui
@@ -22,6 +22,8 @@ services:
     volumes:
       - open-webui-data:/app/backend/data
     environment:
+      - API_SERVER_ENABLED=true
+      - API_SERVER_KEY=not-needed
       - WEBUI_AUTH=false
       - OPENAI_API_BASE_URL=http://agent:8642/v1
       - OPENAI_API_KEY=none

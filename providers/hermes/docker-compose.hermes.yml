@@ -14,8 +14,8 @@ services:
       - HERMES_MAX_ITERATIONS=${HERMES_MAX_ITERATIONS}
     volumes:
       - type: bind
-        source: ${HERMES_CONFIG_FILE}
+        source: ${OUTPUT_DIR}/.hermes/config.yaml
         target: /home/agentuser/.hermes/config.yaml
       - type: bind
-        source: ${HERMES_ENV_FILE}
+        source: ${OUTPUT_DIR}/.hermes/.env
         target: /home/agentuser/.hermes/.env

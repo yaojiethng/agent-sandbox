@@ -69,10 +69,7 @@ USER agentuser
 # providers/hermes/docker-compose.hermes.yml — the image-layer directory
 # is the fallback only; the bind mounts take precedence.
 ENV HERMES_HOME=/home/agentuser/.hermes
-RUN mkdir -p "$HERMES_HOME" && \
-    cp /opt/hermes/cli-config.yaml.example "$HERMES_HOME/config.yaml" && \
-    echo "terminal:" >> "$HERMES_HOME/config.yaml" && \
-    echo "  backend: local" >> "$HERMES_HOME/config.yaml"
+RUN mkdir -p "$HERMES_HOME"
 
 # -------------------------
 # Working directories
@@ -92,8 +89,8 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 
 # ENTRYPOINT uses bash -c so the command string is injected by run_agent.sh
 # per mode via docker compose run --rm agent "<command>":
-#   standard: "hermes chat"
-#   serve:    command: ["hermes", "api"] in docker-compose.serve.yml
+#   standard: command: ["hermes, "chat"]
+#   serve:    command: ["hermes", "gateway"] with API_SERVER_ENABLED=true in ~/.hermes/.env
 # On first run without config, hermes redirects to setup — operator completes
 # setup interactively and exits to bash, then runs hermes chat manually.
-ENTRYPOINT ["bash", "-c"]
+ENTRYPOINT ["hermes"]

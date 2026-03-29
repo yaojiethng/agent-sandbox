@@ -27,7 +27,10 @@ Carried from prior sessions (open):
 | [`providers/hermes/run.sh`](providers/hermes/run.sh) | Compose generation moving here; pre-run hooks (HERMES_HOME, file seeding) |
 | [`providers/hermes/docker-compose.hermes.yml`](providers/hermes/docker-compose.hermes.yml) | New — provider-level overlay; HERMES_HOME env var, config.yaml and .env file mounts |
 | [`providers/hermes/docker-compose.serve.yml`](providers/hermes/docker-compose.serve.yml) | Credential env var injection into agent service |
-| [`providers/hermes/Dockerfile`](providers/hermes/Dockerfile) | ENTRYPOINT changed to `["bash", "-c"]` |
+| [`docs/architecture/tool_interface.md`](docs/architecture/tool_interface.md) | Provider Interface table updated |
+| [`docs/architecture/sandbox_lifecycle.md`](docs/architecture/sandbox_lifecycle.md) | Four phases; provider config pipeline |
+| [`docs/architecture/container_model.md`](docs/architecture/container_model.md) | run_agent.sh ownership; copy-in/out sequence |
+| [`docs/architecture/execution_model.md`](docs/architecture/execution_model.md) | start_agent/run_agent split; directory layout |
 | [`providers/hermes/.env.example`](providers/hermes/.env.example) | Document provider credential variables |
 | [`scripts/start_agent.sh`](scripts/start_agent.sh) | Compose generation removed; passes env file path to run.sh |
 | [`libs/compose.sh`](libs/compose.sh) | No changes expected; `compose_generate` signature unchanged |
@@ -54,19 +57,32 @@ Carried from prior sessions (open):
 | `providers/hermes/Dockerfile` | `ENTRYPOINT ["bash", "-c"]`; comment updated |
 | `providers/opencode/run.sh` | Deleted — lifecycle now owned by `run_agent.sh` |
 | `providers/hermes/run.sh` | Deleted — lifecycle now owned by `run_agent.sh` |
-| `docs/operations/provider_onboarding_guide.md` | `run.sh` removed from file list; `setup.sh` and provider overlay added as optional; libs/scripts separation documented; Steps renumbered |
+| `docs/architecture/tool_interface.md` | Provider Interface table updated — `run.sh` removed; optional files (`setup.sh`, provider overlay) added; Capability Layer Contract header updated |
+| `docs/architecture/sandbox_lifecycle.md` | Four phases (Seed, Fork, Work, Join); provider config pipeline documented; copy-out noted as not yet implemented; session state flagged as future concern |
+| `docs/architecture/container_model.md` | Compose generation ownership updated to `run_agent.sh`; provider overlay in mode composition table; "Why provider config is not mounted" rationale added; start/stop sequences updated |
+| `docs/architecture/execution_model.md` | Invocation model split into `start_agent.sh` and `run_agent.sh`; directory layout updated; sandbox lifecycle description updated to four phases |
 
 ## Deferred items
 
-None.
+| Item | Reason | Where next |
+|---|---|---|
+| `container_model.md` / `sandbox_lifecycle.md` structural overlap | The container lifecycle start/stop sequence in `container_model.md` partially duplicates the phase structure in `sandbox_lifecycle.md` — both describe the same session events, one in Docker terms and one in data-flow terms. A cross-cutting change (like copy-in/copy-out) touches both documents because sequencing lives in two places. The fix is to collapse the container lifecycle steps in `container_model.md` into references to the lifecycle phases in `sandbox_lifecycle.md`, making `container_model.md` purely about Docker mechanics (volumes, mounts, compose generation) and `sandbox_lifecycle.md` the single owner of all session sequencing. This is a doc cleanup pass, not an architecture change — the current split is functional, just friction-inducing for lifecycle changes. | Future doc cleanup pass |
+| Session state persistence | Agents produce session logs, chat logs, and tool call logs that are currently ephemeral — lost on container teardown. A future milestone should define a session state persistence model using the same copy-out mechanism as provider config: provider declares tracked paths (e.g. a session database file or compressed log directory), harness copies them out after the agent exits. Exact files vary by provider and are a future provider integration concern. | Future milestone (post-M2) |
 
 ## Next session
 
-M2.2 — Reasoning Layer Modularisation (validate refactor, then Hermes serve end-to-end).
+M2.2 — Reasoning Layer Modularisation (validate Hermes, implement copy-in).
 
 Trigger B has not run. Two acceptance criteria remain open; Claude Desktop and Pi remain deferred.
 
 Blocking items for next session:
-1. Run `make dry-run PROVIDER=opencode` and `make dry-run PROVIDER=hermes` — confirm both pass after refactor.
-2. Run `make serve PROVIDER=hermes` — confirm Open WebUI connects to Hermes API without operator intervention.
-3. `tool_interface.md` Provider Interface section still lists `run.sh` as a required provider file — needs updating to match `provider_onboarding_guide.md`.
+
+1. **Implement provider config copy-in.** The architecture documents describe copy-in as the mechanism for seeding provider config files into the container, but it is not yet implemented in `scripts/run_agent.sh`. The required change is: after `compose_sandbox_wait` and before the agent attaches, source `providers/<n>/copy_in.sh` if the file exists. `copy_in.sh` is a new optional provider file (alongside `setup.sh`) that uses `docker compose cp` to copy tracked files from `SANDBOX_DIR` into the container. For Hermes, this means copying `$OUTPUT_DIR/.hermes/config.yaml` and `$OUTPUT_DIR/.hermes/.env` into `/home/agentuser/.hermes/` inside the agent container. The existing bind mounts for these files in `docker-compose.hermes.yml` should be removed once copy-in is working — the two mechanisms are redundant and copy-in is the correct one. `provider_onboarding_guide.md` and `tool_interface.md` will need a follow-up update to document `copy_in.sh` as an optional provider file alongside `setup.sh`.
+
+2. **Run `make dry-run PROVIDER=hermes`** — confirm it passes after the `run_agent.sh` refactor. OpenCode dry-run already passes.
+
+3. **Run `make serve PROVIDER=hermes`** — confirm Open WebUI connects to the Hermes API without operator intervention. This is the outstanding acceptance criterion.
+
+4. **Define base Dockerfiles for Hermes and OpenCode.** Both provider Dockerfiles currently install all dependencies (system packages, runtimes, agent source) in a single image, making iterative builds slow. Define a `Dockerfile.base` per provider that contains the slow, stable install layers (apt packages, uv/node, agent source clone and install, Playwright binaries). The provider `Dockerfile` then inherits from this base via `FROM <provider>-base-<project>`. Base images are rebuilt rarely (only when dependencies change); the provider image layer above them rebuilds quickly. `build.sh` for each provider needs updating to build the base image first if it does not exist or if `--no-cache` is passed.
+
+5. **Implement provider config copy-out (if time allows).** Symmetric to copy-in: after the agent exits and before `docker compose down -v`, source `providers/<n>/copy_out.sh` if it exists. For Hermes, this copies `config.yaml` and `.env` back from the container to `SANDBOX_DIR`. Copy-out is noted as not yet implemented in the architecture docs — if implemented this session, remove that note from `sandbox_lifecycle.md` and `container_model.md`.
