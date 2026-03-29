@@ -191,7 +191,7 @@ if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
   echo "Stop with: make stop"
-  echo "Interactive web running on https://127.0.0.1:${SERVE_PORT}"
+  echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
 
 else
   echo "Starting agent: $PROJECT_NAME"

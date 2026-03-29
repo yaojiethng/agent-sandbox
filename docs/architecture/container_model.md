@@ -2,15 +2,15 @@
 
 This document describes how Docker implements the two-layer architecture: how the compose configuration is generated, why the mounts are shaped the way they are, how the two containers start and stop, and what each entrypoint does.
 
-The conceptual model for why the layers are separate is in [`two_layer_model.md`](../concepts/two_layer_model.md). The sandbox lifecycle — snapshot, diff, input channels — is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). The external contract — mount shape table, image naming, execution modes — is in [`tool_interface.md`](tool_interface.md).
+The conceptual model for why the layers are separate is in [`two_layer_model.md`](../concepts/two_layer_model.md). The sandbox lifecycle — snapshot, provider config seed, diff, input channels — is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). The external contract — mount shape table, image naming, execution modes — is in [`tool_interface.md`](tool_interface.md).
 
 ---
 
 ## Compose Generation
 
-`scripts/start_agent.sh` generates the compose configuration on each run. Compose files are written to a tmpfile — never to `SANDBOX_DIR` — and are not operator-managed.
+`scripts/run_agent.sh` generates the compose configuration on each run. Compose files are written to a tmpfile — never to `SANDBOX_DIR` — and are not operator-managed.
 
-**Tmpfile generation:** `compose_generate` in `libs/compose.sh` merges the base template with any mode overlay using `docker compose config --no-interpolate`, bakes image names and host paths into the result, and preserves operator secrets as `${VAR}` for runtime resolution. The merged file is written to a tmpfile and its path passed to `run.sh` via `--compose-file`. The tmpfile is deleted by a trap in `run.sh` on exit.
+**Tmpfile generation:** `compose_generate` in `libs/compose.sh` merges the base template with any applicable overlays using `docker compose config --no-interpolate`, bakes image names and host paths into the result, and preserves operator secrets as `${VAR}` for runtime resolution. The merged tmpfile is owned and cleaned up by `scripts/run_agent.sh` on exit.
 
 **Baked vs `${VAR}` split:** Image names, container names, service dependencies, volume definitions, and internal mount paths are baked at generation time — they are stable per project and do not vary between runs. Machine-specific values — host paths, ports, credentials — are preserved as `${VARIABLE}` and resolved from `.env` at runtime by Docker Compose.
 
@@ -22,11 +22,11 @@ The conceptual model for why the layers are separate is in [`two_layer_model.md`
 
 | Mode | Compose files |
 |---|---|
-| `standard` | Base tmpfile only |
-| `serve` | Base tmpfile + `providers/<n>/docker-compose.serve.yml` |
-| `dry-run` | Base tmpfile + `libs/docker-compose.dry-run.yml` |
+| `standard` | Base template only (+ provider overlay if present) |
+| `serve` | Base template + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
+| `dry-run` | Base template + provider overlay (if present) + `libs/docker-compose.dry-run.yml` |
 
-The serve overlay is a static file in the repo under `providers/<n>/` — never generated or written to `SANDBOX_DIR`. The dry-run overlay is sourced from `libs/docker-compose.dry-run.yml` and merged at generation time.
+The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve and dry-run overlays are static files in the repo, never written to `SANDBOX_DIR`.
 
 **Deferred — multi-service project composition:** Projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed containers. A composition mechanism allowing operator-defined services to be merged with the harness-generated base is a future design task. See `roadmap.md`.
 
@@ -54,6 +54,10 @@ The snapshot is an input prepared before the run. Mounting it read-only prevents
 
 `output/` is the reasoning layer's persistent output channel to the host. Restricting it to text and serialised data limits the attack surface — a compromised agent cannot write executable files that the operator might inadvertently run on the host. Binary outputs, if needed, must go through `sandbox/` and the diff pipeline.
 
+### Why provider config is not mounted
+
+Provider config directories (e.g. `.hermes/`) cannot be bind-mounted as directories because agents may write binaries or perform filesystem operations (cross-device moves from `/tmp`) that fail on Windows-mounted paths. Individual file mounts fail when agents replace files via `mv` rather than in-place writes. The copy-in/copy-out mechanism avoids these issues: the agent has full ownership of its config directory inside the container, and only declared files are synchronised to `SANDBOX_DIR` at session boundaries.
+
 ### Why `--volumes-from` rather than a named volume
 
 A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, and any container could mount it regardless of whether the capability layer is running.
@@ -72,17 +76,20 @@ The harness manages two containers per session via Docker Compose. Start order i
 
 **Start sequence:**
 1. `scripts/start_agent.sh` runs pre-flight: validates paths, loads `.env`, runs snapshot pipeline stage 1, resolves brief
-2. `scripts/start_agent.sh` generates a merged compose tmpfile via `compose_generate`; dispatches to `providers/<n>/run.sh` with mode and `--compose-file`
-3. `providers/<n>/run.sh` assembles compose args — appending the serve overlay if mode is `serve` — then invokes `docker compose`
-4. Capability layer starts first (service dependency), runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
-5. Reasoning layer starts with `--volumes-from <capability-layer>` — attaches to `sandbox/`, mounts `workspace/input/` and `workspace/output/` from host
-6. Reasoning layer hands off to the agent
+2. `scripts/start_agent.sh` dispatches to `scripts/run_agent.sh` with mode, project name, sandbox path, env file, and provider name
+3. `scripts/run_agent.sh` sources `providers/<n>/setup.sh` if present (exports provider vars, pre-creates host dirs)
+4. `scripts/run_agent.sh` assembles compose file list, generates merged tmpfile via `compose_generate`, calls `compose_args`
+5. Capability layer starts first (service dependency), runs snapshot pipeline stage 2, initialises `sandbox/`, records baseline SHA
+6. Reasoning layer starts with `--volumes-from <capability-layer>` — attaches to `sandbox/`, mounts `workspace/input/` and `workspace/output/` from host
+7. Provider config copy-in — `scripts/run_agent.sh` copies tracked provider config files from `SANDBOX_DIR` into the container (see [sandbox_lifecycle.md — Phase 1](sandbox_lifecycle.md#phase-1--seed-provider-config))
+8. Reasoning layer hands off to the agent
 
 **Stop sequence:**
 1. Reasoning layer container exits (agent completes or is interrupted)
-2. Harness stops the capability layer via `docker stop`, sending SIGTERM to PID 1 (`sandbox-entrypoint.sh`)
-3. The TERM trap calls `exit 0`, triggering the EXIT trap
-4. The EXIT trap runs the diff pipeline — commits pending changes in `sandbox/`, writes `staged.diff`
+2. Provider config copy-out — tracked provider config files are copied from the container back to `SANDBOX_DIR` (not yet implemented)
+3. Harness stops the capability layer via `docker stop`, sending SIGTERM to PID 1 (`sandbox-entrypoint.sh`)
+4. The TERM trap calls `exit 0`, triggering the EXIT trap
+5. The EXIT trap runs the diff pipeline — commits pending changes in `sandbox/`, writes `staged.diff`
 
 The capability layer must be running before the reasoning layer starts and must not stop until after the reasoning layer exits. The TERM trap ensures `docker stop` produces a clean exit code so the EXIT trap fires reliably regardless of shutdown path.
 
@@ -105,7 +112,7 @@ Steps 1–3 must succeed before the reasoning layer container starts. Any failur
 
 **Reasoning layer entrypoint:**
 
-Provider-specific. Defined in `providers/<n>/Dockerfile` via `ENTRYPOINT`. Brief and operator input files are accessible via the `workspace/input/` read-only mount — no copy step is required.
+Provider-specific. Defined in `providers/<n>/Dockerfile` via `ENTRYPOINT`. Brief and operator input files are accessible via the `workspace/input/` read-only mount — no copy step is required. Provider config files are copied in by `scripts/run_agent.sh` after the container starts, not via mount.
 
 ---
 
@@ -114,7 +121,7 @@ Provider-specific. Defined in `providers/<n>/Dockerfile` via `ENTRYPOINT`. Brief
 | Topic | Document |
 |---|---|
 | Why the two layers exist | [../concepts/two_layer_model.md](../concepts/two_layer_model.md) |
-| Sandbox lifecycle — snapshot, diff, input channels | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
+| Sandbox lifecycle — snapshot, provider config, diff, input channels | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
 | Execution model (index) | [execution_model.md](execution_model.md) |
 | Mount shape guarantees (contract) | [tool_interface.md](tool_interface.md#mount-shape-guarantees) |
 | Provider interface contract | [tool_interface.md](tool_interface.md#provider-interface) |

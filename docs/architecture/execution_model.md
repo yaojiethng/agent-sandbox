@@ -15,6 +15,7 @@ SANDBOX_DIR/
 ├── Makefile
 ├── .env
 ├── .snapshot/                 ← project snapshot (built at run time by harness)
+├── .<provider>/               ← provider config (seeded on first run; persists across sessions)
 └── .workspace/                ← harness I/O channels
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
@@ -29,7 +30,8 @@ Capability layer container (CWD: /home/agentuser/)
 Reasoning layer container (CWD: /home/agentuser/)
 ├── workspace/input/           ← RO bind mount: task briefs, operator addenda
 ├── workspace/output/          ← RW bind mount: agent progress (no binaries)
-└── sandbox/                   ← RW Docker volume: shared from capability layer via --volumes-from
+├── sandbox/                   ← RW Docker volume: shared from capability layer via --volumes-from
+└── .<provider>/               ← provider config dir (populated via copy-in, not mounted)
 ```
 
 Host path variables are defined in [`tool_interface.md` — `.env` Runtime Variables](tool_interface.md#env-runtime-variables).
@@ -38,17 +40,19 @@ Host path variables are defined in [`tool_interface.md` — `.env` Runtime Varia
 
 ## Invocation Model
 
-`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It reads `.env` from `SANDBOX_DIR`, validates required variables, then orchestrates the session: snapshot pipeline, compose generation, and provider dispatch. If `.env` is missing, it exits with instructions to run `agent-sandbox onboard`.
+`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, snapshot pipeline, and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
+
+`scripts/run_agent.sh` owns the provider lifecycle: sourcing the provider setup hook, assembling and generating the compose file, managing the container lifecycle (start, copy-in, agent attach, copy-out, teardown). It is provider-agnostic — provider-specific behaviour is declared via `providers/<n>/setup.sh`, compose overlays, and copy-in/copy-out hooks.
 
 Container paths are fixed by the harness and not configurable via `.env`. The full mount shape is in [`tool_interface.md` — Mount Shape Guarantees](tool_interface.md#mount-shape-guarantees).
 
-`scripts/start_agent.sh` is provider-agnostic. It exports all `.env` variables before calling `providers/<n>/run.sh` — provider scripts receive image names, host paths, and port config without re-deriving them. The provider interface is defined in [`tool_interface.md` — Provider Interface](tool_interface.md#provider-interface); the implementation guide is in [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md).
+The provider interface is defined in [`tool_interface.md` — Provider Interface](tool_interface.md#provider-interface). The implementation guide is in [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md).
 
 ---
 
 ## Mechanisms
 
-**Sandbox lifecycle** — how project content enters the sandbox, how the agent's changes are captured, and how they are returned to the host. Covers the snapshot pipeline (both stages), git baseline, input channels, diff pipeline, autosave, and apply workflow. See [`sandbox_lifecycle.md`](sandbox_lifecycle.md).
+**Sandbox lifecycle** — how project content enters the sandbox (fork), how provider config is seeded (seed), how the agent works, and how changes are returned to the host (join). Covers the snapshot pipeline (both stages), provider config copy-in/copy-out, git baseline, input channels, diff pipeline, autosave, and apply workflow. See [`sandbox_lifecycle.md`](sandbox_lifecycle.md).
 
 **Container model** — how Docker implements the two-layer architecture. Covers compose generation, mount shape rationale, container lifecycle (start and stop sequences), and entrypoint sequences. See [`container_model.md`](container_model.md).
 

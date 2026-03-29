@@ -2,7 +2,6 @@
 # Serve mode overlay for the Hermes provider.
 # Merged by scripts/run_agent.sh on top of docker-compose.yml and
 # docker-compose.hermes.yml when mode is serve.
-# Never copied to SANDBOX_DIR.
 #
 # Starts Hermes in API server mode and launches Open WebUI as a companion
 # service connected to the Hermes agent container.
@@ -23,7 +22,7 @@ services:
       - open-webui-data:/app/backend/data
     environment:
       - API_SERVER_ENABLED=true
-      - API_SERVER_KEY=not-needed
+      # - API_SERVER_KEY=not-needed
       - WEBUI_AUTH=false
       - OPENAI_API_BASE_URL=http://agent:8642/v1
       - OPENAI_API_KEY=none
