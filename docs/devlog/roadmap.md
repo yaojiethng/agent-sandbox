@@ -47,25 +47,19 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure.
 
-**Depends on:** M2.1. **Scope:** Move `start_agent.sh` to `scripts/` as the provider-agnostic entry point. Define the provider interface (`build.sh` and `run.sh` under `providers/<name>/`). Rename `build_agent.sh` to `build.sh`. Validate OpenCode conforms. Base image split and Claude Code/Desktop provider integrations are deferred.
+**Depends on:** M2.1. **Scope:** Move `start_agent.sh` to `scripts/` as the provider-agnostic entry point. Define the provider interface under `providers/<n>/`. Validate OpenCode and Hermes both conform. Base image split, provider config lifecycle, and build system unified.
+
+Provider interface established and both providers conforming. Shared harness logic extracted into `scripts/` and `libs/`. Compose files generated as tmpfiles per run — never written to `SANDBOX_DIR`. Build system unified under `scripts/build_container.sh`; providers discovered by glob.
+
+Provider config lifecycle implemented: `libs/provider-entrypoint.sh` seeds default config into `AGENT_HOME` at container start (seed-if-missing per file), registers EXIT trap for copy-out, then execs the agent. Host-side persist step in `run_agent.sh` moves copy-out to `$SANDBOX_DIR/.<provider>/` after container exits. Provider declares defaults in `providers/<n>/config/`; harness injects them via build context.
+
+Hermes base image rebuilt as multi-stage build: build tools (`gcc`, `python3-dev`, `libffi-dev`) excluded from runtime image; `python:3.11-slim` base replaces `debian:bookworm`; Node.js 20 via NodeSource replaces apt default; `uv` used exclusively for venv creation and package installation; Playwright removed (~2GB reduction).
+
+**Decisions:**
+- `agent-base` image type deferred — common dependency list not yet stable. When introduced, take reference from `providers/hermes/base.Dockerfile` for: multi-stage build pattern, `python:3.11-slim` + Node 20 via NodeSource, and exclusive `uv` usage for venv and package management.
 
 **Tasks:**
 
-Architecture documents updated to reflect the provider interface, `start_agent.sh` path, and `run.sh` dispatch pattern.
-
-Shared harness logic extracted: `scripts/start_agent.sh` is the provider-agnostic entry point; `libs/containers.sh` owns image naming and preflight; `libs/compose.sh` owns compose generation, args construction, dry-run sequence, teardown, and sandbox health polling.
-
-Provider interface established: `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` under `providers/<n>/`. OpenCode and Hermes both conform. `run.sh` receives a pre-generated compose file and drives `docker compose` calls directly via harness functions.
-
-Compose files are no longer written to `SANDBOX_DIR`. A single fully-merged compose file is generated into a tmpfile on each run by `compose_generate`, with image names and host paths baked in and operator secrets preserved as `${VAR}`. `onboard.sh` no longer produces `docker-compose.yml` or `Dockerfile.sandbox`; `build_sandbox.sh` no longer checks template versions.
-
-`make stop` stops all session containers and volumes by compose project label, derived from `--name` rather than `SANDBOX_DIR` basename.
-
-
-### Deferred breakdown
-- [x] Open WebUI ↔ Hermes API connection in serve mode:
-  - Hermes requires provider credentials in `HERMES_HOME/.hermes/.env` inside the container. `HERMES_HOME` is ephemeral — credentials must be injected via `SANDBOX_DIR/.env` and the serve overlay. Tasks: document variables in `providers/hermes/.env.example`; inject via serve overlay into agent service environment.
-  - Investigate whether Hermes accepts a static config file for provider/model configuration (pre-sets default model so operator does not need to configure in UI on each serve start). If yes: determine format, add pre-prepared file to provider, mount or copy via overlay.
 - [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
 - [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
 
@@ -77,7 +71,11 @@ Compose files are no longer written to `SANDBOX_DIR`. A single fully-merged comp
 - [x] `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/<n>/run.sh`
 - [x] `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
 - [x] `make build` builds sandbox + all providers
-- [ ] A second provider can be added under `providers/<n>/` with `build.sh`, `run.sh`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required (confirmed structurally; proven empirically when a third provider is added)
+- [x] On `make start PROVIDER=hermes`, Hermes config files present in `AGENT_HOME` before agent command runs
+- [x] After agent exits, `$SANDBOX_DIR/.hermes/` contains the session's final config state
+- [x] `providers/hermes/docker-compose.hermes.yml` has no bind mounts for Hermes config files
+- [x] `make start PROVIDER=opencode` functions correctly with new entrypoint wrapper
+- [ ] A second provider can be added under `providers/<n>/` with `base.Dockerfile`, `provider.Dockerfile`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required (confirmed structurally; proven empirically when a third provider is added)
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
@@ -132,7 +130,6 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
 
 - **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
-
 
 ---
 

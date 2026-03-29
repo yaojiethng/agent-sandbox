@@ -5,13 +5,31 @@
 #
 # Rebuilt when provider interface, config, or project-specific content changes.
 # Slow install layers (apt, uv, Hermes source, Playwright) live in base.Dockerfile.
+#
+# Provider contract (harness interface):
+#   AGENT_HOME    — where Hermes writes config, sessions, and memories
+#   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
+#   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
+#                   and registers copy-out trap before exec-ing hermes
+#   config/       — default config files baked into /opt/context/config/ via
+#                   build context; seeded into AGENT_HOME if absent at startup
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 
 # -------------------------
 # Shared libs (root, before USER switch)
 # -------------------------
+# Injected by build_context_agent — cache miss if either file changes.
 COPY dirs.sh /libs/dirs.sh
+COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
+
+# -------------------------
+# Provider config seed (root, before USER switch)
+# -------------------------
+# Default config files from providers/hermes/config/, injected by
+# build_context_agent. Seeded into AGENT_HOME by provider-entrypoint.sh
+# at container start if files are absent.
+COPY config/ /opt/context/config/
 
 # -------------------------
 # Non-root user
@@ -20,18 +38,10 @@ RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
 
 # -------------------------
-# Hermes config (agentuser)
+# Provider identity
 # -------------------------
-# HERMES_HOME is where Hermes writes config, sessions, and memories.
-# Pointed at a user-owned directory inside the container.
-# config.yaml and .env are bind-mounted from the host at runtime via
-# providers/hermes/docker-compose.hermes.yml — the image-layer directory
-# is the fallback only; the bind mounts take precedence.
-ENV HERMES_HOME=/home/agentuser/.hermes
-RUN mkdir -p "$HERMES_HOME" && \
-    cp /opt/hermes/cli-config.yaml.example "$HERMES_HOME/config.yaml" && \
-    echo "terminal:" >> "$HERMES_HOME/config.yaml" && \
-    echo "  backend: local" >> "$HERMES_HOME/config.yaml"
+ENV PROVIDER_NAME=hermes
+ENV AGENT_HOME=/home/agentuser/.hermes
 
 # -------------------------
 # Working directories
@@ -49,4 +59,4 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["hermes"]
+ENTRYPOINT ["provider-entrypoint.sh", "hermes"]

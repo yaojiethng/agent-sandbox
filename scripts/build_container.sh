@@ -107,7 +107,7 @@ if [[ "$local_type" == "agent" ]]; then
     exit 1
   fi
 
-  local_context="$(build_context_agent "$REPO_ROOT")"
+  local_context="$(build_context_agent "$REPO_ROOT" "$local_provider")"
   trap 'rm -rf "$local_context"' EXIT
 
   # Build base image if missing or --rebuild-base

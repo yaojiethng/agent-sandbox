@@ -113,7 +113,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 
 ## Capability Layer Contract
 
-Guarantees the capability layer makes to the reasoning layer. Enforced by the harness — a conforming `run.sh` does not need to re-verify them.
+Guarantees the capability layer makes to the reasoning layer. Enforced by the harness — a conforming provider does not need to re-verify them.
 
 **Readiness signal:** When the capability layer reports healthy, `sandbox/` is fully initialised. The reasoning layer may treat a healthy status as the unconditional signal to proceed.
 
@@ -132,14 +132,15 @@ A conforming provider supplies the following under `providers/<n>/` in the repo:
 
 | File | Required | Purpose |
 |---|---|---|
-| `build.sh` | Yes | Builds the base image (if missing or `--no-cache`) then the reasoning layer image |
-| `run.sh` | Yes | Handles all container invocation for this provider |
 | `base.Dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
 | `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
-| `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run.sh` |
+| `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
-| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars, pre-creates host-side files |
-| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes; used when a provider requires mounts or env vars beyond the base compose template |
+| `config/` | Optional | Default config files seeded into `AGENT_HOME` at container start if absent; `env.stub` is seeded as `.env` |
+| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes; used when a provider requires env vars beyond the base compose template |
+| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars, pre-creates host-side directories |
+
+Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle via `scripts/build_container.sh` and `scripts/run_agent.sh`. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context — providers do not author it.
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 

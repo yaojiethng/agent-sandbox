@@ -12,6 +12,15 @@
 #   dry-run    — liveness check only, no agent interaction
 #   headless   — reserved, not yet implemented
 #
+# Provider config lifecycle (all modes except dry-run):
+#   copy-in:  handled inside the container by provider-entrypoint.sh before
+#             the agent command runs. Seeds /opt/context/config/ files into
+#             AGENT_HOME if absent (first run), then resumes from AGENT_HOME
+#             state on subsequent runs.
+#   copy-out: EXIT trap in provider-entrypoint.sh writes AGENT_HOME to
+#             workspace/output/.<provider>/ on container exit. run_agent.sh
+#             moves that to $SANDBOX_DIR/.<provider>/ after the container exits.
+#
 # Compose file assembly follows deterministic conventions:
 #   base:             libs/docker-compose.yml
 #   provider overlay: providers/<n>/docker-compose.<n>.yml  (merged if exists)
@@ -89,10 +98,10 @@ fi
 # -------------------------
 # Provider setup hook
 # -------------------------
-# sources providers/<n>/setup.sh if it exists.
+# Sources providers/<n>/setup.sh if it exists.
 # setup.sh is responsible for:
 #   - exporting provider-specific vars needed before compose generation
-#   - pre-creating host-side files and directories for bind mounts
+#   - pre-creating $SANDBOX_DIR/.<provider>/ so the bind mount source exists
 # If setup.sh exits non-zero, the session aborts with an attribution message.
 PROVIDER_SETUP="$REPO_ROOT/providers/$PROVIDER_NAME/setup.sh"
 
@@ -183,6 +192,32 @@ case "$MODE" in
 esac
 
 # -------------------------
+# Provider config paths
+# -------------------------
+# copy-in is handled inside the container by provider-entrypoint.sh.
+# copy-out: provider-entrypoint.sh EXIT trap writes AGENT_HOME to
+# workspace/output/.<provider>/; run_agent.sh moves it here after exit.
+PROVIDER_CONFIG_HOST="$SANDBOX_DIR/.$PROVIDER_NAME"
+PROVIDER_CONFIG_OUT="$SANDBOX_DIR/.workspace/output/.$PROVIDER_NAME"
+AGENT_CONTAINER="$(agent_container_name "$PROVIDER_NAME" "$PROJECT_NAME")"
+
+# -------------------------
+# Post-exit copy-out move
+# -------------------------
+# Moves workspace/output/.<provider>/ (written by provider-entrypoint.sh EXIT
+# trap) to $SANDBOX_DIR/.<provider>/ after the container exits.
+# No-op if the container produced no output (e.g. crashed before copy-out ran).
+_provider_persist() {
+  if [[ -d "$PROVIDER_CONFIG_OUT" ]] && [[ -n "$(ls -A "$PROVIDER_CONFIG_OUT" 2>/dev/null)" ]]; then
+    echo "+ persisting provider config to $PROVIDER_CONFIG_HOST"
+    rm -rf "$PROVIDER_CONFIG_HOST"
+    mv "$PROVIDER_CONFIG_OUT" "$PROVIDER_CONFIG_HOST"
+  else
+    echo "+ no provider config output found — skipping persist"
+  fi
+}
+
+# -------------------------
 # Run
 # -------------------------
 compose_teardown
@@ -193,6 +228,15 @@ if [[ "$MODE" == "serve" ]]; then
   echo "Stop with: make stop"
   echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
 
+  # Wait for the agent container to exit (triggered by make stop / docker stop).
+  # Keeps run_agent.sh alive so persist and teardown run in sequence after exit.
+  docker wait "$AGENT_CONTAINER" >/dev/null 2>&1 || true
+
+  _provider_persist
+
+  echo "+ tearing down..."
+  docker compose "${COMPOSE_ARGS[@]}" down -v
+
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
@@ -202,6 +246,8 @@ else
 
   echo "+ attaching to agent..."
   docker compose "${COMPOSE_ARGS[@]}" run --rm agent
+
+  _provider_persist
 
   echo "+ tearing down..."
   docker compose "${COMPOSE_ARGS[@]}" down -v

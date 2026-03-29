@@ -2,8 +2,8 @@
 # Provider overlay for the Hermes provider. Applied in all modes (standard and serve).
 # Merged by scripts/run_agent.sh before the mode overlay.
 #
-# HERMES_CONFIG_FILE and HERMES_ENV_FILE are exported by providers/hermes/setup.sh
-# before compose generation, and resolved by Docker Compose at runtime.
+# Provider config (config.yaml, .env) is seeded into AGENT_HOME by
+# provider-entrypoint.sh at container start — not mounted. See sandbox_lifecycle.md.
 
 services:
   agent:
@@ -12,10 +12,3 @@ services:
       - ANTHROPIC_TOKEN=${ANTHROPIC_TOKEN}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - HERMES_MAX_ITERATIONS=${HERMES_MAX_ITERATIONS}
-    volumes:
-      - type: bind
-        source: ${OUTPUT_DIR}/.hermes/config.yaml
-        target: /home/agentuser/.hermes/config.yaml
-      - type: bind
-        source: ${OUTPUT_DIR}/.hermes/.env
-        target: /home/agentuser/.hermes/.env

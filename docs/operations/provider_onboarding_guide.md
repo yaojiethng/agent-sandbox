@@ -22,7 +22,7 @@ Provider `setup.sh` hooks are sourced by `scripts/run_agent.sh` and have access 
 
 ## What You Are Building
 
-A conforming provider supplies four required files and up to two optional files:
+A conforming provider supplies four required files and up to three optional files:
 
 **Required:**
 ```
@@ -36,11 +36,14 @@ providers/<n>/
 **Optional:**
 ```
 providers/<n>/
+├── config/                       ← default config files; seeded into AGENT_HOME at container start
 ├── docker-compose.<n>.yml        ← provider overlay, merged in all modes if present
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
-None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time. Providers do not supply a `build.sh` — the harness builds all images via `scripts/build_container.sh`.
+Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by `build_context_agent` — providers do not author or maintain it.
+
+None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
 
 ---
 
@@ -58,7 +61,7 @@ Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`, `c
 
 `base.Dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
-The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build_container.sh` skips the base build if the image already exists unless `--no-cache` is passed.
+The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build_container.sh` skips the base build if the image already exists unless `--rebuild-base` is passed.
 
 ```dockerfile
 # providers/<n>/base.Dockerfile
@@ -83,10 +86,21 @@ The base image ends as root. User creation and runtime configuration belong in `
 ARG BASE_IMAGE=<provider>-base
 FROM ${BASE_IMAGE}
 
+# Injected by build_context_agent — do not modify these paths.
 COPY dirs.sh /libs/dirs.sh
+COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
+
+# Provider config seed — injected by build_context_agent from providers/<n>/config/.
+# Omit this line if the provider has no config/ directory.
+COPY config/ /opt/context/config/
 
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
+
+# AGENT_HOME — where the agent writes config and state inside the container.
+# PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
+ENV PROVIDER_NAME=<n>
+ENV AGENT_HOME=/home/agentuser/.<n>
 
 RUN mkdir -p /home/agentuser/workspace/input \
              /home/agentuser/workspace/output
@@ -96,12 +110,14 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["<agent-command>"]
+# provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
+# EXIT trap, then execs the agent command.
+ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
 ```
 
 The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
 
-The agent command is supplied at runtime via `docker compose run --rm agent "<command>"` for standard mode, and via `command:` in `docker-compose.serve.yml` for serve mode.
+`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also injected from `providers/<n>/config/` if that directory exists.
 
 The agent brief and operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
@@ -145,9 +161,33 @@ Variables that are always derivable from other `.env` values (e.g. image names) 
 
 ---
 
-## Step 6 (optional) — Write `docker-compose.<n>.yml`
+## Step 6 (optional) — Add `config/`
 
-If the provider requires mounts, environment variables, or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
+If the provider requires default configuration files to be present before the agent starts, place them in:
+
+```
+providers/<n>/config/
+```
+
+`build_context_agent` copies this directory into the build context. `provider.Dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
+
+Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
+
+```
+providers/<n>/config/
+├── config.yaml     ← seeded as AGENT_HOME/config.yaml if absent
+└── env.stub        ← seeded as AGENT_HOME/.env if absent
+```
+
+Files in `config/` are stubs — they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
+
+If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.Dockerfile`.
+
+---
+
+## Step 7 (optional) — Write `docker-compose.<n>.yml`
+
+If the provider requires environment variables or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
 
 ```
 providers/<n>/docker-compose.<n>.yml
@@ -159,15 +199,13 @@ providers/<n>/docker-compose.<n>.yml
 base → provider overlay → mode overlay
 ```
 
-Use this for bind mounts that must be present in standard mode too, or for environment variables common to all modes.
-
 **Reference:** `providers/hermes/docker-compose.hermes.yml`
 
 ---
 
-## Step 7 (optional) — Write `setup.sh`
+## Step 8 (optional) — Write `setup.sh`
 
-If the provider requires host-side setup before containers start — exporting provider-specific vars, pre-creating directories or files for bind mounts — add a setup hook:
+If the provider requires host-side setup before containers start, add a setup hook:
 
 ```
 providers/<n>/setup.sh
@@ -179,14 +217,13 @@ providers/<n>/setup.sh
 
 Common uses:
 - Export vars that compose overlays reference via `${VAR}` — these must be exported before `compose_generate` runs
-- `mkdir -p` host directories that will be bind-mounted — Docker creates missing sources as root-owned directories; pre-creating them ensures correct ownership
-- Seed config files on first run
+- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so it exists for copy-out to land in on the first session
 
 **Reference:** `providers/hermes/setup.sh`
 
 ---
 
-## Step 8 — Verify conformance
+## Step 9 — Verify conformance
 
 Run the dry-run sequence against an onboarded project to verify the provider integrates correctly:
 
@@ -213,7 +250,7 @@ Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) an
 
 ---
 
-## Step 9 — Register the provider
+## Step 10 — Register the provider
 
 No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.Dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 

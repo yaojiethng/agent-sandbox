@@ -12,7 +12,7 @@ All snapshot and diff functions are defined in `libs/snapshot.sh` and sourced by
 
 A session has four phases:
 
-1. **Seed** — provider config files are copied from `SANDBOX_DIR` into the container after it starts. Absent on first run, the provider supplies bare-bones defaults.
+1. **Seed** — provider config files are seeded into the agent's config directory before the agent command runs.
 2. **Fork** — the host project state is replicated into the sandbox before the containers start. The host repository is never modified.
 3. **Work** — the agent operates exclusively inside the sandbox. The host is untouched.
 4. **Join** — the agent's changes are captured and written to the host. Project changes return as a diff; provider config changes return via file copy.
@@ -23,17 +23,17 @@ A session has four phases:
 
 ## Phase 1 — Seed (Provider Config)
 
-Before the agent starts, provider-declared config files are copied from `SANDBOX_DIR` into the container. This gives the agent a pre-populated config without requiring the operator to run interactive setup on every session.
+Before the agent command runs, `libs/provider-entrypoint.sh` seeds provider config files into `AGENT_HOME` inside the container. This is handled entirely inside the container — no host-side copy step is required.
 
-**On first run:** `SANDBOX_DIR` contains no provider config. The provider's `setup.sh` hook (sourced by `scripts/run_agent.sh`) creates the necessary host-side directories and seeds bare-bones defaults from the provider repo (e.g. `providers/hermes/config.yaml`). These defaults are copied into `SANDBOX_DIR` and then into the container.
+**Seeding logic:** For each file in `/opt/context/config/` (baked into the image at build time from `providers/<n>/config/`), the file is copied to `AGENT_HOME` only if it does not already exist. Files are seeded independently — existing files are never overwritten. `env.stub` is seeded as `.env`.
 
-**On subsequent runs:** Config files written by the agent during a prior session are already present in `SANDBOX_DIR`. They are copied into the container as-is — the agent resumes from its prior state.
+**First run:** `AGENT_HOME` is empty. All files in `/opt/context/config/` are seeded. The agent starts with the provider's default configuration.
 
-The set of tracked files is declared by the provider. The harness provides the copy-in mechanism; the provider decides what to track. Currently implemented via `docker compose cp` after the capability layer is healthy, before the agent starts.
+**Subsequent runs:** `AGENT_HOME` is populated from the prior session's copy-out (see Phase 4). Seeding is skipped for files that already exist — the agent resumes from its prior state.
 
-**Retrieve (copy-out):** After the agent exits, tracked provider config files are copied back from the container to `SANDBOX_DIR` before teardown. Changes the agent made to its config during the session are persisted for the next run. This is not yet implemented — copy-in is the current scope; copy-out is the natural complement and will be added in a follow-up.
+**No config directory:** If `providers/<n>/config/` was empty at build time, `/opt/context/config/` is empty and seeding is a no-op. The provider is responsible for any fallback initialisation in that case.
 
-**Session state:** Agent-produced session logs, chat history, and tool call logs are currently ephemeral — lost on container teardown. A future milestone will extend the copy-out mechanism to cover provider-declared session state files (e.g. a session database or compressed log directory). The mechanism is the same; what varies is which files the provider declares as tracked.
+**Session state:** Agent-produced session logs, chat history, and tool call logs are currently ephemeral — lost on container teardown. A future milestone will extend the copy-out mechanism to cover provider-declared session state files. The mechanism is the same; what varies is which files the provider declares as tracked.
 
 ---
 
@@ -78,11 +78,13 @@ Input channel lifecycle:
 - Read by agent during the run
 - Operator clears or replaces contents before the next run — the harness does not clear it automatically
 
-**`workspace/output/`** — the agent's persistent output channel to the host. Text and serialised data only; binaries are prohibited. Accumulates across the session; cleared by the operator between runs if desired.
+**`workspace/output/`** — the agent's persistent output channel to the host. Text and serialised data only; binaries are deferred to a future milestone. Accumulates across the session; cleared by the operator between runs if desired.
 
 ---
 
-## Phase 4 — Join (Diff Pipeline)
+## Phase 4 — Join (Diff Pipeline and Provider Config Retrieve)
+
+### Diff pipeline
 
 On capability layer container exit, an EXIT trap runs the diff pipeline:
 
@@ -96,13 +98,21 @@ An autosave loop writes `autosave.diff` on a configurable interval (`AUTOSAVE_IN
 
 `.workspace/changes/` is overwritten on each run by the diff pipeline.
 
-Provider config copy-out (retrieve) runs before the capability layer exits — tracked provider config files are copied from the container back to `SANDBOX_DIR`. This is not yet implemented; it will be added alongside or after copy-in is validated.
+### Provider config retrieve (copy-out)
+
+When the reasoning layer container exits, an EXIT trap in `libs/provider-entrypoint.sh` copies `AGENT_HOME` to `workspace/output/.<provider>/` inside the container. Since `workspace/output/` is bind-mounted from `$SANDBOX_DIR/.workspace/output/`, the files land on the host immediately.
+
+`scripts/run_agent.sh` then moves `$SANDBOX_DIR/.workspace/output/.<provider>/` to `$SANDBOX_DIR/.<provider>/`. On the next session start, Phase 1 finds `AGENT_HOME` already populated and skips seeding for existing files — the agent resumes from this state.
+
+Retrieve runs for all modes except dry-run. In serve mode, `run_agent.sh` uses `docker wait` to block on the agent container exit before running the move and teardown, ensuring the EXIT trap has fired before the move occurs.
+
+If the container exits before copy-out runs (e.g. a crash before the entrypoint EXIT trap fires), `$SANDBOX_DIR/.workspace/output/.<provider>/` will be absent or empty and the move is skipped. `$SANDBOX_DIR/.<provider>/` retains its prior state.
 
 ### Apply workflow
 
 On the host, `scripts/apply_workspace.sh` applies `staged.diff` to `PROJECT_DIR` on the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_DIR` is a git repository with at least one commit before applying.
 
-The operator reviews `staged.diff` before applying. If rejected, `.workspace/` contents are discarded — the host repository is unchanged. Provider config changes in `SANDBOX_DIR` are not rolled back — they represent the agent's actual config state at session end.
+The operator reviews `staged.diff` before applying. If rejected, `.workspace/` contents are discarded — the host repository is unchanged. Provider config changes in `$SANDBOX_DIR/.<provider>/` are not rolled back — they represent the agent's actual config state at session end.
 
 ---
 

@@ -4,49 +4,68 @@
 # Tagged as hermes-base (no project suffix — contains no project-specific content).
 # Built by scripts/build_container.sh --type=agent --provider=hermes.
 #
-# Based on the upstream Docker PR: NousResearch/hermes-agent#1841
-# Applies reviewer suggestions: layered apt, --no-cache-dir, npm ci,
-# pinned base image, combined RUN steps for smaller layers.
+# Multi-stage build: builder compiles Python packages; runtime copies the venv
+# without carrying build tools (gcc, python3-dev, libffi-dev) into the final image.
 #
-# Installation approach follows the official install script:
-# https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh
-# Key alignments:
-#   - uv used for Python dependency management instead of pip directly
-# Note: mini-swe-agent submodule was removed in hermes-agent#2804 — all terminal
-# backends are now inlined. Plain git clone is sufficient; no submodule init needed.
-FROM debian:bookworm
+# Based on the upstream Docker PR: NousResearch/hermes-agent#1841 (Aralobster rewrite)
+# Key changes vs original:
+#   - Multi-stage build — build tools excluded from runtime image
+#   - python:3.11-slim base — pinned Python version, smaller than debian:bookworm
+#   - Node.js 20 via NodeSource — current LTS, explicit version pin
+#   - Playwright removed — use Browserbase/CDP instead
+#   - uv used exclusively for venv creation and package installation
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH=/usr/local/bin:$PATH
+# ── Stage 1: Builder ────────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
-# -------------------------
-# System packages (root)
-# -------------------------
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        bash curl git ca-certificates \
-        nodejs npm \
-        python3 python3-pip \
-        ripgrep ffmpeg \
-        gcc python3-dev libffi-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc python3-dev libffi-dev git curl \
     && rm -rf /var/lib/apt/lists/*
 
-# -------------------------
-# Install uv (fast Python package manager)
-# -------------------------
-RUN pip install uv --break-system-packages --no-cache-dir
+# Node.js 20 (WhatsApp bridge, MCP servers)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
-# -------------------------
-# Install Hermes from source (root)
-# -------------------------
-RUN git clone https://github.com/NousResearch/hermes-agent /opt/hermes
+# Install uv via official installer — used exclusively for venv + packages
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
 WORKDIR /opt/hermes
 
-RUN uv venv venv --python 3.11
-ENV VIRTUAL_ENV=/opt/hermes/venv
-ENV PATH="/opt/hermes/venv/bin:$PATH"
+# Clone Hermes source
+RUN git clone https://github.com/NousResearch/hermes-agent /opt/hermes
 
-RUN uv pip install -e ".[all]" --no-cache-dir
+# Create venv and install all extras via uv
+RUN uv venv /opt/venv --python 3.11 && \
+    uv pip install --python /opt/venv/bin/python --no-cache-dir -e ".[all]"
 
-RUN npm ci && \
-    npx playwright install --with-deps chromium
+# Install npm dependencies (no devDependencies)
+RUN npm install --omit=dev
+
+# ── Stage 2: Runtime ────────────────────────────────────────────
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl ca-certificates \
+        ripgrep ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 20 runtime (no build tools needed)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# uv in runtime — needed for MCP tool support at runtime
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Copy built venv and Hermes source from builder
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/hermes /opt/hermes
+
+WORKDIR /opt/hermes
+
+ENV PATH="/opt/venv/bin:/root/.local/bin:/usr/local/bin:$PATH" \
+    VIRTUAL_ENV="/opt/venv" \
+    PYTHONUNBUFFERED=1
