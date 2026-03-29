@@ -19,6 +19,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | **Two-Layer Architecture** | |
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
+| M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -42,40 +43,6 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 
 Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
 Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion
-
-#### M2.2 — Reasoning Layer Modularisation
-
-**Objective:** Extract shared harness logic from OpenCode-specific scripts so that any reasoning layer provider can be added without rewriting shared infrastructure.
-
-**Depends on:** M2.1. **Scope:** Move `start_agent.sh` to `scripts/` as the provider-agnostic entry point. Define the provider interface under `providers/<n>/`. Validate OpenCode and Hermes both conform. Base image split, provider config lifecycle, and build system unified.
-
-Provider interface established and both providers conforming. Shared harness logic extracted into `scripts/` and `libs/`. Compose files generated as tmpfiles per run — never written to `SANDBOX_DIR`. Build system unified under `scripts/build_container.sh`; providers discovered by glob.
-
-Provider config lifecycle implemented: `libs/provider-entrypoint.sh` seeds default config into `AGENT_HOME` at container start (seed-if-missing per file), registers EXIT trap for copy-out, then execs the agent. Host-side persist step in `run_agent.sh` moves copy-out to `$SANDBOX_DIR/.<provider>/` after container exits. Provider declares defaults in `providers/<n>/config/`; harness injects them via build context.
-
-Hermes base image rebuilt as multi-stage build: build tools (`gcc`, `python3-dev`, `libffi-dev`) excluded from runtime image; `python:3.11-slim` base replaces `debian:bookworm`; Node.js 20 via NodeSource replaces apt default; `uv` used exclusively for venv creation and package installation; Playwright removed (~2GB reduction).
-
-**Decisions:**
-- `agent-base` image type deferred — common dependency list not yet stable. When introduced, take reference from `providers/hermes/base.Dockerfile` for: multi-stage build pattern, `python:3.11-slim` + Node 20 via NodeSource, and exclusive `uv` usage for venv and package management.
-
-**Tasks:**
-
-- [ ] Claude Desktop provider integration — investigation resolved; viable pending prototype; full task list at implementation time
-- [ ] Pi provider integration — investigation resolved; `start`, `dry-run` supported; `serve` unsupported (RPC bridge is a future path); full task list at implementation time
-
-**Acceptance criteria:**
-- [x] `make dry-run PROVIDER=opencode` passes after refactor
-- [x] `make dry-run PROVIDER=hermes` passes
-- [x] `make serve PROVIDER=opencode` resolves serve overlay from `providers/opencode/` (not `SANDBOX_DIR`)
-- [x] `agent-sandbox onboard` produces `.env` with stubs from all `providers/*/env.example`; no `docker-compose.serve.yml` in `SANDBOX_DIR`
-- [x] `scripts/start_agent.sh` contains no compose invocation; all compose calls are in `providers/<n>/run.sh`
-- [x] `make build PROVIDER=hermes` builds `hermes-agent-<project>` image
-- [x] `make build` builds sandbox + all providers
-- [x] On `make start PROVIDER=hermes`, Hermes config files present in `AGENT_HOME` before agent command runs
-- [x] After agent exits, `$SANDBOX_DIR/.hermes/` contains the session's final config state
-- [x] `providers/hermes/docker-compose.hermes.yml` has no bind mounts for Hermes config files
-- [x] `make start PROVIDER=opencode` functions correctly with new entrypoint wrapper
-- [ ] A second provider can be added under `providers/<n>/` with `base.Dockerfile`, `provider.Dockerfile`, `docker-compose.serve.yml`, `.env.example` — no changes to `scripts/` or `libs/` required (confirmed structurally; proven empirically when a third provider is added)
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 

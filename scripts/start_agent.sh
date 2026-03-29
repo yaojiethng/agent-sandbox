@@ -221,9 +221,24 @@ if [[ -n "$AGENT_BRIEF" ]]; then
 fi
 
 # -------------------------
+# Stop any running session containers
+# -------------------------
+# Checks for containers with the project's compose label before calling stop.sh.
+# Avoids noise from stop.sh's "no containers found" message on a clean start.
+# stop.sh uses Docker Compose project labels — catches all containers for this
+# project regardless of which provider ran previously.
+_COMPOSE_PROJECT="${PROJECT_NAME,,}"
+_COMPOSE_PROJECT="${_COMPOSE_PROJECT//[^a-z0-9-]/-}"
+if [[ -n "$(docker ps -aq --filter "label=com.docker.compose.project=${_COMPOSE_PROJECT}")" ]]; then
+  echo "Stopping previous session ($PROJECT_NAME)..."
+  "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+fi
+unset _COMPOSE_PROJECT
+
+# -------------------------
 # Preflight
 # -------------------------
-preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
 
 # -------------------------
 # Dispatch to run_agent.sh

@@ -61,3 +61,12 @@ Harness artefacts — snapshot, brief, workspace output — moved from `PROJECT_
 The single container was split into two. The capability layer initialises `sandbox/` from the project snapshot, records a baseline git commit, and writes `staged.diff` on exit via an EXIT trap. The reasoning layer attaches to `sandbox/` through Docker's `--volumes-from` mechanism and cannot start if the capability layer is not healthy — enforcing the ownership boundary at the infrastructure level. Docker Compose manages the two-container lifecycle; Compose files are generated from templates at each run. Build context for each image is assembled into a `mktemp` directory by `build_context` and discarded after the build, replacing the `image-files.txt` manifest. Onboarded template files carry a version tag; `build_sandbox.sh` detects stale installed files and prints a targeted refresh command. `make onboard` and `make refresh` targets in the repo Makefile handle the dogfood sandbox.
 
 ---
+
+## M2.2 — Reasoning Layer Modularisation
+
+*Any reasoning layer provider can now be added under `providers/<n>/` without modifying shared harness scripts or libraries.*
+
+The provider interface was formalised: each provider supplies a `base.Dockerfile` (stable install layers), a `provider.Dockerfile` (runtime config and entrypoint), a serve overlay, and an `.env.example`. The harness discovers providers by glob and injects harness-owned files (`provider-entrypoint.sh`, `dirs.sh`, default config) into the build context at build time. Provider config lifecycle is handled inside the container: `provider-entrypoint.sh` seeds default config into `AGENT_HOME` on first run (seed-if-missing per file), registers an EXIT trap for copy-out, then execs the agent. The host-side persist step in `run_agent.sh` moves copy-out state to `$SANDBOX_DIR/.<provider>/` after container exit, giving each provider persistent config across sessions. Three providers now conform to the interface: OpenCode, Hermes (with a multi-stage base image reducing image size by ~2GB), and Pi. `make start` was hardened to stop any prior session before starting a new one.
+
+---
+

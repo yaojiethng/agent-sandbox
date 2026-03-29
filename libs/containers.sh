@@ -196,12 +196,14 @@ build_all() {
 # Preflight
 # -------------------------
 
-# preflight <provider> <project_name> <repo_root>
-# Checks that both images exist. Errors with build instructions if not.
+# preflight <provider> <project_name> <repo_root> <sandbox_dir>
+# Checks that both images exist. Build before running rather than failing.
+# Equivalent to the operator running: make build TARGET=<provider>,sandbox
 preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
+  local sandbox_dir="${4:?preflight requires sandbox dir}"
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -217,8 +219,8 @@ preflight() {
   fi
 
   if [[ "$missing" == true ]]; then
-    echo "One or more required images are missing. Build them with:"
-    echo "  agent-sandbox build all --name=$project --sandbox=<path>"
-    exit 1
+    echo "One or more required images are missing. Building them now."
+    build_sandbox "$project" "$sandbox_dir" "$repo_root"
+    build_agent   "$provider" "$project" "$repo_root"
   fi
 }
