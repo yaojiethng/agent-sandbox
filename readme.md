@@ -1,4 +1,4 @@
-> **Current milestone status:** see the active handover in `handovers/` (most recent `YYYYMMDD-NN-*.md`).
+> **Current milestone status:** see the active handover in `docs/devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
 
 # Autonomous Coding Agent Sandbox
 
@@ -85,3 +85,6 @@ This repository separates concerns into three categories:
 - **Roadmap** → What may happen later
 
 Future design work and planned features are tracked in the roadmap rather than architecture documentation.
+
+
+   This work is licensed under a [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).

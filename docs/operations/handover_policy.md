@@ -29,7 +29,7 @@ YYYYMMDD-NN-TYPE-description.md
 
 Example: `20260316-02-workflow-policy_audit.md`
 
-Stored in the `handovers/` directory at repo root. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
+Stored in the `docs/devlog/handovers/` directory. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
 
 ---
 
