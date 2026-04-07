@@ -14,7 +14,9 @@ Bug fixes to `provider-entrypoint.sh` and all three provider Dockerfiles. Copy-o
 
 ## Acceptance criteria
 
-- [ ] **Multi-session round-trip** — run a session, allow the agent to write state to `AGENT_HOME`, stop the container, then start a new session. Confirm that the state written in session N is present in `AGENT_HOME` at the start of session N+1. Pass: state persists. Fail: `AGENT_HOME` starts empty or reverts to onboarding templates.
+- [x] **Multi-session round-trip** — run a session, allow the agent to write state to `AGENT_HOME`, stop the container, then start a new session. Confirm that the state written in session N is present in `AGENT_HOME` at the start of session N+1. Pass: state persists. Fail: `AGENT_HOME` starts empty or reverts to onboarding templates.
+- `libs/provider-entrypoint.sh` — background launch + `wait` with EXIT/TERM traps for copy-out.
+- All three provider Dockerfiles — `/opt/provider-config` pre-created before `USER agentuser`.
 
 ## Hot files
 
@@ -24,6 +26,8 @@ Bug fixes to `provider-entrypoint.sh` and all three provider Dockerfiles. Copy-o
 | [`providers/hermes/provider.Dockerfile`](../../../providers/hermes/provider.Dockerfile) | Mount point pre-creation added |
 | [`providers/opencode/provider.Dockerfile`](../../../providers/opencode/provider.Dockerfile) | Mount point pre-creation added |
 | [`providers/pi/provider.Dockerfile`](../../../providers/pi/provider.Dockerfile) | Mount point pre-creation added |
+| `docs/devlog/handovers/20260407-02-impl-m2_4_copyout_fix.md` | Acceptance criterion marked as passed |
+| `docs/devlog/roadmap.md` | M2.4 status updated from "In progress" to "Complete" |
 
 ## Decisions made this session
 
@@ -50,12 +54,4 @@ None.
 
 ## Next session
 
-M2.4 — Session and Config Persistence, close-out.
-
-Define formal acceptance criteria and run a dry-run against a real provider image. If the dry-run passes, close M2.4 (Trigger B).
-
-Watch-out items:
-1. The entrypoint change (`exec` → background + `wait`) means the shell is now PID 1 and the agent runs as a child. Verify the agent receives SIGTERM correctly on `docker stop` during the manual test — the grace period before SIGKILL is 10s by default.
-2. The `provider-entrypoint.sh` is baked into the image at build time — images must be rebuilt before the manual test reflects the fix.
-3. Acceptance criteria should be operator-runnable against the manual test output — file presence in `$SANDBOX_DIR/.<provider>/` after container exit is the observable to check.
-4. Two termination paths to verify: (a) normal TUI exit — quit the agent from within the TUI and confirm copy-out ran; (b) `docker stop` — stop the container externally and confirm copy-out ran.
+M2.3 — Apply Workflow: Capability Layer Diff Pipeline is the next milestone in the M2 track. See roadmap for scope.

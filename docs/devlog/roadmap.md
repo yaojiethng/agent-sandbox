@@ -20,9 +20,10 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
-| [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | In progress |
+| [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
 | M2.3 — Apply Workflow: Capability Layer Diff Pipeline | Not started |
 | M2.5 — Vault Capability Layer Prototype | Not started |
+| M2.6 — Session Resume Across Provider Implementations | Not started |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -51,19 +52,43 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Establish the provider config lifecycle — onboarding-time population, copy-in at session start, copy-out at session end — replacing the implicit image-baking convention with an explicit bind-mount model.
 
-**Depends on:** M2.2. **Scope:** Design settled; implementation artifacts applied. Copy-out workflow validated (normal exit + SIGTERM). Remaining: define formal acceptance criteria and run a dry-run against a real provider image to close the milestone. See handover `20260407-02-impl-m2_4_copyout_fix.md`.
+**Depends on:** M2.2. **Status:** Complete. Design settled; implementation artifacts applied. Copy-out workflow validated (normal exit + SIGTERM). Acceptance criteria met — see handover `20260407-03-close-m2_4.md`.
+
+**Scope note:** M2.4 established the infrastructure for state to survive between sessions (home directory bind mount, config copy-in/out). It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
-**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.
+**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
 
-**Depends on:** M2.1. **Scope:** Formalise checkpoint branch pattern as standard apply convention (composing with or superseding `patch.diff` model). Resolve checkpointing method (clean git ref vs working tree). Evaluate pre-session checkpoint automation. Implement diff pipeline in capability layer. Update `apply_workspace.sh` for checkpoint branches.
+**Depends on:** M2.1. **Status:** Scoped — see `docs/devlog/discussions/design_git_workflow_improvements.md`. Ready for implementation.
+
+**Four changes in scope:**
+
+- **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/YYYYMMDD-HHMMSS` tag before each session. Derive `SESSION_NAME` as `<sanitized-branch>-<timestamp>` and pass to container as env var. Prune to last 5 checkpoint tags.
+
+- **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/changes/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit.
+
+- **Change 3 — draft/confirm/reject workflow** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (applies patches to `agent/draft/<session-name>` branch via `git am`, resets author identity), `make confirm` (rebases draft onto target, fast-forward merges, deletes draft branch — linear history always), `make reject` (discards draft branch). State held in `.workspace/draft-state`. `make apply --mode=apply` retained as legacy fallback.
+
+- **Change 4 — rsync snapshot** (`libs/snapshot.sh`, `start_agent.sh`): Replace `snapshot_enumerate_files` + `snapshot_copy_files` with `snapshot_copy_worktree` using `rsync -a --filter=':- .gitignore' --exclude='.git'`. Snapshot reflects working tree directly, not the git index. Submodule pre-flight check retained. Known limitation: global gitignore and `.git/info/exclude` not respected — documented.
 
 #### M2.5 — Vault Capability Layer Prototype
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
 **Depends on:** M2.1, M2.2, M2.3. **Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+
+#### M2.6 — Session Resume Across Provider Implementations
+
+**Objective:** Define and implement true session persistence — the ability to resume a prior conversation — for each supported provider. M2.4 established that state survives between sessions; M2.6 defines what resuming that state actually means per provider and how the harness supports it.
+
+**Depends on:** M2.4. **Scope:** Investigation-first. Characterise session file format, export mechanism, and resume invocation for pi, Hermes, and opencode. Design harness support based on findings. Known starting points:
+
+- **pi**: requires explicit `pi export` to write session files; resume requires session ID and specific invocation flags. Neither is currently triggered or passed by the harness.
+- **Hermes**: assumed to live-load conversation history from home directory on startup — not validated.
+- **opencode**: session persistence mechanism unknown. Requires investigation before any design work.
+
+Each provider may result in a different integration pattern. Investigation findings should be recorded as named investigation documents before implementation begins.
 
 ---
 
@@ -89,11 +114,11 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
-- **Stale git index causes cryptic snapshot failures** — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. Fix with `git rm --cached <file>` followed by a commit. A future hardening pass should add existence validation in `snapshot_enumerate_files` to produce a clear error rather than a mid-pipeline `cp` failure.
+- **Stale git index causes cryptic snapshot failures** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. M2.3 replaces this pipeline with rsync, eliminating the index-driven enumeration entirely.
 
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
 
-- **Snapshot breaks on uncommitted moves and deletes** — `snapshot_enumerate_files` uses `git ls-files` which reflects the committed index, not the working tree. If files have been moved or deleted but the changes are not yet staged, `git ls-files` still lists the old paths. `snapshot_copy_files` will fail with `cp: cannot stat` for deleted files, or copy the old path instead of the new path for moves. Fix by staging and committing (or at minimum staging) changes before running the harness.
+- **Snapshot breaks on uncommitted moves and deletes** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` uses `git ls-files` which reflects the committed index, not the working tree. If files have been moved or deleted but the changes are not yet staged, `git ls-files` still lists the old paths. `snapshot_copy_files` will fail with `cp: cannot stat` for deleted files, or copy the old path instead of the new path for moves. M2.3 replaces this pipeline with rsync, which copies working tree state directly.
 
 - **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
 

@@ -161,3 +161,38 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 ### Capability Layer — Live Mount
 
 The current model standardises on a sandbox copy in the capability layer container for all workflows. A live mount of the host project directory directly into the capability layer container is a potential UX improvement — changes would be visible on the host immediately during a session rather than after the operator applies the diff. This may also be useful for coding workflows where incremental visibility is valuable. Deferred until the copy pattern has been validated at scale and a concrete use case justifies the added complexity in the diff pipeline.
+
+---
+
+### Pipeline Replacement — Git Worktree Model
+
+**Candidate for post-M2.3 architectural revision.**
+
+Investigation documented in [`docs/devlog/discussions/investigation_git_worktrees.md`](discussions/investigation_git_worktrees.md).
+
+**What it is:** Replace the snapshot + diff + apply pipeline with a `git worktree` per session. The agent's working directory is a real git worktree on a dedicated branch inside PROJECT_DIR's repo. On session end, the branch is already committed — no diff generation, no apply script. The operator reviews via `git log`/`git diff` and merges or discards the branch.
+
+**Why deferred:** Requires the operator to accept three assumptions that are not universally true today: (1) commit history is clean (no secrets ever committed); (2) the agent container runs with `--network=none` (no remote git operations); (3) main branch protection via filesystem-level read-only ref locking is acceptable. Under those assumptions, the model is technically clean and architecturally simpler.
+
+**Key feasibility findings:**
+- Gitignore filtering is naturally preserved — worktrees contain only tracked files, `.env` and secrets don't materialise in the worktree directory.
+- Remote blocking: `--network=none` on the agent container. Single-line compose change.
+- Main branch protection: `git pack-refs --all` + `chmod a-w .git/packed-refs` after worktree creation; restored after session exit. Syscall-level, cannot be bypassed by the agent.
+- The capability layer's join phase simplifies to "commit pending changes" — the full diff pipeline is eliminated.
+- `staged.diff` review artefact is replaced by `git diff main..agent/session` — richer, no dedicated tooling needed.
+
+**Pipeline comparison:**
+
+| Step | Current (snapshot+diff) | Worktree |
+|---|---|---|
+| Enumerate project files | `git ls-files` | (not needed) |
+| Copy files to sandbox | `cp -a` → `.snapshot/` → Docker volume | (not needed) |
+| Init git in sandbox | `git init` + baseline commit | (not needed) |
+| Agent works | in Docker volume | in worktree (bind mount) |
+| Commit pending on exit | yes | yes |
+| Generate diff | `git diff BASELINE..HEAD` | (not needed) |
+| Generate patches | `git format-patch` (M2.3) | (not needed) |
+| Apply to PROJECT_DIR | `git am` or `git apply` | (not needed — already there) |
+| Operator review | reads `staged.diff` file | `git log`/`git diff` on branch |
+
+**Promote when:** M2.3 is complete and validated, and the operator confirms the three assumptions hold for their workflow.
