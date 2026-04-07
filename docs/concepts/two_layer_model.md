@@ -4,7 +4,7 @@
 
 ---
 
-> **Context:** This document records the conceptual model and the decision. Implementation details are distributed across [`execution_model.md`](../architecture/execution_model.md), [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md), and [`container_model.md`](../architecture/container_model.md). The reasoning behind this decision is in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion section.
+> **Context:** This document records the conceptual model and the decision. Implementation details are distributed across [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md), and [`execution_model.md `](../architecture/execution_model.md ). The reasoning behind this decision is in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion section.
 
 ---
 
@@ -56,7 +56,7 @@ The following documents implement this conceptual model:
 |---|---|
 | [`execution_model.md`](../architecture/execution_model.md) | Directory layout, invocation model, index to mechanism documents |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
-| [`container_model.md`](../architecture/container_model.md) | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences |
+| [`execution_model.md `](../architecture/execution_model.md ) | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences |
 | [`tool_interface.md`](../architecture/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
 | [`security.md`](../architecture/security.md) | Trust boundaries and security invariants |
 

@@ -5,21 +5,21 @@
 # a Docker layer cache miss on the COPY step in provider.Dockerfile.
 #
 # Responsibilities:
-#   1. Seed provider config files into AGENT_HOME if they are absent (first run).
-#      Source: /opt/context/config/ — baked into the image via build context.
-#      Each file is seeded independently; existing files are never overwritten.
-#   2. Register an EXIT trap to copy AGENT_HOME back to workspace/output/.<provider>/
-#      (copy-out). Fires on all exits: normal, interrupt, docker stop.
+#   1. Copy provider config from /opt/provider-config/ (bind-mounted from
+#      $SANDBOX_DIR/.<provider>/ on the host) into AGENT_HOME. Runs every
+#      session start — first run seeds from onboarding templates, subsequent
+#      runs resume from prior session state.
+#   2. Register an EXIT trap to copy AGENT_HOME back to /opt/provider-config/
+#      (persist). Fires on all exits: normal, interrupt, docker stop.
 #   3. exec the provider's real entrypoint command, replacing this process.
 #
 # Environment (set via ENV in provider.Dockerfile):
 #   AGENT_HOME     — provider config dir inside the container (e.g. /home/agentuser/.hermes)
 #   PROVIDER_NAME  — provider name (e.g. hermes, opencode)
 #
-# Copy-out target:
-#   /home/agentuser/workspace/output/.<provider>/
-#   Bind-mounted from $SANDBOX_DIR/.workspace/output/ on the host.
-#   run_agent.sh moves it to $SANDBOX_DIR/.<provider>/ after the container exits.
+# Mount:
+#   /opt/provider-config/  — RW bind mount from $SANDBOX_DIR/.<provider>/ on the host.
+#                            Source for copy-in; target for copy-out.
 
 set -euo pipefail
 
@@ -33,29 +33,28 @@ if [[ -z "${PROVIDER_NAME:-}" ]]; then
   exit 1
 fi
 
-SEED_DIR="/opt/context/config"
-COPY_OUT_TARGET="/home/agentuser/workspace/output/.${PROVIDER_NAME}"
+PROVIDER_CONFIG_DIR="/opt/provider-config"
 
 # -------------------------
-# Seed config (first run)
+# Copy-in
 # -------------------------
-# Seeds files from /opt/context/config/ into AGENT_HOME if absent.
-# Each file is seeded independently — existing files are never overwritten.
-# env.stub is seeded as .env.
-if [[ -d "$SEED_DIR" ]]; then
+# Copies provider config from the bind-mounted host directory into AGENT_HOME.
+# On first run: host directory contains onboarding templates (populated by
+# agent-sandbox onboard). On subsequent runs: contains prior session state.
+if [[ -d "$PROVIDER_CONFIG_DIR" ]] && [[ -n "$(ls -A "$PROVIDER_CONFIG_DIR" 2>/dev/null)" ]]; then
   mkdir -p "$AGENT_HOME"
-  # -n prevents overwriting, -t specifies the target directory
-  # The dot at the end of SEED_DIR copies contents, not the folder itself
-  cp -rn "$SEED_DIR"/. "$AGENT_HOME/" 2>/dev/null
+  cp -r "$PROVIDER_CONFIG_DIR/." "$AGENT_HOME/"
 fi
 
 # -------------------------
 # Copy-out trap
 # -------------------------
+# Copies AGENT_HOME back to the bind-mounted host directory on exit.
+# Persists provider config and session state for the next run.
 _copy_out() {
   if [[ -d "$AGENT_HOME" ]] && [[ -n "$(ls -A "$AGENT_HOME" 2>/dev/null)" ]]; then
-    mkdir -p "$COPY_OUT_TARGET"
-    cp -r "$AGENT_HOME/." "$COPY_OUT_TARGET/"
+    mkdir -p "$PROVIDER_CONFIG_DIR"
+    cp -r "$AGENT_HOME/." "$PROVIDER_CONFIG_DIR/"
   fi
 }
 

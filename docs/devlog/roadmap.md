@@ -20,6 +20,9 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
+| [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | In progress |
+| M2.3 — Apply Workflow: Capability Layer Diff Pipeline | Not started |
+| M2.5 — Vault Capability Layer Prototype | Not started |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -44,17 +47,17 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
 Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion
 
+#### M2.4 — Session and Config Persistence
+
+**Objective:** Establish the provider config lifecycle — onboarding-time population, copy-in at session start, copy-out at session end — replacing the implicit image-baking convention with an explicit bind-mount model.
+
+**Depends on:** M2.2. **Scope:** Design settled this session; implementation artifacts produced but not yet applied or verified. See handover `20260407-01-design-session_config_persistence.md` for full task list and deferred items.
+
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.
 
 **Depends on:** M2.1. **Scope:** Formalise checkpoint branch pattern as standard apply convention (composing with or superseding `patch.diff` model). Resolve checkpointing method (clean git ref vs working tree). Evaluate pre-session checkpoint automation. Implement diff pipeline in capability layer. Update `apply_workspace.sh` for checkpoint branches.
-
-#### M2.4 — Session Persistence (Reasoning Layer)
-
-**Objective:** Preserve OpenCode session history across container runs.
-
-**Depends on:** M2.2. **Scope:** Provider-specific reasoning layer concern. Identify host-side storage, add session DB mount, verify persistence across restarts.
 
 #### M2.5 — Vault Capability Layer Prototype
 

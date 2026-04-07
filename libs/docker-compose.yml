@@ -6,6 +6,7 @@
 #   {{PROJECT_NAME}}       → project name
 #   {{SANDBOX_IMAGE_NAME}} → capability layer image name
 #   {{AGENT_IMAGE_NAME}}   → reasoning layer image name
+#   {{PROVIDER_NAME}}      → provider name (e.g. hermes, opencode)
 #
 # ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
 # from the exported environment (.env path variables and secrets).
@@ -55,6 +56,9 @@ services:
       - type: bind
         source: ${OUTPUT_DIR}
         target: /home/agentuser/workspace/output
+      - type: bind
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}
+        target: /opt/provider-config
     environment:
       - INPUT_DIR_NAME=workspace/input
       - OUTPUT_DIR_NAME=workspace/output
