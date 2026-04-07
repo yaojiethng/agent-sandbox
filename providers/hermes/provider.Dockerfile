@@ -25,6 +25,7 @@ COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 # Non-root user
 # -------------------------
 RUN useradd -m -u 1001 -s /bin/bash agentuser
+RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # -------------------------

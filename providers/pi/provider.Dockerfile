@@ -10,6 +10,7 @@ COPY dirs.sh /libs/dirs.sh
 COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
 RUN useradd -m -u 1001 -s /bin/bash agentuser
+RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # AGENT_HOME — Pi's config and state directory inside the container.

@@ -51,7 +51,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Establish the provider config lifecycle — onboarding-time population, copy-in at session start, copy-out at session end — replacing the implicit image-baking convention with an explicit bind-mount model.
 
-**Depends on:** M2.2. **Scope:** Design settled this session; implementation artifacts produced but not yet applied or verified. See handover `20260407-01-design-session_config_persistence.md` for full task list and deferred items.
+**Depends on:** M2.2. **Scope:** Design settled; implementation artifacts applied. Copy-out workflow validated (normal exit + SIGTERM). Remaining: define formal acceptance criteria and run a dry-run against a real provider image to close the milestone. See handover `20260407-02-impl-m2_4_copyout_fix.md`.
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 

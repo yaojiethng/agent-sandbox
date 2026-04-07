@@ -11,7 +11,8 @@
 #      runs resume from prior session state.
 #   2. Register an EXIT trap to copy AGENT_HOME back to /opt/provider-config/
 #      (persist). Fires on all exits: normal, interrupt, docker stop.
-#   3. exec the provider's real entrypoint command, replacing this process.
+#   3. Run the provider's real entrypoint command as a child process and wait
+#      for it to exit, forwarding SIGTERM/INT so docker stop works correctly.
 #
 # Environment (set via ENV in provider.Dockerfile):
 #   AGENT_HOME     — provider config dir inside the container (e.g. /home/agentuser/.hermes)
@@ -61,6 +62,20 @@ _copy_out() {
 trap '_copy_out' EXIT
 
 # -------------------------
-# Exec provider command
+# Run provider command
 # -------------------------
-exec "$@"
+# Do NOT exec here. exec replaces this shell process, which discards the EXIT
+# trap registered above — copy-out would never run.
+#
+# Instead: launch the agent as a background child, capture its PID, forward
+# SIGTERM/INT (sent by docker stop / Ctrl-C) to it, then wait. When wait
+# returns the EXIT trap fires and copy-out runs.
+"$@" &
+AGENT_PID=$!
+
+_forward_signal() {
+  kill -TERM "$AGENT_PID" 2>/dev/null || true
+}
+trap '_forward_signal' TERM INT
+
+wait "$AGENT_PID"
