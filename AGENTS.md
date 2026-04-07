@@ -32,6 +32,44 @@ You operate in three modes, often in combination:
 
 ---
 
+## Session Start
+
+Read these in order before doing anything else:
+
+1. The most recent handover — find it with:
+   `ls -t docs/devlog/handovers/ | head -1`
+   then read it in full.
+2. `docs/development/roadmap.md` — active sub-milestone and pending tasks.
+3. `docs/development/agent_context_brief.md` — collaboration protocol and policy links.
+
+The Hot files section of the handover lists the files in scope for this session. Do not read beyond this list without justification stated in chat first.
+
+---
+
+## Read Discipline
+
+Before opening any file, run a grep to establish whether it contains what you need. The permitted first action when exploring scope is always a grep, never a file read.
+
+To find files containing a term:
+```
+grep -rn "TERM" path/
+```
+
+To get a section map before reading a document:
+```
+grep -n "^##" filename.md
+```
+
+Open a file in full only when:
+- It is listed in the handover's Hot files section, or
+- It is the direct subject of the task, or
+- It is under 40 lines, or
+- The grep result is insufficient and you can state specifically why
+
+Before opening any file not in the Hot files list, state in chat what you need from it and why grep is insufficient. A file read without a prior grep or explicit justification is a protocol violation.
+
+---
+
 ## Collaboration Protocol
 
 **Plan before executing.** State your plan and intended file changes before making them. If the task is ambiguous, ask the most important clarifying question first — one question at a time.
@@ -42,21 +80,11 @@ You operate in three modes, often in combination:
 
 **Scope discipline.** Address only what was asked. Flag adjacent issues separately — never fix them silently.
 
+**Read before write.** Do not edit a file you have not read this session. If a file is not in the Hot files list and you need to edit it, read it first and state in chat why it entered scope.
+
 **Decisions are final.** Do not re-open a decision without a specific technical reason.
 
 **Distinguish current from proposed.** Never blur the description of the existing system with a proposal for change.
-
----
-
-## Working with the Repository
-
-Read the project's own documentation before making changes. Key entry points:
-
-- `readme.md` — system invariants and architecture overview
-- `docs/development/roadmap.md` — current milestone and pending tasks
-- The most recent `docs/devlog/handovers/YYYYMMDD-NN-TYPE-*.md` — where the last session ended
-
-Use targeted file reads rather than reading entire directories. Establish what you need from a file before opening it in full.
 
 ---
 
