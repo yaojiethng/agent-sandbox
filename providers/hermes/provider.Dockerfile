@@ -11,8 +11,6 @@
 #   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
 #   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
 #                   and registers copy-out trap before exec-ing hermes
-#   config/       — default config files baked into /opt/context/config/ via
-#                   build context; seeded into AGENT_HOME if absent at startup
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 
@@ -24,17 +22,10 @@ COPY dirs.sh /libs/dirs.sh
 COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
 # -------------------------
-# Provider config seed (root, before USER switch)
-# -------------------------
-# Default config files from providers/hermes/config/, injected by
-# build_context_agent. Seeded into AGENT_HOME by provider-entrypoint.sh
-# at container start if files are absent.
-COPY config/ /opt/context/config/
-
-# -------------------------
 # Non-root user
 # -------------------------
 RUN useradd -m -u 1001 -s /bin/bash agentuser
+RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # -------------------------

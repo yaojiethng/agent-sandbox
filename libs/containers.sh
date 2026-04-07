@@ -89,8 +89,9 @@ build_context_sandbox() {
 
 # build_context_agent <repo_root> <provider>
 # Creates and populates a temp dir with files required for an agent image build.
-# Injects harness-owned files (dirs.sh, provider-entrypoint.sh) and the
-# provider's default config files (providers/<n>/config/) if present.
+# Injects harness-owned files (dirs.sh, provider-entrypoint.sh).
+# Provider config is not baked into the image — it is populated at onboard time
+# into $SANDBOX_DIR/.<provider>/ and bind-mounted at runtime.
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_agent() {
   local repo_root="${1:?build_context_agent requires repo_root}"
@@ -98,26 +99,11 @@ build_context_agent() {
   local context_dir
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
-
+ 
   # Harness-owned files — required for all providers.
   _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
-
-  # Provider default config — optional. Copied flat into context_dir/config/
-  # so provider.Dockerfile can COPY config/ /opt/context/config/.
-  # If providers/<n>/config/ is absent or empty, the COPY in the Dockerfile
-  # will produce an empty /opt/context/config/ and seeding is skipped at runtime.
-  local provider_config_dir="$repo_root/providers/$provider/config"
-  if [[ -d "$provider_config_dir" ]] && [[ -n "$(ls -A "$provider_config_dir" 2>/dev/null)" ]]; then
-    mkdir -p "$context_dir/config"
-    cp "$provider_config_dir"/. "$context_dir/config/" 2>/dev/null || \
-    cp -r "$provider_config_dir/." "$context_dir/config/"
-  else
-    # Create empty config dir so the COPY instruction in the Dockerfile does
-    # not fail if providers/<n>/config/ has not been created yet.
-    mkdir -p "$context_dir/config"
-  fi
-
+ 
   echo "$context_dir"
 }
 

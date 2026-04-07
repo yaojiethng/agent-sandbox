@@ -9,10 +9,8 @@ FROM ${BASE_IMAGE}
 COPY dirs.sh /libs/dirs.sh
 COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
-# Provider config seed — injected by build_context_agent from providers/pi/config/.
-COPY config/ /opt/context/config/
-
 RUN useradd -m -u 1001 -s /bin/bash agentuser
+RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # AGENT_HOME — Pi's config and state directory inside the container.

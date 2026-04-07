@@ -25,15 +25,18 @@
 #     wslpath 'C:\Users\you\Projects\my-project'
 #
 # What this script produces in SANDBOX_DIR:
-#   docker-compose.dry-run.yml   — dry-run overlay
 #   Makefile                     — from template, PROJECT_NAME substituted
 #   agents.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
 #   .workspace/output/           — reasoning layer output channel
 #   .workspace/changes/          — diff pipeline output
 #   .env                         — paths + operator var stubs
+#   .<provider>/                 — provider config dir, seeded from providers/<n>/config/
+#                                  for each provider present in the repo
 #
 # The operator must review agents.md and .env before the first run.
+# Provider config stubs in .<provider>/ must be populated with real values
+# (e.g. API keys) before the first run.
 # .env must never be committed.
 
 set -euo pipefail
@@ -219,8 +222,6 @@ template_version() {
 # Makefile
 # -------------------------
 MAKEFILE_VERSION=$(template_version "$TEMPLATES/Makefile.template")
-# Only PROJECT_NAME is substituted here — PROJECT_DIR and SANDBOX_DIR
-# are written to .env and read by the Makefile via -include .env.
 sed "s|<project-name>|$PROJECT_NAME|g" \
   "$TEMPLATES/Makefile.template" \
   > "$SANDBOX_DIR/Makefile"
@@ -264,8 +265,6 @@ INPUT_DIR="$SANDBOX_DIR/.workspace/input"
 OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
 
 if [[ "$REFRESH" == true ]]; then
-  # In refresh mode: update only the template version lines in the existing .env.
-  # Operator-set values (SERVE_PORT, provider credentials, etc.) are preserved.
   ENV_FILE="$SANDBOX_DIR/.env"
   if [[ -f "$ENV_FILE" ]]; then
     sed -i \
@@ -320,6 +319,39 @@ ENVEOF
 fi
 
 # -------------------------
+# Provider config seeding
+# -------------------------
+# For each provider that ships a config/ directory, copy its contents into
+# $SANDBOX_DIR/.<provider>/ as the starting state for the first session.
+# env.stub is renamed to .env — the agent expects .env; env.stub is the
+# committed name used to avoid .gitignore matches in the repo.
+# The operator must fill in secrets (e.g. API keys) before the first run.
+# These files are never baked into provider images.
+if [[ "$REFRESH" != true ]]; then
+  for PROVIDER_CONFIG_DIR in "$REPO_ROOT/providers/"*/config; do
+    if [[ ! -d "$PROVIDER_CONFIG_DIR" ]]; then
+      continue
+    fi
+    if [[ -z "$(ls -A "$PROVIDER_CONFIG_DIR" 2>/dev/null)" ]]; then
+      continue
+    fi
+
+    PROVIDER_NAME="$(basename "$(dirname "$PROVIDER_CONFIG_DIR")")"
+    PROVIDER_SANDBOX_DIR="$SANDBOX_DIR/.$PROVIDER_NAME"
+
+    mkdir -p "$PROVIDER_SANDBOX_DIR"
+    cp -r "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
+
+    # Rename env.stub to .env if present.
+    if [[ -f "$PROVIDER_SANDBOX_DIR/env.stub" ]]; then
+      mv "$PROVIDER_SANDBOX_DIR/env.stub" "$PROVIDER_SANDBOX_DIR/.env"
+    fi
+
+    echo "  Created: .$PROVIDER_NAME/ (provider config — fill in secrets before first run)"
+  done
+fi
+
+# -------------------------
 # Summary
 # -------------------------
 echo ""
@@ -335,8 +367,9 @@ else
   echo "Before running for the first time:"
   echo "  1. Edit $SANDBOX_DIR/agents.md — add project context for the agent"
   echo "  2. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
-  echo "  3. Run: make -C $SANDBOX_DIR build"
-  echo "  4. Run: make -C $SANDBOX_DIR dry-run"
+  echo "  3. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
+  echo "  4. Run: make -C $SANDBOX_DIR build"
+  echo "  5. Run: make -C $SANDBOX_DIR dry-run"
   echo ""
   echo "To start a session: make -C $SANDBOX_DIR start"
 fi

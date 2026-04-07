@@ -29,20 +29,49 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ---
 
-## Command Shapes
+## Commands
 
-| Command | Effect |
-|---|---|
-| `make build` | Build capability layer image + all provider images |
-| `make build TARGET=<n>` | Build named provider image only |
-| `make build TARGET=<n>,sandbox` | Build named provider image + capability layer image |
-| `make start PROVIDER=<n>` | Check images exist; start in standard mode |
-| `make serve PROVIDER=<n>` | Check images exist; start with provider serve overlay |
-| `make dry-run PROVIDER=<n>` | Check images exist; liveness check; tear down |
-| `make start PROVIDER=<n> REBUILD=1` | Rebuild capability layer + provider images, then start |
-| `make apply` | Apply `staged.diff` to host repo; optional `BRANCH=<n>` |
+### `make start PROVIDER=<provider> [REBUILD=1]`
 
-`make start`, `make serve`, and `make dry-run` require `PROVIDER` and error clearly if absent. Builds are not triggered unless `REBUILD=1` is passed.
+Stops any running session for this project, builds missing images if needed, snapshots the project, and starts the agent. The terminal attaches to the agent TUI.
+
+`PROVIDER` is required. `REBUILD=1` is optional — forces a full rebuild of all images from scratch before starting; without it, images are built only if missing.
+
+**Leaves behind:** `staged.diff` in `.workspace/changes/`; updated provider session state in `.<provider>/`.
+
+---
+
+### `make serve PROVIDER=<provider> [REBUILD=1]`
+
+Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
+
+`PROVIDER` is required. `REBUILD=1` behaves identically to `make start`.
+
+---
+
+### `make dry-run PROVIDER=<provider>`
+
+Starts both containers, verifies the sandbox initialises correctly, then tears down. No agent is started; no user input is accepted. Produces no `staged.diff`.
+
+`PROVIDER` is required. Use after a build or onboard to verify the harness is functional.
+
+---
+
+### `make build [TARGET=<provider>[,sandbox]]`
+
+Builds images. Safe to run at any time; does not start or stop any containers.
+
+`TARGET` is optional. Without it, all provider images and the sandbox image are built. `TARGET=<provider>` builds the named provider only. `TARGET=<provider>,sandbox` builds the named provider and the sandbox image.
+
+---
+
+### `make apply [BRANCH=<branch>]`
+
+Applies `staged.diff` to `PROJECT_DIR`. Does not commit.
+
+`BRANCH` is optional. If supplied, applies to a new branch checked out from current HEAD; otherwise applies to the current branch.
+
+**Review `staged.diff` before applying.** If rejected, discard `.workspace/changes/` — the host repository is unchanged.
 
 ---
 
@@ -66,12 +95,13 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Mount Shape Guarantees
 
-| Host path (`$VAR`) | Capability layer path | Reasoning layer path | Mode | Owner |
+| Host path | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
 | `$SNAPSHOT_DIR` | `/home/agentuser/.snapshot/` | — | RO | Harness — rebuilt before each run |
 | `$CHANGES_DIR` | `/home/agentuser/workspace/changes/` | — | RW | Harness — diff pipeline output |
 | `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
 | `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
+| `$SANDBOX_DIR/.<provider>/` | — | `/opt/provider-config/` | RW | Harness — provider config; seed and persist via entrypoint |
 | Docker anonymous volume | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker — owned by capability layer; shared via `--volumes-from` |
 
 `PROJECT_DIR` is never mounted. `sandbox/` is created by Docker at session start and destroyed on teardown (`down -v`). The reasoning layer can only access it while the capability layer is running.
@@ -89,6 +119,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `Makefile` | Copied from template by onboard | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands |
 | `.env` | Written by onboard | Machine-specific runtime variables; never committed |
 | `agents.md` | Stub written by onboard; operator-completed | Agent context brief |
+| `.<provider>/` | Copied from `providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
 `docker-compose.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are never written to `SANDBOX_DIR`. Compose files are generated as tmpfiles per run. The serve overlay and capability layer Dockerfile are repo-owned.
 
@@ -136,11 +167,11 @@ A conforming provider supplies the following under `providers/<n>/` in the repo:
 | `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
-| `config/` | Optional | Default config files seeded into `AGENT_HOME` at container start if absent; `env.stub` is seeded as `.env` |
-| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes; used when a provider requires env vars beyond the base compose template |
-| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars, pre-creates host-side directories |
+| `config/` | Optional | Onboarding template — copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
+| `docker-compose.<provider>.yml` | Optional | Provider-level overlay applied in all modes |
+| `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
-Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle via `scripts/build_container.sh` and `scripts/run_agent.sh`. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context — providers do not author it.
+Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context — providers do not author it.
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 

@@ -36,14 +36,14 @@ providers/<n>/
 **Optional:**
 ```
 providers/<n>/
-├── config/                       ← default config files; seeded into AGENT_HOME at container start
+├── config/                       ← onboarding template; copied to $SANDBOX_DIR/.<n>/ at onboard time
 ├── docker-compose.<n>.yml        ← provider overlay, merged in all modes if present
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
 Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by `build_context_agent` — providers do not author or maintain it.
 
-None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
+None of these files are copied to `SANDBOX_DIR` at run time. They live in the agent-sandbox repo and are referenced directly.
 
 ---
 
@@ -53,7 +53,7 @@ None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox 
 mkdir providers/<n>
 ```
 
-Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`, `claude-desktop`). This name becomes the `<provider>` component in image and container names (`<provider>-base`, `<provider>-agent-<project>`).
+Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`). This name becomes the `<provider>` component in image and container names (`<provider>-base`, `<provider>-agent-<project>`).
 
 ---
 
@@ -90,36 +90,33 @@ FROM ${BASE_IMAGE}
 COPY dirs.sh /libs/dirs.sh
 COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
-# Provider config seed — injected by build_context_agent from providers/<n>/config/.
-# Omit this line if the provider has no config/ directory.
-COPY config/ /opt/context/config/
-
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
 
 # AGENT_HOME — where the agent writes config and state inside the container.
-# PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
+# PROVIDER_NAME — used by provider-entrypoint.sh to identify the provider.
 ENV PROVIDER_NAME=<n>
 ENV AGENT_HOME=/home/agentuser/.<n>
 
 RUN mkdir -p /home/agentuser/workspace/input \
-             /home/agentuser/workspace/output
+             /home/agentuser/workspace/output \
+             /opt/provider-config
 
 WORKDIR /home/agentuser/sandbox
 
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
-# EXIT trap, then execs the agent command.
+# provider-entrypoint.sh copies /opt/provider-config/ into AGENT_HOME,
+# registers a copy-out EXIT trap, then execs the agent command.
 ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
 ```
 
-The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
+The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`.
 
-`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also injected from `providers/<n>/config/` if that directory exists.
+`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider.
 
-The agent brief and operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
+The agent brief and operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. `/opt/provider-config/` is bind-mounted from `$SANDBOX_DIR/.<provider>/` at runtime — do not bake config into the image.
 
 **Reference:** `providers/opencode/provider.Dockerfile`, `providers/hermes/provider.Dockerfile`
 
@@ -163,25 +160,25 @@ Variables that are always derivable from other `.env` values (e.g. image names) 
 
 ## Step 6 (optional) — Add `config/`
 
-If the provider requires default configuration files to be present before the agent starts, place them in:
+If the provider requires configuration files before the agent starts, place stubs in:
 
 ```
 providers/<n>/config/
 ```
 
-`build_context_agent` copies this directory into the build context. `provider.Dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
+`agent-sandbox onboard` copies this directory to `$SANDBOX_DIR/.<provider>/` during project setup. If `env.stub` is present, it is renamed to `.env` at this point — `env.stub` is the committed name used to avoid `.gitignore` matches in the repo.
 
-Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
+The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<provider>/` before the first run. At runtime, `provider-entrypoint.sh` copies the contents of `$SANDBOX_DIR/.<provider>/` (via the `/opt/provider-config/` bind mount) into `AGENT_HOME`. On exit, it copies `AGENT_HOME` back, persisting session state for the next run.
 
 ```
 providers/<n>/config/
-├── config.yaml     ← seeded as AGENT_HOME/config.yaml if absent
-└── env.stub        ← seeded as AGENT_HOME/.env if absent
+├── config.yaml     ← stub; operator fills in real values in $SANDBOX_DIR/.<n>/config.yaml
+└── env.stub        ← stub; renamed to .env in $SANDBOX_DIR/.<n>/ at onboard time
 ```
 
-Files in `config/` are stubs — they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
+Files in `config/` are stubs — they contain structure and comments only, not secrets. Provider config is never baked into the image. Do not add a `COPY config/` line to `provider.Dockerfile`.
 
-If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.Dockerfile`.
+If the provider has no config to seed, omit the `config/` directory entirely.
 
 ---
 
@@ -217,7 +214,7 @@ providers/<n>/setup.sh
 
 Common uses:
 - Export vars that compose overlays reference via `${VAR}` — these must be exported before `compose_generate` runs
-- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so it exists for copy-out to land in on the first session
+- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so the bind mount source exists before Docker tries to mount it
 
 **Reference:** `providers/hermes/setup.sh`
 
@@ -246,15 +243,13 @@ Optionally verify serve mode if implemented:
 make serve PROVIDER=<n>
 ```
 
-Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) and the provider-specific service starts correctly.
-
 ---
 
 ## Step 10 — Register the provider
 
 No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.Dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 
-Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to append the new provider's stubs to their `.env`.
+Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs and `config/` templates automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to update template files, then manually copy any new `config/` templates into their `$SANDBOX_DIR/.<provider>/`.
 
 ---
 
@@ -263,5 +258,5 @@ Operators onboarding new projects after the provider is added will receive the p
 | Document | Purpose |
 |---|---|
 | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Provider interface contract and execution mode definitions |
-| [`../architecture/execution_model.md`](../architecture/execution_model.md) | How `start_agent.sh` calls `run_agent.sh`; compose generation internals |
-| [`libs/compose.sh`](../../libs/compose.sh) | Helper functions available to `setup.sh` and provider scripts |
+| [`../architecture/execution_model.md`](../architecture/execution_model.md) | Mount shape, container lifecycle, entrypoint sequences |
+| [`../architecture/provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Reasoning layer lifecycle — copy-in, work, copy-out |

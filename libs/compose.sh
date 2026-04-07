@@ -34,7 +34,9 @@
 #   {{PROJECT_NAME}}        → project name
 #   {{SANDBOX_IMAGE_NAME}}  → derived image name
 #   {{AGENT_IMAGE_NAME}}    → derived image name
+#   {{PROVIDER_NAME}}       → provider name
 #   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)
+#   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
 #   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
 #   ${CHANGES_DIR}          → host changes path (from .env, exported by start_agent.sh)
 #   ${INPUT_DIR}            → host input path (from .env, exported by start_agent.sh)
@@ -89,7 +91,9 @@ compose_generate() {
       -e "s|{{PROJECT_NAME}}|${project_name}|g" \
       -e "s|{{SANDBOX_IMAGE_NAME}}|${sandbox_image}|g" \
       -e "s|{{AGENT_IMAGE_NAME}}|${agent_image}|g" \
+      -e "s|{{PROVIDER_NAME}}|${provider_name}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
+      -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
       -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \
       -e "s|\${CHANGES_DIR}|${CHANGES_DIR:-}|g" \
       -e "s|\${INPUT_DIR}|${INPUT_DIR:-}|g" \
