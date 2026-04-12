@@ -1,0 +1,20 @@
+{
+  "lastChangelogVersion": "0.63.1",
+  "defaultProvider": "google",
+  "defaultModel": "gemini-3-flash-preview",
+  "defaultThinkingLevel": "medium",
+  "followUpMode": "all",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 600000,
+    "keepRecentTokens": 20000
+  },
+  "tools": {
+    "web_fetch": {
+      "enabled": true,
+      "max_content_tokens": 50000,
+      "dynamic_filtering": true
+    }
+  },
+  "enabledModels": ["claude-4-*", "gpt-4o", "gemini-3-*"]
+}
