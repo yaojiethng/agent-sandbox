@@ -20,8 +20,8 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
+| [M2.3 — Apply Workflow: Capability Layer Diff Pipeline](#m23--apply-workflow-capability-layer-diff-pipeline) | In progress |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| M2.3 — Apply Workflow: Capability Layer Diff Pipeline | Not started |
 | M2.5 — Vault Capability Layer Prototype | Not started |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
 | **Single-Agent Coordination** | |
@@ -70,7 +70,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 - **Change 3 — draft/confirm/reject workflow** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (applies patches to `agent/draft/<session-name>` branch via `git am`, resets author identity), `make confirm` (rebases draft onto target, fast-forward merges, deletes draft branch — linear history always), `make reject` (discards draft branch). State held in `.workspace/draft-state`. `make apply --mode=apply` retained as legacy fallback.
 
-- **Change 4 — rsync snapshot** (`libs/snapshot.sh`, `start_agent.sh`): Replace `snapshot_enumerate_files` + `snapshot_copy_files` with `snapshot_copy_worktree` using `rsync -a --filter=':- .gitignore' --exclude='.git'`. Snapshot reflects working tree directly, not the git index. Submodule pre-flight check retained. Known limitation: global gitignore and `.git/info/exclude` not respected — documented.
+- **Change 4 — rsync snapshot** (`libs/snapshot.sh`, `start_agent.sh`): Replace `snapshot_enumerate_files` + `snapshot_copy_files` with `snapshot_copy_worktree` using rsync. Snapshot reflects working tree directly, not the git index. Global gitignore (`core.excludesFile`) and `.git/info/exclude` read explicitly and passed via `--exclude-from`. Files excluded by global/exclude rules (but not local `.gitignore`) emit a stderr warning. Submodule pre-flight check retained. Residual limitation: negation patterns in global gitignore / `.git/info/exclude` not supported by rsync `--exclude-from` — documented.
 
 #### M2.5 — Vault Capability Layer Prototype
 
@@ -115,6 +115,10 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
 - **Stale git index causes cryptic snapshot failures** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. M2.3 replaces this pipeline with rsync, eliminating the index-driven enumeration entirely.
+
+- **Stale container images (Regressed M1.4)** — The harness currently only checks if an image *exists*, not if it is up-to-date with the current `libs/` or `scripts/`. This can lead to regressions if old images persist. 
+  - [Investigation: Staleness and Interactivity Regression](discussions/investigation_staleness_and_interactivity_regression.md)
+  - [Investigation: Unified Versioning and Governance Model](discussions/investigation_versioning_and_governance.md)
 
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
 

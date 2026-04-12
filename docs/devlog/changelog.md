@@ -6,6 +6,14 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
+## [CORRECTION — 2026-04-12] Historical Inconsistency Warning
+
+The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
+
+See Investigation: [`docs/devlog/discussions/investigation_staleness_and_interactivity_regression.md`](discussions/investigation_staleness_and_interactivity_regression.md) for the proposal to re-implement a simpler version of this feature.
+
+---
+
 ## M1 — Barebones Agent Container
 
 *The agent runs inside an isolated Docker container with network access, driven by a per-project Makefile.*
@@ -38,9 +46,11 @@ The per-project conf file was removed in favour of named flags defined in the pr
 
 ---
 
-## M1.4 — Image Staleness Detection
+## M1.4 — Image Staleness Detection [SUPERSEDED/REMOVED in M2.1]
 
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
+
+**NOTE:** This implementation (based on `libs/image.sh` and `image-files.txt`) was **deleted in Milestone 2.1** during the Two-Container refactor. The system currently relies on the operator manually running `make build`.
 
 A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `libs/image.sh` and covers all `libs/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
 
