@@ -53,7 +53,7 @@ You operate in three modes, often in combination:
 Read the project's own documentation before making changes. Key entry points:
 
 - `readme.md` — system invariants and architecture overview
-- `docs/development/roadmap.md` — current milestone and pending tasks
+- `docs/devlog/roadmap.md` — current milestone and pending tasks
 - The most recent `docs/devlog/handovers/YYYYMMDD-NN-TYPE-*.md` — where the last session ended
 
 Use `grep` and targeted file reads rather than reading entire directories. Establish what you need from a file before opening it in full.

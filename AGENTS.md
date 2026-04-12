@@ -54,8 +54,8 @@ Read these in order before doing anything else:
    ```
    ls -t docs/devlog/handovers/ | head -1
    ```
-   If the handovers directory is empty or missing, the session has no prior context. Read `docs/development/roadmap.md` and `docs/development/agent_context_brief.md`, then write a message to `../workspace/output/session-start.md` noting the gap and what you found before proceeding.
-3. `docs/development/roadmap.md` — active sub-milestone and pending tasks.
+   If the handovers directory is empty or missing, the session has no prior context. Read `docs/devlog/roadmap.md` and `docs/development/agent_context_brief.md`, then write a message to `../workspace/output/session-start.md` noting the gap and what you found before proceeding.
+3. `docs/devlog/roadmap.md` — active sub-milestone and pending tasks.
 4. `docs/development/agent_context_brief.md` — collaboration protocol and policy links.
 
 The Hot files section of the handover lists the files in scope for this session. Do not read beyond this list without justification stated in chat first.
