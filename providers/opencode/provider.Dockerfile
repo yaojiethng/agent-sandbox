@@ -34,6 +34,7 @@ USER agentuser
 # -------------------------
 ENV PROVIDER_NAME=opencode
 ENV AGENT_HOME=/home/agentuser/.opencode
+ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 # -------------------------
 # Working directories

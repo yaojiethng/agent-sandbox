@@ -33,6 +33,7 @@ USER agentuser
 # -------------------------
 ENV PROVIDER_NAME=hermes
 ENV AGENT_HOME=/home/agentuser/.hermes
+ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 # -------------------------
 # Working directories
