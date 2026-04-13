@@ -54,11 +54,11 @@ Each session has a type that reflects its dominant activity. The type appears in
 
 A handover has three moments:
 
-**Open** — created at the start of a session (Step 1 of the minor loop). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists.
+**Open** — created at the start of a session (Step 1 of the minor loop). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. **The agent must check the Status header of the previous handover; if it is not "Closed", the previous session may have ended prematurely and require recovery.**
 
-**Active** — updated throughout the session as tasks complete, decisions are made, and scope changes are noted.
+**Active** — updated throughout the session as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** — finalised at session end (Steps 8 and 9 of the minor loop). Records what was completed, marks deferrals explicitly, and seeds the next session.
+**Closed** — finalised at session end (Steps 8 and 9 of the minor loop). Records what was completed, marks deferrals explicitly, and seeds the next session. The Status header is set to "Closed".
 
 ---
 
@@ -70,6 +70,7 @@ A handover has three moments:
 **Session date:** YYYY-MM-DD
 **Milestone:** <sub-milestone ID and name — e.g. M2.1 — General Capability Layer Prototype>
 **Session type:** <Design | Spec | Implementation | Story | Investigation | Planning | Workflow | Housekeeping>
+**Status:** <Active | Closed>
 
 ## Objective
 <One sentence: what this session is trying to achieve. Scoped to the session, not the sub-milestone.>

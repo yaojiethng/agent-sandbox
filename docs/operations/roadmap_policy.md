@@ -20,7 +20,7 @@ The roadmap is not updated continuously during a session. It is touched at two d
 
 ### Sub-milestone close (Trigger B)
 
-Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. It runs at Step 8, after tasks are marked and before the handover is closed. If the chat boundary falls before Trigger B has run, the next session's Step 1 must run it before compacting or creating the new handover — the roadmap will still show the completed sub-milestone as active, which is the signal that Trigger B has not run.
+Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. **The agent must explicitly confirm with the operator that manual acceptance criteria (AC) have been verified on the host before running Trigger B.** It runs at Step 8, after tasks are marked and before the handover is closed. If the chat boundary falls before Trigger B has run, the next session's Step 1 must run it before compacting or creating the new handover — the roadmap will still show the completed sub-milestone as active, which is the signal that Trigger B has not run.
 
 1. **Remove** the completed sub-milestone section from `roadmap.md` entirely — do not collapse it to outcome sentences, remove it. This mirrors how Trigger A removes completed major milestones: the sub-milestone is gone from the active roadmap, not summarised within it.
 2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
