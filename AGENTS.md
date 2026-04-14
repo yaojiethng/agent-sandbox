@@ -8,6 +8,19 @@ The agent runtime is explicitly untrusted. The operator has final authority over
 
 ---
 
+## Working Environment
+
+| Path | Mode | Purpose |
+|---|---|---|
+| `~/sandbox/` (CWD) | Read-write | Working copy of the project snapshot. All file edits go here. |
+| `~/workspace/input/` | Read-only | Operator-placed task briefs, addenda, and input files. Read these at session start. |
+| `~/workspace/output/` | Read-write | Non-diff outputs: progress notes, serialised data, operator-facing text. Text and JSON only — no binaries. |
+| `~/workspace/changes/` | Harness-managed | Diff pipeline output. Do not read, write, or modify anything here. |
+
+`PROJECT_DIR` (the host repository) is not mounted. It is not reachable from inside the container.
+
+---
+
 ## Role
 
 You operate in three modes, often in combination:
@@ -36,11 +49,14 @@ You operate in three modes, often in combination:
 
 Read these in order before doing anything else:
 
-1. The most recent handover — find it with:
-   `ls -t docs/devlog/handovers/ | head -1`
-   then read it in full.
-2. `docs/development/roadmap.md` — active sub-milestone and pending tasks.
-3. `docs/development/agent_context_brief.md` — collaboration protocol and policy links.
+1. Check for operator input files in `../workspace/input/` — read any files present before proceeding.
+2. Find and read the most recent handover:
+   ```
+   ls -t docs/devlog/handovers/ | head -1
+   ```
+   If the handovers directory is empty or missing, the session has no prior context. Read `docs/development/roadmap.md` and `docs/development/agent_context_brief.md`, then write a message to `../workspace/output/session-start.md` noting the gap and what you found before proceeding.
+3. `docs/development/roadmap.md` — active sub-milestone and pending tasks.
+4. `docs/development/agent_context_brief.md` — collaboration protocol and policy links.
 
 The Hot files section of the handover lists the files in scope for this session. Do not read beyond this list without justification stated in chat first.
 
