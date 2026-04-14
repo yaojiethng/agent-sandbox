@@ -131,7 +131,8 @@ compose_args() {
   local sandbox_dir="$2"
   local compose_file="$3"
 
-  local normalised="${project_name,,}"
+  local normalised
+  normalised="$(echo "$project_name" | tr '[:upper:]' '[:lower:]')"
   normalised="${normalised//[^a-z0-9-]/-}"
 
   # Assign to caller's COMPOSE_ARGS (no local — intentional).

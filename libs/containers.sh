@@ -25,7 +25,7 @@
 # Base images contain stable install layers and are not project-specific.
 agent_base_image_name() {
   local provider="${1:?agent_base_image_name requires provider}"
-  echo "${provider,,}-base"
+  echo "$(echo "$provider" | tr '[:upper:]' '[:lower:]')-base"
 }
 
 # agent_image_name <provider> <project_name>
@@ -33,14 +33,14 @@ agent_base_image_name() {
 agent_image_name() {
   local provider="${1:?agent_image_name requires provider}"
   local project="${2:?agent_image_name requires project name}"
-  echo "${provider}-agent-${project,,}"
+  echo "${provider}-agent-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
 
 # sandbox_image_name <project_name>
 # Returns: sandbox-<project> (lowercased)
 sandbox_image_name() {
   local project="${1:?sandbox_image_name requires project name}"
-  echo "sandbox-${project,,}"
+  echo "sandbox-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
 
 # Container names match image names — one session per project at a time.

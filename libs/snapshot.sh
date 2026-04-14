@@ -58,7 +58,8 @@ snapshot_copy_files() {
       echo "Skipping symlink: $file" >&2
       continue
     fi
-    if ! cp --parents -- "$file" "$DEST_DIR/" 2>/dev/null; then
+    mkdir -p "$DEST_DIR/$(dirname "$file")"
+    if ! cp -- "$SOURCE_DIR/$file" "$DEST_DIR/$file" 2>/dev/null; then
       echo "Error: failed to copy: $file" >&2
       failed=1
     fi

@@ -162,7 +162,7 @@ case "$MODE" in
     ;;
 esac
 
-COMPOSE_OUT="$(mktemp --suffix=.yml)"
+COMPOSE_OUT="$(mktemp /tmp/agent-sandbox-XXXXXX.yml)"
 trap 'rm -f "$COMPOSE_OUT"' EXIT
 
 compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"

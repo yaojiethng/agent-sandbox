@@ -37,7 +37,7 @@ fi
 
 # Derive compose project name from PROJECT_NAME.
 # Docker Compose normalisation: lowercase; chars outside [a-z0-9-] → hyphen.
-COMPOSE_PROJECT="${PROJECT_NAME,,}"
+COMPOSE_PROJECT="$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
 COMPOSE_PROJECT="${COMPOSE_PROJECT//[^a-z0-9-]/-}"
 
 CONTAINER_IDS=$(docker ps -aq --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}")
