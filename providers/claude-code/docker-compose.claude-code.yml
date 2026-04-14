@@ -1,0 +1,15 @@
+# providers/claude-code/docker-compose.claude-code.yml
+# Provider overlay — merged in all modes (standard, serve, dry-run).
+# Injects Claude Code authentication credentials from the host .env.
+#
+# Authentication: two supported paths, only one is required per operator.
+#   ANTHROPIC_API_KEY       — pay-as-you-go API access.
+#   CLAUDE_CODE_OAUTH_TOKEN — long-lived OAuth token for claude.ai subscription users.
+#                             Generate once on the host via: claude setup-token
+# Set whichever applies in SANDBOX_DIR/.env; leave the other empty.
+
+services:
+  agent:
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}

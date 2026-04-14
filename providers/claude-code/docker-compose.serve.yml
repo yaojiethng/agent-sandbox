@@ -1,0 +1,22 @@
+# providers/claude-code/docker-compose.serve.yml
+# Claude Code has no native web UI equivalent to serve mode.
+# serve mode is not supported for this provider.
+#
+# Remote Control (claude --remote-control) is the closest analogue: it registers
+# the local session with the Anthropic API and exposes it via claude.ai/code and
+# the Claude mobile app. However, it requires a claude.ai Pro/Max subscription —
+# API key auth is not supported for Remote Control. It is not wired into make serve
+# because it has no port to expose and requires interactive auth that cannot be
+# automated via .env injection.
+#
+# Operators wanting Remote Control can start a standard session (make start) and
+# run /remote-control inside Claude Code once the session is running.
+#
+# If make serve PROVIDER=claude-code is invoked, the agent container will start
+# in its default interactive mode. The harness will emit a warning before starting.
+
+services:
+  agent:
+    command: ["claude"]
+    environment:
+      - CLAUDE_CODE_SERVE_UNSUPPORTED=1

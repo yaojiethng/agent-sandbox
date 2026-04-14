@@ -1,8 +1,8 @@
-# providers/pi/provider.Dockerfile
-# Provider layer for Pi. Inherits from pi-base.
-# Tagged: pi-agent-<project>
+# providers/claude-code/provider.Dockerfile
+# Provider layer for Claude Code. Inherits from claude-code-base.
+# Tagged: claude-code-agent-<project>
 
-ARG BASE_IMAGE=pi-base
+ARG BASE_IMAGE=claude-code-base
 FROM ${BASE_IMAGE}
 
 # Injected by build_context_agent — do not modify these paths.
@@ -13,10 +13,10 @@ RUN useradd -m -u 1001 -s /bin/bash agentuser
 RUN mkdir -p /opt/provider-config
 USER agentuser
 
-# AGENT_HOME — Pi's config and state directory inside the container.
+# AGENT_HOME — Claude Code's config and state directory inside the container.
 # PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
-ENV PROVIDER_NAME=pi
-ENV AGENT_HOME=/home/agentuser/.pi/agent
+ENV PROVIDER_NAME=claude-code
+ENV AGENT_HOME=/home/agentuser/.claude
 ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 RUN mkdir -p /home/agentuser/workspace/input \
@@ -29,4 +29,4 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 
 # provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
 # EXIT trap, then execs the agent command.
-ENTRYPOINT ["provider-entrypoint.sh", "pi"]
+ENTRYPOINT ["provider-entrypoint.sh", "claude"]
