@@ -178,6 +178,8 @@ compose_teardown() {
 # compose_sandbox_wait
 #
 # Polls until the sandbox container reports healthy.
+# Fails fast if the container exits before becoming healthy.
+# Times out after SANDBOX_WAIT_TIMEOUT seconds (default: 120).
 #
 # Args:
 #   $1  project_name
@@ -186,10 +188,26 @@ compose_sandbox_wait() {
   local project_name="$1"
   local container
   container="$(sandbox_container_name "$project_name")"
-
+ 
+  local timeout="${SANDBOX_WAIT_TIMEOUT:-120}"
+  local elapsed=0
+ 
   echo "+ waiting for $container to be healthy..."
   until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null)" == "healthy" ]]; do
+    local state
+    state="$(docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null)"
+    if [[ "$state" == "exited" || "$state" == "dead" || -z "$state" ]]; then
+      echo "Error: sandbox container exited before becoming healthy." >&2
+      echo "  Check logs: docker logs $container" >&2
+      exit 1
+    fi
+    if [[ "$elapsed" -ge "$timeout" ]]; then
+      echo "Error: sandbox container did not become healthy within ${timeout}s." >&2
+      echo "  Check logs: docker logs $container" >&2
+      exit 1
+    fi
     sleep 1
+    (( elapsed++ )) || true
   done
   echo "+ sandbox healthy."
 }

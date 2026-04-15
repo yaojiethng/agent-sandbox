@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # No Node/npm/opencode — the capability layer owns the sandbox and diff
 # pipeline only. The reasoning layer container handles agent invocation.
 RUN apt-get update && apt-get install -y \
-    bash git ca-certificates \
+    bash git ca-certificates rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------

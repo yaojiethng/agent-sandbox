@@ -187,6 +187,11 @@ fi
 # -------------------------
 # Workspace directory setup
 # -------------------------
+# Clean the snapshot directory before building a fresh snapshot.
+# Without this, files from a previous run that are no longer in PROJECT_DIR
+# (deleted, moved, or newly gitignored) would persist in the snapshot and
+# propagate into the sandbox.
+rm -rf "$SNAPSHOT_DIR"
 mkdir -p "$SNAPSHOT_DIR"
 mkdir -p "$CHANGES_DIR"
 mkdir -p "$INPUT_DIR"
