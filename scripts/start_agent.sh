@@ -198,8 +198,7 @@ mkdir -p "$OUTPUT_DIR"
 source "$REPO_ROOT/libs/snapshot.sh"
 
 echo "Building snapshot..."
-(cd "$PROJECT_DIR" && snapshot_enumerate_files "$PROJECT_DIR") \
-  | (cd "$PROJECT_DIR" && snapshot_copy_files "$PROJECT_DIR" "$SNAPSHOT_DIR")
+snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
 
 snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."

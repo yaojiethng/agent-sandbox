@@ -3,7 +3,7 @@
 **Status:** In progress — original findings complete; addendum added under relaxed assumptions (see below)
 
 **Direction:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline  
-**Parent story:** [`docs/devlog/roadmap.md` — M2.3](#) / M2.3 design notes (scrap_note.txt)
+**Parent story:** [`docs/devlog/roadmap.md` — M2.3](#)
 
 ---
 

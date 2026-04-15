@@ -240,23 +240,6 @@ An existence check (skip missing files rather than aborting) would fix the hard-
 
 ---
 
-## Summary of files changed
-
-| File | Changes |
-|---|---|
-| `scripts/start_agent.sh` | Change 1: checkpoint tag creation + write to `checkpoint-latest.ref` + tag pruning; Change 4: updated snapshot call |
-| `libs/diff.sh` | Change 2: `diff_format_patch` function; `diff_on_exit` updated to call it |
-| `scripts/apply_workspace.sh` | Change 3: `make draft` / `confirm` / `reject` commands; per-patch author reset loop; `--mode=apply` legacy fallback |
-| `libs/snapshot.sh` | Change 4: `snapshot_enumerate_files` + `snapshot_copy_files` replaced by `snapshot_copy_worktree` (rsync) |
-| `docs/architecture/sandbox_lifecycle.md` | Phases 2 and 4 updated (checkpoint, format-patch, updated apply) |
-| `docs/architecture/execution_model.md` | Entrypoint sequence: format-patch step |
-| `docs/devlog/roadmap.md` | M2.3 status update on completion |
-
-`sandbox-entrypoint.sh` — no change. `diff_on_exit` already drives the exit pipeline.  
-`sandbox.Dockerfile` — no change. `patches/` is created at runtime inside `workspace/changes/`.  
-`Makefile.template` — adds `make review` (pre-apply patch sequence) and `make log` (post-apply narrative from checkpoint). `make apply` invocation updated for per-patch author reset loop.
-
----
 
 ## Open questions
 

@@ -4,14 +4,135 @@
 # and sandbox-entrypoint.sh (capability layer side).
 #
 # Host-side functions:
-#   snapshot_enumerate_files  SOURCE_DIR
-#   snapshot_copy_files       SOURCE_DIR  DEST_DIR
+#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [primary — rsync-based]
+#   snapshot_enumerate_files  SOURCE_DIR             [deprecated — index-driven]
+#   snapshot_copy_files       SOURCE_DIR  DEST_DIR   [deprecated — index-driven]
 #   snapshot_validate         SNAPSHOT_DIR
 #
 # Container-side functions:
 #   snapshot_copy_to_sandbox  SNAPSHOT_DIR  SANDBOX_DIR
 #   snapshot_init_git         SANDBOX_DIR
 
+# -------------------------
+# snapshot_copy_worktree
+# -------------------------
+# Copies the working tree from SOURCE_DIR into DEST_DIR using rsync.
+# Enumerates from the filesystem directly — not from the git index.
+# Handles unstaged deletions, moves, and new files correctly by construction.
+#
+# Exclude sources applied (in addition to per-directory .gitignore files):
+#   - Global gitignore: resolved via `git config core.excludesFile`
+#   - Repo-level excludes: SOURCE_DIR/.git/info/exclude
+#
+# Files excluded by global/exclude rules but not by any local .gitignore
+# are reported as warnings to stderr so the operator is aware.
+#
+# Residual limitation: negation patterns (`!foo`) in global gitignore or
+# .git/info/exclude are not supported by rsync --exclude-from and are
+# silently ignored. Negations in local .gitignore files work correctly.
+snap_copy_worktree_cleanup() {
+  local tmpfile="$1"
+  [[ -n "$tmpfile" && -f "$tmpfile" ]] && rm -f "$tmpfile"
+}
+
+snapshot_copy_worktree() {
+  local SOURCE_DIR="$1"
+  local DEST_DIR="$2"
+
+  # --- Pre-flight: submodule check ---
+  if git -C "$SOURCE_DIR" ls-files --stage | grep -q '^160000'; then
+    echo "Error: submodules detected in $SOURCE_DIR." >&2
+    echo "  Submodules are not supported by the snapshot pipeline." >&2
+    echo "  Deinitialise submodules before running the harness:" >&2
+    echo "    git -C '$SOURCE_DIR' submodule deinit --all" >&2
+    return 1
+  fi
+
+  # --- Resolve global exclude sources ---
+  local GLOBAL_IGNORE
+  GLOBAL_IGNORE=$(git -C "$SOURCE_DIR" config --global core.excludesFile 2>/dev/null || true)
+  # Expand leading ~ manually (eval is safe here; value comes from git config)
+  if [[ "$GLOBAL_IGNORE" == ~* ]]; then
+    GLOBAL_IGNORE="${HOME}${GLOBAL_IGNORE:1}"
+  fi
+
+  local REPO_EXCLUDE="$SOURCE_DIR/.git/info/exclude"
+
+  # Build combined exclude temp file if any global source exists
+  local EXCLUDE_TMPFILE=""
+  local has_global=0
+
+  if [[ -n "$GLOBAL_IGNORE" && -f "$GLOBAL_IGNORE" ]]; then
+    has_global=1
+  fi
+  local has_repo_exclude=0
+  if [[ -f "$REPO_EXCLUDE" ]]; then
+    has_repo_exclude=1
+  fi
+
+  if [[ "$has_global" -eq 1 || "$has_repo_exclude" -eq 1 ]]; then
+    EXCLUDE_TMPFILE=$(mktemp)
+    trap "snap_copy_worktree_cleanup '$EXCLUDE_TMPFILE'" EXIT
+
+    if [[ "$has_global" -eq 1 ]]; then
+      cat "$GLOBAL_IGNORE" >> "$EXCLUDE_TMPFILE"
+    fi
+    if [[ "$has_repo_exclude" -eq 1 ]]; then
+      # Blank line separator between sources
+      echo "" >> "$EXCLUDE_TMPFILE"
+      cat "$REPO_EXCLUDE" >> "$EXCLUDE_TMPFILE"
+    fi
+  fi
+
+  # --- Build rsync argument arrays ---
+  local BASE_ARGS=(
+    rsync -a
+    --filter=':- .gitignore'
+    --exclude='.git'
+  )
+
+  local FULL_ARGS=("${BASE_ARGS[@]}")
+  if [[ -n "$EXCLUDE_TMPFILE" ]]; then
+    FULL_ARGS+=("--exclude-from=$EXCLUDE_TMPFILE")
+  fi
+
+  # --- Warning pass: detect files excluded by global/exclude rules only ---
+  if [[ -n "$EXCLUDE_TMPFILE" ]]; then
+    # Dry-run A: local .gitignore rules only — what rsync would copy without global rules
+    local LIST_A
+    LIST_A=$("${BASE_ARGS[@]}" --dry-run --list-only "$SOURCE_DIR/" /dev/null 2>/dev/null \
+      | awk '{print $NF}' | sort)
+
+    # Dry-run B: all rules — what rsync will actually copy
+    local LIST_B
+    LIST_B=$("${FULL_ARGS[@]}" --dry-run --list-only "$SOURCE_DIR/" /dev/null 2>/dev/null \
+      | awk '{print $NF}' | sort)
+
+    # Files in A but not B were excluded solely by global/exclude rules
+    local GLOBALLY_EXCLUDED
+    GLOBALLY_EXCLUDED=$(comm -23 <(echo "$LIST_A") <(echo "$LIST_B") || true)
+
+    if [[ -n "$GLOBALLY_EXCLUDED" ]]; then
+      while IFS= read -r filepath; do
+        echo "[snapshot] WARNING: $filepath excluded by global gitignore or .git/info/exclude" >&2
+      done <<< "$GLOBALLY_EXCLUDED"
+    fi
+  fi
+
+  # --- Real copy ---
+  mkdir -p "$DEST_DIR"
+  "${FULL_ARGS[@]}" "$SOURCE_DIR/" "$DEST_DIR/"
+
+  # Cleanup temp file
+  snap_copy_worktree_cleanup "$EXCLUDE_TMPFILE"
+  trap - EXIT
+}
+
+# -------------------------
+# snapshot_enumerate_files  [DEPRECATED]
+# -------------------------
+# Replaced by snapshot_copy_worktree. Retained for reference only.
+# Index-driven enumeration fails on unstaged deletions and moves.
 # -------------------------
 # snapshot_enumerate_files
 # -------------------------
