@@ -26,11 +26,11 @@ The snapshot pipeline replicates the host repository state into the capability l
 
 ### Stage 1 — Host side (`scripts/start_agent.sh`)
 
-**`snapshot_enumerate_files`** runs `git ls-files --cached --others --exclude-standard` inside `PROJECT_DIR`. This covers tracked files and untracked non-ignored files. Gitignored files — including secrets and `.env` — are excluded by definition. A warning is emitted if no `.gitignore` is present.
+**Checkpoint tag** — a lightweight tag `agent-checkpoint/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. This serves as the base for the draft workflow. The last 5 checkpoint tags are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
 
-The `git ls-files` approach was chosen over alternatives (e.g. git bundle, rsync) because it respects `.gitignore` without requiring any mutation of the host repository. A git bundle approach was evaluated and rejected: it required a temporary commit on the host (`git add -A && git commit --no-verify`), which mutated HEAD, the staging area, and commit history — violating the invariant that the harness must not modify the host repo.
+**`snapshot_copy_worktree`** uses `rsync` to replicate the project state into `.snapshot/`. It mirrors the current working tree directly, including untracked non-ignored files, but excluding files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`.
 
-**`snapshot_copy_files`** reads the file list and copies files into `.snapshot/` using `cp --parents` to preserve directory structure.
+The rsync approach ensures the snapshot reflects the on-disk state even if the git index is stale (e.g. uncommitted deletes or moves). Files excluded by global or exclude rules (but not local `.gitignore`) emit a warning to `stderr` to alert the operator of potential missing dependencies.
 
 **`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
 
@@ -58,21 +58,31 @@ The agent works exclusively inside `sandbox/`. The host repository is never moun
 
 On capability layer container exit, an EXIT trap runs the diff pipeline:
 
-1. Any uncommitted changes in `sandbox/` are staged and committed.
-2. `git diff <baseline>..HEAD` is computed against the baseline SHA recorded at startup.
-3. The result is written to `workspace/changes/staged.diff`.
+1. Any uncommitted changes in `sandbox/` are staged and committed with a "sweep" message.
+2. `diff_format_patch` runs `git format-patch` to produce one numbered `.patch` file per agent commit since the baseline.
+3. `git diff <baseline>..HEAD` is computed for a single-file summary.
+4. All artefacts are written to a session-scoped directory: `workspace/changes/<session-name>/`.
+   - `staged.diff` — full session diff
+   - `patches/` — per-commit `.patch` files
+   - `autosave.diff` — (if present) last incremental save
+
+The `SESSION_NAME` is derived from the branch name and session timestamp (e.g., `main-20260408-112344`) and is injected into the container environment at startup.
 
 The diff runs in the capability layer container against `sandbox/` — not in the reasoning layer. The reasoning layer exits first; the harness then stops the capability layer, triggering the EXIT trap and diff generation.
 
-An autosave loop writes `autosave.diff` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
+An autosave loop writes `autosave.diff` into the session directory on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
 
-`workspace/changes/` is overwritten on each run by the diff pipeline.
+`workspace/changes/` accumulates session directories over time; they are not automatically pruned by the harness.
 
 ### Apply workflow
 
-On the host, `scripts/apply_workspace.sh` applies `staged.diff` to `PROJECT_DIR` on the current branch or a named branch via `--branch=<n>`. It uses `git apply --3way` to handle conflicts and validates that `PROJECT_DIR` is a git repository with at least one commit before applying.
+On the host, `scripts/apply_workspace.sh` provides a three-stage draft workflow:
 
-The operator reviews `staged.diff` before applying. If rejected, `.workspace/changes/` contents are discarded — the host repository is unchanged.
+1. **`draft`** — creates a working branch `agent/draft/<session-name>` from the session's checkpoint tag and applies all `.patch` files via `git am --3way`. All commits are reset to the operator's author identity.
+2. **`confirm`** — rebases the draft branch onto the target branch (defaults to the source branch), fast-forward merges it, and deletes the draft branch. This ensures a linear history.
+3. **`reject`** — deletes the draft branch and returns to the source branch.
+
+A legacy **`apply`** mode is retained for applying `staged.diff` directly to the working tree without creating commits.
 
 ---
 

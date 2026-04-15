@@ -20,7 +20,9 @@ SANDBOX_DIR/
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
     └── changes/               ← diff pipeline output
-        └── staged.diff
+        └── <session-name>/    ← session-scoped directory
+            ├── staged.diff
+            └── patches/       ← per-commit .patch files
 
 Capability layer container (CWD: /home/agentuser/)
 ├── .snapshot/                 ← RO bind mount: project snapshot from host
@@ -41,7 +43,7 @@ Host path variables are defined in [`tool_interface.md` — `.env` Runtime Varia
 
 ## Invocation Model
 
-`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, snapshot pipeline stage 1, and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
+`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, checkpoint tag creation, snapshot pipeline (rsync), and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
 
 `scripts/run_agent.sh` owns the provider lifecycle: sourcing the provider setup hook, assembling and generating the compose file, managing the container lifecycle (start, agent attach, teardown).
 
@@ -127,7 +129,7 @@ flowchart TD
     START([<b>START</b>]) --> SA
 
     subgraph HOST [Host / Harness]
-        SA["<b>start_agent.sh</b><br/>preflight • snapshot • brief"]
+        SA["<b>start_agent.sh</b><br/>preflight • checkpoint • snapshot • brief"]
         RA["<b>run_agent.sh</b><br/>compose gen"]
         DEC{setup.sh<br/>exists?}
         SH["<b>setup.sh</b>"]
@@ -145,7 +147,7 @@ flowchart TD
         TR["register EXIT + TERM traps"]
         WAIT["wait"]
         SIGTERM["<b>SIGTERM</b> → exit 0<br/>EXIT trap: commit"]
-        DIFF["staged.diff written"]
+        DIFF["<b>diff_on_exit</b><br/>staged.diff, patches/"]
     end
 
     subgraph RSN [Reasoning Layer]

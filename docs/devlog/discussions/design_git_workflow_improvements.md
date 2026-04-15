@@ -202,7 +202,29 @@ rsync enumerates from the filesystem directly. It copies what is on disk. Deleti
 
 `--filter=':- .gitignore'` is rsync's dir-merge filter syntax: it reads `.gitignore` in each directory and applies the rules to that directory, including nested `.gitignore` files and `!` negation patterns. `--exclude='.git'` prevents the git directory from being copied.
 
-**Known limitation — global gitignore:** rsync does not read `~/.gitignore_global`, `~/.config/git/ignore`, or `.git/info/exclude`. Files excluded only via these paths and not by any local `.gitignore` entry will be included in the snapshot. In practice these files are OS artifacts (`.DS_Store`, `*.swp`) rather than secrets, but operators who rely on global gitignore to exclude sensitive patterns must also add those patterns to the project's local `.gitignore`.
+**Global gitignore and repo-level excludes:** rsync's `--filter=':- .gitignore'` does not read `~/.gitignore_global`, `~/.config/git/ignore` (resolved via `git config core.excludesFile`), or `.git/info/exclude`. These are read explicitly at snapshot time and passed to rsync via `--exclude-from`.
+
+Sequence in `snapshot_copy_worktree`:
+
+1. Resolve global gitignore path: `GLOBAL_IGNORE=$(git -C "$SOURCE_DIR" config --global core.excludesFile 2>/dev/null)`. Expand `~` if present.
+2. Collect exclude sources that exist on disk: `GLOBAL_IGNORE` (if non-empty and file exists) and `$SOURCE_DIR/.git/info/exclude` (if exists).
+3. Concatenate into a temp file (`mktemp`). If neither source exists, skip `--exclude-from` entirely.
+4. Pass `--exclude-from=<tempfile>` to rsync. Clean up temp file after rsync completes (trap on EXIT).
+
+**Warning on global-rule exclusions:** To make it visible when a file is excluded by global/exclude rules (not local `.gitignore`), `snapshot_copy_worktree` performs two rsync dry-runs before the real copy:
+
+- **Dry-run A:** `--filter=':- .gitignore'` only — local rules only. Captures file list.
+- **Dry-run B:** same, plus `--exclude-from=<tempfile>` — all rules. Captures file list.
+
+Files present in A but absent in B were excluded solely by global/exclude rules. For each such file, emit a warning to stderr:
+
+```
+[snapshot] WARNING: <relative-path> excluded by global gitignore or .git/info/exclude
+```
+
+This makes the exclusion visible without blocking the snapshot.
+
+**Residual limitation — negation patterns in `--exclude-from`:** rsync's `--exclude-from` does not support gitignore-style negation patterns (`!foo`). Negation patterns in global gitignore or `.git/info/exclude` will be silently ignored by rsync. This is uncommon in practice (negations are rare in global configs), but is a known and documented gap. Negation patterns in local per-directory `.gitignore` files are handled correctly by `--filter=':- .gitignore'`.
 
 **Comparison with an existence-check fix to `snapshot_copy_files`:**
 
