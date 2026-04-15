@@ -6,7 +6,7 @@
 FROM node:20-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git curl \
+        git curl rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Pi coding agent globally (pinned version)
