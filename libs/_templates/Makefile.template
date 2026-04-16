@@ -43,7 +43,7 @@ export
 PROJECT_NAME := <project-name>
 PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-AGENT_BRIEF  := agents.md
+AGENT_BRIEF  := AGENTS.md
 ENV_FILE     := .env
 PROVIDER     ?=
 REBUILD      ?=

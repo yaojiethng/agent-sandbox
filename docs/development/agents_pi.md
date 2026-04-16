@@ -1,4 +1,4 @@
-# agents.md — Pi (agent-sandbox)
+# AGENTS.md — Pi (agent-sandbox)
 
 ## System
 

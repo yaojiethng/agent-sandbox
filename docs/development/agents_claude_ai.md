@@ -1,4 +1,4 @@
-# agents.md — Claude Chat (claude.ai)
+# AGENTS.md — Claude Chat (claude.ai)
 
 ## Interface
 

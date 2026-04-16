@@ -40,7 +40,7 @@ The agent works inside `AGENT_HOME` and has access to two read-only input channe
 
 **`workspace/input/`** — the dynamic input channel. Files placed in `$SANDBOX_DIR/.workspace/input/` by the operator before the run are mounted read-only into the reasoning layer. The agent brief (resolved from `AGENT_BRIEF` in `.env`) is placed here by `scripts/start_agent.sh` before the containers start.
 
-**`agents.md`** — the static agent context brief. Baked into the reasoning layer image at build time via the provider Dockerfile. Describes the project, conventions, and expected outputs. Written by the operator at onboard time.
+**`AGENTS.md`** — the static agent context brief. Baked into the reasoning layer image at build time via the provider Dockerfile. Describes the project, conventions, and expected outputs. Written by the operator at onboard time.
 
 Input channel lifecycle:
 - Written by operator before the run

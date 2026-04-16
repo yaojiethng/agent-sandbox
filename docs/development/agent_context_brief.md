@@ -94,7 +94,7 @@ Read these in order at session start. Each answers a distinct question — do no
 |---|---|
 | [`readme.md`](readme.md) | What is this system? |
 | this file | How do I work here? |
-| [`agents.md`](agents.md) | What can I do in this specific interface? |
+| [`AGENTS.md`](AGENTS.md) | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
 | [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the current sub-milestone and what are the pending tasks? — **after reading, state your proposed scope for this session and wait for confirmation before producing any output** |
 

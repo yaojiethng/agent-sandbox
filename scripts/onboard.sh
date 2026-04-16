@@ -26,7 +26,7 @@
 #
 # What this script produces in SANDBOX_DIR:
 #   Makefile                     — from template, PROJECT_NAME substituted
-#   agents.md                    — stub; operator fills in project context
+#   AGENTS.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
 #   .workspace/output/           — reasoning layer output channel
 #   .workspace/changes/          — diff pipeline output
@@ -34,7 +34,7 @@
 #   .<provider>/                 — provider config dir, seeded from providers/<n>/config/
 #                                  for each provider present in the repo
 #
-# The operator must review agents.md and .env before the first run.
+# The operator must review AGENTS.md and .env before the first run.
 # Provider config stubs in .<provider>/ must be populated with real values
 # (e.g. API keys) before the first run.
 # .env must never be committed.
@@ -66,7 +66,7 @@ Usage: agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
 
   --refresh               Update stale template files (Makefile) in an existing
                           SANDBOX_DIR without a full re-onboard. Preserves .env
-                          operator values and agents.md. Run after a harness update.
+                          operator values and AGENTS.md. Run after a harness update.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
@@ -228,10 +228,10 @@ sed "s|<project-name>|$PROJECT_NAME|g" \
 echo "  Created: Makefile"
 
 # -------------------------
-# agents.md stub
+# AGENTS.md stub
 # -------------------------
 if [[ "$REFRESH" != true ]]; then
-cat > "$SANDBOX_DIR/agents.md" <<EOF
+cat > "$SANDBOX_DIR/AGENTS.md" <<EOF
 # Agent Context Brief — ${PROJECT_NAME}
 
 ## Project
@@ -243,7 +243,7 @@ cat > "$SANDBOX_DIR/agents.md" <<EOF
 ## Output
 <!-- What good output looks like: expected file changes, patterns to follow. -->
 EOF
-echo "  Created: agents.md (stub — fill in before first run)"
+echo "  Created: AGENTS.md (stub — fill in before first run)"
 fi
 
 # -------------------------
@@ -365,7 +365,7 @@ else
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
-  echo "  1. Edit $SANDBOX_DIR/agents.md — add project context for the agent"
+  echo "  1. Edit $SANDBOX_DIR/AGENTS.md — add project context for the agent"
   echo "  2. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
   echo "  3. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
   echo "  4. Run: make -C $SANDBOX_DIR build"

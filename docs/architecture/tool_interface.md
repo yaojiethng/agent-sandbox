@@ -118,7 +118,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 |---|---|---|
 | `Makefile` | Copied from template by onboard | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands |
 | `.env` | Written by onboard | Machine-specific runtime variables; never committed |
-| `agents.md` | Stub written by onboard; operator-completed | Agent context brief |
+| `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
 | `.<provider>/` | Copied from `providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
 `docker-compose.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are never written to `SANDBOX_DIR`. Compose files are generated as tmpfiles per run. The serve overlay and capability layer Dockerfile are repo-owned.

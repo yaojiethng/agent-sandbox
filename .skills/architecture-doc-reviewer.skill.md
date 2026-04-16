@@ -31,7 +31,7 @@ This project's documentation policy establishes the following rules. A finding i
 
 **No bridge documents.** A document that exists solely to connect two other documents that could reference each other directly should be collapsed.
 
-**No duplicate content across documents.** The four agent-facing documents (`readme.md`, `agent_context_brief.md`, `agents.md`, handover files) each answer a distinct question. Content that appears in more than one of them is a violation.
+**No duplicate content across documents.** The four agent-facing documents (`readme.md`, `agent_context_brief.md`, `AGENTS.md`, handover files) each answer a distinct question. Content that appears in more than one of them is a violation.
 
 **Linking flows one direction.** Lower layers do not reference higher ones. Stable documents do not reference volatile ones.
 
