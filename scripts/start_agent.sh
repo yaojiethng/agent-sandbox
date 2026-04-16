@@ -204,6 +204,7 @@ source "$REPO_ROOT/libs/snapshot.sh"
 
 echo "Building snapshot..."
 snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
+snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
 
 snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."

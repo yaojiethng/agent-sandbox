@@ -105,7 +105,7 @@ make_fixture() {
     echo "diff-content"       > "$dir/libs/diff.sh"
 
     mkdir -p "$dir/scripts"
-    echo "entrypoint-content" > "$dir/scripts/sandbox-entrypoint.sh"
+    echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
 
     echo "$dir"
 }
@@ -187,7 +187,7 @@ REPO=$(make_fixture)
 context=$(build_context sandbox "$REPO")
 
 assert_equal "sandbox-entrypoint.sh content matches source" \
-    "$(cat "$REPO/scripts/sandbox-entrypoint.sh")" \
+    "$(cat "$REPO/libs/sandbox-entrypoint.sh")" \
     "$(cat "$context/sandbox-entrypoint.sh")"
 
 assert_equal "dirs.sh content matches source" \
@@ -252,7 +252,7 @@ d3=$(digest_of_context "$fixed_context")
 assert_not_equal "digest changes when source file changes" "$d1" "$d3"
 
 # Change a different source file
-echo "modified-entrypoint" > "$REPO/scripts/sandbox-entrypoint.sh"
+echo "modified-entrypoint" > "$REPO/libs/sandbox-entrypoint.sh"
 rm -f "$fixed_context"/*
 context_tmp=$(build_context sandbox "$REPO")
 cp "$context_tmp"/* "$fixed_context/"
@@ -294,7 +294,7 @@ cleanup "$REPO"
 
 # Missing source file: sandbox-entrypoint.sh
 REPO=$(make_fixture)
-rm "$REPO/scripts/sandbox-entrypoint.sh"
+rm "$REPO/libs/sandbox-entrypoint.sh"
 assert_exit_nonzero "fails when sandbox-entrypoint.sh is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO"
 cleanup "$REPO"

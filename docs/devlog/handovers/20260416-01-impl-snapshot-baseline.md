@@ -10,7 +10,13 @@ Redesign and implement `snapshot_init_git` so that the sandbox git state correct
 
 ## Scope
 
-Single function: `snapshot_init_git` in `libs/snapshot.sh`, plus the host-side preparation it depends on in `scripts/start_agent.sh`. All other M2.3 changes are out of scope for this session — see `20260412-02-impl-m2_3.md` for their frozen state.
+Change 4 (snapshot baseline initialization) only. All other M2.3 changes remain on hold in `20260412-02-impl-m2_3.md`.
+
+## Status
+
+**CLOSED. All acceptance criteria passed. Operator confirmed.**
+
+---
 
 ## Background — The Bug
 
@@ -112,100 +118,113 @@ Option A is the correct architecture. The split becomes:
 - Host (`start_agent.sh`): rsync working tree → `.snapshot/`, then `git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"`
 - Container (`snapshot_init_git`): unpack `baseline.tar` → commit as baseline → rsync overlay from `.snapshot/` → leave index alone
 
-## Required File Changes
+
+## What changed
+
+### `libs/snapshot.sh`
+
+| Change | Detail |
+|---|---|
+| `snapshot_copy_worktree` | Unchanged from the rsync-based implementation. Correctly copies the working tree including untracked non-ignored files. |
+| `snapshot_archive_head` | **New function.** Runs `git archive HEAD` on the host and writes `baseline.tar` to `DEST_DIR`. Produces a tar containing exactly the committed state at HEAD — no working tree changes, no untracked files. |
+| `snapshot_validate` | **New check.** Fails if `baseline.tar` is absent. Enforces the new pipeline contract at both gate 1 (host) and gate 2 (container). |
+| `snapshot_copy_to_sandbox` | **Changed.** Now copies only `baseline.tar` into `SANDBOX_DIR`. Full working tree arrives via the rsync overlay inside `snapshot_init_git` after the baseline commit is made. |
+| `snapshot_init_git` | **Rewritten.** New signature: `snapshot_init_git SANDBOX_DIR SNAPSHOT_DIR`. Two-step design: (1) unpack `baseline.tar`, `git add -A && git commit` — index reflects HEAD only; (2) rsync overlay from `SNAPSHOT_DIR` with `--delete`, index not touched — working tree reflects operator's on-disk state. No internal `cd`; all git operations use `-C`. |
+| `snapshot_enumerate_files` | **Deleted.** Deprecated index-driven function. |
+| `snapshot_copy_files` | **Deleted.** Deprecated index-driven function. |
+
+### `libs/sandbox-entrypoint.sh` (moved from `scripts/`)
+
+| Change | Detail |
+|---|---|
+| Moved to `libs/` | Aligns with other capability layer libs. Baked into the image via `build_context_sandbox` alongside `snapshot.sh`, `diff.sh`, and `dirs.sh`. |
+| `snapshot_init_git` call | **Updated** to pass `$SNAPSHOT_DIR` as second argument. |
+| `cd "$ROOT"` recovery | **Removed.** `snapshot_init_git` no longer changes directory internally. |
+| File count check | **Moved** to after `snapshot_init_git` completes. Count now excludes `.git/`. |
+| Working tree status log | **Added** after `snapshot_init_git`. Prints `git status --short` so operator can confirm sandbox state from container logs. |
+
+### `scripts/start_agent.sh`
+
+| Change | Detail |
+|---|---|
+| `snapshot_archive_head` call | **Added** immediately after `snapshot_copy_worktree` in the snapshot pipeline block. |
+
+### `tests/test_snapshot_host.sh`
+
+| Change | Detail |
+|---|---|
+| `test_worktree_copies_edited_version_of_tracked_file` | **New.** Verifies rsync copies the on-disk edited version of a tracked file, not the committed version. |
+| `snapshot_archive_head` tests (6) | **New.** Covers: tar produced, committed files present, untracked files absent, unstaged edits absent, failure on no commits, destination auto-creation. |
+| `snapshot_validate` missing baseline.tar test | **New.** Covers the new baseline.tar gate check. |
+| Deprecated tests (7) | **Deleted.** All tested `snapshot_enumerate_files` and `snapshot_copy_files` which no longer exist. |
+
+### `tests/test_snapshot_container.sh`
+
+| Change | Detail |
+|---|---|
+| Eight-case working tree matrix | **New.** Cases: (1) clean, (2) unstaged edit, (3) staged edit, (4) unstaged deletion, (5) staged deletion, (6) untracked file, (7) gitignored file, (8) staged new file. Each asserts `git status --porcelain` output. |
+| Structural tests (3) | **New.** One baseline commit, returned SHA matches, missing baseline.tar fails cleanly. |
+| `snapshot_copy_to_sandbox` test | **Updated.** Asserts only `baseline.tar` copied, working tree files absent. |
+| `resync_snapshot` fixture helper | **Fixed.** Now uses rsync with `--delete` and `--exclude='baseline.tar'` so deletions in `PROJECT_DIR` are mirrored into `SNAPSHOT_DIR` correctly during test setup. |
+| Old `snapshot_init_git` tests (3) | **Replaced** by the above. |
+
+### Documentation
 
 | File | Change |
 |---|---|
-| `scripts/start_agent.sh` | After `snapshot_copy_worktree`, add: `git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"` |
-| `libs/snapshot.sh` | Rewrite `snapshot_init_git` per design above. Add `snapshot_copy_to_sandbox` call to unpack baseline.tar, commit, overlay rsync. |
-| `docs/architecture/sandbox_lifecycle.md` | Update Phase 1 Stage 1 (baseline.tar produced on host) and Stage 2 (archive unpack → commit → rsync overlay). |
-| `tests/test_snapshot_container.sh` | Replace existing `snapshot_init_git` tests with the four-case matrix below. |
+| `docs/architecture/sandbox_lifecycle.md` | Phase 1 rewritten: Stage 1 describes `snapshot_archive_head`; Stage 2 describes the two-step init. Four-case correctness table added. |
+| `docs/devlog/discussions/design_git_workflow_improvements.md` | Change 4 rewritten as "archive HEAD + rsync overlay" with eight-case working tree state table and full design rationale. |
+| `20260412-02-impl-m2_3.md` | Frozen with status note and forward pointer. Not modified further. |
+| `investigation_git_worktrees.md` | Stripped to worktree-mechanism content only. |
 
-## Acceptance Criteria
+---
 
-These are the test specification. They belong in `tests/test_snapshot_container.sh`.
+## Rebuild behaviour
 
-**AC-SB-1 — Untracked file shows as untracked**
+All files under `libs/` — including `sandbox-entrypoint.sh`, `snapshot.sh`, `diff.sh`, and `dirs.sh` — are baked into the capability layer image via `build_context_sandbox`. Changes to any of them require a rebuild.
+
+| File | How it reaches the container | Rebuild needed? |
+|---|---|---|
+| `libs/sandbox-entrypoint.sh` | Baked in via `build_context_sandbox` | **Yes** |
+| `libs/snapshot.sh`, `diff.sh`, `dirs.sh` | Baked in via `build_context_sandbox` | **Yes** |
+| `scripts/start_agent.sh` | Runs on host only | No |
+| `scripts/sandbox-entrypoint.sh` | No longer exists — moved to `libs/` | — |
+
+This session changed `libs/sandbox-entrypoint.sh` (content changes + move from `scripts/`) and `libs/snapshot.sh`. A rebuild is required before the next run:
+
 ```bash
-# Setup: project with one committed file (committed.txt). Add hello-world.txt to working tree.
-touch "$PROJECT_DIR/hello-world.txt"
-make start PROVIDER=<n>
-# Inside container:
-git -C sandbox/ status --porcelain
-# Expected: ?? hello-world.txt
-# Not expected: hello-world.txt in git log or git show HEAD
+make start PROVIDER=<n> REBUILD=1
 ```
 
-**AC-SB-2 — Tracked file with unstaged edits shows as modified**
-```bash
-# Setup: project with foo.py committed. Edit foo.py without staging.
-echo "new content" >> "$PROJECT_DIR/foo.py"
-make start PROVIDER=<n>
-# Inside container:
-git -C sandbox/ status --porcelain
-# Expected: M foo.py (unstaged modification)
-git -C sandbox/ show HEAD:foo.py
-# Expected: original committed content, not the edited content
-git -C sandbox/ diff HEAD foo.py
-# Expected: shows the edit as an unstaged change
-```
+---
 
-**AC-SB-3 — Tracked file deleted without staging shows as deleted**
-```bash
-# Setup: project with bar.txt committed. Remove it without git rm.
-rm "$PROJECT_DIR/bar.txt"
-make start PROVIDER=<n>
-# Inside container:
-git -C sandbox/ status --porcelain
-# Expected: D bar.txt (unstaged deletion)
-git -C sandbox/ show HEAD:bar.txt
-# Expected: file content present in baseline commit
-```
+## Root cause (for the record)
 
-**AC-SB-4 — Clean working tree shows clean status**
-```bash
-# Setup: project with no uncommitted changes.
-make start PROVIDER=<n>
-# Inside container:
-git -C sandbox/ status --porcelain
-# Expected: empty output (clean)
-```
+The original `snapshot_init_git` ran `git add -A && git commit` after `snapshot_copy_to_sandbox` had already copied the full working tree into sandbox. This collapsed all working tree state — unstaged edits, untracked files, deletions — into the baseline commit. The agent saw a clean `git status` regardless of the operator's actual state.
 
-**AC-SB-5 — Gitignored file is not present in sandbox**
-```bash
-# Setup: project with .gitignore containing "secret.env". Create secret.env.
-echo "API_KEY=abc" > "$PROJECT_DIR/secret.env"
-make start PROVIDER=<n>
-# Inside container:
-ls sandbox/secret.env 2>/dev/null
-# Expected: file absent
-git -C sandbox/ status
-# Expected: no mention of secret.env
-```
+A previous session proposed fixing this by switching the copy step from rsync to `git ls-files`. This solved the untracked file case but reintroduced hard failures on unstaged deletions and produced an incorrect baseline for tracked files with unstaged edits.
 
-**AC-SB-6 — Baseline commit is exactly HEAD**
-```bash
-# Inside container:
-git -C sandbox/ log --oneline
-# Expected: exactly one commit with message "baseline"
-git -C sandbox/ diff HEAD
-# Expected: empty (working tree changes are unstaged, not uncommitted diffs from HEAD)
-```
+The correct fix separates two concerns: `git archive HEAD` builds the baseline independently of the working tree; rsync then layers the working tree state on top without touching the index.
 
-**AC-SB-7 — Diff pipeline still produces correct diff after agent edits**
-```bash
-# This validates that the baseline SHA recorded at init is correct for diff_on_exit.
-# Setup: clean project. Start session. Agent edits foo.py and commits.
-# After session exit:
-cat "$SANDBOX_DIR/.workspace/changes/<session>/staged.diff"
-# Expected: diff shows only agent's changes to foo.py, not the working-tree
-# state from before the session
-```
+---
 
-## Deferred Items
+## Acceptance criteria — all passed
 
-None — this session is scoped to snapshot-baseline only. Changes 1–3 remain in `20260412-02-impl-m2_3.md` on hold.
+| AC | Description | Result |
+|---|---|---|
+| AC-SB-1 | Untracked file shows as `??` | ✅ |
+| AC-SB-2 | Tracked file with unstaged edits shows as `M` (unstaged), baseline contains original | ✅ |
+| AC-SB-3 | Tracked file with staged edits: content correct, staging state lost (expected) | ✅ |
+| AC-SB-4 | Tracked file deleted without staging shows as `D`, present in baseline | ✅ |
+| AC-SB-5 | Tracked file staged for deletion: absent from working tree, present in baseline | ✅ |
+| AC-SB-6 | Gitignored file absent from sandbox | ✅ |
+| AC-SB-7 | Clean working tree shows clean status | ✅ |
+| AC-SB-8 | Exactly one baseline commit, `git diff HEAD` empty | ✅ |
 
-## Next Session
+---
 
-Once AC-SB-1 through AC-SB-7 pass with operator confirmation, the session closes and Changes 1–3 can begin atomicization. Each will get its own handover derived from `20260412-02-impl-m2_3.md`. Suggested order: Change 1 (checkpoint tag) → Change 2 (format-patch) → Change 3 (draft/confirm/reject), since each depends on the previous.
+## Next session
+
+Change 4 is complete. The next task is atomicizing Changes 1–3 from `20260412-02-impl-m2_3.md`. Each gets its own handover. Suggested order: Change 1 (checkpoint tag, `start_agent.sh`) → Change 2 (format-patch, `libs/diff.sh`) → Change 3 (draft/confirm/reject, `apply_workspace.sh`), since each depends on the previous.
+
+Before starting Change 1, read `20260412-02-impl-m2_3.md` for the frozen design and `docs/devlog/discussions/design_git_workflow_improvements.md` for the current spec.

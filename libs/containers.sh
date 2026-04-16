@@ -79,7 +79,7 @@ build_context_sandbox() {
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
-  _build_context_copy "$repo_root/scripts/sandbox-entrypoint.sh" "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh" "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/snapshot.sh"              "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/diff.sh"                  "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/dirs.sh"                  "$context_dir/" || return 1

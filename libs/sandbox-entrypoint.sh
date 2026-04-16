@@ -76,16 +76,16 @@ fi
 echo "Copied $file_count file(s) into sandbox."
 
 # Initialise git baseline. Failure here means the container cannot start.
-# Command substitution contains the internal cd inside snapshot_init_git.
-# Explicit cd $ROOT afterward guards against any cwd leak.
-BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR") || {
+BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR") || {
   echo "Error: sandbox git initialisation failed — container cannot start." >&2
   echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
   exit 1
 }
-cd "$ROOT"
 
 echo "Sandbox ready. Baseline: $BASELINE_SHA"
+echo "Working tree status:"
+git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
+echo "  (empty = clean working tree)"
 
 # -------------------------
 # Diff pipeline
