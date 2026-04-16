@@ -211,6 +211,10 @@ Continue the interview until a scope proposal can be made, then present it and w
 - List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
 - Populate Next session with enough orientation that the next agent does not need to read this session's history. **This section is written for the next agent, not the current one — it is source material for that agent's Step 1, not a continuation directive. The next agent will create its own handover before acting on anything written here.**
 - If the completed sub-milestone was the last in the major milestone, write "Major loop required before next session" in Next session and leave the sub-milestone ID blank.
+- **If this session supersedes a prior implementation handover** (e.g., a workflow or chore session interrupting an implementation sequence), include a **Context handover** line in Next session with a markdown link to the last relevant implementation handover. This gives the next agent a direct path to load full context without reconstructing from the handover chain. Example:
+  ```markdown
+  Context handover: [`20260416-01-impl-snapshot-baseline.md`](handovers/20260416-01-impl-snapshot-baseline.md)
+  ```
 
 ---
 

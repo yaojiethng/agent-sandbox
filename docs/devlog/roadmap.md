@@ -20,7 +20,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
-| [M2.3 — Apply Workflow: Capability Layer Diff Pipeline](#m23--apply-workflow-capability-layer-diff-pipeline) | Complete |
+| [M2.3 — Apply Workflow: Capability Layer Diff Pipeline](#m23--apply-workflow-capability-layer-diff-pipeline) | In progress |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
 | M2.5 — Vault Capability Layer Prototype | Not started |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
@@ -60,7 +60,32 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
 
-**Depends on:** M2.1. **Status:** Scoped — see `docs/devlog/discussions/design_git_workflow_improvements.md`. Ready for implementation.
+**Depends on:** M2.1. **Status:** In progress. Changes 1 and 4 complete; Changes 2–3 pending.
+
+**Change status:**
+
+| Change | Description | Status |
+|--------|--------------|--------|
+| Change 1 | Checkpoint tag (`start_agent.sh`) | ✓ Complete |
+| Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | Pending |
+| Change 3 | draft/confirm/reject workflow (`apply_workspace.sh`) | Pending |
+| Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
+
+**Change 1 implementation (complete):**
+
+Checkpoint tag creation and SESSION_NAME derivation:
+- **Host side (`start_agent.sh`):** Creates `agent-checkpoint/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports for docker-compose (injection in Change 2); writes tag to `.workspace/checkpoint-latest.ref` for operator recovery.
+- **Tests:** 12 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 5 SESSION_NAME tests. All pass.
+
+See handover `20260416-04-impl-change1.md` for full implementation details.
+
+**Change 4 implementation (complete):**
+
+The snapshot baseline now correctly reflects the operator's working tree state:
+- **Host side (`start_agent.sh`):** After `snapshot_copy_worktree`, runs `git archive HEAD > baseline.tar` in `.snapshot/`. Produces exactly the committed state — no working tree changes, no untracked files.
+- **Container side (`snapshot_init_git` in `libs/snapshot.sh`):** Two-step init: (1) unpack `baseline.tar`, stage and commit as baseline; (2) rsync overlay from `.snapshot/` with `--delete`. Index reflects HEAD; working tree reflects operator's on-disk state.
+
+Correctly handles all cases: untracked files show as `??`, unstaged edits show as `M`, unstaged deletions show as `D`, clean files stay clean. See handover `20260416-01-impl-snapshot-baseline.md` for full design rationale.
 
 **Four changes in scope:**
 
@@ -70,7 +95,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 - **Change 3 — draft/confirm/reject workflow** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (applies patches to `agent/draft/<session-name>` branch via `git am`, resets author identity), `make confirm` (rebases draft onto target, fast-forward merges, deletes draft branch — linear history always), `make reject` (discards draft branch). State held in `.workspace/draft-state`. `make apply --mode=apply` retained as legacy fallback.
 
-- **Change 4 — rsync snapshot** (`libs/snapshot.sh`, `start_agent.sh`): Replace `snapshot_enumerate_files` + `snapshot_copy_files` with `snapshot_copy_worktree` using rsync. Snapshot reflects working tree directly, not the git index. Global gitignore (`core.excludesFile`) and `.git/info/exclude` read explicitly and passed via `--exclude-from`. Files excluded by global/exclude rules (but not local `.gitignore`) emit a stderr warning. Submodule pre-flight check retained. Residual limitation: negation patterns in global gitignore / `.git/info/exclude` not supported by rsync `--exclude-from` — documented.
+- **Change 4 — Archive HEAD + rsync overlay** (`libs/snapshot.sh`, `start_agent.sh`): Replaced naive rsync-only snapshot with two-step design: (1) host produces `baseline.tar` via `git archive HEAD`; (2) container unpacks tar, commits as baseline, then overlays rsync copy with `--delete`. Baseline commit now represents exactly HEAD — independent of working tree state. Residual limitation: negation patterns in global gitignore / `.git/info/exclude` not supported by rsync `--exclude-from` — documented.
 
 #### M2.5 — Vault Capability Layer Prototype
 
