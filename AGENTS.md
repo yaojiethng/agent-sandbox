@@ -8,19 +8,6 @@ The agent runtime is explicitly untrusted. The operator has final authority over
 
 ---
 
-## Working Environment
-
-| Path | Mode | Purpose |
-|---|---|---|
-| `~/sandbox/` (CWD) | Read-write | Working copy of the project snapshot. All file edits go here. |
-| `~/workspace/input/` | Read-only | Operator-placed task briefs, addenda, and input files. Read these at session start. |
-| `~/workspace/output/` | Read-write | Non-diff outputs: progress notes, serialised data, operator-facing text. Text and JSON only — no binaries. |
-| `~/workspace/changes/` | Harness-managed | Diff pipeline output. Do not read, write, or modify anything here. |
-
-`PROJECT_DIR` (the host repository) is not mounted. It is not reachable from inside the container.
-
----
-
 ## Role
 
 You operate in three modes, often in combination:
@@ -45,44 +32,22 @@ You operate in three modes, often in combination:
 
 ---
 
-## Session Start
+## Tool Awareness
 
-Read these in order before doing anything else:
+Do not assume tools exist if they are not listed here or explicitly discovered in the current session.
 
-1. Check for operator input files in `../workspace/input/` — read any files present before proceeding.
-2. Find and read the most recent handover:
-   ```
-   ls -t docs/devlog/handovers/ | head -1
-   ```
-   If the handovers directory is empty or missing, the session has no prior context. Read `docs/devlog/roadmap.md` and `docs/development/agent_context_brief.md`, then write a message to `../workspace/output/session-start.md` noting the gap and what you found before proceeding.
-3. `docs/devlog/roadmap.md` — active sub-milestone and pending tasks.
-4. `docs/development/agent_context_brief.md` — collaboration protocol and policy links.
+### Core Toolset
+Pi provides four primary tools by default. Do not attempt to use `finish`, `submit`, or other framework-specific termination tools.
+- `read`: Read file contents. Use for exploration and verification.
+- `write`: Create new files or overwrite existing ones.
+- `edit`: Precise text replacement in existing files.
+- `bash`: Execute shell commands. Use for `grep`, `find`, `ls`, and tests.
 
-The Hot files section of the handover lists the files in scope for this session. Do not read beyond this list without justification stated in chat first.
-
----
-
-## Read Discipline
-
-Before opening any file, run a grep to establish whether it contains what you need. The permitted first action when exploring scope is always a grep, never a file read.
-
-To find files containing a term:
-```
-grep -rn "TERM" path/
-```
-
-To get a section map before reading a document:
-```
-grep -n "^##" filename.md
-```
-
-Open a file in full only when:
-- It is listed in the handover's Hot files section, or
-- It is the direct subject of the task, or
-- It is under 40 lines, or
-- The grep result is insufficient and you can state specifically why
-
-Before opening any file not in the Hot files list, state in chat what you need from it and why grep is insufficient. A file read without a prior grep or explicit justification is a protocol violation.
+### Discovery Protocol
+At the start of a session, if you are unsure if a specific capability (like a specialized linter or search tool) is available:
+1. **Check for Skills**: Run `ls .skills/` or `ls ~/.pi/agent/skills/`.
+2. **Check for Extensions**: Run `ls .pi/extensions/` or `ls ~/.pi/agent/extensions/`.
+3. **Verify via Grep**: If a tool is mentioned in documentation but its name is ambiguous, grep the extension/skill files for `registerTool` or `name:`.
 
 ---
 
@@ -96,11 +61,41 @@ Before opening any file not in the Hot files list, state in chat what you need f
 
 **Scope discipline.** Address only what was asked. Flag adjacent issues separately — never fix them silently.
 
-**Read before write.** Do not edit a file you have not read this session. If a file is not in the Hot files list and you need to edit it, read it first and state in chat why it entered scope.
-
 **Decisions are final.** Do not re-open a decision without a specific technical reason.
 
 **Distinguish current from proposed.** Never blur the description of the existing system with a proposal for change.
+
+---
+
+## Session Start
+
+Before making any changes, orient yourself and confirm your understanding of the task:
+
+1. **Read the task brief** — your brief is in `~/workspace/input/`. Read it in full before opening any other file.
+
+2. **Read the handover and roadmap** — find the most recent `docs/devlog/handovers/YYYYMMDD-NN-TYPE-*.md` and read it. Then read `docs/devlog/roadmap.md` for the current sub-milestone and pending tasks.
+
+3. **State your scope** — before writing any file, state in chat:
+   - What you understand the task to be
+   - Which files you intend to read and change, and why
+   - Anything that is explicitly out of scope for this task
+   - Any question that must be resolved before you can begin — if the brief is ambiguous on a point that affects which files you touch, ask it now
+
+   If the brief is clear and complete, proceed after stating your understanding. If it is ambiguous on a scope-affecting point, ask one question and wait for a response before proceeding.
+
+4. **Read before writing** — use `grep` and targeted reads to establish what you need from each file before opening it in full. Do not read entire directories. See working-with-the-repository guidance below.
+
+---
+
+## Working with the Repository
+
+Read the project's own documentation before making changes. Key entry points:
+
+- `readme.md` — system invariants and architecture overview
+- `docs/devlog/roadmap.md` — current milestone and pending tasks
+- The most recent `docs/devlog/handovers/YYYYMMDD-NN-TYPE-*.md` — where the last session ended
+
+Use `grep` and targeted file reads rather than reading entire directories. Establish what you need from a file before opening it in full.
 
 ---
 
