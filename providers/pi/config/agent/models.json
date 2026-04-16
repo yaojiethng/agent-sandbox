@@ -1,0 +1,45 @@
+{
+  "providers": {
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "YOUR-API-KEY-HERE",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "z-ai/glm-5.1",
+          "name": "GLM 5.1 (OpenRouter)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 204800,
+          "maxTokens": 131072,
+          "compat": {
+            "thinkingFormat": "zai",
+            "openRouterRouting": {
+              "order": ["z-ai"]
+            }
+          }
+        },
+        {
+          "id": "qwen/qwen3.5-27b",
+          "name": "Qwen3.5-27B Dense (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "elephant-alpha",
+          "name": "Elephant Alpha (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 262144,
+          "maxTokens": 32800,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}

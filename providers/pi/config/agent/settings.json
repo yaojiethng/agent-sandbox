@@ -2,11 +2,12 @@
   "lastChangelogVersion": "0.63.1",
   "defaultProvider": "google",
   "defaultModel": "gemini-3-flash-preview",
-  "defaultThinkingLevel": "medium",
+  "defaultThinkingLevel": "minimal",
   "followUpMode": "all",
+  "enablePromptCommands": true,
   "compaction": {
     "enabled": true,
-    "reserveTokens": 600000,
+    "reserveTokens": 32768,
     "keepRecentTokens": 20000
   },
   "tools": {
@@ -16,5 +17,14 @@
       "dynamic_filtering": true
     }
   },
-  "enabledModels": ["claude-4-*", "gpt-4o", "gemini-3-*"]
+  "packages": [
+    "@complexthings/pi-dynamic-context-pruning"
+  ],
+  "enabledModels": [
+    "claude-4-*",
+    "gemini-3-*",
+    "z-ai/glm-5*",
+    "qwen/qwen3.5-*",
+    "openrouter/*"
+  ]
 }

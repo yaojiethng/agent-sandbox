@@ -16,7 +16,7 @@ USER agentuser
 # AGENT_HOME — Pi's config and state directory inside the container.
 # PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
 ENV PROVIDER_NAME=pi
-ENV AGENT_HOME=/home/agentuser/.pi/agent
+ENV AGENT_HOME=/home/agentuser/.pi
 ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 RUN mkdir -p /home/agentuser/workspace/input \
