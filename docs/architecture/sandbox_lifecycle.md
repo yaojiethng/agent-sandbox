@@ -26,21 +26,41 @@ The snapshot pipeline replicates the host repository state into the capability l
 
 ### Stage 1 — Host side (`scripts/start_agent.sh`)
 
-**Checkpoint tag** — a lightweight tag `agent-checkpoint/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. This serves as the base for the draft workflow. The last 5 checkpoint tags are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
+**Checkpoint tag** — a lightweight tag `agent-checkpoint/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. This tag serves as the base for the draft workflow. The last 5 checkpoint tags are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
 
-**`snapshot_copy_worktree`** uses `rsync` to replicate the project state into `.snapshot/`. It mirrors the current working tree directly, including untracked non-ignored files, but excluding files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`.
+**`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
 
-The rsync approach ensures the snapshot reflects the on-disk state even if the git index is stale (e.g. uncommitted deletes or moves). Files excluded by global or exclude rules (but not local `.gitignore`) emit a warning to `stderr` to alert the operator of potential missing dependencies.
+Files excluded by global gitignore or `.git/info/exclude` (but not local `.gitignore`) emit a warning to `stderr` to alert the operator of potential missing dependencies.
 
-**`snapshot_validate` (gate 1)** runs after copy, before the containers start. Checks that `.snapshot/` is non-empty and structurally sound. Non-zero exit aborts the run before Docker is invoked.
+**`snapshot_archive_head`** produces a tar archive of the committed state at HEAD:
+
+```bash
+git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"
+```
+
+This runs on the host where `PROJECT_DIR` is available. The tar contains exactly the files as they exist in the HEAD commit — no working tree changes, no untracked files. It is written into `.snapshot/` alongside the rsync copy and is used by the container to construct the baseline commit.
+
+**`snapshot_validate` (gate 1)** runs after both copy and archive, before the containers start. Checks that `.snapshot/` is non-empty, structurally sound, and contains `baseline.tar`. Non-zero exit aborts the run before Docker is invoked.
 
 ### Stage 2 — Capability layer side (capability layer entrypoint)
 
 **`snapshot_validate` (gate 2)** runs first, against the mounted `.snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
 
-**`snapshot_copy_to_sandbox`** copies `.snapshot/` into `sandbox/` — the Docker volume shared with the reasoning layer. This is the working content the agent accesses.
+**`snapshot_init_git`** initialises the sandbox git repository in two steps:
 
-**`snapshot_init_git`** initialises a git repository in `sandbox/` and records a baseline commit. The baseline SHA is stored for diff generation on exit. This is the connecting artefact between fork and join — the diff is always computed against this SHA.
+1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. The baseline SHA is stored in `.git/BASELINE_SHA` for the diff pipeline.
+
+2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
+
+The two-step design ensures all four working tree states are handled correctly:
+
+| Operator state | git status in sandbox |
+|---|---|
+| Untracked file | `??` untracked |
+| Tracked file with unstaged edits | `M` unstaged modification |
+| Tracked file deleted without staging | `D` unstaged deletion |
+| No changes | Clean |
+| Gitignored file | Not visible |
 
 ### Harness directory lifecycle
 
@@ -68,9 +88,7 @@ On capability layer container exit, an EXIT trap runs the diff pipeline:
 
 The `SESSION_NAME` is derived from the branch name and session timestamp (e.g., `main-20260408-112344`) and is injected into the container environment at startup.
 
-The diff runs in the capability layer container against `sandbox/` — not in the reasoning layer. The reasoning layer exits first; the harness then stops the capability layer, triggering the EXIT trap and diff generation.
-
-An autosave loop writes `autosave.diff` into the session directory on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during a session.
+An autosave loop writes `autosave.diff` into the session directory on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s).
 
 `workspace/changes/` accumulates session directories over time; they are not automatically pruned by the harness.
 

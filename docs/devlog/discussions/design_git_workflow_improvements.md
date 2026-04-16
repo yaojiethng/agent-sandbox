@@ -1,15 +1,13 @@
 # Design — Git Workflow Improvements
 
-**Status:** Working document. Tracks all proposed changes to the git-facing pipeline.  
-**Target milestone:** M2.3 (Changes 1–3) + Snapshot Hardening (pre-M2.3 or bundled)
+**Status:** Working document. Tracks all proposed changes to the git-facing pipeline.
+**Target milestone:** M2.3 (Changes 1–3) + Snapshot Baseline (Change 4, active)
 
 ---
 
 ## Context
 
-Four changes have been identified across two sessions of analysis. Three are the M2.3 targeted changes (checkpoint tag, format-patch generation, apply workflow). One is a pre-existing snapshot pipeline defect exposed during the worktree feasibility investigation.
-
-Open questions are listed per change. No implementation should begin until all open questions for that change are resolved.
+Four changes have been identified across two sessions of analysis. Changes 1–3 target the apply workflow and are on hold pending Change 4 completion (see `20260412-02-impl-m2_3.md`). Change 4 is the active work — its original rsync-only design was found to be incorrect and has been replaced by the archive HEAD + rsync overlay design described below.
 
 ---
 
@@ -33,7 +31,7 @@ git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
 
 **Why a tag, not a branch:** A tag is a point-in-time marker. It doesn't imply a line of development, doesn't move, and has a clear semantic: "PROJECT_DIR was here before this session." Branches are for development lines.
 
-**Tag cleanup:** Tag creation is in scope; so is pruning. Policy: keep the 5 most recent `agent-checkpoint/*` tags. On each new tag creation, delete any beyond the 5 most recent (sorted by tag name, which is chronological given the `YYYYMMDD-HHMMSS` format).
+**Tag cleanup:** Keep the 5 most recent `agent-checkpoint/*` tags. On each new tag creation, delete any beyond the 5 most recent (sorted by tag name, which is chronological given the `YYYYMMDD-HHMMSS` format).
 
 **Files changed:** `scripts/start_agent.sh`
 
@@ -47,7 +45,7 @@ git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
 
 ```bash
 BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-SANITIZED=$(echo "$BRANCH" | tr '/' '-')   # main, feat-auth, etc.
+SANITIZED=$(echo "$BRANCH" | tr '/' '-')
 SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"   # e.g. main-20260407-112344
 ```
 
@@ -76,7 +74,7 @@ Both artefacts are produced:
 - `<session-name>/staged.diff` — flat aggregate. Human overview artefact.
 - `<session-name>/patches/*.patch` — per-commit patches. Machine apply artefact.
 
-**Commit authorship:** The agent writes its own commits during the session. Commit messages are used as-is. The agent may include model attribution naturally — encouraged, not enforced. No session metadata file needed.
+**Commit authorship:** The agent writes its own commits during the session. The author identity is reset to the operator's `git config` at `make draft` time via per-patch `--author` amend. Commit messages are used as-is.
 
 **Files changed:** `libs/diff.sh`, `scripts/start_agent.sh`
 
@@ -102,42 +100,21 @@ Exits with the operator on the working branch. Review using any git tool.
 
 **`make confirm [TARGET=<branch>]`**
 
-Reads `.workspace/draft-state`. Target branch is `SOURCE_BRANCH` unless `TARGET` is supplied (necessary if the source branch no longer exists).
+Reads `.workspace/draft-state`. Target branch is `SOURCE_BRANCH` unless `TARGET` is supplied.
 
 Sequence:
-1. On the working branch: `git rebase <target>` — replays draft commits on top of current target HEAD.
+1. `git rebase <target>` on the working branch.
 2. `git switch <target>`
-3. `git merge --ff-only <working-branch>` — always succeeds because working branch is now directly ahead of target.
+3. `git merge --ff-only <working-branch>`
 4. Delete working branch. Clear `.workspace/draft-state`.
 
 History is always linear. No merge commit is created.
 
-If the target branch has not moved since `make draft`, the rebase is a no-op and the fast-forward is trivial. If the target has new commits and there is no conflict, the rebase replays cleanly. If there is a conflict, the rebase stops and the operator resolves normally:
-
-```bash
-# resolve conflict markers
-git add <resolved files>
-git rebase --continue
-# or to abort and return to pre-rebase state:
-git rebase --abort   # working branch is restored; operator can then make reject
-```
-
-On success: working branch deleted, `.workspace/draft-state` cleared. Session artefacts in `.workspace/changes/<session-name>/` retained.
-
 **`make reject`**
 
-Reads `.workspace/draft-state`. Checks out `SOURCE_BRANCH`. Deletes the working branch without merging. Clears `.workspace/draft-state`. PROJECT_DIR returns to exactly the state before `make draft` was called. Session artefacts retained.
+Reads `.workspace/draft-state`. Checks out `SOURCE_BRANCH`. Deletes the working branch without merging. Clears `.workspace/draft-state`. Session artefacts retained.
 
-**Backwards compatibility:** `make apply --mode=apply` retains the old `git apply` behaviour (flat diff applied to working tree, no commits created) for sessions from older harness versions that predate format-patch.
-
-**Conflict during `make draft`** (`git am` conflict, distinct from `git rebase` conflict during `make confirm`):
-
-```bash
-git add <resolved files>
-git am --continue
-# or to abort the patch application:
-git am --abort   # working branch exists in partial state; run make reject to clean up
-```
+**Backwards compatibility:** `make apply --mode=apply` retains the old `git apply` behaviour for sessions from older harness versions that predate format-patch.
 
 **Author reset loop:**
 
@@ -149,103 +126,124 @@ for patch in "$SESSION_DIR/patches/"*.patch; do
 done
 ```
 
-Author identity comes from the operator's git config at `make draft` time. Commit message and author timestamp preserved from the agent's patch.
-
-**Updated operator workflow:**
-
-```bash
-cat .workspace/changes/main-20260407-112344/staged.diff   # optional flat overview
-make draft                            # creates agent/draft/main-20260407-112344, applies patches
-git log -p HEAD~N..HEAD               # review using any git tool
-make confirm                          # merge to main, delete working branch
-# or:
-make confirm TARGET=other-branch      # if main is gone or operator wants a different target
-# or:
-make reject                           # discard working branch, return to main
-```
-
-**Files changed:** `scripts/apply_workspace.sh`, `Makefile.template`  
+**Files changed:** `scripts/apply_workspace.sh`, `Makefile.template`
 **Dependency:** Change 2 (session-scoped artefact directory, `SESSION_NAME` env var)
 
 ---
 
-## Change 4 — Working-tree-aware snapshot (rsync)
+## Change 4 — archive HEAD + rsync overlay
 
-**File:** `libs/snapshot.sh`
+**Files:** `libs/snapshot.sh`, `scripts/start_agent.sh`
 
-**Problem:** `snapshot_enumerate_files` uses `git ls-files --cached --others --exclude-standard`. `--cached` enumerates the git **index**, not the working tree. The index and working tree diverge whenever the operator has unstaged deletions or unstaged moves. When `snapshot_copy_files` tries to `cp` an index-listed path that doesn't exist on disk, it hard-fails and aborts the snapshot.
+**Status:** Active. Replaces the previous rsync-only design, which was found to produce an incorrect baseline commit.
 
-Affected scenarios:
+### The Problem
 
-| Operator working tree state | Current behaviour | Desired behaviour |
-|---|---|---|
-| Unstaged deletion (`rm file.txt`) | `cp` fails → snapshot aborts | File absent from snapshot |
-| Unstaged move (`mv a.txt b.txt`) | `cp a.txt` fails → snapshot aborts | `a.txt` absent, `b.txt` present |
-| Unstaged modification | Working tree version copied ✅ | (unchanged) |
-| Unstaged new file | Picked up via `--others` ✅ | (unchanged) |
-| Staged deletion (`git rm`) | Correctly excluded ✅ | (unchanged) |
+The previous design used rsync to copy the working tree into `.snapshot/`, then ran `git init && git add -A && git commit -m "baseline"` inside the container. This collapses the entire working tree — including unstaged edits, new files, and deletions — into the baseline commit. When the agent runs `git status`, it sees a clean working tree regardless of the operator's actual state.
 
-**Root cause:** The current approach is index-driven and corrects toward the working tree imperfectly. It is only coincidentally correct for modifications and new files.
+The core issue: the baseline commit is supposed to represent `HEAD` in `PROJECT_DIR`. But `git add -A` commits the working tree, not HEAD. These diverge whenever the operator has any uncommitted changes.
 
-**The right frame:** The invariant is that the agent sees an exact replica of the working tree the operator sees, filtered by `.gitignore`. The working tree is the authoritative source. The index is not.
+### The Four Cases
 
-**Fix:** Replace the `snapshot_enumerate_files` + `snapshot_copy_files` pipeline with a single `rsync` call:
+Any correct design must handle all four cases:
+
+| Working tree state | Required sandbox git status |
+|---|---|
+| Untracked file (`hello-world.txt` never committed) | `?? hello-world.txt` |
+| Tracked file with unstaged edits (`foo.py` modified but not staged) | `M foo.py` (unstaged) |
+| Tracked file deleted without staging (`rm bar.txt`, not `git rm`) | `D bar.txt` (unstaged) |
+| Tracked file, no changes | Clean |
+
+The naive "skip unstaged files from `git add`" approach fails case 2: if you don't add `foo.py`, it's absent from the baseline entirely, not present at the committed version.
+
+### The Design
+
+The key insight: construct the baseline commit from `HEAD` directly — independent of the working tree — then overlay the working tree on top without touching the index.
+
+**Host side (`scripts/start_agent.sh`):**
+
+After `snapshot_copy_worktree` (rsync copy of working tree into `.snapshot/`), produce a git archive of HEAD:
 
 ```bash
-rsync -a \
-  --filter=':- .gitignore' \
-  --exclude='.git' \
-  "$SOURCE_DIR/" "$DEST_DIR/"
+git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"
 ```
 
-rsync enumerates from the filesystem directly. It copies what is on disk. Deletions, moves, and new files all behave correctly because rsync has no concept of an index — it sees what the operator sees.
+This runs on the host where `PROJECT_DIR` is available. The tar contains exactly the committed state at HEAD — no working tree changes, no untracked files, no index state. It is written into `.snapshot/` alongside the rsync copy so both are available to the container.
 
-`--filter=':- .gitignore'` is rsync's dir-merge filter syntax: it reads `.gitignore` in each directory and applies the rules to that directory, including nested `.gitignore` files and `!` negation patterns. `--exclude='.git'` prevents the git directory from being copied.
+**Container side (`snapshot_init_git` in `libs/snapshot.sh`):**
 
-**Global gitignore and repo-level excludes:** rsync's `--filter=':- .gitignore'` does not read `~/.gitignore_global`, `~/.config/git/ignore` (resolved via `git config core.excludesFile`), or `.git/info/exclude`. These are read explicitly at snapshot time and passed to rsync via `--exclude-from`.
+```bash
+snapshot_init_git() {
+  local sandbox_dir="$1"
+  local snapshot_dir="$2"
 
-Sequence in `snapshot_copy_worktree`:
+  # Step 1: initialise repo and commit exactly HEAD via the archive
+  git init "$sandbox_dir"
+  git -C "$sandbox_dir" config user.email "sandbox@agent"
+  git -C "$sandbox_dir" config user.name "sandbox"
 
-1. Resolve global gitignore path: `GLOBAL_IGNORE=$(git -C "$SOURCE_DIR" config --global core.excludesFile 2>/dev/null)`. Expand `~` if present.
-2. Collect exclude sources that exist on disk: `GLOBAL_IGNORE` (if non-empty and file exists) and `$SOURCE_DIR/.git/info/exclude` (if exists).
-3. Concatenate into a temp file (`mktemp`). If neither source exists, skip `--exclude-from` entirely.
-4. Pass `--exclude-from=<tempfile>` to rsync. Clean up temp file after rsync completes (trap on EXIT).
+  local archive_dir
+  archive_dir=$(mktemp -d)
+  tar -x -C "$archive_dir" < "$snapshot_dir/baseline.tar"
+  cp -a "$archive_dir/." "$sandbox_dir/"
+  rm -rf "$archive_dir"
 
-**Warning on global-rule exclusions:** To make it visible when a file is excluded by global/exclude rules (not local `.gitignore`), `snapshot_copy_worktree` performs two rsync dry-runs before the real copy:
+  git -C "$sandbox_dir" add -A
+  git -C "$sandbox_dir" commit -m "baseline" --allow-empty
+  git -C "$sandbox_dir" rev-parse HEAD > "$sandbox_dir/.git/BASELINE_SHA"
 
-- **Dry-run A:** `--filter=':- .gitignore'` only — local rules only. Captures file list.
-- **Dry-run B:** same, plus `--exclude-from=<tempfile>` — all rules. Captures file list.
+  # Step 2: overlay the rsync working tree copy on top of the baseline
+  # rsync --delete ensures files absent from the working tree (deletions)
+  # are also absent from sandbox/. The index is NOT updated — working tree
+  # diverges from index exactly as it does in PROJECT_DIR.
+  rsync -a --delete \
+    --exclude='.git' \
+    "$snapshot_dir/" "$sandbox_dir/"
 
-Files present in A but absent in B were excluded solely by global/exclude rules. For each such file, emit a warning to stderr:
-
+  # Step 3: do not run git add. The index reflects HEAD (the baseline commit).
+  # The working tree reflects the operator's current state.
+  # git status will now show the correct diff between the two.
+}
 ```
-[snapshot] WARNING: <relative-path> excluded by global gitignore or .git/info/exclude
+
+**Why this is correct for all four cases:**
+
+| Case | After archive + commit | After rsync overlay | git status |
+|---|---|---|---|
+| Untracked file | Not in index, not on disk | rsync copies it onto disk | `?? hello-world.txt` ✅ |
+| Tracked file with edits | Committed version in index and on disk | Edited version overwrites disk copy | `M foo.py` ✅ |
+| Tracked deletion | Committed version in index and on disk | `--delete` removes it from disk | `D bar.txt` ✅ |
+| No changes | Committed version in index and on disk | rsync copies identical content | Clean ✅ |
+| Gitignored file | Not in archive, not in index | rsync excludes it | Not visible ✅ |
+
+**Why rsync is still correct for the copy step:**
+
+rsync `--filter=':- .gitignore'` reads per-directory `.gitignore` files and applies them during the copy. It copies what is on disk (working tree), not what is in the index. This is correct for producing the working tree overlay. The previous design's error was not in rsync — it was in committing the rsync output directly as the baseline.
+
+**Residual limitation — negation patterns in global gitignore:**
+
+rsync's `--exclude-from` (used for `core.excludesFile` and `.git/info/exclude`) does not support gitignore-style negation patterns (`!foo`). Negation patterns in global gitignore or `.git/info/exclude` are silently ignored. This is uncommon in practice (negations are rare in global configs) and is a documented gap. Negation patterns in local per-directory `.gitignore` files are handled correctly by `--filter=':- .gitignore'`.
+
+**Submodule pre-flight:** The existing submodule check is retained as a separate pre-flight step before the rsync call. It is unaffected by this change.
+
+**API change in `snapshot.sh`:**
+
+`snapshot_init_git` gains a second parameter: `snapshot_dir` (path to the rsync copy). Callers: capability layer entrypoint only. The function signature becomes:
+
+```bash
+snapshot_init_git SANDBOX_DIR SNAPSHOT_DIR
 ```
-
-This makes the exclusion visible without blocking the snapshot.
-
-**Residual limitation — negation patterns in `--exclude-from`:** rsync's `--exclude-from` does not support gitignore-style negation patterns (`!foo`). Negation patterns in global gitignore or `.git/info/exclude` will be silently ignored by rsync. This is uncommon in practice (negations are rare in global configs), but is a known and documented gap. Negation patterns in local per-directory `.gitignore` files are handled correctly by `--filter=':- .gitignore'`.
-
-**Comparison with an existence-check fix to `snapshot_copy_files`:**
-
-An existence check (skip missing files rather than aborting) would fix the hard-failure case but the enumeration would still be index-driven. The result would be "index minus what's not on disk" — approximately correct but not semantically correct. rsync copies "what is on disk" directly and is correct by construction.
-
-**Submodule pre-flight:** The current submodule check (`git ls-files --stage | grep '^160000'`) must be kept as a separate validation step before the rsync call. It is a pre-flight guard, not an enumeration step, and is unaffected by this change.
-
-**Scope note:** This change is independent of M2.3 and should land first. It is a correctness defect causing hard failures on common working tree states.
-
-**API change in `snapshot.sh`:** `snapshot_enumerate_files` and `snapshot_copy_files` are replaced by `snapshot_copy_worktree SOURCE_DIR DEST_DIR`. The submodule check moves into `snapshot_copy_worktree` as a pre-flight or stays in `start_agent.sh` as a separate call. Callers: `start_agent.sh` only.
 
 **Files changed:** `libs/snapshot.sh`, `scripts/start_agent.sh`
 
 ---
 
+## Open Questions
 
-## Open questions
-
-All open questions resolved. No blockers.
+All open questions resolved.
 
 | # | Question | Resolution |
 |---|---|---|
 | OQ-1 | Checkpoint tag retention policy | Keep last 5. On each new tag creation, prune any `agent-checkpoint/*` tags beyond the 5 most recent. |
-| OQ-2 | Session metadata / author amendment | Partial. No `session.json`. Agent writes its own commit messages (including model attribution if it chooses). Author identity (name/email) is reset to the operator's `git config` at apply time via `--author` on each amend. Timestamp preserved from sandbox session. |
+| OQ-2 | Session metadata / author amendment | No `session.json`. Agent writes its own commit messages. Author identity reset to operator's `git config` at apply time via `--author` amend per patch. |
+| OQ-3 | How to make baseline commit represent HEAD without mounting PROJECT_DIR in container | Produce `baseline.tar` via `git archive HEAD` on the host side in `start_agent.sh`, write it into `.snapshot/`. Container unpacks it to form the baseline commit. |
