@@ -3,6 +3,7 @@
 **Session date:** 2026-04-16
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation
+**Status:** Completed
 
 ## Objective
 

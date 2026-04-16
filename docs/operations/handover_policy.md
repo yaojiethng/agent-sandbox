@@ -36,6 +36,7 @@ Stored in the `docs/devlog/handovers/` directory. One file per session. Do not o
 ## Session Types
 
 Each session has a type that reflects its dominant activity. The type appears in the handover header and in the filename shortform.
+Each session type (Eg. workflow vs implementation) must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior sessions of different types. 
 
 | Session type | Shortform | Scope |
 |---|---|---|
@@ -78,6 +79,15 @@ A handover has three moments:
 ## Scope
 <Which task groups or tasks from the roadmap this session targets. Reference by group name;
 do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
+
+## Carried forward
+<Items explicitly deferred from the prior session that this session is picking up. One row per
+item, with a reference to the handover it came from. Populated at Step 1 from the prior
+handover's Deferred items. If nothing was carried forward, write the canonical marker.>
+
+| Item | From handover |
+|---|---|
+| <deferred item description> | <YYYYMMDD-NN-TYPE-description> |
 
 ## Acceptance criteria
 <Criteria carried from prior session + any defined this session. Each criterion is an operator-runnable check — an action or command, expected output or behaviour, and pass/fail condition. Not file state. At session close, mark each as accepted or pushed to next session. Both must be visible under this header.>
@@ -130,6 +140,7 @@ When a section has nothing to record, write the canonical marker and nothing els
 | Decisions made this session | `None.` |
 | Completed this session | `No file changes this session.` |
 | Deferred items | `None.` |
+| Carried forward | `None.` |
 
 Explanation of *why* a section is empty is noise. "None — design confirmed. Implementation-time decisions are task list items, not open design questions." says nothing a reader needs. `None.` says everything.
 
@@ -144,7 +155,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
 - Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
-- Read the prior handover if one exists. Transfer only acceptance criteria that were explicitly pushed to this session — accepted criteria from the prior session are not carried forward. Transfer any deferred items into the Scope or Deferred sections as appropriate. Do not re-litigate deferred decisions — they are recorded where they were made.
+- Read the prior handover if one exists. Populate the Carried forward section: for each item in the prior handover's Deferred items that is destined for this session, add a row with the item description and the prior handover filename. Transfer acceptance criteria that were explicitly pushed to this session. Do not re-litigate deferred decisions — they are recorded where they were made.
 - Reset the Completed this session table to the null marker. It records only files changed in the current session — never carried from a prior handover.
 - Populate the Hot files section: for each task in the roadmap groups targeted this session, add a markdown link and a one-line reason.
 - Set Session type to the dominant activity expected this session.
@@ -190,14 +201,15 @@ Continue the interview until a scope proposal can be made, then present it and w
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
-- The Deferred items section must be complete before the handover is considered closed. For each deferred item, note where it goes: next session, a different sub-milestone, or `roadmap_future.md`. If nothing is deferred, write the canonical marker.
+- **Scope reconciliation — do this before writing anything else in Step 8.** Compare the confirmed scope from Step 1b against the Completed this session table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items — if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-session, it is deferred with the reason. The Deferred items section is not complete until this check passes.
+- For each deferred item, record: what it is, why it did not complete this session, and where it goes next (next session, a specific future sub-milestone, or `roadmap_future.md`). If nothing is deferred, write the canonical marker.
 
 ### At session seed (Step 9)
 
-- Identify the next session's scope from the roadmap.
+- Identify the next session's scope from two sources: the roadmap task list, and the Deferred items just written in Step 8. Deferred items take priority — they represent work already started or committed to that must not be silently dropped.
 - If this was the final session of a sub-milestone, note in Next session whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
 - List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
-- Populate Next session with enough orientation that the next agent does not need to read this session's history.
+- Populate Next session with enough orientation that the next agent does not need to read this session's history. **This section is written for the next agent, not the current one — it is source material for that agent's Step 1, not a continuation directive. The next agent will create its own handover before acting on anything written here.**
 - If the completed sub-milestone was the last in the major milestone, write "Major loop required before next session" in Next session and leave the sub-milestone ID blank.
 
 ---
