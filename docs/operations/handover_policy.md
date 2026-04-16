@@ -122,7 +122,7 @@ None.
 
 ## Canonical Null Markers
 
-When a section has nothing to record, write the canonical marker and nothing else. Do not explain why the section is empty — if a decision was made that affects the section, record it in the Decisions table or the relevant document.
+When a section has nothing to record, write the canonical marker and nothing else. Do not explain why the section is empty — if a decision was made that affects the section, record it in the Decisions table or the relevant document. The agent must not leave a nullable section blank and must not explain why it is empty.
 
 | Section | Canonical marker |
 |---|---|
@@ -139,6 +139,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ### At session open (Step 1)
 
+- **Create a new handover — never modify a closed one.** The most recent handover in `docs/devlog/handovers/` belongs to the previous session. If its Status is `Closed`, it is a read-only record. Do not edit it, do not reopen it, do not update its fields. Create a new file with today's date and the next sequential index. The prior handover is source material only — read it for context, then leave it untouched.
 - **Trigger B recovery check:** if the prior handover's Next session names a different sub-milestone than the one currently active in `roadmap.md`, [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has not run. Run it now before compacting or creating this handover.
 - **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
@@ -148,6 +149,29 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 - Populate the Hot files section: for each task in the roadmap groups targeted this session, add a markdown link and a one-line reason.
 - Set Session type to the dominant activity expected this session.
 - For all nullable sections with nothing yet to record, write the canonical marker — not a blank section, not an explanation.
+
+### At scope confirmation (Step 1b)
+
+After the handover draft is complete, present a scope proposal in chat and wait for operator confirmation before producing any file, code, or structural output. This gate applies to every session type without exception.
+
+**If sufficient context is available** (handover and roadmap uploaded, task list readable), present the proposal directly. Cover:
+
+- What the agent proposes to attempt this session, and why each item is in scope now (dependency order, available context, estimated size)
+- What the agent is explicitly deferring from the roadmap task list, and why (too large for one session, blocked on missing context, depends on a prior group not yet complete)
+- Any questions that must be resolved before the first task can begin
+
+For housekeeping sessions, the scope proposal may simply be the target file list and the nature of the change — that is sufficient. The gate still applies; the operator must confirm before work begins.
+
+**If context is insufficient** (key files missing, roadmap task list unclear, prior handover not uploaded), do not guess at scope. Instead, ask the operator one question at a time to establish what is needed:
+- Which sub-milestone or task group is the target?
+- Which files are available or need to be uploaded?
+- Are there any constraints or priorities the operator wants applied this session?
+
+Continue the interview until a scope proposal can be made, then present it and wait for confirmation.
+
+**Exit condition:** Operator has confirmed the scope proposal in chat. The Scope section of the handover is updated to reflect the confirmed scope before proceeding.
+
+**Rule:** No output before scope is confirmed.
 
 ### During the session
 
@@ -161,7 +185,7 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ### At session close (Step 8)
 
-- Mark all completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). This is done alongside the handover update, not after it.
+- Mark completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). This is done alongside the handover update, not after it.
 - If all sub-milestone tasks are now complete and acceptance criteria are met, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover.
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
@@ -178,17 +202,53 @@ Explanation of *why* a section is empty is noise. "None — design confirmed. Im
 
 ---
 
-## Rules
+## Index Maintenance
 
-- **Decisions in chat do not exist.** If a decision was made in conversation but not recorded in a document and noted in the Decisions table, it will not survive the session boundary.
-- **Completed means confirmed.** A task is checked only after the operator has reviewed and confirmed the output — not when the agent has produced it.
-- **Deferrals are explicit.** "We ran out of time" is not a deferral reason. The reason must name the blocker: dependency, open question, scope change, operator decision.
-- **The handover is not a summary of decisions.** Decisions live in the documents where they were made (roadmap, architecture docs). The handover points to those documents — it does not reproduce their content.
-- **The handover does not duplicate the task list.** The roadmap is the canonical task list. The handover's Scope section references roadmap task groups by name; its Completed section records what was done this session.
-- **Accepted criteria do not carry forward; pushed criteria do.** At session close, every criterion is either marked accepted (stays in the closed handover, not copied to the next) or explicitly pushed to the next session (transferred at session open). The operator must be able to see both outcomes in the current handover without reading the prior one.
-- **Acceptance criteria are operator-runnable checks.** Each criterion describes an action or command the operator performs and an outcome they can observe — expected output, behaviour, or timing. Criteria that describe file contents, internal state, or task completion belong in the Completed table or the task checklist — not under Acceptance criteria.
-- **Next session blockers are concrete.** Blocking design questions in the Next session section are specific questions the next agent must resolve, not general notes. Cap at three items total (blockers + watch-out items combined).
-- **Empty sections use canonical markers.** A blank section is ambiguous — it could mean nothing to record, or a forgotten section. Write the canonical marker. Never leave a nullable section blank and never explain why it is empty.
+Two documents serve as the project's file registry. Each has a defined owner and update cadence. Neither is updated outside these moments.
+
+**`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
+
+**The active handover** is the session-scoped hot file list. It replaces `doc_status.md`, which is retired. The Hot files section of the handover is the only place the current session's file scope is recorded.
+
+### Update triggers
+
+**At major loop close:**
+- Add any new documents created during planning (stories, investigations, stubs) to `project_index.md` with temperature and last-touched milestone
+- Update the Architecture Layers table if freeze status has changed
+- Update temperature for any documents whose stability has changed
+- `project_index.md` last-touched milestone does not need updating for documents that were not changed — only touched files get their row updated
+
+**At minor loop Step 1 (session open):**
+- Create the new handover document
+- Populate the Hot files section from the roadmap task list
+- No changes to `project_index.md` at this step
+
+**At minor loop Step 8 (session close):**
+- Update `project_index.md`: for every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
+- If new files were created during the session, add them to `project_index.md`
+- If files were deleted, remove them from `project_index.md`
+- Update the Hot files section of the handover to reflect final session state
+
+### Temperature rules
+
+Temperature in `project_index.md` reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every session.
+
+| Temperature | Meaning |
+|---|---|
+| 🔴 Hot | Changes continuously — roadmap, active handovers |
+| 🟡 Warm | Changes per milestone — architecture docs, active policy |
+| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
+
+---
+
+## Child Documents
+
+| Document | Governs |
+|---|---|
+| [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
+| [`story_policy.md`](story_policy.md) | Story lifecycle: creation, investigation trigger, graduation, closure |
+| [`investigation_policy.md`](investigation_policy.md) | Investigation lifecycle: structure, states, recommendation, closure |
+| [`handover_policy.md`](handover_policy.md) | Handover format, naming, population rules, session continuity |
 
 ---
 

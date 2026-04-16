@@ -24,7 +24,9 @@ You do not modify the repository. All outputs are proposals; the operator review
 
 These principles are stable. The operating workflow and policy documents are their realizations — they will evolve; the principles do not.
 
-**Handover first.** The first output of every session is the handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt.
+**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `docs/devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it. Create a new file.
+
+**Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`handover_policy.md`](docs/operations/handover_policy.md) — At scope confirmation (Step 1b).
 
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
@@ -44,6 +46,8 @@ These principles are stable. The operating workflow and policy documents are the
 
 **No restatement of completed work.** Reference by name only.
 
+**Confirm scope before producing output:** A core principle across all work is to confirm scope with the operator before producing any file, code, or structural output. This extends the handover discipline — the handover document itself is produced before any output, and scope confirmation (Step 1b) must precede any file, code, or design output within a session.
+
 ---
 
 ## Read Discipline
@@ -54,7 +58,7 @@ Before opening any file in full, establish what you need from it first.
 ```bash
 grep -rn "TERM" path/
 ```
-Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`. If a file is not present in uploads, request it before proceeding — do not infer its content from memory.
+Build your change list from the results. Open only files that appear. This applies whether you have filesystem access (Code, Cowork) or are working from uploaded files in a chat session — in chat, run grep across `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/`.
 
 **To get a section map of a file before reading it:**
 ```bash
@@ -82,7 +86,7 @@ All document, code, and file outputs are proposals. The operator reviews, approv
 
 Read these in order at session start. Each answers a distinct question — do not skip.
 
-**Before proceeding, verify you have access to each required document. A missing file is a blocking condition — do not proceed with inferred or reconstructed content. If a required document is absent, surface it immediately and wait.**
+**Before proceeding, verify you have access to each required document. If a required document is missing, surface it immediately — do not begin the session without it.**
 
 ### Session start — always
 
@@ -92,7 +96,7 @@ Read these in order at session start. Each answers a distinct question — do no
 | this file | How do I work here? |
 | [`agents.md`](agents.md) | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` | What milestone am I on, what files are in scope, and where did the last session end? — find the most recent date-prefixed file at repo root |
-| [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? |
+| [`docs/development/roadmap.md`](docs/development/roadmap.md) | What is the current sub-milestone and what are the pending tasks? — **after reading, state your proposed scope for this session and wait for confirmation before producing any output** |
 
 ### Session start — major loop only
 
@@ -100,8 +104,8 @@ Read these in addition to the above when opening a major loop planning session (
 
 | Document | Question it answers |
 |---|---|
-| [`docs/devlog/roadmap_future.md`](docs/devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
-| [`docs/devlog/changelog.md`](docs/devlog/changelog.md) | Is the prior milestone fully closed? |
+| [`docs/development/roadmap_future.md`](docs/development/roadmap_future.md) | What sub-milestones are planned but not yet active? |
+| [`docs/development/changelog.md`](docs/development/changelog.md) | Is the prior milestone fully closed? |
 
 ###  Policy documents — read before the relevant task type, not at session start
 
@@ -111,4 +115,4 @@ Read these in addition to the above when opening a major loop planning session (
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/development/roadmap_policy.md`](docs/development/roadmap_policy.md) | Any roadmap update |
 | [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session (minor loop open/close), new task, story, investigation, or milestone transition |
-| [`handover_policy.md`](docs/operations/handover_policy.md) | Any session (minor loop open/close), Creating or updating handover, maintaining session continuity across compact operations |
+| [`handover_policy.md`](docs/operations/handover_policy.md) | Any session (minor loop open/close), creating or updating handover, maintaining session continuity across compact operations |

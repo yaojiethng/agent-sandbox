@@ -16,15 +16,16 @@ agent-sandbox workflow
 │   └── 6. Confirm ready to session    milestone_policy.md
 │
 └── Minor loop  (one session per sub-milestone)
-    ├── 1. Open handover               handover_policy.md — At session open
-    ├── 2. Design                      roadmap_policy.md — Rules
-    ├── 3. Conceptual docs             documentation_policy.md
-    ├── 4. Spec                        —
-    ├── 5. Architecture docs           documentation_policy.md
-    ├── 6. Acceptance criteria         handover_policy.md — At Step 6
-    ├── 7. Implementation              —
-    ├── 8. Close session               roadmap_policy.md — Session close + Trigger B if final session
-    └── 9. Seed next session           handover_policy.md — At session seed
+    ├── 1.  Open handover              handover_policy.md — At session open
+    ├── 1b. Confirm scope              handover_policy.md — At scope confirmation
+    ├── 2.  Design                     roadmap_policy.md — Rules
+    ├── 3.  Conceptual docs            documentation_policy.md
+    ├── 4.  Spec                       —
+    ├── 5.  Architecture docs          documentation_policy.md
+    ├── 6.  Acceptance criteria        handover_policy.md — At Step 6
+    ├── 7.  Implementation             —
+    ├── 8.  Close session              roadmap_policy.md — Session close + Trigger B if final session
+    └── 9.  Seed next session          handover_policy.md — At session seed
 ```
 
 ---
@@ -35,7 +36,7 @@ agent-sandbox workflow
 
 **Resolve open questions before advancing.** If a design or scope question cannot be answered, the session does not advance to the next step. Surface the question explicitly — do not assume an answer and proceed.
 
-**Record decisions where the work lives.** Decisions belong in the relevant document, not only in chat. If the reasoning is not recorded, it does not exist for the next session.
+**Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents — it does not reproduce their content.
 
 **Confirm the spec before writing code.** The implementation spec — files, interfaces, naming — is confirmed by the operator before any code is produced. It is the agreement, not a starting point.
 
@@ -95,27 +96,29 @@ The major loop closes when M2.1 (the first sub-milestone) has a complete roadmap
 
 ## Minor Loop — Session Workflow
 
-A session targets one sub-milestone but need not span the full step sequence. Steps 1 and 8–9 always run; the middle steps are scoped to the session type:
+A session targets one sub-milestone but need not span the full step sequence. Steps 1, 1b, and 8–9 always run; the middle steps are scoped to the session type:
 
 ```
 Minor loop
-├── Step 1 — Open handover          (always)
-├── Step 2 — Design                 (design session)
-├── Step 3 — Conceptual docs        (design session)
-├── Step 4 — Spec                   (spec session)
-├── Step 5 — Architecture docs      (spec session)
-├── Step 6 — Acceptance criteria    (session before implementation)
-├── Step 7 — Implementation         (implementation session)
-├── Step 8 — Close session          (always)
-└── Step 9 — Seed next session      (always)
+├── Step 1  — Open handover         (always)
+├── Step 1b — Confirm scope         (always)
+├── Step 2  — Design                (design session)
+├── Step 3  — Conceptual docs       (design session)
+├── Step 4  — Spec                  (spec session)
+├── Step 5  — Architecture docs     (spec session)
+├── Step 6  — Acceptance criteria   (session before implementation)
+├── Step 7  — Implementation        (implementation session)
+├── Step 8  — Close session         (always)
+└── Step 9  — Seed next session     (always)
 ```
 
 A step does not advance until its exit condition is met and the operator has confirmed.
 
 | Step | Entry condition | Action | Exit condition |
 |---|---|---|---|
-| **1 — Open handover** | Session begins | Check whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has run: if the prior handover names a new sub-milestone but the roadmap still shows the previous sub-milestone as active, Trigger B has not run — run it now before proceeding. Then compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). Create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). Read roadmap for pending work. | Handover active. Session target and blockers known. |
-| **2 — Design** | Handover open. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md#rules). Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
+| **1 — Open handover** | Session begins | Check whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has run: if the prior handover names a new sub-milestone but the roadmap still shows the previous sub-milestone as active, Trigger B has not run — run it right after creating the next handover. Then compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). Create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). Read roadmap for pending work. | Handover draft complete. |
+| **1b. Confirm scope** | Handover draft complete | Present a scope proposal in chat per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-1b): what is in scope this session, what is explicitly deferred and why, and any blocking questions. If context is insufficient to propose, interview the operator one question at a time until a proposal can be made. Do not produce any file, code, or structural output until the operator confirms. Update the handover Scope section to reflect confirmed scope. | Operator has confirmed scope in chat. Scope section finalised. |
+| **2 — Design** | Scope confirmed. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md#rules). Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
 | **3 — Conceptual docs** | Design confirmed | Update `docs/concepts/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No concepts document contradicts the agreed design. |
 | **4 — Spec** | Conceptual docs confirmed | Specify files, interfaces, naming, mount shape. Scope is fixed here — adjacent issues are flagged in the handover and deferred, not resolved. | Operator confirmed spec in full. No open interface or naming questions. |
 | **5 — Architecture docs** | Spec confirmed | Update `docs/architecture/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No architecture document contradicts the confirmed spec. |
@@ -182,4 +185,3 @@ Temperature in `project_index.md` reflects the stability of what a document desc
 |---|---|
 | [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
-| [`autonomous_task.md`](../concepts/autonomous_task.md) | Relationship between this interactive workflow and the future autonomous workflow (M3) |

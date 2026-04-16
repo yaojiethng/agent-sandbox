@@ -48,6 +48,26 @@ You operate in three modes, often in combination:
 
 ---
 
+## Session Start
+
+Before making any changes, orient yourself and confirm your understanding of the task:
+
+1. **Read the task brief** — your brief is in `~/workspace/input/`. Read it in full before opening any other file.
+
+2. **Read the handover and roadmap** — find the most recent `docs/devlog/handovers/YYYYMMDD-NN-TYPE-*.md` and read it. Then read `docs/devlog/roadmap.md` for the current sub-milestone and pending tasks.
+
+3. **State your scope** — before writing any file, state in chat:
+   - What you understand the task to be
+   - Which files you intend to read and change, and why
+   - Anything that is explicitly out of scope for this task
+   - Any question that must be resolved before you can begin — if the brief is ambiguous on a point that affects which files you touch, ask it now
+
+   If the brief is clear and complete, proceed after stating your understanding. If it is ambiguous on a scope-affecting point, ask one question and wait for a response before proceeding.
+
+4. **Read before writing** — use `grep` and targeted reads to establish what you need from each file before opening it in full. Do not read entire directories. See working-with-the-repository guidance below.
+
+---
+
 ## Working with the Repository
 
 Read the project's own documentation before making changes. Key entry points:

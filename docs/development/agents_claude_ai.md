@@ -67,8 +67,8 @@ Session open. Uploaded: handover, roadmap, security.md. Focus: capability layer 
 
 **If the operator omits the session open message** and sends a task prompt directly, the agent must not act on the prompt immediately. Instead:
 1. Acknowledge the task.
-2. Run Step 1 housekeeping (Trigger B recovery check, compaction, handover creation) per [`handover_policy.md`](handover_policy.md#at-session-open-step-1).
-3. Confirm Step 1 is complete, then proceed with the task.
+2. Run Step 1 and Step 1b per [`handover_policy.md`](handover_policy.md).
+3. Confirm both steps are complete, then proceed with the task.
 
 **If the operator omits the uploaded files list**, ask for it before proceeding. Do not infer which files are present from the conversation — the operator's explicit list is the authoritative record for this session.
 
@@ -80,8 +80,8 @@ At session start, on receipt of the session open message:
 
 1. Check the uploaded files list against required reading. The most recent handover (`YYYYMMDD-NN-TYPE-*.md`) and `roadmap.md` are the minimum required uploads for any implementation or workflow session. Name any missing files and ask for them before proceeding.
 2. Run Step 1 housekeeping per [`handover_policy.md`](handover_policy.md#at-session-open-step-1): Trigger B recovery check, roadmap compaction, handover creation.
-3. If a Focus was given, use it to scope the Hot files section to the named task group(s). If no Focus was given, scope to the full remaining task list.
-4. Confirm Step 1 is complete before accepting any task prompt.
+3. Run Step 1b scope confirmation per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-1b): present a scope proposal in chat (or interview the operator if context is insufficient), and wait for explicit confirmation before producing any file output. If a Focus was given, use it to narrow the scope proposal. Update the handover Scope section once confirmed.
+4. Confirm both steps are complete before accepting any task prompt.
 
 ---
 
