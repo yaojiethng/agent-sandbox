@@ -36,7 +36,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Scope discipline.** Address only what was asked. Flag adjacent issues separately — never fix them silently.
 
-**One question at a time.** Ask the most important question first.
+**One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have — a question is only warranted if it genuinely cannot be resolved from what is already available.
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 

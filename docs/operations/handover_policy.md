@@ -25,9 +25,9 @@ YYYYMMDD-NN-TYPE-description.md
 | `YYYYMMDD` | Session date |
 | `NN` | Two-digit session index, reset daily. Derived at session start: list existing handovers for today's date, take `max + 1`. First session of the day is `01`. |
 | `TYPE` | Session type shortform (see table below) |
-| `description` | Brief task description. Use underscores for spaces and periods. No other special characters. |
+| `description` | The specific subject of this session — what is being built, changed, or investigated. Name the concrete thing, not a restatement of the type. Use underscores for spaces and periods. No other special characters. A reader scanning a list of handover filenames should be able to distinguish this session from others of the same type without opening the file. Bad: `policy_audit`, `m2_3_impl`, `scope_confirm`. Good: `scope_gate_and_preclose_verification`, `snapshot_baseline_git_init`, `provider_config_copyout`. |
 
-Example: `20260316-02-workflow-policy_audit.md`
+Example: `20260316-02-workflow-scope_gate_and_preclose_verification.md`
 
 Stored in the `docs/devlog/handovers/` directory. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
 
