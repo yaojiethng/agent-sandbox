@@ -10,8 +10,6 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
 
-See Investigation: [`docs/devlog/discussions/investigation_staleness_and_interactivity_regression.md`](discussions/investigation_staleness_and_interactivity_regression.md) for the proposal to re-implement a simpler version of this feature.
-
 ---
 
 ## M1 — Barebones Agent Container

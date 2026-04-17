@@ -154,21 +154,17 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
-- **Stale git index causes cryptic snapshot failures** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. M2.3 replaces this pipeline with rsync, eliminating the index-driven enumeration entirely.
-
-- **Stale container images (Regressed M1.4)** — The harness currently only checks if an image *exists*, not if it is up-to-date with the current `libs/` or `scripts/`. This can lead to regressions if old images persist. 
-  - [Investigation: Staleness and Interactivity Regression](discussions/investigation_staleness_and_interactivity_regression.md)
-  - [Investigation: Unified Versioning and Governance Model](discussions/investigation_versioning_and_governance.md)
-
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
 
-- **Snapshot breaks on uncommitted moves and deletes** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` uses `git ls-files` which reflects the committed index, not the working tree. If files have been moved or deleted but the changes are not yet staged, `git ls-files` still lists the old paths. `snapshot_copy_files` will fail with `cp: cannot stat` for deleted files, or copy the old path instead of the new path for moves. M2.3 replaces this pipeline with rsync, which copies working tree state directly.
-
-- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
+- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path. The image rename in M2.7 (dropping the `<project>` suffix) is a prerequisite step toward this.
 
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
 
-- **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
+### Addressed in upcoming milestones
+
+- **Stale container images** *(M2.7)* — the preflight gate currently checks only whether an image exists, not whether it was built from the current source. M2.7 introduces `container-sig` (hash of `libs/` and provider Dockerfiles, baked as a Docker label) checked at preflight, and `harness-sig` (hash of `scripts/` and compose files) checked at runtime with a warning on drift. See [`story_session_identity_and_harness_versioning.md`](discussions/story_session_identity_and_harness_versioning.md).
+
+- **No automated Makefile or harness script staleness check** *(M2.7)* — `harness-sig` written to `SANDBOX_DIR/.harness-sig.ref` at session end will detect host-side script drift on subsequent runs. Full install-level isolation is a larger task deferred to [`story_harness_packaging_and_install_versioning.md`](discussions/story_harness_packaging_and_install_versioning.md).
 
 ---
 

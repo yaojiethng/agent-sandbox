@@ -135,9 +135,10 @@ When `rev-parse --abbrev-ref HEAD` returns the literal string `HEAD`, substitute
 
 **Where the work goes:** A new sub-milestone (proposed M2.7) covering: primitive set implementation in `start_agent.sh` (single timestamp, `REPO_COMMIT`, `WORKTREE_ID`); `container-sig` baked as Docker label at build time, checked at preflight; `harness-sig` computed at runtime, compared against `SANDBOX_DIR/.harness-sig.ref`; container naming redesign (explicit `container_name:` in generated compose, derived from session identity); image rename prerequisite verification (`agents.md` code review); paired refactor moving base compose files from `libs/` to `providers/`. Detached HEAD handling and tag namespace update (`agent-checkpoint/<worktree-id>/<timestamp>`) can be folded into the next Change 1 implementation pass as low-risk additions.
 
-**Superseded investigations:**
-- [`investigation_staleness_and_interactivity_regression.md`](investigation_staleness_and_interactivity_regression.md) — staleness detection proposal adopted and extended; `INTERACTIVE` flag concern superseded by prior bug fix
-- [`investigation_versioning_and_governance.md`](investigation_versioning_and_governance.md) — runtime concerns fully absorbed; governance concerns addressed in separate chore session; `VERSION` file not adopted
+**Rewritten investigations:**
+Following investigations are rewritten into the current story file: 
+- `investigation_staleness_and_interactivity_regression.md` — staleness detection proposal adopted and extended; `INTERACTIVE` flag concern superseded by prior bug fix
+- `investigation_versioning_and_governance.md` — runtime concerns fully absorbed; governance concerns addressed in separate chore session; `VERSION` file not adopted
 
 **Sub-stories extracted:**
 - [`story_parallel_sessions_worktree.md`](story_parallel_sessions_worktree.md) — parallel sessions via git worktree; `WORKTREE_ID` primitive and checkpoint tag namespace are the harness-level prerequisites
