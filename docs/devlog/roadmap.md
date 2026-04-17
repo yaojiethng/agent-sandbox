@@ -67,7 +67,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 | Change | Description | Status |
 |--------|--------------|--------|
 | Change 1 | Checkpoint tag (`start_agent.sh`) | ✓ Complete |
-| Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | Pending |
+| Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | ✓ Complete |
 | Change 3 | draft/confirm/reject workflow (`apply_workspace.sh`) | Pending |
 | Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
 
@@ -78,6 +78,16 @@ Checkpoint tag creation with worktree namespace, SESSION_NAME derivation, and RE
 - **Tests:** 19 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 6 SESSION_NAME tests, 3 WORKTREE_ID tests, 2 REPO_COMMIT tests. All pass.
 
 See handover `20260416-04-impl-change1.md` for full implementation details.
+
+**Change 2 implementation (complete):**
+
+Format-patch generation and session-scoped artefact directory:
+- **Container side (`libs/diff.sh`):** Added `diff_format_patch` function to generate per-commit `.patch` files via `git format-patch`. Updated `diff_on_exit` and `diff_on_autosave` to accept optional `SESSION_NAME` argument; artefacts written under `.workspace/changes/<session-name>/` with fallback to root `CHANGES_DIR/` for backwards compatibility.
+- **Container side (`libs/sandbox-entrypoint.sh`):** EXIT trap and autosave loop pass `${SESSION_NAME:-}` to diff functions.
+- **Compose (`libs/docker-compose.yml`):** `SESSION_NAME` injected into sandbox container environment.
+- **Tests:** 11 new tests in `tests/test_diff.sh` (24 total) covering `diff_format_patch` and session-scoped artefacts. All pass.
+
+See handover `20260417-04-impl-m2_3_change2.md` for full implementation details.
 
 **Change 4 implementation (complete):**
 

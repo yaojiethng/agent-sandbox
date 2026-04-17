@@ -95,7 +95,7 @@ source /libs/diff.sh
 # On exit: kill autosave subshell if running, commit any pending changes,
 # write staged.diff. Runs on any exit — clean shutdown, SIGTERM, or error.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"' EXIT
+     diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR" "${SESSION_NAME:-}"' EXIT
 
 # On SIGTERM (docker stop): exit cleanly so EXIT trap fires with code 0.
 # Without this, SIGTERM interrupts wait and bash exits with 128+15=143,
@@ -113,7 +113,7 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR"
+      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR" "${SESSION_NAME:-}"
     done
   ) &
   AUTOSAVE_PID=$!

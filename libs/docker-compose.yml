@@ -32,6 +32,7 @@ services:
       - SANDBOX_DIR_NAME=sandbox
       - CHANGES_DIR_NAME=workspace/changes
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
+      - SESSION_NAME=${SESSION_NAME:-}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s
