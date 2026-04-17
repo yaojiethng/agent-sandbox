@@ -113,6 +113,20 @@ See [Dry-Run Guarantees](../architecture/tool_interface.md#dry-run-guarantees) f
 
 ---
 
+## Session checkpointing
+
+Before each session, the harness creates a lightweight git tag `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` in `PROJECT_DIR`. The worktree ID is a short hash of your project path, ensuring tags are namespaced per-worktree. This provides a recovery point if a session produces a bad diff. The 5 most recent checkpoint tags per worktree are kept automatically.
+
+To recover from a bad apply:
+
+```bash
+git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
+```
+
+See [`../architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) for full details on checkpoint tags and session lifecycle.
+
+---
+
 ## References
 
 | Document | Purpose |

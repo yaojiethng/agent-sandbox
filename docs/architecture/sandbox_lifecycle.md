@@ -26,7 +26,7 @@ The snapshot pipeline replicates the host repository state into the capability l
 
 ### Stage 1 — Host side (`scripts/start_agent.sh`)
 
-**Checkpoint tag** — a lightweight tag `agent-checkpoint/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. This tag serves as the base for the draft workflow. The last 5 checkpoint tags are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
+**Checkpoint tag** — a lightweight tag `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. The worktree ID is a short hash of the project path, namespacing tags per-worktree. This tag serves as the base for the draft workflow. The last 5 checkpoint tags per worktree are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
 
 **`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
 

@@ -119,6 +119,34 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 ---
 
+## Recovery
+
+If a session produces a bad diff that corrupts your repository after apply, recover using the checkpoint tag:
+
+```bash
+# Find the latest checkpoint tag
+LATEST=$(cat .workspace/checkpoint-latest.ref)
+
+# Reset to pre-session state
+git reset --hard "$LATEST"
+```
+
+Checkpoint tags are created automatically before each session and stored as `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS`. The worktree ID is a short hash of your project path, ensuring tags are namespaced per-worktree. The 5 most recent tags per worktree are kept; older tags are pruned.
+
+To see all available checkpoint tags for your worktree:
+
+```bash
+git tag --list 'agent-checkpoint/*'
+```
+
+To recover to a specific checkpoint:
+
+```bash
+git reset --hard agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
+```
+
+---
+
 ## References
 
 | Document | Purpose |
