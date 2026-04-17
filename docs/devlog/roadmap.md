@@ -115,6 +115,21 @@ Correctly handles all cases: untracked files show as `??`, unstaged edits show a
 
 Each provider may result in a different integration pattern. Investigation findings should be recorded as named investigation documents before implementation begins.
 
+#### M2.7 — Session Identity and Harness Versioning
+Objective: Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
+Depends on: M2.3. Status: Not started.
+Scope: Implement the primitive set and two-sig model defined in docs/discussions/story_session_identity_and_harness_versioning.md. Work falls into four groups:
+
+Primitive set (scripts/start_agent.sh): single canonical SESSION_TS at top of script replacing any downstream date calls; REPO_COMMIT captured and exported; WORKTREE_ID derived from short hash of PROJECT_DIR absolute path and exported. Note: WORKTREE_ID and updated checkpoint tag namespace (agent-checkpoint/<worktree-id>/<timestamp>) may be folded into M2.3 Change 1 additions if that pass has not yet run.
+Two-sig model (libs/containers.sh, scripts/start_agent.sh): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
+Paired refactor (libs/, providers/): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary.
+Container naming and image rename (libs/compose.sh, libs/containers.sh, provider Dockerfiles): explicit container_name: in generated compose derived from session identity (<provider>-agent-<project>-<session-ts>); image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding. If still baked in, migration to runtime injection via workspace/input/ must complete first.
+
+Sub-stories:
+
+story_parallel_sessions_worktree.md — parallel sessions via git worktree; WORKTREE_ID primitive and checkpoint tag namespace (implemented in this milestone) are the harness-level prerequisites. Two open design questions (OQ1: WORKTREE_ID representation finalisation; OQ3: container naming pattern across restarts) to be resolved at session open before implementation begins.
+story_harness_packaging_and_install_versioning.md — install workflow rewrite; deferred, does not block this milestone.
+
 ---
 
 ## Future Milestones
