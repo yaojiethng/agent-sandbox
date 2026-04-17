@@ -257,6 +257,34 @@ Temperature in `project_index.md` reflects the stability of what a document desc
 
 ---
 
+## Corrections to Closed Handovers
+
+Closed handovers are read-only records with one exception: documented corrections applied under the post-close correction policy (`docs/operations/documentation_policy.md` — Post-Close Document Corrections).
+
+### When to apply
+
+Apply a correction when a factual error is found in the document — an incorrect status, a wrong filename, a misrecorded decision. Do not apply a correction to add new information, change scope, or extend the session record. New session work belongs in a new handover.
+
+### Procedure
+
+1. Identify the error and its location in the document.
+2. Edit the affected text in the body directly. If the error requires context, add a brief inline note: `[see correction below]`.
+3. Append a dated amendment block at the bottom of the document:
+
+```
+---
+[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
+```
+
+4. Do not alter the document's Status, timestamps, or any other metadata field.
+5. Propose the amended document to the operator for review. Do not self-commit.
+
+### What this is not
+
+A correction to a closed handover is not a substitute for a new handover. If the session requires new work, create a new handover first. The correction procedure applies only to errors in the record — not to work that was omitted or deferred.
+
+---
+
 ## Child Documents
 
 | Document | Governs |

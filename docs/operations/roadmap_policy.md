@@ -117,3 +117,32 @@ When producing a changelog entry during a milestone completion pass, output the 
 ````
 
 The operator appends the block contents verbatim to `changelog.md`.
+
+---
+
+## Corrections to Closed Roadmap and Changelog Entries
+
+Closed roadmap entries and changelog entries are permanent historical records. They are not re-issued or restructured. Errors and superseded claims are corrected with inline tags at the point of the affected claim.
+
+The full correction principle is defined in `docs/operations/documentation_policy.md` — Post-Close Document Corrections. This section defines the specific form for roadmap and changelog documents.
+
+### Inline tag forms
+
+| Situation | Tag |
+|---|---|
+| A claim in a prior entry is invalidated by a later milestone | `[SUPERSEDED in MX.X]` appended to the affected sentence |
+| A feature recorded in a prior entry has been removed | `[REMOVED in MX.X]` appended to the affected sentence |
+
+The tag is appended inline to the affected sentence. The entry is not restructured or re-dated. Example:
+
+> Implemented provider isolation layer for container sandboxing. `[SUPERSEDED in M2.1]`
+
+### Trigger B obligation
+
+When closing a milestone (Trigger B), before the handover is finalised:
+
+1. Review the changes in the closing milestone.
+2. Check whether any change invalidates a claim in a prior changelog entry.
+3. If so, apply the appropriate inline tag to the affected sentence before closing the handover.
+
+This check is mandatory and is not deferred to a later session.

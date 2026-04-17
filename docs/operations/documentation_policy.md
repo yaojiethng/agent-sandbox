@@ -151,6 +151,42 @@ Rules:
 
 ---
 
+## Post-Close Document Corrections
+
+### Principle
+
+Closed documents are not re-issued. When an error is found in a closed document, it is corrected in-place with a marked, minimal annotation. The document remains a readable record; the correction is visible at the point of change.
+
+The agent never deletes documents. Deletion is an operator action. The agent's responsibility is to apply the correct correction form and, where applicable, mark referencing links.
+
+### Correction forms by document type
+
+| Document type | Correction form |
+|---|---|
+| Handover | Dated `[CORRECTION: ...]` amendment block appended at the bottom — see [`handover_policy.md`](handover_policy.md) — Corrections to Closed Handovers |
+| Changelog | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected sentence — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
+| Roadmap entry | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected claim — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
+| Investigation — valid content, minor error | Edits directly in the body + dated `[CORRECTION: ...]` amendment block at the bottom — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
+| Investigation — invalid or superseded content | `[SUPERSEDED]` status header with link to correct source — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
+
+### Amendment block format
+
+Used at the bottom of handover and investigation documents:
+
+```
+---
+[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
+```
+
+### Missing documents
+
+If a document the agent expects to find is absent:
+
+- If its referencing link carries a `[REMOVED]` marker — the absence is expected. No error.
+- If its referencing link has no `[REMOVED]` marker — flag as an error and prompt the operator before proceeding. Do not assume the document is optional and do not proceed without resolution.
+
+---
+
 ## Editing Guidelines
 
 1. Identify the document's folder category.
