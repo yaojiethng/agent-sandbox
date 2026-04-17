@@ -56,4 +56,4 @@ None.
 
 Resume M2.3 implementation. Next task: Change 1 (checkpoint tag, `start_agent.sh`).
 
-Before starting, read `20260412-02-impl-m2_3.md` for the frozen design and `docs/devlog/discussions/design_git_workflow_improvements.md` for the current spec.
+Before starting, read `20260412-02-m2_3_onhold.md` for the frozen design and `docs/devlog/discussions/design_git_workflow_improvements.md` for the current spec.

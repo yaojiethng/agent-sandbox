@@ -22,7 +22,7 @@ Implement Change 1 (checkpoint tag) for M2.3, plus SESSION_NAME derivation as a 
 
 ## Acceptance Criteria
 
-All acceptance criteria from `20260412-02-impl-m2_3.md` (AC-1) met:
+All acceptance criteria from `20260412-02-m2_3_onhold.md` (AC-1) met:
 
 | AC | Description | Result |
 |----|-------------|--------|
@@ -148,7 +148,7 @@ Files to modify:
 - `libs/docker-compose.yml` — add `SESSION_NAME` to sandbox container environment
 - `libs/diff.sh` — add `diff_format_patch` function; update `diff_on_exit` and `diff_on_autosave` for session-scoped directories
 
-Context handover: [`20260412-02-impl-m2_3.md`](20260412-02-impl-m2_3.md) (frozen design)
+Context handover: [`20260412-02-m2_3_onhold.md`](20260412-02-m2_3_onhold.md) (frozen design)
 Current spec: [`docs/devlog/discussions/design_git_workflow_improvements.md`](../discussions/design_git_workflow_improvements.md) (Change 2 section)
 
 ---

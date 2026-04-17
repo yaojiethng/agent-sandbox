@@ -7,7 +7,7 @@
 
 ## Context
 
-Four changes have been identified across two sessions of analysis. Changes 1–3 target the apply workflow and are on hold pending Change 4 completion (see `20260412-02-impl-m2_3.md`). Change 4 is the active work — its original rsync-only design was found to be incorrect and has been replaced by the archive HEAD + rsync overlay design described below.
+Four changes have been identified across two sessions of analysis. Changes 1–3 target the apply workflow and are on hold pending Change 4 completion (see `20260412-02-m2_3_onhold.md`). Change 4 is the active work — its original rsync-only design was found to be incorrect and has been replaced by the archive HEAD + rsync overlay design described below.
 
 ---
 
@@ -18,8 +18,10 @@ Four changes have been identified across two sessions of analysis. Changes 1–3
 **What:** Before the snapshot runs, create a lightweight git tag in PROJECT_DIR:
 
 ```
-agent-checkpoint/YYYYMMDD-HHMMSS
+agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
 ```
+
+The worktree ID is a short hash of the project path (e.g., `a1b2c3d4`), namespacing checkpoint tags per-worktree.
 
 Write the tag name to `$SANDBOX_DIR/.workspace/checkpoint-latest.ref` so `apply_workspace.sh` can read it for correlation.
 
@@ -31,7 +33,7 @@ git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
 
 **Why a tag, not a branch:** A tag is a point-in-time marker. It doesn't imply a line of development, doesn't move, and has a clear semantic: "PROJECT_DIR was here before this session." Branches are for development lines.
 
-**Tag cleanup:** Keep the 5 most recent `agent-checkpoint/*` tags. On each new tag creation, delete any beyond the 5 most recent (sorted by tag name, which is chronological given the `YYYYMMDD-HHMMSS` format).
+**Tag cleanup:** Keep the 5 most recent `agent-checkpoint/<worktree-id>/*` tags. On each new tag creation, delete any beyond the 5 most recent (sorted by tag name, which is chronological given the `YYYYMMDD-HHMMSS` format). Pruning is scoped to the worktree namespace.
 
 **Files changed:** `scripts/start_agent.sh`
 

@@ -11,7 +11,7 @@ Redesign and implement `snapshot_init_git` so that the sandbox git state correct
 
 ## Scope
 
-Change 4 (snapshot baseline initialization) only. All other M2.3 changes remain on hold in `20260412-02-impl-m2_3.md`.
+Change 4 (snapshot baseline initialization) only. All other M2.3 changes remain on hold in `20260412-02-m2_3_onhold.md`.
 
 ## Status
 
@@ -175,7 +175,7 @@ Option A is the correct architecture. The split becomes:
 |---|---|
 | `docs/architecture/sandbox_lifecycle.md` | Phase 1 rewritten: Stage 1 describes `snapshot_archive_head`; Stage 2 describes the two-step init. Four-case correctness table added. |
 | `docs/devlog/discussions/design_git_workflow_improvements.md` | Change 4 rewritten as "archive HEAD + rsync overlay" with eight-case working tree state table and full design rationale. |
-| `20260412-02-impl-m2_3.md` | Frozen with status note and forward pointer. Not modified further. |
+| `20260412-02-m2_3_onhold.md` | Frozen with status note and forward pointer. Not modified further. |
 | `investigation_git_worktrees.md` | Stripped to worktree-mechanism content only. |
 
 ---
@@ -226,6 +226,6 @@ The correct fix separates two concerns: `git archive HEAD` builds the baseline i
 
 ## Next session
 
-Change 4 is complete. The next task is atomicizing Changes 1–3 from `20260412-02-impl-m2_3.md`. Each gets its own handover. Suggested order: Change 1 (checkpoint tag, `start_agent.sh`) → Change 2 (format-patch, `libs/diff.sh`) → Change 3 (draft/confirm/reject, `apply_workspace.sh`), since each depends on the previous.
+Change 4 is complete. The next task is atomicizing Changes 1–3 from `20260412-02-m2_3_onhold.md`. Each gets its own handover. Suggested order: Change 1 (checkpoint tag, `start_agent.sh`) → Change 2 (format-patch, `libs/diff.sh`) → Change 3 (draft/confirm/reject, `apply_workspace.sh`), since each depends on the previous.
 
-Before starting Change 1, read `20260412-02-impl-m2_3.md` for the frozen design and `docs/devlog/discussions/design_git_workflow_improvements.md` for the current spec.
+Before starting Change 1, read `20260412-02-m2_3_onhold.md` for the frozen design and `docs/devlog/discussions/design_git_workflow_improvements.md` for the current spec.
