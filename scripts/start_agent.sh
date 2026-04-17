@@ -178,11 +178,59 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -f "$PROJECT_DIR/.gitignore" ]]; then
-  echo "Warning: no .gitignore found in $PROJECT_DIR"
-  echo "  All untracked files will be copied into the sandbox."
-  echo "  Consider adding a .gitignore to exclude secrets, build artifacts, etc."
+# -------------------------
+# Worktree ID
+# -------------------------
+# Derive a stable worktree identifier from the PROJECT_DIR path.
+# This is used to namespace checkpoint tags per-worktree.
+_WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+export WORKTREE_ID="$_WORKTREE_ID"
+unset _WORKTREE_ID
+
+# -------------------------
+# Checkpoint tag 
+# -------------------------
+CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
+CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+
+git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+echo "Checkpoint tag created: $CHECKPOINT_TAG"
+
+# Prune old checkpoint tags — keep the 5 most recent for this worktree.
+# Scope pruning to this worktree's namespace only.
+mapfile -t _ALL_CHECKPOINT_TAGS < <(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
+_KEEP=5
+if [[ "${#_ALL_CHECKPOINT_TAGS[@]}" -gt "$_KEEP" ]]; then
+  _DELETE_COUNT=$(( ${#_ALL_CHECKPOINT_TAGS[@]} - _KEEP ))
+  for (( _i=0; _i<_DELETE_COUNT; _i++ )); do
+    git -C "$PROJECT_DIR" tag -d "${_ALL_CHECKPOINT_TAGS[$_i]}" >/dev/null
+    echo "Pruned checkpoint tag: ${_ALL_CHECKPOINT_TAGS[$_i]}"
+  done
 fi
+unset _ALL_CHECKPOINT_TAGS _KEEP _DELETE_COUNT _i
+
+# Write latest ref for operator recovery and apply workflow.
+mkdir -p "$SANDBOX_DIR/.workspace"
+echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
+
+# -------------------------
+# REPO_COMMIT capture
+# -------------------------
+# Capture the current HEAD commit for image labeling (future use).
+export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+# -------------------------
+# SESSION_NAME derivation 
+# -------------------------
+_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+# Handle detached HEAD: use short SHA instead of literal "HEAD"
+if [[ "$_BRANCH" == "HEAD" ]]; then
+  _BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+fi
+_SANITIZED=$(echo "$_BRANCH" | tr '/' '-')
+export SESSION_NAME="${_SANITIZED}-${CHECKPOINT_TS}"
+unset _BRANCH _SANITIZED
+echo "Session name: $SESSION_NAME"
 
 # -------------------------
 # Workspace directory setup

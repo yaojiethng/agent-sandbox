@@ -39,7 +39,11 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 make_committed_repo() {
   local DIR="$1"
   mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
+  # Explicitly set default branch to main for consistency across git versions
+  git -C "$DIR" init --quiet --initial-branch=main 2>/dev/null || {
+    git -C "$DIR" init --quiet
+    git -C "$DIR" branch -M main 2>/dev/null || true
+  }
   git -C "$DIR" config user.email "test@sandbox"
   git -C "$DIR" config user.name "test"
   echo "tracked content" > "$DIR/tracked.txt"
@@ -58,15 +62,16 @@ test_checkpoint_tag_created() {
   mkdir -p "$SANDBOX_DIR"
 
   # Simulate checkpoint tag creation logic from start_agent.sh
-  local CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
   CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${CHECKPOINT_TS}"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
-  # Verify tag exists
+  # Verify tag exists with worktree namespace
   local TAGS
-  TAGS=$(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*')
+  TAGS=$(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*")
   if [[ -n "$TAGS" && "$TAGS" == *"agent-checkpoint/"* ]]; then
     pass "checkpoint tag created with correct naming convention"
   else
@@ -78,12 +83,12 @@ test_checkpoint_tag_points_to_correct_commit() {
   local PROJECT_DIR="$FIXTURE_DIR/checkpoint_commit_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local BASELINE_SHA
+  local WORKTREE_ID BASELINE_SHA CHECKPOINT_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
   BASELINE_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
-  local CHECKPOINT_TS CHECKPOINT_TAG
   CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${CHECKPOINT_TS}"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
@@ -103,9 +108,10 @@ test_checkpoint_ref_file_written() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$SANDBOX_DIR"
 
-  local CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
   CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${CHECKPOINT_TS}"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
@@ -130,9 +136,10 @@ test_checkpoint_ref_file_creates_workspace_dir() {
   # SANDBOX_DIR exists but .workspace does not
   mkdir -p "$SANDBOX_DIR"
 
-  local CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
   CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${CHECKPOINT_TS}"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
@@ -155,25 +162,28 @@ test_checkpoint_pruning_keeps_five() {
   local PROJECT_DIR="$FIXTURE_DIR/pruning_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  # Create 7 checkpoint tags
+  local WORKTREE_ID
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+
+  # Create 7 checkpoint tags with worktree namespace
   local TAGS=()
   for i in 1 2 3 4 5 6 7; do
     local TS="20260416-09000${i}"
-    local TAG="agent-checkpoint/${TS}"
+    local TAG="agent-checkpoint/${WORKTREE_ID}/${TS}"
     git -C "$PROJECT_DIR" tag "$TAG"
     TAGS+=("$TAG")
   done
 
-  # Verify we have 7 tags
+  # Verify we have 7 tags (scoped to worktree)
   local COUNT_BEFORE
-  COUNT_BEFORE=$(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | wc -l)
+  COUNT_BEFORE=$(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | wc -l)
   if [[ "$COUNT_BEFORE" -ne 7 ]]; then
     fail "setup: expected 7 tags, got $COUNT_BEFORE"
     return
   fi
 
-  # Prune to 5 (as start_agent.sh does)
-  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | sort)
+  # Prune to 5 (scoped to worktree namespace)
+  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
   local KEEP=5
   if [[ "${#ALL_TAGS[@]}" -gt "$KEEP" ]]; then
     local DELETE_COUNT=$(( ${#ALL_TAGS[@]} - KEEP ))
@@ -183,7 +193,7 @@ test_checkpoint_pruning_keeps_five() {
   fi
 
   local COUNT_AFTER
-  COUNT_AFTER=$(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | wc -l)
+  COUNT_AFTER=$(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | wc -l)
 
   if [[ "$COUNT_AFTER" -eq 5 ]]; then
     pass "pruning keeps exactly 5 most recent tags"
@@ -196,14 +206,17 @@ test_checkpoint_pruning_keeps_newest() {
   local PROJECT_DIR="$FIXTURE_DIR/pruning_newest_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  # Create 6 checkpoint tags with clear chronological ordering
+  local WORKTREE_ID
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+
+  # Create 6 checkpoint tags with worktree namespace
   for i in 1 2 3 4 5 6; do
     local TS="20260416-09000${i}"
-    git -C "$PROJECT_DIR" tag "agent-checkpoint/${TS}"
+    git -C "$PROJECT_DIR" tag "agent-checkpoint/${WORKTREE_ID}/${TS}"
   done
 
-  # Prune to 5
-  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | sort)
+  # Prune to 5 (scoped to worktree)
+  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
   local KEEP=5
   if [[ "${#ALL_TAGS[@]}" -gt "$KEEP" ]]; then
     local DELETE_COUNT=$(( ${#ALL_TAGS[@]} - KEEP ))
@@ -214,11 +227,11 @@ test_checkpoint_pruning_keeps_newest() {
 
   # Verify the 5 newest remain (090002 through 090006)
   local REMAINING
-  REMAINING=$(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | sort)
+  REMAINING=$(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
 
-  if [[ "$REMAINING" == *"agent-checkpoint/20260416-090002"* && \
-        "$REMAINING" == *"agent-checkpoint/20260416-090006"* && \
-        "$REMAINING" != *"agent-checkpoint/20260416-090001"* ]]; then
+  if [[ "$REMAINING" == *"agent-checkpoint/${WORKTREE_ID}/20260416-090002"* && \
+        "$REMAINING" == *"agent-checkpoint/${WORKTREE_ID}/20260416-090006"* && \
+        "$REMAINING" != *"agent-checkpoint/${WORKTREE_ID}/20260416-090001"* ]]; then
     pass "pruning keeps the 5 newest tags (oldest deleted)"
   else
     fail "pruning deleted wrong tags: $REMAINING"
@@ -229,14 +242,17 @@ test_checkpoint_no_pruning_when_under_limit() {
   local PROJECT_DIR="$FIXTURE_DIR/no_prune_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  # Create only 3 checkpoint tags
+  local WORKTREE_ID
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+
+  # Create only 3 checkpoint tags with worktree namespace
   for i in 1 2 3; do
     local TS="20260416-09000${i}"
-    git -C "$PROJECT_DIR" tag "agent-checkpoint/${TS}"
+    git -C "$PROJECT_DIR" tag "agent-checkpoint/${WORKTREE_ID}/${TS}"
   done
 
   # Attempt pruning (should do nothing)
-  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | sort)
+  mapfile -t ALL_TAGS < <(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
   local KEEP=5
   if [[ "${#ALL_TAGS[@]}" -gt "$KEEP" ]]; then
     local DELETE_COUNT=$(( ${#ALL_TAGS[@]} - KEEP ))
@@ -246,7 +262,7 @@ test_checkpoint_no_pruning_when_under_limit() {
   fi
 
   local COUNT_AFTER
-  COUNT_AFTER=$(git -C "$PROJECT_DIR" tag --list 'agent-checkpoint/*' | wc -l)
+  COUNT_AFTER=$(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | wc -l)
 
   if [[ "$COUNT_AFTER" -eq 3 ]]; then
     pass "no pruning occurs when under limit (3 tags remain)"
@@ -269,10 +285,10 @@ test_session_name_from_master_branch() {
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
   SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
 
-  if [[ "$SESSION_NAME" == "master-20260416-090000" ]]; then
-    pass "SESSION_NAME correct for master branch"
+  if [[ "$SESSION_NAME" == "main-20260416-090000" ]]; then
+    pass "SESSION_NAME correct for main branch"
   else
-    fail "SESSION_NAME incorrect for master: $SESSION_NAME"
+    fail "SESSION_NAME incorrect for main: $SESSION_NAME"
   fi
 }
 
@@ -344,16 +360,134 @@ test_session_name_exported() {
   local SUBSHELL_VALUE
   SUBSHELL_VALUE=$(echo "$SESSION_NAME")
 
-  if [[ "$SUBSHELL_VALUE" == "master-20260416-090000" ]]; then
+  if [[ "$SUBSHELL_VALUE" == "main-20260416-090000" ]]; then
     pass "SESSION_NAME is exported and available to subshells"
   else
     fail "SESSION_NAME not properly exported: $SUBSHELL_VALUE"
   fi
 }
 
+test_session_name_detached_head() {
+  local PROJECT_DIR="$FIXTURE_DIR/session_detached_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  # Get the current commit SHA
+  local COMMIT_SHA
+  COMMIT_SHA=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+
+  # Detach HEAD
+  git -C "$PROJECT_DIR" checkout --quiet "$COMMIT_SHA"
+
+  local CHECKPOINT_TS="20260416-090000"
+  local BRANCH SANITIZED SESSION_NAME
+  BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+  # Handle detached HEAD (as start_agent.sh does)
+  if [[ "$BRANCH" == "HEAD" ]]; then
+    BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  fi
+  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
+  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+
+  if [[ "$SESSION_NAME" == "${COMMIT_SHA}-20260416-090000" ]]; then
+    pass "SESSION_NAME uses short SHA for detached HEAD"
+  else
+    fail "SESSION_NAME incorrect for detached HEAD: $SESSION_NAME (expected ${COMMIT_SHA}-20260416-090000)"
+  fi
+}
+
+# -------------------------
+# WORKTREE_ID tests
+# -------------------------
+
+test_worktree_id_derived_from_path() {
+  local PROJECT_DIR="$FIXTURE_DIR/worktree_id_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  local WORKTREE_ID
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+
+  # Verify it's 8 characters
+  if [[ ${#WORKTREE_ID} -eq 8 ]]; then
+    pass "WORKTREE_ID is 8 characters"
+  else
+    fail "WORKTREE_ID wrong length: ${#WORKTREE_ID}"
+  fi
+
+  # Verify it's hex
+  if [[ "$WORKTREE_ID" =~ ^[a-f0-9]{8}$ ]]; then
+    pass "WORKTREE_ID is valid hex"
+  else
+    fail "WORKTREE_ID not valid hex: $WORKTREE_ID"
+  fi
+}
+
+test_worktree_id_stable_across_runs() {
+  local PROJECT_DIR="$FIXTURE_DIR/worktree_stable_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  local WORKTREE_ID1 WORKTREE_ID2
+  WORKTREE_ID1=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID2=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+
+  if [[ "$WORKTREE_ID1" == "$WORKTREE_ID2" ]]; then
+    pass "WORKTREE_ID is stable across multiple derivations"
+  else
+    fail "WORKTREE_ID not stable: $WORKTREE_ID1 vs $WORKTREE_ID2"
+  fi
+}
+
+test_worktree_id_different_for_different_paths() {
+  local PROJECT_DIR1="$FIXTURE_DIR/worktree_diff_repo1"
+  local PROJECT_DIR2="$FIXTURE_DIR/worktree_diff_repo2"
+  mkdir -p "$PROJECT_DIR1" "$PROJECT_DIR2"
+
+  local WORKTREE_ID1 WORKTREE_ID2
+  WORKTREE_ID1=$(echo "$PROJECT_DIR1" | sha1sum | head -c8)
+  WORKTREE_ID2=$(echo "$PROJECT_DIR2" | sha1sum | head -c8)
+
+  if [[ "$WORKTREE_ID1" != "$WORKTREE_ID2" ]]; then
+    pass "WORKTREE_ID differs for different paths"
+  else
+    fail "WORKTREE_ID should differ for different paths"
+  fi
+}
+
+# -------------------------
+# REPO_COMMIT tests
+# -------------------------
+
+test_repo_commit_captured() {
+  local PROJECT_DIR="$FIXTURE_DIR/repo_commit_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  local REPO_COMMIT EXPECTED_SHA
+  REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  EXPECTED_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+  if [[ "$REPO_COMMIT" == "$EXPECTED_SHA" ]]; then
+    pass "REPO_COMMIT matches current HEAD"
+  else
+    fail "REPO_COMMIT does not match HEAD"
+  fi
+}
+
+test_repo_commit_is_full_sha() {
+  local PROJECT_DIR="$FIXTURE_DIR/repo_commit_sha_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  local REPO_COMMIT
+  REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+  # Full SHA is 40 hex characters
+  if [[ ${#REPO_COMMIT} -eq 40 && "$REPO_COMMIT" =~ ^[a-f0-9]{40}$ ]]; then
+    pass "REPO_COMMIT is full 40-character SHA"
+  else
+    fail "REPO_COMMIT not full SHA: ${#REPO_COMMIT} chars"
+  fi
+}
+
 # -------------------------
 # Run all tests
-# -------------------------
 
 echo "=== start_agent.sh tests (Change 1: checkpoint + Change 2: SESSION_NAME) ==="
 echo
@@ -370,6 +504,12 @@ run_test "session_name_from_main_branch" test_session_name_from_main_branch
 run_test "session_name_sanitizes_feature_branch" test_session_name_sanitizes_feature_branch
 run_test "session_name_sanitizes_nested_branch" test_session_name_sanitizes_nested_branch
 run_test "session_name_exported" test_session_name_exported
+run_test "session_name_detached_head" test_session_name_detached_head
+run_test "worktree_id_derived_from_path" test_worktree_id_derived_from_path
+run_test "worktree_id_stable_across_runs" test_worktree_id_stable_across_runs
+run_test "worktree_id_different_for_different_paths" test_worktree_id_different_for_different_paths
+run_test "repo_commit_captured" test_repo_commit_captured
+run_test "repo_commit_is_full_sha" test_repo_commit_is_full_sha
 
 echo
 echo "Results: $PASS passed, $FAIL failed"

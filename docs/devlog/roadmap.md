@@ -73,9 +73,9 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Change 1 implementation (complete):**
 
-Checkpoint tag creation and SESSION_NAME derivation:
-- **Host side (`start_agent.sh`):** Creates `agent-checkpoint/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports for docker-compose (injection in Change 2); writes tag to `.workspace/checkpoint-latest.ref` for operator recovery.
-- **Tests:** 12 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 5 SESSION_NAME tests. All pass.
+Checkpoint tag creation with worktree namespace, SESSION_NAME derivation, and REPO_COMMIT capture:
+- **Host side (`start_agent.sh`):** Derives `WORKTREE_ID` from PROJECT_DIR path; creates `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent per worktree; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports `REPO_COMMIT` (full HEAD SHA) for future image labeling; exports `SESSION_NAME` for docker-compose (injection in Change 2); writes tag to `.workspace/checkpoint-latest.ref` for operator recovery.
+- **Tests:** 19 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 6 SESSION_NAME tests, 3 WORKTREE_ID tests, 2 REPO_COMMIT tests. All pass.
 
 See handover `20260416-04-impl-change1.md` for full implementation details.
 
@@ -89,7 +89,7 @@ Correctly handles all cases: untracked files show as `??`, unstaged edits show a
 
 **Four changes in scope:**
 
-- **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/YYYYMMDD-HHMMSS` tag before each session. Derive `SESSION_NAME` as `<sanitized-branch>-<timestamp>` and pass to container as env var. Prune to last 5 checkpoint tags.
+- **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before each session. Derive `WORKTREE_ID` from PROJECT_DIR path, `SESSION_NAME` as `<sanitized-branch>-<timestamp>`, and `REPO_COMMIT` as full HEAD SHA. Prune to last 5 checkpoint tags per worktree.
 
 - **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/changes/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit.
 
