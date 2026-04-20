@@ -2,11 +2,6 @@
 
 **Target milestone:** M2.3 (Changes 3, 5, 6) + Change 5 prerequisite (container naming)
 
-> **Supersedes** [`design_git_workflow_improvements.md`](design_git_workflow_improvements.md)
-> as the authoritative design reference for the apply workflow. That document is retained
-> as an implementation log for Changes 1–4 only. This document governs all design decisions
-> from Change 5 onward and provides the unified framing for the full workflow.
-
 ---
 
 ## Primitives
@@ -298,7 +293,6 @@ requirement.
 
 | Document | Purpose |
 |---|---|
-| [`design_git_workflow_improvements.md`](design_git_workflow_improvements.md) | Implementation log for Changes 1–4 only. Not the design reference |
 | [`story_diff_pipeline_unification_and_baseline_advancement.md`](story_diff_pipeline_unification_and_baseline_advancement.md) | Resolved — design recorded here |
 | [`story_parallel_sessions_worktree.md`](story_parallel_sessions_worktree.md) | Resolved pending Change 5 implementation |
 | [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) | Two-sig model; M2.7 scope |
