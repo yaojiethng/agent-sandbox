@@ -182,7 +182,7 @@ If the provider has no config to seed, omit the `config/` directory entirely.
 
 ---
 
-## Step 7 (optional) — Write `docker-compose.<n>.yml`
+## Step 7 (optional, but usually required) — Write `docker-compose.<n>.yml`
 
 If the provider requires environment variables or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
 
@@ -196,7 +196,25 @@ providers/<n>/docker-compose.<n>.yml
 base → provider overlay → mode overlay
 ```
 
-**Reference:** `providers/hermes/docker-compose.hermes.yml`
+### Important: API Keys Must Be Declared Here
+
+**This is a Docker Compose constraint, not an agent-sandbox one.** Even though `.env` variables are loaded and exported by `scripts/start_agent.sh`, Docker Compose only passes environment variables to containers that are explicitly declared in the compose file's `environment:` block.
+
+If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`), you **must** declare them in `docker-compose.<n>.yml`:
+
+```yaml
+services:
+  agent:
+    environment:
+      - PROVIDER_NAME=<n>
+      - SOME_API_KEY=${SOME_API_KEY:-}
+```
+
+The `${VAR:-}` syntax ensures the variable is only passed if it's set in `.env`. If omitted, the container receives an empty string.
+
+**Without this file, API keys in `.env` will NOT be available inside the container.**
+
+**Reference:** `providers/hermes/docker-compose.hermes.yml`, `providers/pi/docker-compose.pi.yml`, `providers/opencode/docker-compose.opencode.yml`
 
 ---
 

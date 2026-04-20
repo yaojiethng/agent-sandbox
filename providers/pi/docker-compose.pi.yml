@@ -7,8 +7,12 @@ services:
     environment:
       # Suppress Pi's version check on every startup — reduces noise in containers.
       - PI_SKIP_VERSION_CHECK=1
+      # Provider identity — allows the agent to know which provider it's running.
+      - PROVIDER_NAME=pi
       # API keys — injected from host .env; only set if non-empty.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_TOKEN=${ANTHROPIC_TOKEN:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENCODE_API_KEY=${OPENCODE_API_KEY:-}
