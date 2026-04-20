@@ -25,10 +25,9 @@ Explicitly out of scope: Change 3 implementation, any M2.3 architecture changes.
 
 ## Acceptance criteria
 
-- [x] `package-diff.sh` run inside container with no `--baseline` flag resolves `BASELINE_SHA` from env var, then `.git/BASELINE_SHA`, then errors
+- [x] `package-diff.sh` run inside container with no `--baseline` flag resolves `BASELINE_SHA` from env var, then `.git/BASELINE_SHA`, then first repo commit
 - [x] `package-diff.sh` run on host with no `--baseline` flag exits with clear error
-- [x] `package-diff.sh --name=<n>` produces output directory without timestamp prefix
-- [x] `package-diff.sh --name=<n> --label=<n>` exits with error — mutually exclusive
+- [x] `package-diff.sh --name=<n>` produces output directory with timestamp prefix `<timestamp>-<n>`
 - [x] `package-diff.sh --baseline=HEAD` produces `changes.diff` and `changed-files/`
 - [x] `make refresh` invokes `agent-sandbox onboard --refresh` with `--project=$(PROJECT_DIR)` — git alias re-registered
 - [x] `agent-sandbox onboard` registers `git alias.package-diff` in `PROJECT_DIR/.git/config`
@@ -52,7 +51,7 @@ Explicitly out of scope: Change 3 implementation, any M2.3 architecture changes.
 
 | File | Change |
 |---|---|
-| `libs/package-diff.sh` | Validated — `--name` flag, baseline fallback chain, host enforcement, mutual exclusion guard |
+| `libs/package-diff.sh` | Validated — `--name` flag, baseline fallback chain, host enforcement |
 | `scripts/onboard.sh` | Validated — alias registration, `.env` fallback for refresh path |
 | `libs/Makefile.template` | Validated — `make refresh` with `--project=$(PROJECT_DIR)` |
 | `.skills/package-diff.md` | Validated — `--name` guidance, fallback chain documented |
@@ -82,3 +81,11 @@ Context handover: [`20260420-01-plan-m2_3_apply_workflow_design.md`](handovers/2
 - `apply_workspace.sh` (candidate)
 - `Makefile.template`
 - `design_apply_workflow_and_baseline_advancement.md`
+
+---
+[CORRECTION — 2026-04-20]: Post-close fixes to `libs/package-diff.sh` and `.skills/package-diff.md` applied after this session closed.
+
+`--label` flag dropped. `--name` is now the sole labelling flag; output directory is always `<timestamp>-<name>`. This resolves: `NAME_ARG` unbound variable (was crashing under `set -u` inside the container), `--label`/`--name` semantic confusion, missing `--name` parser case. Baseline fallback chain extended with third level: first repo commit via `git rev-list --max-parents=0 HEAD`, applied inside container context only. `head -n -1` replaced with portable `sed '$d'`. Baseline validation tightened to `^{commit}`. `--help` added. Skill doc updated to match: alias-vs-direct-invocation guidance clarified (alias is host-only; container uses direct invocation), `--label` references removed, timestamp behaviour documented.
+
+Acceptance criterion `--name=<n> --label=<n> exits with error — mutually exclusive` removed — `--label` no longer exists so the criterion is void.
+Acceptance criterion `--name=<n> produces output directory without timestamp prefix` corrected — output is always `<timestamp>-<name>`.

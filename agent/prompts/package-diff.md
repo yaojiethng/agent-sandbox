@@ -8,16 +8,17 @@ Package the current session's changes for export via the workspace output mount.
 
 ### 1. Run the packaging script
 
-Use the git alias registered by `agent-sandbox onboard`:
-
-```bash
-git package-diff
-```
-
-If the alias is not registered, fall back to the direct invocation:
+Inside the container, invoke the script directly — the git alias is not registered in
+the sandbox `.git/config`:
 
 ```bash
 bash ~/agent-sandbox/libs/package-diff.sh
+```
+
+On the host, use the git alias registered by `agent-sandbox onboard`:
+
+```bash
+git package-diff
 ```
 
 **Default behaviour:** packages all uncommitted working tree changes against `HEAD`.
@@ -25,37 +26,35 @@ bash ~/agent-sandbox/libs/package-diff.sh
 **To package all changes since session start** (committed and uncommitted):
 
 ```bash
-git package-diff --baseline="$BASELINE_SHA"
+bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA"
 ```
 
 `BASELINE_SHA` is an environment variable set by the container entrypoint. If it is not
 set, the script falls back to reading `.git/BASELINE_SHA` (written by `snapshot_init_git`
-at container startup). Both are always present inside the container.
+at container startup), then to the first commit in the repo. All three are tried
+automatically — inside the container `--baseline` is never required.
 
-If neither is available the script exits with an error — this indicates the script is
-being run outside the container context, where `--baseline` is required explicitly.
-
-**On the host, `--baseline` is mandatory.** There is no synthetic baseline outside the
+On the host, `--baseline` is mandatory. There is no synthetic baseline outside the
 container and no default is applied.
 
-**Always supply a descriptive `--name`** — the agent knows what changed and should
-name the output accordingly. The name should be a concise snake_case phrase describing
-the nature of the change, like a handover filename: specific enough that a reader
-scanning a list of output directories knows what is inside without opening it.
+**Always supply `--name`** — the agent knows what changed and should name the output
+accordingly. The name should be a concise snake_case phrase describing the nature of the
+change, like a handover filename: specific enough that a reader scanning a list of output
+directories knows what is inside without opening it.
 
 ```bash
-git package-diff --baseline="$BASELINE_SHA" --name=add_session_scoped_artefact_dirs
-git package-diff --baseline="$BASELINE_SHA" --name=fix_snapshot_baseline_working_tree
-git package-diff --baseline="$BASELINE_SHA" --name=refactor_compose_generation
+bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=add_session_scoped_artefact_dirs
+bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=fix_snapshot_baseline_working_tree
+bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=refactor_compose_generation
 ```
 
 Good names: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`
 Bad names: `changes`, `update_files`, `misc`, `package`
 
-`--name` produces the directory as-is with no timestamp prefix — use it when the name
-is self-describing. `--label` appends a timestamp prefix and is the fallback when the
-agent does not supply a name. Omit both only as a last resort; the mechanical derivation
-is a safety net, not the intended path.
+The output directory is always `<timestamp>-<name>`. The timestamp is injected
+automatically from the time of script invocation — you do not control it and do not need
+to. Omitting `--name` falls back to mechanical label derivation from the most-changed
+path; this is a safety net, not the intended path.
 
 The script produces:
 - `<outdir>/changes.diff` — unified diff against baseline
