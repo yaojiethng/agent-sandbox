@@ -37,27 +37,29 @@ run_test() {
 # make_project DIR — git repo with one baseline commit on 'main'
 make_project() {
   local DIR="$1"
+  rm -rf "$DIR"
   mkdir -p "$DIR"
   git -C "$DIR" init --quiet
   git -C "$DIR" config user.email "operator@example.com"
   git -C "$DIR" config user.name "Operator"
   # Force branch name to 'main' regardless of git defaults
-  git -C "$DIR" checkout -b main --quiet 2>/dev/null || true
+  git -C "$DIR" checkout -b main --quiet
   echo "baseline" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "baseline" --quiet
 }
 
-# make_sandbox DIR BASELINE_SHA — sandbox repo with commits; returns SHA
-# Produces a patches/ dir at $SANDBOX_DIR/.workspace/changes/<session>/ and
+# make_session PROJECT_DIR SANDBOX_DIR [SESSION] — creates sandbox with agent commits
+# Produces a patches/ dir at $SANDBOX_DIR/.workspace/session-diffs/<session>/ and
 # a staged.diff at the same location.  Also writes checkpoint-latest.ref.
 make_session() {
   local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
   local SESSION="${3:-main-20260408-120000}"
 
-  # Sandbox mirrors baseline
-  local SANDBOX="$FIXTURE_DIR/sandbox-${SESSION}"
+  # Sandbox mirrors baseline — use unique path per SANDBOX_DIR to avoid test collision
+  local SANDBOX="$SANDBOX_DIR/sandbox-work"
+  rm -rf "$SANDBOX"
   mkdir -p "$SANDBOX"
   git -C "$SANDBOX" init --quiet
   git -C "$SANDBOX" config user.email "agent@sandbox"
@@ -77,8 +79,12 @@ make_session() {
   git -C "$SANDBOX" add .
   git -C "$SANDBOX" commit -m "feat: second agent commit" --quiet
 
+  # Prepare workspace directory first (only if not exists - preserve other sessions)
+  mkdir -p "$SANDBOX_DIR/.workspace"
+
   # Write patches and staged.diff
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/changes/$SESSION"
+  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
+  rm -rf "$SESSION_DIR"
   mkdir -p "$SESSION_DIR/patches"
   git -C "$SANDBOX" format-patch "${BASELINE_SHA}..HEAD" \
     --output-directory "$SESSION_DIR/patches" >/dev/null
@@ -91,8 +97,9 @@ make_session() {
   git -C "$PROJECT_DIR" add .
   git -C "$PROJECT_DIR" commit -m "sync baseline" --quiet
   local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG" 2>/dev/null || true
-  mkdir -p "$SANDBOX_DIR/.workspace"
+  # Remove existing tag if present (from a previous test run)
+  git -C "$PROJECT_DIR" tag -d "$CHECKPOINT_TAG" 2>/dev/null || true
+  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
   echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 }
 
@@ -402,7 +409,7 @@ test_confirm_retains_session_artefacts() {
   local S="$FIXTURE_DIR/confirm_artefacts_s"
   make_project "$P"
   make_session "$P" "$S"
-  local SESSION_DIR="$S/.workspace/changes/main-20260408-120000"
+  local SESSION_DIR="$S/.workspace/session-diffs/main-20260408-120000"
   "$APPLY_SCRIPT" draft   --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
 
@@ -489,7 +496,7 @@ test_reject_retains_session_artefacts() {
   local S="$FIXTURE_DIR/reject_artefacts_s"
   make_project "$P"
   make_session "$P" "$S"
-  local SESSION_DIR="$S/.workspace/changes/main-20260408-120000"
+  local SESSION_DIR="$S/.workspace/session-diffs/main-20260408-120000"
   "$APPLY_SCRIPT" draft  --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null
 
@@ -532,8 +539,8 @@ test_draft_no_patches_dir_fails() {
   # Write a checkpoint ref but no patches/
   local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
   git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
-  mkdir -p "$S/.workspace/changes/main-20260408-120000"
-  echo "fake diff" > "$S/.workspace/changes/main-20260408-120000/staged.diff"
+  mkdir -p "$S/.workspace/session-diffs/main-20260408-120000"
+  echo "fake diff" > "$S/.workspace/session-diffs/main-20260408-120000/staged.diff"
   echo "$CHECKPOINT_TAG" > "$S/.workspace/checkpoint-latest.ref"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
@@ -550,7 +557,7 @@ test_draft_empty_patches_fails() {
 
   local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
   git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
-  mkdir -p "$S/.workspace/changes/main-20260408-120000/patches"
+  mkdir -p "$S/.workspace/session-diffs/main-20260408-120000/patches"
   echo "$CHECKPOINT_TAG" > "$S/.workspace/checkpoint-latest.ref"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
@@ -627,9 +634,9 @@ make_legacy_staged_diff() {
   git -C "$SANDBOX" add .
   git -C "$SANDBOX" commit -m "agent work" --quiet
 
-  mkdir -p "$SANDBOX_DIR/.workspace/changes"
+  mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
   git -C "$SANDBOX" diff --binary "${SHA}..HEAD" \
-    > "$SANDBOX_DIR/.workspace/changes/staged.diff"
+    > "$SANDBOX_DIR/.workspace/session-diffs/staged.diff"
 }
 
 test_legacy_applies_diff_to_working_tree() {
@@ -670,7 +677,7 @@ test_legacy_missing_diff_fails() {
   local P="$FIXTURE_DIR/legacy_nodiff_p"
   local S="$FIXTURE_DIR/legacy_nodiff_s"
   make_project "$P"
-  mkdir -p "$S/.workspace/changes"
+  mkdir -p "$S/.workspace/session-diffs"
 
   if "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null; then
     fail "legacy --mode=apply should fail when staged.diff is missing"
@@ -683,8 +690,8 @@ test_legacy_empty_diff_fails() {
   local P="$FIXTURE_DIR/legacy_emptydiff_p"
   local S="$FIXTURE_DIR/legacy_emptydiff_s"
   make_project "$P"
-  mkdir -p "$S/.workspace/changes"
-  touch "$S/.workspace/changes/staged.diff"
+  mkdir -p "$S/.workspace/session-diffs"
+  touch "$S/.workspace/session-diffs/staged.diff"
 
   if "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null; then
     fail "legacy --mode=apply should fail when staged.diff is empty"
