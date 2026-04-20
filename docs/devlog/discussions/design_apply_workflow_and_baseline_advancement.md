@@ -135,7 +135,6 @@ from the capability layer diff channel (`.workspace/session-diffs/`) consumed by
 - Applies via `git apply --3way changes.diff` against `PROJECT_DIR`
 - Prints summary: files changed, any conflicts
 - Does not create commits — operator reviews and commits manually
-- `--mode=apply` flag is deprecated and removed
 
 **Cleanup policy:** `OUTPUT_DIR` is not cleared automatically. Operator clears manually
 between sessions if desired.

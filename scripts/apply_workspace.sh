@@ -16,11 +16,10 @@
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
-#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--branch=<n>]
+#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--session=<name>] [--branch=<n>]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR with git apply --3way.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/).
-#             The --mode=apply flag is deprecated and removed.
 #
 # .workspace/draft-state format:
 #   SOURCE_BRANCH=<branch>
@@ -49,7 +48,6 @@ SANDBOX_DIR=""
 SESSION_ARG=""
 TARGET_BRANCH=""
 APPLY_BRANCH=""
-MODE=""
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -58,7 +56,6 @@ for ARG in "$@"; do
     --session=*) SESSION_ARG="${ARG#--session=}" ;;
     --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
     --branch=*)  APPLY_BRANCH="${ARG#--branch=}" ;;
-    --mode=*)    MODE="${ARG#--mode=}" ;;
     *)
       echo "Unknown flag: $ARG" >&2
       exit 1
@@ -124,7 +121,7 @@ if [[ "$COMMAND" == "draft" ]]; then
   if [[ ! -d "$PATCHES_DIR" ]]; then
     echo "Error: patches directory not found: $PATCHES_DIR" >&2
     echo "  Session artefacts were produced by an older harness version." >&2
-    echo "  Use: make apply --mode=apply (legacy flat-diff fallback)" >&2
+    echo "  Re-run the session with the current harness to produce format-patch output." >&2
     exit 1
   fi
 
@@ -257,13 +254,6 @@ fi
 # LEGACY — no command (reads from OUTPUT_DIR)
 # -------------------------
 if [[ -z "$COMMAND" ]]; then
-  # Deprecation notice for old --mode=apply flag
-  if [[ -n "$MODE" ]]; then
-    echo "Error: --mode=apply is deprecated and has been removed." >&2
-    echo "  make apply now reads from OUTPUT_DIR by default." >&2
-    exit 1
-  fi
-
   # Resolve session directory from OUTPUT_DIR
   if [[ ! -d "$OUTPUT_DIR" ]]; then
     echo "Error: output directory not found: $OUTPUT_DIR" >&2

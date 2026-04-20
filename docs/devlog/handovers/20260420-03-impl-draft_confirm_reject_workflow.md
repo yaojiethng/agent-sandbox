@@ -49,7 +49,7 @@ None.
 - [x] `make apply` with empty `OUTPUT_DIR` exits with clear error
 - [x] `make apply` where resolved directory has no `changes.diff` exits with clear error
 - [x] `make apply` prints path to `migration-guide.md` before applying if present
-- [x] `make apply --mode=apply` exits with clear deprecation notice — old flag removed
+
 - [x] `make draft` is unaffected — still reads from `session-diffs/`
 - [x] Cleanup policy documented in script header: `OUTPUT_DIR` is not cleared automatically
 - [x] All above covered by tests — `tests/test_apply_workspace.sh` (19 tests)

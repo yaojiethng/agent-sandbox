@@ -8,7 +8,7 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--mode=apply]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name>]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
@@ -200,7 +200,7 @@ case "$SUBCOMMAND" in
     "$SCRIPTS/apply_workspace.sh" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
-      --mode=apply \
+      ${SESSION_ARG:+--session="$SESSION_ARG"} \
       ${BRANCH:+--branch="$BRANCH"}
     ;;
 

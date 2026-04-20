@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_apply.sh
-# Tests for scripts/apply_workspace.sh
+# Tests for scripts/apply_workspace.sh — draft/confirm/reject workflow
 #
 # Covers:
 #   draft   — creates working branch, applies patches, resets author, writes draft-state
@@ -8,7 +8,8 @@
 #   confirm TARGET — merges to named branch
 #   reject  — restores source branch, deletes working branch, clears state
 #   guards  — missing args, bad state, double-draft, missing patches
-#   legacy  — --mode=apply applies staged.diff without committing
+#
+# Note: apply (legacy) tests are in tests/test_apply_workspace.sh
 #
 # Each test builds its own fixture. Tests are independent.
 
@@ -609,112 +610,7 @@ test_reject_without_draft_fails() {
   fi
 }
 
-# -------------------------
-# Legacy --mode=apply tests
-# -------------------------
 
-# Helper: builds a staged.diff at the root of CHANGES_DIR for the legacy path
-make_legacy_staged_diff() {
-  local PROJECT_DIR="$1"
-  local SANDBOX_DIR="$2"
-
-  local SANDBOX="$FIXTURE_DIR/legacy-sandbox-$$"
-  mkdir -p "$SANDBOX"
-  git -C "$SANDBOX" init --quiet
-  git -C "$SANDBOX" config user.email "agent@sandbox"
-  git -C "$SANDBOX" config user.name "agent-sandbox"
-  echo "baseline" > "$SANDBOX/file.txt"
-  git -C "$SANDBOX" add .
-  git -C "$SANDBOX" commit -m "baseline" --quiet
-  local SHA
-  SHA=$(git -C "$SANDBOX" rev-parse HEAD)
-
-  echo "agent change" > "$SANDBOX/file.txt"
-  echo "new" > "$SANDBOX/added.txt"
-  git -C "$SANDBOX" add .
-  git -C "$SANDBOX" commit -m "agent work" --quiet
-
-  mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
-  git -C "$SANDBOX" diff --binary "${SHA}..HEAD" \
-    > "$SANDBOX_DIR/.workspace/session-diffs/staged.diff"
-}
-
-test_legacy_applies_diff_to_working_tree() {
-  local P="$FIXTURE_DIR/legacy_apply_p"
-  local S="$FIXTURE_DIR/legacy_apply_s"
-  make_project "$P"
-  make_legacy_staged_diff "$P" "$S"
-
-  "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null
-
-  if [[ "$(cat "$P/file.txt")" == "agent change" && -f "$P/added.txt" ]]; then
-    pass "legacy --mode=apply applies staged.diff to working tree"
-  else
-    fail "legacy --mode=apply: file contents wrong or added file missing"
-  fi
-}
-
-test_legacy_does_not_commit() {
-  local P="$FIXTURE_DIR/legacy_nocommit_p"
-  local S="$FIXTURE_DIR/legacy_nocommit_s"
-  make_project "$P"
-  make_legacy_staged_diff "$P" "$S"
-  local SHA_BEFORE
-  SHA_BEFORE=$(git -C "$P" rev-parse HEAD)
-
-  "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null || true
-
-  local SHA_AFTER
-  SHA_AFTER=$(git -C "$P" rev-parse HEAD)
-  if [[ "$SHA_BEFORE" == "$SHA_AFTER" ]]; then
-    pass "legacy --mode=apply does not commit — HEAD unchanged"
-  else
-    fail "legacy --mode=apply must not create commits"
-  fi
-}
-
-test_legacy_missing_diff_fails() {
-  local P="$FIXTURE_DIR/legacy_nodiff_p"
-  local S="$FIXTURE_DIR/legacy_nodiff_s"
-  make_project "$P"
-  mkdir -p "$S/.workspace/session-diffs"
-
-  if "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null; then
-    fail "legacy --mode=apply should fail when staged.diff is missing"
-  else
-    pass "legacy --mode=apply fails when staged.diff is missing"
-  fi
-}
-
-test_legacy_empty_diff_fails() {
-  local P="$FIXTURE_DIR/legacy_emptydiff_p"
-  local S="$FIXTURE_DIR/legacy_emptydiff_s"
-  make_project "$P"
-  mkdir -p "$S/.workspace/session-diffs"
-  touch "$S/.workspace/session-diffs/staged.diff"
-
-  if "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null; then
-    fail "legacy --mode=apply should fail when staged.diff is empty"
-  else
-    pass "legacy --mode=apply fails when staged.diff is empty"
-  fi
-}
-
-test_legacy_falls_back_to_session_dir() {
-  local P="$FIXTURE_DIR/legacy_sessionfb_p"
-  local S="$FIXTURE_DIR/legacy_sessionfb_s"
-  make_project "$P"
-  make_session "$P" "$S"  # writes staged.diff under a session dir
-
-  # No root-level staged.diff — should fall back to session dir
-  "$APPLY_SCRIPT" --project="$P" --sandbox="$S" --mode=apply 2>/dev/null
-
-  if [[ -f "$P/agent1.txt" || -f "$P/agent2.txt" ]]; then
-    pass "legacy --mode=apply falls back to most recent session staged.diff"
-  else
-    fail "legacy --mode=apply should find and apply session-dir staged.diff"
-  fi
-}
 
 # -------------------------
 # Run all tests
@@ -755,13 +651,6 @@ run_test test_draft_empty_patches_fails
 run_test test_double_draft_fails
 run_test test_confirm_without_draft_fails
 run_test test_reject_without_draft_fails
-
-# legacy
-run_test test_legacy_applies_diff_to_working_tree
-run_test test_legacy_does_not_commit
-run_test test_legacy_missing_diff_fails
-run_test test_legacy_empty_diff_fails
-run_test test_legacy_falls_back_to_session_dir
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

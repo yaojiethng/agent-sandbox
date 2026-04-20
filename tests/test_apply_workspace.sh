@@ -14,7 +14,6 @@
 #   apply (legacy) — applies changes.diff from OUTPUT_DIR with git apply --3way
 #   apply SESSION=<n> — applies from named session directory in OUTPUT_DIR
 #   apply guard — rejects if OUTPUT_DIR empty or changes.diff missing
-#   apply deprecation — rejects --mode=apply flag
 #
 # All fixtures created under a temp dir — no repos created inside the harness repo.
 
@@ -804,29 +803,7 @@ test_apply_prints_migration_guide() {
   fi
 }
 
-test_apply_rejects_mode_apply_flag() {
-  local PROJECT_DIR="$FIXTURE_DIR/apply_mode_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/apply_mode_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
-  make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
-  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
-
-  # Run apply with deprecated --mode=apply flag
-  local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
-    --project="$PROJECT_DIR" \
-    --sandbox="$SANDBOX_DIR" \
-    --mode=apply 2>&1) || true
-
-  if [[ "$OUTPUT" == *"--mode=apply is deprecated"* ]]; then
-    pass "apply rejects deprecated --mode=apply flag"
-  else
-    fail "apply did not reject --mode=apply: $OUTPUT"
-  fi
-}
 
 # -------------------------
 # Run all tests
@@ -852,7 +829,6 @@ run_test "apply_requires_changes_diff" test_apply_requires_changes_diff
 run_test "apply_requires_output_dir" test_apply_requires_output_dir
 run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
 run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
-run_test "apply_rejects_mode_apply_flag" test_apply_rejects_mode_apply_flag
 
 echo
 echo "Results: $PASS passed, $FAIL failed"

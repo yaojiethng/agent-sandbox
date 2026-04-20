@@ -156,6 +156,7 @@ apply:
 	agent-sandbox apply \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(SESSION),--session=$(SESSION),) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
 
 # -------------------------
