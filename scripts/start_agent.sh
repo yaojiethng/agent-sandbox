@@ -55,7 +55,7 @@ PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=".env"
-PROVIDER_NAME="opencode"
+PROVIDER_NAME=""
 
 for ARG in "$@"; do
   case "$ARG" in

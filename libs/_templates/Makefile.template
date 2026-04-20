@@ -49,13 +49,15 @@ PROVIDER     ?=
 REBUILD      ?=
 REBUILD_BASE ?=
 TARGET       ?=
+SESSION      ?=
+TARGET_BRANCH ?=
 
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 REBUILD_BASE_FLAG = $(if $(REBUILD_BASE),--rebuild-base,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 
-.PHONY: build start serve dry-run stop apply
+.PHONY: build start serve dry-run stop apply draft confirm reject refresh
 
 # -------------------------
 # Build
@@ -116,8 +118,37 @@ stop:
 	  --sandbox=$(SANDBOX_DIR)
 
 # -------------------------
-# Apply
+# Apply workflow
 # -------------------------
+#
+# WORKFLOW:
+#   make draft                    — apply session patches to a working branch for review
+#   make draft SESSION=<name>     — apply a specific named session
+#   git log -p HEAD~N..HEAD       — review changes on the working branch
+#   make confirm                  — rebase + fast-forward merge to source branch
+#   make confirm TARGET_BRANCH=x  — merge to a different target branch
+#   make reject                   — discard draft branch, return to source branch
+#
+# LEGACY (sessions before M2.3):
+#   make apply                    — apply staged.diff with git apply (no commits created)
+#   make apply BRANCH=<name>      — apply to a named branch
+
+draft:
+	agent-sandbox draft \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(SESSION),--session=$(SESSION),)
+
+confirm:
+	agent-sandbox confirm \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),)
+
+reject:
+	agent-sandbox reject \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR)
 
 apply:
 	agent-sandbox apply \

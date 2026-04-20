@@ -8,7 +8,10 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--mode=apply]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name>]
+#   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
+#   agent-sandbox reject   --project=<path> --sandbox=<path>
 #
 # --target accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --target=all
@@ -38,6 +41,8 @@ PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR=""
 BRANCH=""
+SESSION_ARG=""
+TARGET_BRANCH=""
 PROVIDER_NAME=""
 REBUILD=false
 REBUILD_BASE=false
@@ -50,6 +55,8 @@ parse_flags() {
       --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
       --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
       --branch=*)   BRANCH="${ARG#--branch=}" ;;
+      --session=*)  SESSION_ARG="${ARG#--session=}" ;;
+      --target=*)   TARGET_BRANCH="${ARG#--target=}" ;;
       --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
       --rebuild)       REBUILD=true ;;
       --rebuild-base)  REBUILD_BASE=true ;;
@@ -193,12 +200,48 @@ case "$SUBCOMMAND" in
     "$SCRIPTS/apply_workspace.sh" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
+      --mode=apply \
       ${BRANCH:+--branch="$BRANCH"}
+    ;;
+
+  draft)
+    parse_flags "$@"
+    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --project and --sandbox are required"
+      exit 1
+    fi
+    "$SCRIPTS/apply_workspace.sh" draft \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR" \
+      ${SESSION_ARG:+--session="$SESSION_ARG"}
+    ;;
+
+  confirm)
+    parse_flags "$@"
+    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --project and --sandbox are required"
+      exit 1
+    fi
+    "$SCRIPTS/apply_workspace.sh" confirm \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR" \
+      ${TARGET_BRANCH:+--target="$TARGET_BRANCH"}
+    ;;
+
+  reject)
+    parse_flags "$@"
+    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --project and --sandbox are required"
+      exit 1
+    fi
+    "$SCRIPTS/apply_workspace.sh" reject \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR"
     ;;
 
   *)
     echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply"
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject"
     exit 1
     ;;
 esac
