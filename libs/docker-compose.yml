@@ -26,11 +26,11 @@ services:
         read_only: true
       - type: bind
         source: ${CHANGES_DIR}
-        target: /home/agentuser/workspace/changes
+        target: /home/agentuser/workspace/session-diffs
     environment:
       - SNAPSHOT_DIR_NAME=.snapshot
       - SANDBOX_DIR_NAME=sandbox
-      - CHANGES_DIR_NAME=workspace/changes
+      - CHANGES_DIR_NAME=workspace/session-diffs
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
       - SESSION_NAME=${SESSION_NAME:-}
     healthcheck:

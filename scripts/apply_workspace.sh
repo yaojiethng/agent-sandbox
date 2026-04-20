@@ -67,7 +67,7 @@ if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
 fi
 
 WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-CHANGES_DIR="$WORKSPACE_DIR/changes"
+CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 DRAFT_STATE_FILE="$WORKSPACE_DIR/draft-state"
 CHECKPOINT_REF_FILE="$WORKSPACE_DIR/checkpoint-latest.ref"
 
@@ -103,7 +103,7 @@ if [[ "$COMMAND" == "draft" ]]; then
     SESSION_DIR="$CHANGES_DIR/$SESSION_ARG"
     SESSION_NAME="$SESSION_ARG"
   else
-    # Most recent session under changes/ (by directory mtime)
+    # Most recent session under session-diffs/ (by directory mtime)
     SESSION_DIR=$(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d \
       | sort -t/ -k1,1 | tail -n 1)
     if [[ -z "$SESSION_DIR" ]]; then

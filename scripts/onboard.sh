@@ -29,7 +29,7 @@
 #   AGENTS.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
 #   .workspace/output/           — reasoning layer output channel
-#   .workspace/changes/          — diff pipeline output
+#   .workspace/session-diffs/    — diff pipeline output  # renamed from changes/ in M2.3
 #   .env                         — paths + operator var stubs
 #   .<provider>/                 — provider config dir, seeded from providers/<n>/config/
 #                                  for each provider present in the repo
@@ -253,8 +253,8 @@ fi
 if [[ "$REFRESH" != true ]]; then
 mkdir -p "$SANDBOX_DIR/.workspace/input"
 mkdir -p "$SANDBOX_DIR/.workspace/output"
-mkdir -p "$SANDBOX_DIR/.workspace/changes"
-echo "  Created: .workspace/input/, .workspace/output/, .workspace/changes/"
+mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
+echo "  Created: .workspace/input/, .workspace/output/, .workspace/session-diffs/"
 fi
 
 # -------------------------
@@ -280,7 +280,7 @@ fi
 # .env
 # -------------------------
 SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
+CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
 INPUT_DIR="$SANDBOX_DIR/.workspace/input"
 OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
 

@@ -37,7 +37,7 @@ Stops any running session for this project, builds missing images if needed, sna
 
 `PROVIDER` is required. `REBUILD=1` is optional — forces a full rebuild of all images from scratch before starting; without it, images are built only if missing.
 
-**Leaves behind:** `staged.diff` in `.workspace/changes/`; updated provider session state in `.<provider>/`.
+**Leaves behind:** `staged.diff` in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
 
 ---
 
@@ -71,7 +71,7 @@ Applies `staged.diff` to `PROJECT_DIR`. Does not commit.
 
 `BRANCH` is optional. If supplied, applies to a new branch checked out from current HEAD; otherwise applies to the current branch.
 
-**Review `staged.diff` before applying.** If rejected, discard `.workspace/changes/` — the host repository is unchanged.
+**Review `staged.diff` before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
 
 ---
 
@@ -98,7 +98,7 @@ Applies `staged.diff` to `PROJECT_DIR`. Does not commit.
 | Host path | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
 | `$SNAPSHOT_DIR` | `/home/agentuser/.snapshot/` | — | RO | Harness — rebuilt before each run |
-| `$CHANGES_DIR` | `/home/agentuser/workspace/changes/` | — | RW | Harness — diff pipeline output |
+| `$CHANGES_DIR` | `/home/agentuser/workspace/session-diffs/` | — | RW | Harness — diff pipeline output |
 | `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
 | `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
 | `$SANDBOX_DIR/.<provider>/` | — | `/opt/provider-config/` | RW | Harness — provider config; seed and persist via entrypoint |
@@ -132,7 +132,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
 | `SNAPSHOT_DIR` | `$SANDBOX_DIR/.snapshot` | Harness — rebuilt before each run |
-| `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/changes` | Harness — diff pipeline output |
+| `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/session-diffs` | Harness — diff pipeline output |
 | `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` | Operator — populated before a run |
 | `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` | Agent — written during a run |
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
@@ -187,7 +187,7 @@ A successful `make dry-run` proves:
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access and write to `sandbox/` via the shared volume
 - Both containers terminate gracefully
-- The diff pipeline runs and produces output in `.workspace/changes/`
+- The diff pipeline runs and produces output in `.workspace/session-diffs/`
 
 A dry-run does not prove agent correctness — it proves the harness infrastructure is functional.
 

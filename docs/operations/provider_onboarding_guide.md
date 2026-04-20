@@ -251,7 +251,7 @@ A passing dry-run confirms:
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access `sandbox/` via the shared volume
 - Both containers terminate gracefully
-- The diff pipeline produces output in `.workspace/changes/`
+- The diff pipeline produces output in `.workspace/session-diffs/`
 
 If `make dry-run` passes, the provider conforms to the harness interface.
 

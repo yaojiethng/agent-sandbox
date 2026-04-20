@@ -57,7 +57,7 @@ Note: this still requires deciding whether `.git` is mounted into the capability
 
 ---
 
-**Invariant 2: The capability layer container must not access host filesystem paths outside `.snapshot/` and `.workspace/changes/`.**
+**Invariant 2: The capability layer container must not access host filesystem paths outside `.snapshot/` and `.workspace/session-diffs/`.**
 
 | | Current | Worktree model |
 |---|---|---|

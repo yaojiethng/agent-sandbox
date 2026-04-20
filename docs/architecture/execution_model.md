@@ -19,14 +19,14 @@ SANDBOX_DIR/
 └── .workspace/                ← harness I/O channels
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
-    └── changes/               ← diff pipeline output
+    └── session-diffs/         ← diff pipeline output
         └── <session-name>/    ← session-scoped directory
             ├── staged.diff
             └── patches/       ← per-commit .patch files
 
 Capability layer container (CWD: /home/agentuser/)
 ├── .snapshot/                 ← RO bind mount: project snapshot from host
-├── workspace/changes/         ← RW bind mount: diff output
+├── workspace/session-diffs/   ← RW bind mount: diff output
 └── sandbox/                   ← RW Docker volume: working content (owned by this container)
 
 Reasoning layer container (CWD: /home/agentuser/)
@@ -81,11 +81,11 @@ The mount shape table is the contract defined in [`tool_interface.md` — Mount 
 
 ### Why subdirectory mounts rather than the workspace parent
 
-Each `.workspace/` subdirectory has a different trust level and a different container owner. Mounting them separately enforces ownership at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted; the reasoning layer cannot write to `workspace/changes/` for the same reason.
+Each `.workspace/` subdirectory has a different trust level and a different container owner. Mounting them separately enforces ownership at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted; the reasoning layer cannot write to `workspace/session-diffs/` for the same reason.
 
 - `input/` — operator-written, agent-read (reasoning layer, read-only)
 - `output/` — agent-written (reasoning layer, read-write)
-- `changes/` — harness-written (capability layer, read-write — diff pipeline)
+- `session-diffs/` — harness-written (capability layer, read-write — diff pipeline)
 
 ### Why `.snapshot/` is read-only and capability-layer-only
 

@@ -21,7 +21,7 @@
 # override via docker run -e or compose .env):
 #   SNAPSHOT_DIR_NAME      — name of the snapshot mount directory  (default: .snapshot)
 #   SANDBOX_DIR_NAME       — name of the sandbox directory         (default: sandbox)
-#   CHANGES_DIR_NAME       — name of the diff output subdirectory  (default: workspace/changes)
+#   CHANGES_DIR_NAME       — name of the diff output subdirectory  (default: workspace/session-diffs)
 #   AUTOSAVE_INTERVAL      — autosave interval in seconds; 0 disables (default: 60)
 
 set -euo pipefail
@@ -40,9 +40,9 @@ source /libs/dirs.sh
 
 SNAPSHOT_DIR="$ROOT/$SNAPSHOT_DIR_NAME"
 SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
-# The capability layer mounts workspace/changes/ only — not the workspace parent.
+# The capability layer mounts workspace/session-diffs/ only — not the workspace parent.
 # The diff pipeline writes exclusively to this subdirectory.
-# Writing outside workspace/changes/ from the capability layer is a bug.
+# Writing outside workspace/session-diffs/ from the capability layer is a bug.
 CHANGES_DIR="$ROOT/$CHANGES_DIR_NAME"
 
 AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables

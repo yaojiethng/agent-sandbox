@@ -25,7 +25,7 @@
 | **`draft-state`** | File at `SANDBOX_DIR/.workspace/draft-state`. Records active draft: source branch, working branch, session directory. One per `SANDBOX_DIR` |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces checkpoint tags and container names per worktree instance |
 | **`ADVANCED_SESSIONS`** | File at `sandbox/.git/ADVANCED_SESSIONS` inside the container. Append-only log of session names whose patches have been applied to the sandbox via baseline advancement |
-| **Session artefact directory** | `SANDBOX_DIR/.workspace/changes/<session-name>/` — scoped directory holding `staged.diff`, `patches/`, and `autosave.diff` for one session |
+| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<session-name>/` — scoped directory holding `staged.diff`, `patches/`, and `autosave.diff` for one session # renamed from changes/ in M2.3 |
 | **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity — not derivable from files that can go stale. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag` |
 | **`scripts/checkpoint.sh`** | Consolidates all checkpoint logic: tag creation, pruning, lookup, and `WORKTREE_ID` derivation. Sourced by `start_agent.sh`, `apply_workspace.sh`, and `advance_baseline.sh` |
 
@@ -75,7 +75,7 @@
 **`make draft [SESSION=<name>]`**
 
 Resolves the target session: explicit name if provided, otherwise the lexicographically
-last entry in `.workspace/changes/` (chronologically latest, given `<branch>-<timestamp>`
+last entry in `.workspace/session-diffs/` (chronologically latest, given `<branch>-<timestamp>`
 naming). Resolves the base checkpoint tag via `checkpoint.sh` — derives `WORKTREE_ID` from
 `PROJECT_DIR`, looks up the latest `agent-checkpoint/<worktree-id>/*` tag by sort order.
 Creates
@@ -110,7 +110,7 @@ Reads `draft-state`. Returns to `SOURCE_BRANCH`. Deletes working branch. Clears
 Advances the sandbox baseline in a running container to match the current host state.
 Locates the container by `agent-sandbox.project-dir` label. Reads `ADVANCED_SESSIONS`
 from the container to determine which sessions have already been applied. Collects all
-session directories in `.workspace/changes/` not present in `ADVANCED_SESSIONS`, sorted
+session directories in `.workspace/session-diffs/` not present in `ADVANCED_SESSIONS`, sorted
 by timestamp, and applies them in sequence. Does not validate session name against the
 container label — `make sync` is an explicit catch-up operation, not a tight per-confirm
 sync. Fails if no container is running.
@@ -124,7 +124,7 @@ file is present.
 ### Session resolution
 
 `make draft` with no `SESSION=` resolves to the lexicographically last entry in
-`.workspace/changes/` — the latest session by sort order. Explicit `SESSION=<name>` is
+`.workspace/session-diffs/` — the latest session by sort order. Explicit `SESSION=<name>` is
 available for older sessions. Short-form aliases are not implemented; revisit when operator
 feedback identifies friction.
 
@@ -168,7 +168,7 @@ the lifetime of the container.
 
 1. Read `ADVANCED_SESSIONS`. If the session name is already recorded, exit — already advanced.
 2. Verify sandbox working tree is clean. If dirty, exit with error: agent must commit before baseline can be advanced.
-3. Apply patches from `workspace/changes/<session-name>/patches/` in sort order via `git am --3way`.
+3. Apply patches from `workspace/session-diffs/<session-name>/patches/` in sort order via `git am --3way`.
 4. On success: write new `HEAD` SHA to `BASELINE_SHA`. Append session name to `ADVANCED_SESSIONS`.
 5. On conflict: run `git am --abort`. Exit with error naming the conflicting patch. Operator resolves on pre-patch state and re-runs `make confirm`.
 

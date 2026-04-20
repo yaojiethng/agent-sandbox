@@ -50,7 +50,7 @@ After onboarding, `SANDBOX_DIR` contains:
 └── .workspace/
     ├── input/
     ├── output/
-    └── changes/
+    └── session-diffs/
 ```
 
 See [`project_onboarding_guide.md`](project_onboarding_guide.md) for the full procedure.

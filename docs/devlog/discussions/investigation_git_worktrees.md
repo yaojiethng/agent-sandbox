@@ -155,7 +155,7 @@ Standard git review workflow — richer than a flat diff file and requires no op
 
 | Current | Worktree |
 |---|---|
-| `staged.diff` written to `workspace/changes/` — explicit review artefact | Replaced by `git diff main..agent/session` — richer but less procedurally enforced |
+| `staged.diff` written to `workspace/session-diffs/` — explicit review artefact | Replaced by `git diff main..agent/session` — richer but less procedurally enforced |
 | `autosave.diff` written periodically | Replaced by mid-session commits in the worktree |
 | `apply_workspace.sh` — explicit apply step | Eliminated — operator uses `git merge` or `git cherry-pick` |
 | Capability layer manages diff on exit | Capability layer commits pending changes on exit (simpler) |

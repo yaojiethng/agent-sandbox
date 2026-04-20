@@ -12,7 +12,7 @@
 #   <sandbox-dir>  absolute path to SANDBOX_DIR — must contain:
 #                    Dockerfile.sandbox
 #                    .snapshot/   (pre-built snapshot)
-#                    .workspace/changes/  (created by this script if absent)
+#                    .workspace/session-diffs/  (created by this script if absent)
 #
 # Example:
 #   ./test_capability_layer.sh ~/agent-sandbox ~/myproject-sandbox
@@ -31,7 +31,7 @@ REPO_ROOT="$(cd "${1:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
 SANDBOX_DIR="$(cd "${2:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
 
 SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
+WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 IMAGE_NAME="${IMAGE_NAME:-test-sandbox-agent-sandbox}"
@@ -142,7 +142,7 @@ echo "  Starting capability layer container..."
 START_OUTPUT=$(docker run -d \
   --name "$CONTAINER_NAME" \
   --volume "$SNAPSHOT_DIR:/home/agentuser/.snapshot:ro" \
-  --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/changes" \
+  --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/session-diffs" \
   --env AUTOSAVE_INTERVAL=0 \
   "$IMAGE_NAME" 2>&1)
 START_EXIT=$?
@@ -270,7 +270,7 @@ FAIL_WORKSPACE="$(mktemp -d)"
 docker run -d \
   --name "$FAIL_CONTAINER" \
   --volume "$EMPTY_SNAPSHOT:/home/agentuser/.snapshot:ro" \
-  --volume "$FAIL_WORKSPACE:/home/agentuser/workspace/changes" \
+  --volume "$FAIL_WORKSPACE:/home/agentuser/workspace/session-diffs" \
   "$IMAGE_NAME" > /dev/null || true
 
 sleep 2

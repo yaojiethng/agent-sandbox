@@ -56,7 +56,7 @@ This is a well-established and Docker-native pattern. The reference `mcp/filesys
 
 ### 2. Mount path compatibility with the existing capability layer
 
-The existing harness snapshot pipeline writes the project snapshot to `SANDBOX_DIR/.agent-input/snapshot/` on the host before any container starts. The diff pipeline writes `staged.diff` to `SANDBOX_DIR/.workspace/changes/` on sandbox container exit.
+The existing harness snapshot pipeline writes the project snapshot to `SANDBOX_DIR/.agent-input/snapshot/` on the host before any container starts. The diff pipeline writes `staged.diff` to `SANDBOX_DIR/.workspace/session-diffs/` on sandbox container exit.
 
 The MCP filesystem server can be pointed at these same host-side paths directly:
 
@@ -83,7 +83,7 @@ Claude Desktop sees the snapshot (read-only) and the workspace (read-write) — 
 
 ### 3. Apply pipeline compatibility
 
-`apply_workspace.sh` operates on `SANDBOX_DIR/.workspace/changes/staged.diff` on the host. It has no dependency on the capability layer container being involved in the session — it reads from the host path and applies the diff to the project repository. `make apply` works identically in the Claude Desktop path.
+`apply_workspace.sh` operates on `SANDBOX_DIR/.workspace/session-diffs/staged.diff` on the host. It has no dependency on the capability layer container being involved in the session — it reads from the host path and applies the diff to the project repository. `make apply` works identically in the Claude Desktop path.
 
 `diff.sh` is tied to the sandbox container lifecycle: when the sandbox container exits or is stopped, the entrypoint hook fires and `diff.sh` generates `staged.diff`. This is confirmed behaviour and requires no change for the Claude Desktop path.
 

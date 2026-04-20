@@ -81,7 +81,7 @@ On capability layer container exit, an EXIT trap runs the diff pipeline:
 1. Any uncommitted changes in `sandbox/` are staged and committed with a "sweep" message.
 2. `diff_format_patch` runs `git format-patch` to produce one numbered `.patch` file per agent commit since the baseline.
 3. `git diff <baseline>..HEAD` is computed for a single-file summary.
-4. All artefacts are written to a session-scoped directory: `workspace/changes/<session-name>/`.
+4. All artefacts are written to a session-scoped directory: `workspace/session-diffs/<session-name>/`.
    - `staged.diff` — full session diff
    - `patches/` — per-commit `.patch` files
    - `autosave.diff` — (if present) last incremental save
@@ -90,7 +90,7 @@ The `SESSION_NAME` is derived from the branch name and session timestamp (e.g., 
 
 An autosave loop writes `autosave.diff` into the session directory on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s).
 
-`workspace/changes/` accumulates session directories over time; they are not automatically pruned by the harness.
+`workspace/session-diffs/` accumulates session directories over time; they are not automatically pruned by the harness.
 
 ### Apply workflow
 

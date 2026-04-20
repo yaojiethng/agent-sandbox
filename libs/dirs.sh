@@ -26,7 +26,7 @@ SANDBOX_DIR_NAME="${SANDBOX_DIR_NAME:-sandbox}"
 # The diff pipeline writes staged.diff and autosave.diff here and nowhere else.
 # The capability layer mounts only this subdirectory — not the workspace parent.
 # Writing outside this directory from the capability layer is a bug.
-CHANGES_DIR_NAME="${CHANGES_DIR_NAME:-workspace/changes}"
+CHANGES_DIR_NAME="${CHANGES_DIR_NAME:-workspace/session-diffs}"
 
 # Reasoning layer input channel: bind-mounted read-only into the reasoning layer.
 # Contains brief.md and operator-placed task files (flat layout — no subdirectory).

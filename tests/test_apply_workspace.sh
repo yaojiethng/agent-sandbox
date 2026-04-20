@@ -119,7 +119,7 @@ test_draft_creates_branch_from_checkpoint() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_branch_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_branch_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -160,7 +160,7 @@ test_draft_applies_patches() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_patches_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_patches_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -196,7 +196,7 @@ test_draft_uses_most_recent_session() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_recent_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_recent_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -232,7 +232,7 @@ test_draft_uses_named_session() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_named_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_named_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -269,7 +269,7 @@ test_draft_rejects_if_draft_exists() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_guard_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_guard_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -310,7 +310,7 @@ test_draft_requires_patches_directory() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_no_patches_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_no_patches_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -345,7 +345,7 @@ test_confirm_rebases_and_merges() {
   local PROJECT_DIR="$FIXTURE_DIR/confirm_merge_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_merge_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -409,7 +409,7 @@ test_confirm_with_target_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/confirm_target_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_target_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -488,7 +488,7 @@ test_reject_returns_to_source_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/reject_return_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/reject_return_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -545,7 +545,7 @@ test_reject_deletes_draft_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/reject_delete_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/reject_delete_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -609,7 +609,7 @@ test_apply_uses_staged_diff() {
   local PROJECT_DIR="$FIXTURE_DIR/apply_staged_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/apply_staged_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
   local SESSION_DIR="$CHANGES_DIR/test-session"
 
   make_committed_repo "$PROJECT_DIR"
@@ -646,7 +646,7 @@ test_apply_falls_back_to_recent_session() {
   local PROJECT_DIR="$FIXTURE_DIR/apply_fallback_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/apply_fallback_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/changes"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"

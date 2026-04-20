@@ -56,7 +56,7 @@ On container exit, an EXIT trap runs `stage_diffs`:
 
 1. Any uncommitted changes in `sandbox/` are staged and committed
 2. `git diff <baseline>..HEAD` is computed against the baseline commit recorded at startup
-3. The result is written to `.workspace/changes/patch.diff`
+3. The result is written to `.workspace/session-diffs/patch.diff`
 
 An autosave loop also runs `stage_diffs` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), providing incremental checkpoints during the session.
 
@@ -146,7 +146,7 @@ PROJECT_ROOT/.bootstrap/       → /home/agentuser/.bootstrap:ro
   brief.md                        agent task brief
 
 PROJECT_ROOT/.workspace/       → /home/agentuser/.workspace:rw
-  changes/patch.diff              agent output
+  session-diffs/patch.diff        agent output
 ```
 
 `PROJECT_ROOT` itself is no longer mounted into the container at runtime. The snapshot is complete before the container starts.

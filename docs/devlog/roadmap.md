@@ -86,7 +86,7 @@ See handover `20260416-04-impl-change1.md` for full implementation details.
 **Change 2 implementation (complete):**
 
 Format-patch generation and session-scoped artefact directory:
-- **Container side (`libs/diff.sh`):** Added `diff_format_patch` function to generate per-commit `.patch` files via `git format-patch`. Updated `diff_on_exit` and `diff_on_autosave` to accept optional `SESSION_NAME` argument; artefacts written under `.workspace/changes/<session-name>/` with fallback to root `CHANGES_DIR/` for backwards compatibility.
+- **Container side (`libs/diff.sh`):** Added `diff_format_patch` function to generate per-commit `.patch` files via `git format-patch`. Updated `diff_on_exit` and `diff_on_autosave` to accept optional `SESSION_NAME` argument; artefacts written under `.workspace/session-diffs/<session-name>/` with fallback to root `CHANGES_DIR/` for backwards compatibility. # renamed from changes/ in M2.3
 - **Container side (`libs/sandbox-entrypoint.sh`):** EXIT trap and autosave loop pass `${SESSION_NAME:-}` to diff functions.
 - **Compose (`libs/docker-compose.yml`):** `SESSION_NAME` injected into sandbox container environment.
 - **Tests:** 11 new tests in `tests/test_diff.sh` (24 total) covering `diff_format_patch` and session-scoped artefacts. All pass.
@@ -105,7 +105,7 @@ Correctly handles all cases: untracked files show as `??`, unstaged edits show a
 
 - **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before each session. Derive `WORKTREE_ID` from PROJECT_DIR path, `SESSION_NAME` as `<sanitized-branch>-<timestamp>`, and `REPO_COMMIT` as full HEAD SHA. Prune to last 5 checkpoint tags per worktree.
 
-- **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/changes/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit.
+- **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/session-diffs/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit. # renamed from changes/ in M2.3
 
 - **Change 3 — draft/confirm/reject** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (resolves session via latest fallback or explicit `SESSION=<n>`; creates `agent/draft/<session-name>` from checkpoint tag via `checkpoint.sh` lookup; applies patches via `git am --3way` with author reset; aborts cleanly on failure), `make confirm [TARGET=<branch>]` (rebases draft onto target, fast-forward merges, linear history always), `make reject` (discards draft branch). `draft-state` holds active draft state. `make apply` retained as legacy fallback. Note: `SYNC=1` flag and `make sync` are Change 6 additions — Change 3 does not touch baseline advancement.
 

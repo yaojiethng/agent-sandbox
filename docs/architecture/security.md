@@ -38,7 +38,7 @@ The two containers have different trust levels. The capability layer is harness-
 Within the capability layer container:
 
 - `.snapshot/` is mounted read-only — contains the pre-built project snapshot
-- `.workspace/changes/` is mounted read-write — the diff output channel
+- `.workspace/session-diffs/` is mounted read-write — the diff output channel
 - `sandbox/` is a shared Docker volume — the working content the agent modifies
 
 Within the reasoning layer container:
@@ -59,7 +59,7 @@ Gitignore controls what enters the snapshot. Sensitive files gitignored on the h
 The following invariants must hold:
 
 - `PROJECT_DIR` must not be mounted into either container at runtime.
-- The capability layer container must not access host filesystem paths outside `.snapshot/` and `.workspace/changes/`.
+- The capability layer container must not access host filesystem paths outside `.snapshot/` and `.workspace/session-diffs/`.
 - The reasoning layer container must not access host filesystem paths outside `.workspace/input/` and `.workspace/output/`.
 - Neither container must have access to the Docker socket.
 - Repository mutation must occur only on the host after human review.

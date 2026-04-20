@@ -62,7 +62,7 @@ Derived values, computed on demand from primitives:
 | `SESSION_NAME` | `<branch-or-short-sha>-<SESSION_TS>` | Branch from `rev-parse --abbrev-ref HEAD`; if detached HEAD, use `git rev-parse --short HEAD` instead |
 | Checkpoint tag | `agent-checkpoint/<worktree-id>/<SESSION_TS>` | Namespaced by worktree to avoid cross-session tag interference in shared git object store |
 | Container name | `<provider>-agent-<project>-<SESSION_TS>` | Per-session; harness-controlled via explicit `container_name:` in generated compose |
-| Artefact directory | `workspace/changes/<SESSION_NAME>/` | Per-session, non-colliding |
+| Artefact directory | `workspace/session-diffs/<SESSION_NAME>/` | Per-session, non-colliding |
 
 ### Image naming
 
