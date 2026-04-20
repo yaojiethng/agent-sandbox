@@ -8,7 +8,7 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name>]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name>] [--force]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
@@ -201,7 +201,8 @@ case "$SUBCOMMAND" in
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
       ${SESSION_ARG:+--session="$SESSION_ARG"} \
-      ${BRANCH:+--branch="$BRANCH"}
+      ${BRANCH:+--branch="$BRANCH"} \
+      ${FORCE:+--force}
     ;;
 
   draft)

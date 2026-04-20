@@ -49,21 +49,22 @@ None.
 - [x] `make apply` with empty `OUTPUT_DIR` exits with clear error
 - [x] `make apply` where resolved directory has no `changes.diff` exits with clear error
 - [x] `make apply` prints path to `migration-guide.md` before applying if present
-
+- [x] `make apply --force` uses `git apply --reject`; `.rej` files created for conflicts
 - [x] `make draft` is unaffected — still reads from `session-diffs/`
 - [x] Cleanup policy documented in script header: `OUTPUT_DIR` is not cleared automatically
-- [x] All above covered by tests — `tests/test_apply_workspace.sh` (19 tests)
+- [x] All above covered by tests — `tests/test_apply_workspace.sh` (28 tests)
 - [x] `tests/test_start_agent.sh` contains no references to `checkpoint-latest.ref` — removed
 
 ## Hot files
 
 | File | Why in scope | Status |
 |---|---|---|
-| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Change 3 primary target; legacy apply rewrite | ✓ Implemented |
-| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | draft/confirm/reject/apply targets; comment updates | ✓ Implemented |
-| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Tests for draft/confirm/reject and apply (OUTPUT_DIR) | ✓ Implemented (19 tests) |
+| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Change 3 primary target; legacy apply rewrite; `--force` flag | ✓ Implemented |
+| [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | Pass `--force` flag to `apply_workspace.sh` | ✓ Implemented |
+| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | draft/confirm/reject/apply targets; comment updates; `FORCE=1` support | ✓ Implemented |
+| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Tests for draft/confirm/reject and apply (OUTPUT_DIR); `--force` tests | ✓ Implemented (28 tests) |
 | [`tests/test_start_agent.sh`](tests/test_start_agent.sh) | Remove `checkpoint-latest.ref` test references | ✓ Updated |
-| [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md) | Document `make apply` OUTPUT_DIR channel | ✓ Updated |
+| [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md) | Document `make apply` OUTPUT_DIR channel; `--force` flag | ✓ Updated |
 | [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | Update Change 3 description | ✓ Updated |
 
 ## Decisions made this session
@@ -72,11 +73,12 @@ None.
 
 ## Completed this session
 
-- `scripts/apply_workspace.sh` — fully implemented with draft/confirm/reject commands; legacy apply rewritten to read from `OUTPUT_DIR` with `changes.diff`
-- `libs/_templates/Makefile.template` — draft/confirm/reject/apply targets added (invoke `agent-sandbox` CLI); comment block updated
-- `tests/test_apply_workspace.sh` — 19 tests covering draft, confirm, reject, and apply (OUTPUT_DIR) workflows
+- `scripts/apply_workspace.sh` — fully implemented with draft/confirm/reject commands; legacy apply rewritten to read from `OUTPUT_DIR` with `changes.diff`; `--force` flag added for `git apply --reject`
+- `scripts/agent-sandbox.sh` — `apply` subcommand passes `--force` flag; help comment updated
+- `libs/_templates/Makefile.template` — draft/confirm/reject/apply targets added (invoke `agent-sandbox` CLI); comment block updated; `FORCE=1` support added
+- `tests/test_apply_workspace.sh` — 28 tests covering draft, confirm, reject, apply (OUTPUT_DIR), and `--force` workflows
 - `tests/test_start_agent.sh` — removed `checkpoint-latest.ref` test references (superseded by Change 5 container label lookup)
-- `docs/discussions/design_apply_workflow_and_baseline_advancement.md` — documented `make apply` OUTPUT_DIR channel in Apply Workflow section
+- `docs/discussions/design_apply_workflow_and_baseline_advancement.md` — documented `make apply` OUTPUT_DIR channel and `--force` flag in Apply Workflow section
 - `docs/devlog/roadmap.md` — updated Change 3 description to include `make apply` fix
 - `docs/devlog/handovers/20260420-03-impl-draft_confirm_reject_workflow.md` — this handover updated with scope, acceptance criteria, and hot files
 

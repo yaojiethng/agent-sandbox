@@ -133,6 +133,7 @@ from the capability layer diff channel (`.workspace/session-diffs/`) consumed by
 **Behaviour:**
 - Prints path to `migration-guide.md` if present — operator should read before proceeding
 - Applies via `git apply --3way changes.diff` against `PROJECT_DIR`
+- With `--force`: uses `git apply --reject`; `.rej` files created for failed hunks
 - Prints summary: files changed, any conflicts
 - Does not create commits — operator reviews and commits manually
 

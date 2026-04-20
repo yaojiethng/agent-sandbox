@@ -16,10 +16,11 @@
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
-#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--session=<name>] [--branch=<n>]
+#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--session=<name>] [--branch=<n>] [--force]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR with git apply --3way.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/).
+#             --force: use git apply --reject on conflicts; .rej files left for manual resolution.
 #
 # .workspace/draft-state format:
 #   SOURCE_BRANCH=<branch>
@@ -48,6 +49,7 @@ SANDBOX_DIR=""
 SESSION_ARG=""
 TARGET_BRANCH=""
 APPLY_BRANCH=""
+FORCE=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -56,6 +58,7 @@ for ARG in "$@"; do
     --session=*) SESSION_ARG="${ARG#--session=}" ;;
     --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
     --branch=*)  APPLY_BRANCH="${ARG#--branch=}" ;;
+    --force)     FORCE=true ;;
     *)
       echo "Unknown flag: $ARG" >&2
       exit 1
@@ -306,20 +309,36 @@ if [[ -z "$COMMAND" ]]; then
   fi
 
   echo "Applying changes.diff from $(basename "$SESSION_DIR") to $(git -C "$PROJECT_DIR" branch --show-current)..."
-  APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --3way "$CHANGES_DIFF" 2>&1) || {
-    echo "Error: git apply failed with conflicts." >&2
-    echo "$APPLY_OUTPUT" >&2
-    echo "" >&2
-    echo "Conflicts must be resolved manually." >&2
-    exit 1
-  }
+
+  if [[ "$FORCE" == true ]]; then
+    echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
+    git -C "$PROJECT_DIR" apply --reject "$CHANGES_DIFF"
+    APPLY_STATUS=$?
+    if [[ $APPLY_STATUS -ne 0 ]]; then
+      echo "" >&2
+      echo "Warning: some hunks failed to apply." >&2
+      echo "Review .rej files and resolve manually." >&2
+    fi
+  else
+    APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --3way "$CHANGES_DIFF" 2>&1) || {
+      echo "Error: git apply failed with conflicts." >&2
+      echo "$APPLY_OUTPUT" >&2
+      echo "" >&2
+      echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
+      exit 1
+    }
+  fi
 
   # Count changed files from the diff
   FILES_CHANGED=$(grep -c "^diff --git" "$CHANGES_DIFF" || echo "0")
 
   echo ""
   echo "Done. Files changed: $FILES_CHANGED"
-  echo "Review changes and commit manually."
+  if [[ "$FORCE" == true ]]; then
+    echo "Force mode: check for .rej files and resolve any failed hunks."
+  else
+    echo "Review changes and commit manually."
+  fi
   echo "Session artefacts retained at: $SESSION_DIR"
 
   exit 0

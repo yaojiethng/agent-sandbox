@@ -133,6 +133,7 @@ stop:
 #   make apply                    — apply changes.diff from .workspace/output/ (no commits created)
 #   make apply SESSION=<name>     — apply from a specific named session directory
 #   make apply BRANCH=<name>      — apply to a named branch
+#   make apply FORCE=1            — apply with --reject; .rej files created for conflicts
 #   Note: OUTPUT_DIR is not cleared automatically. Clear manually between sessions if desired.
 
 draft:
@@ -157,7 +158,8 @@ apply:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(SESSION),--session=$(SESSION),) \
-	  $(if $(BRANCH),--branch=$(BRANCH),)
+	  $(if $(BRANCH),--branch=$(BRANCH),) \
+	  $(if $(FORCE),--force,)
 
 # -------------------------
 # Harness maintenance

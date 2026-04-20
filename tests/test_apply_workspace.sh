@@ -803,7 +803,85 @@ test_apply_prints_migration_guide() {
   fi
 }
 
+test_apply_force_uses_reject() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_force_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_force_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+
+  # Create session with changes.diff
+  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+
+  # Run apply with --force
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --force 2>&1) || true
+
+  if [[ "$OUTPUT" == *"Force mode enabled"* ]] && [[ "$OUTPUT" == *"--reject"* ]]; then
+    pass "apply --force uses git apply --reject"
+  else
+    fail "apply --force did not use --reject: $OUTPUT"
+  fi
+}
+
+test_apply_force_uses_reject_mode() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_force_mode_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_force_mode_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+
+  # Create session with changes.diff
+  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+
+  # Run apply with --force
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --force 2>&1) || true
+
+  if [[ "$OUTPUT" == *"Force mode enabled"* ]]; then
+    pass "apply --force enables force mode"
+  else
+    fail "apply --force did not enable force mode: $OUTPUT"
+  fi
+}
+
+test_apply_force_applies_changes() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_force_apply_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_force_apply_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+
+  # Create session with changes.diff
+  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+
+  # Run apply with --force
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --force >/dev/null 2>&1
+
+  # Verify changes applied
+  local STATUS
+  STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
+  if [[ "$STATUS" == *"output-file.txt"* ]]; then
+    pass "apply --force applies changes successfully"
+  else
+    fail "apply --force did not apply changes: $STATUS"
+  fi
+}
 
 # -------------------------
 # Run all tests
@@ -829,6 +907,8 @@ run_test "apply_requires_changes_diff" test_apply_requires_changes_diff
 run_test "apply_requires_output_dir" test_apply_requires_output_dir
 run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
 run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
+run_test "apply_force_uses_reject_mode" test_apply_force_uses_reject_mode
+run_test "apply_force_applies_changes" test_apply_force_applies_changes
 
 echo
 echo "Results: $PASS passed, $FAIL failed"
