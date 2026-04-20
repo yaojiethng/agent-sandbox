@@ -27,7 +27,7 @@
 #
 # Inside the container, invoke directly — the alias is not registered in the
 # sandbox .git/config:
-#   bash ~/agent-sandbox/libs/package-diff.sh [--baseline=<sha>] [--name=<label>]
+#   bash ~/sandbox/libs/package-diff.sh [--baseline=<sha>] [--name=<label>]
 
 set -euo pipefail
 

@@ -12,7 +12,7 @@ Inside the container, invoke the script directly — the git alias is not regist
 the sandbox `.git/config`:
 
 ```bash
-bash ~/agent-sandbox/libs/package-diff.sh
+bash ~/sandbox/libs/package-diff.sh
 ```
 
 On the host, use the git alias registered by `agent-sandbox onboard`:
@@ -26,7 +26,7 @@ git package-diff
 **To package all changes since session start** (committed and uncommitted):
 
 ```bash
-bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA"
+bash ~/sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA"
 ```
 
 `BASELINE_SHA` is an environment variable set by the container entrypoint. If it is not
@@ -43,9 +43,9 @@ change, like a handover filename: specific enough that a reader scanning a list 
 directories knows what is inside without opening it.
 
 ```bash
-bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=add_session_scoped_artefact_dirs
-bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=fix_snapshot_baseline_working_tree
-bash ~/agent-sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=refactor_compose_generation
+bash ~/sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=add_session_scoped_artefact_dirs
+bash ~/sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=fix_snapshot_baseline_working_tree
+bash ~/sandbox/libs/package-diff.sh --baseline="$BASELINE_SHA" --name=refactor_compose_generation
 ```
 
 Good names: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`
