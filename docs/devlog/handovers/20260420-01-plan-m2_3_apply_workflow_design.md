@@ -79,7 +79,7 @@ Not yet defined.
 | `checkpoint-latest.ref` removal from tests and docs | Implementation-time change; lands with Change 5 | M2.3 Change 5 session |
 | `20260412-02-m2_3_onhold.md` deletion | Pending changes bundle and commit | After M2.3 Changes 3–6 committed |
 | `design_git_workflow_improvements.md` deletion | Retained as implementation log until Changes 1–4 bundle committed | After M2.3 complete |
-| `diff_package` function in `libs/diff.sh` | Mechanical implementation; chore session | `20260420-02-chore-package_diff_unification` |
+
 | Validate `package-diff.sh` behaviour | Script not yet tested against live repo | `20260420-02-chore-package_diff_unification` |
 
 ## Next session
@@ -90,6 +90,7 @@ Context handover: [`20260420-02-chore-package_diff_unification.md`](handovers/20
 ## Objective
 
 Produce the authoritative design for the M2.3 apply workflow (Changes 3, 5, 6), resolve open stories, and update the roadmap to reflect the new change scope.
+open stories, and update the roadmap to reflect the new change scope.
 
 ## Scope
 
@@ -156,7 +157,7 @@ Not yet defined.
 | `checkpoint-latest.ref` removal from tests and docs | Implementation-time change; lands with Change 5 | M2.3 Change 5 session |
 | `20260412-02-m2_3_onhold.md` deletion | Pending changes bundle and commit | After M2.3 Changes 3–6 committed |
 | `design_git_workflow_improvements.md` deletion | Retained as implementation log until Changes 1–4 bundle committed | After M2.3 complete |
-| `package-diff` chore — remaining items | `libs/package-diff.sh` and `onboard.sh` produced this session. Remaining: `diff_package` function in `libs/diff.sh`; validate script behaviour; add `--refresh` alias re-registration when `--project` supplied. Non-blocking on Change 3 | Chore session after Change 3 |
+| `package-diff` chore — remaining items | `libs/package-diff.sh` and `onboard.sh` produced this session. No `diff_package` extraction needed — script is standalone, no shared logic with `libs/diff.sh` warrants extraction. Remaining: validate script behaviour. Non-blocking on Change 3 | `20260420-02-chore-package_diff_unification` |
 
 ## Next session
 

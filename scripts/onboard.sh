@@ -64,9 +64,10 @@ Usage: agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
                           (will be created if it does not exist).
                           Example: /mnt/c/Users/you/Projects/my-project-sandbox
 
-  --refresh               Update stale template files (Makefile) in an existing
-                          SANDBOX_DIR without a full re-onboard. Preserves .env
-                          operator values and AGENTS.md. Run after a harness update.
+  --refresh               Update stale template files (Makefile) and re-register git
+                          aliases in an existing SANDBOX_DIR. Preserves .env operator
+                          values and AGENTS.md. Pass --project to ensure git aliases
+                          are re-registered. Run after a harness update.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
@@ -257,6 +258,25 @@ echo "  Created: .workspace/input/, .workspace/output/, .workspace/changes/"
 fi
 
 # -------------------------
+# Git alias — package-diff
+# -------------------------
+# Register a local git alias in PROJECT_DIR so the operator and agent can
+# invoke package-diff.sh without knowing the harness install path.
+# Local scope (.git/config) keeps the alias project-scoped — no global
+# pollution. Lost on fresh clone; re-registered by re-running onboard.
+if [[ -n "$PROJECT_DIR" ]]; then
+  PACKAGE_DIFF_SCRIPT="$REPO_ROOT/libs/package-diff.sh"
+  if git -C "$PROJECT_DIR" config --local \
+      alias.package-diff "!bash $PACKAGE_DIFF_SCRIPT" 2>/dev/null; then
+    echo "  Registered: git alias 'package-diff' in $PROJECT_DIR/.git/config"
+  else
+    echo "Warning: could not register git alias 'package-diff' in $PROJECT_DIR." >&2
+    echo "  Register manually:" >&2
+    echo "    git config --local alias.package-diff '!bash $PACKAGE_DIFF_SCRIPT'" >&2
+  fi
+fi
+
+# -------------------------
 # .env
 # -------------------------
 SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
@@ -271,6 +291,11 @@ if [[ "$REFRESH" == true ]]; then
       -e "s/^MAKEFILE_VERSION=.*/MAKEFILE_VERSION=${MAKEFILE_VERSION}/" \
       "$ENV_FILE"
     echo "  Updated: .env (template versions)"
+    # Derive PROJECT_DIR from .env if not supplied via flag — needed for alias
+    # re-registration. make refresh does not pass --project.
+    if [[ -z "$PROJECT_DIR" ]]; then
+      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$ENV_FILE" | cut -d= -f2-)
+    fi
   else
     echo "Warning: .env not found in $SANDBOX_DIR — template versions not recorded." >&2
     echo "  Run without --refresh to create a full .env." >&2
@@ -359,6 +384,12 @@ if [[ "$REFRESH" == true ]]; then
   echo "Refresh complete."
   echo ""
   echo "Template files updated to current versions."
+  if [[ -n "$PROJECT_DIR" ]]; then
+    echo "Git alias 'package-diff' re-registered in $PROJECT_DIR/.git/config."
+  else
+    echo "Git alias not re-registered — PROJECT_DIR could not be resolved from .env."
+    echo "  Run: git config --local alias.package-diff '!bash $REPO_ROOT/libs/package-diff.sh'"
+  fi
   echo "Rebuild images to apply changes:"
   echo "  make -C $SANDBOX_DIR build"
 else

@@ -67,6 +67,7 @@ refresh:
 	fi
 	agent-sandbox onboard --refresh \
 	  --name=$(PROJECT_NAME) \
+	  --project=$(CURDIR) \
 	  --sandbox=$(abspath $(SANDBOX_DIR))
 
 # -------------------------

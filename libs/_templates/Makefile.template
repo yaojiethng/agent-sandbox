@@ -124,3 +124,16 @@ apply:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(BRANCH),--branch=$(BRANCH),)
+
+# -------------------------
+# Harness maintenance
+# -------------------------
+#
+# refresh: update stale template files and re-register git aliases after a
+# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+
+refresh:
+	agent-sandbox onboard --refresh \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR)
