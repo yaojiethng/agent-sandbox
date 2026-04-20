@@ -11,8 +11,10 @@
 #   confirm guard — rejects if no draft-state
 #   reject — returns to source branch, deletes draft branch, clears draft-state
 #   reject guard — rejects if no draft-state
-#   apply (legacy) — applies staged.diff with git apply --3way
-#   apply fallback — uses most recent session's staged.diff
+#   apply (legacy) — applies changes.diff from OUTPUT_DIR with git apply --3way
+#   apply SESSION=<n> — applies from named session directory in OUTPUT_DIR
+#   apply guard — rejects if OUTPUT_DIR empty or changes.diff missing
+#   apply deprecation — rejects --mode=apply flag
 #
 # All fixtures created under a temp dir — no repos created inside the harness repo.
 
@@ -91,7 +93,34 @@ EOF
   done
 }
 
-# Create a session with staged.diff
+# Create a session with changes.diff (OUTPUT_DIR format)
+make_session_with_changes_diff() {
+  local SESSION_DIR="$1"
+
+  mkdir -p "$SESSION_DIR"
+
+  # Create a simple unified diff that adds a new file
+  cat > "$SESSION_DIR/changes.diff" <<'EOF'
+diff --git a/output-file.txt b/output-file.txt
+new file mode 100644
+index 0000000..8a963d6
+--- /dev/null
++++ b/output-file.txt
+@@ -0,0 +1 @@
++output change
+EOF
+
+  # Create migration-guide.md
+  cat > "$SESSION_DIR/migration-guide.md" <<'EOF'
+# Migration Guide
+
+This session adds output-file.txt.
+
+Review before applying.
+EOF
+}
+
+# Create a session with staged.diff (old format for draft tests)
 make_session_with_staged_diff() {
   local SESSION_DIR="$1"
   local PROJECT_DIR="$2"
@@ -602,23 +631,23 @@ test_reject_rejects_if_no_draft() {
 }
 
 # -------------------------
-# APPLY (legacy) tests
+# APPLY (legacy) tests — reads from OUTPUT_DIR
 # -------------------------
 
-test_apply_uses_staged_diff() {
-  local PROJECT_DIR="$FIXTURE_DIR/apply_staged_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/apply_staged_sandbox"
+test_apply_uses_latest_session() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_latest_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_latest_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
+  mkdir -p "$OUTPUT_DIR"
 
-  # Create session with staged.diff
-  make_session_with_staged_diff "$SESSION_DIR" "$PROJECT_DIR"
+  # Create two sessions - session-01 sorts before session-02
+  make_session_with_changes_diff "$OUTPUT_DIR/session-01"
+  make_session_with_changes_diff "$OUTPUT_DIR/session-02"
 
-  # Run apply (legacy)
+  # Run apply (no SESSION=) - should use session-02 (lexicographically last)
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -626,52 +655,176 @@ test_apply_uses_staged_diff() {
   # Verify changes applied (working tree dirty)
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
-  if [[ "$STATUS" == *"staged.txt"* ]]; then
-    pass "apply (legacy) applies staged.diff to working tree"
+  if [[ "$STATUS" == *"output-file.txt"* ]]; then
+    pass "apply uses lexicographically latest session in OUTPUT_DIR"
   else
-    fail "apply (legacy) did not apply staged.diff: $STATUS"
+    fail "apply did not apply changes.diff: $STATUS"
   fi
 
   # Verify no new commits
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 1 ]]; then
-    pass "apply (legacy) does not create commits"
+    pass "apply does not create commits"
   else
-    fail "apply (legacy) created commits: expected 1, got $COMMIT_COUNT"
+    fail "apply created commits: expected 1, got $COMMIT_COUNT"
   fi
 }
 
-test_apply_falls_back_to_recent_session() {
-  local PROJECT_DIR="$FIXTURE_DIR/apply_fallback_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/apply_fallback_sandbox"
+test_apply_uses_named_session() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_named_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_named_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
+  mkdir -p "$OUTPUT_DIR"
 
-  # Create base commit
-  echo "tracked" > "$PROJECT_DIR/tracked.txt"
-  git -C "$PROJECT_DIR" add .
-  git -C "$PROJECT_DIR" commit -m "initial" --quiet
-  local BASE_SHA
-  BASE_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  # Create two sessions with different content
+  make_session_with_changes_diff "$OUTPUT_DIR/session-a"
+  # Create session-b with a different file
+  mkdir -p "$OUTPUT_DIR/session-b"
+  cat > "$OUTPUT_DIR/session-b/changes.diff" <<'EOF'
+diff --git a/named-file.txt b/named-file.txt
+new file mode 100644
+index 0000000..7a963d6
+--- /dev/null
++++ b/named-file.txt
+@@ -0,0 +1 @@
++named session change
+EOF
 
-  # Create session with staged.diff (no root-level staged.diff)
-  local SESSION_DIR="$CHANGES_DIR/test-session"
-  make_session_with_staged_diff "$SESSION_DIR" "$BASE_SHA"
+  # Run apply with SESSION=session-a
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="session-a" >/dev/null 2>&1
 
-  # Run apply (legacy) - should find session's staged.diff
+  # Verify session-a's changes applied
+  local STATUS
+  STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
+  if [[ "$STATUS" == *"output-file.txt"* ]] && [[ "$STATUS" != *"named-file.txt"* ]]; then
+    pass "apply uses named session when SESSION specified"
+  else
+    fail "apply did not use named session: $STATUS"
+  fi
+}
+
+test_apply_requires_changes_diff() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_no_diff_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_no_diff_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR/session-incomplete"
+
+  # Create session without changes.diff
+  echo "# Incomplete session" > "$OUTPUT_DIR/session-incomplete/migration-guide.md"
+
+  # Run apply - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
-  if [[ "$OUTPUT" == *"using staged.diff from most recent session"* ]]; then
-    pass "apply (legacy) falls back to most recent session's staged.diff"
+  if [[ "$OUTPUT" == *"changes.diff not found"* ]]; then
+    pass "apply fails when changes.diff is missing"
   else
-    fail "apply (legacy) did not fall back: $OUTPUT"
+    fail "apply did not fail on missing changes.diff: $OUTPUT"
+  fi
+}
+
+test_apply_requires_output_dir() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_no_output_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_no_output_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+
+  make_committed_repo "$PROJECT_DIR"
+  # Do NOT create OUTPUT_DIR
+
+  # Run apply - should fail
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"output directory not found"* ]]; then
+    pass "apply fails when OUTPUT_DIR does not exist"
+  else
+    fail "apply did not fail on missing OUTPUT_DIR: $OUTPUT"
+  fi
+}
+
+test_apply_requires_empty_output_dir() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_empty_output_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_empty_output_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+  # OUTPUT_DIR exists but is empty
+
+  # Run apply - should fail
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"no session directories found"* ]]; then
+    pass "apply fails when OUTPUT_DIR is empty"
+  else
+    fail "apply did not fail on empty OUTPUT_DIR: $OUTPUT"
+  fi
+}
+
+test_apply_prints_migration_guide() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_migration_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_migration_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+
+  # Create session with migration-guide.md
+  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+
+  # Run apply
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"Migration guide available"* ]]; then
+    pass "apply prints migration guide path when present"
+  else
+    fail "apply did not print migration guide: $OUTPUT"
+  fi
+}
+
+test_apply_rejects_mode_apply_flag() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_mode_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_mode_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+
+  # Run apply with deprecated --mode=apply flag
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --mode=apply 2>&1) || true
+
+  if [[ "$OUTPUT" == *"--mode=apply is deprecated"* ]]; then
+    pass "apply rejects deprecated --mode=apply flag"
+  else
+    fail "apply did not reject --mode=apply: $OUTPUT"
   fi
 }
 
@@ -693,8 +846,13 @@ run_test "confirm_rejects_if_no_draft" test_confirm_rejects_if_no_draft
 run_test "reject_returns_to_source_branch" test_reject_returns_to_source_branch
 run_test "reject_deletes_draft_branch" test_reject_deletes_draft_branch
 run_test "reject_rejects_if_no_draft" test_reject_rejects_if_no_draft
-run_test "apply_uses_staged_diff" test_apply_uses_staged_diff
-run_test "apply_falls_back_to_recent_session" test_apply_falls_back_to_recent_session
+run_test "apply_uses_latest_session" test_apply_uses_latest_session
+run_test "apply_uses_named_session" test_apply_uses_named_session
+run_test "apply_requires_changes_diff" test_apply_requires_changes_diff
+run_test "apply_requires_output_dir" test_apply_requires_output_dir
+run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
+run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
+run_test "apply_rejects_mode_apply_flag" test_apply_rejects_mode_apply_flag
 
 echo
 echo "Results: $PASS passed, $FAIL failed"

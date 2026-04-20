@@ -115,11 +115,34 @@ by timestamp, and applies them in sequence. Does not validate session name again
 container label — `make sync` is an explicit catch-up operation, not a tight per-confirm
 sync. Fails if no container is running.
 
-**Legacy path**
+**Legacy path — `make apply` (reasoning layer output channel)**
 
-`make apply` retains `git apply --3way` on `staged.diff` for sessions produced before
-M2.3. Falls back to the most recent session directory's `staged.diff` when no root-level
-file is present.
+`make apply` applies `changes.diff` from the reasoning layer output channel at
+`.workspace/output/`. This is the host-side consumer of reasoning layer output, distinct
+from the capability layer diff channel (`.workspace/session-diffs/`) consumed by `make draft`.
+
+**Session resolution:**
+- With no `SESSION=`: lexicographically last entry in `.workspace/output/` (by basename sort)
+- With `SESSION=<name>`: explicit directory `.workspace/output/<name>/` — errors if not found
+
+**Artefact format:** Each session package is a directory containing:
+- `changes.diff` — unified diff for application via `git apply --3way`
+- `changed-files/` — supporting files referenced by the diff (if any)
+- `migration-guide.md` — operator-facing guide describing the changes (printed by script)
+
+**Behaviour:**
+- Prints path to `migration-guide.md` if present — operator should read before proceeding
+- Applies via `git apply --3way changes.diff` against `PROJECT_DIR`
+- Prints summary: files changed, any conflicts
+- Does not create commits — operator reviews and commits manually
+- `--mode=apply` flag is deprecated and removed
+
+**Cleanup policy:** `OUTPUT_DIR` is not cleared automatically. Operator clears manually
+between sessions if desired.
+
+**Pre-M2.3 sessions:** Sessions produced before the reasoning layer packaging convention
+used `staged.diff` in `.workspace/session-diffs/`. Those are no longer supported by
+`make apply` — operators should use `make draft` for capability layer sessions.
 
 ### Session resolution
 

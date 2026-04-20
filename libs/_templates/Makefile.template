@@ -129,9 +129,11 @@ stop:
 #   make confirm TARGET_BRANCH=x  — merge to a different target branch
 #   make reject                   — discard draft branch, return to source branch
 #
-# LEGACY (sessions before M2.3):
-#   make apply                    — apply staged.diff with git apply (no commits created)
+# LEGACY (reasoning layer output channel):
+#   make apply                    — apply changes.diff from .workspace/output/ (no commits created)
+#   make apply SESSION=<name>     — apply from a specific named session directory
 #   make apply BRANCH=<name>      — apply to a named branch
+#   Note: OUTPUT_DIR is not cleared automatically. Clear manually between sessions if desired.
 
 draft:
 	agent-sandbox draft \

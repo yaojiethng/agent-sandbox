@@ -16,14 +16,19 @@
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
-#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--mode=apply] [--branch=<n>]
-#             Apply staged.diff to PROJECT_DIR with git apply --3way.
+#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--branch=<n>]
+#             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR with git apply --3way.
 #             No commits created. Operator reviews and commits manually.
+#             Reads from reasoning layer output channel (.workspace/output/).
+#             The --mode=apply flag is deprecated and removed.
 #
 # .workspace/draft-state format:
 #   SOURCE_BRANCH=<branch>
 #   WORKING_BRANCH=<branch>
 #   SESSION_DIR=<rel-path>
+#
+# Cleanup policy:
+#   OUTPUT_DIR is not cleared automatically. Operator clears manually between sessions if desired.
 
 set -euo pipefail
 
@@ -68,6 +73,7 @@ fi
 
 WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+OUTPUT_DIR="$WORKSPACE_DIR/output"
 DRAFT_STATE_FILE="$WORKSPACE_DIR/draft-state"
 CHECKPOINT_REF_FILE="$WORKSPACE_DIR/checkpoint-latest.ref"
 
@@ -248,29 +254,55 @@ if [[ "$COMMAND" == "reject" ]]; then
 fi
 
 # -------------------------
-# LEGACY — no command (or --mode=apply)
+# LEGACY — no command (reads from OUTPUT_DIR)
 # -------------------------
-if [[ -z "$COMMAND" || "$MODE" == "apply" ]]; then
-  STAGED_DIFF="$CHANGES_DIR/staged.diff"
+if [[ -z "$COMMAND" ]]; then
+  # Deprecation notice for old --mode=apply flag
+  if [[ -n "$MODE" ]]; then
+    echo "Error: --mode=apply is deprecated and has been removed." >&2
+    echo "  make apply now reads from OUTPUT_DIR by default." >&2
+    exit 1
+  fi
 
-  # Also check for session-scoped staged.diff (most recent session)
-  if [[ ! -f "$STAGED_DIFF" ]]; then
-    LATEST_SESSION=$(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d \
-      | sort -t/ -k1,1 | tail -n 1)
-    if [[ -n "$LATEST_SESSION" && -f "$LATEST_SESSION/staged.diff" ]]; then
-      STAGED_DIFF="$LATEST_SESSION/staged.diff"
-      echo "Note: using staged.diff from most recent session: $(basename "$LATEST_SESSION")"
+  # Resolve session directory from OUTPUT_DIR
+  if [[ ! -d "$OUTPUT_DIR" ]]; then
+    echo "Error: output directory not found: $OUTPUT_DIR" >&2
+    echo "  No session artefacts have been produced yet." >&2
+    exit 1
+  fi
+
+  if [[ -n "$SESSION_ARG" ]]; then
+    # Explicit session name provided
+    SESSION_DIR="$OUTPUT_DIR/$SESSION_ARG"
+    if [[ ! -d "$SESSION_DIR" ]]; then
+      echo "Error: session directory not found: $SESSION_DIR" >&2
+      echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
+      exit 1
+    fi
+  else
+    # Lexicographically last entry in OUTPUT_DIR (by basename sort)
+    SESSION_DIR=$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -type d \
+      | sort | tail -n 1)
+    if [[ -z "$SESSION_DIR" ]]; then
+      echo "Error: no session directories found in $OUTPUT_DIR" >&2
+      echo "  Run a session first, or specify SESSION=<name>." >&2
+      exit 1
     fi
   fi
 
-  if [[ ! -f "$STAGED_DIFF" ]]; then
-    echo "Error: staged.diff not found at $STAGED_DIFF" >&2
+  CHANGES_DIFF="$SESSION_DIR/changes.diff"
+  if [[ ! -f "$CHANGES_DIFF" ]]; then
+    echo "Error: changes.diff not found in session directory: $CHANGES_DIFF" >&2
+    echo "  Session artefacts may be incomplete or from an older format." >&2
     exit 1
   fi
 
-  if [[ ! -s "$STAGED_DIFF" ]]; then
-    echo "Error: staged.diff is empty — nothing to apply" >&2
-    exit 1
+  # Print migration guide path if present (operator should read before applying)
+  MIGRATION_GUIDE="$SESSION_DIR/migration-guide.md"
+  if [[ -f "$MIGRATION_GUIDE" ]]; then
+    echo "Migration guide available: $MIGRATION_GUIDE"
+    echo "  Review before proceeding."
+    echo ""
   fi
 
   if [[ -n "$APPLY_BRANCH" ]]; then
@@ -283,9 +315,22 @@ if [[ -z "$COMMAND" || "$MODE" == "apply" ]]; then
     fi
   fi
 
-  echo "Applying staged.diff to $(git -C "$PROJECT_DIR" branch --show-current) in $PROJECT_DIR..."
-  git -C "$PROJECT_DIR" apply --3way "$STAGED_DIFF"
-  echo "Done. Review changes and commit manually."
+  echo "Applying changes.diff from $(basename "$SESSION_DIR") to $(git -C "$PROJECT_DIR" branch --show-current)..."
+  APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --3way "$CHANGES_DIFF" 2>&1) || {
+    echo "Error: git apply failed with conflicts." >&2
+    echo "$APPLY_OUTPUT" >&2
+    echo "" >&2
+    echo "Conflicts must be resolved manually." >&2
+    exit 1
+  }
+
+  # Count changed files from the diff
+  FILES_CHANGED=$(grep -c "^diff --git" "$CHANGES_DIFF" || echo "0")
+
+  echo ""
+  echo "Done. Files changed: $FILES_CHANGED"
+  echo "Review changes and commit manually."
+  echo "Session artefacts retained at: $SESSION_DIR"
 
   exit 0
 fi
