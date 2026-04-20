@@ -60,7 +60,9 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
 
-**Depends on:** M2.1. **Status:** In progress. Changes 1 and 4 complete; Changes 2–3 pending.
+**Depends on:** M2.1. **Status:** In progress. Changes 1, 2, and 4 complete; Changes 3, 5, and 6 pending.
+
+**Design reference:** [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md)
 
 **Change status:**
 
@@ -68,13 +70,15 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 |--------|--------------|--------|
 | Change 1 | Checkpoint tag (`start_agent.sh`) | ✓ Complete |
 | Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | ✓ Complete |
-| Change 3 | draft/confirm/reject workflow (`apply_workspace.sh`) | Pending |
+| Change 3 | draft/confirm/reject (`apply_workspace.sh`) | Pending |
 | Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
+| Change 5 | Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) | Pending |
+| Change 6 | Baseline advancement (`make confirm SYNC=1`, `make sync`) | Pending |
 
 **Change 1 implementation (complete):**
 
 Checkpoint tag creation with worktree namespace, SESSION_NAME derivation, and REPO_COMMIT capture:
-- **Host side (`start_agent.sh`):** Derives `WORKTREE_ID` from PROJECT_DIR path; creates `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent per worktree; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports `REPO_COMMIT` (full HEAD SHA) for future image labeling; exports `SESSION_NAME` for docker-compose (injection in Change 2); writes tag to `.workspace/checkpoint-latest.ref` for operator recovery.
+- **Host side (`start_agent.sh`):** Derives `WORKTREE_ID` from PROJECT_DIR path; creates `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent per worktree; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports `REPO_COMMIT` (full HEAD SHA) for future image labeling; exports `SESSION_NAME` for docker-compose (injection in Change 2). Note: `checkpoint-latest.ref` written by this implementation is superseded by container label lookup in Change 5 — checkpoint tag is retrieved via `checkpoint.sh` tag lookup at apply time.
 - **Tests:** 19 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 6 SESSION_NAME tests, 3 WORKTREE_ID tests, 2 REPO_COMMIT tests. All pass.
 
 See handover `20260416-04-impl-change1.md` for full implementation details.
@@ -103,9 +107,13 @@ Correctly handles all cases: untracked files show as `??`, unstaged edits show a
 
 - **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/changes/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit.
 
-- **Change 3 — draft/confirm/reject workflow** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (applies patches to `agent/draft/<session-name>` branch via `git am`, resets author identity), `make confirm` (rebases draft onto target, fast-forward merges, deletes draft branch — linear history always), `make reject` (discards draft branch). State held in `.workspace/draft-state`. `make apply --mode=apply` retained as legacy fallback.
+- **Change 3 — draft/confirm/reject** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (resolves session via latest fallback or explicit `SESSION=<n>`; creates `agent/draft/<session-name>` from checkpoint tag via `checkpoint.sh` lookup; applies patches via `git am --3way` with author reset; aborts cleanly on failure), `make confirm [TARGET=<branch>]` (rebases draft onto target, fast-forward merges, linear history always), `make reject` (discards draft branch). `draft-state` holds active draft state. `make apply` retained as legacy fallback. Note: `SYNC=1` flag and `make sync` are Change 6 additions — Change 3 does not touch baseline advancement.
 
 - **Change 4 — Archive HEAD + rsync overlay** (`libs/snapshot.sh`, `start_agent.sh`): Replaced naive rsync-only snapshot with two-step design: (1) host produces `baseline.tar` via `git archive HEAD`; (2) container unpacks tar, commits as baseline, then overlays rsync copy with `--delete`. Baseline commit now represents exactly HEAD — independent of working tree state. Residual limitation: negation patterns in global gitignore / `.git/info/exclude` not supported by rsync `--exclude-from` — documented.
+
+- **Change 5 — Container naming + Docker labels** (`libs/compose.sh`, `scripts/checkpoint.sh`): Explicit `container_name:` in generated compose derived from session identity. Container labels set at session start: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag`. Introduces `scripts/checkpoint.sh` consolidating tag creation, pruning, lookup, and `WORKTREE_ID` derivation — sourced by `start_agent.sh`, `apply_workspace.sh`, and advancement script. Removes `checkpoint-latest.ref` dependency; all checkpoint and container lookups use label queries or `checkpoint.sh`. Prerequisite for Change 6 and for parallel worktree session safety.
+
+- **Change 6 — Baseline advancement** (`scripts/advance_baseline.sh`, `Makefile.template`): Implements `make confirm SYNC=1` (tight per-confirm advancement, validates container session label) and `make sync` (loose catch-up, applies all unadvanced sessions in timestamp order). Container located by `agent-sandbox.project-dir` label. `ADVANCED_SESSIONS` inside the container is the idempotency guard. Requires clean sandbox working tree; conflicts surface via `git am --abort`. Depends on Change 5.
 
 #### M2.5 — Vault Capability Layer Prototype
 
@@ -128,16 +136,15 @@ Each provider may result in a different integration pattern. Investigation findi
 #### M2.7 — Session Identity and Harness Versioning
 Objective: Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
 Depends on: M2.3. Status: Not started.
-Scope: Implement the primitive set and two-sig model defined in docs/discussions/story_session_identity_and_harness_versioning.md. Work falls into four groups:
+Scope: Implement the primitive set and two-sig model defined in docs/discussions/story_session_identity_and_harness_versioning.md. Work falls into three groups (container naming moved to M2.3 Change 5):
 
-Primitive set (scripts/start_agent.sh): single canonical SESSION_TS at top of script replacing any downstream date calls; REPO_COMMIT captured and exported; WORKTREE_ID derived from short hash of PROJECT_DIR absolute path and exported. Note: WORKTREE_ID and updated checkpoint tag namespace (agent-checkpoint/<worktree-id>/<timestamp>) may be folded into M2.3 Change 1 additions if that pass has not yet run.
+Primitive set (scripts/start_agent.sh): single canonical SESSION_TS at top of script replacing any downstream date calls; REPO_COMMIT captured and exported; WORKTREE_ID derived from short hash of PROJECT_DIR absolute path and exported. Note: WORKTREE_ID and updated checkpoint tag namespace (agent-checkpoint/<worktree-id>/<timestamp>) already implemented in M2.3 Change 1.
 Two-sig model (libs/containers.sh, scripts/start_agent.sh): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
-Paired refactor (libs/, providers/): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary.
-Container naming and image rename (libs/compose.sh, libs/containers.sh, provider Dockerfiles): explicit container_name: in generated compose derived from session identity (<provider>-agent-<project>-<session-ts>); image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding. If still baked in, migration to runtime injection via workspace/input/ must complete first.
+Paired refactor (libs/, providers/): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary. Image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding.
 
 Sub-stories:
 
-story_parallel_sessions_worktree.md — parallel sessions via git worktree; WORKTREE_ID primitive and checkpoint tag namespace (implemented in this milestone) are the harness-level prerequisites. Two open design questions (OQ1: WORKTREE_ID representation finalisation; OQ3: container naming pattern across restarts) to be resolved at session open before implementation begins.
+story_parallel_sessions_worktree.md — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1; container naming implemented in M2.3 Change 5. No open design questions remain.
 story_harness_packaging_and_install_versioning.md — install workflow rewrite; deferred, does not block this milestone.
 
 ---

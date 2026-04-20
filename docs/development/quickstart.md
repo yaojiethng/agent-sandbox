@@ -125,7 +125,7 @@ If a session produces a bad diff that corrupts your repository after apply, reco
 
 ```bash
 # Find the latest checkpoint tag
-LATEST=$(cat .workspace/checkpoint-latest.ref)
+LATEST=$(git tag --list "agent-checkpoint/*" | sort | tail -n 1)
 
 # Reset to pre-session state
 git reset --hard "$LATEST"

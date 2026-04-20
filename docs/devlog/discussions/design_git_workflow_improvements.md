@@ -1,7 +1,13 @@
 # Design — Git Workflow Improvements
 
-**Status:** Working document. Tracks all proposed changes to the git-facing pipeline.
-**Target milestone:** M2.3 (Changes 1–3) + Snapshot Baseline (Change 4, active)
+**Status:** Tracks in-progress changes to the git-facing pipeline. Superseded as design reference. 
+**Target milestone:** M2.3
+
+> **Superseded.** This document is retained as an implementation log for M2.3 Changes 1–4.
+> The authoritative design reference for the apply workflow, baseline advancement, and diff
+> primitives is [`design_apply_workflow_and_baseline_advancement.md`](design_apply_workflow_and_baseline_advancement.md).
+> This document is pending deletion once Changes 1–4 are fully committed and the
+> implementation record is fully reflected in implementation handovers and no longer needed for active reference.
 
 ---
 
