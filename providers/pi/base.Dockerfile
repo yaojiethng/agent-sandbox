@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Pi coding agent globally (pinned version)
-RUN npm install -g @mariozechner/pi-coding-agent@0.63.1
+RUN npm install -g @mariozechner/pi-coding-agent@0.67.6
 
 # Base image ends as root.
 # User creation and runtime config belong in provider.Dockerfile.

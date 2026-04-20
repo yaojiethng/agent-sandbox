@@ -1,8 +1,70 @@
 {
   "providers": {
+    "opencode-go": {
+      "baseUrl": "https://opencode.ai/zen/go/v1",
+      "apiKey": "OPENCODE_API_KEY",
+      "models": [
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "mimo-v2-pro",
+          "name": "MiMo-V2-Pro (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "mimo-v2-omni",
+          "name": "MiMo-V2-Omni (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "qwen3.6-plus",
+          "name": "Qwen3.6 Plus (Opencode Go)",
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen3.5 Plus (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "minimax-m2.5",
+          "name": "MiniMax M2.5 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        },
+        {
+          "id": "minimax-m2.7",
+          "name": "MiniMax M2.7 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        }
+      ]
+    },
     "openrouter": {
       "baseUrl": "https://openrouter.ai/api/v1",
-      "apiKey": "YOUR-API-KEY-HERE",
+      "apiKey": "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",
       "api": "openai-completions",
       "models": [
         {
