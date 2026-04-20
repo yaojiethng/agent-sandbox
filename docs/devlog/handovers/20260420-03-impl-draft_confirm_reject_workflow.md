@@ -3,7 +3,7 @@
 **Session date:** 2026-04-20
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation
-**Status:** Active
+**Status:** Complete
 
 ## Objective
 
@@ -28,26 +28,26 @@ None.
 
 ## Acceptance criteria
 
-- `make draft` with no `SESSION=` applies patches from most recent session directory
-- `make draft SESSION=<n>` applies patches from named session directory
-- Failed patch application leaves repo in pre-draft state — no partial branch, no stale `draft-state`
-- `make confirm` rebases draft onto source branch, fast-forward merges, deletes draft branch, clears `draft-state`
-- `make confirm TARGET=<branch>` merges to named branch instead
-- `make reject` returns to source branch, deletes draft branch, clears `draft-state`
-- `make draft` while `draft-state` exists exits with clear error
-- `make confirm` / `make reject` with no `draft-state` exits with clear error
-- `make apply` (legacy) applies `staged.diff` with `git apply --3way`; falls back to most recent session `staged.diff`
-- All above covered by tests
-- `tests/test_start_agent.sh` contains no references to `checkpoint-latest.ref` — replaced by checkpoint tag lookup
+- [x] `make draft` with no `SESSION=` applies patches from most recent session directory
+- [x] `make draft SESSION=<n>` applies patches from named session directory
+- [x] Failed patch application leaves repo in pre-draft state — no partial branch, no stale `draft-state`
+- [x] `make confirm` rebases draft onto source branch, fast-forward merges, deletes draft branch, clears `draft-state`
+- [x] `make confirm TARGET=<branch>` merges to named branch instead
+- [x] `make reject` returns to source branch, deletes draft branch, clears `draft-state`
+- [x] `make draft` while `draft-state` exists exits with clear error
+- [x] `make confirm` / `make reject` with no `draft-state` exits with clear error
+- [x] `make apply` (legacy) applies `staged.diff` with `git apply --3way`; falls back to most recent session `staged.diff`
+- [x] All above covered by tests — `tests/test_apply_workspace.sh` (22 tests)
+- [x] `tests/test_start_agent.sh` contains no references to `checkpoint-latest.ref` — removed
 
 ## Hot files
 
-| File | Why in scope |
-|---|---|
-| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Change 3 primary target |
-| [`libs/Makefile.template`](libs/Makefile.template) | draft/confirm/reject/sync targets |
-| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | New test file for Change 3 |
-| [`tests/test_start_agent.sh`](tests/test_start_agent.sh) | Remove `checkpoint-latest.ref` test references — superseded by label lookup |
+| File | Why in scope | Status |
+|---|---|---|
+| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Change 3 primary target | ✓ Implemented |
+| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | draft/confirm/reject/sync targets | ✓ Implemented |
+| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | New test file for Change 3 | ✓ Implemented (22 tests) |
+| [`tests/test_start_agent.sh`](tests/test_start_agent.sh) | Remove `checkpoint-latest.ref` test references | ✓ Updated |
 
 ## Decisions made this session
 
@@ -55,7 +55,10 @@ None.
 
 ## Completed this session
 
-No file changes this session.
+- `scripts/apply_workspace.sh` — fully implemented with draft/confirm/reject commands and legacy apply fallback
+- `libs/_templates/Makefile.template` — draft/confirm/reject/apply targets added (invoke `agent-sandbox` CLI)
+- `tests/test_apply_workspace.sh` — 22 tests covering draft, confirm, reject, and legacy apply workflows
+- `tests/test_start_agent.sh` — removed `checkpoint-latest.ref` test references (superseded by Change 5 container label lookup)
 
 ## Deferred items
 
@@ -70,5 +73,7 @@ None.
 - This handover
 - `roadmap.md`
 - `design_apply_workflow_and_baseline_advancement.md`
-- `apply_workspace.sh` (implemented this session)
-- `Makefile.template` (updated this session)
+- `scripts/apply_workspace.sh` (implemented)
+- `libs/_templates/Makefile.template` (updated)
+- `tests/test_apply_workspace.sh` (implemented)
+- `tests/test_start_agent.sh` (updated)

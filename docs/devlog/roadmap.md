@@ -70,7 +70,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 |--------|--------------|--------|
 | Change 1 | Checkpoint tag (`start_agent.sh`) | ✓ Complete |
 | Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | ✓ Complete |
-| Change 3 | draft/confirm/reject (`apply_workspace.sh`) | Pending |
+| Change 3 | draft/confirm/reject (`apply_workspace.sh`) | ✓ Complete |
 | Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
 | Change 5 | Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) | Pending |
 | Change 6 | Baseline advancement (`make confirm SYNC=1`, `make sync`) | Pending |

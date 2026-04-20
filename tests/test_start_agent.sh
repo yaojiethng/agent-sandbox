@@ -3,10 +3,14 @@
 # Host-side start_agent.sh tests — Change 1 (checkpoint tag) and Change 2 (SESSION_NAME).
 #
 # Covers:
-#   checkpoint tag creation          — agent-checkpoint/YYYYMMDD-HHMMSS
-#   checkpoint tag pruning           — keep 5 most recent
-#   checkpoint-latest.ref writing    — for operator recovery
+#   checkpoint tag creation          — agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
+#   checkpoint tag pruning           — keep 5 most recent per worktree
 #   SESSION_NAME derivation          — sanitized branch + timestamp
+#   WORKTREE_ID derivation           — from PROJECT_DIR path
+#   REPO_COMMIT capture              — full HEAD SHA
+#
+# Note: checkpoint-latest.ref writing tested indirectly via tag creation.
+# Direct ref file tests removed — Change 5 replaces with container label lookup.
 #
 # All fixtures created under a temp dir — no repos created inside the harness repo.
 
@@ -99,58 +103,6 @@ test_checkpoint_tag_points_to_correct_commit() {
     pass "checkpoint tag points to current HEAD"
   else
     fail "checkpoint tag does not point to current HEAD"
-  fi
-}
-
-test_checkpoint_ref_file_written() {
-  local PROJECT_DIR="$FIXTURE_DIR/checkpoint_ref_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/checkpoint_ref_sandbox"
-  make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$SANDBOX_DIR"
-
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-  CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
-
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Write ref file (as start_agent.sh does)
-  mkdir -p "$SANDBOX_DIR/.workspace"
-  echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
-
-  local REF_CONTENT
-  REF_CONTENT=$(cat "$SANDBOX_DIR/.workspace/checkpoint-latest.ref")
-
-  if [[ "$REF_CONTENT" == "$CHECKPOINT_TAG" ]]; then
-    pass "checkpoint-latest.ref contains correct tag name"
-  else
-    fail "checkpoint-latest.ref has incorrect content: $REF_CONTENT"
-  fi
-}
-
-test_checkpoint_ref_file_creates_workspace_dir() {
-  local PROJECT_DIR="$FIXTURE_DIR/checkpoint_ref_dir_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/checkpoint_ref_dir_sandbox"
-  make_committed_repo "$PROJECT_DIR"
-  # SANDBOX_DIR exists but .workspace does not
-  mkdir -p "$SANDBOX_DIR"
-
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-  CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
-
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Write ref file (as start_agent.sh does)
-  mkdir -p "$SANDBOX_DIR/.workspace"
-  echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
-
-  if [[ -f "$SANDBOX_DIR/.workspace/checkpoint-latest.ref" ]]; then
-    pass "checkpoint-latest.ref created with workspace directory"
-  else
-    fail "checkpoint-latest.ref not created"
   fi
 }
 
@@ -494,8 +446,6 @@ echo
 
 run_test "checkpoint_tag_created" test_checkpoint_tag_created
 run_test "checkpoint_tag_points_to_correct_commit" test_checkpoint_tag_points_to_correct_commit
-run_test "checkpoint_ref_file_written" test_checkpoint_ref_file_written
-run_test "checkpoint_ref_file_creates_workspace_dir" test_checkpoint_ref_file_creates_workspace_dir
 run_test "checkpoint_pruning_keeps_five" test_checkpoint_pruning_keeps_five
 run_test "checkpoint_pruning_keeps_newest" test_checkpoint_pruning_keeps_newest
 run_test "checkpoint_no_pruning_when_under_limit" test_checkpoint_no_pruning_when_under_limit
