@@ -49,6 +49,10 @@ At the start of a session, if you are unsure if a specific capability (like a sp
 2. **Check for Extensions**: Run `ls .pi/extensions/` or `ls ~/.pi/agent/extensions/`.
 3. **Verify via Grep**: If a tool is mentioned in documentation but its name is ambiguous, grep the extension/skill files for `registerTool` or `name:`.
 
+### Tool Use Preferences
+- Prefer `edit` for existing files. Use `write` only for new files, or after reading an existing file and deciding to replace it end-to-end because most of it is changing.
+- You can parallelize independent work when safe, such as reads, searches, checks, or disjoint `edit` calls, including disjoint sections of the same file.
+
 ---
 
 ## Collaboration Protocol
