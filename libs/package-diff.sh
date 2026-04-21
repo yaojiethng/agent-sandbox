@@ -4,8 +4,7 @@
 # Package changed files and a unified diff into an output directory.
 #
 # Produces:
-#   <outdir>/changes.diff          — unified diff against baseline
-#   <outdir>/changed-files/        — copies of changed files, repo-relative paths
+#   <outdir>/changes.diff          — unified diff against baseline, suitable for patch -p1
 #
 # Usage:
 #   package-diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
@@ -147,46 +146,30 @@ fi
 # -------------------------
 TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
 OUTDIR="$PARENT_DIR/${TIMESTAMP}-${LABEL}"
-mkdir -p "$OUTDIR/changed-files"
+mkdir -p "$OUTDIR"
 
 # -------------------------
-# Enumerate changed files
+# Check for changes
 # -------------------------
-COMMITTED=$(git -C "$REPO_ROOT" diff --name-only "$BASELINE" 2>/dev/null || true)
-STAGED=$(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null || true)
 UNTRACKED=$(git -C "$REPO_ROOT" ls-files --others --exclude-standard 2>/dev/null || true)
 
-ALL_FILES=$(printf '%s\n' $COMMITTED $STAGED $UNTRACKED \
-  | sort -u \
-  | grep -v '^$' || true)
-
-if [[ -z "$ALL_FILES" ]]; then
+if [[ -z "$(git -C "$REPO_ROOT" diff --name-only "$BASELINE" 2>/dev/null)$UNTRACKED$(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null)" ]]; then
   echo "Nothing to package — no changes found relative to $BASELINE." >&2
   rm -rf "$OUTDIR"
   exit 0
 fi
 
 # -------------------------
-# Copy changed files
-# -------------------------
-FILE_COUNT=0
-while IFS= read -r F; do
-  SRC="$REPO_ROOT/$F"
-  if [[ ! -f "$SRC" ]]; then
-    continue
-  fi
-  DEST="$OUTDIR/changed-files/$F"
-  mkdir -p "$(dirname "$DEST")"
-  cp -- "$SRC" "$DEST"
-  (( FILE_COUNT++ )) || true
-done <<< "$ALL_FILES"
-
-# -------------------------
 # Generate diff
 #
-# Whitespace normalisation: strip trailing whitespace from each line,
-# ensure exactly one newline before EOF. Applied to the raw diff output
-# so that the packaged changes.diff is clean and git apply does not warn.
+# Produces a unified diff consumable by `patch -p1`. The `index <sha>..<sha>`
+# lines emitted by git diff encode blob SHAs that cause `git apply` to reject
+# diffs when the index has drifted. Stripping them makes the diff purely
+# context-line based — patch applies by matching surrounding lines only,
+# which is tolerant of index state and sequential application.
+#
+# Whitespace normalisation: strip trailing whitespace per line, ensure exactly
+# one trailing newline before EOF.
 # -------------------------
 UNTRACKED_STAGED=()
 if [[ -n "$UNTRACKED" ]]; then
@@ -196,6 +179,7 @@ if [[ -n "$UNTRACKED" ]]; then
 fi
 
 git -C "$REPO_ROOT" diff "$BASELINE" \
+  | grep -v '^index ' \
   | sed 's/[[:space:]]*$//' \
   | sed -e '$a\' \
   > "$OUTDIR/changes.diff"
@@ -210,9 +194,7 @@ DIFF_LINES=$(wc -l < "$OUTDIR/changes.diff" | tr -d ' ')
 # Summary
 # -------------------------
 echo "Output directory: $OUTDIR"
-echo "Changed files:    $FILE_COUNT copied"
 echo "Diff size:        ${DIFF_LINES} lines"
 echo ""
 echo "Contents:"
 echo "  $OUTDIR/changes.diff"
-echo "  $OUTDIR/changed-files/  ($FILE_COUNT files)"

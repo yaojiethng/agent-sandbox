@@ -17,10 +17,12 @@
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
 #   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--force]
-#             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR with git apply --3way.
+#             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR using git apply
+#             with index lines stripped — context-line matching only, no blob SHA
+#             validation, tolerant of index drift and sequential application.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/).
-#             --force: use git apply --reject on conflicts; .rej files left for manual resolution.
+#             --force: apply with --reject; .rej files left for manual resolution.
 #
 # .workspace/draft-state format:
 #   SOURCE_BRANCH=<branch>
@@ -347,33 +349,18 @@ if [[ "$COMMAND" == "apply" ]]; then
 
   echo "Applying changes.diff from $(basename "$SESSION_DIR") to $(git -C "$PROJECT_DIR" branch --show-current)..."
 
-  # Pre-stage new files so --3way has an index entry to merge against.
-  # Without this, git apply --3way fails for added files with "does not exist in index".
-  NEW_FILES=$(awk '/^diff --git/{f=$3} /^new file mode/{print f}' "$CHANGES_DIFF" | sed 's|^a/||')
-  NEW_FILE_COUNT=0
-  if [[ -n "$NEW_FILES" ]]; then
-    while IFS= read -r F; do
-      DEST="$PROJECT_DIR/$F"
-      mkdir -p "$(dirname "$DEST")"
-      touch "$DEST"
-      git -C "$PROJECT_DIR" add "$F"
-      (( NEW_FILE_COUNT++ )) || true
-    done <<< "$NEW_FILES"
-  fi
-
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
-    git -C "$PROJECT_DIR" apply --reject "$CHANGES_DIFF"
-    APPLY_STATUS=$?
-    if [[ $APPLY_STATUS -ne 0 ]]; then
+    grep -v '^index ' "$CHANGES_DIFF" | git -C "$PROJECT_DIR" apply --reject || {
       echo "" >&2
       echo "Warning: some hunks failed to apply." >&2
       echo "Review .rej files and resolve manually." >&2
-    fi
+    }
   else
-    APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --index --3way "$CHANGES_DIFF" 2>&1) || {
-      echo "Error: git apply failed with conflicts." >&2
-      echo "$APPLY_OUTPUT" >&2
+    # Strip index lines before applying — removes blob SHA validation so git apply
+    # matches by context lines only. Tolerates index drift and sequential application.
+    grep -v '^index ' "$CHANGES_DIFF" | git -C "$PROJECT_DIR" apply || {
+      echo "Error: git apply failed." >&2
       echo "" >&2
       echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
       exit 1

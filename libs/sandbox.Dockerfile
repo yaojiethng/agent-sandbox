@@ -43,13 +43,13 @@ USER agentuser
 # creation time, which is what makes --volumes-from work. It is not a
 # named volume — it is removed with docker rm -v (or compose down -v)
 # after each session so it does not persist across runs.
-# workspace/changes/ is bind-mounted from SANDBOX_DIR/.workspace/changes/
+# workspace/session-diffs/ is bind-mounted from SANDBOX_DIR/.workspace/session-diffs/
 # on the host — the diff pipeline writes staged.diff here only.
 # The capability layer does not mount the workspace parent.
 # .snapshot/ is bind-mounted read-only from SANDBOX_DIR/.snapshot/ on the host.
 # All directories created as agentuser so mounts are not blocked by ownership.
 RUN mkdir -p /home/agentuser/sandbox \
-             /home/agentuser/workspace/changes \
+             /home/agentuser/workspace/session-diffs \
              /home/agentuser/.snapshot
 
 VOLUME /home/agentuser/sandbox

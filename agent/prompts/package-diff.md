@@ -57,15 +57,13 @@ to. Omitting `--name` falls back to mechanical label derivation from the most-ch
 path; this is a safety net, not the intended path.
 
 The script produces:
-- `<outdir>/changes.diff` — unified diff against baseline
-- `<outdir>/changed-files/` — copies of all changed files, repo-relative paths preserved
+- `<outdir>/changes.diff` — unified diff against baseline, suitable for `patch -p1`
 
-It prints the output directory path, file count, and diff size on completion.
+It prints the output directory path and diff size on completion.
 
 **If `libs/package-diff.sh` is not present** (pre-unification harness), fall back to the
-original manual steps: enumerate changed files with `git diff --name-only HEAD` and
-`git ls-files --others --exclude-standard`, copy them manually, and generate the diff
-with `git diff HEAD > changes.diff`.
+original manual steps: generate the diff with `git diff HEAD > changes.diff` and apply
+with `patch -p1 < changes.diff`.
 
 ### 2. Write `migration-guide.md`
 
@@ -90,11 +88,7 @@ Describe any functions, classes, or blocks removed and why. If nothing was delet
 **How to apply**
 
 ```
-Option A — Copy files:
-  cp -r changed-files/* /path/to/repo/
-
-Option B — Git apply:
-  git apply changes.diff
+patch -p1 < changes.diff
 ```
 
 **API breaking changes**
