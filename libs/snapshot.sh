@@ -72,7 +72,7 @@ snapshot_copy_worktree() {
   fi
 
   if [[ "$has_global" -eq 1 || "$has_repo_exclude" -eq 1 ]]; then
-    EXCLUDE_TMPFILE=$(mktemp)
+    EXCLUDE_TMPFILE=$(mktemp /tmp/snapshot-exclude.XXXXXX)
     trap "snap_copy_worktree_cleanup '$EXCLUDE_TMPFILE'" EXIT
 
     if [[ "$has_global" -eq 1 ]]; then
@@ -265,13 +265,14 @@ snapshot_init_git() {
 
   # Unpack baseline.tar — contains exactly the committed state at HEAD.
   # This is the only content that belongs in the baseline commit.
-  local ARCHIVE_TMP
-  ARCHIVE_TMP=$(mktemp -d)
-  tar -x -C "$ARCHIVE_TMP" < "$SNAPSHOT_DIR/baseline.tar" \
-    || { echo "Error: failed to unpack baseline.tar" >&2; rm -rf "$ARCHIVE_TMP"; return 1; }
-  cp -a "$ARCHIVE_TMP/." "$SANDBOX_DIR/" \
-    || { echo "Error: failed to copy archive contents into sandbox" >&2; rm -rf "$ARCHIVE_TMP"; return 1; }
-  rm -rf "$ARCHIVE_TMP"
+  # Extract baseline.tar directly into the sandbox directory.
+  # baseline.tar is produced by `git archive HEAD` — it contains working tree
+  # files only (no .git/). Safe to extract on top of the git init skeleton.
+  # Previously this used an intermediate mktemp directory + cp -a, which
+  # failed when TMPDIR resolved to /opt/provider-config/ inside the
+  # container, because cp -a preserved read-only git object permissions.
+  tar -x -C "$SANDBOX_DIR" < "$SNAPSHOT_DIR/baseline.tar" \
+    || { echo "Error: failed to unpack baseline.tar into sandbox" >&2; return 1; }
 
   git -C "$SANDBOX_DIR" add -A \
     || { echo "Error: git add failed in $SANDBOX_DIR" >&2; return 1; }
