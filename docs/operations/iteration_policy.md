@@ -103,25 +103,28 @@ A session targets one sub-milestone but need not span the full step sequence. St
 Minor loop
 ├── Step 1  — Open handover         (always)
 ├── Step 1b — Confirm scope         (always)
-├── Step 2  — Design                (design session)
-├── Step 3  — Conceptual docs       (design session)
-├── Step 4  — Spec                  (spec session)
-├── Step 5  — Architecture docs     (spec session)
-├── Step 6  — Acceptance criteria   (session before implementation)
-├── Step 7  — Implementation        (implementation session)
-├── Step 7b — Pre-close verification (implementation session)
+├── Step 2  — Design                (design session, confirmed)
+├── Step 3  — Conceptual docs       (design session, assessed)
+├── Step 4  — Spec                  (spec session, confirmed)
+├── Step 5  — Architecture docs     (spec session, confirmed)
+├── Step 6  — Acceptance criteria   (session before implementation, confirmed)
+├── Step 7  — Implementation        (implementation session, confirmed)
+├── Step 7b — Pre-close verification (implementation session, confirmed)
 ├── Step 8  — Close session         (always)
 └── Step 9  — Seed next session     (always)
 ```
 
-A step does not advance until its exit condition is met and the operator has confirmed.
+**Step tags:**
+- `(always)` — runs every session without exception.
+- `(confirmed)` — runs when in scope for the session type; requires explicit operator release to advance. Cannot be skipped without operator instruction.
+- `(assessed)` — agent assesses applicability and presents a recommendation with rationale before producing any output. Operator confirms to proceed or skips with a single acknowledgement. No explicit release is required to skip; explicit release is required to proceed.
 
 | Step | Entry condition | Action | Exit condition |
 |---|---|---|---|
 | **1 — Open handover** | Session begins | Check whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has run: if the prior handover names a new sub-milestone but the roadmap still shows the previous sub-milestone as active, Trigger B has not run — run it right after creating the next handover. Then compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). Create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). Read roadmap for pending work. | Handover draft complete. |
 | **1b. Confirm scope** | Handover draft complete | Present a scope proposal in chat per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-1b): what is in scope this session, what is explicitly deferred and why, and any blocking questions. If context is insufficient to propose, interview the operator one question at a time until a proposal can be made. Do not produce any file, code, or structural output until the operator explicitly releases this gate. Update the handover Scope section to reflect confirmed scope. The release applies to the immediately following step only — after producing that step's output, pause and confirm before advancing further. | Operator has confirmed scope **and** sent an explicit release to proceed (e.g. "proceed", "go ahead", "start"). A message that confirms or acknowledges scope without a clear forward signal (e.g. "that looks right, hold changes", "yes but wait") does not satisfy this exit condition — the agent remains at this gate. If in doubt, ask: "Shall I proceed?" |
 | **2 — Design** | Scope confirmed. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md#rules). Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
-| **3 — Conceptual docs** | Design confirmed | Update `docs/concepts/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No concepts document contradicts the agreed design. |
+| **3 — Conceptual docs** | Design confirmed | Assess whether a concepts doc is warranted for this feature area per [`documentation_policy.md`](documentation_policy.md) — Concepts Docs. Present a recommendation to the operator with rationale. If the operator confirms: produce the concepts doc by distillation from the design doc per the distillation pass rules. If the operator skips: record the decision in the handover Decisions table and proceed. | Operator has confirmed or skipped. If confirmed: concepts doc produced and no concepts doc contradicts the agreed design. |
 | **4 — Spec** | Conceptual docs confirmed | Specify files, interfaces, naming, mount shape. Scope is fixed here — adjacent issues are flagged in the handover and deferred, not resolved. | Operator confirmed spec in full. No open interface or naming questions. |
 | **5 — Architecture docs** | Spec confirmed | Update `docs/architecture/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No architecture document contradicts the confirmed spec. |
 | **6 — Acceptance criteria** | Architecture docs confirmed (or design confirmed if session spans design through implementation) | Define criteria per [`handover_policy.md`](handover_policy.md#at-step-6--define-acceptance-criteria). Every session that touches architecture must include a criterion: *"Architecture documents in scope describe the system as built."* | Operator confirmed criteria. `Not yet defined.` replaced. Implementation will not begin without confirmed criteria. |

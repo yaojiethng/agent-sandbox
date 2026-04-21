@@ -127,6 +127,73 @@ If content is useful to a human reader, it belongs in `readme.md` or the appropr
 
 ---
 
+### Concepts docs
+
+A concepts doc exists to give architecture docs a stable reference target for conceptual
+grounding. Architecture docs link to it when they need to say "for why this model is shaped
+this way, see X" — when a feature has non-obvious invariants, introduces a new primitive,
+or interacts with enough other components that the architecture doc alone is insufficient
+for an agent designing changes.
+
+Concepts docs live in `docs/concepts/`.
+
+Concepts docs are created on demand, not on schedule. The trigger is repeated clarifying
+questions about the same conceptual area, or a feature area that agents will need to reason
+about frequently when designing future changes.
+
+**When to recommend one (Step 3 assessment):**
+
+Present a recommendation to the operator at Step 3 of the minor loop when any of the
+following apply:
+
+- The feature introduces a new primitive or model that other components will need to reason
+  about when designing changes
+- The area has non-obvious invariants that cannot be stated concisely in the architecture
+  doc itself
+- A design doc exists for the area and is too long or branched to serve as a stable
+  reference link from architecture docs
+
+If none of these apply, recommend skipping Step 3 and state why. The operator makes the
+final call. If no design doc exists for the area, note that explicitly — distillation
+requires source material.
+
+**How to produce one (distillation pass):**
+
+When a concepts doc is confirmed, produce it by distillation from the design doc — not
+from scratch. The distillation pass transforms a design doc into a stable conceptual
+reference:
+
+1. Remove delivery-sequence framing — "Change N", "prerequisite", "introduced in"
+   language. The concepts doc describes the settled model, not how it was delivered.
+2. Remove command shapes and implementation detail that belong in the architecture doc.
+   The concepts doc describes *why* the model works this way, not *what* the system does.
+3. Keep: primitives, invariants, design rationale, and any collision or interaction tables.
+4. During active development, links may point to design and discussion documents as the
+   reasoning record — this is expected.
+
+**Trigger B cleanup:**
+
+At sub-milestone close, if a concepts doc was produced during the milestone:
+
+1. Firm up any invariants that shifted during implementation.
+2. Replace links to design and discussion documents with links to the architecture docs
+   that now exist — the architecture doc is the stable reference; the design doc becomes
+   background reading.
+3. Update the status note at the top of the concepts doc (if present) to name the
+   condition that triggered cleanup rather than referencing a workflow mechanism name
+   (e.g. "links updated now that `apply_workflow.md` is finalised" not "Trigger B
+   cleanup complete").
+
+This is a link-and-invariant pass, not a rewrite.
+
+**Scope:**
+
+Not every feature area warrants a concepts doc. A concepts doc that duplicates what the
+architecture doc already states clearly is not earning its place. When in doubt, recommend
+skipping.
+
+---
+
 ## Document Header Format
 
 All documents in `docs/` must open with a consistent header block so that status and scope are visible without reading the file body, and so that `grep -n "^##"` reliably returns a usable section map.

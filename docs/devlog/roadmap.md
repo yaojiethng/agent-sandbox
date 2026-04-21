@@ -60,7 +60,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
 
-**Depends on:** M2.1. **Status:** In progress. Changes 1, 2, and 4 complete; Changes 3, 5, and 6 pending.
+**Depends on:** M2.1. **Status:** In progress. Changes 1, 2, 3, 4, and 5 complete; Change 6 pending.
 
 **Design reference:** [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md)
 
@@ -72,7 +72,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 | Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | ✓ Complete |
 | Change 3 | draft/confirm/reject (`apply_workspace.sh`) | ✓ Complete |
 | Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
-| Change 5 | Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) | Pending |
+| Change 5 | Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) | ✓ Complete |
 | Change 6 | Baseline advancement (`make confirm SYNC=1`, `make sync`) | Pending |
 
 **Change 1 implementation (complete):**
@@ -114,6 +114,14 @@ Correctly handles all cases: untracked files show as `??`, unstaged edits show a
 - **Change 5 — Container naming + Docker labels** (`libs/compose.sh`, `scripts/checkpoint.sh`): Explicit `container_name:` in generated compose derived from session identity. Container labels set at session start: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag`. Introduces `scripts/checkpoint.sh` consolidating tag creation, pruning, lookup, and `WORKTREE_ID` derivation — sourced by `start_agent.sh`, `apply_workspace.sh`, and advancement script. Removes `checkpoint-latest.ref` dependency; all checkpoint and container lookups use label queries or `checkpoint.sh`. Prerequisite for Change 6 and for parallel worktree session safety.
 
 - **Change 6 — Baseline advancement** (`scripts/advance_baseline.sh`, `Makefile.template`): Implements `make confirm SYNC=1` (tight per-confirm advancement, validates container session label) and `make sync` (loose catch-up, applies all unadvanced sessions in timestamp order). Container located by `agent-sandbox.project-dir` label. `ADVANCED_SESSIONS` inside the container is the idempotency guard. Requires clean sandbox working tree; conflicts surface via `git am --abort`. Depends on Change 5.
+
+**Pre-close design tasks (required before Trigger B):**
+
+Two gaps in the correspondence model were identified during documentation work this milestone. Both require a design session to resolve before M2.3 can close. Detail and open questions are in [`docs/concepts/sandbox_host_correspondence_model.md`](docs/concepts/sandbox_host_correspondence_model.md) — Model Gaps.
+
+- **Mixing `make apply` and `make draft` within a single session:** If changes are partially extracted via `make apply` (reasoning layer path) during a live session and `make draft` is then run at session exit, the format-patch patches will cover content already present on the host. The model does not define the correct behaviour. Requires a design decision: whether `make draft` detects and skips already-applied content, or whether the operator is expected to sequence the two paths manually.
+
+- **Two-path coordination for mixed session types:** A project using both Claude Chat sessions (reasoning layer / `make apply`) and OpenCode sessions (capability layer / `make draft`) against the same repo has no defined correspondence. `make apply` has no awareness of `draft-state` or `ADVANCED_SESSIONS`; `make draft` has no awareness of prior `make apply` applications. Likely warrants a story before a design decision can be made.
 
 #### M2.5 — Vault Capability Layer Prototype
 
