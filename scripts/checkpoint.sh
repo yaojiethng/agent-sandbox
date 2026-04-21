@@ -45,9 +45,20 @@ checkpoint_create() {
   local TIMESTAMP="$2"
   local WORKTREE_ID
   WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
+
+  # Check if current HEAD already has a tag for this worktree
+  local EXISTING_TAG
+  EXISTING_TAG=$(git -C "$PROJECT_DIR" tag --points-at HEAD "agent-checkpoint/${WORKTREE_ID}/*" | sort | tail -n 1)
+
+  if [[ -n "$EXISTING_TAG" ]]; then
+    # Return existing tag instead of creating a new one
+    echo "$EXISTING_TAG"
+    return 0
+  fi
+
   local TAG="agent-checkpoint/${WORKTREE_ID}/${TIMESTAMP}"
   git -C "$PROJECT_DIR" tag "$TAG"
-  checkpoint_prune "$PROJECT_DIR" 5 &> dev/null
+  checkpoint_prune "$PROJECT_DIR" 5 &> /dev/null
   echo "$TAG"
 }
 

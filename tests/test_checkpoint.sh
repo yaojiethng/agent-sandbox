@@ -180,14 +180,21 @@ test_checkpoint_create_prunes_to_five() {
   local WORKTREE_ID
   WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
 
-  # Create 7 tags manually
+  # Create 7 tags manually on DIFFERENT commits so pruning is actually needed
   for i in 1 2 3 4 5 6 7; do
+    echo "content $i" > "$PROJECT_DIR/content$i.txt"
+    git -C "$PROJECT_DIR" add "content$i.txt"
+    git -C "$PROJECT_DIR" commit -m "commit $i" --quiet
     local TS="20260420-12000${i}"
     local TAG="agent-checkpoint/${WORKTREE_ID}/${TS}"
     git -C "$PROJECT_DIR" tag "$TAG"
   done
 
   # Create one more via checkpoint_create (should prune to 5)
+  # Use a NEW commit so it doesn't trigger the idempotency check
+  echo "new commit" > "$PROJECT_DIR/new.txt"
+  git -C "$PROJECT_DIR" add "new.txt"
+  git -C "$PROJECT_DIR" commit -m "new commit" --quiet
   checkpoint_create "$PROJECT_DIR" "20260420-120008" >/dev/null
 
   local COUNT
@@ -325,6 +332,25 @@ test_checkpoint_latest_scoped_to_worktree() {
   fi
 }
 
+test_checkpoint_create_idempotent() {
+  local PROJECT_DIR="$FIXTURE_DIR/cc_idempotent_repo"
+  make_committed_repo "$PROJECT_DIR"
+
+  # Create first tag
+  local TAG1
+  TAG1=$(checkpoint_create "$PROJECT_DIR" "20260421-120000")
+
+  # Try creating second tag on same commit with different timestamp
+  local TAG2
+  TAG2=$(checkpoint_create "$PROJECT_DIR" "20260421-120005")
+
+  if [[ "$TAG1" == "$TAG2" ]]; then
+    pass "checkpoint_create is idempotent for same commit"
+  else
+    fail "checkpoint_create created duplicate tags for same commit: $TAG1 vs $TAG2"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -343,6 +369,7 @@ run_test "checkpoint_worktree_id_alias" test_checkpoint_worktree_id_alias
 run_test "checkpoint_create_returns_tag" test_checkpoint_create_returns_tag
 run_test "checkpoint_create_creates_tag" test_checkpoint_create_creates_tag
 run_test "checkpoint_create_prunes_to_five" test_checkpoint_create_prunes_to_five
+run_test "checkpoint_create_idempotent" test_checkpoint_create_idempotent
 
 # checkpoint_prune tests
 run_test "checkpoint_prune_standalone" test_checkpoint_prune_standalone

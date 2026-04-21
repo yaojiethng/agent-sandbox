@@ -469,12 +469,12 @@ test_docker_compose_template_agent_uses_anchor() {
   fi
 }
 
-test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs() {
-  if grep -q "SANDBOX_CONTAINER_NAME: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
-     grep -q "SANDBOX_CONTAINER_NAME: {{AGENT_SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
-    pass "docker-compose.yml has SANDBOX_CONTAINER_NAME for both services"
+test_docker_compose_template_has_container_names() {
+  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
+     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml has container_name for both services"
   else
-    fail "docker-compose.yml missing SANDBOX_CONTAINER_NAME placeholders"
+    fail "docker-compose.yml missing container_name placeholders"
   fi
 }
 # -------------------------
@@ -507,7 +507,7 @@ run_test "repo_commit_is_full_sha" test_repo_commit_is_full_sha
 run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
 run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
 run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
-run_test "docker_compose_template_has_SANDBOX_CONTAINER_NAMEs" test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs
+run_test "docker_compose_template_has_container_names" test_docker_compose_template_has_container_names
 
 echo
 echo "Results: $PASS passed, $FAIL failed"
@@ -549,13 +549,13 @@ test_docker_compose_template_agent_uses_anchor() {
   fi
 }
 
-test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs() {
+test_docker_compose_template_has_container_names() {
   # Verify both SANDBOX_CONTAINER_NAME placeholders exist
-  if grep -q "SANDBOX_CONTAINER_NAME: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
-     grep -q "SANDBOX_CONTAINER_NAME: {{AGENT_SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
-    pass "docker-compose.yml has SANDBOX_CONTAINER_NAME for both services"
+  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
+     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml has container_name for both services"
   else
-    fail "docker-compose.yml missing SANDBOX_CONTAINER_NAME placeholders"
+    fail "docker-compose.yml missing container_name placeholders"
   fi
 }
 
@@ -563,4 +563,4 @@ test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs() {
 run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
 run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
 run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
-run_test "docker_compose_template_has_SANDBOX_CONTAINER_NAMEs" test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs
+run_test "docker_compose_template_has_container_names" test_docker_compose_template_has_container_names
