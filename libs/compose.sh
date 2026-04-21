@@ -37,7 +37,7 @@
 #   {{AGENT_IMAGE_NAME}}    → derived image name
 #   {{PROVIDER_NAME}}       → provider name
 #   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<timestamp>)
-#   {{AGENT_CONTAINER_NAME}} → agent container name (agent-<project>-<timestamp>)
+#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
 #   {{SESSION_NAME}}        → session identifier (<branch>-<timestamp>)
 #   {{CHECKPOINT_TAG}}      → git checkpoint tag
 #   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)

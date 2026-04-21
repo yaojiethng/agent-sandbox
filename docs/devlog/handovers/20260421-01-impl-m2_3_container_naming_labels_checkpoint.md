@@ -33,7 +33,7 @@ Labels are defined once as `x-session-labels: &session_labels` and referenced by
 
 **Container naming:**
 - Sandbox: `sandbox-<PROJECT_NAME>-<CHECKPOINT_TS>`
-- Agent: `agent-<PROJECT_NAME>-<CHECKPOINT_TS>`
+- Agent: `<PROVIDER_NAME>-<PROJECT_NAME>-<CHECKPOINT_TS>`
 
 **Dependencies removed:**
 - `checkpoint-latest.ref` — Replaced by `checkpoint.sh` tag lookup and container label queries
@@ -79,7 +79,7 @@ Labels are defined once as `x-session-labels: &session_labels` and referenced by
 
 2. **Container naming for both services** — Both sandbox and agent containers now have explicit `container_name:` derived from session identity:
    - Sandbox: `sandbox-<PROJECT_NAME>-<CHECKPOINT_TS>`
-   - Agent: `agent-<PROJECT_NAME>-<CHECKPOINT_TS>`
+   - Agent: `<PROVIDER_NAME>-<PROJECT_NAME>-<CHECKPOINT_TS>`
 
 3. **sha256sum for worktree ID** — Uses sha256sum (not sha1sum) for better hash distribution. This is a minor breaking change for existing checkpoint tags, which will be pruned naturally.
 
@@ -135,7 +135,7 @@ checkpoint_latest <project-dir>             # Alias for checkpoint_lookup
 
 **Container naming:**
 - Sandbox: `sandbox-<PROJECT_NAME>-<CHECKPOINT_TS>`
-- Agent: `agent-<PROJECT_NAME>-<CHECKPOINT_TS>`
+- Agent: `<PROVIDER_NAME>-<PROJECT_NAME>-<CHECKPOINT_TS>`
 
 **Label schema (sandbox only):**
 ```

@@ -211,9 +211,7 @@ if [[ "$MODE" == "serve" ]]; then
   # Wait for the agent container to exit (triggered by make stop / docker stop).
   # Keeps run_agent.sh alive so teardown runs after the EXIT trap has fired
   # and copy-out to /opt/provider-config/ is complete.
-  local AGENT_CONTAINER
-  AGENT_CONTAINER="$(agent_container_name "$PROVIDER_NAME" "$PROJECT_NAME")"
-  docker wait "$AGENT_CONTAINER" >/dev/null 2>&1 || true
+  docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
 
   echo "+ tearing down..."
   docker compose "${COMPOSE_ARGS[@]}" down -v
@@ -226,7 +224,7 @@ else
   compose_sandbox_wait "$PROJECT_NAME"
 
   echo "+ attaching to agent..."
-  docker compose "${COMPOSE_ARGS[@]}" run --rm agent
+  docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent
 
   echo "+ tearing down..."
   docker compose "${COMPOSE_ARGS[@]}" down -v
