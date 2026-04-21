@@ -184,11 +184,18 @@ fi
 source "$REPO_ROOT/scripts/checkpoint.sh"
 
 # -------------------------
+# Session timestamp (single canonical definition)
+# -------------------------
+# SESSION_TS is the one source of truth for the session timestamp. All
+# derived names (SESSION_NAME, checkpoint tag, container names) reference
+# this variable — no downstream date calls.
+export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+
+# -------------------------
 # Worktree ID and checkpoint tag
 # -------------------------
-CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
 export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
-export CHECKPOINT_TAG; CHECKPOINT_TAG=$(checkpoint_create "$PROJECT_DIR" "$CHECKPOINT_TS")
+export CHECKPOINT_TAG; CHECKPOINT_TAG=$(checkpoint_create "$PROJECT_DIR" "$SESSION_TS")
 echo "Checkpoint tag created: $CHECKPOINT_TAG"
 
 # -------------------------
@@ -198,18 +205,24 @@ echo "Checkpoint tag created: $CHECKPOINT_TAG"
 export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
 # -------------------------
-# SESSION_NAME and CONTAINER_NAME derivation 
+# SESSION_NAME and CONTAINER_NAME derivation
 # -------------------------
-_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+# SESSION_NAME is used for session-scoped artefact directories and Docker
+# labels. Branch slashes are replaced with dashes so the value is safe as
+# a directory name. The original (unsanitised) branch name is kept in
+# BRANCH_NAME for the draft-branch naming convention, which preserves
+# slashes for readability and disambiguates with SESSION_TS appended
+# after a dash.
+BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
 # Handle detached HEAD: use short SHA instead of literal "HEAD"
-if [[ "$_BRANCH" == "HEAD" ]]; then
-  _BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+if [[ "$BRANCH_NAME" == "HEAD" ]]; then
+  BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
 fi
-_SANITIZED=$(echo "$_BRANCH" | tr '/' '-')
-export SESSION_NAME="${_SANITIZED}-${CHECKPOINT_TS}"
-export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${CHECKPOINT_TS}"
-export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${CHECKPOINT_TS}"
-unset _BRANCH _SANITIZED
+_SANITIZED=$(echo "$BRANCH_NAME" | tr '/' '-')
+export SESSION_NAME="${_SANITIZED}-${SESSION_TS}"
+export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_TS}"
+export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_TS}"
+unset BRANCH_NAME _SANITIZED
 echo "Session name: $SESSION_NAME"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"

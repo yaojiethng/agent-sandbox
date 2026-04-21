@@ -131,10 +131,10 @@ test_draft_creates_working_branch() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  if branch_exists "$P" "agent/draft/main-20260408-120000"; then
-    pass "draft creates working branch agent/draft/<session>"
+  if branch_exists "$P" "draft/main-20260408-120000"; then
+    pass "draft creates working branch with correct name format"
   else
-    fail "draft should create agent/draft/<session> branch"
+    fail "draft should create draft/<branch>-<ts> branch"
   fi
 }
 
@@ -148,7 +148,7 @@ test_draft_checks_out_working_branch() {
 
   local BRANCH
   BRANCH=$(current_branch "$P")
-  if [[ "$BRANCH" == "agent/draft/main-20260408-120000" ]]; then
+  if [[ "$BRANCH" == "draft/main-20260408-120000" ]]; then
     pass "draft checks out the working branch"
   else
     fail "draft should check out working branch, got: $BRANCH"
@@ -243,7 +243,7 @@ test_draft_writes_draft_state() {
   fi
 
   if grep -q "SOURCE_BRANCH=main" "$STATE" \
-     && grep -q "WORKING_BRANCH=agent/draft/main-20260408-120000" "$STATE" \
+     && grep -q "WORKING_BRANCH=draft/main-20260408-120000" "$STATE" \
      && grep -q "SESSION_DIR=" "$STATE"; then
     pass "draft-state contains SOURCE_BRANCH, WORKING_BRANCH, SESSION_DIR"
   else
@@ -262,13 +262,14 @@ test_draft_selects_most_recent_session_by_default() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  # Should have applied the most recent session (sort order)
-  if branch_exists "$P" "agent/draft/main-20260408-110000"; then
-    pass "draft selects most recent session when --session not specified"
+  # Draft branch uses checkpoint timestamp, not session name timestamp.
+  # Branch name is draft/<branch>-<checkpoint-ts> regardless of which session is selected.
+  if branch_exists "$P" "draft/main-20260408-120000"; then
+    pass "draft selects most recent session and names branch from checkpoint"
   else
     local BRANCH
     BRANCH=$(current_branch "$P")
-    fail "draft should pick most recent session, got branch: $BRANCH"
+    fail "draft should create branch draft/main-20260408-120000, got branch: $BRANCH"
   fi
 }
 
@@ -283,10 +284,13 @@ test_draft_explicit_session_selection() {
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" \
     --session="main-20260408-100000" 2>/dev/null
 
-  if branch_exists "$P" "agent/draft/main-20260408-100000"; then
+  # Draft branch uses checkpoint timestamp regardless of which session is specified.
+  # The --session flag selects which session's patches to apply, but the branch
+  # name always reflects the checkpoint (base) timestamp.
+  if branch_exists "$P" "draft/main-20260408-120000"; then
     pass "draft --session applies the specified session"
   else
-    fail "draft --session should apply specified session"
+    fail "draft --session should create branch draft/main-20260408-120000"
   fi
 }
 
@@ -355,10 +359,10 @@ test_confirm_deletes_working_branch() {
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
 
-  if ! branch_exists "$P" "agent/draft/main-20260408-120000"; then
+  if ! branch_exists "$P" "draft/main-20260408-120000"; then
     pass "confirm deletes the working branch after merge"
   else
-    fail "confirm should delete agent/draft/* branch after merge"
+    fail "confirm should delete draft/* branch after merge"
   fi
 }
 
@@ -452,10 +456,10 @@ test_reject_deletes_working_branch() {
   "$APPLY_SCRIPT" draft  --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null
 
-  if ! branch_exists "$P" "agent/draft/main-20260408-120000"; then
+  if ! branch_exists "$P" "draft/main-20260408-120000"; then
     pass "reject deletes the working branch"
   else
-    fail "reject should delete agent/draft/* branch"
+    fail "reject should delete draft/* branch"
   fi
 }
 

@@ -66,10 +66,10 @@ test_checkpoint_tag_created() {
   mkdir -p "$SANDBOX_DIR"
 
   # Simulate checkpoint tag creation logic from start_agent.sh
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-  CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
@@ -87,12 +87,12 @@ test_checkpoint_tag_points_to_correct_commit() {
   local PROJECT_DIR="$FIXTURE_DIR/checkpoint_commit_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local WORKTREE_ID BASELINE_SHA CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID BASELINE_SHA SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
   BASELINE_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
-  CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
 
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
@@ -231,11 +231,11 @@ test_session_name_from_master_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/session_master_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   if [[ "$SESSION_NAME" == "main-20260416-090000" ]]; then
     pass "SESSION_NAME correct for main branch"
@@ -249,11 +249,11 @@ test_session_name_from_main_branch() {
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" branch -m main
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   if [[ "$SESSION_NAME" == "main-20260416-090000" ]]; then
     pass "SESSION_NAME correct for main branch"
@@ -267,11 +267,11 @@ test_session_name_sanitizes_feature_branch() {
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" checkout -b "feature/test-branch" --quiet
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   if [[ "$SESSION_NAME" == "feature-test-branch-20260416-090000" ]]; then
     pass "SESSION_NAME sanitizes slashes in branch name"
@@ -285,11 +285,11 @@ test_session_name_sanitizes_nested_branch() {
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" checkout -b "feature/nested/deep/branch" --quiet
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   if [[ "$SESSION_NAME" == "feature-nested-deep-branch-20260416-090000" ]]; then
     pass "SESSION_NAME sanitizes nested branch names"
@@ -302,11 +302,11 @@ test_session_name_exported() {
   local PROJECT_DIR="$FIXTURE_DIR/session_export_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  export SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  export SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   # Verify it's exported (available to subshells)
   local SUBSHELL_VALUE
@@ -330,7 +330,7 @@ test_session_name_detached_head() {
   # Detach HEAD
   git -C "$PROJECT_DIR" checkout --quiet "$COMMIT_SHA"
 
-  local CHECKPOINT_TS="20260416-090000"
+  local SESSION_TS="20260416-090000"
   local BRANCH SANITIZED SESSION_NAME
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   # Handle detached HEAD (as start_agent.sh does)
@@ -338,7 +338,7 @@ test_session_name_detached_head() {
     BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   fi
   SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${CHECKPOINT_TS}"
+  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
 
   if [[ "$SESSION_NAME" == "${COMMIT_SHA}-20260416-090000" ]]; then
     pass "SESSION_NAME uses short SHA for detached HEAD"

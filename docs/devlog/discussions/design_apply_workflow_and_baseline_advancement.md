@@ -16,7 +16,7 @@
 | **`staged.diff`** | Flat aggregate diff since `BASELINE_SHA`. Human-readable overview artefact |
 | **`patches/`** | Per-commit `.patch` files from sandbox history via `git format-patch BASELINE_SHA..HEAD`. One file per agent commit. Machine-apply artefact |
 | **Checkpoint tag** | `agent-checkpoint/<worktree-id>/<timestamp>` — lightweight tag in the host repo marking host state before session start. Recovery point and draft branch base |
-| **Draft branch** | `agent/draft/<session-name>` — temporary branch in the host repo. Patches applied here for operator review before merge to target |
+| **Draft branch** | `draft/<branch>-<session-ts>` — temporary branch in the host repo. Preserves original branch-name slashes; disambiguates sessions with session timestamp |
 | **`draft-state`** | File at `SANDBOX_DIR/.workspace/draft-state`. Records active draft: source branch, working branch, session directory. One per `SANDBOX_DIR` |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces checkpoint tags and container names per worktree instance |
 | **`ADVANCED_SESSIONS`** | File at `sandbox/.git/ADVANCED_SESSIONS` inside the container. Append-only log of session names whose patches have been applied to the sandbox via baseline advancement |
@@ -74,7 +74,8 @@ last entry in `.workspace/session-diffs/` (chronologically latest, given `<branc
 naming). Resolves the base checkpoint tag via `checkpoint.sh` — derives `WORKTREE_ID` from
 `PROJECT_DIR`, looks up the latest `agent-checkpoint/<worktree-id>/*` tag by sort order.
 Creates
-`agent/draft/<session-name>` from the checkpoint. Applies all patches in `patches/` in
+`draft/<branch>-<session-ts>` from the checkpoint, preserving original branch-name slashes
+for readability and disambiguating sessions with the session timestamp. Applies all patches in `patches/` in
 sort order via `git am --3way` with per-patch author reset to operator's `git config`.
 Writes `draft-state`.
 

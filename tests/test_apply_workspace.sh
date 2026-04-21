@@ -154,10 +154,10 @@ test_draft_creates_branch_from_checkpoint() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -168,9 +168,9 @@ test_draft_creates_branch_from_checkpoint() {
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch created
-  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/agent/draft/test-session"; then
-    pass "draft creates working branch from checkpoint"
+  # Verify draft branch created — format is draft/<branch>-<session-ts>
+  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
+    pass "draft creates working branch with correct name format"
   else
     fail "draft did not create working branch"
   fi
@@ -194,10 +194,10 @@ test_draft_applies_patches() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with 2 patches
@@ -228,10 +228,10 @@ test_draft_uses_most_recent_session() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create two sessions - session-01 sorts before session-02
@@ -263,10 +263,10 @@ test_draft_uses_named_session() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create two sessions
@@ -289,6 +289,88 @@ test_draft_uses_named_session() {
   fi
 }
 
+test_draft_branch_name_preserves_slashes() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_slashes_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_slashes_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local SESSION_DIR="$CHANGES_DIR/test-session"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Switch to a branch with slashes
+  git -C "$PROJECT_DIR" checkout -b "feature/M2_3-agent-session-history" --quiet
+
+  # Create checkpoint tag
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
+  SESSION_TS="20260421-143000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
+  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+
+  # Create session with patches
+  make_session_with_patches "$SESSION_DIR" 1
+
+  # Run draft
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Verify draft branch name preserves slashes and appends session-ts
+  # Expected format: draft/<branch>-<session-ts> → draft/feature/M2_3-agent-session-history-20260421-143000
+  local EXPECTED_BRANCH="draft/feature/M2_3-agent-session-history-20260421-143000"
+  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$EXPECTED_BRANCH"; then
+    pass "draft branch name preserves slashes and disambiguates with session-ts"
+  else
+    # Show what branches exist for debugging
+    local FOUND
+    FOUND=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | head -5)
+    fail "draft branch name wrong: expected '$EXPECTED_BRANCH', got branches: $FOUND"
+  fi
+}
+
+test_draft_branch_name_detached_head() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_detached_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_detached_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local SESSION_DIR="$CHANGES_DIR/test-session"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Detach HEAD
+  local SHORT_SHA
+  SHORT_SHA=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  git -C "$PROJECT_DIR" checkout --quiet "$SHORT_SHA"
+
+  # Create checkpoint tag
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
+  SESSION_TS="20260421-143000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
+  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+
+  # Create session with patches
+  make_session_with_patches "$SESSION_DIR" 1
+
+  # Run draft
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Verify draft branch name uses short SHA for detached HEAD
+  # Expected format: draft/<short-sha>-<session-ts> → draft/<sha>-20260421-143000
+  local FOUND_BRANCH
+  FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+  if [[ "$FOUND_BRANCH" == "draft/${SHORT_SHA}-20260421-143000" ]]; then
+    pass "draft branch name uses short SHA for detached HEAD"
+  else
+    fail "draft branch name for detached HEAD: expected 'draft/${SHORT_SHA}-20260421-143000', got '$FOUND_BRANCH'"
+  fi
+}
+
 test_draft_rejects_if_draft_exists() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_guard_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_guard_sandbox"
@@ -300,10 +382,10 @@ test_draft_rejects_if_draft_exists() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -312,7 +394,7 @@ test_draft_rejects_if_draft_exists() {
   # Create fake draft-state
   cat > "$WORKSPACE_DIR/draft-state" <<EOF
 SOURCE_BRANCH=main
-WORKING_BRANCH=agent/draft/test-session
+WORKING_BRANCH=draft/main-20260420-120000
 SESSION_DIR=$SESSION_DIR
 EOF
 
@@ -340,10 +422,10 @@ test_draft_requires_patches_directory() {
   mkdir -p "$SESSION_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Run draft - should fail (no patches dir)
@@ -374,10 +456,10 @@ test_confirm_rebases_and_merges() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -410,7 +492,7 @@ test_confirm_rebases_and_merges() {
   fi
 
   # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/agent/draft/test-session"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
     pass "confirm deletes draft branch"
   else
     fail "confirm did not delete draft branch"
@@ -440,10 +522,10 @@ test_confirm_with_target_branch() {
   git -C "$PROJECT_DIR" checkout -b "feature-branch" --quiet
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -515,10 +597,10 @@ test_reject_returns_to_source_branch() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -571,10 +653,10 @@ test_reject_deletes_draft_branch() {
   mkdir -p "$WORKSPACE_DIR"
 
   # Create checkpoint tag
-  local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
+  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
   WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
+  SESSION_TS="20260420-120000"
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
 
   # Create session with patches
@@ -591,7 +673,7 @@ test_reject_deletes_draft_branch() {
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
   # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/agent/draft/test-session"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
     pass "reject deletes draft branch"
   else
     fail "reject did not delete draft branch"
@@ -883,6 +965,8 @@ run_test "draft_creates_branch_from_checkpoint" test_draft_creates_branch_from_c
 run_test "draft_applies_patches" test_draft_applies_patches
 run_test "draft_uses_most_recent_session" test_draft_uses_most_recent_session
 run_test "draft_uses_named_session" test_draft_uses_named_session
+run_test "draft_branch_name_preserves_slashes" test_draft_branch_name_preserves_slashes
+run_test "draft_branch_name_detached_head" test_draft_branch_name_detached_head
 run_test "draft_rejects_if_draft_exists" test_draft_rejects_if_draft_exists
 run_test "draft_requires_patches_directory" test_draft_requires_patches_directory
 run_test "confirm_rebases_and_merges" test_confirm_rebases_and_merges

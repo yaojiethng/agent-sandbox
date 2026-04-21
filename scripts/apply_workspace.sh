@@ -5,13 +5,13 @@
 #
 # Commands:
 #   draft   [--project=<path>] [--sandbox=<path>] [--session=<name>]
-#             Create a working branch agent/draft/<session-name> from the
+#             Create a working branch draft/<branch>-<session-ts> from the
 #             checkpoint tag. Apply all patches via git am --3way with
 #             per-patch author reset. Write .workspace/draft-state.
 #
 #   confirm [--project=<path>] [--sandbox=<path>] [--target=<branch>]
 #             Rebase draft branch onto target, fast-forward merge to target,
-#             delete working branch, clear draft-state.
+#             delete working branch (-D, always force-delete), clear draft-state.
 #
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
@@ -162,7 +162,17 @@ if [[ "$COMMAND" == "draft" ]]; then
   fi
 
   SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  WORKING_BRANCH="agent/draft/${SESSION_NAME}"
+  # Handle detached HEAD: use short SHA instead of literal "HEAD"
+  if [[ "$SOURCE_BRANCH" == "HEAD" ]]; then
+    SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  fi
+
+  # Extract SESSION_TS from the checkpoint tag (last path component).
+  # The draft branch preserves original branch-name slashes for readability
+  # and appends SESSION_TS for session disambiguation, e.g.:
+  #   draft/feature/M2_3-work-20260421-143000
+  SESSION_TS="${CHECKPOINT_TAG##*/}"
+  WORKING_BRANCH="draft/${SOURCE_BRANCH}-${SESSION_TS}"
 
   echo "Creating draft branch '$WORKING_BRANCH' from $CHECKPOINT_TAG..."
   git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$CHECKPOINT_TAG"
@@ -220,7 +230,7 @@ if [[ "$COMMAND" == "confirm" ]]; then
   git -C "$PROJECT_DIR" merge --ff-only "$WORKING_BRANCH"
 
   echo "Deleting working branch: $WORKING_BRANCH"
-  git -C "$PROJECT_DIR" branch -d "$WORKING_BRANCH"
+  git -C "$PROJECT_DIR" branch -D "$WORKING_BRANCH"
 
   rm -f "$DRAFT_STATE_FILE"
 

@@ -38,7 +38,7 @@
 #   {{PROVIDER_NAME}}       → provider name
 #   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<timestamp>)
 #   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
-#   {{SESSION_NAME}}        → session identifier (<branch>-<timestamp>)
+#   {{SESSION_NAME}}        → session identifier (<sanitized-branch>-<SESSION_TS>)
 #   {{CHECKPOINT_TAG}}      → git checkpoint tag
 #   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)

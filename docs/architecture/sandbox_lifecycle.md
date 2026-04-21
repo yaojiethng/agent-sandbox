@@ -96,9 +96,9 @@ An autosave loop writes `autosave.diff` into the session directory on a configur
 
 On the host, `scripts/apply_workspace.sh` provides a three-stage draft workflow:
 
-1. **`draft`** — creates a working branch `agent/draft/<session-name>` from the session's checkpoint tag and applies all `.patch` files via `git am --3way`. All commits are reset to the operator's author identity.
-2. **`confirm`** — rebases the draft branch onto the target branch (defaults to the source branch), fast-forward merges it, and deletes the draft branch. This ensures a linear history.
-3. **`reject`** — deletes the draft branch and returns to the source branch.
+1. **`draft`** — creates a working branch `draft/<branch>-<session-ts>` from the session's checkpoint tag and applies all `.patch` files via `git am --3way`. The branch name preserves original branch-name slashes for readability and appends the session timestamp to disambiguate concurrent sessions on the same branch. All commits are reset to the operator's author identity.
+2. **`confirm`** — rebases the draft branch onto the target branch (defaults to the source branch), fast-forward merges it, and force-deletes the draft branch. This ensures a linear history and reliable cleanup.
+3. **`reject`** — force-deletes the draft branch and returns to the source branch.
 
 A legacy **`apply`** mode is retained for applying `changes.diff` from the reasoning layer output channel (`.workspace/output/`) directly to the working tree without creating commits.
 
