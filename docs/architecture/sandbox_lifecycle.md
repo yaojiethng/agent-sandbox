@@ -26,7 +26,7 @@ The snapshot pipeline replicates the host repository state into the capability l
 
 ### Stage 1 — Host side (`scripts/start_agent.sh`)
 
-**Checkpoint tag** — a lightweight tag `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. The worktree ID is a short hash of the project path, namespacing tags per-worktree. This tag serves as the base for the draft workflow. The last 5 checkpoint tags per worktree are preserved; older tags are pruned. The current tag name is written to `.workspace/checkpoint-latest.ref`.
+**Checkpoint tag** — a lightweight tag `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. The worktree ID is a short hash of the project path, namespacing tags per-worktree. This tag serves as the base for the draft workflow. The last 5 checkpoint tags per worktree are preserved; older tags are pruned. The tag is retrieved at apply time via `checkpoint.sh` lookup — no ref file is written.
 
 **`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
 
@@ -100,7 +100,7 @@ On the host, `scripts/apply_workspace.sh` provides a three-stage draft workflow:
 2. **`confirm`** — rebases the draft branch onto the target branch (defaults to the source branch), fast-forward merges it, and deletes the draft branch. This ensures a linear history.
 3. **`reject`** — deletes the draft branch and returns to the source branch.
 
-A legacy **`apply`** mode is retained for applying `staged.diff` directly to the working tree without creating commits.
+A legacy **`apply`** mode is retained for applying `changes.diff` from the reasoning layer output channel (`.workspace/output/`) directly to the working tree without creating commits.
 
 ---
 

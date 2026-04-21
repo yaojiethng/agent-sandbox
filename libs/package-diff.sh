@@ -183,6 +183,10 @@ done <<< "$ALL_FILES"
 
 # -------------------------
 # Generate diff
+#
+# Whitespace normalisation: strip trailing whitespace from each line,
+# ensure exactly one newline before EOF. Applied to the raw diff output
+# so that the packaged changes.diff is clean and git apply does not warn.
 # -------------------------
 UNTRACKED_STAGED=()
 if [[ -n "$UNTRACKED" ]]; then
@@ -191,7 +195,10 @@ if [[ -n "$UNTRACKED" ]]; then
   done <<< "$UNTRACKED"
 fi
 
-git -C "$REPO_ROOT" diff "$BASELINE" > "$OUTDIR/changes.diff"
+git -C "$REPO_ROOT" diff "$BASELINE" \
+  | sed 's/[[:space:]]*$//' \
+  | sed -e '$a\' \
+  > "$OUTDIR/changes.diff"
 
 if [[ ${#UNTRACKED_STAGED[@]} -gt 0 ]]; then
   git -C "$REPO_ROOT" restore --staged -- "${UNTRACKED_STAGED[@]}" 2>/dev/null || true

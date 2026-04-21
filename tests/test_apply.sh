@@ -9,7 +9,7 @@
 #   reject  — restores source branch, deletes working branch, clears state
 #   guards  — missing args, bad state, double-draft, missing patches
 #
-# Note: apply (legacy) tests are in tests/test_apply_workspace.sh
+# Note: apply command tests are in tests/test_apply_workspace.sh
 #
 # Each test builds its own fixture. Tests are independent.
 

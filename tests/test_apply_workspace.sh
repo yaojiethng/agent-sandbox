@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_apply_workspace.sh
-# Tests for scripts/apply_workspace.sh — Change 3 (draft/confirm/reject workflow)
+# Tests for scripts/apply_workspace.sh — Change 3 (draft/confirm/reject/apply workflow)
 #
 # Covers:
 #   draft — creates working branch from checkpoint tag, applies patches
@@ -11,7 +11,7 @@
 #   confirm guard — rejects if no draft-state
 #   reject — returns to source branch, deletes draft branch, clears draft-state
 #   reject guard — rejects if no draft-state
-#   apply (legacy) — applies changes.diff from OUTPUT_DIR with git apply --3way
+#   apply — applies changes.diff from OUTPUT_DIR with git apply --index --3way
 #   apply SESSION=<n> — applies from named session directory in OUTPUT_DIR
 #   apply guard — rejects if OUTPUT_DIR empty or changes.diff missing
 #
@@ -637,7 +637,7 @@ test_apply_uses_latest_session() {
   make_session_with_changes_diff "$OUTPUT_DIR/session-02"
 
   # Run apply (no SESSION=) - should use session-02 (lexicographically last)
-  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
@@ -684,7 +684,7 @@ index 0000000..7a963d6
 EOF
 
   # Run apply with SESSION=session-a
-  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --session="session-a" >/dev/null 2>&1
@@ -713,7 +713,7 @@ test_apply_requires_changes_diff() {
 
   # Run apply - should fail
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
@@ -734,7 +734,7 @@ test_apply_requires_output_dir() {
 
   # Run apply - should fail
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
@@ -757,7 +757,7 @@ test_apply_requires_empty_output_dir() {
 
   # Run apply - should fail
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
@@ -782,7 +782,7 @@ test_apply_prints_migration_guide() {
 
   # Run apply
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
@@ -807,7 +807,7 @@ test_apply_force_uses_reject() {
 
   # Run apply with --force
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --force 2>&1) || true
@@ -833,7 +833,7 @@ test_apply_force_uses_reject_mode() {
 
   # Run apply with --force
   local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --force 2>&1) || true
@@ -858,7 +858,7 @@ test_apply_force_applies_changes() {
   make_session_with_changes_diff "$OUTPUT_DIR/test-session"
 
   # Run apply with --force
-  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" \
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --force >/dev/null 2>&1

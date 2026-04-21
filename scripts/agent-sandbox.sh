@@ -197,7 +197,7 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace.sh" \
+    "$SCRIPTS/apply_workspace.sh" apply \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
       ${SESSION_ARG:+--session="$SESSION_ARG"} \

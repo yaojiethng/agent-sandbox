@@ -16,7 +16,7 @@
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
-#   (legacy, no command arg)  [--project=<path>] [--sandbox=<path>] [--session=<name>] [--branch=<n>] [--force]
+#   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--force]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR with git apply --3way.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/).
@@ -143,7 +143,6 @@ if [[ "$COMMAND" == "draft" ]]; then
 
   # Resolve checkpoint tag via checkpoint.sh lookup
   CHECKPOINT_TAG=$(checkpoint_lookup "$PROJECT_DIR")
-  echo "Resolved checkpoint tag: ${CHECKPOINT_TAG:-<none>}"
   if [[ -z "$CHECKPOINT_TAG" ]]; then
     echo "Error: no checkpoint tag found for worktree: $PROJECT_DIR" >&2
     echo "  Cannot determine base tag for draft branch." >&2
@@ -282,9 +281,9 @@ if [[ "$COMMAND" == "reject" ]]; then
 fi
 
 # -------------------------
-# LEGACY — no command (reads from OUTPUT_DIR)
+# APPLY — reads from OUTPUT_DIR
 # -------------------------
-if [[ -z "$COMMAND" ]]; then
+if [[ "$COMMAND" == "apply" ]]; then
   # Resolve session directory from OUTPUT_DIR
   if [[ ! -d "$OUTPUT_DIR" ]]; then
     echo "Error: output directory not found: $OUTPUT_DIR" >&2
@@ -338,6 +337,20 @@ if [[ -z "$COMMAND" ]]; then
 
   echo "Applying changes.diff from $(basename "$SESSION_DIR") to $(git -C "$PROJECT_DIR" branch --show-current)..."
 
+  # Pre-stage new files so --3way has an index entry to merge against.
+  # Without this, git apply --3way fails for added files with "does not exist in index".
+  NEW_FILES=$(awk '/^diff --git/{f=$3} /^new file mode/{print f}' "$CHANGES_DIFF" | sed 's|^a/||')
+  NEW_FILE_COUNT=0
+  if [[ -n "$NEW_FILES" ]]; then
+    while IFS= read -r F; do
+      DEST="$PROJECT_DIR/$F"
+      mkdir -p "$(dirname "$DEST")"
+      touch "$DEST"
+      git -C "$PROJECT_DIR" add "$F"
+      (( NEW_FILE_COUNT++ )) || true
+    done <<< "$NEW_FILES"
+  fi
+
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
     git -C "$PROJECT_DIR" apply --reject "$CHANGES_DIFF"
@@ -348,7 +361,7 @@ if [[ -z "$COMMAND" ]]; then
       echo "Review .rej files and resolve manually." >&2
     fi
   else
-    APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --3way "$CHANGES_DIFF" 2>&1) || {
+    APPLY_OUTPUT=$(git -C "$PROJECT_DIR" apply --index --3way "$CHANGES_DIFF" 2>&1) || {
       echo "Error: git apply failed with conflicts." >&2
       echo "$APPLY_OUTPUT" >&2
       echo "" >&2
@@ -398,5 +411,5 @@ if [[ "$COMMAND" == "sync" ]]; then
 fi
 
 echo "Unknown command: $COMMAND" >&2
-echo "Valid commands: draft, confirm, reject, sync" >&2
+echo "Valid commands: draft, confirm, reject, apply, sync" >&2
 exit 1

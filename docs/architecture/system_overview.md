@@ -33,23 +33,23 @@ Two elements frame the stack without belonging to it:
 
 **Human Workflow** — the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
 
-Current layer freeze status is tracked in [`docs/development/doc-status.md`](../development/doc-status.md).
+Current layer freeze status is tracked in [`docs/development/project_index.md`](../development/project_index.md).
 
 ---
 
 ## Major Components
 
-**Container runtime** — each agent runs inside a Docker container built from a minimal Ubuntu image with Node, Git, and the OpenCode agent installed. The container is ephemeral and discarded after each run.
+**Two-layer container runtime** — each session runs two containers: a capability layer (sandbox, snapshot pipeline, diff pipeline) and a reasoning layer (agent runtime, provider-specific). Both are ephemeral and discarded after each run. The capability layer starts first and owns the sandbox volume; the reasoning layer attaches to it via `--volumes-from`.
 
-**`.bootstrap/`** — a read-only input channel mounted into the container before the agent starts. Contains the pre-built project snapshot and the agent brief. The snapshot is constructed on the host by `start_agent.sh` before the container launches; the container never has direct access to `PROJECT_ROOT`.
+**`.snapshot/`** — a host-side directory rebuilt before each run by `start_agent.sh`. Contains a `baseline.tar` (from `git archive HEAD`) and an rsync copy of the operator's working tree. Mounted read-only into the capability layer. Never mounted into the reasoning layer.
 
-**Sandbox** — a writable, container-local copy of the project snapshot. The entrypoint copies `.bootstrap/snapshot/` into `sandbox/` on startup. The agent works exclusively in the sandbox.
+**Sandbox** — a Docker anonymous volume owned by the capability layer. Initialised at container start from `.snapshot/`: baseline commit first (from `baseline.tar`), then working tree overlaid via rsync. The agent works exclusively in `sandbox/`. Destroyed on session teardown.
 
-**`.workspace/`** — a read-write directory mounted from the host. The sole persistent output channel between container and host. Agent changes are written here as `staged.diff` on exit; `autosave.diff` is written periodically during a session if autosave is enabled.
+**`.workspace/`** — a host-side directory providing the I/O channels between containers and host. Subdirectories have distinct owners and trust levels: `input/` (operator-written, reasoning layer read-only), `output/` (agent-written, reasoning layer read-write), `session-diffs/` (harness-written, capability layer read-write — diff pipeline output).
 
-**Diff and apply** — the entrypoint records a git baseline in `sandbox/` before the agent runs. On exit, it produces `staged.diff` capturing all agent changes. The operator applies this diff to the host repository manually using `apply_workspace_inplace.sh` or `apply_workspace_to_branch.sh`.
+**Diff and apply** — on capability layer exit, the diff pipeline produces per-commit `.patch` files and a `staged.diff` into a session-scoped directory under `session-diffs/`. The operator runs `make draft` to apply patches to a working branch, reviews, then runs `make confirm` to merge. A legacy `make apply` path applies `changes.diff` from `output/` directly to the working tree without creating commits.
 
-**Per-project config** — each project has a config directory under `projects/<project>/` containing machine-agnostic settings, machine-specific overrides, and a `.env` for runtime variables. This allows the same harness to run against different projects and machines without modifying core scripts.
+**Per-project config** — each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and `agents.md` (agent context brief). Provider-specific config is managed via copy-in at session start and copy-out at session end.
 
 ---
 
