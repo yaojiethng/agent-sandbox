@@ -33,6 +33,13 @@
 set -euo pipefail
 
 # -------------------------
+# Source checkpoint library
+# -------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/scripts/checkpoint.sh"
+
+# -------------------------
 # Parse command
 # -------------------------
 COMMAND=""
@@ -75,7 +82,6 @@ WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 OUTPUT_DIR="$WORKSPACE_DIR/output"
 DRAFT_STATE_FILE="$WORKSPACE_DIR/draft-state"
-CHECKPOINT_REF_FILE="$WORKSPACE_DIR/checkpoint-latest.ref"
 
 # -------------------------
 # Common validation
@@ -135,13 +141,14 @@ if [[ "$COMMAND" == "draft" ]]; then
     exit 1
   fi
 
-  # Resolve checkpoint tag
-  if [[ ! -f "$CHECKPOINT_REF_FILE" ]]; then
-    echo "Error: checkpoint-latest.ref not found: $CHECKPOINT_REF_FILE" >&2
+  # Resolve checkpoint tag via checkpoint.sh lookup
+  CHECKPOINT_TAG=$(checkpoint_lookup "$PROJECT_DIR")
+  echo "Resolved checkpoint tag: ${CHECKPOINT_TAG:-<none>}"
+  if [[ -z "$CHECKPOINT_TAG" ]]; then
+    echo "Error: no checkpoint tag found for worktree: $PROJECT_DIR" >&2
     echo "  Cannot determine base tag for draft branch." >&2
     exit 1
   fi
-  CHECKPOINT_TAG=$(cat "$CHECKPOINT_REF_FILE")
   if ! git -C "$PROJECT_DIR" rev-parse --verify "$CHECKPOINT_TAG" >/dev/null 2>&1; then
     echo "Error: checkpoint tag not found in repository: $CHECKPOINT_TAG" >&2
     exit 1
@@ -221,6 +228,27 @@ if [[ "$COMMAND" == "confirm" ]]; then
   echo ""
   echo "Done. Changes merged into $MERGE_TARGET."
   echo "Session artefacts retained at: $SESSION_DIR"
+
+  # SYNC=1: trigger baseline advancement in running container
+  # advance_baseline.sh implemented in Change 6
+  if [[ "${SYNC:-}" == "1" ]]; then
+    # Find container by label
+    CONTAINER=$(docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" \
+      --format '{{.Names}}' | head -n 1)
+    if [[ -n "$CONTAINER" ]]; then
+      # Validate session name matches
+      CONTAINER_SESSION=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.session-name"}}' "$CONTAINER" 2>/dev/null || echo "")
+      SESSION_NAME_FROM_STATE=$(basename "$SESSION_DIR")
+      if [[ "$CONTAINER_SESSION" != "$SESSION_NAME_FROM_STATE" ]]; then
+        echo "Warning: container session ($CONTAINER_SESSION) does not match confirmed session ($SESSION_NAME_FROM_STATE)." >&2
+        echo "  Skipping baseline advancement." >&2
+      elif docker exec "$CONTAINER" test -f /usr/local/bin/advance_baseline.sh 2>/dev/null; then
+        echo "Triggering baseline advancement for session: $SESSION_NAME_FROM_STATE"
+        docker exec "$CONTAINER" advance_baseline.sh "$SESSION_NAME_FROM_STATE"
+      fi
+    fi
+    # If no container running, SYNC=1 is silently ignored
+  fi
 
   exit 0
 fi
@@ -344,6 +372,31 @@ if [[ -z "$COMMAND" ]]; then
   exit 0
 fi
 
+# -------------------------
+# SYNC
+# -------------------------
+if [[ "$COMMAND" == "sync" ]]; then
+  # Find container by label
+  CONTAINER=$(docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" \
+    --format '{{.Names}}' | head -n 1)
+  if [[ -z "$CONTAINER" ]]; then
+    echo "Error: no running container found for project: $PROJECT_DIR" >&2
+    echo "  Start a session first, or run 'make start'." >&2
+    exit 1
+  fi
+
+  # advance_baseline.sh implemented in Change 6
+  if docker exec "$CONTAINER" test -f /usr/local/bin/advance_baseline.sh 2>/dev/null; then
+    echo "Triggering baseline advancement for all unadvanced sessions..."
+    docker exec "$CONTAINER" advance_baseline.sh --all
+  else
+    echo "Note: advance_baseline.sh not yet implemented (Change 6)."
+    echo "  Container is running but cannot advance baseline yet."
+  fi
+
+  exit 0
+fi
+
 echo "Unknown command: $COMMAND" >&2
-echo "Valid commands: draft, confirm, reject" >&2
+echo "Valid commands: draft, confirm, reject, sync" >&2
 exit 1

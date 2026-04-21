@@ -155,11 +155,10 @@ test_draft_creates_branch_from_checkpoint() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 2
@@ -196,11 +195,10 @@ test_draft_applies_patches() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with 2 patches
   make_session_with_patches "$SESSION_DIR" 2
@@ -231,11 +229,10 @@ test_draft_uses_most_recent_session() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create two sessions - session-01 sorts before session-02
   make_session_with_patches "$CHANGES_DIR/session-01" 1
@@ -267,11 +264,10 @@ test_draft_uses_named_session() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create two sessions
   make_session_with_patches "$CHANGES_DIR/session-a" 1
@@ -305,11 +301,10 @@ test_draft_rejects_if_draft_exists() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 1
@@ -346,11 +341,10 @@ test_draft_requires_patches_directory() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Run draft - should fail (no patches dir)
   local OUTPUT
@@ -381,11 +375,10 @@ test_confirm_rebases_and_merges() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 1
@@ -448,11 +441,10 @@ test_confirm_with_target_branch() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 1
@@ -524,11 +516,10 @@ test_reject_returns_to_source_branch() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 1
@@ -581,11 +572,10 @@ test_reject_deletes_draft_branch() {
 
   # Create checkpoint tag
   local WORKTREE_ID CHECKPOINT_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
   CHECKPOINT_TS="20260420-120000"
   CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$WORKSPACE_DIR/checkpoint-latest.ref"
 
   # Create session with patches
   make_session_with_patches "$SESSION_DIR" 1

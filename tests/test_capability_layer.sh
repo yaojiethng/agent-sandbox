@@ -36,7 +36,7 @@ DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 IMAGE_NAME="${IMAGE_NAME:-test-sandbox-agent-sandbox}"
 RUN_ID="$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n')"
-CONTAINER_NAME="cap-layer-test-${RUN_ID}"
+SANDBOX_CONTAINER_NAME="cap-layer-test-${RUN_ID}"
 BUILD_LOG=""
 
 PASS=0
@@ -61,8 +61,8 @@ check() {
 cleanup() {
   echo ""
   echo "Cleaning up..."
-  docker stop "$CONTAINER_NAME" &>/dev/null || true
-  docker rm -v "$CONTAINER_NAME" &>/dev/null || true
+  docker stop "$SANDBOX_CONTAINER_NAME" &>/dev/null || true
+  docker rm -v "$SANDBOX_CONTAINER_NAME" &>/dev/null || true
   docker rmi "$IMAGE_NAME" &>/dev/null || true
   rm -f "$BUILD_LOG"
 }
@@ -140,7 +140,7 @@ echo "--- Startup ---"
 
 echo "  Starting capability layer container..."
 START_OUTPUT=$(docker run -d \
-  --name "$CONTAINER_NAME" \
+  --name "$SANDBOX_CONTAINER_NAME" \
   --volume "$SNAPSHOT_DIR:/home/agentuser/.snapshot:ro" \
   --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/session-diffs" \
   --env AUTOSAVE_INTERVAL=0 \
@@ -162,7 +162,7 @@ echo "  Waiting for container to become healthy..."
 HEALTH_TIMEOUT=60
 HEALTH_ELAPSED=0
 while true; do
-  STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)
+  STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$SANDBOX_CONTAINER_NAME" 2>/dev/null)
   if [[ "$STATUS" == "healthy" ]]; then
     break
   fi
@@ -170,7 +170,7 @@ while true; do
     fail "container became unhealthy — aborting"
     echo ""
     echo "  Container logs:"
-    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    docker logs "$SANDBOX_CONTAINER_NAME" 2>&1 | sed 's/^/    /'
     echo ""
     exit 1
   fi
@@ -178,7 +178,7 @@ while true; do
     fail "container did not become healthy within ${HEALTH_TIMEOUT}s — aborting"
     echo ""
     echo "  Container logs:"
-    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    docker logs "$SANDBOX_CONTAINER_NAME" 2>&1 | sed 's/^/    /'
     echo ""
     exit 1
   fi
@@ -187,12 +187,12 @@ while true; do
 done
 
 check "container is healthy after init" \
-  bash -c "[[ \"\$(docker inspect -f '{{.State.Health.Status}}' '$CONTAINER_NAME')\" == 'healthy' ]]"
+  bash -c "[[ \"\$(docker inspect -f '{{.State.Health.Status}}' '$SANDBOX_CONTAINER_NAME')\" == 'healthy' ]]"
 
 check "sandbox is non-empty (copy succeeded)" \
-  bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
+  bash -c "[[ \$(docker run --rm --volumes-from '$SANDBOX_CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
 
-BASELINE_LOG=$(docker logs "$CONTAINER_NAME" 2>&1)
+BASELINE_LOG=$(docker logs "$SANDBOX_CONTAINER_NAME" 2>&1)
 
 check "baseline SHA logged to stderr" \
   bash -c "echo '$BASELINE_LOG' | grep -q 'Baseline:'"
@@ -207,13 +207,13 @@ echo ""
 echo "--- Mutation (simulated reasoning layer) ---"
 
 docker run --rm \
-  --volumes-from "$CONTAINER_NAME" \
+  --volumes-from "$SANDBOX_CONTAINER_NAME" \
   ubuntu:24.04 \
   bash -c "echo 'capability layer test' >> /home/agentuser/sandbox/capability_test.txt" \
   &>/dev/null
 
 check "throwaway container can write to sandbox volume" \
-  bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 \
+  bash -c "[[ \$(docker run --rm --volumes-from '$SANDBOX_CONTAINER_NAME' ubuntu:24.04 \
     cat /home/agentuser/sandbox/capability_test.txt) == 'capability layer test' ]]"
 
 # -------------------------
@@ -222,10 +222,10 @@ check "throwaway container can write to sandbox volume" \
 echo ""
 echo "--- Shutdown and diff pipeline ---"
 
-docker stop "$CONTAINER_NAME" > /dev/null
+docker stop "$SANDBOX_CONTAINER_NAME" > /dev/null
 
 check "container exits with code 0" \
-  bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$CONTAINER_NAME')\" == '0' ]]"
+  bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$SANDBOX_CONTAINER_NAME')\" == '0' ]]"
 
 check "staged.diff written to workspace" \
   test -f "$WORKSPACE_CHANGES_DIR/staged.diff"

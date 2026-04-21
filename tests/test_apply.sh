@@ -52,7 +52,7 @@ make_project() {
 
 # make_session PROJECT_DIR SANDBOX_DIR [SESSION] — creates sandbox with agent commits
 # Produces a patches/ dir at $SANDBOX_DIR/.workspace/session-diffs/<session>/ and
-# a staged.diff at the same location.  Also writes checkpoint-latest.ref.
+# a staged.diff at the same location.
 make_session() {
   local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
@@ -97,11 +97,12 @@ make_session() {
   cp "$SANDBOX/file.txt" "$PROJECT_DIR/file.txt"
   git -C "$PROJECT_DIR" add .
   git -C "$PROJECT_DIR" commit -m "sync baseline" --quiet
-  local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
+  local WORKTREE_ID CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
   # Remove existing tag if present (from a previous test run)
   git -C "$PROJECT_DIR" tag -d "$CHECKPOINT_TAG" 2>/dev/null || true
   git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-  echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 }
 
 # current_branch DIR
@@ -537,12 +538,13 @@ test_draft_no_patches_dir_fails() {
   local S="$FIXTURE_DIR/guard_nopatch_s"
   make_project "$P"
 
-  # Write a checkpoint ref but no patches/
-  local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
+  # Write a checkpoint tag but no patches/
+  local WORKTREE_ID CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$P" | sha256sum | head -c8)
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
   git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
   mkdir -p "$S/.workspace/session-diffs/main-20260408-120000"
   echo "fake diff" > "$S/.workspace/session-diffs/main-20260408-120000/staged.diff"
-  echo "$CHECKPOINT_TAG" > "$S/.workspace/checkpoint-latest.ref"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
     fail "draft should fail when patches/ directory is missing"
@@ -556,10 +558,11 @@ test_draft_empty_patches_fails() {
   local S="$FIXTURE_DIR/guard_emptypatch_s"
   make_project "$P"
 
-  local CHECKPOINT_TAG="agent-checkpoint/20260408-120000"
+  local WORKTREE_ID CHECKPOINT_TAG
+  WORKTREE_ID=$(echo "$P" | sha256sum | head -c8)
+  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
   git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
   mkdir -p "$S/.workspace/session-diffs/main-20260408-120000/patches"
-  echo "$CHECKPOINT_TAG" > "$S/.workspace/checkpoint-latest.ref"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
     fail "draft should fail when patches/ directory is empty"

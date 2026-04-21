@@ -6,8 +6,6 @@
 #   agent_base_image_name  — compute reasoning layer base image name from provider
 #   agent_image_name       — compute reasoning layer image name from provider + project
 #   sandbox_image_name     — compute capability layer image name from project
-#   agent_container_name   — alias for agent_image_name
-#   sandbox_container_name — alias for sandbox_image_name
 #   build_context_sandbox  — populate a temp dir with sandbox build context files
 #   build_context_agent    — populate a temp dir with agent build context files
 #   build_image            — compute digest and run docker build
@@ -42,15 +40,6 @@ sandbox_image_name() {
   local project="${1:?sandbox_image_name requires project name}"
   echo "sandbox-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
-
-# Container names match image names — one session per project at a time.
-# container_name: is set in the compose template to enforce this.
-
-# agent_container_name <provider> <project_name>
-agent_container_name() { agent_image_name "$1" "$2"; }
-
-# sandbox_container_name <project_name>
-sandbox_container_name() { sandbox_image_name "$1"; }
 
 # -------------------------
 # Build context

@@ -14,11 +14,23 @@
 # Container names match image names — one session per project at a time.
 # Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
+#
+# Session labels are defined once as a YAML anchor (&session_labels) and
+# referenced by all services (sandbox, agent, and any future sidecars).
+# This ensures consistent lifecycle management across all containers.
+
+# Session labels — applied to ALL containers for unified lifecycle management.
+# Referenced via *session_labels anchor in each service.
+x-session-labels: &session_labels
+  agent-sandbox.project-dir: {{PROJECT_DIR}}
+  agent-sandbox.session-name: {{SESSION_NAME}}
+  agent-sandbox.checkpoint-tag: {{CHECKPOINT_TAG}}
 
 services:
   sandbox:
     image: {{SANDBOX_IMAGE_NAME}}
-    container_name: {{SANDBOX_IMAGE_NAME}}
+    container_name: {{SANDBOX_CONTAINER_NAME}}
+    labels: *session_labels
     volumes:
       - type: bind
         source: ${SNAPSHOT_DIR}
@@ -43,7 +55,8 @@ services:
 
   agent:
     image: {{AGENT_IMAGE_NAME}}
-    container_name: {{AGENT_IMAGE_NAME}}
+    container_name: {{AGENT_CONTAINER_NAME}}
+    labels: *session_labels
     depends_on:
       sandbox:
         condition: service_healthy

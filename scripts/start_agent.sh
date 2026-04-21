@@ -179,39 +179,17 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 # -------------------------
-# Worktree ID
+# Source checkpoint library
 # -------------------------
-# Derive a stable worktree identifier from the PROJECT_DIR path.
-# This is used to namespace checkpoint tags per-worktree.
-_WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-export WORKTREE_ID="$_WORKTREE_ID"
-unset _WORKTREE_ID
+source "$REPO_ROOT/scripts/checkpoint.sh"
 
 # -------------------------
-# Checkpoint tag 
+# Worktree ID and checkpoint tag
 # -------------------------
 CHECKPOINT_TS=$(date -u +%Y%m%d-%H%M%S)
-CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${CHECKPOINT_TS}"
-
-git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
+export CHECKPOINT_TAG; CHECKPOINT_TAG=$(checkpoint_create "$PROJECT_DIR" "$CHECKPOINT_TS")
 echo "Checkpoint tag created: $CHECKPOINT_TAG"
-
-# Prune old checkpoint tags — keep the 5 most recent for this worktree.
-# Scope pruning to this worktree's namespace only.
-mapfile -t _ALL_CHECKPOINT_TAGS < <(git -C "$PROJECT_DIR" tag --list "agent-checkpoint/${WORKTREE_ID}/*" | sort)
-_KEEP=5
-if [[ "${#_ALL_CHECKPOINT_TAGS[@]}" -gt "$_KEEP" ]]; then
-  _DELETE_COUNT=$(( ${#_ALL_CHECKPOINT_TAGS[@]} - _KEEP ))
-  for (( _i=0; _i<_DELETE_COUNT; _i++ )); do
-    git -C "$PROJECT_DIR" tag -d "${_ALL_CHECKPOINT_TAGS[$_i]}" >/dev/null
-    echo "Pruned checkpoint tag: ${_ALL_CHECKPOINT_TAGS[$_i]}"
-  done
-fi
-unset _ALL_CHECKPOINT_TAGS _KEEP _DELETE_COUNT _i
-
-# Write latest ref for operator recovery and apply workflow.
-mkdir -p "$SANDBOX_DIR/.workspace"
-echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 
 # -------------------------
 # REPO_COMMIT capture
@@ -220,7 +198,7 @@ echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
 # -------------------------
-# SESSION_NAME derivation 
+# SESSION_NAME and CONTAINER_NAME derivation 
 # -------------------------
 _BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
 # Handle detached HEAD: use short SHA instead of literal "HEAD"
@@ -229,8 +207,12 @@ if [[ "$_BRANCH" == "HEAD" ]]; then
 fi
 _SANITIZED=$(echo "$_BRANCH" | tr '/' '-')
 export SESSION_NAME="${_SANITIZED}-${CHECKPOINT_TS}"
+export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${CHECKPOINT_TS}"
+export AGENT_CONTAINER_NAME="agent-${PROJECT_NAME}-${CHECKPOINT_TS}"
 unset _BRANCH _SANITIZED
 echo "Session name: $SESSION_NAME"
+echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
+echo "Agent container name: $AGENT_CONTAINER_NAME"
 
 # -------------------------
 # Workspace directory setup

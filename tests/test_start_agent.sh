@@ -438,6 +438,45 @@ test_repo_commit_is_full_sha() {
   fi
 }
 
+
+# -------------------------
+# Container labels tests (Change 5)
+# Note: These tests verify the template structure directly since docker compose
+# config requires a running Docker daemon which may not be available in test env.
+# -------------------------
+
+test_docker_compose_template_has_labels_anchor() {
+  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml defines session labels as YAML anchor"
+  else
+    fail "docker-compose.yml missing YAML anchor for session labels"
+  fi
+}
+
+test_docker_compose_template_sandbox_uses_anchor() {
+  if grep -A3 "sandbox:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+    pass "sandbox service references session labels anchor"
+  else
+    fail "sandbox service does not reference session labels anchor"
+  fi
+}
+
+test_docker_compose_template_agent_uses_anchor() {
+  if grep -A3 "agent:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+    pass "agent service references session labels anchor"
+  else
+    fail "agent service does not reference session labels anchor"
+  fi
+}
+
+test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs() {
+  if grep -q "SANDBOX_CONTAINER_NAME: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
+     grep -q "SANDBOX_CONTAINER_NAME: {{AGENT_SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml has SANDBOX_CONTAINER_NAME for both services"
+  else
+    fail "docker-compose.yml missing SANDBOX_CONTAINER_NAME placeholders"
+  fi
+}
 # -------------------------
 # Run all tests
 
@@ -461,9 +500,67 @@ run_test "worktree_id_different_for_different_paths" test_worktree_id_different_
 run_test "repo_commit_captured" test_repo_commit_captured
 run_test "repo_commit_is_full_sha" test_repo_commit_is_full_sha
 
+
+# Container labels tests (Change 5)
+# Note: These tests verify the template structure directly since docker compose
+# config requires a running Docker daemon which may not be available in test env.
+run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
+run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
+run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
+run_test "docker_compose_template_has_SANDBOX_CONTAINER_NAMEs" test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs
+
 echo
 echo "Results: $PASS passed, $FAIL failed"
 
 if [[ "$FAIL" -gt 0 ]]; then
   exit 1
 fi
+
+# -------------------------
+# Container labels tests (Change 5)
+# Note: These tests verify the template structure directly since docker compose
+# config requires a running Docker daemon which may not be available in test env.
+# -------------------------
+
+test_docker_compose_template_has_labels_anchor() {
+  # Verify the template defines session labels as a YAML anchor
+  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml defines session labels as YAML anchor"
+  else
+    fail "docker-compose.yml missing YAML anchor for session labels"
+  fi
+}
+
+test_docker_compose_template_sandbox_uses_anchor() {
+  # Verify sandbox service references the labels anchor
+  if grep -A3 "sandbox:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+    pass "sandbox service references session labels anchor"
+  else
+    fail "sandbox service does not reference session labels anchor"
+  fi
+}
+
+test_docker_compose_template_agent_uses_anchor() {
+  # Verify agent service references the labels anchor
+  if grep -A3 "agent:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+    pass "agent service references session labels anchor"
+  else
+    fail "agent service does not reference session labels anchor"
+  fi
+}
+
+test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs() {
+  # Verify both SANDBOX_CONTAINER_NAME placeholders exist
+  if grep -q "SANDBOX_CONTAINER_NAME: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
+     grep -q "SANDBOX_CONTAINER_NAME: {{AGENT_SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+    pass "docker-compose.yml has SANDBOX_CONTAINER_NAME for both services"
+  else
+    fail "docker-compose.yml missing SANDBOX_CONTAINER_NAME placeholders"
+  fi
+}
+
+# Add container label tests to the test runner
+run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
+run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
+run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
+run_test "docker_compose_template_has_SANDBOX_CONTAINER_NAMEs" test_docker_compose_template_has_SANDBOX_CONTAINER_NAMEs
