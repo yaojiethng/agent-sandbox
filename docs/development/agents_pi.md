@@ -71,6 +71,32 @@ At the start of a session, if you are unsure if a specific capability (like a sp
 
 ---
 
+## Propagation Discipline
+
+When a task requires applying a change across multiple files — a naming rule, a structural convention, an interface rename, a container label, a variable — use a propagation checklist to track coverage.
+
+**Before writing any file**, produce a checklist in chat:
+
+```
+Propagation checklist — <change description>
+
+| File | Change | Status |
+|---|---|---|
+| path/to/file.sh | rename FOO_VAR to BAR_VAR | pending |
+| path/to/other.sh | rename FOO_VAR to BAR_VAR | pending |
+| docs/architecture/file.md | update reference to BAR_VAR | pending |
+```
+
+Update the checklist in chat as each file is completed. Mark each row `done` before moving to the next file.
+
+**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage — show the table.
+
+**The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
+
+This discipline exists because context window limitations mean silently skipped files do not surface until review. The checklist makes coverage a visible, verifiable claim rather than an approximation.
+
+---
+
 ## Session Start
 
 Before making any changes, orient yourself and confirm your understanding of the task:

@@ -49,6 +49,10 @@ At the start of a session, if you are unsure if a specific capability (like a sp
 2. **Check for Extensions**: Run `ls .pi/extensions/` or `ls ~/.pi/agent/extensions/`.
 3. **Verify via Grep**: If a tool is mentioned in documentation but its name is ambiguous, grep the extension/skill files for `registerTool` or `name:`.
 
+### Tool Use Preferences
+- Prefer `edit` for existing files. Use `write` only for new files, or after reading an existing file and deciding to replace it end-to-end because most of it is changing.
+- You can parallelize independent work when safe, such as reads, searches, checks, or disjoint `edit` calls, including disjoint sections of the same file.
+
 ---
 
 ## Collaboration Protocol
@@ -64,6 +68,32 @@ At the start of a session, if you are unsure if a specific capability (like a sp
 **Decisions are final.** Do not re-open a decision without a specific technical reason.
 
 **Distinguish current from proposed.** Never blur the description of the existing system with a proposal for change.
+
+---
+
+## Propagation Discipline
+
+When a task requires applying a change across multiple files — a naming rule, a structural convention, an interface rename, a container label, a variable — use a propagation checklist to track coverage.
+
+**Before writing any file**, produce a checklist in chat:
+
+```
+Propagation checklist — <change description>
+
+| File | Change | Status |
+|---|---|---|
+| path/to/file.sh | rename FOO_VAR to BAR_VAR | pending |
+| path/to/other.sh | rename FOO_VAR to BAR_VAR | pending |
+| docs/architecture/file.md | update reference to BAR_VAR | pending |
+```
+
+Update the checklist in chat as each file is completed. Mark each row `done` before moving to the next file.
+
+**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage — show the table.
+
+**The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
+
+This discipline exists because context window limitations mean silently skipped files do not surface until review. The checklist makes coverage a visible, verifiable claim rather than an approximation.
 
 ---
 

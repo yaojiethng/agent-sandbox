@@ -194,6 +194,27 @@ Continue the interview until a scope proposal can be made, then present it and w
 
 - Replace `Not yet defined.` with the confirmed criteria before the step exits. The null marker must not be present when implementation begins — a session that enters Step 7 with `Not yet defined.` in place has skipped the gate.
 
+### At pre-close verification (Step 7b)
+
+Step 7b is a mandatory gate before session close. The agent presents a pre-close summary and waits for an explicit operator release before advancing to Step 8.
+
+**For any session that touched multiple files under a shared rule or naming convention**, the pre-close summary must include a propagation replay table — a row-by-row comparison of every file that was planned to receive the change against the Completed this session table:
+
+| File | Change planned | Status |
+|---|---|---|
+| `path/to/file.md` | `<what was supposed to change>` | `completed` / `deferred` / `not started` |
+
+Every row must have a status. A row with status `deferred` or `not started` must appear in the Deferred items section before the gate closes. The operator cannot release Step 7b while any row is unresolved.
+
+**A propagation replay is required when any of the following apply:**
+- The session applied a naming rule, structural rule, or interface change across more than two files
+- The spec produced an explicit file table at Step 4
+- The task description used language like "all", "every", "throughout", or "wherever X appears"
+
+**When a propagation replay is not required**, the pre-close summary covers: what was built, tests produced, AC status per criterion, and recommended manual checks.
+
+The operator releases this gate with an explicit forward signal (e.g. "proceed", "close the session"). A message that reviews output without a clear forward signal does not satisfy the exit condition.
+
 ### At session close (Step 8)
 
 - Mark completed tasks in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). This is done alongside the handover update, not after it.
