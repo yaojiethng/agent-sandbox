@@ -187,16 +187,14 @@ source "$REPO_ROOT/scripts/checkpoint.sh"
 # Session timestamp (single canonical definition)
 # -------------------------
 # SESSION_TS is the one source of truth for the session timestamp. All
-# derived names (SESSION_NAME, checkpoint tag, container names) reference
-# this variable — no downstream date calls.
+# derived names (SESSION_NAME, container names) reference this variable —
+# no downstream date calls.
 export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
 
 # -------------------------
-# Worktree ID and checkpoint tag
+# Worktree ID
 # -------------------------
 export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
-export CHECKPOINT_TAG; CHECKPOINT_TAG=$(checkpoint_create "$PROJECT_DIR" "$SESSION_TS")
-echo "Checkpoint tag created: $CHECKPOINT_TAG"
 
 # -------------------------
 # REPO_COMMIT capture

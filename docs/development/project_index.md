@@ -104,9 +104,11 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
-| `apply_workspace.sh` | 🟡 Warm | M1.5 | Applies staged.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
+| `apply_workspace.sh` | 🟡 Warm | M2.3 | Applies staged.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
 | `agent-sandbox.sh` | 🟡 Warm | M1.5 | CLI dispatch wrapper. Installed to host via `make install`. |
 | `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
+| `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
+| `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
 ### Lib (`libs/`)
 
@@ -116,6 +118,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package-diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
 | `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
+| `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
+| `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 

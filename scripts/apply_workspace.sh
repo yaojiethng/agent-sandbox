@@ -5,9 +5,9 @@
 #
 # Commands:
 #   draft   [--project=<path>] [--sandbox=<path>] [--session=<name>]
-#             Create a working branch draft/<branch>-<session-ts> from the
-#             checkpoint tag. Apply all patches via git am --3way with
-#             per-patch author reset. Write .workspace/draft-state.
+#             Create a working branch draft/<branch>-<session-ts> from HEAD.
+#             Apply all patches via git am --3way with per-patch author reset.
+#             Write .workspace/draft-state.
 #
 #   confirm [--project=<path>] [--sandbox=<path>] [--target=<branch>]
 #             Rebase draft branch onto target, fast-forward merge to target,
@@ -35,11 +35,10 @@
 set -euo pipefail
 
 # -------------------------
-# Source checkpoint library
+# Resolve paths
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$REPO_ROOT/scripts/checkpoint.sh"
 
 # -------------------------
 # Parse command
@@ -143,17 +142,8 @@ if [[ "$COMMAND" == "draft" ]]; then
     exit 1
   fi
 
-  # Resolve checkpoint tag via checkpoint.sh lookup
-  CHECKPOINT_TAG=$(checkpoint_lookup "$PROJECT_DIR")
-  if [[ -z "$CHECKPOINT_TAG" ]]; then
-    echo "Error: no checkpoint tag found for worktree: $PROJECT_DIR" >&2
-    echo "  Cannot determine base tag for draft branch." >&2
-    exit 1
-  fi
-  if ! git -C "$PROJECT_DIR" rev-parse --verify "$CHECKPOINT_TAG" >/dev/null 2>&1; then
-    echo "Error: checkpoint tag not found in repository: $CHECKPOINT_TAG" >&2
-    exit 1
-  fi
+  # Default to HEAD as the base commit (FROM argument added in Unit E)
+  BASE_COMMIT="HEAD"
 
   # Guard: reject if draft-state already exists
   if [[ -f "$DRAFT_STATE_FILE" ]]; then
@@ -169,15 +159,10 @@ if [[ "$COMMAND" == "draft" ]]; then
     SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   fi
 
-  # Extract SESSION_TS from the checkpoint tag (last path component).
-  # The draft branch preserves original branch-name slashes for readability
-  # and appends SESSION_TS for session disambiguation, e.g.:
-  #   draft/feature/M2_3-work-20260421-143000
-  SESSION_TS="${CHECKPOINT_TAG##*/}"
   WORKING_BRANCH="draft/${SOURCE_BRANCH}-${SESSION_TS}"
 
-  echo "Creating draft branch '$WORKING_BRANCH' from $CHECKPOINT_TAG..."
-  git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$CHECKPOINT_TAG"
+  echo "Creating draft branch '$WORKING_BRANCH' from $BASE_COMMIT..."
+  git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$BASE_COMMIT"
 
   # Apply patches with per-patch author reset
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"

@@ -75,6 +75,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) — superseded in part; see handover for change 5
 - package-diff index-line stripping + `git apply` (`libs/package-diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260421-07-impl-package_diff_patch_and_index_strip.md`
 - INIT_SHA at container init (`libs/snapshot.sh`, `libs/package-diff.sh`) — see handover `20260422-03-impl-init_sha_at_container_init.md`
+- Remove checkpoint tags (`start_agent.sh`, `scripts/checkpoint.sh`, `libs/compose.sh`) — see handover `20260422-04-impl-remove_checkpoint_tags.md`
 
 **Pending — diff packaging unification:**
 
@@ -82,7 +83,7 @@ Units are ordered by dependency. A and B are independent and can be implemented 
 
 - [x] **A — INIT_SHA at container init** (`libs/snapshot.sh`): In `snapshot_init_git`, write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write or update logic.
 
-- [ ] **B — Remove checkpoint tags** (`start_agent.sh`, `scripts/checkpoint.sh`): Remove checkpoint git tag creation and pruning from `start_agent.sh`. Remove tag creation, pruning, and lookup from `scripts/checkpoint.sh`; retain `WORKTREE_ID` derivation. Remove `agent-sandbox.checkpoint-tag` from container labels.
+- [x] **B — Remove checkpoint tags** (`start_agent.sh`, `scripts/checkpoint.sh`): Remove checkpoint git tag creation and pruning from `start_agent.sh`. Remove tag creation, pruning, and lookup from `scripts/checkpoint.sh`; retain `WORKTREE_ID` derivation. Remove `agent-sandbox.checkpoint-tag` from container labels.
 
 - [ ] **C — `package-branch` function** (`libs/diff.sh`): Add `package_branch` — iterates commits since `INIT_SHA`, produces numbered `.diff` files with index lines stripped into `workspace/session-diffs/<branch-name>/`, overwrites on each run. Add `package_diff` — `git diff HEAD` with index lines stripped to `workspace/output/changes.diff`. Update `diff_on_exit` to call `package_branch`. Retain `staged.diff`. Depends on A.
 

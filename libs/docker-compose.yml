@@ -24,7 +24,6 @@
 x-session-labels: &session_labels
   agent-sandbox.project-dir: {{PROJECT_DIR}}
   agent-sandbox.session-name: {{SESSION_NAME}}
-  agent-sandbox.checkpoint-tag: {{CHECKPOINT_TAG}}
 
 services:
   sandbox:
