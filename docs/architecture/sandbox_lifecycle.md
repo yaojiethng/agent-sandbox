@@ -6,7 +6,7 @@ The reasoning layer lifecycle — provider config copy-in, input channels, copy-
 
 The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
 
-All snapshot and diff functions are defined in `libs/snapshot.sh` and sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
+All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
 
 ---
 
@@ -16,7 +16,7 @@ A capability layer session has three phases:
 
 1. **Fork** — the host project state is replicated into the sandbox before the containers start. The host repository is never modified.
 2. **Work** — the agent operates exclusively inside the sandbox. The host is untouched.
-3. **Join** — the agent's changes are captured as a diff and written to the host for operator review.
+3. **Join** — the agent's changes are packaged as diffs and written to the host for operator review.
 
 ---
 
@@ -25,8 +25,6 @@ A capability layer session has three phases:
 The snapshot pipeline replicates the host repository state into the capability layer sandbox. It runs in two stages separated by the container boundary.
 
 ### Stage 1 — Host side (`scripts/start_agent.sh`)
-
-**Checkpoint tag** — a lightweight tag `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` is created in `PROJECT_DIR` before the snapshot begins. The worktree ID is a short hash of the project path, namespacing tags per-worktree. This tag serves as the base for the draft workflow. The last 5 checkpoint tags per worktree are preserved; older tags are pruned. The tag is retrieved at apply time via `checkpoint.sh` lookup — no ref file is written.
 
 **`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
 
@@ -48,7 +46,13 @@ This runs on the host where `PROJECT_DIR` is available. The tar contains exactly
 
 **`snapshot_init_git`** initialises the sandbox git repository in two steps:
 
-1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. The baseline SHA is stored in `.git/BASELINE_SHA` for the diff pipeline.
+1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, the root commit SHA is written to `sandbox/.git/INIT_SHA`:
+
+```bash
+git rev-list --max-parents=0 HEAD > sandbox/.git/INIT_SHA
+```
+
+`INIT_SHA` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime.
 
 2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
 
@@ -79,28 +83,32 @@ The agent works exclusively inside `sandbox/`. The host repository is never moun
 On capability layer container exit, an EXIT trap runs the diff pipeline:
 
 1. Any uncommitted changes in `sandbox/` are staged and committed with a "sweep" message.
-2. `diff_format_patch` runs `git format-patch` to produce one numbered `.patch` file per agent commit since the baseline.
-3. `git diff <baseline>..HEAD` is computed for a single-file summary.
-4. All artefacts are written to a session-scoped directory: `workspace/session-diffs/<session-name>/`.
-   - `staged.diff` — full session diff
-   - `patches/` — per-commit `.patch` files
-   - `autosave.diff` — (if present) last incremental save
+2. `package_branch` produces one numbered `.diff` file per agent commit since `INIT_SHA`, written to `workspace/session-diffs/<branch-name>/`. Git index lines (`index <sha>..<sha>`) are stripped from all output.
+3. A flat `staged.diff` (net delta `INIT_SHA..HEAD`) is written alongside the numbered series as a human-readable session summary.
 
-The `SESSION_NAME` is derived from the branch name and session timestamp (e.g., `main-20260408-112344`) and is injected into the container environment at startup.
+All artefacts land in `workspace/session-diffs/<branch-name>/`:
+- `staged.diff` — full session diff, single file, human-readable overview
+- `0001.diff`, `0002.diff`, ... — per-commit diffs, applied in order by `make draft`
 
-An autosave loop writes `autosave.diff` into the session directory on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s).
+The branch name (e.g. `main`, `feature/foo`) is the folder differentiator. If the agent works on multiple branches, each gets its own folder under `session-diffs/`.
 
-`workspace/session-diffs/` accumulates session directories over time; they are not automatically pruned by the harness.
+An autosave loop runs `package_diff` (uncommitted working tree changes) on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s), writing `autosave.diff` to the session directory as an incremental checkpoint.
+
+`workspace/session-diffs/` accumulates branch directories over time and is not automatically pruned by the harness.
 
 ### Apply workflow
 
-On the host, `scripts/apply_workspace.sh` provides a three-stage draft workflow:
+On the host, `scripts/apply_workspace.sh` provides two application paths:
 
-1. **`draft`** — creates a working branch `draft/<branch>-<session-ts>` from the session's checkpoint tag and applies all `.patch` files via `git am --3way`. The branch name preserves original branch-name slashes for readability and appends the session timestamp to disambiguate concurrent sessions on the same branch. All commits are reset to the operator's author identity.
-2. **`confirm`** — rebases the draft branch onto the target branch (defaults to the source branch), fast-forward merges it, and force-deletes the draft branch. This ensures a linear history and reliable cleanup.
-3. **`reject`** — force-deletes the draft branch and returns to the source branch.
+**`make draft [FROM=<hash>] [DIFFS=<start>..<end>]`** — creates a `draft/<branch>` branch from `FROM` (default: current host `HEAD`; accepts any commit hash or partial hash). Applies the numbered `.diff` files from `session-diffs/<branch-name>/` in sort order using `git apply` with index lines stripped. `DIFFS` selects a sub-range (e.g. `3..5`, `2..`, `..4`); default is all. Produces a branch with one commit per diff, ready for `git rebase -i` onto the target branch. Writes `draft-state`.
 
-A legacy **`apply`** mode is retained for applying `changes.diff` from the reasoning layer output channel (`.workspace/output/`) directly to the working tree without creating commits.
+**`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged. Deletes the draft branch, clears `draft-state`.
+
+**`make reject`** — discards the draft branch, clears `draft-state`. Artefacts unchanged.
+
+**`make apply [DIFF=<path>]`** — applies a single `.diff` to the working tree uncommitted using `git apply` with index lines stripped. Used for mid-session partial changes (sandbox→host) and host amendments pushed into a running sandbox (host→sandbox). Default: latest `.diff` in `workspace/output/` by timestamp.
+
+No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
 
 ---
 
@@ -108,6 +116,7 @@ A legacy **`apply`** mode is retained for applying `changes.diff` from the reaso
 
 | Topic | Document |
 |---|---|
+| Correspondence model — three cases, bidirectional flow | [../concepts/sandbox_host_correspondence_model.md](../concepts/sandbox_host_correspondence_model.md) |
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
 | Operator run workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |

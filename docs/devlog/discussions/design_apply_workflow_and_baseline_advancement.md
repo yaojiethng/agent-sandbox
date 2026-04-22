@@ -2,6 +2,8 @@
 
 **Target milestone:** M2.3 (Changes 3, 5, 6) + Change 5 prerequisite (container naming)
 
+> [SUPERSEDED: Change 6 as originally specified is rejected and replaced. See `design_diff_and_branch_packaging_workflow.md`. All other content is preserved as the reasoning record. SUPERSEDED markers indicate the specific decisions that changed.]
+
 ---
 
 ## Primitives
@@ -12,27 +14,27 @@
 | **Worktree repo** | `git worktree add` checkout of the same object store; distinct path, distinct branch, shared tags and object store |
 | **Sandbox** | Container-local git repository initialised from a snapshot of the host at session start |
 | **Baseline commit** | Synthetic first commit in sandbox, representing exactly `HEAD` of host at session start. Produced via `git archive HEAD` → unpack → commit |
-| **`BASELINE_SHA`** | SHA of the baseline commit, written to `sandbox/.git/BASELINE_SHA` at init. All diffs computed against this |
+| **`BASELINE_SHA`** | SHA of the baseline commit, written to `sandbox/.git/BASELINE_SHA` at init. All diffs computed against this [SUPERSEDED: advancing `BASELINE_SHA` removed; replaced by `INIT_SHA` — written once at container init, never updated. See new design.] |
 | **`staged.diff`** | Flat aggregate diff since `BASELINE_SHA`. Human-readable overview artefact |
-| **`patches/`** | Per-commit `.patch` files from sandbox history via `git format-patch BASELINE_SHA..HEAD`. One file per agent commit. Machine-apply artefact |
-| **Checkpoint tag** | `agent-checkpoint/<worktree-id>/<timestamp>` — lightweight tag in the host repo marking host state before session start. Recovery point and draft branch base |
+| **`patches/`** | Per-commit `.patch` files from sandbox history via `git format-patch BASELINE_SHA..HEAD`. One file per agent commit. Machine-apply artefact [SUPERSEDED: `.patch` files with git metadata headers replaced by plain numbered `.diff` files with index lines stripped, applied via `git apply`. See new design.] |
+| **Checkpoint tag** | `agent-checkpoint/<worktree-id>/<timestamp>` — lightweight tag in the host repo marking host state before session start. Recovery point and draft branch base [SUPERSEDED: checkpoint git tags removed — they pollute the remote for all users. `make draft` accepts `FROM=<hash>` for branch base; defaults to `HEAD`. See new design.] |
 | **Draft branch** | `draft/<branch>-<session-ts>` — temporary branch in the host repo. Preserves original branch-name slashes; disambiguates sessions with session timestamp |
 | **`draft-state`** | File at `SANDBOX_DIR/.workspace/draft-state`. Records active draft: source branch, working branch, session directory. One per `SANDBOX_DIR` |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces checkpoint tags and container names per worktree instance |
-| **`ADVANCED_SESSIONS`** | File at `sandbox/.git/ADVANCED_SESSIONS` inside the container. Append-only log of session names whose patches have been applied to the sandbox via baseline advancement |
-| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<session-name>/` — scoped directory holding `staged.diff`, `patches/`, and `autosave.diff` for one session # renamed from changes/ in M2.3 |
-| **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity — not derivable from files that can go stale. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag` |
-| **`scripts/checkpoint.sh`** | Consolidates all checkpoint logic: tag creation, pruning, lookup, and `WORKTREE_ID` derivation. Sourced by `start_agent.sh`, `apply_workspace.sh`, and `advance_baseline.sh` |
+| **`ADVANCED_SESSIONS`** | File at `sandbox/.git/ADVANCED_SESSIONS` inside the container. Append-only log of session names whose patches have been applied to the sandbox via baseline advancement [SUPERSEDED: removed entirely — no harness-side tracking of applied state. See new design.] |
+| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<session-name>/` — scoped directory holding `staged.diff`, `patches/`, and `autosave.diff` for one session # renamed from changes/ in M2.3 [SUPERSEDED: folder key changes from `<session-name>` to `<branch-name>`; contents change from `patches/` of `.patch` files to numbered `.diff` files. See new design.] |
+| **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity — not derivable from files that can go stale. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag` [SUPERSEDED: `agent-sandbox.checkpoint-tag` label removed alongside checkpoint tags. Other labels retained.] |
+| **`scripts/checkpoint.sh`** | Consolidates all checkpoint logic: tag creation, pruning, lookup, and `WORKTREE_ID` derivation. Sourced by `start_agent.sh`, `apply_workspace.sh`, and `advance_baseline.sh` [SUPERSEDED: tag creation, pruning, and lookup removed from `scripts/checkpoint.sh`; `WORKTREE_ID` derivation retained for container naming.] |
 
 ---
 
 ## Invariants
 
 - The host repo is never modified by the container directly. All changes flow out as patches and are applied by the operator.
-- The sandbox and host repo have divergent git histories. The shared language between them is the **patch set** — patches produced from sandbox history apply cleanly to host state at the checkpoint because both represent the same content lineage from the same baseline.
+- The sandbox and host repo have divergent git histories. The shared language between them is the **patch set** — patches produced from sandbox history apply cleanly to host state at the checkpoint because both represent the same content lineage from the same baseline. [SUPERSEDED: "patch set" and "checkpoint" replaced by "diff file" and "session-start file state". The shared language is a git-agnostic unified diff, not a git patch. See new design.]
 - One draft is active per repo at a time. Git enforces this by allowing only one checked-out branch. `draft-state` records which session is staged; `make draft` guards against starting a second draft while one is in progress.
 - Patches apply cleanly when sandbox and host are in unison at the baseline. A patch that does not apply cleanly signals content divergence — the conflict is resolved on the pre-patch state, not mid-apply.
-- Baseline advancement requires a clean sandbox working tree. Uncommitted agent work must be committed before the operator triggers advancement.
+- Baseline advancement requires a clean sandbox working tree. Uncommitted agent work must be committed before the operator triggers advancement. [SUPERSEDED: baseline advancement via `docker exec` removed entirely; this invariant no longer applies.]
 - Session artefact directories are non-colliding across concurrent worktree sessions. `SESSION_NAME` encodes branch and timestamp; git worktree enforces branch uniqueness.
 
 ---
@@ -41,20 +43,20 @@
 
 **Apply workflow (host side):**
 - Operator reviews agent changes on a working branch before merging to any target branch
-- Review branch is created from the checkpoint tag — the exact host state the agent worked against
+- Review branch is created from the checkpoint tag — the exact host state the agent worked against [SUPERSEDED: checkpoint tag removed; branch base is `FROM=<hash>` argument, defaulting to `HEAD`. Operator supplies hash explicitly when needed.]
 - Merge is always linear; no merge commits
 - A failed or unwanted draft can be cleanly discarded with no lasting effect on the host repo
 - Pre-M2.3 sessions (flat diff, no patches) remain applicable via a legacy path
-- Operator can recover to pre-session host state via checkpoint tag lookup — `checkpoint.sh` provides the lookup function; no ref file required
+- Operator can recover to pre-session host state via checkpoint tag lookup — `checkpoint.sh` provides the lookup function; no ref file required [SUPERSEDED: checkpoint tag lookup removed; recovery via `git reflog` or operator knowledge of pre-session commit SHA.]
 
 **Baseline advancement:**
-- After confirming a patch set to the host, the sandbox baseline advances to match — without container restart
-- Advancement is idempotent: a session cannot be applied to the sandbox twice
-- Multiple unadvanced sessions are applied in sequence in timestamp order
+- After confirming a patch set to the host, the sandbox baseline advances to match — without container restart [SUPERSEDED: baseline advancement via `docker exec`/`git am` removed. `INIT_SHA` is fixed and never advanced. Full re-export via `package-branch` on demand replaces incremental advancement. See new design.]
+- Advancement is idempotent: a session cannot be applied to the sandbox twice [SUPERSEDED: `ADVANCED_SESSIONS` idempotency guard removed.]
+- Multiple unadvanced sessions are applied in sequence in timestamp order [SUPERSEDED: multi-session advancement removed.]
 - When no container is running, advancement is skipped gracefully; the operator restarts to get a fresh baseline from the updated snapshot
 
 **Diff primitives:**
-- Two complementary primitives with distinct semantics are available
+- Two complementary primitives with distinct semantics are available [SUPERSEDED: two primitives collapsed to one unified diff format. See new design.]
 - Both are accessible as shell functions in `libs/diff.sh` and as agent-facing skills in `.skills/`
 
 **Parallel sessions:**
@@ -67,7 +69,7 @@
 
 ### draft / confirm / reject
 
-**`make draft [SESSION=<name>]`**
+**`make draft [SESSION=<n>]`**
 
 Resolves the target session: explicit name if provided, otherwise the lexicographically
 last entry in `.workspace/session-diffs/` (chronologically latest, given `<branch>-<timestamp>`
@@ -83,6 +85,8 @@ On patch application failure: runs `git am --abort`, deletes the partially-creat
 branch, removes `draft-state`, exits with a message identifying the failing patch and
 conflict. The repo is left in its pre-draft state.
 
+[SUPERSEDED: `make draft` redesigned — checkpoint tag lookup replaced by `FROM=<hash>` (default: `HEAD`); `SESSION=<n>` replaced by branch-name folder with `DIFFS=<start>..<end>` range argument; `git am --3way` replaced by sequential `git apply` with index lines stripped; per-patch author reset removed. See new design.]
+
 **`make confirm [TARGET=<branch>] [SYNC=1]`**
 
 Reads `draft-state`. Rebases working branch onto target (default: `SOURCE_BRANCH`).
@@ -95,6 +99,8 @@ container. Locates the container by querying Docker for a running container whos
 the container was started for a different session and `SYNC=1` fails with a clear error
 rather than advancing an incompatible baseline. If no container is running, `SYNC=1` is
 silently ignored.
+
+[SUPERSEDED: `SYNC=1` and `docker exec` baseline advancement removed. `make confirm` now only cleans up the draft branch and clears `draft-state`. Operator runs `git rebase -i` manually before calling `make confirm`. See new design.]
 
 **`make reject`**
 
@@ -111,6 +117,8 @@ by timestamp, and applies them in sequence. Does not validate session name again
 container label — `make sync` is an explicit catch-up operation, not a tight per-confirm
 sync. Fails if no container is running.
 
+[SUPERSEDED: `make sync` removed entirely. `ADVANCED_SESSIONS` removed. No harness-side baseline advancement. See new design.]
+
 **Legacy path — `make apply` (reasoning layer output channel)**
 
 `make apply` applies `changes.diff` from the reasoning layer output channel at
@@ -119,16 +127,16 @@ from the capability layer diff channel (`.workspace/session-diffs/`) consumed by
 
 **Session resolution:**
 - With no `SESSION=`: lexicographically last entry in `.workspace/output/` (by basename sort)
-- With `SESSION=<name>`: explicit directory `.workspace/output/<name>/` — errors if not found
+- With `SESSION=<n>`: explicit directory `.workspace/output/<n>/` — errors if not found
 
 **Artefact format:** Each session package is a directory containing:
 - `changes.diff` — unified diff for application via `git apply --3way`
-- `changed-files/` — supporting files referenced by the diff (if any)
+- `changed-files/` — supporting files referenced by the diff (if any) [SUPERSEDED: `changed-files/` removed in M2.3 Change 7.]
 - `migration-guide.md` — operator-facing guide describing the changes (printed by script)
 
 **Behaviour:**
 - Prints path to `migration-guide.md` if present — operator should read before proceeding
-- Applies via `git apply --3way changes.diff` against `PROJECT_DIR`
+- Applies via `git apply --3way changes.diff` against `PROJECT_DIR` [SUPERSEDED: replaced by `grep -v '^index ' | git apply` in M2.3 Change 7.]
 - With `--force`: uses `git apply --reject`; `.rej` files created for failed hunks
 - Prints summary: files changed, any conflicts
 - Does not create commits — operator reviews and commits manually
@@ -143,9 +151,11 @@ used `staged.diff` in `.workspace/session-diffs/`. Those are no longer supported
 ### Session resolution
 
 `make draft` with no `SESSION=` resolves to the lexicographically last entry in
-`.workspace/session-diffs/` — the latest session by sort order. Explicit `SESSION=<name>` is
+`.workspace/session-diffs/` — the latest session by sort order. Explicit `SESSION=<n>` is
 available for older sessions. Short-form aliases are not implemented; revisit when operator
 feedback identifies friction.
+
+[SUPERSEDED: session resolution by `SESSION=<n>` replaced by branch-name folder with `DIFFS=<start>..<end>` range argument. See new design.]
 
 ---
 
@@ -160,6 +170,8 @@ already reviewed and applied.
 
 Container restart resolves this — a fresh snapshot is built from the updated host — but at
 the cost of snapshot rebuild, volume recreation, and session context loss.
+
+[SUPERSEDED: the problem framing is correct but the solution (`docker exec` / `git am` advancement) is wrong and removed. `package-branch` always re-exports the full branch history since `INIT_SHA`; the operator manages range selection via `DIFFS=<start>..` argument. The design section below is superseded in full. See new design.]
 
 ### Design
 
@@ -221,6 +233,8 @@ this single library rather than being duplicated across scripts.
 Two primitives with distinct semantics. Both available as functions in `libs/diff.sh` and
 as skills in `.skills/`.
 
+[SUPERSEDED: two primitives collapsed to one unified diff format. `format-patch` removed. `package-diff` retained and extended. New `package-branch` command added. See new design.]
+
 ### `format-patch` — history-preserving
 
 Produces one `.patch` file per agent commit via `git format-patch BASELINE_SHA..HEAD`.
@@ -229,6 +243,8 @@ becomes a real commit in host history. **Not idempotent:** applying the same pat
 conflicts because the content is already present.
 
 Used by: `make draft` / `make confirm`; baseline advancement inside the container.
+
+[SUPERSEDED: `format-patch` removed. Replaced by `package-branch` producing plain numbered `.diff` files applied via `git apply`. See new design.]
 
 ### `package-diff` — content-addressed, history-neutral
 
@@ -261,11 +277,11 @@ reasoning and is not mechanically produced by `libs/diff.sh`.
 | Token | Scoped by | Collision possible? |
 |---|---|---|
 | Session artefact directory | `SESSION_NAME` — branch + timestamp | No — git enforces branch uniqueness across worktrees |
-| Checkpoint tags | `WORKTREE_ID` namespace | No — separate namespace per worktree |
+| Checkpoint tags | `WORKTREE_ID` namespace | No — separate namespace per worktree [SUPERSEDED: checkpoint tags removed.] |
 | Container names | Session identity via `container_name:` (Change 5) | No — per-session name |
 | Container labels | Set at session start; `project-dir` label scopes lookup to correct container | No — label lookup is project-scoped |
 | `draft-state` | `SANDBOX_DIR` | No — separate file per worktree |
-| `ADVANCED_SESSIONS` | Container-internal; scoped to sandbox | No — separate container per session |
+| `ADVANCED_SESSIONS` | Container-internal; scoped to sandbox | No — separate container per session [SUPERSEDED: `ADVANCED_SESSIONS` removed.] |
 
 ### Worktree to main repo
 
@@ -298,3 +314,4 @@ requirement.
 | [`story_parallel_sessions_worktree.md`](story_parallel_sessions_worktree.md) | Resolved pending Change 5 implementation |
 | [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) | Two-sig model; M2.7 scope |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; baseline commit construction |
+| [`design_diff_and_branch_packaging_workflow.md`](design_diff_and_branch_packaging_workflow.md) | Superseding design — diff packaging and branch review workflow |

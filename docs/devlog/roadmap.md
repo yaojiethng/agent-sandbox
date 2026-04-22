@@ -58,70 +58,56 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 #### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 
-**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
+**Objective:** Redesign the apply workflow to reflect the two-layer model: git-agnostic unified diffs generated from capability layer `sandbox/`, bidirectional diff flow between host and sandbox, draft branch pattern formalised for operator review.
 
-**Depends on:** M2.1. **Status:** In progress. Changes 1, 2, 3, 4, and 5 complete; Change 6 pending.
+**Depends on:** M2.1. **Status:** In progress.
 
-**Design reference:** [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md)
+**Design references:**
+- [`docs/discussions/design_diff_and_branch_packaging_workflow.md`](docs/discussions/design_diff_and_branch_packaging_workflow.md) — current design
+- [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md) — prior design, preserved with SUPERSEDED markers
 
-**Change status:**
+**Completed:**
 
-| Change | Description | Status |
-|--------|--------------|--------|
-| Change 1 | Checkpoint tag (`start_agent.sh`) | ✓ Complete |
-| Change 2 | Format-patch + session artefacts (`libs/diff.sh`) | ✓ Complete |
-| Change 3 | draft/confirm/reject/apply (`apply_workspace.sh`) | ✓ Complete |
-| Change 4 | Archive HEAD + rsync overlay (`libs/snapshot.sh`) | ✓ Complete |
-| Change 5 | Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) | ✓ Complete |
-| Change 6 | Baseline advancement (`make confirm SYNC=1`, `make sync`) | Pending |
+- Checkpoint tag + WORKTREE_ID + SESSION_NAME (`start_agent.sh`) — see handover `20260416-04-impl-change1.md`
+- Format-patch + session-scoped artefact directory (`libs/diff.sh`) — superseded in part; see handover `20260417-04-impl-m2_3_change2.md`
+- draft/confirm/reject/apply (`scripts/apply_workspace.sh`) — superseded in part; see handover for change 3
+- Archive HEAD + rsync overlay (`libs/snapshot.sh`) — see handover `20260416-01-impl-snapshot-baseline.md`
+- Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) — superseded in part; see handover for change 5
+- package-diff index-line stripping + `git apply` (`libs/package-diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260421-07-impl-package_diff_patch_and_index_strip.md`
 
-**Change 1 implementation (complete):**
+**Pending — diff packaging unification:**
 
-Checkpoint tag creation with worktree namespace, SESSION_NAME derivation, and REPO_COMMIT capture:
-- **Host side (`start_agent.sh`):** Derives `WORKTREE_ID` from PROJECT_DIR path; creates `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before snapshot runs; prunes to 5 most recent per worktree; derives `SESSION_NAME` as `<sanitized-branch>-<timestamp>`; exports `REPO_COMMIT` (full HEAD SHA) for future image labeling; exports `SESSION_NAME` for docker-compose (injection in Change 2). Note: `checkpoint-latest.ref` written by this implementation is superseded by container label lookup in Change 5 — checkpoint tag is retrieved via `checkpoint.sh` tag lookup at apply time.
-- **Tests:** 19 tests in `tests/test_start_agent.sh` — 7 checkpoint tests, 6 SESSION_NAME tests, 3 WORKTREE_ID tests, 2 REPO_COMMIT tests. All pass.
+Units are ordered by dependency. A and B are independent and can be implemented in either order. C depends on A. E depends on C. F depends on E. D and G are independent of each other but G should be last.
 
-See handover `20260416-04-impl-change1.md` for full implementation details.
+- [ ] **A — INIT_SHA at container init** (`libs/snapshot.sh`): In `snapshot_init_git`, write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write or update logic.
 
-**Change 2 implementation (complete):**
+- [ ] **B — Remove checkpoint tags** (`start_agent.sh`, `scripts/checkpoint.sh`): Remove checkpoint git tag creation and pruning from `start_agent.sh`. Remove tag creation, pruning, and lookup from `scripts/checkpoint.sh`; retain `WORKTREE_ID` derivation. Remove `agent-sandbox.checkpoint-tag` from container labels.
 
-Format-patch generation and session-scoped artefact directory:
-- **Container side (`libs/diff.sh`):** Added `diff_format_patch` function to generate per-commit `.patch` files via `git format-patch`. Updated `diff_on_exit` and `diff_on_autosave` to accept optional `SESSION_NAME` argument; artefacts written under `.workspace/session-diffs/<session-name>/` with fallback to root `CHANGES_DIR/` for backwards compatibility. # renamed from changes/ in M2.3
-- **Container side (`libs/sandbox-entrypoint.sh`):** EXIT trap and autosave loop pass `${SESSION_NAME:-}` to diff functions.
-- **Compose (`libs/docker-compose.yml`):** `SESSION_NAME` injected into sandbox container environment.
-- **Tests:** 11 new tests in `tests/test_diff.sh` (24 total) covering `diff_format_patch` and session-scoped artefacts. All pass.
+- [ ] **C — `package-branch` function** (`libs/diff.sh`): Add `package_branch` — iterates commits since `INIT_SHA`, produces numbered `.diff` files with index lines stripped into `workspace/session-diffs/<branch-name>/`, overwrites on each run. Add `package_diff` — `git diff HEAD` with index lines stripped to `workspace/output/changes.diff`. Update `diff_on_exit` to call `package_branch`. Retain `staged.diff`. Depends on A.
 
-See handover `20260417-04-impl-m2_3_change2.md` for full implementation details.
+- [ ] **D — `make apply` update** (`scripts/apply_workspace.sh`): Add `DIFF=<path>` argument. Remove pre-staging block. Replace apply call with `grep -v '^index ' "$DIFF" | git -C "$PROJECT_DIR" apply`. Preserve default resolution (latest `.diff` in `workspace/output/` by timestamp).
 
-**Change 4 implementation (complete):**
+- [ ] **E — `make draft` redesign** (`scripts/apply_workspace.sh`): Remove checkpoint tag lookup. Add `FROM=<hash>` argument (default: `HEAD`). Replace session-name folder resolution with branch-name folder. Add `DIFFS=<start>..<end>` range argument. Replace `git am` loop with sequential `git apply` loop (index lines stripped), staging and committing each diff. Depends on C.
 
-The snapshot baseline now correctly reflects the operator's working tree state:
-- **Host side (`start_agent.sh`):** After `snapshot_copy_worktree`, runs `git archive HEAD > baseline.tar` in `.snapshot/`. Produces exactly the committed state — no working tree changes, no untracked files.
-- **Container side (`snapshot_init_git` in `libs/snapshot.sh`):** Two-step init: (1) unpack `baseline.tar`, stage and commit as baseline; (2) rsync overlay from `.snapshot/` with `--delete`. Index reflects HEAD; working tree reflects operator's on-disk state.
+- [ ] **F — `make confirm` simplification + `make sync` removal** (`scripts/apply_workspace.sh`, `Makefile.template`): Remove rebase invocation from `make confirm`. Remove `SYNC=1` handling. Remove `make sync` target. `make confirm` becomes: read `draft-state`, delete draft branch, clear `draft-state`. Depends on E.
 
-Correctly handles all cases: untracked files show as `??`, unstaged edits show as `M`, unstaged deletions show as `D`, clean files stay clean. See handover `20260416-01-impl-snapshot-baseline.md` for full design rationale.
+- [ ] **G — `.skills/package-diff.md` update**: Add `package-branch` section. Update apply instructions for `make draft` redesign. Remove references to `.patch` files and `git am`.
 
-**Four changes in scope:**
+**Acceptance criteria:**
 
-- **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS` tag before each session. Derive `WORKTREE_ID` from PROJECT_DIR path, `SESSION_NAME` as `<sanitized-branch>-<timestamp>`, and `REPO_COMMIT` as full HEAD SHA. Prune to last 5 checkpoint tags per worktree.
+- `package-branch` produces numbered `.diff` files in `session-diffs/<branch-name>/` on session exit; no `index` lines present
+- `make draft` applies numbered diffs via `git apply`; `FROM` and `DIFFS` arguments work correctly
+- `make confirm` cleans up draft branch only — no rebase, no `docker exec`
+- `make apply` applies a single diff uncommitted on both host and container; `DIFF=<path>` override works
+- No checkpoint git tags written to repo on session start
+- No `ADVANCED_SESSIONS`, no `make sync`, no `SYNC=1`
+- `INIT_SHA` written once at container init, readable at `sandbox/.git/INIT_SHA`
 
-- **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/session-diffs/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit. # renamed from changes/ in M2.3
+**Pre-close design tasks** (required before Trigger B): both resolved this session.
 
-- **Change 3 — draft/confirm/reject/apply** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (resolves session via latest fallback or explicit `SESSION=<n>`; creates `draft/<branch>-<session-ts>` from checkpoint tag via `checkpoint.sh` lookup; applies patches via `git am --3way` with author reset; aborts cleanly on failure), `make confirm [TARGET=<branch>]` (rebases draft onto target, fast-forward merges, linear history always, force-deletes draft branch), `make reject` (discards draft branch). `draft-state` holds active draft state. `make apply` retained as a named command — reads from `OUTPUT_DIR` (`.workspace/output/`), supports `SESSION=<n>` override and basename sort for latest session; pre-stages new files via `touch` + `git add` before `git apply --index --3way` to avoid "does not exist in index" errors for added files; `--index` flag propagates mode changes to the index. `--mode=apply` flag removed. Note: `SYNC=1` flag and `make sync` are Change 6 additions — Change 3 does not touch baseline advancement.
+- Mixing `make apply` and `make draft` within a single session — resolved. Paths are structurally separate under the new model: `make apply` reads from `workspace/output/`; `make draft` reads from `workspace/session-diffs/<branch-name>/`. No shared application mechanism; no undefined behaviour.
+- Mixed session types against the same repo (Claude Chat + OpenCode) — closed as explicitly out of scope. Not intended behaviour. Warrants a story only if it becomes a real use case.
 
-- **Change 4 — Archive HEAD + rsync overlay** (`libs/snapshot.sh`, `start_agent.sh`): Replaced naive rsync-only snapshot with two-step design: (1) host produces `baseline.tar` via `git archive HEAD`; (2) container unpacks tar, commits as baseline, then overlays rsync copy with `--delete`. Baseline commit now represents exactly HEAD — independent of working tree state. Residual limitation: negation patterns in global gitignore / `.git/info/exclude` not supported by rsync `--exclude-from` — documented.
-
-- **Change 5 — Container naming + Docker labels** (`libs/compose.sh`, `scripts/checkpoint.sh`): Explicit `container_name:` in generated compose derived from session identity. Container labels set at session start: `agent-sandbox.project-dir`, `agent-sandbox.session-name`, `agent-sandbox.checkpoint-tag`. Introduces `scripts/checkpoint.sh` consolidating tag creation, pruning, lookup, and `WORKTREE_ID` derivation — sourced by `start_agent.sh`, `apply_workspace.sh`, and advancement script. Removes `checkpoint-latest.ref` dependency; all checkpoint and container lookups use label queries or `checkpoint.sh`. Prerequisite for Change 6 and for parallel worktree session safety.
-
-- **Change 6 — Baseline advancement** (`scripts/advance_baseline.sh`, `Makefile.template`): Implements `make confirm SYNC=1` (tight per-confirm advancement, validates container session label) and `make sync` (loose catch-up, applies all unadvanced sessions in timestamp order). Container located by `agent-sandbox.project-dir` label. `ADVANCED_SESSIONS` inside the container is the idempotency guard. Requires clean sandbox working tree; conflicts surface via `git am --abort`. Depends on Change 5.
-
-**Pre-close design tasks (required before Trigger B):**
-
-Two gaps in the correspondence model were identified during documentation work this milestone. Both require a design session to resolve before M2.3 can close. Detail and open questions are in [`docs/concepts/sandbox_host_correspondence_model.md`](docs/concepts/sandbox_host_correspondence_model.md) — Model Gaps.
-
-- **Mixing `make apply` and `make draft` within a single session:** If changes are partially extracted via `make apply` (reasoning layer path) during a live session and `make draft` is then run at session exit, the format-patch patches will cover content already present on the host. The model does not define the correct behaviour. Requires a design decision: whether `make draft` detects and skips already-applied content, or whether the operator is expected to sequence the two paths manually.
-
-- **Two-path coordination for mixed session types:** A project using both Claude Chat sessions (reasoning layer / `make apply`) and OpenCode sessions (capability layer / `make draft`) against the same repo has no defined correspondence. `make apply` has no awareness of `draft-state` or `ADVANCED_SESSIONS`; `make draft` has no awareness of prior `make apply` applications. Likely warrants a story before a design decision can be made.
 
 #### M2.5 — Vault Capability Layer Prototype
 
