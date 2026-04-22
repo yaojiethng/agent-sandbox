@@ -10,8 +10,8 @@
 #   package-diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
 #
 #   --baseline=<sha>   Git ref to diff against.
-#                      Inside the container: resolved automatically from BASELINE_SHA
-#                      env var, then .git/BASELINE_SHA, then first repo commit.
+#                      Inside the container: resolved automatically from INIT_SHA
+#                      file in .git/, then first repo commit.
 #                      On the host: required; no default applied.
 #   --name=<label>     Short snake_case label for the output directory.
 #                      Output directory is always <timestamp>-<label>.
@@ -74,15 +74,15 @@ IN_CONTAINER=0
 if [[ -z "$BASELINE" ]]; then
   if [[ -n "${BASELINE_SHA:-}" ]]; then
     BASELINE="$BASELINE_SHA"
-  elif [[ -f "$REPO_ROOT/.git/BASELINE_SHA" ]]; then
-    BASELINE=$(cat "$REPO_ROOT/.git/BASELINE_SHA")
+  elif [[ -f "$REPO_ROOT/.git/INIT_SHA" ]]; then
+    BASELINE=$(cat "$REPO_ROOT/.git/INIT_SHA")
   elif [[ "$IN_CONTAINER" -eq 1 ]]; then
     # Last resort inside container: diff against first commit
     BASELINE=$(git -C "$REPO_ROOT" rev-list --max-parents=0 HEAD)
   else
     echo "Error: --baseline is required when running outside the container." >&2
     echo "  Usage: package-diff.sh --baseline=<sha>" >&2
-    echo "  Inside the container, BASELINE_SHA is set automatically." >&2
+    echo "  Inside the container, INIT_SHA is written at container init." >&2
     exit 1
   fi
 fi

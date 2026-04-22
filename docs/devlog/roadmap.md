@@ -74,12 +74,13 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - Archive HEAD + rsync overlay (`libs/snapshot.sh`) — see handover `20260416-01-impl-snapshot-baseline.md`
 - Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) — superseded in part; see handover for change 5
 - package-diff index-line stripping + `git apply` (`libs/package-diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260421-07-impl-package_diff_patch_and_index_strip.md`
+- INIT_SHA at container init (`libs/snapshot.sh`, `libs/package-diff.sh`) — see handover `20260422-03-impl-init_sha_at_container_init.md`
 
 **Pending — diff packaging unification:**
 
 Units are ordered by dependency. A and B are independent and can be implemented in either order. C depends on A. E depends on C. F depends on E. D and G are independent of each other but G should be last.
 
-- [ ] **A — INIT_SHA at container init** (`libs/snapshot.sh`): In `snapshot_init_git`, write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write or update logic.
+- [x] **A — INIT_SHA at container init** (`libs/snapshot.sh`): In `snapshot_init_git`, write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write or update logic.
 
 - [ ] **B — Remove checkpoint tags** (`start_agent.sh`, `scripts/checkpoint.sh`): Remove checkpoint git tag creation and pruning from `start_agent.sh`. Remove tag creation, pruning, and lookup from `scripts/checkpoint.sh`; retain `WORKTREE_ID` derivation. Remove `agent-sandbox.checkpoint-tag` from container labels.
 

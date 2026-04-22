@@ -539,6 +539,46 @@ test_sandbox_isolation() {
   fi
 }
 
+# INIT_SHA file creation — verify .git/INIT_SHA is written correctly
+test_init_git_creates_init_sha() {
+  local PROJECT="$FIXTURE_DIR/init_sha_project"
+  local SNAPSHOT="$FIXTURE_DIR/init_sha_snapshot"
+  local SANDBOX="$FIXTURE_DIR/init_sha_sandbox"
+  mkdir -p "$SANDBOX"
+
+  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
+
+  local SHA
+  SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
+
+  # Check INIT_SHA file exists
+  if [[ ! -f "$SANDBOX/.git/INIT_SHA" ]]; then
+    fail "init_git: .git/INIT_SHA file not created"
+    return
+  fi
+
+  # Check INIT_SHA file contains correct SHA
+  local FILE_SHA
+  FILE_SHA=$(cat "$SANDBOX/.git/INIT_SHA")
+
+  if [[ "$FILE_SHA" == "$SHA" ]]; then
+    pass "init_git: INIT_SHA file contains correct SHA"
+  else
+    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, returned $SHA"
+  fi
+
+  # Check INIT_SHA matches actual first commit
+  local ACTUAL_SHA
+  ACTUAL_SHA=$(git -C "$SANDBOX" rev-list --max-parents=0 HEAD)
+
+  if [[ "$FILE_SHA" == "$ACTUAL_SHA" ]]; then
+    pass "init_git: INIT_SHA matches first commit SHA"
+  else
+    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, actual first commit is $ACTUAL_SHA"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -561,6 +601,7 @@ run_test "init_git case 8: staged new file"          test_init_git_case8_staged_
 run_test "init_git: one baseline commit"             test_init_git_one_commit
 run_test "init_git: missing baseline.tar"            test_init_git_missing_baseline_tar
 run_test "sandbox isolation"                         test_sandbox_isolation
+run_test "init_git: creates INIT_SHA file"           test_init_git_creates_init_sha
 
 # -------------------------
 # Summary

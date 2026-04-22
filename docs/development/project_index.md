@@ -112,8 +112,9 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
+| `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
+| `package-diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
 | `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
@@ -124,6 +125,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
 | `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
 
 ### Providers (`providers/`)
 
