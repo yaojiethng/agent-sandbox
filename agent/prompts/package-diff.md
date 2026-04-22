@@ -1,5 +1,5 @@
 ---
-description: Package changed files and a unified diff into the workspace output mount for handoff or migration. Use this skill whenever the agent has made changes that need to be shipped to the operator — e.g. "package up my work", "export these changes", "prepare a diff for review", "ship this", or any request to bundle, export, or hand off the current session's work. Also use when preparing a mid-session checkpoint before a risky operation.
+description: Package changed files and a unified diff into the workspace output mount for handoff or migration. Use this skill whenever the agent has made changes that need to be shipped to the operator — e.g. "package up my work", "export these changes", "prepare a diff for review", "ship this", or any request to bundle, export, or hand off the current session's work. Also use when preparing a mid-session checkpoint before a risky operation. Packaging does not affect session status — do not edit any of the session file contents while packaging.
 trigger: /package-diff
 ---
 Package the current session's changes for export via the workspace output mount.

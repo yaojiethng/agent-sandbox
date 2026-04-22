@@ -99,7 +99,7 @@ When a workflow document (such as `iteration_policy.md`) instructs the agent to 
 Perform X per [`policy_document.md`](path/to/policy_document.md) — Section Name.
 ```
 
-**Rationale:** A References table at the end of a document is navigation aid, not a handoff. An agent executing step 9a that sees "mark completions" without a link to `roadmap_policy.md` must remember to consult it. An agent that sees "mark completions per [`roadmap_policy.md`](roadmap_policy.md) — Step 9a" has the handoff made explicit at the moment it is needed. The link is the instruction to read the policy, not an afterthought.
+The link is the instruction to read the policy — an agent that sees the link at the handoff point does not need to remember to consult it.
 
 ---
 
@@ -119,78 +119,11 @@ Four documents govern agent behaviour. Each answers a distinct question and must
 
 **`agent_context_brief.md`** — written for all agents regardless of provider. Collaboration protocol, role definition, read discipline, output format rules, and operating workflow. References `readme.md` for system invariants — does not restate them.
 
-**`AGENTS.md`** — provider-specific notes. Capabilities and limitations of the current agent interface (Claude Chat, OpenCode, etc.). Swapped out when the provider changes. Must not contain protocol rules that belong in `agent_context_brief.md`.
+**`agents.md`** — provider-specific notes. Capabilities and limitations of the current agent interface (Claude Chat, OpenCode, etc.). Swapped out when the provider changes. Must not contain protocol rules that belong in `agent_context_brief.md`.
 
-**`docs/devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Ephemeral — records what was done and what is next. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
+**`handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Ephemeral — records what was done and what is next. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
 
-If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs all agents, it belongs in `agent_context_brief.md`. If it is provider-specific, it belongs in `AGENTS.md`. None of these files duplicate each other.
-
----
-
-### Concepts docs
-
-A concepts doc exists to give architecture docs a stable reference target for conceptual
-grounding. Architecture docs link to it when they need to say "for why this model is shaped
-this way, see X" — when a feature has non-obvious invariants, introduces a new primitive,
-or interacts with enough other components that the architecture doc alone is insufficient
-for an agent designing changes.
-
-Concepts docs live in `docs/concepts/`.
-
-Concepts docs are created on demand, not on schedule. The trigger is repeated clarifying
-questions about the same conceptual area, or a feature area that agents will need to reason
-about frequently when designing future changes.
-
-**When to recommend one (Step 3 assessment):**
-
-Present a recommendation to the operator at Step 3 of the minor loop when any of the
-following apply:
-
-- The feature introduces a new primitive or model that other components will need to reason
-  about when designing changes
-- The area has non-obvious invariants that cannot be stated concisely in the architecture
-  doc itself
-- A design doc exists for the area and is too long or branched to serve as a stable
-  reference link from architecture docs
-
-If none of these apply, recommend skipping Step 3 and state why. The operator makes the
-final call. If no design doc exists for the area, note that explicitly — distillation
-requires source material.
-
-**How to produce one (distillation pass):**
-
-When a concepts doc is confirmed, produce it by distillation from the design doc — not
-from scratch. The distillation pass transforms a design doc into a stable conceptual
-reference:
-
-1. Remove delivery-sequence framing — "Change N", "prerequisite", "introduced in"
-   language. The concepts doc describes the settled model, not how it was delivered.
-2. Remove command shapes and implementation detail that belong in the architecture doc.
-   The concepts doc describes *why* the model works this way, not *what* the system does.
-3. Keep: primitives, invariants, design rationale, and any collision or interaction tables.
-4. During active development, links may point to design and discussion documents as the
-   reasoning record — this is expected.
-
-**Trigger B cleanup:**
-
-At sub-milestone close, if a concepts doc was produced during the milestone:
-
-1. Firm up any invariants that shifted during implementation.
-2. Replace links to design and discussion documents with links to the architecture docs
-   that now exist — the architecture doc is the stable reference; the design doc becomes
-   background reading.
-3. Update the status note at the top of the concepts doc (if present) to name the
-   condition that triggered cleanup rather than referencing a workflow mechanism name
-   (e.g. "links updated now that `apply_workflow.md` is finalised" not "Trigger B
-   cleanup complete").
-
-This is a link-and-invariant pass, not a rewrite.
-
-**Scope:**
-
-Not every feature area warrants a concepts doc. A concepts doc that duplicates what the
-architecture doc already states clearly is not earning its place. When in doubt, recommend
-skipping.
+If content is useful to a human reader, it belongs in `readme.md` or the appropriate architecture or concepts document. If content governs all agents, it belongs in `agent_context_brief.md`. If it is provider-specific, it belongs in `agents.md`. None of these files duplicate each other.
 
 ---
 
@@ -220,37 +153,19 @@ Rules:
 
 ## Post-Close Document Corrections
 
-### Principle
+Closed handovers are read-only records with one exception: factual errors — incorrect status, wrong filename, misrecorded decision. Do not apply a correction to add new information, change scope, or extend the session record.
 
-Closed documents are not re-issued. When an error is found in a closed document, it is corrected in-place with a marked, minimal annotation. The document remains a readable record; the correction is visible at the point of change.
+**Procedure:**
+1. Edit the affected text directly. If context is needed, add an inline note: `[see correction below]`.
+2. Append a dated amendment block at the bottom:
+   ```
+   ---
+   [CORRECTION — YYYY-MM-DD]: <what was wrong and what was changed>
+   ```
+3. Do not alter Status, timestamps, or other metadata fields.
+4. Propose the amended document to the operator. Do not self-commit.
 
-The agent never deletes documents. Deletion is an operator action. The agent's responsibility is to apply the correct correction form and, where applicable, mark referencing links.
-
-### Correction forms by document type
-
-| Document type | Correction form |
-|---|---|
-| Handover | Dated `[CORRECTION: ...]` amendment block appended at the bottom — see [`handover_policy.md`](handover_policy.md) — Corrections to Closed Handovers |
-| Changelog | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected sentence — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
-| Roadmap entry | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected claim — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
-| Investigation — valid content, minor error | Edits directly in the body + dated `[CORRECTION: ...]` amendment block at the bottom — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
-| Investigation — invalid or superseded content | `[SUPERSEDED]` status header with link to correct source — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
-
-### Amendment block format
-
-Used at the bottom of handover and investigation documents:
-
-```
----
-[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
-```
-
-### Missing documents
-
-If a document the agent expects to find is absent:
-
-- If its referencing link carries a `[REMOVED]` marker — the absence is expected. No error.
-- If its referencing link has no `[REMOVED]` marker — flag as an error and prompt the operator before proceeding. Do not assume the document is optional and do not proceed without resolution.
+A correction is not a substitute for a new handover. If the session requires new work, open a new handover first.
 
 ---
 

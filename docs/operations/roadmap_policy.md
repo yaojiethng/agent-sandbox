@@ -1,6 +1,6 @@
 # Roadmap Policy
 
-Policy rules for `docs/devlog/roadmap.md`, `docs/devlog/roadmap_future.md`, and `docs/devlog/changelog.md`.
+Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future.md`, and `docs/development/changelog.md`.
 
 ---
 
@@ -20,7 +20,7 @@ The roadmap is not updated continuously during a session. It is touched at two d
 
 ### Sub-milestone close (Trigger B)
 
-Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. **The agent must explicitly confirm with the operator that manual acceptance criteria (AC) have been verified on the host before running Trigger B.** It runs at Step 8, after tasks are marked and before the handover is closed. If the chat boundary falls before Trigger B has run, the next session's Step 1 must run it before compacting or creating the new handover — the roadmap will still show the completed sub-milestone as active, which is the signal that Trigger B has not run.
+Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. It runs at Step 8, after tasks are marked and before the handover is closed. If the chat boundary falls before Trigger B has run, the next session's Step 1 must run it before compacting or creating the new handover — the roadmap will still show the completed sub-milestone as active, which is the signal that Trigger B has not run.
 
 1. **Remove** the completed sub-milestone section from `roadmap.md` entirely — do not collapse it to outcome sentences, remove it. This mirrors how Trigger A removes completed major milestones: the sub-milestone is gone from the active roadmap, not summarised within it.
 2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
@@ -33,8 +33,6 @@ Trigger B fires when all tasks in the active sub-milestone are complete and acce
 3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
 4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
 5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion) below)
-
-**The separation between Step 8 and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 8 marks, the next Step 1 compacts.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -79,7 +77,7 @@ Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focuse
 
 ## Changelog Format
 
-Changelog entries live in `docs/devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
+Changelog entries live in `docs/development/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
 
 ### Entry structure
 
@@ -120,29 +118,24 @@ The operator appends the block contents verbatim to `changelog.md`.
 
 ---
 
-## Corrections to Closed Roadmap and Changelog Entries
+## Index Maintenance
 
-Closed roadmap entries and changelog entries are permanent historical records. They are not re-issued or restructured. Errors and superseded claims are corrected with inline tags at the point of the affected claim.
+`project_index.md` is the complete file registry. It records every document with its temperature, architecture layer assignment, and `Last touched in` milestone. The active handover's Hot files section is the session-scoped file list — `project_index.md` is updated at defined moments only.
 
-The full correction principle is defined in `docs/operations/documentation_policy.md` — Post-Close Document Corrections. This section defines the specific form for roadmap and changelog documents.
+### Update triggers
 
-### Inline tag forms
+**At major loop close:** add new planning documents (stories, investigations, stubs) with temperature and last-touched milestone; update the Architecture Layers table and temperature for any document whose role or stability changed.
 
-| Situation | Tag |
+**At minor loop Step 1:** create the new handover; populate Hot files from the roadmap task list. No `project_index.md` changes at this step.
+
+**At minor loop Step 8:** for every file in the Completed this session table, update its `Last touched in` column. Add new files; remove deleted files.
+
+### Temperature
+
+| Temperature | Meaning |
 |---|---|
-| A claim in a prior entry is invalidated by a later milestone | `[SUPERSEDED in MX.X]` appended to the affected sentence |
-| A feature recorded in a prior entry has been removed | `[REMOVED in MX.X]` appended to the affected sentence |
+| 🔴 Hot | Changes continuously — roadmap, active handovers |
+| 🟡 Warm | Changes per milestone — architecture docs, active policy |
+| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
 
-The tag is appended inline to the affected sentence. The entry is not restructured or re-dated. Example:
-
-> Implemented provider isolation layer for container sandboxing. `[SUPERSEDED in M2.1]`
-
-### Trigger B obligation
-
-When closing a milestone (Trigger B), before the handover is finalised:
-
-1. Review the changes in the closing milestone.
-2. Check whether any change invalidates a claim in a prior changelog entry.
-3. If so, apply the appropriate inline tag to the affected sentence before closing the handover.
-
-This check is mandatory and is not deferred to a later session.
+Temperature reflects the stability of what a document *describes*, not how carefully it was written. Update at major loop close when a document's role changes, not at every session.
