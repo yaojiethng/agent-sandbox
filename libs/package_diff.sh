@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# libs/package-diff.sh
+# libs/package_diff.sh
 #
 # Package changed files and a unified diff into an output directory.
 #
@@ -7,7 +7,7 @@
 #   <outdir>/changes.diff          — unified diff against baseline, suitable for patch -p1
 #
 # Usage:
-#   package-diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
+#   package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
 #
 #   --baseline=<sha>   Git ref to diff against.
 #                      Inside the container: resolved automatically from INIT_SHA
@@ -22,11 +22,11 @@
 #
 # Alias registration (host only — done by agent-sandbox onboard):
 #   git config --local alias.package-diff \
-#     '!bash $(git rev-parse --show-toplevel)/../agent-sandbox/libs/package-diff.sh'
+#     '!bash $(git rev-parse --show-toplevel)/../agent-sandbox/libs/package_diff.sh'
 #
 # Inside the container, invoke directly — the alias is not registered in the
 # sandbox .git/config:
-#   bash ~/sandbox/libs/package-diff.sh [--baseline=<sha>] [--name=<label>]
+#   bash ~/sandbox/libs/package_diff.sh [--baseline=<sha>] [--name=<label>]
 
 set -euo pipefail
 
@@ -56,7 +56,7 @@ for ARG in "$@"; do
       ;;
     *)
       echo "Unknown argument: $ARG" >&2
-      echo "Usage: package-diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]" >&2
+      echo "Usage: package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]" >&2
       exit 1
       ;;
   esac
@@ -81,7 +81,7 @@ if [[ -z "$BASELINE" ]]; then
     BASELINE=$(git -C "$REPO_ROOT" rev-list --max-parents=0 HEAD)
   else
     echo "Error: --baseline is required when running outside the container." >&2
-    echo "  Usage: package-diff.sh --baseline=<sha>" >&2
+    echo "  Usage: package_diff.sh --baseline=<sha>" >&2
     echo "  Inside the container, INIT_SHA is written at container init." >&2
     exit 1
   fi
@@ -145,7 +145,7 @@ fi
 # Create output directory
 # -------------------------
 TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
-OUTDIR="$PARENT_DIR/${TIMESTAMP}-${LABEL}"
+OUTDIR="$PARENT_DIR/diffs/${TIMESTAMP}-${LABEL}"
 mkdir -p "$OUTDIR"
 
 # -------------------------

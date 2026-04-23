@@ -261,11 +261,11 @@ fi
 # Git alias — package-diff
 # -------------------------
 # Register a local git alias in PROJECT_DIR so the operator and agent can
-# invoke package-diff.sh without knowing the harness install path.
+# invoke package_diff.sh without knowing the harness install path.
 # Local scope (.git/config) keeps the alias project-scoped — no global
 # pollution. Lost on fresh clone; re-registered by re-running onboard.
 if [[ -n "$PROJECT_DIR" ]]; then
-  PACKAGE_DIFF_SCRIPT="$REPO_ROOT/libs/package-diff.sh"
+  PACKAGE_DIFF_SCRIPT="$REPO_ROOT/libs/package_diff.sh"
   if git -C "$PROJECT_DIR" config --local \
       alias.package-diff "!bash $PACKAGE_DIFF_SCRIPT" 2>/dev/null; then
     echo "  Registered: git alias 'package-diff' in $PROJECT_DIR/.git/config"
@@ -388,7 +388,7 @@ if [[ "$REFRESH" == true ]]; then
     echo "Git alias 'package-diff' re-registered in $PROJECT_DIR/.git/config."
   else
     echo "Git alias not re-registered — PROJECT_DIR could not be resolved from .env."
-    echo "  Run: git config --local alias.package-diff '!bash $REPO_ROOT/libs/package-diff.sh'"
+    echo "  Run: git config --local alias.package-diff '!bash $REPO_ROOT/libs/package_diff.sh'"
   fi
   echo "Rebuild images to apply changes:"
   echo "  make -C $SANDBOX_DIR build"

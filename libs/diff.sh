@@ -7,8 +7,13 @@
 #   diff_commit_pending  SANDBOX_DIR
 #   diff_generate        SANDBOX_DIR  BASELINE_SHA  OUTPUT_FILE
 #   diff_format_patch    SANDBOX_DIR  BASELINE_SHA  PATCHES_DIR
-#   diff_on_exit         SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR [SESSION_NAME]
-#   diff_on_autosave     SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR [SESSION_NAME]
+#   diff_on_exit         SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_NAME
+#   diff_on_autosave     SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_NAME
+#
+# Note: package_branch() has been moved to libs/package_branch.sh
+
+# SESSION_NAME is required for all session-scoped functions (diff_on_exit, diff_on_autosave).
+# Backward compatibility for empty SESSION_NAME has been removed.
 
 # -------------------------
 # diff_commit_pending
@@ -97,36 +102,62 @@ diff_format_patch() {
 # -------------------------
 # diff_on_exit
 #
-# Commits pending changes, generates staged.diff, and produces format-patch
-# output. Called by the EXIT trap in sandbox-entrypoint.sh.
-# SESSION_NAME is optional; if provided, artefacts are written under
-# CHANGES_DIR/<session-name>/ for session-scoped organisation.
-# If SESSION_NAME is empty, falls back to CHANGES_DIR/ root (backwards compat).
+# Captures uncommitted changes, commits pending changes, generates staged.diff,
+# produces format-patch output, and calls package_branch. Called by the EXIT trap
+# in sandbox-entrypoint.sh.
+# SESSION_NAME is required — artefacts are written under CHANGES_DIR/<session-name>/.
 # -------------------------
 diff_on_exit() {
   local SANDBOX_DIR="$1"
   local BASELINE_SHA="$2"
   local CHANGES_DIR="$3"
-  local SESSION_NAME="${4:-}"
+  local SESSION_NAME="$4"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" ]]; then
-    echo "diff_on_exit: SANDBOX_DIR, BASELINE_SHA, and CHANGES_DIR are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_NAME" ]]; then
+    echo "diff_on_exit: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, and SESSION_NAME are required" >&2
     return 1
   fi
 
-  # Determine output directory based on SESSION_NAME
-  local OUTPUT_DIR
-  if [[ -n "$SESSION_NAME" ]]; then
-    OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
-    mkdir -p "$OUTPUT_DIR"
+  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
+  mkdir -p "$OUTPUT_DIR"
+
+  # Capture uncommitted changes BEFORE committing (writes to session dir)
+  if git -C "$SANDBOX_DIR" diff --quiet HEAD; then
+    echo "diff_on_exit: no uncommitted changes" >&2
+    > "$OUTPUT_DIR/changes.diff"
   else
-    OUTPUT_DIR="$CHANGES_DIR"
+    git -C "$SANDBOX_DIR" diff HEAD \
+      | grep -v '^index ' \
+      | sed 's/[[:space:]]*$//' \
+      | sed -e '$a\' \
+      > "$OUTPUT_DIR/changes.diff"
   fi
 
   echo "diff_on_exit: staging final diff..." >&2
   diff_commit_pending "$SANDBOX_DIR"
   diff_generate "$SANDBOX_DIR" "$BASELINE_SHA" "${OUTPUT_DIR}/staged.diff"
   diff_format_patch "$SANDBOX_DIR" "$BASELINE_SHA" "${OUTPUT_DIR}/patches"
+
+  # Call package_branch to produce numbered .diff files
+  local INIT_SHA=""
+  if [[ -f "${SANDBOX_DIR}/.git/INIT_SHA" ]]; then
+    INIT_SHA=$(cat "${SANDBOX_DIR}/.git/INIT_SHA")
+  else
+    echo "diff_on_exit: INIT_SHA not found, skipping package_branch" >&2
+  fi
+
+  if [[ -n "$INIT_SHA" ]]; then
+    # Source package_branch.sh to get the package_branch function
+    source /libs/package_branch.sh
+
+    local BRANCH_NAME
+    BRANCH_NAME=$(git -C "$SANDBOX_DIR" rev-parse --abbrev-ref HEAD)
+    # Handle detached HEAD
+    if [[ "$BRANCH_NAME" == "HEAD" ]]; then
+      BRANCH_NAME=$(git -C "$SANDBOX_DIR" rev-parse --short HEAD)
+    fi
+    package_branch "$SANDBOX_DIR" "$INIT_SHA" "$CHANGES_DIR" "$BRANCH_NAME"
+  fi
 }
 
 # -------------------------
@@ -135,29 +166,21 @@ diff_on_exit() {
 # Generates autosave.diff without committing pending changes.
 # The agent is still running; committing here would interfere
 # with the agent's own git operations.
-# SESSION_NAME is optional; if provided, autosave.diff is written under
-# CHANGES_DIR/<session-name>/ for session-scoped organisation.
-# If SESSION_NAME is empty, falls back to CHANGES_DIR/ root (backwards compat).
+# SESSION_NAME is required — autosave.diff is written under CHANGES_DIR/<session-name>/.
 # Called by the autosave loop in sandbox-entrypoint.sh.
 # -------------------------
 diff_on_autosave() {
   local SANDBOX_DIR="$1"
   local BASELINE_SHA="$2"
   local CHANGES_DIR="$3"
-  local SESSION_NAME="${4:-}"
+  local SESSION_NAME="$4"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" ]]; then
-    echo "diff_on_autosave: SANDBOX_DIR, BASELINE_SHA, and CHANGES_DIR are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_NAME" ]]; then
+    echo "diff_on_autosave: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, and SESSION_NAME are required" >&2
     return 1
   fi
 
-  # Determine output directory based on SESSION_NAME
-  local OUTPUT_DIR
-  if [[ -n "$SESSION_NAME" ]]; then
-    OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
-  else
-    OUTPUT_DIR="$CHANGES_DIR"
-  fi
+  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
   mkdir -p "$OUTPUT_DIR"
 
   echo "diff_on_autosave: writing checkpoint diff..." >&2

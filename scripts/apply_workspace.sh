@@ -278,30 +278,32 @@ if [[ "$COMMAND" == "reject" ]]; then
 fi
 
 # -------------------------
-# APPLY — reads from OUTPUT_DIR
+# APPLY — reads from OUTPUT_DIR/diffs/
 # -------------------------
 if [[ "$COMMAND" == "apply" ]]; then
-  # Resolve session directory from OUTPUT_DIR
-  if [[ ! -d "$OUTPUT_DIR" ]]; then
-    echo "Error: output directory not found: $OUTPUT_DIR" >&2
+  # Resolve session directory from OUTPUT_DIR/diffs/
+  DIFFS_DIR="$OUTPUT_DIR/diffs"
+
+  if [[ ! -d "$DIFFS_DIR" ]]; then
+    echo "Error: diffs directory not found: $DIFFS_DIR" >&2
     echo "  No session artefacts have been produced yet." >&2
     exit 1
   fi
 
   if [[ -n "$SESSION_ARG" ]]; then
     # Explicit session name provided
-    SESSION_DIR="$OUTPUT_DIR/$SESSION_ARG"
+    SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
     if [[ ! -d "$SESSION_DIR" ]]; then
       echo "Error: session directory not found: $SESSION_DIR" >&2
       echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
       exit 1
     fi
   else
-    # Lexicographically last entry in OUTPUT_DIR (by basename sort)
-    SESSION_DIR=$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -type d \
+    # Lexicographically last entry in DIFFS_DIR (by basename sort)
+    SESSION_DIR=$(find "$DIFFS_DIR" -mindepth 1 -maxdepth 1 -type d \
       | sort | tail -n 1)
     if [[ -z "$SESSION_DIR" ]]; then
-      echo "Error: no session directories found in $OUTPUT_DIR" >&2
+      echo "Error: no session directories found in $DIFFS_DIR" >&2
       echo "  Run a session first, or specify SESSION=<name>." >&2
       exit 1
     fi
@@ -310,7 +312,7 @@ if [[ "$COMMAND" == "apply" ]]; then
   CHANGES_DIFF="$SESSION_DIR/changes.diff"
   if [[ ! -f "$CHANGES_DIFF" ]]; then
     echo "Error: changes.diff not found in session directory: $CHANGES_DIFF" >&2
-    echo "  Session artefacts may be incomplete or from an older format." >&2
+    echo "  Session artefacts may be incomplete or from a different version." >&2
     exit 1
   fi
 
@@ -347,7 +349,7 @@ if [[ "$COMMAND" == "apply" ]]; then
     grep -v '^index ' "$CHANGES_DIFF" | git -C "$PROJECT_DIR" apply || {
       echo "Error: git apply failed." >&2
       echo "" >&2
-      echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
+      echo "Hint: use --force (make apply FORCE=1) to apply with --reject and create .rej files for conflicts." >&2
       exit 1
     }
   fi
