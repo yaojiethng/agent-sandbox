@@ -23,7 +23,8 @@
 # Referenced via *session_labels anchor in each service.
 x-session-labels: &session_labels
   agent-sandbox.project-dir: {{PROJECT_DIR}}
-  agent-sandbox.session-name: {{SESSION_NAME}}
+  agent-sandbox.session-ts: {{SESSION_TS}}
+  agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
 
 services:
   sandbox:
@@ -43,7 +44,8 @@ services:
       - SANDBOX_DIR_NAME=sandbox
       - CHANGES_DIR_NAME=workspace/session-diffs
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
-      - SESSION_NAME=${SESSION_NAME:-}
+      - SESSION_TS=${SESSION_TS:-}
+      - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s

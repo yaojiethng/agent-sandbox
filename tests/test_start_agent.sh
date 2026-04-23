@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# tests/test_start_agent.sh
-# Host-side start_agent.sh tests — Change 1 (checkpoint tag) and Change 2 (SESSION_NAME).
+# -------------------------
+# Host-side start_agent.sh tests — checkpoint tags, session identity,
+# WORKTREE_ID derivation, REPO_COMMIT capture, and compose template structure.
 #
 # Covers:
 #   checkpoint tag creation          — agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
 #   checkpoint tag pruning           — keep 5 most recent per worktree
-#   SESSION_NAME derivation          — sanitized branch + timestamp
+#   SANITIZED_HOST_BRANCH derivation — branch name sanitised for directory labels
 #   WORKTREE_ID derivation           — from PROJECT_DIR path
 #   REPO_COMMIT capture              — full HEAD SHA
 #
@@ -224,102 +225,92 @@ test_checkpoint_no_pruning_when_under_limit() {
 }
 
 # -------------------------
-# SESSION_NAME derivation tests
+# SANITIZED_HOST_BRANCH derivation tests
 # -------------------------
 
-test_session_name_from_master_branch() {
+test_sanitized_host_branch_from_master_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/session_master_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
-  if [[ "$SESSION_NAME" == "main-20260416-090000" ]]; then
-    pass "SESSION_NAME correct for main branch"
+  if [[ "$SANITIZED_HOST_BRANCH" == "main" ]]; then
+    pass "SANITIZED_HOST_BRANCH correct for main branch"
   else
-    fail "SESSION_NAME incorrect for main: $SESSION_NAME"
+    fail "SANITIZED_HOST_BRANCH incorrect for main: $SANITIZED_HOST_BRANCH"
   fi
 }
 
-test_session_name_from_main_branch() {
+test_sanitized_host_branch_from_main_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/session_main_repo"
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" branch -m main
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
-  if [[ "$SESSION_NAME" == "main-20260416-090000" ]]; then
-    pass "SESSION_NAME correct for main branch"
+  if [[ "$SANITIZED_HOST_BRANCH" == "main" ]]; then
+    pass "SANITIZED_HOST_BRANCH correct for main branch"
   else
-    fail "SESSION_NAME incorrect for main: $SESSION_NAME"
+    fail "SANITIZED_HOST_BRANCH incorrect for main: $SANITIZED_HOST_BRANCH"
   fi
 }
 
-test_session_name_sanitizes_feature_branch() {
+test_sanitized_host_branch_sanitizes_feature_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/session_feature_repo"
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" checkout -b "feature/test-branch" --quiet
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
-  if [[ "$SESSION_NAME" == "feature-test-branch-20260416-090000" ]]; then
-    pass "SESSION_NAME sanitizes slashes in branch name"
+  if [[ "$SANITIZED_HOST_BRANCH" == "feature-test-branch" ]]; then
+    pass "SANITIZED_HOST_BRANCH sanitizes slashes in branch name"
   else
-    fail "SESSION_NAME incorrect for feature branch: $SESSION_NAME"
+    fail "SANITIZED_HOST_BRANCH incorrect for feature branch: $SANITIZED_HOST_BRANCH"
   fi
 }
 
-test_session_name_sanitizes_nested_branch() {
+test_sanitized_host_branch_sanitizes_nested_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/session_nested_repo"
   make_committed_repo "$PROJECT_DIR"
   git -C "$PROJECT_DIR" checkout -b "feature/nested/deep/branch" --quiet
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
-  if [[ "$SESSION_NAME" == "feature-nested-deep-branch-20260416-090000" ]]; then
-    pass "SESSION_NAME sanitizes nested branch names"
+  if [[ "$SANITIZED_HOST_BRANCH" == "feature-nested-deep-branch" ]]; then
+    pass "SANITIZED_HOST_BRANCH sanitizes nested branch names"
   else
-    fail "SESSION_NAME incorrect for nested branch: $SESSION_NAME"
+    fail "SANITIZED_HOST_BRANCH incorrect for nested branch: $SANITIZED_HOST_BRANCH"
   fi
 }
 
-test_session_name_exported() {
+test_sanitized_host_branch_exported() {
   local PROJECT_DIR="$FIXTURE_DIR/session_export_repo"
   make_committed_repo "$PROJECT_DIR"
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  export SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  export SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
   # Verify it's exported (available to subshells)
   local SUBSHELL_VALUE
-  SUBSHELL_VALUE=$(echo "$SESSION_NAME")
+  SUBSHELL_VALUE=$(echo "$SANITIZED_HOST_BRANCH")
 
-  if [[ "$SUBSHELL_VALUE" == "main-20260416-090000" ]]; then
-    pass "SESSION_NAME is exported and available to subshells"
+  if [[ "$SUBSHELL_VALUE" == "main" ]]; then
+    pass "SANITIZED_HOST_BRANCH is exported and available to subshells"
   else
-    fail "SESSION_NAME not properly exported: $SUBSHELL_VALUE"
+    fail "SANITIZED_HOST_BRANCH not properly exported: $SUBSHELL_VALUE"
   fi
 }
 
-test_session_name_detached_head() {
+test_sanitized_host_branch_detached_head() {
   local PROJECT_DIR="$FIXTURE_DIR/session_detached_repo"
   make_committed_repo "$PROJECT_DIR"
 
@@ -330,20 +321,19 @@ test_session_name_detached_head() {
   # Detach HEAD
   git -C "$PROJECT_DIR" checkout --quiet "$COMMIT_SHA"
 
-  local SESSION_TS="20260416-090000"
-  local BRANCH SANITIZED SESSION_NAME
+  local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   # Handle detached HEAD (as start_agent.sh does)
   if [[ "$BRANCH" == "HEAD" ]]; then
     BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   fi
-  SANITIZED=$(echo "$BRANCH" | tr '/' '-')
-  SESSION_NAME="${SANITIZED}-${SESSION_TS}"
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
 
-  if [[ "$SESSION_NAME" == "${COMMIT_SHA}-20260416-090000" ]]; then
-    pass "SESSION_NAME uses short SHA for detached HEAD"
+  # Short SHA is hex characters, so no sanitization needed
+  if [[ "$SANITIZED_HOST_BRANCH" == "$COMMIT_SHA" ]]; then
+    pass "SANITIZED_HOST_BRANCH uses short SHA for detached HEAD"
   else
-    fail "SESSION_NAME incorrect for detached HEAD: $SESSION_NAME (expected ${COMMIT_SHA}-20260416-090000)"
+    fail "SANITIZED_HOST_BRANCH incorrect for detached HEAD: $SANITIZED_HOST_BRANCH (expected $COMMIT_SHA)"
   fi
 }
 
@@ -480,7 +470,7 @@ test_docker_compose_template_has_container_names() {
 # -------------------------
 # Run all tests
 
-echo "=== start_agent.sh tests (Change 1: checkpoint + Change 2: SESSION_NAME) ==="
+echo "=== start_agent.sh tests (session identity derivation + compose template) ==="
 echo
 
 run_test "checkpoint_tag_created" test_checkpoint_tag_created
@@ -488,12 +478,12 @@ run_test "checkpoint_tag_points_to_correct_commit" test_checkpoint_tag_points_to
 run_test "checkpoint_pruning_keeps_five" test_checkpoint_pruning_keeps_five
 run_test "checkpoint_pruning_keeps_newest" test_checkpoint_pruning_keeps_newest
 run_test "checkpoint_no_pruning_when_under_limit" test_checkpoint_no_pruning_when_under_limit
-run_test "session_name_from_master_branch" test_session_name_from_master_branch
-run_test "session_name_from_main_branch" test_session_name_from_main_branch
-run_test "session_name_sanitizes_feature_branch" test_session_name_sanitizes_feature_branch
-run_test "session_name_sanitizes_nested_branch" test_session_name_sanitizes_nested_branch
-run_test "session_name_exported" test_session_name_exported
-run_test "session_name_detached_head" test_session_name_detached_head
+run_test "sanitized_host_branch_from_master_branch" test_sanitized_host_branch_from_master_branch
+run_test "sanitized_host_branch_from_main_branch" test_sanitized_host_branch_from_main_branch
+run_test "sanitized_host_branch_sanitizes_feature_branch" test_sanitized_host_branch_sanitizes_feature_branch
+run_test "sanitized_host_branch_sanitizes_nested_branch" test_sanitized_host_branch_sanitizes_nested_branch
+run_test "sanitized_host_branch_exported" test_sanitized_host_branch_exported
+run_test "sanitized_host_branch_detached_head" test_sanitized_host_branch_detached_head
 run_test "worktree_id_derived_from_path" test_worktree_id_derived_from_path
 run_test "worktree_id_stable_across_runs" test_worktree_id_stable_across_runs
 run_test "worktree_id_different_for_different_paths" test_worktree_id_different_for_different_paths
@@ -515,52 +505,3 @@ echo "Results: $PASS passed, $FAIL failed"
 if [[ "$FAIL" -gt 0 ]]; then
   exit 1
 fi
-
-# -------------------------
-# Container labels tests (Change 5)
-# Note: These tests verify the template structure directly since docker compose
-# config requires a running Docker daemon which may not be available in test env.
-# -------------------------
-
-test_docker_compose_template_has_labels_anchor() {
-  # Verify the template defines session labels as a YAML anchor
-  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/libs/docker-compose.yml"; then
-    pass "docker-compose.yml defines session labels as YAML anchor"
-  else
-    fail "docker-compose.yml missing YAML anchor for session labels"
-  fi
-}
-
-test_docker_compose_template_sandbox_uses_anchor() {
-  # Verify sandbox service references the labels anchor
-  if grep -A3 "sandbox:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
-    pass "sandbox service references session labels anchor"
-  else
-    fail "sandbox service does not reference session labels anchor"
-  fi
-}
-
-test_docker_compose_template_agent_uses_anchor() {
-  # Verify agent service references the labels anchor
-  if grep -A3 "agent:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
-    pass "agent service references session labels anchor"
-  else
-    fail "agent service does not reference session labels anchor"
-  fi
-}
-
-test_docker_compose_template_has_container_names() {
-  # Verify both SANDBOX_CONTAINER_NAME placeholders exist
-  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
-     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
-    pass "docker-compose.yml has container_name for both services"
-  else
-    fail "docker-compose.yml missing container_name placeholders"
-  fi
-}
-
-# Add container label tests to the test runner
-run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
-run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
-run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
-run_test "docker_compose_template_has_container_names" test_docker_compose_template_has_container_names

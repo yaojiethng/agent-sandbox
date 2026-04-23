@@ -7,13 +7,15 @@
 #   diff_commit_pending  SANDBOX_DIR
 #   diff_generate        SANDBOX_DIR  BASELINE_SHA  OUTPUT_FILE
 #   diff_format_patch    SANDBOX_DIR  BASELINE_SHA  PATCHES_DIR
-#   diff_on_exit         SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_NAME
-#   diff_on_autosave     SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_NAME
+#   diff_on_exit         SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
+#   diff_on_autosave     SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
 #
 # Note: package_branch() has been moved to libs/package_branch.sh
 
-# SESSION_NAME is required for all session-scoped functions (diff_on_exit, diff_on_autosave).
-# Backward compatibility for empty SESSION_NAME has been removed.
+# SESSION_TS and SANITIZED_HOST_BRANCH are the session identity primitives.
+# They are injected into the container environment at session start and passed
+# as arguments to diff functions. SESSION_NAME is not used — directory paths
+# are composed from these primitives directly.
 
 # -------------------------
 # diff_commit_pending
@@ -105,20 +107,26 @@ diff_format_patch() {
 # Captures uncommitted changes, commits pending changes, generates staged.diff,
 # produces format-patch output, and calls package_branch. Called by the EXIT trap
 # in sandbox-entrypoint.sh.
-# SESSION_NAME is required — artefacts are written under CHANGES_DIR/<session-name>/.
+# SESSION_TS and SANITIZED_HOST_BRANCH are required — artefacts are written
+# under CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/.
+# EXPORT_TIME is generated at call time, distinct from SESSION_TS to support
+# multiple exports within a session.
 # -------------------------
 diff_on_exit() {
   local SANDBOX_DIR="$1"
   local BASELINE_SHA="$2"
   local CHANGES_DIR="$3"
-  local SESSION_NAME="$4"
+  local SESSION_TS="$4"
+  local SANITIZED_HOST_BRANCH="$5"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_NAME" ]]; then
-    echo "diff_on_exit: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, and SESSION_NAME are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_TS" || -z "$SANITIZED_HOST_BRANCH" ]]; then
+    echo "diff_on_exit: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, SESSION_TS, and SANITIZED_HOST_BRANCH are required" >&2
     return 1
   fi
 
-  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
+  local EXPORT_TIME
+  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+  local OUTPUT_DIR="${CHANGES_DIR}/${EXPORT_TIME}-${SANITIZED_HOST_BRANCH}-${SESSION_TS}"
   mkdir -p "$OUTPUT_DIR"
 
   # Capture uncommitted changes BEFORE committing (writes to session dir)
@@ -166,21 +174,25 @@ diff_on_exit() {
 # Generates autosave.diff without committing pending changes.
 # The agent is still running; committing here would interfere
 # with the agent's own git operations.
-# SESSION_NAME is required — autosave.diff is written under CHANGES_DIR/<session-name>/.
+# SESSION_TS and SANITIZED_HOST_BRANCH are required — autosave.diff is written
+# under CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/.
 # Called by the autosave loop in sandbox-entrypoint.sh.
 # -------------------------
 diff_on_autosave() {
   local SANDBOX_DIR="$1"
   local BASELINE_SHA="$2"
   local CHANGES_DIR="$3"
-  local SESSION_NAME="$4"
+  local SESSION_TS="$4"
+  local SANITIZED_HOST_BRANCH="$5"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_NAME" ]]; then
-    echo "diff_on_autosave: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, and SESSION_NAME are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$BASELINE_SHA" || -z "$CHANGES_DIR" || -z "$SESSION_TS" || -z "$SANITIZED_HOST_BRANCH" ]]; then
+    echo "diff_on_autosave: SANDBOX_DIR, BASELINE_SHA, CHANGES_DIR, SESSION_TS, and SANITIZED_HOST_BRANCH are required" >&2
     return 1
   fi
 
-  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_NAME}"
+  local EXPORT_TIME
+  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+  local OUTPUT_DIR="${CHANGES_DIR}/${EXPORT_TIME}-${SANITIZED_HOST_BRANCH}-${SESSION_TS}"
   mkdir -p "$OUTPUT_DIR"
 
   echo "diff_on_autosave: writing checkpoint diff..." >&2

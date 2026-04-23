@@ -11,14 +11,20 @@
 # Each .diff file is a single-commit diff with index lines stripped,
 # suitable for sequential git apply.
 #
+# Note: When invoked from diff_on_exit (container side), the output path
+# uses the CHANGES_DIR layout with EXPORT_TIME prefix. When invoked
+# standalone with --outdir, the output path uses the bundles/ layout.
+#
 # Usage:
-#   package_branch SANDBOX_DIR INIT_SHA SESSION_DIFFS_DIR BRANCH_NAME
+#   package_branch SANDBOX_DIR INIT_SHA SESSION_DIFFS_DIR BRANCH_NAME [SESSION_SUMMARY]
 #
 # Arguments:
 #   SANDBOX_DIR       — path to the git repository
 #   INIT_SHA          — initial commit SHA (from sandbox/.git/INIT_SHA)
 #   SESSION_DIFFS_DIR — output directory for session diffs
 #   BRANCH_NAME       — current branch name (may contain slashes)
+#   SESSION_SUMMARY   — optional short description for the output folder name
+#                        (defaults to sanitized branch name)
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -36,6 +42,7 @@ package_branch() {
   local INIT_SHA="$2"
   local SESSION_DIFFS_DIR="$3"
   local BRANCH_NAME="$4"
+  local SESSION_SUMMARY="${5:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$INIT_SHA" || -z "$SESSION_DIFFS_DIR" || -z "$BRANCH_NAME" ]]; then
     echo "package_branch: SANDBOX_DIR, INIT_SHA, SESSION_DIFFS_DIR, and BRANCH_NAME are required" >&2

@@ -38,7 +38,8 @@
 #   {{PROVIDER_NAME}}       → provider name
 #   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<timestamp>)
 #   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
-#   {{SESSION_NAME}}        → session identifier (<sanitized-branch>-<SESSION_TS>)
+#   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
+#   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
 #   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
@@ -99,7 +100,8 @@ compose_generate() {
       -e "s|{{PROVIDER_NAME}}|${provider_name}|g" \
       -e "s|{{SANDBOX_CONTAINER_NAME}}|${SANDBOX_CONTAINER_NAME:-}|g" \
       -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
-      -e "s|{{SESSION_NAME}}|${SESSION_NAME:-}|g" \
+      -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
+      -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
       -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \

@@ -267,15 +267,21 @@ if [[ "$COMMAND" == "confirm" ]]; then
     CONTAINER=$(docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" \
       --format '{{.Names}}' | head -n 1)
     if [[ -n "$CONTAINER" ]]; then
-      # Validate session name matches
-      CONTAINER_SESSION=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.session-name"}}' "$CONTAINER" 2>/dev/null || echo "")
-      SESSION_NAME_FROM_STATE=$(basename "$SESSION_DIR")
-      if [[ "$CONTAINER_SESSION" != "$SESSION_NAME_FROM_STATE" ]]; then
-        echo "Warning: container session ($CONTAINER_SESSION) does not match confirmed session ($SESSION_NAME_FROM_STATE)." >&2
+      # Validate session identity matches
+      CONTAINER_SESSION_TS=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.session-ts"}}' "$CONTAINER" 2>/dev/null || echo "")
+      CONTAINER_HOST_BRANCH=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.host-branch"}}' "$CONTAINER" 2>/dev/null || echo "")
+      SESSION_ID_FROM_DIR=$(basename "$SESSION_DIR")
+      # Directory name format: <EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>
+      # Both CONTAINER_SESSION_TS and CONTAINER_HOST_BRANCH must appear in the dir name
+      if [[ -n "$CONTAINER_SESSION_TS" && "$SESSION_ID_FROM_DIR" != *"$CONTAINER_SESSION_TS"* ]] \
+         || [[ -n "$CONTAINER_HOST_BRANCH" && "$SESSION_ID_FROM_DIR" != *"$CONTAINER_HOST_BRANCH"* ]]; then
+        echo "Warning: container session identity does not match confirmed session directory." >&2
+        echo "  Container: session-ts=$CONTAINER_SESSION_TS host-branch=$CONTAINER_HOST_BRANCH" >&2
+        echo "  Directory: $SESSION_ID_FROM_DIR" >&2
         echo "  Skipping baseline advancement." >&2
       elif docker exec "$CONTAINER" test -f /usr/local/bin/advance_baseline.sh 2>/dev/null; then
-        echo "Triggering baseline advancement for session: $SESSION_NAME_FROM_STATE"
-        docker exec "$CONTAINER" advance_baseline.sh "$SESSION_NAME_FROM_STATE"
+        echo "Triggering baseline advancement for session: $SESSION_ID_FROM_DIR"
+        docker exec "$CONTAINER" advance_baseline.sh "$SESSION_ID_FROM_DIR"
       fi
     fi
     # If no container running, SYNC=1 is silently ignored

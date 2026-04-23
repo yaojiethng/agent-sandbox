@@ -187,8 +187,8 @@ source "$REPO_ROOT/scripts/checkpoint.sh"
 # Session timestamp (single canonical definition)
 # -------------------------
 # SESSION_TS is the one source of truth for the session timestamp. All
-# derived names (SESSION_NAME, container names) reference this variable —
-# no downstream date calls.
+# derived names (container names, artefact directories) reference this
+# variable — no downstream date calls.
 export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
 
 # -------------------------
@@ -203,25 +203,22 @@ export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
 export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
 # -------------------------
-# SESSION_NAME and CONTAINER_NAME derivation
+# SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
 # -------------------------
-# SESSION_NAME is used for session-scoped artefact directories and Docker
-# labels. Branch slashes are replaced with dashes so the value is safe as
-# a directory name. The original (unsanitised) branch name is kept in
-# BRANCH_NAME for the draft-branch naming convention, which preserves
-# slashes for readability and disambiguates with SESSION_TS appended
-# after a dash.
+# SANITIZED_HOST_BRANCH is the host branch name captured at session start,
+# sanitised for use in directory names and Docker labels. Slashes are
+# replaced with dashes; all non-alphanumeric characters (except dash,
+# underscore, dot) are replaced with dashes.
 BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
 # Handle detached HEAD: use short SHA instead of literal "HEAD"
 if [[ "$BRANCH_NAME" == "HEAD" ]]; then
   BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
 fi
-_SANITIZED=$(echo "$BRANCH_NAME" | tr '/' '-')
-export SESSION_NAME="${_SANITIZED}-${SESSION_TS}"
+export SANITIZED_HOST_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
 export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_TS}"
 export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_TS}"
-unset BRANCH_NAME _SANITIZED
-echo "Session name: $SESSION_NAME"
+unset BRANCH_NAME
+echo "Host branch: $SANITIZED_HOST_BRANCH"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 

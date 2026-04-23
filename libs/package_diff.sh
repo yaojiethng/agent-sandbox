@@ -14,11 +14,15 @@
 #                      file in .git/, then first repo commit.
 #                      On the host: required; no default applied.
 #   --name=<label>     Short snake_case label for the output directory.
-#                      Output directory is always <timestamp>-<label>.
+#                      Output directory is always <timestamp>-<label>-<SESSION_TS>.
 #                      Default: derived from the most-changed path in the diff.
 #   --outdir=<path>    Parent directory for output. Default: ~/workspace/output
 #                      if that path exists (inside container), otherwise
 #                      <repo-root>/.package-diff-output on the host.
+#   --session-summary=<text>  Short description for the output folder name.
+#                      Default: "snapshot".
+#   --session-ts=<ts>  Session timestamp for the output folder name suffix.
+#                      Default: derived from SESSION_TS environment variable.
 #
 # Alias registration (host only — done by agent-sandbox onboard):
 #   git config --local alias.package-diff \
@@ -44,19 +48,23 @@ fi
 BASELINE=""
 NAME_ARG=""
 OUTDIR_ARG=""
+SESSION_SUMMARY_ARG=""
+SESSION_TS_ARG=""
 
 for ARG in "$@"; do
   case "$ARG" in
-    --baseline=*) BASELINE="${ARG#--baseline=}" ;;
-    --name=*)     NAME_ARG="${ARG#--name=}" ;;
-    --outdir=*)   OUTDIR_ARG="${ARG#--outdir=}" ;;
+    --baseline=*)        BASELINE="${ARG#--baseline=}" ;;
+    --name=*)            NAME_ARG="${ARG#--name=}" ;;
+    --outdir=*)          OUTDIR_ARG="${ARG#--outdir=}" ;;
+    --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
+    --session-ts=*)      SESSION_TS_ARG="${ARG#--session-ts=}" ;;
     --help)
       grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
       echo "Unknown argument: $ARG" >&2
-      echo "Usage: package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]" >&2
+      echo "Usage: package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>] [--session-summary=<text>] [--session-ts=<ts>]" >&2
       exit 1
       ;;
   esac
@@ -105,47 +113,29 @@ fi
 mkdir -p "$PARENT_DIR"
 
 # -------------------------
-# Derive label
+# Resolve session summary
 # -------------------------
-if [[ -n "$NAME_ARG" ]]; then
-  LABEL="$NAME_ARG"
+# SESSION_SUMMARY is a short description for the output folder name.
+# Can be set via --session-summary flag, --name flag (legacy alias),
+# or defaults to "snapshot".
+if [[ -n "$SESSION_SUMMARY_ARG" ]]; then
+  SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
+elif [[ -n "$NAME_ARG" ]]; then
+  SESSION_SUMMARY="$NAME_ARG"
 else
-  # Derive from the most-changed path in the diff.
-  TOP_PATH=$(git -C "$REPO_ROOT" diff --stat "$BASELINE" \
-    | sed '$d' \
-    | sort -t'|' -k2 -rn \
-    | head -n1 \
-    | awk -F'|' '{print $1}' \
-    | tr -d ' ')
-
-  if [[ -z "$TOP_PATH" ]]; then
-    TOP_PATH=$(git -C "$REPO_ROOT" diff --name-only | head -n1)
-  fi
-
-  if [[ -z "$TOP_PATH" ]]; then
-    LABEL="uncommitted_changes"
-  else
-    BASENAME=$(basename "$TOP_PATH")
-    STEM="${BASENAME%.*}"
-    if [[ -n "$STEM" && "$STEM" != "$BASENAME" ]]; then
-      RAW_LABEL="$STEM"
-    else
-      RAW_LABEL="$(basename "$(dirname "$TOP_PATH")")"
-    fi
-    LABEL=$(echo "$RAW_LABEL" \
-      | tr '[:upper:]' '[:lower:]' \
-      | sed 's/[^a-z0-9]/_/g' \
-      | sed 's/__*/_/g' \
-      | sed 's/^_//;s/_$//')
-    [[ -z "$LABEL" ]] && LABEL="changes"
-  fi
+  SESSION_SUMMARY="snapshot"
 fi
+
+# -------------------------
+# Resolve session timestamp
+# -------------------------
+SESSION_TS="${SESSION_TS_ARG:-${SESSION_TS:-}}"
 
 # -------------------------
 # Create output directory
 # -------------------------
-TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
-OUTDIR="$PARENT_DIR/diffs/${TIMESTAMP}-${LABEL}"
+EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
 mkdir -p "$OUTDIR"
 
 # -------------------------

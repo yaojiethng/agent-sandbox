@@ -84,16 +84,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 Units are ordered by dependency. F0 must run first. F1 depends on F0 and E. F2 depends on F1. G is last.
 
-- [ ] **F0 — path and timestamp audit** (`scripts/start_agent.sh`, `libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `libs/compose.sh`, capability layer entrypoint): Grep every script and lib for path construction and timestamp derivation. Normalise to the locked spec:
-
-  - `SESSION_TS` derived once at top of `start_agent.sh` as `$(date +%Y%m%d-%H%M%S)` with delimiter — exported, never re-derived downstream
-  - `SANITIZED_HOST_BRANCH` derived once at `start_agent.sh`, injected into container environment alongside `SESSION_TS`
-  - Container names adopt delimiter format: `sandbox-<project>-<SESSION_TS>`, `<provider>-<project>-<SESSION_TS>`
-  - `diff_on_exit` writes to: `$CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/`
-  - `package_branch` writes to: `$OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`
-  - `package_diff` writes to: `$OUTPUT_DIR/diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`
-  - `make apply` default resolution updated to latest entry under `$OUTPUT_DIR/diffs/` by lexicographic sort
-  - Drop `SESSION_NAME` as a derived primitive everywhere — replace with explicit `<SESSION_TS>-<SANITIZED_HOST_BRANCH>` where needed
+- [x] **F0 — path and timestamp audit** (`scripts/start_agent.sh`, `libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `libs/compose.sh`, capability layer entrypoint): Normalised all path constructions, timestamp derivations, and session identifiers. `SESSION_TS` derived once with delimiter format and exported. `SANITIZED_HOST_BRANCH` derived from branch name and exported. `SESSION_NAME` dropped entirely. `diff_on_exit`/`diff_on_autosave` use `<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>` output path. Container labels and environment updated to `session-ts` and `host-branch`. See handover `20260423-06-impl-path_and_timestamp_audit.md`.
 
 - [ ] **F1 — complete `make draft` + `.draft-state`** (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`):
 
