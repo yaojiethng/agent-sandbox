@@ -20,9 +20,13 @@ Git is a tool used independently inside each repo. It is not the correspondence 
 | **`package-diff` output** | Single unified diff of uncommitted working tree changes. Produced by `git diff HEAD` with index lines stripped. No git metadata headers. |
 | **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`, written to `workspace/session-diffs/<branch-name>/`. Overwrites the folder on each run — always reflects the full branch history since `INIT_SHA`. Index lines stripped. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Created by `make draft`, populated by sequential diff application, ready for `git rebase -i` onto the target branch. |
-| **`draft-state`** | File at `SANDBOX_DIR/.workspace/draft-state`. Records active draft: source branch, working branch, diff series location. One per `SANDBOX_DIR`. |
+| **`.draft-state`** | File committed as the first commit on the draft branch. Fields: `source_branch`, `from_hash`, `author`, `session_ts`, `host_branch`, `diff_count`, `exported-at`, `drafted-at`. Dropped automatically by `make confirm` before merge — never lands on the target branch. All fields are host-derivable or read from the export folder name — no local paths, no container-internal variables. M2.7 adds `run_id:` as one new field. |
+| **`EXPORT_TIME`** | Timestamp at which a packaging command ran (`date +%Y%m%d-%H%M%S`). Prefixes all output folder names, enabling lexicographic sort by export order. Distinct from `SESSION_TS` — a session may produce multiple exports. |
+| **`SESSION_SUMMARY`** | Operator or agent provided title for `package_branch` and `package_diff` invocations. Describes the content of the export. |
+| **`BRANCH_SUMMARY`** | Optional operator argument to `make draft`. Replaces `<sanitized-host-branch>` in the draft branch name when provided. |
+| **`SESSION_TS`** | Single canonical timestamp derived once at the top of `start_agent.sh`: `SESSION_TS=$(date +%Y%m%d-%H%M%S)`. Exported and reused everywhere — no independent `date` calls downstream. Format `YYYYMMDD-HHMMSS` with delimiter, applied uniformly to container names and artifact folder names. M2.7 introduces `RUN_ID` as the primary session identity; `SESSION_TS` is retained for time-based ordering and timestamp tagging. |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces container names per worktree instance. Retained from prior design. |
-| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<branch-name>/` — holds the numbered diff series for one branch. Overwritten on each `package-branch` run. |
+| **Session artefact directory** | Output folder for `diff_on_exit`: `$CHANGES_DIR/<EXPORT_TIME>-<sanitized-host-branch>-<SESSION_TS>/`. Flat structure — no parent folder. Lexicographic sort on `EXPORT_TIME` prefix gives chronological order. M2.7 replaces `<SESSION_TS>` suffix with `<RUN_ID>`. |
 | **Container labels** | Docker labels set at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |
 
 ---
@@ -32,7 +36,8 @@ Git is a tool used independently inside each repo. It is not the correspondence 
 - The host repo is never modified by the container directly. All changes flow via diff files through the bind-mounted workspace.
 - No `docker exec` is used for correspondence operations. All state transfer happens via bind-mounted files.
 - No unreviewed changes become commits. `make apply` lands changes uncommitted; `make draft` lands changes on an explicitly-named `draft/` branch requiring operator review before merge.
-- One draft is active per repo at a time. `draft-state` records which branch is staged; `make draft` guards against starting a second draft while one is in progress.
+- One draft is active per repo at a time. The presence of a `draft/` branch is the guard; `make draft` checks for existing `draft/` branches before proceeding.
+- `.draft-state` is committed metadata on the draft branch, not a file in the working directory. It is never present on the target branch after merge.
 - The harness does not track which diffs have been applied to the host. The operator selects what to apply via explicit arguments. Defaults cover the common case.
 - Session artefact directories are non-colliding across concurrent worktree sessions. Branch name is the folder differentiator; git enforces branch uniqueness across worktrees.
 - Git is used as a tool inside each repo independently. It is not the correspondence mechanism between sandbox and host.
@@ -82,34 +87,64 @@ Both `package-diff` (uncommitted) and `package-branch` (committed series) produc
 
 ---
 
+## Output Paths
+
+All artifact locations use `EXPORT_TIME` as the leading sort key. `SESSION_TS` as the trailing session identifier will be replaced by `RUN_ID` in M2.7 — a clean suffix substitution with no structural change.
+
+| Artifact | Path | Name pattern |
+|---|---|---|
+| `diff_on_exit` | `$CHANGES_DIR/` | `<EXPORT_TIME>-<sanitized-host-branch>-<SESSION_TS>/` |
+| `package_branch` | `$OUTPUT_DIR/bundles/` | `<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/` |
+| `package_diff` | `$OUTPUT_DIR/diffs/` | `<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/` |
+| Draft branch | host git | `draft/<EXPORT_TIME>-<SESSION_TS>-<sanitized-host-branch or BRANCH_SUMMARY>-<sha6>` |
+
+`EXPORT_TIME` is generated at packaging time (`date +%Y%m%d-%H%M%S`), not at session start. Multiple exports within a single session each get a distinct `EXPORT_TIME`, enabling lexicographic sort to select the latest export correctly.
+
+---
+
 ## Packaging Commands
 
 ### `package-diff` — uncommitted changes
 
-Produces a single unified diff of the current working tree against HEAD. Strips index lines. Output: `workspace/output/changes.diff` by default.
+Produces a single unified diff of the current working tree against HEAD. Strips index lines.
 
 ```bash
+EXPORT_TIME=$(date +%Y%m%d-%H%M%S)
+OUTPUT="$OUTPUT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}/changes.diff"
 git diff HEAD | grep -v '^index ' > "$OUTPUT"
 ```
 
-Stateless — no reference to `INIT_SHA` or any sync point. Works identically on host and container. Invoked as `/package-diff` inside the container (agent-facing skill) and `git package-diff` alias on the host (operator-facing). Both call the same underlying script in `libs/`.
+Requires `SESSION_SUMMARY` argument — a short description of the content being packaged. `SESSION_TS` is injected into the container environment at session start; on the host it is read from the environment or passed explicitly.
+
+Invoked as `/package-diff <summary>` inside the container (agent-facing skill) and `git package-diff <summary>` alias on the host (operator-facing). Both call the same underlying script in `libs/`.
 
 ### `package-branch` — committed branch history
 
-Produces one numbered `.diff` file per commit from `INIT_SHA..HEAD` on the current branch. Output directory: `workspace/session-diffs/<branch-name>/`. Overwrites the directory on each run — the series always reflects the current full branch history.
+Produces one numbered `.diff` file per commit from `INIT_SHA..HEAD` on the current branch.
 
 ```bash
+EXPORT_TIME=$(date +%Y%m%d-%H%M%S)
+OUT_DIR="$OUTPUT_DIR/bundles/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
+mkdir -p "$OUT_DIR"
 git log --reverse --format="%H" INIT_SHA..HEAD | while read sha; do
-  git show "$sha" | grep -v '^index ' > "$OUTPUT_DIR/$(printf '%04d' $n).diff"
+  git show "$sha" | grep -v '^index ' > "$OUT_DIR/$(printf '%04d' $n).diff"
   n=$((n + 1))
 done
 ```
 
-Branch name is derived from the current branch and used as the folder key. If the sandbox or host has multiple branches, each gets its own folder. `make draft` reads from the folder matching the branch name passed or the current branch.
+Requires `SESSION_SUMMARY` argument. Overwrites nothing — each invocation produces a new timestamped folder. Multiple exports within a session are all preserved.
 
-**On exit:** `package-branch` runs automatically in the EXIT trap alongside `staged.diff` generation. The autosave loop runs `package-diff` on a configurable interval (`AUTOSAVE_INTERVAL`, default 60s).
+**On exit:** `diff_on_exit` runs automatically in the EXIT trap. It uses the same diff format but writes to `$CHANGES_DIR/` with an automated name (no `SESSION_SUMMARY` required):
 
-**Nonlinear history:** The sandbox is a linear workspace. If the operator introduces nonlinear history, the series reflects whatever `git log INIT_SHA..HEAD` produces on the current branch. Nonlinear cases are the operator's responsibility; the harness provides the tools but does not validate linearity.
+```bash
+EXPORT_TIME=$(date +%Y%m%d-%H%M%S)
+OUT_DIR="$CHANGES_DIR/${EXPORT_TIME}-${SANITIZED_HOST_BRANCH}-${SESSION_TS}"
+mkdir -p "$OUT_DIR"
+```
+
+`SANITIZED_HOST_BRANCH` is the host branch name captured at session start and injected into the container environment alongside `SESSION_TS`. The autosave loop also writes to `$CHANGES_DIR/` using the same pattern.
+
+**Nonlinear history:** The sandbox is a linear workspace. Nonlinear cases are the operator's responsibility; the harness provides the tools but does not validate linearity.
 
 ---
 
@@ -117,7 +152,7 @@ Branch name is derived from the current branch and used as the folder key. If th
 
 ### `make apply [DIFF=<path>]` — single diff, uncommitted
 
-Reads a single `.diff` file (default: latest in `workspace/output/` by timestamp; override with `DIFF=<path>`). Applies with index lines stripped:
+Reads a single `.diff` file (default: latest entry under `$OUTPUT_DIR/diffs/` by lexicographic sort; override with `DIFF=<path>`). Applies with index lines stripped:
 
 ```bash
 grep -v '^index ' "$DIFF" | git -C "$TARGET_DIR" apply
@@ -129,44 +164,144 @@ Symmetric: works on host (applies to `PROJECT_DIR`) and inside container (applie
 
 **Amendment workflow (host → container):** If the operator needs to push a fix into the running sandbox without restart, they package the change on the host with `package-diff` and apply it inside the container with `make apply`. The agent reviews and commits. The next `package-branch` will include this commit in the series alongside the agent's own work.
 
-### `make draft [FROM=<hash>] [DIFFS=<start>..<end>]` — diff series, branch review
+### `make draft [FROM=<hash>] [DIFFS=<start>..<end>] [BRANCH_SUMMARY=<slug>]` — diff series, branch review
 
-Creates a `draft/<branch>` branch from `FROM` (default: current host `HEAD`; accepts any commit hash or partial hash for cases where the host has advanced since session start). Reads numbered diffs from `session-diffs/<branch-name>/` in sort order. Applies each sequentially:
+Resolves the target export folder: latest entry under `$CHANGES_DIR/` by lexicographic sort (most recent `EXPORT_TIME`). Override with explicit `--session=<path>` to target a specific folder, including `$OUTPUT_DIR/bundles/` exports.
 
-```bash
-for diff in $(ls "$SERIES_DIR"/*.diff | sort); do
-  grep -v '^index ' "$diff" | git apply
-  git commit -m "$(basename $diff)"
-done
+Parses `EXPORT_TIME`, `SANITIZED_HOST_BRANCH`, and `SESSION_TS` from the resolved folder name (`<EXPORT_TIME>-<sanitized-host-branch>-<SESSION_TS>`). These values are not shell variables on the host — they are read from the folder name.
+
+Derives draft branch name:
+
+```
+draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or sanitized-host-branch>-<sha6>
 ```
 
-The result is a branch with one commit per diff, ready for:
+Where `sha6` is the first 6 characters of `FROM` (default: current `HEAD`). `BRANCH_SUMMARY` replaces the auto-generated branch slug when provided.
 
-```bash
-git rebase -i main   # operator squashes, rewords, reorders
-                     # --continue, --skip, --abort all available
+Guards against an existing `draft/` branch — refuses if one is already present.
+
+First commit on the branch is `.draft-state`:
+
+```
+source_branch: main
+from_hash: abc1234
+author: Jane Operator <jane@example.com>
+session_ts: 20260423-081334
+host_branch: main
+diff_count: 6
+exported-at: 20260423-081334
+drafted-at: 20260423-143012
 ```
 
-After rebase and merge, operator runs `make confirm` to clean up.
+All fields are host-derivable or read from the export folder name. No local paths. No container-internal shell variables. M2.7 adds `run_id:` as one new field.
 
-**Diff selection:** `DIFFS=start..end` selects a sub-range. `2..` means from diff 2 onwards. `..4` means up to and including diff 4. Default is all diffs in the folder. This is the operator's mechanism for applying only diffs not yet confirmed — no harness-side tracking required.
+Subsequent commits apply the numbered diffs in sort order via `git apply` with index lines stripped, staging and committing each.
 
-**On failure:** If a diff fails to apply, `make draft` stops at that diff, reports the failing file and hunk, and leaves the branch at the last successfully applied diff. Operator runs `make reject`, amends the failing diff, and re-runs `make draft`.
+**Branch topology after `make draft`** (where `FROM` is older than `HEAD`):
 
-**Amendment workflow (review feedback):** If a diff doesn't pass review and needs changes:
-1. Agent or operator amends the relevant `.diff` file in `session-diffs/<branch>/`
-2. `make reject` discards the current draft branch
-3. `make draft` re-applies the amended series from scratch
+```
+---[from_hash]---[A]---[B]---(HEAD=main)
+      \
+       ---[.draft-state]---[0001]---[0002]---[0003]---(draft/<EXPORT_TIME>-<SESSION_TS>-<branch>-<sha6>)
+```
 
-The diff series is the source of truth. The draft branch is always derived from it, never the other way around.
+**Diff selection:** `DIFFS=start..end` selects a sub-range. `2..` means from diff 2 onwards. Default is all diffs in the folder.
+
+**On failure:** `make draft` stops at the failing diff, reports the file and hunk. Operator runs `make reject`, amends the failing diff, re-runs `make draft`.
+
+**Amendment workflow:** Amend the relevant `.diff` file in the source folder, `make reject`, re-run `make draft`. The diff series is the source of truth.
+
+**Operator hint printed on completion:**
+
+```
+Draft branch created: draft/<EXPORT_TIME>-<SESSION_TS>-<branch>-<sha6>
+Export: <source-folder>
+Diffs applied: <n>
+Branch point: <from_hash>
+
+Shape your commits, then confirm:
+
+  git rebase -i <source_branch>
+  make confirm [TARGET=<branch>]
+
+To discard: make reject
+```
 
 ### `make confirm [TARGET=<branch>]`
 
-Cleans up the draft branch after the operator has completed `git rebase -i` and merged. Deletes the draft branch. Clears `draft-state`. No rebase, no merge — those are operator actions via standard git.
+Reads `.draft-state` from the draft branch. Validates current branch is a `draft/` branch.
+Performs the following sequence:
+
+**1. Drop `.draft-state` commit**
+
+```bash
+draft_state_commit=$(git rev-list "draft/$BRANCH" ^"$FROM_HASH" | tail -1)
+git rebase --onto "${draft_state_commit}^" "$draft_state_commit" "draft/$BRANCH"
+```
+
+The `.draft-state` commit is always the first commit on the branch — the one immediately
+after `from_hash`. Dropping it leaves only the operator's shaped commits.
+
+**2. Rebase draft onto target**
+
+```bash
+git rebase "$TARGET" "draft/$BRANCH"
+```
+
+Brings the draft commits up to the tip of the target branch regardless of where `FROM`
+was. This is always required — even when `FROM=HEAD` at draft creation time, the target
+may have advanced since.
+
+**Branch topology after rebase:**
+
+```
+---[from_hash]---[A]---[B]---[draft changes]---(HEAD=main)
+```
+
+The draft changes land at the tip of the target branch. `from_hash` is retained in history
+as the original branch point but the draft commits are now on top of the latest work.
+
+**3. Fast-forward merge**
+
+```bash
+git checkout "$TARGET"
+git merge --ff-only "draft/$BRANCH"
+```
+
+Guaranteed to succeed after the rebase. If it fails (concurrent modification to target
+between rebase and merge), repeat from step 2.
+
+**4. Cleanup**
+
+Delete draft branch. Done.
+
+**On rebase conflict:** `make confirm` stops and prints the exact command the operator
+needs to resolve:
+
+```
+Conflict rebasing draft/main onto main.
+
+Resolve conflicts, then run:
+
+  git rebase --continue          # after resolving each conflict
+  make confirm                   # retry the merge once rebase is clean
+
+To abort and return to the draft branch:
+
+  git rebase --abort
+  make confirm                   # retry from scratch once draft is ready
+
+To discard the draft entirely:
+
+  git rebase --abort
+  make reject
+```
 
 ### `make reject`
 
-Discards the draft branch. Clears `draft-state`. Session artefacts unchanged.
+Checks out `source_branch` (read from `.draft-state` on the draft branch). Deletes the
+draft branch. Done. No working directory files to clean up — `.draft-state` is on the
+branch, not in the working tree.
 
 ---
 
