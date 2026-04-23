@@ -16,12 +16,13 @@
 #   reject  [--project=<path>] [--sandbox=<path>]
 #             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
 #
-#   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--force]
+#   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--diff=<path>] [--force]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR using git apply
 #             with index lines stripped — context-line matching only, no blob SHA
 #             validation, tolerant of index drift and sequential application.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/).
+#             --diff=<path>: apply specific diff file instead of resolving from OUTPUT_DIR.
 #             --force: apply with --reject; .rej files left for manual resolution.
 #
 # .workspace/draft-state format:
@@ -57,6 +58,7 @@ SANDBOX_DIR=""
 SESSION_ARG=""
 TARGET_BRANCH=""
 APPLY_BRANCH=""
+DIFF_ARG=""
 FORCE=false
 
 for ARG in "$@"; do
@@ -66,6 +68,7 @@ for ARG in "$@"; do
     --session=*) SESSION_ARG="${ARG#--session=}" ;;
     --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
     --branch=*)  APPLY_BRANCH="${ARG#--branch=}" ;;
+    --diff=*)    DIFF_ARG="${ARG#--diff=}" ;;
     --force)     FORCE=true ;;
     *)
       echo "Unknown flag: $ARG" >&2
@@ -281,39 +284,52 @@ fi
 # APPLY — reads from OUTPUT_DIR/diffs/
 # -------------------------
 if [[ "$COMMAND" == "apply" ]]; then
-  # Resolve session directory from OUTPUT_DIR/diffs/
-  DIFFS_DIR="$OUTPUT_DIR/diffs"
+  CHANGES_DIFF=""
+  SESSION_DIR=""
 
-  if [[ ! -d "$DIFFS_DIR" ]]; then
-    echo "Error: diffs directory not found: $DIFFS_DIR" >&2
-    echo "  No session artefacts have been produced yet." >&2
-    exit 1
-  fi
-
-  if [[ -n "$SESSION_ARG" ]]; then
-    # Explicit session name provided
-    SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
-    if [[ ! -d "$SESSION_DIR" ]]; then
-      echo "Error: session directory not found: $SESSION_DIR" >&2
-      echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
+  if [[ -n "$DIFF_ARG" ]]; then
+    # Explicit diff path provided
+    CHANGES_DIFF="$DIFF_ARG"
+    if [[ ! -f "$CHANGES_DIFF" ]]; then
+      echo "Error: diff file not found: $CHANGES_DIFF" >&2
       exit 1
     fi
+    SESSION_DIR=$(dirname "$CHANGES_DIFF")
   else
-    # Lexicographically last entry in DIFFS_DIR (by basename sort)
-    SESSION_DIR=$(find "$DIFFS_DIR" -mindepth 1 -maxdepth 1 -type d \
-      | sort | tail -n 1)
-    if [[ -z "$SESSION_DIR" ]]; then
-      echo "Error: no session directories found in $DIFFS_DIR" >&2
-      echo "  Run a session first, or specify SESSION=<name>." >&2
+    # Resolve session directory from OUTPUT_DIR/diffs/
+    DIFFS_DIR="$OUTPUT_DIR/diffs"
+
+    if [[ ! -d "$DIFFS_DIR" ]]; then
+      echo "Error: diffs directory not found: $DIFFS_DIR" >&2
+      echo "  No session artefacts have been produced yet." >&2
       exit 1
     fi
-  fi
 
-  CHANGES_DIFF="$SESSION_DIR/changes.diff"
-  if [[ ! -f "$CHANGES_DIFF" ]]; then
-    echo "Error: changes.diff not found in session directory: $CHANGES_DIFF" >&2
-    echo "  Session artefacts may be incomplete or from a different version." >&2
-    exit 1
+    if [[ -n "$SESSION_ARG" ]]; then
+      # Explicit session name provided
+      SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
+      if [[ ! -d "$SESSION_DIR" ]]; then
+        echo "Error: session directory not found: $SESSION_DIR" >&2
+        echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
+        exit 1
+      fi
+    else
+      # Lexicographically last entry in DIFFS_DIR (by basename sort)
+      SESSION_DIR=$(find "$DIFFS_DIR" -mindepth 1 -maxdepth 1 -type d \
+        | sort | tail -n 1)
+      if [[ -z "$SESSION_DIR" ]]; then
+        echo "Error: no session directories found in $DIFFS_DIR" >&2
+        echo "  Run a session first, or specify SESSION=<name>." >&2
+        exit 1
+      fi
+    fi
+
+    CHANGES_DIFF="$SESSION_DIR/changes.diff"
+    if [[ ! -f "$CHANGES_DIFF" ]]; then
+      echo "Error: changes.diff not found in session directory: $CHANGES_DIFF" >&2
+      echo "  Session artefacts may be incomplete or from a different version." >&2
+      exit 1
+    fi
   fi
 
   # Print migration guide path if present (operator should read before applying)

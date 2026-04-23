@@ -159,6 +159,7 @@ apply:
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(SESSION),--session=$(SESSION),) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
+	  $(if $(DIFF),--diff=$(DIFF),) \
 	  $(if $(FORCE),--force,)
 
 # -------------------------

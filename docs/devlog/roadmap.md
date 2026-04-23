@@ -77,18 +77,15 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - INIT_SHA at container init (`libs/snapshot.sh`, `libs/package_diff.sh`) — see handover `20260422-03-impl-init_sha_at_container_init.md`
 - Remove checkpoint tags (`start_agent.sh`, `scripts/checkpoint.sh`, `libs/compose.sh`) — see handover `20260422-04-impl-remove_checkpoint_tags.md`
 - `package-branch` function + `make apply` path fix (`libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260423-02-impl-make_apply_path_resolution.md`
+- `make apply` DIFF argument (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`) — see handover `20260423-03-impl-make_apply_diff_argument.md`
 
 **Pending — diff packaging unification:**
 
-Units are ordered by dependency. A and B are independent and can be implemented in either order. C depends on A. E depends on C. F depends on E. D and G are independent of each other but G should be last.
+Units A, B, and C established the foundation: `INIT_SHA` is written once at container init, checkpoint tags have been removed, and `package_branch` produces numbered `.diff` files in `workspace/session-diffs/<branch-name>/` with index lines stripped.
 
-- [x] **A — INIT_SHA at container init** (`libs/snapshot.sh`): In `snapshot_init_git`, write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write or update logic.
+Units are ordered by dependency. E depends on C. F depends on E. D and G are independent of each other but G should be last.
 
-- [x] **B — Remove checkpoint tags** (`start_agent.sh`, `scripts/checkpoint.sh`): Remove checkpoint git tag creation and pruning from `start_agent.sh`. Remove tag creation, pruning, and lookup from `scripts/checkpoint.sh`; retain `WORKTREE_ID` derivation. Remove `agent-sandbox.checkpoint-tag` from container labels.
-
-- [x] **C — `package-branch` function** (`libs/diff.sh`, `libs/package_branch.sh`, `tests/test_diff.sh`): Add `package_branch` — iterates commits since `INIT_SHA`, produces numbered `.diff` files with index lines stripped into `workspace/session-diffs/<branch-name>/`, overwrites on each run. Capture uncommitted changes in `diff_on_exit` to `workspace/session-diffs/<session-name>/changes.diff`. Update `diff_on_exit` to call `package_branch`. Retain `staged.diff`. Require `SESSION_NAME` for `diff_on_exit` and `diff_on_autosave` (backward compat removed). Add tests for `package_branch`. Depends on A.
-
-- [ ] **D — `make apply` update** (`scripts/apply_workspace.sh`): Add `DIFF=<path>` argument. Remove pre-staging block. Replace apply call with `grep -v '^index ' "$DIFF" | git -C "$PROJECT_DIR" apply`. Preserve default resolution (latest `.diff` in `workspace/output/` by timestamp).
+- [x] **D — `make apply` update** (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`): Add `DIFF=<path>` argument. Remove pre-staging block. Replace apply call with `grep -v '^index ' "$DIFF" | git -C "$PROJECT_DIR" apply`. Preserve default resolution (latest `.diff` in `workspace/output/` by timestamp).
 
 - [ ] **E — `make draft` redesign** (`scripts/apply_workspace.sh`): Remove checkpoint tag lookup. Add `FROM=<hash>` argument (default: `HEAD`). Replace session-name folder resolution with branch-name folder. Add `DIFFS=<start>..<end>` range argument. Replace `git am` loop with sequential `git apply` loop (index lines stripped), staging and committing each diff. Depends on C.
 

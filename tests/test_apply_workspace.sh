@@ -92,14 +92,15 @@ EOF
   done
 }
 
-# Create a session with changes.diff (OUTPUT_DIR format)
+# Create a session with changes.diff (OUTPUT_DIR format with diffs/<timestamp>/)
 make_session_with_changes_diff() {
-  local SESSION_DIR="$1"
+  local TIMESTAMP="$1"
+  local DIFFS_DIR="$2"
 
-  mkdir -p "$SESSION_DIR"
+  mkdir -p "$DIFFS_DIR/$TIMESTAMP"
 
   # Create a simple unified diff that adds a new file
-  cat > "$SESSION_DIR/changes.diff" <<'EOF'
+  cat > "$DIFFS_DIR/$TIMESTAMP/changes.diff" <<'EOF'
 diff --git a/output-file.txt b/output-file.txt
 new file mode 100644
 index 0000000..8a963d6
@@ -110,7 +111,7 @@ index 0000000..8a963d6
 EOF
 
   # Create migration-guide.md
-  cat > "$SESSION_DIR/migration-guide.md" <<'EOF'
+  cat > "$DIFFS_DIR/$TIMESTAMP/migration-guide.md" <<'EOF'
 # Migration Guide
 
 This session adds output-file.txt.
@@ -714,9 +715,9 @@ test_apply_uses_latest_session() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR"
 
-  # Create two sessions - session-01 sorts before session-02
-  make_session_with_changes_diff "$OUTPUT_DIR/session-01"
-  make_session_with_changes_diff "$OUTPUT_DIR/session-02"
+  # Create two sessions - 20260401 sorts before 20260402
+  make_session_with_changes_diff "20260401-120000" "$OUTPUT_DIR/diffs"
+  make_session_with_changes_diff "20260402-120000" "$OUTPUT_DIR/diffs"
 
   # Run apply (no SESSION=) - should use session-02 (lexicographically last)
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
@@ -749,13 +750,13 @@ test_apply_uses_named_session() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
 
   # Create two sessions with different content
-  make_session_with_changes_diff "$OUTPUT_DIR/session-a"
+  make_session_with_changes_diff "session-a" "$OUTPUT_DIR/diffs"
   # Create session-b with a different file
-  mkdir -p "$OUTPUT_DIR/session-b"
-  cat > "$OUTPUT_DIR/session-b/changes.diff" <<'EOF'
+  mkdir -p "$OUTPUT_DIR/diffs/session-b"
+  cat > "$OUTPUT_DIR/diffs/session-b/changes.diff" <<'EOF'
 diff --git a/named-file.txt b/named-file.txt
 new file mode 100644
 index 0000000..7a963d6
@@ -788,10 +789,10 @@ test_apply_requires_changes_diff() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR/session-incomplete"
+  mkdir -p "$OUTPUT_DIR/diffs/session-incomplete"
 
   # Create session without changes.diff
-  echo "# Incomplete session" > "$OUTPUT_DIR/session-incomplete/migration-guide.md"
+  echo "# Incomplete session" > "$OUTPUT_DIR/diffs/session-incomplete/migration-guide.md"
 
   # Run apply - should fail
   local OUTPUT
@@ -820,10 +821,10 @@ test_apply_requires_output_dir() {
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
-  if [[ "$OUTPUT" == *"output directory not found"* ]]; then
-    pass "apply fails when OUTPUT_DIR does not exist"
+  if [[ "$OUTPUT" == *"diffs directory not found"* ]]; then
+    pass "apply fails when diffs directory does not exist"
   else
-    fail "apply did not fail on missing OUTPUT_DIR: $OUTPUT"
+    fail "apply did not fail on missing diffs directory: $OUTPUT"
   fi
 }
 
@@ -834,8 +835,8 @@ test_apply_requires_empty_output_dir() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
-  # OUTPUT_DIR exists but is empty
+  mkdir -p "$OUTPUT_DIR/diffs"
+  # diffs directory exists but is empty
 
   # Run apply - should fail
   local OUTPUT
@@ -844,9 +845,9 @@ test_apply_requires_empty_output_dir() {
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
   if [[ "$OUTPUT" == *"no session directories found"* ]]; then
-    pass "apply fails when OUTPUT_DIR is empty"
+    pass "apply fails when diffs directory is empty"
   else
-    fail "apply did not fail on empty OUTPUT_DIR: $OUTPUT"
+    fail "apply did not fail on empty diffs directory: $OUTPUT"
   fi
 }
 
@@ -857,10 +858,10 @@ test_apply_prints_migration_guide() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
 
   # Create session with migration-guide.md
-  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
   # Run apply
   local OUTPUT
@@ -882,10 +883,10 @@ test_apply_force_uses_reject() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
 
   # Create session with changes.diff
-  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
   # Run apply with --force
   local OUTPUT
@@ -908,10 +909,10 @@ test_apply_force_uses_reject_mode() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
 
   # Create session with changes.diff
-  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
   # Run apply with --force
   local OUTPUT
@@ -934,10 +935,10 @@ test_apply_force_applies_changes() {
   local OUTPUT_DIR="$WORKSPACE_DIR/output"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
 
   # Create session with changes.diff
-  make_session_with_changes_diff "$OUTPUT_DIR/test-session"
+  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
   # Run apply with --force
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
@@ -952,6 +953,92 @@ test_apply_force_applies_changes() {
     pass "apply --force applies changes successfully"
   else
     fail "apply --force did not apply changes: $STATUS"
+  fi
+}
+
+test_apply_uses_diff_argument() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_diff_arg_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_diff_arg_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
+
+  # Create session with changes.diff
+  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
+
+  # Run apply with DIFF argument pointing to specific diff file
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --diff="$OUTPUT_DIR/diffs/test-session/changes.diff" >/dev/null 2>&1
+
+  # Verify changes applied
+  local STATUS
+  STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
+  if [[ "$STATUS" == *"output-file.txt"* ]]; then
+    pass "apply DIFF=<path> applies specific diff file"
+  else
+    fail "apply DIFF=<path> did not apply changes: $STATUS"
+  fi
+}
+
+test_apply_diff_argument_requires_file_exists() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_diff_missing_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_diff_missing_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Run apply with DIFF argument pointing to non-existent file
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --diff="/nonexistent/path/changes.diff" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"diff file not found"* ]]; then
+    pass "apply DIFF=<path> fails when diff file does not exist"
+  else
+    fail "apply DIFF=<path> did not fail on missing file: $OUTPUT"
+  fi
+}
+
+test_apply_strips_index_lines() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_index_strip_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_index_strip_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
+
+  # Create a diff with an index line
+  mkdir -p "$OUTPUT_DIR/diffs/test-session"
+  cat > "$OUTPUT_DIR/diffs/test-session/changes.diff" <<'EOF'
+diff --git a/index-test.txt b/index-test.txt
+new file mode 100644
+index 0000000..abc1234
+--- /dev/null
++++ b/index-test.txt
+@@ -0,0 +1 @@
++index line test
+EOF
+
+  # Run apply - should succeed despite index line having SHA
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Verify changes applied (index line should have been stripped)
+  local STATUS
+  STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
+  if [[ "$STATUS" == *"index-test.txt"* ]]; then
+    pass "apply strips index lines before applying diff"
+  else
+    fail "apply did not strip index lines: $STATUS"
   fi
 }
 
@@ -983,6 +1070,9 @@ run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
 run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
 run_test "apply_force_uses_reject_mode" test_apply_force_uses_reject_mode
 run_test "apply_force_applies_changes" test_apply_force_applies_changes
+run_test "apply_uses_diff_argument" test_apply_uses_diff_argument
+run_test "apply_diff_argument_requires_file_exists" test_apply_diff_argument_requires_file_exists
+run_test "apply_strips_index_lines" test_apply_strips_index_lines
 
 echo
 echo "Results: $PASS passed, $FAIL failed"
