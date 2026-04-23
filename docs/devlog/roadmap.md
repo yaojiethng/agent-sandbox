@@ -130,18 +130,34 @@ Units are ordered by dependency. A and B are independent and can be implemented 
 Each provider may result in a different integration pattern. Investigation findings should be recorded as named investigation documents before implementation begins.
 
 #### M2.7 — Session Identity and Harness Versioning
-Objective: Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
-Depends on: M2.3. Status: Not started.
-Scope: Implement the primitive set and two-sig model defined in docs/discussions/story_session_identity_and_harness_versioning.md. Work falls into three groups (container naming moved to M2.3 Change 5):
 
-Primitive set (scripts/start_agent.sh): single canonical SESSION_TS at top of script replacing any downstream date calls; REPO_COMMIT captured and exported; WORKTREE_ID derived from short hash of PROJECT_DIR absolute path and exported. Note: WORKTREE_ID and updated checkpoint tag namespace (agent-checkpoint/<worktree-id>/<timestamp>) already implemented in M2.3 Change 1.
-Two-sig model (libs/containers.sh, scripts/start_agent.sh): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
-Paired refactor (libs/, providers/): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary. Image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding.
+**Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
 
-Sub-stories:
+**Depends on:** M2.3. **Status:** Not started.
 
-story_parallel_sessions_worktree.md — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1; container naming implemented in M2.3 Change 5. No open design questions remain.
-story_harness_packaging_and_install_versioning.md — install workflow rewrite; deferred, does not block this milestone.
+**Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
+
+**Scope:** Implement the hash-based session identity model, two-sig model, and container lifecycle redesign. Work falls into four groups:
+
+**1. run_id derivation** (`scripts/start_agent.sh`): Add `RUN_ID` as 6-char hex hash of `${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}`. Replace timestamp-based container naming with run_id-based naming (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`).
+
+**2. Docker labels** (`libs/docker-compose.yml`): Add `agent-sandbox.project`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` labels for container lifecycle management. Retain `agent-sandbox.session-name` for backwards compatibility.
+
+**3. make stop redesign** (`scripts/stop.sh`): Update to filter containers by `project + worktree-id` labels instead of Docker Compose project name. Enables parallel sessions from different worktrees without container collision.
+
+**4. make prune implementation** (`scripts/prune.sh`, `libs/_templates/Makefile.template`): Add `make prune` target with:
+   - Targeted cleanup: `project + worktree-id` (same scope as stop)
+   - Time-based cleanup: `project + >3 days old` (ignores worktree-id)
+   - Cleans: build cache, layer cache, system cache, volume cache
+
+**5. Two-sig model** (`libs/containers.sh`, `scripts/start_agent.sh`): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
+
+**6. Paired refactor** (`libs/`, `providers/`): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary. Image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding.
+
+**Sub-stories:**
+
+- `story_parallel_sessions_worktree.md` — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1. Container naming updated in M2.7.
+- `story_harness_packaging_and_install_versioning.md` — install workflow rewrite; deferred, does not block this milestone.
 
 ---
 
@@ -175,7 +191,7 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Addressed in upcoming milestones
 
-- **Stale container images** *(M2.7)* — the preflight gate currently checks only whether an image exists, not whether it was built from the current source. M2.7 introduces `container-sig` (hash of `libs/` and provider Dockerfiles, baked as a Docker label) checked at preflight, and `harness-sig` (hash of `scripts/` and compose files) checked at runtime with a warning on drift. See [`story_session_identity_and_harness_versioning.md`](discussions/story_session_identity_and_harness_versioning.md).
+- **Stale container images** *(M2.7)* — the preflight gate currently checks only whether an image exists, not whether it was built from the current source. M2.7 introduces `container-sig` (hash of `libs/` and provider Dockerfiles, baked as a Docker label) checked at preflight, and `harness-sig` (hash of `scripts/` and compose files) checked at runtime with a warning on drift. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
 
 - **No automated Makefile or harness script staleness check** *(M2.7)* — `harness-sig` written to `SANDBOX_DIR/.harness-sig.ref` at session end will detect host-side script drift on subsequent runs. Full install-level isolation is a larger task deferred to [`story_harness_packaging_and_install_versioning.md`](discussions/story_harness_packaging_and_install_versioning.md).
 
