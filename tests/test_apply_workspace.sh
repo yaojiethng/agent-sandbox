@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # tests/test_apply_workspace.sh
-# Tests for scripts/apply_workspace.sh — Change 3 (draft/confirm/reject/apply workflow)
+# Tests for scripts/apply_workspace.sh — Unit E (draft redesign)
 #
 # Covers:
-#   draft — creates working branch from checkpoint tag, applies patches
-#   draft SESSION=<n> — applies patches from named session
+#   draft — creates working branch from HEAD, applies .diff files via git apply
+#   draft SESSION=<branch> — applies diffs from named branch directory
+#   draft BRANCH_FROM=<hash> — creates branch from specified commit
+#   draft DIFFS=<start>..<end> — applies only selected diff range
 #   draft guard — rejects if draft-state already exists
 #   confirm — rebases, fast-forward merges, deletes draft branch, clears draft-state
 #   confirm TARGET=<branch> — merges to named branch
 #   confirm guard — rejects if no draft-state
 #   reject — returns to source branch, deletes draft branch, clears draft-state
 #   reject guard — rejects if no draft-state
-#   apply — applies changes.diff from OUTPUT_DIR with git apply --index --3way
+#   apply — applies changes.diff from OUTPUT_DIR with git apply
 #   apply SESSION=<n> — applies from named session directory in OUTPUT_DIR
 #   apply guard — rejects if OUTPUT_DIR empty or changes.diff missing
 #
@@ -57,37 +59,23 @@ make_committed_repo() {
   git -C "$DIR" commit -m "initial commit" --quiet
 }
 
-# Create a session with patches
-make_session_with_patches() {
-  local SESSION_DIR="$1"
-  local PATCHES_DIR="$SESSION_DIR/patches"
-  local NUM_PATCHES="${2:-2}"
+# Create a session with numbered .diff files in a branch-name folder
+make_session_with_diffs() {
+  local BRANCH_DIR="$1"
+  local NUM_DIFFS="${2:-2}"
 
-  mkdir -p "$PATCHES_DIR"
+  mkdir -p "$BRANCH_DIR"
 
-  # Create patches manually (format-patch requires the commits to exist in target repo)
-  # Instead, create simple patch files that add new files
-  for i in $(seq 1 "$NUM_PATCHES"); do
-    cat > "$PATCHES_DIR/000${i}-Agent-change-${i}.patch" <<EOF
-From 000000000000000000000000000000000000000${i} Mon Sep 17 00:00:00 2001
-From: Test User <test@test.com>
-Date: Wed, 20 Apr 2026 12:00:0${i} +0000
-Subject: [PATCH ${i}/${NUM_PATCHES}] Agent change ${i}
-
----
- file-${i}.txt | 1 +
- 1 file changed, 1 insertion(+)
- create mode 100644 file-${i}.txt
-
+  for i in $(seq 1 "$NUM_DIFFS"); do
+    local PADDING
+    PADDING=$(printf "%04d" "$i")
+    cat > "$BRANCH_DIR/${PADDING}-abc1234.diff" <<EOF
 diff --git a/file-${i}.txt b/file-${i}.txt
 new file mode 100644
-index 0000000..9${i}b${i}6${i}
 --- /dev/null
 +++ b/file-${i}.txt
 @@ -0,0 +1 @@
 +change ${i}
---
-2.${i}0.0
 EOF
   done
 }
@@ -144,36 +132,32 @@ EOF
 # DRAFT tests
 # -------------------------
 
-test_draft_creates_branch_from_checkpoint() {
+test_draft_creates_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_branch_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_branch_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 2
+  # Create session with diffs
+  make_session_with_diffs "$BRANCH_DIR" 2
 
   # Run draft
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch created — format is draft/<branch>-<session-ts>
-  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
-    pass "draft creates working branch with correct name format"
+  # Verify draft branch created
+  local FOUND_BRANCH
+  FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+  if [[ "$FOUND_BRANCH" == draft/* ]]; then
+    pass "draft creates working branch"
   else
-    fail "draft did not create working branch"
+    fail "draft did not create working branch: got '$FOUND_BRANCH'"
   fi
 
   # Verify draft-state written
@@ -184,42 +168,36 @@ test_draft_creates_branch_from_checkpoint() {
   fi
 }
 
-test_draft_applies_patches() {
-  local PROJECT_DIR="$FIXTURE_DIR/draft_patches_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/draft_patches_sandbox"
+test_draft_applies_diffs() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_diffs_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_diffs_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with 2 patches
-  make_session_with_patches "$SESSION_DIR" 2
+  # Create session with 2 diffs
+  make_session_with_diffs "$BRANCH_DIR" 2
 
   # Run draft
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify patches applied (2 new commits on draft branch)
+  # Verify diffs applied (2 new commits on draft branch)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 3 ]]; then
-    pass "draft applies all patches as commits"
+    pass "draft applies all diffs as commits"
   else
     fail "draft applied wrong number of commits: expected 3, got $COMMIT_COUNT"
   fi
 }
 
-test_draft_uses_most_recent_session() {
+test_draft_uses_most_recent_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_recent_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_recent_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
@@ -228,33 +206,27 @@ test_draft_uses_most_recent_session() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+  # Create two branch directories - branch-01 sorts before branch-02
+  make_session_with_diffs "$CHANGES_DIR/branch-01" 1
+  make_session_with_diffs "$CHANGES_DIR/branch-02" 2
 
-  # Create two sessions - session-01 sorts before session-02
-  make_session_with_patches "$CHANGES_DIR/session-01" 1
-  make_session_with_patches "$CHANGES_DIR/session-02" 2
-
-  # Run draft without SESSION= (should use session-02, which sorts last)
+  # Run draft without SESSION= (should use branch-02, which sorts last)
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify session-02's patches applied (2 commits + initial = 3)
+  # Verify branch-02's diffs applied (2 commits + initial = 3)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 3 ]]; then
-    pass "draft uses most recent session when SESSION not specified"
+    pass "draft uses most recent branch directory when SESSION not specified"
   else
-    fail "draft did not use most recent session: expected 3 commits, got $COMMIT_COUNT"
+    fail "draft did not use most recent branch: expected 3 commits, got $COMMIT_COUNT"
   fi
 }
 
-test_draft_uses_named_session() {
+test_draft_uses_named_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_named_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_named_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
@@ -263,30 +235,53 @@ test_draft_uses_named_session() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+  # Create two branch directories
+  make_session_with_diffs "$CHANGES_DIR/branch-a" 1
+  make_session_with_diffs "$CHANGES_DIR/branch-b" 3
 
-  # Create two sessions
-  make_session_with_patches "$CHANGES_DIR/session-a" 1
-  make_session_with_patches "$CHANGES_DIR/session-b" 3
-
-  # Run draft with SESSION=session-a
+  # Run draft with SESSION=branch-a
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
-    --session="session-a" >/dev/null 2>&1
+    --session="branch-a" >/dev/null 2>&1
 
-  # Verify session-a's patches applied (1 commit)
+  # Verify branch-a's diffs applied (1 commit)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 2 ]]; then
-    pass "draft uses named session when SESSION specified"
+    pass "draft uses named branch when SESSION specified"
   else
-    fail "draft did not use named session: expected 2 commits, got $COMMIT_COUNT"
+    fail "draft did not use named branch: expected 2 commits, got $COMMIT_COUNT"
+  fi
+}
+
+test_draft_uses_sanitized_branch_name() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_sanitized_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_sanitized_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Directory uses dashes (sanitized from slashes)
+  make_session_with_diffs "$CHANGES_DIR/feature-M2_3-agent" 1
+
+  # Pass original branch name with slashes
+  export SESSION_TS="20260420-120000"
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="feature/M2_3/agent" >/dev/null 2>&1
+
+  # Verify diffs applied (1 commit)
+  local COMMIT_COUNT
+  COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
+  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+    pass "draft sanitizes slashes in branch name for directory lookup"
+  else
+    fail "draft did not resolve sanitized branch name: expected 2 commits, got $COMMIT_COUNT"
   fi
 }
 
@@ -295,7 +290,7 @@ test_draft_branch_name_preserves_slashes() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_slashes_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -303,31 +298,22 @@ test_draft_branch_name_preserves_slashes() {
   # Switch to a branch with slashes
   git -C "$PROJECT_DIR" checkout -b "feature/M2_3-agent-session-history" --quiet
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260421-143000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with diffs
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Run draft
+  export SESSION_TS="20260421-143000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
   # Verify draft branch name preserves slashes and appends session-ts
-  # Expected format: draft/<branch>-<session-ts> → draft/feature/M2_3-agent-session-history-20260421-143000
-  local EXPECTED_BRANCH="draft/feature/M2_3-agent-session-history-20260421-143000"
-  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$EXPECTED_BRANCH"; then
+  local FOUND_BRANCH
+  FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+  if [[ "$FOUND_BRANCH" == *"feature/M2_3-agent-session-history"* ]]; then
     pass "draft branch name preserves slashes and disambiguates with session-ts"
   else
-    # Show what branches exist for debugging
-    local FOUND
-    FOUND=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | head -5)
-    fail "draft branch name wrong: expected '$EXPECTED_BRANCH', got branches: $FOUND"
+    fail "draft branch name wrong: expected feature/M2_3-agent-session-history in '$FOUND_BRANCH'"
   fi
 }
 
@@ -336,7 +322,7 @@ test_draft_branch_name_detached_head() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_detached_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -346,23 +332,16 @@ test_draft_branch_name_detached_head() {
   SHORT_SHA=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   git -C "$PROJECT_DIR" checkout --quiet "$SHORT_SHA"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260421-143000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with diffs
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Run draft
+  export SESSION_TS="20260421-143000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
   # Verify draft branch name uses short SHA for detached HEAD
-  # Expected format: draft/<short-sha>-<session-ts> → draft/<sha>-20260421-143000
   local FOUND_BRANCH
   FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
   if [[ "$FOUND_BRANCH" == "draft/${SHORT_SHA}-20260421-143000" ]]; then
@@ -377,26 +356,19 @@ test_draft_rejects_if_draft_exists() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_guard_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with diffs
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Create fake draft-state
   cat > "$WORKSPACE_DIR/draft-state" <<EOF
 SOURCE_BRANCH=main
-WORKING_BRANCH=draft/main-20260420-120000
-SESSION_DIR=$SESSION_DIR
+WORKING_BRANCH=draft/main-test
+SESSION_DIR=$BRANCH_DIR
 EOF
 
   # Run draft - should fail
@@ -412,33 +384,94 @@ EOF
   fi
 }
 
-test_draft_requires_patches_directory() {
-  local PROJECT_DIR="$FIXTURE_DIR/draft_no_patches_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/draft_no_patches_sandbox"
+test_draft_requires_diff_files() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_no_diffs_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_no_diffs_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$SESSION_DIR"
+  mkdir -p "$BRANCH_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Run draft - should fail (no patches dir)
+  # Run draft - should fail (empty branch dir, no .diff files)
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
-  if [[ "$OUTPUT" == *"patches directory not found"* ]]; then
-    pass "draft fails when patches directory missing"
+  if [[ "$OUTPUT" == *"no .diff files found"* ]]; then
+    pass "draft fails when no .diff files in branch directory"
   else
-    fail "draft did not fail on missing patches: $OUTPUT"
+    fail "draft did not fail on missing diffs: $OUTPUT"
+  fi
+}
+
+test_draft_uses_branch_from() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_from_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_from_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Create a second commit so HEAD~1 is a valid base
+  echo "second" > "$PROJECT_DIR/second.txt"
+  git -C "$PROJECT_DIR" add second.txt
+  git -C "$PROJECT_DIR" commit -m "second commit" --quiet
+
+  local BASE_SHA
+  BASE_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD~1)
+
+  # Create session with 1 diff
+  make_session_with_diffs "$BRANCH_DIR" 1
+
+  # Run draft with BRANCH_FROM=HEAD~1
+  export SESSION_TS="20260420-120000"
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --branch-from="$BASE_SHA" >/dev/null 2>&1
+
+  # Verify draft branch is from HEAD~1 (2 commits: initial + diff)
+  local COMMIT_COUNT
+  COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
+  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+    pass "draft BRANCH_FROM creates branch from specified commit"
+  else
+    fail "draft BRANCH_FROM wrong commit count: expected 2, got $COMMIT_COUNT"
+  fi
+}
+
+test_draft_uses_diffs_range() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_range_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_range_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Create session with 4 diffs
+  make_session_with_diffs "$BRANCH_DIR" 4
+
+  # Run draft with DIFFS=2..3 (apply only diffs 2 and 3)
+  export SESSION_TS="20260420-120000"
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --diffs="2..3" >/dev/null 2>&1
+
+  # Verify only 2 diffs applied (2 commits + initial = 3)
+  local COMMIT_COUNT
+  COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+    pass "draft DIFFS range applies only selected diffs"
+  else
+    fail "draft DIFFS range wrong commit count: expected 3, got $COMMIT_COUNT"
   fi
 }
 
@@ -451,25 +484,23 @@ test_confirm_rebases_and_merges() {
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_merge_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with 1 diff
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Create draft
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Capture working branch name before confirm deletes it
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
   # Run confirm
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
@@ -493,7 +524,7 @@ test_confirm_rebases_and_merges() {
   fi
 
   # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH"; then
     pass "confirm deletes draft branch"
   else
     fail "confirm did not delete draft branch"
@@ -514,7 +545,7 @@ test_confirm_with_target_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_target_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -522,17 +553,11 @@ test_confirm_with_target_branch() {
   # Create target branch
   git -C "$PROJECT_DIR" checkout -b "feature-branch" --quiet
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with 1 diff
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Create draft (on feature-branch)
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -592,22 +617,16 @@ test_reject_returns_to_source_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/reject_return_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with 1 diff
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Create draft
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -648,25 +667,23 @@ test_reject_deletes_draft_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/reject_delete_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local SESSION_DIR="$CHANGES_DIR/test-session"
+  local BRANCH_DIR="$CHANGES_DIR/test-branch"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create checkpoint tag
-  local WORKTREE_ID SESSION_TS CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  SESSION_TS="20260420-120000"
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/${SESSION_TS}"
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
-
-  # Create session with patches
-  make_session_with_patches "$SESSION_DIR" 1
+  # Create session with 1 diff
+  make_session_with_diffs "$BRANCH_DIR" 1
 
   # Create draft
+  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Capture working branch name before reject deletes it
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
   # Run reject
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
@@ -674,7 +691,7 @@ test_reject_deletes_draft_branch() {
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
   # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/draft/main-20260420-120000"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH"; then
     pass "reject deletes draft branch"
   else
     fail "reject did not delete draft branch"
@@ -1044,18 +1061,22 @@ EOF
 
 # -------------------------
 # Run all tests
+# -------------------------
 
-echo "=== apply_workspace.sh tests (Change 3: draft/confirm/reject workflow) ==="
+echo "=== apply_workspace.sh tests (Unit E: draft redesign) ==="
 echo
 
-run_test "draft_creates_branch_from_checkpoint" test_draft_creates_branch_from_checkpoint
-run_test "draft_applies_patches" test_draft_applies_patches
-run_test "draft_uses_most_recent_session" test_draft_uses_most_recent_session
-run_test "draft_uses_named_session" test_draft_uses_named_session
+run_test "draft_creates_branch" test_draft_creates_branch
+run_test "draft_applies_diffs" test_draft_applies_diffs
+run_test "draft_uses_most_recent_branch" test_draft_uses_most_recent_branch
+run_test "draft_uses_named_branch" test_draft_uses_named_branch
+run_test "draft_uses_sanitized_branch_name" test_draft_uses_sanitized_branch_name
 run_test "draft_branch_name_preserves_slashes" test_draft_branch_name_preserves_slashes
 run_test "draft_branch_name_detached_head" test_draft_branch_name_detached_head
 run_test "draft_rejects_if_draft_exists" test_draft_rejects_if_draft_exists
-run_test "draft_requires_patches_directory" test_draft_requires_patches_directory
+run_test "draft_requires_diff_files" test_draft_requires_diff_files
+run_test "draft_uses_branch_from" test_draft_uses_branch_from
+run_test "draft_uses_diffs_range" test_draft_uses_diffs_range
 run_test "confirm_rebases_and_merges" test_confirm_rebases_and_merges
 run_test "confirm_with_target_branch" test_confirm_with_target_branch
 run_test "confirm_rejects_if_no_draft" test_confirm_rejects_if_no_draft
@@ -1068,6 +1089,7 @@ run_test "apply_requires_changes_diff" test_apply_requires_changes_diff
 run_test "apply_requires_output_dir" test_apply_requires_output_dir
 run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
 run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
+run_test "apply_force_uses_reject" test_apply_force_uses_reject
 run_test "apply_force_uses_reject_mode" test_apply_force_uses_reject_mode
 run_test "apply_force_applies_changes" test_apply_force_applies_changes
 run_test "apply_uses_diff_argument" test_apply_uses_diff_argument

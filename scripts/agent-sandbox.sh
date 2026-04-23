@@ -51,16 +51,18 @@ PASSTHROUGH=()
 parse_flags() {
   for ARG in "$@"; do
     case "$ARG" in
-      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --branch=*)   BRANCH="${ARG#--branch=}" ;;
-      --session=*)  SESSION_ARG="${ARG#--session=}" ;;
-      --target=*)   TARGET_BRANCH="${ARG#--target=}" ;;
+      --name=*)        PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --branch=*)      BRANCH="${ARG#--branch=}" ;;
+      --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+      --target=*)      TARGET_BRANCH="${ARG#--target=}" ;;
+      --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
+      --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
       --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
       --rebuild)       REBUILD=true ;;
       --rebuild-base)  REBUILD_BASE=true ;;
-      *)            PASSTHROUGH+=("$ARG") ;;
+      *)               PASSTHROUGH+=("$ARG") ;;
     esac
   done
 }
@@ -214,7 +216,9 @@ case "$SUBCOMMAND" in
     "$SCRIPTS/apply_workspace.sh" draft \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
-      ${SESSION_ARG:+--session="$SESSION_ARG"}
+      ${SESSION_ARG:+--session="$SESSION_ARG"} \
+      ${BRANCH_FROM:+--branch-from="$BRANCH_FROM"} \
+      ${DIFFS:+--diffs="$DIFFS"}
     ;;
 
   confirm)

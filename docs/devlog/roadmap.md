@@ -87,7 +87,7 @@ Units are ordered by dependency. E depends on C. F depends on E. D and G are ind
 
 - [x] **D — `make apply` update** (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`): Add `DIFF=<path>` argument. Remove pre-staging block. Replace apply call with `grep -v '^index ' "$DIFF" | git -C "$PROJECT_DIR" apply`. Preserve default resolution (latest `.diff` in `workspace/output/` by timestamp).
 
-- [ ] **E — `make draft` redesign** (`scripts/apply_workspace.sh`): Remove checkpoint tag lookup. Add `FROM=<hash>` argument (default: `HEAD`). Replace session-name folder resolution with branch-name folder. Add `DIFFS=<start>..<end>` range argument. Replace `git am` loop with sequential `git apply` loop (index lines stripped), staging and committing each diff. Depends on C.
+- [x] **E — `make draft` redesign** (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`, `scripts/agent-sandbox.sh`): Remove checkpoint tag lookup. Add `BRANCH_FROM=<hash>` argument (default: `HEAD`). Replace session-name folder resolution with branch-name folder. Add `DIFFS=<start>..<end>` range argument. Replace `git am` loop with sequential `git apply` loop (index lines stripped), staging and committing each diff. Depends on C.
 
 - [ ] **F — `make confirm` simplification + `make sync` removal** (`scripts/apply_workspace.sh`, `Makefile.template`): Remove rebase invocation from `make confirm`. Remove `SYNC=1` handling. Remove `make sync` target. `make confirm` becomes: read `draft-state`, delete draft branch, clear `draft-state`. Depends on E.
 
@@ -96,7 +96,7 @@ Units are ordered by dependency. E depends on C. F depends on E. D and G are ind
 **Acceptance criteria:**
 
 - `package-branch` produces numbered `.diff` files in `session-diffs/<branch-name>/` on session exit; no `index` lines present
-- `make draft` applies numbered diffs via `git apply`; `FROM` and `DIFFS` arguments work correctly
+- `make draft` applies numbered diffs via `git apply`; `BRANCH_FROM` and `DIFFS` arguments work correctly
 - `make confirm` cleans up draft branch only — no rebase, no `docker exec`
 - `make apply` applies a single diff uncommitted on both host and container; `DIFF=<path>` override works
 - No checkpoint git tags written to repo on session start

@@ -59,17 +59,21 @@ SESSION_ARG=""
 TARGET_BRANCH=""
 APPLY_BRANCH=""
 DIFF_ARG=""
+BRANCH_FROM_ARG=""
+DIFFS_ARG=""
 FORCE=false
 
 for ARG in "$@"; do
   case "$ARG" in
-    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --session=*) SESSION_ARG="${ARG#--session=}" ;;
-    --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
-    --branch=*)  APPLY_BRANCH="${ARG#--branch=}" ;;
-    --diff=*)    DIFF_ARG="${ARG#--diff=}" ;;
-    --force)     FORCE=true ;;
+    --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
+    --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
+    --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+    --target=*)      TARGET_BRANCH="${ARG#--target=}" ;;
+    --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
+    --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
+    --branch-from=*) BRANCH_FROM_ARG="${ARG#--branch-from=}" ;;
+    --diffs=*)       DIFFS_ARG="${ARG#--diffs=}" ;;
+    --force)         FORCE=true ;;
     *)
       echo "Unknown flag: $ARG" >&2
       exit 1
@@ -114,39 +118,66 @@ if [[ "$COMMAND" == "draft" ]]; then
     exit 1
   fi
 
-  # Resolve session directory
+  # Resolve branch directory under session-diffs/
   if [[ -n "$SESSION_ARG" ]]; then
-    SESSION_DIR="$CHANGES_DIR/$SESSION_ARG"
-    SESSION_NAME="$SESSION_ARG"
+    # Sanitise branch name for directory lookup (slashes → dashes)
+    SANITIZED_BRANCH=$(echo "$SESSION_ARG" | tr '/' '-')
+    BRANCH_DIR="$CHANGES_DIR/$SANITIZED_BRANCH"
+    BRANCH_NAME="$SESSION_ARG"
   else
-    # Most recent session under session-diffs/ (by directory mtime)
-    SESSION_DIR=$(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d \
+    # Most recent branch directory under session-diffs/ (by directory mtime)
+    BRANCH_DIR=$(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d \
       | sort -t/ -k1,1 | tail -n 1)
-    if [[ -z "$SESSION_DIR" ]]; then
-      echo "Error: no session directories found under $CHANGES_DIR" >&2
-      echo "  Run a session first, or specify --session=<name>" >&2
+    if [[ -z "$BRANCH_DIR" ]]; then
+      echo "Error: no branch directories found under $CHANGES_DIR" >&2
+      echo "  Run a session first, or specify --session=<branch-name>" >&2
       exit 1
     fi
-    SESSION_NAME=$(basename "$SESSION_DIR")
+    BRANCH_NAME=$(basename "$BRANCH_DIR")
   fi
 
-  PATCHES_DIR="$SESSION_DIR/patches"
-  if [[ ! -d "$PATCHES_DIR" ]]; then
-    echo "Error: patches directory not found: $PATCHES_DIR" >&2
-    echo "  Session artefacts were produced by an older harness version." >&2
-    echo "  Re-run the session with the current harness to produce format-patch output." >&2
+  if [[ ! -d "$BRANCH_DIR" ]]; then
+    echo "Error: branch directory not found: $BRANCH_DIR" >&2
+    echo "  Session artefacts may not have been produced yet." >&2
     exit 1
   fi
 
-  mapfile -t PATCHES < <(find "$PATCHES_DIR" -name '*.patch' | sort)
-  if [[ "${#PATCHES[@]}" -eq 0 ]]; then
-    echo "Error: no .patch files found in $PATCHES_DIR" >&2
+  mapfile -t DIFF_FILES < <(find "$BRANCH_DIR" -maxdepth 1 -name '*.diff' | sort)
+  if [[ "${#DIFF_FILES[@]}" -eq 0 ]]; then
+    echo "Error: no .diff files found in $BRANCH_DIR" >&2
     echo "  The session may have produced no commits." >&2
     exit 1
   fi
 
-  # Default to HEAD as the base commit (FROM argument added in Unit E)
-  BASE_COMMIT="HEAD"
+  # Apply optional DIFFS range filter
+  if [[ -n "$DIFFS_ARG" ]]; then
+    START_NUM=$(echo "$DIFFS_ARG" | cut -d. -f1)
+    END_NUM=$(echo "$DIFFS_ARG" | cut -d. -f3)
+    if [[ -z "$START_NUM" || -z "$END_NUM" ]]; then
+      echo "Error: invalid DIFFS range format: $DIFFS_ARG" >&2
+      echo "  Expected: <start>..<end> (e.g. 2..4)" >&2
+      exit 1
+    fi
+    FILTERED_DIFFS=()
+    for df in "${DIFF_FILES[@]}"; do
+      BASENAME=$(basename "$df")
+      NUM="${BASENAME%%-*}"
+      if [[ "$NUM" =~ ^[0-9]+$ ]]; then
+        NUM_INT=$((10#$NUM))
+        if [[ "$NUM_INT" -ge "$START_NUM" && "$NUM_INT" -le "$END_NUM" ]]; then
+          FILTERED_DIFFS+=("$df")
+        fi
+      fi
+    done
+    if [[ "${#FILTERED_DIFFS[@]}" -eq 0 ]]; then
+      echo "Error: no diffs in range $DIFFS_ARG found in $BRANCH_DIR" >&2
+      exit 1
+    fi
+    DIFF_FILES=("${FILTERED_DIFFS[@]}")
+  fi
+
+  # Resolve base commit
+  BASE_COMMIT="${BRANCH_FROM_ARG:-HEAD}"
 
   # Guard: reject if draft-state already exists
   if [[ -f "$DRAFT_STATE_FILE" ]]; then
@@ -167,24 +198,25 @@ if [[ "$COMMAND" == "draft" ]]; then
   echo "Creating draft branch '$WORKING_BRANCH' from $BASE_COMMIT..."
   git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$BASE_COMMIT"
 
-  # Apply patches with per-patch author reset
+  # Apply diffs sequentially with git apply (index lines stripped), stage, and commit
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
-  for patch in "${PATCHES[@]}"; do
-    echo "Applying: $(basename "$patch")"
-    git -C "$PROJECT_DIR" am --3way "$patch"
-    git -C "$PROJECT_DIR" commit --amend --author="$AUTHOR" --no-edit
+  for diff_file in "${DIFF_FILES[@]}"; do
+    echo "Applying: $(basename "$diff_file")"
+    grep -v '^index ' "$diff_file" | git -C "$PROJECT_DIR" apply
+    git -C "$PROJECT_DIR" add -A
+    git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
   done
 
   # Write draft-state
   cat > "$DRAFT_STATE_FILE" <<EOF
 SOURCE_BRANCH=${SOURCE_BRANCH}
 WORKING_BRANCH=${WORKING_BRANCH}
-SESSION_DIR=${SESSION_DIR}
+SESSION_DIR=${BRANCH_DIR}
 EOF
 
   echo ""
   echo "Draft ready on branch: $WORKING_BRANCH"
-  echo "Review with: git -C '$PROJECT_DIR' log -p HEAD~${#PATCHES[@]}..HEAD"
+  echo "Review with: git -C '$PROJECT_DIR' log -p HEAD~${#DIFF_FILES[@]}..HEAD"
   echo "Then: make confirm   (or: make reject)"
 
   exit 0
