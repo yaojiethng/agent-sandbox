@@ -78,3 +78,11 @@ The provider interface was formalised: each provider supplies a `base.Dockerfile
 
 ---
 
+## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+
+*The operator can review agent work as shaped commits on a draft branch, confirm via rebase and fast-forward merge, or reject with no trace — all through a git-agnostic diff pipeline that works identically in both directions between sandbox and host.*
+
+The diff pipeline was redesigned around a single git-agnostic unified diff format with index lines stripped, consumed by `git apply` in both directions. `package-diff` exports uncommitted working tree changes; `package-branch` exports the full committed branch history since `INIT_SHA` as numbered diffs. `make draft` creates a `draft/<name>` branch from the host, applies the numbered diffs sequentially, and commits `.draft-state` as metadata on the branch. `make confirm` validates the draft branch, drops `.draft-state`, rebases onto target, fast-forward merges, and deletes the draft branch — printing exact recovery commands on rebase conflict. `make reject` returns to the source branch and discards the draft. `make apply` applies a single diff uncommitted for mid-session sync in either direction. No checkpoint git tags, no `make sync`, no `SYNC=1`, and no `ADVANCED_SESSIONS` tracking — the harness does not bookkeeping which diffs have been applied.
+
+---
+

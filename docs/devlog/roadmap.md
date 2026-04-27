@@ -22,7 +22,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
 | [M2.3 — Apply Workflow: Capability Layer Diff Pipeline](#m23--apply-workflow-capability-layer-diff-pipeline) | In progress |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| M2.5 — Vault Capability Layer Prototype | Not started |
+| [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | In progress |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
@@ -68,54 +68,82 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Completed:**
 
-- Checkpoint tag + WORKTREE_ID + SESSION_NAME (`start_agent.sh`) — see handover `20260416-04-impl-change1.md`
-- Format-patch + session-scoped artefact directory (`libs/diff.sh`) — superseded in part; see handover `20260417-04-impl-m2_3_change2.md`
-- draft/confirm/reject/apply (`scripts/apply_workspace.sh`) — superseded in part; see handover for change 3
-- Archive HEAD + rsync overlay (`libs/snapshot.sh`) — see handover `20260416-01-impl-snapshot-baseline.md`
-- Container naming + Docker labels (`libs/compose.sh`, `scripts/checkpoint.sh`) — superseded in part; see handover for change 5
-- package-diff index-line stripping + `git apply` (`libs/package_diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260421-07-impl-package_diff_patch_and_index_strip.md`
-- INIT_SHA at container init (`libs/snapshot.sh`, `libs/package_diff.sh`) — see handover `20260422-03-impl-init_sha_at_container_init.md`
-- Remove checkpoint tags (`start_agent.sh`, `scripts/checkpoint.sh`, `libs/compose.sh`) — see handover `20260422-04-impl-remove_checkpoint_tags.md`
-- `package-branch` function + `make apply` path fix (`libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260423-02-impl-make_apply_path_resolution.md`
-- `make apply` DIFF argument (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`) — see handover `20260423-03-impl-make_apply_diff_argument.md`
-- `make draft` redesign — branch-name folder, `BRANCH_FROM`, `DIFFS` range, `git apply` loop (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`) — see handover `20260423-04-impl-make_draft_redesign.md`
-- Diff pipeline restructure — 2-field directory names, `session/`/`autosave/` subfolders, `EXPORT-TIME.txt`, `changes.diff`, unified path resolution for `make draft` / `make apply` — see handover `20260427-02-impl-diff_pipeline_restructure.md`
+The two-layer diff pipeline is fully implemented. `package_diff` produces unified diffs from the capability layer for operator `make apply`; `package_branch` packages sandbox commits as numbered per-commit diffs for `make draft`. The draft/confirm/reject workflow is operational: `make draft` resolves the latest session export, creates a typed draft branch with `.draft-state` as the first commit, and applies patches sequentially via `git apply`; `make confirm` drops the state commit, rebases onto target, and fast-forward merges; `make reject` returns to the source branch cleanly. Session artefact directories use 2-field names (`<SESSION_TS>-<SANITIZED_HOST_BRANCH>`), with `session/` and `autosave/` subfolders, `EXPORT-TIME.txt`, and unified path resolution across both commands. Checkpoint tags and `make sync` are removed. `INIT_SHA` is written once at container init. All diff output has index lines stripped for context-only `git apply`.
 
-**Pending:**
+**Pending — apply_workspace refactor:**
 
-Units are ordered by dependency. F0 must run first. F1 depends on F0 and E. F2 depends on F1. G is last.
+Design complete — see `spec_apply_workspace_refactor.md`. The refactor decomposes `scripts/apply_workspace.sh` into focused library files and eliminates the double flag-parse between `agent-sandbox.sh` and `apply_workspace.sh`.
 
-**F0 — path and timestamp audit** — `SESSION_TS` and `SANITIZED_HOST_BRANCH` are derived once at session start and exported to all downstream consumers; `SESSION_NAME` is removed. Diff output paths, container labels, and environment variables use the primitive variables directly.
+- [ ] Extract shared test fixtures — `tests/lib/git_fixtures.sh` and `tests/lib/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
+- [ ] Write `libs/session.sh` — `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh`
+- [ ] Write `libs/draft_workflow.sh` — absorb `libs/draft.sh` functions; extract `draft_run`, `confirm_run`, `reject_run` from `apply_workspace.sh`; write `tests/test_draft_workflow.sh`
+- [ ] Write `libs/diff_workflow.sh` — extract `apply_run` from `apply_workspace.sh`; write `tests/test_diff_workflow.sh`
+- [ ] Switch `agent-sandbox.sh` to call workflow libs directly; verify all four subcommands end-to-end
+- [ ] Grep and patch all remaining callers of `apply_workspace.sh`; update Makefile targets to call `agent-sandbox` directly
+- [ ] Delete `scripts/apply_workspace.sh`, `libs/draft.sh`, `tests/test_apply.sh`, `tests/test_apply_workspace.sh`, `tests/test_session.sh`; run full test suite clean
 
-**F1 — complete `make draft` + `.draft-state`** — `make draft` resolves the latest export from `$CHANGES_DIR/` by lexicographic sort and supports explicit `--session=<path>`. It parses session identity from folder names, creates draft branches with the `draft/<EXPORT_TIME>-<SESSION_TS>-<branch>-<sha6>` naming convention, and commits `.draft-state` as the first commit on the branch. Shared draft utilities live in `libs/draft.sh`. Same-name collision guard prevents duplicate branch creation while allowing concurrent drafts from different sessions.
+**Pending — `SESSION_STATE` file and `$SESSION_TS` persistence bug:**
 
-**F2 — `make confirm` rewrite + `make reject` update + `make sync` removal** — `make confirm` validates the current branch is a proper draft branch (name, `.draft-state` presence, first commit message), drops the `.draft-state` commit, rebases onto target, fast-forward merges, and deletes the draft branch. `make reject` validates the same way, checks out the source branch, and deletes the current draft branch only. Both commands share a unified `draft_validate_branch` function in `libs/draft.sh` with descriptive per-check errors. `make sync` and all `SYNC=1` handling removed.
+`$SESSION_TS` is set at container start and manually validated as present. However, tests run inside the container may set or unset environment variables, leaving `SESSION_TS` absent for the remainder of the session. Confirmed failure mode: the `package-branch` skill reads `$SESSION_TS` from the environment to construct the output directory name — when it is absent, the directory name is silently malformed (missing the session timestamp suffix). Other reads may exist.
 
-- [ ] **G — `.skills/package-diff.md` update**: Add `package-branch` section. Update apply instructions for `make draft` and `make confirm` redesign. Update output paths to reflect new folder structure. Remove references to `.patch` files and `git am`. Depends on F2.
+Fix: replace environment-only reliance with a durable `sandbox/.git/SESSION_STATE` key-value file written at container init alongside `INIT_SHA`. Format mirrors `.draft-state` (`key: value` per line); no shared read/write helpers needed — the pattern is simple enough to inline at each call site. `INIT_SHA` is rolled into `SESSION_STATE` as a key, and the standalone `sandbox/.git/INIT_SHA` file is removed. All existing read sites for `INIT_SHA` are updated to read from `SESSION_STATE` instead.
+
+- [ ] Grep `libs/`, `scripts/`, and skills for all reads of `$SESSION_TS` and `INIT_SHA` in the container context; catalogue every call site before changing anything
+- [ ] Write `SESSION_STATE` at container init with at minimum `session_ts` and `init_sha` keys; remove the standalone `INIT_SHA` write
+- [ ] Update all `INIT_SHA` read sites to read from `SESSION_STATE`
+- [ ] Update all `SESSION_TS` read sites — in scripts and skills — to read from `SESSION_STATE` when the environment variable is absent, with the env var taking precedence if set
+- [ ] Update the `package-branch` skill: replace `$SESSION_TS` env read with `SESSION_STATE` read; add fallback instruction if `SESSION_STATE` is absent (e.g. running outside a container)
+
+**Pending — `package-branch` skill amendments:**
+
+Session log analysis identified two instructions in the skill that caused nonproductive agent reasoning:
+
+- Scope framing: "Package the current session's committed branch history" implies a conversation boundary, not a container-lifetime boundary. The script packages all commits since `INIT_SHA`; the skill should say so explicitly. The same ambiguity affected the migration guide scope instruction — the agent second-guessed whether commits from prior sessions should be described.
+- `SESSION_TS` fallback: the skill instructs the agent to construct `OUTDIR` using `$SESSION_TS` but gives no fallback for when it is absent. The agent looped before improvising. A single fallback sentence would eliminate this.
+
+- [ ] Reframe scope description in `package-branch` skill: "all commits since `INIT_SHA`" (container-lifetime boundary, not conversation boundary); apply the same framing to the migration guide scope instruction
+- [ ] Add `SESSION_TS` fallback instruction: read from `SESSION_STATE` file first, fall back to env var, note omission if neither is available — do not loop attempting to derive it
+- [ ] These amendments depend on the `SESSION_STATE` task above; complete that task first so the skill can reference the file directly
+
+**Pending — interactive confirmation flag:**
+
+Both `make apply` and `make draft` lack an operator review step before changes are applied. A shared `--interactive` flag (candidate for shared logic in `libs/session.sh` or equivalent) prints the resolved diff file(s) to be applied — one per line — then prompts for confirmation before proceeding. `make apply` always has one file; `make draft` has one or more. Output format should be consistent between the two commands.
+
+- [ ] Implement `--interactive` flag in `apply_run` and `draft_run` — print resolved diff file list, prompt for confirmation, abort cleanly on rejection; extract print-and-prompt logic as a shared helper
+- [ ] Add `--interactive` to `make apply` and `make draft` Makefile targets; update `agent-sandbox.sh` to pass the flag through
+- [ ] Test interactive mode for both commands: confirmation proceeds, rejection aborts without applying, file list matches resolved session
+
+**Design note — host→container direction:**
+
+The two-layer model includes a host→container direction: operator runs `package-diff` on the host to push amendments into a running container session. This direction is present in the design but intentionally not implemented — no current use case warrants it. Not planned unless a concrete use case emerges.
 
 **Acceptance criteria:**
 
-- `SESSION_TS` derived once at session start with delimiter format; no independent `date` calls downstream
-- `diff_on_exit` writes to `$CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/`
-- `package_branch` and `package_diff` write to `$OUTPUT_DIR/bundles/` and `$OUTPUT_DIR/diffs/` respectively with `<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/` naming
-- `make draft` resolves latest export from `$CHANGES_DIR/` by lexicographic sort; creates draft branch named `draft/<EXPORT_TIME>-<SESSION_TS>-<branch>-<sha6>`; `.draft-state` is the first commit with all required fields; operator hint printed on completion
-- `make confirm`: drops `.draft-state` commit, rebases draft onto target, fast-forward merges, deletes draft branch; prints exact recovery commands on rebase conflict
-- `make reject`: reads `source_branch` from `.draft-state` on the branch; returns to source branch; deletes draft branch
-- `make apply` applies a single diff uncommitted on both host and container; `DIFF=<path>` override works
-- No checkpoint git tags written to repo on session start
-- No `ADVANCED_SESSIONS`, no `make sync`, no `SYNC=1`
-- `INIT_SHA` written once at container init, readable at `sandbox/.git/INIT_SHA`
-
-**Pre-close design tasks** (required before Trigger B): both resolved this session.
-
-- Mixing `make apply` and `make draft` within a single session — resolved. Paths are structurally separate: `make apply` reads from `$OUTPUT_DIR/diffs/`; `make draft` reads from `$CHANGES_DIR/`. No shared application mechanism.
-- Mixed session types against the same repo (Claude Chat + OpenCode) — closed as explicitly out of scope. Not intended behaviour. Warrants a story only if it becomes a real use case.
+- `scripts/apply_workspace.sh` does not exist; `agent-sandbox` is the sole entry point for `draft`, `confirm`, `reject`, `apply`
+- `libs/session.sh`, `libs/draft_workflow.sh`, `libs/diff_workflow.sh` exist; `libs/draft.sh` does not exist
+- `tests/test_draft_workflow.sh` and `tests/test_diff_workflow.sh` pass clean; `tests/test_apply.sh` and `tests/test_apply_workspace.sh` do not exist
+- `grep -rn "apply_workspace" .` returns no results outside `scripts/` (i.e. the file is gone and no caller references it)
+- `make apply --interactive` and `make draft --interactive` print the resolved diff file list and prompt before applying; aborting at the prompt leaves the project directory unchanged
+- diff and draft workflows produce correct artefact paths after tests have been run inside the container — verified by unsetting `$SESSION_TS` in the shell and confirming `SESSION_STATE` is read as fallback
+- `sandbox/.git/SESSION_STATE` exists at container init and contains `session_ts` and `init_sha` keys; `sandbox/.git/INIT_SHA` does not exist
 
 #### M2.5 — Vault Capability Layer Prototype
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
-**Depends on:** M2.1, M2.2, M2.3. **Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+**Depends on:** M2.1, M2.2, M2.3. **Status:** In progress.
+
+**Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+
+**Tasks:**
+
+- [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](docs/discussions/investigation_mcp_server.md) candidates table)
+- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
+- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
+- [ ] Validate binary file handling (vault attachments) under selected MCP server
+- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
+- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
 
 #### M2.6 — Session Resume Across Provider Implementations
 
