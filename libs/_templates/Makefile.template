@@ -123,15 +123,17 @@ stop:
 #
 # WORKFLOW:
 #   make draft                    — apply session patches to a working branch for review
-#   make draft SESSION=<name>     — apply a specific named session
+#   make draft SESSION=<name>     — apply a specific session from session-diffs/
+#   make draft SESSION=<abs-path> — apply from an explicit folder path (e.g. bundles/)
 #   git log -p HEAD~N..HEAD       — review changes on the working branch
 #   make confirm                  — rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x  — merge to a different target branch
 #   make reject                   — discard draft branch, return to source branch
 #
 # LEGACY (reasoning layer output channel):
-#   make apply                    — apply changes.diff from .workspace/output/ (no commits created)
-#   make apply SESSION=<name>     — apply from a specific named session directory
+#   make apply                    — apply changes.diff from .workspace/output/diffs/ (no commits created)
+#   make apply SESSION=<name>     — apply from a specific session under output/diffs/
+#   make apply SESSION=<abs-path> — apply from an explicit folder path
 #   make apply BRANCH=<name>      — apply to a named branch
 #   make apply FORCE=1            — apply with --reject; .rej files created for conflicts
 #   Note: OUTPUT_DIR is not cleared automatically. Clear manually between sessions if desired.

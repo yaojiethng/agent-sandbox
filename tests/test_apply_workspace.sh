@@ -18,7 +18,9 @@
 #   reject guard — rejects if no draft-state
 #   apply — applies changes.diff from OUTPUT_DIR with git apply
 #   apply SESSION=<n> — applies from named session directory in OUTPUT_DIR
+#   apply SESSION=<abs-path> — applies from explicit absolute path
 #   apply guard — rejects if OUTPUT_DIR empty or changes.diff missing
+#   draft SESSION=<name> — resolves relative name under CHANGES_DIR/
 #
 # All fixtures created under a temp dir — no repos created inside the harness repo.
 
@@ -220,6 +222,35 @@ test_draft_uses_named_session_path() {
     pass "draft uses explicit --session path"
   else
     fail "draft did not use explicit path: expected 3 commits, got $COMMIT_COUNT"
+  fi
+}
+
+test_draft_uses_named_session_relative() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_named_rel_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_named_rel_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Create two exports
+  make_export_with_diffs "$CHANGES_DIR/20260420-120000-branch-a-20260420-120000" 1
+  make_export_with_diffs "$CHANGES_DIR/20260420-130000-branch-b-20260420-130000" 3
+
+  # Run draft with relative session name (resolved under CHANGES_DIR)
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="20260420-120000-branch-a-20260420-120000" >/dev/null 2>&1
+
+  # Verify branch-a's diffs applied (1 diff + .draft-state + initial = 3)
+  local COMMIT_COUNT
+  COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+    pass "draft resolves relative SESSION under CHANGES_DIR"
+  else
+    fail "draft did not resolve relative SESSION: expected 3 commits, got $COMMIT_COUNT"
   fi
 }
 
@@ -1020,6 +1051,41 @@ EOF
   fi
 }
 
+test_apply_uses_absolute_session_path() {
+  local PROJECT_DIR="$FIXTURE_DIR/apply_abs_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/apply_abs_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local OUTPUT_DIR="$WORKSPACE_DIR/output"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$OUTPUT_DIR/diffs"
+
+  # Create a session in a custom absolute path (outside default diffs/)
+  local CUSTOM_DIR="$FIXTURE_DIR/custom-session"
+  mkdir -p "$CUSTOM_DIR"
+  cat > "$CUSTOM_DIR/changes.diff" <<'EOF'
+diff --git a/abs-file.txt b/abs-file.txt
+new file mode 100644
+--- /dev/null
++++ b/abs-file.txt
+@@ -0,0 +1 @@
++absolute path change
+EOF
+
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="$CUSTOM_DIR" >/dev/null 2>&1
+
+  local STATUS
+  STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
+  if [[ "$STATUS" == *"abs-file.txt"* ]]; then
+    pass "apply uses absolute SESSION path directly"
+  else
+    fail "apply did not use absolute path: $STATUS"
+  fi
+}
+
 test_apply_requires_changes_diff() {
   local PROJECT_DIR="$FIXTURE_DIR/apply_no_diff_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/apply_no_diff_sandbox"
@@ -1239,6 +1305,7 @@ run_test "draft_creates_branch" test_draft_creates_branch
 run_test "draft_applies_diffs" test_draft_applies_diffs
 run_test "draft_uses_most_recent_export" test_draft_uses_most_recent_export
 run_test "draft_uses_named_session_path" test_draft_uses_named_session_path
+run_test "draft_uses_named_session_relative" test_draft_uses_named_session_relative
 run_test "draft_branch_name_format" test_draft_branch_name_format
 run_test "draft_branch_name_with_summary" test_draft_branch_name_with_summary
 run_test "draft_creates_draft_state_commit" test_draft_creates_draft_state_commit
@@ -1262,6 +1329,7 @@ run_test "validate_branch_rejects_missing_draft_state" test_validate_branch_reje
 run_test "validate_branch_rejects_bad_first_commit" test_validate_branch_rejects_bad_first_commit
 run_test "apply_uses_latest_session" test_apply_uses_latest_session
 run_test "apply_uses_named_session" test_apply_uses_named_session
+run_test "apply_uses_absolute_session_path" test_apply_uses_absolute_session_path
 run_test "apply_requires_changes_diff" test_apply_requires_changes_diff
 run_test "apply_requires_output_dir" test_apply_requires_output_dir
 run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir

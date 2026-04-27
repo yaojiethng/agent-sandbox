@@ -4,13 +4,14 @@
 # Apply workflow for agent-sandbox session artefacts.
 #
 # Commands:
-#   draft   [--project=<path>] [--sandbox=<path>] [--session=<path>] [--branch-from=<hash>]
+#   draft   [--project=<path>] [--sandbox=<path>] [--session=<name|path>] [--branch-from=<hash>]
 #             [--diffs=<start>..<end>] [--branch-summary=<slug>]
 #             Create a working branch draft/<export_time>-<session_ts>-<branch>-<sha6> from HEAD.
 #             Apply numbered diffs from the resolved export folder via git apply (index stripped),
 #             staging and committing each. The first commit on the branch is .draft-state.
 #             Resolves latest export from $CHANGES_DIR/ by lexicographic sort unless --session
-#             specifies an explicit path.
+#             is given. --session=<name> resolves under $CHANGES_DIR/; --session=<absolute-path>
+#             uses the path directly (e.g. to target an $OUTPUT_DIR/bundles/ export).
 #
 #   confirm [--project=<path>] [--sandbox=<path>] [--target=<branch>]
 #             Read .draft-state from the draft branch. Rebase onto target,
@@ -20,12 +21,14 @@
 #             Read source_branch from .draft-state on the draft branch.
 #             Checkout source branch, delete working branch, clear draft-state.
 #
-#   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--diff=<path>] [--force]
+#   apply   [--project=<path>] [--sandbox=<path>] [--session=<name|path>] [--branch=<n>] [--diff=<path>] [--force]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR using git apply
 #             with index lines stripped — context-line matching only, no blob SHA
 #             validation, tolerant of index drift and sequential application.
 #             No commits created. Operator reviews and commits manually.
-#             Reads from reasoning layer output channel (.workspace/output/).
+#             Reads from reasoning layer output channel (.workspace/output/diffs/).
+#             --session=<name> resolves under $OUTPUT_DIR/diffs/; --session=<absolute-path>
+#             uses the path directly.
 #             --diff=<path>: apply specific diff file instead of resolving from OUTPUT_DIR.
 #             --force: apply with --reject; .rej files left for manual resolution.
 #
@@ -132,8 +135,12 @@ if [[ "$COMMAND" == "draft" ]]; then
 
   # Resolve target export folder
   if [[ -n "$SESSION_ARG" ]]; then
-    # Explicit path override — can be any folder, including $OUTPUT_DIR/bundles/
-    EXPORT_DIR="$SESSION_ARG"
+    # Explicit path override — absolute used as-is; relative resolved under $CHANGES_DIR
+    if [[ "$SESSION_ARG" == /* ]]; then
+      EXPORT_DIR="$SESSION_ARG"
+    else
+      EXPORT_DIR="$CHANGES_DIR/$SESSION_ARG"
+    fi
     if [[ ! -d "$EXPORT_DIR" ]]; then
       echo "Error: session directory not found: $EXPORT_DIR" >&2
       exit 1
@@ -371,8 +378,12 @@ if [[ "$COMMAND" == "apply" ]]; then
     fi
 
     if [[ -n "$SESSION_ARG" ]]; then
-      # Explicit session name provided
-      SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
+      # Explicit session path — absolute used as-is; relative resolved under $DIFFS_DIR
+      if [[ "$SESSION_ARG" == /* ]]; then
+        SESSION_DIR="$SESSION_ARG"
+      else
+        SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
+      fi
       if [[ ! -d "$SESSION_DIR" ]]; then
         echo "Error: session directory not found: $SESSION_DIR" >&2
         echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
