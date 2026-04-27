@@ -4,7 +4,7 @@ Step-by-step guide to adding a new reasoning layer provider to agent-sandbox. A 
 
 The provider interface contract is defined in [`../architecture/tool_interface.md` — Provider Interface](../architecture/tool_interface.md#provider-interface). This guide walks through implementing that contract. Refer to [`../architecture/execution_model.md`](../architecture/execution_model.md) for implementation detail on how the harness calls provider scripts.
 
-`opencode` and `hermes` are both conforming providers and are the reference implementations for this guide.
+`claude-ai` and `claude-code` are both conforming providers and are the reference implementations for this guide.
 
 ---
 
@@ -22,7 +22,7 @@ Provider `setup.sh` hooks are sourced by `scripts/run_agent.sh` and have access 
 
 ## What You Are Building
 
-A conforming provider supplies four required files and up to three optional files:
+A conforming provider supplies four required files and up to four optional files:
 
 **Required:**
 ```
@@ -36,14 +36,15 @@ providers/<n>/
 **Optional:**
 ```
 providers/<n>/
-├── config/                       ← onboarding template; copied to $SANDBOX_DIR/.<n>/ at onboard time
+├── config/                       ← default config files; seeded into AGENT_HOME at container start
+│   └── AGENTS.md                 ← provider-layer agent context (see Step 7)
 ├── docker-compose.<n>.yml        ← provider overlay, merged in all modes if present
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
 Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by `build_context_agent` — providers do not author or maintain it.
 
-None of these files are copied to `SANDBOX_DIR` at run time. They live in the agent-sandbox repo and are referenced directly.
+None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
 
 ---
 
@@ -53,7 +54,7 @@ None of these files are copied to `SANDBOX_DIR` at run time. They live in the ag
 mkdir providers/<n>
 ```
 
-Use a short lowercase name with hyphens if needed (e.g. `opencode`, `hermes`). This name becomes the `<provider>` component in image and container names (`<provider>-base`, `<provider>-agent-<project>`).
+Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-code`). This name becomes the `<provider>` component in image and container names (`<provider>-base`, `<provider>-agent-<project>`).
 
 ---
 
@@ -73,7 +74,7 @@ RUN ...
 
 The base image ends as root. User creation and runtime configuration belong in `provider.Dockerfile`.
 
-**Reference:** `providers/opencode/base.Dockerfile`, `providers/hermes/base.Dockerfile`
+**Reference:** `providers/claude-ai/base.Dockerfile`, `providers/claude-code/base.Dockerfile`
 
 ---
 
@@ -90,35 +91,38 @@ FROM ${BASE_IMAGE}
 COPY dirs.sh /libs/dirs.sh
 COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
+# Provider config seed — injected by build_context_agent from providers/<n>/config/.
+# Omit this line if the provider has no config/ directory.
+COPY config/ /opt/context/config/
+
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 USER agentuser
 
 # AGENT_HOME — where the agent writes config and state inside the container.
-# PROVIDER_NAME — used by provider-entrypoint.sh to identify the provider.
+# PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
 ENV PROVIDER_NAME=<n>
 ENV AGENT_HOME=/home/agentuser/.<n>
 
 RUN mkdir -p /home/agentuser/workspace/input \
-             /home/agentuser/workspace/output \
-             /opt/provider-config
+             /home/agentuser/workspace/output
 
 WORKDIR /home/agentuser/sandbox
 
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh copies /opt/provider-config/ into AGENT_HOME,
-# registers a copy-out EXIT trap, then execs the agent command.
+# provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
+# EXIT trap, then execs the agent command.
 ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
 ```
 
-The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`.
+The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
 
-`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider.
+`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also injected from `providers/<n>/config/` if that directory exists.
 
-The agent brief and operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. `/opt/provider-config/` is bind-mounted from `$SANDBOX_DIR/.<provider>/` at runtime — do not bake config into the image.
+The operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
-**Reference:** `providers/opencode/provider.Dockerfile`, `providers/hermes/provider.Dockerfile`
+**Reference:** `providers/claude-ai/provider.Dockerfile`, `providers/claude-code/provider.Dockerfile`
 
 ---
 
@@ -136,7 +140,7 @@ services:
 
 If the provider does not support serve mode, create the file anyway with a comment and ensure the agent behaviour on `make serve` is documented.
 
-**Reference:** `providers/opencode/docker-compose.serve.yml`, `providers/hermes/docker-compose.serve.yml`
+**Reference:** `providers/claude-ai/docker-compose.serve.yml`, `providers/claude-code/docker-compose.serve.yml`
 
 ---
 
@@ -154,35 +158,61 @@ SOME_PORT=8080
 
 Variables that are always derivable from other `.env` values (e.g. image names) should not appear here — they are exported by `scripts/start_agent.sh` at run time.
 
-**Reference:** `providers/opencode/.env.example`, `providers/hermes/.env.example`
+**Reference:** `providers/claude-ai/.env.example`, `providers/claude-code/.env.example`
 
 ---
 
 ## Step 6 (optional) — Add `config/`
 
-If the provider requires configuration files before the agent starts, place stubs in:
+If the provider requires default configuration files to be present before the agent starts, place them in:
 
 ```
 providers/<n>/config/
 ```
 
-`agent-sandbox onboard` copies this directory to `$SANDBOX_DIR/.<provider>/` during project setup. If `env.stub` is present, it is renamed to `.env` at this point — `env.stub` is the committed name used to avoid `.gitignore` matches in the repo.
+`build_context_agent` copies this directory into the build context. `provider.Dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
 
-The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<provider>/` before the first run. At runtime, `provider-entrypoint.sh` copies the contents of `$SANDBOX_DIR/.<provider>/` (via the `/opt/provider-config/` bind mount) into `AGENT_HOME`. On exit, it copies `AGENT_HOME` back, persisting session state for the next run.
+Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
 
 ```
 providers/<n>/config/
-├── config.yaml     ← stub; operator fills in real values in $SANDBOX_DIR/.<n>/config.yaml
-└── env.stub        ← stub; renamed to .env in $SANDBOX_DIR/.<n>/ at onboard time
+├── AGENTS.md       ← provider-layer agent context brief (see Step 7)
+├── config.yaml     ← seeded as AGENT_HOME/config.yaml if absent
+└── env.stub        ← seeded as AGENT_HOME/.env if absent
 ```
 
-Files in `config/` are stubs — they contain structure and comments only, not secrets. Provider config is never baked into the image. Do not add a `COPY config/` line to `provider.Dockerfile`.
+Files in `config/` are stubs — they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
 
-If the provider has no config to seed, omit the `config/` directory entirely.
+If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.Dockerfile`.
 
 ---
 
-## Step 7 (optional, but usually required) — Write `docker-compose.<n>.yml`
+## Step 7 — Write `config/AGENTS.md`
+
+Every provider must supply a provider-layer `AGENTS.md` at `providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh` and orients the agent to its immediate environment.
+
+Use `providers/AGENTS.template.md` as the starting point. The template includes authoring notes for each section — remove all comment blocks before committing.
+
+**Provider-layer content covers:**
+- What interface the agent is operating in
+- Sandbox context: working directory, diff pipeline, operator authority
+- Input and output channels and their paths
+- Available tools and tool use preferences
+- Output mechanism (how files are delivered)
+- Provider-specific session start steps
+
+**Provider-layer content does not include:**
+- Project workflow, session conventions, or collaboration principles — those are in the project-layer `AGENTS.md` at the repository root
+- Policy document reading lists — those are in the project-layer `AGENTS.md`
+- Duplicate content from other layers — link rather than restate
+
+The two-layer agent context model is defined in [`../concepts/agent_workflow.md` — Agent Context Model](../concepts/agent_workflow.md#agent-context-model).
+
+**Reference:** `providers/claude-ai/config/AGENTS.md`, `providers/claude-code/config/AGENTS.md`
+
+---
+
+## Step 8 (optional) — Write `docker-compose.<n>.yml`
 
 If the provider requires environment variables or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
 
@@ -196,29 +226,11 @@ providers/<n>/docker-compose.<n>.yml
 base → provider overlay → mode overlay
 ```
 
-### Important: API Keys Must Be Declared Here
-
-**This is a Docker Compose constraint, not an agent-sandbox one.** Even though `.env` variables are loaded and exported by `scripts/start_agent.sh`, Docker Compose only passes environment variables to containers that are explicitly declared in the compose file's `environment:` block.
-
-If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`), you **must** declare them in `docker-compose.<n>.yml`:
-
-```yaml
-services:
-  agent:
-    environment:
-      - PROVIDER_NAME=<n>
-      - SOME_API_KEY=${SOME_API_KEY:-}
-```
-
-The `${VAR:-}` syntax ensures the variable is only passed if it's set in `.env`. If omitted, the container receives an empty string.
-
-**Without this file, API keys in `.env` will NOT be available inside the container.**
-
-**Reference:** `providers/hermes/docker-compose.hermes.yml`, `providers/pi/docker-compose.pi.yml`, `providers/opencode/docker-compose.opencode.yml`
+**Reference:** `providers/claude-code/docker-compose.claude-code.yml`
 
 ---
 
-## Step 8 (optional) — Write `setup.sh`
+## Step 9 (optional) — Write `setup.sh`
 
 If the provider requires host-side setup before containers start, add a setup hook:
 
@@ -232,13 +244,13 @@ providers/<n>/setup.sh
 
 Common uses:
 - Export vars that compose overlays reference via `${VAR}` — these must be exported before `compose_generate` runs
-- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so the bind mount source exists before Docker tries to mount it
+- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so it exists for copy-out to land in on the first session
 
-**Reference:** `providers/hermes/setup.sh`
+**Reference:** `providers/claude-code/setup.sh`
 
 ---
 
-## Step 9 — Verify conformance
+## Step 10 — Verify conformance
 
 Run the dry-run sequence against an onboarded project to verify the provider integrates correctly:
 
@@ -251,7 +263,7 @@ A passing dry-run confirms:
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access `sandbox/` via the shared volume
 - Both containers terminate gracefully
-- The diff pipeline produces output in `.workspace/session-diffs/`
+- The diff pipeline produces output in `.workspace/changes/`
 
 If `make dry-run` passes, the provider conforms to the harness interface.
 
@@ -261,13 +273,15 @@ Optionally verify serve mode if implemented:
 make serve PROVIDER=<n>
 ```
 
+Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) and the provider-specific service starts correctly.
+
 ---
 
-## Step 10 — Register the provider
+## Step 11 — Register the provider
 
 No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.Dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 
-Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs and `config/` templates automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to update template files, then manually copy any new `config/` templates into their `$SANDBOX_DIR/.<provider>/`.
+Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to append the new provider's stubs to their `.env`.
 
 ---
 
@@ -276,5 +290,7 @@ Operators onboarding new projects after the provider is added will receive the p
 | Document | Purpose |
 |---|---|
 | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Provider interface contract and execution mode definitions |
-| [`../architecture/execution_model.md`](../architecture/execution_model.md) | Mount shape, container lifecycle, entrypoint sequences |
-| [`../architecture/provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Reasoning layer lifecycle — copy-in, work, copy-out |
+| [`../architecture/execution_model.md`](../architecture/execution_model.md) | How `start_agent.sh` calls `run_agent.sh`; compose generation internals |
+| [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md) | Two-layer agent context model |
+| [`../../providers/AGENTS.template.md`](../../providers/AGENTS.template.md) | Reference template for provider-layer AGENTS.md |
+| [`../../libs/compose.sh`](../../libs/compose.sh) | Helper functions available to `setup.sh` and provider scripts |

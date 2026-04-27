@@ -47,9 +47,9 @@ Current layer freeze status is tracked in [`docs/development/project_index.md`](
 
 **`.workspace/`** — a host-side directory providing the I/O channels between containers and host. Subdirectories have distinct owners and trust levels: `input/` (operator-written, reasoning layer read-only), `output/` (agent-written, reasoning layer read-write), `session-diffs/` (harness-written, capability layer read-write — diff pipeline output).
 
-**Diff and apply** — on capability layer exit, the diff pipeline produces numbered `.diff` files (per-commit from `package_branch`), `changes.diff` (uncommitted vs HEAD), and `staged.diff` (net delta from `INIT_SHA`) into a session-scoped directory under `session-diffs/<SESSION_TS>-<BRANCH>/session/`. An autosave loop also writes `changes.diff` and numbered `.diff` files to the `autosave/` subfolder. The operator runs `make draft` to apply patches to a working branch, reviews, then runs `make confirm` to merge. `make apply` applies `changes.diff` directly to the working tree without creating commits.
+**Diff and apply** — on capability layer exit, the diff pipeline produces per-commit `.patch` files and a `staged.diff` into a session-scoped directory under `session-diffs/`. The operator runs `make draft` to apply patches to a working branch, reviews, then runs `make confirm` to merge. A legacy `make apply` path applies `changes.diff` from `output/` directly to the working tree without creating commits.
 
-**Per-project config** — each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and `agents.md` (agent context brief). Provider-specific config is managed via copy-in at session start and copy-out at session end.
+**Per-project config** — each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context — session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `providers/<n>/config/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model).
 
 ---
 

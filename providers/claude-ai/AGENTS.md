@@ -6,7 +6,15 @@ Claude Chat (claude.ai). Artifacts are available. The agent has no direct filesy
 
 ---
 
-## What a session is
+## Sandbox Context
+
+You are operating as an agent within a claude.ai conversation. You have no access to the filesystem, shell, or container environment. All repository content must be explicitly uploaded by the operator to be available in this conversation.
+
+The agent runtime is explicitly untrusted. The operator has final authority over all outputs.
+
+---
+
+## What a Session Is
 
 A session is a single claude.ai conversation. Memory does not persist across conversations — every new conversation starts with a completely empty context. There is no residual knowledge of repository files, prior decisions, or session state from previous conversations. The handover document and uploaded files are the complete and only context for any session.
 
@@ -14,7 +22,7 @@ This definition is the basis for the file access gate below. It is not the same 
 
 ---
 
-## File access gate
+## File Access Gate
 
 **Do not produce any output derived from the content of a repository file unless that file has been uploaded to this conversation.**
 
@@ -29,7 +37,7 @@ This gate applies to every output in the conversation — not only at session st
 
 ---
 
-## Output mechanism
+## Output Mechanism
 
 All document and file outputs are produced as **artifacts**, one artifact per file. Inline chat prose is not a substitute for an artifact when the output is intended for the repository.
 
@@ -39,7 +47,7 @@ For multi-file outputs (e.g. a compaction pass touching several roadmap sections
 
 ---
 
-## Session open convention
+## Session Open Convention
 
 Every session begins with a session open message from the operator, sent **before any task prompt**. This separates session initialisation from task work and ensures Step 1 housekeeping runs reliably.
 
@@ -67,34 +75,28 @@ Session open. Uploaded: handover, roadmap, security.md. Focus: capability layer 
 
 **If the operator omits the session open message** and sends a task prompt directly, the agent must not act on the prompt immediately. Instead:
 1. Acknowledge the task.
-2. Run Step 1 and Step 1b per [`handover_policy.md`](handover_policy.md).
-3. Confirm both steps are complete, then proceed with the task.
+2. Run Step 1 housekeeping (Trigger B recovery check, compaction, handover creation) per [`handover_policy.md`](docs/operations/handover_policy.md#at-session-open-step-1).
+3. Confirm Step 1 is complete, then proceed with the task.
 
 **If the operator omits the uploaded files list**, ask for it before proceeding. Do not infer which files are present from the conversation — the operator's explicit list is the authoritative record for this session.
 
 ---
 
-## Session start
+## Session Start
 
 At session start, on receipt of the session open message:
 
 1. Check the uploaded files list against required reading. The most recent handover (`YYYYMMDD-NN-TYPE-*.md`) and `roadmap.md` are the minimum required uploads for any implementation or workflow session. Name any missing files and ask for them before proceeding.
-2. Run Step 1 housekeeping per [`handover_policy.md`](handover_policy.md#at-session-open-step-1): Trigger B recovery check, roadmap compaction, handover creation.
-3. Run Step 1b scope confirmation per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-1b): present a scope proposal in chat (or interview the operator if context is insufficient), and wait for explicit confirmation before producing any file output. If a Focus was given, use it to narrow the scope proposal. Update the handover Scope section once confirmed.
-4. Confirm both steps are complete before accepting any task prompt.
+2. Run Step 1 housekeeping per [`handover_policy.md`](docs/operations/handover_policy.md#at-session-open-step-1): Trigger B recovery check, roadmap compaction, handover creation.
+3. If a Focus was given, use it to scope the Hot files section to the named task group(s). If no Focus was given, scope to the full remaining task list.
+4. Confirm Step 1 is complete before accepting any task prompt.
+
+The full session reading list and workflow conventions are in the project-layer `AGENTS.md` at the repository root. This file must be uploaded by the operator to be available — it is not discoverable via filesystem. If it has not been uploaded, request it alongside the handover and roadmap.
 
 ---
 
 ## Constraints
 
 - No bash, grep, or filesystem access. File content must be uploaded by the operator.
-- Read discipline still applies: establish what you need from a file before asking for it. If a section map is needed, ask the operator to share the file — do not ask for the full file when a grep result would suffice.
+- Read discipline still applies: establish what you need from a file before asking for it. If a section map is needed, ask the operator to share the file — do not ask for the full file when a section excerpt would suffice.
 - Memory does not persist across conversations. The handover and uploaded files are the complete context.
-
----
-
-## References
-
-| Document | Purpose |
-|---|---|
-| [`agent_context_brief.md`](agent_context_brief.md) | Collaboration protocol, output format principles, read discipline |
