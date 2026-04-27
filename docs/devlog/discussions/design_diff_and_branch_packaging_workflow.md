@@ -231,7 +231,9 @@ To discard: make reject
 
 ### `make confirm [TARGET=<branch>]`
 
-Reads `.draft-state` from the draft branch. Validates current branch is a `draft/` branch.
+Validates the current branch is a proper draft branch via three checks: branch name starts
+with `draft/`, `.draft-state` exists at the branch tip, and the first commit after `from_hash`
+has message `.draft-state`. Reads `.draft-state` from the draft branch into shell variables.
 Performs the following sequence:
 
 **1. Drop `.draft-state` commit**
@@ -242,7 +244,8 @@ git rebase --onto "${draft_state_commit}^" "$draft_state_commit" "draft/$BRANCH"
 ```
 
 The `.draft-state` commit is always the first commit on the branch — the one immediately
-after `from_hash`. Dropping it leaves only the operator's shaped commits.
+after `from_hash`. Dropping it leaves only the operator's shaped commits. The `.draft-state`
+file is never present on the target branch after merge.
 
 **2. Rebase draft onto target**
 
@@ -301,9 +304,9 @@ To discard the draft entirely:
 
 ### `make reject`
 
-Checks out `source_branch` (read from `.draft-state` on the draft branch). Deletes the
-draft branch. Done. No working directory files to clean up — `.draft-state` is on the
-branch, not in the working tree.
+Validates the current branch is a proper draft branch (same three checks as `make confirm`).
+Reads `source_branch` from `.draft-state` on the draft branch. Checks out the source branch.
+Deletes the current draft branch only — other `draft/` branches are untouched. Done.
 
 ---
 

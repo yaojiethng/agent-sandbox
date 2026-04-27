@@ -84,19 +84,11 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 Units are ordered by dependency. F0 must run first. F1 depends on F0 and E. F2 depends on F1. G is last.
 
-**F0 — path and timestamp audit** — Complete. `SESSION_TS` and `SANITIZED_HOST_BRANCH` are derived once at session start and exported to all downstream consumers. `SESSION_NAME` is removed. Diff output paths, container labels, and environment variables all use the primitive variables directly.
+**F0 — path and timestamp audit** — `SESSION_TS` and `SANITIZED_HOST_BRANCH` are derived once at session start and exported to all downstream consumers; `SESSION_NAME` is removed. Diff output paths, container labels, and environment variables use the primitive variables directly.
 
-- [x] **F1 — complete `make draft` + `.draft-state`** (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`, `libs/draft.sh`): `make draft` resolves the latest export from `$CHANGES_DIR/` by lexicographic sort; explicit `--session=<path>` accepts any folder. Parses `EXPORT_TIME`, `SANITIZED_HOST_BRANCH`, `SESSION_TS` from folder name. Draft branch name: `draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or SANITIZED_HOST_BRANCH>-<sha6>`. First commit is `.draft-state` with all required fields. Shared draft utilities extracted to `libs/draft.sh`. Same-name collision guard — identical branch names rejected, different names allowed to coexist. See handover `20260423-07-impl-draft_state_and_make_draft_redesign.md`.
+**F1 — complete `make draft` + `.draft-state`** — `make draft` resolves the latest export from `$CHANGES_DIR/` by lexicographic sort and supports explicit `--session=<path>`. It parses session identity from folder names, creates draft branches with the `draft/<EXPORT_TIME>-<SESSION_TS>-<branch>-<sha6>` naming convention, and commits `.draft-state` as the first commit on the branch. Shared draft utilities live in `libs/draft.sh`. Same-name collision guard prevents duplicate branch creation while allowing concurrent drafts from different sessions.
 
-- [ ] **F2 — `make confirm` rewrite + `make reject` update + `make sync` removal** (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`):
-
-  **`make confirm`:** (1) Read `.draft-state` from draft branch — fail with "not on a draft branch" if absent. (2) Drop `.draft-state` commit via `git rebase --onto`. (3) Rebase draft onto target — on conflict print exact recovery commands (`git rebase --continue` / `make confirm` / `git rebase --abort` + `make reject`) and exit. (4) `git merge --ff-only`. (5) Delete draft branch.
-
-  **`make reject`:** Read `source_branch` from `.draft-state` on the draft branch. Check out source branch. Delete draft branch.
-
-  **`make sync` removal:** Remove `SYNC=1` handling and `make sync` target entirely.
-
-  Depends on F1.
+**F2 — `make confirm` rewrite + `make reject` update + `make sync` removal** — `make confirm` validates the current branch is a proper draft branch (name, `.draft-state` presence, first commit message), drops the `.draft-state` commit, rebases onto target, fast-forward merges, and deletes the draft branch. `make reject` validates the same way, checks out the source branch, and deletes the current draft branch only. Both commands share a unified `draft_validate_branch` function in `libs/draft.sh` with descriptive per-check errors. `make sync` and all `SYNC=1` handling removed.
 
 - [ ] **G — `.skills/package-diff.md` update**: Add `package-branch` section. Update apply instructions for `make draft` and `make confirm` redesign. Update output paths to reflect new folder structure. Remove references to `.patch` files and `git am`. Depends on F2.
 

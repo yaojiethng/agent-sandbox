@@ -106,7 +106,6 @@ fi
 WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
 OUTPUT_DIR="$WORKSPACE_DIR/output"
-DRAFT_STATE_FILE="$WORKSPACE_DIR/draft-state"
 
 # -------------------------
 # Common validation
@@ -206,6 +205,14 @@ if [[ "$COMMAND" == "draft" ]]; then
   # Compute draft branch name
   WORKING_BRANCH="draft/${EXPORT_TIME}-${SESSION_TS}-${BRANCH_SLUG}-${FROM_SHA6}"
 
+  # Guard: don't allow drafting from a draft branch
+  CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+  if [[ "$CURRENT_BRANCH" == draft/* ]]; then
+    echo "Error: already on a draft branch: $CURRENT_BRANCH" >&2
+    echo "  Run 'make reject' or 'make confirm' first." >&2
+    exit 1
+  fi
+
   # Guard: same-name collision only
   draft_guard_no_collision "$PROJECT_DIR" "$WORKING_BRANCH" || exit 1
 
@@ -240,13 +247,6 @@ if [[ "$COMMAND" == "draft" ]]; then
     git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
   done
 
-  # Backward-compat: write legacy draft-state file for F2 transition
-  cat > "$DRAFT_STATE_FILE" <<EOF
-SOURCE_BRANCH=${SOURCE_BRANCH}
-WORKING_BRANCH=${WORKING_BRANCH}
-SESSION_DIR=${EXPORT_DIR}
-EOF
-
   # Operator hint
   echo ""
   echo "Draft branch created: $WORKING_BRANCH"
@@ -268,16 +268,10 @@ fi
 # CONFIRM
 # -------------------------
 if [[ "$COMMAND" == "confirm" ]]; then
-  if [[ ! -f "$DRAFT_STATE_FILE" ]]; then
-    echo "Error: no draft in progress — draft-state not found: $DRAFT_STATE_FILE" >&2
-    echo "  Run 'make draft' first." >&2
-    exit 1
-  fi
+  # Validate we're on a proper draft branch; read .draft-state into caller scope
+  eval "$(draft_validate_branch "$PROJECT_DIR")" || exit 1
 
-  # Read state
-  source "$DRAFT_STATE_FILE"
-
-  MERGE_TARGET="${TARGET_BRANCH:-$SOURCE_BRANCH}"
+  MERGE_TARGET="${TARGET_BRANCH:-$source_branch}"
 
   if ! git -C "$PROJECT_DIR" rev-parse --verify "$MERGE_TARGET" >/dev/null 2>&1; then
     echo "Error: target branch does not exist: $MERGE_TARGET" >&2
@@ -285,49 +279,48 @@ if [[ "$COMMAND" == "confirm" ]]; then
     exit 1
   fi
 
-  echo "Rebasing $WORKING_BRANCH onto $MERGE_TARGET..."
-  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH"
-  git -C "$PROJECT_DIR" rebase "$MERGE_TARGET"
+  # 1. Drop .draft-state commit
+  DRAFT_STATE_COMMIT=$(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse | head -n 1)
+  echo "Dropping .draft-state commit..."
+  if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
+    echo "Error: failed to drop .draft-state commit" >&2
+    exit 1
+  fi
 
-  echo "Fast-forward merging $WORKING_BRANCH into $MERGE_TARGET..."
+  # 2. Rebase draft onto target
+  echo "Rebasing $CURRENT_BRANCH onto $MERGE_TARGET..."
+  if ! git -C "$PROJECT_DIR" rebase "$MERGE_TARGET" "$CURRENT_BRANCH"; then
+    echo ""
+    echo "Conflict rebasing $CURRENT_BRANCH onto $MERGE_TARGET."
+    echo ""
+    echo "Resolve conflicts, then run:"
+    echo ""
+    echo "  git rebase --continue          # after resolving each conflict"
+    echo "  make confirm                   # retry the merge once rebase is clean"
+    echo ""
+    echo "To abort and return to the draft branch:"
+    echo ""
+    echo "  git rebase --abort"
+    echo "  make confirm                   # retry from scratch once draft is ready"
+    echo ""
+    echo "To discard the draft entirely:"
+    echo ""
+    echo "  git rebase --abort"
+    echo "  make reject"
+    exit 1
+  fi
+
+  # 3. Fast-forward merge
+  echo "Fast-forward merging $CURRENT_BRANCH into $MERGE_TARGET..."
   git -C "$PROJECT_DIR" switch "$MERGE_TARGET"
-  git -C "$PROJECT_DIR" merge --ff-only "$WORKING_BRANCH"
+  git -C "$PROJECT_DIR" merge --ff-only "$CURRENT_BRANCH"
 
-  echo "Deleting working branch: $WORKING_BRANCH"
-  git -C "$PROJECT_DIR" branch -D "$WORKING_BRANCH"
-
-  rm -f "$DRAFT_STATE_FILE"
+  # 4. Delete draft branch
+  echo "Deleting draft branch: $CURRENT_BRANCH"
+  git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"
 
   echo ""
   echo "Done. Changes merged into $MERGE_TARGET."
-  echo "Session artefacts retained at: $SESSION_DIR"
-
-  # SYNC=1: trigger baseline advancement in running container
-  # advance_baseline.sh implemented in Change 6
-  if [[ "${SYNC:-}" == "1" ]]; then
-    # Find container by label
-    CONTAINER=$(docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" \
-      --format '{{.Names}}' | head -n 1)
-    if [[ -n "$CONTAINER" ]]; then
-      # Validate session identity matches
-      CONTAINER_SESSION_TS=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.session-ts"}}' "$CONTAINER" 2>/dev/null || echo "")
-      CONTAINER_HOST_BRANCH=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.host-branch"}}' "$CONTAINER" 2>/dev/null || echo "")
-      SESSION_ID_FROM_DIR=$(basename "$SESSION_DIR")
-      # Directory name format: <EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>
-      # Both CONTAINER_SESSION_TS and CONTAINER_HOST_BRANCH must appear in the dir name
-      if [[ -n "$CONTAINER_SESSION_TS" && "$SESSION_ID_FROM_DIR" != *"$CONTAINER_SESSION_TS"* ]] \
-         || [[ -n "$CONTAINER_HOST_BRANCH" && "$SESSION_ID_FROM_DIR" != *"$CONTAINER_HOST_BRANCH"* ]]; then
-        echo "Warning: container session identity does not match confirmed session directory." >&2
-        echo "  Container: session-ts=$CONTAINER_SESSION_TS host-branch=$CONTAINER_HOST_BRANCH" >&2
-        echo "  Directory: $SESSION_ID_FROM_DIR" >&2
-        echo "  Skipping baseline advancement." >&2
-      elif docker exec "$CONTAINER" test -f /usr/local/bin/advance_baseline.sh 2>/dev/null; then
-        echo "Triggering baseline advancement for session: $SESSION_ID_FROM_DIR"
-        docker exec "$CONTAINER" advance_baseline.sh "$SESSION_ID_FROM_DIR"
-      fi
-    fi
-    # If no container running, SYNC=1 is silently ignored
-  fi
 
   exit 0
 fi
@@ -336,26 +329,18 @@ fi
 # REJECT
 # -------------------------
 if [[ "$COMMAND" == "reject" ]]; then
-  if [[ ! -f "$DRAFT_STATE_FILE" ]]; then
-    echo "Error: no draft in progress — draft-state not found: $DRAFT_STATE_FILE" >&2
-    exit 1
+  # Validate we're on a proper draft branch; read .draft-state into caller scope
+  eval "$(draft_validate_branch "$PROJECT_DIR")" || exit 1
+
+  echo "Rejecting draft. Returning to $source_branch..."
+  git -C "$PROJECT_DIR" checkout "$source_branch"
+
+  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH" 2>/dev/null; then
+    git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"
+    echo "Deleted draft branch: $CURRENT_BRANCH"
   fi
 
-  # Read state
-  source "$DRAFT_STATE_FILE"
-
-  echo "Rejecting draft. Returning to $SOURCE_BRANCH..."
-  git -C "$PROJECT_DIR" checkout "$SOURCE_BRANCH"
-
-  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH"; then
-    git -C "$PROJECT_DIR" branch -D "$WORKING_BRANCH"
-    echo "Deleted working branch: $WORKING_BRANCH"
-  fi
-
-  rm -f "$DRAFT_STATE_FILE"
-
-  echo "Draft rejected. PROJECT_DIR restored to $SOURCE_BRANCH."
-  echo "Session artefacts retained at: $SESSION_DIR"
+  echo "Draft rejected. PROJECT_DIR restored to $source_branch."
 
   exit 0
 fi
@@ -465,31 +450,6 @@ if [[ "$COMMAND" == "apply" ]]; then
   exit 0
 fi
 
-# -------------------------
-# SYNC
-# -------------------------
-if [[ "$COMMAND" == "sync" ]]; then
-  # Find container by label
-  CONTAINER=$(docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" \
-    --format '{{.Names}}' | head -n 1)
-  if [[ -z "$CONTAINER" ]]; then
-    echo "Error: no running container found for project: $PROJECT_DIR" >&2
-    echo "  Start a session first, or run 'make start'." >&2
-    exit 1
-  fi
-
-  # advance_baseline.sh implemented in Change 6
-  if docker exec "$CONTAINER" test -f /usr/local/bin/advance_baseline.sh 2>/dev/null; then
-    echo "Triggering baseline advancement for all unadvanced sessions..."
-    docker exec "$CONTAINER" advance_baseline.sh --all
-  else
-    echo "Note: advance_baseline.sh not yet implemented (Change 6)."
-    echo "  Container is running but cannot advance baseline yet."
-  fi
-
-  exit 0
-fi
-
 echo "Unknown command: $COMMAND" >&2
-echo "Valid commands: draft, confirm, reject, apply, sync" >&2
+echo "Valid commands: draft, confirm, reject, apply" >&2
 exit 1

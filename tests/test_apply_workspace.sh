@@ -411,6 +411,35 @@ test_draft_rejects_same_name_collision() {
   fi
 }
 
+test_draft_rejects_when_on_draft_branch() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_on_draft_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_on_draft_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+  make_export_with_diffs "$EXPORT_DIR" 1
+
+  # Create first draft
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Try to create second draft while still on draft branch
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"already on a draft branch"* ]]; then
+    pass "draft rejects when already on a draft branch"
+  else
+    fail "draft did not reject when on draft branch: $OUTPUT"
+  fi
+}
+
 test_draft_allows_other_draft_branches() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_other_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_other_sandbox"
@@ -588,6 +617,9 @@ test_confirm_rebases_and_merges() {
   local WORKING_BRANCH
   WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
+  # Must be on draft branch to confirm
+  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH" --quiet
+
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -600,25 +632,19 @@ test_confirm_rebases_and_merges() {
     fail "confirm did not return to source branch: $CURRENT_BRANCH"
   fi
 
-  if [[ ! -f "$WORKSPACE_DIR/draft-state" ]]; then
-    pass "confirm clears draft-state"
-  else
-    fail "confirm did not clear draft-state"
-  fi
-
   if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH" 2>/dev/null; then
     pass "confirm deletes draft branch"
   else
     fail "confirm did not delete draft branch"
   fi
 
-  # Changes merged: initial + .draft-state + diff = 3 commits on main after merge
+  # Changes merged: initial + diff = 2 commits on main after merge (.draft-state dropped)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
     pass "confirm merges changes to source branch"
   else
-    fail "confirm did not merge changes: expected 3 commits, got $COMMIT_COUNT"
+    fail "confirm did not merge changes: expected 2 commits, got $COMMIT_COUNT"
   fi
 }
 
@@ -640,6 +666,12 @@ test_confirm_with_target_branch() {
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  # Must be on draft branch to confirm
+  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH" --quiet
+
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
@@ -655,30 +687,86 @@ test_confirm_with_target_branch() {
 
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
     pass "confirm with TARGET applies changes to target branch"
   else
-    fail "confirm with TARGET did not apply changes: expected 3 commits, got $COMMIT_COUNT"
+    fail "confirm with TARGET did not apply changes: expected 2 commits, got $COMMIT_COUNT"
   fi
 }
 
-test_confirm_rejects_if_no_draft() {
+test_confirm_rejects_if_not_on_draft_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/confirm_guard_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_guard_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
 
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
-  if [[ "$OUTPUT" == *"no draft in progress"* ]]; then
-    pass "confirm rejects when no draft-state exists"
+  if [[ "$OUTPUT" == *"not on a draft branch"* ]]; then
+    pass "confirm rejects when not on a draft branch"
   else
-    fail "confirm did not reject missing draft: $OUTPUT"
+    fail "confirm did not reject non-draft branch: $OUTPUT"
+  fi
+}
+
+test_confirm_conflict_prints_recovery_commands() {
+  local PROJECT_DIR="$FIXTURE_DIR/confirm_conflict_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/confirm_conflict_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  # Create a file that will conflict
+  echo "original" > "$PROJECT_DIR/conflict.txt"
+  git -C "$PROJECT_DIR" add conflict.txt
+  git -C "$PROJECT_DIR" commit -m "add conflict file" --quiet
+
+  # Create export with a diff that modifies conflict.txt
+  mkdir -p "$EXPORT_DIR"
+  cat > "$EXPORT_DIR/0001-abc1234.diff" <<'EOF'
+diff --git a/conflict.txt b/conflict.txt
+--- a/conflict.txt
++++ b/conflict.txt
+@@ -1 +1 @@
+-original
++draft change
+EOF
+
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  # Modify the same file on main to create a conflict
+  git -C "$PROJECT_DIR" checkout main --quiet
+  echo "main change" > "$PROJECT_DIR/conflict.txt"
+  git -C "$PROJECT_DIR" add conflict.txt
+  git -C "$PROJECT_DIR" commit -m "main modifies conflict file" --quiet
+
+  # Return to draft branch and attempt confirm
+  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH" --quiet
+
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"Conflict rebasing"* ]] && \
+     [[ "$OUTPUT" == *"git rebase --continue"* ]] && \
+     [[ "$OUTPUT" == *"make confirm"* ]] && \
+     [[ "$OUTPUT" == *"git rebase --abort"* ]] && \
+     [[ "$OUTPUT" == *"make reject"* ]]; then
+    pass "confirm prints recovery commands on rebase conflict"
+  else
+    fail "confirm did not print recovery commands on conflict: $OUTPUT"
   fi
 }
 
@@ -702,6 +790,12 @@ test_reject_returns_to_source_branch() {
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  # Must be on draft branch to reject
+  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH" --quiet
+
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -712,12 +806,6 @@ test_reject_returns_to_source_branch() {
     pass "reject returns to source branch"
   else
     fail "reject did not return to source branch: $CURRENT_BRANCH"
-  fi
-
-  if [[ ! -f "$WORKSPACE_DIR/draft-state" ]]; then
-    pass "reject clears draft-state"
-  else
-    fail "reject did not clear draft-state"
   fi
 
   local COMMIT_COUNT
@@ -748,6 +836,9 @@ test_reject_deletes_draft_branch() {
   local WORKING_BRANCH
   WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
+  # Must be on draft branch to reject
+  git -C "$PROJECT_DIR" checkout "$WORKING_BRANCH" --quiet
+
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
@@ -759,23 +850,101 @@ test_reject_deletes_draft_branch() {
   fi
 }
 
-test_reject_rejects_if_no_draft() {
+test_reject_rejects_if_not_on_draft_branch() {
   local PROJECT_DIR="$FIXTURE_DIR/reject_guard_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/reject_guard_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
 
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
-  if [[ "$OUTPUT" == *"no draft in progress"* ]]; then
-    pass "reject rejects when no draft-state exists"
+  if [[ "$OUTPUT" == *"not on a draft branch"* ]]; then
+    pass "reject rejects when not on a draft branch"
   else
-    fail "reject did not reject missing draft: $OUTPUT"
+    fail "reject did not reject non-draft branch: $OUTPUT"
+  fi
+}
+
+# -------------------------
+# VALIDATION unit tests
+# -------------------------
+
+test_validate_branch_rejects_non_draft_name() {
+  local PROJECT_DIR="$FIXTURE_DIR/val_name_repo"
+
+  make_committed_repo "$PROJECT_DIR"
+  git -C "$PROJECT_DIR" checkout -b "feature/foo" --quiet
+
+  # Source the library
+  source "$SCRIPT_DIR/../libs/draft.sh"
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$PROJECT_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"not on a draft branch"* ]]; then
+    pass "validate_branch rejects non-draft branch name"
+  else
+    fail "validate_branch did not reject non-draft name: $OUTPUT"
+  fi
+}
+
+test_validate_branch_rejects_missing_draft_state() {
+  local PROJECT_DIR="$FIXTURE_DIR/val_state_repo"
+
+  make_committed_repo "$PROJECT_DIR"
+  git -C "$PROJECT_DIR" checkout -b "draft/test" --quiet
+  echo "some file" > "$PROJECT_DIR/other.txt"
+  git -C "$PROJECT_DIR" add other.txt
+  git -C "$PROJECT_DIR" commit -m "other commit" --quiet
+
+  source "$SCRIPT_DIR/../libs/draft.sh"
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$PROJECT_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *".draft-state not found"* ]]; then
+    pass "validate_branch rejects missing .draft-state"
+  else
+    fail "validate_branch did not reject missing state: $OUTPUT"
+  fi
+}
+
+test_validate_branch_rejects_bad_first_commit() {
+  local PROJECT_DIR="$FIXTURE_DIR/val_first_repo"
+
+  make_committed_repo "$PROJECT_DIR"
+  local FROM_HASH
+  FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+  git -C "$PROJECT_DIR" checkout -b "draft/test" --quiet
+
+  # Write .draft-state with proper from_hash but commit with wrong message
+  cat > "$PROJECT_DIR/.draft-state" <<EOF
+source_branch: main
+from_hash: ${FROM_HASH}
+author: test <test@sandbox>
+session_ts: 20260420-120000
+host_branch: test-branch
+diff_count: 1
+exported-at: 20260420-120000
+drafted-at: 20260420-120000
+EOF
+
+  git -C "$PROJECT_DIR" add .draft-state
+  git -C "$PROJECT_DIR" commit -m "bad-message" --quiet
+
+  source "$SCRIPT_DIR/../libs/draft.sh"
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$PROJECT_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"first commit on draft branch"*"is not '.draft-state'"* ]]; then
+    pass "validate_branch rejects bad first commit message"
+  else
+    fail "validate_branch did not reject bad first commit: $OUTPUT"
   fi
 }
 
@@ -1063,7 +1232,7 @@ EOF
 # Run all tests
 # -------------------------
 
-echo "=== apply_workspace.sh tests (Unit F1: draft-state + make draft redesign) ==="
+echo "=== apply_workspace.sh tests (Units F1 + F2: draft-state + confirm/reject rewrite) ==="
 echo
 
 run_test "draft_creates_branch" test_draft_creates_branch
@@ -1080,12 +1249,17 @@ run_test "draft_branch_name_detached_head" test_draft_branch_name_detached_head
 run_test "draft_requires_diff_files" test_draft_requires_diff_files
 run_test "draft_uses_branch_from" test_draft_uses_branch_from
 run_test "draft_uses_diffs_range" test_draft_uses_diffs_range
+run_test "draft_rejects_when_on_draft_branch" test_draft_rejects_when_on_draft_branch
 run_test "confirm_rebases_and_merges" test_confirm_rebases_and_merges
 run_test "confirm_with_target_branch" test_confirm_with_target_branch
-run_test "confirm_rejects_if_no_draft" test_confirm_rejects_if_no_draft
+run_test "confirm_rejects_if_not_on_draft_branch" test_confirm_rejects_if_not_on_draft_branch
+run_test "confirm_conflict_prints_recovery_commands" test_confirm_conflict_prints_recovery_commands
 run_test "reject_returns_to_source_branch" test_reject_returns_to_source_branch
 run_test "reject_deletes_draft_branch" test_reject_deletes_draft_branch
-run_test "reject_rejects_if_no_draft" test_reject_rejects_if_no_draft
+run_test "reject_rejects_if_not_on_draft_branch" test_reject_rejects_if_not_on_draft_branch
+run_test "validate_branch_rejects_non_draft_name" test_validate_branch_rejects_non_draft_name
+run_test "validate_branch_rejects_missing_draft_state" test_validate_branch_rejects_missing_draft_state
+run_test "validate_branch_rejects_bad_first_commit" test_validate_branch_rejects_bad_first_commit
 run_test "apply_uses_latest_session" test_apply_uses_latest_session
 run_test "apply_uses_named_session" test_apply_uses_named_session
 run_test "apply_requires_changes_diff" test_apply_requires_changes_diff

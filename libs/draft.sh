@@ -119,10 +119,72 @@ draft_read_state_from_branch() {
   }
 
   # Parse key: value lines into shell variables
+  # Hyphens in keys are converted to underscores so they are valid shell identifiers.
   while IFS=':' read -r KEY VALUE; do
     [[ -z "$KEY" ]] && continue
-    KEY=$(echo "$KEY" | tr -d ' ')
+    KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
     printf '%s="%s"\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
+}
+
+# -------------------------
+# Validate current branch is a proper draft branch
+# -------------------------
+# Performs three checks:
+#   1. Current branch name starts with "draft/"
+#   2. .draft-state file exists at the branch tip
+#   3. The first commit on the branch (after from_hash) has message ".draft-state"
+#
+# On success: sets shell variables from .draft-state in caller scope and returns 0.
+# On failure: prints descriptive error to stderr and returns 1.
+#
+draft_validate_branch() {
+  local PROJECT_DIR="$1"
+
+  local CURRENT_BRANCH
+  CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null) || {
+    echo "Error: not in a git repository" >&2
+    return 1
+  }
+
+  # Check 1: branch name
+  if [[ "$CURRENT_BRANCH" != draft/* ]]; then
+    echo "Error: not on a draft branch (current: $CURRENT_BRANCH)" >&2
+    return 1
+  fi
+
+  # Check 2: .draft-state exists on branch
+  local STATE_CONTENT
+  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${CURRENT_BRANCH}:.draft-state" 2>/dev/null) || {
+    echo "Error: .draft-state not found on branch: $CURRENT_BRANCH" >&2
+    return 1
+  }
+
+  # Set variables in function scope and print for caller
+  # Hyphens in keys are converted to underscores so they are valid shell identifiers.
+  while IFS=':' read -r KEY VALUE; do
+    [[ -z "$KEY" ]] && continue
+    KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
+    VALUE=$(echo "$VALUE" | sed 's/^ *//')
+    printf -v "$KEY" '%s' "$VALUE"
+    printf '%s="%s"\n' "$KEY" "$VALUE"
+  done <<< "$STATE_CONTENT"
+
+  # Check 3: first commit after from_hash has message ".draft-state"
+  if [[ -z "${from_hash:-}" ]]; then
+    echo "Error: .draft-state on $CURRENT_BRANCH is missing 'from_hash' field" >&2
+    return 1
+  fi
+
+  local FIRST_COMMIT_MSG
+  FIRST_COMMIT_MSG=$(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse --format=%s | grep -v '^commit ' | head -n 1)
+
+  if [[ "$FIRST_COMMIT_MSG" != ".draft-state" ]]; then
+    echo "Error: first commit on draft branch $CURRENT_BRANCH is not '.draft-state' (got: $FIRST_COMMIT_MSG)" >&2
+    return 1
+  fi
+
+  # Export current branch name for downstream use
+  echo "CURRENT_BRANCH=$CURRENT_BRANCH"
 }
