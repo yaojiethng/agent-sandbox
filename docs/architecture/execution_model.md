@@ -198,5 +198,4 @@ A `agent-sandbox.digest` label is embedded in each image at build time for exter
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | External contract | [tool_interface.md](tool_interface.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
-| Operator-facing workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security guarantees | [security.md](security.md) |

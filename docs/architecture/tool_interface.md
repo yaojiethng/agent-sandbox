@@ -2,7 +2,7 @@
 
 External contract between the agent-sandbox harness and onboarded projects: what the harness guarantees, what a project must provide, and the naming conventions that bind them.
 
-Internal implementation is in [`execution_model.md`](execution_model.md). Operator workflow is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md).
+Internal implementation is in [`execution_model.md`](execution_model.md).
 
 ---
 
@@ -198,7 +198,6 @@ A dry-run does not prove agent correctness — it proves the harness infrastruct
 | Topic | Document |
 |---|---|
 | Internal implementation | [execution_model.md](execution_model.md) |
-| Operator workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security model | [security.md](security.md) |
 | Onboarding a project | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
 | Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |

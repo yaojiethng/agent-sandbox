@@ -119,6 +119,5 @@ No checkpoint git tags are used. No `git am`. No `docker exec`. All corresponden
 | Correspondence model — three cases, bidirectional flow | [../concepts/sandbox_host_correspondence_model.md](../concepts/sandbox_host_correspondence_model.md) |
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
-| Operator run workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Mount shape guarantees | [tool_interface.md](tool_interface.md#mount-shape-guarantees) |
 | Project onboarding | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |

@@ -13,7 +13,7 @@ Currently supported agent provider:
 
 ### System Invariants
 
-The following guarantees define the harness architecture:
+The following guarantees define the harness architecture. Defined authoritatively in [`docs/architecture/security.md`](docs/architecture/security.md#security-invariants):
 
 - Agents run in containers
 - Tasks produce diffs instead of direct commits
@@ -71,8 +71,9 @@ Start here and follow the path in order. Architecture documents describe the sys
 | 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
 | 2 | [project_index.md](docs/development/project_index.md) | Full file registry, freeze status, architecture layer assignments |
 | 3 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
-| 4 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
-| 5 | [roadmap.md](docs/devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
+| 4 | [agent_workflow.md](docs/concepts/agent_workflow.md) | Workflow expression model and policy map (read once) |
+| 5 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
+| 6 | [roadmap.md](docs/devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 

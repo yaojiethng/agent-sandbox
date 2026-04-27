@@ -4,6 +4,8 @@ Stable registry of all documentation and policy files in agent-sandbox. Records 
 
 The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `docs/devlog/handovers/`).
 
+Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
+
 ---
 
 ## Architecture Layers
@@ -77,7 +79,7 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `agent_workflow.md` | 🟢 Cold | M2.1 | Design principles, invariants, UX flow names. Rescoped to pure conceptual; operational detail moved to quickstart and tool_interface. |
+| `agent_workflow.md` | 🟢 Cold | M2.1 | Rescoped as conceptual entry point and policy map. Defines the three-layer workflow expression model (policy documents, skill files, prompt templates) and maps canonical ownership across all policy documents. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
@@ -148,6 +150,44 @@ Temperature reflects the stability of what a document describes — not how care
 | `onboarding.md` | 🟢 Cold | M1.5 | Forward-compatibility note added. No further changes until M2.1. |
 | `story.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to `docs/discussions/story_obsidian_vault_onboarding.md`. |
 | `roadmap.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to README + changelog + main roadmap. |
+
+---
+
+## Maintenance Rules
+
+Two documents serve as the project's file registry. Each has a defined owner and update cadence. Neither is updated outside these moments.
+
+**`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
+
+**The active handover** is the session-scoped hot file list. The Hot files section of the handover is the only place the current session's file scope is recorded.
+
+### Update triggers
+
+**At major loop close:**
+- Add any new documents created during planning (stories, investigations, stubs) with temperature and last-touched milestone
+- Update the Architecture Layers table if freeze status has changed
+- Update temperature for any documents whose stability has changed
+- Only touched files get their `Last touched in` row updated — unchanged files are not updated
+
+**At minor loop Step 1 (session open):**
+- Create the new handover and populate the Hot files section from the roadmap task list
+- No changes to `project_index.md` at this step
+
+**At minor loop Step 8 (session close):**
+- For every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
+- Add new files created during the session
+- Remove files deleted during the session
+- Update the Hot files section of the handover to reflect final session state
+
+### Temperature rules
+
+Temperature reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every session.
+
+| Temperature | Meaning |
+|---|---|
+| 🔴 Hot | Changes continuously — roadmap, active handovers |
+| 🟡 Warm | Changes per milestone — architecture docs, active policy |
+| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
 
 ---
 

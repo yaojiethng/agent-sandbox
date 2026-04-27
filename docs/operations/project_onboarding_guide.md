@@ -133,4 +133,4 @@ See [`../architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.m
 |---|---|
 | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, `.env` variable reference |
 | [`provider_onboarding_guide.md`](provider_onboarding_guide.md) | Adding a new reasoning layer provider |
-| [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md) | Operator workflow — before, during, and after a run |
+| [`../operations/quickstart.md`](../operations/quickstart.md) | Session workflow — before, during, and after a run |

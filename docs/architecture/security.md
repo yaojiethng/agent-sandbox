@@ -6,8 +6,6 @@ This document summarizes the threat entities, impacted assets, STRIDE categoriza
 
 It defines trust boundaries, threat assumptions, and security invariants.
 
-Operational workflow details are defined in [`concepts/agent_workflow.md`](../concepts/agent_workflow.md).
-
 ---
 
 ## Scope
@@ -27,30 +25,20 @@ The system includes the following explicit trust boundaries:
 
 1. Host OS ↔ WSL
 2. WSL ↔ Docker daemon
-3. Docker daemon ↔ Capability layer container
-4. Docker daemon ↔ Reasoning layer container
-5. Capability layer ↔ Reasoning layer (shared Docker volume)
-6. Containers ↔ Mounted host directories (`.snapshot/`, `.workspace/`)
-7. Agent runtime ↔ Project files within the container
+3. Docker daemon ↔ Container
+4. Container ↔ Mounted directories (`.bootstrap/`, `.workspace/`)
+5. Agent runtime ↔ Project files within the container
 
-The two containers have different trust levels. The capability layer is harness-controlled — it runs the snapshot pipeline and diff pipeline with no agent code. The reasoning layer is agent-controlled — it runs the agent runtime and is explicitly untrusted.
+Within the container:
 
-Within the capability layer container:
+- `.bootstrap/` is mounted read-only — contains the pre-built project snapshot and agent brief
+- `.workspace/` is mounted read-write — the sole output channel from the container to the host
+- `PROJECT_ROOT` is not mounted at container runtime
+- The agent works exclusively in `sandbox/`, a container-local copy of `.bootstrap/snapshot/` made at startup
 
-- `.snapshot/` is mounted read-only — contains the pre-built project snapshot
-- `.workspace/session-diffs/` is mounted read-write — the diff output channel
-- `sandbox/` is a shared Docker volume — the working content the agent modifies
+**The agent runtime is explicitly untrusted.** The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. `PROJECT_ROOT` is not mounted into the container, so the agent runtime cannot read host repository files directly. The agent's view of the project is limited to what was enumerated by `git ls-files` on the host and copied into `.bootstrap/snapshot/` before the container started.
 
-Within the reasoning layer container:
-
-- `.workspace/input/` is mounted read-only — operator-placed task briefs and addenda
-- `.workspace/output/` is mounted read-write — agent progress and serialised data (no binaries)
-- `sandbox/` is the same shared Docker volume — the agent's working copy
-- `PROJECT_DIR` is not mounted at container runtime
-
-**The agent runtime is explicitly untrusted.** The reasoning layer container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. `PROJECT_DIR` is not mounted into either container, so the agent runtime cannot read host repository files directly. The agent's view of the project is limited to what was enumerated by `git ls-files` on the host and copied into `.snapshot/` before the containers started.
-
-Gitignore controls what enters the snapshot. Sensitive files gitignored on the host are excluded from the snapshot and therefore never visible to the agent runtime. Sensitive files must not exist in `PROJECT_DIR` at all if there is any risk of them being unintentionally tracked. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
+Gitignore controls what enters the snapshot. Sensitive files gitignored on the host are excluded from the snapshot and therefore never visible to the agent runtime. Sensitive files must not exist in `PROJECT_ROOT` at all if there is any risk of them being unintentionally tracked. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
 
 ---
 
@@ -58,14 +46,12 @@ Gitignore controls what enters the snapshot. Sensitive files gitignored on the h
 
 The following invariants must hold:
 
-- `PROJECT_DIR` must not be mounted into either container at runtime.
-- The capability layer container must not access host filesystem paths outside `.snapshot/` and `.workspace/session-diffs/`.
-- The reasoning layer container must not access host filesystem paths outside `.workspace/input/` and `.workspace/output/`.
-- Neither container must have access to the Docker socket.
+- `PROJECT_ROOT` must not be mounted into the container at runtime.
+- The container must not access host filesystem paths outside `.bootstrap/` and `.workspace/`.
+- The container must not have access to the Docker socket.
 - Repository mutation must occur only on the host after human review.
-- Agent-produced changes must be staged as `staged.diff` before application.
-- Gitignored files (including secrets) must never be copied into `.snapshot/` or `sandbox/`.
-- `agent-output/` must not contain binary or executable files.
+- Agent-produced changes must be staged as `patch.diff` before application.
+- Gitignored files (including secrets) must never be copied into `.bootstrap/snapshot/` or `sandbox/`.
 
 Validation procedures for these invariants are defined in operational documentation.
 
@@ -74,9 +60,8 @@ Validation procedures for these invariants are defined in operational documentat
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Two containers run per session: capability layer (harness-controlled) and reasoning layer (agent-controlled, untrusted).
 - Containers are ephemeral.
-- Only `.workspace/` subdirectories persist agent and harness outputs across runs.
+- Only `.workspace/` persists agent outputs across runs.
 - Network access may be enabled depending on execution mode.
 
 Network policy details are defined by configuration, not by this document.
