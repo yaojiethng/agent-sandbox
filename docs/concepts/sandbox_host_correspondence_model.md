@@ -32,11 +32,11 @@ unified diffs participates in the model.
 |---|---|
 | **`INIT_SHA`** | SHA of the root (baseline) commit in the sandbox. Written once at container init, never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. |
 | **`package-diff` output** | Single unified diff of uncommitted working tree changes. No git metadata. Applied with `git apply`. |
-| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`, written to `session-diffs/<branch-name>/`. Overwrites on each run — always reflects full branch history since `INIT_SHA`. |
+| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`. Manual invocation writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`; `diff_on_exit` writes to `CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/`. Overwrites on each run — always reflects full branch history since `INIT_SHA`. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Populated by sequential diff application, ready for `git rebase -i`. |
-| **`draft-state`** | File at `SANDBOX_DIR/.workspace/draft-state`. Records active draft: source branch, working branch, diff series location. One per `SANDBOX_DIR`. |
+| **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces container names per worktree instance. |
-| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<branch-name>/` — holds the numbered diff series for one branch. Overwritten on each `package-branch` run. |
+| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<EXPORT_TIME>-<branch>-<SESSION_TS>/` — holds the numbered diff series produced by `diff_on_exit`. Overwritten on each exit. Manual `package-branch` invocations write to `OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`. |
 | **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |
 
 ---
@@ -78,7 +78,7 @@ HEAD = A                             (not yet started)
   │                                    ├─ agent reviews, commits
   │                                    │
   │  ◄── package-branch ───────────────┤  sandbox → host (on demand, or on exit)
-  │      session-diffs/<branch>/       │  0001.diff .. 000n.diff
+  │      bundles/<timestamped>/        │  0001.diff .. 000n.diff
   │                                    │
   │        [STOPPED]                   │
   │                                    X  container exits; artefacts persisted
@@ -118,8 +118,8 @@ use the same diff format and the same `make apply` command regardless of directi
   applies it inside the container with `make apply`. Agent reviews and commits. The next
   `package-branch` includes this commit in the series.
 - **Sandbox → host (committed work):** `package-branch` exports all commits since
-  `INIT_SHA` as numbered diffs into `session-diffs/<branch-name>/`. Runs automatically on
-  container exit; also available on demand.
+  `INIT_SHA` as numbered diffs. `diff_on_exit` writes to `session-diffs/<timestamped>/`
+  automatically on container exit; manual invocation writes to `bundles/<timestamped>/`.
 
 **STOPPED — applying persisted artefacts**
 
@@ -131,7 +131,7 @@ for skipping already-confirmed diffs without harness tracking. After `git rebase
 merge, `make confirm` cleans up the draft branch.
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator
-runs `make reject`, amends the failing diff in `session-diffs/<branch>/`, and re-runs
+runs `make reject`, amends the failing diff in the source export folder, and re-runs
 `make draft`. The diff series is the source of truth; the draft branch is always derived
 from it.
 
@@ -168,7 +168,7 @@ directions and on both host and container.
 | Command | Available on | What it does |
 |---|---|---|
 | `package-diff` | Both | Packages uncommitted working tree changes as a single `.diff`. Output: `workspace/output/changes.diff` by default. |
-| `package-branch` | Both | Packages all commits since `INIT_SHA` as numbered `.diff` files into `workspace/session-diffs/<branch-name>/`. Overwrites on each run. |
+| `package-branch` | Both | Packages all commits since `INIT_SHA` as numbered `.diff` files. Manual: `OUTPUT_DIR/bundles/<timestamped>/`. On exit: `CHANGES_DIR/<timestamped>/`. Overwrites on each run. |
 | `make apply [DIFF=<path>]` | Both | Applies a single `.diff` uncommitted. Default: latest in `workspace/output/` by timestamp. |
 | `make draft [FROM=<hash>] [DIFFS=<start>..<end>]` | Host | Creates `draft/<branch>`, applies numbered diffs in order. `FROM` sets branch base (default: `HEAD`). `DIFFS` selects range (default: all). |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
@@ -201,7 +201,7 @@ prior design, both paths ultimately fed into `git am`, so double-application of 
 was possible if `make apply` was used mid-session before `make draft` ran at exit. Under
 the current model the two paths are structurally separate: `make apply` reads from
 `workspace/output/` and lands changes uncommitted in the working tree; `make draft` reads
-from `workspace/session-diffs/<branch-name>/` and applies committed diffs to a branch.
+from `CHANGES_DIR/<timestamped-dir>/` or `OUTPUT_DIR/bundles/<timestamped-dir>/` and applies committed diffs to a branch.
 The artefact locations do not overlap and there is no shared application mechanism. No
 undefined behaviour remains.
 

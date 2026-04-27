@@ -44,9 +44,9 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `doc_status.md` — retired | — | M1.5 | Replaced by handover Hot files section. Deleted. |
 | `project_index.md` | 🟡 Warm | M2 | This file. Updated when files are added, removed, or freeze status changes. |
-| `roadmap.md` | 🔴 Hot | M1.5 | Active milestone tasks and milestone summary table. |
-| `roadmap_future.md` | 🟡 Warm | M1.5 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
-| `changelog.md` | 🟡 Warm | M1.5 | Completed milestone records. Append-only. |
+| `roadmap.md` | 🔴 Hot | M2.3 | Active milestone tasks and milestone summary table. |
+| `roadmap_future.md` | 🟡 Warm | M2.3 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
+| `changelog.md` | 🟡 Warm | M2.3 | Completed milestone records. Append-only. |
 
 ### Discussions (`docs/discussions/`)
 
@@ -62,6 +62,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `investigation_hermes.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_pi.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_workspace_input_channel.md` | 🟢 Cold | M1.5 | Resolved. Operator input channel implemented in M1.5. |
+| `design_diff_and_branch_packaging_workflow.md` | 🟡 Warm | M2.3 | Current design for diff pipeline and apply workflow. Supersedes prior apply_workflow_and_baseline_advancement design. |
 
 ### Architecture (`docs/architecture/`)
 
@@ -83,6 +84,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
+| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.3 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. |
 
 ### Operations (`docs/operations/`)
 
@@ -135,6 +137,13 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
 | `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
 | `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
+
+### Prompts (`agent/prompts/`)
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `package-diff.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-diff`. Documents uncommitted change packaging. |
+| `package-branch.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-branch`. Documents committed branch history packaging. |
 
 ### Providers (`providers/`)
 

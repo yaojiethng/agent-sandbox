@@ -158,13 +158,7 @@ diff_on_exit() {
     # Source package_branch.sh to get the package_branch function
     source /libs/package_branch.sh
 
-    local BRANCH_NAME
-    BRANCH_NAME=$(git -C "$SANDBOX_DIR" rev-parse --abbrev-ref HEAD)
-    # Handle detached HEAD
-    if [[ "$BRANCH_NAME" == "HEAD" ]]; then
-      BRANCH_NAME=$(git -C "$SANDBOX_DIR" rev-parse --short HEAD)
-    fi
-    package_branch "$SANDBOX_DIR" "$INIT_SHA" "$CHANGES_DIR" "$BRANCH_NAME"
+    package_branch "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
   fi
 }
 

@@ -4,27 +4,21 @@
 # Package branch commits as numbered diff files.
 #
 # Produces:
-#   <session-diffs-dir>/<branch-name>/0001-<sha>.diff
-#   <session-diffs-dir>/<branch-name>/0002-<sha>.diff
+#   <output-dir>/0001-<sha>.diff
+#   <output-dir>/0002-<sha>.diff
 #   ...
 #
 # Each .diff file is a single-commit diff with index lines stripped,
 # suitable for sequential git apply.
 #
-# Note: When invoked from diff_on_exit (container side), the output path
-# uses the CHANGES_DIR layout with EXPORT_TIME prefix. When invoked
-# standalone with --outdir, the output path uses the bundles/ layout.
-#
 # Usage:
-#   package_branch SANDBOX_DIR INIT_SHA SESSION_DIFFS_DIR BRANCH_NAME [SESSION_SUMMARY]
+#   package_branch SANDBOX_DIR INIT_SHA OUTPUT_DIR [SESSION_SUMMARY]
 #
 # Arguments:
 #   SANDBOX_DIR       — path to the git repository
 #   INIT_SHA          — initial commit SHA (from sandbox/.git/INIT_SHA)
-#   SESSION_DIFFS_DIR — output directory for session diffs
-#   BRANCH_NAME       — current branch name (may contain slashes)
-#   SESSION_SUMMARY   — optional short description for the output folder name
-#                        (defaults to sanitized branch name)
+#   OUTPUT_DIR        — full destination directory path (caller constructs)
+#   SESSION_SUMMARY   — optional short description for logging only
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -40,12 +34,11 @@ fi
 package_branch() {
   local SANDBOX_DIR="$1"
   local INIT_SHA="$2"
-  local SESSION_DIFFS_DIR="$3"
-  local BRANCH_NAME="$4"
-  local SESSION_SUMMARY="${5:-}"
+  local OUTPUT_DIR="$3"
+  local SESSION_SUMMARY="${4:-}"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$INIT_SHA" || -z "$SESSION_DIFFS_DIR" || -z "$BRANCH_NAME" ]]; then
-    echo "package_branch: SANDBOX_DIR, INIT_SHA, SESSION_DIFFS_DIR, and BRANCH_NAME are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$INIT_SHA" || -z "$OUTPUT_DIR" ]]; then
+    echo "package_branch: SANDBOX_DIR, INIT_SHA, and OUTPUT_DIR are required" >&2
     return 1
   fi
 
@@ -61,12 +54,9 @@ package_branch() {
     return 1
   fi
 
-  # Sanitise branch name for directory use (replace slashes with dashes)
-  local SANITIZED_BRANCH
-  SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '/' '-')
-  local BRANCH_DIFFS_DIR="${SESSION_DIFFS_DIR}/${SANITIZED_BRANCH}"
+  local BRANCH_DIFFS_DIR="$OUTPUT_DIR"
 
-  # Remove existing diffs for this branch (overwrite on each run)
+  # Remove existing diffs (overwrite on each run)
   rm -rf "$BRANCH_DIFFS_DIR"
   mkdir -p "$BRANCH_DIFFS_DIR"
 

@@ -30,7 +30,7 @@ bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA"
 ```
 
 `BASELINE_SHA` is an environment variable set by the container entrypoint. If it is not
-set, the script falls back to reading `.git/BASELINE_SHA` (written by `snapshot_init_git`
+set, the script falls back to reading `.git/INIT_SHA` (written by `snapshot_init_git`
 at container startup), then to the first commit in the repo. All three are tried
 automatically — inside the container `--baseline` is never required.
 
@@ -54,13 +54,10 @@ The output directory format is `diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_T
 **Legacy flag:** `--name=<label>` is accepted as an alias for `--session-summary`.
 
 The script produces:
-- `<outdir>/changes.diff` — unified diff against baseline, suitable for `patch -p1`
+- `<outdir>/changes.diff` — unified diff against baseline, index lines stripped,
+  suitable for `git apply`
 
 It prints the output directory path and diff size on completion.
-
-**If `libs/package_diff.sh` is not present** (pre-unification harness), fall back to the
-original manual steps: generate the diff with `git diff HEAD > changes.diff` and apply
-with `patch -p1 < changes.diff`.
 
 ### 2. Write `migration-guide.md`
 
@@ -84,8 +81,15 @@ Describe any functions, classes, or blocks removed and why. If nothing was delet
 
 **How to apply**
 
+```bash
+git apply changes.diff
 ```
-patch -p1 < changes.diff
+
+If the diff might have conflicts or was generated outside the container, strip index
+lines before applying:
+
+```bash
+grep -v '^index ' changes.diff | git apply --reject
 ```
 
 **API breaking changes**

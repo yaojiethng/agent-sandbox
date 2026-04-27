@@ -151,8 +151,8 @@ if [[ "$COMMAND" == "draft" ]]; then
   EXPORT_BASENAME=$(basename "$EXPORT_DIR")
   draft_parse_folder_name "$EXPORT_BASENAME"
 
-  # Collect diff files
-  mapfile -t DIFF_FILES < <(find "$EXPORT_DIR" -maxdepth 1 -name '*.diff' | sort)
+  # Collect numbered diff files only (ignore changes.diff, staged.diff, autosave.diff)
+  mapfile -t DIFF_FILES < <(find "$EXPORT_DIR" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]*.diff' | sort)
   if [[ "${#DIFF_FILES[@]}" -eq 0 ]]; then
     echo "Error: no .diff files found in $EXPORT_DIR" >&2
     echo "  The session may have produced no commits." >&2
