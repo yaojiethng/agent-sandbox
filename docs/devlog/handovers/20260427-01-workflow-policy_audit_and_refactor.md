@@ -86,4 +86,4 @@ None.
 
 ## Next session
 
-— (implementation ongoing; next session scope not yet defined)
+Not yet defined

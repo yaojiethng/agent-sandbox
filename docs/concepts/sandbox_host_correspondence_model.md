@@ -32,11 +32,11 @@ unified diffs participates in the model.
 |---|---|
 | **`INIT_SHA`** | SHA of the root (baseline) commit in the sandbox. Written once at container init, never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. |
 | **`package-diff` output** | Single unified diff of uncommitted working tree changes. No git metadata. Applied with `git apply`. |
-| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`. Manual invocation writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`; `diff_on_exit` writes to `CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/`. Overwrites on each run — always reflects full branch history since `INIT_SHA`. |
+| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`. On exit, written to `CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/session/patches/`. Overwrites on each run — always reflects full branch history since `INIT_SHA`. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Populated by sequential diff application, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces container names per worktree instance. |
-| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<EXPORT_TIME>-<branch>-<SESSION_TS>/` — holds the numbered diff series produced by `diff_on_exit`. Overwritten on each exit. Manual `package-branch` invocations write to `OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`. |
+| **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` — holds `session/` (exit artefacts) and `autosave/` (checkpoint artefacts). Both subfolders are overwritten on each invocation. |
 | **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |
 
 ---
@@ -71,14 +71,14 @@ HEAD = A                             (not yet started)
   │        [RUNNING — loop start]      │
   │                                    ├─ agent works, commits accumulate
   │                                    │
-  │  ◄── package-diff ─────────────────┤  sandbox → host (uncommitted, mid-session)
-  │      changes.diff                  │
+  │  ◄── autosave ──────────────────────┤  sandbox → host (mid-session checkpoint)
+  │      <SESSION_TS>-<BRANCH>/autosave/  │    changes.diff + patches/ (overwritten each tick)
   │                                    │
   ├─ make apply DIFF=<path> ──────────►│  host → sandbox (amendment, fix)
   │                                    ├─ agent reviews, commits
   │                                    │
-  │  ◄── package-branch ───────────────┤  sandbox → host (on demand, or on exit)
-  │      bundles/<timestamped>/        │  0001.diff .. 000n.diff
+  │  ◄── diff_on_exit ───────────────┤  sandbox → host (on exit)
+  │      <SESSION_TS>-<BRANCH>/session/   │  patches/0001.diff .. patches/000n.diff
   │                                    │
   │        [STOPPED]                   │
   │                                    X  container exits; artefacts persisted
@@ -111,15 +111,9 @@ the fixed reference for all diff packaging in this container lifetime.
 Changes can flow in either direction at any time while the sandbox is live. All transfers
 use the same diff format and the same `make apply` command regardless of direction.
 
-- **Sandbox → host (mid-session partial):** `package-diff` exports uncommitted working
-  tree changes as `changes.diff`. Operator runs `make apply` on the host, reviews, commits
-  manually.
-- **Host → sandbox (amendment):** Operator packages a host change with `package-diff` and
-  applies it inside the container with `make apply`. Agent reviews and commits. The next
-  `package-branch` includes this commit in the series.
-- **Sandbox → host (committed work):** `package-branch` exports all commits since
-  `INIT_SHA` as numbered diffs. `diff_on_exit` writes to `session-diffs/<timestamped>/`
-  automatically on container exit; manual invocation writes to `bundles/<timestamped>/`.
+- **Sandbox → host (mid-session checkpoint):** The autosave loop exports uncommitted working tree changes as `changes.diff` and committed work as numbered `patches/`, all under `session-diffs/<SESSION_TS>-<BRANCH>/autosave/`. Overwritten each tick. Operator runs `make apply --session=<path-to-autosave>` on the host, reviews, commits manually.
+- **Host → sandbox (amendment):** Operator packages a host change with `package-diff` and applies it inside the container with `make apply`. Agent reviews and commits. The next `package-branch` includes this commit in the series.
+- **Sandbox → host (committed work):** `package-branch` exports all commits since `INIT_SHA` as numbered diffs in `session-diffs/<SESSION_TS>-<BRANCH>/session/patches/`. This runs automatically on container exit.
 
 **STOPPED — applying persisted artefacts**
 
@@ -168,7 +162,7 @@ directions and on both host and container.
 | Command | Available on | What it does |
 |---|---|---|
 | `package-diff` | Both | Packages uncommitted working tree changes as a single `.diff`. Output: `workspace/output/changes.diff` by default. |
-| `package-branch` | Both | Packages all commits since `INIT_SHA` as numbered `.diff` files. Manual: `OUTPUT_DIR/bundles/<timestamped>/`. On exit: `CHANGES_DIR/<timestamped>/`. Overwrites on each run. |
+| `package-branch` | Both | Packages all commits since `INIT_SHA` as numbered `.diff` files. On exit: `CHANGES_DIR/<SESSION_TS>-<BRANCH>/session/patches/`. Overwrites on each run. |
 | `make apply [DIFF=<path>]` | Both | Applies a single `.diff` uncommitted. Default: latest in `workspace/output/` by timestamp. |
 | `make draft [FROM=<hash>] [DIFFS=<start>..<end>]` | Host | Creates `draft/<branch>`, applies numbered diffs in order. `FROM` sets branch base (default: `HEAD`). `DIFFS` selects range (default: all). |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
@@ -201,7 +195,7 @@ prior design, both paths ultimately fed into `git am`, so double-application of 
 was possible if `make apply` was used mid-session before `make draft` ran at exit. Under
 the current model the two paths are structurally separate: `make apply` reads from
 `workspace/output/` and lands changes uncommitted in the working tree; `make draft` reads
-from `CHANGES_DIR/<timestamped-dir>/` or `OUTPUT_DIR/bundles/<timestamped-dir>/` and applies committed diffs to a branch.
+from `CHANGES_DIR/<SESSION_TS>-<BRANCH>/session/` and applies committed diffs to a branch.
 The artefact locations do not overlap and there is no shared application mechanism. No
 undefined behaviour remains.
 

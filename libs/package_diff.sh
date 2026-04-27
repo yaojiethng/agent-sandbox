@@ -5,6 +5,8 @@
 #
 # Produces:
 #   <outdir>/changes.diff          — unified diff against baseline, suitable for patch -p1
+#   <outdir>/changed-files/        — full copies of every changed file, preserving
+#                                    directory structure relative to repo root
 #
 # Usage:
 #   package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
@@ -181,10 +183,64 @@ fi
 DIFF_LINES=$(wc -l < "$OUTDIR/changes.diff" | tr -d ' ')
 
 # -------------------------
+# Copy changed files
+#
+# Copies every modified or untracked file into <outdir>/changed-files/,
+# preserving directory structure relative to repo root. Provides full file
+# content alongside the diff for manual inspection or recovery.
+# -------------------------
+CHANGED_FILES_DIR="$OUTDIR/changed-files"
+mkdir -p "$CHANGED_FILES_DIR"
+
+CHANGED_FILE_COUNT=0
+
+# Tracked files that differ from baseline
+while IFS= read -r F; do
+  [[ -z "$F" ]] && continue
+  mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
+  cp "$REPO_ROOT/$F" "$CHANGED_FILES_DIR/$F"
+  CHANGED_FILE_COUNT=$((CHANGED_FILE_COUNT + 1))
+done < <(git -C "$REPO_ROOT" diff --name-only "$BASELINE" 2>/dev/null || true)
+
+# Staged files not yet in the diff above
+while IFS= read -r F; do
+  [[ -z "$F" ]] && continue
+  # Skip if already copied (may overlap with diff --name-only)
+  [[ -f "$CHANGED_FILES_DIR/$F" ]] && continue
+  mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
+  cp "$REPO_ROOT/$F" "$CHANGED_FILES_DIR/$F"
+  CHANGED_FILE_COUNT=$((CHANGED_FILE_COUNT + 1))
+done < <(git -C "$REPO_ROOT" diff --cached --name-only 2>/dev/null || true)
+
+# Untracked files
+if [[ -n "$UNTRACKED" ]]; then
+  while IFS= read -r F; do
+    [[ -z "$F" ]] && continue
+    # Skip if already copied (shouldn't overlap, but be safe)
+    [[ -f "$CHANGED_FILES_DIR/$F" ]] && continue
+    mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
+    cp "$REPO_ROOT/$F" "$CHANGED_FILES_DIR/$F"
+    CHANGED_FILE_COUNT=$((CHANGED_FILE_COUNT + 1))
+  done <<< "$UNTRACKED"
+fi
+
+# Remove changed-files dir if empty (shouldn't happen given the earlier
+# no-changes check, but be defensive)
+if [[ "$CHANGED_FILE_COUNT" -eq 0 ]]; then
+  rmdir "$CHANGED_FILES_DIR" 2>/dev/null || true
+fi
+
+# -------------------------
 # Summary
 # -------------------------
 echo "Output directory: $OUTDIR"
 echo "Diff size:        ${DIFF_LINES} lines"
+if [[ "$CHANGED_FILE_COUNT" -gt 0 ]]; then
+  echo "Changed files:    ${CHANGED_FILE_COUNT}"
+fi
 echo ""
 echo "Contents:"
 echo "  $OUTDIR/changes.diff"
+if [[ "$CHANGED_FILE_COUNT" -gt 0 ]]; then
+  echo "  $OUTDIR/changed-files/  (${CHANGED_FILE_COUNT} files)"
+fi

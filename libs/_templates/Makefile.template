@@ -123,20 +123,26 @@ stop:
 #
 # WORKFLOW:
 #   make draft                    — apply session patches to a working branch for review
-#   make draft SESSION=<name>     — apply a specific session from session-diffs/
-#   make draft SESSION=<abs-path> — apply from an explicit folder path (e.g. bundles/)
+#   make draft SESSION=<path>     — apply from a specific session path
+#     <path> can be:
+#       - relative name under session-diffs/ (e.g. 20260420-120000-main)
+#       - absolute path (e.g. /path/to/session-diffs/20260420-120000-main/session)
+#       - absolute path to autosave (e.g. .../20260420-120000-main/autosave)
 #   git log -p HEAD~N..HEAD       — review changes on the working branch
 #   make confirm                  — rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x  — merge to a different target branch
 #   make reject                   — discard draft branch, return to source branch
 #
-# LEGACY (reasoning layer output channel):
-#   make apply                    — apply changes.diff from .workspace/output/diffs/ (no commits created)
-#   make apply SESSION=<name>     — apply from a specific session under output/diffs/
-#   make apply SESSION=<abs-path> — apply from an explicit folder path
+#   make apply                    — apply uncommitted changes (auto-resolves from output/diffs/)
+#   make apply SESSION=<path>     — apply from a specific session path
+#     <path> can be:
+#       - relative name under output/diffs/ (e.g. 20260420-120000-snapshot-abc123)
+#       - absolute path (e.g. /path/to/output/diffs/20260420-120000-snapshot-abc123)
+#       - absolute path to session-diffs directory (e.g. .../session-diffs/20260417-120000-main/session)
+#   make apply DIFF=<path>        — apply a specific diff file (no session resolution needed)
 #   make apply BRANCH=<name>      — apply to a named branch
 #   make apply FORCE=1            — apply with --reject; .rej files created for conflicts
-#   Note: OUTPUT_DIR is not cleared automatically. Clear manually between sessions if desired.
+#   Note: output/diffs/ is not cleared automatically. Clear manually between sessions if desired.
 
 draft:
 	agent-sandbox draft \

@@ -37,7 +37,7 @@ Stops any running session for this project, builds missing images if needed, sna
 
 `PROVIDER` is required. `REBUILD=1` is optional — forces a full rebuild of all images from scratch before starting; without it, images are built only if missing.
 
-**Leaves behind:** `staged.diff` in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
+**Leaves behind:** `session/` and `autosave/` subfolders in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`; updated provider session state in `.<provider>/`.
 
 ---
 
@@ -67,11 +67,11 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ### `make apply [BRANCH=<branch>]`
 
-Applies `staged.diff` to `PROJECT_DIR`. Does not commit.
+Applies `changes.diff` from a session directory to `PROJECT_DIR`. Does not commit.
 
 `BRANCH` is optional. If supplied, applies to a new branch checked out from current HEAD; otherwise applies to the current branch.
 
-**Review `staged.diff` before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
+**Review `changes.diff` before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
 
 ---
 
@@ -153,7 +153,7 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 **Sandbox initialisation:** Before reporting healthy, the capability layer will have:
 1. Copied `.snapshot/` into `sandbox/`
 2. Initialised a git repository in `sandbox/`
-3. Committed a baseline SHA — the diff pipeline computes `staged.diff` against this on exit
+3. Committed a baseline SHA — the diff pipeline computes artefacts against this on exit
 
 ---
 
@@ -187,7 +187,7 @@ A successful `make dry-run` proves:
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access and write to `sandbox/` via the shared volume
 - Both containers terminate gracefully
-- The diff pipeline runs and produces output in `.workspace/session-diffs/`
+- The diff pipeline runs and produces output in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`
 
 A dry-run does not prove agent correctness — it proves the harness infrastructure is functional.
 

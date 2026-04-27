@@ -79,6 +79,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - `package-branch` function + `make apply` path fix (`libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `scripts/apply_workspace.sh`) — see handover `20260423-02-impl-make_apply_path_resolution.md`
 - `make apply` DIFF argument (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`) — see handover `20260423-03-impl-make_apply_diff_argument.md`
 - `make draft` redesign — branch-name folder, `BRANCH_FROM`, `DIFFS` range, `git apply` loop (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`) — see handover `20260423-04-impl-make_draft_redesign.md`
+- Diff pipeline restructure — 2-field directory names, `session/`/`autosave/` subfolders, `EXPORT-TIME.txt`, `changes.diff`, unified path resolution for `make draft` / `make apply` — see handover `20260427-02-impl-diff_pipeline_restructure.md`
 
 **Pending:**
 

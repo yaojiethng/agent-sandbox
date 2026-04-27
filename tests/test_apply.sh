@@ -3,15 +3,24 @@
 # Tests for scripts/apply_workspace.sh — draft/confirm/reject workflow
 #
 # Covers:
-#   draft   — creates working branch, applies patches, resets author, writes draft-state
-#   confirm — rebases onto target, fast-forward merges, deletes branch, clears state
+#   draft   — creates working branch, applies patches, resets author
+#   confirm — rebases onto target, fast-forward merges, deletes branch
 #   confirm TARGET — merges to named branch
-#   reject  — restores source branch, deletes working branch, clears state
+#   reject  — restores source branch, deletes working branch
 #   guards  — missing args, bad state, double-draft, missing patches
 #
-# Note: apply command tests are in tests/test_apply_workspace.sh
+# Directory structure expected by draft:
+#   session-diffs/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
+#     session/
+#       EXPORT-TIME.txt
+#       changes.diff
+#       staged.diff
+#       patches/
+#         0001-<sha>.diff
+#         0002-<sha>.diff
+#         ...
 #
-# Each test builds its own fixture. Tests are independent.
+# Note: apply command tests are in tests/test_apply_workspace.sh
 
 set -uo pipefail
 
@@ -44,21 +53,24 @@ make_project() {
   git -C "$DIR" config user.email "operator@example.com"
   git -C "$DIR" config user.name "Operator"
   # Force branch name to 'main' regardless of git defaults
-  git -C "$DIR" checkout -b main --quiet
+  git -C "$DIR" checkout -b main --quiet 2>/dev/null || true
+  git -C "$DIR" branch -M main 2>/dev/null || true
   echo "baseline" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "baseline" --quiet
 }
 
-# make_session PROJECT_DIR SANDBOX_DIR [SESSION] — creates sandbox with agent commits
-# Produces a patches/ dir at $SANDBOX_DIR/.workspace/session-diffs/<session>/ and
-# a staged.diff at the same location.
+# make_session PROJECT_DIR SANDBOX_DIR [SESSION_TS] [BRANCH]
+# Creates sandbox with agent commits and produces session-diffs/<SESSION_TS>-<BRANCH>/
+# with session/patches/*.diff, session/changes.diff, session/staged.diff,
+# and session/EXPORT-TIME.txt.
 make_session() {
   local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
-  local SESSION="${3:-main-20260408-120000}"
+  local SESSION_TS="${3:-20260408-120000}"
+  local BRANCH="${4:-main}"
 
-  # Sandbox mirrors baseline — use unique path per SANDBOX_DIR to avoid test collision
+  # Sandbox mirrors baseline — use unique path per SANDBOX_DIR
   local SANDBOX="$SANDBOX_DIR/sandbox-work"
   rm -rf "$SANDBOX"
   mkdir -p "$SANDBOX"
@@ -80,29 +92,39 @@ make_session() {
   git -C "$SANDBOX" add .
   git -C "$SANDBOX" commit -m "feat: second agent commit" --quiet
 
-  # Prepare workspace directory first (only if not exists - preserve other sessions)
+  # Prepare workspace directory
   mkdir -p "$SANDBOX_DIR/.workspace"
 
-  # Write patches and staged.diff
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
+  # Write session directory with new structure
+  local SESSION_NAME="${SESSION_TS}-${BRANCH}"
+  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION_NAME"
   rm -rf "$SESSION_DIR"
-  mkdir -p "$SESSION_DIR/patches"
-  git -C "$SANDBOX" format-patch "${BASELINE_SHA}..HEAD" \
-    --output-directory "$SESSION_DIR/patches" >/dev/null
-  git -C "$SANDBOX" diff --binary -M "${BASELINE_SHA}..HEAD" \
-    > "$SESSION_DIR/staged.diff"
+  mkdir -p "$SESSION_DIR/session/patches"
 
-  # Sync baseline into project and create checkpoint
-  git -C "$PROJECT_DIR" checkout main --quiet
-  cp "$SANDBOX/file.txt" "$PROJECT_DIR/file.txt"
-  git -C "$PROJECT_DIR" add .
-  git -C "$PROJECT_DIR" commit -m "sync baseline" --quiet
-  local WORKTREE_ID CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | head -c8)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
-  # Remove existing tag if present (from a previous test run)
-  git -C "$PROJECT_DIR" tag -d "$CHECKPOINT_TAG" 2>/dev/null || true
-  git -C "$PROJECT_DIR" tag "$CHECKPOINT_TAG"
+  # Write EXPORT-TIME.txt
+  echo "20260408-120000" > "$SESSION_DIR/session/EXPORT-TIME.txt"
+
+  # Write numbered .diff files (index-stripped) from BASELINE_SHA..HEAD
+  local COMMIT_NUM=1
+  local PREV_SHA="$BASELINE_SHA"
+  for COMMIT_SHA in $(git -C "$SANDBOX" rev-list "${BASELINE_SHA}..HEAD" --reverse); do
+    local PADDING
+    PADDING=$(printf "%04d" "$COMMIT_NUM")
+    git -C "$SANDBOX" diff "${PREV_SHA}..${COMMIT_SHA}" \
+      | grep -v '^index ' \
+      | sed 's/[[:space:]]*$//' \
+      | sed -e '$a\' \
+      > "$SESSION_DIR/session/patches/${PADDING}-${COMMIT_SHA}.diff"
+    PREV_SHA="$COMMIT_SHA"
+    COMMIT_NUM=$((COMMIT_NUM + 1))
+  done
+
+  # Write staged.diff (net delta from baseline)
+  git -C "$SANDBOX" diff --binary -M "${BASELINE_SHA}..HEAD" \
+    > "$SESSION_DIR/session/staged.diff"
+
+  # Write changes.diff (working tree vs HEAD — empty since agent committed everything)
+  > "$SESSION_DIR/session/changes.diff"
 }
 
 # current_branch DIR
@@ -115,14 +137,10 @@ branch_exists() {
   git -C "$1" show-ref --verify --quiet "refs/heads/$2"
 }
 
-# commit_count_on DIR BRANCH since SINCE_SHA
-commit_count_since() {
-  git -C "$1" rev-list --count "${2}..HEAD"
-}
-
 # -------------------------
 # DRAFT tests
 # -------------------------
+
 test_draft_creates_working_branch() {
   local P="$FIXTURE_DIR/draft_creates_p"
   local S="$FIXTURE_DIR/draft_creates_s"
@@ -131,10 +149,12 @@ test_draft_creates_working_branch() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  if branch_exists "$P" "draft/main-20260408-120000"; then
+  local BRANCH
+  BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  if [[ "$BRANCH" == draft/20260408-120000-main-* ]]; then
     pass "draft creates working branch with correct name format"
   else
-    fail "draft should create draft/<branch>-<ts> branch"
+    fail "draft should create draft/<SESSION_TS>-<BRANCH>-<SHA6> branch, got: $BRANCH"
   fi
 }
 
@@ -148,7 +168,7 @@ test_draft_checks_out_working_branch() {
 
   local BRANCH
   BRANCH=$(current_branch "$P")
-  if [[ "$BRANCH" == "draft/main-20260408-120000" ]]; then
+  if [[ "$BRANCH" == draft/20260408-120000-main-* ]]; then
     pass "draft checks out the working branch"
   else
     fail "draft should check out working branch, got: $BRANCH"
@@ -163,13 +183,13 @@ test_draft_applies_all_patches() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  # Should have 2 commits from the agent (on top of baseline)
+  # Should have 2 diff commits + .draft-state commit above baseline (3 total)
   local COUNT
   COUNT=$(git -C "$P" rev-list --count "main..HEAD")
-  if [[ "$COUNT" -eq 2 ]]; then
+  if [[ "$COUNT" -eq 3 ]]; then
     pass "draft applies all patches as commits (got $COUNT)"
   else
-    fail "draft should apply 2 patches, got $COUNT commits above main"
+    fail "draft should apply 2 patches + .draft-state = 3 commits above main, got $COUNT"
   fi
 }
 
@@ -208,7 +228,7 @@ test_draft_resets_author_to_operator() {
   fi
 }
 
-test_draft_preserves_commit_messages() {
+test_draft_commit_messages() {
   local P="$FIXTURE_DIR/draft_msg_p"
   local S="$FIXTURE_DIR/draft_msg_s"
   make_project "$P"
@@ -216,17 +236,26 @@ test_draft_preserves_commit_messages() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  local MSGS
-  MSGS=$(git -C "$P" log main..HEAD --format='%s' | sort)
-  if echo "$MSGS" | grep -q "feat: first agent commit" \
-     && echo "$MSGS" | grep -q "feat: second agent commit"; then
-    pass "draft preserves original commit messages from agent patches"
+  # The first commit above baseline should be .draft-state
+  local FIRST_MSG
+  FIRST_MSG=$(git -C "$P" log main..HEAD --reverse --format='%s' | head -1)
+  if [[ "$FIRST_MSG" == ".draft-state" ]]; then
+    pass "draft creates .draft-state as first commit"
   else
-    fail "draft should preserve patch commit messages, got: $MSGS"
+    fail "draft first commit should be .draft-state, got: $FIRST_MSG"
+  fi
+
+  # Subsequent commits should have "Apply <filename>" messages
+  local SECOND_MSG
+  SECOND_MSG=$(git -C "$P" log main..HEAD --reverse --format='%s' | sed -n '2p')
+  if [[ "$SECOND_MSG" == "Apply "* ]]; then
+    pass "draft applies patches with generated commit messages"
+  else
+    fail "draft commit messages should start with 'Apply', got: $SECOND_MSG"
   fi
 }
 
-test_draft_writes_draft_state() {
+test_draft_writes_draft_state_commit() {
   local P="$FIXTURE_DIR/draft_state_p"
   local S="$FIXTURE_DIR/draft_state_s"
   make_project "$P"
@@ -234,20 +263,28 @@ test_draft_writes_draft_state() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  local STATE="$S/.workspace/draft-state"
-  if [[ -f "$STATE" ]]; then
-    pass "draft writes .workspace/draft-state"
+  # .draft-state should exist as a committed file on the branch, not in .workspace/
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  local STATE_CONTENT
+  STATE_CONTENT=$(git -C "$P" show "${DRAFT_BRANCH}:.draft-state" 2>/dev/null || echo "")
+
+  if [[ -n "$STATE_CONTENT" ]]; then
+    pass "draft commits .draft-state on the branch"
   else
-    fail "draft should write .workspace/draft-state"
+    fail "draft should commit .draft-state on the branch"
     return
   fi
 
-  if grep -q "SOURCE_BRANCH=main" "$STATE" \
-     && grep -q "WORKING_BRANCH=draft/main-20260408-120000" "$STATE" \
-     && grep -q "SESSION_DIR=" "$STATE"; then
-    pass "draft-state contains SOURCE_BRANCH, WORKING_BRANCH, SESSION_DIR"
-  else
-    fail "draft-state is missing expected fields: $(cat "$STATE")"
+  local ALL_FIELDS=true
+  for field in source_branch from_hash author session_ts host_branch diff_count exported-at drafted-at; do
+    if [[ "$STATE_CONTENT" != *"${field}:"* ]]; then
+      ALL_FIELDS=false
+      fail "draft .draft-state missing field: $field"
+    fi
+  done
+  if [[ "$ALL_FIELDS" == true ]]; then
+    pass "draft .draft-state contains all required fields"
   fi
 }
 
@@ -256,20 +293,20 @@ test_draft_selects_most_recent_session_by_default() {
   local S="$FIXTURE_DIR/draft_recent_s"
   make_project "$P"
 
-  # Create two sessions — the second is more recent
-  make_session "$P" "$S" "main-20260408-100000"
-  make_session "$P" "$S" "main-20260408-110000"
+  # Create two sessions — the second has a later SESSION_TS, so it sorts last
+  make_session "$P" "$S" "20260408-100000" "main"
+  make_session "$P" "$S" "20260408-110000" "main"
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  # Draft branch uses checkpoint timestamp, not session name timestamp.
-  # Branch name is draft/<branch>-<checkpoint-ts> regardless of which session is selected.
-  if branch_exists "$P" "draft/main-20260408-120000"; then
-    pass "draft selects most recent session and names branch from checkpoint"
+  # The draft branch should use the second session's patches (3 total commits:
+  # .draft-state + 2 patches from the "110000" session)
+  local COUNT
+  COUNT=$(git -C "$P" rev-list --count "main..HEAD")
+  if [[ "$COUNT" -eq 3 ]]; then
+    pass "draft selects most recent session by lexicographic sort"
   else
-    local BRANCH
-    BRANCH=$(current_branch "$P")
-    fail "draft should create branch draft/main-20260408-120000, got branch: $BRANCH"
+    fail "draft should select most recent session, expected 3 commits, got $COUNT"
   fi
 }
 
@@ -278,25 +315,27 @@ test_draft_explicit_session_selection() {
   local S="$FIXTURE_DIR/draft_explicit_s"
   make_project "$P"
 
-  make_session "$P" "$S" "main-20260408-100000"
-  make_session "$P" "$S" "main-20260408-110000"
+  make_session "$P" "$S" "20260408-100000" "main"
+  make_session "$P" "$S" "20260408-110000" "main"
 
+  # Explicitly select the first (older) session
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" \
-    --session="main-20260408-100000" 2>/dev/null
+    --session="20260408-100000-main" 2>/dev/null
 
-  # Draft branch uses checkpoint timestamp regardless of which session is specified.
-  # The --session flag selects which session's patches to apply, but the branch
-  # name always reflects the checkpoint (base) timestamp.
-  if branch_exists "$P" "draft/main-20260408-120000"; then
+  # Should apply the first session's patches (3 commits: .draft-state + 2 patches)
+  local COUNT
+  COUNT=$(git -C "$P" rev-list --count "main..HEAD")
+  if [[ "$COUNT" -eq 3 ]]; then
     pass "draft --session applies the specified session"
   else
-    fail "draft --session should create branch draft/main-20260408-120000"
+    fail "draft --session should apply specified session, expected 3 commits, got $COUNT"
   fi
 }
 
 # -------------------------
 # CONFIRM tests
 # -------------------------
+
 test_confirm_merges_to_source_branch() {
   local P="$FIXTURE_DIR/confirm_merge_p"
   local S="$FIXTURE_DIR/confirm_merge_s"
@@ -325,6 +364,7 @@ test_confirm_commits_are_on_source_branch() {
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
 
+  # After confirm, main should have 2 diff commits above baseline (.draft-state dropped)
   local COUNT
   COUNT=$(git -C "$P" rev-list --count "${BASELINE_SHA}..HEAD")
   if [[ "$COUNT" -eq 2 ]]; then
@@ -357,27 +397,16 @@ test_confirm_deletes_working_branch() {
   make_project "$P"
   make_session "$P" "$S"
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
+
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+
   "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
 
-  if ! branch_exists "$P" "draft/main-20260408-120000"; then
+  if ! branch_exists "$P" "$WORKING_BRANCH"; then
     pass "confirm deletes the working branch after merge"
   else
     fail "confirm should delete draft/* branch after merge"
-  fi
-}
-
-test_confirm_clears_draft_state() {
-  local P="$FIXTURE_DIR/confirm_clear_p"
-  local S="$FIXTURE_DIR/confirm_clear_s"
-  make_project "$P"
-  make_session "$P" "$S"
-  "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
-  "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
-
-  if [[ ! -f "$S/.workspace/draft-state" ]]; then
-    pass "confirm clears .workspace/draft-state"
-  else
-    fail "confirm should clear draft-state after merge"
   fi
 }
 
@@ -415,12 +444,12 @@ test_confirm_retains_session_artefacts() {
   local S="$FIXTURE_DIR/confirm_artefacts_s"
   make_project "$P"
   make_session "$P" "$S"
-  local SESSION_DIR="$S/.workspace/session-diffs/main-20260408-120000"
+  local SESSION_DIR="$S/.workspace/session-diffs/20260408-120000-main"
   "$APPLY_SCRIPT" draft   --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null
 
   local COUNT
-  COUNT=$(find "$SESSION_DIR/patches" -name '*.patch' 2>/dev/null | wc -l)
+  COUNT=$(find "$SESSION_DIR/session/patches" -name '*.diff' 2>/dev/null | wc -l)
   if [[ "$COUNT" -gt 0 ]]; then
     pass "confirm retains session patches after merge"
   else
@@ -431,6 +460,7 @@ test_confirm_retains_session_artefacts() {
 # -------------------------
 # REJECT tests
 # -------------------------
+
 test_reject_returns_to_source_branch() {
   local P="$FIXTURE_DIR/reject_branch_p"
   local S="$FIXTURE_DIR/reject_branch_s"
@@ -454,27 +484,16 @@ test_reject_deletes_working_branch() {
   make_project "$P"
   make_session "$P" "$S"
   "$APPLY_SCRIPT" draft  --project="$P" --sandbox="$S" 2>/dev/null
+
+  local WORKING_BRANCH
+  WORKING_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+
   "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null
 
-  if ! branch_exists "$P" "draft/main-20260408-120000"; then
+  if ! branch_exists "$P" "$WORKING_BRANCH"; then
     pass "reject deletes the working branch"
   else
     fail "reject should delete draft/* branch"
-  fi
-}
-
-test_reject_clears_draft_state() {
-  local P="$FIXTURE_DIR/reject_clear_p"
-  local S="$FIXTURE_DIR/reject_clear_s"
-  make_project "$P"
-  make_session "$P" "$S"
-  "$APPLY_SCRIPT" draft  --project="$P" --sandbox="$S" 2>/dev/null
-  "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null
-
-  if [[ ! -f "$S/.workspace/draft-state" ]]; then
-    pass "reject clears .workspace/draft-state"
-  else
-    fail "reject should clear draft-state"
   fi
 }
 
@@ -502,12 +521,12 @@ test_reject_retains_session_artefacts() {
   local S="$FIXTURE_DIR/reject_artefacts_s"
   make_project "$P"
   make_session "$P" "$S"
-  local SESSION_DIR="$S/.workspace/session-diffs/main-20260408-120000"
+  local SESSION_DIR="$S/.workspace/session-diffs/20260408-120000-main"
   "$APPLY_SCRIPT" draft  --project="$P" --sandbox="$S" 2>/dev/null
   "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null
 
   local COUNT
-  COUNT=$(find "$SESSION_DIR/patches" -name '*.patch' 2>/dev/null | wc -l)
+  COUNT=$(find "$SESSION_DIR/session/patches" -name '*.diff' 2>/dev/null | wc -l)
   if [[ "$COUNT" -gt 0 ]]; then
     pass "reject retains session patches"
   else
@@ -518,6 +537,7 @@ test_reject_retains_session_artefacts() {
 # -------------------------
 # Guard / error condition tests
 # -------------------------
+
 test_draft_missing_project_fails() {
   local S="$FIXTURE_DIR/guard_noproject_s"
   mkdir -p "$S"
@@ -542,13 +562,8 @@ test_draft_no_patches_dir_fails() {
   local S="$FIXTURE_DIR/guard_nopatch_s"
   make_project "$P"
 
-  # Write a checkpoint tag but no patches/
-  local WORKTREE_ID CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$P" | sha256sum | head -c8)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
-  git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
-  mkdir -p "$S/.workspace/session-diffs/main-20260408-120000"
-  echo "fake diff" > "$S/.workspace/session-diffs/main-20260408-120000/staged.diff"
+  # Create session directory without patches/
+  mkdir -p "$S/.workspace/session-diffs/20260408-120000-main"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
     fail "draft should fail when patches/ directory is missing"
@@ -562,11 +577,8 @@ test_draft_empty_patches_fails() {
   local S="$FIXTURE_DIR/guard_emptypatch_s"
   make_project "$P"
 
-  local WORKTREE_ID CHECKPOINT_TAG
-  WORKTREE_ID=$(echo "$P" | sha256sum | head -c8)
-  CHECKPOINT_TAG="agent-checkpoint/${WORKTREE_ID}/20260408-120000"
-  git -C "$P" tag "$CHECKPOINT_TAG" 2>/dev/null || true
-  mkdir -p "$S/.workspace/session-diffs/main-20260408-120000/patches"
+  # Create session directory with empty session/patches/
+  mkdir -p "$S/.workspace/session-diffs/20260408-120000-main/session/patches"
 
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
     fail "draft should fail when patches/ directory is empty"
@@ -583,9 +595,9 @@ test_double_draft_fails() {
 
   "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null
 
-  # Second draft attempt — draft-state already exists
+  # Second draft attempt — should fail because already on a draft branch
   if "$APPLY_SCRIPT" draft --project="$P" --sandbox="$S" 2>/dev/null; then
-    fail "second draft should fail when draft is already in progress"
+    fail "second draft should fail when already on a draft branch"
   else
     pass "draft correctly rejects a second draft while one is in progress"
   fi
@@ -598,9 +610,9 @@ test_confirm_without_draft_fails() {
   mkdir -p "$S/.workspace"
 
   if "$APPLY_SCRIPT" confirm --project="$P" --sandbox="$S" 2>/dev/null; then
-    fail "confirm should fail when no draft is in progress"
+    fail "confirm should fail when not on a draft branch"
   else
-    pass "confirm fails when draft-state is absent"
+    pass "confirm fails when not on a draft branch"
   fi
 }
 
@@ -611,13 +623,11 @@ test_reject_without_draft_fails() {
   mkdir -p "$S/.workspace"
 
   if "$APPLY_SCRIPT" reject --project="$P" --sandbox="$S" 2>/dev/null; then
-    fail "reject should fail when no draft is in progress"
+    fail "reject should fail when not on a draft branch"
   else
-    pass "reject fails when draft-state is absent"
+    pass "reject fails when not on a draft branch"
   fi
 }
-
-
 
 # -------------------------
 # Run all tests
@@ -629,8 +639,8 @@ run_test test_draft_checks_out_working_branch
 run_test test_draft_applies_all_patches
 run_test test_draft_files_present_after_apply
 run_test test_draft_resets_author_to_operator
-run_test test_draft_preserves_commit_messages
-run_test test_draft_writes_draft_state
+run_test test_draft_commit_messages
+run_test test_draft_writes_draft_state_commit
 run_test test_draft_selects_most_recent_session_by_default
 run_test test_draft_explicit_session_selection
 
@@ -639,14 +649,12 @@ run_test test_confirm_merges_to_source_branch
 run_test test_confirm_commits_are_on_source_branch
 run_test test_confirm_history_is_linear
 run_test test_confirm_deletes_working_branch
-run_test test_confirm_clears_draft_state
 run_test test_confirm_target_branch
 run_test test_confirm_retains_session_artefacts
 
 # reject
 run_test test_reject_returns_to_source_branch
 run_test test_reject_deletes_working_branch
-run_test test_reject_clears_draft_state
 run_test test_reject_source_branch_unchanged
 run_test test_reject_retains_session_artefacts
 

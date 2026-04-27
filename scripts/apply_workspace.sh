@@ -6,12 +6,15 @@
 # Commands:
 #   draft   [--project=<path>] [--sandbox=<path>] [--session=<name|path>] [--branch-from=<hash>]
 #             [--diffs=<start>..<end>] [--branch-summary=<slug>]
-#             Create a working branch draft/<export_time>-<session_ts>-<branch>-<sha6> from HEAD.
-#             Apply numbered diffs from the resolved export folder via git apply (index stripped),
-#             staging and committing each. The first commit on the branch is .draft-state.
-#             Resolves latest export from $CHANGES_DIR/ by lexicographic sort unless --session
-#             is given. --session=<name> resolves under $CHANGES_DIR/; --session=<absolute-path>
-#             uses the path directly (e.g. to target an $OUTPUT_DIR/bundles/ export).
+#             Create a working branch draft/<session_ts>-<branch>-<sha6> from HEAD.
+#             Apply numbered diffs from the resolved session folder via git apply
+#             (index stripped), staging and committing each. The first commit on
+#             the branch is .draft-state.
+#
+#             --session=<path> - absolute path used as-is (must contain session/patches/
+#               with numbered .diff files); relative path resolved under $CHANGES_DIR/.
+#             No --session - auto-resolve: find the latest session directory with a
+#               valid session/ subfolder. If none found, error with helpful hints.
 #
 #   confirm [--project=<path>] [--sandbox=<path>] [--target=<branch>]
 #             Read .draft-state from the draft branch. Rebase onto target,
@@ -27,8 +30,10 @@
 #             validation, tolerant of index drift and sequential application.
 #             No commits created. Operator reviews and commits manually.
 #             Reads from reasoning layer output channel (.workspace/output/diffs/).
-#             --session=<name> resolves under $OUTPUT_DIR/diffs/; --session=<absolute-path>
-#             uses the path directly.
+#             --session=<name> resolves relative under $OUTPUT_DIR/diffs/; --session=<absolute-path>
+#             uses the path directly (no $OUTPUT_DIR/diffs/ required).
+#             Resolves changes.diff: flat path first, then session/changes.diff,
+#             then autosave/changes.diff.
 #             --diff=<path>: apply specific diff file instead of resolving from OUTPUT_DIR.
 #             --force: apply with --reject; .rej files left for manual resolution.
 #
@@ -41,9 +46,6 @@
 #   diff_count: <n>
 #   exported-at: <YYYYMMDD-HHMMSS>
 #   drafted-at: <YYYYMMDD-HHMMSS>
-#
-# Legacy backward-compat:
-#   $WORKSPACE_DIR/draft-state file is also written for F2 transition.
 #
 # Cleanup policy:
 #   OUTPUT_DIR is not cleared automatically. Operator clears manually between sessions if desired.
@@ -124,7 +126,7 @@ if ! git -C "$PROJECT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
-  echo "Error: $PROJECT_DIR has no commits — cannot apply patch" >&2
+  echo "Error: $PROJECT_DIR has no commits - cannot apply patch" >&2
   exit 1
 fi
 
@@ -133,35 +135,111 @@ fi
 # -------------------------
 if [[ "$COMMAND" == "draft" ]]; then
 
-  # Resolve target export folder
+  # Determine the patches directory to use.
+  # --session can point to:
+  #   1. A session top-level dir (e.g. .../session-diffs/20260420-120000-main)
+  #      → we look for session/patches/ inside it
+  #   2. A subfolder directly (e.g. .../session-diffs/20260420-120000-main/session
+  #      or .../session-diffs/20260420-120000-main/autosave)
+  #      → we look for patches/ inside it
+  #   3. No --session → auto-resolve to latest session with valid session/patches/
   if [[ -n "$SESSION_ARG" ]]; then
-    # Explicit path override — absolute used as-is; relative resolved under $CHANGES_DIR
+    # Explicit path - absolute used as-is; relative resolved under $CHANGES_DIR
     if [[ "$SESSION_ARG" == /* ]]; then
-      EXPORT_DIR="$SESSION_ARG"
+      SESSION_PATH="$SESSION_ARG"
     else
-      EXPORT_DIR="$CHANGES_DIR/$SESSION_ARG"
+      SESSION_PATH="$CHANGES_DIR/$SESSION_ARG"
     fi
-    if [[ ! -d "$EXPORT_DIR" ]]; then
-      echo "Error: session directory not found: $EXPORT_DIR" >&2
+    if [[ ! -d "$SESSION_PATH" ]]; then
+      echo "Error: session path not found: $SESSION_PATH" >&2
+      echo "  Relative paths resolve under: $CHANGES_DIR" >&2
+      if [[ -d "$CHANGES_DIR" ]]; then
+        echo "  Available sessions:" >&2
+        ls -1 "$CHANGES_DIR" >&2 2>/dev/null || echo "    (none)" >&2
+      fi
+      exit 1
+    fi
+
+    # Determine if SESSION_PATH points to a top-level session dir or a subfolder
+    if [[ -d "$SESSION_PATH/session/patches" ]]; then
+      # Top-level session dir → use session/patches/
+      EXPORT_DIR="$SESSION_PATH"
+      PATCHES_DIR="$SESSION_PATH/session/patches"
+      echo "Using session: $SESSION_PATH (session/patches/)"
+    elif [[ -d "$SESSION_PATH/patches" ]]; then
+      # Subfolder (session/ or autosave/) → use patches/ inside it
+      PATCHES_DIR="$SESSION_PATH/patches"
+      # Walk up to get the session top-level dir for folder name parsing
+      EXPORT_DIR="$(dirname "$SESSION_PATH")"
+      echo "Using session: $SESSION_PATH (patches/)"
+    else
+      echo "Error: no patches/ directory found in $SESSION_PATH" >&2
+      echo "  Expected: $SESSION_PATH/session/patches/ or $SESSION_PATH/patches/" >&2
       exit 1
     fi
   else
-    # Default: latest export from $CHANGES_DIR/ by lexicographic sort
+    # Auto-resolve: find the latest session directory with a valid session/ subfolder
     if [[ ! -d "$CHANGES_DIR" ]]; then
       echo "Error: changes directory not found: $CHANGES_DIR" >&2
+      echo "  Expected: $CHANGES_DIR/<timestamp>-<branch>/session/patches/" >&2
       exit 1
     fi
-    EXPORT_DIR=$(draft_resolve_latest_export "$CHANGES_DIR") || exit 1
+
+    LATEST_SESSION=""
+    LATEST_WITH_AUTOSAVE=""
+
+    # Iterate session dirs from newest to oldest (lexicographic reverse)
+    while IFS= read -r CANDIDATE; do
+      [[ -z "$CANDIDATE" ]] && continue
+
+      # Check if this candidate has a session/patches/ directory with diffs
+      if [[ -d "$CANDIDATE/session/patches" ]] && \
+         ls "$CANDIDATE/session/patches/"*.diff >/dev/null 2>&1; then
+        LATEST_SESSION="$CANDIDATE"
+        break  # Found the newest valid session - done
+      fi
+
+      # Track latest directory with autosave only (for error messaging)
+      # Only set if we haven't found a valid session yet - since we iterate
+      # newest-to-oldest, this captures any directory that has autosave/ but
+      # not session/patches/ above the newest valid session.
+      if [[ -z "$LATEST_WITH_AUTOSAVE" ]] && [[ -d "$CANDIDATE/autosave" ]]; then
+        LATEST_WITH_AUTOSAVE="$CANDIDATE"
+      fi
+    done < <(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d | sort -r)
+
+    if [[ -n "$LATEST_SESSION" ]]; then
+      EXPORT_DIR="$LATEST_SESSION"
+      PATCHES_DIR="$LATEST_SESSION/session/patches"
+      echo "Auto-resolved session: $LATEST_SESSION"
+    else
+      # No valid session found - produce helpful error
+      echo "Error: no completed session found in $CHANGES_DIR" >&2
+      echo "  Contents:" >&2
+      ls -1 "$CHANGES_DIR" >&2 2>/dev/null || echo "    (empty or unreadable)" >&2
+      if [[ -n "$LATEST_WITH_AUTOSAVE" ]]; then
+        echo "  Autosave checkpoint(s) found but no completed session." >&2
+        echo "  Latest autosave: $LATEST_WITH_AUTOSAVE/autosave/" >&2
+        echo "  Run again with --session=<path-to-autosave> to apply autosave diffs." >&2
+      fi
+      exit 1
+    fi
   fi
 
   # Parse session identity from folder name
   EXPORT_BASENAME=$(basename "$EXPORT_DIR")
   draft_parse_folder_name "$EXPORT_BASENAME"
 
-  # Collect numbered diff files only (ignore changes.diff, staged.diff, autosave.diff)
-  mapfile -t DIFF_FILES < <(find "$EXPORT_DIR" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]*.diff' | sort)
+  # Read EXPORT_TIME from session/EXPORT-TIME.txt
+  EXPORT_TIME=$(draft_read_export_time "$EXPORT_DIR")
+  if [[ -z "$EXPORT_TIME" ]]; then
+    EXPORT_TIME="unknown"
+  fi
+
+  # Collect numbered diff files from the resolved patches directory
+  mapfile -t DIFF_FILES < <(find "$PATCHES_DIR" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]*.diff' | sort)
   if [[ "${#DIFF_FILES[@]}" -eq 0 ]]; then
-    echo "Error: no .diff files found in $EXPORT_DIR" >&2
+    echo "Error: no .diff files found in $PATCHES_DIR" >&2
     echo "  The session may have produced no commits." >&2
     exit 1
   fi
@@ -177,8 +255,8 @@ if [[ "$COMMAND" == "draft" ]]; then
     fi
     FILTERED_DIFFS=()
     for df in "${DIFF_FILES[@]}"; do
-      BASENAME=$(basename "$df")
-      NUM="${BASENAME%%-*}"
+      BNAME=$(basename "$df")
+      NUM="${BNAME%%-*}"
       if [[ "$NUM" =~ ^[0-9]+$ ]]; then
         NUM_INT=$((10#$NUM))
         if [[ "$NUM_INT" -ge "$START_NUM" && "$NUM_INT" -le "$END_NUM" ]]; then
@@ -187,7 +265,7 @@ if [[ "$COMMAND" == "draft" ]]; then
       fi
     done
     if [[ "${#FILTERED_DIFFS[@]}" -eq 0 ]]; then
-      echo "Error: no diffs in range $DIFFS_ARG found in $EXPORT_DIR" >&2
+      echo "Error: no diffs in range $DIFFS_ARG found in $PATCHES_DIR" >&2
       exit 1
     fi
     DIFF_FILES=("${FILTERED_DIFFS[@]}")
@@ -209,8 +287,8 @@ if [[ "$COMMAND" == "draft" ]]; then
     BRANCH_SLUG="$SANITIZED_HOST_BRANCH"
   fi
 
-  # Compute draft branch name
-  WORKING_BRANCH="draft/${EXPORT_TIME}-${SESSION_TS}-${BRANCH_SLUG}-${FROM_SHA6}"
+  # Compute draft branch name: draft/<SESSION_TS>-<BRANCH>-<SHA6>
+  WORKING_BRANCH="draft/${SESSION_TS}-${BRANCH_SLUG}-${FROM_SHA6}"
 
   # Guard: don't allow drafting from a draft branch
   CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
@@ -247,9 +325,17 @@ if [[ "$COMMAND" == "draft" ]]; then
   git -C "$PROJECT_DIR" commit -m ".draft-state" --author="$AUTHOR"
 
   # Apply diffs sequentially with git apply (index lines stripped), stage, and commit
+  # Use process substitution to avoid SIGPIPE from grep in a pipeline (set -euo pipefail)
+  echo "Patches directory: $PATCHES_DIR"
+  echo "Applying ${#DIFF_FILES[@]} diffs..."
   for diff_file in "${DIFF_FILES[@]}"; do
-    echo "Applying: $(basename "$diff_file")"
-    grep -v '^index ' "$diff_file" | git -C "$PROJECT_DIR" apply
+    echo "  Applying: $(basename "$diff_file")"
+    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$diff_file"); then
+      echo "Error: failed to apply $(basename "$diff_file")" >&2
+      echo "  Patch file: $diff_file" >&2
+      git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
+      exit 1
+    fi
     git -C "$PROJECT_DIR" add -A
     git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
   done
@@ -257,7 +343,7 @@ if [[ "$COMMAND" == "draft" ]]; then
   # Operator hint
   echo ""
   echo "Draft branch created: $WORKING_BRANCH"
-  echo "Export: $EXPORT_DIR"
+  echo "Session: $EXPORT_DIR"
   echo "Diffs applied: ${#DIFF_FILES[@]}"
   echo "Branch point: ${FROM_HASH:0:7}"
   echo ""
@@ -287,7 +373,8 @@ if [[ "$COMMAND" == "confirm" ]]; then
   fi
 
   # 1. Drop .draft-state commit
-  DRAFT_STATE_COMMIT=$(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse | head -n 1)
+  # Process substitution avoids SIGPIPE from head in a pipeline (set -euo pipefail)
+  read -r DRAFT_STATE_COMMIT < <(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse)
   echo "Dropping .draft-state commit..."
   if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
     echo "Error: failed to drop .draft-state commit" >&2
@@ -360,7 +447,7 @@ if [[ "$COMMAND" == "apply" ]]; then
   SESSION_DIR=""
 
   if [[ -n "$DIFF_ARG" ]]; then
-    # Explicit diff path provided
+    # Explicit diff path provided — no session resolution needed
     CHANGES_DIFF="$DIFF_ARG"
     if [[ ! -f "$CHANGES_DIFF" ]]; then
       echo "Error: diff file not found: $CHANGES_DIFF" >&2
@@ -371,26 +458,37 @@ if [[ "$COMMAND" == "apply" ]]; then
     # Resolve session directory from OUTPUT_DIR/diffs/
     DIFFS_DIR="$OUTPUT_DIR/diffs"
 
-    if [[ ! -d "$DIFFS_DIR" ]]; then
-      echo "Error: diffs directory not found: $DIFFS_DIR" >&2
-      echo "  No session artefacts have been produced yet." >&2
-      exit 1
-    fi
-
     if [[ -n "$SESSION_ARG" ]]; then
       # Explicit session path — absolute used as-is; relative resolved under $DIFFS_DIR
       if [[ "$SESSION_ARG" == /* ]]; then
         SESSION_DIR="$SESSION_ARG"
+        # Absolute paths do not require $DIFFS_DIR to exist
       else
+        # Relative path — must have $DIFFS_DIR
+        if [[ ! -d "$DIFFS_DIR" ]]; then
+          echo "Error: diffs directory not found: $DIFFS_DIR" >&2
+          echo "  No session artefacts have been produced yet." >&2
+          exit 1
+        fi
         SESSION_DIR="$DIFFS_DIR/$SESSION_ARG"
       fi
       if [[ ! -d "$SESSION_DIR" ]]; then
         echo "Error: session directory not found: $SESSION_DIR" >&2
-        echo "  Specify a valid session name or omit SESSION= to use the latest." >&2
+        if [[ "$SESSION_ARG" != /* ]]; then
+          echo "  Relative paths resolve under: $DIFFS_DIR" >&2
+        fi
+        echo "  Specify a valid session name or use an absolute path." >&2
         exit 1
       fi
     else
-      # Lexicographically last entry in DIFFS_DIR (by basename sort)
+      # Auto-resolve: lexicographically last entry in DIFFS_DIR
+      if [[ ! -d "$DIFFS_DIR" ]]; then
+        echo "Error: diffs directory not found: $DIFFS_DIR" >&2
+        echo "  Expected: $DIFFS_DIR/<session>/changes.diff" >&2
+        echo "  No session artefacts have been produced yet." >&2
+        exit 1
+      fi
+
       SESSION_DIR=$(find "$DIFFS_DIR" -mindepth 1 -maxdepth 1 -type d \
         | sort | tail -n 1)
       if [[ -z "$SESSION_DIR" ]]; then
@@ -400,9 +498,19 @@ if [[ "$COMMAND" == "apply" ]]; then
       fi
     fi
 
-    CHANGES_DIFF="$SESSION_DIR/changes.diff"
-    if [[ ! -f "$CHANGES_DIFF" ]]; then
-      echo "Error: changes.diff not found in session directory: $CHANGES_DIFF" >&2
+    # Resolve changes.diff: try flat, then session/, then autosave/
+    CHANGES_DIFF=""
+    if [[ -f "$SESSION_DIR/changes.diff" ]]; then
+      CHANGES_DIFF="$SESSION_DIR/changes.diff"
+    elif [[ -f "$SESSION_DIR/session/changes.diff" ]]; then
+      CHANGES_DIFF="$SESSION_DIR/session/changes.diff"
+    elif [[ -f "$SESSION_DIR/autosave/changes.diff" ]]; then
+      CHANGES_DIFF="$SESSION_DIR/autosave/changes.diff"
+    else
+      echo "Error: changes.diff not found in session directory: $SESSION_DIR" >&2
+      echo "  Tried: $SESSION_DIR/changes.diff" >&2
+      echo "        $SESSION_DIR/session/changes.diff" >&2
+      echo "        $SESSION_DIR/autosave/changes.diff" >&2
       echo "  Session artefacts may be incomplete or from a different version." >&2
       exit 1
     fi
@@ -426,24 +534,27 @@ if [[ "$COMMAND" == "apply" ]]; then
     fi
   fi
 
-  echo "Applying changes.diff from $(basename "$SESSION_DIR") to $(git -C "$PROJECT_DIR" branch --show-current)..."
+  echo "Applying $CHANGES_DIFF to $(git -C "$PROJECT_DIR" branch --show-current)..."
 
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
-    grep -v '^index ' "$CHANGES_DIFF" | git -C "$PROJECT_DIR" apply --reject || {
+    if ! git -C "$PROJECT_DIR" apply --reject < <(grep -v '^index ' "$CHANGES_DIFF"); then
       echo "" >&2
       echo "Warning: some hunks failed to apply." >&2
       echo "Review .rej files and resolve manually." >&2
-    }
+    fi
   else
-    # Strip index lines before applying — removes blob SHA validation so git apply
+    # Strip index lines before applying - removes blob SHA validation so git apply
     # matches by context lines only. Tolerates index drift and sequential application.
-    grep -v '^index ' "$CHANGES_DIFF" | git -C "$PROJECT_DIR" apply || {
+    # Uses process substitution to avoid SIGPIPE from grep in a pipeline (set -euo pipefail).
+    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$CHANGES_DIFF"); then
       echo "Error: git apply failed." >&2
+      echo "  Diff file: $CHANGES_DIFF" >&2
+      echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
       echo "" >&2
       echo "Hint: use --force (make apply FORCE=1) to apply with --reject and create .rej files for conflicts." >&2
       exit 1
-    }
+    fi
   fi
 
   # Count changed files from the diff

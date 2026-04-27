@@ -4,7 +4,11 @@
 #
 # Covers:
 #   package_branch        — produces numbered diffs, index lines stripped,
-#                           branch name sanitization, missing args, no commits
+#                           missing args, no commits
+#
+# Note: package_branch writes directly to OUTPUT_DIR/*.diff — it does not
+# create a subdirectory based on SESSION_SUMMARY. SESSION_SUMMARY is for
+# logging only.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../libs/package_branch.sh"
@@ -27,7 +31,7 @@ run_test() {
 # -------------------------
 make_sandbox() {
   local DIR="$1"
-  rm -rf "$DIR"              # ← Clean first (testing_policy)
+  rm -rf "$DIR"
   mkdir -p "$DIR"
   git -C "$DIR" init --quiet
   git -C "$DIR" config user.email "test@test.com"
@@ -55,7 +59,7 @@ commit_change() {
 test_package_branch_produces_numbered_diffs() {
   local DIR="$FIXTURE_DIR/pb_basic"
   local DIFFS="$FIXTURE_DIR/pb_basic_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -66,7 +70,7 @@ test_package_branch_produces_numbered_diffs() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
   local COUNT
-  COUNT=$(ls -1 "$DIFFS/main/"*.diff 2>/dev/null | wc -l)
+  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
   if [[ "$COUNT" -eq 2 ]]; then
     pass "package_branch produces one diff per commit (got $COUNT)"
   else
@@ -77,7 +81,7 @@ test_package_branch_produces_numbered_diffs() {
 test_package_branch_numbering_format() {
   local DIR="$FIXTURE_DIR/pb_num"
   local DIFFS="$FIXTURE_DIR/pb_num_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -88,9 +92,9 @@ test_package_branch_numbering_format() {
 
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
-  if ls "$DIFFS/main/0001-"*.diff >/dev/null 2>&1 && \
-     ls "$DIFFS/main/0002-"*.diff >/dev/null 2>&1 && \
-     ls "$DIFFS/main/0003-"*.diff >/dev/null 2>&1; then
+  if ls "$DIFFS/0001-"*.diff >/dev/null 2>&1 && \
+     ls "$DIFFS/0002-"*.diff >/dev/null 2>&1 && \
+     ls "$DIFFS/0003-"*.diff >/dev/null 2>&1; then
     pass "package_branch uses correct 0001-, 0002-, 0003- numbering"
   else
     fail "package_branch should use 0001-, 0002-, 0003- prefix"
@@ -100,7 +104,7 @@ test_package_branch_numbering_format() {
 test_package_branch_index_lines_stripped() {
   local DIR="$FIXTURE_DIR/pb_noindex"
   local DIFFS="$FIXTURE_DIR/pb_noindex_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -110,7 +114,7 @@ test_package_branch_index_lines_stripped() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
   local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/main/"*.diff | head -n1)
+  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
   if ! grep -q '^index ' "$DIFF_FILE"; then
     pass "package_branch strips index lines from diffs"
   else
@@ -118,30 +122,10 @@ test_package_branch_index_lines_stripped() {
   fi
 }
 
-test_package_branch_sanitizes_branch_name() {
-  local DIR="$FIXTURE_DIR/pb_sanitize"
-  local DIFFS="$FIXTURE_DIR/pb_sanitize_out"
-  mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
-
-  commit_change "$DIR" "change"
-
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "feature/nested/branch"
-
-  if [[ -d "$DIFFS/feature-nested-branch" ]] && \
-     ! [[ -d "$DIFFS/feature/nested/branch" ]]; then
-    pass "package_branch sanitizes branch name (slashes to dashes)"
-  else
-    fail "package_branch should sanitize branch name"
-  fi
-}
-
 test_package_branch_overwrites_existing() {
   local DIR="$FIXTURE_DIR/pb_overwrite"
   local DIFFS="$FIXTURE_DIR/pb_overwrite_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -150,14 +134,14 @@ test_package_branch_overwrites_existing() {
   commit_change "$DIR" "first"
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
   local COUNT1
-  COUNT1=$(ls -1 "$DIFFS/main/"*.diff 2>/dev/null | wc -l)
+  COUNT1=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
 
   # Second run with more commits
   commit_change "$DIR" "second"
   commit_change "$DIR" "third"
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
   local COUNT2
-  COUNT2=$(ls -1 "$DIFFS/main/"*.diff 2>/dev/null | wc -l)
+  COUNT2=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
 
   if [[ "$COUNT2" -eq 3 ]]; then
     pass "package_branch overwrites existing diffs (got $COUNT2 after second run)"
@@ -172,7 +156,7 @@ test_package_branch_overwrites_existing() {
 test_package_branch_no_commits() {
   local DIR="$FIXTURE_DIR/pb_nocommit"
   local DIFFS="$FIXTURE_DIR/pb_nocommit_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -181,7 +165,7 @@ test_package_branch_no_commits() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main" 2>/dev/null
 
   local COUNT
-  COUNT=$(ls -1 "$DIFFS/main/"*.diff 2>/dev/null | wc -l)
+  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
   if [[ "$COUNT" -eq 0 ]]; then
     pass "package_branch produces no diffs when no commits since INIT_SHA"
   else
@@ -199,7 +183,7 @@ test_package_branch_missing_args() {
 
 test_package_branch_missing_sandbox_dir() {
   local DIFFS="$FIXTURE_DIR/pb_missing_sandbox"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
 
   if package_branch "/nonexistent" "abc123" "$DIFFS" "main" 2>/dev/null; then
     fail "package_branch should fail with nonexistent SANDBOX_DIR"
@@ -211,7 +195,7 @@ test_package_branch_missing_sandbox_dir() {
 test_package_branch_missing_init_sha() {
   local DIR="$FIXTURE_DIR/pb_missing_init"
   local DIFFS="$FIXTURE_DIR/pb_missing_init_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
 
   # Invalid INIT_SHA
@@ -229,6 +213,7 @@ test_package_branch_diff_is_applicable() {
   local DIR="$FIXTURE_DIR/pb_apply"
   local TARGET="$FIXTURE_DIR/pb_apply_target"
   local DIFFS="$FIXTURE_DIR/pb_apply_out"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   make_sandbox "$TARGET"
   local INIT_SHA
@@ -238,7 +223,7 @@ test_package_branch_diff_is_applicable() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
   local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/main/"*.diff | head -n1)
+  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
 
   # Apply diff to target (same baseline)
   if git -C "$TARGET" apply "$DIFF_FILE" 2>/dev/null; then
@@ -251,7 +236,7 @@ test_package_branch_diff_is_applicable() {
 test_package_branch_diff_contains_expected_content() {
   local DIR="$FIXTURE_DIR/pb_content"
   local DIFFS="$FIXTURE_DIR/pb_content_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -263,7 +248,7 @@ test_package_branch_diff_contains_expected_content() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
   local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/main/"*.diff | head -n1)
+  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
 
   if grep -q "unique content here" "$DIFF_FILE"; then
     pass "diff contains expected file content"
@@ -278,7 +263,7 @@ test_package_branch_diff_contains_expected_content() {
 test_package_branch_single_commit() {
   local DIR="$FIXTURE_DIR/pb_single"
   local DIFFS="$FIXTURE_DIR/pb_single_out"
-  mkdir -p "$DIFFS"
+  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
@@ -288,7 +273,7 @@ test_package_branch_single_commit() {
   package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
 
   local COUNT
-  COUNT=$(ls -1 "$DIFFS/main/"*.diff 2>/dev/null | wc -l)
+  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
   if [[ "$COUNT" -eq 1 ]]; then
     pass "package_branch handles single commit correctly"
   else
@@ -302,7 +287,6 @@ test_package_branch_single_commit() {
 run_test test_package_branch_produces_numbered_diffs
 run_test test_package_branch_numbering_format
 run_test test_package_branch_index_lines_stripped
-run_test test_package_branch_sanitizes_branch_name
 run_test test_package_branch_overwrites_existing
 run_test test_package_branch_no_commits
 run_test test_package_branch_missing_args

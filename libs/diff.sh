@@ -10,6 +10,25 @@
 #   diff_on_exit         SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
 #   diff_on_autosave     SANDBOX_DIR  BASELINE_SHA  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
 #
+# Directory structure under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
+#
+#   session/
+#     EXPORT-TIME.txt       — timestamp of the exit export (audit trail)
+#     changes.diff          — uncommitted changes vs HEAD (before sweep commit)
+#     staged.diff           — net delta INIT_SHA..HEAD (after sweep commit)
+#     patches/
+#       0001-<sha>.diff     — per-commit diffs from package_branch
+#
+#   autosave/
+#     EXPORT-TIME.txt       — timestamp of the last autosave tick
+#     changes.diff          — uncommitted changes vs HEAD (no sweep; agent still running)
+#     patches/
+#       0001-<sha>.diff     — per-commit diffs from package_branch
+#
+# Both subfolders are overwritten on each call. The session/ and autosave/
+# separation prevents race conditions between the EXIT trap and the autosave
+# loop writing to the same files.
+#
 # Note: package_branch() has been moved to libs/package_branch.sh
 
 # SESSION_TS and SANITIZED_HOST_BRANCH are the session identity primitives.
@@ -70,6 +89,44 @@ diff_generate() {
 }
 
 # -------------------------
+# diff_write_changes_diff
+#
+# Writes uncommitted changes vs HEAD to OUTPUT_FILE.
+# Strips git index lines and trailing whitespace for clean git apply.
+# Writes an empty file if there are no uncommitted changes.
+# -------------------------
+diff_write_changes_diff() {
+  local SANDBOX_DIR="$1"
+  local OUTPUT_FILE="$2"
+
+  # Stage untracked files so they appear in diff HEAD (git add -N = add to index
+  # without content, so diff shows them). Restore staged state after.
+  local UNTRACKED_STAGED=()
+  local UNTRACKED
+  UNTRACKED=$(git -C "$SANDBOX_DIR" ls-files --others --exclude-standard 2>/dev/null || true)
+  if [[ -n "$UNTRACKED" ]]; then
+    while IFS= read -r F; do
+      git -C "$SANDBOX_DIR" add -N -- "$F" 2>/dev/null && UNTRACKED_STAGED+=("$F")
+    done <<< "$UNTRACKED"
+  fi
+
+  if git -C "$SANDBOX_DIR" diff --quiet HEAD 2>/dev/null; then
+    > "$OUTPUT_FILE"
+  else
+    git -C "$SANDBOX_DIR" diff HEAD \
+      | grep -v '^index ' \
+      | sed 's/[[:space:]]*$//' \
+      | sed -e '$a\\' \
+      > "$OUTPUT_FILE"
+  fi
+
+  # Restore staged state for untracked files
+  if [[ ${#UNTRACKED_STAGED[@]} -gt 0 ]]; then
+    git -C "$SANDBOX_DIR" restore --staged -- "${UNTRACKED_STAGED[@]}" 2>/dev/null || true
+  fi
+}
+
+# -------------------------
 # diff_format_patch
 #
 # Generates per-commit patch files from BASELINE_SHA to HEAD in SANDBOX_DIR.
@@ -104,13 +161,15 @@ diff_format_patch() {
 # -------------------------
 # diff_on_exit
 #
-# Captures uncommitted changes, commits pending changes, generates staged.diff,
-# produces format-patch output, and calls package_branch. Called by the EXIT trap
-# in sandbox-entrypoint.sh.
-# SESSION_TS and SANITIZED_HOST_BRANCH are required — artefacts are written
-# under CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/.
-# EXPORT_TIME is generated at call time, distinct from SESSION_TS to support
-# multiple exports within a session.
+# Captures uncommitted changes, commits pending changes, writes session
+# artefacts, and calls package_branch. Called by the EXIT trap in
+# sandbox-entrypoint.sh.
+#
+# Output layout under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
+#   session/EXPORT-TIME.txt   — audit trail timestamp
+#   session/changes.diff      — uncommitted vs HEAD (before sweep)
+#   session/staged.diff       — net delta INIT_SHA..HEAD (after sweep)
+#   session/patches/          — per-commit .diff files from package_branch
 # -------------------------
 diff_on_exit() {
   local SANDBOX_DIR="$1"
@@ -124,29 +183,26 @@ diff_on_exit() {
     return 1
   fi
 
+  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_TS}-${SANITIZED_HOST_BRANCH}"
+  local SESSION_DIR="${OUTPUT_DIR}/session"
+  mkdir -p "$SESSION_DIR/patches"
+
+  # Record export time for audit trail
   local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  local OUTPUT_DIR="${CHANGES_DIR}/${EXPORT_TIME}-${SANITIZED_HOST_BRANCH}-${SESSION_TS}"
-  mkdir -p "$OUTPUT_DIR"
+  echo "$EXPORT_TIME" > "$SESSION_DIR/EXPORT-TIME.txt"
 
-  # Capture uncommitted changes BEFORE committing (writes to session dir)
-  if git -C "$SANDBOX_DIR" diff --quiet HEAD; then
-    echo "diff_on_exit: no uncommitted changes" >&2
-    > "$OUTPUT_DIR/changes.diff"
-  else
-    git -C "$SANDBOX_DIR" diff HEAD \
-      | grep -v '^index ' \
-      | sed 's/[[:space:]]*$//' \
-      | sed -e '$a\' \
-      > "$OUTPUT_DIR/changes.diff"
-  fi
+  # Capture uncommitted changes BEFORE committing
+  diff_write_changes_diff "$SANDBOX_DIR" "${SESSION_DIR}/changes.diff"
 
+  # Commit any pending changes (sweep commit)
   echo "diff_on_exit: staging final diff..." >&2
   diff_commit_pending "$SANDBOX_DIR"
-  diff_generate "$SANDBOX_DIR" "$BASELINE_SHA" "${OUTPUT_DIR}/staged.diff"
-  diff_format_patch "$SANDBOX_DIR" "$BASELINE_SHA" "${OUTPUT_DIR}/patches"
 
-  # Call package_branch to produce numbered .diff files
+  # staged.diff — net delta from baseline to HEAD (after sweep)
+  diff_generate "$SANDBOX_DIR" "$BASELINE_SHA" "${SESSION_DIR}/staged.diff"
+
+  # Per-commit .diff files from package_branch
   local INIT_SHA=""
   if [[ -f "${SANDBOX_DIR}/.git/INIT_SHA" ]]; then
     INIT_SHA=$(cat "${SANDBOX_DIR}/.git/INIT_SHA")
@@ -155,22 +211,27 @@ diff_on_exit() {
   fi
 
   if [[ -n "$INIT_SHA" ]]; then
-    # Source package_branch.sh to get the package_branch function
-    source /libs/package_branch.sh
-
-    package_branch "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
+    # Resolve package_branch.sh relative to this file (works in container and test envs)
+    local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    source "${_diff_sh_dir}/package_branch.sh"
+    package_branch "$SANDBOX_DIR" "$INIT_SHA" "${SESSION_DIR}/patches"
   fi
 }
 
 # -------------------------
 # diff_on_autosave
 #
-# Generates autosave.diff without committing pending changes.
+# Generates autosave artefacts without committing pending changes.
 # The agent is still running; committing here would interfere
 # with the agent's own git operations.
-# SESSION_TS and SANITIZED_HOST_BRANCH are required — autosave.diff is written
-# under CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/.
+# Overwrites the autosave/ subfolder on each tick — one snapshot per
+# session, updated in place.
 # Called by the autosave loop in sandbox-entrypoint.sh.
+#
+# Output layout under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
+#   autosave/EXPORT-TIME.txt   — audit trail timestamp (last tick)
+#   autosave/changes.diff      — uncommitted vs HEAD (no sweep)
+#   autosave/patches/          — per-commit .diff files from package_branch
 # -------------------------
 diff_on_autosave() {
   local SANDBOX_DIR="$1"
@@ -184,11 +245,31 @@ diff_on_autosave() {
     return 1
   fi
 
+  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_TS}-${SANITIZED_HOST_BRANCH}"
+  local AUTOSAVE_DIR="${OUTPUT_DIR}/autosave"
+  mkdir -p "$AUTOSAVE_DIR/patches"
+
+  # Record export time for audit trail
   local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  local OUTPUT_DIR="${CHANGES_DIR}/${EXPORT_TIME}-${SANITIZED_HOST_BRANCH}-${SESSION_TS}"
-  mkdir -p "$OUTPUT_DIR"
+  echo "$EXPORT_TIME" > "$AUTOSAVE_DIR/EXPORT-TIME.txt"
 
-  echo "diff_on_autosave: writing checkpoint diff..." >&2
-  diff_generate "$SANDBOX_DIR" "$BASELINE_SHA" "${OUTPUT_DIR}/autosave.diff"
+  echo "diff_on_autosave: writing checkpoint..." >&2
+
+  # Uncommitted changes vs HEAD (no sweep — agent is still running)
+  diff_write_changes_diff "$SANDBOX_DIR" "${AUTOSAVE_DIR}/changes.diff"
+
+  # Per-commit .diff files from package_branch (committed work since INIT_SHA)
+  local INIT_SHA=""
+  if [[ -f "${SANDBOX_DIR}/.git/INIT_SHA" ]]; then
+    INIT_SHA=$(cat "${SANDBOX_DIR}/.git/INIT_SHA")
+  fi
+
+  if [[ -n "$INIT_SHA" ]]; then
+    local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    source "${_diff_sh_dir}/package_branch.sh"
+    package_branch "$SANDBOX_DIR" "$INIT_SHA" "${AUTOSAVE_DIR}/patches"
+  fi
+
+  echo "diff_on_autosave: checkpoint written to ${AUTOSAVE_DIR}" >&2
 }

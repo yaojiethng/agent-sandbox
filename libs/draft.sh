@@ -32,28 +32,42 @@ draft_resolve_latest_export() {
 # -------------------------
 # Parse export folder name
 # -------------------------
-# Folder name format: <EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>
-# EXPORT_TIME is fixed width: YYYYMMDD-HHMMSS (15 chars + dash = 16)
+# Folder name format: <SESSION_TS>-<SANITIZED_HOST_BRANCH>
 # SESSION_TS is fixed width: YYYYMMDD-HHMMSS (15 chars)
-# SANITIZED_HOST_BRANCH is everything between them.
+# SANITIZED_HOST_BRANCH is everything after the first dash.
 #
 # Sets variables in caller scope:
-#   EXPORT_TIME, SANITIZED_HOST_BRANCH, SESSION_TS
+#   SANITIZED_HOST_BRANCH, SESSION_TS
+#
+# EXPORT_TIME is no longer in the folder name; it is read from
+# session/EXPORT-TIME.txt via draft_read_export_time().
 #
 draft_parse_folder_name() {
   local BASENAME="$1"
 
-  # Extract EXPORT_TIME (first 15 chars: YYYYMMDD-HHMMSS)
-  EXPORT_TIME="${BASENAME:0:15}"
+  # Extract SESSION_TS (first 15 chars: YYYYMMDD-HHMMSS)
+  SESSION_TS="${BASENAME:0:15}"
 
-  # Extract SESSION_TS (last 15 chars: YYYYMMDD-HHMMSS)
-  SESSION_TS="${BASENAME: -15}"
+  # Extract SANITIZED_HOST_BRANCH (everything after the dash following SESSION_TS)
+  # Format: YYYYMMDD-HHMMSS-<branch>
+  SANITIZED_HOST_BRANCH="${BASENAME:16}"
+}
 
-  # Extract SANITIZED_HOST_BRANCH (everything between the two timestamps and their delimiters)
-  # Format: YYYYMMDD-HHMMSS-<branch>-YYYYMMDD-HHMMSS
-  # Remove first 16 chars (EXPORT_TIME + trailing dash) and last 16 chars (leading dash + SESSION_TS)
-  local REMAINING="${BASENAME:16}"
-  SANITIZED_HOST_BRANCH="${REMAINING%-*}"
+# -------------------------
+# Read EXPORT-TIME.txt from session directory
+# -------------------------
+# Reads the first line of <SESSION_DIR>/session/EXPORT-TIME.txt.
+# Returns the export timestamp string. Returns empty string on failure.
+#
+draft_read_export_time() {
+  local SESSION_DIR="$1"
+  local EXPORT_TIME_FILE="${SESSION_DIR}/session/EXPORT-TIME.txt"
+
+  if [[ -f "$EXPORT_TIME_FILE" ]]; then
+    head -n 1 "$EXPORT_TIME_FILE"
+  else
+    echo ""
+  fi
 }
 
 # -------------------------
@@ -171,14 +185,17 @@ draft_validate_branch() {
     printf '%s="%s"\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
 
-  # Check 3: first commit after from_hash has message ".draft-state"
+  # Validate from_hash
   if [[ -z "${from_hash:-}" ]]; then
     echo "Error: .draft-state on $CURRENT_BRANCH is missing 'from_hash' field" >&2
     return 1
   fi
 
-  local FIRST_COMMIT_MSG
-  FIRST_COMMIT_MSG=$(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse --format=%s | grep -v '^commit ' | head -n 1)
+  # Check 3: first commit after from_hash has message ".draft-state"
+  # Process substitution avoids SIGPIPE from head in a pipeline (set -euo pipefail).
+  local FIRST_SHA FIRST_COMMIT_MSG
+  read -r FIRST_SHA < <(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse)
+  FIRST_COMMIT_MSG=$(git -C "$PROJECT_DIR" log -1 --format=%s "$FIRST_SHA" 2>/dev/null || echo "")
 
   if [[ "$FIRST_COMMIT_MSG" != ".draft-state" ]]; then
     echo "Error: first commit on draft branch $CURRENT_BRANCH is not '.draft-state' (got: $FIRST_COMMIT_MSG)" >&2
