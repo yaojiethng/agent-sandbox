@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # tests/test_apply_workspace.sh
-# Tests for scripts/apply_workspace.sh — Unit E (draft redesign)
+# Tests for scripts/apply_workspace.sh — Unit F1 (draft-state + make draft redesign)
 #
 # Covers:
-#   draft — creates working branch from HEAD, applies .diff files via git apply
-#   draft SESSION=<branch> — applies diffs from named branch directory
+#   draft — resolves latest export from CHANGES_DIR/, creates draft branch with
+#           .draft-state as first commit, applies numbered diffs sequentially
+#   draft SESSION=<path> — applies diffs from explicit folder path
+#   draft BRANCH_SUMMARY=<slug> — uses custom slug in branch name
 #   draft BRANCH_FROM=<hash> — creates branch from specified commit
 #   draft DIFFS=<start>..<end> — applies only selected diff range
-#   draft guard — rejects if draft-state already exists
+#   draft guard — rejects if a draft branch with the same name already exists
+#   draft guard — allows other draft/ branches from different sessions
 #   confirm — rebases, fast-forward merges, deletes draft branch, clears draft-state
 #   confirm TARGET=<branch> — merges to named branch
 #   confirm guard — rejects if no draft-state
@@ -59,17 +62,18 @@ make_committed_repo() {
   git -C "$DIR" commit -m "initial commit" --quiet
 }
 
-# Create a session with numbered .diff files in a branch-name folder
-make_session_with_diffs() {
-  local BRANCH_DIR="$1"
+# Create an export folder with numbered .diff files.
+# Folder name format: <EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>
+make_export_with_diffs() {
+  local EXPORT_DIR="$1"
   local NUM_DIFFS="${2:-2}"
 
-  mkdir -p "$BRANCH_DIR"
+  mkdir -p "$EXPORT_DIR"
 
   for i in $(seq 1 "$NUM_DIFFS"); do
     local PADDING
     PADDING=$(printf "%04d" "$i")
-    cat > "$BRANCH_DIR/${PADDING}-abc1234.diff" <<EOF
+    cat > "$EXPORT_DIR/${PADDING}-abc1234.diff" <<EOF
 diff --git a/file-${i}.txt b/file-${i}.txt
 new file mode 100644
 --- /dev/null
@@ -108,26 +112,6 @@ Review before applying.
 EOF
 }
 
-# Create a session with staged.diff (old format for draft tests)
-make_session_with_staged_diff() {
-  local SESSION_DIR="$1"
-  local PROJECT_DIR="$2"
-
-  mkdir -p "$SESSION_DIR"
-
-  # Create a simple unified diff that adds a new file
-  # (simpler than modifying existing file which requires exact hash)
-  cat > "$SESSION_DIR/staged.diff" <<'EOF'
-diff --git a/staged.txt b/staged.txt
-new file mode 100644
-index 0000000..e69de29
---- /dev/null
-+++ b/staged.txt
-@@ -0,0 +1 @@
-+staged change
-EOF
-}
-
 # -------------------------
 # DRAFT tests
 # -------------------------
@@ -137,34 +121,23 @@ test_draft_creates_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_branch_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with diffs
-  make_session_with_diffs "$BRANCH_DIR" 2
+  make_export_with_diffs "$EXPORT_DIR" 2
 
-  # Run draft
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch created
   local FOUND_BRANCH
   FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
   if [[ "$FOUND_BRANCH" == draft/* ]]; then
     pass "draft creates working branch"
   else
     fail "draft did not create working branch: got '$FOUND_BRANCH'"
-  fi
-
-  # Verify draft-state written
-  if [[ -f "$WORKSPACE_DIR/draft-state" ]]; then
-    pass "draft writes draft-state file"
-  else
-    fail "draft did not write draft-state file"
   fi
 }
 
@@ -173,31 +146,28 @@ test_draft_applies_diffs() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_diffs_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with 2 diffs
-  make_session_with_diffs "$BRANCH_DIR" 2
+  make_export_with_diffs "$EXPORT_DIR" 2
 
-  # Run draft
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify diffs applied (2 new commits on draft branch)
+  # Verify diffs applied (2 diff commits + .draft-state + initial = 4)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 4 ]]; then
     pass "draft applies all diffs as commits"
   else
-    fail "draft applied wrong number of commits: expected 3, got $COMMIT_COUNT"
+    fail "draft applied wrong number of commits: expected 4, got $COMMIT_COUNT"
   fi
 }
 
-test_draft_uses_most_recent_branch() {
+test_draft_uses_most_recent_export() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_recent_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_recent_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
@@ -206,27 +176,25 @@ test_draft_uses_most_recent_branch() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create two branch directories - branch-01 sorts before branch-02
-  make_session_with_diffs "$CHANGES_DIR/branch-01" 1
-  make_session_with_diffs "$CHANGES_DIR/branch-02" 2
+  # Create two exports — later EXPORT_TIME sorts last
+  make_export_with_diffs "$CHANGES_DIR/20260420-120000-old-branch-20260420-120000" 1
+  make_export_with_diffs "$CHANGES_DIR/20260420-130000-new-branch-20260420-130000" 2
 
-  # Run draft without SESSION= (should use branch-02, which sorts last)
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify branch-02's diffs applied (2 commits + initial = 3)
+  # Verify new-branch's diffs applied (2 diff commits + .draft-state + initial = 4)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
-    pass "draft uses most recent branch directory when SESSION not specified"
+  if [[ "$COMMIT_COUNT" -eq 4 ]]; then
+    pass "draft uses most recent export by lexicographic sort"
   else
-    fail "draft did not use most recent branch: expected 3 commits, got $COMMIT_COUNT"
+    fail "draft did not use most recent export: expected 4 commits, got $COMMIT_COUNT"
   fi
 }
 
-test_draft_uses_named_branch() {
+test_draft_uses_named_session_path() {
   local PROJECT_DIR="$FIXTURE_DIR/draft_named_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/draft_named_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
@@ -235,85 +203,249 @@ test_draft_uses_named_branch() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create two branch directories
-  make_session_with_diffs "$CHANGES_DIR/branch-a" 1
-  make_session_with_diffs "$CHANGES_DIR/branch-b" 3
+  # Create two exports
+  make_export_with_diffs "$CHANGES_DIR/20260420-120000-branch-a-20260420-120000" 1
+  make_export_with_diffs "$CHANGES_DIR/20260420-130000-branch-b-20260420-130000" 3
 
-  # Run draft with SESSION=branch-a
-  export SESSION_TS="20260420-120000"
+  # Run draft with explicit --session pointing to branch-a
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
-    --session="branch-a" >/dev/null 2>&1
+    --session="$CHANGES_DIR/20260420-120000-branch-a-20260420-120000" >/dev/null 2>&1
 
-  # Verify branch-a's diffs applied (1 commit)
+  # Verify branch-a's diffs applied (1 diff + .draft-state + initial = 3)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
-    pass "draft uses named branch when SESSION specified"
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+    pass "draft uses explicit --session path"
   else
-    fail "draft did not use named branch: expected 2 commits, got $COMMIT_COUNT"
+    fail "draft did not use explicit path: expected 3 commits, got $COMMIT_COUNT"
   fi
 }
 
-test_draft_uses_sanitized_branch_name() {
-  local PROJECT_DIR="$FIXTURE_DIR/draft_sanitized_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/draft_sanitized_sandbox"
+test_draft_branch_name_format() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_name_fmt_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_name_fmt_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-feature-M2_3-agent-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Directory uses dashes (sanitized from slashes)
-  make_session_with_diffs "$CHANGES_DIR/feature-M2_3-agent" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Pass original branch name with slashes
-  export SESSION_TS="20260420-120000"
-  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
-    --project="$PROJECT_DIR" \
-    --sandbox="$SANDBOX_DIR" \
-    --session="feature/M2_3/agent" >/dev/null 2>&1
-
-  # Verify diffs applied (1 commit)
-  local COMMIT_COUNT
-  COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
-    pass "draft sanitizes slashes in branch name for directory lookup"
-  else
-    fail "draft did not resolve sanitized branch name: expected 2 commits, got $COMMIT_COUNT"
-  fi
-}
-
-test_draft_branch_name_preserves_slashes() {
-  local PROJECT_DIR="$FIXTURE_DIR/draft_slashes_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/draft_slashes_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
-
-  make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
-
-  # Switch to a branch with slashes
-  git -C "$PROJECT_DIR" checkout -b "feature/M2_3-agent-session-history" --quiet
-
-  # Create session with diffs
-  make_session_with_diffs "$BRANCH_DIR" 1
-
-  # Run draft
-  export SESSION_TS="20260421-143000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch name preserves slashes and appends session-ts
   local FOUND_BRANCH
   FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
-  if [[ "$FOUND_BRANCH" == *"feature/M2_3-agent-session-history"* ]]; then
-    pass "draft branch name preserves slashes and disambiguates with session-ts"
+
+  # Expected: draft/20260420-120000-20260420-120000-feature-M2_3-agent-<sha6>
+  if [[ "$FOUND_BRANCH" == draft/20260420-120000-20260420-120000-feature-M2_3-agent-* ]]; then
+    pass "draft branch name follows expected format"
   else
-    fail "draft branch name wrong: expected feature/M2_3-agent-session-history in '$FOUND_BRANCH'"
+    fail "draft branch name wrong: got '$FOUND_BRANCH'"
+  fi
+}
+
+test_draft_branch_name_with_summary() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_summary_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_summary_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  make_export_with_diffs "$EXPORT_DIR" 1
+
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --branch-summary="my-feature" >/dev/null 2>&1
+
+  local FOUND_BRANCH
+  FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  if [[ "$FOUND_BRANCH" == *"my-feature"* ]]; then
+    pass "draft branch name uses BRANCH_SUMMARY"
+  else
+    fail "draft branch name missing BRANCH_SUMMARY: got '$FOUND_BRANCH'"
+  fi
+}
+
+test_draft_creates_draft_state_commit() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_state_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_state_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  make_export_with_diffs "$EXPORT_DIR" 2
+
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  # The first NEW commit on the draft branch (after the base commit) should be .draft-state
+  local FIRST_NEW_COMMIT
+  FIRST_NEW_COMMIT=$(git -C "$PROJECT_DIR" rev-list main.."${DRAFT_BRANCH}" --reverse | head -1)
+  local FIRST_COMMIT_MSG
+  FIRST_COMMIT_MSG=$(git -C "$PROJECT_DIR" log -1 --format=%s "$FIRST_NEW_COMMIT")
+
+  if [[ "$FIRST_COMMIT_MSG" == ".draft-state" ]]; then
+    pass ".draft-state is the first new commit on draft branch"
+  else
+    fail ".draft-state not first new commit: got '$FIRST_COMMIT_MSG'"
+  fi
+
+  # Verify .draft-state content has required fields
+  local STATE_CONTENT
+  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${FIRST_NEW_COMMIT}:.draft-state")
+
+  local ALL_FIELDS=true
+  for field in source_branch from_hash author session_ts host_branch diff_count exported-at drafted-at; do
+    if [[ "$STATE_CONTENT" != *"${field}:"* ]]; then
+      ALL_FIELDS=false
+      fail ".draft-state missing field: $field"
+    fi
+  done
+  if [[ "$ALL_FIELDS" == true ]]; then
+    pass ".draft-state contains all required fields"
+  fi
+}
+
+test_draft_state_has_correct_values() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_state_vals_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_state_vals_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  make_export_with_diffs "$EXPORT_DIR" 3
+
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
+  local FIRST_NEW_COMMIT
+  FIRST_NEW_COMMIT=$(git -C "$PROJECT_DIR" rev-list main.."${DRAFT_BRANCH}" --reverse | head -1)
+  local STATE_CONTENT
+  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${FIRST_NEW_COMMIT}:.draft-state")
+
+  if [[ "$STATE_CONTENT" == *"source_branch: main"* ]]; then
+    pass ".draft-state has correct source_branch"
+  else
+    fail ".draft-state source_branch wrong"
+  fi
+
+  if [[ "$STATE_CONTENT" == *"session_ts: 20260420-120000"* ]]; then
+    pass ".draft-state has correct session_ts"
+  else
+    fail ".draft-state session_ts wrong"
+  fi
+
+  if [[ "$STATE_CONTENT" == *"host_branch: test-branch"* ]]; then
+    pass ".draft-state has correct host_branch"
+  else
+    fail ".draft-state host_branch wrong"
+  fi
+
+  if [[ "$STATE_CONTENT" == *"diff_count: 3"* ]]; then
+    pass ".draft-state has correct diff_count"
+  else
+    fail ".draft-state diff_count wrong"
+  fi
+
+  if [[ "$STATE_CONTENT" == *"exported-at: 20260420-120000"* ]]; then
+    pass ".draft-state has correct exported-at"
+  else
+    fail ".draft-state exported-at wrong"
+  fi
+}
+
+test_draft_rejects_same_name_collision() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_collision_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_collision_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  make_export_with_diffs "$EXPORT_DIR" 1
+
+  # Create first draft
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
+
+  # Return to source branch so HEAD is the same base commit for second run
+  git -C "$PROJECT_DIR" checkout main --quiet
+
+  # Try to create second draft with same parameters — should fail
+  local OUTPUT
+  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1) || true
+
+  if [[ "$OUTPUT" == *"draft branch already exists"* ]]; then
+    pass "draft rejects same-name collision"
+  else
+    fail "draft did not reject collision: $OUTPUT"
+  fi
+}
+
+test_draft_allows_other_draft_branches() {
+  local PROJECT_DIR="$FIXTURE_DIR/draft_other_repo"
+  local SANDBOX_DIR="$FIXTURE_DIR/draft_other_sandbox"
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
+  local EXPORT_DIR1="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
+  local EXPORT_DIR2="$CHANGES_DIR/20260420-130000-test-branch-20260420-130000"
+
+  make_committed_repo "$PROJECT_DIR"
+  mkdir -p "$WORKSPACE_DIR"
+
+  make_export_with_diffs "$EXPORT_DIR1" 1
+  make_export_with_diffs "$EXPORT_DIR2" 1
+
+  # Create first draft explicitly from first export
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="$EXPORT_DIR1" >/dev/null 2>&1
+
+  # Return to main so second draft can be created from same base
+  git -C "$PROJECT_DIR" checkout main --quiet
+
+  # Create second draft from different export — should succeed (different name)
+  bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    --session="$EXPORT_DIR2" >/dev/null 2>&1
+
+  local DRAFT_COUNT
+  DRAFT_COUNT=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | wc -l)
+  if [[ "$DRAFT_COUNT" -eq 2 ]]; then
+    pass "draft allows other draft/ branches from different sessions"
+  else
+    fail "expected 2 draft branches, got $DRAFT_COUNT"
   fi
 }
 
@@ -322,7 +454,7 @@ test_draft_branch_name_detached_head() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_detached_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -330,57 +462,22 @@ test_draft_branch_name_detached_head() {
   # Detach HEAD
   local SHORT_SHA
   SHORT_SHA=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  # Truncate to 6 chars to match FROM_SHA6 in branch name
+  local SHA6="${SHORT_SHA:0:6}"
   git -C "$PROJECT_DIR" checkout --quiet "$SHORT_SHA"
 
-  # Create session with diffs
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Run draft
-  export SESSION_TS="20260421-143000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch name uses short SHA for detached HEAD
   local FOUND_BRANCH
   FOUND_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
-  if [[ "$FOUND_BRANCH" == "draft/${SHORT_SHA}-20260421-143000" ]]; then
-    pass "draft branch name uses short SHA for detached HEAD"
+  if [[ "$FOUND_BRANCH" == *"${SHA6}"* ]]; then
+    pass "draft branch name includes short SHA for detached HEAD"
   else
-    fail "draft branch name for detached HEAD: expected 'draft/${SHORT_SHA}-20260421-143000', got '$FOUND_BRANCH'"
-  fi
-}
-
-test_draft_rejects_if_draft_exists() {
-  local PROJECT_DIR="$FIXTURE_DIR/draft_guard_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/draft_guard_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
-
-  make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$WORKSPACE_DIR"
-
-  # Create session with diffs
-  make_session_with_diffs "$BRANCH_DIR" 1
-
-  # Create fake draft-state
-  cat > "$WORKSPACE_DIR/draft-state" <<EOF
-SOURCE_BRANCH=main
-WORKING_BRANCH=draft/main-test
-SESSION_DIR=$BRANCH_DIR
-EOF
-
-  # Run draft - should fail
-  local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
-    --project="$PROJECT_DIR" \
-    --sandbox="$SANDBOX_DIR" 2>&1) || true
-
-  if [[ "$OUTPUT" == *"draft is already in progress"* ]]; then
-    pass "draft rejects when draft-state already exists"
-  else
-    fail "draft did not reject existing draft: $OUTPUT"
+    fail "draft branch name for detached HEAD wrong: got '$FOUND_BRANCH'"
   fi
 }
 
@@ -389,19 +486,18 @@ test_draft_requires_diff_files() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_no_diffs_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$BRANCH_DIR"
+  mkdir -p "$EXPORT_DIR"
 
-  # Run draft - should fail (empty branch dir, no .diff files)
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1) || true
 
   if [[ "$OUTPUT" == *"no .diff files found"* ]]; then
-    pass "draft fails when no .diff files in branch directory"
+    pass "draft fails when no .diff files in export directory"
   else
     fail "draft did not fail on missing diffs: $OUTPUT"
   fi
@@ -412,7 +508,7 @@ test_draft_uses_branch_from() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_from_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
@@ -425,23 +521,20 @@ test_draft_uses_branch_from() {
   local BASE_SHA
   BASE_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD~1)
 
-  # Create session with 1 diff
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Run draft with BRANCH_FROM=HEAD~1
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --branch-from="$BASE_SHA" >/dev/null 2>&1
 
-  # Verify draft branch is from HEAD~1 (2 commits: initial + diff)
+  # Verify draft branch is from HEAD~1 (initial + .draft-state + diff = 3)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
     pass "draft BRANCH_FROM creates branch from specified commit"
   else
-    fail "draft BRANCH_FROM wrong commit count: expected 2, got $COMMIT_COUNT"
+    fail "draft BRANCH_FROM wrong commit count: expected 3, got $COMMIT_COUNT"
   fi
 }
 
@@ -450,28 +543,25 @@ test_draft_uses_diffs_range() {
   local SANDBOX_DIR="$FIXTURE_DIR/draft_range_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with 4 diffs
-  make_session_with_diffs "$BRANCH_DIR" 4
+  make_export_with_diffs "$EXPORT_DIR" 4
 
-  # Run draft with DIFFS=2..3 (apply only diffs 2 and 3)
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --diffs="2..3" >/dev/null 2>&1
 
-  # Verify only 2 diffs applied (2 commits + initial = 3)
+  # Verify only 2 diffs applied (2 diffs + .draft-state + initial = 4)
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 4 ]]; then
     pass "draft DIFFS range applies only selected diffs"
   else
-    fail "draft DIFFS range wrong commit count: expected 3, got $COMMIT_COUNT"
+    fail "draft DIFFS range wrong commit count: expected 4, got $COMMIT_COUNT"
   fi
 }
 
@@ -484,30 +574,24 @@ test_confirm_rebases_and_merges() {
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_merge_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with 1 diff
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Create draft
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Capture working branch name before confirm deletes it
   local WORKING_BRANCH
   WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
-  # Run confirm
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify on main branch
   local CURRENT_BRANCH
   CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -516,27 +600,25 @@ test_confirm_rebases_and_merges() {
     fail "confirm did not return to source branch: $CURRENT_BRANCH"
   fi
 
-  # Verify draft-state cleared
   if [[ ! -f "$WORKSPACE_DIR/draft-state" ]]; then
     pass "confirm clears draft-state"
   else
     fail "confirm did not clear draft-state"
   fi
 
-  # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH" 2>/dev/null; then
     pass "confirm deletes draft branch"
   else
     fail "confirm did not delete draft branch"
   fi
 
-  # Verify changes merged (1 new commit on main)
+  # Changes merged: initial + .draft-state + diff = 3 commits on main after merge
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
     pass "confirm merges changes to source branch"
   else
-    fail "confirm did not merge changes: expected 2 commits, got $COMMIT_COUNT"
+    fail "confirm did not merge changes: expected 3 commits, got $COMMIT_COUNT"
   fi
 }
 
@@ -545,30 +627,24 @@ test_confirm_with_target_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/confirm_target_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create target branch
   git -C "$PROJECT_DIR" checkout -b "feature-branch" --quiet
 
-  # Create session with 1 diff
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Create draft (on feature-branch)
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Run confirm with TARGET=main
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --target="main" >/dev/null 2>&1
 
-  # Verify on main branch
   local CURRENT_BRANCH
   CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -577,13 +653,12 @@ test_confirm_with_target_branch() {
     fail "confirm with TARGET did not merge to specified branch: $CURRENT_BRANCH"
   fi
 
-  # Verify changes on main
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
     pass "confirm with TARGET applies changes to target branch"
   else
-    fail "confirm with TARGET did not apply changes: expected 2 commits, got $COMMIT_COUNT"
+    fail "confirm with TARGET did not apply changes: expected 3 commits, got $COMMIT_COUNT"
   fi
 }
 
@@ -595,7 +670,6 @@ test_confirm_rejects_if_no_draft() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Run confirm without draft - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" confirm \
     --project="$PROJECT_DIR" \
@@ -617,26 +691,21 @@ test_reject_returns_to_source_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/reject_return_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with 1 diff
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Create draft
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Run reject
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify on main branch
   local CURRENT_BRANCH
   CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   if [[ "$CURRENT_BRANCH" == "main" ]]; then
@@ -645,14 +714,12 @@ test_reject_returns_to_source_branch() {
     fail "reject did not return to source branch: $CURRENT_BRANCH"
   fi
 
-  # Verify draft-state cleared
   if [[ ! -f "$WORKSPACE_DIR/draft-state" ]]; then
     pass "reject clears draft-state"
   else
     fail "reject did not clear draft-state"
   fi
 
-  # Verify no new commits on main
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 1 ]]; then
@@ -667,31 +734,25 @@ test_reject_deletes_draft_branch() {
   local SANDBOX_DIR="$FIXTURE_DIR/reject_delete_sandbox"
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-  local BRANCH_DIR="$CHANGES_DIR/test-branch"
+  local EXPORT_DIR="$CHANGES_DIR/20260420-120000-test-branch-20260420-120000"
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Create session with 1 diff
-  make_session_with_diffs "$BRANCH_DIR" 1
+  make_export_with_diffs "$EXPORT_DIR" 1
 
-  # Create draft
-  export SESSION_TS="20260420-120000"
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" draft \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Capture working branch name before reject deletes it
   local WORKING_BRANCH
   WORKING_BRANCH=$(git -C "$PROJECT_DIR" branch --list 'draft/*' | tr -d ' *' | head -1)
 
-  # Run reject
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify draft branch deleted
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH"; then
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$WORKING_BRANCH" 2>/dev/null; then
     pass "reject deletes draft branch"
   else
     fail "reject did not delete draft branch"
@@ -706,7 +767,6 @@ test_reject_rejects_if_no_draft() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Run reject without draft - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" reject \
     --project="$PROJECT_DIR" \
@@ -720,7 +780,7 @@ test_reject_rejects_if_no_draft() {
 }
 
 # -------------------------
-# APPLY (legacy) tests — reads from OUTPUT_DIR
+# APPLY tests — reads from OUTPUT_DIR
 # -------------------------
 
 test_apply_uses_latest_session() {
@@ -732,16 +792,13 @@ test_apply_uses_latest_session() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR"
 
-  # Create two sessions - 20260401 sorts before 20260402
   make_session_with_changes_diff "20260401-120000" "$OUTPUT_DIR/diffs"
   make_session_with_changes_diff "20260402-120000" "$OUTPUT_DIR/diffs"
 
-  # Run apply (no SESSION=) - should use session-02 (lexicographically last)
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify changes applied (working tree dirty)
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
   if [[ "$STATUS" == *"output-file.txt"* ]]; then
@@ -750,7 +807,6 @@ test_apply_uses_latest_session() {
     fail "apply did not apply changes.diff: $STATUS"
   fi
 
-  # Verify no new commits
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$PROJECT_DIR" rev-list --count HEAD)
   if [[ "$COMMIT_COUNT" -eq 1 ]]; then
@@ -769,9 +825,7 @@ test_apply_uses_named_session() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
 
-  # Create two sessions with different content
   make_session_with_changes_diff "session-a" "$OUTPUT_DIR/diffs"
-  # Create session-b with a different file
   mkdir -p "$OUTPUT_DIR/diffs/session-b"
   cat > "$OUTPUT_DIR/diffs/session-b/changes.diff" <<'EOF'
 diff --git a/named-file.txt b/named-file.txt
@@ -783,13 +837,11 @@ index 0000000..7a963d6
 +named session change
 EOF
 
-  # Run apply with SESSION=session-a
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --session="session-a" >/dev/null 2>&1
 
-  # Verify session-a's changes applied
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
   if [[ "$STATUS" == *"output-file.txt"* ]] && [[ "$STATUS" != *"named-file.txt"* ]]; then
@@ -807,11 +859,8 @@ test_apply_requires_changes_diff() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs/session-incomplete"
-
-  # Create session without changes.diff
   echo "# Incomplete session" > "$OUTPUT_DIR/diffs/session-incomplete/migration-guide.md"
 
-  # Run apply - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -830,9 +879,7 @@ test_apply_requires_output_dir() {
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
 
   make_committed_repo "$PROJECT_DIR"
-  # Do NOT create OUTPUT_DIR
 
-  # Run apply - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -853,9 +900,7 @@ test_apply_requires_empty_output_dir() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-  # diffs directory exists but is empty
 
-  # Run apply - should fail
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -876,11 +921,8 @@ test_apply_prints_migration_guide() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create session with migration-guide.md
   make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
-  # Run apply
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -901,11 +943,8 @@ test_apply_force_uses_reject() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create session with changes.diff
   make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
-  # Run apply with --force
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -919,32 +958,6 @@ test_apply_force_uses_reject() {
   fi
 }
 
-test_apply_force_uses_reject_mode() {
-  local PROJECT_DIR="$FIXTURE_DIR/apply_force_mode_repo"
-  local SANDBOX_DIR="$FIXTURE_DIR/apply_force_mode_sandbox"
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local OUTPUT_DIR="$WORKSPACE_DIR/output"
-
-  make_committed_repo "$PROJECT_DIR"
-  mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create session with changes.diff
-  make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
-
-  # Run apply with --force
-  local OUTPUT
-  OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
-    --project="$PROJECT_DIR" \
-    --sandbox="$SANDBOX_DIR" \
-    --force 2>&1) || true
-
-  if [[ "$OUTPUT" == *"Force mode enabled"* ]]; then
-    pass "apply --force enables force mode"
-  else
-    fail "apply --force did not enable force mode: $OUTPUT"
-  fi
-}
-
 test_apply_force_applies_changes() {
   local PROJECT_DIR="$FIXTURE_DIR/apply_force_apply_repo"
   local SANDBOX_DIR="$FIXTURE_DIR/apply_force_apply_sandbox"
@@ -953,17 +966,13 @@ test_apply_force_applies_changes() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create session with changes.diff
   make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
-  # Run apply with --force
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --force >/dev/null 2>&1
 
-  # Verify changes applied
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
   if [[ "$STATUS" == *"output-file.txt"* ]]; then
@@ -981,17 +990,13 @@ test_apply_uses_diff_argument() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create session with changes.diff
   make_session_with_changes_diff "test-session" "$OUTPUT_DIR/diffs"
 
-  # Run apply with DIFF argument pointing to specific diff file
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" \
     --diff="$OUTPUT_DIR/diffs/test-session/changes.diff" >/dev/null 2>&1
 
-  # Verify changes applied
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
   if [[ "$STATUS" == *"output-file.txt"* ]]; then
@@ -1009,7 +1014,6 @@ test_apply_diff_argument_requires_file_exists() {
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$WORKSPACE_DIR"
 
-  # Run apply with DIFF argument pointing to non-existent file
   local OUTPUT
   OUTPUT=$(bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
@@ -1031,8 +1035,6 @@ test_apply_strips_index_lines() {
 
   make_committed_repo "$PROJECT_DIR"
   mkdir -p "$OUTPUT_DIR/diffs"
-
-  # Create a diff with an index line
   mkdir -p "$OUTPUT_DIR/diffs/test-session"
   cat > "$OUTPUT_DIR/diffs/test-session/changes.diff" <<'EOF'
 diff --git a/index-test.txt b/index-test.txt
@@ -1044,12 +1046,10 @@ index 0000000..abc1234
 +index line test
 EOF
 
-  # Run apply - should succeed despite index line having SHA
   bash "$SCRIPT_DIR/../scripts/apply_workspace.sh" apply \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" >/dev/null 2>&1
 
-  # Verify changes applied (index line should have been stripped)
   local STATUS
   STATUS=$(git -C "$PROJECT_DIR" status --porcelain)
   if [[ "$STATUS" == *"index-test.txt"* ]]; then
@@ -1063,17 +1063,20 @@ EOF
 # Run all tests
 # -------------------------
 
-echo "=== apply_workspace.sh tests (Unit E: draft redesign) ==="
+echo "=== apply_workspace.sh tests (Unit F1: draft-state + make draft redesign) ==="
 echo
 
 run_test "draft_creates_branch" test_draft_creates_branch
 run_test "draft_applies_diffs" test_draft_applies_diffs
-run_test "draft_uses_most_recent_branch" test_draft_uses_most_recent_branch
-run_test "draft_uses_named_branch" test_draft_uses_named_branch
-run_test "draft_uses_sanitized_branch_name" test_draft_uses_sanitized_branch_name
-run_test "draft_branch_name_preserves_slashes" test_draft_branch_name_preserves_slashes
+run_test "draft_uses_most_recent_export" test_draft_uses_most_recent_export
+run_test "draft_uses_named_session_path" test_draft_uses_named_session_path
+run_test "draft_branch_name_format" test_draft_branch_name_format
+run_test "draft_branch_name_with_summary" test_draft_branch_name_with_summary
+run_test "draft_creates_draft_state_commit" test_draft_creates_draft_state_commit
+run_test "draft_state_has_correct_values" test_draft_state_has_correct_values
+run_test "draft_rejects_same_name_collision" test_draft_rejects_same_name_collision
+run_test "draft_allows_other_draft_branches" test_draft_allows_other_draft_branches
 run_test "draft_branch_name_detached_head" test_draft_branch_name_detached_head
-run_test "draft_rejects_if_draft_exists" test_draft_rejects_if_draft_exists
 run_test "draft_requires_diff_files" test_draft_requires_diff_files
 run_test "draft_uses_branch_from" test_draft_uses_branch_from
 run_test "draft_uses_diffs_range" test_draft_uses_diffs_range
@@ -1090,7 +1093,6 @@ run_test "apply_requires_output_dir" test_apply_requires_output_dir
 run_test "apply_requires_empty_output_dir" test_apply_requires_empty_output_dir
 run_test "apply_prints_migration_guide" test_apply_prints_migration_guide
 run_test "apply_force_uses_reject" test_apply_force_uses_reject
-run_test "apply_force_uses_reject_mode" test_apply_force_uses_reject_mode
 run_test "apply_force_applies_changes" test_apply_force_applies_changes
 run_test "apply_uses_diff_argument" test_apply_uses_diff_argument
 run_test "apply_diff_argument_requires_file_exists" test_apply_diff_argument_requires_file_exists

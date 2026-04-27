@@ -37,24 +37,21 @@ automatically — inside the container `--baseline` is never required.
 On the host, `--baseline` is mandatory. There is no synthetic baseline outside the
 container and no default is applied.
 
-**Always supply `--name`** — the agent knows what changed and should name the output
-accordingly. The name should be a concise snake_case phrase describing the nature of the
-change, like a handover filename: specific enough that a reader scanning a list of output
-directories knows what is inside without opening it.
+**Always supply `--session-summary`** — the agent knows what changed and should name the output accordingly. The summary should be a concise snake_case phrase describing the nature of the change, like a handover filename: specific enough that a reader scanning a list of output directories knows what is inside without opening it.
 
 ```bash
-bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --name=add_session_scoped_artefact_dirs
-bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --name=fix_snapshot_baseline_working_tree
-bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --name=refactor_compose_generation
+bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --session-summary=add_session_scoped_artefact_dirs
+bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --session-summary=fix_snapshot_baseline_working_tree
+bash ~/sandbox/libs/package_diff.sh --baseline="$BASELINE_SHA" --session-summary=refactor_compose_generation
 ```
 
-Good names: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`
-Bad names: `changes`, `update_files`, `misc`, `package`
+Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`
+Bad summaries: `changes`, `update_files`, `misc`, `package`
 
-The output directory is always `<timestamp>-<name>`. The timestamp is injected
-automatically from the time of script invocation — you do not control it and do not need
-to. Omitting `--name` falls back to mechanical label derivation from the most-changed
-path; this is a safety net, not the intended path.
+The output directory format is `diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`. The
+`EXPORT_TIME` is injected automatically from the time of script invocation — you do not control it and do not need to. `SESSION_TS` is read from the environment variable set by the container entrypoint. Omitting `--session-summary` falls back to "snapshot"; this is a safety net, not the intended path.
+
+**Legacy flag:** `--name=<label>` is accepted as an alias for `--session-summary`.
 
 The script produces:
 - `<outdir>/changes.diff` — unified diff against baseline, suitable for `patch -p1`

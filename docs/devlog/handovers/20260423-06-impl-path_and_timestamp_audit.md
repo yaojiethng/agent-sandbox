@@ -33,6 +33,8 @@ None.
 | 10 | `apply_workspace.sh` `SESSION_NAME` references removed; label lookups updated | ✅ |
 | 11 | Zero `SESSION_NAME` non-comment references in `scripts/` and `libs/` | ✅ |
 | 12 | All tests pass: `test_diff.sh` (40/40), `test_start_agent.sh` (21/21), `test_apply_workspace.sh` (37/37) | ✅ |
+| 13 | `package-diff.md` skill template updated for new `--session-summary` / `--session-ts` flags | ✅ |
+| 14 | `apply_workspace.sh` session-identity validation check corrected (substring direction was inverted, `CONTAINER_HOST_BRANCH` now checked) | ✅ |
 
 ## Hot files
 
@@ -45,11 +47,12 @@ None.
 | [`libs/package_branch.sh`](libs/package_branch.sh) | Add `SESSION_SUMMARY` optional 5th arg to `package_branch`; update header docs | ✅ done |
 | [`libs/package_diff.sh`](libs/package_diff.sh) | Add `--session-summary` and `--session-ts` flags; replace auto-derived `LABEL` with `SESSION_SUMMARY`; generate `EXPORT_TIME`; output path `diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/` | ✅ done |
 | [`libs/sandbox-entrypoint.sh`](libs/sandbox-entrypoint.sh) | Update `diff_on_exit`/`diff_on_autosave` call signatures from `SESSION_NAME` to `SESSION_TS` + `SANITIZED_HOST_BRANCH` | ✅ done |
-| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Remove `SESSION_NAME` references; update container label lookups to `session-ts` and `host-branch` | ✅ done |
+| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Remove `SESSION_NAME` references; update container label lookups to `session-ts` and `host-branch`; fix inverted session identity validation check (substring direction was wrong) | ✅ done |
 | [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | Verified — no `SESSION_NAME` references found | ✅ verified |
 | [`libs/dirs.sh`](libs/dirs.sh) | Verified — no changes needed | ✅ verified |
 | [`libs/containers.sh`](libs/containers.sh) | Verified — container names derived in `start_agent.sh` | ✅ verified |
 | [`tests/test_diff.sh`](tests/test_diff.sh) | Update all `diff_on_exit`/`diff_on_autosave` calls to new 5-arg signature; use `find_session_dir` helper for dynamic `EXPORT_TIME` prefix; add missing-args failure tests | ✅ done |
+| [`agent/prompts/package-diff.md`](agent/prompts/package-diff.md) | Update invocation docs from `--name` to `--session-summary`; update output path format to `diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`; add `--session-ts` note; mark `--name` as legacy alias | ✅ done |
 | [`tests/test_start_agent.sh`](tests/test_start_agent.sh) | Replace `SESSION_NAME` tests with `SANITIZED_HOST_BRANCH` tests; update sanitization pattern from `tr '/' '-'` to `sed 's/[^a-zA-Z0-9._-]/-/g'`; update test runner and section header | ✅ done |
 | [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Verified — already uses `SESSION_TS`, no `SESSION_NAME` references | ✅ verified |
 
@@ -74,7 +77,8 @@ None.
 | `package_branch` gains `SESSION_SUMMARY` parameter | `libs/package_branch.sh` |
 | `package_diff` new output path format with `SESSION_SUMMARY` + `SESSION_TS` | `libs/package_diff.sh` |
 | Update EXIT trap and autosave call signatures | `libs/sandbox-entrypoint.sh` |
-| Remove `SESSION_NAME` references, update label lookups | `scripts/apply_workspace.sh` |
+| Remove `SESSION_NAME` references, update label lookups; fix inverted session-identity validation | `scripts/apply_workspace.sh` |
+| Update package-diff skill template for new `--session-summary` and `--session-ts` flags | `agent/prompts/package-diff.md` |
 | All test files updated | `tests/test_diff.sh`, `tests/test_start_agent.sh` |
 
 ## Deferred items

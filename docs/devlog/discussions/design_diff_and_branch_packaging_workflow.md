@@ -178,9 +178,11 @@ draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or sanitized-host-branch>-<sha6
 
 Where `sha6` is the first 6 characters of `FROM` (default: current `HEAD`). `BRANCH_SUMMARY` replaces the auto-generated branch slug when provided.
 
-Guards against an existing `draft/` branch — refuses if one is already present.
+Guards against a branch with the exact computed name already existing — refuses if `git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"` succeeds. Drafts from different sessions produce different branch names and are allowed to coexist. Tests must verify that a second `make draft` with identical parameters is rejected, and that a second `make draft` with different parameters (different `EXPORT_TIME`, different `FROM`, etc.) is allowed.
 
-First commit on the branch is `.draft-state`:
+First commit on the branch is `.draft-state`. It is the first commit after `from_hash` on the draft branch. Locate it with `git rev-list "${DRAFT_BRANCH}" ^"${FROM_HASH}" | tail -1`. Tests must use `git log "${FROM_HASH}..${DRAFT_BRANCH}" --reverse --format=%s | head -1` to verify — not `git log "${DRAFT_BRANCH}" --reverse`, which includes the full history of the source branch.
+
+The `.draft-state` file contains:
 
 ```
 source_branch: main

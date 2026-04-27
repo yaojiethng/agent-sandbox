@@ -9,7 +9,7 @@
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
 #   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name>] [--force]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name>]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<path>] [--branch-summary=<slug>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
 #
@@ -59,6 +59,7 @@ parse_flags() {
       --target=*)      TARGET_BRANCH="${ARG#--target=}" ;;
       --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
+      --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
       --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
       --rebuild)       REBUILD=true ;;
       --rebuild-base)  REBUILD_BASE=true ;;
@@ -218,7 +219,8 @@ case "$SUBCOMMAND" in
       --sandbox="$SANDBOX_DIR" \
       ${SESSION_ARG:+--session="$SESSION_ARG"} \
       ${BRANCH_FROM:+--branch-from="$BRANCH_FROM"} \
-      ${DIFFS:+--diffs="$DIFFS"}
+      ${DIFFS:+--diffs="$DIFFS"} \
+      ${BRANCH_SUMMARY:+--branch-summary="$BRANCH_SUMMARY"}
     ;;
 
   confirm)

@@ -120,6 +120,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch commits as numbered diff files. Sourced by `diff_on_exit`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
+| `draft.sh` | 🟡 Warm | M2.3 | Shared draft branch management: folder resolution, name parsing, collision guard, .draft-state read/write. |
 | `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |

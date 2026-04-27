@@ -142,7 +142,8 @@ draft:
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(SESSION),--session=$(SESSION),) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
-	  $(if $(DIFFS),--diffs=$(DIFFS),)
+	  $(if $(DIFFS),--diffs=$(DIFFS),) \
+	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
 
 confirm:
 	agent-sandbox confirm \

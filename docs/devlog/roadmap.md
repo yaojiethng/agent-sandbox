@@ -84,17 +84,9 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 Units are ordered by dependency. F0 must run first. F1 depends on F0 and E. F2 depends on F1. G is last.
 
-- [x] **F0 — path and timestamp audit** (`scripts/start_agent.sh`, `libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `libs/compose.sh`, capability layer entrypoint): Normalised all path constructions, timestamp derivations, and session identifiers. `SESSION_TS` derived once with delimiter format and exported. `SANITIZED_HOST_BRANCH` derived from branch name and exported. `SESSION_NAME` dropped entirely. `diff_on_exit`/`diff_on_autosave` use `<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>` output path. Container labels and environment updated to `session-ts` and `host-branch`. See handover `20260423-06-impl-path_and_timestamp_audit.md`.
+**F0 — path and timestamp audit** — Complete. `SESSION_TS` and `SANITIZED_HOST_BRANCH` are derived once at session start and exported to all downstream consumers. `SESSION_NAME` is removed. Diff output paths, container labels, and environment variables all use the primitive variables directly.
 
-- [ ] **F1 — complete `make draft` + `.draft-state`** (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`):
-
-  Resolves target export folder from `$CHANGES_DIR/` by lexicographic sort (latest `EXPORT_TIME`). Explicit `--session=<path>` accepts any path including `$OUTPUT_DIR/bundles/` exports. Parses `EXPORT_TIME`, `SANITIZED_HOST_BRANCH`, `SESSION_TS` from folder name — these are not shell variables on the host.
-
-  Draft branch name: `draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or SANITIZED_HOST_BRANCH>-<sha6>`. Optional `BRANCH_SUMMARY` argument replaces the auto-generated branch slug.
-
-  First commit on branch is `.draft-state` with fields: `source_branch`, `from_hash`, `author` (git config), `session_ts`, `host_branch`, `diff_count`, `exported-at` (from folder name), `drafted-at` (host timestamp at `make draft` runtime). No local paths, no container-internal shell variables.
-
-  Extract shared draft branch management functions (branch existence guard, `.draft-state` read/write, folder name parsing) into a common location sourced by F2. Depends on F0 and E.
+- [x] **F1 — complete `make draft` + `.draft-state`** (`scripts/apply_workspace.sh`, `scripts/agent-sandbox.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`, `libs/draft.sh`): `make draft` resolves the latest export from `$CHANGES_DIR/` by lexicographic sort; explicit `--session=<path>` accepts any folder. Parses `EXPORT_TIME`, `SANITIZED_HOST_BRANCH`, `SESSION_TS` from folder name. Draft branch name: `draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or SANITIZED_HOST_BRANCH>-<sha6>`. First commit is `.draft-state` with all required fields. Shared draft utilities extracted to `libs/draft.sh`. Same-name collision guard — identical branch names rejected, different names allowed to coexist. See handover `20260423-07-impl-draft_state_and_make_draft_redesign.md`.
 
 - [ ] **F2 — `make confirm` rewrite + `make reject` update + `make sync` removal** (`scripts/apply_workspace.sh`, `libs/_templates/Makefile.template`, `tests/test_apply_workspace.sh`):
 

@@ -4,17 +4,21 @@
 # Apply workflow for agent-sandbox session artefacts.
 #
 # Commands:
-#   draft   [--project=<path>] [--sandbox=<path>] [--session=<name>]
-#             Create a working branch draft/<branch>-<session-ts> from HEAD.
-#             Apply all patches via git am --3way with per-patch author reset.
-#             Write .workspace/draft-state.
+#   draft   [--project=<path>] [--sandbox=<path>] [--session=<path>] [--branch-from=<hash>]
+#             [--diffs=<start>..<end>] [--branch-summary=<slug>]
+#             Create a working branch draft/<export_time>-<session_ts>-<branch>-<sha6> from HEAD.
+#             Apply numbered diffs from the resolved export folder via git apply (index stripped),
+#             staging and committing each. The first commit on the branch is .draft-state.
+#             Resolves latest export from $CHANGES_DIR/ by lexicographic sort unless --session
+#             specifies an explicit path.
 #
 #   confirm [--project=<path>] [--sandbox=<path>] [--target=<branch>]
-#             Rebase draft branch onto target, fast-forward merge to target,
-#             delete working branch (-D, always force-delete), clear draft-state.
+#             Read .draft-state from the draft branch. Rebase onto target,
+#             fast-forward merge to target, delete working branch, clear draft-state.
 #
 #   reject  [--project=<path>] [--sandbox=<path>]
-#             Checkout SOURCE_BRANCH, delete working branch, clear draft-state.
+#             Read source_branch from .draft-state on the draft branch.
+#             Checkout source branch, delete working branch, clear draft-state.
 #
 #   apply   [--project=<path>] [--sandbox=<path>] [--session=<n>] [--branch=<n>] [--diff=<path>] [--force]
 #             Apply changes.diff from OUTPUT_DIR to PROJECT_DIR using git apply
@@ -25,10 +29,18 @@
 #             --diff=<path>: apply specific diff file instead of resolving from OUTPUT_DIR.
 #             --force: apply with --reject; .rej files left for manual resolution.
 #
-# .workspace/draft-state format:
-#   SOURCE_BRANCH=<branch>
-#   WORKING_BRANCH=<branch>
-#   SESSION_DIR=<rel-path>
+# .draft-state format (committed as first commit on draft branch):
+#   source_branch: <branch>
+#   from_hash: <sha>
+#   author: <name> <email>
+#   session_ts: <YYYYMMDD-HHMMSS>
+#   host_branch: <sanitized-branch-name>
+#   diff_count: <n>
+#   exported-at: <YYYYMMDD-HHMMSS>
+#   drafted-at: <YYYYMMDD-HHMMSS>
+#
+# Legacy backward-compat:
+#   $WORKSPACE_DIR/draft-state file is also written for F2 transition.
 #
 # Cleanup policy:
 #   OUTPUT_DIR is not cleared automatically. Operator clears manually between sessions if desired.
@@ -40,6 +52,9 @@ set -euo pipefail
 # -------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Source shared draft utilities
+source "$REPO_ROOT/libs/draft.sh"
 
 # -------------------------
 # Parse command
@@ -61,6 +76,7 @@ APPLY_BRANCH=""
 DIFF_ARG=""
 BRANCH_FROM_ARG=""
 DIFFS_ARG=""
+BRANCH_SUMMARY=""
 FORCE=false
 
 for ARG in "$@"; do
@@ -73,6 +89,7 @@ for ARG in "$@"; do
     --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
     --branch-from=*) BRANCH_FROM_ARG="${ARG#--branch-from=}" ;;
     --diffs=*)       DIFFS_ARG="${ARG#--diffs=}" ;;
+    --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
     --force)         FORCE=true ;;
     *)
       echo "Unknown flag: $ARG" >&2
@@ -113,38 +130,32 @@ fi
 # DRAFT
 # -------------------------
 if [[ "$COMMAND" == "draft" ]]; then
-  if [[ ! -d "$CHANGES_DIR" ]]; then
-    echo "Error: changes directory not found: $CHANGES_DIR" >&2
-    exit 1
-  fi
 
-  # Resolve branch directory under session-diffs/
+  # Resolve target export folder
   if [[ -n "$SESSION_ARG" ]]; then
-    # Sanitise branch name for directory lookup (slashes → dashes)
-    SANITIZED_BRANCH=$(echo "$SESSION_ARG" | tr '/' '-')
-    BRANCH_DIR="$CHANGES_DIR/$SANITIZED_BRANCH"
-    BRANCH_NAME="$SESSION_ARG"
-  else
-    # Most recent branch directory under session-diffs/ (by directory mtime)
-    BRANCH_DIR=$(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d \
-      | sort -t/ -k1,1 | tail -n 1)
-    if [[ -z "$BRANCH_DIR" ]]; then
-      echo "Error: no branch directories found under $CHANGES_DIR" >&2
-      echo "  Run a session first, or specify --session=<branch-name>" >&2
+    # Explicit path override — can be any folder, including $OUTPUT_DIR/bundles/
+    EXPORT_DIR="$SESSION_ARG"
+    if [[ ! -d "$EXPORT_DIR" ]]; then
+      echo "Error: session directory not found: $EXPORT_DIR" >&2
       exit 1
     fi
-    BRANCH_NAME=$(basename "$BRANCH_DIR")
+  else
+    # Default: latest export from $CHANGES_DIR/ by lexicographic sort
+    if [[ ! -d "$CHANGES_DIR" ]]; then
+      echo "Error: changes directory not found: $CHANGES_DIR" >&2
+      exit 1
+    fi
+    EXPORT_DIR=$(draft_resolve_latest_export "$CHANGES_DIR") || exit 1
   fi
 
-  if [[ ! -d "$BRANCH_DIR" ]]; then
-    echo "Error: branch directory not found: $BRANCH_DIR" >&2
-    echo "  Session artefacts may not have been produced yet." >&2
-    exit 1
-  fi
+  # Parse session identity from folder name
+  EXPORT_BASENAME=$(basename "$EXPORT_DIR")
+  draft_parse_folder_name "$EXPORT_BASENAME"
 
-  mapfile -t DIFF_FILES < <(find "$BRANCH_DIR" -maxdepth 1 -name '*.diff' | sort)
+  # Collect diff files
+  mapfile -t DIFF_FILES < <(find "$EXPORT_DIR" -maxdepth 1 -name '*.diff' | sort)
   if [[ "${#DIFF_FILES[@]}" -eq 0 ]]; then
-    echo "Error: no .diff files found in $BRANCH_DIR" >&2
+    echo "Error: no .diff files found in $EXPORT_DIR" >&2
     echo "  The session may have produced no commits." >&2
     exit 1
   fi
@@ -170,36 +181,58 @@ if [[ "$COMMAND" == "draft" ]]; then
       fi
     done
     if [[ "${#FILTERED_DIFFS[@]}" -eq 0 ]]; then
-      echo "Error: no diffs in range $DIFFS_ARG found in $BRANCH_DIR" >&2
+      echo "Error: no diffs in range $DIFFS_ARG found in $EXPORT_DIR" >&2
       exit 1
     fi
     DIFF_FILES=("${FILTERED_DIFFS[@]}")
   fi
 
-  # Resolve base commit
+  # Resolve base commit and source branch
   BASE_COMMIT="${BRANCH_FROM_ARG:-HEAD}"
-
-  # Guard: reject if draft-state already exists
-  if [[ -f "$DRAFT_STATE_FILE" ]]; then
-    echo "Error: a draft is already in progress." >&2
-    echo "  Run 'make confirm' or 'make reject' before starting a new draft." >&2
-    echo "  State file: $DRAFT_STATE_FILE" >&2
-    exit 1
-  fi
-
   SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  # Handle detached HEAD: use short SHA instead of literal "HEAD"
   if [[ "$SOURCE_BRANCH" == "HEAD" ]]; then
     SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   fi
+  FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
+  FROM_SHA6="${FROM_HASH:0:6}"
 
-  WORKING_BRANCH="draft/${SOURCE_BRANCH}-${SESSION_TS}"
+  # Compute branch slug
+  if [[ -n "$BRANCH_SUMMARY" ]]; then
+    BRANCH_SLUG="$BRANCH_SUMMARY"
+  else
+    BRANCH_SLUG="$SANITIZED_HOST_BRANCH"
+  fi
 
-  echo "Creating draft branch '$WORKING_BRANCH' from $BASE_COMMIT..."
+  # Compute draft branch name
+  WORKING_BRANCH="draft/${EXPORT_TIME}-${SESSION_TS}-${BRANCH_SLUG}-${FROM_SHA6}"
+
+  # Guard: same-name collision only
+  draft_guard_no_collision "$PROJECT_DIR" "$WORKING_BRANCH" || exit 1
+
+  # Author for commits
+  AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
+
+  # Create draft branch
+  echo "Creating draft branch '$WORKING_BRANCH' from ${FROM_HASH:0:7}..."
   git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$BASE_COMMIT"
 
+  # Write .draft-state and commit it as the first commit on the branch
+  DRAFTED_AT=$(date -u +%Y%m%d-%H%M%S)
+  DRAFT_STATE_CONTENT=$(draft_write_state \
+    "$SOURCE_BRANCH" \
+    "$FROM_HASH" \
+    "$AUTHOR" \
+    "$SESSION_TS" \
+    "$SANITIZED_HOST_BRANCH" \
+    "${#DIFF_FILES[@]}" \
+    "$EXPORT_TIME" \
+    "$DRAFTED_AT")
+
+  echo "$DRAFT_STATE_CONTENT" > "$PROJECT_DIR/.draft-state"
+  git -C "$PROJECT_DIR" add .draft-state
+  git -C "$PROJECT_DIR" commit -m ".draft-state" --author="$AUTHOR"
+
   # Apply diffs sequentially with git apply (index lines stripped), stage, and commit
-  AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
   for diff_file in "${DIFF_FILES[@]}"; do
     echo "Applying: $(basename "$diff_file")"
     grep -v '^index ' "$diff_file" | git -C "$PROJECT_DIR" apply
@@ -207,17 +240,26 @@ if [[ "$COMMAND" == "draft" ]]; then
     git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
   done
 
-  # Write draft-state
+  # Backward-compat: write legacy draft-state file for F2 transition
   cat > "$DRAFT_STATE_FILE" <<EOF
 SOURCE_BRANCH=${SOURCE_BRANCH}
 WORKING_BRANCH=${WORKING_BRANCH}
-SESSION_DIR=${BRANCH_DIR}
+SESSION_DIR=${EXPORT_DIR}
 EOF
 
+  # Operator hint
   echo ""
-  echo "Draft ready on branch: $WORKING_BRANCH"
-  echo "Review with: git -C '$PROJECT_DIR' log -p HEAD~${#DIFF_FILES[@]}..HEAD"
-  echo "Then: make confirm   (or: make reject)"
+  echo "Draft branch created: $WORKING_BRANCH"
+  echo "Export: $EXPORT_DIR"
+  echo "Diffs applied: ${#DIFF_FILES[@]}"
+  echo "Branch point: ${FROM_HASH:0:7}"
+  echo ""
+  echo "Shape your commits, then confirm:"
+  echo ""
+  echo "  git rebase -i ${SOURCE_BRANCH}"
+  echo "  make confirm [TARGET=${SOURCE_BRANCH}]"
+  echo ""
+  echo "To discard: make reject"
 
   exit 0
 fi
