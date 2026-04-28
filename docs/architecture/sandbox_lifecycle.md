@@ -110,7 +110,7 @@ session-diffs/20260420-120000-main/
 
 ### Apply workflow
 
-On the host, `scripts/apply_workspace.sh` provides two application paths:
+On the host, `agent-sandbox` dispatches to workflow libraries that provide two application paths:
 
 **`make draft [SESSION=<path>] [FROM=<hash>] [DIFFS=<start>..<end>]`** — creates a `draft/<SESSION_TS>-<branch>-<sha6>` branch from `FROM` (default: current host `HEAD`). Resolves numbered `.diff` files from `session/patches/` inside the session directory. Without `SESSION=`, auto-resolves to the latest session with a valid `session/patches/` subdirectory. Applies diffs in sort order using `git apply` with index lines stripped. `DIFFS` selects a sub-range. Produces a branch with one commit per diff, ready for `git rebase -i`.
 

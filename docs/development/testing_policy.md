@@ -351,16 +351,5 @@ Before committing a new test:
 
 ---
 
-## References
 
-- [`tests/test_apply.sh`](tests/test_apply.sh) — Example of fully isolated test suite (35 tests)
-- [`tests/test_diff.sh`](tests/test_diff.sh) — Example of helper-based test structure (39 tests)
-- [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) — Example of integration tests (22 tests)
 
----
-
-## Document History
-
-| Date | Change |
-|---|---|
-| 2026-04-20 | Initial draft — patterns extracted from `test_apply.sh` fixture isolation fixes |

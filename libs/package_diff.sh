@@ -197,6 +197,8 @@ CHANGED_FILE_COUNT=0
 # Tracked files that differ from baseline
 while IFS= read -r F; do
   [[ -z "$F" ]] && continue
+  # Skip deleted files — they no longer exist in the working tree
+  [[ -f "$REPO_ROOT/$F" ]] || continue
   mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
   cp "$REPO_ROOT/$F" "$CHANGED_FILES_DIR/$F"
   CHANGED_FILE_COUNT=$((CHANGED_FILE_COUNT + 1))
@@ -207,6 +209,8 @@ while IFS= read -r F; do
   [[ -z "$F" ]] && continue
   # Skip if already copied (may overlap with diff --name-only)
   [[ -f "$CHANGED_FILES_DIR/$F" ]] && continue
+  # Skip deleted files — they no longer exist in the working tree
+  [[ -f "$REPO_ROOT/$F" ]] || continue
   mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
   cp "$REPO_ROOT/$F" "$CHANGED_FILES_DIR/$F"
   CHANGED_FILE_COUNT=$((CHANGED_FILE_COUNT + 1))
