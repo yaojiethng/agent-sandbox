@@ -11,14 +11,25 @@
 # Each .diff file is a single-commit diff with index lines stripped,
 # suitable for sequential git apply.
 #
-# Usage:
+# Usage (library):
 #   package_branch SANDBOX_DIR INIT_SHA OUTPUT_DIR [SESSION_SUMMARY]
 #
-# Arguments:
+# Usage (direct):
+#   package_branch.sh [--session-summary=<text>] [--outdir=<path>]
+#                     [--sandbox=<dir>] [--init-sha=<sha>]
+#
+# Arguments (library mode):
 #   SANDBOX_DIR       — path to the git repository
-#   INIT_SHA          — initial commit SHA (from sandbox/.git/INIT_SHA)
-#   OUTPUT_DIR        — full destination directory path (caller constructs)
-#   SESSION_SUMMARY   — optional short description for logging only
+#   INIT_SHA          — initial commit SHA
+#   OUTPUT_DIR        — full destination directory path
+#   SESSION_SUMMARY   — optional short description for logging
+#
+# Flags (direct mode):
+#   --session-summary  Short snake_case label for the output directory.
+#                      Default: "snapshot".
+#   --outdir          Parent directory for output. Default: ~/workspace/output
+#   --sandbox         Path to the git repository. Default: ~/sandbox.
+#   --init-sha        Initial commit SHA. Default: read from SESSION_STATE.
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -29,7 +40,7 @@ fi
 # package_branch
 #
 # Iterates commits since INIT_SHA, produces numbered .diff files with index
-# lines stripped into SESSION_DIFFS_DIR/<branch-name>/, overwrites on each run.
+# lines stripped into OUTPUT_DIR/, overwrites on each run.
 # -------------------------
 package_branch() {
   local SANDBOX_DIR="$1"
@@ -97,7 +108,74 @@ package_branch() {
   echo "package_branch: generated ${DIFF_COUNT} diff(s) in ${BRANCH_DIFFS_DIR}" >&2
 }
 
-# If run directly (not sourced), execute with positional arguments
+# If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  package_branch "$@"
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  source "$SCRIPT_DIR/session.sh"
+
+  SANDBOX_DIR=""
+  INIT_SHA=""
+  OUTDIR_ARG=""
+  SESSION_SUMMARY_ARG=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
+      --outdir=*)          OUTDIR_ARG="${ARG#--outdir=}" ;;
+      --sandbox=*)         SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --init-sha=*)        INIT_SHA="${ARG#--init-sha=}" ;;
+      --help)
+        grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+      *)
+        echo "Unknown argument: $ARG" >&2
+        echo "Usage: package_branch.sh [--session-summary=<text>] [--outdir=<path>] [--sandbox=<dir>] [--init-sha=<sha>]" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  # Default sandbox dir
+  if [[ -z "$SANDBOX_DIR" ]]; then
+    if [[ -d "$HOME/sandbox" ]]; then
+      SANDBOX_DIR="$HOME/sandbox"
+    else
+      echo "Error: could not find sandbox directory. Use --sandbox=<dir>" >&2
+      exit 1
+    fi
+  fi
+
+  # Auto-resolve INIT_SHA from SESSION_STATE if not provided
+  if [[ -z "$INIT_SHA" ]]; then
+    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+    if [[ -z "$INIT_SHA" ]]; then
+      echo "Error: could not resolve init_sha from SESSION_STATE. Use --init-sha=<sha>" >&2
+      exit 1
+    fi
+  fi
+
+  # Resolve session summary
+  local SESSION_SUMMARY="snapshot"
+  if [[ -n "$SESSION_SUMMARY_ARG" ]]; then
+    SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
+  fi
+
+  # Auto-resolve SESSION_TS from SESSION_STATE
+  local SESSION_TS
+  SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
+
+  # Construct output directory
+  local EXPORT_TIME
+  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+  local OUTPUT_DIR
+  if [[ -n "$OUTDIR_ARG" ]]; then
+    OUTPUT_DIR="$OUTDIR_ARG"
+  elif [[ -n "$SESSION_TS" ]]; then
+    OUTPUT_DIR="$HOME/workspace/output/bundles/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
+  else
+    OUTPUT_DIR="$HOME/workspace/output/bundles/${EXPORT_TIME}-${SESSION_SUMMARY}"
+  fi
+
+  package_branch "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR" "$SESSION_SUMMARY"
 fi

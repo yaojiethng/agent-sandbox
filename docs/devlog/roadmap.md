@@ -70,46 +70,21 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 The two-layer diff pipeline is fully implemented. `package_diff` produces unified diffs from the capability layer for operator `make apply`; `package_branch` packages sandbox commits as numbered per-commit diffs for `make draft`. The draft/confirm/reject workflow is operational: `make draft` resolves the latest session export, creates a typed draft branch with `.draft-state` as the first commit, and applies patches sequentially via `git apply`; `make confirm` drops the state commit, rebases onto target, and fast-forward merges; `make reject` returns to the source branch cleanly. Session artefact directories use 2-field names (`<SESSION_TS>-<SANITIZED_HOST_BRANCH>`), with `session/` and `autosave/` subfolders, `EXPORT-TIME.txt`, and unified path resolution across both commands. Checkpoint tags and `make sync` are removed. `INIT_SHA` is written once at container init. All diff output has index lines stripped for context-only `git apply`.
 
-**Pending — apply_workspace refactor:**
+The apply workflow is consolidated under `agent-sandbox.sh`: `draft`, `confirm`, `reject`, and `apply` all resolve through the agent-sandbox entry point, and the deprecated `scripts/apply_workspace.sh`, `libs/draft.sh`, and their tests have been removed.
 
-Design complete — see `spec_apply_workspace_refactor.md`. The refactor decomposes `scripts/apply_workspace.sh` into focused library files and eliminates the double flag-parse between `agent-sandbox.sh` and `apply_workspace.sh`.
-
-- [x] Extract shared test fixtures — `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
-- [x] Write `libs/session.sh` — `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh`
-- [x] Write `libs/draft_workflow.sh` — absorb `libs/draft.sh` functions; extract `draft_run`, `confirm_run`, `reject_run` from `apply_workspace.sh`; write `tests/test_draft_workflow.sh`
-- [x] Write `libs/diff_workflow.sh` — extract `apply_run` from `apply_workspace.sh`; write `tests/test_diff_workflow.sh`
-- [x] Switch `agent-sandbox.sh` to call workflow libs directly; verify all four subcommands end-to-end
-- [x] Grep and patch all remaining callers of `apply_workspace.sh`; update Makefile targets to call `agent-sandbox` directly
-- [x] Delete `scripts/apply_workspace.sh`, `libs/draft.sh`, `tests/test_apply.sh`, `tests/test_apply_workspace.sh`; run full test suite clean
-
-**Pending — `SESSION_STATE` file and `$SESSION_TS` persistence bug:**
-
-`$SESSION_TS` is set at container start and manually validated as present. However, tests run inside the container may set or unset environment variables, leaving `SESSION_TS` absent for the remainder of the session. Confirmed failure mode: the `package-branch` skill reads `$SESSION_TS` from the environment to construct the output directory name — when it is absent, the directory name is silently malformed (missing the session timestamp suffix). Other reads may exist.
-
-Fix: replace environment-only reliance with a durable `sandbox/.git/SESSION_STATE` key-value file written at container init alongside `INIT_SHA`. Format mirrors `.draft-state` (`key: value` per line); no shared read/write helpers needed — the pattern is simple enough to inline at each call site. `INIT_SHA` is rolled into `SESSION_STATE` as a key, and the standalone `sandbox/.git/INIT_SHA` file is removed. All existing read sites for `INIT_SHA` are updated to read from `SESSION_STATE` instead.
-
-- [ ] Grep `libs/`, `scripts/`, and skills for all reads of `$SESSION_TS` and `INIT_SHA` in the container context; catalogue every call site before changing anything
-- [ ] Write `SESSION_STATE` at container init with at minimum `session_ts` and `init_sha` keys; remove the standalone `INIT_SHA` write
-- [ ] Update all `INIT_SHA` read sites to read from `SESSION_STATE`
-- [ ] Update all `SESSION_TS` read sites — in scripts and skills — to read from `SESSION_STATE` when the environment variable is absent, with the env var taking precedence if set
-- [ ] Update the `package-branch` skill: replace `$SESSION_TS` env read with `SESSION_STATE` read; add fallback instruction if `SESSION_STATE` is absent (e.g. running outside a container)
+A durable `sandbox/.git/SESSION_STATE` key-value file persists `session_ts` and `init_sha` across the container lifetime, replacing the standalone `INIT_SHA` file and eliminating malformed artefact paths when environment variables are unset.
 
 **Pending — `package-branch` skill amendments:**
 
-Session log analysis identified two instructions in the skill that caused nonproductive agent reasoning:
+Session log analysis identified two instructions in the skill that caused nonproductive agent reasoning. The SESSION_STATE dependency is now resolved; the skill already references `SESSION_STATE` but the following amendments remain:
 
-- Scope framing: "Package the current session's committed branch history" implies a conversation boundary, not a container-lifetime boundary. The script packages all commits since `INIT_SHA`; the skill should say so explicitly. The same ambiguity affected the migration guide scope instruction — the agent second-guessed whether commits from prior sessions should be described.
-- `SESSION_TS` fallback: the skill instructs the agent to construct `OUTDIR` using `$SESSION_TS` but gives no fallback for when it is absent. The agent looped before improvising. A single fallback sentence would eliminate this.
-
-- [ ] Reframe scope description in `package-branch` skill: "all commits since `INIT_SHA`" (container-lifetime boundary, not conversation boundary); apply the same framing to the migration guide scope instruction
-- [ ] Add `SESSION_TS` fallback instruction: read from `SESSION_STATE` file first, fall back to env var, note omission if neither is available — do not loop attempting to derive it
-- [ ] These amendments depend on the `SESSION_STATE` task above; complete that task first so the skill can reference the file directly
+- [x] Reframe scope description in `package-branch` skill: "all commits since `init_sha`" (container-lifetime boundary, not conversation boundary); apply the same framing to the migration guide scope instruction
+- [x] Verify `SESSION_TS` fallback instruction is clear: read from `SESSION_STATE` file first, fall back to env var, note omission if neither is available — do not loop attempting to derive it
 
 **Pending — test suite repair:**
 
-The full test suite run identified five files with pre-existing failures unrelated to the apply_workspace refactor. These must be triaged and fixed before M2.3 closes.
+The full test suite run identified pre-existing failures unrelated to the apply_workspace refactor. `test_package_diff.sh` failures are resolved (SESSION_TS/SESSION_STATE fix). These remain:
 
-- [ ] `tests/test_package_diff.sh` — 10 failures. Root cause: SESSION_TS absent in test context. Fix: update tests to set SESSION_TS or source from SESSION_STATE after SESSION_STATE task completes.
 - [ ] `tests/test_checkpoint.sh` — 8 failures. Root cause: `checkpoint_latest` worktree scoping regression. Investigate and fix independently.
 - [ ] `tests/test_build_context.sh` — script error (`libs/build_context.sh` missing). Investigate whether file was deleted or moved.
 - [ ] `tests/test_capability_layer.sh` — unclear result. Investigate and fix.
