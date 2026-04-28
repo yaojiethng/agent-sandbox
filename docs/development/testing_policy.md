@@ -76,6 +76,21 @@ make_session() {
 }
 ```
 
+### 4. Test Files Must Be Self-Contained
+
+A test file may only source helpers from `tests/lib/`. It must never source another test file, and must never depend on another test file having run first.
+
+`tests/lib/` files contain only helper functions — no test execution, no `run_test` calls, no pass/fail counters. A `tests/lib/` file sourced in isolation must produce no output and have no side effects.
+
+```bash
+# ✓ Correct: source only from tests/lib/
+source "$SCRIPT_DIR/../tests/lib/git_fixtures.sh"
+source "$SCRIPT_DIR/../tests/lib/session_fixtures.sh"
+
+# ✗ Wrong: sourcing another test file
+source "$SCRIPT_DIR/test_draft_workflow.sh"   # ← Executes tests, pollutes state
+```
+
 ---
 
 ## Fixture Management Patterns
@@ -140,6 +155,56 @@ When tests create nested state, clean up in reverse order of creation:
 # 3. Project directory (rm -rf "$PROJECT_DIR")
 # 4. Checkpoint tag (git tag -d)
 ```
+
+---
+
+## Shared Fixtures (`tests/lib/`)
+
+Helpers used by more than one test file live in `tests/lib/` and are sourced explicitly. Two fixture files are established:
+
+| File | Contains |
+|---|---|
+| `tests/lib/git_fixtures.sh` | Git repo setup helpers: `make_committed_repo`, `get_init_sha`, `current_branch`, `branch_exists`, `commit_change` |
+| `tests/lib/session_fixtures.sh` | Workspace/session structure helpers: `make_export_with_diffs`, `make_diffs_session`, `make_changes_session` |
+
+**Rules for `tests/lib/` files:**
+- Helper functions only — no test execution
+- Every helper must follow Core Principles 1–3 (isolation, clean-before-create, no shared state)
+- A new helper belongs in `tests/lib/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
+
+Do not add a third `tests/lib/` file without a clear category boundary. If a helper does not fit `git_fixtures.sh` or `session_fixtures.sh`, name the new file to reflect its distinct scope.
+
+---
+
+## Running the Test Suite
+
+The full suite is run via:
+
+```bash
+make test
+# or
+bash scripts/run_tests.sh
+```
+
+This runs all test files in sequence and prints a consolidated pass/fail summary per file. Use this as the primary verification step — running individual test files is for debugging only.
+
+**Rule:** A change to any lib or script is not complete until `make test` passes clean. Running a subset of test files is not sufficient.
+
+---
+
+## Keeping Tests Current
+
+When a lib or script changes behaviour, the corresponding test files must be reviewed for staleness.
+
+**Rule:** Before marking a lib or script change complete, run:
+
+```bash
+grep -rl "script_or_lib_name" tests/
+```
+
+Read each file returned and assess whether any test case is invalidated or no longer sufficient given the change. If a test needs updating, update it in the same change — do not defer test updates to a follow-up.
+
+This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour — but if in doubt, grep and check.
 
 ---
 
@@ -226,6 +291,17 @@ make_project() {
 }
 ```
 
+### Anti-Pattern 4: Cross-Test-File Sourcing
+
+**Symptom:** Sourcing a test file to reuse its helpers executes its tests as a side effect and may corrupt state.
+
+```bash
+# ✗ Wrong: sources a test file to get its helpers
+source "$SCRIPT_DIR/test_draft_workflow.sh"
+```
+
+**Fix:** Move the shared helper to `tests/lib/` and source it from there in both files.
+
 ---
 
 ## Test Structure Template
@@ -238,6 +314,10 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_SCRIPT="$SCRIPT_DIR/../scripts/example.sh"
+
+# Shared fixtures — source only from tests/lib/
+source "$SCRIPT_DIR/../tests/lib/git_fixtures.sh"
+# source "$SCRIPT_DIR/../tests/lib/session_fixtures.sh"  # if needed
 
 PASS=0
 FAIL=0
@@ -253,7 +333,7 @@ run_test() {
 }
 
 # -------------------------
-# Helpers
+# Local helpers (not shared across files)
 # -------------------------
 
 make_fixture() {
@@ -344,12 +424,17 @@ Before committing a new test:
 - [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
 - [ ] All helper functions clean their inputs before creating state
 - [ ] No hardcoded paths outside fixture directory
+- [ ] Sources only from `tests/lib/` — no sourcing of other test files
 - [ ] Test passes when run in isolation
 - [ ] Test passes when run after every other test in the file
 - [ ] Test passes when run twice in a row
+- [ ] `make test` passes clean after the new test is added
 - [ ] Test failure message clearly describes what went wrong
 
----
+## Checklist for Lib and Script Changes
 
+Before marking a lib or script change complete:
 
-
+- [ ] `grep -rl "<changed file>" tests/` run; all returned files reviewed for staleness
+- [ ] Any stale test cases updated in the same change
+- [ ] `make test` passes clean

@@ -111,6 +111,15 @@ The two-layer model includes a host→container direction: operator runs `packag
 - `make apply --interactive` and `make draft --interactive` print the resolved diff file list and prompt before applying; aborting at the prompt leaves the project directory unchanged
 - diff and draft workflows produce correct artefact paths after tests have been run inside the container — verified by unsetting `$SESSION_TS` in the shell and confirming `SESSION_STATE` is read as fallback
 - `sandbox/.git/SESSION_STATE` exists at container init and contains `session_ts` and `init_sha` keys; `sandbox/.git/INIT_SHA` does not exist
+- `make test` runs all `tests/test_*.sh` files and exits 0 when all pass, 1 when any fail; `tests/lib/` files are not executed
+
+**Pending — test infrastructure:**
+
+Design complete — see `docs/discussions/spec_test_infrastructure.md`. Depends on the apply_workspace refactor establishing `tests/lib/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh` before these are added. Recommended after test suite repair so the runner has a clean baseline.
+
+- [ ] Write `scripts/run_tests.sh` — discovers and runs all `tests/test_*.sh` files in a subshell, prints per-file pass/fail and totals, exits 1 if any fail; excludes `tests/lib/`
+- [ ] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
+- [ ] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/lib/`) for references and prints which test files cover each; explicitly reports files with no coverage
 
 #### M2.5 — Vault Capability Layer Prototype
 
