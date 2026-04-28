@@ -17,6 +17,7 @@ The roadmap is not updated continuously during a session. It is touched at two d
 1. Mark all tasks completed this session with `[x]`
 2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
 3. If all tasks in the sub-milestone are now complete and acceptance criteria are met, run [Sub-milestone close (Trigger B)](#sub-milestone-close-trigger-b) before closing the handover
+4. **Carry-forward escalation:** if a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list. A finding that would survive more than one handover hop belongs in the roadmap, not the handover chain.
 
 ### Sub-milestone close (Trigger B)
 
@@ -33,6 +34,8 @@ Trigger B fires when all tasks in the active sub-milestone are complete and acce
 3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
 4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
 5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion) below)
+
+**The separation between Step 8 and Step 1 is load-bearing.** Compacting at the same session that marks completions removes the only verification point — the operator cannot confirm what was done if the evidence is already collapsed. The session boundary enforces this: Step 8 marks, the next Step 1 compacts.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -115,27 +118,3 @@ When producing a changelog entry during a milestone completion pass, output the 
 ````
 
 The operator appends the block contents verbatim to `changelog.md`.
-
----
-
-## Index Maintenance
-
-`project_index.md` is the complete file registry. It records every document with its temperature, architecture layer assignment, and `Last touched in` milestone. The active handover's Hot files section is the session-scoped file list — `project_index.md` is updated at defined moments only.
-
-### Update triggers
-
-**At major loop close:** add new planning documents (stories, investigations, stubs) with temperature and last-touched milestone; update the Architecture Layers table and temperature for any document whose role or stability changed.
-
-**At minor loop Step 1:** create the new handover; populate Hot files from the roadmap task list. No `project_index.md` changes at this step.
-
-**At minor loop Step 8:** for every file in the Completed this session table, update its `Last touched in` column. Add new files; remove deleted files.
-
-### Temperature
-
-| Temperature | Meaning |
-|---|---|
-| 🔴 Hot | Changes continuously — roadmap, active handovers |
-| 🟡 Warm | Changes per milestone — architecture docs, active policy |
-| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
-
-Temperature reflects the stability of what a document *describes*, not how carefully it was written. Update at major loop close when a document's role changes, not at every session.

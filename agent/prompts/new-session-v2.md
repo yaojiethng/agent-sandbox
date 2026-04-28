@@ -19,7 +19,7 @@ Then read `docs/devlog/roadmap.md`. No other files are needed at this stage.
 
 ## Recovery checks
 
-**Trigger B check:** Compare the sub-milestone named in the prior handover's Next session section against the sub-milestone currently marked active in `roadmap.md`. If they differ, Trigger B has not run — run it now before proceeding. If they match, no action needed.
+**Trigger B check:** Verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session names a sub-milestone that the roadmap still shows as active, the prior session's close sequence did not complete — run the missing steps before proceeding.
 
 **Compaction check:** A task group is fully complete when every checkbox in it is checked. Scan the active sub-milestone task list in `roadmap.md`. If any group meets this condition, compact it — replace the group header and checklist with a single outcome sentence describing what the system can now do. If no groups are fully complete, note this and continue.
 

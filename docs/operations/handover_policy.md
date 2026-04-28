@@ -108,6 +108,19 @@ complete or new files enter scope.>
 
 None.
 
+## Mid-session findings
+<Append-only. Written immediately when something changes the plan: a bug or contradiction
+discovered, steering received from the operator, a blocker encountered, or a new file
+entering scope. Do not log routine reads or completed tasks here — only write when something
+changes what you are doing or what the next session needs to know. Triaged into the proper
+sections at session close.>
+
+| Finding | Type | Impact |
+|---|---|---|
+| <description> | bug / contradiction / steering / blocker / scope change | current unit / next unit / next session / roadmap |
+
+None.
+
 ## Completed this session
 <Table: file | one-line change summary. If no files changed, write the canonical marker.>
 
@@ -126,6 +139,8 @@ None.
 <Blocking design questions the next agent must resolve before advancing.>
 <Known watch-out items (capped at three).>
 <Grep or file reads to run at session start, if known.>
+
+**Conclusions from this session:** decisions made, approaches confirmed, dead ends ruled out. Not a full log — only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
 
 ---
@@ -138,6 +153,7 @@ When a section has nothing to record, write the canonical marker and nothing els
 |---|---|
 | Acceptance criteria | `Not yet defined.` |
 | Decisions made this session | `None.` |
+| Mid-session findings | `None.` |
 | Completed this session | `No file changes this session.` |
 | Deferred items | `None.` |
 | Carried forward | `None.` |
@@ -149,7 +165,7 @@ When a section has nothing to record, write the canonical marker and nothing els
 ### At session open (Step 1)
 
 - **Create a new handover — never modify a closed one.** Create a new file with today's date and the next sequential index. The prior handover is source material only — read it for context, then leave it untouched.
-- **Trigger B recovery check:** if the prior handover's Next session names a different sub-milestone than the one currently active in `roadmap.md`, [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has not run. Run it now before compacting or creating this handover.
+- **Recovery check:** verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session names a sub-milestone that the roadmap still shows as active (i.e. not yet promoted out), the prior session's close sequence did not complete — run the missing steps (Trigger B, roadmap update) before creating this handover.
 - **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
 - Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
@@ -177,7 +193,21 @@ For housekeeping sessions, the scope proposal may simply be the target file list
 
 **Rule:** No output before scope is confirmed.
 
+**Rule:** When a session contains multiple implementation units (e.g. F0, F1, F2), the detailed per-step spec is written only for the currently active unit. The handover may list all units for orientation, but unit N+1's spec is not written until unit N's output is confirmed. Cross-unit dependencies written before prior units run are the primary source of spec contradictions.
+
+**Rule:** Any code block in the spec that will be copy-pasted into implementation requires a grep result or file excerpt from the same session confirming live variable names, paths, and call signatures. Memory is not a substitute. If the target file is not uploaded, ask for it before writing the spec.
+
+**Rule:** If the spec requires a structured output — coverage map, propagation table, diff summary — the format must be defined in the spec before implementation begins. An open-ended analysis requirement without a specified output format will produce inconsistent results across sessions.
+
 ### During the session
+
+Implementation sessions should name their units consistently — `Unit 1`, `Unit 2`, etc. Tasks within a unit are working memory and need not be persisted unless they become a finding. The handover write-back fires at three moments:
+
+**On task completion:** When a task in the session task list is completed, mark it complete in the Scope section and update Completed this session. Check whether any findings from that task belong in Mid-session findings before picking up the next task. Do not accumulate updates — write immediately.
+
+**On discovery:** When a bug, contradiction, design gap, blocker, or new file enters scope, write it to Mid-session findings immediately. Do not continue to the next task until the finding is recorded. If the finding changes the current unit's approach, surface it in chat before proceeding.
+
+**On steering received:** When the operator provides instruction that modifies the scope of a current or future unit, write it to Mid-session findings before resuming work. If the steering affects a future unit's spec, write it to Deferred items or Next session as well. Do not resume until this is done.
 
 - Record decisions in the Decisions table as they are made, with the document where the decision was recorded. If a decision is only in chat, it does not exist for the next session.
 - Record new acceptance criteria as they are defined. Pushed (unresolved) criteria from prior sessions are already present in the handover from session open — do not re-copy them.
@@ -217,12 +247,16 @@ The operator releases this gate with an explicit forward signal (e.g. "proceed",
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
 - **Scope reconciliation — do this before writing anything else in Step 8.** Compare the confirmed scope from Step 2 against the Completed this session table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items — if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-session, it is deferred with the reason. The Deferred items section is not complete until this check passes.
 - For each deferred item, record: what it is, why it did not complete this session, and where it goes next (next session, a specific future sub-milestone, or `roadmap_future.md`). If nothing is deferred, write the canonical marker.
+- **Carry-forward escalation:** a deferred item may be carried to the immediately following session via Next session. If it cannot be picked up in that session — because it depends on work spanning multiple sessions, or its destination is uncertain — it must be written as a named task entry in `roadmap.md` under the current sub-milestone, not left in the handover chain. A finding that would survive more than one hop as a deferred item belongs in the roadmap.
+- **Triage Mid-session findings:** for each entry, route it to its correct destination — Decisions table, Deferred items, Next session, or roadmap — and clear the Mid-session findings section. At close, Mid-session findings should be empty or contain only items explicitly marked as triaged.
+- **Spec amendment:** if any implementation gap discovered this session affects the spec — missing flag, unspecified behaviour, ambiguous fixture approach — amend the spec before closing. Do not leave spec gaps for the next session to re-derive.
 
 ### At session seed (Step 9)
 
 - Identify the next session's scope from two sources: the roadmap task list, and the Deferred items just written in Step 8. Deferred items take priority — they represent work already started or committed to that must not be silently dropped.
 - If this was the final session of a sub-milestone, note in Next session whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
 - List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
+- Populate the **Conclusions from this session** field: decisions made, approaches confirmed, dead ends ruled out this session. Only what the next agent would otherwise re-derive from scratch — not a full log.
 - Populate Next session with enough orientation that the next agent does not need to read this session's history. **This section is written for the next agent, not the current one — it is source material for that agent's Step 1, not a continuation directive. The next agent will create its own handover before acting on anything written here.**
 - If the completed sub-milestone was the last in the major milestone, write "Major loop required before next session" in Next session and leave the sub-milestone ID blank.
 - **If this session supersedes a prior implementation handover**, include a **Context handover** line in Next session with a markdown link to the last relevant implementation handover, so the next agent can load full context directly.

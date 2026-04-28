@@ -7,12 +7,13 @@ Read this document at the start of any session. Read the relevant child document
 | Loop | Step | Governing document |
 |---|---|---|
 | **Major** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
-| | **Gate** | wait for operator direction |
-| | 3. Open stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
-| | 4. Commission investigations | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation) |
-| | 5. Resolve stories → roadmap | [`story_policy.md`](story_policy.md#closure) — Closure |
-| | 6. Confirm ready to session | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
+| | **Gate 2** | select sub-milestone (also entry point for Trigger B) |
+| | 3. Open or revise stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
+| | 4. Investigate or design | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation) |
+| | 5. Resolve stories | [`story_policy.md`](story_policy.md#closure) — Closure |
+| | **Gate 3** | confirm ready to session |
 | **Minor** | 1. Open handover | [`handover_policy.md`](handover_policy.md#at-session-open-step-1) |
 | | 2. Confirm scope | [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-2) |
 | | **Gate 1** | wait for operator release before any output |
@@ -68,15 +69,16 @@ The loops are sequential at the major level — a major milestone must be planne
 
 Triggered after a major milestone closes. Performed once per major milestone before any session work begins. This is a planning and investigation cadence, not a coding one.
 
-| Step | Action | Governing document |
-|---|---|---|
-| **1 — Close prior milestone** | Write changelog entry, extract milestone, promote next from `roadmap_future.md`. | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
-| **2 — Orient to next milestone** | Read promoted milestone in `roadmap.md`. Present to operator: which sub-milestones are fully scoped, which have open design questions, and which depend on earlier implementation decisions and cannot yet be scoped. Wait for operator confirmation before proceeding. | `roadmap.md` |
-| **Gate** | Wait for operator to confirm orientation and direct which areas to open stories or investigations for. Do not proceed to Step 3 without explicit direction. | — |
-| **3 — Open stories** | For each unresolved design area the operator has directed, open a `story_` document in `docs/discussions/`. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
-| **4 — Commission investigations** | For each story with multiple candidate approaches, open one `investigation_` document per candidate. | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation) |
-| **5 — Resolve stories to roadmap entries** | When a story's questions are resolved, graduate it: close with a Resolution section, write the sub-milestone entry to `roadmap_future.md` or `roadmap.md`. Unresolvable stories are deferred and flagged for the relevant minor loop session. | [`story_policy.md`](story_policy.md#closure) — Closure |
-| **6 — Confirm ready to session** | Major loop closes when the first sub-milestone has a complete roadmap entry with objective, resolved decisions, and task list. Later sub-milestones may still have open items. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
+| Step | Entry condition | Action | Exit condition | Governing document |
+|---|---|---|---|---|
+| **1 — Close prior milestone** | Prior milestone complete and no current milestone open. Skip to Gate 2 if a milestone is already open. | Write changelog entry and extract the completed milestone from `roadmap.md`. | Prior milestone removed from roadmap. Changelog entry written. | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| **Gate 1 — Select next milestone** | Prior milestone closed. Skip to Gate 2 if a milestone is already open. | Present available next milestones from `roadmap_future.md`. Wait for operator to select which to promote. | Operator selects next milestone. Explicit release required. | — |
+| **2 — Orient to next milestone** | Operator has selected next milestone. | Promote selected milestone from `roadmap_future.md` into `roadmap.md`. Read it. Present sub-milestones ready to progress (no unresolved dependencies) and which have open planning work. | Orientation presented. | `roadmap.md` |
+| **Gate 2 — Select sub-milestone** | Orientation presented. | Wait for operator to select which sub-milestone to plan first. This gate also fires when a sub-milestone closes mid-milestone (Trigger B) — enter here directly, skipping Gate 1 and Step 2. | Operator selects sub-milestone. Explicit release required. | — |
+| **3 — Open or revise stories** | Operator has directed specific areas, OR open stories or unresolved questions exist under the chosen sub-milestone. Skip if neither applies. | For each directed or open area, produce a new story or revise an existing one in `docs/discussions/`. | All directed and existing open areas have a current story document. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
+| **4 — Investigate or design** | Unresolved stories exist under the chosen sub-milestone. | For each unresolved story: if direction is clear, produce a design or spec document in `docs/discussions/` directly. If unclear, open investigation documents — one per story, or one per candidate option if the option surface area warrants it. | Every unresolved story has a design document, spec document, or one or more investigation documents. | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation), [`story_policy.md`](story_policy.md) |
+| **5 — Resolve stories** | A story has a completed investigation or agreed approach. | Operator reviews each story and provides explicit sign-off with direction. Each story is either graduated to the roadmap or given an explicit status (deferred, abandoned, superseded) with a recorded reason. | All stories under the sub-milestone are resolved or carry an explicit status with recorded reason. Graduated stories are written as roadmap entries. | [`story_policy.md`](story_policy.md#closure) — Closure |
+| **Gate 3 — Confirm ready to session** | All stories resolved or explicitly statused. | Wait for operator to confirm the sub-milestone is ready to session. | Operator confirms sub-milestone has a complete roadmap entry. Explicit release required. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
 
 ---
 
@@ -90,9 +92,9 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 | **2 — Confirm scope** | always | Handover draft complete | Present scope proposal per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-2); wait for explicit release before any output. | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
 | **Gate 1** | always | Scope confirmed | No output until operator releases. | Explicit release received. |
 | **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). | All design questions resolved, recorded, and operator confirmed. |
-| **4 — Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs. Accumulate lapses across all four; group related lapses across document boundaries; surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
+| **4 — Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
 | **5 — Acceptance criteria** | confirmed | Information gathering pass complete | Define criteria per [`handover_policy.md`](handover_policy.md#at-step-5--acceptance-criteria). Every session touching architecture must include: *"Architecture documents in scope describe the system as built."* | Operator confirmed. `Not yet defined.` replaced. |
-| **Gate 2** | always | Acceptance criteria confirmed | No implementation until operator releases. | Explicit release received. |
+| **Gate 2** | always | Acceptance criteria confirmed | Before releasing: re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug — resolve it now, not at pre-close. No implementation until operator releases. | All criteria verified as satisfiable. Explicit release received. |
 | **6 — Implementation** | confirmed | Gate 2 released | Produce code against confirmed spec; tests alongside. On spec divergence: correct architecture doc before continuing. Flag and defer all other adjacent issues. | All tasks complete. Tests pass. Architecture docs reflect system as built. |
 | **7 — Pre-close verification** | confirmed | Implementation complete | Present pre-close summary per [`handover_policy.md`](handover_policy.md#at-pre-close-verification-step-7); wait for explicit release before Step 8. | Operator confirmed against AC and sent explicit release. Packaging changes do not release this gate. |
 | **Gate 3** | always | Pre-close verified | No session close until operator releases. | Explicit release received. |

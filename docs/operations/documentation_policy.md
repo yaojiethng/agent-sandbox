@@ -52,6 +52,12 @@ Every pull request must answer: **"Does this change system behaviour?"**
 
 This question must appear in the pull request template as a required checkbox.
 
+### Code example propagation check
+
+When updating an architecture or concepts document, verify that every code block, variable name, path, and function signature in the document reflects the current implementation. A document partially updated across multiple sessions accumulates stale examples that silently contradict the system as built.
+
+Check before closing any session that touched an architecture or concepts document: does every code example in the document still use current variable names and call signatures? If not, update or remove the stale example before the session closes.
+
 ---
 
 ## Linking Convention
