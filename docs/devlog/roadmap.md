@@ -74,7 +74,7 @@ The two-layer diff pipeline is fully implemented. `package_diff` produces unifie
 
 Design complete — see `spec_apply_workspace_refactor.md`. The refactor decomposes `scripts/apply_workspace.sh` into focused library files and eliminates the double flag-parse between `agent-sandbox.sh` and `apply_workspace.sh`.
 
-- [ ] Extract shared test fixtures — `tests/lib/git_fixtures.sh` and `tests/lib/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
+- [ ] Extract shared test fixtures — `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
 - [ ] Write `libs/session.sh` — `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh`
 - [ ] Write `libs/draft_workflow.sh` — absorb `libs/draft.sh` functions; extract `draft_run`, `confirm_run`, `reject_run` from `apply_workspace.sh`; write `tests/test_draft_workflow.sh`
 - [ ] Write `libs/diff_workflow.sh` — extract `apply_run` from `apply_workspace.sh`; write `tests/test_diff_workflow.sh`

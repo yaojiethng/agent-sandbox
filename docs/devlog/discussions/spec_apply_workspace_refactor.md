@@ -63,12 +63,12 @@ No bash function-reference callbacks. The validation difference between the two 
 |---|---|---|
 | `tests/test_draft_workflow.sh` | `test_apply.sh` + draft/confirm/reject portion of `test_apply_workspace.sh` | `package_branch` → `draft_run` → `confirm_run`/`reject_run` pipeline |
 | `tests/test_diff_workflow.sh` | apply portion of `test_apply_workspace.sh` | `package_diff` → `apply_run` pipeline |
-| `tests/lib/git_fixtures.sh` | `make_project`, `make_committed_repo`, `make_sandbox` (verify names against current files at implementation time) | Git repo setup helpers |
-| `tests/lib/session_fixtures.sh` | `make_export_with_diffs`, `make_diffs_session`, `make_changes_session` (verify names against current files at implementation time) | Workspace/session structure helpers |
+| `tests/libs/git_fixtures.sh` | `make_project`, `make_committed_repo`, `make_sandbox` (verify names against current files at implementation time) | Git repo setup helpers |
+| `tests/libs/session_fixtures.sh` | `make_export_with_diffs`, `make_diffs_session`, `make_changes_session` (verify names against current files at implementation time) | Workspace/session structure helpers |
 
 `test_apply.sh` and `test_apply_workspace.sh` are deleted once coverage is confirmed in the new files.
 
-`test_package_branch.sh` and `test_package_diff.sh` are updated to source `tests/lib/git_fixtures.sh` instead of defining their own repo setup helper. Verify that each file defines its own helper before removing it — do not remove a local definition that is still used within the same file.
+`test_package_branch.sh` and `test_package_diff.sh` are updated to source `tests/libs/git_fixtures.sh` instead of defining their own repo setup helper. Verify that each file defines its own helper before removing it — do not remove a local definition that is still used within the same file.
 
 ---
 
@@ -147,7 +147,7 @@ Each change is independently reviewable and leaves the system in a working state
 
 ### Change 1 — Extract shared test fixtures
 
-**Files:** `tests/lib/git_fixtures.sh` (new), `tests/lib/session_fixtures.sh` (new), `tests/test_package_branch.sh`, `tests/test_package_diff.sh`
+**Files:** `tests/libs/git_fixtures.sh` (new), `tests/libs/session_fixtures.sh` (new), `tests/test_package_branch.sh`, `tests/test_package_diff.sh`
 
 Before writing the fixture files, grep all test files for local repo-setup and session-structure helper definitions to establish the complete set of functions to consolidate. The function names listed in Decision 4 were accurate at spec-writing time — treat them as a starting inventory, not a complete list.
 
@@ -180,7 +180,7 @@ Read `libs/draft.sh` and the `draft`, `confirm`, and `reject` blocks in `apply_w
 
 Port all functions from `libs/draft.sh` into `draft_workflow.sh`. Implement `draft_run`, `confirm_run`, and `reject_run` as functions wrapping the extracted block logic. `apply_workspace.sh` and `libs/draft.sh` are not modified in this change.
 
-`tests/test_draft_workflow.sh` sources `tests/lib/git_fixtures.sh` and `tests/lib/session_fixtures.sh`. It covers the full `package_branch → draft_run → confirm_run/reject_run` pipeline. Before finalising, read `test_apply.sh` and the draft/confirm/reject portion of `test_apply_workspace.sh` and produce a coverage map: for each test case in those files, confirm it is covered in `test_draft_workflow.sh` — either directly or by a case that supersedes it. Explicitly note any cases that are deliberately dropped and why. The coverage map does not need to be committed, but the agent must be able to state that no case was accidentally omitted.
+`tests/test_draft_workflow.sh` sources `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`. It covers the full `package_branch → draft_run → confirm_run/reject_run` pipeline. Before finalising, read `test_apply.sh` and the draft/confirm/reject portion of `test_apply_workspace.sh` and produce a coverage map: for each test case in those files, confirm it is covered in `test_draft_workflow.sh` — either directly or by a case that supersedes it. Explicitly note any cases that are deliberately dropped and why. The coverage map does not need to be committed, but the agent must be able to state that no case was accidentally omitted.
 
 This change also absorbs the `resolve_session_dir` and `validate_project_dir` cases from `tests/test_session.sh` that are exercised end-to-end through the draft workflow. Those cases remain in `test_session.sh` until Change 7 — they are not removed here.
 
@@ -192,7 +192,7 @@ This change also absorbs the `resolve_session_dir` and `validate_project_dir` ca
 
 Read the `apply` block in `apply_workspace.sh` before writing any code. Use the actual current content as the source of truth. `apply_workspace.sh` is not modified in this change.
 
-`tests/test_diff_workflow.sh` sources `tests/lib/git_fixtures.sh` and `tests/lib/session_fixtures.sh`. It covers the full `package_diff → apply_run` pipeline. Before finalising, read the apply portion of `test_apply_workspace.sh` and produce a coverage map using the same standard as Change 3: every case either covered or explicitly noted as deliberately dropped.
+`tests/test_diff_workflow.sh` sources `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`. It covers the full `package_diff → apply_run` pipeline. Before finalising, read the apply portion of `test_apply_workspace.sh` and produce a coverage map using the same standard as Change 3: every case either covered or explicitly noted as deliberately dropped.
 
 This change also absorbs the `resolve_session_dir` and `validate_project_dir` cases from `tests/test_session.sh` that are exercised end-to-end through the apply workflow. Those cases remain in `test_session.sh` until Change 7 — they are not removed here.
 

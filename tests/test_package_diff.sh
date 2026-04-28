@@ -8,6 +8,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIFF_SCRIPT="$SCRIPT_DIR/../libs/package_diff.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 PASS=0
 FAIL=0
@@ -25,21 +26,7 @@ run_test() {
 # -------------------------
 # Helpers
 # -------------------------
-make_sandbox() {
-  local DIR="$1"
-  rm -rf "$DIR"              # ← Clean first (testing_policy)
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  git -C "$DIR" config user.email "test@test.com"
-  git -C "$DIR" config user.name "Test"
-  echo "baseline" > "$DIR/file.txt"
-  git -C "$DIR" add .
-  git -C "$DIR" commit -m "baseline" --quiet
-}
-
-get_init_sha() {
-  git -C "$1" rev-list --max-parents=0 HEAD
-}
+# (repo setup helpers sourced from tests/libs/git_fixtures.sh)
 
 # -------------------------
 # package_diff.sh — basic functionality
@@ -48,7 +35,7 @@ test_package_diff_produces_changes_diff() {
   local DIR="$FIXTURE_DIR/pd_basic"
   local OUTDIR="$FIXTURE_DIR/pd_basic_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -68,7 +55,7 @@ test_package_diff_index_lines_stripped() {
   local DIR="$FIXTURE_DIR/pd_noindex"
   local OUTDIR="$FIXTURE_DIR/pd_noindex_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -89,7 +76,7 @@ test_package_diff_output_path_structure() {
   local DIR="$FIXTURE_DIR/pd_path"
   local OUTDIR="$FIXTURE_DIR/pd_path_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -112,7 +99,7 @@ test_package_diff_baseline_arg() {
   local DIR="$FIXTURE_DIR/pd_baseline"
   local OUTDIR="$FIXTURE_DIR/pd_baseline_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -131,7 +118,7 @@ test_package_diff_baseline_required_outside_container() {
   local DIR="$FIXTURE_DIR/pd_nobaseline"
   local OUTDIR="$FIXTURE_DIR/pd_nobaseline_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
 
   # No --baseline, not in container context (override HOME to avoid workspace/output detection)
   local OUTPUT
@@ -147,7 +134,7 @@ test_package_diff_init_sha_fallback() {
   local DIR="$FIXTURE_DIR/pd_initsha"
   local OUTDIR="$FIXTURE_DIR/pd_initsha_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -173,7 +160,7 @@ test_package_diff_no_changes() {
   local DIR="$FIXTURE_DIR/pd_nochange"
   local OUTDIR="$FIXTURE_DIR/pd_nochange_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -191,7 +178,7 @@ test_package_diff_no_changes() {
 test_package_diff_missing_args() {
   local DIR="$FIXTURE_DIR/pd_missing_args"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
 
   local OUTPUT
   OUTPUT=$(cd "$DIR" && HOME=/nonexistent bash "$PACKAGE_DIFF_SCRIPT" 2>&1)
@@ -216,7 +203,7 @@ test_package_diff_name_arg() {
   local DIR="$FIXTURE_DIR/pd_name"
   local OUTDIR="$FIXTURE_DIR/pd_name_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -235,7 +222,7 @@ test_package_diff_automatic_name_derivation() {
   local DIR="$FIXTURE_DIR/pd_autoname"
   local OUTDIR="$FIXTURE_DIR/pd_autoname_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -261,8 +248,8 @@ test_package_diff_diff_is_applicable() {
   local DIR="$FIXTURE_DIR/pd_apply"
   local TARGET="$FIXTURE_DIR/pd_apply_target"
   local OUTDIR="$FIXTURE_DIR/pd_apply_out"
-  make_sandbox "$DIR"
-  make_sandbox "$TARGET"
+  make_committed_repo "$DIR"
+  make_committed_repo "$TARGET"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -287,7 +274,7 @@ test_package_diff_diff_contains_expected_content() {
   local DIR="$FIXTURE_DIR/pd_content"
   local OUTDIR="$FIXTURE_DIR/pd_content_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 
@@ -312,7 +299,7 @@ test_package_diff_includes_untracked() {
   local DIR="$FIXTURE_DIR/pd_untracked"
   local OUTDIR="$FIXTURE_DIR/pd_untracked_out"
   mkdir -p "$DIR" "$OUTDIR"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local BASELINE
   BASELINE=$(get_init_sha "$DIR")
 

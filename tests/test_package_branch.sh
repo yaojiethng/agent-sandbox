@@ -12,6 +12,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../libs/package_branch.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 PASS=0
 FAIL=0
@@ -27,40 +28,13 @@ run_test() {
 }
 
 # -------------------------
-# Helpers
-# -------------------------
-make_sandbox() {
-  local DIR="$1"
-  rm -rf "$DIR"
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  git -C "$DIR" config user.email "test@test.com"
-  git -C "$DIR" config user.name "Test"
-  echo "baseline" > "$DIR/file.txt"
-  git -C "$DIR" add .
-  git -C "$DIR" commit -m "baseline" --quiet
-}
-
-get_init_sha() {
-  git -C "$1" rev-list --max-parents=0 HEAD
-}
-
-commit_change() {
-  local DIR="$1"
-  local MSG="${2:-agent commit}"
-  echo "$MSG" > "$DIR/change-${RANDOM}.txt"
-  git -C "$DIR" add .
-  git -C "$DIR" commit -m "$MSG" --quiet
-}
-
-# -------------------------
 # package_branch — basic functionality
 # -------------------------
 test_package_branch_produces_numbered_diffs() {
   local DIR="$FIXTURE_DIR/pb_basic"
   local DIFFS="$FIXTURE_DIR/pb_basic_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -82,7 +56,7 @@ test_package_branch_numbering_format() {
   local DIR="$FIXTURE_DIR/pb_num"
   local DIFFS="$FIXTURE_DIR/pb_num_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -105,7 +79,7 @@ test_package_branch_index_lines_stripped() {
   local DIR="$FIXTURE_DIR/pb_noindex"
   local DIFFS="$FIXTURE_DIR/pb_noindex_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -126,7 +100,7 @@ test_package_branch_overwrites_existing() {
   local DIR="$FIXTURE_DIR/pb_overwrite"
   local DIFFS="$FIXTURE_DIR/pb_overwrite_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -157,7 +131,7 @@ test_package_branch_no_commits() {
   local DIR="$FIXTURE_DIR/pb_nocommit"
   local DIFFS="$FIXTURE_DIR/pb_nocommit_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -196,7 +170,7 @@ test_package_branch_missing_init_sha() {
   local DIR="$FIXTURE_DIR/pb_missing_init"
   local DIFFS="$FIXTURE_DIR/pb_missing_init_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
 
   # Invalid INIT_SHA
   if package_branch "$DIR" "invalidsha" "$DIFFS" "main" 2>/dev/null; then
@@ -214,8 +188,8 @@ test_package_branch_diff_is_applicable() {
   local TARGET="$FIXTURE_DIR/pb_apply_target"
   local DIFFS="$FIXTURE_DIR/pb_apply_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
-  make_sandbox "$TARGET"
+  make_committed_repo "$DIR"
+  make_committed_repo "$TARGET"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -237,7 +211,7 @@ test_package_branch_diff_contains_expected_content() {
   local DIR="$FIXTURE_DIR/pb_content"
   local DIFFS="$FIXTURE_DIR/pb_content_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 
@@ -264,7 +238,7 @@ test_package_branch_single_commit() {
   local DIR="$FIXTURE_DIR/pb_single"
   local DIFFS="$FIXTURE_DIR/pb_single_out"
   rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_sandbox "$DIR"
+  make_committed_repo "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_init_sha "$DIR")
 

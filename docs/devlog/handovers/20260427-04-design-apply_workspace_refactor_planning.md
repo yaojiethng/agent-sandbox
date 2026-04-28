@@ -51,7 +51,7 @@ None.
 | Draft auto-resolve (newest dir with `session/patches/*.diff`) stays in `draft_workflow.sh` | More specific than lexicographic-last; `session.sh` handles the common path only | Spec — File Specifications — `libs/session.sh` |
 | `validate_project_dir` lives in `libs/session.sh` | Both workflows need it; session.sh is the natural shared infrastructure file | Spec — File Specifications — `libs/session.sh` |
 | Tests split by workflow: `test_draft_workflow.sh` and `test_diff_workflow.sh` | Test files follow workflow boundary, not script boundary; eliminates overlap | Spec — Decision 4 |
-| Shared fixtures extracted to `tests/lib/git_fixtures.sh` and `tests/lib/session_fixtures.sh` | Three variants of the same repo-setup helper exist across test files; consolidate once | Spec — Decision 4 |
+| Shared fixtures extracted to `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh` | Three variants of the same repo-setup helper exist across test files; consolidate once | Spec — Decision 4 |
 | `tests/test_session.sh` is temporary; absorbed into workflow tests in Changes 3 and 4 | Session resolver is exercised end-to-end through the workflow tests; standalone unit file not needed permanently | Spec — Changes 3, 4, 7 |
 
 ## Completed this session
@@ -74,9 +74,9 @@ The spec is at `spec_apply_workspace_refactor.md` — read it in full at session
 
 Grep all test files for local repo-setup helpers (`make_sandbox`, `make_project`, `make_committed_repo` or similar) and session-structure helpers (`make_export_with_diffs`, `make_diffs_session`, `make_changes_session` or similar). The function names in the spec were accurate at writing time but may have changed — use grep output as the definitive inventory.
 
-Write `tests/lib/git_fixtures.sh` with one canonical `make_committed_repo` covering the union of all local variants. Write `tests/lib/session_fixtures.sh` with the session-structure helpers. Update `tests/test_package_branch.sh` and `tests/test_package_diff.sh` to source `git_fixtures.sh` and remove their local definitions. Run both test files after each edit — they must pass unchanged before proceeding.
+Write `tests/libs/git_fixtures.sh` with one canonical `make_committed_repo` covering the union of all local variants. Write `tests/libs/session_fixtures.sh` with the session-structure helpers. Update `tests/test_package_branch.sh` and `tests/test_package_diff.sh` to source `git_fixtures.sh` and remove their local definitions. Run both test files after each edit — they must pass unchanged before proceeding.
 
 **Watch-outs:**
 - The local repo-setup variants may differ subtly in behaviour (branch naming, initial commit content, git config). Resolve differences to the most general form before consolidating — do not silently narrow.
-- `tests/lib/` directory may not exist yet; create it.
+- `tests/libs/` directory may not exist yet; create it.
 - `test_apply_workspace.sh` also defines session-structure helpers — move them to `session_fixtures.sh` but do not modify any test logic in that file yet. That file is deleted in Change 7, not Change 1.
