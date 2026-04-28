@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 PASS=0
 FAIL=0
-FIXTURE_DIR="$(mktemp -d)"
+FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
@@ -230,14 +230,11 @@ test_package_diff_automatic_name_derivation() {
 
   (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --outdir="$OUTDIR" >/dev/null 2>&1)
 
-  # Should derive name from changed file or fallback to "uncommitted_changes"
-  if ls "$OUTDIR"/diffs/*-my_special_file >/dev/null 2>&1 || \
-     ls "$OUTDIR"/diffs/*-my_special_file.txt >/dev/null 2>&1 || \
-     ls "$OUTDIR"/diffs/*-uncommitted_changes >/dev/null 2>&1 || \
-     ls "$OUTDIR"/diffs/*-changes >/dev/null 2>&1; then
-    pass "package_diff.sh derives or falls back to a name when --name not provided"
+  # When --name is omitted, SESSION_SUMMARY defaults to "snapshot"
+  if ls "$OUTDIR"/diffs/*-snapshot >/dev/null 2>&1; then
+    pass "package_diff.sh falls back to 'snapshot' when --name not provided"
   else
-    fail "package_diff.sh should derive or fallback name"
+    fail "package_diff.sh should fall back to 'snapshot'"
   fi
 }
 

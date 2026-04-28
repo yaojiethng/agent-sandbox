@@ -6,8 +6,6 @@
 #
 # Depends on: git, standard shell utilities.
 
-set -euo pipefail
-
 # validate_project_dir PROJECT_DIR
 #   Checks PROJECT_DIR exists, is a git repository, and has at least one commit.
 #   Returns 1 with error message to stderr on failure.
@@ -28,6 +26,30 @@ validate_project_dir() {
     echo "Error: $PROJECT_DIR has no commits - cannot apply patch" >&2
     return 1
   fi
+}
+
+# session_state_read SANDBOX_DIR KEY
+#   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
+#   The file format is one key=value pair per line.
+#   Prints the value to stdout, or empty string if the file or key is missing.
+#   Args:
+#     $1  SANDBOX_DIR  — path to sandbox directory
+#     $2  KEY          — key to look up
+session_state_read() {
+  local SANDBOX_DIR="$1"
+  local KEY="$2"
+  local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
+
+  if [[ ! -f "$STATE_FILE" ]]; then
+    return 0
+  fi
+
+  while IFS='=' read -r k v; do
+    if [[ "$k" == "$KEY" ]]; then
+      echo "$v"
+      return 0
+    fi
+  done < "$STATE_FILE"
 }
 
 # resolve_session_dir BASE_DIR SESSION_ARG REQUIRE_SUBPATH

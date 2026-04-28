@@ -35,7 +35,7 @@ run_test() {
   "$@" || true
 }
 
-FIXTURE_DIR="$(mktemp -d)"
+FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # -------------------------
@@ -303,11 +303,16 @@ test_sanitized_host_branch_exported() {
   local SUBSHELL_VALUE
   SUBSHELL_VALUE=$(echo "$SANITIZED_HOST_BRANCH")
 
+  local rc=0
   if [[ "$SUBSHELL_VALUE" == "main" ]]; then
     pass "SANITIZED_HOST_BRANCH is exported and available to subshells"
   else
     fail "SANITIZED_HOST_BRANCH not properly exported: $SUBSHELL_VALUE"
+    rc=1
   fi
+
+  unset SANITIZED_HOST_BRANCH
+  return $rc
 }
 
 test_sanitized_host_branch_detached_head() {

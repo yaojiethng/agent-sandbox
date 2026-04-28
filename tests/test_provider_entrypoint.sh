@@ -55,22 +55,22 @@ _run() {
 
 test_missing_agent_home() {
   local out
-  out=$(PROVIDER_NAME=test PROVIDER_CONFIG_DIR=/tmp bash "$ENTRYPOINT" true 2>&1) && return 1
+  out=$(unset AGENT_HOME; PROVIDER_NAME=test PROVIDER_CONFIG_DIR=/tmp bash "$ENTRYPOINT" true 2>&1) && return 1
   [[ "$out" == *"AGENT_HOME is not set"* ]]
 }
 
 test_missing_provider_name() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local out rc=0
-  out=$(AGENT_HOME="$tmpdir/ah" PROVIDER_CONFIG_DIR=/tmp bash "$ENTRYPOINT" true 2>&1) || rc=$?
+  out=$(unset PROVIDER_NAME; AGENT_HOME="$tmpdir/ah" PROVIDER_CONFIG_DIR=/tmp bash "$ENTRYPOINT" true 2>&1) || rc=$?
   rm -rf "$tmpdir"
   [[ $rc -ne 0 ]] && [[ "$out" == *"PROVIDER_NAME is not set"* ]]
 }
 
 test_missing_provider_config_dir() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local out rc=0
-  out=$(AGENT_HOME="$tmpdir/ah" PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) || rc=$?
+  out=$(unset PROVIDER_CONFIG_DIR; AGENT_HOME="$tmpdir/ah" PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) || rc=$?
   rm -rf "$tmpdir"
   [[ $rc -ne 0 ]] && [[ "$out" == *"PROVIDER_CONFIG_DIR is not set"* ]]
 }
@@ -78,7 +78,7 @@ test_missing_provider_config_dir() {
 # -- Copy-in --
 
 test_copy_in_on_start() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local pc="$tmpdir/pc" ah="$tmpdir/ah"
   mkdir -p "$pc"
   echo "test-value" > "$pc/config.yaml"
@@ -92,7 +92,7 @@ test_copy_in_on_start() {
 }
 
 test_copy_in_skipped_when_empty() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local pc="$tmpdir/pc" ah="$tmpdir/ah"
   mkdir -p "$pc"
 
@@ -103,7 +103,7 @@ test_copy_in_skipped_when_empty() {
 }
 
 test_copy_in_skipped_when_absent() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local rc=0
   _run "$tmpdir/ah" "$tmpdir/does_not_exist" true || rc=$?
   rm -rf "$tmpdir"
@@ -113,7 +113,7 @@ test_copy_in_skipped_when_absent() {
 # -- Copy-out --
 
 test_copy_out_on_normal_exit() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local pc="$tmpdir/pc" ah="$tmpdir/ah"
   mkdir -p "$pc" "$ah"
 
@@ -126,7 +126,7 @@ test_copy_out_on_normal_exit() {
 }
 
 test_copy_out_on_nonzero_exit() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local pc="$tmpdir/pc" ah="$tmpdir/ah"
   mkdir -p "$pc" "$ah"
 
@@ -141,7 +141,7 @@ test_copy_out_on_nonzero_exit() {
 # -- Exit code --
 
 test_exit_code_zero() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local rc=0
   _run "$tmpdir/ah" "$tmpdir/pc" bash -c "exit 0" || rc=$?
   rm -rf "$tmpdir"
@@ -149,7 +149,7 @@ test_exit_code_zero() {
 }
 
 test_exit_code_nonzero() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
   local rc=0
   _run "$tmpdir/ah" "$tmpdir/pc" bash -c "exit 42" || rc=$?
   rm -rf "$tmpdir"
@@ -159,18 +159,18 @@ test_exit_code_nonzero() {
 # -- stdin regression guard --
 
 test_stdin_not_devnull() {
-  # Verifies that the agent's stdin is NOT /dev/null.
-  # Under any background-job approach (with or without job control), non-interactive
-  # bash redirects stdin to /dev/null for background children. This test catches
-  # any future change that reintroduces a background job for the agent.
-  local tmpdir; tmpdir=$(mktemp -d)
-  local stdin_path_file="$tmpdir/stdin_path"
+  # Verifies that the agent's stdin is connected to the parent shell's stdin.
+  # Under any background-job approach, bash redirects stdin to /dev/null for
+  # background children. The synchronous approach inherits stdin from the shell.
+  # This test pipes explicit input and verifies the agent receives it.
+  local tmpdir; tmpdir=$(mktemp -d /tmp/XXXXXX)
+  local stdin_content="$tmpdir/stdin_content"
 
-  _run "$tmpdir/ah" "$tmpdir/pc" \
-    bash -c "ls -la /proc/\$\$/fd/0 2>/dev/null > \"$stdin_path_file\""
+  echo "test-input-42" | _run "$tmpdir/ah" "$tmpdir/pc" \
+    bash -c "cat > \"$stdin_content\""
 
   local rc=0
-  grep -q "/dev/null" "$stdin_path_file" && rc=1 || true
+  [[ -f "$stdin_content" ]] && grep -q "test-input-42" "$stdin_content" || rc=1
   rm -rf "$tmpdir"
   return $rc
 }

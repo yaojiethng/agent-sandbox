@@ -63,6 +63,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `investigation_pi.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_workspace_input_channel.md` | 🟢 Cold | M1.5 | Resolved. Operator input channel implemented in M1.5. |
 | `design_diff_and_branch_packaging_workflow.md` | 🟡 Warm | M2.3 | Current design for diff pipeline and apply workflow. Supersedes prior apply_workflow_and_baseline_advancement design. |
+| `spec_test_infrastructure.md` | 🟡 Warm | M2.3 | Test infrastructure spec: runner auto-discovery, coverage check, `make test` target. |
 
 ### Architecture (`docs/architecture/`)
 
@@ -123,7 +124,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch commits as numbered diff files. Sourced by `diff_on_exit`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
 | `draft.sh` | 🟡 Warm | M2.3 | Shared draft branch management: folder resolution, name parsing, collision guard, .draft-state read/write. |
-| `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
+| `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. |
@@ -133,10 +134,19 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `test_apply_workspace.sh` | 🟡 Warm | M2.3 | Functional tests for apply_workspace.sh. Covers draft/confirm/reject/apply workflow. |
-| `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
-| `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
+| `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
+| `test_diff.sh` | 🟢 Cold | M2.3 | Diff pipeline tests: `diff_generate`, `diff_format_patch`, `diff_on_exit`, `diff_on_autosave`. |
+| `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
+| `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
+| `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
+| `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
+| `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
+| `test_session.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
 | `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
+| `test_snapshot_host.sh` | 🟢 Cold | M2.3 | Host-side snapshot tests: archive head, copy worktree, validate. |
+| `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |
 
 ### Prompts (`agent/prompts/`)
 

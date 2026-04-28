@@ -25,6 +25,14 @@
 # explicitly so that failures produce diagnostic output rather than silent exit.
 
 # -------------------------
+# Preflight: skip if docker unavailable
+# -------------------------
+if ! command -v docker >/dev/null 2>&1; then
+  echo "SKIP: docker not available — skipping capability layer tests"
+  exit 0
+fi
+
+# -------------------------
 # Args and config
 # -------------------------
 REPO_ROOT="$(cd "${1:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
@@ -243,7 +251,7 @@ echo ""
 echo "--- Diff integrity ---"
 
 # Apply the diff to a temp clone of the snapshot to verify it's well-formed.
-APPLY_DIR="$(mktemp -d)"
+APPLY_DIR="$(mktemp -d /tmp/XXXXXX)"
 cp -a "$SNAPSHOT_DIR/." "$APPLY_DIR/"
 cd "$APPLY_DIR"
 git init -q
@@ -263,9 +271,9 @@ rm -rf "$APPLY_DIR"
 echo ""
 echo "--- Failure cases ---"
 
-EMPTY_SNAPSHOT="$(mktemp -d)"
+EMPTY_SNAPSHOT="$(mktemp -d /tmp/XXXXXX)"
 FAIL_CONTAINER="cap-layer-fail-${RUN_ID}"
-FAIL_WORKSPACE="$(mktemp -d)"
+FAIL_WORKSPACE="$(mktemp -d /tmp/XXXXXX)"
 
 docker run -d \
   --name "$FAIL_CONTAINER" \

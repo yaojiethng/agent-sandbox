@@ -19,7 +19,7 @@ source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
 PASS=0
 FAIL=0
-FIXTURE_DIR="$(mktemp -d)"
+FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }

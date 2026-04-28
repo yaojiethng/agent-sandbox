@@ -2,7 +2,7 @@
 
 **Type:** Implementation spec — ready for execution after apply_workspace refactor  
 **Status:** Approved for implementation  
-**Depends on:** apply_workspace refactor (spec: `spec_apply_workspace_refactor.md`) — specifically Changes 1–4, which establish `tests/lib/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh`
+**Depends on:** apply_workspace refactor (spec: `spec_apply_workspace_refactor.md`) — specifically Changes 1–4, which establish `tests/libs/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh`
 
 ---
 
@@ -14,7 +14,7 @@ The test suite has four structural gaps that the apply_workspace refactor expose
 
 2. **No staleness enforcement.** When a lib or script changes behaviour, there is no mechanism prompting the author to check which test files reference it. Test drift is silent.
 
-3. **No self-containment rule.** The policy does not prohibit sourcing other test files or require that shared helpers live only in `tests/lib/`. The fixture consolidation in the refactor establishes this pattern but it is not yet policy-backed.
+3. **No self-containment rule.** The policy does not prohibit sourcing other test files or require that shared helpers live only in `tests/libs/`. The fixture consolidation in the refactor establishes this pattern but it is not yet policy-backed.
 
 4. **Policy not enforced at the boundary.** The checklist in `testing_policy.md` does not include the runner or staleness checks, so the policy does not close on itself.
 
@@ -28,7 +28,7 @@ Items 3 and 4 are addressed in the `testing_policy.md` update produced alongside
 
 A single script that discovers and runs all test files under `tests/`, collects per-file pass/fail, and prints a consolidated summary. Registered as `make test`.
 
-Auto-discovery over a hardcoded list: the runner finds test files by globbing `tests/test_*.sh`. This means new test files are picked up without editing the runner. The glob must exclude `tests/lib/` — lib files are not runnable test files.
+Auto-discovery over a hardcoded list: the runner finds test files by globbing `tests/test_*.sh`. This means new test files are picked up without editing the runner. The glob must exclude `tests/libs/` — lib files are not runnable test files.
 
 Each test file runs in a subshell to prevent state leakage between files. The runner collects exit codes; a non-zero exit from any file is a suite failure.
 
@@ -110,7 +110,7 @@ Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]
 4. Exit 0 always — this is informational output, not a gate.
 
 **Constraints:**
-- Exclude `tests/lib/` from the grep — lib files are helpers, not test files. A match in `tests/lib/git_fixtures.sh` is not meaningful coverage.
+- Exclude `tests/libs/` from the grep — lib files are helpers, not test files. A match in `tests/libs/git_fixtures.sh` is not meaningful coverage.
 - Accept both full paths and basenames as arguments — strip to basename before grepping.
 - If called with no arguments, print usage and exit 1.
 
@@ -131,4 +131,4 @@ These are independent of each other and can be done in either order. Both are in
 - `bash scripts/check_test_coverage.sh libs/session.sh` prints the test files that reference `session.sh`, or explicitly states none were found
 - `bash scripts/check_test_coverage.sh` with no arguments prints usage and exits 1
 - Neither script requires modification when a new `tests/test_*.sh` file is added
-- `tests/lib/` files are not executed by `make test` and do not appear in coverage check results
+- `tests/libs/` files are not executed by `make test` and do not appear in coverage check results

@@ -30,7 +30,7 @@ run_test() {
   "$@" || true
 }
 
-FIXTURE_DIR="$(mktemp -d)"
+FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # -------------------------

@@ -37,6 +37,12 @@
 set -euo pipefail
 
 # -------------------------
+# Source shared session infrastructure
+# -------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/session.sh"
+
+# -------------------------
 # Locate repo root
 # -------------------------
 if ! REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
@@ -131,13 +137,24 @@ fi
 # -------------------------
 # Resolve session timestamp
 # -------------------------
-SESSION_TS="${SESSION_TS_ARG:-${SESSION_TS:-}}"
+if [[ -n "$SESSION_TS_ARG" ]]; then
+  SESSION_TS="$SESSION_TS_ARG"
+else
+  SESSION_TS=$(session_state_read "$REPO_ROOT" "session_ts")
+  if [[ -z "$SESSION_TS" ]]; then
+    SESSION_TS="${SESSION_TS:-}"
+  fi
+fi
 
 # -------------------------
 # Create output directory
 # -------------------------
 EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
+if [[ -n "$SESSION_TS" ]]; then
+  OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
+else
+  OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}"
+fi
 mkdir -p "$OUTDIR"
 
 # -------------------------

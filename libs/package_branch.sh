@@ -31,6 +31,9 @@
 #   --sandbox         Path to the git repository. Default: ~/sandbox.
 #   --init-sha        Initial commit SHA. Default: read from SESSION_STATE.
 
+_PB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_PB_SCRIPT_DIR/session.sh"
+
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   set -euo pipefail
@@ -43,9 +46,9 @@ fi
 # lines stripped into OUTPUT_DIR/, overwrites on each run.
 # -------------------------
 package_branch() {
-  local SANDBOX_DIR="$1"
-  local INIT_SHA="$2"
-  local OUTPUT_DIR="$3"
+  local SANDBOX_DIR="${1:-}"
+  local INIT_SHA="${2:-}"
+  local OUTPUT_DIR="${3:-}"
   local SESSION_SUMMARY="${4:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$INIT_SHA" || -z "$OUTPUT_DIR" ]]; then
@@ -110,9 +113,6 @@ package_branch() {
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  source "$SCRIPT_DIR/session.sh"
-
   SANDBOX_DIR=""
   INIT_SHA=""
   OUTDIR_ARG=""
