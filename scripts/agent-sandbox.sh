@@ -8,7 +8,7 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name|path>] [--force]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name|path>] [--diff=<path>] [--force]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name|path>] [--branch-summary=<slug>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
@@ -25,6 +25,8 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
 source "$AGENT_SANDBOX_REPO/libs/containers.sh"
+source "$AGENT_SANDBOX_REPO/libs/draft_workflow.sh"
+source "$AGENT_SANDBOX_REPO/libs/diff_workflow.sh"
 
 SUBCOMMAND="${1:-}"
 shift || true
@@ -46,6 +48,11 @@ TARGET_BRANCH=""
 PROVIDER_NAME=""
 REBUILD=false
 REBUILD_BASE=false
+DIFF_ARG=""
+FORCE=false
+BRANCH_FROM=""
+DIFFS=""
+BRANCH_SUMMARY=""
 PASSTHROUGH=()
 
 parse_flags() {
@@ -60,6 +67,8 @@ parse_flags() {
       --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
+      --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
+      --force)         FORCE=true ;;
       --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
       --rebuild)       REBUILD=true ;;
       --rebuild-base)  REBUILD_BASE=true ;;
@@ -200,12 +209,7 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace.sh" apply \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      ${SESSION_ARG:+--session="$SESSION_ARG"} \
-      ${BRANCH:+--branch="$BRANCH"} \
-      ${FORCE:+--force}
+    apply_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$DIFF_ARG" "$BRANCH" "$FORCE"
     ;;
 
   draft)
@@ -214,13 +218,7 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace.sh" draft \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      ${SESSION_ARG:+--session="$SESSION_ARG"} \
-      ${BRANCH_FROM:+--branch-from="$BRANCH_FROM"} \
-      ${DIFFS:+--diffs="$DIFFS"} \
-      ${BRANCH_SUMMARY:+--branch-summary="$BRANCH_SUMMARY"}
+    draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
     ;;
 
   confirm)
@@ -229,10 +227,7 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace.sh" confirm \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      ${TARGET_BRANCH:+--target="$TARGET_BRANCH"}
+    confirm_run "$PROJECT_DIR" "$SANDBOX_DIR" "$TARGET_BRANCH"
     ;;
 
   reject)
@@ -241,9 +236,7 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    "$SCRIPTS/apply_workspace.sh" reject \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR"
+    reject_run "$PROJECT_DIR" "$SANDBOX_DIR"
     ;;
 
   *)

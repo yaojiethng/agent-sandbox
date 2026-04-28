@@ -74,11 +74,11 @@ The two-layer diff pipeline is fully implemented. `package_diff` produces unifie
 
 Design complete — see `spec_apply_workspace_refactor.md`. The refactor decomposes `scripts/apply_workspace.sh` into focused library files and eliminates the double flag-parse between `agent-sandbox.sh` and `apply_workspace.sh`.
 
-- [ ] Extract shared test fixtures — `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
-- [ ] Write `libs/session.sh` — `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh`
-- [ ] Write `libs/draft_workflow.sh` — absorb `libs/draft.sh` functions; extract `draft_run`, `confirm_run`, `reject_run` from `apply_workspace.sh`; write `tests/test_draft_workflow.sh`
-- [ ] Write `libs/diff_workflow.sh` — extract `apply_run` from `apply_workspace.sh`; write `tests/test_diff_workflow.sh`
-- [ ] Switch `agent-sandbox.sh` to call workflow libs directly; verify all four subcommands end-to-end
+- [x] Extract shared test fixtures — `tests/libs/git_fixtures.sh` and `tests/libs/session_fixtures.sh`; update `test_package_branch.sh` and `test_package_diff.sh` to source `git_fixtures.sh`
+- [x] Write `libs/session.sh` — `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh`
+- [x] Write `libs/draft_workflow.sh` — absorb `libs/draft.sh` functions; extract `draft_run`, `confirm_run`, `reject_run` from `apply_workspace.sh`; write `tests/test_draft_workflow.sh`
+- [x] Write `libs/diff_workflow.sh` — extract `apply_run` from `apply_workspace.sh`; write `tests/test_diff_workflow.sh`
+- [x] Switch `agent-sandbox.sh` to call workflow libs directly; verify all four subcommands end-to-end
 - [ ] Grep and patch all remaining callers of `apply_workspace.sh`; update Makefile targets to call `agent-sandbox` directly
 - [ ] Delete `scripts/apply_workspace.sh`, `libs/draft.sh`, `tests/test_apply.sh`, `tests/test_apply_workspace.sh`, `tests/test_session.sh`; run full test suite clean
 
