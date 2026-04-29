@@ -10,18 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIFF_SCRIPT="$SCRIPT_DIR/../libs/package_diff.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
-PASS=0
-FAIL=0
+source "$SCRIPT_DIR/libs/test_common.sh"
+
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  echo "[ $1 ]"
-  $1 || true
-}
 
 # -------------------------
 # Helpers
@@ -333,6 +325,4 @@ run_test test_package_diff_diff_is_applicable
 run_test test_package_diff_diff_contains_expected_content
 run_test test_package_diff_includes_untracked
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done

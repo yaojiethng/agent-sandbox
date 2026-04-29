@@ -16,21 +16,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$REPO_ROOT/scripts/checkpoint.sh"
 
-PASS=0
-FAIL=0
-
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  local NAME="$1"
-  shift
-  echo "[ $NAME ]"
-  "$@" || true
-}
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
@@ -122,14 +108,9 @@ test_worktree_id_derive_different_for_different_paths() {
 echo "=== checkpoint.sh unit tests ==="
 echo
 
-run_test "worktree_id_derive_returns_8_chars" test_worktree_id_derive_returns_8_chars
-run_test "worktree_id_derive_is_hex" test_worktree_id_derive_is_hex
-run_test "worktree_id_derive_stable_across_calls" test_worktree_id_derive_stable_across_calls
-run_test "worktree_id_derive_different_for_different_paths" test_worktree_id_derive_different_for_different_paths
+run_test test_worktree_id_derive_returns_8_chars
+run_test test_worktree_id_derive_is_hex
+run_test test_worktree_id_derive_stable_across_calls
+run_test test_worktree_id_derive_different_for_different_paths
 
-echo
-echo "Results: $PASS passed, $FAIL failed"
-
-if [[ "$FAIL" -gt 0 ]]; then
-  exit 1
-fi
+test_done

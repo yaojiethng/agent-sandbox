@@ -24,12 +24,15 @@
 # Note: intentionally no set -euo pipefail — test scripts must handle failures
 # explicitly so that failures produce diagnostic output rather than silent exit.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/libs/test_common.sh"
+
 # -------------------------
 # Preflight: skip if docker unavailable
 # -------------------------
 if ! command -v docker >/dev/null 2>&1; then
-  echo "SKIP: docker not available — skipping capability layer tests"
-  exit 0
+  skip "docker not available — skipping capability layer tests"
+  test_done "Capability Layer Functional Test"
 fi
 
 # -------------------------
@@ -47,14 +50,7 @@ RUN_ID="$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n
 SANDBOX_CONTAINER_NAME="cap-layer-test-${RUN_ID}"
 BUILD_LOG=""
 
-PASS=0
-FAIL=0
 
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; ((PASS++)) || true; }
-fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
 
 check() {
   local desc="$1"
@@ -289,19 +285,4 @@ check "container exits non-zero when .snapshot/ is empty (gate 2)" \
 docker rm -v "$FAIL_CONTAINER" &>/dev/null || true
 rm -rf "$EMPTY_SNAPSHOT" "$FAIL_WORKSPACE"
 
-# -------------------------
-# Summary
-# -------------------------
-echo ""
-echo "=== Results ==="
-echo "  Passed: $PASS"
-echo "  Failed: $FAIL"
-echo ""
-
-if [[ "$FAIL" -eq 0 ]]; then
-  echo "All checks passed."
-  exit 0
-else
-  echo "Some checks failed. Review output above."
-  exit 1
-fi
+test_done "Capability Layer Functional Test"

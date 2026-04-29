@@ -12,24 +12,10 @@
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/libs/snapshot.sh"
-
-PASS=0
-FAIL=0
-
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  local NAME="$1"
-  shift
-  echo "[ $NAME ]"
-  "$@" || true
-}
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
@@ -583,29 +569,24 @@ test_init_git_creates_init_sha() {
 # Run all tests
 # -------------------------
 
-run_test "validate passes"                   test_validate_passes
-run_test "validate missing dir"              test_validate_missing
-run_test "validate empty dir"                test_validate_empty
-run_test "validate missing baseline.tar"     test_validate_missing_baseline_tar
-run_test "copy to sandbox"                   test_copy_to_sandbox
-run_test "copy leaves snapshot intact"       test_copy_leaves_snapshot_intact
+run_test                   test_validate_passes
+run_test              test_validate_missing
+run_test                test_validate_empty
+run_test     test_validate_missing_baseline_tar
+run_test                   test_copy_to_sandbox
+run_test       test_copy_leaves_snapshot_intact
 
-run_test "init_git case 1: clean"                    test_init_git_case1_clean
-run_test "init_git case 2: unstaged edit"            test_init_git_case2_unstaged_edit
-run_test "init_git case 3: staged edit"              test_init_git_case3_staged_edit
-run_test "init_git case 4: unstaged deletion"        test_init_git_case4_unstaged_deletion
-run_test "init_git case 5: staged deletion"          test_init_git_case5_staged_deletion
-run_test "init_git case 6: untracked file"           test_init_git_case6_untracked
-run_test "init_git case 7: gitignored file"          test_init_git_case7_gitignored
-run_test "init_git case 8: staged new file"          test_init_git_case8_staged_new_file
-run_test "init_git: one baseline commit"             test_init_git_one_commit
-run_test "init_git: missing baseline.tar"            test_init_git_missing_baseline_tar
-run_test "sandbox isolation"                         test_sandbox_isolation
-run_test "init_git: creates INIT_SHA file"           test_init_git_creates_init_sha
+run_test                    test_init_git_case1_clean
+run_test            test_init_git_case2_unstaged_edit
+run_test              test_init_git_case3_staged_edit
+run_test        test_init_git_case4_unstaged_deletion
+run_test          test_init_git_case5_staged_deletion
+run_test           test_init_git_case6_untracked
+run_test          test_init_git_case7_gitignored
+run_test          test_init_git_case8_staged_new_file
+run_test             test_init_git_one_commit
+run_test            test_init_git_missing_baseline_tar
+run_test                         test_sandbox_isolation
+run_test           test_init_git_creates_init_sha
 
-# -------------------------
-# Summary
-# -------------------------
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done

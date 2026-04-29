@@ -11,24 +11,10 @@
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/libs/snapshot.sh"
-
-PASS=0
-FAIL=0
-
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  local NAME="$1"
-  shift
-  echo "[ $NAME ]"
-  "$@" || true
-}
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
@@ -379,34 +365,29 @@ test_validate_missing_baseline_tar() {
 # -------------------------
 
 # snapshot_copy_worktree (primary)
-run_test "worktree: copies tracked files"              test_worktree_copies_tracked_files
-run_test "worktree: excludes gitignored files"         test_worktree_excludes_gitignored_files
-run_test "worktree: includes untracked non-ignored"    test_worktree_includes_untracked_non_ignored_files
-run_test "worktree: copies edited version of tracked"  test_worktree_copies_edited_version_of_tracked_file
-run_test "worktree: handles unstaged deletion"         test_worktree_handles_unstaged_deletion
-run_test "worktree: handles unstaged move"             test_worktree_handles_unstaged_move
-run_test "worktree: excludes .git directory"           test_worktree_excludes_git_directory
-run_test "worktree: creates destination if absent"     test_worktree_creates_destination_if_absent
-run_test "worktree: preserves directory structure"     test_worktree_preserves_directory_structure
-run_test "worktree: submodule detection"               test_worktree_submodule_detected
+run_test              test_worktree_copies_tracked_files
+run_test         test_worktree_excludes_gitignored_files
+run_test    test_worktree_includes_untracked_non_ignored_files
+run_test  test_worktree_copies_edited_version_of_tracked_file
+run_test         test_worktree_handles_unstaged_deletion
+run_test             test_worktree_handles_unstaged_move
+run_test           test_worktree_excludes_git_directory
+run_test     test_worktree_creates_destination_if_absent
+run_test     test_worktree_preserves_directory_structure
+run_test               test_worktree_submodule_detected
 
 # snapshot_archive_head
-run_test "archive_head: produces baseline.tar"             test_archive_head_produces_tar
-run_test "archive_head: tar contains committed files"      test_archive_head_tar_contains_committed_files
-run_test "archive_head: tar excludes untracked files"      test_archive_head_tar_excludes_untracked_files
-run_test "archive_head: tar excludes unstaged edits"       test_archive_head_tar_excludes_unstaged_edits
-run_test "archive_head: fails with no commits"             test_archive_head_fails_with_no_commits
-run_test "archive_head: creates destination if absent"     test_archive_head_creates_dest_if_absent
+run_test             test_archive_head_produces_tar
+run_test      test_archive_head_tar_contains_committed_files
+run_test      test_archive_head_tar_excludes_untracked_files
+run_test       test_archive_head_tar_excludes_unstaged_edits
+run_test             test_archive_head_fails_with_no_commits
+run_test     test_archive_head_creates_dest_if_absent
 
 # snapshot_validate
-run_test "validate passes"                  test_validate_passes
-run_test "validate missing dir"             test_validate_missing_dir
-run_test "validate empty dir"               test_validate_empty_dir
-run_test "validate missing baseline.tar"    test_validate_missing_baseline_tar
+run_test                  test_validate_passes
+run_test             test_validate_missing_dir
+run_test               test_validate_empty_dir
+run_test    test_validate_missing_baseline_tar
 
-# -------------------------
-# Summary
-# -------------------------
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done

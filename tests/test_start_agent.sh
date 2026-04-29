@@ -17,23 +17,10 @@
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-PASS=0
-FAIL=0
-
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  local NAME="$1"
-  shift
-  echo "[ $NAME ]"
-  "$@" || true
-}
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
@@ -478,35 +465,30 @@ test_docker_compose_template_has_container_names() {
 echo "=== start_agent.sh tests (session identity derivation + compose template) ==="
 echo
 
-run_test "checkpoint_tag_created" test_checkpoint_tag_created
-run_test "checkpoint_tag_points_to_correct_commit" test_checkpoint_tag_points_to_correct_commit
-run_test "checkpoint_pruning_keeps_five" test_checkpoint_pruning_keeps_five
-run_test "checkpoint_pruning_keeps_newest" test_checkpoint_pruning_keeps_newest
-run_test "checkpoint_no_pruning_when_under_limit" test_checkpoint_no_pruning_when_under_limit
-run_test "sanitized_host_branch_from_master_branch" test_sanitized_host_branch_from_master_branch
-run_test "sanitized_host_branch_from_main_branch" test_sanitized_host_branch_from_main_branch
-run_test "sanitized_host_branch_sanitizes_feature_branch" test_sanitized_host_branch_sanitizes_feature_branch
-run_test "sanitized_host_branch_sanitizes_nested_branch" test_sanitized_host_branch_sanitizes_nested_branch
-run_test "sanitized_host_branch_exported" test_sanitized_host_branch_exported
-run_test "sanitized_host_branch_detached_head" test_sanitized_host_branch_detached_head
-run_test "worktree_id_derived_from_path" test_worktree_id_derived_from_path
-run_test "worktree_id_stable_across_runs" test_worktree_id_stable_across_runs
-run_test "worktree_id_different_for_different_paths" test_worktree_id_different_for_different_paths
-run_test "repo_commit_captured" test_repo_commit_captured
-run_test "repo_commit_is_full_sha" test_repo_commit_is_full_sha
+run_test test_checkpoint_tag_created
+run_test test_checkpoint_tag_points_to_correct_commit
+run_test test_checkpoint_pruning_keeps_five
+run_test test_checkpoint_pruning_keeps_newest
+run_test test_checkpoint_no_pruning_when_under_limit
+run_test test_sanitized_host_branch_from_master_branch
+run_test test_sanitized_host_branch_from_main_branch
+run_test test_sanitized_host_branch_sanitizes_feature_branch
+run_test test_sanitized_host_branch_sanitizes_nested_branch
+run_test test_sanitized_host_branch_exported
+run_test test_sanitized_host_branch_detached_head
+run_test test_worktree_id_derived_from_path
+run_test test_worktree_id_stable_across_runs
+run_test test_worktree_id_different_for_different_paths
+run_test test_repo_commit_captured
+run_test test_repo_commit_is_full_sha
 
 
 # Container labels tests (Change 5)
 # Note: These tests verify the template structure directly since docker compose
 # config requires a running Docker daemon which may not be available in test env.
-run_test "docker_compose_template_has_labels_anchor" test_docker_compose_template_has_labels_anchor
-run_test "docker_compose_template_sandbox_uses_anchor" test_docker_compose_template_sandbox_uses_anchor
-run_test "docker_compose_template_agent_uses_anchor" test_docker_compose_template_agent_uses_anchor
-run_test "docker_compose_template_has_container_names" test_docker_compose_template_has_container_names
+run_test test_docker_compose_template_has_labels_anchor
+run_test test_docker_compose_template_sandbox_uses_anchor
+run_test test_docker_compose_template_agent_uses_anchor
+run_test test_docker_compose_template_has_container_names
 
-echo
-echo "Results: $PASS passed, $FAIL failed"
-
-if [[ "$FAIL" -gt 0 ]]; then
-  exit 1
-fi
+test_done

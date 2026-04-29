@@ -17,18 +17,10 @@ source "$SCRIPT_DIR/../libs/draft_workflow.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
-PASS=0
-FAIL=0
+source "$SCRIPT_DIR/libs/test_common.sh"
+
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  echo "[ $1 ]"
-  $1 || true
-}
 
 # current_branch DIR
 _current_branch() {
@@ -654,6 +646,4 @@ run_test test_reject_returns_to_source
 run_test test_reject_deletes_draft_branch
 run_test test_reject_rejects_non_draft
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-exit $FAIL
+test_done

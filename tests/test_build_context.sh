@@ -20,11 +20,7 @@ source "$REPO_ROOT/libs/containers.sh"
 # Test harness
 # ---------------------------------------------------------------------------
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 assert_exit_zero() {
     local label="$1"; shift
@@ -341,8 +337,4 @@ cleanup "$REPO"
 # Summary
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "=== Results: $PASS passed, $FAIL failed ==="
-echo ""
-
-[[ $FAIL -eq 0 ]]
+test_done

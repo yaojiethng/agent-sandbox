@@ -76,7 +76,7 @@ refresh:
 
 .PHONY: test
 test:
-	bash scripts/run_tests.sh
+	VERBOSE=$(VERBOSE) bash scripts/run_tests.sh
 
 # -------------------------
 # Help
