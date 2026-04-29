@@ -74,27 +74,9 @@ The apply workflow is consolidated under `agent-sandbox.sh`: `draft`, `confirm`,
 
 A durable `sandbox/.git/SESSION_STATE` key-value file persists `session_ts` and `init_sha` across the container lifetime, replacing the standalone `INIT_SHA` file and eliminating malformed artefact paths when environment variables are unset.
 
-**Pending — `package-branch` skill amendments:**
+The `package-branch` skill instructions were amended to use the container-lifetime boundary framing ("all commits since `init_sha`") and the `SESSION_TS` fallback logic now correctly directs reading from `SESSION_STATE` first, with env-var fallback.
 
-Session log analysis identified two instructions in the skill that caused nonproductive agent reasoning. The SESSION_STATE dependency is now resolved; the skill already references `SESSION_STATE` but the following amendments remain:
-
-- [x] Reframe scope description in `package-branch` skill: "all commits since `init_sha`" (container-lifetime boundary, not conversation boundary); apply the same framing to the migration guide scope instruction
-- [x] Verify `SESSION_TS` fallback instruction is clear: read from `SESSION_STATE` file first, fall back to env var, note omission if neither is available — do not loop attempting to derive it
-
-**Pending — test suite repair:**
-
-All failing tests repaired. Root causes confirmed and fixed independently:
-
-- [x] `tests/test_checkpoint.sh` — test file was stale, still testing functions removed in `20260422-04-impl-remove_checkpoint_tags.md`. Fixed by removing stale tests; 4 passed, 0 failed.
-- [x] `tests/test_build_context.sh` — `libs/build_context.sh` removed, functions moved to `libs/containers.sh` as `build_context_sandbox`/`build_context_agent`. Fixed by updating test to source `containers.sh` and use new function names; 32 passed, 0 failed.
-- [x] `tests/test_capability_layer.sh` — requires Docker, unavailable in test environment. Fixed by adding early-skip logic; exits 0 with skip message when Docker unavailable.
-- [x] `tests/test_provider_entrypoint.sh` — outer shell had `AGENT_HOME`/`PROVIDER_NAME`/`PROVIDER_CONFIG_DIR` pre-set, causing missing-var tests to inherit them. Fixed by explicitly `unset`-ting target vars in subshells; stdin test rewritten to pipe explicit input. 11 passed, 0 failed.
-- [x] `tests/test_package_diff.sh` — `package_diff.sh` did not read `SESSION_TS` from `SESSION_STATE`, producing `...-test-` output paths. Fixed by implementing `session_state_read()` in `libs/session.sh`, wiring it into `package_diff.sh`, and fixing output path construction. 14 passed, 0 failed.
-- [x] `session_state_read()` missing function — implemented in `libs/session.sh` with key=value parser from `.git/SESSION_STATE`.
-- [x] `tests/test_start_agent.sh` — `SANITIZED_HOST_BRANCH` leaked into outer shell. Fixed by `unset` after test.
-- [x] All `tests/test_*.sh` hardened: `mktemp -d` changed to `mktemp -d /tmp/XXXXXX` to prevent fixture resolution to `/opt/provider-config`.
-
-**Grand total: 248 passed, 0 failed across 13 test files.**
+The test suite was fully repaired: all 13 test files pass (248 total assertions), including fixes for stale checkpoint tests, build-context function relocation, Docker-unavailable skip logic, provider-entrypoint environment leakage, `session_state_read` implementation, and `mktemp` hardening across all test files.
 
 **Pending — interactive confirmation flag:**
 
@@ -123,9 +105,9 @@ The two-layer model includes a host→container direction: operator runs `packag
 
 Design complete — see `docs/discussions/spec_test_infrastructure.md`. Depends on the apply_workspace refactor establishing `tests/libs/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh` before these are added. Recommended after test suite repair so the runner has a clean baseline.
 
-- [ ] Write `scripts/run_tests.sh` — discovers and runs all `tests/test_*.sh` files in a subshell, prints per-file pass/fail and totals, exits 1 if any fail; excludes `tests/libs/`
-- [ ] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
-- [ ] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/libs/`) for references and prints which test files cover each; explicitly reports files with no coverage
+- [x] Write `scripts/run_tests.sh` — discovers and runs all `tests/test_*.sh` files in a subshell, prints per-file pass/fail and totals, exits 1 if any fail; excludes `tests/libs/`
+- [x] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
+- [x] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/libs/`) for references and prints which test files cover each; explicitly reports files with no coverage
 
 #### M2.5 — Vault Capability Layer Prototype
 
