@@ -28,6 +28,50 @@ validate_project_dir() {
   fi
 }
 
+# session_state_write SANDBOX_DIR KEY VALUE
+#   Writes or updates a key in the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
+#   The file format is one key=value pair per line.
+#   If the key already exists, its value is updated; otherwise it is appended.
+#   Args:
+#     $1  SANDBOX_DIR  — path to sandbox directory
+#     $2  KEY          — key to write
+#     $3  VALUE        — value to write
+session_state_write() {
+  local SANDBOX_DIR="$1"
+  local KEY="$2"
+  local VALUE="$3"
+  local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
+
+  if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+    echo "session_state_write: $SANDBOX_DIR/.git does not exist" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$STATE_FILE" ]]; then
+    echo "${KEY}=${VALUE}" > "$STATE_FILE"
+    return 0
+  fi
+
+  local UPDATED=0
+  local TMPFILE
+  TMPFILE=$(mktemp)
+
+  while IFS='=' read -r k v; do
+    if [[ "$k" == "$KEY" ]]; then
+      echo "${KEY}=${VALUE}" >> "$TMPFILE"
+      UPDATED=1
+    else
+      echo "${k}=${v}" >> "$TMPFILE"
+    fi
+  done < "$STATE_FILE"
+
+  if [[ "$UPDATED" -eq 0 ]]; then
+    echo "${KEY}=${VALUE}" >> "$TMPFILE"
+  fi
+
+  mv "$TMPFILE" "$STATE_FILE"
+}
+
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
 #   The file format is one key=value pair per line.

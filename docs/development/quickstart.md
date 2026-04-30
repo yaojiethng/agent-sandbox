@@ -121,29 +121,59 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 ## Recovery
 
-If a session produces a bad diff that corrupts your repository after apply, recover using the checkpoint tag:
+### Missing diff — `make apply` cannot find a diff file
 
 ```bash
-# Find the latest checkpoint tag
-LATEST=$(git tag --list "agent-checkpoint/*" | sort | tail -n 1)
+# List all available session artefacts
+ls -la .workspace/session-diffs/
 
-# Reset to pre-session state
-git reset --hard "$LATEST"
+# Apply from a specific session by name
+make apply SESSION=20260420-120000-main
+
+# Apply from autosave channel
+make apply SESSION=20260420-120000-main AUTOSAVE=1
+
+# Apply an arbitrary diff file directly
+make apply DIFF=/path/to/my-diff.diff
 ```
 
-Checkpoint tags are created automatically before each session and stored as `agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS`. The worktree ID is a short hash of your project path, ensuring tags are namespaced per-worktree. The 5 most recent tags per worktree are kept; older tags are pruned.
-
-To see all available checkpoint tags for your worktree:
+### Wrong branch after `make draft`
 
 ```bash
-git tag --list 'agent-checkpoint/*'
+# Check which branch you are on
+git branch
+
+# If on a draft branch and you want to discard it
+make reject
+
+# If already committed changes on the draft branch, save them first
+git checkout -b saved-changes
+make reject   # returns to source branch
+git cherry-pick <commit-from-saved-changes>  # bring changes back manually
 ```
 
-To recover to a specific checkpoint:
+### Rebase conflict during `make confirm`
 
 ```bash
-git reset --hard agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
+# confirm stops and prints recovery commands on conflict
+# Typical recovery:
+git rebase --abort          # abort the failed rebase
+make reject                 # discard the draft branch
+# Edit the failing diff in .workspace/session-diffs/<session>/session/patches/
+make draft SESSION=<name>   # re-create the draft branch with the fixed diff
 ```
+
+### Bad diff applied to working tree
+
+`make apply` does not create commits — it only modifies the working tree. If the result is wrong:
+
+```bash
+# Discard all uncommitted changes
+git checkout -- .
+git clean -fd
+```
+
+The host repository is never modified by the container directly. All changes flow through diff files that you review before applying.
 
 ---
 

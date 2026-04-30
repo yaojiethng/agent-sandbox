@@ -12,7 +12,8 @@ make_export_with_diffs() {
   mkdir -p "$EXPORT_DIR/session/patches"
 
   echo "20260420-120000" > "$EXPORT_DIR/session/EXPORT-TIME.txt"
-  > "$EXPORT_DIR/session/changes.diff"
+  > "$EXPORT_DIR/session/uncommitted.diff"
+  > "$EXPORT_DIR/session/all-changes.diff"
 
   for i in $(seq 1 "$NUM_DIFFS"); do
     local PADDING
@@ -36,7 +37,7 @@ make_diffs_session() {
 
   mkdir -p "$DIFFS_DIR/$SESSION_NAME"
 
-  cat > "$DIFFS_DIR/$SESSION_NAME/changes.diff" <<'EOF'
+  cat > "$DIFFS_DIR/$SESSION_NAME/uncommitted.diff" <<'EOF'
 diff --git a/output-file.txt b/output-file.txt
 new file mode 100644
 --- /dev/null
@@ -62,7 +63,7 @@ make_changes_session() {
 
   mkdir -p "$CHANGES_DIR/$SESSION_NAME/session"
 
-  cat > "$CHANGES_DIR/$SESSION_NAME/session/changes.diff" <<'EOF'
+  cat > "$CHANGES_DIR/$SESSION_NAME/session/uncommitted.diff" <<'EOF'
 diff --git a/output-file.txt b/output-file.txt
 new file mode 100644
 --- /dev/null

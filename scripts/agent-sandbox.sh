@@ -8,10 +8,14 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name|path>] [--diff=<path>] [--force]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name|path>] [--branch-summary=<slug>]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--channel=<c>] [--branch=<n>] [--session=<name>] [--diff=<path>] [--force]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<c>] [--session=<name>] [--branch-from=<hash>] [--diffs=<range>] [--branch-summary=<slug>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
+#
+# --channel values:
+#   draft:  session (default), autosave, bundles
+#   apply:  diffs (default), autosave, session
 #
 # --target accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --target=all
@@ -53,6 +57,7 @@ FORCE=false
 BRANCH_FROM=""
 DIFFS=""
 BRANCH_SUMMARY=""
+CHANNEL=""
 PASSTHROUGH=()
 
 parse_flags() {
@@ -68,6 +73,7 @@ parse_flags() {
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
       --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
+      --channel=*)     CHANNEL="${ARG#--channel=}" ;;
       --force)         FORCE=true ;;
       --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
       --rebuild)       REBUILD=true ;;
@@ -95,6 +101,184 @@ rebuild_if_requested() {
     build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
     build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $([ "$REBUILD_BASE" == true ] && echo "--rebuild-base")
   fi
+}
+
+# -------------------------
+# Channel routers
+# -------------------------
+
+# resolve_source_for_draft SANDBOX_DIR CHANNEL SESSION_ARG
+#   Resolves a SOURCE_DIR (directory containing patches/) and SESSION_NAME
+#   for the draft command. Prints tab-separated SOURCE_DIR and SESSION_NAME.
+#   Returns 1 on error.
+resolve_source_for_draft() {
+  local SANDBOX_DIR="$1"
+  local CHANNEL="$2"
+  local SESSION_ARG="$3"
+
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local BASE_DIR=""
+  local SUBDIR=""
+
+  case "$CHANNEL" in
+    session)
+      BASE_DIR="$WORKSPACE_DIR/session-diffs"
+      SUBDIR="session"
+      ;;
+    autosave)
+      BASE_DIR="$WORKSPACE_DIR/session-diffs"
+      SUBDIR="autosave"
+      ;;
+    bundles)
+      BASE_DIR="$WORKSPACE_DIR/output/bundles"
+      SUBDIR=""
+      ;;
+    *)
+      echo "Error: unknown channel for draft: $CHANNEL" >&2
+      echo "  Valid: session, autosave, bundles" >&2
+      return 1
+      ;;
+  esac
+
+  if [[ -n "$SESSION_ARG" ]]; then
+    if [[ "$SESSION_ARG" == /* ]]; then
+      echo "Error: --session does not accept absolute paths. Use a session name." >&2
+      return 1
+    fi
+
+    local TARGET_DIR
+    if [[ -n "$SUBDIR" ]]; then
+      TARGET_DIR="$BASE_DIR/$SESSION_ARG/$SUBDIR"
+    else
+      TARGET_DIR="$BASE_DIR/$SESSION_ARG"
+    fi
+
+    if [[ ! -d "$TARGET_DIR" ]]; then
+      echo "Error: session not found: $TARGET_DIR" >&2
+      return 1
+    fi
+
+    local SESSION_NAME
+    if [[ -n "$SUBDIR" ]]; then
+      SESSION_NAME=$(basename "$(dirname "$TARGET_DIR")")
+    else
+      SESSION_NAME=$(basename "$TARGET_DIR")
+    fi
+
+    printf '%s\t%s\n' "$TARGET_DIR" "$SESSION_NAME"
+    return 0
+  fi
+
+  # Auto-resolve: find latest directory with patches/*.diff
+  if [[ ! -d "$BASE_DIR" ]]; then
+    echo "Error: no exports found for channel '$CHANNEL'" >&2
+    return 1
+  fi
+
+  local LATEST=""
+  while IFS= read -r CANDIDATE; do
+    [[ -z "$CANDIDATE" ]] && continue
+    local CHECK_DIR
+    if [[ -n "$SUBDIR" ]]; then
+      CHECK_DIR="$CANDIDATE/$SUBDIR"
+    else
+      CHECK_DIR="$CANDIDATE"
+    fi
+    if [[ -d "$CHECK_DIR/patches" ]] && \
+       ls "$CHECK_DIR/patches/"*.diff >/dev/null 2>&1; then
+      LATEST="$CHECK_DIR"
+      break
+    fi
+  done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | sort -r)
+
+  if [[ -z "$LATEST" ]]; then
+    echo "Error: no completed session found for channel '$CHANNEL'" >&2
+    echo "  Directory: $BASE_DIR" >&2
+    return 1
+  fi
+
+  local SESSION_NAME
+  if [[ -n "$SUBDIR" ]]; then
+    SESSION_NAME=$(basename "$(dirname "$LATEST")")
+  else
+    SESSION_NAME=$(basename "$LATEST")
+  fi
+
+  printf '%s\t%s\n' "$LATEST" "$SESSION_NAME"
+}
+
+# resolve_diff_for_apply SANDBOX_DIR CHANNEL SESSION_ARG
+#   Resolves the file path to uncommitted.diff for the apply command.
+#   Prints the file path. Returns 1 on error.
+resolve_diff_for_apply() {
+  local SANDBOX_DIR="$1"
+  local CHANNEL="$2"
+  local SESSION_ARG="$3"
+
+  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
+  local BASE_DIR=""
+  local SUBDIR=""
+
+  case "$CHANNEL" in
+    diffs)
+      BASE_DIR="$WORKSPACE_DIR/output/diffs"
+      SUBDIR=""
+      ;;
+    autosave)
+      BASE_DIR="$WORKSPACE_DIR/session-diffs"
+      SUBDIR="autosave"
+      ;;
+    session)
+      BASE_DIR="$WORKSPACE_DIR/session-diffs"
+      SUBDIR="session"
+      ;;
+    *)
+      echo "Error: unknown channel for apply: $CHANNEL" >&2
+      echo "  Valid: diffs, autosave, session" >&2
+      return 1
+      ;;
+  esac
+
+  local TARGET_DIR=""
+
+  if [[ -n "$SESSION_ARG" ]]; then
+    if [[ "$SESSION_ARG" == /* ]]; then
+      echo "Error: --session does not accept absolute paths. Use a session name." >&2
+      return 1
+    fi
+
+    if [[ -n "$SUBDIR" ]]; then
+      TARGET_DIR="$BASE_DIR/$SESSION_ARG/$SUBDIR"
+    else
+      TARGET_DIR="$BASE_DIR/$SESSION_ARG"
+    fi
+
+    if [[ ! -d "$TARGET_DIR" ]]; then
+      echo "Error: session not found: $TARGET_DIR" >&2
+      return 1
+    fi
+  else
+    # Auto-resolve: find latest directory
+    if [[ ! -d "$BASE_DIR" ]]; then
+      echo "Error: no exports found for channel '$CHANNEL'" >&2
+      return 1
+    fi
+
+    TARGET_DIR=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
+    if [[ -z "$TARGET_DIR" ]]; then
+      echo "Error: no sessions found for channel '$CHANNEL'" >&2
+      return 1
+    fi
+  fi
+
+  local DIFF_FILE="$TARGET_DIR/uncommitted.diff"
+
+  if [[ ! -f "$DIFF_FILE" ]]; then
+    echo "Error: uncommitted.diff not found: $DIFF_FILE" >&2
+    return 1
+  fi
+
+  echo "$DIFF_FILE"
 }
 
 # -------------------------
@@ -209,7 +393,17 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    apply_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$DIFF_ARG" "$BRANCH" "$FORCE"
+
+    [[ -z "$CHANNEL" ]] && CHANNEL="diffs"
+
+    local DIFF_FILE=""
+    if [[ -n "$DIFF_ARG" ]]; then
+      DIFF_FILE="$DIFF_ARG"
+    else
+      DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+    fi
+
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
     ;;
 
   draft)
@@ -218,7 +412,15 @@ case "$SUBCOMMAND" in
       echo "Error: --project and --sandbox are required"
       exit 1
     fi
-    draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+
+    [[ -z "$CHANNEL" ]] && CHANNEL="session"
+
+    local RESOLVE_RESULT SOURCE_DIR SESSION_NAME
+    RESOLVE_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+    SOURCE_DIR="${RESOLVE_RESULT%%$'\t'*}"
+    SESSION_NAME="${RESOLVE_RESULT##*$'\t'}"
+
+    draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$SESSION_NAME"
     ;;
 
   confirm)

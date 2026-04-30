@@ -356,6 +356,206 @@ Each worktree is an independent harness instance with its own `SANDBOX_DIR`. Ses
 
 ---
 
+## Contract Amendments (Session A.1, A.2, A.3 & B)
+
+This section records amendments agreed across design sessions `20260429-03-design-command_shape_and_contract.md` and `20260429-04-impl-command_contract_refactor.md`. The original contract above remains valid for the portions it covers; this section supersedes specific clauses where noted.
+
+Refactor work is partitioned into three implementation chunks (A.1, A.2, A.3). A.2 depends on A.1; A.3 depends on both. Session B (interactive) depends on all three.
+
+---
+
+### A.1 — Data Model: Output Format Unification
+
+*Theme: "What gets written where" — no CLI changes, no user-visible behaviour change.*
+
+#### Motivation
+
+The current output format has drifted across callers: `diff_on_exit` writes `session/changes.diff` + `session/staged.diff` + `session/patches/`; `diff_on_autosave` writes `autosave/changes.diff` + `autosave/patches/`; `package_diff` writes `output/diffs/<tag>/changes.diff`; `package_branch` writes flat `.diff` files to `output/bundles/<tag>/`. The amendments below unify all output to a single format, eliminate the sweep commit, and consolidate session identity into `SESSION_STATE`.
+
+#### Unified output format
+
+Every packaging operation (whether triggered by EXIT trap, autosave, or direct CLI) produces:
+
+```
+<output-dir>/
+  uncommitted.diff     — git diff HEAD (uncommitted working tree vs HEAD)
+  all-changes.diff     — git diff INIT_SHA (all changes since session init)
+  patches/
+    0001-<sha>.diff
+    0002-<sha>.diff
+    ...
+```
+
+- `uncommitted.diff` replaces `changes.diff`
+- `all-changes.diff` replaces `staged.diff`
+- `patches/` replaces flat `.diff` output in bundles
+- No sweep commit: `diff_on_exit` no longer calls `diff_commit_pending`; uncommitted changes are captured directly by `uncommitted.diff`
+
+#### `package_branch` dispatcher
+
+`package_branch` becomes a dispatcher function that orchestrates four operations:
+
+1. `package_commits(SANDBOX_DIR, INIT_SHA, OUTPUT_DIR/patches/)` — old `package_branch` logic, writes numbered diffs
+2. `write_uncommitted_diff(SANDBOX_DIR, OUTPUT_DIR/uncommitted.diff)` — git diff HEAD
+3. `write_all_changes_diff(SANDBOX_DIR, OUTPUT_DIR/all-changes.diff)` — git diff INIT_SHA
+4. `write_changed_files(SANDBOX_DIR, INIT_SHA, OUTPUT_DIR)` — copies all changed files since INIT_SHA into `changed-files/`, with `MANIFEST.txt`
+
+Called by:
+- `diff_on_exit` (EXIT trap)
+- `diff_on_autosave` (autosave loop)
+- `package_branch.sh` direct mode (CLI)
+
+#### `package_diff` changes
+
+- Rename output file from `changes.diff` to `uncommitted.diff`
+- Extract reusable diff-writing helpers into `libs/diff.sh`
+- Accept `OUTPUT_PATH` argument to override default output directory
+
+#### `diff_on_exit` / `diff_on_autosave` changes
+
+- Drop `BASELINE_SHA` parameter (replaced by `INIT_SHA` read from `SESSION_STATE`)
+- Drop `diff_commit_pending` call (no sweep)
+- Call `package_branch` dispatcher for unified output
+- `diff_on_exit` sweeps nothing; `uncommitted.diff` captures pre-sweep state
+
+#### `diff_generate` / `diff_format_patch`
+
+- Rename `BASELINE_SHA` parameter to `since_sha` (generic commit boundary)
+- Callers pass `INIT_SHA` as the `since` argument
+
+#### SESSION_STATE consolidation
+
+- `snapshot_init_git` writes `session_ts` and `init_sha` to `sandbox/.git/SESSION_STATE`
+- `sandbox/.git/INIT_SHA` file is removed
+- All `INIT_SHA` readers updated to read from `SESSION_STATE`
+- `session_state_write` function added to `libs/session.sh`
+
+#### `changed-files/` as separate operation
+
+`write_changed_files(SANDBOX_DIR, SINCE_SHA, OUTPUT_DIR)` is an accessibility function that produces `OUTPUT_DIR/changed-files/` containing:
+
+- `MANIFEST.txt` — sorted list of unique file paths changed since `SINCE_SHA`
+- Working tree copies of each file, preserving directory structure relative to repo root
+
+Two-source file list: `git diff --name-only SINCE_SHA` (committed + staged + unstaged) + `git ls-files --others` (untracked). Deleted files are skipped. Deduplicated via `sort -u`.
+
+Called by:
+- `package_branch` dispatcher (with `SINCE_SHA=INIT_SHA`)
+- `package_diff.sh` (with `SINCE_SHA=HEAD`)
+
+Defined separately in `libs/diff.sh` so it can be added/removed without affecting the core diff contract.
+
+---
+
+### A.2 — CLI Contract: `--channel` Flag and Routing
+
+*Theme: "How the user invokes it" — assumes A.1 output format is in place.*
+
+**Depends on: A.1**
+
+#### `--session` becomes name-only; single `--channel` flag
+
+`--session` accepts names only, resolved under channel-specific base directories. Absolute paths are removed. A single `--channel` flag selects the channel.
+
+| Command | `--channel` values | Resolves under |
+|---|---|---|
+| `draft` | `session` (default), `autosave`, `bundles` | `$CHANGES_DIR/<session>/session/` or `.../autosave/` or `$BUNDLES_DIR/<session>/` |
+| `apply` | `diffs` (default), `autosave`, `session` | `$DIFFS_DIR/<tag>/` or `$CHANGES_DIR/<session>/autosave/` or `.../session/` |
+
+Escape hatch for arbitrary files: `--diff=<path>` on `apply` bypasses all resolution.
+
+#### Unified `SOURCE_DIR` contract
+
+Every directory passed to `draft_run` conforms to:
+
+```
+SOURCE_DIR/
+  patches/
+    0001-*.diff
+    ...
+  uncommitted.diff    (optional)
+```
+
+`draft_run` applies `patches/*.diff` sequentially, then `uncommitted.diff` if present.
+
+#### `apply_run` contract
+
+`apply_run` receives a file path directly. It has no hardcoded filename — the caller (router) decides which file to pass. The default resolved path is `uncommitted.diff` for all channels, but `--diff=<path>` bypasses all resolution and passes an arbitrary file.
+
+- `--channel=diffs` → router resolves `$DIFFS_DIR/<tag>/uncommitted.diff`, passes to `apply_run`
+- `--channel=autosave` → router resolves `$CHANGES_DIR/<session>/autosave/uncommitted.diff`, passes to `apply_run`
+- `--channel=session` → router resolves `$CHANGES_DIR/<session>/session/uncommitted.diff`, passes to `apply_run`
+- `--diff=<path>` → bypasses router entirely; `<path>` passed directly to `apply_run`
+
+#### Router functions
+
+Channel resolution lives in `scripts/agent-sandbox.sh` (the CLI entry point), not in the workflow libraries:
+
+- `resolve_source_for_draft SANDBOX_DIR CHANNEL SESSION_ARG` — returns tab-separated `SOURCE_DIR` and `SESSION_NAME`. Validates that `--session` is name-only (rejects absolute paths).
+- `resolve_diff_for_apply SANDBOX_DIR CHANNEL SESSION_ARG` — returns file path to `uncommitted.diff`.
+
+Both functions auto-resolve the latest directory when `--session` is omitted, and error clearly when no matching export is found.
+
+#### Makefile flag mapping
+
+| Flag | Maps to |
+|---|---|
+| `AUTOSAVE=1` | `--channel=autosave` |
+| `BUNDLE=1` | `--channel=bundles` |
+
+Mutually exclusive. No flag needed for default channel.
+
+---
+
+### A.3 — Documentation and Recovery
+
+*Theme: "How the operator recovers" — assumes A.1 and A.2 are complete.*
+
+**Depends on: A.1 + A.2**
+
+#### Emergency recovery helpers
+
+Thin wrapper snippets bypassing channel routing, documented in `docs/development/quickstart.md`:
+
+```bash
+# Draft from explicit path (bypass --session/--channel)
+source "$AGENT_SANDBOX_REPO/libs/draft_workflow.sh"
+draft_run "$PROJECT_DIR" "$EXPLICIT_SOURCE_DIR" ""
+
+# Apply explicit diff (bypass --session/--channel)
+source "$AGENT_SANDBOX_REPO/libs/diff_workflow.sh"
+apply_run "$PROJECT_DIR" "$EXPLICIT_DIFF_FILE" "" false
+```
+
+These are escape hatches for manual recovery. The primary interface remains `make draft` / `make apply`.
+
+#### Design document maintenance
+
+Update `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` to remove superseded sections (old Packaging Commands, old Apply Workflow) and replace with the amended contract. Preserve the original in `design_apply_workflow_and_baseline_advancement.md` with SUPERSEDED markers.
+
+---
+
+### B — Interactive Mode
+
+**Depends on: A.1 + A.2 + A.3**
+
+- Add `interactive_select_sessions` utility
+- Wire `--interactive` into `agent-sandbox.sh` for `draft` and `apply`
+- Table rendering for `draft` (recent sessions with availability indicators)
+- Default-on-empty-input, pre-filled from `SESSION=<name>`
+- Abort on `q`/`n`
+- For `apply`: show resolved `uncommitted.diff` path, prompt for confirmation
+
+---
+
+### Open questions
+
+1. **Whether `package_diff` should cross-write into `session-diffs/<session>/session/uncommitted.diff`.** Currently `package_diff` (host CLI) writes to `output/diffs/` only. Cross-writing would make host-packaged uncommitted diffs available to `draft` via `--channel=session`. Channel-boundary decision; does not block A.1–A.3 or B.
+
+2. **Exact CLI flag names for `--channel` values.** `bundles`, `autosave`, `session`, `diffs` are confirmed. May be revised if shorter alternatives emerge during implementation.
+
+---
+
 ## Implementation Scope (Change 6)
 
 | File | Change |

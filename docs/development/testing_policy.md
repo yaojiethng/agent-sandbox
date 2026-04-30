@@ -219,7 +219,7 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 make_session() {
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
   mkdir -p "$SESSION_DIR/patches"
-  # ... create patches and staged.diff ...
+  # ... create patches and diff files ...
   
   rm -rf "$SANDBOX_DIR/.workspace"    # ← Deletes what we just created!
   mkdir -p "$SANDBOX_DIR/.workspace"
@@ -237,7 +237,7 @@ make_session() {
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
   rm -rf "$SESSION_DIR"               # ← Clean only this session
   mkdir -p "$SESSION_DIR/patches"
-  # ... create patches and staged.diff ...
+  # ... create patches and diff files ...
   
   echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 }

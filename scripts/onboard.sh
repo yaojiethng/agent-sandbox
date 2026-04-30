@@ -328,7 +328,7 @@ MAKEFILE_VERSION=${MAKEFILE_VERSION}
 INSTALL_DIR=~/.local/bin
 # Port for serve mode (make serve)
 SERVE_PORT=46553
-# Autosave interval in seconds (how often staged.diff is written mid-session)
+# Autosave interval in seconds (how often autosave/uncommitted.diff is written mid-session)
 AUTOSAVE_INTERVAL=60
 ENVEOF
 

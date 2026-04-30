@@ -525,11 +525,11 @@ test_sandbox_isolation() {
   fi
 }
 
-# INIT_SHA file creation — verify .git/INIT_SHA is written correctly
-test_init_git_creates_init_sha() {
-  local PROJECT="$FIXTURE_DIR/init_sha_project"
-  local SNAPSHOT="$FIXTURE_DIR/init_sha_snapshot"
-  local SANDBOX="$FIXTURE_DIR/init_sha_sandbox"
+# SESSION_STATE creation — verify .git/SESSION_STATE is written correctly
+test_init_git_creates_session_state() {
+  local PROJECT="$FIXTURE_DIR/session_state_project"
+  local SNAPSHOT="$FIXTURE_DIR/session_state_snapshot"
+  local SANDBOX="$FIXTURE_DIR/session_state_sandbox"
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
@@ -538,30 +538,37 @@ test_init_git_creates_init_sha() {
   local SHA
   SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
 
-  # Check INIT_SHA file exists
-  if [[ ! -f "$SANDBOX/.git/INIT_SHA" ]]; then
-    fail "init_git: .git/INIT_SHA file not created"
+  # Check SESSION_STATE file exists
+  if [[ ! -f "$SANDBOX/.git/SESSION_STATE" ]]; then
+    fail "init_git: .git/SESSION_STATE file not created"
     return
   fi
 
-  # Check INIT_SHA file contains correct SHA
+  # Check SESSION_STATE contains init_sha
   local FILE_SHA
-  FILE_SHA=$(cat "$SANDBOX/.git/INIT_SHA")
+  FILE_SHA=$(grep '^init_sha=' "$SANDBOX/.git/SESSION_STATE" | cut -d= -f2)
 
   if [[ "$FILE_SHA" == "$SHA" ]]; then
-    pass "init_git: INIT_SHA file contains correct SHA"
+    pass "init_git: SESSION_STATE contains correct init_sha"
   else
-    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, returned $SHA"
+    fail "init_git: init_sha mismatch: file has $FILE_SHA, returned $SHA"
   fi
 
-  # Check INIT_SHA matches actual first commit
+  # Check init_sha matches actual first commit
   local ACTUAL_SHA
   ACTUAL_SHA=$(git -C "$SANDBOX" rev-list --max-parents=0 HEAD)
 
   if [[ "$FILE_SHA" == "$ACTUAL_SHA" ]]; then
-    pass "init_git: INIT_SHA matches first commit SHA"
+    pass "init_git: init_sha in SESSION_STATE matches first commit SHA"
   else
-    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, actual first commit is $ACTUAL_SHA"
+    fail "init_git: init_sha mismatch: file has $FILE_SHA, actual first commit is $ACTUAL_SHA"
+  fi
+
+  # Check INIT_SHA file does NOT exist
+  if [[ ! -f "$SANDBOX/.git/INIT_SHA" ]]; then
+    pass "init_git: INIT_SHA file is not created"
+  else
+    fail "init_git: INIT_SHA file should not be created"
   fi
 }
 
@@ -587,6 +594,6 @@ run_test          test_init_git_case8_staged_new_file
 run_test             test_init_git_one_commit
 run_test            test_init_git_missing_baseline_tar
 run_test                         test_sandbox_isolation
-run_test           test_init_git_creates_init_sha
+run_test           test_init_git_creates_session_state
 
 test_done

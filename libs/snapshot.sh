@@ -3,6 +3,8 @@
 # Snapshot pipeline functions — sourced by start_agent.sh (host side)
 # and sandbox-entrypoint.sh (capability layer side).
 #
+# Depends on: libs/session.sh (for session_state_write)
+#
 # Host-side functions:
 #   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [primary — rsync-based]
 #   snapshot_archive_head     SOURCE_DIR  DEST_DIR   [produces baseline.tar for container]
@@ -202,6 +204,10 @@ snapshot_copy_to_sandbox() {
     || { echo "Error: failed to copy baseline.tar from $SNAPSHOT_DIR" >&2; return 1; }
 }
 
+# Source session.sh for session_state_write
+_PB_SNAPSHOT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_PB_SNAPSHOT_SCRIPT_DIR/session.sh"
+
 # -------------------------
 # snapshot_init_git
 # -------------------------
@@ -289,9 +295,11 @@ snapshot_init_git() {
   sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD) \
     || { echo "Error: could not retrieve baseline SHA" >&2; return 1; }
 
-  # Write INIT_SHA to .git/INIT_SHA for future diff packaging
-  echo "$sha" > "$SANDBOX_DIR/.git/INIT_SHA" \
-    || { echo "Error: failed to write INIT_SHA" >&2; return 1; }
+  # Write session identity to SESSION_STATE for future diff packaging
+  session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
+  if [[ -n "${SESSION_TS:-}" ]]; then
+    session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
+  fi
 
   # --- Step 2: overlay the working tree without touching the index ---
   # rsync copies the operator's working tree state (from SNAPSHOT_DIR, produced

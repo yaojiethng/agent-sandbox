@@ -38,10 +38,10 @@ draft_parse_folder_name() {
   SANITIZED_HOST_BRANCH="${BASENAME:16}"
 }
 
-# Read EXPORT-TIME.txt from session directory.
+# Read EXPORT-TIME.txt from source directory.
 draft_read_export_time() {
-  local SESSION_DIR="$1"
-  local EXPORT_TIME_FILE="${SESSION_DIR}/session/EXPORT-TIME.txt"
+  local SOURCE_DIR="$1"
+  local EXPORT_TIME_FILE="${SOURCE_DIR}/EXPORT-TIME.txt"
   if [[ -f "$EXPORT_TIME_FILE" ]]; then
     head -n 1 "$EXPORT_TIME_FILE"
   else
@@ -159,94 +159,51 @@ draft_validate_branch() {
 # =============================================================================
 # draft_run — create draft branch, apply patches
 # =============================================================================
+#
+# SOURCE_DIR must conform to the unified output format:
+#   SOURCE_DIR/
+#     patches/
+#       0001-*.diff
+#       ...
+#     uncommitted.diff    (optional)
+#     EXPORT-TIME.txt     (optional)
+#
+# SESSION_NAME is the folder basename used for metadata (e.g. 20260420-120000-main).
 
 draft_run() {
   local PROJECT_DIR="$1"
-  local SANDBOX_DIR="$2"
-  local SESSION_ARG="$3"
-  local BRANCH_FROM_ARG="$4"
-  local DIFFS_ARG="$5"
-  local BRANCH_SUMMARY="$6"
+  local SOURCE_DIR="$2"
+  local BRANCH_FROM_ARG="$3"
+  local DIFFS_ARG="$4"
+  local BRANCH_SUMMARY="$5"
+  local SESSION_NAME="$6"
 
   validate_project_dir "$PROJECT_DIR" || return 1
 
-  local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
-  local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
-
-  # --- Resolve session directory and patches directory ---
-  local EXPORT_DIR=""
-  local PATCHES_DIR=""
-
-  if [[ -n "$SESSION_ARG" ]]; then
-    local SESSION_PATH
-    SESSION_PATH=$(resolve_session_dir "$CHANGES_DIR" "$SESSION_ARG" "") || return 1
-
-    if [[ -d "$SESSION_PATH/session/patches" ]]; then
-      EXPORT_DIR="$SESSION_PATH"
-      PATCHES_DIR="$SESSION_PATH/session/patches"
-      echo "Using session: $SESSION_PATH (session/patches/)"
-    elif [[ -d "$SESSION_PATH/patches" ]]; then
-      PATCHES_DIR="$SESSION_PATH/patches"
-      EXPORT_DIR="$(dirname "$SESSION_PATH")"
-      echo "Using session: $SESSION_PATH (patches/)"
-    else
-      echo "Error: no patches/ directory found in $SESSION_PATH" >&2
-      echo "  Expected: $SESSION_PATH/session/patches/ or $SESSION_PATH/patches/" >&2
-      return 1
-    fi
-  else
-    # Auto-resolve: newest directory with session/patches/*.diff
-    if [[ ! -d "$CHANGES_DIR" ]]; then
-      echo "Error: changes directory not found: $CHANGES_DIR" >&2
-      echo "  Expected: $CHANGES_DIR/<timestamp>-<branch>/session/patches/" >&2
-      return 1
-    fi
-
-    local LATEST_SESSION="" LATEST_WITH_AUTOSAVE=""
-    while IFS= read -r CANDIDATE; do
-      [[ -z "$CANDIDATE" ]] && continue
-      if [[ -d "$CANDIDATE/session/patches" ]] && \
-         ls "$CANDIDATE/session/patches/"*.diff >/dev/null 2>&1; then
-        LATEST_SESSION="$CANDIDATE"
-        break
-      fi
-      if [[ -z "$LATEST_WITH_AUTOSAVE" ]] && [[ -d "$CANDIDATE/autosave" ]]; then
-        LATEST_WITH_AUTOSAVE="$CANDIDATE"
-      fi
-    done < <(find "$CHANGES_DIR" -mindepth 1 -maxdepth 1 -type d | sort -r)
-
-    if [[ -n "$LATEST_SESSION" ]]; then
-      EXPORT_DIR="$LATEST_SESSION"
-      PATCHES_DIR="$LATEST_SESSION/session/patches"
-      echo "Auto-resolved session: $LATEST_SESSION"
-    else
-      echo "Error: no completed session found in $CHANGES_DIR" >&2
-      echo "  Contents:" >&2
-      ls -1 "$CHANGES_DIR" >&2 2>/dev/null || echo "    (empty or unreadable)" >&2
-      if [[ -n "$LATEST_WITH_AUTOSAVE" ]]; then
-        echo "  Autosave checkpoint(s) found but no completed session." >&2
-        echo "  Latest autosave: $LATEST_WITH_AUTOSAVE/autosave/" >&2
-        echo "  Run again with --session=<path-to-autosave> to apply autosave diffs." >&2
-      fi
-      return 1
-    fi
+  if [[ ! -d "$SOURCE_DIR" ]]; then
+    echo "Error: source directory not found: $SOURCE_DIR" >&2
+    return 1
   fi
 
-  # --- Parse session identity from folder name ---
-  local EXPORT_BASENAME SESSION_TS SANITIZED_HOST_BRANCH
-  EXPORT_BASENAME=$(basename "$EXPORT_DIR")
-  draft_parse_folder_name "$EXPORT_BASENAME"
+  # --- Parse session identity from SESSION_NAME ---
+  local SESSION_TS SANITIZED_HOST_BRANCH
+  SESSION_TS="${SESSION_NAME:0:15}"
+  SANITIZED_HOST_BRANCH="${SESSION_NAME:16}"
 
   # --- Read export time ---
   local EXPORT_TIME
-  EXPORT_TIME=$(draft_read_export_time "$EXPORT_DIR")
+  EXPORT_TIME=$(draft_read_export_time "$SOURCE_DIR")
   [[ -z "$EXPORT_TIME" ]] && EXPORT_TIME="unknown"
 
   # --- Collect numbered diff files ---
+  local PATCHES_DIR="$SOURCE_DIR/patches"
   local DIFF_FILES=()
-  while IFS= read -r -d '' f; do
-    DIFF_FILES+=("$f")
-  done < <(find "$PATCHES_DIR" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]*.diff' -print0 | sort -z)
+
+  if [[ -d "$PATCHES_DIR" ]]; then
+    while IFS= read -r -d '' f; do
+      DIFF_FILES+=("$f")
+    done < <(find "$PATCHES_DIR" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]*.diff' -print0 | sort -z)
+  fi
 
   if [[ "${#DIFF_FILES[@]}" -eq 0 ]]; then
     echo "Error: no .diff files found in $PATCHES_DIR" >&2
@@ -359,10 +316,21 @@ draft_run() {
     git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
   done
 
+  # --- Apply uncommitted.diff if present ---
+  if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+    echo "  Applying: uncommitted.diff"
+    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$SOURCE_DIR/uncommitted.diff"); then
+      echo "Error: failed to apply uncommitted.diff" >&2
+      return 1
+    fi
+    git -C "$PROJECT_DIR" add -A
+    git -C "$PROJECT_DIR" commit -m "Apply uncommitted changes" --author="$AUTHOR"
+  fi
+
   # --- Operator hint ---
   echo ""
   echo "Draft branch created: $WORKING_BRANCH"
-  echo "Session: $EXPORT_DIR"
+  echo "Source: $SOURCE_DIR"
   echo "Diffs applied: ${#DIFF_FILES[@]}"
   echo "Branch point: ${FROM_HASH:0:7}"
   echo ""

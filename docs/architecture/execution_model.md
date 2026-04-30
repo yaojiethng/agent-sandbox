@@ -23,13 +23,16 @@ SANDBOX_DIR/
         └── <SESSION_TS>-<BRANCH>/    ← session-scoped directory
             ├── session/          ← exit artefacts
             │   ├── EXPORT-TIME.txt
-            │   ├── changes.diff
-            │   ├── staged.diff
-            │   └── patches/       ← per-commit .diff files
+            │   ├── uncommitted.diff
+            │   ├── all-changes.diff
+            │   ├── patches/       ← per-commit .diff files
+            │   └── changed-files/ ← working tree copies + MANIFEST.txt
             └── autosave/         ← checkpoint artefacts
                 ├── EXPORT-TIME.txt
-                ├── changes.diff
-                └── patches/       ← per-commit .diff files
+                ├── uncommitted.diff
+                ├── all-changes.diff
+                ├── patches/       ← per-commit .diff files
+                └── changed-files/ ← working tree copies + MANIFEST.txt
 
 Capability layer container (CWD: /home/agentuser/)
 ├── .snapshot/                 ← RO bind mount: project snapshot from host
@@ -154,7 +157,7 @@ flowchart TD
         TR["register EXIT + TERM traps"]
         WAIT["wait"]
         SIGTERM["<b>SIGTERM</b> → exit 0<br/>EXIT trap: commit"]
-        DIFF["<b>diff_on_exit</b><br/>changes.diff, staged.diff, patches/"]
+        DIFF["<b>diff_on_exit</b><br/>uncommitted.diff, all-changes.diff, patches/"]
     end
 
     subgraph RSN [Reasoning Layer]

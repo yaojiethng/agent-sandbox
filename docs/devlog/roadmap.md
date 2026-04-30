@@ -78,12 +78,73 @@ The `package-branch` skill instructions were amended to use the container-lifeti
 
 The test suite was fully repaired: all 13 test files pass (248 total assertions), including fixes for stale checkpoint tests, build-context function relocation, Docker-unavailable skip logic, provider-entrypoint environment leakage, `session_state_read` implementation, and `mktemp` hardening across all test files.
 
-**Pending — interactive confirmation flag:**
+**Done — Session A.1: Data model — output format unification:**
 
-Both `make apply` and `make draft` lack an operator review step before changes are applied. A shared `--interactive` flag (candidate for shared logic in `libs/session.sh` or equivalent) prints the resolved diff file(s) to be applied — one per line — then prompts for confirmation before proceeding. `make apply` always has one file; `make draft` has one or more. Output format should be consistent between the two commands.
+Unify all packaging output to a single format. No CLI changes, no user-visible behaviour change.
 
-- [ ] Implement `--interactive` flag in `apply_run` and `draft_run` — print resolved diff file list, prompt for confirmation, abort cleanly on rejection; extract print-and-prompt logic as a shared helper
-- [ ] Add `--interactive` to `make apply` and `make draft` Makefile targets; update `agent-sandbox.sh` to pass the flag through
+- [x] `snapshot_init_git`: write `session_ts` + `init_sha` to `SESSION_STATE`; drop `INIT_SHA` file
+- [x] `sandbox-entrypoint.sh`: drop `BASELINE_SHA` variable
+- [x] `libs/diff.sh`: remove `diff_commit_pending`; add `write_uncommitted_diff` and `write_all_changes_diff`
+- [x] `libs/diff.sh`: `diff_on_exit` / `diff_on_autosave` call `package_branch` dispatcher; no sweep
+- [x] `libs/package_branch.sh`: dispatcher rewrite — orchestrates `package_commits` + `write_uncommitted_diff` + `write_all_changes_diff`
+- [x] `libs/package_diff.sh`: rename `changes.diff` → `uncommitted.diff`; extract reusable helpers
+- [x] `libs/diff.sh`: `diff_generate` / `diff_format_patch` param rename (`BASELINE_SHA` → `since_sha`)
+- [x] Add `session_state_write` to `libs/session.sh`
+- [x] Update tests for output format changes
+
+*Completed 2026-04-29. See handover `20260429-05-impl-a1_data_model.md`.*
+
+**Done — Session A.2: CLI contract — `--channel` flag and routing:**
+
+Restructure `apply` and `draft` CLI contracts. Depends on A.1 output format.
+
+- [x] `agent-sandbox.sh`: add `--channel` flag; remove `--session` absolute-path support
+- [x] `resolve_session_dir`: remove absolute-path branch; consolidate channel routing
+- [x] `draft_run`: take `SOURCE_DIR` directly; apply `patches/*.diff` + optional `uncommitted.diff`
+- [x] `apply_run`: take file path directly; always apply `uncommitted.diff`
+- [x] `Makefile.template`: add `AUTOSAVE=1` → `--channel=autosave`, `BUNDLE=1` → `--channel=bundles`
+- [x] Update tests for CLI and routing changes
+
+`agent-sandbox.sh` now routes all `apply` and `draft` calls through channel-aware resolution functions. `--channel=session|autosave|bundles` for `draft`, `--channel=diffs|autosave|session` for `apply`. `--session` is name-only (absolute paths rejected with clear error). `--diff=<path>` bypasses all resolution on `apply`. The Makefile maps `AUTOSAVE=1` and `BUNDLE=1` to the corresponding channel flags. All 13 test files pass (237 assertions).
+
+*Completed 2026-04-29. See handover `20260429-06-impl-a2_cli_contract.md`.*
+
+**Done — Session A.3: Documentation and recovery:**
+
+Document the amended contract and provide recovery helpers. Depends on A.1 + A.2.
+
+- [x] `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md`: update Contract Amendments with final design
+- [x] `docs/development/quickstart.md`: add emergency recovery helper snippets
+- [x] Final test pass across all changes
+
+All 8 architecture/concept/development documents updated to reflect the unified contract. Stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, `diff_commit_pending`, and `apply_workspace.sh` removed from `docs/` and `libs/` (excluding workflow/knowledge-vault/). Recovery section in quickstart covers missing diff, wrong branch, rebase conflict, and bad diff scenarios. Checkpoint tag recovery removed (feature was deleted in earlier session).
+
+*Completed 2026-04-29. See handover `20260429-07-impl-a3_docs_recovery.md`.*
+
+**Done — Session A.4: changed-files separate operation:**
+
+Extract inline `changed-files/` logic from `package_diff.sh` into a shared `write_changed_files` function in `libs/diff.sh`, parameterized by `SINCE_SHA`. Wire into both `package_branch` dispatcher (uses `INIT_SHA`) and `package_diff.sh` (uses `HEAD`).
+
+- [x] `libs/diff.sh`: add `write_changed_files(SANDBOX_DIR, SINCE_SHA, OUTPUT_DIR)` — two-source file list (`git diff --name-only` + `git ls-files --others --exclude-standard`), deduplication via `sort -u`, working tree copies preserving directory structure, deleted files skipped
+- [x] `libs/package_branch.sh`: dispatcher calls `write_changed_files` after `package_commits` + `write_uncommitted_diff` + `write_all_changes_diff`
+- [x] `libs/package_diff.sh`: replace inline 3-source copy logic with single `write_changed_files` call using `HEAD`
+- [x] Tests for `write_changed_files`: manifest contents, file copies, untracked files, deduplication (`tests/test_package_branch.sh`, `tests/test_package_diff.sh`)
+- [x] Architecture docs updated: `execution_model.md` and `sandbox_lifecycle.md` directory trees include `changed-files/`
+- [x] Design doc updated: `design_diff_and_branch_packaging_workflow.md` documents `write_changed_files` contract
+
+241 tests pass, 0 failed. No operator-visible behaviour change — `changed-files/` output existed before; this session only unified the implementation.
+
+*Completed 2026-04-29. See handover `20260429-09-impl-changed_files.md`.*
+
+**Pending — Session B: Interactive confirmation flag:**
+
+Add `--interactive` mode to `make apply` and `make draft` as an operator review step before changes are applied. Depends on Session A because interactive mode consumes the refactored `SOURCE_DIR` resolution flow and folder structures.
+
+- [ ] Add `interactive_select_sessions` utility for `draft` (table of recent sessions with availability indicators)
+- [ ] Add interactive confirmation prompt for `apply` (show resolved `uncommitted.diff` path, confirm/reject)
+- [ ] Wire `--interactive` into `agent-sandbox.sh` for both `draft` and `apply`
+- [ ] Support pre-filled default from `SESSION=<name>` in interactive mode
+- [ ] Add `INTERACTIVE=1` Makefile flag; update `libs/_templates/Makefile.template`
 - [ ] Test interactive mode for both commands: confirmation proceeds, rejection aborts without applying, file list matches resolved session
 
 **Design note — host→container direction:**
@@ -101,13 +162,7 @@ The two-layer model includes a host→container direction: operator runs `packag
 - `sandbox/.git/SESSION_STATE` exists at container init and contains `session_ts` and `init_sha` keys; `sandbox/.git/INIT_SHA` does not exist
 - `make test` runs all `tests/test_*.sh` files and exits 0 when all pass, 1 when any fail; `tests/libs/` files are not executed
 
-**Pending — test infrastructure:**
-
-Design complete — see `docs/discussions/spec_test_infrastructure.md`. Depends on the apply_workspace refactor establishing `tests/libs/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh` before these are added. Recommended after test suite repair so the runner has a clean baseline.
-
-- [x] Write `scripts/run_tests.sh` — discovers and runs all `tests/test_*.sh` files in a subshell, prints per-file pass/fail and totals, exits 1 if any fail; excludes `tests/libs/`
-- [x] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
-- [x] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/libs/`) for references and prints which test files cover each; explicitly reports files with no coverage
+**Test infrastructure** — complete. `make test` runs all `tests/test_*.sh` files through `scripts/run_tests.sh` with three verbosity levels (`-v`/`-vv`); `scripts/check_test_coverage.sh` maps changed files to their covering test files. All 13 test files pass (248 assertions).
 
 #### M2.5 — Vault Capability Layer Prototype
 

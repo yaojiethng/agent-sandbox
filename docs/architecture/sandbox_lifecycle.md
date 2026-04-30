@@ -46,13 +46,14 @@ This runs on the host where `PROJECT_DIR` is available. The tar contains exactly
 
 **`snapshot_init_git`** initialises the sandbox git repository in two steps:
 
-1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, the root commit SHA is written to `sandbox/.git/INIT_SHA`:
+1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, the root commit SHA is recorded in `sandbox/.git/SESSION_STATE`:
 
 ```bash
-git rev-list --max-parents=0 HEAD > sandbox/.git/INIT_SHA
+echo "session_ts: $SESSION_TS" >> sandbox/.git/SESSION_STATE
+echo "init_sha: $(git rev-list --max-parents=0 HEAD)" >> sandbox/.git/SESSION_STATE
 ```
 
-`INIT_SHA` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime.
+`init_sha` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime. `SESSION_STATE` is the single source of truth for session identity.
 
 2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
 
@@ -80,12 +81,13 @@ The agent works exclusively inside `sandbox/`. The host repository is never moun
 
 ## Phase 3 — Join (Diff Pipeline)
 
-On capability layer container exit, an EXIT trap runs the diff pipeline:
+On capability layer container exit, an EXIT trap runs the diff pipeline via the `package_branch` dispatcher:
 
-1. **Capture uncommitted changes** — `changes.diff` is written before any sweep commit, preserving the working tree delta from HEAD.
-2. **Commit pending changes** — Any remaining uncommitted changes are staged and committed with a sweep message.
-3. **Write `staged.diff`** — A flat diff (net delta `INIT_SHA..HEAD`) is written for human review.
-4. **`package_branch`** — Produces one numbered `.diff` file per agent commit since `INIT_SHA`, written into `patches/`. Git index lines are stripped from all output.
+1. **`package_commits`** — Produces one numbered `.diff` file per agent commit since `init_sha`, written into `patches/`.
+2. **`write_uncommitted_diff`** — `git diff HEAD` of the working tree, including untracked files staged with `git add -N`.
+3. **`write_all_changes_diff`** — `git diff INIT_SHA` of all changes since session init, including untracked files.
+
+All output has git `index` lines stripped. No sweep commit is created.
 
 All artefacts land in `workspace/session-diffs/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/`:
 
@@ -93,15 +95,22 @@ All artefacts land in `workspace/session-diffs/<SESSION_TS>-<SANITIZED_HOST_BRAN
 session-diffs/20260420-120000-main/
   session/
     EXPORT-TIME.txt       — timestamp of the exit export
-    changes.diff          — uncommitted changes vs HEAD (before sweep)
-    staged.diff           — net delta INIT_SHA..HEAD (after sweep)
+    uncommitted.diff      — uncommitted changes vs HEAD
+    all-changes.diff      — net delta INIT_SHA..HEAD (working tree)
     patches/
-      0001-abc1234.diff   — per-commit diffs from package_branch
+      0001-abc1234.diff   — per-commit diffs from package_commits
+    changed-files/
+      MANIFEST.txt        — sorted list of changed file paths
+      <file-paths>        — working tree copies preserving structure
   autosave/
     EXPORT-TIME.txt       — timestamp of the last autosave tick
-    changes.diff          — uncommitted changes vs HEAD (no sweep)
+    uncommitted.diff      — uncommitted changes vs HEAD
+    all-changes.diff      — net delta INIT_SHA..HEAD (working tree)
     patches/
-      0001-abc1234.diff   — per-commit diffs from package_branch
+      0001-abc1234.diff   — per-commit diffs from package_commits
+    changed-files/
+      MANIFEST.txt        — sorted list of changed file paths
+      <file-paths>        — working tree copies preserving structure
 ```
 
 `session/` is written by the EXIT trap. `autosave/` is written by the autosave loop and overwritten on each tick. Both share the same parent directory — the race condition is avoided because they write to separate subfolders.
@@ -112,13 +121,13 @@ session-diffs/20260420-120000-main/
 
 On the host, `agent-sandbox` dispatches to workflow libraries that provide two application paths:
 
-**`make draft [SESSION=<path>] [FROM=<hash>] [DIFFS=<start>..<end>]`** — creates a `draft/<SESSION_TS>-<branch>-<sha6>` branch from `FROM` (default: current host `HEAD`). Resolves numbered `.diff` files from `session/patches/` inside the session directory. Without `SESSION=`, auto-resolves to the latest session with a valid `session/patches/` subdirectory. Applies diffs in sort order using `git apply` with index lines stripped. `DIFFS` selects a sub-range. Produces a branch with one commit per diff, ready for `git rebase -i`.
+**`make draft [SESSION=<name>] [BRANCH_FROM=<hash>] [DIFFS=<start>..<end>] [BRANCH_SUMMARY=<text>] [AUTOSAVE=1|BUNDLE=1]`** — creates a `draft/<SESSION_TS>-<branch>-<sha6>` branch from `BRANCH_FROM` (default: current host `HEAD`). Resolves numbered `.diff` files from `session/patches/` inside the session directory via `--channel` routing. Without `SESSION=`, auto-resolves to the latest session. `AUTOSAVE=1` resolves `--channel=autosave`; `BUNDLE=1` resolves `--channel=bundles` (bundles are not session-scoped and use a separate base directory). Applies diffs in sort order using `git apply` with index lines stripped, then `uncommitted.diff` if present. `DIFFS` selects a sub-range. Produces a branch with one commit per diff, ready for `git rebase -i`.
 
 **`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged. Deletes the draft branch, clears `draft-state`.
 
 **`make reject`** — discards the draft branch, clears `draft-state`. Artefacts unchanged.
 
-**`make apply [SESSION=<path>] [DIFF=<path>]`** — applies `changes.diff` from a session directory using `git apply` with index lines stripped. Looks for `session/changes.diff` first, then falls back to `autosave/changes.diff`. No commits created. Operator reviews and commits manually.
+**`make apply [SESSION=<name>] [DIFF=<path>] [BRANCH=<name>] [FORCE=1] [AUTOSAVE=1]`** — applies `uncommitted.diff` from a session directory using `git apply` with index lines stripped. `--channel=diffs` (default) resolves from `output/diffs/`; `--channel=autosave` from session autosave folder; `--channel=session` from session exit folder. `DIFF=<path>` bypasses all resolution and applies the specified file directly. No commits created. Operator reviews and commits manually.
 
 No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
 

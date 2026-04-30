@@ -51,7 +51,7 @@ Same as `make start` but starts the agent in serve mode. The terminal is returne
 
 ### `make dry-run PROVIDER=<provider>`
 
-Starts both containers, verifies the sandbox initialises correctly, then tears down. No agent is started; no user input is accepted. Produces no `staged.diff`.
+Starts both containers, verifies the sandbox initialises correctly, then tears down. No agent is started; no user input is accepted. Produces no `all-changes.diff`.
 
 `PROVIDER` is required. Use after a build or onboard to verify the harness is functional.
 
@@ -65,13 +65,52 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make apply [BRANCH=<branch>]`
+### `make apply [SESSION=<name>] [DIFF=<path>] [BRANCH=<branch>] [FORCE=1] [AUTOSAVE=1]`
 
-Applies `changes.diff` from a session directory to `PROJECT_DIR`. Does not commit.
+Applies a diff file to `PROJECT_DIR`. Does not commit.
 
-`BRANCH` is optional. If supplied, applies to a new branch checked out from current HEAD; otherwise applies to the current branch.
+| Flag | Effect |
+|---|---|
+| (no flags) | Applies `uncommitted.diff` from the latest entry in `output/diffs/` (`--channel=diffs`) |
+| `SESSION=<name>` | Applies from the named session instead of auto-resolving the latest |
+| `AUTOSAVE=1` | Applies from the autosave channel of the named (or latest) session |
+| `DIFF=<path>` | Bypasses all resolution; applies the specified file directly |
+| `BRANCH=<name>` | Checks out a new branch from current HEAD before applying |
+| `FORCE=1` | Applies with `--reject`; creates `.rej` files on conflict instead of failing |
 
-**Review `changes.diff` before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
+`--session` accepts names only (not absolute paths). `DIFF=<path>` is the escape hatch for arbitrary files.
+
+**Review the diff before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
+
+---
+
+### `make draft [SESSION=<name>] [BRANCH_FROM=<hash>] [DIFFS=<range>] [BRANCH_SUMMARY=<text>] [AUTOSAVE=1|BUNDLE=1]`
+
+Creates a `draft/<name>` branch and applies session patches as commits for review. The branch is temporary — the operator reviews, then runs `make confirm` to merge or `make reject` to discard.
+
+| Flag | Effect |
+|---|---|
+| (no flags) | Creates draft from latest session (`--channel=session`) |
+| `SESSION=<name>` | Uses the named session instead of auto-resolving |
+| `AUTOSAVE=1` | Resolves from the autosave channel instead of exit artefacts |
+| `BUNDLE=1` | Resolves from the bundles channel (not session-scoped) |
+| `BRANCH_FROM=<hash>` | Creates the draft branch from this commit instead of `HEAD` |
+| `DIFFS=<start>..<end>` | Applies only the selected patch range (default: all) |
+| `BRANCH_SUMMARY=<text>` | Appends a summary to the generated draft branch name |
+
+The draft branch name format is `draft/<SESSION_TS>-<host-branch>-<hash6>[-<summary>]`.
+
+---
+
+### `make confirm [TARGET=<branch>]`
+
+Cleans up the draft branch after the operator has rebased and merged. Validates the current branch is a proper draft branch, drops `.draft-state`, rebases onto the target, fast-forward merges, and deletes the draft branch. On rebase conflict, prints exact recovery commands and aborts.
+
+---
+
+### `make reject`
+
+Discards the current draft branch and returns to the source branch recorded in `.draft-state`. Artefacts in `.workspace/session-diffs/` are unchanged.
 
 ---
 
@@ -187,7 +226,7 @@ A successful `make dry-run` proves:
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access and write to `sandbox/` via the shared volume
 - Both containers terminate gracefully
-- The diff pipeline runs and produces output in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`
+- The diff pipeline runs and produces output in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/session/`
 
 A dry-run does not prove agent correctness — it proves the harness infrastructure is functional.
 

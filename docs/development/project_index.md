@@ -109,8 +109,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
-| `apply_workspace.sh` | 🟡 Warm | M2.3 | Applies changes.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
-| `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly — no `apply_workspace.sh` delegation. |
+| `agent-sandbox.sh` | 🟡 Warm | M2.3-A.2 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. Router layer for `--channel` flag and session resolution. |
 | `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
 | `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
@@ -119,15 +118,15 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
-| `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
-| `package_branch.sh` | 🟢 Cold | M2.3 | Package branch commits as numbered diff files. Sourced by `diff_on_exit`. |
-| `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
-| `draft.sh` | 🟡 Warm | M2.3 | Shared draft branch management: folder resolution, name parsing, collision guard, .draft-state read/write. |
+| `snapshot.sh` | 🟢 Cold | M2.3-A.1 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. Writes `session_ts` and `init_sha` to `SESSION_STATE`. |
+| `diff.sh` | 🟢 Cold | M2.3-A.1 | Diff pipeline functions. Sourced by container-entrypoint.sh. Dispatcher pattern: `write_uncommitted_diff`, `write_all_changes_diff`. No sweep commit. |
+| `package_branch.sh` | 🟢 Cold | M2.3-A.1 | Package branch dispatcher. Orchestrates `package_commits` + `write_uncommitted_diff` + `write_all_changes_diff`. |
+| `package_diff.sh` | 🟢 Cold | M2.3-A.1 | Package diffs for apply workflow. Writes `uncommitted.diff`. |
+| `draft.sh` | 🟡 Warm | M2.3-A.2 | Shared draft branch management: folder resolution, name parsing, collision guard, .draft-state read/write. |
 | `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
-| `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. |
+| `_templates/Makefile.template` | 🟡 Warm | M2.3-A.2 | Project Makefile template. Maps `AUTOSAVE=1` → `--channel=autosave`, `BUNDLE=1` → `--channel=bundles`. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 
 ### Tests (`tests/`)
@@ -137,8 +136,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
 | `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
 | `test_diff.sh` | 🟢 Cold | M2.3 | Diff pipeline tests: `diff_generate`, `diff_format_patch`, `diff_on_exit`, `diff_on_autosave`. |
-| `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
-| `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
+| `test_diff_workflow.sh` | 🟢 Cold | M2.3-A.2 | Apply workflow tests: `apply_run` file-path contract. |
+| `test_draft_workflow.sh` | 🟢 Cold | M2.3-A.2 | Draft branch workflow tests: `draft_run` with `SOURCE_DIR` + `SESSION_NAME`. |
 | `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |

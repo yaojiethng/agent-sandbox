@@ -3,12 +3,14 @@
 # Tests for libs/diff.sh and libs/package_branch.sh
 #
 # Covers:
-#   diff_commit_pending   — commit dirty/clean/staged/missing-arg
 #   diff_generate         — produces diff, no-op on clean, missing args
 #   diff_format_patch     — produces per-commit patches, no-op on zero commits, missing args
-#   diff_on_exit          — session/ subfolder with EXPORT-TIME.txt, changes.diff, staged.diff, patches/
-#   diff_on_autosave      — autosave/ subfolder with EXPORT-TIME.txt, changes.diff, patches/
-#   package_branch        — produces numbered diffs, strips index lines, sanitizes branch names
+#   diff_on_exit          — session/ subfolder with EXPORT-TIME.txt, uncommitted.diff,
+#                           all-changes.diff, patches/
+#   diff_on_autosave      — autosave/ subfolder with EXPORT-TIME.txt, uncommitted.diff,
+#                           all-changes.diff, patches/
+#   package_branch        — produces unified output format (dispatcher)
+#   package_commits       — produces numbered diffs, strips index lines
 #
 # Each test creates its own fixture under a temp dir. Tests are independent.
 
@@ -36,6 +38,14 @@ find_session_dir() {
   fi
 }
 
+# Write SESSION_STATE with init_sha (and optionally session_ts)
+write_session_state() {
+  local DIR="$1"
+  local INIT_SHA="$2"
+  mkdir -p "$DIR/.git"
+  echo "init_sha=$INIT_SHA" > "$DIR/.git/SESSION_STATE"
+}
+
 make_sandbox() {
   local DIR="$1"
   mkdir -p "$DIR"
@@ -57,67 +67,6 @@ commit_change() {
   echo "$MSG" > "$DIR/change-${RANDOM}.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "$MSG" --quiet
-}
-
-# -------------------------
-# diff_commit_pending
-# -------------------------
-test_commit_pending_clean_tree() {
-  local DIR="$FIXTURE_DIR/commit_clean"
-  make_sandbox "$DIR"
-
-  if diff_commit_pending "$DIR"; then
-    pass "commit_pending is no-op on clean tree"
-  else
-    fail "commit_pending should succeed on clean tree"
-  fi
-}
-
-test_commit_pending_dirty_working_tree() {
-  local DIR="$FIXTURE_DIR/commit_dirty"
-  make_sandbox "$DIR"
-
-  echo "change" > "$DIR/file.txt"
-
-  if diff_commit_pending "$DIR"; then
-    local MSG
-    MSG=$(git -C "$DIR" log -1 --pretty=%s)
-    if [[ "$MSG" == "agent-sandbox: uncommitted changes on exit" ]]; then
-      pass "commit_pending commits dirty working tree with correct message"
-    else
-      fail "commit_pending committed but with wrong message: $MSG"
-    fi
-  else
-    fail "commit_pending should succeed on dirty working tree"
-  fi
-}
-
-test_commit_pending_staged_changes() {
-  local DIR="$FIXTURE_DIR/commit_staged"
-  make_sandbox "$DIR"
-
-  echo "staged" > "$DIR/new.txt"
-  git -C "$DIR" add new.txt
-
-  if diff_commit_pending "$DIR"; then
-    local COUNT
-    COUNT=$(git -C "$DIR" show --stat HEAD | grep -c "new.txt")
-    if [[ "$COUNT" -gt 0 ]]; then
-      pass "commit_pending commits staged changes"
-    else
-      fail "commit_pending committed but staged file not included"
-    fi
-  else
-    fail "commit_pending should succeed with staged changes"
-  fi
-}
-
-test_commit_pending_missing_arg() {
-  if diff_commit_pending 2>/dev/null; then
-    fail "commit_pending should fail with missing SANDBOX_DIR"
-  else
-    pass "commit_pending fails with missing SANDBOX_DIR"
-  fi
 }
 
 # -------------------------
@@ -273,9 +222,10 @@ test_on_exit_creates_session_dir() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "agent commit"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120000" "main")
@@ -286,46 +236,52 @@ test_on_exit_creates_session_dir() {
   fi
 }
 
-test_on_exit_writes_changes_diff_before_commit() {
-  local DIR="$FIXTURE_DIR/exit_changes_diff"
-  local CHANGES="$FIXTURE_DIR/exit_changes_diff_out"
+test_on_exit_writes_uncommitted_diff() {
+  local DIR="$FIXTURE_DIR/exit_uncommitted"
+  local CHANGES="$FIXTURE_DIR/exit_uncommitted_out"
   mkdir -p "$CHANGES"
   make_sandbox "$DIR"
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Uncommitted change — should appear in changes.diff
+  write_session_state "$DIR" "$SHA"
+
+  # Uncommitted change — should appear in uncommitted.diff
   echo "agent work" > "$DIR/result.txt"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120001" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120001" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120001" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/changes.diff" && -s "$SESSION_DIR/session/changes.diff" ]]; then
-    pass "diff_on_exit writes non-empty changes.diff in session/ dir (before sweep)"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/uncommitted.diff" && -s "$SESSION_DIR/session/uncommitted.diff" ]]; then
+    pass "diff_on_exit writes non-empty uncommitted.diff in session/ dir"
   else
-    fail "diff_on_exit should write non-empty changes.diff in session/ dir"
+    fail "diff_on_exit should write non-empty uncommitted.diff in session/ dir"
   fi
 }
 
-test_on_exit_writes_staged_diff() {
-  local DIR="$FIXTURE_DIR/exit_staged_diff"
-  local CHANGES="$FIXTURE_DIR/exit_staged_diff_out"
+test_on_exit_writes_all_changes_diff() {
+  local DIR="$FIXTURE_DIR/exit_all_changes"
+  local CHANGES="$FIXTURE_DIR/exit_all_changes_out"
   mkdir -p "$CHANGES"
   make_sandbox "$DIR"
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "agent work" > "$DIR/result.txt"
+  write_session_state "$DIR" "$SHA"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120002" "main"
+  echo "agent work" > "$DIR/result.txt"
+  git -C "$DIR" add .
+  git -C "$DIR" commit -m "work" --quiet
+
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120002" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120002" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/staged.diff" ]]; then
-    pass "diff_on_exit writes staged.diff in session/ dir"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/all-changes.diff" && -s "$SESSION_DIR/session/all-changes.diff" ]]; then
+    pass "diff_on_exit writes non-empty all-changes.diff in session/ dir"
   else
-    fail "diff_on_exit should write staged.diff in session/ dir"
+    fail "diff_on_exit should write non-empty all-changes.diff in session/ dir"
   fi
 }
 
@@ -337,13 +293,12 @@ test_on_exit_writes_patches_in_session_subfolder() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   commit_change "$DIR" "first commit"
   commit_change "$DIR" "second commit"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120002" "feat"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120002" "feat"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120002" "feat")
@@ -356,30 +311,29 @@ test_on_exit_writes_patches_in_session_subfolder() {
   fi
 }
 
-test_on_exit_sweep_commit_produces_one_diff() {
-  local DIR="$FIXTURE_DIR/exit_sweep"
-  local CHANGES="$FIXTURE_DIR/exit_sweep_out"
+test_on_exit_no_sweep_no_extra_patches() {
+  local DIR="$FIXTURE_DIR/exit_nosweep"
+  local CHANGES="$FIXTURE_DIR/exit_nosweep_out"
   mkdir -p "$CHANGES"
   make_sandbox "$DIR"
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write .git/INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
-  # Uncommitted change — diff_on_exit sweeps it into one commit
+  # Uncommitted change — should NOT produce a patch (no sweep)
   echo "agent work" > "$DIR/result.txt"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120003" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120003" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120003" "main")
   local COUNT
   COUNT=$(find "$SESSION_DIR/session/patches" -name '*.diff' 2>/dev/null | wc -l)
-  if [[ "$COUNT" -eq 1 ]]; then
-    pass "diff_on_exit sweep commit produces exactly one .diff file"
+  if [[ "$COUNT" -eq 0 ]]; then
+    pass "diff_on_exit without commits produces no patches (no sweep)"
   else
-    fail "diff_on_exit sweep should produce 1 .diff, got $COUNT"
+    fail "diff_on_exit without commits should produce 0 patches, got $COUNT"
   fi
 }
 
@@ -391,7 +345,9 @@ test_on_exit_no_patches_when_no_changes() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120004" "main"
+  write_session_state "$DIR" "$SHA"
+
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120004" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120004" "main")
@@ -412,9 +368,10 @@ test_on_exit_writes_export_time() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "work"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120005" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120005" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-120005" "main")
@@ -433,9 +390,10 @@ test_on_exit_folder_name_format() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "work"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-120006" "feature-branch"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-120006" "feature-branch"
 
   local EXPECTED_DIR="$CHANGES/20260408-120006-feature-branch"
   if [[ -d "$EXPECTED_DIR" ]]; then
@@ -454,14 +412,20 @@ test_on_exit_multiple_sessions_accumulate() {
   make_sandbox "$DIR1"
   local SHA1
   SHA1=$(get_sha "$DIR1")
+  write_session_state "$DIR1" "$SHA1"
   echo "session 1 work" > "$DIR1/s1.txt"
-  diff_on_exit "$DIR1" "$SHA1" "$CHANGES" "20260408-100000" "main"
+  git -C "$DIR1" add .
+  git -C "$DIR1" commit -m "s1" --quiet
+  diff_on_exit "$DIR1" "$CHANGES" "20260408-100000" "main"
 
   make_sandbox "$DIR2"
   local SHA2
   SHA2=$(get_sha "$DIR2")
+  write_session_state "$DIR2" "$SHA2"
   echo "session 2 work" > "$DIR2/s2.txt"
-  diff_on_exit "$DIR2" "$SHA2" "$CHANGES" "20260408-110000" "main"
+  git -C "$DIR2" add .
+  git -C "$DIR2" commit -m "s2" --quiet
+  diff_on_exit "$DIR2" "$CHANGES" "20260408-110000" "main"
 
   local COUNT
   COUNT=$(find "$CHANGES" -mindepth 1 -maxdepth 1 -type d | wc -l)
@@ -483,9 +447,10 @@ test_on_autosave_writes_autosave_dir() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "wip"
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130000" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130000" "main")
@@ -496,24 +461,25 @@ test_on_autosave_writes_autosave_dir() {
   fi
 }
 
-test_on_autosave_writes_changes_diff() {
-  local DIR="$FIXTURE_DIR/autosave_changes"
-  local CHANGES="$FIXTURE_DIR/autosave_changes_out"
+test_on_autosave_writes_uncommitted_diff() {
+  local DIR="$FIXTURE_DIR/autosave_uncommitted"
+  local CHANGES="$FIXTURE_DIR/autosave_uncommitted_out"
   mkdir -p "$CHANGES"
   make_sandbox "$DIR"
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "wip"
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130001" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130001" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130001" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/autosave/changes.diff" ]]; then
-    pass "diff_on_autosave writes changes.diff in autosave/ dir"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/autosave/uncommitted.diff" ]]; then
+    pass "diff_on_autosave writes uncommitted.diff in autosave/ dir"
   else
-    fail "diff_on_autosave should write changes.diff in autosave/ dir"
+    fail "diff_on_autosave should write uncommitted.diff in autosave/ dir"
   fi
 }
 
@@ -525,11 +491,13 @@ test_on_autosave_does_not_commit_pending() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
+
   echo "uncommitted" > "$DIR/pending.txt"
   local BEFORE
   BEFORE=$(get_sha "$DIR")
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130002" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130002" "main"
 
   local AFTER
   AFTER=$(get_sha "$DIR")
@@ -541,7 +509,7 @@ test_on_autosave_does_not_commit_pending() {
   fi
 }
 
-test_on_autosave_no_changes_writes_empty_changes_diff() {
+test_on_autosave_no_changes_writes_empty_uncommitted_diff() {
   local DIR="$FIXTURE_DIR/autosave_nochange"
   local CHANGES="$FIXTURE_DIR/autosave_nochange_out"
   mkdir -p "$CHANGES"
@@ -549,14 +517,16 @@ test_on_autosave_no_changes_writes_empty_changes_diff() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130003" "main"
+  write_session_state "$DIR" "$SHA"
+
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130003" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130003" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/autosave/changes.diff" && ! -s "$SESSION_DIR/autosave/changes.diff" ]]; then
-    pass "diff_on_autosave writes empty changes.diff when no changes"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/autosave/uncommitted.diff" && ! -s "$SESSION_DIR/autosave/uncommitted.diff" ]]; then
+    pass "diff_on_autosave writes empty uncommitted.diff when no changes"
   else
-    fail "diff_on_autosave should write empty changes.diff when no changes"
+    fail "diff_on_autosave should write empty uncommitted.diff when no changes"
   fi
 }
 
@@ -568,14 +538,13 @@ test_on_autosave_overwrites_previous() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   # First tick: one commit
   echo "first" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "first" --quiet
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130004" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130004" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130004" "main")
@@ -586,13 +555,13 @@ test_on_autosave_overwrites_previous() {
   echo "second" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "second" --quiet
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130004" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130004" "main"
 
   local SECOND_EXPORT
   SECOND_EXPORT=$(cat "$SESSION_DIR/autosave/EXPORT-TIME.txt")
 
   # EXPORT-TIME.txt should be updated (overwrite semantics)
-  if [[ -n "$FIRST_EXPORT" && -n "$SECOND_EXPORT" && -f "$SESSION_DIR/autosave/changes.diff" ]]; then
+  if [[ -n "$FIRST_EXPORT" && -n "$SECOND_EXPORT" && -f "$SESSION_DIR/autosave/uncommitted.diff" ]]; then
     pass "diff_on_autosave overwrites autosave/ on each tick"
   else
     fail "diff_on_autosave did not overwrite: first=$FIRST_EXPORT second=$SECOND_EXPORT"
@@ -607,13 +576,12 @@ test_on_autosave_writes_patches() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   commit_change "$DIR" "first commit"
   commit_change "$DIR" "second commit"
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130005" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130005" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130005" "main")
@@ -634,9 +602,10 @@ test_on_autosave_writes_export_time() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "wip"
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-130006" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-130006" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-130006" "main")
@@ -658,11 +627,11 @@ test_exit_and_autosave_write_separate_subfolders() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
   commit_change "$DIR" "work"
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-140000" "main"
-  diff_on_exit     "$DIR" "$SHA" "$CHANGES" "20260408-140000" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260408-140000" "main"
+  diff_on_exit     "$DIR" "$CHANGES" "20260408-140000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-140000" "main")
@@ -673,7 +642,7 @@ test_exit_and_autosave_write_separate_subfolders() {
   fi
 }
 
-test_exit_writes_staged_and_changes() {
+test_exit_writes_uncommitted_and_all_changes() {
   local DIR="$FIXTURE_DIR/exit_both_diffs"
   local CHANGES="$FIXTURE_DIR/exit_both_diffs_out"
   mkdir -p "$CHANGES"
@@ -681,17 +650,19 @@ test_exit_writes_staged_and_changes() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Uncommitted change — should appear in changes.diff
+  write_session_state "$DIR" "$SHA"
+
+  # Uncommitted change — should appear in uncommitted.diff
   echo "uncommitted" > "$DIR/unstaged.txt"
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260408-140001" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260408-140001" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260408-140001" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/changes.diff" && -f "$SESSION_DIR/session/staged.diff" ]]; then
-    pass "diff_on_exit writes both changes.diff and staged.diff in session/"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/uncommitted.diff" && -f "$SESSION_DIR/session/all-changes.diff" ]]; then
+    pass "diff_on_exit writes both uncommitted.diff and all-changes.diff in session/"
   else
-    fail "diff_on_exit should write both changes.diff and staged.diff in session/"
+    fail "diff_on_exit should write both uncommitted.diff and all-changes.diff in session/"
   fi
 }
 
@@ -774,9 +745,9 @@ test_format_patch_standalone_missing_args() {
 }
 
 # -------------------------
-# Session-scoped tests (with INIT_SHA for package_branch)
+# Session-scoped tests (with SESSION_STATE for package_branch)
 # -------------------------
-test_on_exit_session_dir_with_init_sha() {
+test_on_exit_session_dir_with_session_state() {
   local DIR="$FIXTURE_DIR/exit_sess"
   local CHANGES="$FIXTURE_DIR/exit_sess_out"
   mkdir -p "$CHANGES"
@@ -784,46 +755,45 @@ test_on_exit_session_dir_with_init_sha() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260417-120000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260417-120000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260417-120000" "main")
   if [[ -n "$SESSION_DIR" && -d "$SESSION_DIR/session" ]]; then
-    pass "diff_on_exit creates session directory with INIT_SHA"
+    pass "diff_on_exit creates session directory with SESSION_STATE"
   else
     fail "diff_on_exit should create session directory"
   fi
 }
 
-test_on_exit_session_staged_diff() {
-  local DIR="$FIXTURE_DIR/exit_sess_staged"
-  local CHANGES="$FIXTURE_DIR/exit_sess_staged_out"
+test_on_exit_session_all_changes_diff() {
+  local DIR="$FIXTURE_DIR/exit_sess_all"
+  local CHANGES="$FIXTURE_DIR/exit_sess_all_out"
   mkdir -p "$CHANGES"
   make_sandbox "$DIR"
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260417-120000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260417-120000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260417-120000" "main")
-  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/staged.diff" ]]; then
-    pass "diff_on_exit writes staged.diff inside session/ directory"
+  if [[ -n "$SESSION_DIR" && -f "$SESSION_DIR/session/all-changes.diff" && -s "$SESSION_DIR/session/all-changes.diff" ]]; then
+    pass "diff_on_exit writes all-changes.diff inside session/ directory"
   else
-    fail "diff_on_exit should write staged.diff inside session/ directory"
+    fail "diff_on_exit should write all-changes.diff inside session/ directory"
   fi
 }
 
@@ -835,13 +805,13 @@ test_on_exit_session_patches() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$SHA"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260417-120000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260417-120000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260417-120000" "main")
@@ -861,12 +831,14 @@ test_on_exit_missing_args_fails() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
+
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
   # Missing SESSION_TS and SANITIZED_HOST_BRANCH — should fail
-  if ! diff_on_exit "$DIR" "$SHA" "$CHANGES" "" "" 2>/dev/null; then
+  if ! diff_on_exit "$DIR" "$CHANGES" "" "" 2>/dev/null; then
     pass "diff_on_exit fails with empty SESSION_TS and SANITIZED_HOST_BRANCH"
   else
     fail "diff_on_exit should fail with empty session identity args"
@@ -881,24 +853,26 @@ test_on_exit_multiple_sessions_no_clobber() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
+
   # First session
   echo "work1" > "$DIR/file1.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work1" --quiet
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260417-110000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260417-110000" "main"
 
   # Second session (different session timestamp)
   echo "work2" > "$DIR/file2.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work2" --quiet
-  diff_on_exit "$DIR" "$SHA" "$CHANGES" "20260417-120000" "main"
+  diff_on_exit "$DIR" "$CHANGES" "20260417-120000" "main"
 
   local DIR1 DIR2
   DIR1=$(find_session_dir "$CHANGES" "20260417-110000" "main")
   DIR2=$(find_session_dir "$CHANGES" "20260417-120000" "main")
   if [[ -n "$DIR1" && -n "$DIR2" ]] && \
-     [[ -f "$DIR1/session/staged.diff" ]] && \
-     [[ -f "$DIR2/session/staged.diff" ]]; then
+     [[ -f "$DIR1/session/all-changes.diff" ]] && \
+     [[ -f "$DIR2/session/all-changes.diff" ]]; then
     pass "diff_on_exit accumulates multiple sessions without clobbering"
   else
     fail "diff_on_exit should preserve both session directories"
@@ -916,18 +890,20 @@ test_on_autosave_session_dir() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
+
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
-  diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260417-120000" "main"
+  diff_on_autosave "$DIR" "$CHANGES" "20260417-120000" "main"
 
   local SESSION_DIR
   SESSION_DIR=$(find_session_dir "$CHANGES" "20260417-120000" "main")
-  if [[ -n "$SESSION_DIR" && -d "$SESSION_DIR/autosave" && -f "$SESSION_DIR/autosave/changes.diff" ]]; then
-    pass "diff_on_autosave writes changes.diff in autosave/ dir"
+  if [[ -n "$SESSION_DIR" && -d "$SESSION_DIR/autosave" && -f "$SESSION_DIR/autosave/uncommitted.diff" ]]; then
+    pass "diff_on_autosave writes uncommitted.diff in autosave/ dir"
   else
-    fail "diff_on_autosave should write changes.diff in autosave/ dir"
+    fail "diff_on_autosave should write uncommitted.diff in autosave/ dir"
   fi
 }
 
@@ -939,12 +915,14 @@ test_on_autosave_missing_args_fails() {
   local SHA
   SHA=$(get_sha "$DIR")
 
+  write_session_state "$DIR" "$SHA"
+
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "work" --quiet
 
   # Missing SESSION_TS and SANITIZED_HOST_BRANCH — should fail
-  if ! diff_on_autosave "$DIR" "$SHA" "$CHANGES" "" "" 2>/dev/null; then
+  if ! diff_on_autosave "$DIR" "$CHANGES" "" "" 2>/dev/null; then
     pass "diff_on_autosave fails with empty SESSION_TS and SANITIZED_HOST_BRANCH"
   else
     fail "diff_on_autosave should fail with empty session identity args"
@@ -952,7 +930,7 @@ test_on_autosave_missing_args_fails() {
 }
 
 # -------------------------
-# package_branch tests
+# package_branch tests (dispatcher)
 # -------------------------
 # Note: package_branch is sourced from libs/package_branch.sh
 # These tests target package_branch directly, not through diff_on_exit.
@@ -963,8 +941,7 @@ test_package_branch_produces_numbered_diffs() {
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA to .git/INIT_SHA
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR" "$INIT_SHA"
 
   # Make 3 commits
   commit_change "$DIR" "commit 1"
@@ -976,15 +953,15 @@ test_package_branch_produces_numbered_diffs() {
 
   # Source package_branch.sh
   source "$SCRIPT_DIR/../libs/package_branch.sh"
-  package_branch "$DIR" "$INIT_SHA" "$CHANGES" "main"
+  package_branch "$DIR" "$CHANGES"
 
   local DIFF_COUNT
-  DIFF_COUNT=$(ls -1 "$CHANGES"/*.diff 2>/dev/null | wc -l)
+  DIFF_COUNT=$(ls -1 "$CHANGES/patches"/*.diff 2>/dev/null | wc -l)
 
   if [[ "$DIFF_COUNT" -eq 3 ]]; then
-    pass "package_branch produces 3 numbered diff files"
+    pass "package_branch dispatcher produces 3 numbered diff files in patches/"
   else
-    fail "package_branch should produce 3 diffs, got $DIFF_COUNT"
+    fail "package_branch dispatcher should produce 3 diffs in patches/, got $DIFF_COUNT"
   fi
 }
 
@@ -993,7 +970,8 @@ test_package_branch_strips_index_lines() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+
+  write_session_state "$DIR" "$INIT_SHA"
 
   commit_change "$DIR" "test commit"
 
@@ -1001,15 +979,15 @@ test_package_branch_strips_index_lines() {
   mkdir -p "$CHANGES"
 
   source "$SCRIPT_DIR/../libs/package_branch.sh"
-  package_branch "$DIR" "$INIT_SHA" "$CHANGES" "main"
+  package_branch "$DIR" "$CHANGES"
 
   local INDEX_COUNT
-  INDEX_COUNT=$(grep -c "^index " "$CHANGES/main"/*.diff 2>/dev/null | awk -F: '{sum+=$2} END {print sum+0}')
+  INDEX_COUNT=$(grep -c "^index " "$CHANGES/patches"/*.diff 2>/dev/null | awk -F: '{sum+=$2} END {print sum+0}')
 
   if [[ "$INDEX_COUNT" -eq 0 ]]; then
-    pass "package_branch strips index lines from diffs"
+    pass "package_branch dispatcher strips index lines from diffs"
   else
-    fail "package_branch should strip index lines, found $INDEX_COUNT"
+    fail "package_branch dispatcher should strip index lines, found $INDEX_COUNT"
   fi
 }
 
@@ -1018,7 +996,8 @@ test_package_branch_sanitizes_branch_name() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+
+  write_session_state "$DIR" "$INIT_SHA"
 
   # Create a branch with slashes
   git -C "$DIR" checkout -b "feature/sub-feature" --quiet
@@ -1028,16 +1007,15 @@ test_package_branch_sanitizes_branch_name() {
   mkdir -p "$CHANGES"
 
   source "$SCRIPT_DIR/../libs/package_branch.sh"
-  package_branch "$DIR" "$INIT_SHA" "$CHANGES" "feature/sub-feature"
+  package_branch "$DIR" "$CHANGES"
 
-  # package_branch writes directly to OUTPUT_DIR; SESSION_SUMMARY is for logging only
   local DIFF_COUNT
-  DIFF_COUNT=$(ls -1 "$CHANGES"/*.diff 2>/dev/null | wc -l)
+  DIFF_COUNT=$(ls -1 "$CHANGES/patches"/*.diff 2>/dev/null | wc -l)
 
   if [[ "$DIFF_COUNT" -ge 1 ]]; then
-    pass "package_branch produces diffs regardless of branch name"
+    pass "package_branch dispatcher produces diffs regardless of branch name"
   else
-    fail "package_branch should produce at least 1 diff"
+    fail "package_branch dispatcher should produce at least 1 diff"
   fi
 }
 
@@ -1046,31 +1024,28 @@ test_package_branch_no_commits() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+
+  write_session_state "$DIR" "$INIT_SHA"
 
   local CHANGES="$FIXTURE_DIR/pkgbranch_nocommits_changes"
   mkdir -p "$CHANGES"
 
   source "$SCRIPT_DIR/../libs/package_branch.sh"
-  package_branch "$DIR" "$INIT_SHA" "$CHANGES" "main"
+  package_branch "$DIR" "$CHANGES" 2>/dev/null
 
   local DIFF_COUNT
-  DIFF_COUNT=$(ls -1 "$CHANGES/main"/*.diff 2>/dev/null | wc -l)
+  DIFF_COUNT=$(ls -1 "$CHANGES/patches"/*.diff 2>/dev/null | wc -l)
 
   if [[ "$DIFF_COUNT" -eq 0 ]]; then
-    pass "package_branch produces no diffs when no commits since INIT_SHA"
+    pass "package_branch dispatcher produces no diffs when no commits since INIT_SHA"
   else
-    fail "package_branch should produce 0 diffs, got $DIFF_COUNT"
+    fail "package_branch dispatcher should produce 0 diffs, got $DIFF_COUNT"
   fi
 }
 
 # -------------------------
 # Run all tests
 # -------------------------
-run_test test_commit_pending_clean_tree
-run_test test_commit_pending_dirty_working_tree
-run_test test_commit_pending_staged_changes
-run_test test_commit_pending_missing_arg
 run_test test_generate_produces_diff
 run_test test_generate_no_changes
 run_test test_generate_missing_args
@@ -1080,29 +1055,29 @@ run_test test_format_patch_noop_on_zero_commits
 run_test test_format_patch_missing_args
 run_test test_format_patch_patches_are_applicable
 run_test test_on_exit_creates_session_dir
-run_test test_on_exit_writes_changes_diff_before_commit
-run_test test_on_exit_writes_staged_diff
+run_test test_on_exit_writes_uncommitted_diff
+run_test test_on_exit_writes_all_changes_diff
 run_test test_on_exit_writes_patches_in_session_subfolder
-run_test test_on_exit_sweep_commit_produces_one_diff
+run_test test_on_exit_no_sweep_no_extra_patches
 run_test test_on_exit_no_patches_when_no_changes
 run_test test_on_exit_writes_export_time
 run_test test_on_exit_folder_name_format
 run_test test_on_exit_multiple_sessions_accumulate
 run_test test_on_autosave_writes_autosave_dir
-run_test test_on_autosave_writes_changes_diff
+run_test test_on_autosave_writes_uncommitted_diff
 run_test test_on_autosave_does_not_commit_pending
-run_test test_on_autosave_no_changes_writes_empty_changes_diff
+run_test test_on_autosave_no_changes_writes_empty_uncommitted_diff
 run_test test_on_autosave_overwrites_previous
 run_test test_on_autosave_writes_patches
 run_test test_on_autosave_writes_export_time
 run_test test_exit_and_autosave_write_separate_subfolders
-run_test test_exit_writes_staged_and_changes
+run_test test_exit_writes_uncommitted_and_all_changes
 run_test test_format_patch_standalone_produces_patches
 run_test test_format_patch_standalone_numbering
 run_test test_format_patch_standalone_no_commits
 run_test test_format_patch_standalone_missing_args
-run_test test_on_exit_session_dir_with_init_sha
-run_test test_on_exit_session_staged_diff
+run_test test_on_exit_session_dir_with_session_state
+run_test test_on_exit_session_all_changes_diff
 run_test test_on_exit_session_patches
 run_test test_on_exit_missing_args_fails
 run_test test_on_exit_multiple_sessions_no_clobber
