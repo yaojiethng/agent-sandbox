@@ -46,7 +46,7 @@ If the directive slot is empty:
 - Follow handover policy. Derive session type and objective from Next session.
 
 If the directive slot is non-empty:
-- Identify the session type from the directive using the table above (explicit shortform, or implied by the language used). If the type cannot be determined, ask the operator to name it before continuing.
+- Identify the session type from the directive using the table above (explicit shortform, or implied by the language used). If the type cannot be determined, stop immediately to ask the operator to name the session type before continuing.
 - **Step 1 — Compare session types.** Extract the session type implied by Next session. If the directive's type and Next session's type do not match, this session diverges — go to Diverges below.
 - **Step 2 — Compare topics.** If types match, check whether the subject of the directive overlaps with the scoped task described in Next session (shared keywords, named files, or task references). If there is no recognisable overlap, ask the operator whether this session supersedes or adjusts prior work before continuing.
   - **Continues or adjusts prior work:** Reflect the directive as the session's focus and objective — it takes priority over the specific framing in Next session, but does not change the session type or supersede the work in progress.
