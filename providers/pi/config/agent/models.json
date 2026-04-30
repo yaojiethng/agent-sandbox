@@ -1,5 +1,62 @@
 {
   "providers": {
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com",
+      "api": "openai-completions",
+      "apiKey": "DEEPSEEK_API_KEY",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "name": "Deepseek V4 Flash",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "cost": {
+            "input": 0.14,
+            "output": 0.28,
+            "cacheRead": 0.028,
+            "cacheWrite": 0
+          },
+          "compat": {
+             "thinkingFormat": "deepseek",
+              "requiresReasoningContentOnAssistantMessages": true,
+              "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "name": "Deepseek V4 Pro",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "cost": {
+            "input": 0.435,
+            "output": 0.87,
+            "cacheRead": 0.003625,
+            "cacheWrite": 0
+          },
+          "compat": {
+             "thinkingFormat": "deepseek",
+              "requiresReasoningContentOnAssistantMessages": true,
+              "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
+        }
+      ]
+    },
     "opencode-go": {
       "baseUrl": "https://opencode.ai/zen/go/v1",
       "apiKey": "OPENCODE_API_KEY",
@@ -8,34 +65,19 @@
           "id": "glm-5.1",
           "name": "GLM-5.1 (Opencode Go)",
           "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 204800,
-          "maxTokens": 131072,
-          "cost": { "input": 1.2, "output": 4, "cacheRead": 0.24, "cacheWrite": 0 }
+          "baseUrl": "https://opencode.ai/zen/go/v1"
         },
         {
           "id": "mimo-v2-pro",
           "name": "MiMo-V2-Pro (Opencode Go)",
           "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 1048576,
-          "maxTokens": 131072,
-          "cost": { "input": 1, "output": 3, "cacheRead": 0.2, "cacheWrite": 0 }
+          "baseUrl": "https://opencode.ai/zen/go/v1"
         },
         {
           "id": "mimo-v2-omni",
           "name": "MiMo-V2-Omni (Opencode Go)",
           "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 262144,
-          "maxTokens": 131072,
-          "cost": { "input": 0.4, "output": 2, "cacheRead": 0.08, "cacheWrite": 0 }
+          "baseUrl": "https://opencode.ai/zen/go/v1"
         },
         {
           "id": "qwen3.6-plus",
@@ -62,6 +104,36 @@
           "compat": {
             "thinkingFormat": "qwen"
           }
+        },
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "minimax-m2.5",
+          "name": "MiniMax M2.5 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        },
+        {
+          "id": "minimax-m2.7",
+          "name": "MiniMax M2.7 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "name": "DeepSeek V4 Pro (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
         }
       ]
     },
@@ -96,13 +168,20 @@
           }
         },
         {
-          "id": "elephant-alpha",
-          "name": "Elephant Alpha (OpenRouter)",
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "Deepseek V4 Flash (OpenRouter)",
           "reasoning": true,
           "input": ["text"],
-          "contextWindow": 262144,
-          "maxTokens": 32800,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+          "contextWindow": 1000000,
+          "maxTokens": 364000
+        },
+        {
+          "id": "deepseek/deepseek-v4-pro",
+          "name": "Deepseek V4 Pro (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000
         }
       ]
     }
