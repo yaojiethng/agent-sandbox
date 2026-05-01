@@ -99,10 +99,18 @@ make_fixture() {
     echo "dirs-content"        > "$dir/libs/dirs.sh"
     echo "snapshot-content"   > "$dir/libs/snapshot.sh"
     echo "diff-content"       > "$dir/libs/diff.sh"
+    echo "package_branch-content" > "$dir/libs/package_branch.sh"
+    echo "package_diff-content"   > "$dir/libs/package_diff.sh"
+    echo "session-content"        > "$dir/libs/session.sh"
 
     mkdir -p "$dir/scripts"
     echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
     echo "provider-entrypoint-content" > "$dir/libs/provider-entrypoint.sh"
+
+    mkdir -p "$dir/docs/architecture"
+    echo "arch-content" > "$dir/docs/architecture/test.md"
+    mkdir -p "$dir/docs/concepts"
+    echo "concept-content" > "$dir/docs/concepts/test.md"
 
     echo "$dir"
 }
@@ -143,17 +151,21 @@ cleanup "$REPO"
 # ---------------------------------------------------------------------------
 echo ""
 echo "-- File contents: sandbox image type --"
-# sandbox context must contain exactly: sandbox-entrypoint.sh, snapshot.sh,
-# diff.sh, dirs.sh — and nothing else.
+# sandbox context must contain: sandbox-entrypoint.sh, dirs.sh, snapshot.sh,
+# diff.sh, package_branch.sh, session.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
 context=$(build_context_sandbox "$REPO")
 
 assert_file_exists  "sandbox: contains sandbox-entrypoint.sh" "$context/sandbox-entrypoint.sh"
+assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
 assert_file_exists  "sandbox: contains snapshot.sh"           "$context/snapshot.sh"
 assert_file_exists  "sandbox: contains diff.sh"               "$context/diff.sh"
-assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
-assert_dir_file_count "sandbox: contains exactly 4 files"     "$context" 4
+assert_file_exists  "sandbox: contains package_branch.sh"     "$context/package_branch.sh"
+assert_file_exists  "sandbox: contains session.sh"            "$context/session.sh"
+assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
+assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
+assert_dir_file_count "sandbox: contains at least 6 files"    "$context" 6
 
 cleanup "$context"
 cleanup "$REPO"
@@ -161,16 +173,20 @@ cleanup "$REPO"
 # ---------------------------------------------------------------------------
 echo ""
 echo "-- File contents: agent image type --"
-# agent context must contain exactly: dirs.sh — and nothing else.
+# agent context must contain: dirs.sh, provider-entrypoint.sh,
+# package_diff.sh, session.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
 context=$(build_context_agent "$REPO" test-provider)
 
-assert_file_exists    "agent: contains dirs.sh"              "$context/dirs.sh"
-assert_file_absent    "agent: does not contain entrypoint"   "$context/sandbox-entrypoint.sh"
-assert_file_absent    "agent: does not contain snapshot.sh"  "$context/snapshot.sh"
-assert_file_absent    "agent: does not contain diff.sh"      "$context/diff.sh"
-assert_dir_file_count "agent: contains exactly 2 files"       "$context" 2
+assert_file_exists    "agent: contains dirs.sh"               "$context/dirs.sh"
+assert_file_exists    "agent: contains provider-entrypoint.sh" "$context/provider-entrypoint.sh"
+assert_file_exists    "agent: contains package_diff.sh"        "$context/package_diff.sh"
+assert_file_exists    "agent: contains session.sh"             "$context/session.sh"
+assert_file_absent    "agent: does not contain sandbox scripts" "$context/sandbox-entrypoint.sh"
+assert_file_absent    "agent: does not contain snapshot.sh"    "$context/snapshot.sh"
+assert_file_absent    "agent: does not contain diff.sh"        "$context/diff.sh"
+assert_dir_file_count "agent: contains at least 4 files"       "$context" 4
 
 cleanup "$context"
 cleanup "$REPO"
@@ -224,14 +240,14 @@ fixed_context=$(mktemp -d /tmp/XXXXXX)
 
 # First build: populate fixed_context by copying from build_context output
 context_tmp=$(build_context_sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d1=$(digest_of_context "$fixed_context")
 
 # Second build: wipe and repopulate the same fixed path
-rm -f "$fixed_context"/*
+rm -rf "$fixed_context"/*
 context_tmp=$(build_context_sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d2=$(digest_of_context "$fixed_context")
 
@@ -240,9 +256,9 @@ assert_equal "digest is 64 hex chars" 64 "${#d1}"
 
 # Change a source file — digest must change
 echo "modified-content" > "$REPO/libs/dirs.sh"
-rm -f "$fixed_context"/*
+rm -rf "$fixed_context"/*
 context_tmp=$(build_context_sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d3=$(digest_of_context "$fixed_context")
 
@@ -250,9 +266,9 @@ assert_not_equal "digest changes when source file changes" "$d1" "$d3"
 
 # Change a different source file
 echo "modified-entrypoint" > "$REPO/libs/sandbox-entrypoint.sh"
-rm -f "$fixed_context"/*
+rm -rf "$fixed_context"/*
 context_tmp=$(build_context_sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d4=$(digest_of_context "$fixed_context")
 

@@ -21,11 +21,14 @@ RUN apt-get update && apt-get install -y \
 # -------------------------
 # Build context is a temp directory populated by build_context in libs/build.sh;
 # files are copied flat so paths here match the temp dir layout.
-COPY sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
-COPY snapshot.sh /libs/snapshot.sh
-COPY diff.sh /libs/diff.sh
-COPY dirs.sh /libs/dirs.sh
-RUN chmod +x /usr/local/bin/sandbox-entrypoint.sh
+COPY sandbox-entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
+COPY dirs.sh /opt/sandbox/lib/dirs.sh
+COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
+COPY diff.sh /opt/sandbox/lib/diff.sh
+COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
+COPY session.sh /opt/sandbox/lib/session.sh
+COPY docs/ /opt/sandbox/docs/
+RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 
 # -------------------------
 # Non-root user
@@ -66,4 +69,4 @@ WORKDIR /home/agentuser
 HEALTHCHECK --interval=2s --timeout=5s --start-period=30s --retries=5 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["/usr/local/bin/sandbox-entrypoint.sh"]
+ENTRYPOINT ["/opt/sandbox/bin/sandbox-entrypoint.sh"]

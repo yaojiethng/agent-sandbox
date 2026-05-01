@@ -11,7 +11,7 @@ Package all commits since `init_sha` for export via the workspace output mount.
 Inside the container, invoke the script directly:
 
 ```bash
-bash ~/sandbox/libs/package_branch.sh --session-summary=add_format_patch_support
+bash /opt/sandbox/lib/package_branch.sh --session-summary=add_format_patch_support
 ```
 
 This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE` and writes output to `bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.

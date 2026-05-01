@@ -36,7 +36,7 @@ ROOT="/home/agentuser"
 
 # Directory name defaults — single source of truth.
 # Override via environment variables without rebuilding the image.
-source /libs/dirs.sh
+source /opt/sandbox/lib/dirs.sh
 
 SNAPSHOT_DIR="$ROOT/$SNAPSHOT_DIR_NAME"
 SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
@@ -54,7 +54,7 @@ mkdir -p "$CHANGES_DIR"
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source /libs/snapshot.sh
+source /opt/sandbox/lib/snapshot.sh
 
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
 snapshot_validate "$SNAPSHOT_DIR"
@@ -90,7 +90,7 @@ echo "  (empty = clean working tree)"
 # -------------------------
 # Diff pipeline
 # -------------------------
-source /libs/diff.sh
+source /opt/sandbox/lib/diff.sh
 
 # On exit: kill autosave subshell if running, commit any pending changes,
 # write staged.diff. Runs on any exit — clean shutdown, SIGTERM, or error.

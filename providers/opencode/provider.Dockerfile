@@ -19,8 +19,10 @@ FROM ${BASE_IMAGE}
 # -------------------------
 # Injected by build_context_agent — cache miss if either file changes.
 # dirs.sh is sourced by dry_run.sh inside the container.
-COPY dirs.sh /libs/dirs.sh
-COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
+COPY dirs.sh /opt/sandbox/lib/dirs.sh
+COPY provider-entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
+COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
+COPY session.sh /opt/sandbox/lib/session.sh
 
 # -------------------------
 # Non-root user
@@ -58,4 +60,5 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 #   standard: no override — runs as `opencode` with no args
 #   serve:    docker-compose.serve.yml sets command: ["serve", ...]
 #   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
-ENTRYPOINT ["provider-entrypoint.sh", "opencode"]
+ENV PATH=/opt/sandbox/bin:$PATH
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "opencode"]

@@ -3,16 +3,16 @@
 # Shared container lifecycle library for agent-sandbox.
 #
 # Provides:
-#   agent_base_image_name  — compute reasoning layer base image name from provider
-#   agent_image_name       — compute reasoning layer image name from provider + project
-#   sandbox_image_name     — compute capability layer image name from project
-#   build_context_sandbox  — populate a temp dir with sandbox build context files
-#   build_context_agent    — populate a temp dir with agent build context files
-#   build_image            — compute digest and run docker build
-#   build_agent            — build the reasoning layer images for a given provider + project
-#   build_sandbox          — build the capability layer image for a given project
-#   build_all              — build both images
-#   preflight              — verify both images exist; error with instructions if not
+#   agent_base_image_name  - compute reasoning layer base image name from provider
+#   agent_image_name       - compute reasoning layer image name from provider + project
+#   sandbox_image_name     - compute capability layer image name from project
+#   build_context_sandbox  - populate a temp dir with sandbox build context files
+#   build_context_agent    - populate a temp dir with agent build context files
+#   build_image            - compute digest and run docker build
+#   build_agent            - build the reasoning layer images for a given provider + project
+#   build_sandbox          - build the capability layer image for a given project
+#   build_all              - build both images
+#   preflight              - verify both images exist; error with instructions if not
 
 # -------------------------
 # Naming conventions
@@ -64,14 +64,20 @@ _build_context_copy() {
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_sandbox() {
   local repo_root="${1:?build_context_sandbox requires repo_root}"
-  local context_dir
+  local context_dir=""
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
-  _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh" "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/snapshot.sh"              "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/diff.sh"                  "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/dirs.sh"                  "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh"     "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/snapshot.sh"                "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
+  # docs/
+  mkdir -p "$context_dir/docs" || return 1
+  cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
+  cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
 
   echo "$context_dir"
 }
@@ -79,20 +85,26 @@ build_context_sandbox() {
 # build_context_agent <repo_root> <provider>
 # Creates and populates a temp dir with files required for an agent image build.
 # Injects harness-owned files (dirs.sh, provider-entrypoint.sh).
-# Provider config is not baked into the image — it is populated at onboard time
+# Provider config is not baked into the image - it is populated at onboard time
 # into $SANDBOX_DIR/.<provider>/ and bind-mounted at runtime.
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_agent() {
   local repo_root="${1:?build_context_agent requires repo_root}"
   local provider="${2:?build_context_agent requires provider}"
-  local context_dir
+  local context_dir=""
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
- 
-  # Harness-owned files — required for all providers.
+
+  # Harness-owned files - required for all providers.
   _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
- 
+  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
+  # docs/
+  mkdir -p "$context_dir/docs" || return 1
+  cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
+  cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
+
   echo "$context_dir"
 }
 

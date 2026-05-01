@@ -13,7 +13,7 @@ Package the current session's changes for export via the workspace output mount.
 Inside the container, invoke the script directly — the git alias is not registered in the sandbox `.git/config`:
 
 ```bash
-bash ~/sandbox/libs/package_diff.sh
+bash /opt/sandbox/lib/package_diff.sh
 ```
 
 This packages all uncommitted working tree changes against `HEAD`. No arguments required.
@@ -21,7 +21,7 @@ This packages all uncommitted working tree changes against `HEAD`. No arguments 
 **To package all changes since session start** (committed and uncommitted):
 
 ```bash
-bash ~/sandbox/libs/package_diff.sh --all
+bash /opt/sandbox/lib/package_diff.sh --all
 ```
 
 The `--all` flag reads `init_sha` from `~/sandbox/.git/SESSION_STATE`, a key-value file written at container init. Do not attempt to derive the baseline manually.
@@ -29,7 +29,7 @@ The `--all` flag reads `init_sha` from `~/sandbox/.git/SESSION_STATE`, a key-val
 **To diff against an explicit baseline:**
 
 ```bash
-bash ~/sandbox/libs/package_diff.sh --baseline=<sha>
+bash /opt/sandbox/lib/package_diff.sh --baseline=<sha>
 ```
 
 On the host, `--baseline` or `--all` is required. There is no synthetic baseline outside the container.
@@ -37,9 +37,9 @@ On the host, `--baseline` or `--all` is required. There is no synthetic baseline
 **Always supply `--session-summary`** — the agent knows what changed and should name the output accordingly. The summary should be a concise snake_case phrase describing the nature of the change, like a handover filename: specific enough that a reader scanning a list of output directories knows what is inside without opening it.
 
 ```bash
-bash ~/sandbox/libs/package_diff.sh --session-summary=add_session_scoped_artefact_dirs
-bash ~/sandbox/libs/package_diff.sh --all --session-summary=fix_snapshot_baseline_working_tree
-bash ~/sandbox/libs/package_diff.sh --baseline=<sha> --session-summary=refactor_compose_generation
+bash /opt/sandbox/lib/package_diff.sh --session-summary=add_session_scoped_artefact_dirs
+bash /opt/sandbox/lib/package_diff.sh --all --session-summary=fix_snapshot_baseline_working_tree
+bash /opt/sandbox/lib/package_diff.sh --baseline=<sha> --session-summary=refactor_compose_generation
 ```
 
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.

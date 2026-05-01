@@ -125,16 +125,16 @@ fi
 rm -f "$BUILD_LOG"
 
 check "sandbox-entrypoint.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /usr/local/bin/sandbox-entrypoint.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/bin/sandbox-entrypoint.sh
 
 check "libs/snapshot.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/snapshot.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/snapshot.sh
 
 check "libs/diff.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/diff.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/diff.sh
 
 check "libs/dirs.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/dirs.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/dirs.sh
 
 # -------------------------
 # Startup

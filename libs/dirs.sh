@@ -10,7 +10,7 @@
 # the image.
 #
 # Usage:
-#   source /libs/dirs.sh
+#   source /opt/sandbox/lib/dirs.sh
 #   # Then use $SNAPSHOT_DIR_NAME, $SANDBOX_DIR_NAME, etc.
 
 # Snapshot input: bind-mounted read-only into the capability layer container.

@@ -25,7 +25,7 @@
 set -o pipefail
 
 ROOT="/home/agentuser"
-source /libs/dirs.sh
+source /opt/sandbox/lib/dirs.sh
 
 INPUT_DIR="$ROOT/$INPUT_DIR_NAME"
 OUTPUT_DIR="$ROOT/$OUTPUT_DIR_NAME"

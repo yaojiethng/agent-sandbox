@@ -156,19 +156,16 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   fi
 
   # Resolve session summary
-  local SESSION_SUMMARY="snapshot"
+  SESSION_SUMMARY="snapshot"
   if [[ -n "$SESSION_SUMMARY_ARG" ]]; then
     SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
   fi
 
   # Auto-resolve SESSION_TS from SESSION_STATE
-  local SESSION_TS
   SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
 
   # Construct output directory
-  local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  local OUTPUT_DIR
   if [[ -n "$OUTDIR_ARG" ]]; then
     OUTPUT_DIR="$OUTDIR_ARG"
   elif [[ -n "$SESSION_TS" ]]; then
