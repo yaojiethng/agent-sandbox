@@ -109,6 +109,48 @@ Design complete — see `docs/discussions/spec_test_infrastructure.md`. Depends 
 - [x] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
 - [x] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/libs/`) for references and prints which test files cover each; explicitly reports files with no coverage
 
+**Pending — pre-clean remediation:**
+
+These tasks address discrepancies between documented M2.3 acceptance criteria and the live tree — changes claimed in handovers that are not present or are incomplete. They must be resolved before Trigger B can fire.
+
+**Dependency ordering:** Group 1 must execute first (SESSION_STATE data model change; first task leaves the tree red until the third restores it). Group 2 is independent. Group 3 must follow Group 1.
+
+**Group 1 — SESSION_STATE/INIT_SHA migration:**
+
+- [ ] **SESSION_STATE write side.** Add `session_state_write` to `libs/session.sh` (symmetric counterpart to existing `session_state_read`). Update `libs/snapshot.sh` line 292: replace the `.git/INIT_SHA` write with `session_state_write "$SANDBOX_DIR" "init_sha" "$sha"` and add a `session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"` call. Update `libs/sandbox-entrypoint.sh`: after `snapshot_init_git` runs, write `session_ts` to `SESSION_STATE` so the key-value store is populated at container init. `libs/package_branch.sh` line 151 already reads `init_sha` from `SESSION_STATE` via `session_state_read`; once the write side is live, this path becomes operational. **Cross-task dependency:** this task leaves the tree red (tests assert `.git/INIT_SHA`); next task in this group restores green. **AC:** `scripts/run_tests.sh` shows failures but the failure count is lower than baseline (snapshot_container test now fails because `INIT_SHA` file is no longer created).
+
+- [ ] **SESSION_STATE consumers.** Update `libs/diff.sh` lines 206–208 and 264–265: replace direct `cat "${SANDBOX_DIR}/.git/INIT_SHA"` reads with `session_state_read "$SANDBOX_DIR" "init_sha"`. Update `libs/package_diff.sh` lines 93–94: replace the `.git/INIT_SHA` fallback with `session_state_read "$REPO_ROOT" "init_sha"`. Update error messages in both files that reference `INIT_SHA` file to reference `SESSION_STATE` instead. **AC:** `grep -n "\.git/INIT_SHA\|cat.*INIT_SHA" libs/diff.sh libs/package_diff.sh` returns no matches.
+
+- [ ] **SESSION_STATE test fixtures.** Update `tests/test_snapshot_container.sh` line 528: replace `.git/INIT_SHA` assertions with `.git/SESSION_STATE` assertions (verify both `init_sha` and `session_ts` keys are present, verify `.git/INIT_SHA` does NOT exist). Update `tests/test_package_diff.sh` line 134: replace `echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"` with a `write_session_state` helper call or inline `echo` that writes `init_sha` and `session_ts` to `.git/SESSION_STATE`. Apply the same pattern to `tests/test_diff.sh` (all 12 fixture write sites) and `tests/test_package_branch.sh`. Add a `write_session_state` helper to the shared test fixture library (`tests/libs/`) if one does not exist. **AC:** `scripts/run_tests.sh` exits 0; `grep -n "\.git/INIT_SHA\|\.git/SESSION_STATE" tests/test_*.sh` shows all fixtures write to `.git/SESSION_STATE` and no fixture writes to `.git/INIT_SHA`.
+
+**Group 2 — Documentation and stale file cleanup:**
+
+These tasks are independent of Group 1 and may be executed in any order.
+
+- [ ] **Update sandbox_lifecycle.md.** In `docs/architecture/sandbox_lifecycle.md`, line 49: replace the `INIT_SHA` write description with the current behaviour — `session_state_write` records both `init_sha` and `session_ts` to `.git/SESSION_STATE`. Update all downstream references (lines 52, 55, 87, 88, 97) that describe `INIT_SHA` file reads or `staged.diff` outputs. **AC:** `grep -n "INIT_SHA" docs/architecture/sandbox_lifecycle.md` returns no matches (or only matches in historical-context paragraphs).
+
+- [ ] **Remove stale roadmap duplicate.** Delete `docs/devlog/discussions/roadmap.md`. This file is a stale duplicate of `docs/devlog/roadmap.md` with the same section structure and no unique content. Check for any cross-references in other documents pointing to the discussion copy and update them to point to the canonical file. **AC:** `ls docs/devlog/discussions/roadmap.md` exits 2 (file does not exist); `grep -rn "discussions/roadmap.md" docs/` returns no results.
+
+- [ ] **Update design_diff_and_branch_packaging_workflow.md.** In `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md`, line 318: replace the `INIT_SHA` file write code example (`git rev-list --max-parents=0 HEAD > sandbox/.git/INIT_SHA`) with the `SESSION_STATE` write equivalent. Update all references throughout the file (19 grep matches) that describe `INIT_SHA` as a file — change to `SESSION_STATE` key-value store. **AC:** `grep -n "\.git/INIT_SHA" docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` returns no matches.
+
+- [ ] **Clean up project_index.md.** In `docs/development/project_index.md`, remove the entries for `apply_workspace.sh` (line 112) and `draft.sh` (line 126) — both have been deleted from the repository and their functionality absorbed into `agent-sandbox.sh`, `diff_workflow.sh`, and `draft_workflow.sh`. Cross-reference all remaining `.sh` entries against `git ls-files libs/ scripts/` to identify any other stale entries. **AC:** Every `.sh` entry in `docs/development/project_index.md` under Scripts/Lib/Tests corresponds to a tracked file in the repository.
+
+- [ ] **Remove baseline.tar from git.** Run `git rm baseline.tar` and add `baseline.tar` to `.gitignore` if not already present. The file is a build artefact regenerated at runtime by `libs/snapshot.sh:158` (`git archive HEAD`) — it does not need to be version-controlled. **AC:** `git ls-files --error-unmatch baseline.tar` exits 1 (file untracked); `grep "baseline\.tar" .gitignore` shows an ignore entry.
+
+- [ ] **Fix sandbox.Dockerfile stale comment.** In `libs/sandbox.Dockerfile` line 47, update the comment from `the diff pipeline writes staged.diff here only` to describe the current output: `the diff pipeline writes uncommitted.diff, all-changes.diff, and patches/*.diff here`. **AC:** `sed -n '47p' libs/sandbox.Dockerfile | grep -c "staged\.diff"` returns 0.
+
+**Group 3 — Test coverage additions:**
+
+These tasks must run after Group 1 (they test SESSION_STATE behaviour).
+
+- [ ] **Add session_state_read tests.** In `tests/test_session.sh`, add tests covering:
+  - Reading an existing key (`init_sha` or `session_ts`) from a valid `SESSION_STATE` file returns the expected value.
+  - Reading from a non-existent `SESSION_STATE` file returns the appropriate error signal (per `session_state_read`'s contract in `libs/session.sh` line 38).
+  - Reading a non-existent key from a valid `SESSION_STATE` file behaves per contract.
+  - Reading from a malformed SESSION_STATE file behaves per contract.
+  - Reading with `SESSION_TS` env var unset exercises the fallback path.
+  **AC:** `grep -c "session_state_read" tests/test_session.sh` shows 4+ test assertions for the function.
+
 #### M2.5 — Vault Capability Layer Prototype
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
