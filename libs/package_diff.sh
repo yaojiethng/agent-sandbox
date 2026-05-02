@@ -90,15 +90,15 @@ IN_CONTAINER=0
 if [[ -z "$BASELINE" ]]; then
   if [[ -n "${BASELINE_SHA:-}" ]]; then
     BASELINE="$BASELINE_SHA"
-  elif [[ -f "$REPO_ROOT/.git/INIT_SHA" ]]; then
-    BASELINE=$(cat "$REPO_ROOT/.git/INIT_SHA")
+  elif [[ -f "$REPO_ROOT/.git/SESSION_STATE" ]]; then
+    BASELINE=$(session_state_read "$REPO_ROOT" "init_sha")
   elif [[ "$IN_CONTAINER" -eq 1 ]]; then
     # Last resort inside container: diff against first commit
     BASELINE=$(git -C "$REPO_ROOT" rev-list --max-parents=0 HEAD)
   else
     echo "Error: --baseline is required when running outside the container." >&2
     echo "  Usage: package_diff.sh --baseline=<sha>" >&2
-    echo "  Inside the container, INIT_SHA is written at container init." >&2
+    echo "  Inside the container, SESSION_STATE is written at container init." >&2
     exit 1
   fi
 fi

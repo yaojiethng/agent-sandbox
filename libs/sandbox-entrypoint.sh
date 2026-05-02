@@ -53,6 +53,7 @@ mkdir -p "$CHANGES_DIR"
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
+source /opt/sandbox/lib/session.sh
 source /opt/sandbox/lib/snapshot.sh
 
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
@@ -67,6 +68,11 @@ BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR") || {
   echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
   exit 1
 }
+
+# Write session identity to SESSION_STATE so downstream consumers
+# (package_branch.sh, diff.sh) can read init_sha and session_ts
+session_state_write "$SANDBOX_DIR" "init_sha" "$BASELINE_SHA"
+session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
 
 echo "Sandbox ready. Baseline: $BASELINE_SHA"
 echo "Working tree status:"

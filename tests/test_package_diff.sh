@@ -127,21 +127,17 @@ test_package_diff_init_sha_fallback() {
   local OUTDIR="$FIXTURE_DIR/pd_initsha_out"
   mkdir -p "$DIR" "$OUTDIR"
   make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
-
-  # Write INIT_SHA file
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   echo "change" > "$DIR/changed.txt"
 
-  # No --baseline, but INIT_SHA file exists
+  # No --baseline, but SESSION_STATE file exists
   (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
 
-  if ls "$OUTDIR"/diffs/*-test/changes.diff >/dev/null 2>&1; then
-    pass "package_diff.sh falls back to INIT_SHA file"
+  if ls "$OUTDIR"/diffs/*test*/changes.diff >/dev/null 2>&1; then
+    pass "package_diff.sh falls back to SESSION_STATE"
   else
-    fail "package_diff.sh should fall back to INIT_SHA file"
+    fail "package_diff.sh should fall back to SESSION_STATE"
   fi
 }
 

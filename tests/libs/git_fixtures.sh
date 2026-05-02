@@ -25,6 +25,21 @@ get_init_sha() {
   git -C "$1" rev-list --max-parents=0 HEAD
 }
 
+# write_session_state DIR [SESSION_TS]
+#   Writes init_sha and session_ts to DIR/.git/SESSION_STATE in key=value format.
+#   Creates .git/ if it does not exist.
+write_session_state() {
+  local DIR="$1"
+  local SESSION_TS="${2:-20260501-120000}"
+  local SHA
+  SHA=$(get_init_sha "$DIR")
+
+  mkdir -p "$DIR/.git"
+  > "$DIR/.git/SESSION_STATE"
+  echo "init_sha=$SHA" >> "$DIR/.git/SESSION_STATE"
+  echo "session_ts=$SESSION_TS" >> "$DIR/.git/SESSION_STATE"
+}
+
 # commit_change DIR [MSG]
 #   Creates a new file and commits it with the given message.
 commit_change() {

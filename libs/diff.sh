@@ -37,6 +37,11 @@
 # are composed from these primitives directly.
 
 # -------------------------
+# Source session.sh for session_state_read
+_DIFF_SH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_DIFF_SH_DIR/session.sh"
+
+# -------------------------
 # diff_commit_pending
 #
 # Stages and commits any uncommitted changes in SANDBOX_DIR.
@@ -204,10 +209,9 @@ diff_on_exit() {
 
   # Per-commit .diff files from package_branch
   local INIT_SHA=""
-  if [[ -f "${SANDBOX_DIR}/.git/INIT_SHA" ]]; then
-    INIT_SHA=$(cat "${SANDBOX_DIR}/.git/INIT_SHA")
-  else
-    echo "diff_on_exit: INIT_SHA not found, skipping package_branch" >&2
+  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  if [[ -z "$INIT_SHA" ]]; then
+    echo "diff_on_exit: init_sha not found in SESSION_STATE, skipping package_branch" >&2
   fi
 
   if [[ -n "$INIT_SHA" ]]; then
@@ -261,9 +265,7 @@ diff_on_autosave() {
 
   # Per-commit .diff files from package_branch (committed work since INIT_SHA)
   local INIT_SHA=""
-  if [[ -f "${SANDBOX_DIR}/.git/INIT_SHA" ]]; then
-    INIT_SHA=$(cat "${SANDBOX_DIR}/.git/INIT_SHA")
-  fi
+  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
 
   if [[ -n "$INIT_SHA" ]]; then
     local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

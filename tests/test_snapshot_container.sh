@@ -13,6 +13,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/libs/session.sh"
 source "$REPO_ROOT/libs/snapshot.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 
@@ -475,42 +476,61 @@ test_sandbox_isolation() {
   fi
 }
 
-# INIT_SHA file creation — verify .git/INIT_SHA is written correctly
-test_init_git_creates_init_sha() {
-  local PROJECT="$FIXTURE_DIR/init_sha_project"
-  local SNAPSHOT="$FIXTURE_DIR/init_sha_snapshot"
-  local SANDBOX="$FIXTURE_DIR/init_sha_sandbox"
+# SESSION_STATE file creation — verify .git/SESSION_STATE is written correctly
+# and .git/INIT_SHA is NOT written
+test_init_git_creates_session_state() {
+  local PROJECT="$FIXTURE_DIR/session_state_project"
+  local SNAPSHOT="$FIXTURE_DIR/session_state_snapshot"
+  local SANDBOX="$FIXTURE_DIR/session_state_sandbox"
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
 
+  # Set SESSION_TS so snapshot_init_git writes it to SESSION_STATE
+  local SESSION_TS="20260501-120000"
   local SHA
   SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
 
-  # Check INIT_SHA file exists
-  if [[ ! -f "$SANDBOX/.git/INIT_SHA" ]]; then
-    fail "init_git: .git/INIT_SHA file not created"
+  # Check INIT_SHA file does NOT exist
+  if [[ -f "$SANDBOX/.git/INIT_SHA" ]]; then
+    fail "init_git: .git/INIT_SHA should not exist (use SESSION_STATE instead)"
     return
   fi
 
-  # Check INIT_SHA file contains correct SHA
-  local FILE_SHA
-  FILE_SHA=$(cat "$SANDBOX/.git/INIT_SHA")
-
-  if [[ "$FILE_SHA" == "$SHA" ]]; then
-    pass "init_git: INIT_SHA file contains correct SHA"
-  else
-    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, returned $SHA"
+  # Check SESSION_STATE file exists
+  if [[ ! -f "$SANDBOX/.git/SESSION_STATE" ]]; then
+    fail "init_git: .git/SESSION_STATE file not created"
+    return
   fi
 
-  # Check INIT_SHA matches actual first commit
+  # Check init_sha key contains correct SHA
+  local SESSION_INIT_SHA
+  SESSION_INIT_SHA=$(session_state_read "$SANDBOX" "init_sha")
+
+  if [[ "$SESSION_INIT_SHA" == "$SHA" ]]; then
+    pass "init_git: SESSION_STATE init_sha contains correct SHA"
+  else
+    fail "init_git: SESSION_STATE init_sha mismatch: has $SESSION_INIT_SHA, returned $SHA"
+  fi
+
+  # Check init_sha matches actual first commit
   local ACTUAL_SHA
   ACTUAL_SHA=$(git -C "$SANDBOX" rev-list --max-parents=0 HEAD)
 
-  if [[ "$FILE_SHA" == "$ACTUAL_SHA" ]]; then
-    pass "init_git: INIT_SHA matches first commit SHA"
+  if [[ "$SESSION_INIT_SHA" == "$ACTUAL_SHA" ]]; then
+    pass "init_git: SESSION_STATE init_sha matches first commit SHA"
   else
-    fail "init_git: INIT_SHA mismatch: file has $FILE_SHA, actual first commit is $ACTUAL_SHA"
+    fail "init_git: SESSION_STATE init_sha mismatch: has $SESSION_INIT_SHA, actual first commit is $ACTUAL_SHA"
+  fi
+
+  # Check session_ts key is present
+  local SESSION_TS_VALUE
+  SESSION_TS_VALUE=$(session_state_read "$SANDBOX" "session_ts")
+
+  if [[ -n "$SESSION_TS_VALUE" ]]; then
+    pass "init_git: SESSION_STATE session_ts is present"
+  else
+    fail "init_git: SESSION_STATE session_ts is missing"
   fi
 }
 
@@ -533,6 +553,6 @@ run_test          test_init_git_case8_staged_new_file
 run_test             test_init_git_one_commit
 run_test            test_init_git_missing_baseline_tar
 run_test                         test_sandbox_isolation
-run_test           test_init_git_creates_init_sha
+run_test           test_init_git_creates_session_state
 
 test_done

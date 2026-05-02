@@ -79,6 +79,27 @@ session_state_read() {
   done < "$STATE_FILE"
 }
 
+# session_state_write SANDBOX_DIR KEY VALUE
+#   Writes a key=value pair to the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
+#   Creates the file if it does not exist. Appends the pair on a new line.
+#   Args:
+#     $1  SANDBOX_DIR  — path to sandbox directory
+#     $2  KEY          — key to write
+#     $3  VALUE        — value to write
+session_state_write() {
+  local SANDBOX_DIR="$1"
+  local KEY="$2"
+  local VALUE="$3"
+  local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
+
+  local DIR="$(dirname "$STATE_FILE")"
+  if [[ ! -d "$DIR" ]]; then
+    return 1
+  fi
+
+  echo "${KEY}=${VALUE}" >> "$STATE_FILE"
+}
+
 # resolve_session_dir BASE_DIR SESSION_ARG REQUIRE_SUBPATH
 #   Resolves a session directory from an explicit or auto-detected path.
 #   Prints resolved absolute path to stdout.

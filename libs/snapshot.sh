@@ -269,9 +269,9 @@ snapshot_init_git() {
   sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD) \
     || { echo "Error: could not retrieve baseline SHA" >&2; return 1; }
 
-  # Write INIT_SHA to .git/INIT_SHA for future diff packaging
-  echo "$sha" > "$SANDBOX_DIR/.git/INIT_SHA" \
-    || { echo "Error: failed to write INIT_SHA" >&2; return 1; }
+  # Write init_sha and session_ts to .git/SESSION_STATE for future diff packaging
+  session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
+  session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
 
   # --- Step 2: overlay the working tree without touching the index ---
   # rsync copies the operator's working tree state (from SNAPSHOT_DIR, produced

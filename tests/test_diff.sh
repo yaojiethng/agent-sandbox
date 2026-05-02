@@ -59,6 +59,18 @@ commit_change() {
   git -C "$DIR" commit -m "$MSG" --quiet
 }
 
+write_session_state() {
+  local DIR="$1"
+  local SESSION_TS="${2:-20260501-120000}"
+  local SHA
+  SHA=$(get_sha "$DIR")
+
+  mkdir -p "$DIR/.git"
+  > "$DIR/.git/SESSION_STATE"
+  echo "init_sha=$SHA" >> "$DIR/.git/SESSION_STATE"
+  echo "session_ts=$SESSION_TS" >> "$DIR/.git/SESSION_STATE"
+}
+
 # -------------------------
 # diff_commit_pending
 # -------------------------
@@ -337,8 +349,8 @@ test_on_exit_writes_patches_in_session_subfolder() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  # Write SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   commit_change "$DIR" "first commit"
   commit_change "$DIR" "second commit"
@@ -364,8 +376,8 @@ test_on_exit_sweep_commit_produces_one_diff() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write .git/INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  # Write .git/SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   # Uncommitted change — diff_on_exit sweeps it into one commit
   echo "agent work" > "$DIR/result.txt"
@@ -568,8 +580,8 @@ test_on_autosave_overwrites_previous() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  # Write SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   # First tick: one commit
   echo "first" > "$DIR/file.txt"
@@ -607,8 +619,8 @@ test_on_autosave_writes_patches() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  # Write SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   commit_change "$DIR" "first commit"
   commit_change "$DIR" "second commit"
@@ -658,7 +670,7 @@ test_exit_and_autosave_write_separate_subfolders() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
   commit_change "$DIR" "work"
 
   diff_on_autosave "$DIR" "$SHA" "$CHANGES" "20260408-140000" "main"
@@ -774,7 +786,7 @@ test_format_patch_standalone_missing_args() {
 }
 
 # -------------------------
-# Session-scoped tests (with INIT_SHA for package_branch)
+# Session-scoped tests (with SESSION_STATE for package_branch)
 # -------------------------
 test_on_exit_session_dir_with_init_sha() {
   local DIR="$FIXTURE_DIR/exit_sess"
@@ -784,8 +796,8 @@ test_on_exit_session_dir_with_init_sha() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA for package_branch
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  # Write SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
@@ -810,7 +822,7 @@ test_on_exit_session_staged_diff() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
@@ -835,7 +847,7 @@ test_on_exit_session_patches() {
   local SHA
   SHA=$(get_sha "$DIR")
 
-  echo "$SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   echo "work" > "$DIR/file.txt"
   git -C "$DIR" add .
@@ -963,8 +975,8 @@ test_package_branch_produces_numbered_diffs() {
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
 
-  # Write INIT_SHA to .git/INIT_SHA
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  # Write SESSION_STATE for package_branch
+  write_session_state "$DIR"
 
   # Make 3 commits
   commit_change "$DIR" "commit 1"
@@ -993,7 +1005,7 @@ test_package_branch_strips_index_lines() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   commit_change "$DIR" "test commit"
 
@@ -1018,7 +1030,7 @@ test_package_branch_sanitizes_branch_name() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   # Create a branch with slashes
   git -C "$DIR" checkout -b "feature/sub-feature" --quiet
@@ -1046,7 +1058,7 @@ test_package_branch_no_commits() {
   make_sandbox "$DIR"
   local INIT_SHA
   INIT_SHA=$(get_sha "$DIR")
-  echo "$INIT_SHA" > "$DIR/.git/INIT_SHA"
+  write_session_state "$DIR"
 
   local CHANGES="$FIXTURE_DIR/pkgbranch_nocommits_changes"
   mkdir -p "$CHANGES"
