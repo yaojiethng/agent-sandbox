@@ -6,4 +6,4 @@
 
 # Pre-create the host-side config directory so copy-out has a landing target
 # on the first session (before any prior state exists in SANDBOX_DIR).
-mkdir -p "${SANDBOX_DIR}/.claude-code"
+mkdir -p "${SANDBOX_DIR}/.claude"
