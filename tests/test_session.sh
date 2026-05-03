@@ -158,6 +158,67 @@ test_resolve_missing_absolute() {
 }
 
 # -------------------------
+# session_state_read
+# -------------------------
+
+test_session_state_read_existing_key() {
+  local DIR="$FIXTURE_DIR/ss_existing_key"
+  mkdir -p "$DIR/.git"
+  session_state_write "$DIR" "init_sha" "abc123def"
+  local VALUE
+  VALUE=$(session_state_read "$DIR" "init_sha")
+  if [[ "$VALUE" == "abc123def" ]]; then
+    pass "returns value for existing key"
+  else
+    fail "expected 'abc123def', got '$VALUE'"
+  fi
+}
+
+test_session_state_read_missing_file() {
+  local DIR="$FIXTURE_DIR/ss_missing_file"
+  mkdir -p "$DIR/.git"
+  local VALUE
+  VALUE=$(session_state_read "$DIR" "init_sha")
+  if [[ -z "$VALUE" ]]; then
+    pass "returns empty when SESSION_STATE file does not exist"
+  else
+    fail "expected empty output, got '$VALUE'"
+  fi
+}
+
+test_session_state_read_missing_key() {
+  local DIR="$FIXTURE_DIR/ss_missing_key"
+  mkdir -p "$DIR/.git"
+  echo "init_sha=abc123" > "$DIR/.git/SESSION_STATE"
+  local VALUE
+  VALUE=$(session_state_read "$DIR" "session_ts")
+  if [[ -z "$VALUE" ]]; then
+    pass "returns empty for non-existent key"
+  else
+    fail "expected empty output, got '$VALUE'"
+  fi
+}
+
+test_session_state_read_malformed() {
+  local DIR="$FIXTURE_DIR/ss_malformed"
+  mkdir -p "$DIR/.git"
+  printf 'garbage\nnoequalsign\n\nkey=valid\n' > "$DIR/.git/SESSION_STATE"
+  local VALUE
+  VALUE=$(session_state_read "$DIR" "key")
+  if [[ "$VALUE" == "valid" ]]; then
+    pass "finds key after malformed lines"
+  else
+    fail "expected 'valid', got '$VALUE'"
+  fi
+  VALUE=$(session_state_read "$DIR" "init_sha")
+  if [[ -z "$VALUE" ]]; then
+    pass "returns empty for key not in file with malformed lines"
+  else
+    fail "expected empty output, got '$VALUE'"
+  fi
+}
+
+# -------------------------
 # Run all
 # -------------------------
 run_test test_validate_project_dir_missing
@@ -172,5 +233,9 @@ run_test test_resolve_require_subpath_missing
 run_test test_resolve_missing_base_relative
 run_test test_resolve_missing_base_auto
 run_test test_resolve_missing_absolute
+run_test test_session_state_read_existing_key
+run_test test_session_state_read_missing_file
+run_test test_session_state_read_missing_key
+run_test test_session_state_read_malformed
 
 test_done
