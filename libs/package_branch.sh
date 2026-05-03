@@ -8,8 +8,12 @@
 #   <output-dir>/0002-<sha>.diff
 #   ...
 #
-# Each .diff file is a single-commit diff with index lines stripped,
-# suitable for sequential git apply.
+# Each .diff file is a single-commit diff. Index lines are stripped from
+# text diffs (cosmetic — context-line matching is sufficient for text).
+# Binary diffs retain their index line because git apply requires it to
+# locate the base85-encoded binary content. Uses git diff --binary so
+# binary patches include the full content rather than just "differ".
+# Suitable for sequential git apply.
 #
 # Usage (library):
 #   package_branch SANDBOX_DIR INIT_SHA OUTPUT_DIR [SESSION_SUMMARY]
@@ -91,14 +95,16 @@ package_branch() {
       PREVIOUS_SHA="$INIT_SHA"
     fi
 
-    # Generate single-commit diff with index lines stripped
+    # Generate single-commit diff. Selectively strip index lines:
+    # - binary diffs: keep index (required for GIT binary patch)
+    # - text diffs:   strip index (cosmetic)
     local DIFF_FILE
     local PADDING
     PADDING=$(printf "%04d" "$INDEX")
     DIFF_FILE="${BRANCH_DIFFS_DIR}/${PADDING}-${COMMIT_SHA}.diff"
 
-    git -C "$SANDBOX_DIR" diff "${PREVIOUS_SHA}..${COMMIT_SHA}" \
-      | grep -v '^index ' \
+    git -C "$SANDBOX_DIR" diff --binary "${PREVIOUS_SHA}..${COMMIT_SHA}" \
+      | awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1' \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\' \
       > "$DIFF_FILE"

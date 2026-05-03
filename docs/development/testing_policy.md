@@ -176,6 +176,26 @@ Do not add a third `tests/lib/` file without a clear category boundary. If a hel
 
 ---
 
+## Knowledge Tests
+
+Knowledge tests live in `tests/knowledge/` and document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. They are **not** run by `make test` or `scripts/run_tests.sh` — the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob.
+
+**Purpose:** A knowledge test is a one-off executable document that:
+- Records what was learned about a tool's behaviour during investigation
+- Asserts that key assumptions still hold on the current system
+- Provides a reference for future developers modifying related code
+- Runs independently and self-validates (exit 0 = all assumptions confirmed)
+
+**Conventions:**
+- Naming: `tests/knowledge/knowledge_<topic>.sh`
+- Must be self-contained (no sourcing from `tests/lib/`, no shared fixtures)
+- Must create and clean up its own temporary directories
+- Must exit 0 when all assertions pass, non-zero otherwise
+- Not added to `run_tests.sh` or `make test`
+- Referenced by handover in relevant investigation or implementation sessions
+
+**Rule:** A knowledge test's assertions are not acceptance criteria for implementation sessions. They document tool behaviour, not system behaviour. Implementation acceptance criteria are defined per-session in the handover.
+
 ## Running the Test Suite
 
 The full suite is run via:

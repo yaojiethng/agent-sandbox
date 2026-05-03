@@ -172,10 +172,11 @@ fi
 # Generate diff
 #
 # Produces a unified diff consumable by `patch -p1`. The `index <sha>..<sha>`
-# lines emitted by git diff encode blob SHAs that cause `git apply` to reject
-# diffs when the index has drifted. Stripping them makes the diff purely
-# context-line based — patch applies by matching surrounding lines only,
-# which is tolerant of index state and sequential application.
+# lines emitted by git diff encode blob SHAs. For text diffs these are
+# stripped (cosmetic — context-line matching is sufficient). Binary diffs
+# retain their index line because git apply requires it to locate the
+# base85-encoded binary content. Uses git diff --binary so binary patches
+# include the full content rather than just "differ".
 #
 # Whitespace normalisation: strip trailing whitespace per line, ensure exactly
 # one trailing newline before EOF.
@@ -187,8 +188,8 @@ if [[ -n "$UNTRACKED" ]]; then
   done <<< "$UNTRACKED"
 fi
 
-git -C "$REPO_ROOT" diff "$BASELINE" \
-  | grep -v '^index ' \
+git -C "$REPO_ROOT" diff --binary "$BASELINE" \
+  | awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1' \
   | sed 's/[[:space:]]*$//' \
   | sed -e '$a\' \
   > "$OUTDIR/changes.diff"
