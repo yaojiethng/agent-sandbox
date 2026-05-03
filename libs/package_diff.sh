@@ -12,8 +12,8 @@
 #   package_diff.sh [--baseline=<sha>] [--name=<label>] [--outdir=<path>]
 #
 #   --baseline=<sha>   Git ref to diff against.
-#                      Inside the container: resolved automatically from INIT_SHA
-#                      file in .git/, then first repo commit.
+#                      Inside the container: resolved automatically from SESSION_STATE,
+#                      then first repo commit.
 #                      On the host: required; no default applied.
 #   --name=<label>     Short snake_case label for the output directory.
 #                      Output directory is always <timestamp>-<label>-<SESSION_TS>.
@@ -141,9 +141,6 @@ if [[ -n "$SESSION_TS_ARG" ]]; then
   SESSION_TS="$SESSION_TS_ARG"
 else
   SESSION_TS=$(session_state_read "$REPO_ROOT" "session_ts")
-  if [[ -z "$SESSION_TS" ]]; then
-    SESSION_TS="${SESSION_TS:-}"
-  fi
 fi
 
 # -------------------------

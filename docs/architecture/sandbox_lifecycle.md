@@ -46,13 +46,14 @@ This runs on the host where `PROJECT_DIR` is available. The tar contains exactly
 
 **`snapshot_init_git`** initialises the sandbox git repository in two steps:
 
-1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, the root commit SHA is written to `sandbox/.git/INIT_SHA`:
+1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, both the root commit SHA and session timestamp are written to `sandbox/.git/SESSION_STATE` as key-value pairs:
 
 ```bash
-git rev-list --max-parents=0 HEAD > sandbox/.git/INIT_SHA
+session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
+session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
 ```
 
-`INIT_SHA` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime.
+`init_sha` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime. `session_ts` records the session start timestamp.
 
 2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
 
@@ -84,8 +85,8 @@ On capability layer container exit, an EXIT trap runs the diff pipeline:
 
 1. **Capture uncommitted changes** — `changes.diff` is written before any sweep commit, preserving the working tree delta from HEAD.
 2. **Commit pending changes** — Any remaining uncommitted changes are staged and committed with a sweep message.
-3. **Write `staged.diff`** — A flat diff (net delta `INIT_SHA..HEAD`) is written for human review.
-4. **`package_branch`** — Produces one numbered `.diff` file per agent commit since `INIT_SHA`, written into `patches/`. Git index lines are stripped from all output.
+3. **Write `staged.diff`** — A flat diff (net delta `init_sha..HEAD`) is written for human review.
+4. **`package_branch`** — Produces one numbered `.diff` file per agent commit since `init_sha`, written into `patches/`. Git index lines are stripped from all output.
 
 All artefacts land in `workspace/session-diffs/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/`:
 
@@ -94,7 +95,7 @@ session-diffs/20260420-120000-main/
   session/
     EXPORT-TIME.txt       — timestamp of the exit export
     changes.diff          — uncommitted changes vs HEAD (before sweep)
-    staged.diff           — net delta INIT_SHA..HEAD (after sweep)
+    staged.diff           — net delta init_sha..HEAD (after sweep)
     patches/
       0001-abc1234.diff   — per-commit diffs from package_branch
   autosave/

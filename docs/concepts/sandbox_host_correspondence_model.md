@@ -30,9 +30,9 @@ unified diffs participates in the model.
 
 | Primitive | Definition |
 |---|---|
-| **`INIT_SHA`** | SHA of the root (baseline) commit in the sandbox. Written once at container init, never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. |
+| **`init_sha`** (from SESSION_STATE) | SHA of the root (baseline) commit in the sandbox. Written once at container init to `.git/SESSION_STATE`, never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. `session_ts` is written alongside it. |
 | **`package-diff` output** | Single unified diff of uncommitted working tree changes. No git metadata. Applied with `git apply`. |
-| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`. On exit, written to `CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/session/patches/`. Overwrites on each run — always reflects full branch history since `INIT_SHA`. |
+| **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `init_sha`. On exit, written to `CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/session/patches/`. Overwrites on each run — always reflects full branch history since `init_sha`. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Populated by sequential diff application, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
 | **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces container names per worktree instance. |
@@ -64,9 +64,9 @@ HEAD = A                             (not yet started)
   │        [INIT]                      │
   ├─ git archive HEAD ─────────────────►│
   │  rsync working tree                ├─ unpack baseline.tar → baseline commit
-  │                                    ├─ INIT_SHA written (root commit SHA)
+  │                                    ├─ init_sha written to SESSION_STATE (root commit SHA)
   │                                    ├─ rsync overlay (working tree state)
-  │                                    │  INIT_SHA = A
+  │                                    │  init_sha = A
   │                                    │
   │        [RUNNING — loop start]      │
   │                                    ├─ agent works, commits accumulate
@@ -94,7 +94,7 @@ HEAD = A                             (not yet started)
 HEAD = B
   │
   │        [RESTART — loop back to INIT]
-  └─ (new container snapshots HEAD = B; new INIT_SHA established)
+  └─ (new container snapshots HEAD = B; new init_sha established)
 ```
 
 **INIT — establishing correspondence**
@@ -102,8 +102,8 @@ HEAD = B
 Before the container starts, the harness snapshots the host: `git archive HEAD` produces a
 tar of the committed state; rsync copies the operator's working tree alongside it. Inside
 the container, `snapshot_init_git` unpacks the tar, commits as the baseline, writes
-`INIT_SHA`, then overlays the rsync copy so the working tree matches the operator's
-on-disk state. At this point sandbox file content exactly matches the host. `INIT_SHA` is
+`init_sha` (via SESSION_STATE), then overlays the rsync copy so the working tree matches the operator's
+on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is
 the fixed reference for all diff packaging in this container lifetime.
 
 **RUNNING — bidirectional flow**
@@ -113,7 +113,7 @@ use the same diff format and the same `make apply` command regardless of directi
 
 - **Sandbox → host (mid-session checkpoint):** The autosave loop exports uncommitted working tree changes as `changes.diff` and committed work as numbered `patches/`, all under `session-diffs/<SESSION_TS>-<BRANCH>/autosave/`. Overwritten each tick. Operator runs `make apply --session=<path-to-autosave>` on the host, reviews, commits manually.
 - **Host → sandbox (amendment):** Operator packages a host change with `package-diff` and applies it inside the container with `make apply`. Agent reviews and commits. The next `package-branch` includes this commit in the series.
-- **Sandbox → host (committed work):** `package-branch` exports all commits since `INIT_SHA` as numbered diffs in `session-diffs/<SESSION_TS>-<BRANCH>/session/patches/`. This runs automatically on container exit.
+- **Sandbox → host (committed work):** `package-branch` exports all commits since `init_sha` as numbered diffs in `session-diffs/<SESSION_TS>-<BRANCH>/session/patches/`. This runs automatically on container exit.
 
 **STOPPED — applying persisted artefacts**
 
@@ -132,10 +132,10 @@ from it.
 **RESTART — resetting correspondence**
 
 On the next container start, the harness snapshots the current host HEAD — incorporating
-all sessions confirmed since the last container — and establishes a new `INIT_SHA` from
+all sessions confirmed since the last container — and establishes a new `init_sha` from
 that snapshot. What carries over: session artefacts in `session-diffs/` persist in
 `SANDBOX_DIR` and remain available to the operator; provider config files are copied into
-the new container at startup. What resets: `INIT_SHA` is recomputed from scratch; agent
+the new container at startup. What resets: `init_sha` is recomputed from scratch; agent
 session context (conversation history, in-progress work) is lost unless the provider
 supports session resume (M2.6 scope).
 
@@ -162,7 +162,7 @@ directions and on both host and container.
 | Command | Available on | What it does |
 |---|---|---|
 | `package-diff` | Both | Packages uncommitted working tree changes as a single `.diff`. Output: `workspace/output/changes.diff` by default. |
-| `package-branch` | Both | Packages all commits since `INIT_SHA` as numbered `.diff` files. On exit: `CHANGES_DIR/<SESSION_TS>-<BRANCH>/session/patches/`. Overwrites on each run. |
+| `package-branch` | Both | Packages all commits since `init_sha` as numbered `.diff` files. On exit: `CHANGES_DIR/<SESSION_TS>-<BRANCH>/session/patches/`. Overwrites on each run. |
 | `make apply [DIFF=<path>]` | Both | Applies a single `.diff` uncommitted. Default: latest in `workspace/output/` by timestamp. |
 | `make draft [FROM=<hash>] [DIFFS=<start>..<end>]` | Host | Creates `draft/<branch>`, applies numbered diffs in order. `FROM` sets branch base (default: `HEAD`). `DIFFS` selects range (default: all). |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
@@ -214,5 +214,5 @@ coordination becomes a real use case, it warrants a story at that time.
 |---|---|
 | [`design_diff_and_branch_packaging_workflow.md`](../discussions/design_diff_and_branch_packaging_workflow.md) | Full design record — command shapes, implementation scope |
 | [`design_apply_workflow_and_baseline_advancement.md`](../discussions/design_apply_workflow_and_baseline_advancement.md) | Prior design record — preserved with SUPERSEDED markers |
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; INIT_SHA initialisation; Phase 3 join |
+| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |

@@ -109,8 +109,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
-| `apply_workspace.sh` | 🟡 Warm | M2.3 | Applies changes.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
-| `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly — no `apply_workspace.sh` delegation. |
+| `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
 | `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
 | `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
@@ -122,8 +121,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch commits as numbered diff files. Sourced by `diff_on_exit`. |
-| `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads INIT_SHA from .git/ at container init. |
-| `draft.sh` | 🟡 Warm | M2.3 | Shared draft branch management: folder resolution, name parsing, collision guard, .draft-state read/write. |
+| `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |

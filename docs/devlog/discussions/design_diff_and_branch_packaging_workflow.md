@@ -16,7 +16,7 @@ Git is a tool used independently inside each repo. It is not the correspondence 
 
 | Primitive | Definition |
 |---|---|
-| **`INIT_SHA`** | SHA of the root commit in the sandbox. Written once to `sandbox/.git/INIT_SHA` at container init. Never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. |
+| **`init_sha`** (from SESSION_STATE) | SHA of the root commit in the sandbox. Written once to `sandbox/.git/SESSION_STATE` as `init_sha=<sha>` at container init. Never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. `session_ts=<timestamp>` is written alongside it. |
 | **`package-diff` output** | Single unified diff of uncommitted working tree changes. Produced by `git diff HEAD` with index lines stripped. No git metadata headers. |
 | **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `INIT_SHA`. Manual invocation writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`; `diff_on_exit` writes to `CHANGES_DIR/<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/`. Overwrites the folder on each run — always reflects the full branch history since `INIT_SHA`. Index lines stripped. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Created by `make draft`, populated by sequential diff application, ready for `git rebase -i` onto the target branch. |
@@ -310,17 +310,18 @@ Deletes the current draft branch only — other `draft/` branches are untouched.
 
 ---
 
-## INIT_SHA
+## SESSION_STATE
 
 Set once at container init by `snapshot_init_git`, immediately after the baseline commit is created:
 
 ```bash
-git rev-list --max-parents=0 HEAD > sandbox/.git/INIT_SHA
+session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
+session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
 ```
 
-Never updated. Used only by `package-branch` as the lower boundary of the diff series. Not used by `make apply`, `make draft`, or any host-side command.
+`init_sha` (`init_sha` key in SESSION_STATE) is never updated. Used by `package-branch` as the lower boundary of the diff series. Not used by `make apply`, `make draft`, or any host-side command.
 
-On container restart, a new container produces a new `INIT_SHA` from a fresh snapshot of the current host state. There is no carryover between container lifetimes.
+On container restart, a new container produces a new `init_sha` from a fresh snapshot of the current host state. There is no carryover between container lifetimes.
 
 ---
 
@@ -360,7 +361,7 @@ Each worktree is an independent harness instance with its own `SANDBOX_DIR`. Ses
 
 | File | Change |
 |---|---|
-| `libs/snapshot.sh` | In `snapshot_init_git`: write `git rev-list --max-parents=0 HEAD` to `sandbox/.git/INIT_SHA` after baseline commit. Remove any `BASELINE_SHA` write. |
+| `libs/snapshot.sh` | In `snapshot_init_git`: write `session_state_write` records both `init_sha` and `session_ts` to `sandbox/.git/SESSION_STATE` after baseline commit. Remove any `BASELINE_SHA` write. |
 | `libs/diff.sh` | Replace `diff_format_patch` with `package_branch` function. Update `diff_on_exit` to call `package_branch`. Add `package_diff` function (`git diff HEAD` with index lines stripped). Retain `staged.diff` generation. |
 | `scripts/apply_workspace.sh` | Redesign `make draft`: remove checkpoint tag lookup; add `FROM=<hash>` and `DIFFS=<start>..<end>` arguments; replace `git am` loop with sequential `git apply` loop over numbered `.diff` files. Redesign `make confirm`: remove rebase — cleanup only. Update `make apply`: add `DIFF=<path>` argument; remove pre-staging block; use `grep -v '^index ' \| git apply`. Remove `make sync` and `SYNC=1` entirely. |
 | `scripts/checkpoint.sh` | Remove checkpoint git tag creation, pruning, and lookup functions. Retain `WORKTREE_ID` derivation. Rename if scope no longer warrants the name. |
@@ -374,5 +375,5 @@ Each worktree is an independent harness instance with its own `SANDBOX_DIR`. Ses
 | Document | Purpose |
 |---|---|
 | [`design_apply_workflow_and_baseline_advancement.md`](design_apply_workflow_and_baseline_advancement.md) | Superseded design — original reasoning record with inline SUPERSEDED markers |
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; INIT_SHA initialisation |
+| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation |
 | [`sandbox_host_correspondence_model.md`](../concepts/sandbox_host_correspondence_model.md) | Correspondence model — how sandbox and host stay in sync |

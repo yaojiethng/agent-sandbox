@@ -47,7 +47,7 @@ USER agentuser
 # named volume — it is removed with docker rm -v (or compose down -v)
 # after each session so it does not persist across runs.
 # workspace/session-diffs/ is bind-mounted from SANDBOX_DIR/.workspace/session-diffs/
-# on the host — the diff pipeline writes staged.diff here only.
+# on the host — the diff pipeline writes changes.diff, EXPORT-TIME.txt, and patches/*.diff
 # The capability layer does not mount the workspace parent.
 # .snapshot/ is bind-mounted read-only from SANDBOX_DIR/.snapshot/ on the host.
 # All directories created as agentuser so mounts are not blocked by ownership.
