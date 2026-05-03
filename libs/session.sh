@@ -28,6 +28,33 @@ validate_project_dir() {
   fi
 }
 
+# Check for and remove a stale .git/index.lock.
+# On Windows/WSL (drvfs mounts), git operations can leave a stale lock file
+# behind even when they succeed (antivirus scanning, delayed unlink).
+# Removing it prevents cascading failures in subsequent git commands.
+draft_clear_stale_lock() {
+  local PROJECT_DIR="$1"
+  local LOCKFILE="$PROJECT_DIR/.git/index.lock"
+  if [[ -f "$LOCKFILE" ]]; then
+    # Check if a git process is actively holding the lock.
+    # On Linux: lsof is reliable. On Windows/MINGW64: check process list.
+    local LOCK_HELD=false
+    if command -v lsof >/dev/null 2>&1; then
+      if lsof "$LOCKFILE" >/dev/null 2>&1; then
+        LOCK_HELD=true
+      fi
+    fi
+    if [[ "$LOCK_HELD" == true ]]; then
+      echo "Error: .git/index.lock is held by another git process" >&2
+      echo "  File: $LOCKFILE" >&2
+      echo "  Ensure no other git process is running and retry." >&2
+      return 1
+    fi
+    echo "Warning: removing stale .git/index.lock" >&2
+    rm -f "$LOCKFILE"
+  fi
+}
+
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
 #   The file format is one key=value pair per line.

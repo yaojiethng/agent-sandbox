@@ -22,6 +22,7 @@ apply_run() {
   local FORCE="$6"
 
   validate_project_dir "$PROJECT_DIR" || return 1
+  draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
   local CHANGES_DIFF=""
   local SESSION_DIR=""

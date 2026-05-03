@@ -144,13 +144,18 @@ draft_validate_branch() {
     return 1
   fi
 
-  local FIRST_SHA FIRST_COMMIT_MSG
-  read -r FIRST_SHA < <(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse)
-  FIRST_COMMIT_MSG=$(git -C "$PROJECT_DIR" log -1 --format=%s "$FIRST_SHA" 2>/dev/null || echo "")
+  # Find .draft-state commit by message — it may not be the first commit after
+  # from_hash if the user ran git rebase -i (which is the recommended workflow
+  # for shaping commits before confirm).
+  local DRAFT_STATE_COMMIT
+  DRAFT_STATE_COMMIT=$(git -C "$PROJECT_DIR" log "${from_hash}..${CURRENT_BRANCH}" --reverse --format="%H" --grep="^\.draft-state$" 2>/dev/null | head -1)
 
-  if [[ "$FIRST_COMMIT_MSG" != ".draft-state" ]]; then
-    echo "Error: first commit on draft branch $CURRENT_BRANCH is not '.draft-state' (got: $FIRST_COMMIT_MSG)" >&2
-    return 1
+  if [[ -z "$DRAFT_STATE_COMMIT" ]]; then
+    echo "Warning: .draft-state commit not found between ${from_hash:0:7}..${CURRENT_BRANCH}" >&2
+    echo "  The commit may have been dropped during rebase. Skipping drop step." >&2
+    echo "DRAFT_STATE_COMMIT="
+  else
+    echo "DRAFT_STATE_COMMIT=$DRAFT_STATE_COMMIT"
   fi
 
   echo "CURRENT_BRANCH=$CURRENT_BRANCH"
@@ -169,6 +174,7 @@ draft_run() {
   local BRANCH_SUMMARY="$6"
 
   validate_project_dir "$PROJECT_DIR" || return 1
+  draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
   local WORKSPACE_DIR="$SANDBOX_DIR/.workspace"
   local CHANGES_DIR="$WORKSPACE_DIR/session-diffs"
@@ -384,9 +390,12 @@ confirm_run() {
   local TARGET_BRANCH="$3"
 
   validate_project_dir "$PROJECT_DIR" || return 1
+  draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
   # Validate draft branch and read .draft-state into local scope
-  eval "$(draft_validate_branch "$PROJECT_DIR")" || return 1
+  local DRAFT_VALIDATION
+  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  eval "$DRAFT_VALIDATION"
 
   local MERGE_TARGET="${TARGET_BRANCH:-$source_branch}"
 
@@ -396,13 +405,15 @@ confirm_run() {
     return 1
   fi
 
-  # 1. Drop .draft-state commit
-  local DRAFT_STATE_COMMIT
-  read -r DRAFT_STATE_COMMIT < <(git -C "$PROJECT_DIR" rev-list "${from_hash}..${CURRENT_BRANCH}" --reverse)
-  echo "Dropping .draft-state commit..."
-  if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
-    echo "Error: failed to drop .draft-state commit" >&2
-    return 1
+  # 1. Drop .draft-state commit (if found — user may have already removed it during rebase)
+  if [[ -n "${DRAFT_STATE_COMMIT:-}" ]]; then
+    echo "Dropping .draft-state commit..."
+    if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
+      echo "Error: failed to drop .draft-state commit" >&2
+      return 1
+    fi
+  else
+    echo ".draft-state commit not found — skipping drop step."
   fi
 
   # 2. Rebase draft onto target
@@ -450,9 +461,12 @@ reject_run() {
   local SANDBOX_DIR="$2"
 
   validate_project_dir "$PROJECT_DIR" || return 1
+  draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
   # Validate draft branch and read .draft-state into local scope
-  eval "$(draft_validate_branch "$PROJECT_DIR")" || return 1
+  local DRAFT_VALIDATION
+  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  eval "$DRAFT_VALIDATION"
 
   echo "Rejecting draft. Returning to $source_branch..."
   git -C "$PROJECT_DIR" checkout "$source_branch"
