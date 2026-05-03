@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_snapshot_container.sh
-# Container-side snapshot pipeline tests: snapshot_validate, snapshot_copy_to_sandbox,
-# snapshot_init_git.
+# Container-side snapshot pipeline tests: snapshot_validate, snapshot_init_git.
 #
 # snapshot_init_git tests cover the full eight-case working tree state matrix.
 # Each case builds a fixture that includes both a baseline.tar (via git archive HEAD)
@@ -120,47 +119,8 @@ test_validate_missing_baseline_tar() {
   fi
 }
 
-# -------------------------
-# snapshot_copy_to_sandbox tests
-# -------------------------
-
-test_copy_to_sandbox() {
-  local SNAPSHOT="$FIXTURE_DIR/copy_snapshot"
-  local SANDBOX="$FIXTURE_DIR/copy_sandbox"
-  make_snapshot "$SNAPSHOT"
-  touch "$SNAPSHOT/baseline.tar"
-
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
-
-  # Only baseline.tar should be copied — working tree files are overlaid
-  # by snapshot_init_git after the baseline commit is made, not here.
-  if [[ -f "$SANDBOX/baseline.tar" ]]; then
-    pass "baseline.tar copied to sandbox"
-  else
-    fail "baseline.tar missing from sandbox after copy"
-  fi
-
-  if [[ ! -f "$SANDBOX/file.txt" ]]; then
-    pass "working tree files not copied at this stage (correct)"
-  else
-    fail "working tree files should not be present before snapshot_init_git runs"
-  fi
-}
-
-test_copy_leaves_snapshot_intact() {
-  local SNAPSHOT="$FIXTURE_DIR/intact_snapshot"
-  local SANDBOX="$FIXTURE_DIR/intact_sandbox"
-  make_snapshot "$SNAPSHOT"
-  touch "$SNAPSHOT/baseline.tar"
-
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
-
-  if [[ -f "$SNAPSHOT/file.txt" && -f "$SNAPSHOT/baseline.tar" ]]; then
-    pass "snapshot intact after copy"
-  else
-    fail "snapshot modified by copy"
-  fi
-}
+# This function was removed — it was superfluous:
+# snapshot_init_git reads baseline.tar directly from the snapshot mount.
 
 # -------------------------
 # snapshot_init_git — working tree state matrix
@@ -182,7 +142,6 @@ test_init_git_case1_clean() {
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
 
   local SHA
   SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
@@ -216,7 +175,6 @@ test_init_git_case2_unstaged_edit() {
   echo "unstaged edit" >> "$PROJECT/committed.txt"
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -253,7 +211,6 @@ test_init_git_case3_staged_edit() {
   git -C "$PROJECT" add committed.txt  # staged but not committed
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -286,7 +243,6 @@ test_init_git_case4_unstaged_deletion() {
   rm "$PROJECT/committed.txt"  # unstaged deletion
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -327,7 +283,6 @@ test_init_git_case5_staged_deletion() {
   git -C "$PROJECT" rm committed.txt --quiet  # staged deletion
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -360,7 +315,6 @@ test_init_git_case6_untracked() {
   echo "new untracked" > "$PROJECT/hello-world.txt"
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -404,7 +358,6 @@ test_init_git_case7_gitignored() {
   echo "secret data" > "$PROJECT/secret.env"
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -437,7 +390,6 @@ test_init_git_case8_staged_new_file() {
   git -C "$PROJECT" add new-staged.txt  # staged but not committed
   resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   local STATUS
@@ -466,7 +418,6 @@ test_init_git_one_commit() {
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
 
   local SHA
   SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
@@ -511,7 +462,6 @@ test_sandbox_isolation() {
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
   snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
 
   echo "agent change" > "$SANDBOX/committed.txt"
@@ -533,7 +483,6 @@ test_init_git_creates_init_sha() {
   mkdir -p "$SANDBOX"
 
   make_init_fixture "$PROJECT" "$SNAPSHOT"
-  snapshot_copy_to_sandbox "$SNAPSHOT" "$SANDBOX"
 
   local SHA
   SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
@@ -573,9 +522,6 @@ run_test                   test_validate_passes
 run_test              test_validate_missing
 run_test                test_validate_empty
 run_test     test_validate_missing_baseline_tar
-run_test                   test_copy_to_sandbox
-run_test       test_copy_leaves_snapshot_intact
-
 run_test                    test_init_git_case1_clean
 run_test            test_init_git_case2_unstaged_edit
 run_test              test_init_git_case3_staged_edit

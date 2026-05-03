@@ -4,14 +4,13 @@
 #
 # Sequence:
 #   1. snapshot_validate (gate 2)       — confirm .snapshot/ is intact
-#   2. snapshot_copy_to_sandbox         — copy snapshot into sandbox/ (clean at container start)
-#   3. snapshot_init_git                — git init + baseline commit; records baseline SHA
-#   4. register EXIT trap → diff        — fires on any exit; commits pending changes,
+#   2. snapshot_init_git                — git init + baseline commit; records baseline SHA
+#   3. register EXIT trap → diff        — fires on any exit; commits pending changes,
 #                                         writes staged.diff, kills autosave subshell
-#   5. register TERM trap → exit 0      — docker stop sends SIGTERM to PID 1; clean exit
+#   4. register TERM trap → exit 0      — docker stop sends SIGTERM to PID 1; clean exit
 #                                         ensures EXIT trap fires reliably
-#   6. start autosave loop              — if AUTOSAVE_INTERVAL > 0
-#   7. wait                             — stays running while reasoning layer is active
+#   5. start autosave loop              — if AUTOSAVE_INTERVAL > 0
+#   6. wait                             — stays running while reasoning layer is active
 #
 # The reasoning layer container exits first. The harness then stops this
 # container via docker stop, which sends SIGTERM to PID 1 (this script).
@@ -59,21 +58,8 @@ source /opt/sandbox/lib/snapshot.sh
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
 snapshot_validate "$SNAPSHOT_DIR"
 
-# Copy snapshot into sandbox/.
-# sandbox/ starts clean from the image — no stale content to clear.
-# The reasoning layer accesses this directory via --volumes-from, so it
-# sees exactly what the capability layer writes here and nothing else.
-snapshot_copy_to_sandbox "$SNAPSHOT_DIR" "$SANDBOX_DIR"
-
-# Confirm files landed — catch silent copy failures before git init.
-file_count=$(find "$SANDBOX_DIR" -type f | wc -l)
-if [[ "$file_count" -eq 0 ]]; then
-  echo "Error: sandbox is empty after copy — snapshot may be missing files." >&2
-  echo "  Snapshot dir: $SNAPSHOT_DIR" >&2
-  echo "  Run: ls -la $SNAPSHOT_DIR" >&2
-  exit 1
-fi
-echo "Copied $file_count file(s) into sandbox."
+# The snapshot is already validated above and baseline.tar is read directly
+# from the snapshot mount by snapshot_init_git — no copy needed.
 
 # Initialise git baseline. Failure here means the container cannot start.
 BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR") || {

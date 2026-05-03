@@ -11,7 +11,6 @@
 #   snapshot_validate         SNAPSHOT_DIR
 #
 # Container-side functions:
-#   snapshot_copy_to_sandbox  SNAPSHOT_DIR  SANDBOX_DIR
 #   snapshot_init_git         SANDBOX_DIR   SNAPSHOT_DIR
 
 # -------------------------
@@ -181,25 +180,6 @@ snapshot_validate() {
     echo "  snapshot_archive_head must run before snapshot_validate." >&2
     return 1
   fi
-}
-
-# -------------------------
-# snapshot_copy_to_sandbox
-# -------------------------
-# Copies baseline.tar from SNAPSHOT_DIR into SANDBOX_DIR.
-# Only baseline.tar is needed at this stage — snapshot_init_git unpacks it
-# to form the baseline commit, then overlays the full working tree from
-# SNAPSHOT_DIR in a second step. Copying the full working tree here would
-# cause untracked and modified files to land in sandbox before the baseline
-# commit is made, including them in the baseline commit.
-# SANDBOX_DIR is created if it does not exist.
-snapshot_copy_to_sandbox() {
-  local SNAPSHOT_DIR="$1"
-  local SANDBOX_DIR="$2"
-
-  mkdir -p "$SANDBOX_DIR"
-  cp "$SNAPSHOT_DIR/baseline.tar" "$SANDBOX_DIR/baseline.tar" \
-    || { echo "Error: failed to copy baseline.tar from $SNAPSHOT_DIR" >&2; return 1; }
 }
 
 # -------------------------
