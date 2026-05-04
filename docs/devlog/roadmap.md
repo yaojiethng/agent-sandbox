@@ -134,7 +134,7 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 
 ---
 
-#### A.0 — Sourceability refactor for `agent-sandbox.sh`
+#### A.0 — Sourceability refactor for `agent-sandbox.sh` (complete)
 
 **Objective:** Make `scripts/agent-sandbox.sh` sourceable so that workflow functions defined within its dispatch logic can be unit tested directly. Currently the file executes top-level code on source (sets `set -euo pipefail`, sources libs, dispatches via `case`), which cannot be sourced without side effects.
 
