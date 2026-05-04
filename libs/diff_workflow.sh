@@ -59,13 +59,13 @@ apply_run() {
 
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
-    if ! git -C "$PROJECT_DIR" apply --reject < <(grep -v '^index ' "$DIFF_FILE"); then
+    if ! git -C "$PROJECT_DIR" apply --reject < <(strip_index_lines < "$DIFF_FILE"); then
       echo "" >&2
       echo "Warning: some hunks failed to apply." >&2
       echo "Review .rej files and resolve manually." >&2
     fi
   else
-    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$DIFF_FILE"); then
+    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$DIFF_FILE"); then
       echo "Error: git apply failed." >&2
       echo "  Diff file: $DIFF_FILE" >&2
       echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
@@ -92,3 +92,4 @@ apply_run() {
 # Source session.sh for shared helpers
 _DW_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_DW_SCRIPT_DIR/session.sh"
+source "$_DW_SCRIPT_DIR/diff.sh"

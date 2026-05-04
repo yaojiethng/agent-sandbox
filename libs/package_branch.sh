@@ -102,7 +102,7 @@ package_commits() {
     DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
 
     git -C "$SANDBOX_DIR" diff --binary "${PREVIOUS_SHA}..${COMMIT_SHA}" \
-      | awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1' \
+      | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\' \
       > "$DIFF_FILE"

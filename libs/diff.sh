@@ -30,6 +30,23 @@ source "$_DIFF_SH_DIR/session.sh"
 source "$_DIFF_SH_DIR/routing.sh"
 
 # -------------------------
+# strip_index_lines
+#
+# Filters git diff output: strips index lines from text diffs (cosmetic),
+# preserves index lines for binary diffs (required by git apply).
+#
+# Without this filter, index lines from text diffs cause cosmetic SHA
+# mismatches when applying across repos with different histories.
+# Without preserving binary index lines, git apply rejects binary patches.
+#
+# Usage:  git diff ... | strip_index_lines > file.diff
+#         git apply < <(strip_index_lines < file.diff)
+# -------------------------
+strip_index_lines() {
+  awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1'
+}
+
+# -------------------------
 # write_uncommitted_diff
 #
 # Writes uncommitted changes vs HEAD to OUTPUT_FILE.
@@ -61,7 +78,7 @@ write_uncommitted_diff() {
     > "$OUTPUT_FILE"
   else
     git -C "$SANDBOX_DIR" diff HEAD \
-      | grep -v '^index ' \
+      | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"
@@ -124,7 +141,7 @@ write_all_changes_diff() {
     > "$OUTPUT_FILE"
   else
     git -C "$SANDBOX_DIR" diff "$INIT_SHA" \
-      | grep -v '^index ' \
+      | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"

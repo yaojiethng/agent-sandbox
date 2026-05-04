@@ -135,7 +135,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # -------------------------
   # Copy changed files
   # -------------------------
-  local SINCE_SHA="HEAD"
+  SINCE_SHA="HEAD"
   if [[ -n "$BASELINE_ARG" ]]; then
     SINCE_SHA="$BASELINE_ARG"
   elif [[ "$ALL_FLAG" == true ]]; then

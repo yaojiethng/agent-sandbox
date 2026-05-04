@@ -10,6 +10,7 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/routing.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/diff.sh"
 
 # =============================================================================
 # Internal helpers (absorbed from libs/draft.sh)
@@ -311,7 +312,7 @@ draft_run() {
   echo "Applying ${#DIFF_FILES[@]} diffs..."
   for diff_file in "${DIFF_FILES[@]}"; do
     echo "  Applying: $(basename "$diff_file")"
-    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$diff_file"); then
+    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$diff_file"); then
       echo "Error: failed to apply $(basename "$diff_file")" >&2
       echo "  Patch file: $diff_file" >&2
       git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
@@ -326,7 +327,7 @@ draft_run() {
   if [[ -f "$UNCOMMITTED_DIFF" && -s "$UNCOMMITTED_DIFF" ]]; then
     echo ""
     echo "Applying uncommitted.diff..."
-    if ! git -C "$PROJECT_DIR" apply < <(grep -v '^index ' "$UNCOMMITTED_DIFF"); then
+    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$UNCOMMITTED_DIFF"); then
       echo "Error: failed to apply uncommitted.diff" >&2
       echo "  File: $UNCOMMITTED_DIFF" >&2
       return 1

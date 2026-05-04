@@ -83,7 +83,7 @@ make_real_session() {
     local PADDING
     PADDING=$(printf "%04d" "$COMMIT_NUM")
     git -C "$SANDBOX" diff "${PREV_SHA}..${COMMIT_SHA}" \
-      | grep -v '^index ' \
+      | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\' \
       > "$SESSION_DIR/patches/${PADDING}-${COMMIT_SHA}.diff"

@@ -291,6 +291,156 @@ else
 fi
 
 # ===============================================================
+# Section 6: grep -v '^index ' destroys binary patches
+#
+# This section validates that the naive grep -v '^index ' filter
+# (previously used in draft_run and apply_run) breaks binary patches,
+# while the selective awk filter preserves them.
+#
+# This is the root cause of the patch-003 failure found in
+# handover 20260504-03-study-patch_003_binary_diff_failure.md
+# ===============================================================
+echo ""
+echo "--- Section 6: grep -v index destroys binary patches (the bug) ---"
+
+make_repo "$FIXTURE/section6_src"
+make_binary "$FIXTURE/section6_src/data.bin"
+echo "text" > "$FIXTURE/section6_src/file.txt"
+git -C "$FIXTURE/section6_src" add . && git -C "$FIXTURE/section6_src" commit -m "init" --quiet
+
+# Modify binary + text in one commit (mixing both types)
+make_other_binary "$FIXTURE/section6_src/data.bin"
+echo "line 2" >> "$FIXTURE/section6_src/file.txt"
+git -C "$FIXTURE/section6_src" add .
+git -C "$FIXTURE/section6_src" commit -m "change both" --quiet
+
+BASELINE=$(git -C "$FIXTURE/section6_src" rev-list --max-parents=0 HEAD)
+HEAD_SHA=$(git -C "$FIXTURE/section6_src" rev-parse HEAD)
+
+# Generate patch using the selective awk filter (correct, as package_commits does)
+git -C "$FIXTURE/section6_src" diff --binary "${BASELINE}..${HEAD_SHA}" | strip_index_selectively > "$FIXTURE/selective.diff"
+
+# Same patch, but stripped with grep -v '^index ' (as the buggy draft_run did)
+git -C "$FIXTURE/section6_src" diff --binary "${BASELINE}..${HEAD_SHA}" | grep -v '^index ' > "$FIXTURE/broken.diff"
+
+# Apply both patches to fresh repos with same initial state
+
+# Fresh repo A — apply with selective strip
+make_repo "$FIXTURE/section6_apply_good"
+make_binary "$FIXTURE/section6_apply_good/data.bin"
+echo "text" > "$FIXTURE/section6_apply_good/file.txt"
+git -C "$FIXTURE/section6_apply_good" add . && git -C "$FIXTURE/section6_apply_good" commit -m "init" --quiet
+
+if git -C "$FIXTURE/section6_apply_good" apply "$FIXTURE/selective.diff" 2>/dev/null; then
+  pass "Section 6: selective-strip patch (correct) applies cleanly"
+else
+  fail "Section 6: selective-strip patch failed to apply"
+fi
+
+# Fresh repo B — apply with grep -v '^index ' (the bug)
+make_repo "$FIXTURE/section6_apply_bad"
+make_binary "$FIXTURE/section6_apply_bad/data.bin"
+echo "text" > "$FIXTURE/section6_apply_bad/file.txt"
+git -C "$FIXTURE/section6_apply_bad" add . && git -C "$FIXTURE/section6_apply_bad" commit -m "init" --quiet
+
+if git -C "$FIXTURE/section6_apply_bad" apply "$FIXTURE/broken.diff" 2>/dev/null; then
+  fail "Section 6: grep -v '^index ' patch applied unexpectedly (binary data may have been lost)"
+else
+  pass "Section 6: grep -v '^index ' patch fails to apply (expected — index line missing for binary)"
+fi
+
+# Verify content of the successful apply
+if grep -q "line 2" "$FIXTURE/section6_apply_good/file.txt"; then
+  pass "Section 6: text content correctly applied alongside binary"
+else
+  fail "Section 6: text content missing after binary+text apply"
+fi
+
+# ===============================================================
+# Section 7: Sequential mixed patches (text, then binary, then text)
+#
+# Simulates a real session where the agent makes multiple commits
+# alternating between text and binary changes. Validates that the
+# selective strip filter produces patches that apply sequentially.
+# ===============================================================
+echo ""
+echo "--- Section 7: sequential mixed patches (text → binary → text) ---"
+
+make_repo "$FIXTURE/section7"
+echo "init" > "$FIXTURE/section7/readme.txt"
+git -C "$FIXTURE/section7" add . && git -C "$FIXTURE/section7" commit -m "init" --quiet
+BASELINE=$(git -C "$FIXTURE/section7" rev-parse HEAD)
+
+# Commit 1: text only
+echo "feature a" > "$FIXTURE/section7/feature-a.txt"
+git -C "$FIXTURE/section7" add .
+git -C "$FIXTURE/section7" commit -m "text: feature a" --quiet
+SHA1=$(git -C "$FIXTURE/section7" rev-parse HEAD)
+
+# Commit 2: binary only
+mkdir -p "$FIXTURE/section7/assets"
+make_binary "$FIXTURE/section7/assets/icon.bin"
+git -C "$FIXTURE/section7" add .
+git -C "$FIXTURE/section7" commit -m "binary: icon" --quiet
+SHA2=$(git -C "$FIXTURE/section7" rev-parse HEAD)
+
+# Commit 3: text only (second binary - modify)
+mkdir -p "$FIXTURE/section7/assets"
+make_other_binary "$FIXTURE/section7/assets/icon.bin"
+echo "feature b" > "$FIXTURE/section7/feature-b.txt"
+git -C "$FIXTURE/section7" add .
+git -C "$FIXTURE/section7" commit -m "binary+text: icon v2 + feature b" --quiet
+SHA3=$(git -C "$FIXTURE/section7" rev-parse HEAD)
+
+# Generate patches as package_commits would (consecutive diffs, selective strip)
+mkdir -p "$FIXTURE/patches"
+git -C "$FIXTURE/section7" diff --binary "${BASELINE}..${SHA1}" | strip_index_selectively > "$FIXTURE/patches/0001-test.diff"
+git -C "$FIXTURE/section7" diff --binary "${SHA1}..${SHA2}" | strip_index_selectively > "$FIXTURE/patches/0002-test.diff"
+git -C "$FIXTURE/section7" diff --binary "${SHA2}..${SHA3}" | strip_index_selectively > "$FIXTURE/patches/0003-test.diff"
+
+# Apply to fresh repo simulating host
+make_repo "$FIXTURE/section7_apply"
+echo "init" > "$FIXTURE/section7_apply/readme.txt"
+git -C "$FIXTURE/section7_apply" add . && git -C "$FIXTURE/section7_apply" commit -m "init" --quiet
+
+ALL_APPLIED=true
+for i in 1 2 3; do
+  PF="$FIXTURE/patches/000${i}-test.diff"
+  if git -C "$FIXTURE/section7_apply" apply < <(strip_index_selectively < "$PF") 2>/dev/null; then
+    git -C "$FIXTURE/section7_apply" add -A
+    git -C "$FIXTURE/section7_apply" commit -m "apply patch $i" --quiet
+    : # pass is handled below
+  else
+    fail "Section 7: patch $i failed to apply in sequence"
+    ALL_APPLIED=false
+  fi
+done
+
+if [[ "$ALL_APPLIED" == true ]]; then
+  pass "Section 7: all 3 sequential patches (text → binary → text+binary) apply cleanly"
+fi
+
+# Verify state after all patches
+if [[ -f "$FIXTURE/section7_apply/feature-a.txt" && -f "$FIXTURE/section7_apply/feature-b.txt" ]]; then
+  pass "Section 7: text files present after sequential apply"
+else
+  fail "Section 7: text files missing after sequential apply"
+fi
+
+if [[ -f "$FIXTURE/section7_apply/assets/icon.bin" ]]; then
+  pass "Section 7: binary file present after sequential apply"
+else
+  fail "Section 7: binary file missing after sequential apply"
+fi
+
+# Verify binary content is from the final version (icon v2)
+if head -1 "$FIXTURE/section7_apply/assets/icon.bin" | grep -q $'\xff\xfe\xfd'; then
+  pass "Section 7: binary content is final version (icon v2)"
+else
+  fail "Section 7: binary content is not the final version"
+fi
+
+# ===============================================================
 # Summary
 # ===============================================================
 echo ""

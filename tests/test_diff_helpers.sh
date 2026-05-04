@@ -9,6 +9,7 @@ FIXTURE_DIR=$(mktemp -d)
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/diff.sh"
 
 
@@ -315,3 +316,129 @@ test_changed_files_missing_args() {
     pass "write_changed_files fails with missing args"
   fi
 }
+
+# ===================================================================
+# strip_index_lines
+# ===================================================================
+
+test_strip_index_removes_text_index() {
+  local INPUT=$'diff --git a/file.txt b/file.txt\nindex abc123..def456 100644\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new'
+  local OUTPUT
+  OUTPUT=$(echo "$INPUT" | strip_index_lines)
+
+  if echo "$OUTPUT" | grep -q '^index '; then
+    fail "strip_index_lines should remove index lines from text diffs"
+  else
+    pass "strip_index_lines removes index lines from text diffs"
+  fi
+
+  # Verify diff content is preserved
+  if echo "$OUTPUT" | grep -q '^@@ '; then
+    pass "strip_index_lines preserves diff hunk headers"
+  else
+    fail "strip_index_lines should preserve diff hunk headers"
+  fi
+}
+
+test_strip_index_preserves_binary_index() {
+  local INPUT='diff --git a/data.bin b/data.bin
+index 0eee44a..802480f 100644
+GIT binary patch
+literal 1500
+acmezW@9+OnG
+
+literal 0
+HcmV?d00001'
+  local OUTPUT
+  OUTPUT=$(echo "$INPUT" | strip_index_lines)
+
+  if echo "$OUTPUT" | grep -q '^index '; then
+    pass "strip_index_lines preserves index line for binary diffs"
+  else
+    fail "strip_index_lines should preserve index line for binary diffs"
+  fi
+
+  if echo "$OUTPUT" | grep -q 'GIT binary patch'; then
+    pass "strip_index_lines preserves GIT binary patch header"
+  else
+    fail "strip_index_lines should preserve GIT binary patch header"
+  fi
+}
+
+test_strip_index_handles_mixed_diff() {
+  # Create a diff with both text and binary changes
+  local INPUT='diff --git a/file.txt b/file.txt
+index abc123..def456 100644
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-old
++new
+diff --git a/data.bin b/data.bin
+index 0eee44a..802480f 100644
+GIT binary patch
+literal 1500
+acmezW@9+OnG'
+  local OUTPUT
+  OUTPUT=$(echo "$INPUT" | strip_index_lines)
+
+  # Count remaining index lines — should be exactly 1 (binary only)
+  local COUNT
+  COUNT=$(echo "$OUTPUT" | grep -c '^index ' || echo 0)
+
+  if [[ "$COUNT" -eq 1 ]]; then
+    pass "strip_index_lines: exactly 1 index line remains in mixed diff (binary only)"
+  else
+    fail "strip_index_lines: expected 1 index line in mixed diff, got $COUNT"
+  fi
+
+  if echo "$OUTPUT" | grep -q '^--- a/file.txt'; then
+    pass "strip_index_lines preserves text diff headers"
+  else
+    fail "strip_index_lines should preserve text diff headers"
+  fi
+}
+
+test_strip_index_passthrough_no_index() {
+  local INPUT='diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-old
++new'
+  local OUTPUT
+  OUTPUT=$(echo "$INPUT" | strip_index_lines)
+
+  if echo "$OUTPUT" | grep -q '^--- a/file.txt'; then
+    pass "strip_index_lines passes through diff without index lines"
+  else
+    fail "strip_index_lines should pass through diff without index lines"
+  fi
+}
+
+# =============================================================================
+# Run
+# =============================================================================
+run_test test_uncommitted_writes_diff
+run_test test_uncommitted_empty_on_clean
+run_test test_uncommitted_includes_untracked
+run_test test_uncommitted_strips_index_lines
+run_test test_uncommitted_missing_args
+run_test test_all_changes_writes_diff
+run_test test_all_changes_includes_both_committed_and_uncommitted
+run_test test_all_changes_empty_on_clean
+run_test test_all_changes_missing_args
+run_test test_all_changes_missing_session_state
+run_test test_changed_files_copies_modified
+run_test test_changed_files_copies_untracked
+run_test test_changed_files_skips_deleted
+run_test test_changed_files_writes_manifest
+run_test test_changed_files_preserves_directory_structure
+run_test test_changed_files_deduplicates
+run_test test_changed_files_missing_args
+run_test test_strip_index_removes_text_index
+run_test test_strip_index_preserves_binary_index
+run_test test_strip_index_handles_mixed_diff
+run_test test_strip_index_passthrough_no_index
+
+test_done
