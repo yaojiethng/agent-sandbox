@@ -4,7 +4,7 @@ trigger: /package-diff
 ---
 > $@
 
-Package the current session's changes for export via the workspace output mount.
+Package the current session's changes for export via the workspace output mount. Execute the following steps immediately. This task is independent of session open housekeeping — Do not read the handover or roadmap first. Run the script, write the guide, then resume normal session flow.
 
 ## Steps
 

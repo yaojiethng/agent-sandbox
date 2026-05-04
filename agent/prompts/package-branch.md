@@ -4,7 +4,7 @@ trigger: /package-branch
 ---
 > $@
 
-Package all commits since `init_sha` for export via the workspace output mount.
+Package all commits since `init_sha` for export via the workspace output mount. Execute the following steps immediately. This task is independent of session open housekeeping — Do not read the handover or roadmap first. Run the script, write the guide, then resume normal session flow.
 
 ## 1. Run the packaging script
 
