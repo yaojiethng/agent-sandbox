@@ -18,8 +18,8 @@
 #
 # References:
 #   - handover 20260503-02-study-binary_file_handling_in_patch_pipeline.md
-#   - libs/package_branch.sh  (applies the selective strip approach)
-#   - libs/package_diff.sh    (applies the selective strip approach)
+#   - libs/package_branch.sh  (package_commits uses the selective strip approach for per-commit diffs)
+#   - libs/package_diff.sh    (strips all index lines via write_uncommitted_diff; no selective strip)
 
 set -uo pipefail
 

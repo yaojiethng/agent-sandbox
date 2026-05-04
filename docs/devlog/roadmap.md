@@ -134,33 +134,11 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 
 ---
 
-#### A.0 — Sourceability refactor for `agent-sandbox.sh` (complete)
-
-**Objective:** Make `scripts/agent-sandbox.sh` sourceable so that workflow functions defined within its dispatch logic can be unit tested directly. Currently the file executes top-level code on source (sets `set -euo pipefail`, sources libs, dispatches via `case`), which cannot be sourced without side effects.
-
-**Scope:**
-- Add a `main` guard (or equivalent) to `scripts/agent-sandbox.sh`: wrap the dispatch and top-level execution code in a function or guard condition, so sourcing the file defines functions without executing dispatch logic
-- The guard must preserve existing behaviour when the file is executed directly (`bash scripts/agent-sandbox.sh apply ...`)
-- No other code changes — this task is strictly a sourceability refactor
-
-**Hot files:**
-| File | Change |
-|---|---|
-| `scripts/agent-sandbox.sh` | Add `main` guard |
-
-**Acceptance criteria:**
-1. `bash -c "source scripts/agent-sandbox.sh; echo OK"` exits 0 and prints "OK" (file is sourceable)
-2. `bash scripts/agent-sandbox.sh` (no subcommand) exits 1 with usage error (existing behaviour preserved)
-3. `bash scripts/agent-sandbox.sh onboard --help` still forwards to `onboard.sh` (dispatch works when executed directly)
-4. `scripts/run_tests.sh` exits 0 (tree green, no regressions)
-
-**Test additions:**
-- None for this task; the sourceability check is validated by the ACs above
-- Router tests (which require sourceability) are scoped to A.2 where the routers are introduced
+**A.0 — Sourceability refactor for `agent-sandbox.sh` (complete):** `scripts/agent-sandbox.sh` now has a `main` guard (`[[ "${BASH_SOURCE[0]}" == "${0}" ]]`) — the file can be sourced for test access to workflow functions without executing dispatch logic. All existing behaviour preserved when executed directly. See `20260503-08-impl-sourceability_main_guard.md`.
 
 ---
 
-#### A.1 — Data model: unified output format, dispatcher, `diff_on_exit` repair
+#### A.1 — Data model: unified output format, dispatcher, `diff_on_exit` repair (complete)
 
 **Objective:** Restructure all diff packaging around a single unified output format. Rewrite `package_branch.sh` as a dispatcher orchestrating `package_commits`, `write_uncommitted_diff`, `write_all_changes_diff`, and `write_changed_files`. Rewrite `diff_on_exit` and `diff_on_autosave` as thin wrappers calling `package_branch` — no sweep commit, no `BASELINE_SHA` parameter. This is the largest entry in the sequence.
 
@@ -225,7 +203,9 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 - `libs/_templates/Makefile.template` — add `AUTOSAVE=1` → `--channel=autosave`, `BUNDLE=1` → `--channel=bundles` mappings; update `apply` and `draft` Makefile targets
 - `libs/session.sh` — move `resolve_session_dir` to `agent-sandbox.sh` or mark as deprecated (it's replaced by channel-specific routers)
 - `scripts/onboard.sh` — update stale `staged.diff` / `changes.diff` comments
-- `libs/sandbox-entrypoint.sh` — update stale `staged.diff` / `autosave.diff` comments
+- `libs/sandbox-entrypoint.sh` — **remove `diff_on_exit`/`diff_on_autosave` calls entirely; inline path construction directly**: build `$CHANGES_DIR/<session>/session/` (or `.../autosave/`), write `EXPORT-TIME.txt`, then call `package_branch "$SANDBOX_DIR" "$SESSION_DIR"` directly. Source `package_branch.sh` from the entrypoint.
+- `libs/diff.sh` — **remove `diff_on_exit` and `diff_on_autosave` entirely** — no wrapper functions remain. The function header comment is updated to reflect the new function list.
+- **Evaluate shared dispatch helper:** if the path-construction pattern (`mkdir -p`, `EXPORT-TIME.txt`, `package_branch`) is identical between `sandbox-entrypoint.sh` (session vs autosave) and any host-side path (`agent-sandbox.sh` routers), extract into a shared `diff_export SANDBOX_DIR OUTPUT_DIR` helper in `libs/diff.sh`. If host-side paths differ meaningfully (no EXPORT-TIME.txt, different base paths), keep entrypoint-side inline and skip extraction.
 - `libs/dirs.sh` — update stale comment about output format
 
 *Test files to update:*
@@ -243,9 +223,12 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 | File | Change |
 |---|---|
 | `scripts/agent-sandbox.sh` | `--channel` flag; routers; absolute-path rejection |
+| `libs/diff.sh` | Replace `diff_on_exit`/`diff_on_autosave` with single `diff_export` |
 | `libs/diff_workflow.sh` | `apply_run` 4-arg file-path contract |
 | `libs/draft_workflow.sh` | `draft_run` SOURCE_DIR + SESSION_NAME contract |
 | `libs/_templates/Makefile.template` | AUTOSAVE/BUNDLE flag mappings |
+| `libs/sandbox-entrypoint.sh` | Path construction for `diff_export`; stale comment cleanup |
+| `tests/test_diff_dispatch.sh` | Rewrite to test path construction and `package_branch` dispatch call — entrypoint builds path, writes EXPORT-TIME.txt, calls `package_branch` directly |
 | `tests/test_diff_workflow.sh` | New apply_run tests |
 | `tests/test_draft_workflow.sh` | New draft_run tests |
 
@@ -265,7 +248,7 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 
 ---
 
-#### A.4 — `changed-files/` extraction and verification
+#### A.4 — `changed-files/` extraction and verification (complete)
 
 **Objective:** Extract the inline `changed-files/` copy logic from `libs/package_diff.sh` into a shared `write_changed_files` function in `libs/diff.sh`. Wire it into both the `package_branch` dispatcher and `package_diff.sh`. Update tests.
 

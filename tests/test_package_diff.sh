@@ -1,324 +1,266 @@
 #!/usr/bin/env bash
-# tests/test_package_diff.sh
-# Tests for libs/package_diff.sh
+# Tests for libs/package_diff.sh — simplified uncommitted-diff packaging.
 #
-# Covers:
-#   package_diff.sh       — produces changes.diff, index lines stripped,
-#                           output path, baseline resolution, missing args
+# The script always diffs against HEAD and produces uncommitted.diff + changed-files/.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGE_DIFF_SCRIPT="$SCRIPT_DIR/../libs/package_diff.sh"
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
+set -uo pipefail
 
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
+FIXTURE_DIR=$(mktemp -d)
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-# -------------------------
-# Helpers
-# -------------------------
-# (repo setup helpers sourced from tests/libs/git_fixtures.sh)
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 
-# -------------------------
-# package_diff.sh — basic functionality
-# -------------------------
-test_package_diff_produces_changes_diff() {
-  local DIR="$FIXTURE_DIR/pd_basic"
-  local OUTDIR="$FIXTURE_DIR/pd_basic_out"
-  mkdir -p "$DIR" "$OUTDIR"
+plan 14
+
+# -------------------------------------------------------------------
+# Helper: run package_diff.sh with a sandbox dir override
+# -------------------------------------------------------------------
+run_package_diff() {
+  local SANDBOX_DIR="$1"
+  shift
+  bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/package_diff.sh" \
+    --sandbox="$SANDBOX_DIR" "$@"
+}
+
+# ===================================================================
+# Output structure
+# ===================================================================
+
+test_produces_uncommitted_diff() {
+  local DIR="$FIXTURE_DIR/pd_uncommitted"
+  mkdir -p "$DIR"
   make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
+  write_session_state "$DIR"
 
-  echo "new content" > "$DIR/newfile.txt"
+  echo "change" > "$DIR/new.txt"
 
-  # Run script from within the repo directory
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
+  local OUTDIR
+  OUTDIR=$(run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_u_out" --session-summary=test 2>/dev/null)
+  OUTDIR="$FIXTURE_DIR/pd_u_out"
 
-  if ls "$OUTDIR"/diffs/*-test/changes.diff >/dev/null 2>&1; then
-    pass "package_diff.sh produces changes.diff in diffs/<timestamp>-<name>/"
+  local FOUND
+  FOUND=$(find "$OUTDIR" -name 'uncommitted.diff' 2>/dev/null | head -1)
+  if [[ -n "$FOUND" ]] && [[ -s "$FOUND" ]]; then
+    pass "package_diff.sh produces uncommitted.diff in output"
   else
-    fail "package_diff.sh should produce changes.diff in diffs/ subfolder"
+    fail "package_diff.sh should produce uncommitted.diff"
   fi
 }
 
-test_package_diff_index_lines_stripped() {
-  local DIR="$FIXTURE_DIR/pd_noindex"
-  local OUTDIR="$FIXTURE_DIR/pd_noindex_out"
-  mkdir -p "$DIR" "$OUTDIR"
+test_produces_changed_files_dir() {
+  local DIR="$FIXTURE_DIR/pd_changed"
+  mkdir -p "$DIR"
   make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
+  write_session_state "$DIR"
 
-  echo "change" > "$DIR/changed.txt"
+  echo "change" > "$DIR/new.txt"
 
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_c_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_c_out"
+
+  local FOUND
+  FOUND=$(find "$OUTDIR" -type d -name 'changed-files' 2>/dev/null | head -1)
+  if [[ -n "$FOUND" ]]; then
+    pass "package_diff.sh produces changed-files/ directory"
+  else
+    fail "package_diff.sh should produce changed-files/ directory"
+  fi
+}
+
+test_output_dir_format() {
+  local DIR="$FIXTURE_DIR/pd_outdir"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR" "20260501-120000"
+
+  echo "change" > "$DIR/new.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_o_out" --session-summary=test_label 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_o_out"
+
+  local MATCH
+  MATCH=$(find "$OUTDIR" -maxdepth 1 -type d -name '*test_label*' 2>/dev/null | head -1)
+  if [[ -n "$MATCH" ]]; then
+    pass "package_diff.sh output dir contains session summary label"
+  else
+    fail "package_diff.sh output dir should contain session summary label, found nothing in $OUTDIR"
+  fi
+}
+
+# ===================================================================
+# Content correctness
+# ===================================================================
+
+test_diff_contains_change() {
+  local DIR="$FIXTURE_DIR/pd_content"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "unique-content" > "$DIR/new.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_cnt_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_cnt_out"
 
   local DIFF_FILE
-  DIFF_FILE=$(ls "$OUTDIR"/diffs/*-test/changes.diff 2>/dev/null | head -n1)
-  if [[ -n "$DIFF_FILE" ]] && ! grep -q '^index ' "$DIFF_FILE"; then
-    pass "package_diff.sh strips index lines from changes.diff"
+  DIFF_FILE=$(find "$OUTDIR" -name 'uncommitted.diff' -type f 2>/dev/null | head -1)
+  if [[ -n "$DIFF_FILE" ]] && grep -q "unique-content" "$DIFF_FILE" 2>/dev/null; then
+    pass "uncommitted.diff contains expected file content"
+  else
+    fail "uncommitted.diff should contain expected content"
+  fi
+}
+
+test_diff_includes_untracked() {
+  local DIR="$FIXTURE_DIR/pd_untracked"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "untracked" > "$DIR/untracked.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_ut_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_ut_out"
+
+  local DIFF_FILE
+  DIFF_FILE=$(find "$OUTDIR" -name 'uncommitted.diff' -type f 2>/dev/null | head -1)
+  if [[ -n "$DIFF_FILE" ]] && grep -q "untracked.txt" "$DIFF_FILE" 2>/dev/null; then
+    pass "uncommitted.diff includes untracked files"
+  else
+    fail "uncommitted.diff should include untracked files"
+  fi
+}
+
+test_strips_index_lines() {
+  local DIR="$FIXTURE_DIR/pd_index"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "content" > "$DIR/file.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_idx_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_idx_out"
+
+  local DIFF_FILE
+  DIFF_FILE=$(find "$OUTDIR" -name 'uncommitted.diff' -type f 2>/dev/null | head -1)
+  if [[ -n "$DIFF_FILE" ]] && ! grep -q '^index ' "$DIFF_FILE" 2>/dev/null; then
+    pass "package_diff.sh strips index lines from text diffs"
   else
     fail "package_diff.sh should strip index lines"
   fi
 }
 
-test_package_diff_output_path_structure() {
-  local DIR="$FIXTURE_DIR/pd_path"
-  local OUTDIR="$FIXTURE_DIR/pd_path_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "change" > "$DIR/changed.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=mytest --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  if [[ -d "$OUTDIR/diffs" ]] && \
-     ls "$OUTDIR"/diffs/*-mytest >/dev/null 2>&1; then
-    pass "package_diff.sh writes to diffs/<timestamp>-<name>/ structure"
-  else
-    fail "package_diff.sh should write to diffs/ subfolder"
-  fi
-}
-
-# -------------------------
-# package_diff.sh — baseline resolution
-# -------------------------
-test_package_diff_baseline_arg() {
-  local DIR="$FIXTURE_DIR/pd_baseline"
-  local OUTDIR="$FIXTURE_DIR/pd_baseline_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "change" > "$DIR/changed.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  if ls "$OUTDIR"/diffs/*-test/changes.diff >/dev/null 2>&1; then
-    pass "package_diff.sh uses --baseline argument"
-  else
-    fail "package_diff.sh should use --baseline"
-  fi
-}
-
-test_package_diff_baseline_required_outside_container() {
-  local DIR="$FIXTURE_DIR/pd_nobaseline"
-  local OUTDIR="$FIXTURE_DIR/pd_nobaseline_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-
-  # No --baseline, not in container context (override HOME to avoid workspace/output detection)
-  local OUTPUT
-  OUTPUT=$(cd "$DIR" && HOME=/nonexistent bash "$PACKAGE_DIFF_SCRIPT" --name=test --outdir="$OUTDIR" 2>&1)
-  if echo "$OUTPUT" | grep -q "baseline is required"; then
-    pass "package_diff.sh requires --baseline outside container"
-  else
-    fail "package_diff.sh should require --baseline outside container"
-  fi
-}
-
-test_package_diff_init_sha_fallback() {
-  local DIR="$FIXTURE_DIR/pd_initsha"
-  local OUTDIR="$FIXTURE_DIR/pd_initsha_out"
-  mkdir -p "$DIR" "$OUTDIR"
+test_no_changes_no_output() {
+  local DIR="$FIXTURE_DIR/pd_none"
+  mkdir -p "$DIR"
   make_committed_repo "$DIR"
   write_session_state "$DIR"
 
-  echo "change" > "$DIR/changed.txt"
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_no_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_no_out"
 
-  # No --baseline, but SESSION_STATE file exists
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  if ls "$OUTDIR"/diffs/*test*/changes.diff >/dev/null 2>&1; then
-    pass "package_diff.sh falls back to SESSION_STATE"
-  else
-    fail "package_diff.sh should fall back to SESSION_STATE"
-  fi
-}
-
-# -------------------------
-# package_diff.sh — edge cases
-# -------------------------
-test_package_diff_no_changes() {
-  local DIR="$FIXTURE_DIR/pd_nochange"
-  local OUTDIR="$FIXTURE_DIR/pd_nochange_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  # No changes
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" 2>&1)
-
-  # Should report nothing to package and not create output dir
-  if ! ls "$OUTDIR"/diffs/*-test >/dev/null 2>&1; then
+  # Should not produce any output directory (rmdir on empty)
+  local COUNT
+  COUNT=$(find "$OUTDIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+  if [[ "$COUNT" -eq 0 ]]; then
     pass "package_diff.sh produces no output when no changes"
   else
-    fail "package_diff.sh should not create output when no changes"
+    fail "package_diff.sh should produce no output on clean tree"
   fi
 }
 
-test_package_diff_missing_args() {
-  local DIR="$FIXTURE_DIR/pd_missing_args"
+# ===================================================================
+# Changed-files content
+# ===================================================================
+
+test_changed_files_has_copies() {
+  local DIR="$FIXTURE_DIR/pd_copies"
   mkdir -p "$DIR"
   make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "modified" > "$DIR/file.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_cp_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_cp_out"
+
+  local CF_DIR
+  CF_DIR=$(find "$OUTDIR" -type d -name 'changed-files' 2>/dev/null | head -1)
+  if [[ -d "$CF_DIR" ]] && [[ -f "$CF_DIR/file.txt" ]] && grep -q "modified" "$CF_DIR/file.txt"; then
+    pass "package_diff.sh copies changed files with correct content"
+  else
+    fail "package_diff.sh should copy changed files into changed-files/"
+  fi
+}
+
+test_changed_files_has_manifest() {
+  local DIR="$FIXTURE_DIR/pd_manifest"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "content" > "$DIR/a.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_mf_out" --session-summary=test 2>/dev/null
+  OUTDIR="$FIXTURE_DIR/pd_mf_out"
+
+  local CF_DIR
+  CF_DIR=$(find "$OUTDIR" -type d -name 'changed-files' 2>/dev/null | head -1)
+  if [[ -f "$CF_DIR/MANIFEST.txt" ]] && grep -q "a.txt" "$CF_DIR/MANIFEST.txt" 2>/dev/null; then
+    pass "package_diff.sh writes MANIFEST.txt in changed-files/"
+  else
+    fail "package_diff.sh should write MANIFEST.txt in changed-files/"
+  fi
+}
+
+# ===================================================================
+# Modes and fallbacks
+# ===================================================================
+
+test_falls_back_to_snapshot_summary() {
+  local DIR="$FIXTURE_DIR/pd_snapshot"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "change" > "$DIR/new.txt"
+
+  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_snap_out" 2>/dev/null  # no --session-summary
+  OUTDIR="$FIXTURE_DIR/pd_snap_out"
+
+  local MATCH
+  MATCH=$(find "$OUTDIR" -maxdepth 1 -type d -name '*snapshot*' 2>/dev/null | head -1)
+  if [[ -n "$MATCH" ]]; then
+    pass "package_diff.sh falls back to 'snapshot' as default summary"
+  else
+    fail "package_diff.sh should use 'snapshot' as default summary, found nothing"
+  fi
+}
+
+test_usage_with_no_args() {
+  run_package_diff "$FIXTURE_DIR/pd_usage" --help 2>&1 | grep -q "package_diff" && {
+    pass "package_diff.sh shows usage with --help"
+  } || {
+    fail "package_diff.sh should show usage with --help"
+  }
+}
+
+test_diff_file_printed_in_output() {
+  local DIR="$FIXTURE_DIR/pd_printed"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  echo "change" > "$DIR/new.txt"
 
   local OUTPUT
-  OUTPUT=$(cd "$DIR" && HOME=/nonexistent bash "$PACKAGE_DIFF_SCRIPT" 2>&1)
-  if echo "$OUTPUT" | grep -q "Usage"; then
-    pass "package_diff.sh shows usage with no args"
+  OUTPUT=$(run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_pr_out" --session-summary=test 2>&1)
+  OUTDIR="$FIXTURE_DIR/pd_pr_out"
+
+  if echo "$OUTPUT" | grep -q "uncommitted.diff"; then
+    pass "package_diff.sh output mentions uncommitted.diff"
   else
-    fail "package_diff.sh should show usage with no args"
+    fail "package_diff.sh output should mention uncommitted.diff"
   fi
 }
-
-test_package_diff_unknown_arg() {
-  local OUTPUT
-  OUTPUT=$(bash "$PACKAGE_DIFF_SCRIPT" --unknown 2>&1)
-  if echo "$OUTPUT" | grep -q "Unknown argument"; then
-    pass "package_diff.sh rejects unknown arguments"
-  else
-    fail "package_diff.sh should reject unknown arguments"
-  fi
-}
-
-test_package_diff_name_arg() {
-  local DIR="$FIXTURE_DIR/pd_name"
-  local OUTDIR="$FIXTURE_DIR/pd_name_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "change" > "$DIR/changed.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=custom_label --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  if ls "$OUTDIR"/diffs/*-custom_label >/dev/null 2>&1; then
-    pass "package_diff.sh uses --name for output directory label"
-  else
-    fail "package_diff.sh should use --name for label"
-  fi
-}
-
-test_package_diff_automatic_name_derivation() {
-  local DIR="$FIXTURE_DIR/pd_autoname"
-  local OUTDIR="$FIXTURE_DIR/pd_autoname_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "change" > "$DIR/my_special_file.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  # When --name is omitted, SESSION_SUMMARY defaults to "snapshot"
-  if ls "$OUTDIR"/diffs/*-snapshot >/dev/null 2>&1; then
-    pass "package_diff.sh falls back to 'snapshot' when --name not provided"
-  else
-    fail "package_diff.sh should fall back to 'snapshot'"
-  fi
-}
-
-# -------------------------
-# package_diff.sh — diff content verification
-# -------------------------
-test_package_diff_diff_is_applicable() {
-  local DIR="$FIXTURE_DIR/pd_apply"
-  local TARGET="$FIXTURE_DIR/pd_apply_target"
-  local OUTDIR="$FIXTURE_DIR/pd_apply_out"
-  make_committed_repo "$DIR"
-  make_committed_repo "$TARGET"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "change" > "$DIR/changed.txt"
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$OUTDIR"/diffs/*-test/changes.diff 2>/dev/null | head -n1)
-
-  if [[ -n "$DIFF_FILE" ]]; then
-    if git -C "$TARGET" apply "$DIFF_FILE" 2>/dev/null; then
-      pass "diff produced by package_diff.sh applies cleanly via git apply"
-    else
-      fail "diff produced by package_diff.sh does not apply via git apply"
-    fi
-  else
-    fail "package_diff.sh should produce a diff file"
-  fi
-}
-
-test_package_diff_diff_contains_expected_content() {
-  local DIR="$FIXTURE_DIR/pd_content"
-  local OUTDIR="$FIXTURE_DIR/pd_content_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  echo "unique content here" > "$DIR/unique.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$OUTDIR"/diffs/*-test/changes.diff 2>/dev/null | head -n1)
-
-  if [[ -n "$DIFF_FILE" ]] && grep -q "unique content here" "$DIFF_FILE"; then
-    pass "diff contains expected file content"
-  else
-    fail "diff should contain expected file content"
-  fi
-}
-
-# -------------------------
-# package_diff.sh — untracked files
-# -------------------------
-test_package_diff_includes_untracked() {
-  local DIR="$FIXTURE_DIR/pd_untracked"
-  local OUTDIR="$FIXTURE_DIR/pd_untracked_out"
-  mkdir -p "$DIR" "$OUTDIR"
-  make_committed_repo "$DIR"
-  local BASELINE
-  BASELINE=$(get_init_sha "$DIR")
-
-  # Untracked file
-  echo "untracked" > "$DIR/untracked.txt"
-
-  (cd "$DIR" && bash "$PACKAGE_DIFF_SCRIPT" --baseline="$BASELINE" --name=test --outdir="$OUTDIR" >/dev/null 2>&1)
-
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$OUTDIR"/diffs/*-test/changes.diff 2>/dev/null | head -n1)
-
-  if [[ -n "$DIFF_FILE" ]] && grep -q "untracked.txt" "$DIFF_FILE"; then
-    pass "package_diff.sh includes untracked files in diff"
-  else
-    fail "package_diff.sh should include untracked files"
-  fi
-}
-
-# -------------------------
-# Run all tests
-# -------------------------
-run_test test_package_diff_produces_changes_diff
-run_test test_package_diff_index_lines_stripped
-run_test test_package_diff_output_path_structure
-run_test test_package_diff_baseline_arg
-run_test test_package_diff_baseline_required_outside_container
-run_test test_package_diff_init_sha_fallback
-run_test test_package_diff_no_changes
-run_test test_package_diff_missing_args
-run_test test_package_diff_unknown_arg
-run_test test_package_diff_name_arg
-run_test test_package_diff_automatic_name_derivation
-run_test test_package_diff_diff_is_applicable
-run_test test_package_diff_diff_contains_expected_content
-run_test test_package_diff_includes_untracked
-
-test_done

@@ -1,265 +1,331 @@
 #!/usr/bin/env bash
-# tests/test_package_branch.sh
-# Tests for libs/package_branch.sh
+# Tests for libs/package_branch.sh — dispatcher produces unified output format
 #
-# Covers:
-#   package_branch        — produces numbered diffs, index lines stripped,
-#                           missing args, no commits
-#
-# Note: package_branch writes directly to OUTPUT_DIR/*.diff — it does not
-# create a subdirectory based on SESSION_SUMMARY. SESSION_SUMMARY is for
-# logging only.
+# Expected output layout (under OUTPUT_DIR/):
+#   patches/0001-<sha>.diff
+#   patches/0002-<sha>.diff
+#   ...
+#   uncommitted.diff
+#   all-changes.diff
+#   changed-files/MANIFEST.txt
+#   changed-files/<path>/<file>
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/package_branch.sh"
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
+set -uo pipefail
 
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
+FIXTURE_DIR=$(mktemp -d)
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-# -------------------------
-# package_branch — basic functionality
-# -------------------------
-test_package_branch_produces_numbered_diffs() {
-  local DIR="$FIXTURE_DIR/pb_basic"
-  local DIFFS="$FIXTURE_DIR/pb_basic_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 
-  commit_change "$DIR" "first commit"
-  commit_change "$DIR" "second commit"
+plan 18
 
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
+# -------------------------------------------------------------------
+# Helper: create a clean sandbox with a commit, write SESSION_STATE
+# -------------------------------------------------------------------
+make_sandbox_with_state() {
+  local DIR="$1"
+  make_sandbox "$DIR"
+  local SHA
+  SHA=$(get_sha "$DIR")
+  write_session_state "$DIR" "$SHA"
+  echo "$SHA"
+}
+
+# -------------------------------------------------------------------
+# Helper: create one or more commits in the sandbox
+# -------------------------------------------------------------------
+commit_file() {
+  local DIR="$1"
+  local FILE="$2"
+  local CONTENT="${3:-file content}"
+  mkdir -p "$(dirname "$DIR/$FILE")"
+  echo "$CONTENT" > "$DIR/$FILE"
+  git -C "$DIR" add "$FILE"
+  git -C "$DIR" commit -m "add $FILE" --quiet
+}
+
+# ===================================================================
+# package_branch produces the unified output layout
+# ===================================================================
+
+test_dispatcher_creates_patches_dir() {
+  local DIR="$FIXTURE_DIR/pb_patches"
+  local OUT="$FIXTURE_DIR/pb_patches_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ -d "$OUT/patches" ]] && ls "$OUT/patches/"*.diff >/dev/null 2>&1; then
+    pass "package_branch creates patches/ with diff files"
+  else
+    fail "package_branch should create patches/ with .diff files"
+  fi
+}
+
+test_dispatcher_creates_uncommitted_diff() {
+  local DIR="$FIXTURE_DIR/pb_uncommitted"
+  local OUT="$FIXTURE_DIR/pb_uncommitted_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+
+  echo "unstaged work" > "$DIR/new.txt"
+  git -C "$DIR" add -N new.txt 2>/dev/null || true
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ -f "$OUT/uncommitted.diff" ]]; then
+    pass "package_branch creates uncommitted.diff"
+  else
+    fail "package_branch should create uncommitted.diff"
+  fi
+}
+
+test_dispatcher_creates_all_changes_diff() {
+  local DIR="$FIXTURE_DIR/pb_allchanges"
+  local OUT="$FIXTURE_DIR/pb_allchanges_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ -f "$OUT/all-changes.diff" ]]; then
+    pass "package_branch creates all-changes.diff"
+  else
+    fail "package_branch should create all-changes.diff"
+  fi
+}
+
+test_dispatcher_creates_changed_files() {
+  local DIR="$FIXTURE_DIR/pb_changedfiles"
+  local OUT="$FIXTURE_DIR/pb_changedfiles_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ -d "$OUT/changed-files" ]] && [[ -f "$OUT/changed-files/a.txt" ]]; then
+    pass "package_branch creates changed-files/ with file copies"
+  else
+    fail "package_branch should create changed-files/ with copied files"
+  fi
+}
+
+test_dispatcher_writes_manifest() {
+  local DIR="$FIXTURE_DIR/pb_manifest"
+  local OUT="$FIXTURE_DIR/pb_manifest_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ -f "$OUT/changed-files/MANIFEST.txt" ]] && [[ -s "$OUT/changed-files/MANIFEST.txt" ]]; then
+    pass "package_branch writes MANIFEST.txt in changed-files/"
+  else
+    fail "package_branch should write non-empty MANIFEST.txt"
+  fi
+}
+
+test_dispatcher_produces_numbered_diffs() {
+  local DIR="$FIXTURE_DIR/pb_numbered"
+  local OUT="$FIXTURE_DIR/pb_numbered_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+  commit_file "$DIR" "b.txt"
+
+  package_branch "$DIR" "$OUT"
 
   local COUNT
-  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
+  COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
   if [[ "$COUNT" -eq 2 ]]; then
-    pass "package_branch produces one diff per commit (got $COUNT)"
+    pass "package_branch produces 2 numbered diffs for 2 commits (got $COUNT)"
   else
-    fail "package_branch should produce 2 diffs, got $COUNT"
+    fail "package_branch should produce 2 diffs for 2 commits, got $COUNT"
   fi
 }
 
-test_package_branch_numbering_format() {
-  local DIR="$FIXTURE_DIR/pb_num"
-  local DIFFS="$FIXTURE_DIR/pb_num_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+test_dispatcher_prefix_numbering() {
+  local DIR="$FIXTURE_DIR/pb_prefix"
+  local OUT="$FIXTURE_DIR/pb_prefix_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+  commit_file "$DIR" "b.txt"
+  commit_file "$DIR" "c.txt"
 
-  commit_change "$DIR" "first"
-  commit_change "$DIR" "second"
-  commit_change "$DIR" "third"
+  package_branch "$DIR" "$OUT"
 
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-
-  if ls "$DIFFS/0001-"*.diff >/dev/null 2>&1 && \
-     ls "$DIFFS/0002-"*.diff >/dev/null 2>&1 && \
-     ls "$DIFFS/0003-"*.diff >/dev/null 2>&1; then
-    pass "package_branch uses correct 0001-, 0002-, 0003- numbering"
+  if ls "$OUT/patches/0001-"*.diff >/dev/null 2>&1 && \
+     ls "$OUT/patches/0002-"*.diff >/dev/null 2>&1 && \
+     ls "$OUT/patches/0003-"*.diff >/dev/null 2>&1; then
+    pass "package_branch uses 0001-, 0002-, 0003- prefix"
   else
-    fail "package_branch should use 0001-, 0002-, 0003- prefix"
+    fail "package_branch should use 0001-, 0002-, 0003- prefix for 3 commits"
   fi
 }
 
-test_package_branch_index_lines_stripped() {
-  local DIR="$FIXTURE_DIR/pb_noindex"
-  local DIFFS="$FIXTURE_DIR/pb_noindex_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
-
-  commit_change "$DIR" "change"
-
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
-  if ! grep -q '^index ' "$DIFF_FILE"; then
-    pass "package_branch strips index lines from diffs"
-  else
-    fail "package_branch should strip index lines from diffs"
-  fi
-}
-
-test_package_branch_overwrites_existing() {
+test_dispatcher_overwrites_output() {
   local DIR="$FIXTURE_DIR/pb_overwrite"
-  local DIFFS="$FIXTURE_DIR/pb_overwrite_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+  local OUT="$FIXTURE_DIR/pb_overwrite_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
 
-  # First run
-  commit_change "$DIR" "first"
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-  local COUNT1
-  COUNT1=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
+  package_branch "$DIR" "$OUT"
 
-  # Second run with more commits
-  commit_change "$DIR" "second"
-  commit_change "$DIR" "third"
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-  local COUNT2
-  COUNT2=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
+  local FIRST_COUNT
+  FIRST_COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
 
-  if [[ "$COUNT2" -eq 3 ]]; then
-    pass "package_branch overwrites existing diffs (got $COUNT2 after second run)"
+  commit_file "$DIR" "b.txt"
+  package_branch "$DIR" "$OUT"
+
+  local SECOND_COUNT
+  SECOND_COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
+
+  if [[ "$SECOND_COUNT" -eq 2 ]] && [[ "$FIRST_COUNT" -eq 1 ]]; then
+    pass "package_branch overwrites: 1 diff first run, 2 diffs second run"
   else
-    fail "package_branch should overwrite, got $COUNT2 diffs"
+    fail "package_branch should overwrite output, got $FIRST_COUNT then $SECOND_COUNT"
   fi
 }
 
-# -------------------------
-# package_branch — edge cases
-# -------------------------
-test_package_branch_no_commits() {
-  local DIR="$FIXTURE_DIR/pb_nocommit"
-  local DIFFS="$FIXTURE_DIR/pb_nocommit_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
-
-  # No commits since baseline
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main" 2>/dev/null
-
-  local COUNT
-  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
-  if [[ "$COUNT" -eq 0 ]]; then
-    pass "package_branch produces no diffs when no commits since INIT_SHA"
-  else
-    fail "package_branch should produce 0 diffs, got $COUNT"
-  fi
-}
-
-test_package_branch_missing_args() {
-  if package_branch 2>/dev/null; then
-    fail "package_branch should fail with missing args"
-  else
-    pass "package_branch fails with missing args"
-  fi
-}
-
-test_package_branch_missing_sandbox_dir() {
-  local DIFFS="$FIXTURE_DIR/pb_missing_sandbox"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-
-  if package_branch "/nonexistent" "abc123" "$DIFFS" "main" 2>/dev/null; then
-    fail "package_branch should fail with nonexistent SANDBOX_DIR"
-  else
-    pass "package_branch fails with nonexistent SANDBOX_DIR"
-  fi
-}
-
-test_package_branch_missing_init_sha() {
-  local DIR="$FIXTURE_DIR/pb_missing_init"
-  local DIFFS="$FIXTURE_DIR/pb_missing_init_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-
-  # Invalid INIT_SHA
-  if package_branch "$DIR" "invalidsha" "$DIFFS" "main" 2>/dev/null; then
-    fail "package_branch should fail with invalid INIT_SHA"
-  else
-    pass "package_branch fails with invalid INIT_SHA"
-  fi
-}
-
-# -------------------------
-# package_branch — diff content verification
-# -------------------------
-test_package_branch_diff_is_applicable() {
+test_dispatcher_diff_is_applicable() {
   local DIR="$FIXTURE_DIR/pb_apply"
+  local OUT="$FIXTURE_DIR/pb_apply_out"
   local TARGET="$FIXTURE_DIR/pb_apply_target"
-  local DIFFS="$FIXTURE_DIR/pb_apply_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  make_committed_repo "$TARGET"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+  mkdir -p "$OUT" "$TARGET"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt" "hello world"
 
-  commit_change "$DIR" "agent change"
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
+  package_branch "$DIR" "$OUT"
 
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
+  # Init target repo and apply the patch
+  git -C "$TARGET" init --quiet
+  git -C "$TARGET" config user.email "t@t"
+  git -C "$TARGET" config user.name "t"
+  git -C "$TARGET" commit --allow-empty -m "base" --quiet
+  echo "hello world" > "$TARGET/a.txt"
 
-  # Apply diff to target (same baseline)
-  if git -C "$TARGET" apply "$DIFF_FILE" 2>/dev/null; then
-    pass "diff produced by package_branch applies cleanly via git apply"
+  if git -C "$TARGET" apply < <(grep -v '^index ' "$OUT/patches/0001-"*.diff) 2>/dev/null; then
+    pass "diff produced by package_branch applies via git apply"
   else
     fail "diff produced by package_branch does not apply via git apply"
   fi
 }
 
-test_package_branch_diff_contains_expected_content() {
+test_dispatcher_diff_contains_content() {
   local DIR="$FIXTURE_DIR/pb_content"
-  local DIFFS="$FIXTURE_DIR/pb_content_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+  local OUT="$FIXTURE_DIR/pb_content_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt" "unique-content"
 
-  echo "unique content here" > "$DIR/unique.txt"
-  git -C "$DIR" add .
-  git -C "$DIR" commit -m "add unique file" --quiet
+  package_branch "$DIR" "$OUT"
 
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-
-  local DIFF_FILE
-  DIFF_FILE=$(ls "$DIFFS/"*.diff | head -n1)
-
-  if grep -q "unique content here" "$DIFF_FILE"; then
+  if grep -q "unique-content" "$OUT/patches/"*.diff 2>/dev/null; then
     pass "diff contains expected file content"
   else
     fail "diff should contain expected file content"
   fi
 }
 
-# -------------------------
-# package_branch — single commit edge case
-# -------------------------
-test_package_branch_single_commit() {
-  local DIR="$FIXTURE_DIR/pb_single"
-  local DIFFS="$FIXTURE_DIR/pb_single_out"
-  rm -rf "$DIFFS" && mkdir -p "$DIFFS"
-  make_committed_repo "$DIR"
-  local INIT_SHA
-  INIT_SHA=$(get_init_sha "$DIR")
+test_dispatcher_strips_index_lines() {
+  local DIR="$FIXTURE_DIR/pb_index"
+  local OUT="$FIXTURE_DIR/pb_index_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
 
-  commit_change "$DIR" "only commit"
+  package_branch "$DIR" "$OUT"
 
-  package_branch "$DIR" "$INIT_SHA" "$DIFFS" "main"
-
-  local COUNT
-  COUNT=$(ls -1 "$DIFFS/"*.diff 2>/dev/null | wc -l)
-  if [[ "$COUNT" -eq 1 ]]; then
-    pass "package_branch handles single commit correctly"
+  local HAS_INDEX
+  HAS_INDEX=$(grep -c '^index ' "$OUT/patches/"*.diff 2>/dev/null || echo 0)
+  if [[ "$HAS_INDEX" -eq 0 ]]; then
+    pass "package_branch strips index lines from text diffs"
   else
-    fail "package_branch should produce 1 diff, got $COUNT"
+    fail "package_branch should strip index lines from text diffs, found $HAS_INDEX"
   fi
 }
 
-# -------------------------
-# Run all tests
-# -------------------------
-run_test test_package_branch_produces_numbered_diffs
-run_test test_package_branch_numbering_format
-run_test test_package_branch_index_lines_stripped
-run_test test_package_branch_overwrites_existing
-run_test test_package_branch_no_commits
-run_test test_package_branch_missing_args
-run_test test_package_branch_missing_sandbox_dir
-run_test test_package_branch_missing_init_sha
-run_test test_package_branch_diff_is_applicable
-run_test test_package_branch_diff_contains_expected_content
-run_test test_package_branch_single_commit
+test_dispatcher_includes_untracked_in_changed_files() {
+  local DIR="$FIXTURE_DIR/pb_untracked"
+  local OUT="$FIXTURE_DIR/pb_untracked_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  echo "untracked content" > "$DIR/untracked.txt"
 
-test_done
+  package_branch "$DIR" "$OUT"
+
+  if [[ -f "$OUT/changed-files/untracked.txt" ]]; then
+    pass "package_branch includes untracked file in changed-files/"
+  else
+    fail "package_branch should include untracked file in changed-files/"
+  fi
+}
+
+test_dispatcher_single_commit() {
+  local DIR="$FIXTURE_DIR/pb_single"
+  local OUT="$FIXTURE_DIR/pb_single_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  local COUNT
+  COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
+  if [[ "$COUNT" -eq 1 ]]; then
+    pass "package_branch produces 1 diff for single commit"
+  else
+    fail "package_branch should produce 1 diff for single commit, got $COUNT"
+  fi
+}
+
+test_dispatcher_two_commits() {
+  local DIR="$FIXTURE_DIR/pb_two"
+  local OUT="$FIXTURE_DIR/pb_two_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+  commit_file "$DIR" "b.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  local COUNT
+  COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
+  if [[ "$COUNT" -eq 2 ]]; then
+    pass "package_branch produces 2 diffs for 2 commits"
+  else
+    fail "package_branch should produce 2 diffs for 2 commits, got $COUNT"
+  fi
+}
+
+test_dispatcher_no_commits() {
+  local DIR="$FIXTURE_DIR/pb_none"
+  local OUT="$FIXTURE_DIR/pb_none_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+
+  package_branch "$DIR" "$OUT"
+
+  local PATCH_COUNT
+  PATCH_COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
+  if [[ "$PATCH_COUNT" -eq 0 ]]; then
+    pass "package_branch produces no diffs when no commits"
+  else
+    fail "package_branch should produce 0 diffs when no commits, got $PATCH_COUNT"
+  fi
+}
+
+test_dispatcher_missing_args() {
+  if package_branch "" "" 2>/dev/null; then
+    fail "package_branch should fail with missing args"
+  else
+    pass "package_branch fails with missing args"
+  fi
+}

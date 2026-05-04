@@ -5,8 +5,8 @@
 # Sequence:
 #   1. snapshot_validate (gate 2)       — confirm .snapshot/ is intact
 #   2. snapshot_init_git                — git init + baseline commit; records baseline SHA
-#   3. register EXIT trap → diff        — fires on any exit; commits pending changes,
-#                                         writes staged.diff, kills autosave subshell
+#   3. register EXIT trap → diff        — fires on any exit; writes session export
+#                                         via package_branch dispatcher, kills autosave subshell
 #   4. register TERM trap → exit 0      — docker stop sends SIGTERM to PID 1; clean exit
 #                                         ensures EXIT trap fires reliably
 #   5. start autosave loop              — if AUTOSAVE_INTERVAL > 0
@@ -63,18 +63,16 @@ snapshot_validate "$SNAPSHOT_DIR"
 # from the snapshot mount by snapshot_init_git — no copy needed.
 
 # Initialise git baseline. Failure here means the container cannot start.
-BASELINE_SHA=$(snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR") || {
+> /dev/null; snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" || {
   echo "Error: sandbox git initialisation failed — container cannot start." >&2
   echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
   exit 1
 }
 
-# Write session identity to SESSION_STATE so downstream consumers
-# (package_branch.sh, diff.sh) can read init_sha and session_ts
-session_state_write "$SANDBOX_DIR" "init_sha" "$BASELINE_SHA"
-session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
+# SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
+# No additional writes needed — downstream consumers read from SESSION_STATE.
 
-echo "Sandbox ready. Baseline: $BASELINE_SHA"
+echo "Sandbox ready. Baseline recorded in SESSION_STATE."
 echo "Working tree status:"
 git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
 echo "  (empty = clean working tree)"
@@ -87,7 +85,7 @@ source /opt/sandbox/lib/diff.sh
 # On exit: kill autosave subshell if running, commit any pending changes,
 # write staged.diff. Runs on any exit — clean shutdown, SIGTERM, or error.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     diff_on_exit "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"' EXIT
+     diff_on_exit "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"' EXIT
 
 # On SIGTERM (docker stop): exit cleanly so EXIT trap fires with code 0.
 # Without this, SIGTERM interrupts wait and bash exits with 128+15=143,
@@ -105,7 +103,7 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      diff_on_autosave "$SANDBOX_DIR" "$BASELINE_SHA" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"
+      diff_on_autosave "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"
     done
   ) &
   AUTOSAVE_PID=$!
