@@ -2,7 +2,7 @@
 
 Governs the creation, population, and closure of session handover documents. A handover is a session log — it records what was done and what comes next, with enough fidelity that a new agent can continue without reconstructing state from the session history.
 
-A handover is not a document. It is not subject to `documentation_policy.md`. It is ephemeral by design.
+A handover is not a document. It is not subject to `documentation_policy.md`. It is a session log — committed alongside other session changes, retained for the life of the milestone, and read-only once closed. It does not describe the system; it describes the session. This is what "ephemeral" means here: it is not a reference document. It does not mean excluded from version control or from packaging.
 
 ---
 
