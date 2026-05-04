@@ -17,7 +17,6 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 
-plan 18
 
 # -------------------------------------------------------------------
 # Helper: create a clean sandbox with a commit, write SESSION_STATE

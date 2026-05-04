@@ -7,42 +7,27 @@
 #   write_uncommitted_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_all_changes_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_changed_files      SANDBOX_DIR  SINCE_SHA  OUTPUT_DIR
-#   diff_on_exit             SANDBOX_DIR  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
-#   diff_on_autosave         SANDBOX_DIR  CHANGES_DIR  SESSION_TS  SANITIZED_HOST_BRANCH
+#   diff_export              SANDBOX_DIR  OUTPUT_DIR
 #
-# Directory structure under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
+# All four functions are pure primitives — no dispatch logic, no session
+# resolution. Path construction is the caller's responsibility.
 #
-#   session/
-#     EXPORT-TIME.txt          — timestamp of the exit export (audit trail)
-#     uncommitted.diff         — uncommitted changes vs HEAD (via write_uncommitted_diff)
-#     all-changes.diff         — net delta INIT_SHA..HEAD (via write_all_changes_diff)
-#     patches/
-#       0001-<sha>.diff        — per-commit diffs from package_branch dispatcher
-#     changed-files/
-#       MANIFEST.txt
-#       <path>/<file>          — working tree copies of all changed files
+# Directory layout under OUTPUT_DIR/ (caller constructs the path):
 #
-#   autosave/
-#     EXPORT-TIME.txt          — timestamp of the last autosave tick
-#     uncommitted.diff         — uncommitted changes vs HEAD (no sweep; agent running)
-#     patches/
-#       0001-<sha>.diff        — per-commit diffs from package_branch dispatcher
-#     changed-files/
-#       MANIFEST.txt
-#       <path>/<file>          — working tree copies of all changed files
-#
-# Both subfolders are overwritten on each call. The session/ and autosave/
-# separation prevents race conditions between the EXIT trap and the autosave
-# loop writing to the same files.
-
-# SESSION_TS and SANITIZED_HOST_BRANCH are the session identity primitives.
-# They are injected into the container environment at session start and passed
-# as arguments to diff functions.
+#   EXPORT-TIME.txt          — timestamp of the export (audit trail)
+#   uncommitted.diff         — uncommitted changes vs HEAD
+#   all-changes.diff         — net delta INIT_SHA..HEAD
+#   patches/
+#     0001-<sha>.diff        — per-commit diffs from package_branch dispatcher
+#   changed-files/
+#     MANIFEST.txt
+#     <path>/<file>          — working tree copies of all changed files
 
 # -------------------------
-# Source session.sh for session_state_read
+# Source session.sh for session_state_read; source routing.sh for path helpers
 _DIFF_SH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_DIFF_SH_DIR/session.sh"
+source "$_DIFF_SH_DIR/routing.sh"
 
 # -------------------------
 # write_uncommitted_diff
@@ -189,87 +174,45 @@ write_changed_files() {
 }
 
 # -------------------------
-# diff_on_exit
+# diff_export
 #
-# Thin dispatcher: creates output directory, writes EXPORT-TIME.txt, calls
-# package_branch which orchestrates all four output operations.
-# Called by the EXIT trap in sandbox-entrypoint.sh.
+# Writes export artefacts (EXPORT-TIME.txt + package_branch output) to a
+# pre-constructed OUTPUT_DIR. Caller is responsible for creating the output
+# directory and determining its location using session_export_path (from
+# routing.sh) or a custom path.
+#
 # No sweep commit — uncommitted changes are captured in uncommitted.diff.
+# No session resolution — path is caller-provided.
 #
-# Output layout under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
-#   session/EXPORT-TIME.txt
-#   session/patches/
-#   session/uncommitted.diff
-#   session/all-changes.diff
-#   session/changed-files/
+# Called by:
+#   sandbox-entrypoint.sh (EXIT trap and autosave loop)
+#
+# Args:
+#   SANDBOX_DIR  — path to the sandbox git repository
+#   OUTPUT_DIR   — full path to the output directory
+#                  Contents are overwritten on each call (package_branch
+#                  removes and recreates OUTPUT_DIR internally).
 # -------------------------
-diff_on_exit() {
+diff_export() {
   local SANDBOX_DIR="$1"
-  local CHANGES_DIR="$2"
-  local SESSION_TS="$3"
-  local SANITIZED_HOST_BRANCH="$4"
+  local OUTPUT_DIR="$2"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$CHANGES_DIR" || -z "$SESSION_TS" || -z "$SANITIZED_HOST_BRANCH" ]]; then
-    echo "diff_on_exit: SANDBOX_DIR, CHANGES_DIR, SESSION_TS, and SANITIZED_HOST_BRANCH are required" >&2
+  if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
+    echo "diff_export: SANDBOX_DIR and OUTPUT_DIR are required" >&2
     return 1
   fi
 
-  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_TS}-${SANITIZED_HOST_BRANCH}"
-  local SESSION_DIR="${OUTPUT_DIR}/session"
-  mkdir -p "$SESSION_DIR"
+  echo "diff_export: packaging artefacts..." >&2
 
-  # Record export time for audit trail
-  local EXPORT_TIME
-  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  echo "$EXPORT_TIME" > "$SESSION_DIR/EXPORT-TIME.txt"
-
-  # Delegate to package_branch dispatcher
-  echo "diff_on_exit: packaging session artefacts..." >&2
+  # Delegate to package_branch dispatcher first (it recreates OUTPUT_DIR),
+  # then write EXPORT-TIME.txt after so it isn't wiped by rm -rf.
   local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   source "${_diff_sh_dir}/package_branch.sh"
-  package_branch "$SANDBOX_DIR" "$SESSION_DIR"
-}
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"
 
-# -------------------------
-# diff_on_autosave
-#
-# Thin dispatcher: creates output directory, writes EXPORT-TIME.txt, calls
-# package_branch which orchestrates all four output operations.
-# No sweep commit — agent is still running; committing would interfere.
-# Overwrites the autosave/ subfolder on each tick.
-# Called by the autosave loop in sandbox-entrypoint.sh.
-#
-# Output layout under CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/:
-#   autosave/EXPORT-TIME.txt
-#   autosave/patches/
-#   autosave/uncommitted.diff
-#   autosave/all-changes.diff
-#   autosave/changed-files/
-# -------------------------
-diff_on_autosave() {
-  local SANDBOX_DIR="$1"
-  local CHANGES_DIR="$2"
-  local SESSION_TS="$3"
-  local SANITIZED_HOST_BRANCH="$4"
-
-  if [[ -z "$SANDBOX_DIR" || -z "$CHANGES_DIR" || -z "$SESSION_TS" || -z "$SANITIZED_HOST_BRANCH" ]]; then
-    echo "diff_on_autosave: SANDBOX_DIR, CHANGES_DIR, SESSION_TS, and SANITIZED_HOST_BRANCH are required" >&2
-    return 1
-  fi
-
-  local OUTPUT_DIR="${CHANGES_DIR}/${SESSION_TS}-${SANITIZED_HOST_BRANCH}"
-  local AUTOSAVE_DIR="${OUTPUT_DIR}/autosave"
-  mkdir -p "$AUTOSAVE_DIR"
-
-  # Record export time for audit trail
+  # Record export time for audit trail (written after package_branch
+  # since it removes and recreates OUTPUT_DIR internally)
   local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  echo "$EXPORT_TIME" > "$AUTOSAVE_DIR/EXPORT-TIME.txt"
-
-  echo "diff_on_autosave: writing checkpoint..." >&2
-
-  # Delegate to package_branch dispatcher
-  local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  source "${_diff_sh_dir}/package_branch.sh"
-  package_branch "$SANDBOX_DIR" "$AUTOSAVE_DIR"
+  echo "$EXPORT_TIME" > "$OUTPUT_DIR/EXPORT-TIME.txt"
 }

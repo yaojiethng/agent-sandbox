@@ -10,6 +10,7 @@ COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY provider-entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
 COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
 COPY session.sh /opt/sandbox/lib/session.sh
+COPY routing.sh /opt/sandbox/lib/routing.sh
 
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 RUN mkdir -p /opt/provider-config

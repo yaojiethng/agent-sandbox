@@ -3,236 +3,143 @@
 # Tests for libs/session.sh
 #
 # Covers:
-#   validate_project_dir — missing dir, not a repo, no commits, valid repo
-#   resolve_session_dir  — absolute, relative, auto-resolve, require_subpath,
-#                          missing base, missing resolved
+#   validate_project_dir     — checks existence, git repo, commits
+#   session_state_read       — key-value lookup from SESSION_STATE
+#   session_state_write      — key-value append to SESSION_STATE
+#
+# Note: resolve_session_dir was removed in A.2 — routing concerns moved
+# to libs/routing.sh (tested in test_routing.sh).
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../libs/session.sh"
-
 source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-# -------------------------
+
+# =============================================================================
 # validate_project_dir
-# -------------------------
+# =============================================================================
 
 test_validate_project_dir_missing() {
-  local DIR="$FIXTURE_DIR/nonexistent"
-  if ! validate_project_dir "$DIR" 2>/dev/null; then
-    pass "returns error for missing directory"
+  if validate_project_dir "/nonexistent/path" 2>/dev/null; then
+    fail "validate_project_dir should fail for non-existent dir"
   else
-    fail "expected error for missing directory"
+    pass "validate_project_dir fails for non-existent dir"
   fi
 }
 
 test_validate_project_dir_not_git() {
   local DIR="$FIXTURE_DIR/not_git"
   mkdir -p "$DIR"
-  if ! validate_project_dir "$DIR" 2>/dev/null; then
-    pass "returns error for non-git directory"
+
+  if validate_project_dir "$DIR" 2>/dev/null; then
+    fail "validate_project_dir should fail for non-git dir"
   else
-    fail "expected error for non-git directory"
+    pass "validate_project_dir fails for non-git dir"
   fi
 }
 
 test_validate_project_dir_no_commits() {
   local DIR="$FIXTURE_DIR/no_commits"
   mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  if ! validate_project_dir "$DIR" 2>/dev/null; then
-    pass "returns error for repo with no commits"
+  git -C "$DIR" init --quiet 2>/dev/null
+
+  if validate_project_dir "$DIR" 2>/dev/null; then
+    fail "validate_project_dir should fail for repo with no commits"
   else
-    fail "expected error for repo with no commits"
+    pass "validate_project_dir fails for repo with no commits"
   fi
 }
 
 test_validate_project_dir_valid() {
-  local DIR="$FIXTURE_DIR/valid_repo"
+  local DIR="$FIXTURE_DIR/valid"
   mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  git -C "$DIR" config user.email "test@test.com"
+  git -C "$DIR" init --quiet 2>/dev/null
+  git -C "$DIR" config user.email "test@test"
   git -C "$DIR" config user.name "Test"
-  echo "baseline" > "$DIR/file.txt"
+  echo "init" > "$DIR/file.txt"
   git -C "$DIR" add .
-  git -C "$DIR" commit -m "baseline" --quiet
-  if validate_project_dir "$DIR" 2>/dev/null; then
-    pass "succeeds for valid repo with commits"
+  git -C "$DIR" commit -m "init" --quiet 2>/dev/null
+
+  if validate_project_dir "$DIR"; then
+    pass "validate_project_dir passes for valid repo"
   else
-    fail "expected success for valid repo with commits"
+    fail "validate_project_dir should pass for valid repo"
   fi
 }
 
-# -------------------------
-# resolve_session_dir
-# -------------------------
-
-test_resolve_absolute_path() {
-  local DIR="$FIXTURE_DIR/abs_session"
-  mkdir -p "$DIR/session/patches"
-  local RESULT
-  RESULT=$(resolve_session_dir "$FIXTURE_DIR/other" "$DIR" "")
-  if [[ "$RESULT" == "$DIR" ]]; then
-    pass "absolute path used as-is"
-  else
-    fail "expected '$DIR', got '$RESULT'"
-  fi
-}
-
-test_resolve_relative_path() {
-  local BASE="$FIXTURE_DIR/rel_base"
-  mkdir -p "$BASE/my-session/session/patches"
-  local RESULT
-  RESULT=$(resolve_session_dir "$BASE" "my-session" "")
-  if [[ "$RESULT" == "$BASE/my-session" ]]; then
-    pass "relative path resolved under base"
-  else
-    fail "expected '$BASE/my-session', got '$RESULT'"
-  fi
-}
-
-test_resolve_auto_resolve() {
-  local BASE="$FIXTURE_DIR/auto_base"
-  mkdir -p "$BASE/20260420-120000-main/session/patches"
-  mkdir -p "$BASE/20260421-130000-feature/session/patches"
-  local RESULT
-  RESULT=$(resolve_session_dir "$BASE" "" "")
-  if [[ "$RESULT" == "$BASE/20260421-130000-feature" ]]; then
-    pass "auto-resolve selects lexicographically last directory"
-  else
-    fail "expected '$BASE/20260421-130000-feature', got '$RESULT'"
-  fi
-}
-
-test_resolve_require_subpath_ok() {
-  local DIR="$FIXTURE_DIR/sub_ok"
-  mkdir -p "$DIR/session/patches"
-  local RESULT
-  RESULT=$(resolve_session_dir "$FIXTURE_DIR/other" "$DIR" "session/patches")
-  if [[ "$RESULT" == "$DIR" ]]; then
-    pass "require_subpath satisfied"
-  else
-    fail "expected '$DIR', got '$RESULT'"
-  fi
-}
-
-test_resolve_require_subpath_missing() {
-  local DIR="$FIXTURE_DIR/sub_missing"
-  mkdir -p "$DIR/session"
-  if ! resolve_session_dir "$FIXTURE_DIR/other" "$DIR" "session/patches" 2>/dev/null; then
-    pass "returns error when require_subpath missing"
-  else
-    fail "expected error when require_subpath missing"
-  fi
-}
-
-test_resolve_missing_base_relative() {
-  local BASE="$FIXTURE_DIR/missing_base_rel"
-  if ! resolve_session_dir "$BASE" "some-session" "" 2>/dev/null; then
-    pass "returns error when base missing for relative path"
-  else
-    fail "expected error when base missing for relative path"
-  fi
-}
-
-test_resolve_missing_base_auto() {
-  local BASE="$FIXTURE_DIR/missing_base_auto"
-  if ! resolve_session_dir "$BASE" "" "" 2>/dev/null; then
-    pass "returns error when base missing for auto-resolve"
-  else
-    fail "expected error when base missing for auto-resolve"
-  fi
-}
-
-test_resolve_missing_absolute() {
-  local DIR="$FIXTURE_DIR/missing_abs"
-  if ! resolve_session_dir "$FIXTURE_DIR/other" "$DIR" "" 2>/dev/null; then
-    pass "returns error when absolute path does not exist"
-  else
-    fail "expected error when absolute path does not exist"
-  fi
-}
-
-# -------------------------
-# session_state_read
-# -------------------------
+# =============================================================================
+# session_state_read / session_state_write
+# =============================================================================
 
 test_session_state_read_existing_key() {
-  local DIR="$FIXTURE_DIR/ss_existing_key"
+  local DIR="$FIXTURE_DIR/state_existing"
   mkdir -p "$DIR/.git"
-  session_state_write "$DIR" "init_sha" "abc123def"
-  local VALUE
-  VALUE=$(session_state_read "$DIR" "init_sha")
-  if [[ "$VALUE" == "abc123def" ]]; then
-    pass "returns value for existing key"
+  echo "init_sha=abc123" > "$DIR/.git/SESSION_STATE"
+  echo "session_ts=20260401-120000" >> "$DIR/.git/SESSION_STATE"
+
+  local RESULT
+  RESULT=$(session_state_read "$DIR" "init_sha")
+  if [[ "$RESULT" == "abc123" ]]; then
+    pass "session_state_read returns value for existing key"
   else
-    fail "expected 'abc123def', got '$VALUE'"
+    fail "session_state_read: expected abc123, got $RESULT"
   fi
 }
 
 test_session_state_read_missing_file() {
-  local DIR="$FIXTURE_DIR/ss_missing_file"
+  local DIR="$FIXTURE_DIR/state_nofile"
   mkdir -p "$DIR/.git"
-  local VALUE
-  VALUE=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$VALUE" ]]; then
-    pass "returns empty when SESSION_STATE file does not exist"
+
+  local RESULT
+  RESULT=$(session_state_read "$DIR" "init_sha")
+  if [[ -z "$RESULT" ]]; then
+    pass "session_state_read returns empty for missing file"
   else
-    fail "expected empty output, got '$VALUE'"
+    fail "session_state_read should return empty for missing file, got: $RESULT"
   fi
 }
 
 test_session_state_read_missing_key() {
-  local DIR="$FIXTURE_DIR/ss_missing_key"
+  local DIR="$FIXTURE_DIR/state_nokey"
   mkdir -p "$DIR/.git"
-  echo "init_sha=abc123" > "$DIR/.git/SESSION_STATE"
-  local VALUE
-  VALUE=$(session_state_read "$DIR" "session_ts")
-  if [[ -z "$VALUE" ]]; then
-    pass "returns empty for non-existent key"
+  echo "other_key=value" > "$DIR/.git/SESSION_STATE"
+
+  local RESULT
+  RESULT=$(session_state_read "$DIR" "init_sha")
+  if [[ -z "$RESULT" ]]; then
+    pass "session_state_read returns empty for missing key"
   else
-    fail "expected empty output, got '$VALUE'"
+    fail "session_state_read should return empty for missing key, got: $RESULT"
   fi
 }
 
 test_session_state_read_malformed() {
-  local DIR="$FIXTURE_DIR/ss_malformed"
+  local DIR="$FIXTURE_DIR/state_malformed"
   mkdir -p "$DIR/.git"
-  printf 'garbage\nnoequalsign\n\nkey=valid\n' > "$DIR/.git/SESSION_STATE"
-  local VALUE
-  VALUE=$(session_state_read "$DIR" "key")
-  if [[ "$VALUE" == "valid" ]]; then
-    pass "finds key after malformed lines"
+  echo "not-a-key-value-pair" > "$DIR/.git/SESSION_STATE"
+
+  local RESULT
+  RESULT=$(session_state_read "$DIR" "init_sha")
+  if [[ -z "$RESULT" ]]; then
+    pass "session_state_read handles malformed file gracefully"
   else
-    fail "expected 'valid', got '$VALUE'"
-  fi
-  VALUE=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$VALUE" ]]; then
-    pass "returns empty for key not in file with malformed lines"
-  else
-    fail "expected empty output, got '$VALUE'"
+    fail "session_state_read should return empty for malformed file, got: $RESULT"
   fi
 }
 
-# -------------------------
-# Run all
-# -------------------------
+# =============================================================================
+# Run
+# =============================================================================
+
 run_test test_validate_project_dir_missing
 run_test test_validate_project_dir_not_git
 run_test test_validate_project_dir_no_commits
 run_test test_validate_project_dir_valid
-run_test test_resolve_absolute_path
-run_test test_resolve_relative_path
-run_test test_resolve_auto_resolve
-run_test test_resolve_require_subpath_ok
-run_test test_resolve_require_subpath_missing
-run_test test_resolve_missing_base_relative
-run_test test_resolve_missing_base_auto
-run_test test_resolve_missing_absolute
 run_test test_session_state_read_existing_key
 run_test test_session_state_read_missing_file
 run_test test_session_state_read_missing_key

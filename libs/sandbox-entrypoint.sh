@@ -81,11 +81,19 @@ echo "  (empty = clean working tree)"
 # Diff pipeline
 # -------------------------
 source /opt/sandbox/lib/diff.sh
+source /opt/sandbox/lib/routing.sh
 
-# On exit: kill autosave subshell if running, commit any pending changes,
-# write staged.diff. Runs on any exit — clean shutdown, SIGTERM, or error.
+# On exit: kill autosave subshell if running, write session export via
+# session_export_path + diff_export. Runs on any exit — clean shutdown,
+# SIGTERM, or error.
+#
+# Uses session_export_path from routing.sh to construct the output path
+# under CHANGES_DIR/session/<SESSION_TS>-<BRANCH>/, then calls diff_export
+# which delegates to package_branch.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     diff_on_exit "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"' EXIT
+     local _exit_dir="$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}")"
+     mkdir -p "$_exit_dir"
+     diff_export "$SANDBOX_DIR" "$_exit_dir"' EXIT
 
 # On SIGTERM (docker stop): exit cleanly so EXIT trap fires with code 0.
 # Without this, SIGTERM interrupts wait and bash exits with 128+15=143,
@@ -96,14 +104,19 @@ trap 'exit 0' TERM
 # -------------------------
 # Optional autosave loop
 # -------------------------
-# Writes autosave.diff on interval without committing — provides incremental
-# checkpoints during a session without disturbing the baseline diff.
+# Writes autosave checkpoint on interval without committing — provides
+# incremental checkpoints during a session without disturbing the baseline
+# diff. Uses session_export_path from routing.sh to construct the output
+# path under CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>/, then calls
+# diff_export which delegates to package_branch.
 # PID is tracked so the EXIT trap can kill the subshell cleanly on shutdown.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      diff_on_autosave "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}"
+      local _as_dir="$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}")"
+      mkdir -p "$_as_dir"
+      diff_export "$SANDBOX_DIR" "$_as_dir"
     done
   ) &
   AUTOSAVE_PID=$!

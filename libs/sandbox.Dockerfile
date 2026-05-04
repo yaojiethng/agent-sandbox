@@ -25,8 +25,8 @@ COPY sandbox-entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
 COPY diff.sh /opt/sandbox/lib/diff.sh
-COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
 COPY session.sh /opt/sandbox/lib/session.sh
+COPY routing.sh /opt/sandbox/lib/routing.sh
 COPY docs/ /opt/sandbox/docs/
 RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 

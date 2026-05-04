@@ -11,7 +11,6 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/diff.sh"
 
-plan 18
 
 # -------------------------------------------------------------------
 # Helper: create a clean sandbox with a baseline commit

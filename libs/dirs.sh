@@ -23,8 +23,9 @@ SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
 SANDBOX_DIR_NAME="${SANDBOX_DIR_NAME:-sandbox}"
 
 # Diff output subdirectory: bind-mounted read-write into the capability layer only.
-# The diff pipeline writes staged.diff and autosave.diff here and nowhere else.
-# The capability layer mounts only this subdirectory — not the workspace parent.
+# The diff pipeline writes uncommitted.diff, all-changes.diff, patches/, and
+# changed-files/ here and nowhere else. The capability layer mounts only this
+# subdirectory — not the workspace parent.
 # Writing outside this directory from the capability layer is a bug.
 CHANGES_DIR_NAME="${CHANGES_DIR_NAME:-workspace/session-diffs}"
 

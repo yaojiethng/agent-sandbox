@@ -8,8 +8,8 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--session=<name|path>] [--diff=<path>] [--force]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--session=<name|path>] [--branch-summary=<slug>]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--session=<name>] [--diff=<path>] [--force]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
 #
@@ -27,6 +27,7 @@ SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 source "$AGENT_SANDBOX_REPO/libs/containers.sh"
 source "$AGENT_SANDBOX_REPO/libs/draft_workflow.sh"
 source "$AGENT_SANDBOX_REPO/libs/diff_workflow.sh"
+source "$AGENT_SANDBOX_REPO/libs/routing.sh"
 
 # =============================================================================
 # CLI entry point
@@ -51,6 +52,7 @@ main() {
   local SANDBOX_DIR=""
   local BRANCH=""
   local SESSION_ARG=""
+  local CHANNEL_ARG=""
   local TARGET_BRANCH=""
   local PROVIDER_NAME=""
   local REBUILD=false
@@ -70,6 +72,7 @@ main() {
         --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
         --branch=*)      BRANCH="${ARG#--branch=}" ;;
         --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+        --channel=*)     CHANNEL_ARG="${ARG#--channel=}" ;;
         --target=*)      TARGET_BRANCH="${ARG#--target=}" ;;
         --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
         --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
@@ -214,7 +217,17 @@ main() {
         echo "Error: --project and --sandbox are required"
         exit 1
       fi
-      apply_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$DIFF_ARG" "$BRANCH" "$FORCE"
+
+      if [[ -n "$DIFF_ARG" ]]; then
+        # Explicit diff path — bypass all channel resolution
+        apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+      else
+        # Resolve via router
+        local CHANNEL="${CHANNEL_ARG:-diffs}"
+        local DIFF_FILE
+        DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+        apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+      fi
       ;;
 
     draft)
@@ -223,7 +236,15 @@ main() {
         echo "Error: --project and --sandbox are required"
         exit 1
       fi
-      draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+
+      # Resolve source dir via router
+      local CHANNEL="${CHANNEL_ARG:-session}"
+      local ROUTER_RESULT
+      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+      local SOURCE_DIR SESSION_NAME
+      SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+      SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+      draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
       ;;
 
     confirm)

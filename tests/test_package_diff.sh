@@ -10,7 +10,6 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 
-plan 14
 
 # -------------------------------------------------------------------
 # Helper: run package_diff.sh with a sandbox dir override

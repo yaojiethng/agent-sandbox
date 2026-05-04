@@ -29,6 +29,7 @@
 _PD_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_PD_SCRIPT_DIR/session.sh"
 source "$_PD_SCRIPT_DIR/diff.sh"
+source "$_PD_SCRIPT_DIR/routing.sh"
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -104,15 +105,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   fi
 
   # -------------------------
-  # Create output directory
+  # Create output directory via output_export_path
   # -------------------------
-  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
-  if [[ -n "$SESSION_TS" ]]; then
-    OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
-  else
-    OUTDIR="$PARENT_DIR/diffs/${EXPORT_TIME}-${SESSION_SUMMARY}"
-  fi
-  mkdir -p "$OUTDIR"
+  OUTDIR=$(output_export_path "$PARENT_DIR" "diffs" "$SESSION_SUMMARY" "$SESSION_TS")
 
   # -------------------------
   # Check for changes

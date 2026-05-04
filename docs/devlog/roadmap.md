@@ -140,148 +140,19 @@ These tasks implement the unified output format, `--channel` CLI contract, route
 
 #### A.1 — Data model: unified output format, dispatcher, `diff_on_exit` repair (complete)
 
-**Objective:** Restructure all diff packaging around a single unified output format. Rewrite `package_branch.sh` as a dispatcher orchestrating `package_commits`, `write_uncommitted_diff`, `write_all_changes_diff`, and `write_changed_files`. Rewrite `diff_on_exit` and `diff_on_autosave` as thin wrappers calling `package_branch` — no sweep commit, no `BASELINE_SHA` parameter. This is the largest entry in the sequence.
-
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md` § 2–3, § 6.
-
-**Scope:**
-
-*Files to change:*
-- `libs/diff.sh` — remove `diff_commit_pending`, `diff_generate`, `diff_format_patch` (old functions); add `write_uncommitted_diff` and `write_all_changes_diff`; rewrite `diff_on_exit` and `diff_on_autosave` as thin dispatchers calling `package_branch`; change signature: drop `BASELINE_SHA` param, read `init_sha` from `SESSION_STATE`
-- `libs/package_branch.sh` — extract `package_commits` from old `package_branch` logic; rewrite `package_branch` as dispatcher calling `package_commits` + `write_uncommitted_diff` + `write_all_changes_diff` + `write_changed_files`; read `init_sha` from `SESSION_STATE`; source `diff.sh` at top level; **preserve the existing `BASH_SOURCE` main guard** so the file remains both directly executable and sourceable (used via `bash /opt/sandbox/lib/package_branch.sh` from `agent/prompts/package-branch.md`)
-- `libs/package_diff.sh` — rename `changes.diff` → `uncommitted.diff`; remove `--baseline` flag and `resolve_baseline` function; use `git diff HEAD` as canonical; call `write_changed_files` (shared helper) instead of inline copy logic; **add a `BASH_SOURCE` main guard** — currently missing; file must remain directly executable (invoked as `bash /opt/sandbox/lib/package_diff.sh` from `agent/prompts/package-diff.md`) while also being sourceable as a library
-- `libs/sandbox-entrypoint.sh` — remove `BASELINE_SHA` variable; update `diff_on_exit` / `diff_on_autosave` calls to match new 3-arg signature
-- `libs/snapshot.sh` — already writes to `SESSION_STATE`; verify no `INIT_SHA` file writes remain
-
-*Test files to update:*
-- `tests/test_diff.sh` — remove `diff_commit_pending` tests; add tests for `write_uncommitted_diff`, `write_all_changes_diff`; rename `changes.diff` → `uncommitted.diff`, `staged.diff` → `all-changes.diff` in assertions; add `SESSION_STATE` setup; verify `patches/` subfolder; verify no sweep commit; **add end-to-end test for `diff_on_exit` non-empty output** (NDQ-1 test gap)
-- `tests/test_package_branch.sh` — update for dispatcher pattern: `patches/` subfolder, `uncommitted.diff`, `all-changes.diff`, `write_changed_files`; extract `package_commits` tests
-- `tests/test_package_diff.sh` — update for `uncommitted.diff` rename and `write_changed_files` shared helper
-- `tests/test_snapshot_container.sh` — already has `SESSION_STATE` tests; verify no `INIT_SHA` assertions remain
-
-**NDQ-1 resolution:** The empty `diff_on_exit` bug folds into this entry. Root cause: the old code path (sweep commit, `BASELINE_SHA` param) cannot produce output when called from the restructured entrypoint. A.1's rewrite as a thin dispatcher resolves the defect by construction. The test gap (no end-to-end `diff_on_exit` test) is closed by AC #5 below.
-
-**NDQ-2 resolution:** Three separate `git diff` invocations exist (`diff_write_changes_diff` in `diff.sh`, `diff_generate` in `diff.sh`, inline diff in `package_diff.sh`). A.1 extracts `write_uncommitted_diff` and `write_all_changes_diff` as shared helpers called from all three sites.
-
-**Hot files:**
-| File | Change |
-|---|---|
-| `libs/diff.sh` | New helpers; remove old functions; thin dispatchers |
-| `libs/package_branch.sh` | Dispatcher rewrite with `package_commits` extraction |
-| `libs/package_diff.sh` | Rename `changes.diff` → `uncommitted.diff` |
-| `libs/sandbox-entrypoint.sh` | Drop `BASELINE_SHA` variable; update call signatures |
-| `tests/test_diff.sh` | New tests; rename assertions |
-| `tests/test_package_branch.sh` | Dispatcher tests |
-| `tests/test_package_diff.sh` | `uncommitted.diff` tests |
-
-**Acceptance criteria:**
-1. `scripts/run_tests.sh` exits 0 (all tests pass)
-2. `package_branch` writes `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` to output directory
-3. `diff_on_exit` produces `session/uncommitted.diff`, `session/all-changes.diff`, `session/patches/*.diff`, `session/changed-files/` — no `session/changes.diff`, no `session/staged.diff`, no sweep commit
-4. `diff_on_autosave` produces `autosave/uncommitted.diff`, `autosave/patches/*.diff` — no `autosave/changes.diff`
-5. `diff_on_exit` produces **non-empty output** for a session with changes (end-to-end test, NDQ-1 gating)
-6. `package_diff.sh` writes `uncommitted.diff` (not `changes.diff`) and `changed-files/`
-7. `sandbox-entrypoint.sh` has no `BASELINE_SHA` variable or reference to it
-8. `write_changed_files` helper exists in `libs/diff.sh` and is called from both `package_branch` and `package_diff.sh`
-
-**Depends on:** A.0 (sourceability — optional but recommended for test setup clarity)
+All diff packaging is restructured around a single unified output format. `package_branch.sh` acts as a dispatcher orchestrating `package_commits`, `write_uncommitted_diff`, `write_all_changes_diff`, and `write_changed_files`. `diff_on_exit` and `diff_on_autosave` are thin wrappers calling `package_branch` — no sweep commit, no `BASELINE_SHA` parameter. The output format produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` in both session and autosave directories.
 
 ---
 
-#### A.2 — CLI contract: `--channel` flag and routing
+#### A.2 — CLI contract: `--channel` flag and routing (complete)
 
-**Objective:** Restructure `apply` and `draft` CLI contracts around a single `--channel` flag. Add router functions in `agent-sandbox.sh`. Make `--session` name-only (reject absolute paths). Update `draft_run` / `apply_run` to the file-path / `SOURCE_DIR` contract. Add Makefile flag mappings.
-
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md` § 4.
-
-**Scope:**
-
-*Files to change:*
-- `scripts/agent-sandbox.sh` — add `--channel` flag parsing with values `session`, `autosave`, `bundles` (draft) and `diffs`, `autosave`, `session` (apply); add `resolve_source_for_draft` and `resolve_diff_for_apply` router functions; add absolute-path rejection for `--session`; update `apply`/`draft` dispatch to call routers then pass resolved paths to workflow functions
-- `libs/diff_workflow.sh` — rewrite `apply_run` to take file path directly (4 args: PROJECT_DIR, DIFF_FILE, BRANCH, FORCE); no hardcoded filename; no session resolution
-- `libs/draft_workflow.sh` — rewrite `draft_run` to take SOURCE_DIR + SESSION_NAME (6 args); apply `patches/*.diff` sequentially, then `uncommitted.diff` if present; remove `resolve_session_dir` calls (router handles resolution)
-- `libs/_templates/Makefile.template` — add `AUTOSAVE=1` → `--channel=autosave`, `BUNDLE=1` → `--channel=bundles` mappings; update `apply` and `draft` Makefile targets
-- `libs/session.sh` — move `resolve_session_dir` to `agent-sandbox.sh` or mark as deprecated (it's replaced by channel-specific routers)
-- `scripts/onboard.sh` — update stale `staged.diff` / `changes.diff` comments
-- `libs/sandbox-entrypoint.sh` — **remove `diff_on_exit`/`diff_on_autosave` calls entirely; inline path construction directly**: build `$CHANGES_DIR/<session>/session/` (or `.../autosave/`), write `EXPORT-TIME.txt`, then call `package_branch "$SANDBOX_DIR" "$SESSION_DIR"` directly. Source `package_branch.sh` from the entrypoint.
-- `libs/diff.sh` — **remove `diff_on_exit` and `diff_on_autosave` entirely** — no wrapper functions remain. The function header comment is updated to reflect the new function list.
-- **Evaluate shared dispatch helper:** if the path-construction pattern (`mkdir -p`, `EXPORT-TIME.txt`, `package_branch`) is identical between `sandbox-entrypoint.sh` (session vs autosave) and any host-side path (`agent-sandbox.sh` routers), extract into a shared `diff_export SANDBOX_DIR OUTPUT_DIR` helper in `libs/diff.sh`. If host-side paths differ meaningfully (no EXPORT-TIME.txt, different base paths), keep entrypoint-side inline and skip extraction.
-- `libs/dirs.sh` — update stale comment about output format
-
-*Test files to update:*
-- `tests/test_diff_workflow.sh` — rewrite tests for new `apply_run` contract (file-path input, no resolution logic)
-- `tests/test_draft_workflow.sh` — update test calls for new `draft_run` signature; add `test_draft_applies_uncommitted_diff`
-- `tests/libs/session_fixtures.sh` — rename `changes.diff` → `uncommitted.diff` in fixtures; add `all-changes.diff`
-- `tests/test_session.sh` — update or remove `resolve_session_dir` tests if function moves/deprecated
-- Add **router unit tests** for `resolve_source_for_draft` and `resolve_diff_for_apply` — these are the first unit tests that require `agent-sandbox.sh` to be sourceable (which A.0 provides)
-
-**NDQ-3 resolution:** A.0's scope is reduced to sourceability only (scope #1 confirmed). Router unit tests (scope #2) are absorbed into A.2 since the routers are introduced here. A.0 does not include router tests.
-
-**NDQ-5 resolution:** Full scope pending — nothing from the settled A.2 contract has landed in the live tree. The list above is the full scope.
-
-**Hot files:**
-| File | Change |
-|---|---|
-| `scripts/agent-sandbox.sh` | `--channel` flag; routers; absolute-path rejection |
-| `libs/diff.sh` | Replace `diff_on_exit`/`diff_on_autosave` with single `diff_export` |
-| `libs/diff_workflow.sh` | `apply_run` 4-arg file-path contract |
-| `libs/draft_workflow.sh` | `draft_run` SOURCE_DIR + SESSION_NAME contract |
-| `libs/_templates/Makefile.template` | AUTOSAVE/BUNDLE flag mappings |
-| `libs/sandbox-entrypoint.sh` | Path construction for `diff_export`; stale comment cleanup |
-| `tests/test_diff_dispatch.sh` | Rewrite to test path construction and `package_branch` dispatch call — entrypoint builds path, writes EXPORT-TIME.txt, calls `package_branch` directly |
-| `tests/test_diff_workflow.sh` | New apply_run tests |
-| `tests/test_draft_workflow.sh` | New draft_run tests |
-
-**Acceptance criteria:**
-1. `scripts/run_tests.sh` exits 0
-2. `make draft` (no flags) resolves `--channel=session`, finds latest session export under `$CHANGES_DIR/`, applies `patches/*.diff` then `uncommitted.diff` if present
-3. `make draft BUNDLE=1` resolves `--channel=bundles`, finds latest bundle export under `$OUTPUT_DIR/bundles/`
-4. `make apply` (no flags) resolves `--channel=diffs`, finds latest `uncommitted.diff` under `$OUTPUT_DIR/diffs/`
-5. `make apply AUTOSAVE=1` resolves `--channel=autosave`, finds latest `uncommitted.diff` under `$CHANGES_DIR/<session>/autosave/`
-6. `--diff=<path>` bypasses all channel resolution; `--session=<name>` rejects absolute paths with clear error
-7. `draft_run` applies `patches/*.diff` sequentially then `uncommitted.diff` if present (no other files processed)
-8. `apply_run` applies any file path passed to it (no hardcoded filename)
-9. Router unit tests exist for both `resolve_source_for_draft` and `resolve_diff_for_apply`, covering: default channel, explicit channel, name-only session, absolute-path rejection, missing session
-10. Stale `staged.diff` / `changes.diff` references removed from `onboard.sh`, `sandbox-entrypoint.sh`, `dirs.sh`
-
-**Depends on:** A.0 (sourceability), A.1 (unified output format — output files must exist for routing to resolve)
+CLI contracts restructured around a single `--channel` flag with router functions in `libs/routing.sh`. `apply_run` accepts a file path directly (4 args, no resolution). `draft_run` accepts `SOURCE_DIR` + `SESSION_NAME` (caller supplies the directory). `diff_on_exit` and `diff_on_autosave` replaced by `diff_export` — callers construct paths via `session_export_path` from `routing.sh`. Session output layout flipped to `session-diffs/{session,autosave}/<SESSION_TS>-<BRANCH>/`. Makefile template has `AUTOSAVE` and `BUNDLE` flag mappings. See `20260504-01-impl-cli_contract_channel_flag_routing.md`.
 
 ---
 
 #### A.4 — `changed-files/` extraction and verification (complete)
 
-**Objective:** Extract the inline `changed-files/` copy logic from `libs/package_diff.sh` into a shared `write_changed_files` function in `libs/diff.sh`. Wire it into both the `package_branch` dispatcher and `package_diff.sh`. Update tests.
-
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md` § 3 (`write_changed_files`).
-
-**NDQ-4 resolution:** `write_changed_files` does not exist in `libs/diff.sh`. Inline changed-files logic is still in `package_diff.sh` only. A.4 has full standalone scope and is retained in the sequence.
-
-**Scope:**
-- `libs/diff.sh` — add `write_changed_files(SANDBOX_DIR, SINCE_SHA, OUTPUT_DIR)` — two-source file list (`git diff --name-only SINCE_SHA` + `git ls-files --others --exclude-standard`), deduplication via `sort -u`, working tree copies preserving structure, deleted files skipped, empty cleanup; update function list in header
-- `libs/package_branch.sh` — dispatcher calls `write_changed_files` after `package_commits` + `write_uncommitted_diff` + `write_all_changes_diff`; source `diff.sh` at top level (move existing source if needed)
-- `libs/package_diff.sh` — replace inline 3-source copy logic with single `write_changed_files` call using `SINCE_SHA=HEAD`
-- `tests/test_package_branch.sh` — 4 new tests: manifest, copies, uncommitted, dedup
-- `tests/test_package_diff.sh` — 3 new tests: manifest, copies, untracked
-
-**Hot files:**
-| File | Change |
-|---|---|
-| `libs/diff.sh` | New `write_changed_files` function |
-| `libs/package_branch.sh` | Call `write_changed_files` in dispatcher |
-| `libs/package_diff.sh` | Replace inline copy logic with helper call |
-| `tests/test_package_branch.sh` | 4 changed-files tests |
-| `tests/test_package_diff.sh` | 3 changed-files tests |
-
-**Acceptance criteria:**
-1. `scripts/run_tests.sh` exits 0
-2. `write_changed_files` exists in `libs/diff.sh`
-3. `package_branch` output includes `changed-files/` directory with file copies and `MANIFEST.txt`
-4. `package_diff.sh` output includes `changed-files/` directory (sourced from same helper)
-5. Deleted files are not copied (skipped gracefully, not an error)
-6. Untracked files appear in `changed-files/` (not skipped)
-7. Deduplication: a file modified and untracked appears once in `changed-files/`
-
-**Depends on:** A.1 (unified output format provides the `package_branch` dispatcher shape; `write_changed_files` is called alongside the other helpers)
+Covered by A.1. `write_changed_files` helper is extracted in `libs/diff.sh` and wired into both the `package_branch` dispatcher and `package_diff.sh`. Changed-files output validated across all test scenarios.
 
 ---
 

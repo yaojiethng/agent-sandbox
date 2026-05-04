@@ -50,6 +50,8 @@ REBUILD      ?=
 REBUILD_BASE ?=
 TARGET       ?=
 SESSION      ?=
+AUTOSAVE     ?=
+BUNDLE       ?=
 TARGET_BRANCH ?=
 
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
@@ -117,37 +119,43 @@ stop:
 	  --name=$(PROJECT_NAME) \
 	  --sandbox=$(SANDBOX_DIR)
 
-# -------------------------
 # Apply workflow
 # -------------------------
 #
+# CHANNELS:
+#   --channel=session  (draft default) — resolve from session-diffs/session/
+#   --channel=autosave                 — resolve from session-diffs/autosave/
+#   --channel=bundles  (draft only)    — resolve from output/bundles/
+#   --channel=diffs    (apply default) — resolve from output/diffs/
+#
+# SHORTCUTS:
+#   make draft BUNDLE=1  →  --channel=bundles
+#   make apply AUTOSAVE=1  →  --channel=autosave
+#
 # WORKFLOW:
 #   make draft                    — apply session patches to a working branch for review
-#   make draft SESSION=<path>     — apply from a specific session path
-#     <path> can be:
-#       - relative name under session-diffs/ (e.g. 20260420-120000-main)
-#       - absolute path (e.g. /path/to/session-diffs/20260420-120000-main/session)
-#       - absolute path to autosave (e.g. .../20260420-120000-main/autosave)
+#   make draft SESSION=<name>     — apply from a named session under the channel directory
+#   make draft BUNDLE=1           — resolve from output/bundles/ instead of session-diffs/
+#   make draft AUTOSAVE=1         — resolve from session-diffs/autosave/ instead of session/
 #   git log -p HEAD~N..HEAD       — review changes on the working branch
 #   make confirm                  — rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x  — merge to a different target branch
 #   make reject                   — discard draft branch, return to source branch
 #
 #   make apply                    — apply uncommitted changes (auto-resolves from output/diffs/)
-#   make apply SESSION=<path>     — apply from a specific session path
-#     <path> can be:
-#       - relative name under output/diffs/ (e.g. 20260420-120000-snapshot-abc123)
-#       - absolute path (e.g. /path/to/output/diffs/20260420-120000-snapshot-abc123)
-#       - absolute path to session-diffs directory (e.g. .../session-diffs/20260417-120000-main/session)
+#   make apply SESSION=<name>     — apply from a named session under the channel directory
+#   make apply AUTOSAVE=1         — resolve from session-diffs/autosave/ instead of output/diffs/
 #   make apply DIFF=<path>        — apply a specific diff file (no session resolution needed)
 #   make apply BRANCH=<name>      — apply to a named branch
 #   make apply FORCE=1            — apply with --reject; .rej files created for conflicts
-#   Note: output/diffs/ is not cleared automatically. Clear manually between sessions if desired.
+
+DRAFT_CHANNEL := $(if $(BUNDLE),bundles,$(if $(AUTOSAVE),autosave,session))
 
 draft:
 	agent-sandbox draft \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
+	  --channel=$(DRAFT_CHANNEL) \
 	  $(if $(SESSION),--session=$(SESSION),) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
 	  $(if $(DIFFS),--diffs=$(DIFFS),) \
@@ -164,10 +172,13 @@ reject:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
 
+APPLY_CHANNEL := $(if $(AUTOSAVE),autosave,$(if $(SESSION),session,diffs))
+
 apply:
 	agent-sandbox apply \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
+	  --channel=$(APPLY_CHANNEL) \
 	  $(if $(SESSION),--session=$(SESSION),) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \

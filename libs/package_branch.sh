@@ -35,6 +35,7 @@
 _PB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_PB_SCRIPT_DIR/session.sh"
 source "$_PB_SCRIPT_DIR/diff.sh"
+source "$_PB_SCRIPT_DIR/routing.sh"
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -204,14 +205,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Auto-resolve SESSION_TS from SESSION_STATE
   SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
 
-  # Construct output directory
-  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+  # Construct output directory via output_export_path, or use explicit --outdir
   if [[ -n "$OUTDIR_ARG" ]]; then
     OUTPUT_DIR="$OUTDIR_ARG"
-  elif [[ -n "$SESSION_TS" ]]; then
-    OUTPUT_DIR="$HOME/workspace/output/bundles/${EXPORT_TIME}-${SESSION_SUMMARY}-${SESSION_TS}"
   else
-    OUTPUT_DIR="$HOME/workspace/output/bundles/${EXPORT_TIME}-${SESSION_SUMMARY}"
+    OUTPUT_DIR=$(output_export_path "$HOME/workspace/output" "bundles" "$SESSION_SUMMARY" "$SESSION_TS")
   fi
 
   package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"
