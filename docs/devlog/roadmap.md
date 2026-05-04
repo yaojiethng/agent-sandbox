@@ -246,7 +246,7 @@ Each provider may result in a different integration pattern. Investigation findi
 
 **Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
 
-**Scope:** Implement the hash-based session identity model, two-sig model, and container lifecycle redesign. Work falls into four groups:
+**Scope:** Implement the hash-based session identity model, two-sig model, and container lifecycle redesign. Work falls into seven groups:
 
 **1. run_id derivation** (`scripts/start_agent.sh`): Add `RUN_ID` as 6-char hex hash of `${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}`. Replace timestamp-based container naming with run_id-based naming (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`).
 
@@ -267,6 +267,17 @@ Each provider may result in a different integration pattern. Investigation findi
 
 - `story_parallel_sessions_worktree.md` — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1. Container naming updated in M2.7.
 - `story_harness_packaging_and_install_versioning.md` — install workflow rewrite; deferred, does not block this milestone.
+
+**7. Context_dir removal** (`libs/containers.sh`, `libs/sandbox.Dockerfile`, `providers/*/provider.Dockerfile`, `tests/test_build_context.sh`):
+Remove `build_context_sandbox`, `build_context_agent`, and `_build_context_copy` from `libs/containers.sh`. Once container-sig (item 5) hashes source files at repo-root paths, the temp-directory staging layer is dead code. Pre-scoping findings:
+
+   - **Dead digest pipeline**: `build_image()` computes a digest of context_dir contents and bakes it as `agent-sandbox.digest` Docker label. No code anywhere reads this label back — the stale-detection read side was never implemented (M1.4 design was write-only). The label is metadata residue.
+   - **Known drift — package_branch.sh**: `sandbox.Dockerfile` COPYs `package_branch.sh` into the image, but `build_context_sandbox()` does not stage it into the context. Fresh `make build sandbox` would fail with `COPY failed: file not found`. (Reverse in agent build: `package_branch.sh` IS staged but never COPY'd by any `provider.Dockerfile` — harmless waste.)
+   - **Dual-maintenance surface**: Adding a file to an image requires edits in both the `build_context_*` file list and the Dockerfile COPY stanza. No cross-reference or test catches drift.
+   - **Dogfooding constraint**: Can't naively switch to `$repo_root` as build context because that sends the entire project tree (including tests/, docs/, .git/) to the Docker daemon, busting cache on irrelevant changes. The focused-context behaviour must be preserved — either via `.dockerignore` or by inlining the file list directly in the build caller.
+   - **Test file impact**: `tests/test_build_context.sh` (~47 tests) tests context_dir population and digest determinism. It must be either deleted or rewritten to test Dockerfile-based file selection instead.
+   - **`_build_context_copy`**: A 5-line wrapper over `cp` that checks source-file existence. Existence failures are already caught at Docker build time (COPY fails on missing source). The check adds no coverage beyond Docker's native behaviour.
+   - **Agent context files are also staged for base image builds** (`build_container.sh` line ~70): `build_context_agent` creates a context that is used for both the base image build and the provider image build. The base Dockerfile (`base.Dockerfile`) has no COPY commands — it ignores the context entirely. This is wasteful but harmless (context is small). Worth verifying on removal that the base image doesn't accidentally depend on context files.
 
 ---
 
