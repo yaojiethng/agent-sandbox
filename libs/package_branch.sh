@@ -18,19 +18,19 @@
 #   package_branch SANDBOX_DIR OUTPUT_DIR
 #
 # Usage (direct):
-#   package_branch.sh [--session-summary=<text>] [--outdir=<path>]
-#                     [--sandbox=<dir>]
+#   package_branch.sh --to=<dir> [--session-summary=<text>] [--baseline=<sha>]
 #
 # Arguments (library mode):
 #   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory path (parent of patches/,
-#                       uncommitted.diff, etc.)
+#   OUTPUT_DIR        — full destination directory path
+#   INIT_SHA_OVERRIDE — optional explicit baseline SHA
 #
 # Flags (direct mode):
-#   --session-summary  Short snake_case label for the output directory.
-#                      Default: "snapshot".
-#   --outdir          Parent directory for output. Default: ~/workspace/output
-#   --sandbox         Path to the git repository. Default: ~/sandbox.
+#   --to=<dir>        Base parent directory (required). Script creates
+#                     <to>/bundles/<ts>-<label>[-<ts>]/ subdirectory.
+#   --session-summary Short snake_case label for the output directory.
+#                     Default: "snapshot".
+#   --baseline=<sha>  Explicit baseline SHA for commit history.
 
 _PB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_PB_SCRIPT_DIR/session.sh"
@@ -52,6 +52,7 @@ fi
 package_commits() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
+  local INIT_SHA_OVERRIDE="${3:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_commits: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -59,10 +60,14 @@ package_commits() {
   fi
 
   local INIT_SHA
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -z "$INIT_SHA" ]]; then
-    echo "package_commits: init_sha not found in SESSION_STATE" >&2
-    return 1
+  if [[ -n "$INIT_SHA_OVERRIDE" ]]; then
+    INIT_SHA="$INIT_SHA_OVERRIDE"
+  else
+    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+    if [[ -z "$INIT_SHA" ]]; then
+      echo "package_commits: init_sha not found in SESSION_STATE" >&2
+      return 1
+    fi
   fi
 
   # Validate SANDBOX_DIR exists and is a git repository
@@ -119,12 +124,19 @@ package_commits() {
 #   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
 #   4. write_changed_files     — changed-files/ with MANIFEST.txt
 #
-# Reads init_sha from SESSION_STATE.
+# Reads init_sha from SESSION_STATE, or uses an explicit override if provided.
 # Overwrites OUTPUT_DIR on each run.
+#
+# Args:
+#   SANDBOX_DIR       — path to the git repository
+#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
+#   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
+#                       init_sha from SESSION_STATE
 # -------------------------
 package_branch() {
   local SANDBOX_DIR="${1:-}"
   local OUTPUT_DIR="${2:-}"
+  local INIT_SHA_OVERRIDE="${3:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -132,10 +144,14 @@ package_branch() {
   fi
 
   local INIT_SHA
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -z "$INIT_SHA" ]]; then
-    echo "package_branch: init_sha not found in SESSION_STATE" >&2
-    return 1
+  if [[ -n "$INIT_SHA_OVERRIDE" ]]; then
+    INIT_SHA="$INIT_SHA_OVERRIDE"
+  else
+    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+    if [[ -z "$INIT_SHA" ]]; then
+      echo "package_branch: init_sha not found in SESSION_STATE" >&2
+      return 1
+    fi
   fi
 
   # Validate SANDBOX_DIR exists and is a git repository
@@ -149,7 +165,7 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$INIT_SHA"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"
@@ -165,35 +181,41 @@ package_branch() {
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  SANDBOX_DIR=""
-  OUTDIR_ARG=""
+  TO_ARG=""
   SESSION_SUMMARY_ARG=""
+  BASELINE_ARG=""
 
   for ARG in "$@"; do
     case "$ARG" in
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
-      --outdir=*)          OUTDIR_ARG="${ARG#--outdir=}" ;;
-      --sandbox=*)         SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --to=*)              TO_ARG="${ARG#--to=}" ;;
+      --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
       --help)
         grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
         exit 0
         ;;
       *)
         echo "Unknown argument: $ARG" >&2
-        echo "Usage: package_branch.sh [--session-summary=<text>] [--outdir=<path>] [--sandbox=<dir>]" >&2
+        echo "Usage: package_branch.sh --to=<dir> [--session-summary=<text>] [--baseline=<sha>]" >&2
         exit 1
         ;;
     esac
   done
 
-  # Default sandbox dir
-  if [[ -z "$SANDBOX_DIR" ]]; then
-    if [[ -d "$HOME/sandbox" ]]; then
-      SANDBOX_DIR="$HOME/sandbox"
-    else
-      echo "Error: could not find sandbox directory. Use --sandbox=<dir>" >&2
-      exit 1
-    fi
+  # --to is required
+  if [[ -z "$TO_ARG" ]]; then
+    echo "Error: --to is required. Specify a base output directory." >&2
+    echo "  In container: --to=\$HOME/workspace/output" >&2
+    echo "  On host: use 'agent-sandbox package-branch --sandbox=<path>' instead" >&2
+    exit 1
+  fi
+
+  # Resolve SANDBOX_DIR from container default or git root
+  if [[ -d "$HOME/sandbox" ]]; then
+    SANDBOX_DIR="$HOME/sandbox"
+  else
+    echo "Error: could not find sandbox directory. Run inside the container." >&2
+    exit 1
   fi
 
   # Resolve session summary
@@ -205,12 +227,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Auto-resolve SESSION_TS from SESSION_STATE
   SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
 
-  # Construct output directory via output_export_path, or use explicit --outdir
-  if [[ -n "$OUTDIR_ARG" ]]; then
-    OUTPUT_DIR="$OUTDIR_ARG"
-  else
-    OUTPUT_DIR=$(output_export_path "$HOME/workspace/output" "bundles" "$SESSION_SUMMARY" "$SESSION_TS")
-  fi
+  # Construct output directory via output_export_path
+  OUTPUT_DIR=$(output_export_path "$TO_ARG" "bundles" "$SESSION_SUMMARY" "$SESSION_TS")
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$BASELINE_ARG"
 fi

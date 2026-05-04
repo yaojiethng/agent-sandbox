@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
+# Host-side CLI tool for managing agent-sandbox sessions and exports.
+# All subcommands run on the host — never inside a container.
+# Inside the container, invoke lib scripts directly (see prompt templates).
+#
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--target=<targets>] --name=<n> --project=<path> --sandbox=<path>
@@ -12,6 +16,8 @@
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
+#   agent-sandbox package-diff   --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--all|--baseline=<sha>]
+#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--baseline=<sha>]
 #
 # --target accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --target=all
@@ -62,6 +68,10 @@ main() {
   local BRANCH_FROM=""
   local DIFFS=""
   local BRANCH_SUMMARY=""
+  local TO_ARG=""
+  local SESSION_SUMMARY_ARG=""
+  local ALL_FLAG=false
+  local BASELINE_ARG=""
   local -a PASSTHROUGH=()
 
   parse_flags() {
@@ -77,6 +87,10 @@ main() {
         --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
         --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
         --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
+        --to=*)          TO_ARG="${ARG#--to=}" ;;
+        --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
+        --all)           ALL_FLAG=true ;;
+        --baseline=*)    BASELINE_ARG="${ARG#--baseline=}" ;;
         --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
         --force)         FORCE=true ;;
         --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
@@ -265,9 +279,67 @@ main() {
       reject_run "$PROJECT_DIR" "$SANDBOX_DIR"
       ;;
 
+    package-diff)
+      parse_flags "$@"
+      if [[ -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --sandbox is required"
+        exit 1
+      fi
+
+      local ENV_FILE="$SANDBOX_DIR/.env"
+      if [[ ! -f "$ENV_FILE" ]]; then
+        echo "Error: .env not found in $SANDBOX_DIR" >&2
+        echo "  Run 'agent-sandbox onboard' first to create it." >&2
+        exit 1
+      fi
+
+      # Source .env to get INPUT_DIR, OUTPUT_DIR
+      set -a; source "$ENV_FILE"; set +a
+
+      if [[ -n "$TO_ARG" ]]; then
+        local TO_DIR="$TO_ARG"
+      else
+        local TO_DIR="$INPUT_DIR"
+      fi
+
+      exec bash "$AGENT_SANDBOX_REPO/libs/package_diff.sh" \
+        --to="$TO_DIR" \
+        $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
+        $( [[ "$ALL_FLAG" == true ]] && echo "--all" ) \
+        $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )
+      ;;
+
+    package-branch)
+      parse_flags "$@"
+      if [[ -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --sandbox is required"
+        exit 1
+      fi
+
+      local ENV_FILE="$SANDBOX_DIR/.env"
+      if [[ ! -f "$ENV_FILE" ]]; then
+        echo "Error: .env not found in $SANDBOX_DIR" >&2
+        echo "  Run 'agent-sandbox onboard' first to create it." >&2
+        exit 1
+      fi
+
+      set -a; source "$ENV_FILE"; set +a
+
+      if [[ -n "$TO_ARG" ]]; then
+        local TO_DIR="$TO_ARG"
+      else
+        local TO_DIR="$INPUT_DIR"
+      fi
+
+      exec bash "$AGENT_SANDBOX_REPO/libs/package_branch.sh" \
+        --to="$TO_DIR" \
+        $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
+        $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )
+      ;;
+
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
-      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject"
+      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"
       exit 1
       ;;
   esac

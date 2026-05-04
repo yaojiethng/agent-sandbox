@@ -156,6 +156,12 @@ Covered by A.1. `write_changed_files` helper is extracted in `libs/diff.sh` and 
 
 ---
 
+#### A.5 — Host path resolution (complete)
+
+Host-side `package-diff` and `package-branch` subcommands added to `agent-sandbox.sh`, with corresponding `make package-diff` / `make package-branch` targets in the Makefile template. Git alias for `package-diff` removed from `onboard.sh`. Flag renamed from `--outdir` to `--to` (required base parent directory) in both lib scripts — no implicit defaults, no `IN_CONTAINER` detection. Added `--all` and `--baseline=<sha>` optional flags for diffing against session or explicit baselines. `write_all_changes_diff` and `package_branch`/`package_commits` accept optional baseline override parameters. See `20260504-02-design-host_path_resolution.md`.
+
+---
+
 #### A.3 — Documentation alignment
 
 **Objective:** Update all architecture and development documents to describe the system as built after A.1, A.2, and A.4. Remove stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, absolute `--session` paths, and sweep commits. Add recovery snippets for the new contract.

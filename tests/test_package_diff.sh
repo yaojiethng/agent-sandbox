@@ -34,7 +34,7 @@ test_produces_uncommitted_diff() {
   echo "change" > "$DIR/new.txt"
 
   local OUTDIR
-  OUTDIR=$(run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_u_out" --session-summary=test 2>/dev/null)
+  OUTDIR=$(run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_u_out" --session-summary=test 2>/dev/null)
   OUTDIR="$FIXTURE_DIR/pd_u_out"
 
   local FOUND
@@ -54,7 +54,7 @@ test_produces_changed_files_dir() {
 
   echo "change" > "$DIR/new.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_c_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_c_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_c_out"
 
   local FOUND
@@ -74,7 +74,7 @@ test_output_dir_format() {
 
   echo "change" > "$DIR/new.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_o_out" --session-summary=test_label 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_o_out" --session-summary=test_label 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_o_out"
 
   local MATCH
@@ -98,7 +98,7 @@ test_diff_contains_change() {
 
   echo "unique-content" > "$DIR/new.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_cnt_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_cnt_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_cnt_out"
 
   local DIFF_FILE
@@ -118,7 +118,7 @@ test_diff_includes_untracked() {
 
   echo "untracked" > "$DIR/untracked.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_ut_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_ut_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_ut_out"
 
   local DIFF_FILE
@@ -138,7 +138,7 @@ test_strips_index_lines() {
 
   echo "content" > "$DIR/file.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_idx_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_idx_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_idx_out"
 
   local DIFF_FILE
@@ -156,7 +156,7 @@ test_no_changes_no_output() {
   make_committed_repo "$DIR"
   write_session_state "$DIR"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_no_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_no_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_no_out"
 
   # Should not produce any output directory (rmdir on empty)
@@ -181,7 +181,7 @@ test_changed_files_has_copies() {
 
   echo "modified" > "$DIR/file.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_cp_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_cp_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_cp_out"
 
   local CF_DIR
@@ -201,7 +201,7 @@ test_changed_files_has_manifest() {
 
   echo "content" > "$DIR/a.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_mf_out" --session-summary=test 2>/dev/null
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_mf_out" --session-summary=test 2>/dev/null
   OUTDIR="$FIXTURE_DIR/pd_mf_out"
 
   local CF_DIR
@@ -225,7 +225,7 @@ test_falls_back_to_snapshot_summary() {
 
   echo "change" > "$DIR/new.txt"
 
-  run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_snap_out" 2>/dev/null  # no --session-summary
+  run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_snap_out" 2>/dev/null  # no --session-summary
   OUTDIR="$FIXTURE_DIR/pd_snap_out"
 
   local MATCH
@@ -254,7 +254,7 @@ test_diff_file_printed_in_output() {
   echo "change" > "$DIR/new.txt"
 
   local OUTPUT
-  OUTPUT=$(run_package_diff "$DIR" --outdir="$FIXTURE_DIR/pd_pr_out" --session-summary=test 2>&1)
+  OUTPUT=$(run_package_diff "$DIR" --to="$FIXTURE_DIR/pd_pr_out" --session-summary=test 2>&1)
   OUTDIR="$FIXTURE_DIR/pd_pr_out"
 
   if echo "$OUTPUT" | grep -q "uncommitted.diff"; then

@@ -76,28 +76,39 @@ write_uncommitted_diff() {
 # -------------------------
 # write_all_changes_diff
 #
-# Writes a unified diff of all changes since INIT_SHA (committed + uncommitted)
-# to OUTPUT_FILE. Reads init_sha from SESSION_STATE.
+# Writes a unified diff of all changes since a baseline (committed + uncommitted)
+# to OUTPUT_FILE. Reads init_sha from SESSION_STATE by default, or uses an
+# explicit SINCE_SHA if provided (for --baseline flag).
 # Stages untracked files temporarily (via git add -N) so they appear in the
 # diff, then restores staged state after. Writes an empty file if no changes.
-# Uses `git diff INIT_SHA` (not range syntax) so uncommitted changes are
+# Uses `git diff <baseline>` (not range syntax) so uncommitted changes are
 # included alongside committed changes.
+#
+# Args:
+#   SANDBOX_DIR  — path to the git repository
+#   OUTPUT_FILE  — path to write the diff to
+#   SINCE_SHA    — optional explicit baseline SHA; if omitted, reads init_sha
+#                  from SESSION_STATE
 # -------------------------
 write_all_changes_diff() {
   local SANDBOX_DIR="$1"
   local OUTPUT_FILE="$2"
+  local SINCE_SHA="${3:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_FILE" ]]; then
     echo "write_all_changes_diff: SANDBOX_DIR and OUTPUT_FILE are required" >&2
     return 1
   fi
 
-  local INIT_SHA
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -z "$INIT_SHA" ]]; then
-    echo "write_all_changes_diff: init_sha not found in SESSION_STATE" >&2
-    return 1
+  if [[ -z "$SINCE_SHA" ]]; then
+    SINCE_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+    if [[ -z "$SINCE_SHA" ]]; then
+      echo "write_all_changes_diff: init_sha not found in SESSION_STATE and no SINCE_SHA provided" >&2
+      return 1
+    fi
   fi
+
+  local INIT_SHA="$SINCE_SHA"
 
   # Stage untracked files so they appear in the diff
   local UNTRACKED_STAGED=()

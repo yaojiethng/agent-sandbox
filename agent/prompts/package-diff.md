@@ -10,45 +10,53 @@ Package the current session's changes for export via the workspace output mount.
 
 ### 1. Run the packaging script
 
-Inside the container, invoke the script directly — the git alias is not registered in the sandbox `.git/config`:
+Inside the container, invoke the script with an explicit output base directory:
 
 ```bash
-bash /opt/sandbox/lib/package_diff.sh
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output
 ```
 
-This packages all uncommitted working tree changes against `HEAD`. No arguments required.
+This packages all uncommitted working tree changes against `HEAD`.
 
 **To package all changes since session start** (committed and uncommitted):
 
 ```bash
-bash /opt/sandbox/lib/package_diff.sh --all
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --all
 ```
 
-The `--all` flag reads `init_sha` from `~/sandbox/.git/SESSION_STATE`, a key-value file written at container init. Do not attempt to derive the baseline manually.
+The `--all` flag reads `init_sha` from `~/sandbox/.git/SESSION_STATE` and produces `all-changes.diff`.
 
 **To diff against an explicit baseline:**
 
 ```bash
-bash /opt/sandbox/lib/package_diff.sh --baseline=<sha>
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --baseline=<sha>
 ```
 
-On the host, `--baseline` or `--all` is required. There is no synthetic baseline outside the container.
+The `--all` and `--baseline` flags are mutually exclusive. If neither is given, only uncommitted changes (`git diff HEAD`) are packaged.
 
 **Always supply `--session-summary`** — the agent knows what changed and should name the output accordingly. The summary should be a concise snake_case phrase describing the nature of the change, like a handover filename: specific enough that a reader scanning a list of output directories knows what is inside without opening it.
 
 ```bash
-bash /opt/sandbox/lib/package_diff.sh --session-summary=add_session_scoped_artefact_dirs
-bash /opt/sandbox/lib/package_diff.sh --all --session-summary=fix_snapshot_baseline_working_tree
-bash /opt/sandbox/lib/package_diff.sh --baseline=<sha> --session-summary=refactor_compose_generation
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --session-summary=add_session_scoped_artefact_dirs
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --all --session-summary=fix_snapshot_baseline_working_tree
+bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --baseline=<sha> --session-summary=refactor_compose_generation
 ```
 
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
 Bad summaries: `changes`, `update_files`, `misc`, `package`.
 
-The output directory format is `diffs/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`. The `EXPORT_TIME` is injected automatically from the time of script invocation — you do not control it and do not need to. `SESSION_TS` is read from the `SESSION_STATE` file first; the environment variable is checked as fallback if present. Omitting `--session-summary` falls back to "snapshot"; this is a safety net, not the intended path.
+The script creates a timestamped subdirectory under `<to>/diffs/<EXPORT_TIME>-<SESSION_SUMMARY>[-<SESSION_TS>]/`. The `EXPORT_TIME` is injected automatically from the time of script invocation — you do not control it and do not need to. `SESSION_TS` is read from the `SESSION_STATE` file first; the environment variable is checked as fallback if present. Omitting `--session-summary` falls back to "snapshot"; this is a safety net, not the intended path.
 
 The script produces:
-- `<outdir>/changes.diff` — unified diff against baseline, index lines stripped, suitable for `git apply`
+- `<outdir>/uncommitted.diff` — unified diff against HEAD (default)
+- `<outdir>/all-changes.diff` — unified diff against baseline (`--all` or `--baseline`)
+- `<outdir>/changed-files/` — working tree copies of all changed files
+
+On the host, invoke via:
+```bash
+agent-sandbox package-diff --sandbox=<path> [--session-summary=<text>]
+make package-diff [SESSION_SUMMARY=<text>]
+```
 
 It prints the output directory path and diff size on completion.
 

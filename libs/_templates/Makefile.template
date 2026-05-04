@@ -53,6 +53,9 @@ SESSION      ?=
 AUTOSAVE     ?=
 BUNDLE       ?=
 TARGET_BRANCH ?=
+SESSION_SUMMARY ?=
+BASELINE ?=
+ALL ?=
 
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 REBUILD_BASE_FLAG = $(if $(REBUILD_BASE),--rebuild-base,)
@@ -183,6 +186,30 @@ apply:
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
 	  $(if $(FORCE),--force,)
+
+# -------------------------
+# Harness maintenance
+# -------------------------
+#
+# refresh: update stale template files and re-register git aliases after a
+# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+
+# -------------------------
+# Package exports
+# -------------------------
+
+package-diff:
+	agent-sandbox package-diff \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
+	  $(if $(ALL),--all,) \
+	  $(if $(BASELINE),--baseline=$(BASELINE),)
+
+package-branch:
+	agent-sandbox package-branch \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
+	  $(if $(BASELINE),--baseline=$(BASELINE),)
 
 # -------------------------
 # Harness maintenance

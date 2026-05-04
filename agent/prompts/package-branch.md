@@ -8,14 +8,20 @@ Package all commits since `init_sha` for export via the workspace output mount.
 
 ## 1. Run the packaging script
 
-Inside the container, invoke the script directly:
+Inside the container, invoke the script with an explicit output base directory:
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --session-summary=add_format_patch_support
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --session-summary=add_format_patch_support
 ```
 
-This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE` and writes output to `bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.
+This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE` and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.
 If `SESSION_STATE` is missing, the script aborts with a clear error.
+
+**To diff against an explicit baseline:**
+
+```bash
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --session-summary=<text>
+```
 
 Always supply `--session-summary` — a concise snake_case phrase describing the nature of the change.
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
@@ -24,14 +30,25 @@ Bad summaries: `changes`, `update_files`, `misc`, `package`.
 The script produces one numbered `.diff` file per commit since `init_sha`:
 
 ```
-bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/
-  0001-<sha>.diff
-  0002-<sha>.diff
-  ...
+<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/
+  patches/
+    0001-<sha>.diff
+    0002-<sha>.diff
+    ...
+  uncommitted.diff
+  all-changes.diff
+  changed-files/
+    MANIFEST.txt
 ```
 
 Each `.diff` is a unified diff with index lines stripped, suitable for sequential `git apply`.
 The numbered order reflects commit history from `init_sha` to `HEAD`.
+
+On the host, invoke via:
+```bash
+agent-sandbox package-branch --sandbox=<path> [--session-summary=<text>]
+make package-branch [SESSION_SUMMARY=<text>]
+```
 
 ## 2. Write `migration-guide.md`
 
