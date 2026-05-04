@@ -312,7 +312,7 @@ draft_run() {
   echo "Applying ${#DIFF_FILES[@]} diffs..."
   for diff_file in "${DIFF_FILES[@]}"; do
     echo "  Applying: $(basename "$diff_file")"
-    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$diff_file"); then
+    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$diff_file"); then
       echo "Error: failed to apply $(basename "$diff_file")" >&2
       echo "  Patch file: $diff_file" >&2
       git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
@@ -327,7 +327,7 @@ draft_run() {
   if [[ -f "$UNCOMMITTED_DIFF" && -s "$UNCOMMITTED_DIFF" ]]; then
     echo ""
     echo "Applying uncommitted.diff..."
-    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$UNCOMMITTED_DIFF"); then
+    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$UNCOMMITTED_DIFF"); then
       echo "Error: failed to apply uncommitted.diff" >&2
       echo "  File: $UNCOMMITTED_DIFF" >&2
       return 1

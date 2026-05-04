@@ -65,7 +65,7 @@ apply_run() {
       echo "Review .rej files and resolve manually." >&2
     fi
   else
-    if ! git -C "$PROJECT_DIR" apply < <(strip_index_lines < "$DIFF_FILE"); then
+    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
       echo "Error: git apply failed." >&2
       echo "  Diff file: $DIFF_FILE" >&2
       echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2

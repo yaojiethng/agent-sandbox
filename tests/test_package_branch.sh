@@ -166,7 +166,7 @@ test_dispatcher_diff_is_applicable() {
   git -C "$TARGET" add file.txt
   git -C "$TARGET" commit -m "baseline" --quiet
 
-  if git -C "$TARGET" apply < <(strip_index_lines < "$OUT/patches/0001-"*.diff) 2>/dev/null; then
+  if git -C "$TARGET" apply --ignore-whitespace < <(strip_index_lines < "$OUT/patches/0001-"*.diff) 2>/dev/null; then
     pass "diff produced by package_branch applies via git apply"
   else
     fail "diff produced by package_branch does not apply via git apply"
@@ -242,7 +242,7 @@ test_dispatcher_binary_patch_applies_to_fresh_repo() {
   git -C "$TARGET" commit -m "init" --quiet
 
   # Apply using strip_index_lines (as draft_run now does)
-  if git -C "$TARGET" apply < <(strip_index_lines < "$OUT/patches/0002-"*.diff) 2>/dev/null; then
+  if git -C "$TARGET" apply --ignore-whitespace < <(strip_index_lines < "$OUT/patches/0002-"*.diff) 2>/dev/null; then
     pass "binary diff from package_branch applies to fresh repo via strip_index_lines"
   else
     fail "binary diff from package_branch should apply to fresh repo"

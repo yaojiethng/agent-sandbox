@@ -40,7 +40,7 @@ source "$_DIFF_SH_DIR/routing.sh"
 # Without preserving binary index lines, git apply rejects binary patches.
 #
 # Usage:  git diff ... | strip_index_lines > file.diff
-#         git apply < <(strip_index_lines < file.diff)
+#         git apply --ignore-whitespace < <(strip_index_lines < file.diff)
 # -------------------------
 strip_index_lines() {
   awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1'
