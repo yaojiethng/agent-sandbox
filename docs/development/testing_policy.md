@@ -1,4 +1,4 @@
-# Testing Policy — agent-sandbox
+# Testing Policy - agent-sandbox
 
 This document defines the testing standards, patterns, and anti-patterns for the agent-sandbox test suite. It is designed to ensure test reliability, isolation, and maintainability.
 
@@ -56,7 +56,6 @@ When a test calls a helper function multiple times (e.g., to create multiple ses
 make_session() {
   local SANDBOX_DIR="$1"
   local SESSION="$2"
-  
   mkdir -p "$SANDBOX_DIR/.workspace"          # ← Create if needed, don't destroy
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
   rm -rf "$SESSION_DIR"                       # ← Clean only this session
@@ -68,7 +67,6 @@ make_session() {
 make_session() {
   local SANDBOX_DIR="$1"
   local SESSION="$2"
-  
   rm -rf "$SANDBOX_DIR/.workspace"            # ← Destroys previous sessions!
   mkdir -p "$SANDBOX_DIR/.workspace"
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
@@ -80,7 +78,7 @@ make_session() {
 
 A test file may only source helpers from `tests/lib/`. It must never source another test file, and must never depend on another test file having run first.
 
-`tests/lib/` files contain only helper functions — no test execution, no `run_test` calls, no pass/fail counters. A `tests/lib/` file sourced in isolation must produce no output and have no side effects.
+`tests/lib/` files contain only helper functions - no test execution, no `run_test` calls, no pass/fail counters. A `tests/lib/` file sourced in isolation must produce no output and have no side effects.
 
 ```bash
 # ✓ Correct: source only from tests/lib/
@@ -168,8 +166,8 @@ Helpers used by more than one test file live in `tests/lib/` and are sourced exp
 | `tests/lib/session_fixtures.sh` | Workspace/session structure helpers: `make_export_with_diffs`, `make_diffs_session`, `make_changes_session` |
 
 **Rules for `tests/lib/` files:**
-- Helper functions only — no test execution
-- Every helper must follow Core Principles 1–3 (isolation, clean-before-create, no shared state)
+- Helper functions only - no test execution
+- Every helper must follow Core Principles 1-3 (isolation, clean-before-create, no shared state)
 - A new helper belongs in `tests/lib/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
 
 Do not add a third `tests/lib/` file without a clear category boundary. If a helper does not fit `git_fixtures.sh` or `session_fixtures.sh`, name the new file to reflect its distinct scope.
@@ -178,7 +176,7 @@ Do not add a third `tests/lib/` file without a clear category boundary. If a hel
 
 ## Knowledge Tests
 
-Knowledge tests live in `tests/knowledge/` and document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. They are **not** run by `make test` or `scripts/run_tests.sh` — the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob.
+Knowledge tests live in `tests/knowledge/` and document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. They are **not** run by `make test` or `scripts/run_tests.sh` - the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob.
 
 **Purpose:** A knowledge test is a one-off executable document that:
 - Records what was learned about a tool's behaviour during investigation
@@ -206,7 +204,7 @@ make test
 bash scripts/run_tests.sh
 ```
 
-This runs all test files in sequence and prints a consolidated pass/fail summary per file. Use this as the primary verification step — running individual test files is for debugging only.
+This runs all test files in sequence and prints a consolidated pass/fail summary per file. Use this as the primary verification step - running individual test files is for debugging only.
 
 **Rule:** A change to any lib or script is not complete until `make test` passes clean. Running a subset of test files is not sufficient.
 
@@ -222,9 +220,9 @@ When a lib or script changes behaviour, the corresponding test files must be rev
 grep -rl "script_or_lib_name" tests/
 ```
 
-Read each file returned and assess whether any test case is invalidated or no longer sufficient given the change. If a test needs updating, update it in the same change — do not defer test updates to a follow-up.
+Read each file returned and assess whether any test case is invalidated or no longer sufficient given the change. If a test needs updating, update it in the same change - do not defer test updates to a follow-up.
 
-This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour — but if in doubt, grep and check.
+This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour - but if in doubt, grep and check.
 
 ---
 
@@ -239,8 +237,7 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 make_session() {
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
   mkdir -p "$SESSION_DIR/patches"
-  # ... create patches and staged.diff ...
-  
+  # create patches and diff files
   rm -rf "$SANDBOX_DIR/.workspace"    # ← Deletes what we just created!
   mkdir -p "$SANDBOX_DIR/.workspace"
   echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
@@ -257,8 +254,7 @@ make_session() {
   local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
   rm -rf "$SESSION_DIR"               # ← Clean only this session
   mkdir -p "$SESSION_DIR/patches"
-  # ... create patches and staged.diff ...
-  
+  # create patches and diff files
   echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
 }
 ```
@@ -271,7 +267,7 @@ make_session() {
 # ✗ Wrong: multiple tests use same sandbox path
 make_session() {
   local SANDBOX="$FIXTURE_DIR/sandbox-main"  # ← Same for all tests with same session
-  ...
+  # ...
 }
 ```
 
@@ -282,7 +278,7 @@ make_session() {
 make_session() {
   local SANDBOX_DIR="$1"
   local SANDBOX="$SANDBOX_DIR/sandbox-work"  # ← Unique per test
-  ...
+  # ...
 }
 ```
 
@@ -295,7 +291,7 @@ make_session() {
 make_project() {
   mkdir -p "$DIR"
   git -C "$DIR" init  # ← Fails if already a git repo
-  ...
+  # ...
 }
 ```
 
@@ -307,7 +303,7 @@ make_project() {
   rm -rf "$DIR"
   mkdir -p "$DIR"
   git -C "$DIR" init
-  ...
+  # ...
 }
 ```
 
@@ -335,7 +331,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_SCRIPT="$SCRIPT_DIR/../scripts/example.sh"
 
-# Shared fixtures — source only from tests/lib/
+# Shared fixtures - source only from tests/lib/
 source "$SCRIPT_DIR/../tests/lib/git_fixtures.sh"
 # source "$SCRIPT_DIR/../tests/lib/session_fixtures.sh"  # if needed
 
@@ -372,9 +368,7 @@ test_example_feature() {
   local S="$FIXTURE_DIR/example_s"
   make_fixture "$P"
   make_fixture "$S"
-  
   # ... test logic ...
-  
   if [[ condition ]]; then
     pass "description"
   else
@@ -403,7 +397,7 @@ echo "Results: $PASS passed, $FAIL failed"
 
 **Debug steps:**
 1. Run the full test suite and note which test fails
-2. Run only the failing test — it should pass
+2. Run only the failing test - it should pass
 3. Run the test immediately before the failing test, then the failing test
 4. Check for:
    - Shared fixture paths
@@ -444,7 +438,7 @@ Before committing a new test:
 - [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
 - [ ] All helper functions clean their inputs before creating state
 - [ ] No hardcoded paths outside fixture directory
-- [ ] Sources only from `tests/lib/` — no sourcing of other test files
+- [ ] Sources only from `tests/lib/` - no sourcing of other test files
 - [ ] Test passes when run in isolation
 - [ ] Test passes when run after every other test in the file
 - [ ] Test passes when run twice in a row
