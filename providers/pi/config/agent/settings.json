@@ -5,6 +5,8 @@
   "defaultThinkingLevel": "minimal",
   "followUpMode": "all",
   "enablePromptCommands": true,
+  "skills": ["/opt/workflow/agent/skills"],
+  "prompts": ["/opt/workflow/agent/prompts"],
   "compaction": {
     "enabled": true,
     "reserveTokens": 32768,

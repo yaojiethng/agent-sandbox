@@ -108,6 +108,11 @@ build_context_agent() {
   cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
   cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
 
+  # agent workflow files/ — prompts and skills the agent uses at runtime
+  mkdir -p "$context_dir/agent" || return 1
+  cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
+  cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
+
   echo "$context_dir"
 }
 

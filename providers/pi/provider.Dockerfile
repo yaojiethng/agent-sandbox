@@ -12,6 +12,10 @@ COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
 COPY session.sh /opt/sandbox/lib/session.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh
 
+# Workflow files — prompts and skills the agent uses at runtime.
+COPY agent/skills/ /opt/workflow/agent/skills/
+COPY agent/prompts/ /opt/workflow/agent/prompts/
+
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 RUN mkdir -p /opt/provider-config
 USER agentuser
