@@ -73,7 +73,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `execution_model.md` | 🟡 Warm | M2.3 | Index document: directory layout, invocation model. Compose generation, mount shape rationale, container lifecycle. Delegates layer implementation to sandbox_lifecycle.md and provider_lifecycle.md . |
 | `sandbox_lifecycle.md` | 🟡 Warm | M2.3 | Capability layer's lifecycle: snapshot pipeline (fork), agent work, git baseline, diff pipeline (join), input channels, apply workflow. |
 | `provider_lifecycle.md ` | 🟡 Warm | M2.3 | Reasoning layer's lifecycle: config seed (copy-in), agent work, config persist (copy-out). |
-| `tool_interface.md` | 🟡 Warm | M2.2 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
+| `tool_interface.md` | 🟡 Warm | M2.3 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
@@ -94,7 +94,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
 | `provider_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to adding a new reasoning layer provider. References tool_interface.md for contract and execution_model.md for mechanics. |
 | `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, AGENTS.md authoring, and verification. |
-| `quickstart.md` | 🟡 Warm | M2.2 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
+| `quickstart.md` | 🟡 Warm | M2.3 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
@@ -110,7 +110,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
 | `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
-| `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
+| `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
 | `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
@@ -120,8 +120,9 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
-| `package_branch.sh` | 🟢 Cold | M2.3 | Package branch commits as numbered diff files. Sourced by `diff_on_exit`. |
+| `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
+| `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
 | `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
@@ -134,7 +135,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
 | `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
-| `test_diff.sh` | 🟢 Cold | M2.3 | Diff pipeline tests: `diff_generate`, `diff_format_patch`, `diff_on_exit`, `diff_on_autosave`. |
+| `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
 | `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
 | `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |

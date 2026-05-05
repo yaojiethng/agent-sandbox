@@ -128,7 +128,7 @@ These tasks must run after Group 1 (they test SESSION_STATE behaviour).
 
 **Pending — Change A: unified output format and CLI contract:**
 
-These tasks implement the unified output format, `--channel` CLI contract, router extraction, and documentation alignment defined in `design_change_a_contract.md`. Each entry is self-contained and executable without recovery context. All four must complete before Trigger B can fire.
+These tasks implement the unified output format, `--channel` CLI contract, router extraction, host path resolution, and documentation alignment defined in `design_change_a_contract.md`. Each entry is self-contained and executable without recovery context. All groups (A.0–A.5) must complete before Trigger B can fire.
 
 **Dependency ordering:** A.0 (sourceability) must execute before A.1 (it's needed for testability, though A.1 tests do not depend on it directly). A.1 must execute before A.2 and A.4. A.2 and A.4 can execute in parallel after A.1 completes. A.3 must follow all of A.1, A.2, and A.4 since it documents the system as built.
 
@@ -162,51 +162,15 @@ Host-side `package-diff` and `package-branch` subcommands added to `agent-sandbo
 
 ---
 
-#### A.3 — Documentation alignment
+#### A.3 — Documentation alignment (complete)
 
-**Objective:** Update all architecture and development documents to describe the system as built after A.1, A.2, and A.4. Remove stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, absolute `--session` paths, and sweep commits. Add recovery snippets for the new contract.
-
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md` (full document).
-
-**NDQ-6 resolution:** Pre-clean Group 2 covered SESSION_STATE-specific doc updates only (5 files: `sandbox_lifecycle.md`, `design_diff_and_branch_packaging_workflow.md`, `project_index.md`, `sandbox.Dockerfile`, `roadmap.md` stale duplicate). The unified contract documentation (filename renames, `--channel` flag, router architecture, `SOURCE_DIR` contract, `write_changed_files`) was not covered. Residue requires updating all architecture docs.
-
-**Scope:**
-- `docs/architecture/execution_model.md` — rename `changes.diff` → `uncommitted.diff`, `staged.diff` → `all-changes.diff` in directory tree and mermaid diagrams; add `changed-files/` to directory tree
-- `docs/architecture/sandbox_lifecycle.md` — remove sweep commit description; rename filenames; update `make apply`/`draft` command descriptions for `--channel`/`--uncommitted.diff`
-- `docs/architecture/tool_interface.md` — rewrite `make apply` and `make draft` descriptions for `--channel`, `--session` (name-only), `--diff=<path>` (escape hatch), `AUTOSAVE=1`, `BUNDLE=1`; update `make confirm`/`reject`
-- `docs/concepts/sandbox_host_correspondence_model.md` — update correspondence cycle; rewrite command map with new flags and output paths
-- `docs/architecture/system_overview.md` — update diff output description; remove "legacy" framing
-- `docs/development/project_index.md` — update `Last touched in` for A.1/A.2 files; remove any stale entries found
-- `docs/development/testing_policy.md` — rename `staged.diff` → generic "diff files" in anti-pattern examples
-- `docs/development/quickstart.md` — recovery section: verify current (pre-clean updated) recovery paths are consistent with unified contract; add snippets for `--channel` and `--diff=<path>` usage if not already present
-- `docs/devlog/discussions/design_change_a_contract.md` — verify the design doc is self-consistent (created by this bootstrap session)
-- `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` — add forward-reference to `design_change_a_contract.md` for output format and CLI contract details
-
-**Hot files:**
-| File | Change |
-|---|---|
-| `docs/architecture/execution_model.md` | Filename renames; add `changed-files/` |
-| `docs/architecture/sandbox_lifecycle.md` | Sweep commit removal; filename renames |
-| `docs/architecture/tool_interface.md` | New CLI flags documentation |
-| `docs/concepts/sandbox_host_correspondence_model.md` | Command map updates |
-| `docs/architecture/system_overview.md` | Output format description |
-| `docs/development/project_index.md` | Last-touched updates |
-| `docs/development/quickstart.md` | Recovery section consistency check |
-| `docs/development/testing_policy.md` | Anti-pattern example renames |
-
-**Acceptance criteria:**
-1. `scripts/run_tests.sh` exits 0
-2. No stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, `diff_commit_pending`, or absolute `--session` paths remain in `docs/` (excluding design discussions that describe the system as it was — these are historical records, not documentation bugs)
-3. `execution_model.md` and `sandbox_lifecycle.md` directory trees match the unified format (§ 2 of design doc)
-4. `tool_interface.md` documents `--channel`, `--session` (name-only), `--diff=<path>`, `AUTOSAVE=1`, `BUNDLE=1`
-5. `design_diff_and_branch_packaging_workflow.md` has a forward-reference to `design_change_a_contract.md`
-6. All operator-facing comments in `Makefile.template` are current (verified in A.2)
+All architecture, concept, and development documents updated to describe the system as built after A.0–A.5. Stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, sweep commits, and the old directory layout removed. Directory trees reflect the flipped `session-diffs/{session,autosave}/<SESSION_TS>-<BRANCH>/` layout. Command documentation covers `--channel`, `--session` (name-only), `--diff=<path>`, `AUTOSAVE=1`, `BUNDLE=1`, `make package-diff`, `make package-branch`, and `--to`. Correspondence cycle and command map updated. See `20260504-03-impl-documentation_alignment.md`.
 
 **Depends on:** A.1, A.2, A.4 (documents the system as built after all three)
 
 ---
 
-**Trigger B status:** Not yet fireable. A.0–A.4 must all complete before Trigger B.
+**Trigger B status:** Not yet fireable. A.0–A.5 must all complete before Trigger B.
 
 #### M2.5 — Vault Capability Layer Prototype
 

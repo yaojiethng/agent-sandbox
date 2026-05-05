@@ -51,7 +51,7 @@ Same as `make start` but starts the agent in serve mode. The terminal is returne
 
 ### `make dry-run PROVIDER=<provider>`
 
-Starts both containers, verifies the sandbox initialises correctly, then tears down. No agent is started; no user input is accepted. Produces no `staged.diff`.
+Starts both containers, verifies the sandbox initialises correctly, then tears down. No agent is started; no user input is accepted. Produces no diff output.
 
 `PROVIDER` is required. Use after a build or onboard to verify the harness is functional.
 
@@ -65,13 +65,63 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make apply [BRANCH=<branch>]`
+### `make apply [CHANNEL=<channel>] [SESSION=<name>] [DIFF=<path>] [BRANCH=<branch>] [FORCE=1]`
 
-Applies `changes.diff` from a session directory to `PROJECT_DIR`. Does not commit.
+Applies a diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
 
-`BRANCH` is optional. If supplied, applies to a new branch checked out from current HEAD; otherwise applies to the current branch.
+The `--channel` flag (aliased as `CHANNEL=` in Makefile) controls which directory the router searches.
+By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session. `DIFF=<path>` bypasses all channel resolution — applies the specified file directly.
 
-**Review `changes.diff` before applying.** If rejected, discard `.workspace/session-diffs/` — the host repository is unchanged.
+**Channels:**
+- `diffs` (default) — resolves `uncommitted.diff` from `output/diffs/`
+- `session` — resolves `uncommitted.diff` from `session-diffs/session/`
+- `autosave` — resolves `uncommitted.diff` from `session-diffs/autosave/` (shorthand: `AUTOSAVE=1`)
+
+`BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
+
+---
+
+### `make draft [SESSION=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
+
+Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present.
+
+The `--channel` flag (aliased as `CHANNEL=` in Makefile, with `AUTOSAVE=1` → `channel=autosave` and `BUNDLE=1` → `channel=bundles` shortcuts) controls which directory the router searches.
+By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session (name-only — absolute paths rejected).
+
+**Channels:**
+- `session` (default) — resolves from `session-diffs/session/`
+- `autosave` — resolves from `session-diffs/autosave/` (shorthand: `AUTOSAVE=1`)
+- `bundles` — resolves from `output/bundles/` (shorthand: `BUNDLE=1`)
+
+`DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
+
+---
+
+### `make confirm [TARGET=<branch>]`
+
+Rebases the current `draft/` branch onto `TARGET` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch.
+
+---
+
+### `make reject`
+
+Discards the current `draft/` branch, returns to the source branch. Artefacts unchanged.
+
+---
+
+### `make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`
+
+Host-side export. Packages uncommitted changes from `PROJECT_DIR` as `uncommitted.diff` + `changed-files/`. Delegates to `agent-sandbox package-diff`, which reads `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`.
+
+`ALL=1` packages all changes since session baseline (`all-changes.diff`). `BASELINE=<sha>` packages against an explicit SHA.
+
+---
+
+### `make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`
+
+Host-side export. Packages committed branch history as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/`. Delegates to `agent-sandbox package-branch`, which reads `.env` and writes to `INPUT_DIR/bundles/<ts>-<summary>/`.
+
+`BASELINE=<sha>` overrides the baseline SHA (default: reads from SESSION_STATE — only available during a live session).
 
 ---
 

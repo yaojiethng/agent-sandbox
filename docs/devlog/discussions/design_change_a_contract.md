@@ -10,7 +10,7 @@
 
 ## 1. Scope
 
-Change A restructures the diff packaging pipeline and CLI contract around a unified output format, a `--channel` routing layer, and a consolidated `SESSION_STATE` identity model. It comprises four sequenced implementation groups (A.0–A.4), each with its own roadmap entry.
+Change A restructures the diff packaging pipeline and CLI contract around a unified output format, a `--channel` routing layer, and a consolidated `SESSION_STATE` identity model. It comprises sequenced implementation groups (A.0–A.5), each with its own roadmap entry.
 
 **What Change A is:**
 - A new output format for all diff packaging (exit, autosave, manual `package_branch`, manual `package_diff`)
@@ -25,6 +25,7 @@ Change A restructures the diff packaging pipeline and CLI contract around a unif
 - Not a redesign of the diff format or git-agnostic principle (those are settled in the core design doc)
 - Not interactive mode (that is Change B)
 - Not `SESSION_STATE` migration (that is already complete via pre-clean)
+- Not host path resolution unification (that is A.5 — `agent-sandbox package-diff`/`package-branch` subcommands, `--to` flag, git alias removal)
 
 ---
 
@@ -224,13 +225,14 @@ A.1 (data model: unified format, dispatcher, diff_on_exit repair)
   ├──► A.2 (CLI contract: --channel, routers, new signatures)
   │        │
   │        ▼
-  │     A.4 (changed-files extraction — depends on A.1's helper
-  │        infrastructure, but not on A.2's CLI changes)
+  │     A.4 (changed-files extraction — folded into A.1)
   │
-  └──► A.3 (documentation alignment — depends on A.1 + A.2 + A.4)
+  ├──► A.3 (documentation alignment — depends on A.1 + A.2 + A.4)
+  │
+  └──► A.5 (host path resolution — depends on A.2's routing.sh)
 ```
 
-A.4 can run in parallel with A.2 (both depend on A.1, but not on each other).
+A.4 was folded into A.1. A.5 (git alias removal, `agent-sandbox package-diff`/`package-branch` subcommands, `--to` flag) was discovered during A.2 and depends on A.2's `routing.sh` infrastructure.
 
 ---
 

@@ -20,16 +20,19 @@ SANDBOX_DIR/
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
     └── session-diffs/         ← diff pipeline output
-        └── <SESSION_TS>-<BRANCH>/    ← session-scoped directory
-            ├── session/          ← exit artefacts
-            │   ├── EXPORT-TIME.txt
-            │   ├── changes.diff
-            │   ├── staged.diff
-            │   └── patches/       ← per-commit .diff files
-            └── autosave/         ← checkpoint artefacts
+        ├── session/            ← exit artefacts
+        │   └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
+        │       ├── EXPORT-TIME.txt
+        │       ├── uncommitted.diff
+        │       ├── all-changes.diff
+        │       ├── patches/         ← per-commit .diff files
+        │       └── changed-files/   ← working tree copies
+        └── autosave/           ← checkpoint artefacts
+            └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
                 ├── EXPORT-TIME.txt
-                ├── changes.diff
-                └── patches/       ← per-commit .diff files
+                ├── uncommitted.diff
+                ├── patches/
+                └── changed-files/
 
 Capability layer container (CWD: /home/agentuser/)
 ├── .snapshot/                 ← RO bind mount: project snapshot from host
@@ -154,7 +157,7 @@ flowchart TD
         TR["register EXIT + TERM traps"]
         WAIT["wait"]
         SIGTERM["<b>SIGTERM</b> → exit 0<br/>EXIT trap: commit"]
-        DIFF["<b>diff_on_exit</b><br/>changes.diff, staged.diff, patches/"]
+        DIFF["<b>diff_export</b><br/>uncommitted.diff, all-changes.diff, patches/, changed-files/"]
     end
 
     subgraph RSN [Reasoning Layer]

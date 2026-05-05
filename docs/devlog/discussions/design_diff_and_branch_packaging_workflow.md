@@ -3,6 +3,7 @@
 **Target milestone:** M2.3 (Change 6 redesign)
 
 **Supersedes:** The Baseline Advancement section and Diff Primitives section of [`design_apply_workflow_and_baseline_advancement.md`](design_apply_workflow_and_baseline_advancement.md), and the original Change 6 specification.
+**See also:** [`design_change_a_contract.md`](design_change_a_contract.md) — unified output format, `--channel` CLI contract, routing layer, and output format renames (A.0–A.5).
 
 ---
 
