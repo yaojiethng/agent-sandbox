@@ -78,13 +78,9 @@ The `package-branch` skill instructions were amended to use the container-lifeti
 
 The test suite was fully repaired: all 13 test files pass (248 total assertions), including fixes for stale checkpoint tests, build-context function relocation, Docker-unavailable skip logic, provider-entrypoint environment leakage, `session_state_read` implementation, and `mktemp` hardening across all test files.
 
-**Pending — interactive confirmation flag:**
+**Pending — interactive confirmation flag (complete):**
 
-Both `make apply` and `make draft` lack an operator review step before changes are applied. A shared `--interactive` flag (candidate for shared logic in `libs/session.sh` or equivalent) prints the resolved diff file(s) to be applied — one per line — then prompts for confirmation before proceeding. `make apply` always has one file; `make draft` has one or more. Output format should be consistent between the two commands.
-
-- [ ] Implement `--interactive` flag in `apply_run` and `draft_run` — print resolved diff file list, prompt for confirmation, abort cleanly on rejection; extract print-and-prompt logic as a shared helper
-- [ ] Add `--interactive` to `make apply` and `make draft` Makefile targets; update `agent-sandbox.sh` to pass the flag through
-- [ ] Test interactive mode for both commands: confirmation proceeds, rejection aborts without applying, file list matches resolved session
+Both `make apply` and `make draft` support an `--interactive` flag (`INTERACTIVE=1` in Makefile) that guides the operator through numbered pickers instead of requiring explicit `SESSION=<name>` or `FROM=<channel>` arguments. `draft --interactive` presents a two-step picker (channel then session); `apply --interactive` presents a three-step picker (channel, session, diff type). When all required args are provided, the picker is skipped and the operator confirms with a single y/N prompt. The `BUNDLE=`/`AUTOSAVE=` Makefile shortcuts have been replaced by `FROM=<channel>` (e.g. `FROM=bundles`, `FROM=autosave`). See `docs/devlog/discussions/design_interactive_confirmation_flag.md`.
 
 **Design note — host→container direction:**
 
@@ -96,18 +92,12 @@ The two-layer model includes a host→container direction: operator runs `packag
 - `libs/session.sh`, `libs/draft_workflow.sh`, `libs/diff_workflow.sh` exist; `libs/draft.sh` does not exist
 - `tests/test_draft_workflow.sh` and `tests/test_diff_workflow.sh` pass clean; `tests/test_apply.sh` and `tests/test_apply_workspace.sh` do not exist
 - `grep -rn "apply_workspace" .` returns no results outside `docs/` (i.e. no caller references it and no stale archive links in implementation code)
-- `make apply --interactive` and `make draft --interactive` print the resolved diff file list and prompt before applying; aborting at the prompt leaves the project directory unchanged
+- `make apply --interactive` and `make draft --interactive` guide the operator through numbered pickers (channel → session for draft; channel → session → diff type for apply)
 - diff and draft workflows produce correct artefact paths after tests have been run inside the container — verified by unsetting `$SESSION_TS` in the shell and confirming `SESSION_STATE` is read as fallback
 - `sandbox/.git/SESSION_STATE` exists at container init and contains `session_ts` and `init_sha` keys; `sandbox/.git/INIT_SHA` does not exist
 - `make test` runs all `tests/test_*.sh` files and exits 0 when all pass, 1 when any fail; `tests/libs/` files are not executed
 
-**Pending — test infrastructure:**
-
-Design complete — see `docs/discussions/spec_test_infrastructure.md`. Depends on the apply_workspace refactor establishing `tests/libs/`, `test_draft_workflow.sh`, and `test_diff_workflow.sh` before these are added. Recommended after test suite repair so the runner has a clean baseline.
-
-- [x] Write `scripts/run_tests.sh` — discovers and runs all `tests/test_*.sh` files in a subshell, prints per-file pass/fail and totals, exits 1 if any fail; excludes `tests/libs/`
-- [x] Add `make test` target calling `scripts/run_tests.sh`; verify no conflict with existing targets before adding
-- [x] Write `scripts/check_test_coverage.sh` — given changed file paths as arguments, greps `tests/` (excluding `tests/libs/`) for references and prints which test files cover each; explicitly reports files with no coverage
+**Test infrastructure (complete):** Test discovery, execution, and coverage checking are automated via `make test` and `scripts/check_test_coverage.sh`. `make test` discovers and runs all `tests/test_*.sh` files (excluding `tests/libs/`), printing per-file pass/fail and totals, exiting 1 if any fail. `scripts/check_test_coverage.sh` maps changed files to their test coverage by grepping `tests/` for references.
 
 **Pending — pre-clean remediation:**
 

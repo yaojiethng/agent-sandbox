@@ -69,15 +69,17 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 Applies a diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
 
-The `--channel` flag (aliased as `CHANNEL=` in Makefile) controls which directory the router searches.
+The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
 By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session. `DIFF=<path>` bypasses all channel resolution — applies the specified file directly.
 
 **Channels:**
 - `diffs` (default) — resolves `uncommitted.diff` from `output/diffs/`
 - `session` — resolves `uncommitted.diff` from `session-diffs/session/`
-- `autosave` — resolves `uncommitted.diff` from `session-diffs/autosave/` (shorthand: `AUTOSAVE=1`)
+- `autosave` — resolves `uncommitted.diff` from `session-diffs/autosave/` (shorthand: `FROM=autosave`)
 
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
+
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, session selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
@@ -85,15 +87,17 @@ By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resol
 
 Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present.
 
-The `--channel` flag (aliased as `CHANNEL=` in Makefile, with `AUTOSAVE=1` → `channel=autosave` and `BUNDLE=1` → `channel=bundles` shortcuts) controls which directory the router searches.
+The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
 By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session (name-only — absolute paths rejected).
 
 **Channels:**
 - `session` (default) — resolves from `session-diffs/session/`
-- `autosave` — resolves from `session-diffs/autosave/` (shorthand: `AUTOSAVE=1`)
-- `bundles` — resolves from `output/bundles/` (shorthand: `BUNDLE=1`)
+- `autosave` — resolves from `session-diffs/autosave/` (shorthand: `FROM=autosave`)
+- `bundles` — resolves from `output/bundles/` (shorthand: `FROM=bundles`)
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
+
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and session selection. When both `SESSION=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 

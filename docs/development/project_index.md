@@ -123,10 +123,11 @@ Temperature reflects the stability of what a document describes — not how care
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
+| `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
 | `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
 | `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
-| `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. |
+| `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. `BUNDLE=`/`AUTOSAVE=` replaced with `FROM=<channel>`; `INTERACTIVE=` added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 
 ### Tests (`tests/`)
@@ -138,6 +139,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
 | `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
+| `test_interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection tests: confirm/abort, channel picker, session picker, diff type picker (25 tests). |
 | `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |

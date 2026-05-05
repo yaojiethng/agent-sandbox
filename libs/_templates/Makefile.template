@@ -50,8 +50,8 @@ REBUILD      ?=
 REBUILD_BASE ?=
 TARGET       ?=
 SESSION      ?=
-AUTOSAVE     ?=
-BUNDLE       ?=
+FROM         ?=
+INTERACTIVE  ?=
 TARGET_BRANCH ?=
 SESSION_SUMMARY ?=
 BASELINE ?=
@@ -132,27 +132,32 @@ stop:
 #   --channel=diffs    (apply default) — resolve from output/diffs/
 #
 # SHORTCUTS:
-#   make draft BUNDLE=1  →  --channel=bundles
-#   make apply AUTOSAVE=1  →  --channel=autosave
+#   make draft FROM=bundles  →  --channel=bundles
+#   make draft FROM=autosave  →  --channel=autosave
+#   make apply FROM=autosave  →  --channel=autosave
+#   make draft INTERACTIVE=1  →  --interactive (multi-step picker)
+#   make apply INTERACTIVE=1  →  --interactive (multi-step picker)
 #
 # WORKFLOW:
-#   make draft                    — apply session patches to a working branch for review
-#   make draft SESSION=<name>     — apply from a named session under the channel directory
-#   make draft BUNDLE=1           — resolve from output/bundles/ instead of session-diffs/
-#   make draft AUTOSAVE=1         — resolve from session-diffs/autosave/ instead of session/
-#   git log -p HEAD~N..HEAD       — review changes on the working branch
-#   make confirm                  — rebase + fast-forward merge to source branch
-#   make confirm TARGET_BRANCH=x  — merge to a different target branch
-#   make reject                   — discard draft branch, return to source branch
+#   make draft                           — apply session patches to a working branch for review
+#   make draft SESSION=<name>            — apply from a named session under the channel directory
+#   make draft FROM=bundles              — resolve from output/bundles/ instead of session-diffs/
+#   make draft FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
+#   make draft INTERACTIVE=1             — interactive picker for channel and session selection
+#   git log -p HEAD~N..HEAD              — review changes on the working branch
+#   make confirm                         — rebase + fast-forward merge to source branch
+#   make confirm TARGET_BRANCH=x         — merge to a different target branch
+#   make reject                          — discard draft branch, return to source branch
 #
-#   make apply                    — apply uncommitted changes (auto-resolves from output/diffs/)
-#   make apply SESSION=<name>     — apply from a named session under the channel directory
-#   make apply AUTOSAVE=1         — resolve from session-diffs/autosave/ instead of output/diffs/
-#   make apply DIFF=<path>        — apply a specific diff file (no session resolution needed)
-#   make apply BRANCH=<name>      — apply to a named branch
-#   make apply FORCE=1            — apply with --reject; .rej files created for conflicts
+#   make apply                           — apply uncommitted changes (auto-resolves from output/diffs/)
+#   make apply SESSION=<name>            — apply from a named session under the channel directory
+#   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of output/diffs/
+#   make apply DIFF=<path>               — apply a specific diff file (no session resolution needed)
+#   make apply BRANCH=<name>             — apply to a named branch
+#   make apply FORCE=1                   — apply with --reject; .rej files created for conflicts
+#   make apply INTERACTIVE=1             — interactive picker for channel, session, and diff type
 
-DRAFT_CHANNEL := $(if $(BUNDLE),bundles,$(if $(AUTOSAVE),autosave,session))
+DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
 draft:
 	agent-sandbox draft \
@@ -160,6 +165,7 @@ draft:
 	  --sandbox=$(SANDBOX_DIR) \
 	  --channel=$(DRAFT_CHANNEL) \
 	  $(if $(SESSION),--session=$(SESSION),) \
+	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
 	  $(if $(DIFFS),--diffs=$(DIFFS),) \
 	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
@@ -175,7 +181,7 @@ reject:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
 
-APPLY_CHANNEL := $(if $(AUTOSAVE),autosave,$(if $(SESSION),session,diffs))
+APPLY_CHANNEL := $(if $(FROM),$(FROM),diffs)
 
 apply:
 	agent-sandbox apply \
@@ -183,6 +189,7 @@ apply:
 	  --sandbox=$(SANDBOX_DIR) \
 	  --channel=$(APPLY_CHANNEL) \
 	  $(if $(SESSION),--session=$(SESSION),) \
+	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
 	  $(if $(FORCE),--force,)

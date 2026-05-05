@@ -65,6 +65,7 @@ main() {
   local REBUILD_BASE=false
   local DIFF_ARG=""
   local FORCE=false
+  local INTERACTIVE=false
   local BRANCH_FROM=""
   local DIFFS=""
   local BRANCH_SUMMARY=""
@@ -93,6 +94,7 @@ main() {
         --baseline=*)    BASELINE_ARG="${ARG#--baseline=}" ;;
         --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
         --force)         FORCE=true ;;
+        --interactive)   INTERACTIVE=true ;;
         --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
         --rebuild)       REBUILD=true ;;
         --rebuild-base)  REBUILD_BASE=true ;;
@@ -232,15 +234,52 @@ main() {
         exit 1
       fi
 
-      if [[ -n "$DIFF_ARG" ]]; then
-        # Explicit diff path — bypass all channel resolution
-        apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+      if [[ "$INTERACTIVE" == true ]]; then
+        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+
+        if [[ -n "$DIFF_ARG" ]]; then
+          # --diff=<path> given: skip selection steps, just confirm and apply
+          interactive_confirm_or_abort "Apply:" "$DIFF_ARG" || exit 1
+          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+        else
+          # Step 1: pick channel
+          local CHANNEL
+          CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
+          # Step 2: pick session
+          local SESSION_NAME
+          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
+          # Step 3: pick diff type
+          local DIFF_TYPE
+          DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION_NAME" "$CHANNEL") || exit 1
+          # Construct the diff file path from channel + session + type
+          local DIFF_FILE
+          dirs_resolve "$SANDBOX_DIR"
+          local BASE_DIR=""
+          case "$CHANNEL" in
+            diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
+            autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
+            session)  BASE_DIR="${CHANGES_DIR}/session" ;;
+            bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
+          esac
+          DIFF_FILE="${BASE_DIR}/${SESSION_NAME}/${DIFF_TYPE}.diff"
+          if [[ ! -f "$DIFF_FILE" ]]; then
+            echo "Error: diff file not found: $DIFF_FILE" >&2
+            exit 1
+          fi
+          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+        fi
       else
-        # Resolve via router
-        local CHANNEL="${CHANNEL_ARG:-diffs}"
-        local DIFF_FILE
-        DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
-        apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+        # Non-interactive: existing behaviour unchanged
+        if [[ -n "$DIFF_ARG" ]]; then
+          # Explicit diff path — bypass all channel resolution
+          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+        else
+          # Resolve via router
+          local CHANNEL="${CHANNEL_ARG:-diffs}"
+          local DIFF_FILE
+          DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+        fi
       fi
       ;;
 
@@ -251,14 +290,61 @@ main() {
         exit 1
       fi
 
-      # Resolve source dir via router
-      local CHANNEL="${CHANNEL_ARG:-session}"
-      local ROUTER_RESULT
-      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
-      local SOURCE_DIR SESSION_NAME
-      SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-      SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
-      draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+      if [[ "$INTERACTIVE" == true ]]; then
+        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+
+        if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
+          # Both channel and session given: skip pickers, show patch list + confirm
+          local ROUTER_RESULT
+          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_ARG") || exit 1
+          local SOURCE_DIR SESSION_NAME
+          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+          SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+
+          # Build patch list
+          local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
+          local PATCH_COUNT=0
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            PATCH_ITEMS+=("    $(basename "$f")")
+            PATCH_COUNT=$((PATCH_COUNT + 1))
+          done < <(find "$SOURCE_DIR/patches" -maxdepth 1 -name '*.diff' -print0 2>/dev/null | xargs -0 -I{} basename {} | sort)
+
+          if [[ "$PATCH_COUNT" -eq 0 ]]; then
+            echo "Error: no .diff files found in $SOURCE_DIR/patches" >&2
+            exit 1
+          fi
+
+          if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+            PATCH_ITEMS+=("  Uncommitted: uncommitted.diff (non-empty)")
+          fi
+
+          interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
+          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+        else
+          # Step 1: pick channel
+          local CHANNEL
+          CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
+          # Step 2: pick session
+          local SESSION_NAME
+          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
+          # Use the selected channel and session for router resolution
+          local ROUTER_RESULT
+          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_NAME") || exit 1
+          local SOURCE_DIR
+          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+        fi
+      else
+        # Non-interactive: existing behaviour unchanged
+        local CHANNEL="${CHANNEL_ARG:-session}"
+        local ROUTER_RESULT
+        ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+        local SOURCE_DIR SESSION_NAME
+        SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+        SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+        draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+      fi
       ;;
 
     confirm)

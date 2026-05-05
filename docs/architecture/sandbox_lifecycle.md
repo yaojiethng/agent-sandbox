@@ -114,9 +114,11 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make draft [SESSION=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch. `SESSION` is name-only (rejected if absolute).
 
-**`make draft BUNDLE=1`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
+**`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
-**`make draft AUTOSAVE=1`** — shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
+**`make draft FROM=autosave`** — shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
+
+**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then session) instead of requiring explicit `SESSION=` or `FROM=` arguments.
 
 **`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged.
 
@@ -124,7 +126,9 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make apply [CHANNEL=<channel>] [DIFF=<path>]`** — applies a diff file via `git apply` with index lines stripped. The diff file is resolved by the router (default: `diffs` channel, resolving from `output/diffs/`). `DIFF=<path>` bypasses all channel resolution. No commits created.
 
-**`make apply AUTOSAVE=1`** — shorthand for `--channel=autosave`. Resolves `uncommitted.diff` from `session-diffs/autosave/`.
+**`make apply FROM=autosave`** — shorthand for `--channel=autosave`. Resolves `uncommitted.diff` from `session-diffs/autosave/`.
+
+**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags.
 
 **`make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`** — runs `agent-sandbox package-diff --sandbox=$(SANDBOX_DIR)`, which sources `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`. Default: packages uncommitted changes only. `ALL=1` packages all changes since session baseline. `BASELINE=<sha>` packages against explicit SHA.
 
