@@ -5,9 +5,11 @@
 **Session type:** Implementation
 **Status:** Closed
 
-## Objective
+## Objective (Phase 1)
 
 Update all architecture, concepts, and development documents to describe the system as built after A.1, A.2, A.4, and A.5. Verify drift items: sweep commit elimination and apply semantics.
+
+**Phase 2 (added mid-session):** Consolidate all harness path derivation into a single module (`dirs_resolve` in `libs/dirs.sh`), eliminating the derived-path cache in `.env` and unifying host-side and container-side path conventions.
 
 ## Scope
 
@@ -77,7 +79,9 @@ None.
 
 ## Decisions made this session
 
-None.
+- **`dirs_resolve` does NOT set `SANDBOX_DIR`.** SANDBOX_DIR has different base semantics on host (it IS the base for derivation) vs container (it is derived from ROOT + SANDBOX_DIR_NAME). Callers supply or derive SANDBOX_DIR separately.
+- **Derived paths removed from `.env`.** SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR are no longer stored in `.env` — they are produced on demand by `dirs_resolve`.
+- **Single function, two conventions.** The only difference between host and container path derivation is the `WORKSPACE_DIR_NAME` override (`workspace` in container vs `.workspace` default on host). The same `dirs_resolve` function handles both.
 
 ## Mid-session findings
 
@@ -97,6 +101,18 @@ None.
 | `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Added forward-reference to `design_change_a_contract.md` |
 | `docs/devlog/discussions/design_change_a_contract.md` | Updated scope to A.0–A.5; added A.5 to dependency ordering diagram |
 | `docs/devlog/roadmap.md` | Updated Trigger B status to A.0–A.5 |
+| `tests/test_dirs.sh` | **New** — 11 tests for `dirs_resolve` (host convention, container convention, empty base, env overrides) |
+| `libs/dirs.sh` | Added `WORKSPACE_DIR_NAME` default (`.workspace`); changed `CHANGES_DIR_NAME`/`INPUT_DIR_NAME`/`OUTPUT_DIR_NAME` to leaf-only; added `dirs_resolve` function |
+| `libs/routing.sh` | Sourced `dirs.sh`; replaced inline path derivation with `dirs_resolve` |
+| `libs/sandbox-entrypoint.sh` | Replaced inline `$ROOT/$X_DIR_NAME` with `WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"` |
+| `scripts/dry_run.sh` | Same pattern — replaced inline with `dirs_resolve` |
+| `scripts/start_agent.sh` | Removed `REQUIRED_ENV_VARS` validation; added `source dirs.sh` + `dirs_resolve` |
+| `scripts/agent-sandbox.sh` | Replaced `.env` sourcing (for INPUT_DIR) with `source dirs.sh` + `dirs_resolve` in package-diff/package-branch |
+| `scripts/onboard.sh` | Removed SNAPSHOT_DIR/CHANGES_DIR/INPUT_DIR/OUTPUT_DIR from .env template |
+| `docs/devlog/discussions/design_unified_path_derivation.md` | **New** — design doc for path derivation consolidation |
+| `docs/architecture/tool_interface.md` | Moved derived vars out of `.env` table into "Runtime-derived paths" subsection |
+| `docs/concepts/sandbox_host_correspondence_model.md` | Updated command map phrasing to "Derives INPUT_DIR from SANDBOX_DIR" |
+| `tests/test_routing.sh` | Added `unset` for leaking `_DIR_NAME` env vars at top |
 
 ## Deferred items
 
@@ -104,16 +120,18 @@ None.
 
 ## Next session
 
-**Trigger B — Sub-milestone close for M2.3.**
+**Interactive confirmation flag (Change B) — next M2.3 task.**
 
-All A.0–A.5 groups are complete. Trigger B removes the M2.3 section from `roadmap.md`, promotes the next sub-milestone, and updates the changelog. The active handover for reference is this one (`20260504-03-impl-documentation_alignment.md`).
+A.0–A.5 groups are complete, and the path derivation unification is done. The remaining M2.3 task is the `--interactive` flag for `make apply` and `make draft`: print resolved diff file list, prompt for confirmation, abort on rejection.
 
-**Watch-out item for Trigger B:**
-- A.5 inherited `--all`/`--baseline` flags that were originally documented in prompt templates but not implemented until A.5 — ensure they're included in any acceptance criteria summary
-- `test_package_diff.sh` and `test_package_branch.sh` don't source `test_common.sh` and report 0 tests each — pre-existing, not blocking Trigger B
+**Watch-out items:**
+- `test_package_diff.sh` and `test_package_branch.sh` don't source `test_common.sh` and report 0 tests each — pre-existing, not blocking
+- The env var leak (`INPUT_DIR_NAME=workspace/input`, `OUTPUT_DIR_NAME=workspace/output`) in the container shell environment is not a production issue (dirs.sh defaults apply correctly in fresh shells), but test fixtures in `test_routing.sh` now explicitly `unset` them to stay hermetic
 
 **Conclusions from this session:**
 - All architecture, concept, and development docs now describe the system as built after A.1–A.5
 - Sweep commit elimination confirmed: `uncommitted.diff` captures unstaged changes without committing
 - Apply semantics confirmed: 4-arg `apply_run` applies resolved diff file unstaged; channel determines which diff file is applied
 - Bundle/draft identity drift confirmed resolved: router-based resolution correctly extracts SESSION_TS from bundle folder names
+- Path derivation unified under `dirs_resolve` — derived paths removed from `.env`, single canonical function for host and container
+- No stale cache to drift — derived paths are strict functions of `SANDBOX_DIR` at point-of-use

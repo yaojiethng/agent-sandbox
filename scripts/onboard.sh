@@ -261,11 +261,6 @@ fi
 # -------------------------
 # .env
 # -------------------------
-SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
-INPUT_DIR="$SANDBOX_DIR/.workspace/input"
-OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
-
 if [[ "$REFRESH" == true ]]; then
   ENV_FILE="$SANDBOX_DIR/.env"
   if [[ -f "$ENV_FILE" ]]; then
@@ -293,12 +288,6 @@ else
 # --- Project paths (set at onboard time, stable for this machine) ---
 PROJECT_DIR=${PROJECT_DIR}
 SANDBOX_DIR=${SANDBOX_DIR}
-
-# --- Derived paths ---
-SNAPSHOT_DIR=${SNAPSHOT_DIR}
-CHANGES_DIR=${CHANGES_DIR}
-INPUT_DIR=${INPUT_DIR}
-OUTPUT_DIR=${OUTPUT_DIR}
 
 # --- Template versions (set at onboard time) ---
 # Used by build scripts to detect stale onboarded files.

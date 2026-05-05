@@ -132,23 +132,12 @@ while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
 done < "$ENV_FILE"
 
 # -------------------------
-# Required .env var validation
+# Derive harness paths from SANDBOX_DIR
 # -------------------------
-REQUIRED_ENV_VARS=(
-  SNAPSHOT_DIR
-  CHANGES_DIR
-  INPUT_DIR
-  OUTPUT_DIR
-)
-
-for VAR in "${REQUIRED_ENV_VARS[@]}"; do
-  if [[ -z "${!VAR:-}" ]]; then
-    echo "Error: required variable '$VAR' is missing from $ENV_FILE"
-    echo "  Re-run onboarding to regenerate .env:"
-    echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
-    exit 1
-  fi
-done
+# The .env file stores only the primitive (SANDBOX_DIR). Derived paths
+# (SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR) are produced here.
+source "$REPO_ROOT/libs/dirs.sh"
+dirs_resolve "$SANDBOX_DIR"
 
 # -------------------------
 # Image name derivation

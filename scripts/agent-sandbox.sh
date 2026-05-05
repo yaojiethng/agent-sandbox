@@ -293,8 +293,9 @@ main() {
         exit 1
       fi
 
-      # Source .env to get INPUT_DIR, OUTPUT_DIR
-      set -a; source "$ENV_FILE"; set +a
+      # Derive INPUT_DIR from SANDBOX_DIR
+      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      dirs_resolve "$SANDBOX_DIR"
 
       if [[ -n "$TO_ARG" ]]; then
         local TO_DIR="$TO_ARG"
@@ -316,14 +317,9 @@ main() {
         exit 1
       fi
 
-      local ENV_FILE="$SANDBOX_DIR/.env"
-      if [[ ! -f "$ENV_FILE" ]]; then
-        echo "Error: .env not found in $SANDBOX_DIR" >&2
-        echo "  Run 'agent-sandbox onboard' first to create it." >&2
-        exit 1
-      fi
-
-      set -a; source "$ENV_FILE"; set +a
+      # Derive INPUT_DIR from SANDBOX_DIR
+      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      dirs_resolve "$SANDBOX_DIR"
 
       if [[ -n "$TO_ARG" ]]; then
         local TO_DIR="$TO_ARG"

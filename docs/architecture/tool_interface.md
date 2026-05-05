@@ -181,14 +181,23 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 |---|---|---|
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
-| `SNAPSHOT_DIR` | `$SANDBOX_DIR/.snapshot` | Harness — rebuilt before each run |
-| `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/session-diffs` | Harness — diff pipeline output |
-| `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` | Operator — populated before a run |
-| `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` | Agent — written during a run |
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
 `SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `libs/containers.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
+
+### Runtime-derived paths (not stored in `.env`)
+
+These paths are derived from `SANDBOX_DIR` at run time by `dirs_resolve` in `libs/dirs.sh`. They are not stored in `.env` because they are strict functions of `SANDBOX_DIR` — storing them would introduce drift risk without providing any configurable behaviour.
+
+| Variable | Derivation |
+|---|---|
+| `SNAPSHOT_DIR` | `$SANDBOX_DIR/.snapshot` |
+| `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/session-diffs` |
+| `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` |
+| `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` |
+
+Inside the container, the workspace directory is named `workspace/` (visible) instead of `.workspace/` (hidden). The `WORKSPACE_DIR_NAME` override (`workspace`) is set in `sandbox-entrypoint.sh` and `dry_run.sh` before calling `dirs_resolve`.
 
 ---
 

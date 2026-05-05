@@ -28,9 +28,8 @@ ROOT="/home/agentuser"
 source /opt/sandbox/lib/dirs.sh
 source /opt/sandbox/lib/session.sh
 
-INPUT_DIR="$ROOT/$INPUT_DIR_NAME"
-OUTPUT_DIR="$ROOT/$OUTPUT_DIR_NAME"
-SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
+WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
 # ---------------------------------------------------------------------------
 # Check framework

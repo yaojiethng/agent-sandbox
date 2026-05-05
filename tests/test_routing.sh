@@ -9,6 +9,11 @@
 
 set -uo pipefail
 
+# Ensure env overrides don't leak from outside the test suite
+unset WORKSPACE_DIR_NAME
+unset SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
+unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../libs/routing.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"

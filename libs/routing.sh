@@ -23,11 +23,14 @@
 #   $INPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/   — host writes
 #   $INPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/     — host writes
 #
-# Callers must resolve SANDBOX_DIR, CHANGES_DIR, OUTPUT_DIR, and INPUT_DIR
-# before calling these functions. The routing functions do not read .env or
-# detect container context.
+# Callers must provide SANDBOX_DIR before calling these functions. The routing
+# functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR via
+# dirs_resolve. They do not read .env or detect container context.
 
 set -euo pipefail
+
+DIRS_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dirs.sh"
+source "$DIRS_LIB"
 
 # =============================================================================
 # Session-export paths (used by entrypoint exit/autosave and CLI resolvers)
@@ -133,9 +136,7 @@ resolve_source_for_draft() {
   local CHANNEL="${2:-session}"
   local SESSION_ARG="${3:-}"
 
-  local WORKSPACE_DIR="${SANDBOX_DIR}/.workspace"
-  local CHANGES_DIR="${WORKSPACE_DIR}/session-diffs"
-  local OUTPUT_DIR="${WORKSPACE_DIR}/output"
+  dirs_resolve "$SANDBOX_DIR"
 
   local BASE_DIR=""
   case "$CHANNEL" in
@@ -212,9 +213,7 @@ resolve_diff_for_apply() {
   local CHANNEL="${2:-diffs}"
   local SESSION_ARG="${3:-}"
 
-  local WORKSPACE_DIR="${SANDBOX_DIR}/.workspace"
-  local CHANGES_DIR="${WORKSPACE_DIR}/session-diffs"
-  local OUTPUT_DIR="${WORKSPACE_DIR}/output"
+  dirs_resolve "$SANDBOX_DIR"
 
   local BASE_DIR=""
   case "$CHANNEL" in

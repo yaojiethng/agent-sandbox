@@ -163,8 +163,8 @@ directions and on both host and container.
 |---|---|---|
 | `bash .../package_diff.sh --to=<dir> [--all|--baseline=<sha>]` | Container | Packages uncommitted changes as `uncommitted.diff` + `changed-files/` under `<to>/diffs/<ts>-<label>/`. `--all` packages all-changes vs SESSION_STATE baseline. `--baseline=<sha>` against explicit SHA. |
 | `bash .../package_branch.sh --to=<dir> [--baseline=<sha>]` | Container | Packages all commits since `init_sha` as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/` under `<to>/bundles/<ts>-<label>/`. |
-| `agent-sandbox package-diff --sandbox=<path>` | Host | Host-side wrapper. Reads `.env`, resolves `INPUT_DIR`, writes to `INPUT_DIR/diffs/<ts>-<label>/`. |
-| `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Reads `.env`, resolves `INPUT_DIR`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
+| `agent-sandbox package-diff --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/diffs/<ts>-<label>/`. |
+| `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
 | `make apply [CHANNEL=<channel>] [DIFF=<path>]` | Host | Applies `uncommitted.diff` (resolved by router) uncommitted. Default: `diffs` channel. `DIFF=<path>` bypasses resolution. |
 | `make draft [CHANNEL=<channel>] [SESSION=<name>]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
