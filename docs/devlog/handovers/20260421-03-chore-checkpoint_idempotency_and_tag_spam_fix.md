@@ -40,7 +40,7 @@ are redundant — only the earliest timestamp is meaningful.
 Out of scope: Cleanup of existing redundant tags in the host repository — this requires
 manual operator action (procedure provided below).
 
-## Acceptance Criteria
+## Acceptance criteria
 
 - [x] `checkpoint_create()` checks for existing tag on current HEAD before creating new one
 - [x] When an existing tag is found, it is returned instead of creating a duplicate
@@ -50,7 +50,7 @@ manual operator action (procedure provided below).
 - [x] Test `test_docker_compose_template_has_container_names` fixed to assert correct
   `container_name:` format
 
-## Hot Files
+## Hot files
 
 | File | Why in scope | Status |
 |---|---|---|
@@ -58,7 +58,7 @@ manual operator action (procedure provided below).
 | `tests/test_checkpoint.sh` | Pruning test updated; idempotency test added | ✓ Complete |
 | `tests/test_start_agent.sh` | Test assertion corrected | ✓ Complete |
 
-## Changes Made
+## Changes made
 
 ### `scripts/checkpoint.sh`
 
@@ -100,7 +100,7 @@ commits between tags. Pruning only has meaning when tags point to different comm
 `container_name:` key format in docker-compose.yml instead of the incorrect
 `SANDBOX_CONTAINER_NAME:` key.
 
-## Decisions Made
+## Decisions made this session
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
@@ -108,7 +108,7 @@ commits between tags. Pruning only has meaning when tags point to different comm
 | Return existing tag, don't error | Silent idempotency is preferable to forcing callers to handle "tag exists" errors | `checkpoint_create()` implementation |
 | Keep earliest timestamp as canonical | First session on a commit is the meaningful checkpoint; later sessions are retries or restarts | `sort | tail -n 1` selects earliest |
 
-## Completed This Session
+## Completed this session
 
 | File | Change summary |
 |---|---|
@@ -116,7 +116,7 @@ commits between tags. Pruning only has meaning when tags point to different comm
 | `tests/test_checkpoint.sh` | Pruning test updated; idempotency test added |
 | `tests/test_start_agent.sh` | Test assertion corrected |
 
-## Tag Cleanup Procedure (Manual Operator Action)
+## Tag cleanup procedure (Manual operator action)
 
 The fix prevents future tag spam but does not clean up existing redundant tags. To clean
 up the host repository, run the following commands **on the host repository** (not in the
@@ -228,3 +228,6 @@ done | sort | uniq -D -w 40
 - `scripts/checkpoint.sh`
 - `tests/test_checkpoint.sh`
 - `tests/test_start_agent.sh`
+
+---
+[AMENDMENT — 2026-05-06]: Section headers `## Changes made` and `## Tag cleanup procedure (Manual operator action)` are non-standard. No canonical 1:1 replacement exists — content spans implementation detail and operator instructions that don't map cleanly to standard handover sections. Left unchanged. See 20260506-01-workflow-handover_audit_and_corrections.md.

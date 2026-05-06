@@ -3,7 +3,8 @@
 **Session date:** 2026-04-27
 **Milestone:** M2.3 — Workflow Audit and Policy Refactor
 **Session type:** Workflow
-**Status:** Active
+**Status:** Closed
+
 
 ## Objective
 
@@ -87,3 +88,6 @@ None.
 ## Next session
 
 Not yet defined
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". This session was superseded by 20260428-04-workflow-policy_audit_and_refactor.md which completed the workflow audit. See 20260506-01-workflow-handover_audit_and_corrections.md.

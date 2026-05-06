@@ -8,7 +8,7 @@
 
 ---
 
-## Session objective
+## Objective
 
 Execute **Group 2** of the M2.3 pre-clean remediation — documentation updates and stale file cleanup that bring the documentation tree in line with the current codebase (post-SESSION_STATE migration). Group 2 is documentation-only; no code or test files are modified.
 
@@ -55,7 +55,7 @@ None — scope is well-defined by the existing roadmap entries.
 
 ---
 
-## Key decisions
+## Decisions made this session
 
 None yet.
 
@@ -94,6 +94,9 @@ None.
 ---
 
 ## Next session
+
+---
+[AMENDMENT — 2026-05-06]: Section headers `## Required reading` and `## Recovery checks` are non-standard. No canonical 1:1 replacement exists — they carry custom content specific to this session's recovery workflow. Left unchanged. See 20260506-01-workflow-handover_audit_and_corrections.md.
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline — Pre-clean (continued)
 

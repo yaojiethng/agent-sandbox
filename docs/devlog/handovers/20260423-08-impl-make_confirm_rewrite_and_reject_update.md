@@ -3,7 +3,7 @@
 **Session date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation
-**Status:** `Complete`
+**Status:** Closed
 
 ## Objective
 
@@ -118,3 +118,6 @@ None.
 ### Known watch-out items
 1. Verify `.skills/package-diff.md` exists and is writable.
 2. Ensure no stale references to `make sync` or `SYNC=1` remain in the skill doc.
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "`Complete`" (non-standard) to "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.

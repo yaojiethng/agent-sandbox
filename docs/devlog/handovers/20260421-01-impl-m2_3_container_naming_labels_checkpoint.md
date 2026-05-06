@@ -3,7 +3,7 @@
 **Session date:** 2026-04-21
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation (Change 5)
-**Status:** ✓ Complete
+**Status:** Closed
 
 ## Objective
 
@@ -102,6 +102,11 @@ Labels are defined once as `x-session-labels: &session_labels` and referenced by
 None — Change 5 is complete.
 
 ## Next session
+
+**Conclusions from this session:** All Change 5 implementation complete; checkpoint.sh integrated into compose and start_agent.
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "✓ Complete" (non-standard) to "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Next task:** Implement Change 6 (baseline advancement).

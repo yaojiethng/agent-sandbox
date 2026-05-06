@@ -3,7 +3,7 @@
 **Session date:** 2026-04-28
 **Milestone:** M2.3 — Workflow Audit and Policy Refactor
 **Session type:** Workflow
-**Status:** Active
+**Status:** Closed
 
 ## Objective
 
@@ -75,7 +75,7 @@ None.
 ## Next session
 
 **Milestone:** M2.3 — Workflow Audit and Policy Refactor
-**Status:** Workflow audit complete. All policy changes produced as artifacts. Pending operator review and application to repository.
+**Session outcome:** Workflow audit complete. All policy changes produced as artifacts. Pending operator review and application to repository.
 
 **Outstanding implementation thread:** M2.3 apply_workspace refactor (Changes 1–7) complete per `20260428-03-impl-apply_workspace_refactor.md`. Remaining M2.3 task groups in dependency order:
 1. `SESSION_STATE` file / `$SESSION_TS` persistence bug
@@ -87,5 +87,8 @@ None.
 
 **Watch-outs:**
 - New handover format includes `## Mid-session findings` — next implementation agent must populate or null-mark at session open
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". All policy changes produced as artifacts; operator review was pending, documented here for completeness. See 20260506-01-workflow-handover_audit_and_corrections.md.
 - Carry-forward escalation rule is new — first session to use it should verify the roadmap entry format for escalated findings is legible alongside planned task entries
 - Major loop now has three named gates and skip conditions — next planning session agent should read the full major loop table before proceeding

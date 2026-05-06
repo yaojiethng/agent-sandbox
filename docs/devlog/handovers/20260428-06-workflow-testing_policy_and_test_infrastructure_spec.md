@@ -59,24 +59,25 @@ None — this is a standalone workflow session.
 
 None.
 
-Next session
+## Next session
+
 Milestone: M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 Task: Test suite repair
+
 Test suite repair is the immediate next task. Running make test against a broken suite produces noise rather than signal — repair first so the runner has a clean baseline to verify against when test infrastructure is implemented.
 Remaining M2.3 task groups in dependency order:
 
-Test suite repair — test_checkpoint.sh (8 failures, worktree scoping regression), test_build_context.sh (missing lib), test_capability_layer.sh (unclear), test_provider_entrypoint.sh (missing env vars). Investigate each independently before fixing — root causes are not confirmed.
-Test infrastructure — scripts/run_tests.sh, scripts/check_test_coverage.sh, make test Makefile target. Spec at docs/discussions/spec_test_infrastructure.md. Runner auto-discovers tests/test_*.sh via glob — no hardcoded file list. Coverage check is informational only. Both scripts are independent of each other; implement runner first.
-Interactive confirmation flag — --interactive for make apply and make draft
+1. **Test suite repair** — test_checkpoint.sh (8 failures, worktree scoping regression), test_build_context.sh (missing lib), test_capability_layer.sh (unclear), test_provider_entrypoint.sh (missing env vars). Investigate each independently before fixing — root causes are not confirmed.
+2. **Test infrastructure** — scripts/run_tests.sh, scripts/check_test_coverage.sh, make test Makefile target. Spec at docs/discussions/spec_test_infrastructure.md. Runner auto-discovers tests/test_*.sh via glob — no hardcoded file list. Coverage check is informational only. Both scripts are independent of each other; implement runner first.
+3. **Interactive confirmation flag** — --interactive for make apply and make draft
 
-Deferred — link testing_policy.md into repo nav:
-docs/development/testing_policy.md exists and is complete but is not linked from any entry-point document. The correct fix is a handoff link in Step 6 of the minor loop table in docs/development/iteration_policy.md — "tests alongside" becomes "tests alongside per testing_policy.md". This is the natural repo nav entry point: the policy is referenced at the moment it is actionable. Apply this change in the test infrastructure session.
 Files to read at session start:
-
-tests/test_checkpoint.sh — 8 failures, likely worktree scoping regression in checkpoint_latest
-tests/test_build_context.sh — script error; libs/build_context.sh may have been deleted or moved; grep libs/ before assuming
+- tests/test_checkpoint.sh — 8 failures, worktree scoping regression in checkpoint_latest
+- tests/test_build_context.sh — script error; libs/build_context.sh may have been deleted or moved; grep libs/ before assuming
 
 Watch-outs:
+- Diagnose before fixing — each test file failure may have a different root cause; do not batch-fix without confirming
+- tests/lib/ directory may not exist yet; it is created as part of test infrastructure, not test suite repair
 
-Diagnose before fixing — each test file failure may have a different root cause; do not batch-fix without confirming
-tests/lib/ directory may not exist yet; it is created as part of test infrastructure, not test suite repair
+---
+[CORRECTION — 2026-05-06]: Added missing `## Next session` section header and reformatted trailing content (which was present as plain text) under proper section heading. The deferred link to testing_policy.md was resolved in a later session — the link now exists in iteration_policy.md Step 6. See 20260506-01-workflow-handover_audit_and_corrections.md.

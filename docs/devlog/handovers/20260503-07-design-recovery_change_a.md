@@ -142,6 +142,9 @@ The handover `20260429-08-design-b_interactive.md` was found in the input direct
 
 ## Next session
 
+---
+[AMENDMENT — 2026-05-06]: Section headers `## Deliverables` and `## Narrow design question resolutions` are non-standard. No canonical 1:1 replacement exists — they carry design-session-specific content. Left unchanged. See 20260506-01-workflow-handover_audit_and_corrections.md.
+
 **A.0 — Sourceability refactor for `agent-sandbox.sh`**
 
 **Session type:** Implementation

@@ -126,3 +126,4 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 |---|---|
 | [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
+| [`audit_policy.md`](audit_policy.md) | Operator-invoked handover audit procedure — deferred chain integrity, structural completeness, dangling references |

@@ -20,7 +20,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
-| [M2.3 — Apply Workflow: Capability Layer Diff Pipeline](#m23--apply-workflow-capability-layer-diff-pipeline) | In progress |
+| M2.3 — Apply Workflow: Capability Layer Diff Pipeline | [Complete — see changelog](changelog.md) |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
 | [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | In progress |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
@@ -55,112 +55,6 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Depends on:** M2.2. **Status:** Complete. Design settled; implementation artifacts applied. Copy-out workflow validated (normal exit + SIGTERM). Acceptance criteria met — see handover `20260407-03-close-m2_4.md`.
 
 **Scope note:** M2.4 established the infrastructure for state to survive between sessions (home directory bind mount, config copy-in/out). It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
-
-#### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-
-**Objective:** Redesign the apply workflow to reflect the two-layer model: git-agnostic unified diffs generated from capability layer `sandbox/`, bidirectional diff flow between host and sandbox, draft branch pattern formalised for operator review.
-
-**Depends on:** M2.1. **Status:** In progress.
-
-**Design references:**
-- [`docs/discussions/design_diff_and_branch_packaging_workflow.md`](docs/discussions/design_diff_and_branch_packaging_workflow.md) — current design
-- [`docs/discussions/design_apply_workflow_and_baseline_advancement.md`](docs/discussions/design_apply_workflow_and_baseline_advancement.md) — prior design, preserved with SUPERSEDED markers
-
-**Completed:**
-
-The two-layer diff pipeline is fully implemented. `package_diff` produces unified diffs from the capability layer for operator `make apply`; `package_branch` packages sandbox commits as numbered per-commit diffs for `make draft`. The draft/confirm/reject workflow is operational: `make draft` resolves the latest session export, creates a typed draft branch with `.draft-state` as the first commit, and applies patches sequentially via `git apply`; `make confirm` drops the state commit, rebases onto target, and fast-forward merges; `make reject` returns to the source branch cleanly. Session artefact directories use 2-field names (`<SESSION_TS>-<SANITIZED_HOST_BRANCH>`), with `session/` and `autosave/` subfolders, `EXPORT-TIME.txt`, and unified path resolution across both commands. Checkpoint tags and `make sync` are removed. `INIT_SHA` is written once at container init. All diff output has index lines stripped for context-only `git apply`.
-
-The apply workflow is consolidated under `agent-sandbox.sh`: `draft`, `confirm`, `reject`, and `apply` all resolve through the agent-sandbox entry point, and the deprecated `scripts/apply_workspace.sh`, `libs/draft.sh`, and their tests have been removed.
-
-A durable `sandbox/.git/SESSION_STATE` key-value file persists `session_ts` and `init_sha` across the container lifetime, replacing the standalone `INIT_SHA` file and eliminating malformed artefact paths when environment variables are unset.
-
-The `package-branch` skill instructions were amended to use the container-lifetime boundary framing ("all commits since `init_sha`") and the `SESSION_TS` fallback logic now correctly directs reading from `SESSION_STATE` first, with env-var fallback.
-
-The test suite was fully repaired: all 13 test files pass (248 total assertions), including fixes for stale checkpoint tests, build-context function relocation, Docker-unavailable skip logic, provider-entrypoint environment leakage, `session_state_read` implementation, and `mktemp` hardening across all test files.
-
-**Pending — interactive confirmation flag (complete):**
-
-Both `make apply` and `make draft` support an `--interactive` flag (`INTERACTIVE=1` in Makefile) that guides the operator through numbered pickers instead of requiring explicit `SESSION=<name>` or `FROM=<channel>` arguments. `draft --interactive` presents a two-step picker (channel then session); `apply --interactive` presents a three-step picker (channel, session, diff type). When all required args are provided, the picker is skipped and the operator confirms with a single y/N prompt. The `BUNDLE=`/`AUTOSAVE=` Makefile shortcuts have been replaced by `FROM=<channel>` (e.g. `FROM=bundles`, `FROM=autosave`). See `docs/devlog/discussions/design_interactive_confirmation_flag.md`.
-
-**Design note — host→container direction:**
-
-The two-layer model includes a host→container direction: operator runs `package-diff` on the host to push amendments into a running container session. This direction is present in the design but intentionally not implemented — no current use case warrants it. Not planned unless a concrete use case emerges.
-
-**Acceptance criteria:**
-
-- `scripts/apply_workspace.sh` does not exist; `agent-sandbox` is the sole entry point for `draft`, `confirm`, `reject`, `apply`
-- `libs/session.sh`, `libs/draft_workflow.sh`, `libs/diff_workflow.sh` exist; `libs/draft.sh` does not exist
-- `tests/test_draft_workflow.sh` and `tests/test_diff_workflow.sh` pass clean; `tests/test_apply.sh` and `tests/test_apply_workspace.sh` do not exist
-- `grep -rn "apply_workspace" .` returns no results outside `docs/` (i.e. no caller references it and no stale archive links in implementation code)
-- `make apply --interactive` and `make draft --interactive` guide the operator through numbered pickers (channel → session for draft; channel → session → diff type for apply)
-- diff and draft workflows produce correct artefact paths after tests have been run inside the container — verified by unsetting `$SESSION_TS` in the shell and confirming `SESSION_STATE` is read as fallback
-- `sandbox/.git/SESSION_STATE` exists at container init and contains `session_ts` and `init_sha` keys; `sandbox/.git/INIT_SHA` does not exist
-- `make test` runs all `tests/test_*.sh` files and exits 0 when all pass, 1 when any fail; `tests/libs/` files are not executed
-
-**Test infrastructure (complete):** Test discovery, execution, and coverage checking are automated via `make test` and `scripts/check_test_coverage.sh`. `make test` discovers and runs all `tests/test_*.sh` files (excluding `tests/libs/`), printing per-file pass/fail and totals, exiting 1 if any fail. `scripts/check_test_coverage.sh` maps changed files to their test coverage by grepping `tests/` for references.
-
-**Pending — pre-clean remediation:**
-
-These tasks address discrepancies between documented M2.3 acceptance criteria and the live tree — changes claimed in handovers that are not present or are incomplete. They must be resolved before Trigger B can fire.
-
-**Dependency ordering:** Group 1 must execute first (SESSION_STATE data model change; first task leaves the tree red until the third restores it). Group 2 is independent. Group 3 must follow Group 1.
-
-**Group 1 — SESSION_STATE/INIT_SHA migration (complete):** The container-init SESSION_STATE key-value store is fully operational. `session_state_write` and `session_state_read` are symmetric; `snapshot_init_git` records both `init_sha` and `session_ts` via SESSION_STATE; all consumers (`diff.sh`, `package_diff.sh`) read from SESSION_STATE instead of a standalone `INIT_SHA` file; the `INIT_SHA` file is no longer created or expected. All test fixtures write to `.git/SESSION_STATE` and verify `.git/INIT_SHA` is absent. Tree green (256 tests, 0 failed).
-
-**Group 2 — Documentation and stale file cleanup (complete):** All 5 documentation files updated to reflect the post-SESSION_STATE codebase: `sandbox_lifecycle.md`, `design_diff_and_branch_packaging_workflow.md`, `project_index.md`, `sandbox.Dockerfile`, and `roadmap.md` (stale duplicate removed). `baseline.tar` removed from git tracking and ignored; `apply_workspace.sh` and `draft.sh` entries cleared from `project_index.md`; all `.sh` entries in the index correspond to tracked files.
-
-**Group 3 — Test coverage additions:**
-
-These tasks must run after Group 1 (they test SESSION_STATE behaviour).
-
-- [x] **Add session_state_read tests and clean up dead env-var fallback.** Added 4 test functions (5 assertions) covering existing key, missing file, missing key, and malformed file to `tests/test_session.sh`. Removed dead `SESSION_TS="${SESSION_TS:-}"` fallback from `libs/package_diff.sh` — the local assignment shadows the outer env var, making the fallback a no-op.
-  **AC:** `grep -c "session_state_read" tests/test_session.sh` shows 4+ test assertions; `grep -c "\${SESSION_TS:-}" libs/package_diff.sh` returns 0.
-
-**Pending — Change A: unified output format and CLI contract:**
-
-These tasks implement the unified output format, `--channel` CLI contract, router extraction, host path resolution, and documentation alignment defined in `design_change_a_contract.md`. Each entry is self-contained and executable without recovery context. All groups (A.0–A.5) must complete before Trigger B can fire.
-
-**Dependency ordering:** A.0 (sourceability) must execute before A.1 (it's needed for testability, though A.1 tests do not depend on it directly). A.1 must execute before A.2 and A.4. A.2 and A.4 can execute in parallel after A.1 completes. A.3 must follow all of A.1, A.2, and A.4 since it documents the system as built.
-
----
-
-**A.0 — Sourceability refactor for `agent-sandbox.sh` (complete):** `scripts/agent-sandbox.sh` now has a `main` guard (`[[ "${BASH_SOURCE[0]}" == "${0}" ]]`) — the file can be sourced for test access to workflow functions without executing dispatch logic. All existing behaviour preserved when executed directly. See `20260503-08-impl-sourceability_main_guard.md`.
-
----
-
-#### A.1 — Data model: unified output format, dispatcher, `diff_on_exit` repair (complete)
-
-All diff packaging is restructured around a single unified output format. `package_branch.sh` acts as a dispatcher orchestrating `package_commits`, `write_uncommitted_diff`, `write_all_changes_diff`, and `write_changed_files`. `diff_on_exit` and `diff_on_autosave` are thin wrappers calling `package_branch` — no sweep commit, no `BASELINE_SHA` parameter. The output format produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` in both session and autosave directories.
-
----
-
-#### A.2 — CLI contract: `--channel` flag and routing (complete)
-
-CLI contracts restructured around a single `--channel` flag with router functions in `libs/routing.sh`. `apply_run` accepts a file path directly (4 args, no resolution). `draft_run` accepts `SOURCE_DIR` + `SESSION_NAME` (caller supplies the directory). `diff_on_exit` and `diff_on_autosave` replaced by `diff_export` — callers construct paths via `session_export_path` from `routing.sh`. Session output layout flipped to `session-diffs/{session,autosave}/<SESSION_TS>-<BRANCH>/`. Makefile template has `AUTOSAVE` and `BUNDLE` flag mappings. See `20260504-01-impl-cli_contract_channel_flag_routing.md`.
-
----
-
-#### A.4 — `changed-files/` extraction and verification (complete)
-
-Covered by A.1. `write_changed_files` helper is extracted in `libs/diff.sh` and wired into both the `package_branch` dispatcher and `package_diff.sh`. Changed-files output validated across all test scenarios.
-
----
-
-#### A.5 — Host path resolution (complete)
-
-Host-side `package-diff` and `package-branch` subcommands added to `agent-sandbox.sh`, with corresponding `make package-diff` / `make package-branch` targets in the Makefile template. Git alias for `package-diff` removed from `onboard.sh`. Flag renamed from `--outdir` to `--to` (required base parent directory) in both lib scripts — no implicit defaults, no `IN_CONTAINER` detection. Added `--all` and `--baseline=<sha>` optional flags for diffing against session or explicit baselines. `write_all_changes_diff` and `package_branch`/`package_commits` accept optional baseline override parameters. See `20260504-02-design-host_path_resolution.md`.
-
----
-
-#### A.3 — Documentation alignment (complete)
-
-All architecture, concept, and development documents updated to describe the system as built after A.0–A.5. Stale references to `changes.diff`, `staged.diff`, `BASELINE_SHA`, sweep commits, and the old directory layout removed. Directory trees reflect the flipped `session-diffs/{session,autosave}/<SESSION_TS>-<BRANCH>/` layout. Command documentation covers `--channel`, `--session` (name-only), `--diff=<path>`, `AUTOSAVE=1`, `BUNDLE=1`, `make package-diff`, `make package-branch`, and `--to`. Correspondence cycle and command map updated. See `20260504-03-impl-documentation_alignment.md`.
-
-**Depends on:** A.1, A.2, A.4 (documents the system as built after all three)
-
----
-
-**Trigger B status:** Not yet fireable. A.0–A.5 must all complete before Trigger B.
 
 #### M2.5 — Vault Capability Layer Prototype
 
@@ -262,6 +156,10 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path. The image rename in M2.7 (dropping the `<project>` suffix) is a prerequisite step toward this.
 
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
+
+### Deferred (not milestone-scoped)
+
+- **Docs restructuring investigation** — The docs/ directory currently mixes architecture/concepts/operations/development/ discussions/devlog into a single tree. Architecture and concepts docs are baked into container images; operations and development docs are coding-agent workflow artifacts that should logically live in a separate namespace. Investigation deferred — no immediate use case warrants it, and the current layout is functional.
 
 ### Addressed in upcoming milestones
 

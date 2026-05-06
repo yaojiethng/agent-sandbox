@@ -3,7 +3,7 @@
 **Session date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation
-**Status:** `Closed`
+**Status:** Closed
 
 ## Objective
 
@@ -118,3 +118,6 @@ cat docs/discussions/investigation_mcp_server.md | grep -A5 "candidates table"
 ## Next session
 
 Not yet defined.
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "`Closed`" (backtick-wrapped) to standard "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.

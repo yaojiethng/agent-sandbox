@@ -3,7 +3,10 @@
 **Session date:** 2026-05-04
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
 **Session type:** Implementation
-**Status:** Active
+**Status:** Closed
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". All 6 units completed per the handover's Completed this session table. M2.3 closed via Trigger B in this session. See 20260506-01-chore-handover_audit_and_corrections.md.
 
 ## Objective
 

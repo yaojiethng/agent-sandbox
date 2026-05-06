@@ -79,6 +79,10 @@ None.
 | Draft branch naming `draft/<SESSION_TS>-<BRANCH>-<SHA6>` | 3-field `EXPORT_TIME` prefix dropped; the branch name uses the stable session identity | This handover |
 | Relative `SESSION=` resolves from `$CHANGES_DIR` (not CWD) | Consistent with the design principle that session-diffs is the authority for changes | This handover |
 
+## Deferred items
+
+None.
+
 ## Completed this session
 
 | File | Change |
@@ -101,3 +105,6 @@ None.
 ## Next session
 
 Not yet defined.
+
+---
+[CORRECTION — 2026-05-06]: Added missing `## Deferred items` section with canonical null marker. See 20260506-01-workflow-handover_audit_and_corrections.md.

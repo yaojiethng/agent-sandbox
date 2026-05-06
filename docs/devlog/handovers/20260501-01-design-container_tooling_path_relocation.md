@@ -3,7 +3,7 @@
 **Session date:** 2026-05-01
 **Milestone:** Unassigned — container tooling path relocation (prerequisite for M2.x)
 **Session type:** Design
-**Status:** Active
+**Status:** Closed
 
 ## Objective
 
@@ -83,8 +83,8 @@ None.
 
 | Item | Reason | Destination |
 |---|---|---|
-| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) referencing `docs/` by project-relative path | Out of scope — these reference operations/ policy, not architecture/concepts docs | Future session (after docs restructuring investigation) |
-| Docs restructuring: fold operations/ + development/ into a coding-agent workflow/, remove from overarching docs/ | Big renaming change, not in scope | Future investigation |
+| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) referencing `docs/` by project-relative path | Out of scope — these reference operations/ policy, not architecture/concepts docs | Future session (after docs restructuring investigation) — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — not worth resolving |
+| Docs restructuring: fold operations/ + development/ into a coding-agent workflow/, remove from overarching docs/ | Big renaming change, not in scope | Future investigation — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — not worth pursuing |
 
 ## Next session
 
@@ -111,3 +111,6 @@ None.
 - Test assertions in `test_capability_layer.sh` and `test_build_context.sh` get updated paths and counts
 - Provider Dockerfiles get new COPY lines, `ENV PATH`, and full-path ENTRYPOINTs
 - A future investigation is needed to restructure docs/ with a coding-agent workflow/ boundary
+
+---
+[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". Design session superseded by 20260501-02-impl-container_tooling_path_relocation.md (implementation completed). See 20260506-01-workflow-handover_audit_and_corrections.md.

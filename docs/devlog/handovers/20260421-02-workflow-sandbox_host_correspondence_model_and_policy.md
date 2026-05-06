@@ -77,7 +77,7 @@ None.
 
 | Item | Reason | Goes next |
 |---|---|---|
-| `docs/architecture/apply_workflow.md` | Command shapes and path mechanics are implementation detail — out of scope for a workflow/docs session; concepts doc was the priority | Next implementation or spec session for M2.3 |
+| `docs/architecture/apply_workflow.md` | Command shapes and path mechanics are implementation detail — out of scope for a workflow/docs session; concepts doc was the priority | Next implementation or spec session for M2.3 — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — never created, not worth creating |
 | `package-diff.sh` untracked file tests | Test structure discussed but not written | M2.3 implementation work |
 
 ## Next session
