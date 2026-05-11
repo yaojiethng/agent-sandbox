@@ -21,7 +21,7 @@ Agents: read [`agent_context_brief.md`](../../agent_context_brief.md) for the wo
 - Multi-agent orchestration (parent/child dispatch) is a future milestone — not currently active. See `roadmap_future.md` — M4–M6.
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
-For the current single-agent workflow, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
+For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
 
 ---
 

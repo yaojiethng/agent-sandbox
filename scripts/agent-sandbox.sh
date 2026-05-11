@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
+# Host-side CLI tool for managing agent-sandbox sessions and exports.
+# All subcommands run on the host — never inside a container.
+# Inside the container, invoke lib scripts directly (see prompt templates).
+#
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--target=<targets>] --name=<n> --project=<path> --sandbox=<path>
@@ -8,7 +12,12 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--session=<name>] [--diff=<path>] [--force]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>]
+#   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
+#   agent-sandbox reject   --project=<path> --sandbox=<path>
+#   agent-sandbox package-diff   --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--all|--baseline=<sha>]
+#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--baseline=<sha>]
 #
 # --target accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --target=all
@@ -22,183 +31,403 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
 source "$AGENT_SANDBOX_REPO/libs/containers.sh"
+source "$AGENT_SANDBOX_REPO/libs/draft_workflow.sh"
+source "$AGENT_SANDBOX_REPO/libs/diff_workflow.sh"
+source "$AGENT_SANDBOX_REPO/libs/routing.sh"
 
-SUBCOMMAND="${1:-}"
-shift || true
+# =============================================================================
+# CLI entry point
+# =============================================================================
+# When sourced (for tests), only functions are defined — dispatch is not run.
+# When executed directly, main() parses flags and dispatches to subcommands.
 
-if [[ -z "$SUBCOMMAND" ]]; then
-  echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|apply> <flags>"
-  exit 1
-fi
+main() {
+  local SUBCOMMAND="${1:-}"
+  shift || true
 
-# -------------------------
-# Flag parsing (shared)
-# -------------------------
-PROJECT_NAME=""
-PROJECT_DIR=""
-SANDBOX_DIR=""
-BRANCH=""
-PROVIDER_NAME=""
-REBUILD=false
-REBUILD_BASE=false
-PASSTHROUGH=()
-
-parse_flags() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --branch=*)   BRANCH="${ARG#--branch=}" ;;
-      --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
-      --rebuild)       REBUILD=true ;;
-      --rebuild-base)  REBUILD_BASE=true ;;
-      *)            PASSTHROUGH+=("$ARG") ;;
-    esac
-  done
-}
-
-require_run_args() {
-  local SUBCOMMAND="$1"
-  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --name, --project, and --sandbox are required"
+  if [[ -z "$SUBCOMMAND" ]]; then
+    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|apply|draft|confirm|reject> <flags>"
     exit 1
   fi
-  if [[ -z "$PROVIDER_NAME" ]]; then
-    echo "Error: --provider is required. Example: agent-sandbox $SUBCOMMAND --provider=hermes ..."
-    exit 1
-  fi
-}
 
-rebuild_if_requested() {
-  if [[ "$REBUILD" == true ]]; then
-    echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
-    build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
-    build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $([ "$REBUILD_BASE" == true ] && echo "--rebuild-base")
-  fi
-}
+  # -------------------------
+  # Flag parsing (shared)
+  # -------------------------
+  local PROJECT_NAME=""
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+  local BRANCH=""
+  local SESSION_ARG=""
+  local CHANNEL_ARG=""
+  local TARGET_BRANCH=""
+  local PROVIDER_NAME=""
+  local REBUILD=false
+  local REBUILD_BASE=false
+  local DIFF_ARG=""
+  local FORCE=false
+  local INTERACTIVE=false
+  local BRANCH_FROM=""
+  local DIFFS=""
+  local BRANCH_SUMMARY=""
+  local TO_ARG=""
+  local SESSION_SUMMARY_ARG=""
+  local ALL_FLAG=false
+  local BASELINE_ARG=""
+  local -a PASSTHROUGH=()
 
-# -------------------------
-# Dispatch
-# -------------------------
-case "$SUBCOMMAND" in
-
-  onboard)
-    exec "$SCRIPTS/onboard.sh" "$@"
-    ;;
-
-  build)
-    BUILD_TARGET=""
-    REBUILD_BASE_FLAG=""
-    TARGET_FLAG_SEEN=false
-    REMAINING=()
+  parse_flags() {
     for ARG in "$@"; do
       case "$ARG" in
-        --target=*)
-          TARGET_FLAG_SEEN=true
-          BUILD_TARGET="${ARG#--target=}"
-          ;;
-        --rebuild-base) REBUILD_BASE_FLAG="--rebuild-base" ;;
-        *) REMAINING+=("$ARG") ;;
+        --name=*)        PROJECT_NAME="${ARG#--name=}" ;;
+        --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
+        --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
+        --branch=*)      BRANCH="${ARG#--branch=}" ;;
+        --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+        --channel=*)     CHANNEL_ARG="${ARG#--channel=}" ;;
+        --target=*)      TARGET_BRANCH="${ARG#--target=}" ;;
+        --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
+        --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
+        --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
+        --to=*)          TO_ARG="${ARG#--to=}" ;;
+        --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
+        --all)           ALL_FLAG=true ;;
+        --baseline=*)    BASELINE_ARG="${ARG#--baseline=}" ;;
+        --diff=*)        DIFF_ARG="${ARG#--diff=}" ;;
+        --force)         FORCE=true ;;
+        --interactive)   INTERACTIVE=true ;;
+        --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
+        --rebuild)       REBUILD=true ;;
+        --rebuild-base)  REBUILD_BASE=true ;;
+        *)               PASSTHROUGH+=("$ARG") ;;
       esac
     done
-    parse_flags "${REMAINING[@]}"
+  }
 
-    # --target= with no value is an error
-    if [[ "$TARGET_FLAG_SEEN" == true && -z "$BUILD_TARGET" ]]; then
-      echo "Error: --target requires a value. Use --target=all, --target=sandbox, or --target=<provider>[,<provider>]"
+  require_run_args() {
+    local SUBCOMMAND="$1"
+    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
+    if [[ -z "$PROVIDER_NAME" ]]; then
+      echo "Error: --provider is required. Example: agent-sandbox $SUBCOMMAND --provider=hermes ..."
+      exit 1
+    fi
+  }
 
-    # --target absent or --target=all → build everything
-    if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
+  rebuild_if_requested() {
+    if [[ "$REBUILD" == true ]]; then
+      echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
       build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
-      for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/providers/"*/base.Dockerfile; do
-        [[ -f "$BASE_DOCKERFILE" ]] || continue
-        DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
-        build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+      build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $([ "$REBUILD_BASE" == true ] && echo "--rebuild-base")
+    fi
+  }
+
+  # -------------------------
+  # Dispatch
+  # -------------------------
+  case "$SUBCOMMAND" in
+
+    onboard)
+      exec "$SCRIPTS/onboard.sh" "$@"
+      ;;
+
+    build)
+      local BUILD_TARGET=""
+      local REBUILD_BASE_FLAG=""
+      local TARGET_FLAG_SEEN=false
+      local -a REMAINING=()
+      for ARG in "$@"; do
+        case "$ARG" in
+          --target=*)
+            TARGET_FLAG_SEEN=true
+            BUILD_TARGET="${ARG#--target=}"
+            ;;
+          --rebuild-base) REBUILD_BASE_FLAG="--rebuild-base" ;;
+          *) REMAINING+=("$ARG") ;;
+        esac
       done
-    else
-      # Split comma-separated list; build sandbox first if present
-      IFS=',' read -ra BUILD_TARGETS <<< "$BUILD_TARGET"
-      WANT_SANDBOX=false
-      PROVIDER_TARGETS=()
-      for T in "${BUILD_TARGETS[@]}"; do
-        if [[ "$T" == "sandbox" ]]; then
-          WANT_SANDBOX=true
-        else
-          PROVIDER_TARGETS+=("$T")
-        fi
-      done
-      if [[ "$WANT_SANDBOX" == true ]]; then
-        build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+      parse_flags "${REMAINING[@]}"
+
+      if [[ "$TARGET_FLAG_SEEN" == true && -z "$BUILD_TARGET" ]]; then
+        echo "Error: --target requires a value. Use --target=all, --target=sandbox, or --target=<provider>[,<provider>]"
+        exit 1
       fi
-      for P in "${PROVIDER_TARGETS[@]}"; do
-        build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
-      done
-    fi
-    ;;
 
-  start)
-    parse_flags "$@"
-    require_run_args start
-    rebuild_if_requested
-    "$SCRIPTS/start_agent.sh" standard \
-      --name="$PROJECT_NAME" \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      --provider="$PROVIDER_NAME" \
-      "${PASSTHROUGH[@]}"
-    ;;
+      if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
+        build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+        for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/providers/"*/base.Dockerfile; do
+          [[ -f "$BASE_DOCKERFILE" ]] || continue
+          local DISCOVERED_PROVIDER
+          DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
+          build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+        done
+      else
+        IFS=',' read -ra BUILD_TARGETS <<< "$BUILD_TARGET"
+        local WANT_SANDBOX=false
+        local -a PROVIDER_TARGETS=()
+        for T in "${BUILD_TARGETS[@]}"; do
+          if [[ "$T" == "sandbox" ]]; then
+            WANT_SANDBOX=true
+          else
+            PROVIDER_TARGETS+=("$T")
+          fi
+        done
+        if [[ "$WANT_SANDBOX" == true ]]; then
+          build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+        fi
+        for P in "${PROVIDER_TARGETS[@]}"; do
+          build_agent "$P" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+        done
+      fi
+      ;;
 
-  serve)
-    parse_flags "$@"
-    require_run_args serve
-    rebuild_if_requested
-    "$SCRIPTS/start_agent.sh" serve \
-      --name="$PROJECT_NAME" \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      --provider="$PROVIDER_NAME" \
-      "${PASSTHROUGH[@]}"
-    ;;
+    start)
+      parse_flags "$@"
+      require_run_args start
+      rebuild_if_requested
+      "$SCRIPTS/start_agent.sh" standard \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        --provider="$PROVIDER_NAME" \
+        "${PASSTHROUGH[@]}"
+      ;;
 
-  dry-run)
-    parse_flags "$@"
-    require_run_args dry-run
-    rebuild_if_requested
-    "$SCRIPTS/start_agent.sh" dry-run \
-      --name="$PROJECT_NAME" \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      --provider="$PROVIDER_NAME" \
-      "${PASSTHROUGH[@]}"
-    ;;
+    serve)
+      parse_flags "$@"
+      require_run_args serve
+      rebuild_if_requested
+      "$SCRIPTS/start_agent.sh" serve \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        --provider="$PROVIDER_NAME" \
+        "${PASSTHROUGH[@]}"
+      ;;
 
-  stop)
-    parse_flags "$@"
-    if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name and --sandbox are required"
+    dry-run)
+      parse_flags "$@"
+      require_run_args dry-run
+      rebuild_if_requested
+      "$SCRIPTS/start_agent.sh" dry-run \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        --provider="$PROVIDER_NAME" \
+        "${PASSTHROUGH[@]}"
+      ;;
+
+    stop)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --name and --sandbox are required"
+        exit 1
+      fi
+      exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+      ;;
+
+    apply)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --project and --sandbox are required"
+        exit 1
+      fi
+
+      if [[ "$INTERACTIVE" == true ]]; then
+        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+
+        if [[ -n "$DIFF_ARG" ]]; then
+          # --diff=<path> given: skip selection steps, just confirm and apply
+          interactive_confirm_or_abort "Apply:" "$DIFF_ARG" || exit 1
+          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+        else
+          # Step 1: pick channel
+          local CHANNEL
+          CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
+          # Step 2: pick session
+          local SESSION_NAME
+          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
+          # Step 3: pick diff type
+          local DIFF_TYPE
+          DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION_NAME" "$CHANNEL") || exit 1
+          # Construct the diff file path from channel + session + type
+          local DIFF_FILE
+          dirs_resolve "$SANDBOX_DIR"
+          local BASE_DIR=""
+          case "$CHANNEL" in
+            diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
+            autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
+            session)  BASE_DIR="${CHANGES_DIR}/session" ;;
+            bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
+          esac
+          DIFF_FILE="${BASE_DIR}/${SESSION_NAME}/${DIFF_TYPE}.diff"
+          if [[ ! -f "$DIFF_FILE" ]]; then
+            echo "Error: diff file not found: $DIFF_FILE" >&2
+            exit 1
+          fi
+          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+        fi
+      else
+        # Non-interactive: existing behaviour unchanged
+        if [[ -n "$DIFF_ARG" ]]; then
+          # Explicit diff path — bypass all channel resolution
+          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
+        else
+          # Resolve via router
+          local CHANNEL="${CHANNEL_ARG:-diffs}"
+          local DIFF_FILE
+          DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
+        fi
+      fi
+      ;;
+
+    draft)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --project and --sandbox are required"
+        exit 1
+      fi
+
+      if [[ "$INTERACTIVE" == true ]]; then
+        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+
+        if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
+          # Both channel and session given: skip pickers, show patch list + confirm
+          local ROUTER_RESULT
+          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_ARG") || exit 1
+          local SOURCE_DIR SESSION_NAME
+          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+          SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+
+          # Build patch list
+          local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
+          local PATCH_COUNT=0
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            PATCH_ITEMS+=("    $(basename "$f")")
+            PATCH_COUNT=$((PATCH_COUNT + 1))
+          done < <(find "$SOURCE_DIR/patches" -maxdepth 1 -name '*.diff' -print0 2>/dev/null | xargs -0 -I{} basename {} | sort)
+
+          if [[ "$PATCH_COUNT" -eq 0 ]]; then
+            echo "Error: no .diff files found in $SOURCE_DIR/patches" >&2
+            exit 1
+          fi
+
+          if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+            PATCH_ITEMS+=("  Uncommitted: uncommitted.diff (non-empty)")
+          fi
+
+          interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
+          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+        else
+          # Step 1: pick channel
+          local CHANNEL
+          CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
+          # Step 2: pick session
+          local SESSION_NAME
+          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
+          # Use the selected channel and session for router resolution
+          local ROUTER_RESULT
+          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_NAME") || exit 1
+          local SOURCE_DIR
+          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+        fi
+      else
+        # Non-interactive: existing behaviour unchanged
+        local CHANNEL="${CHANNEL_ARG:-session}"
+        local ROUTER_RESULT
+        ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+        local SOURCE_DIR SESSION_NAME
+        SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+        SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+        draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+      fi
+      ;;
+
+    confirm)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --project and --sandbox are required"
+        exit 1
+      fi
+      confirm_run "$PROJECT_DIR" "$SANDBOX_DIR" "$TARGET_BRANCH"
+      ;;
+
+    reject)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --project and --sandbox are required"
+        exit 1
+      fi
+      reject_run "$PROJECT_DIR" "$SANDBOX_DIR"
+      ;;
+
+    package-diff)
+      parse_flags "$@"
+      if [[ -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --sandbox is required"
+        exit 1
+      fi
+
+      local ENV_FILE="$SANDBOX_DIR/.env"
+      if [[ ! -f "$ENV_FILE" ]]; then
+        echo "Error: .env not found in $SANDBOX_DIR" >&2
+        echo "  Run 'agent-sandbox onboard' first to create it." >&2
+        exit 1
+      fi
+
+      # Derive INPUT_DIR from SANDBOX_DIR
+      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      dirs_resolve "$SANDBOX_DIR"
+
+      if [[ -n "$TO_ARG" ]]; then
+        local TO_DIR="$TO_ARG"
+      else
+        local TO_DIR="$INPUT_DIR"
+      fi
+
+      exec bash "$AGENT_SANDBOX_REPO/libs/package_diff.sh" \
+        --to="$TO_DIR" \
+        $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
+        $( [[ "$ALL_FLAG" == true ]] && echo "--all" ) \
+        $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )
+      ;;
+
+    package-branch)
+      parse_flags "$@"
+      if [[ -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --sandbox is required"
+        exit 1
+      fi
+
+      # Derive INPUT_DIR from SANDBOX_DIR
+      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      dirs_resolve "$SANDBOX_DIR"
+
+      if [[ -n "$TO_ARG" ]]; then
+        local TO_DIR="$TO_ARG"
+      else
+        local TO_DIR="$INPUT_DIR"
+      fi
+
+      exec bash "$AGENT_SANDBOX_REPO/libs/package_branch.sh" \
+        --to="$TO_DIR" \
+        $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
+        $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )
+      ;;
+
+    *)
+      echo "Unknown subcommand: $SUBCOMMAND"
+      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"
       exit 1
-    fi
-    exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
-    ;;
+      ;;
+  esac
+}
 
-  apply)
-    parse_flags "$@"
-    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --project and --sandbox are required"
-      exit 1
-    fi
-    "$SCRIPTS/apply_workspace.sh" \
-      --project="$PROJECT_DIR" \
-      --sandbox="$SANDBOX_DIR" \
-      ${BRANCH:+--branch="$BRANCH"}
-    ;;
-
-  *)
-    echo "Unknown subcommand: $SUBCOMMAND"
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply"
-    exit 1
-    ;;
-esac
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

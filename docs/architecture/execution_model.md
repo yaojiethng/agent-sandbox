@@ -19,12 +19,24 @@ SANDBOX_DIR/
 └── .workspace/                ← harness I/O channels
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
-    └── changes/               ← diff pipeline output
-        └── staged.diff
+    └── session-diffs/         ← diff pipeline output
+        ├── session/            ← exit artefacts
+        │   └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
+        │       ├── EXPORT-TIME.txt
+        │       ├── uncommitted.diff
+        │       ├── all-changes.diff
+        │       ├── patches/         ← per-commit .diff files
+        │       └── changed-files/   ← working tree copies
+        └── autosave/           ← checkpoint artefacts
+            └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
+                ├── EXPORT-TIME.txt
+                ├── uncommitted.diff
+                ├── patches/
+                └── changed-files/
 
 Capability layer container (CWD: /home/agentuser/)
 ├── .snapshot/                 ← RO bind mount: project snapshot from host
-├── workspace/changes/         ← RW bind mount: diff output
+├── workspace/session-diffs/   ← RW bind mount: diff output
 └── sandbox/                   ← RW Docker volume: working content (owned by this container)
 
 Reasoning layer container (CWD: /home/agentuser/)
@@ -41,7 +53,7 @@ Host path variables are defined in [`tool_interface.md` — `.env` Runtime Varia
 
 ## Invocation Model
 
-`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, snapshot pipeline stage 1, and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
+`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, checkpoint tag creation, snapshot pipeline (rsync), and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
 
 `scripts/run_agent.sh` owns the provider lifecycle: sourcing the provider setup hook, assembling and generating the compose file, managing the container lifecycle (start, agent attach, teardown).
 
@@ -79,11 +91,11 @@ The mount shape table is the contract defined in [`tool_interface.md` — Mount 
 
 ### Why subdirectory mounts rather than the workspace parent
 
-Each `.workspace/` subdirectory has a different trust level and a different container owner. Mounting them separately enforces ownership at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted; the reasoning layer cannot write to `workspace/changes/` for the same reason.
+Each `.workspace/` subdirectory has a different trust level and a different container owner. Mounting them separately enforces ownership at the filesystem level: the capability layer cannot write to `workspace/input/` because it is not mounted; the reasoning layer cannot write to `workspace/session-diffs/` for the same reason.
 
 - `input/` — operator-written, agent-read (reasoning layer, read-only)
 - `output/` — agent-written (reasoning layer, read-write)
-- `changes/` — harness-written (capability layer, read-write — diff pipeline)
+- `session-diffs/` — harness-written (capability layer, read-write — diff pipeline)
 
 ### Why `.snapshot/` is read-only and capability-layer-only
 
@@ -127,7 +139,7 @@ flowchart TD
     START([<b>START</b>]) --> SA
 
     subgraph HOST [Host / Harness]
-        SA["<b>start_agent.sh</b><br/>preflight • snapshot • brief"]
+        SA["<b>start_agent.sh</b><br/>preflight • checkpoint • snapshot • brief"]
         RA["<b>run_agent.sh</b><br/>compose gen"]
         DEC{setup.sh<br/>exists?}
         SH["<b>setup.sh</b>"]
@@ -145,7 +157,7 @@ flowchart TD
         TR["register EXIT + TERM traps"]
         WAIT["wait"]
         SIGTERM["<b>SIGTERM</b> → exit 0<br/>EXIT trap: commit"]
-        DIFF["staged.diff written"]
+        DIFF["<b>diff_export</b><br/>uncommitted.diff, all-changes.diff, patches/, changed-files/"]
     end
 
     subgraph RSN [Reasoning Layer]
@@ -196,5 +208,4 @@ A `agent-sandbox.digest` label is embedded in each image at build time for exter
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | External contract | [tool_interface.md](tool_interface.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
-| Operator-facing workflow | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security guarantees | [security.md](security.md) |

@@ -33,7 +33,7 @@ make serve PROVIDER=opencode REBUILD=1
 
 ```sh
 # Review the diff first
-cat .workspace/changes/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/session/staged.diff
 
 # Apply to current branch
 make apply
@@ -89,11 +89,11 @@ docker rmi opencode-agent-<PROJECT_NAME>
 ## Workspace inspection
 
 ```sh
-# Check staged diff after a run
-cat .workspace/changes/staged.diff
+# Check staged diff (full session delta) after a run
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/session/staged.diff
 
 # Check autosave diff mid-session
-cat .workspace/changes/autosave.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/autosave/changes.diff
 
 # Check snapshot contents before a run
 ls -la .snapshot/
@@ -153,8 +153,8 @@ If a bad diff has been applied and the project repo is in a broken state:
 git -C <PROJECT_DIR> reset --hard <commit-sha>
 
 # Clear workspace and snapshot
-rm -rf .workspace/changes/ .snapshot/
-mkdir -p .workspace/changes/
+rm -rf .workspace/session-diffs/ .snapshot/
+mkdir -p .workspace/session-diffs/
 
 # Verify
 make dry-run PROVIDER=opencode

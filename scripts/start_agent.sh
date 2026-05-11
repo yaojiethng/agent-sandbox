@@ -55,7 +55,7 @@ PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=".env"
-PROVIDER_NAME="opencode"
+PROVIDER_NAME=""
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -132,23 +132,12 @@ while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
 done < "$ENV_FILE"
 
 # -------------------------
-# Required .env var validation
+# Derive harness paths from SANDBOX_DIR
 # -------------------------
-REQUIRED_ENV_VARS=(
-  SNAPSHOT_DIR
-  CHANGES_DIR
-  INPUT_DIR
-  OUTPUT_DIR
-)
-
-for VAR in "${REQUIRED_ENV_VARS[@]}"; do
-  if [[ -z "${!VAR:-}" ]]; then
-    echo "Error: required variable '$VAR' is missing from $ENV_FILE"
-    echo "  Re-run onboarding to regenerate .env:"
-    echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
-    exit 1
-  fi
-done
+# The .env file stores only the primitive (SANDBOX_DIR). Derived paths
+# (SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR) are produced here.
+source "$REPO_ROOT/libs/dirs.sh"
+dirs_resolve "$SANDBOX_DIR"
 
 # -------------------------
 # Image name derivation
@@ -178,15 +167,58 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -f "$PROJECT_DIR/.gitignore" ]]; then
-  echo "Warning: no .gitignore found in $PROJECT_DIR"
-  echo "  All untracked files will be copied into the sandbox."
-  echo "  Consider adding a .gitignore to exclude secrets, build artifacts, etc."
+# -------------------------
+# Source checkpoint library
+# -------------------------
+source "$REPO_ROOT/scripts/checkpoint.sh"
+
+# -------------------------
+# Session timestamp (single canonical definition)
+# -------------------------
+# SESSION_TS is the one source of truth for the session timestamp. All
+# derived names (container names, artefact directories) reference this
+# variable — no downstream date calls.
+export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+
+# -------------------------
+# Worktree ID
+# -------------------------
+export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
+
+# -------------------------
+# REPO_COMMIT capture
+# -------------------------
+# Capture the current HEAD commit for image labeling (future use).
+export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+# -------------------------
+# SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
+# -------------------------
+# SANITIZED_HOST_BRANCH is the host branch name captured at session start,
+# sanitised for use in directory names and Docker labels. Slashes are
+# replaced with dashes; all non-alphanumeric characters (except dash,
+# underscore, dot) are replaced with dashes.
+BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+# Handle detached HEAD: use short SHA instead of literal "HEAD"
+if [[ "$BRANCH_NAME" == "HEAD" ]]; then
+  BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
 fi
+export SANITIZED_HOST_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
+export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_TS}"
+export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_TS}"
+unset BRANCH_NAME
+echo "Host branch: $SANITIZED_HOST_BRANCH"
+echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
+echo "Agent container name: $AGENT_CONTAINER_NAME"
 
 # -------------------------
 # Workspace directory setup
 # -------------------------
+# Clean the snapshot directory before building a fresh snapshot.
+# Without this, files from a previous run that are no longer in PROJECT_DIR
+# (deleted, moved, or newly gitignored) would persist in the snapshot and
+# propagate into the sandbox.
+rm -rf "$SNAPSHOT_DIR"
 mkdir -p "$SNAPSHOT_DIR"
 mkdir -p "$CHANGES_DIR"
 mkdir -p "$INPUT_DIR"
@@ -198,8 +230,8 @@ mkdir -p "$OUTPUT_DIR"
 source "$REPO_ROOT/libs/snapshot.sh"
 
 echo "Building snapshot..."
-(cd "$PROJECT_DIR" && snapshot_enumerate_files "$PROJECT_DIR") \
-  | (cd "$PROJECT_DIR" && snapshot_copy_files "$PROJECT_DIR" "$SNAPSHOT_DIR")
+snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
+snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
 
 snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."

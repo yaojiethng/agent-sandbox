@@ -26,15 +26,15 @@
 #
 # What this script produces in SANDBOX_DIR:
 #   Makefile                     — from template, PROJECT_NAME substituted
-#   agents.md                    — stub; operator fills in project context
+#   AGENTS.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
 #   .workspace/output/           — reasoning layer output channel
-#   .workspace/changes/          — diff pipeline output
+#   .workspace/session-diffs/    — diff pipeline output  # renamed from changes/ in M2.3
 #   .env                         — paths + operator var stubs
 #   .<provider>/                 — provider config dir, seeded from providers/<n>/config/
 #                                  for each provider present in the repo
 #
-# The operator must review agents.md and .env before the first run.
+# The operator must review AGENTS.md and .env before the first run.
 # Provider config stubs in .<provider>/ must be populated with real values
 # (e.g. API keys) before the first run.
 # .env must never be committed.
@@ -64,9 +64,10 @@ Usage: agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
                           (will be created if it does not exist).
                           Example: /mnt/c/Users/you/Projects/my-project-sandbox
 
-  --refresh               Update stale template files (Makefile) in an existing
-                          SANDBOX_DIR without a full re-onboard. Preserves .env
-                          operator values and agents.md. Run after a harness update.
+  --refresh               Update stale template files (Makefile, templates)
+                          aliases in an existing SANDBOX_DIR. Preserves .env operator
+                          values and AGENTS.md. Pass --project to ensure git aliases
+                          are re-registered. Run after a harness update.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
@@ -228,10 +229,10 @@ sed "s|<project-name>|$PROJECT_NAME|g" \
 echo "  Created: Makefile"
 
 # -------------------------
-# agents.md stub
+# AGENTS.md stub
 # -------------------------
 if [[ "$REFRESH" != true ]]; then
-cat > "$SANDBOX_DIR/agents.md" <<EOF
+cat > "$SANDBOX_DIR/AGENTS.md" <<EOF
 # Agent Context Brief — ${PROJECT_NAME}
 
 ## Project
@@ -243,7 +244,7 @@ cat > "$SANDBOX_DIR/agents.md" <<EOF
 ## Output
 <!-- What good output looks like: expected file changes, patterns to follow. -->
 EOF
-echo "  Created: agents.md (stub — fill in before first run)"
+echo "  Created: AGENTS.md (stub — fill in before first run)"
 fi
 
 # -------------------------
@@ -252,18 +253,14 @@ fi
 if [[ "$REFRESH" != true ]]; then
 mkdir -p "$SANDBOX_DIR/.workspace/input"
 mkdir -p "$SANDBOX_DIR/.workspace/output"
-mkdir -p "$SANDBOX_DIR/.workspace/changes"
-echo "  Created: .workspace/input/, .workspace/output/, .workspace/changes/"
+mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
+echo "  Created: .workspace/input/, .workspace/output/, .workspace/session-diffs/"
 fi
 
 # -------------------------
+# -------------------------
 # .env
 # -------------------------
-SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
-INPUT_DIR="$SANDBOX_DIR/.workspace/input"
-OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
-
 if [[ "$REFRESH" == true ]]; then
   ENV_FILE="$SANDBOX_DIR/.env"
   if [[ -f "$ENV_FILE" ]]; then
@@ -271,6 +268,11 @@ if [[ "$REFRESH" == true ]]; then
       -e "s/^MAKEFILE_VERSION=.*/MAKEFILE_VERSION=${MAKEFILE_VERSION}/" \
       "$ENV_FILE"
     echo "  Updated: .env (template versions)"
+    # Derive PROJECT_DIR from .env if not supplied via flag — needed for alias
+    # re-registration. make refresh does not pass --project.
+    if [[ -z "$PROJECT_DIR" ]]; then
+      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$ENV_FILE" | cut -d= -f2-)
+    fi
   else
     echo "Warning: .env not found in $SANDBOX_DIR — template versions not recorded." >&2
     echo "  Run without --refresh to create a full .env." >&2
@@ -287,12 +289,6 @@ else
 PROJECT_DIR=${PROJECT_DIR}
 SANDBOX_DIR=${SANDBOX_DIR}
 
-# --- Derived paths ---
-SNAPSHOT_DIR=${SNAPSHOT_DIR}
-CHANGES_DIR=${CHANGES_DIR}
-INPUT_DIR=${INPUT_DIR}
-OUTPUT_DIR=${OUTPUT_DIR}
-
 # --- Template versions (set at onboard time) ---
 # Used by build scripts to detect stale onboarded files.
 # To refresh: agent-sandbox onboard --refresh --name=${PROJECT_NAME} --project=${PROJECT_DIR} --sandbox=${SANDBOX_DIR}
@@ -303,7 +299,7 @@ MAKEFILE_VERSION=${MAKEFILE_VERSION}
 INSTALL_DIR=~/.local/bin
 # Port for serve mode (make serve)
 SERVE_PORT=46553
-# Autosave interval in seconds (how often staged.diff is written mid-session)
+# Autosave interval in seconds (how often session checkpoints are written mid-session)
 AUTOSAVE_INTERVAL=60
 ENVEOF
 
@@ -359,13 +355,14 @@ if [[ "$REFRESH" == true ]]; then
   echo "Refresh complete."
   echo ""
   echo "Template files updated to current versions."
+  echo "Use 'agent-sandbox package-diff' or 'make package-diff' for host-side exports."
   echo "Rebuild images to apply changes:"
   echo "  make -C $SANDBOX_DIR build"
 else
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
-  echo "  1. Edit $SANDBOX_DIR/agents.md — add project context for the agent"
+  echo "  1. Edit $SANDBOX_DIR/AGENTS.md — add project context for the agent"
   echo "  2. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
   echo "  3. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
   echo "  4. Run: make -C $SANDBOX_DIR build"

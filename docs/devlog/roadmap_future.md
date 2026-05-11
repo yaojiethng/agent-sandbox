@@ -8,30 +8,6 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-
-**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint branch pattern formalised.
-
-**Depends on:** M2.1.
-
-**Open decisions (resolve before implementation):**
-- Checkpoint branch pattern — formalise as the standard `apply` convention. The vault workflow established a checkpoint branch pattern (dated branch from HEAD before each session; apply diff after review; roll back if rejected) validated through KV4. Determine whether this pattern composes with or supersedes the current `patch.diff` model.
-- Checkpointing method — evaluate snapshotting from a clean git ref rather than working tree (operator designates a commit SHA or tag; a dirty or broken working tree has no effect on what the agent sees).
-- Pre-session checkpoint automation — evaluate automating checkpoint creation before each session (e.g. as part of `make start`). Defer if manual workflow has not been validated at scale by this milestone.
-
-**Tasks:**
-- [ ] Confirm checkpoint branch pattern as the standard apply convention
-- [ ] Agree on export format (`git format-patch` vs bundle vs other)
-- [ ] Parameterise agent branch naming (`agent/<task-id>`) — single-agent case
-- [ ] Implement diff pipeline in capability layer (exit trap, post-session script)
-- [ ] Update `apply_workspace.sh` — checkpoint branch creation, replay commits
-- [ ] Resolve patch history: archive `patch.diff` or drop in favour of replayable commit history
-- [ ] Resolve checkpointing method — clean git ref vs working tree snapshot
-- [ ] Decide pre-session checkpoint automation — implement or explicitly defer
-- [ ] Update `agent_workflow.md` and `execution_model.md`
-
----
-
 ## M2.4 — Session Persistence (Reasoning Layer)
 
 **Objective:** Preserve OpenCode session history across container runs. Provider-specific to the OpenCode reasoning layer; scoped here as a reasoning layer concern separate from the capability layer.

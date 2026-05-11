@@ -20,9 +20,9 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M2 — Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
 | M2.1 — General Capability Layer Prototype | [Complete — see changelog](changelog.md) |
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
+| M2.3 — Apply Workflow: Capability Layer Diff Pipeline | [Complete — see changelog](changelog.md) |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| M2.3 — Apply Workflow: Capability Layer Diff Pipeline | Not started |
-| M2.5 — Vault Capability Layer Prototype | Not started |
+| [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | In progress |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
@@ -56,27 +56,23 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Scope note:** M2.4 established the infrastructure for state to survive between sessions (home directory bind mount, config copy-in/out). It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
 
-#### M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-
-**Objective:** Redesign the apply workflow to reflect the two-layer model: diff generated post-session from capability layer `sandbox/`, agent commit history preserved, checkpoint and draft branch pattern formalised.
-
-**Depends on:** M2.1. **Status:** Scoped — see `docs/devlog/discussions/design_git_workflow_improvements.md`. Ready for implementation.
-
-**Four changes in scope:**
-
-- **Change 1 — Checkpoint tag** (`start_agent.sh`): Create `agent-checkpoint/YYYYMMDD-HHMMSS` tag before each session. Derive `SESSION_NAME` as `<sanitized-branch>-<timestamp>` and pass to container as env var. Prune to last 5 checkpoint tags.
-
-- **Change 2 — Format-patch + session artefacts** (`libs/diff.sh`, `start_agent.sh`): Add `diff_format_patch`; write per-commit `.patch` files to `.workspace/changes/<session-name>/patches/`. Move `staged.diff` into the same session-scoped directory. Both artefacts produced on every session exit.
-
-- **Change 3 — draft/confirm/reject workflow** (`scripts/apply_workspace.sh`, `Makefile.template`): Replace `make apply` with `make draft` (applies patches to `agent/draft/<session-name>` branch via `git am`, resets author identity), `make confirm` (rebases draft onto target, fast-forward merges, deletes draft branch — linear history always), `make reject` (discards draft branch). State held in `.workspace/draft-state`. `make apply --mode=apply` retained as legacy fallback.
-
-- **Change 4 — rsync snapshot** (`libs/snapshot.sh`, `start_agent.sh`): Replace `snapshot_enumerate_files` + `snapshot_copy_files` with `snapshot_copy_worktree` using `rsync -a --filter=':- .gitignore' --exclude='.git'`. Snapshot reflects working tree directly, not the git index. Submodule pre-flight check retained. Known limitation: global gitignore and `.git/info/exclude` not respected — documented.
-
 #### M2.5 — Vault Capability Layer Prototype
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
-**Depends on:** M2.1, M2.2, M2.3. **Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+**Depends on:** M2.1, M2.2, M2.3. **Status:** In progress.
+
+**Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+
+**Tasks:**
+
+- [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](docs/discussions/investigation_mcp_server.md) candidates table)
+- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
+- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
+- [ ] Validate binary file handling (vault attachments) under selected MCP server
+- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
+- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
 
 #### M2.6 — Session Resume Across Provider Implementations
 
@@ -89,6 +85,47 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 - **opencode**: session persistence mechanism unknown. Requires investigation before any design work.
 
 Each provider may result in a different integration pattern. Investigation findings should be recorded as named investigation documents before implementation begins.
+
+#### M2.7 — Session Identity and Harness Versioning
+
+**Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
+
+**Depends on:** M2.3. **Status:** Not started.
+
+**Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
+
+**Scope:** Implement the hash-based session identity model, two-sig model, and container lifecycle redesign. Work falls into seven groups:
+
+**1. run_id derivation** (`scripts/start_agent.sh`): Add `RUN_ID` as 6-char hex hash of `${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}`. Replace timestamp-based container naming with run_id-based naming (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`).
+
+**2. Docker labels** (`libs/docker-compose.yml`): Add `agent-sandbox.project`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` labels for container lifecycle management. Retain `agent-sandbox.session-name` for backwards compatibility.
+
+**3. make stop redesign** (`scripts/stop.sh`): Update to filter containers by `project + worktree-id` labels instead of Docker Compose project name. Enables parallel sessions from different worktrees without container collision.
+
+**4. make prune implementation** (`scripts/prune.sh`, `libs/_templates/Makefile.template`): Add `make prune` target with:
+   - Targeted cleanup: `project + worktree-id` (same scope as stop)
+   - Time-based cleanup: `project + >3 days old` (ignores worktree-id)
+   - Cleans: build cache, layer cache, system cache, volume cache
+
+**5. Two-sig model** (`libs/containers.sh`, `scripts/start_agent.sh`): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
+
+**6. Paired refactor** (`libs/`, `providers/`): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary. Image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding.
+
+**Sub-stories:**
+
+- `story_parallel_sessions_worktree.md` — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1. Container naming updated in M2.7.
+- `story_harness_packaging_and_install_versioning.md` — install workflow rewrite; deferred, does not block this milestone.
+
+**7. Context_dir removal** (`libs/containers.sh`, `libs/sandbox.Dockerfile`, `providers/*/provider.Dockerfile`, `tests/test_build_context.sh`):
+Remove `build_context_sandbox`, `build_context_agent`, and `_build_context_copy` from `libs/containers.sh`. Once container-sig (item 5) hashes source files at repo-root paths, the temp-directory staging layer is dead code. Pre-scoping findings:
+
+   - **Dead digest pipeline**: `build_image()` computes a digest of context_dir contents and bakes it as `agent-sandbox.digest` Docker label. No code anywhere reads this label back — the stale-detection read side was never implemented (M1.4 design was write-only). The label is metadata residue.
+   - **Known drift — package_branch.sh**: `sandbox.Dockerfile` COPYs `package_branch.sh` into the image, but `build_context_sandbox()` does not stage it into the context. Fresh `make build sandbox` would fail with `COPY failed: file not found`. (Reverse in agent build: `package_branch.sh` IS staged but never COPY'd by any `provider.Dockerfile` — harmless waste.)
+   - **Dual-maintenance surface**: Adding a file to an image requires edits in both the `build_context_*` file list and the Dockerfile COPY stanza. No cross-reference or test catches drift.
+   - **Dogfooding constraint**: Can't naively switch to `$repo_root` as build context because that sends the entire project tree (including tests/, docs/, .git/) to the Docker daemon, busting cache on irrelevant changes. The focused-context behaviour must be preserved — either via `.dockerignore` or by inlining the file list directly in the build caller.
+   - **Test file impact**: `tests/test_build_context.sh` (~47 tests) tests context_dir population and digest determinism. It must be either deleted or rewritten to test Dockerfile-based file selection instead.
+   - **`_build_context_copy`**: A 5-line wrapper over `cp` that checks source-file existence. Existence failures are already caught at Docker build time (COPY fails on missing source). The check adds no coverage beyond Docker's native behaviour.
+   - **Agent context files are also staged for base image builds** (`build_container.sh` line ~70): `build_context_agent` creates a context that is used for both the base image build and the provider image build. The base Dockerfile (`base.Dockerfile`) has no COPY commands — it ignores the context entirely. This is wasteful but harmless (context is small). Worth verifying on removal that the base image doesn't accidentally depend on context files.
 
 ---
 
@@ -114,17 +151,21 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
-- **Stale git index causes cryptic snapshot failures** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` enumerates files via `git ls-files` against the current index. If tracked files have been deleted from disk but not staged for removal (`git rm`), `snapshot_copy_files` will fail with `cp: cannot stat`. M2.3 replaces this pipeline with rsync, eliminating the index-driven enumeration entirely.
-
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
 
-- **Snapshot breaks on uncommitted moves and deletes** *(addressed in M2.3 Change 4)* — `snapshot_enumerate_files` uses `git ls-files` which reflects the committed index, not the working tree. If files have been moved or deleted but the changes are not yet staged, `git ls-files` still lists the old paths. `snapshot_copy_files` will fail with `cp: cannot stat` for deleted files, or copy the old path instead of the new path for moves. M2.3 replaces this pipeline with rsync, which copies working tree state directly.
-
-- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
+- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path. The image rename in M2.7 (dropping the `<project>` suffix) is a prerequisite step toward this.
 
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
 
-- **No automated Makefile staleness check** — the Makefile is seeded from a template at onboard time but not version-checked at run time. A deferred task is to define lightweight project versioning with version semantics: when the harness interface changes, a minor version bump would allow the Makefile to detect that the repo is ahead of the installed version and prompt a refresh.
+### Deferred (not milestone-scoped)
+
+- **Docs restructuring investigation** — The docs/ directory currently mixes architecture/concepts/operations/development/ discussions/devlog into a single tree. Architecture and concepts docs are baked into container images; operations and development docs are coding-agent workflow artifacts that should logically live in a separate namespace. Investigation deferred — no immediate use case warrants it, and the current layout is functional.
+
+### Addressed in upcoming milestones
+
+- **Stale container images** *(M2.7)* — the preflight gate currently checks only whether an image exists, not whether it was built from the current source. M2.7 introduces `container-sig` (hash of `libs/` and provider Dockerfiles, baked as a Docker label) checked at preflight, and `harness-sig` (hash of `scripts/` and compose files) checked at runtime with a warning on drift. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
+
+- **No automated Makefile or harness script staleness check** *(M2.7)* — `harness-sig` written to `SANDBOX_DIR/.harness-sig.ref` at session end will detect host-side script drift on subsequent runs. Full install-level isolation is a larger task deferred to [`story_harness_packaging_and_install_versioning.md`](discussions/story_harness_packaging_and_install_versioning.md).
 
 ---
 

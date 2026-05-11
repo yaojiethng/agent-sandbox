@@ -3,18 +3,16 @@
 # Shared container lifecycle library for agent-sandbox.
 #
 # Provides:
-#   agent_base_image_name  — compute reasoning layer base image name from provider
-#   agent_image_name       — compute reasoning layer image name from provider + project
-#   sandbox_image_name     — compute capability layer image name from project
-#   agent_container_name   — alias for agent_image_name
-#   sandbox_container_name — alias for sandbox_image_name
-#   build_context_sandbox  — populate a temp dir with sandbox build context files
-#   build_context_agent    — populate a temp dir with agent build context files
-#   build_image            — compute digest and run docker build
-#   build_agent            — build the reasoning layer images for a given provider + project
-#   build_sandbox          — build the capability layer image for a given project
-#   build_all              — build both images
-#   preflight              — verify both images exist; error with instructions if not
+#   agent_base_image_name  - compute reasoning layer base image name from provider
+#   agent_image_name       - compute reasoning layer image name from provider + project
+#   sandbox_image_name     - compute capability layer image name from project
+#   build_context_sandbox  - populate a temp dir with sandbox build context files
+#   build_context_agent    - populate a temp dir with agent build context files
+#   build_image            - compute digest and run docker build
+#   build_agent            - build the reasoning layer images for a given provider + project
+#   build_sandbox          - build the capability layer image for a given project
+#   build_all              - build both images
+#   preflight              - verify both images exist; error with instructions if not
 
 # -------------------------
 # Naming conventions
@@ -43,15 +41,6 @@ sandbox_image_name() {
   echo "sandbox-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
 
-# Container names match image names — one session per project at a time.
-# container_name: is set in the compose template to enforce this.
-
-# agent_container_name <provider> <project_name>
-agent_container_name() { agent_image_name "$1" "$2"; }
-
-# sandbox_container_name <project_name>
-sandbox_container_name() { sandbox_image_name "$1"; }
-
 # -------------------------
 # Build context
 # -------------------------
@@ -75,14 +64,21 @@ _build_context_copy() {
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_sandbox() {
   local repo_root="${1:?build_context_sandbox requires repo_root}"
-  local context_dir
+  local context_dir=""
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
-  _build_context_copy "$repo_root/scripts/sandbox-entrypoint.sh" "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/snapshot.sh"              "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/diff.sh"                  "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/dirs.sh"                  "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh"     "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/snapshot.sh"                "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
+
+  # docs/
+  mkdir -p "$context_dir/docs" || return 1
+  cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
+  cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
 
   echo "$context_dir"
 }
@@ -90,20 +86,33 @@ build_context_sandbox() {
 # build_context_agent <repo_root> <provider>
 # Creates and populates a temp dir with files required for an agent image build.
 # Injects harness-owned files (dirs.sh, provider-entrypoint.sh).
-# Provider config is not baked into the image — it is populated at onboard time
+# Provider config is not baked into the image - it is populated at onboard time
 # into $SANDBOX_DIR/.<provider>/ and bind-mounted at runtime.
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_agent() {
   local repo_root="${1:?build_context_agent requires repo_root}"
   local provider="${2:?build_context_agent requires provider}"
-  local context_dir
+  local context_dir=""
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
- 
-  # Harness-owned files — required for all providers.
+
+  # Harness-owned files - required for all providers.
   _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
- 
+  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
+  # docs/
+  mkdir -p "$context_dir/docs" || return 1
+  cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
+  cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
+
+  # agent workflow files/ — prompts and skills the agent uses at runtime
+  mkdir -p "$context_dir/agent" || return 1
+  cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
+  cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
+
   echo "$context_dir"
 }
 

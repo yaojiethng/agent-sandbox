@@ -4,28 +4,28 @@ The authoritative workflow for all development in agent-sandbox. Defines the two
 
 Read this document at the start of any session. Read the relevant child document before performing that subprocess.
 
-```
-agent-sandbox workflow
-│
-├── Major loop  (triggers when a major milestone closes)
-│   ├── 1. Close prior milestone       roadmap_policy.md — Trigger A
-│   ├── 2. Orient to next milestone     roadmap.md
-│   ├── 3. Open stories                story_policy.md
-│   ├── 4. Commission investigations   investigation_policy.md
-│   ├── 5. Resolve stories → roadmap   story_policy.md — Closure
-│   └── 6. Confirm ready to session    milestone_policy.md
-│
-└── Minor loop  (one session per sub-milestone)
-    ├── 1. Open handover               handover_policy.md — At session open
-    ├── 2. Design                      roadmap_policy.md — Rules
-    ├── 3. Conceptual docs             documentation_policy.md
-    ├── 4. Spec                        —
-    ├── 5. Architecture docs           documentation_policy.md
-    ├── 6. Acceptance criteria         handover_policy.md — At Step 6
-    ├── 7. Implementation              —
-    ├── 8. Close session               roadmap_policy.md — Session close + Trigger B if final session
-    └── 9. Seed next session           handover_policy.md — At session seed
-```
+| Loop | Step | Governing document |
+|---|---|---|
+| **Major** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| | **Gate 1** | select next milestone |
+| | 2. Orient to next milestone | `roadmap.md` |
+| | **Gate 2** | select sub-milestone (also entry point for Trigger B) |
+| | 3. Open or revise stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
+| | 4. Investigate or design | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation) |
+| | 5. Resolve stories | [`story_policy.md`](story_policy.md#closure) — Closure |
+| | **Gate 3** | confirm ready to session |
+| **Minor** | 1. Open handover | [`handover_policy.md`](handover_policy.md#at-session-open-step-1) |
+| | 2. Confirm scope | [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-2) |
+| | **Gate 1** | wait for operator release before any output |
+| | 3. Design | [`roadmap_policy.md`](roadmap_policy.md#rules) |
+| | 4. Information gathering pass | [`documentation_policy.md`](documentation_policy.md) |
+| | 5. Acceptance criteria | [`handover_policy.md`](handover_policy.md#at-step-5--acceptance-criteria) |
+| | **Gate 2** | wait for operator release before implementation |
+| | 6. Implementation | — |
+| | 7. Pre-close verification | [`handover_policy.md`](handover_policy.md#at-pre-close-verification-step-7) |
+| | **Gate 3** | wait for operator release before session close |
+| | 8. Close session | [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8) |
+| | 9. Seed next session | [`handover_policy.md`](handover_policy.md#at-session-seed-step-9) |
 
 ---
 
@@ -35,7 +35,7 @@ agent-sandbox workflow
 
 **Resolve open questions before advancing.** If a design or scope question cannot be answered, the session does not advance to the next step. Surface the question explicitly — do not assume an answer and proceed.
 
-**Record decisions where the work lives.** Decisions belong in the relevant document, not only in chat. If the reasoning is not recorded, it does not exist for the next session.
+**Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents — it does not reproduce their content.
 
 **Confirm the spec before writing code.** The implementation spec — files, interfaces, naming — is confirmed by the operator before any code is produced. It is the agreement, not a starting point.
 
@@ -69,99 +69,43 @@ The loops are sequential at the major level — a major milestone must be planne
 
 Triggered after a major milestone closes. Performed once per major milestone before any session work begins. This is a planning and investigation cadence, not a coding one.
 
-See [`milestone_policy.md`](milestone_policy.md) for the full process governing stories, investigations, and roadmap entry production.
-
-### Steps
-
-**1. Close the prior major milestone**
-Follow [`roadmap_policy.md`](roadmap_policy.md) — Trigger A: write the changelog entry, extract the milestone, promote the next milestone from `roadmap_future.md`. Confirm all sub-milestone entries are complete in the changelog before proceeding.
-
-**2. Orient to the next major milestone**
-Read the promoted milestone section in `roadmap.md`. Identify: which sub-milestones are fully scoped, which have open design questions, and which depend on earlier sub-milestone implementation decisions and cannot yet be scoped.
-
-**3. Open stories for unresolved design areas**
-For each area where the design is not settled, open a `story_` document in `docs/discussions/`. See [`story_policy.md`](story_policy.md). Stories surface pain points and frame the investigation space — they do not propose solutions.
-
-**4. Commission investigations**
-For each story where candidate approaches need evaluation, open one `investigation_` document per candidate in `docs/discussions/`. See [`investigation_policy.md`](investigation_policy.md). Investigations run until a recommendation can be made.
-
-**5. Resolve stories to roadmap entries**
-When a story's open questions are resolved, graduate it: close the story with a Resolution section per [`story_policy.md`](story_policy.md) — Closure, and write the corresponding sub-milestone entry into `roadmap_future.md` (or directly into `roadmap.md` if the sub-milestone is next) per [`roadmap_policy.md`](roadmap_policy.md). Unresolvable stories — those that depend on earlier implementation decisions — are explicitly deferred, noted in the story, and flagged for the relevant minor loop session.
-
-**6. Confirm the milestone is ready to session**
-The major loop closes when M2.1 (the first sub-milestone) has a complete roadmap entry with an objective, resolved design decisions, and a task list. Subsequent sub-milestones may still have open items — that is expected. The loop does not require all sub-milestones to be fully scoped before sessioning begins.
+| Step | Entry condition | Action | Exit condition | Governing document |
+|---|---|---|---|---|
+| **1 — Close prior milestone** | Prior milestone complete and no current milestone open. Skip to Gate 2 if a milestone is already open. | Write changelog entry and extract the completed milestone from `roadmap.md`. | Prior milestone removed from roadmap. Changelog entry written. | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| **Gate 1 — Select next milestone** | Prior milestone closed. Skip to Gate 2 if a milestone is already open. | Present available next milestones from `roadmap_future.md`. Wait for operator to select which to promote. | Operator selects next milestone. Explicit release required. | — |
+| **2 — Orient to next milestone** | Operator has selected next milestone. | Promote selected milestone from `roadmap_future.md` into `roadmap.md`. Read it. Present sub-milestones ready to progress (no unresolved dependencies) and which have open planning work. | Orientation presented. | `roadmap.md` |
+| **Gate 2 — Select sub-milestone** | Orientation presented. | Wait for operator to select which sub-milestone to plan first. This gate also fires when a sub-milestone closes mid-milestone (Trigger B) — enter here directly, skipping Gate 1 and Step 2. | Operator selects sub-milestone. Explicit release required. | — |
+| **3 — Open or revise stories** | Operator has directed specific areas, OR open stories or unresolved questions exist under the chosen sub-milestone. Skip if neither applies. | For each directed or open area, produce a new story or revise an existing one in `docs/discussions/`. | All directed and existing open areas have a current story document. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
+| **4 — Investigate or design** | Unresolved stories exist under the chosen sub-milestone. | For each unresolved story: if direction is clear, produce a design or spec document in `docs/discussions/` directly. If unclear, open investigation documents — one per story, or one per candidate option if the option surface area warrants it. | Every unresolved story has a design document, spec document, or one or more investigation documents. | [`investigation_policy.md`](investigation_policy.md#when-to-open-an-investigation), [`story_policy.md`](story_policy.md) |
+| **5 — Resolve stories** | A story has a completed investigation or agreed approach. | Operator reviews each story and provides explicit sign-off with direction. Each story is either graduated to the roadmap or given an explicit status (deferred, abandoned, superseded) with a recorded reason. | All stories under the sub-milestone are resolved or carry an explicit status with recorded reason. Graduated stories are written as roadmap entries. | [`story_policy.md`](story_policy.md#closure) — Closure |
+| **Gate 3 — Confirm ready to session** | All stories resolved or explicitly statused. | Wait for operator to confirm the sub-milestone is ready to session. | Operator confirms sub-milestone has a complete roadmap entry. Explicit release required. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
 
 ---
 
 ## Minor Loop — Session Workflow
 
-A session targets one sub-milestone but need not span the full step sequence. Steps 1 and 8–9 always run; the middle steps are scoped to the session type:
+The information gathering pass (step 4) reads in order: design decisions, conceptual docs, spec, architecture docs. Lapses are accumulated across all four documents and surfaced together before Gate 2 — related lapses grouped for easy review. Tags: `(always)` runs without exception; `(confirmed)` requires explicit operator release; `(assessed)` check runs, skip allowed when not applicable to session type.
 
-```
-Minor loop
-├── Step 1 — Open handover          (always)
-├── Step 2 — Design                 (design session)
-├── Step 3 — Conceptual docs        (design session)
-├── Step 4 — Spec                   (spec session)
-├── Step 5 — Architecture docs      (spec session)
-├── Step 6 — Acceptance criteria    (session before implementation)
-├── Step 7 — Implementation         (implementation session)
-├── Step 8 — Close session          (always)
-└── Step 9 — Seed next session      (always)
-```
-
-A step does not advance until its exit condition is met and the operator has confirmed.
-
-| Step | Entry condition | Action | Exit condition |
-|---|---|---|---|
-| **1 — Open handover** | Session begins | Check whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has run: if the prior handover names a new sub-milestone but the roadmap still shows the previous sub-milestone as active, Trigger B has not run — run it now before proceeding. Then compact completed task groups per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). Create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). Read roadmap for pending work. | Handover active. Session target and blockers known. |
-| **2 — Design** | Handover open. *Skip if:* roadmap entry already has resolved decisions and recorded rationale — task list alone does not satisfy skip. | Gather requirements, surface tensions, ask clarifying questions one at a time. Record all decisions in the roadmap and relevant discussion document per [`roadmap_policy.md`](roadmap_policy.md#rules). Note in handover Decisions table. Resolve any deferred story that depends on this sub-milestone before proceeding. | All design questions resolved and recorded. Operator confirmed. |
-| **3 — Conceptual docs** | Design confirmed | Update `docs/concepts/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No concepts document contradicts the agreed design. |
-| **4 — Spec** | Conceptual docs confirmed | Specify files, interfaces, naming, mount shape. Scope is fixed here — adjacent issues are flagged in the handover and deferred, not resolved. | Operator confirmed spec in full. No open interface or naming questions. |
-| **5 — Architecture docs** | Spec confirmed | Update `docs/architecture/` documents per [`documentation_policy.md`](documentation_policy.md). Produce as proposals. | Operator confirmed. No architecture document contradicts the confirmed spec. |
-| **6 — Acceptance criteria** | Architecture docs confirmed (or design confirmed if session spans design through implementation) | Define criteria per [`handover_policy.md`](handover_policy.md#at-step-6--define-acceptance-criteria). Every session that touches architecture must include a criterion: *"Architecture documents in scope describe the system as built."* | Operator confirmed criteria. `Not yet defined.` replaced. Implementation will not begin without confirmed criteria. |
-| **7 — Implementation** | Acceptance criteria confirmed | Produce code against confirmed spec. Tests alongside implementation. If implementation reveals a divergence from the spec — a naming difference, an interface change, a new file — stop and correct the architecture document before continuing. Flag and defer any other adjacent issue. All outputs are proposals. | All targeted tasks complete. Tests pass. Architecture documents reflect the system as built. Operator confirmed against acceptance criteria. |
-| **8 — Close session** | Session step range complete | Mark completed tasks per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8). Verify that every in-scope architecture and concepts document describes the system as built — if any divergence exists, resolve it now or record it as an explicit deferred item that blocks Trigger B. If all sub-milestone tasks are now complete, acceptance criteria are met, and no doc divergence is deferred, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover. Update handover per [`handover_policy.md`](handover_policy.md#at-session-close-step-8). Update `project_index.md` per [Index Maintenance](#index-maintenance). | Roadmap updated. Trigger B run if applicable. Handover complete. No incomplete tasks or doc divergences without explicit deferral. |
-| **9 — Seed next session** | Session closed | Identify next scope from roadmap. Populate handover Next session per [`handover_policy.md`](handover_policy.md#at-session-seed-step-9). If sub-milestone was last in major milestone, flag that major loop is required. | Next session section actionable. |
+| Step | Tag | Entry condition | Action | Exit condition |
+|---|---|---|---|---|
+| **1 — Open handover** | always | Session begins | Run recovery checks, then create and populate handover per [`handover_policy.md`](handover_policy.md#at-session-open-step-1). | Handover draft complete. |
+| **2 — Confirm scope** | always | Handover draft complete | Present scope proposal per [`handover_policy.md`](handover_policy.md#at-scope-confirmation-step-2); wait for explicit release before any output. | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
+| **Gate 1** | always | Scope confirmed | No output until operator releases. | Explicit release received. |
+| **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). | All design questions resolved, recorded, and operator confirmed. |
+| **4 — Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
+| **5 — Acceptance criteria** | confirmed | Information gathering pass complete | Define criteria per [`handover_policy.md`](handover_policy.md#at-step-5--acceptance-criteria). Every session touching architecture must include: *"Architecture documents in scope describe the system as built."* | Operator confirmed. `Not yet defined.` replaced. |
+| **Gate 2** | always | Acceptance criteria confirmed | Before releasing: re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug — resolve it now, not at pre-close. No implementation until operator releases. | All criteria verified as satisfiable. Explicit release received. |
+| **6 — Implementation** | confirmed | Gate 2 released | Produce code against confirmed spec; tests alongside per [`testing_policy.md`](testing_policy.md). On spec divergence: correct architecture doc before continuing. Flag all other adjacent issues; Defer by default. | All tasks complete. Tests pass. Architecture docs reflect system as built. |
+| **7 — Pre-close verification** | confirmed | Implementation complete | Present pre-close summary per [`handover_policy.md`](handover_policy.md#at-pre-close-verification-step-7); wait for explicit release before Step 8. | Operator confirmed against AC and sent explicit release. Packaging changes do not release this gate. |
+| **Gate 3** | always | Pre-close verified | No session close until operator releases. | Explicit release received. |
+| **8 — Close session** | always | Gate 3 released | Mark tasks and run Trigger B if applicable per [`roadmap_policy.md`](roadmap_policy.md#session-close-step-8); verify all in-scope architecture and concepts docs describe the system as built — resolve divergences or record as explicit deferrals blocking Trigger B; close handover per [`handover_policy.md`](handover_policy.md#at-session-close-step-8). | Roadmap updated. Handover closed. No doc divergences without explicit deferral. |
+| **9 — Seed next session** | always | Session closed | Populate handover Next session per [`handover_policy.md`](handover_policy.md#at-session-seed-step-9). If sub-milestone was last in major milestone, write "Major loop required" and link to [`iteration_policy.md`](iteration_policy.md#major-loop--milestone-planning). | Next session section actionable. |
 
 ---
 
 ## Index Maintenance
 
-Two documents serve as the project's file registry. Each has a defined owner and update cadence. Neither is updated outside these moments.
-
-**`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
-
-**The active handover** is the session-scoped hot file list. It replaces `doc_status.md`, which is retired. The Hot files section of the handover is the only place the current session's file scope is recorded.
-
-### Update triggers
-
-**At major loop close:**
-- Add any new documents created during planning (stories, investigations, stubs) to `project_index.md` with temperature and last-touched milestone
-- Update the Architecture Layers table if freeze status has changed
-- Update temperature for any documents whose stability has changed
-- `project_index.md` last-touched milestone does not need updating for documents that were not changed — only touched files get their row updated
-
-**At minor loop Step 1 (session open):**
-- Create the new handover document
-- Populate the Hot files section from the roadmap task list
-- No changes to `project_index.md` at this step
-
-**At minor loop Step 8 (session close):**
-- Update `project_index.md`: for every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
-- If new files were created during the session, add them to `project_index.md`
-- If files were deleted, remove them from `project_index.md`
-- Update the Hot files section of the handover to reflect final session state
-
-### Temperature rules
-
-Temperature in `project_index.md` reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every session.
-
-| Temperature | Meaning |
-|---|---|
-| 🔴 Hot | Changes continuously — roadmap, active handovers |
-| 🟡 Warm | Changes per milestone — architecture docs, active policy |
-| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
+`project_index.md` is the complete registry. The active handover's Hot files section is the session-scoped list. Update rules, trigger moments, and temperature definitions are in [`project_index.md` — Maintenance Rules](../development/project_index.md#maintenance-rules).
 
 ---
 
@@ -182,4 +126,4 @@ Temperature in `project_index.md` reflects the stability of what a document desc
 |---|---|
 | [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
-| [`autonomous_task.md`](../concepts/autonomous_task.md) | Relationship between this interactive workflow and the future autonomous workflow (M3) |
+| [`audit_policy.md`](audit_policy.md) | Operator-invoked handover audit procedure — deferred chain integrity, structural completeness, dangling references |

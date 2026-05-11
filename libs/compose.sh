@@ -32,9 +32,14 @@
 #
 # Substitutions applied here (baked into generated file):
 #   {{PROJECT_NAME}}        → project name
+#   {{PROJECT_DIR}}         → absolute path to project directory
 #   {{SANDBOX_IMAGE_NAME}}  → derived image name
 #   {{AGENT_IMAGE_NAME}}    → derived image name
 #   {{PROVIDER_NAME}}       → provider name
+#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<timestamp>)
+#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
+#   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
+#   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
 #   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
@@ -89,9 +94,14 @@ compose_generate() {
     local dst="$staging_dir/$(printf '%02d' $i)-$(basename "$src")"
     sed \
       -e "s|{{PROJECT_NAME}}|${project_name}|g" \
+      -e "s|{{PROJECT_DIR}}|${PROJECT_DIR:-}|g" \
       -e "s|{{SANDBOX_IMAGE_NAME}}|${sandbox_image}|g" \
       -e "s|{{AGENT_IMAGE_NAME}}|${agent_image}|g" \
       -e "s|{{PROVIDER_NAME}}|${provider_name}|g" \
+      -e "s|{{SANDBOX_CONTAINER_NAME}}|${SANDBOX_CONTAINER_NAME:-}|g" \
+      -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
+      -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
+      -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
       -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \
@@ -178,6 +188,8 @@ compose_teardown() {
 # compose_sandbox_wait
 #
 # Polls until the sandbox container reports healthy.
+# Fails fast if the container exits before becoming healthy.
+# Times out after SANDBOX_WAIT_TIMEOUT seconds (default: 120).
 #
 # Args:
 #   $1  project_name
@@ -185,11 +197,27 @@ compose_teardown() {
 compose_sandbox_wait() {
   local project_name="$1"
   local container
-  container="$(sandbox_container_name "$project_name")"
-
+  container="$SANDBOX_CONTAINER_NAME"
+ 
+  local timeout="${SANDBOX_WAIT_TIMEOUT:-120}"
+  local elapsed=0
+ 
   echo "+ waiting for $container to be healthy..."
   until [[ "$(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null)" == "healthy" ]]; do
+    local state
+    state="$(docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null)"
+    if [[ "$state" == "exited" || "$state" == "dead" || -z "$state" ]]; then
+      echo "Error: sandbox container exited before becoming healthy." >&2
+      echo "  Check logs: docker logs $container" >&2
+      exit 1
+    fi
+    if [[ "$elapsed" -ge "$timeout" ]]; then
+      echo "Error: sandbox container did not become healthy within ${timeout}s." >&2
+      echo "  Check logs: docker logs $container" >&2
+      exit 1
+    fi
     sleep 1
+    (( elapsed++ )) || true
   done
   echo "+ sandbox healthy."
 }

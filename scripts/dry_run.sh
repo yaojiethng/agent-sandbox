@@ -15,7 +15,7 @@
 #   identity          — user and uid
 #   environment       — required env vars (AGENT_HOME, PROVIDER_NAME, PROVIDER_CONFIG_DIR)
 #   mounts            — input (exists + read-only), output (exists + writable), sandbox (exists + writable)
-#   capability layer  — sandbox/.git present (baseline commit made)
+#   capability layer  — sandbox/.git present (baseline commit made), SESSION_STATE valid
 #   provider config   — PROVIDER_CONFIG_DIR is writable (copy-in / copy-out path)
 #   input channel     — brief.md and snapshot .gitignore present
 #   stdin / TUI       — stdin is not /dev/null (regression guard for background-job entrypoint)
@@ -25,11 +25,11 @@
 set -o pipefail
 
 ROOT="/home/agentuser"
-source /libs/dirs.sh
+source /opt/sandbox/lib/dirs.sh
+source /opt/sandbox/lib/session.sh
 
-INPUT_DIR="$ROOT/$INPUT_DIR_NAME"
-OUTPUT_DIR="$ROOT/$OUTPUT_DIR_NAME"
-SANDBOX_DIR="$ROOT/$SANDBOX_DIR_NAME"
+WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
 # ---------------------------------------------------------------------------
 # Check framework
@@ -104,6 +104,39 @@ critical "sandbox is writable"         _is_writable "$SANDBOX_DIR"
 
 section "capability layer"
 critical "sandbox/.git present (baseline commit ready)" test -d "$SANDBOX_DIR/.git"
+
+# SESSION_STATE is written by the sandbox entrypoint (snapshot_init_git).
+# Missing file means the capability layer completed init without writing it
+# (e.g. stale volume from before the feature was added), or init never finished.
+critical "sandbox/.git/SESSION_STATE exists" test -f "$SANDBOX_DIR/.git/SESSION_STATE"
+
+# init_sha is required by package_diff --all and write_all_changes_diff.
+# Without it, diff packaging cannot find the session baseline.
+# Validated in two steps: (1) readable and non-empty, (2) corresponds to a
+# real commit in the sandbox repo (catches truncated or corrupted values).
+check_init_sha_readable() {
+  local sha
+  sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
+  [[ -n "$sha" ]]
+}
+critical "SESSION_STATE.init_sha readable" check_init_sha_readable
+
+check_init_sha_valid() {
+  local sha
+  sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
+  [[ -z "$sha" ]] && return 1
+  git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$sha" >/dev/null 2>&1
+}
+critical "SESSION_STATE.init_sha is a valid commit" check_init_sha_valid
+
+# session_ts is used by package_branch for output path naming.
+# Packaging falls back to env var if missing, so this is a warning.
+check_session_ts() {
+  local ts
+  ts=$(session_state_read "$SANDBOX_DIR" "session_ts" 2>/dev/null) || return 1
+  [[ -n "$ts" ]]
+}
+warn_check "SESSION_STATE.session_ts readable" check_session_ts
 
 section "provider config"
 critical "PROVIDER_CONFIG_DIR is writable" \

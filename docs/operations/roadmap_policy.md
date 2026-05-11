@@ -1,6 +1,6 @@
 # Roadmap Policy
 
-Policy rules for `docs/devlog/roadmap.md`, `docs/devlog/roadmap_future.md`, and `docs/devlog/changelog.md`.
+Policy rules for `docs/development/roadmap.md`, `docs/development/roadmap_future.md`, and `docs/development/changelog.md`.
 
 ---
 
@@ -17,6 +17,7 @@ The roadmap is not updated continuously during a session. It is touched at two d
 1. Mark all tasks completed this session with `[x]`
 2. Do not compact — leave checked items in place for the next session's Step 1 to collapse
 3. If all tasks in the sub-milestone are now complete and acceptance criteria are met, run [Sub-milestone close (Trigger B)](#sub-milestone-close-trigger-b) before closing the handover
+4. **Carry-forward escalation:** if a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list. A finding that would survive more than one handover hop belongs in the roadmap, not the handover chain.
 
 ### Sub-milestone close (Trigger B)
 
@@ -79,7 +80,7 @@ Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focuse
 
 ## Changelog Format
 
-Changelog entries live in `docs/devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
+Changelog entries live in `docs/development/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
 
 ### Entry structure
 

@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # No Node/npm/opencode — the capability layer owns the sandbox and diff
 # pipeline only. The reasoning layer container handles agent invocation.
 RUN apt-get update && apt-get install -y \
-    bash git ca-certificates \
+    bash git ca-certificates rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------
@@ -21,11 +21,14 @@ RUN apt-get update && apt-get install -y \
 # -------------------------
 # Build context is a temp directory populated by build_context in libs/build.sh;
 # files are copied flat so paths here match the temp dir layout.
-COPY sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
-COPY snapshot.sh /libs/snapshot.sh
-COPY diff.sh /libs/diff.sh
-COPY dirs.sh /libs/dirs.sh
-RUN chmod +x /usr/local/bin/sandbox-entrypoint.sh
+COPY sandbox-entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
+COPY dirs.sh /opt/sandbox/lib/dirs.sh
+COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
+COPY diff.sh /opt/sandbox/lib/diff.sh
+COPY session.sh /opt/sandbox/lib/session.sh
+COPY routing.sh /opt/sandbox/lib/routing.sh
+COPY docs/ /opt/sandbox/docs/
+RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 
 # -------------------------
 # Non-root user
@@ -43,13 +46,13 @@ USER agentuser
 # creation time, which is what makes --volumes-from work. It is not a
 # named volume — it is removed with docker rm -v (or compose down -v)
 # after each session so it does not persist across runs.
-# workspace/changes/ is bind-mounted from SANDBOX_DIR/.workspace/changes/
-# on the host — the diff pipeline writes staged.diff here only.
+# workspace/session-diffs/ is bind-mounted from SANDBOX_DIR/.workspace/session-diffs/
+# on the host — the diff pipeline writes changes.diff, EXPORT-TIME.txt, and patches/*.diff
 # The capability layer does not mount the workspace parent.
 # .snapshot/ is bind-mounted read-only from SANDBOX_DIR/.snapshot/ on the host.
 # All directories created as agentuser so mounts are not blocked by ownership.
 RUN mkdir -p /home/agentuser/sandbox \
-             /home/agentuser/workspace/changes \
+             /home/agentuser/workspace/session-diffs \
              /home/agentuser/.snapshot
 
 VOLUME /home/agentuser/sandbox
@@ -66,4 +69,4 @@ WORKDIR /home/agentuser
 HEALTHCHECK --interval=2s --timeout=5s --start-period=30s --retries=5 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["/usr/local/bin/sandbox-entrypoint.sh"]
+ENTRYPOINT ["/opt/sandbox/bin/sandbox-entrypoint.sh"]

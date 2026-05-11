@@ -37,14 +37,14 @@ agent-sandbox onboard knowledge-vault --vault=/path/to/vault
 
 This places three files at the vault root:
 - `Makefile` — pre-filled with vault name and paths
-- `agents.md` — agent brief starter template (fill this in before `make start`)
+- `AGENTS.md` — agent brief starter template (fill this in before `make start`)
 - `.vault` — symlink to the vault tooling in the agent-sandbox repo (machine-local, gitignored after initialization)
 
 The command warns if Obsidian Sync appears active and exits without changes if onboarding has already run.
 
-### 3. Fill in agents.md
+### 3. Fill in AGENTS.md
 
-Open `agents.md` at the vault root and fill in the vault description, constraints, and current task scope. `make start` will fail if this file is missing.
+Open `AGENTS.md` at the vault root and fill in the vault description, constraints, and current task scope. `make start` will fail if this file is missing.
 
 ### 4. Initialize
 

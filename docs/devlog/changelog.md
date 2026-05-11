@@ -6,6 +6,12 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
+## [CORRECTION — 2026-04-12] Historical Inconsistency Warning
+
+The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
+
+---
+
 ## M1 — Barebones Agent Container
 
 *The agent runs inside an isolated Docker container with network access, driven by a per-project Makefile.*
@@ -38,9 +44,11 @@ The per-project conf file was removed in favour of named flags defined in the pr
 
 ---
 
-## M1.4 — Image Staleness Detection
+## M1.4 — Image Staleness Detection [SUPERSEDED/REMOVED in M2.1]
 
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
+
+**NOTE:** This implementation (based on `libs/image.sh` and `image-files.txt`) was **deleted in Milestone 2.1** during the Two-Container refactor. The system currently relies on the operator manually running `make build`.
 
 A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `libs/image.sh` and covers all `libs/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
 
@@ -67,6 +75,14 @@ The single container was split into two. The capability layer initialises `sandb
 *Any reasoning layer provider can now be added under `providers/<n>/` without modifying shared harness scripts or libraries.*
 
 The provider interface was formalised: each provider supplies a `base.Dockerfile` (stable install layers), a `provider.Dockerfile` (runtime config and entrypoint), a serve overlay, and an `.env.example`. The harness discovers providers by glob and injects harness-owned files (`provider-entrypoint.sh`, `dirs.sh`, default config) into the build context at build time. Provider config lifecycle is handled inside the container: `provider-entrypoint.sh` seeds default config into `AGENT_HOME` on first run (seed-if-missing per file), registers an EXIT trap for copy-out, then execs the agent. The host-side persist step in `run_agent.sh` moves copy-out state to `$SANDBOX_DIR/.<provider>/` after container exit, giving each provider persistent config across sessions. Three providers now conform to the interface: OpenCode, Hermes (with a multi-stage base image reducing image size by ~2GB), and Pi. `make start` was hardened to stop any prior session before starting a new one.
+
+---
+
+## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+
+*The operator can review agent work as shaped commits on a draft branch, confirm via rebase and fast-forward merge, or reject with no trace — all through a git-agnostic diff pipeline that works identically in both directions between sandbox and host.*
+
+The diff pipeline was redesigned around a single git-agnostic unified diff format with index lines stripped, consumed by `git apply` in both directions. `package-diff` exports uncommitted working tree changes; `package-branch` exports the full committed branch history since `INIT_SHA` as numbered diffs. `make draft` creates a `draft/<name>` branch from the host, applies the numbered diffs sequentially, and commits `.draft-state` as metadata on the branch. `make confirm` validates the draft branch, drops `.draft-state`, rebases onto target, fast-forward merges, and deletes the draft branch — printing exact recovery commands on rebase conflict. `make reject` returns to the source branch and discards the draft. `make apply` applies a single diff uncommitted for mid-session sync in either direction. No checkpoint git tags, no `make sync`, no `SYNC=1`, and no `ADVANCED_SESSIONS` tracking — the harness does not bookkeeping which diffs have been applied.
 
 ---
 

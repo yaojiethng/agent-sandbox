@@ -85,7 +85,7 @@ When closing an investigation:
 3. If superseded, add a blockquote redirect after the Status line pointing to the superseding document
 4. Update the parent story's Investigation Findings section with a summary link to this investigation and its recommendation
 
-A closed investigation is never deleted. It is the reasoning record for why a candidate was chosen or rejected. Future agents must be able to read it and reconstruct the decision.
+A closed investigation is not modified without cause. It is the reasoning record for why a candidate was chosen or rejected. Future agents must be able to read it and reconstruct the decision. Corrections to closed investigations follow the procedure below.
 
 ---
 
@@ -98,6 +98,50 @@ When all investigations for a story are closed:
 - The story is ready to resolve: choose the approach, write the Resolution section, graduate to a roadmap entry
 
 If a single investigation produces a clear enough recommendation that further investigations are unnecessary, the remaining investigation stubs may be closed as `Superseded` with a redirect to the adopted approach.
+
+---
+
+## Corrections to Closed Investigations
+
+The full correction principle is defined in `docs/operations/documentation_policy.md` — Post-Close Document Corrections. This section defines the specific form for investigation documents.
+
+### Valid investigation — minor error
+
+If the investigation's core findings are sound but a detail is incorrect (wrong filename, inaccurate measurement, incomplete finding):
+
+1. Edit the affected text directly in the body of the document.
+2. Append a dated amendment block at the bottom:
+
+```
+---
+[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
+```
+
+3. Do not alter the document's status, title, or metadata.
+4. Propose the amended document to the operator for review.
+
+### Invalid investigation — superseded or incorrect content
+
+If the investigation's core content is wrong or has been superseded by properly organised work elsewhere:
+
+1. Set the document status to `Superseded`.
+2. Add a blockquote redirect after the status line pointing to the correct source:
+
+```
+> **Superseded.** This investigation has been superseded by [correct document name](path/to/document). Do not rely on the findings below.
+```
+
+3. Do not edit the body content.
+4. Propose the amended document to the operator for review.
+
+The operator may delete the document. If deleted, the operator will mark any referencing links `[REMOVED]`. The agent does not delete investigation documents.
+
+### Missing investigations
+
+If an investigation document the agent expects to find is absent:
+
+- If its referencing link carries a `[REMOVED]` marker — the absence is expected. No error.
+- If its referencing link has no `[REMOVED]` marker — flag as an error and prompt the operator before proceeding.
 
 ---
 

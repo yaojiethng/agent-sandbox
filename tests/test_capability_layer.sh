@@ -12,7 +12,7 @@
 #   <sandbox-dir>  absolute path to SANDBOX_DIR — must contain:
 #                    Dockerfile.sandbox
 #                    .snapshot/   (pre-built snapshot)
-#                    .workspace/changes/  (created by this script if absent)
+#                    .workspace/session-diffs/  (created by this script if absent)
 #
 # Example:
 #   ./test_capability_layer.sh ~/agent-sandbox ~/myproject-sandbox
@@ -24,6 +24,17 @@
 # Note: intentionally no set -euo pipefail — test scripts must handle failures
 # explicitly so that failures produce diagnostic output rather than silent exit.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/libs/test_common.sh"
+
+# -------------------------
+# Preflight: skip if docker unavailable
+# -------------------------
+if ! command -v docker >/dev/null 2>&1; then
+  skip "docker not available — skipping capability layer tests"
+  test_done "Capability Layer Functional Test"
+fi
+
 # -------------------------
 # Args and config
 # -------------------------
@@ -31,22 +42,15 @@ REPO_ROOT="$(cd "${1:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
 SANDBOX_DIR="$(cd "${2:?Usage: $0 <repo-root> <sandbox-dir>}" && pwd)"
 
 SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
-WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/changes"
+WORKSPACE_CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
 DOCKERFILE="$SANDBOX_DIR/Dockerfile.sandbox"
 
 IMAGE_NAME="${IMAGE_NAME:-test-sandbox-agent-sandbox}"
 RUN_ID="$(dd if=/dev/urandom bs=4 count=1 2>/dev/null | od -An -tx1 | tr -d ' \n')"
-CONTAINER_NAME="cap-layer-test-${RUN_ID}"
+SANDBOX_CONTAINER_NAME="cap-layer-test-${RUN_ID}"
 BUILD_LOG=""
 
-PASS=0
-FAIL=0
 
-# -------------------------
-# Helpers
-# -------------------------
-pass() { echo "  PASS: $1"; ((PASS++)) || true; }
-fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
 
 check() {
   local desc="$1"
@@ -61,8 +65,8 @@ check() {
 cleanup() {
   echo ""
   echo "Cleaning up..."
-  docker stop "$CONTAINER_NAME" &>/dev/null || true
-  docker rm -v "$CONTAINER_NAME" &>/dev/null || true
+  docker stop "$SANDBOX_CONTAINER_NAME" &>/dev/null || true
+  docker rm -v "$SANDBOX_CONTAINER_NAME" &>/dev/null || true
   docker rmi "$IMAGE_NAME" &>/dev/null || true
   rm -f "$BUILD_LOG"
 }
@@ -121,16 +125,16 @@ fi
 rm -f "$BUILD_LOG"
 
 check "sandbox-entrypoint.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /usr/local/bin/sandbox-entrypoint.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/bin/sandbox-entrypoint.sh
 
 check "libs/snapshot.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/snapshot.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/snapshot.sh
 
 check "libs/diff.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/diff.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/diff.sh
 
 check "libs/dirs.sh present in image" \
-  docker run --rm --entrypoint test "$IMAGE_NAME" -f /libs/dirs.sh
+  docker run --rm --entrypoint test "$IMAGE_NAME" -f /opt/sandbox/lib/dirs.sh
 
 # -------------------------
 # Startup
@@ -140,9 +144,9 @@ echo "--- Startup ---"
 
 echo "  Starting capability layer container..."
 START_OUTPUT=$(docker run -d \
-  --name "$CONTAINER_NAME" \
+  --name "$SANDBOX_CONTAINER_NAME" \
   --volume "$SNAPSHOT_DIR:/home/agentuser/.snapshot:ro" \
-  --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/changes" \
+  --volume "$WORKSPACE_CHANGES_DIR:/home/agentuser/workspace/session-diffs" \
   --env AUTOSAVE_INTERVAL=0 \
   "$IMAGE_NAME" 2>&1)
 START_EXIT=$?
@@ -162,7 +166,7 @@ echo "  Waiting for container to become healthy..."
 HEALTH_TIMEOUT=60
 HEALTH_ELAPSED=0
 while true; do
-  STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)
+  STATUS=$(docker inspect -f '{{.State.Health.Status}}' "$SANDBOX_CONTAINER_NAME" 2>/dev/null)
   if [[ "$STATUS" == "healthy" ]]; then
     break
   fi
@@ -170,7 +174,7 @@ while true; do
     fail "container became unhealthy — aborting"
     echo ""
     echo "  Container logs:"
-    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    docker logs "$SANDBOX_CONTAINER_NAME" 2>&1 | sed 's/^/    /'
     echo ""
     exit 1
   fi
@@ -178,7 +182,7 @@ while true; do
     fail "container did not become healthy within ${HEALTH_TIMEOUT}s — aborting"
     echo ""
     echo "  Container logs:"
-    docker logs "$CONTAINER_NAME" 2>&1 | sed 's/^/    /'
+    docker logs "$SANDBOX_CONTAINER_NAME" 2>&1 | sed 's/^/    /'
     echo ""
     exit 1
   fi
@@ -187,12 +191,12 @@ while true; do
 done
 
 check "container is healthy after init" \
-  bash -c "[[ \"\$(docker inspect -f '{{.State.Health.Status}}' '$CONTAINER_NAME')\" == 'healthy' ]]"
+  bash -c "[[ \"\$(docker inspect -f '{{.State.Health.Status}}' '$SANDBOX_CONTAINER_NAME')\" == 'healthy' ]]"
 
 check "sandbox is non-empty (copy succeeded)" \
-  bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
+  bash -c "[[ \$(docker run --rm --volumes-from '$SANDBOX_CONTAINER_NAME' ubuntu:24.04 find /home/agentuser/sandbox -type f | wc -l) -gt 0 ]]"
 
-BASELINE_LOG=$(docker logs "$CONTAINER_NAME" 2>&1)
+BASELINE_LOG=$(docker logs "$SANDBOX_CONTAINER_NAME" 2>&1)
 
 check "baseline SHA logged to stderr" \
   bash -c "echo '$BASELINE_LOG' | grep -q 'Baseline:'"
@@ -207,13 +211,13 @@ echo ""
 echo "--- Mutation (simulated reasoning layer) ---"
 
 docker run --rm \
-  --volumes-from "$CONTAINER_NAME" \
+  --volumes-from "$SANDBOX_CONTAINER_NAME" \
   ubuntu:24.04 \
   bash -c "echo 'capability layer test' >> /home/agentuser/sandbox/capability_test.txt" \
   &>/dev/null
 
 check "throwaway container can write to sandbox volume" \
-  bash -c "[[ \$(docker run --rm --volumes-from '$CONTAINER_NAME' ubuntu:24.04 \
+  bash -c "[[ \$(docker run --rm --volumes-from '$SANDBOX_CONTAINER_NAME' ubuntu:24.04 \
     cat /home/agentuser/sandbox/capability_test.txt) == 'capability layer test' ]]"
 
 # -------------------------
@@ -222,10 +226,10 @@ check "throwaway container can write to sandbox volume" \
 echo ""
 echo "--- Shutdown and diff pipeline ---"
 
-docker stop "$CONTAINER_NAME" > /dev/null
+docker stop "$SANDBOX_CONTAINER_NAME" > /dev/null
 
 check "container exits with code 0" \
-  bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$CONTAINER_NAME')\" == '0' ]]"
+  bash -c "[[ \"\$(docker inspect -f '{{.State.ExitCode}}' '$SANDBOX_CONTAINER_NAME')\" == '0' ]]"
 
 check "staged.diff written to workspace" \
   test -f "$WORKSPACE_CHANGES_DIR/staged.diff"
@@ -243,7 +247,7 @@ echo ""
 echo "--- Diff integrity ---"
 
 # Apply the diff to a temp clone of the snapshot to verify it's well-formed.
-APPLY_DIR="$(mktemp -d)"
+APPLY_DIR="$(mktemp -d /tmp/XXXXXX)"
 cp -a "$SNAPSHOT_DIR/." "$APPLY_DIR/"
 cd "$APPLY_DIR"
 git init -q
@@ -263,14 +267,14 @@ rm -rf "$APPLY_DIR"
 echo ""
 echo "--- Failure cases ---"
 
-EMPTY_SNAPSHOT="$(mktemp -d)"
+EMPTY_SNAPSHOT="$(mktemp -d /tmp/XXXXXX)"
 FAIL_CONTAINER="cap-layer-fail-${RUN_ID}"
-FAIL_WORKSPACE="$(mktemp -d)"
+FAIL_WORKSPACE="$(mktemp -d /tmp/XXXXXX)"
 
 docker run -d \
   --name "$FAIL_CONTAINER" \
   --volume "$EMPTY_SNAPSHOT:/home/agentuser/.snapshot:ro" \
-  --volume "$FAIL_WORKSPACE:/home/agentuser/workspace/changes" \
+  --volume "$FAIL_WORKSPACE:/home/agentuser/workspace/session-diffs" \
   "$IMAGE_NAME" > /dev/null || true
 
 sleep 2
@@ -281,19 +285,4 @@ check "container exits non-zero when .snapshot/ is empty (gate 2)" \
 docker rm -v "$FAIL_CONTAINER" &>/dev/null || true
 rm -rf "$EMPTY_SNAPSHOT" "$FAIL_WORKSPACE"
 
-# -------------------------
-# Summary
-# -------------------------
-echo ""
-echo "=== Results ==="
-echo "  Passed: $PASS"
-echo "  Failed: $FAIL"
-echo ""
-
-if [[ "$FAIL" -eq 0 ]]; then
-  echo "All checks passed."
-  exit 0
-else
-  echo "Some checks failed. Review output above."
-  exit 1
-fi
+test_done "Capability Layer Functional Test"

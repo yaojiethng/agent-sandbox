@@ -18,8 +18,15 @@ FROM ${BASE_IMAGE}
 # Shared libs (root, before USER switch)
 # -------------------------
 # Injected by build_context_agent — cache miss if either file changes.
-COPY dirs.sh /libs/dirs.sh
-COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
+COPY dirs.sh /opt/sandbox/lib/dirs.sh
+COPY provider-entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
+COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
+COPY session.sh /opt/sandbox/lib/session.sh
+COPY routing.sh /opt/sandbox/lib/routing.sh
+
+# Workflow files — prompts and skills the agent uses at runtime.
+COPY agent/skills/ /opt/workflow/agent/skills/
+COPY agent/prompts/ /opt/workflow/agent/prompts/
 
 # -------------------------
 # Non-root user
@@ -51,4 +58,5 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-ENTRYPOINT ["provider-entrypoint.sh", "hermes"]
+ENV PATH=/opt/sandbox/bin:$PATH
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "hermes"]

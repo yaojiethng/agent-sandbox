@@ -4,6 +4,8 @@ Stable registry of all documentation and policy files in agent-sandbox. Records 
 
 The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `docs/devlog/handovers/`).
 
+Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
+
 ---
 
 ## Architecture Layers
@@ -42,9 +44,9 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `doc_status.md` — retired | — | M1.5 | Replaced by handover Hot files section. Deleted. |
 | `project_index.md` | 🟡 Warm | M2 | This file. Updated when files are added, removed, or freeze status changes. |
-| `roadmap.md` | 🔴 Hot | M1.5 | Active milestone tasks and milestone summary table. |
-| `roadmap_future.md` | 🟡 Warm | M1.5 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
-| `changelog.md` | 🟡 Warm | M1.5 | Completed milestone records. Append-only. |
+| `roadmap.md` | 🔴 Hot | M2.3 | Active milestone tasks and milestone summary table. |
+| `roadmap_future.md` | 🟡 Warm | M2.3 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
+| `changelog.md` | 🟡 Warm | M2.3 | Completed milestone records. Append-only. |
 
 ### Discussions (`docs/discussions/`)
 
@@ -60,6 +62,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `investigation_hermes.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_pi.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_workspace_input_channel.md` | 🟢 Cold | M1.5 | Resolved. Operator input channel implemented in M1.5. |
+| `design_diff_and_branch_packaging_workflow.md` | 🟡 Warm | M2.3 | Current design for diff pipeline and apply workflow. Supersedes prior apply_workflow_and_baseline_advancement design. |
+| `spec_test_infrastructure.md` | 🟡 Warm | M2.3 | Test infrastructure spec: runner auto-discovery, coverage check, `make test` target. |
 
 ### Architecture (`docs/architecture/`)
 
@@ -69,7 +73,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `execution_model.md` | 🟡 Warm | M2.3 | Index document: directory layout, invocation model. Compose generation, mount shape rationale, container lifecycle. Delegates layer implementation to sandbox_lifecycle.md and provider_lifecycle.md . |
 | `sandbox_lifecycle.md` | 🟡 Warm | M2.3 | Capability layer's lifecycle: snapshot pipeline (fork), agent work, git baseline, diff pipeline (join), input channels, apply workflow. |
 | `provider_lifecycle.md ` | 🟡 Warm | M2.3 | Reasoning layer's lifecycle: config seed (copy-in), agent work, config persist (copy-out). |
-| `tool_interface.md` | 🟡 Warm | M2.2 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
+| `tool_interface.md` | 🟡 Warm | M2.3 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
@@ -77,10 +81,11 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `agent_workflow.md` | 🟢 Cold | M2.1 | Design principles, invariants, UX flow names. Rescoped to pure conceptual; operational detail moved to quickstart and tool_interface. |
+| `agent_workflow.md` | 🟢 Cold | M2.1 | Rescoped as conceptual entry point and policy map. Defines the three-layer workflow expression model (policy documents, skill files, prompt templates) and maps canonical ownership across all policy documents. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
+| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.3 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. |
 
 ### Operations (`docs/operations/`)
 
@@ -88,8 +93,8 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `standard_operating_procedures.md` | 🟡 Warm | M1 | Update when security mitigations or operational procedures change. |
 | `provider_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to adding a new reasoning layer provider. References tool_interface.md for contract and execution_model.md for mechanics. |
-| `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, agents.md authoring, and verification. |
-| `quickstart.md` | 🟡 Warm | M2.2 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
+| `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, AGENTS.md authoring, and verification. |
+| `quickstart.md` | 🟡 Warm | M2.3 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
 | `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
@@ -104,26 +109,52 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
-| `apply_workspace.sh` | 🟡 Warm | M1.5 | Applies staged.diff to PROJECT_DIR. Takes `--project` and `--sandbox` flags. |
-| `agent-sandbox.sh` | 🟡 Warm | M1.5 | CLI dispatch wrapper. Installed to host via `make install`. |
-| `onboard.sh` | 🟡 Warm | M2.1 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
+| `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
+| `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
+| `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
+| `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
 ### Lib (`libs/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `snapshot.sh` | 🟢 Cold | M1.2 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
-| `diff.sh` | 🟢 Cold | M1.2 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
-| `build_context.sh` | 🟡 Warm | M2.1 | Build context preparation. Creates mktemp dir, copies required files per image type, errors on missing file. |
-| `_templates/Makefile.template` | 🟡 Warm | M2.1 | Project Makefile template. Template version tag added. |
+| `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
+| `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
+| `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
+| `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
+| `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
+| `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
+| `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
+| `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
+| `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
+| `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. `BUNDLE=`/`AUTOSAVE=` replaced with `FROM=<channel>`; `INTERACTIVE=` added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
 
 ### Tests (`tests/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `test_capability_layer.sh` | 🟡 Warm | M2.1 | Standalone capability layer functional test. All checks passing. |
-| `test_build_context.sh` | 🟡 Warm | M2.1 | Property-based tests for `build_context`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
+| `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
+| `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
+| `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
+| `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
+| `test_interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection tests: confirm/abort, channel picker, session picker, diff type picker (25 tests). |
+| `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
+| `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
+| `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
+| `test_session.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
+| `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
+| `test_snapshot_host.sh` | 🟢 Cold | M2.3 | Host-side snapshot tests: archive head, copy worktree, validate. |
+| `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |
+
+### Prompts (`agent/prompts/`)
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `package-diff.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-diff`. Documents uncommitted change packaging. |
+| `package-branch.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-branch`. Documents committed branch history packaging. |
 
 ### Providers (`providers/`)
 
@@ -140,6 +171,44 @@ Temperature reflects the stability of what a document describes — not how care
 | `onboarding.md` | 🟢 Cold | M1.5 | Forward-compatibility note added. No further changes until M2.1. |
 | `story.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to `docs/discussions/story_obsidian_vault_onboarding.md`. |
 | `roadmap.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to README + changelog + main roadmap. |
+
+---
+
+## Maintenance Rules
+
+Two documents serve as the project's file registry. Each has a defined owner and update cadence. Neither is updated outside these moments.
+
+**`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
+
+**The active handover** is the session-scoped hot file list. The Hot files section of the handover is the only place the current session's file scope is recorded.
+
+### Update triggers
+
+**At major loop close:**
+- Add any new documents created during planning (stories, investigations, stubs) with temperature and last-touched milestone
+- Update the Architecture Layers table if freeze status has changed
+- Update temperature for any documents whose stability has changed
+- Only touched files get their `Last touched in` row updated — unchanged files are not updated
+
+**At minor loop Step 1 (session open):**
+- Create the new handover and populate the Hot files section from the roadmap task list
+- No changes to `project_index.md` at this step
+
+**At minor loop Step 8 (session close):**
+- For every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
+- Add new files created during the session
+- Remove files deleted during the session
+- Update the Hot files section of the handover to reflect final session state
+
+### Temperature rules
+
+Temperature reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every session.
+
+| Temperature | Meaning |
+|---|---|
+| 🔴 Hot | Changes continuously — roadmap, active handovers |
+| 🟡 Warm | Changes per milestone — architecture docs, active policy |
+| 🟢 Cold | Frozen policy or settled invariants; changes signal design instability |
 
 ---
 

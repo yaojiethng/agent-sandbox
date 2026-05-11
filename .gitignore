@@ -10,6 +10,7 @@ output/
 .snapshot/
 .sandbox/
 .vault
+rough-notes.md
 
 # === Python ===
 __pycache__/
@@ -66,3 +67,4 @@ Thumbs.db
 *.lnk
 *.url
 
+baseline.tar

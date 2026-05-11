@@ -44,7 +44,7 @@ Agent container
 
 This is a refinement of the current harness model, not a replacement. The current harness already has the reporting workspace (`.workspace/`) and the working workspace (`sandbox/` inside the agent container). The structural change is that the working workspace moves out of the agent container into the MCP server container, accessed only via tools. The reporting workspace is unchanged.
 
-**Diff pipeline migration:** Currently the diff runs inside the agent container against `sandbox/`. Under this model it runs against the MCP server's working mount after the session ends — either inside the MCP server container, or by the harness comparing the working mount against the original before teardown. Output still lands in `.workspace/changes/patch.diff` for operator review as now.
+**Diff pipeline migration:** Currently the diff runs inside the agent container against `sandbox/`. Under this model it runs against the MCP server's working mount after the session ends — either inside the MCP server container, or by the harness comparing the working mount against the original before teardown. Output still lands in `.workspace/session-diffs/patch.diff` for operator review as now.
 
 **Agent harness candidates:**
 
@@ -271,7 +271,7 @@ Adopt the two-layer model as the target architecture. The two-workspace pattern 
 - **Reporting workspace** (`SANDBOX_DIR/.workspace/`) — owned by the reasoning layer container. The agent reads briefs here, writes progress state, todo lists, and session output. Direct mount, read-write, unchanged from current model.
 - **Working workspace** — owned by the capability layer container (MCP server). The agent has no direct filesystem path to it. All access is via tool calls. The container boundary enforces isolation — built-in filesystem tools in the agent have nothing to reach because no working mount exists in the agent container.
 
-The diff pipeline migrates to post-session, run against the capability layer's working mount rather than inside the agent container. Output still lands in `.workspace/changes/` for operator review.
+The diff pipeline migrates to post-session, run against the capability layer's working mount rather than inside the agent container. Output still lands in `.workspace/session-diffs/` for operator review.
 
 ### Why M1.7 was superseded
 

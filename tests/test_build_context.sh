@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_build_context.sh — Tests for libs/build_context.sh build_context.
+# tests/test_build_context.sh — Tests for libs/containers.sh build_context.
 #
 # Uses a temporary directory to simulate the repo layout.
 # Each test is self-contained; the fixture is rebuilt per test.
@@ -14,17 +14,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/libs/build_context.sh"
+source "$REPO_ROOT/libs/containers.sh"
 
 # ---------------------------------------------------------------------------
 # Test harness
 # ---------------------------------------------------------------------------
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
+source "$SCRIPT_DIR/libs/test_common.sh"
 
 assert_exit_zero() {
     local label="$1"; shift
@@ -97,15 +93,24 @@ assert_dir_file_count() {
 
 make_fixture() {
     local dir
-    dir=$(mktemp -d)
+    dir=$(mktemp -d /tmp/XXXXXX)
 
     mkdir -p "$dir/libs"
     echo "dirs-content"        > "$dir/libs/dirs.sh"
     echo "snapshot-content"   > "$dir/libs/snapshot.sh"
     echo "diff-content"       > "$dir/libs/diff.sh"
+    echo "package_branch-content" > "$dir/libs/package_branch.sh"
+    echo "package_diff-content"   > "$dir/libs/package_diff.sh"
+    echo "session-content"        > "$dir/libs/session.sh"
 
     mkdir -p "$dir/scripts"
-    echo "entrypoint-content" > "$dir/scripts/sandbox-entrypoint.sh"
+    echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
+    echo "provider-entrypoint-content" > "$dir/libs/provider-entrypoint.sh"
+
+    mkdir -p "$dir/docs/architecture"
+    echo "arch-content" > "$dir/docs/architecture/test.md"
+    mkdir -p "$dir/docs/concepts"
+    echo "concept-content" > "$dir/docs/concepts/test.md"
 
     echo "$dir"
 }
@@ -128,17 +133,17 @@ echo ""
 
 # ---------------------------------------------------------------------------
 echo "-- Output contract --"
-# build_context prints a path to stdout; that path is a directory.
+# build_context_sandbox prints a path to stdout; that path is a directory.
 
 REPO=$(make_fixture)
 
-context=$(build_context sandbox "$REPO")
-assert_exit_zero    "sandbox: exits 0"       build_context sandbox "$REPO"
+context=$(build_context_sandbox "$REPO")
+assert_exit_zero    "sandbox: exits 0"       build_context_sandbox "$REPO"
 assert_equal        "sandbox: output is a directory" "directory" "$([ -d "$context" ] && echo directory || echo not-a-directory)"
 cleanup "$context"
 
-context=$(build_context agent "$REPO")
-assert_exit_zero    "agent: exits 0"         build_context agent "$REPO"
+context=$(build_context_agent "$REPO" test-provider)
+assert_exit_zero    "agent: exits 0"         build_context_agent "$REPO" test-provider
 assert_equal        "agent: output is a directory" "directory" "$([ -d "$context" ] && echo directory || echo not-a-directory)"
 cleanup "$context"
 cleanup "$REPO"
@@ -146,17 +151,21 @@ cleanup "$REPO"
 # ---------------------------------------------------------------------------
 echo ""
 echo "-- File contents: sandbox image type --"
-# sandbox context must contain exactly: sandbox-entrypoint.sh, snapshot.sh,
-# diff.sh, dirs.sh — and nothing else.
+# sandbox context must contain: sandbox-entrypoint.sh, dirs.sh, snapshot.sh,
+# diff.sh, package_branch.sh, session.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
-context=$(build_context sandbox "$REPO")
+context=$(build_context_sandbox "$REPO")
 
 assert_file_exists  "sandbox: contains sandbox-entrypoint.sh" "$context/sandbox-entrypoint.sh"
+assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
 assert_file_exists  "sandbox: contains snapshot.sh"           "$context/snapshot.sh"
 assert_file_exists  "sandbox: contains diff.sh"               "$context/diff.sh"
-assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
-assert_dir_file_count "sandbox: contains exactly 4 files"     "$context" 4
+assert_file_exists  "sandbox: contains package_branch.sh"     "$context/package_branch.sh"
+assert_file_exists  "sandbox: contains session.sh"            "$context/session.sh"
+assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
+assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
+assert_dir_file_count "sandbox: contains at least 6 files"    "$context" 6
 
 cleanup "$context"
 cleanup "$REPO"
@@ -164,16 +173,20 @@ cleanup "$REPO"
 # ---------------------------------------------------------------------------
 echo ""
 echo "-- File contents: agent image type --"
-# agent context must contain exactly: dirs.sh — and nothing else.
+# agent context must contain: dirs.sh, provider-entrypoint.sh,
+# package_diff.sh, session.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
-context=$(build_context agent "$REPO")
+context=$(build_context_agent "$REPO" test-provider)
 
-assert_file_exists    "agent: contains dirs.sh"              "$context/dirs.sh"
-assert_file_absent    "agent: does not contain entrypoint"   "$context/sandbox-entrypoint.sh"
-assert_file_absent    "agent: does not contain snapshot.sh"  "$context/snapshot.sh"
-assert_file_absent    "agent: does not contain diff.sh"      "$context/diff.sh"
-assert_dir_file_count "agent: contains exactly 1 file"       "$context" 1
+assert_file_exists    "agent: contains dirs.sh"               "$context/dirs.sh"
+assert_file_exists    "agent: contains provider-entrypoint.sh" "$context/provider-entrypoint.sh"
+assert_file_exists    "agent: contains package_diff.sh"        "$context/package_diff.sh"
+assert_file_exists    "agent: contains session.sh"             "$context/session.sh"
+assert_file_absent    "agent: does not contain sandbox scripts" "$context/sandbox-entrypoint.sh"
+assert_file_absent    "agent: does not contain snapshot.sh"    "$context/snapshot.sh"
+assert_file_absent    "agent: does not contain diff.sh"        "$context/diff.sh"
+assert_dir_file_count "agent: contains at least 4 files"       "$context" 4
 
 cleanup "$context"
 cleanup "$REPO"
@@ -184,10 +197,10 @@ echo "-- File content fidelity --"
 # Files in the context must have identical content to the source files.
 
 REPO=$(make_fixture)
-context=$(build_context sandbox "$REPO")
+context=$(build_context_sandbox "$REPO")
 
 assert_equal "sandbox-entrypoint.sh content matches source" \
-    "$(cat "$REPO/scripts/sandbox-entrypoint.sh")" \
+    "$(cat "$REPO/libs/sandbox-entrypoint.sh")" \
     "$(cat "$context/sandbox-entrypoint.sh")"
 
 assert_equal "dirs.sh content matches source" \
@@ -202,8 +215,8 @@ echo ""
 echo "-- Isolation: each call produces a distinct temp dir --"
 
 REPO=$(make_fixture)
-context_a=$(build_context sandbox "$REPO")
-context_b=$(build_context sandbox "$REPO")
+context_a=$(build_context_sandbox "$REPO")
+context_b=$(build_context_sandbox "$REPO")
 
 assert_not_equal "two calls produce different paths" "$context_a" "$context_b"
 assert_equal     "both paths are valid directories" \
@@ -223,18 +236,18 @@ echo "-- Digest properties --"
 # (which includes the file path) is identical between runs.
 
 REPO=$(make_fixture)
-fixed_context=$(mktemp -d)
+fixed_context=$(mktemp -d /tmp/XXXXXX)
 
 # First build: populate fixed_context by copying from build_context output
-context_tmp=$(build_context sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+context_tmp=$(build_context_sandbox "$REPO")
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d1=$(digest_of_context "$fixed_context")
 
 # Second build: wipe and repopulate the same fixed path
-rm -f "$fixed_context"/*
-context_tmp=$(build_context sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+rm -rf "$fixed_context"/*
+context_tmp=$(build_context_sandbox "$REPO")
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d2=$(digest_of_context "$fixed_context")
 
@@ -243,19 +256,19 @@ assert_equal "digest is 64 hex chars" 64 "${#d1}"
 
 # Change a source file — digest must change
 echo "modified-content" > "$REPO/libs/dirs.sh"
-rm -f "$fixed_context"/*
-context_tmp=$(build_context sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+rm -rf "$fixed_context"/*
+context_tmp=$(build_context_sandbox "$REPO")
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d3=$(digest_of_context "$fixed_context")
 
 assert_not_equal "digest changes when source file changes" "$d1" "$d3"
 
 # Change a different source file
-echo "modified-entrypoint" > "$REPO/scripts/sandbox-entrypoint.sh"
-rm -f "$fixed_context"/*
-context_tmp=$(build_context sandbox "$REPO")
-cp "$context_tmp"/* "$fixed_context/"
+echo "modified-entrypoint" > "$REPO/libs/sandbox-entrypoint.sh"
+rm -rf "$fixed_context"/*
+context_tmp=$(build_context_sandbox "$REPO")
+cp -r "$context_tmp"/* "$fixed_context/"
 cleanup "$context_tmp"
 d4=$(digest_of_context "$fixed_context")
 
@@ -270,8 +283,8 @@ echo ""
 echo "-- Caller is responsible for cleanup (temp dir persists after call) --"
 
 REPO=$(make_fixture)
-context=$(build_context sandbox "$REPO")
-assert_equal "context dir still exists after build_context returns" \
+context=$(build_context_sandbox "$REPO")
+assert_equal "context dir still exists after build_context_sandbox returns" \
     "directory" "$([ -d "$context" ] && echo directory || echo not-a-directory)"
 cleanup "$context"
 cleanup "$REPO"
@@ -282,56 +295,52 @@ echo "-- Error cases --"
 
 # Missing required arguments
 assert_exit_nonzero "fails when image_type arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context'
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox'
 assert_exit_nonzero "fails when repo_root arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox'
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox'
 
-# Unknown image type
-REPO=$(make_fixture)
-assert_exit_nonzero "fails on unknown image type" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context unknown '"$REPO"
-cleanup "$REPO"
+
 
 # Missing source file: sandbox-entrypoint.sh
 REPO=$(make_fixture)
-rm "$REPO/scripts/sandbox-entrypoint.sh"
+rm "$REPO/libs/sandbox-entrypoint.sh"
 assert_exit_nonzero "fails when sandbox-entrypoint.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: snapshot.sh
 REPO=$(make_fixture)
 rm "$REPO/libs/snapshot.sh"
 assert_exit_nonzero "fails when snapshot.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: diff.sh
 REPO=$(make_fixture)
 rm "$REPO/libs/diff.sh"
 assert_exit_nonzero "fails when diff.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (sandbox)
 REPO=$(make_fixture)
 rm "$REPO/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (sandbox)" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (agent)
 REPO=$(make_fixture)
 rm "$REPO/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (agent)" \
-    bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context agent '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_agent '"$REPO"
 cleanup "$REPO"
 
-# No partial output on error: build_context must clean up the temp dir
+# No partial output on error: build_context_sandbox must clean up the temp dir
 # before returning on failure — the ERR trap handles this.
 REPO=$(make_fixture)
 rm "$REPO/libs/snapshot.sh"
-partial_output=$(bash -c 'source '"$REPO_ROOT"'/libs/build_context.sh && build_context sandbox '"$REPO" 2>/dev/null || true)
+partial_output=$(bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO" 2>/dev/null || true)
 if [[ -n "$partial_output" && -d "$partial_output" ]]; then
     fail "no partial output on error: partial context dir left behind at $partial_output"
     rm -rf "$partial_output"
@@ -344,8 +353,4 @@ cleanup "$REPO"
 # Summary
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "=== Results: $PASS passed, $FAIL failed ==="
-echo ""
-
-[[ $FAIL -eq 0 ]]
+test_done

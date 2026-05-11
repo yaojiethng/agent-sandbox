@@ -1,0 +1,9 @@
+{
+  "workspaceFolder": "/home/agentuser/sandbox",
+  "remoteUser": "agentuser",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "git.openRepositoryInParentFolders": "always"
+  },
+  "extensions": []
+}

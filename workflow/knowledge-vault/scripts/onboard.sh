@@ -5,7 +5,7 @@
 #
 # Places at vault root:
 #   Makefile       — pre-filled from libs/_templates/Makefile.template
-#   agents.md      — agent brief starter (operator fills in before make start)
+#   AGENTS.md      — agent brief starter (operator fills in before make start)
 #   .vault         — relative symlink to this workflow directory
 #
 # Idempotent: warns and exits without changes if already onboarded.
@@ -125,14 +125,14 @@ sed -i "s/^\.PHONY:.*$/& initialize checkpoint rollback checkpoint-prune/" "$MAK
 echo "  Makefile written"
 echo "  PROJECT_NAME = ${VAULT_NAME}"
 echo "  PROJECT_ROOT = (resolved at make time via \$(CURDIR))"
-echo "  AGENT_BRIEF  = agents.md"
+echo "  AGENT_BRIEF  = AGENTS.md"
 
 touch $ENV_PATH
 echo "  .env written"
 
-BRIEF_PATH="$VAULT_DIR/agents.md"
+BRIEF_PATH="$VAULT_DIR/AGENTS.md"
 if [[ -f "$BRIEF_PATH" ]]; then
-  echo "  agents.md already exists — skipping"
+  echo "  AGENTS.md already exists — skipping"
 else
   cat > "$BRIEF_PATH" <<BRIEF
 # Agent Brief — ${VAULT_NAME}
@@ -146,7 +146,7 @@ else
 ## Task
 <describe the current task or migration scope here before each session>
 BRIEF
-  echo "  agents.md written"
+  echo "  AGENTS.md written"
 fi
 
 # -------------------------
@@ -160,9 +160,9 @@ echo "  1. Verify git identity is set:"
 echo "       git config --global user.name / user.email"
 if [[ -f "$VAULT_DIR/.obsidian/sync.json" ]]; then
 echo "  2. In Obsidian: Settings → Sync → Excluded files → add '.git'"
-echo "  3. Fill in agents.md with vault context and current task"
+echo "  3. Fill in AGENTS.md with vault context and current task"
 else
-echo "  2. Fill in agents.md with vault context and current task"
+echo "  2. Fill in AGENTS.md with vault context and current task"
 fi
 echo ""
 echo "Then run:"

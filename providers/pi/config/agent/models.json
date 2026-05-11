@@ -1,0 +1,189 @@
+{
+  "providers": {
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com",
+      "api": "openai-completions",
+      "apiKey": "DEEPSEEK_API_KEY",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "name": "Deepseek V4 Flash",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "cost": {
+            "input": 0.14,
+            "output": 0.28,
+            "cacheRead": 0.028,
+            "cacheWrite": 0
+          },
+          "compat": {
+             "thinkingFormat": "deepseek",
+              "requiresReasoningContentOnAssistantMessages": true,
+              "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "name": "Deepseek V4 Pro",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "cost": {
+            "input": 0.435,
+            "output": 0.87,
+            "cacheRead": 0.003625,
+            "cacheWrite": 0
+          },
+          "compat": {
+             "thinkingFormat": "deepseek",
+              "requiresReasoningContentOnAssistantMessages": true,
+              "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
+        }
+      ]
+    },
+    "opencode-go": {
+      "baseUrl": "https://opencode.ai/zen/go/v1",
+      "apiKey": "OPENCODE_API_KEY",
+      "models": [
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "mimo-v2-pro",
+          "name": "MiMo-V2-Pro (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "mimo-v2-omni",
+          "name": "MiMo-V2-Omni (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "qwen3.6-plus",
+          "name": "Qwen3.6 Plus (Opencode Go)",
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen3.5 Plus (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "minimax-m2.5",
+          "name": "MiniMax M2.5 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        },
+        {
+          "id": "minimax-m2.7",
+          "name": "MiniMax M2.7 (Opencode Go)",
+          "api": "anthropic-messages",
+          "baseUrl": "https://opencode.ai/zen/go"
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "name": "DeepSeek V4 Pro (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (Opencode Go)",
+          "api": "openai-completions",
+          "baseUrl": "https://opencode.ai/zen/go/v1"
+        }
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "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",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "z-ai/glm-5.1",
+          "name": "GLM 5.1 (OpenRouter)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 204800,
+          "maxTokens": 131072,
+          "compat": {
+            "thinkingFormat": "zai",
+            "openRouterRouting": {
+              "order": ["z-ai"]
+            }
+          }
+        },
+        {
+          "id": "qwen/qwen3.5-27b",
+          "name": "Qwen3.5-27B Dense (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 8192,
+          "compat": {
+            "thinkingFormat": "qwen"
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "Deepseek V4 Flash (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000
+        },
+        {
+          "id": "deepseek/deepseek-v4-pro",
+          "name": "Deepseek V4 Pro (OpenRouter)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 364000
+        }
+      ]
+    }
+  }
+}
