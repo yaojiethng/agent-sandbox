@@ -58,6 +58,20 @@ There is no harness-level AGENTS.md injected across all providers and all projec
 
 The `~/workspace/input/brief.md` path was previously used to inject a stub file at session start. This stub carried no substantive content and has been removed. The input channel at `~/workspace/input/` remains available for operator-supplied files (task specs, reference documents); it is not used for agent orientation.
 
+### Skills and Prompts Layer Model
+
+Skills and prompt templates follow a parallel three-layer model with distinct loading mechanisms per layer:
+
+| Layer | Source | Loaded via | Update mechanism |
+|---|---|---|---|
+| **Provider layer** | `providers/<n>/config/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` (config-seeded, survives image rebuild) | `onboard.sh --refresh` or edit `$SANDBOX_DIR/.<provider>/` |
+| **Sandbox (workflow) layer** | `agent/skills/`, `agent/prompts/` | Image-baked at `/opt/workflow/agent/skills&#124;prompts/`, referenced by `settings.json` keys `skills` and `prompts` | Image rebuild (`make build`) — stable baseline independent of working tree |
+| **User layer** | `$SANDBOX_DIR/.<provider>/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` | Direct filesystem placement by operator |
+
+**Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts — one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability — a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+
+**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`. The sandbox-layer files are not seeded into these paths by default — they are baked into the image at `/opt/workflow/`. The `settings.json` `"skills"` and `"prompts"` keys bridge this gap by telling pi to look at the image-baked paths. This makes the sandbox layer critically dependent on those keys surviving in `settings.json` across sessions — see [Config Flow and Fragility Notes](../architecture/provider_lifecycle.md#config-flow-and-fragility-notes) in `provider_lifecycle.md`.
+
 ---
 
 ## How the Workflow is Expressed

@@ -71,6 +71,55 @@ The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<pr
 
 ---
 
+## Config Flow and Fragility Notes
+
+The provider config cycle can be visualised as:
+
+```
+   Onboard source  ──┬──> Bind mount ──┬──copy-in──> AGENT_HOME ──> pi reads
+   (providers/       │                 │                                     │
+    <n>/config/)     │                 │                                     │
+                     │                 │                           pi writes │
+                     │                 │                                     │
+                     │                 ◄──────copy-out───────────────────────┘
+                     │
+   User files ───────┘
+   (skills/prompts
+    placed by operator)
+```
+
+### Ownership collision: settings.json
+
+`settings.json` has two simultaneous owners:
+
+- **Agent (pi).** Pi reads, modifies, and writes `settings.json`. When pi saves, it writes only keys it manages (model, provider, theme, compaction, etc.).
+- **Agent-sandbox.** The harness seeds `settings.json` with additional keys (`skills`, `prompts`) that reference image-baked paths at `/opt/workflow/`. These keys tell pi where to find sandbox-layer workflow files.
+
+Both owners share a single file, but only pi writes it back. The harness-owned keys survive only if pi preserves them across its own save cycle. If pi drops them, the next copy-out propagates the stripped file to the bind-mount, and every subsequent session copies-in the stripped version.
+
+**What happened in practice:** The `settings.json` at the bind-mount was stripped of its `skills`/`prompts` keys by a prior session's copy-out. Subsequent sessions lost access to the sandbox-layer skills and prompts even though the files existed in the image at `/opt/workflow/`. Recovery required manually re-seeding the bind-mount from the onboard source.
+
+### Fragility summary
+
+| Issue | Mechanism | Impact |
+|---|---|---|
+| **Ownership collision** | settings.json written by both pi and agent-sandbox; only pi's write path is active | Custom keys (`skills`, `prompts`) silently lost on pi save |
+| **Copy-out overwrites seed** | `cp -r` is lossless but writes pi's runtime state over the canonical seed | Corrupted bind-mount is permanent until manually re-seeded |
+| **No recovery mechanism** | No check "does bind-mount differ from onboard source?" at session start | Silent drift — operator notices only when features stop working |
+| **Onboard template is a snapshot** | `providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | Default values drift between onboard template and runtime pi version |
+
+### How the three-layer skills/prompts model interacts with this cycle
+
+Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in the repo) are loaded through a different path than provider-layer or user-layer content:
+
+- **Sandbox layer** — image-baked at `/opt/workflow/agent/skills|prompts`. Loaded exclusively via the `"skills"` and `"prompts"` keys in `settings.json`. **Single point of failure**: if those keys are stripped, the entire sandbox layer vanishes.
+- **Provider layer** — config-seeded into `~/.pi/agent/prompts/pi-agent.md`. Loaded via pi's auto-discovery from `~/.pi/agent/prompts/`. Survives independently of settings.json keys.
+- **User layer** — operator-provided files in `~/.pi/agent/skills|prompts/`. Loaded via pi's auto-discovery from these default global directories. Survives independently of settings.json keys.
+
+The three-layer model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#skills-and-prompts-layer-model).
+
+---
+
 ## References
 
 | Topic | Document |
