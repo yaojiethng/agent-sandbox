@@ -115,12 +115,15 @@ main() {
     fi
   }
 
-  rebuild_if_requested() {
+  rebuild_flags() {
+    local flags=""
     if [[ "$REBUILD" == true ]]; then
-      echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
-      build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
-      build_agent   "$PROVIDER_NAME" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $([ "$REBUILD_BASE" == true ] && echo "--rebuild-base")
+      flags+=" --rebuild"
     fi
+    if [[ "$REBUILD_BASE" == true ]]; then
+      flags+=" --rebuild-base"
+    fi
+    echo "$flags"
   }
 
   # -------------------------
@@ -155,7 +158,7 @@ main() {
       fi
 
       if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
-        build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+        build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
         for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/providers/"*/base.Dockerfile; do
           [[ -f "$BASE_DOCKERFILE" ]] || continue
           local DISCOVERED_PROVIDER
@@ -174,10 +177,10 @@ main() {
           fi
         done
         if [[ "$WANT_SANDBOX" == true ]]; then
-          build_sandbox "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO"
+          build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
         fi
         for P in "${PROVIDER_TARGETS[@]}"; do
-          build_agent "$P" "$PROJECT_NAME" "$SANDBOX_DIR" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+          build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
         done
       fi
       ;;
@@ -185,36 +188,36 @@ main() {
     start)
       parse_flags "$@"
       require_run_args start
-      rebuild_if_requested
       "$SCRIPTS/start_agent.sh" standard \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
         --provider="$PROVIDER_NAME" \
+        $(rebuild_flags) \
         "${PASSTHROUGH[@]}"
       ;;
 
     serve)
       parse_flags "$@"
       require_run_args serve
-      rebuild_if_requested
       "$SCRIPTS/start_agent.sh" serve \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
         --provider="$PROVIDER_NAME" \
+        $(rebuild_flags) \
         "${PASSTHROUGH[@]}"
       ;;
 
     dry-run)
       parse_flags "$@"
       require_run_args dry-run
-      rebuild_if_requested
       "$SCRIPTS/start_agent.sh" dry-run \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
         --provider="$PROVIDER_NAME" \
+        $(rebuild_flags) \
         "${PASSTHROUGH[@]}"
       ;;
 

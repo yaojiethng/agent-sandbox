@@ -56,6 +56,8 @@ SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=".env"
 PROVIDER_NAME=""
+REBUILD=false
+REBUILD_BASE=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -65,6 +67,8 @@ for ARG in "$@"; do
     --brief=*)    AGENT_BRIEF="${ARG#--brief=}" ;;
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+    --rebuild)    REBUILD=true ;;
+    --rebuild-base) REBUILD_BASE=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -266,6 +270,22 @@ if [[ -n "$(docker ps -aq --filter "label=com.docker.compose.project=${_COMPOSE_
   "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
 fi
 unset _COMPOSE_PROJECT
+
+# -------------------------
+# Rebuild (if requested)
+# -------------------------
+# When --rebuild is passed, build sandbox and provider images before preflight.
+# This replaces the old rebuild_if_requested() in agent-sandbox.sh — the
+# decision is now owned by start_agent.sh alongside preflight.
+if [[ "$REBUILD" == true ]]; then
+  echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
+  if [[ "$REBUILD_BASE" == true ]]; then
+    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--rebuild-base"
+  else
+    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+  fi
+fi
 
 # -------------------------
 # Preflight

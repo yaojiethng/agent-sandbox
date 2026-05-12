@@ -11,7 +11,6 @@
 #   build_image            - compute digest and run docker build
 #   build_agent            - build the reasoning layer images for a given provider + project
 #   build_sandbox          - build the capability layer image for a given project
-#   build_all              - build both images
 #   preflight              - verify both images exist; error with instructions if not
 
 # -------------------------
@@ -143,48 +142,74 @@ build_image() {
 }
 
 # build_agent <provider> <project_name> <repo_root> [--rebuild-base]
-# Delegates to build_container.sh which builds base then provider image.
+# Builds the reasoning layer provider image (<provider>-agent-<project>),
+# and the base image (<provider>-base) if it does not exist or --rebuild-base is set.
+#
+# Default behaviour: base image is skipped if it already exists; provider image is always rebuilt.
+# --rebuild-base: forces a full rebuild of both base and provider with --no-cache.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
   local repo_root="${3:?build_agent requires repo root}"
   local rebuild_base="${4:-}"
+  local no_cache=""
 
-  local build_script="$repo_root/scripts/build_container.sh"
-  if [[ ! -f "$build_script" ]]; then
-    echo "Error: build_container.sh not found: $build_script" >&2
+  if [[ -n "$rebuild_base" ]]; then
+    no_cache="--no-cache"
+  fi
+
+  local base_image; base_image="$(agent_base_image_name "$provider")"
+  local base_dockerfile="$repo_root/providers/$provider/base.Dockerfile"
+  local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
+  local provider_dockerfile="$repo_root/providers/$provider/provider.Dockerfile"
+
+  if [[ ! -f "$base_dockerfile" ]]; then
+    echo "Error: base Dockerfile not found: $base_dockerfile" >&2
+    exit 1
+  fi
+  if [[ ! -f "$provider_dockerfile" ]]; then
+    echo "Error: provider Dockerfile not found: $provider_dockerfile" >&2
     exit 1
   fi
 
-  "$build_script" --type=agent --provider="$provider" --name="$project" ${rebuild_base:+--rebuild-base}
+  local context
+  context="$(build_context_agent "$repo_root" "$provider")"
+  local context_cleanup="$context"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$context_cleanup'" EXIT
+
+  # Build base image if missing or --rebuild-base
+  if ! docker image inspect "$base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
+    build_image "$base_image" "$base_dockerfile" "$context" "$no_cache"
+  else
+    echo "Base image exists, skipping: $base_image"
+  fi
+
+  # Always build provider image
+  build_image "$provider_image" "$provider_dockerfile" "$context" "" \
+    --build-arg "BASE_IMAGE=$base_image"
 }
 
-# build_sandbox <project_name> <sandbox_dir> <repo_root>
-# Delegates to build_container.sh which builds the capability layer image.
+# build_sandbox <project_name> <repo_root>
+# Builds the capability layer image (sandbox-<project>).
 build_sandbox() {
   local project="${1:?build_sandbox requires project name}"
-  local sandbox_dir="${2:?build_sandbox requires sandbox dir}"
-  local repo_root="${3:?build_sandbox requires repo root}"
+  local repo_root="${2:?build_sandbox requires repo root}"
 
-  local build_script="$repo_root/scripts/build_container.sh"
-  if [[ ! -f "$build_script" ]]; then
-    echo "Error: build_container.sh not found: $build_script" >&2
+  local dockerfile="$repo_root/libs/sandbox.Dockerfile"
+  if [[ ! -f "$dockerfile" ]]; then
+    echo "Error: sandbox Dockerfile not found: $dockerfile" >&2
     exit 1
   fi
 
-  "$build_script" --type=sandbox --name="$project" --sandbox="$sandbox_dir"
-}
+  local image; image="$(sandbox_image_name "$project")"
+  local context
+  context="$(build_context_sandbox "$repo_root")"
+  local context_cleanup="$context"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$context_cleanup'" EXIT
 
-# build_all <provider> <project_name> <sandbox_dir> <repo_root>
-# Always rebuilds base and provider images.
-build_all() {
-  local provider="$1"
-  local project="$2"
-  local sandbox_dir="$3"
-  local repo_root="$4"
-
-  build_sandbox "$project" "$sandbox_dir" "$repo_root"
-  build_agent   "$provider" "$project" "$repo_root" "--rebuild-base"
+  build_image "$image" "$dockerfile" "$context" ""
 }
 
 # -------------------------
@@ -215,7 +240,7 @@ preflight() {
 
   if [[ "$missing" == true ]]; then
     echo "One or more required images are missing. Building them now."
-    build_sandbox "$project" "$sandbox_dir" "$repo_root"
+    build_sandbox "$project" "$repo_root"
     build_agent   "$provider" "$project" "$repo_root"
   fi
 }

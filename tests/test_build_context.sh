@@ -102,10 +102,17 @@ make_fixture() {
     echo "package_branch-content" > "$dir/libs/package_branch.sh"
     echo "package_diff-content"   > "$dir/libs/package_diff.sh"
     echo "session-content"        > "$dir/libs/session.sh"
+    echo "routing-content"        > "$dir/libs/routing.sh"
 
     mkdir -p "$dir/scripts"
     echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
     echo "provider-entrypoint-content" > "$dir/libs/provider-entrypoint.sh"
+
+    # agent workflow files — needed by build_context_agent
+    mkdir -p "$dir/agent/skills"
+    echo "skill-content" > "$dir/agent/skills/test.md"
+    mkdir -p "$dir/agent/prompts"
+    echo "prompt-content" > "$dir/agent/prompts/test.md"
 
     mkdir -p "$dir/docs/architecture"
     echo "arch-content" > "$dir/docs/architecture/test.md"
@@ -152,7 +159,7 @@ cleanup "$REPO"
 echo ""
 echo "-- File contents: sandbox image type --"
 # sandbox context must contain: sandbox-entrypoint.sh, dirs.sh, snapshot.sh,
-# diff.sh, package_branch.sh, session.sh, docs/architecture/, docs/concepts/.
+# diff.sh, routing.sh, session.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
 context=$(build_context_sandbox "$REPO")
@@ -161,7 +168,7 @@ assert_file_exists  "sandbox: contains sandbox-entrypoint.sh" "$context/sandbox-
 assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
 assert_file_exists  "sandbox: contains snapshot.sh"           "$context/snapshot.sh"
 assert_file_exists  "sandbox: contains diff.sh"               "$context/diff.sh"
-assert_file_exists  "sandbox: contains package_branch.sh"     "$context/package_branch.sh"
+assert_file_exists  "sandbox: contains routing.sh"            "$context/routing.sh"
 assert_file_exists  "sandbox: contains session.sh"            "$context/session.sh"
 assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
 assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
@@ -174,7 +181,7 @@ cleanup "$REPO"
 echo ""
 echo "-- File contents: agent image type --"
 # agent context must contain: dirs.sh, provider-entrypoint.sh,
-# package_diff.sh, session.sh, docs/architecture/, docs/concepts/.
+# package_diff.sh, session.sh, routing.sh, docs/architecture/, docs/concepts/.
 
 REPO=$(make_fixture)
 context=$(build_context_agent "$REPO" test-provider)
@@ -183,10 +190,11 @@ assert_file_exists    "agent: contains dirs.sh"               "$context/dirs.sh"
 assert_file_exists    "agent: contains provider-entrypoint.sh" "$context/provider-entrypoint.sh"
 assert_file_exists    "agent: contains package_diff.sh"        "$context/package_diff.sh"
 assert_file_exists    "agent: contains session.sh"             "$context/session.sh"
+assert_file_exists    "agent: contains routing.sh"             "$context/routing.sh"
 assert_file_absent    "agent: does not contain sandbox scripts" "$context/sandbox-entrypoint.sh"
 assert_file_absent    "agent: does not contain snapshot.sh"    "$context/snapshot.sh"
 assert_file_absent    "agent: does not contain diff.sh"        "$context/diff.sh"
-assert_dir_file_count "agent: contains at least 4 files"       "$context" 4
+assert_dir_file_count "agent: contains at least 6 files"       "$context" 6
 
 cleanup "$context"
 cleanup "$REPO"
@@ -347,6 +355,61 @@ if [[ -n "$partial_output" && -d "$partial_output" ]]; then
 else
     pass "no partial output on error: no directory left behind"
 fi
+cleanup "$REPO"
+
+# -------------------------------------------------------------------------
+echo ""
+echo "-- build_sandbox argument validation --"
+# build_sandbox checks required args and Dockerfile presence.
+
+REPO=$(make_fixture)
+assert_exit_nonzero "build_sandbox: fails when project name is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox'
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+assert_exit_nonzero "build_sandbox: fails when repo_root is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+# No sandbox.Dockerfile in fixture; should fail on missing file.
+assert_exit_nonzero "build_sandbox: fails when sandbox.Dockerfile is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"' '"'"'$REPO'"'"
+cleanup "$REPO"
+
+# -------------------------------------------------------------------------
+echo ""
+echo "-- build_agent argument validation --"
+# build_agent checks required args and Dockerfile presence.
+
+REPO=$(make_fixture)
+assert_exit_nonzero "build_agent: fails when provider name is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent'
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+assert_exit_nonzero "build_agent: fails when project name is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+assert_exit_nonzero "build_agent: fails when repo_root is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+# No providers/ dir in fixture; should fail on missing base.Dockerfile.
+assert_exit_nonzero "build_agent: fails when base.Dockerfile is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
+cleanup "$REPO"
+
+REPO=$(make_fixture)
+mkdir -p "$REPO/providers/test-provider"
+echo "base" > "$REPO/providers/test-provider/base.Dockerfile"
+# base.Dockerfile exists but provider.Dockerfile does not; should fail.
+assert_exit_nonzero "build_agent: fails when provider.Dockerfile is missing" \
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 # ---------------------------------------------------------------------------

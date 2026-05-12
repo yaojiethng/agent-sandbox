@@ -491,4 +491,54 @@ run_test test_docker_compose_template_sandbox_uses_anchor
 run_test test_docker_compose_template_agent_uses_anchor
 run_test test_docker_compose_template_has_container_names
 
+# -------------------------
+
+test_rebuild_flags_parsed_by_start_agent() {
+  if grep -q -- '--rebuild)' "$REPO_ROOT/scripts/start_agent.sh" && \
+     grep -q -- 'REBUILD=true' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh parses --rebuild flag"
+  else
+    fail "start_agent.sh missing --rebuild flag handling"
+  fi
+}
+
+test_rebuild_base_flags_parsed_by_start_agent() {
+  if grep -q -- '--rebuild-base)' "$REPO_ROOT/scripts/start_agent.sh" && \
+     grep -q -- 'REBUILD_BASE=true' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh parses --rebuild-base flag"
+  else
+    fail "start_agent.sh missing --rebuild-base flag handling"
+  fi
+}
+
+test_rebuild_block_exists_before_preflight() {
+  # Check that the rebuild block appears before the preflight call
+  local before_preflight
+  before_preflight=$(grep -n '^preflight' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+  local rebuild_block
+  rebuild_block=$(grep -n 'if.*REBUILD.*true' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+
+  if [[ -n "$before_preflight" && -n "$rebuild_block" && "$rebuild_block" -lt "$before_preflight" ]]; then
+    pass "rebuild block appears before preflight in start_agent.sh"
+  else
+    fail "rebuild block missing or not before preflight"
+  fi
+}
+
+test_agent_sandbox_has_rebuild_flags_function() {
+  if grep -q 'rebuild_flags()' "$REPO_ROOT/scripts/agent-sandbox.sh" && \
+     grep -q 'rebuild_if_requested' "$REPO_ROOT/scripts/agent-sandbox.sh"; then
+    fail "agent-sandbox.sh still has old rebuild_if_requested function"
+  elif grep -q 'rebuild_flags()' "$REPO_ROOT/scripts/agent-sandbox.sh"; then
+    pass "agent-sandbox.sh has rebuild_flags() and no rebuild_if_requested"
+  else
+    fail "agent-sandbox.sh missing rebuild_flags()"
+  fi
+}
+
+run_test test_rebuild_flags_parsed_by_start_agent
+run_test test_rebuild_base_flags_parsed_by_start_agent
+run_test test_rebuild_block_exists_before_preflight
+run_test test_agent_sandbox_has_rebuild_flags_function
+
 test_done

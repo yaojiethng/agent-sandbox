@@ -12,7 +12,7 @@ The provider interface contract is defined in [`../architecture/tool_interface.m
 
 Two directories contain scripts in the agent-sandbox repo. Understanding the distinction matters when deciding where provider-specific logic belongs:
 
-**`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh`, `run_agent.sh`, and `build_container.sh` live here.
+**`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh` and `run_agent.sh` live here.
 
 **`libs/`** — reusable utility functions. Sourced by scripts and providers alike. No top-level control flow — only named functions. `compose.sh`, `containers.sh`, `snapshot.sh` live here.
 
@@ -62,7 +62,7 @@ Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-cod
 
 `base.Dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
-The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build_container.sh` skips the base build if the image already exists unless `--rebuild-base` is passed.
+The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `libs/containers.sh`'s `build_agent` function handles base-image skip logic (base is skipped if it already exists) unless `--rebuild-base` is passed.
 
 ```dockerfile
 # providers/<n>/base.Dockerfile
@@ -116,7 +116,7 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
 ```
 
-The `ARG BASE_IMAGE` declaration allows `scripts/build_container.sh` to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
+The `ARG BASE_IMAGE` declaration allows `libs/containers.sh`'s `build_agent` function to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
 
 `dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also injected from `providers/<n>/config/` if that directory exists.
 
