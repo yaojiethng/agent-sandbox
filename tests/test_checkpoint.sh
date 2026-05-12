@@ -17,26 +17,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/scripts/checkpoint.sh"
 
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# -------------------------
-# Fixture builder
-# -------------------------
-make_committed_repo() {
-  local DIR="$1"
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet --initial-branch=main 2>/dev/null || {
-    git -C "$DIR" init --quiet
-    git -C "$DIR" branch -M main 2>/dev/null || true
-  }
-  git -C "$DIR" config user.email "test@sandbox"
-  git -C "$DIR" config user.name "test"
-  echo "initial" > "$DIR/initial.txt"
-  git -C "$DIR" add initial.txt
-  git -C "$DIR" commit -m "initial commit" --quiet
-}
 
 # -------------------------
 # worktree_id_derive tests

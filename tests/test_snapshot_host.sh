@@ -15,29 +15,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/libs/snapshot.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # -------------------------
 # Fixture builder
-# -------------------------
-make_repo() {
-  local DIR="$1"
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  git -C "$DIR" config user.email "test@sandbox"
-  git -C "$DIR" config user.name "test"
-}
-
-make_committed_repo() {
-  local DIR="$1"
-  make_repo "$DIR"
-  echo "tracked content" > "$DIR/tracked.txt"
-  git -C "$DIR" add tracked.txt
-  git -C "$DIR" commit -m "initial" --quiet
-}
-
 # -------------------------
 # snapshot_copy_worktree tests
 # -------------------------
@@ -49,7 +33,7 @@ test_worktree_copies_tracked_files() {
 
   snapshot_copy_worktree "$SRC" "$DST"
 
-  if [[ -f "$DST/tracked.txt" ]]; then
+  if [[ -f "$DST/file.txt" ]]; then
     pass "worktree: tracked file copied to destination"
   else
     fail "worktree: tracked file missing from destination"
@@ -240,7 +224,7 @@ test_archive_head_tar_contains_committed_files() {
 
   local CONTENTS
   CONTENTS=$(tar -tf "$DST/baseline.tar")
-  if echo "$CONTENTS" | grep -q "tracked.txt"; then
+  if echo "$CONTENTS" | grep -q "file.txt"; then
     pass "archive_head: committed file present in tar"
   else
     fail "archive_head: committed file missing from tar"

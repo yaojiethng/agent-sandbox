@@ -21,6 +21,7 @@ source "$REPO_ROOT/libs/containers.sh"
 # ---------------------------------------------------------------------------
 
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/mock_repo_fixtures.sh"
 
 assert_exit_zero() {
     local label="$1"; shift
@@ -91,37 +92,6 @@ assert_dir_file_count() {
 # Fixture helpers
 # ---------------------------------------------------------------------------
 
-make_fixture() {
-    local dir
-    dir=$(mktemp -d /tmp/XXXXXX)
-
-    mkdir -p "$dir/libs"
-    echo "dirs-content"        > "$dir/libs/dirs.sh"
-    echo "snapshot-content"   > "$dir/libs/snapshot.sh"
-    echo "diff-content"       > "$dir/libs/diff.sh"
-    echo "package_branch-content" > "$dir/libs/package_branch.sh"
-    echo "package_diff-content"   > "$dir/libs/package_diff.sh"
-    echo "session-content"        > "$dir/libs/session.sh"
-    echo "routing-content"        > "$dir/libs/routing.sh"
-
-    mkdir -p "$dir/scripts"
-    echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
-    echo "provider-entrypoint-content" > "$dir/libs/provider-entrypoint.sh"
-
-    # agent workflow files — needed by build_context_agent
-    mkdir -p "$dir/agent/skills"
-    echo "skill-content" > "$dir/agent/skills/test.md"
-    mkdir -p "$dir/agent/prompts"
-    echo "prompt-content" > "$dir/agent/prompts/test.md"
-
-    mkdir -p "$dir/docs/architecture"
-    echo "arch-content" > "$dir/docs/architecture/test.md"
-    mkdir -p "$dir/docs/concepts"
-    echo "concept-content" > "$dir/docs/concepts/test.md"
-
-    echo "$dir"
-}
-
 digest_of_context() {
     local context_dir="$1"
     # Must match the digest computation in build_sandbox.sh and build_agent.sh exactly.
@@ -142,7 +112,7 @@ echo ""
 echo "-- Output contract --"
 # build_context_sandbox prints a path to stdout; that path is a directory.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 
 context=$(build_context_sandbox "$REPO")
 assert_exit_zero    "sandbox: exits 0"       build_context_sandbox "$REPO"
@@ -161,7 +131,7 @@ echo "-- File contents: sandbox image type --"
 # sandbox context must contain: sandbox-entrypoint.sh, dirs.sh, snapshot.sh,
 # diff.sh, routing.sh, session.sh, docs/architecture/, docs/concepts/.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 context=$(build_context_sandbox "$REPO")
 
 assert_file_exists  "sandbox: contains sandbox-entrypoint.sh" "$context/sandbox-entrypoint.sh"
@@ -183,7 +153,7 @@ echo "-- File contents: agent image type --"
 # agent context must contain: dirs.sh, provider-entrypoint.sh,
 # package_diff.sh, session.sh, routing.sh, docs/architecture/, docs/concepts/.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 context=$(build_context_agent "$REPO" test-provider)
 
 assert_file_exists    "agent: contains dirs.sh"               "$context/dirs.sh"
@@ -204,7 +174,7 @@ echo ""
 echo "-- File content fidelity --"
 # Files in the context must have identical content to the source files.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 context=$(build_context_sandbox "$REPO")
 
 assert_equal "sandbox-entrypoint.sh content matches source" \
@@ -222,7 +192,7 @@ cleanup "$REPO"
 echo ""
 echo "-- Isolation: each call produces a distinct temp dir --"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 context_a=$(build_context_sandbox "$REPO")
 context_b=$(build_context_sandbox "$REPO")
 
@@ -243,7 +213,7 @@ echo "-- Digest properties --"
 # fixed directory twice — same path both times — so the sha256sum output
 # (which includes the file path) is identical between runs.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 fixed_context=$(mktemp -d /tmp/XXXXXX)
 
 # First build: populate fixed_context by copying from build_context output
@@ -290,7 +260,7 @@ cleanup "$REPO"
 echo ""
 echo "-- Caller is responsible for cleanup (temp dir persists after call) --"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 context=$(build_context_sandbox "$REPO")
 assert_equal "context dir still exists after build_context_sandbox returns" \
     "directory" "$([ -d "$context" ] && echo directory || echo not-a-directory)"
@@ -310,35 +280,35 @@ assert_exit_nonzero "fails when repo_root arg is missing" \
 
 
 # Missing source file: sandbox-entrypoint.sh
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/sandbox-entrypoint.sh"
 assert_exit_nonzero "fails when sandbox-entrypoint.sh is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: snapshot.sh
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/snapshot.sh"
 assert_exit_nonzero "fails when snapshot.sh is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: diff.sh
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/diff.sh"
 assert_exit_nonzero "fails when diff.sh is missing" \
     bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (sandbox)
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (sandbox)" \
     bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (agent)
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (agent)" \
     bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_agent '"$REPO"
@@ -346,7 +316,7 @@ cleanup "$REPO"
 
 # No partial output on error: build_context_sandbox must clean up the temp dir
 # before returning on failure — the ERR trap handles this.
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 rm "$REPO/libs/snapshot.sh"
 partial_output=$(bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO" 2>/dev/null || true)
 if [[ -n "$partial_output" && -d "$partial_output" ]]; then
@@ -362,17 +332,17 @@ echo ""
 echo "-- build_sandbox argument validation --"
 # build_sandbox checks required args and Dockerfile presence.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 assert_exit_nonzero "build_sandbox: fails when project name is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox'
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 assert_exit_nonzero "build_sandbox: fails when repo_root is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 # No sandbox.Dockerfile in fixture; should fail on missing file.
 assert_exit_nonzero "build_sandbox: fails when sandbox.Dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"' '"'"'$REPO'"'"
@@ -383,28 +353,28 @@ echo ""
 echo "-- build_agent argument validation --"
 # build_agent checks required args and Dockerfile presence.
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when provider name is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent'
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when project name is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when repo_root is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 # No providers/ dir in fixture; should fail on missing base.Dockerfile.
 assert_exit_nonzero "build_agent: fails when base.Dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
-REPO=$(make_fixture)
+REPO=$(make_mock_repo)
 mkdir -p "$REPO/providers/test-provider"
 echo "base" > "$REPO/providers/test-provider/base.Dockerfile"
 # base.Dockerfile exists but provider.Dockerfile does not; should fail.

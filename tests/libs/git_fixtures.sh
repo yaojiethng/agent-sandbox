@@ -2,6 +2,17 @@
 # tests/libs/git_fixtures.sh
 # Canonical git repo setup helpers for test files.
 
+# make_repo DIR
+#   Creates a fresh, bare git repository with no commits.
+#   Use when the test needs an empty git init (e.g. for snapshot_copy_worktree).
+make_repo() {
+  local DIR="$1"
+  mkdir -p "$DIR"
+  git -C "$DIR" init --quiet
+  git -C "$DIR" config user.email "test@fixture"
+  git -C "$DIR" config user.name "Test Fixture"
+}
+
 # make_committed_repo DIR
 #   Creates a fresh git repository with one baseline commit on 'main'.
 make_committed_repo() {
