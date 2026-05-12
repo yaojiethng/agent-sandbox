@@ -479,27 +479,38 @@ run_test test_docker_compose_template_has_container_names
 test_rebuild_flags_parsed_by_start_agent() {
   if grep -q -- '--rebuild)' "$REPO_ROOT/scripts/start_agent.sh" && \
      grep -q -- 'REBUILD=true' "$REPO_ROOT/scripts/start_agent.sh"; then
-    pass "start_agent.sh parses --rebuild flag"
+    pass "start_agent.sh parses --rebuild flag (rebuild everything)"
   else
     fail "start_agent.sh missing --rebuild flag handling"
   fi
 }
 
-test_rebuild_base_flags_parsed_by_start_agent() {
-  if grep -q -- '--rebuild-base)' "$REPO_ROOT/scripts/start_agent.sh" && \
-     grep -q -- 'REBUILD_BASE=true' "$REPO_ROOT/scripts/start_agent.sh"; then
-    pass "start_agent.sh parses --rebuild-base flag"
+test_refresh_flags_parsed_by_start_agent() {
+  if grep -q -- '--refresh)' "$REPO_ROOT/scripts/start_agent.sh" && \
+     grep -q -- 'REFRESH=true' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh parses --refresh flag (base skipped)"
   else
-    fail "start_agent.sh missing --rebuild-base flag handling"
+    fail "start_agent.sh missing --refresh flag handling"
+  fi
+}
+
+test_rebuild_base_flag_removed() {
+  if grep -q -- '--rebuild-base)' "$REPO_ROOT/scripts/start_agent.sh"; then
+    fail "start_agent.sh still has old --rebuild-base flag"
+  elif grep -q -- 'REBUILD_BASE' "$REPO_ROOT/scripts/start_agent.sh"; then
+    fail "start_agent.sh still has old REBUILD_BASE variable"
+  else
+    pass "start_agent.sh no longer has --rebuild-base flag"
   fi
 }
 
 test_rebuild_block_exists_before_preflight() {
-  # Check that the rebuild block appears before the preflight call
+  # Check that the rebuild/refresh block appears before the preflight call
   local before_preflight
   before_preflight=$(grep -n '^preflight' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+  # Matches either --rebuild or --refresh block (both appear before preflight)
   local rebuild_block
-  rebuild_block=$(grep -n 'if.*REBUILD.*true' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+  rebuild_block=$(grep -nE 'if \[\[ .*(REBUILD|REFRESH).*true' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
 
   if [[ -n "$before_preflight" && -n "$rebuild_block" && "$rebuild_block" -lt "$before_preflight" ]]; then
     pass "rebuild block appears before preflight in start_agent.sh"
@@ -520,7 +531,8 @@ test_agent_sandbox_has_rebuild_flags_function() {
 }
 
 run_test test_rebuild_flags_parsed_by_start_agent
-run_test test_rebuild_base_flags_parsed_by_start_agent
+run_test test_refresh_flags_parsed_by_start_agent
+run_test test_rebuild_base_flag_removed
 run_test test_rebuild_block_exists_before_preflight
 run_test test_agent_sandbox_has_rebuild_flags_function
 

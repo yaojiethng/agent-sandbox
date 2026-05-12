@@ -17,22 +17,23 @@
 #   Required for all run targets. Pass as a Make variable.
 #   Example: make start PROVIDER=hermes
 #
-# REBUILD
-#   Optional. Rebuilds provider image before running (base skipped if exists).
-#   Example: make start PROVIDER=hermes REBUILD=1
+# REFRESH
+#   Optional. Rebuilds sandbox and provider images before running (base skipped if exists).
+#   Example: make start PROVIDER=hermes REFRESH=1
 #
-# REBUILD_BASE
-#   Optional. Forces a full rebuild of the base and provider images.
+# REBUILD
+#   Optional. Forces a full rebuild of sandbox, provider, and base images from scratch.
+#   Supersedes REFRESH if both are set.
 #   Use when system packages or the agent runtime version has changed.
-#   Example: make build REBUILD_BASE=1
-#   Example: make start PROVIDER=hermes REBUILD=1 REBUILD_BASE=1
+#   Example: make start PROVIDER=hermes REBUILD=1
+#   Example: make build REBUILD=1
 #
 # BUILD TARGETS
 #   make build                        — builds sandbox + all providers
 #   make build TARGET=all             — explicit alias for build-all
 #   make build TARGET=hermes          — builds hermes provider only
 #   make build TARGET=hermes,sandbox  — builds hermes and sandbox
-#   make build REBUILD_BASE=1         — forces full rebuild including base images
+#   make build REBUILD=1              — forces full rebuild including base images
 #
 # STOP
 #   make stop                         — stop and remove all session containers and volumes
@@ -46,8 +47,8 @@ SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run:
 AGENT_BRIEF  := AGENTS.md
 ENV_FILE     := .env
 PROVIDER     ?=
+REFRESH      ?=
 REBUILD      ?=
-REBUILD_BASE ?=
 TARGET       ?=
 SESSION      ?=
 FROM         ?=
@@ -57,8 +58,8 @@ SESSION_SUMMARY ?=
 BASELINE ?=
 ALL ?=
 
+REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
-REBUILD_BASE_FLAG = $(if $(REBUILD_BASE),--rebuild-base,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 
@@ -71,7 +72,7 @@ TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 build:
 	agent-sandbox build \
 	  $(TARGET_FLAG) \
-	  $(REBUILD_BASE_FLAG) \
+	  $(REBUILD_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
@@ -83,8 +84,8 @@ build:
 start:
 	agent-sandbox start \
 	  $(PROVIDER_FLAG) \
+	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -94,8 +95,8 @@ start:
 serve:
 	agent-sandbox serve \
 	  $(PROVIDER_FLAG) \
+	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -105,8 +106,8 @@ serve:
 dry-run:
 	agent-sandbox dry-run \
 	  $(PROVIDER_FLAG) \
+	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(REBUILD_BASE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

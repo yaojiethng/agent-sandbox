@@ -141,20 +141,20 @@ build_image() {
   echo "Build complete: $image_name"
 }
 
-# build_agent <provider> <project_name> <repo_root> [--rebuild-base]
+# build_agent <provider> <project_name> <repo_root> [--no-cache-base]
 # Builds the reasoning layer provider image (<provider>-agent-<project>),
-# and the base image (<provider>-base) if it does not exist or --rebuild-base is set.
+# and the base image (<provider>-base) if it does not exist or --no-cache-base is set.
 #
 # Default behaviour: base image is skipped if it already exists; provider image is always rebuilt.
-# --rebuild-base: forces a full rebuild of both base and provider with --no-cache.
+# --no-cache-base: forces a full rebuild of both base and provider with --no-cache.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
   local repo_root="${3:?build_agent requires repo root}"
-  local rebuild_base="${4:-}"
+  local no_cache_base="${4:-}"
   local no_cache=""
 
-  if [[ -n "$rebuild_base" ]]; then
+  if [[ -n "$no_cache_base" ]]; then
     no_cache="--no-cache"
   fi
 
@@ -178,7 +178,7 @@ build_agent() {
   # shellcheck disable=SC2064
   trap "rm -rf '$context_cleanup'" EXIT
 
-  # Build base image if missing or --rebuild-base
+  # Build base image if missing or --no-cache-base
   if ! docker image inspect "$base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
     build_image "$base_image" "$base_dockerfile" "$context" "$no_cache"
   else

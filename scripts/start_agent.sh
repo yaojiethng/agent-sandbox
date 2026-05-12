@@ -56,8 +56,8 @@ SANDBOX_DIR_OVERRIDE=""
 AGENT_BRIEF=""
 ENV_REL=".env"
 PROVIDER_NAME=""
+REFRESH=false
 REBUILD=false
-REBUILD_BASE=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -67,8 +67,8 @@ for ARG in "$@"; do
     --brief=*)    AGENT_BRIEF="${ARG#--brief=}" ;;
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+    --refresh)    REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
-    --rebuild-base) REBUILD_BASE=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -274,17 +274,16 @@ unset _COMPOSE_PROJECT
 # -------------------------
 # Rebuild (if requested)
 # -------------------------
-# When --rebuild is passed, build sandbox and provider images before preflight.
-# This replaces the old rebuild_if_requested() in agent-sandbox.sh — the
-# decision is now owned by start_agent.sh alongside preflight.
+# --refresh: rebuild sandbox and provider (base skipped if exists).
+# --rebuild: rebuild everything from scratch including base (supersedes --refresh).
 if [[ "$REBUILD" == true ]]; then
-  echo "Rebuilding sandbox and provider: $PROVIDER_NAME..."
+  echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
   build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-  if [[ "$REBUILD_BASE" == true ]]; then
-    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--rebuild-base"
-  else
-    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
-  fi
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache-base"
+elif [[ "$REFRESH" == true ]]; then
+  echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
 fi
 
 # -------------------------

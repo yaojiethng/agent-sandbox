@@ -8,9 +8,9 @@
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--target=<targets>] --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
-#   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
-#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--rebuild] [flags]
+#   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
+#   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
+#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox stop     --sandbox=<path>
 #   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--session=<name>] [--diff=<path>] [--force]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>]
@@ -61,8 +61,8 @@ main() {
   local CHANNEL_ARG=""
   local TARGET_BRANCH=""
   local PROVIDER_NAME=""
+  local REFRESH=false
   local REBUILD=false
-  local REBUILD_BASE=false
   local DIFF_ARG=""
   local FORCE=false
   local INTERACTIVE=false
@@ -96,8 +96,8 @@ main() {
         --force)         FORCE=true ;;
         --interactive)   INTERACTIVE=true ;;
         --provider=*)    PROVIDER_NAME="${ARG#--provider=}" ;;
+        --refresh)       REFRESH=true ;;
         --rebuild)       REBUILD=true ;;
-        --rebuild-base)  REBUILD_BASE=true ;;
         *)               PASSTHROUGH+=("$ARG") ;;
       esac
     done
@@ -116,14 +116,12 @@ main() {
   }
 
   rebuild_flags() {
-    local flags=""
+    # --rebuild supersedes --refresh: if both are set, emit only --rebuild.
     if [[ "$REBUILD" == true ]]; then
-      flags+=" --rebuild"
+      echo " --rebuild"
+    elif [[ "$REFRESH" == true ]]; then
+      echo " --refresh"
     fi
-    if [[ "$REBUILD_BASE" == true ]]; then
-      flags+=" --rebuild-base"
-    fi
-    echo "$flags"
   }
 
   # -------------------------
@@ -137,7 +135,7 @@ main() {
 
     build)
       local BUILD_TARGET=""
-      local REBUILD_BASE_FLAG=""
+      local REBUILD_FLAG=""
       local TARGET_FLAG_SEEN=false
       local -a REMAINING=()
       for ARG in "$@"; do
@@ -146,7 +144,7 @@ main() {
             TARGET_FLAG_SEEN=true
             BUILD_TARGET="${ARG#--target=}"
             ;;
-          --rebuild-base) REBUILD_BASE_FLAG="--rebuild-base" ;;
+          --rebuild) REBUILD_FLAG="--no-cache-base" ;;
           *) REMAINING+=("$ARG") ;;
         esac
       done
@@ -163,7 +161,7 @@ main() {
           [[ -f "$BASE_DOCKERFILE" ]] || continue
           local DISCOVERED_PROVIDER
           DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
-          build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+          build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_FLAG
         done
       else
         IFS=',' read -ra BUILD_TARGETS <<< "$BUILD_TARGET"
@@ -180,7 +178,7 @@ main() {
           build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
         fi
         for P in "${PROVIDER_TARGETS[@]}"; do
-          build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_BASE_FLAG
+          build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_FLAG
         done
       fi
       ;;
