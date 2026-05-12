@@ -36,7 +36,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `readme.md` | 🟢 Cold | M2 | System invariants and entry point. Should rarely need updating. |
 | `contributors.md` | 🟢 Cold | M2 | Contribution rules. Update only when workflow or security model changes. |
-| `agent_context_brief.md` | 🟡 Warm | M2 | Agent collaboration protocol. Update when working practices evolve. |
+| `agent_context_brief.md` | `[REMOVED]` | M2 | Content absorbed into `AGENTS.md`. Stale reference retained with `[REMOVED]` marker per documentation policy. |
 
 ### Development (`docs/development/`)
 

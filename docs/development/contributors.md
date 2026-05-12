@@ -2,7 +2,7 @@
 
 Guidelines for contributing safely and consistently to the agent-sandbox project. All contributors — human and agent — must follow these procedures to maintain security, integrity, and reproducibility.
 
-Agents: read [`agent_context_brief.md`](../../agent_context_brief.md) for the working protocol specific to your interface. This document covers rules that apply to all contributors regardless of type.
+Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to your interface. This document covers rules that apply to all contributors regardless of type.
 
 ---
 
