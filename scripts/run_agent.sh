@@ -180,7 +180,7 @@ compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT"
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT"
+    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR"
     exit 0
     ;;
 

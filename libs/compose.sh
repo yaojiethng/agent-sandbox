@@ -172,6 +172,7 @@ compose_args() {
 # Args:
 #   $1  dry_run_script  — absolute path to dry_run.sh on the host
 #   $2  dry_run_capability_script  — path to dry_run_capability.sh (optional, skip phase 1 if empty)
+#   $3  sandbox_dir     — host-side SANDBOX_DIR (for Phase 3 host verification)
 # -------------------------
 compose_dry_run() {
   local dry_run_script="$1"
@@ -214,13 +215,63 @@ compose_dry_run() {
     exit 1
   fi
 
-  # Phase 3: host-side verification (placeholder — implemented in 11e)
+  # Phase 3: host-side verification
   echo ""
   echo "=== Phase 3: host-side verification ==="
-  echo "(placeholder — full implementation in M2.7 item 11e)"
-  echo "Phase 3 SKIPPED."
 
-  # Cleanup
+  local _sandbox_dir="${3:-}"
+  if [[ -z "$_sandbox_dir" ]]; then
+    echo "HOST-VERIFY SKIP: no sandbox dir provided" >&2
+  else
+    local host_changes="$_sandbox_dir/.workspace/session-diffs"
+    local host_input="$_sandbox_dir/.workspace/input"
+    local host_output="$_sandbox_dir/.workspace/output"
+    local host_verify_fails=0
+
+    _host_pass() { echo "  HOST-VERIFY PASS: $1"; }
+    _host_fail() { echo "  HOST-VERIFY FAIL: $1" >&2; host_verify_fails=$(( host_verify_fails + 1 )); }
+    _host_warn() { echo "  HOST-VERIFY WARN: $1" >&2; }
+
+    # Check capability layer marker survived to host
+    local _cap_marker="$host_changes/.dryrun_capability_marker"
+    if [[ -f "$_cap_marker" ]]; then
+      local _content; _content=$(cat "$_cap_marker" 2>/dev/null)
+      if [[ "$_content" == "CAPABILITY_LAYER_OK" ]]; then
+        _host_pass "capability marker visible on host at $host_changes"
+        rm -f "$_cap_marker"
+      else
+        _host_fail "capability marker has unexpected content: $_content"
+      fi
+    else
+      _host_fail "capability marker not found on host at $host_changes"
+    fi
+
+    # Check liveness file survived from reasoning layer
+    local _liveness="$host_output/liveness.txt"
+    if [[ -f "$_liveness" ]]; then
+      local _lcontent; _lcontent=$(cat "$_liveness" 2>/dev/null)
+      if [[ "$_lcontent" == "PASS" ]]; then
+        _host_pass "liveness.txt visible on host at $host_output"
+        rm -f "$_liveness"
+      else
+        _host_fail "liveness.txt has unexpected content: $_lcontent"
+      fi
+    else
+      _host_fail "liveness.txt not found on host at $host_output"
+    fi
+
+    # Clean up any remaining temp files
+    rm -f "$host_changes/.dryrun_seam_test" 2>/dev/null || true
+    rm -f "$host_changes/.dryrun_capability_marker" 2>/dev/null || true
+
+    if [[ "$host_verify_fails" -eq 0 ]]; then
+      echo "Phase 3 PASSED."
+    else
+      echo "Phase 3 FAILED — $host_verify_fails check(s) failed." >&2
+    fi
+  fi
+
+  # Cleanup containers
   echo ""
   echo "Cleaning up containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
