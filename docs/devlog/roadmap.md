@@ -163,6 +163,18 @@ Unify all workspace path definitions under a single `x-workspace` anchor in the 
 
    **Not in scope:** SESSION_STATE append semantics fix (deferred to M2.6). The sandbox `.git/` is container-ephemeral, so append is safe for now.
 
+**11. Dual-layer seam testing via dry-run** (`scripts/dry_run.sh`, `scripts/dry_run_capability.sh`, `libs/sandbox-entrypoint.sh`, `libs/docker-compose.yml`, `libs/docker-compose.dry-run.yml`, `libs/compose.sh`, `tests/test_capability_layer.sh`):
+Design and implement a mechanism for dry-run to assert host-container seam behaviour in both the reasoning layer AND the capability layer. Five sessions:
+
+   - **11a. Design** — produce design document for the full mechanism. [This session.]
+   - **11b. Pre-flight script** — add critical-invariant checks to `sandbox-entrypoint.sh` (every-container checks: mounts writable, SESSION_STATE valid, channels accessible). Warn-only for AGENTS.md/brief.md injection.
+   - **11c. dry_run_capability.sh** — new script running inside sandbox container. Deep investigation checks. Add bind mount to sandbox service in dry-run overlay.
+   - **11d. dry_run.sh rewrite** — rewrite reasoning-layer checks as a separate script. Fully decoupled from capability layer checks. Subsumes old `dry_run.sh`.
+   - **11e. Host-side verification** — after both containers exit, verify artifacts written by sandbox are visible on the host, and clean up temp files.
+
+**12. AGENTS.md injection path** (`scripts/start_agent.sh`, `libs/docker-compose.yml`, `libs/sandbox.Dockerfile` or provider Dockerfiles):
+AGENTS.md is currently copied into `INPUT_DIR/brief.md` before agent start, which is inefficient — the brief is a one-shot file read at session start, not sent on every turn. The agent should read AGENTS.md from its working directory directly. Fix the injection path to mount AGENTS.md into the agent's CWD instead of copying into INPUT_DIR.
+
 ---
 
 ## Future Milestones
