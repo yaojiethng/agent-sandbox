@@ -2,11 +2,22 @@
 # Dry-run overlay for agent-sandbox.
 # Merged at generation time by compose_generate — not operator-visible.
 #
-# Adds the dry_run.sh bind mount to the agent service.
-# DRY_RUN_SCRIPT is resolved by start_agent.sh before compose_generate is
-# called and baked into the generated compose file — not a runtime variable.
+# Adds dry-run scripts to both the sandbox (capability) and agent (reasoning)
+# services. Each runs inside its respective container during the three-phase
+# dry-run sequence (capability → reasoning → host).
+#
+# {{DRY_RUN_CAPABILITY_SCRIPT}} and {{DRY_RUN_SCRIPT}} are resolved by
+# start_agent.sh before compose_generate is called and baked into the
+# generated compose file — not runtime variables.
 
 services:
+  sandbox:
+    volumes:
+      - type: bind
+        source: {{DRY_RUN_CAPABILITY_SCRIPT}}
+        target: /dry_run_capability.sh
+        read_only: true
+
   agent:
     volumes:
       - type: bind
