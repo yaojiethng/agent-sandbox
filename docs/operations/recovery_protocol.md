@@ -187,3 +187,10 @@ Confirm the commit sequence makes sense and no fixup or repair commits remain.
 ### Exit conditions
 
 All checks pass. The history is clean — no working documents, no wrong prefix, no missing handovers, no fixup commits. The operator can proceed with normal session flow.
+
+## Open questions
+
+The recovery protocol has known gaps that have not yet been resolved. These are documented here for awareness and future improvement.
+
+- **No expected test count baseline.** The recovery procedure says "check total test count matches expected" (Step 5), but no canonical baseline is recorded anywhere. The operator or recovery agent has to rely on memory or infer from context. A test-count baseline should be committed alongside the test suite.
+- **Chat history is the only complete change record.** The session JSONL log format (`*.jsonl`) is interface-specific and not standardised. If the chat history is lost (container reset without persisted logs), there is no machine-parseable record of what changed. A structured session log format or explicit commit-hook-based change recording would eliminate this single point of failure.
