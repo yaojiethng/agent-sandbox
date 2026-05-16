@@ -94,7 +94,8 @@ warn_check "running as non-root" bash -c '[[ "$(id -u)" -ne 0 ]]'
 section "environment variables"
 critical "AGENT_HOME is set"          bash -c '[[ -n "${AGENT_HOME:-}" ]]'
 critical "PROVIDER_NAME is set"       bash -c '[[ -n "${PROVIDER_NAME:-}" ]]'
-critical "PROVIDER_CONFIG_DIR is set" bash -c '[[ -n "${PROVIDER_CONFIG_DIR:-}" ]]'
+# PROVIDER_CONFIG_DIR was removed in M2.7 item 8 — config is now bind-mounted
+# directly at AGENT_HOME. This check is intentionally absent.
 
 # ---------------------------------------------------------------------------
 # Mount checks (reasoning layer perspective)

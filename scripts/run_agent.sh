@@ -118,6 +118,7 @@ fi
 # Docker creates missing bind mount sources as root-owned; pre-creating avoids
 # permission failures in provider-entrypoint.sh copy-out.
 mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
+mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME/agent/sessions"
 
 # -------------------------
 # Compose file assembly

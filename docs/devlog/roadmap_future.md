@@ -132,6 +132,34 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
+## Harness Packaging and Versioning (Standalone)
+
+**Objective:** Self-contain the agent-sandbox binary at install time and introduce semantic versioning to detect and communicate staleness. This is the prerequisite for harness-sig (runtime drift detection).
+
+**Problem:** `make install` writes an `agent-sandbox` CLI script that sources scripts/libs/templates from the repo checkout at runtime. After `git pull`, the installed binary silently executes changed code. No mechanism signals the operator to reinstall.
+
+**Solution path — two complementary changes:**
+
+1. **Self-contained binary.** `make install` packages all scripts, libs, and templates into the binary itself (shar archive or similar). The installed binary has zero runtime dependency on the repo checkout. This eliminates the entire class of host-side drift problems.
+
+2. **Semantic versioning.** A `VERSION` file in the repo root, bumped on meaningful changes. The installed binary writes its version to `~/.config/agent-sandbox/.version` at install time. At `make start`, the harness compares installed version against repo version and warns on mismatch.
+
+   Bump policy:
+   - **Patch** (0.x.1): lib/script bugfixes, behaviour-preserving internal changes
+   - **Minor** (0.1.x): new features, new flags, new Makefile targets
+   - **Major** (1.0): breaking CLI changes, install contract changes, deployment model changes
+
+**Depends on:** M2.7 completion (container-sig, build pipeline cleanup). Not part of any current milestone.
+
+**Preconditions for design:**
+- Self-contained binary mechanism selected (shar archive vs compiled language vs proper package manager)
+- Version bump policy agreed and documented
+- Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
+
+**Design reference:** [`docs/devlog/discussions/investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md)
+
+---
+
 ## Deferred (Unplanned)
 
 ### Capability Layer — Live Mount

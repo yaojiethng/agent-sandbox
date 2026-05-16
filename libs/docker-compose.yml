@@ -85,9 +85,25 @@ services:
       - type: bind
         source: ${OUTPUT_DIR}
         target: /home/agentuser/workspace/output
+      # Provider config: directory bind mount directly at AGENT_HOME
+      # Replaces the old /opt/provider-config mount + copy-in/copy-out cycle.
+      # All writes (settings.json, auth.json, sessions/) go directly to host.
+      # CONSTRAINT: The host filesystem for ${SANDBOX_DIR} must support
+      # utime() (fs.utimesSync). Pi's settings-manager uses proper-lockfile
+      # which calls utime for stale-lock detection. On 9p mounts (Docker
+      # Desktop Windows drive -> WSL2), utime fails with EPERM, causing
+      # settings.json to silently fall back to defaults.
+      # Resolution: Keep PROJECT_DIR on a Linux-native WSL2 path
+      # (not /mnt/c/... or M:\) so SANDBOX_DIR and its bind mounts
+      # reside on ext4 where utime() succeeds. See:
+      # docs/devlog/discussions/story_windows_filesystem_incompatibilities.md
       - type: bind
-        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}
-        target: /opt/provider-config
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent
+        target: /home/agentuser/.pi/agent
+      # tmpfs at bin/ — keeps binary downloads (fd, rg) container-local
+      # so pi's cross-device mv from /tmp does not cross filesystem boundaries.
+      - type: tmpfs
+        target: /home/agentuser/.pi/agent/bin
     environment:
       - INPUT_DIR=/home/agentuser/workspace/input
       - OUTPUT_DIR=/home/agentuser/workspace/output

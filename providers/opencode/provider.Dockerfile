@@ -33,7 +33,6 @@ COPY agent/prompts/ /opt/workflow/agent/prompts/
 # Non-root user
 # -------------------------
 RUN useradd -m -u 1001 -s /bin/bash agentuser
-RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # -------------------------
@@ -41,7 +40,6 @@ USER agentuser
 # -------------------------
 ENV PROVIDER_NAME=opencode
 ENV AGENT_HOME=/home/agentuser/.opencode
-ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 # -------------------------
 # Working directories

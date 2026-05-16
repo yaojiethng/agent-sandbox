@@ -2,7 +2,7 @@
 
 **Target milestone:** M2.5 — Vault Capability Layer Prototype
 
-**Status:** Design record — enumerates the problem, constraints, and candidate solutions for the settings.json ownership collision and skills/prompts loading architecture. Not yet settled — decision deferred to next session.
+**Status:** Design record — enumerates the problem, constraints, and candidate solutions for the settings.json ownership collision and skills/prompts loading architecture. Implemented in M2.7 item 8 (see handover 20260513-10). [CORRECTION — 2026-05-22]: Filesystem compatibility gap — see CORRECTION block below.
 
 **Related:**
 - [`libs/provider-entrypoint.sh`](../../libs/provider-entrypoint.sh) — current copy-in/copy-out mechanism
@@ -177,6 +177,15 @@ The `sessions/` subdirectory must exist on the host before the bind mount is cre
 No changes needed: `providers/pi/setup.sh`, `scripts/onboard.sh`, `libs/compose.sh`.
 
 ---
+[CORRECTION — 2026-05-22]: Filesystem compatibility gap — the bind mount at `AGENT_HOME` assumes the host filesystem supports `utime()`. When `SANDBOX_DIR` resides on a 9p mount (WSL2/Docker Desktop Windows drive), `proper-lockfile` (used by Pi's `settings-manager.js`) fails with `EPERM` on `fs.utimesSync()`. The lock acquisition throws before the settings file is read or written, causing all settings to silently fall back to defaults. The design did not account for filesystems that do not support timestamp modification.
+
+**Resolution:** Prefer approach 1 — keep `PROJECT_DIR` (and thus `SANDBOX_DIR`) on a Linux-native WSL2 path (e.g., `/home/user/projects/...`) rather than a Docker Desktop Windows drive (`/mnt/c/...`, `M:\`). When the project resides on the Linux-native ext4 filesystem, the `AGENT_HOME` bind mount inherits ext4's POSIX semantics and `utime()` succeeds. This avoids the 9p seam entirely with no code or mount changes.
+
+Mitigation (if approach 1 is not possible): Pi's `settings-manager.js` must catch `EPERM` and proceed without locking, or `proper-lockfile`'s `mtimePrecision.probe()` must handle `EPERM` as a non-fatal error (falling back to second-level precision).
+
+See also: `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues (Issue 1: utime EPERM, Issue 2: bin/ cross-filesystem moves) and a proposed proactive detection mechanism.
+
+---
 
 ## 5. Decision record
 
@@ -187,7 +196,7 @@ No changes needed: `providers/pi/setup.sh`, `scripts/onboard.sh`, `libs/compose.
 | `bin/` as tmpfs | **Settled** | Shadows the dir mount to keep binary downloads container-local (cross-device mv). |
 | Provider config mounted as directory (`agent/`), not individual files | **Settled** | One mount covers AGENTS.md, auth.json, models.json, settings.json, sessions/, prompts/. N-volumes not needed. |
 | Sandbox-layer skills/prompts as RO bind mounts at `/opt/workflow-host/` | **Settled** | Real-time sync for development. Image-baked `/opt/workflow/` stays as fallback. |
-| `settings.json` paths reference both image-baked and host-mounted | **Settled** | Two-adapter seam: image path is fallback, host path is live. |
+| `settings.json` paths reference both image-baked and host-mounted | **Settled** | Two-adapter seam: image path is fallback, host path is live. [see correction below] |
 | Pre-flight merge via Node.js | **Settled** | Node is already in base image (node:20-slim). No jq dependency needed. |
 | Three-layer loading model | Settled (previous session) | See `docs/concepts/agent_workflow.md` |
 | Fragility documented in provider_lifecycle.md | Settled (previous session) | See `docs/architecture/provider_lifecycle.md` |

@@ -198,6 +198,95 @@ docker volume prune -f --filter "until=3d"
 
 ---
 
+## Container-sig (Image Staleness Detection)
+
+### What it detects
+
+Container-sig detects when the source files that were baked into a container image have changed since the image was built. If an operator modifies a lib script or workflow file and doesn't rebuild, the running container uses stale code.
+
+### What is hashed
+
+The hash covers everything the harness bundles into the image — the contents of `/opt/sandbox/` and `/opt/workflow/` at build time:
+
+```
+/opt/sandbox/bin/          — entrypoint scripts (provider-entrypoint.sh, sandbox-entrypoint.sh)
+/opt/sandbox/lib/          — library scripts (dirs.sh, snapshot.sh, diff.sh, session.sh, routing.sh, package_*.sh)
+/opt/sandbox/docs/         — architecture and concepts docs
+/opt/workflow/agent/skills/ — sandbox-layer workflow skills
+/opt/workflow/agent/prompts/ — sandbox-layer workflow prompts
+```
+
+Not included:
+- Base image layers (provider binary, OS packages, Node.js) — tracked separately by `--rebuild`
+- Bind-mounted directories (config, workspace, snapshot) — runtime state, not image state
+
+### Derivation
+
+Computed at build time in `build_sandbox()` and `build_agent()` after the image is built, using an empty container to inspect the image contents:
+
+```bash
+# Create a temporary container from the built image and hash its harness directories
+container_sig=$(docker run --rm "$image_name" bash -c '
+  find /opt/sandbox /opt/workflow -type f | sort | xargs sha256sum | sha256sum | cut -c1-16
+')
+
+# Bake as Docker label for later comparison
+docker build --label "agent-sandbox.container-sig=$container_sig" ...
+```
+
+Note: After item 7 (context_dir removal), `build_image()` is removed and `build_sandbox()`/`build_agent()` inline the `docker build` call. The container-sig computation happens after the build completes.
+
+### Preflight check
+
+Checked by `scripts/start_agent.sh` before starting a session. If the label doesn't match the current source files, the image is stale:
+
+```bash
+_check_container_sig() {
+  local image="$1"
+  local expected
+  # Compute expected sig from current repo source files
+  expected=$(find "$REPO_ROOT/libs" "$REPO_ROOT/agent" -type f | sort | xargs sha256sum | sha256sum | cut -c1-16)
+
+  local actual
+  actual=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.container-sig"}}' "$image" 2>/dev/null) || actual=""
+
+  if [[ -z "$actual" ]]; then
+    echo "WARN: image has no container-sig label — may be outdated" >&2
+    return 0  # warn only, don't block
+  fi
+
+  if [[ "$expected" != "$actual" ]]; then
+    echo "WARN: image is stale (source files changed since build)" >&2
+    echo "  Run 'make refresh' or 'make rebuild' to update." >&2
+    return 0  # warn only, don't block
+  fi
+}
+```
+
+**Design decision:** Container-sig warns but does not block. A hard gate (refusing to start) would be too aggressive for development workflows where the operator deliberately modifies source files and wants to test without rebuilding. The warning is sufficient for the common case (forgot to rebuild).
+
+### When container-sig changes
+
+| Action | container-sig changes? |
+|---|---|
+| Edit `libs/sandbox-entrypoint.sh` | Yes — rebuild needed |
+| Edit `agent/skills/*.md` | Yes — rebuild needed if image-baked paths used |
+| Upgrade provider npm package | No — base image layer, covered by `--rebuild` |
+| Edit `scripts/start_agent.sh` | No — runtime script, not in image |
+| Edit `.env` | No — not in image |
+| `make refresh` | Yes — rebuilds images → new sig |
+| `make rebuild` | Yes — rebuilds from scratch → new sig |
+
+---
+
+## Harness-sig (Runtime Drift Detection)
+
+**Deferred.** See [`investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) §Harness Packaging and Versioning.
+
+Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic versioning. These are scoped as a standalone future milestone, not part of M2.7.
+
+---
+
 ## Open Questions
 
 1. **Hash collision handling:** 6-char hex has ~16M combinations. Should we add collision detection (check if run_id already exists, regenerate if so)?
@@ -214,3 +303,4 @@ docker volume prune -f --filter "until=3d"
 - [`scripts/start_agent.sh`](../../scripts/start_agent.sh) — primitive set implementation
 - [`scripts/checkpoint.sh`](../../scripts/checkpoint.sh) — WORKTREE_ID derivation
 - [`scripts/stop.sh`](../../scripts/stop.sh) — current stop implementation
+- [`docs/devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md`](../../devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md) — container-sig settlement and harness-sig investigation scope
