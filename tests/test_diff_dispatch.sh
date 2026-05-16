@@ -157,6 +157,26 @@ test_diff_export_missing_args_fails() {
   fi
 }
 
+test_diff_export_missing_session_state() {
+  local DIR="$FIXTURE/de_nostate"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  # Intentionally do NOT write SESSION_STATE
+
+  local OUTPUT_DIR="${DIR}/export"
+  mkdir -p "$OUTPUT_DIR"
+
+  # diff_export currently swallows package_branch's error.
+  # This test asserts that diff_export returns non-zero when
+  # package_branch fails due to missing SESSION_STATE.
+  # Initially FAILS — fix libs/diff.sh to propagate the error.
+  if ! diff_export "$DIR" "$OUTPUT_DIR" 2>/dev/null; then
+    pass "diff_export fails when SESSION_STATE is missing"
+  else
+    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0 — needs fix)"
+  fi
+}
+
 # ===================================================================
 # session_export_path + diff_export (entrypoint simulation)
 # ===================================================================
@@ -303,6 +323,7 @@ run_test test_diff_export_writes_patches
 run_test test_diff_export_writes_changed_files
 run_test test_diff_export_no_sweep_commit
 run_test test_diff_export_missing_args_fails
+run_test test_diff_export_missing_session_state
 run_test test_session_path_exit_export
 run_test test_session_path_autosave_export
 run_test test_session_path_session_and_autosave_independent

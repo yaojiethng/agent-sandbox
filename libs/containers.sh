@@ -73,6 +73,7 @@ build_context_sandbox() {
   _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1 || return 1
 
   # docs/
   mkdir -p "$context_dir/docs" || return 1

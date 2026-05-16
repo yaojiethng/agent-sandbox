@@ -290,6 +290,31 @@ test_dispatcher_missing_args() {
   fi
 }
 
+test_dispatcher_missing_session_state() {
+  local DIR="$FIXTURE_DIR/pb_nostate"
+  local OUT="$FIXTURE_DIR/pb_nostate_out"
+  mkdir -p "$OUT"
+  make_committed_repo "$DIR"
+  # Intentionally do NOT write SESSION_STATE
+
+  if package_branch "$DIR" "$OUT" 2>/dev/null; then
+    fail "package_branch should fail when SESSION_STATE is missing"
+  else
+    pass "package_branch fails when SESSION_STATE is missing"
+  fi
+
+  # Verify no artefacts were written (OUTPUT_DIR may have been created
+  # by package_branch's mkdir -p, but patches/ and diff files should be absent)
+  local HAS_PATCHES=false HAS_DIFFS=false
+  [[ -d "$OUT/patches" ]] && HAS_PATCHES=true
+  [[ -f "$OUT/uncommitted.diff" || -f "$OUT/all-changes.diff" ]] && HAS_DIFFS=true
+  if [[ "$HAS_PATCHES" == false && "$HAS_DIFFS" == false ]]; then
+    pass "package_branch produces no artefacts when SESSION_STATE is missing"
+  else
+    fail "package_branch should produce no artefacts when SESSION_STATE is missing"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -303,5 +328,6 @@ run_test test_dispatcher_binary_patch_applies_to_fresh_repo
 run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
 run_test test_dispatcher_missing_args
+run_test test_dispatcher_missing_session_state
 
 test_done

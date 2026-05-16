@@ -142,7 +142,7 @@ assert_file_exists  "sandbox: contains routing.sh"            "$context/routing.
 assert_file_exists  "sandbox: contains session.sh"            "$context/session.sh"
 assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
 assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
-assert_dir_file_count "sandbox: contains at least 6 files"    "$context" 6
+assert_dir_file_count "sandbox: contains at least 7 files"    "$context" 7
 
 cleanup "$context"
 cleanup "$REPO"

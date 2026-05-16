@@ -42,7 +42,7 @@ services:
     environment:
       - SNAPSHOT_DIR_NAME=.snapshot
       - SANDBOX_DIR_NAME=sandbox
-      - CHANGES_DIR_NAME=workspace/session-diffs
+      - CHANGES_DIR_NAME=session-diffs
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
       - SESSION_TS=${SESSION_TS:-}
       - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}

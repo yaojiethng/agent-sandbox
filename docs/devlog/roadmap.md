@@ -146,6 +146,23 @@ Fix the session-diffs path resolution mismatch between compose template and `dir
    - **dry-run as seam test staging ground**: add a block in `dry_run.sh` that tests the session-diffs path round-trip — write a test diff, verify it appears at the expected host-relative path, read it back.
    - **commit message capture**: extend `package_branch.sh` to embed the commit subject in the diff filename (e.g. `0001-<sha>-<subject>.diff`) or in a companion manifest. Extend the session-diffs pipeline to store commit messages alongside diffs.
 
+**10. Workspace path resolution refactor** (`libs/docker-compose.yml`, `libs/dirs.sh`, `libs/sandbox-entrypoint.sh`, `scripts/start_agent.sh`, `scripts/dry_run.sh`, `libs/routing.sh`, `libs/interactive_session_select.sh`, `scripts/agent-sandbox.sh`, `tests/`):
+Unify all workspace path definitions under a single `x-workspace` anchor in the compose template. Retire `libs/dirs.sh` from production code. Write paths to `SESSION_STATE` on container init so consumers read deterministically.
+
+   Design document: [`docs/devlog/discussions/design_workspace_path_resolution.md`](../discussions/design_workspace_path_resolution.md)
+
+   - Add `x-workspace` anchor to `libs/docker-compose.yml` with host/container path pairs.
+   - Export host paths in `scripts/start_agent.sh` (no more `dirs_resolve`).
+   - Update compose template: replace `_NAME` env vars with absolute path vars; volumes reference anchor values.
+   - Update `libs/sandbox-entrypoint.sh`: remove `dirs.sh`, write paths to `SESSION_STATE` after init.
+   - Update `scripts/dry_run.sh`: remove `dirs.sh`, read paths from env vars (baked at compose gen time).
+   - Update `libs/routing.sh` and `libs/interactive_session_select.sh`: replace `dirs_resolve` with SESSION_STATE reads.
+   - Update `scripts/agent-sandbox.sh`: host-side subcommands read from `SESSION_STATE`.
+   - Update tests to match new path sources.
+   - Create `tests/knowledge/knowledge_workspace_paths.sh` asserting cross-context path agreement.
+
+   **Not in scope:** SESSION_STATE append semantics fix (deferred to M2.6). The sandbox `.git/` is container-ephemeral, so append is safe for now.
+
 ---
 
 ## Future Milestones

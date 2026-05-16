@@ -236,7 +236,10 @@ diff_export() {
   # then write EXPORT-TIME.txt after so it isn't wiped by rm -rf.
   local _diff_sh_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   source "${_diff_sh_dir}/package_branch.sh"
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"
+  if ! package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"; then
+    echo "diff_export: package_branch failed — export incomplete" >&2
+    return 1
+  fi
 
   # Record export time for audit trail (written after package_branch
   # since it removes and recreates OUTPUT_DIR internally)
