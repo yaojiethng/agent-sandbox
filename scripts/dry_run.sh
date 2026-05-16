@@ -25,11 +25,19 @@
 set -o pipefail
 
 ROOT="/home/agentuser"
-source /opt/sandbox/lib/dirs.sh
 source /opt/sandbox/lib/session.sh
 
-WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+# Paths are passed as absolute env vars from the compose template.
+# Fallback to dirs.sh only if unset (testing without compose).
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
+CHANGES_DIR="${CHANGES_DIR:-}"
+INPUT_DIR="${INPUT_DIR:-}"
+OUTPUT_DIR="${OUTPUT_DIR:-}"
+
+if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+  source /opt/sandbox/lib/dirs.sh
+  WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+fi
 
 # ---------------------------------------------------------------------------
 # Check framework

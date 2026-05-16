@@ -9,22 +9,34 @@
 #   {{PROVIDER_NAME}}      → provider name (e.g. hermes, opencode)
 #
 # ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
-# from the exported environment (.env path variables and secrets).
+# from the exported environment (set by start_agent.sh before compose).
+#
+# Workspace path variables (${SNAPSHOT_DIR}, ${CHANGES_DIR}, ${INPUT_DIR},
+# ${OUTPUT_DIR}) are exported by start_agent.sh — derived from SANDBOX_DIR.
+# The x-workspace anchor below documents the path mapping in one place.
 #
 # Container names match image names — one session per project at a time.
 # Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
-#
-# Session labels are defined once as a YAML anchor (&session_labels) and
-# referenced by all services (sandbox, agent, and any future sidecars).
-# This ensures consistent lifecycle management across all containers.
 
 # Session labels — applied to ALL containers for unified lifecycle management.
-# Referenced via *session_labels anchor in each service.
 x-session-labels: &session_labels
   agent-sandbox.project-dir: {{PROJECT_DIR}}
   agent-sandbox.session-ts: {{SESSION_TS}}
   agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
+
+# Workspace path documentation — single source of truth for all path mappings.
+# Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.
+# Container paths (right) are literals fixed for the image architecture.
+# When adding a new bind mount, add the mapping here and reference ${VAR} below.
+# Design rationale: docs/devlog/discussions/design_workspace_path_resolution.md
+x-workspace:
+  # Host → Container
+  snapshot_host:   "${SNAPSHOT_DIR}"             # → "/home/agentuser/.snapshot"
+  changes_host:    "${CHANGES_DIR}"              # → "/home/agentuser/workspace/session-diffs"
+  input_host:      "${INPUT_DIR}"                # → "/home/agentuser/workspace/input"
+  output_host:     "${OUTPUT_DIR}"               # → "/home/agentuser/workspace/output"
+  provider_config_host: "${SANDBOX_DIR}/.{{PROVIDER_NAME}}" # → "/opt/provider-config"
 
 services:
   sandbox:
@@ -40,9 +52,11 @@ services:
         source: ${CHANGES_DIR}
         target: /home/agentuser/workspace/session-diffs
     environment:
-      - SNAPSHOT_DIR_NAME=.snapshot
+      - SNAPSHOT_DIR=/home/agentuser/.snapshot
+      - CHANGES_DIR=/home/agentuser/workspace/session-diffs
+      - INPUT_DIR=/home/agentuser/workspace/input
+      - OUTPUT_DIR=/home/agentuser/workspace/output
       - SANDBOX_DIR_NAME=sandbox
-      - CHANGES_DIR_NAME=session-diffs
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
       - SESSION_TS=${SESSION_TS:-}
       - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
@@ -75,8 +89,9 @@ services:
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}
         target: /opt/provider-config
     environment:
-      - INPUT_DIR_NAME=input
-      - OUTPUT_DIR_NAME=output
+      - INPUT_DIR=/home/agentuser/workspace/input
+      - OUTPUT_DIR=/home/agentuser/workspace/output
+      - CHANGES_DIR=/home/agentuser/workspace/session-diffs
       - SANDBOX_DIR_NAME=sandbox
     stdin_open: true
     tty: true

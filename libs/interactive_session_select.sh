@@ -366,7 +366,7 @@ interactive_select_diff_type() {
   local SESSION_NAME="$2"
   local CHANNEL="$3"
 
-  dirs_resolve "$SANDBOX_DIR"
+  _resolve_paths "$SANDBOX_DIR"
 
   local BASE_DIR=""
   case "$CHANNEL" in

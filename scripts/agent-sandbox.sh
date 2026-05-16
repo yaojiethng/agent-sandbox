@@ -254,7 +254,7 @@ main() {
           DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION_NAME" "$CHANNEL") || exit 1
           # Construct the diff file path from channel + session + type
           local DIFF_FILE
-          dirs_resolve "$SANDBOX_DIR"
+          _resolve_paths "$SANDBOX_DIR"
           local BASE_DIR=""
           case "$CHANNEL" in
             diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
