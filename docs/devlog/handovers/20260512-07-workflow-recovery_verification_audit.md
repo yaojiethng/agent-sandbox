@@ -72,7 +72,7 @@ These items were created or existed during the session but do not appear in the 
 
 | Item | Reason |
 |---|---|
-| `package-branch.md` prompt Makefile reference | Minor — actual CLI path works |
+| ~~`package-branch.md` prompt Makefile reference~~ | ~~Minor — actual CLI path works~~ [see correction below] |
 
 ## Next session
 
@@ -82,7 +82,7 @@ M2.7 container naming work (WG1: RUN_ID derivation) as previously scoped.
 
 | Finding | Type | Impact | Resolution |
 |---|---|---|---|
-| **No `make package-branch` target in Makefile** — `agent/prompts/package-branch.md` references `make package-branch [SESSION_SUMMARY=<text>]` but no such target exists in the actual Makefile. | doc/implementation gap | Minor confusion | Not resolved — flagged for operator awareness |
+| **~~No `make package-branch` target in Makefile~~** — ~~`agent/prompts/package-branch.md` references `make package-branch [SESSION_SUMMARY=<text>]` but no such target exists in the actual Makefile.~~ [see correction below] | doc/implementation gap | Minor confusion | Not resolved — flagged for operator awareness |
 | **Handover dating convention ambiguous for recovery** — `handover_policy.md` says "YYYYMMDD = Session date" but during recovery "session date" could mean original or replay date. | policy gap | Future recovery sessions may date inconsistently | ✅ Resolved — `recovery_protocol.md` documents "use replay date" |
 | **Fixture gaps exposed by restructuring** — inlining `build_container.sh` caused `build_context_sandbox` to copy `routing.sh` which the fixture didn't create. Tests passed before because the old code path didn't exercise that file. | test infrastructure observation | Recovery replay more fragile than fresh implementation | ✅ Resolved — fixture updated during replay to include `routing.sh` |
 
@@ -94,3 +94,6 @@ M2.7 container naming work (WG1: RUN_ID derivation) as previously scoped.
 | **Handover dated to original session date first** — used `2026-05-11` instead of `2026-05-12`. Required fixup commit, rebased away by audit session. | Date ambiguity in policy | ✅ Resolved — convention now documented in `recovery_protocol.md` |
 | **No expected test count to verify against** — had to rely on memory of baseline count after each replayed session. | Missing verification anchor | Not resolved — flagged for operator awareness |
 | **Chat history was the only complete change record** — JSONL log existed at `~/workspace/output/recovery-session.jsonl` but format is undocumented and tool-specific. | Single point of failure | Not resolved — flagged for operator awareness |
+
+---
+[CORRECTION — 2026-05-13]: The finding "No `make package-branch` target in Makefile" was incorrect. The target `make package-branch` exists in `libs/_templates/Makefile.template` in the baseline commit, wrapping `agent-sandbox package-branch`. The corresponding deferred item was also struck. Verified by inspection of the source on 2026-05-13. See handover `20260513-01-plan-m2_7_activation.md`.
