@@ -97,38 +97,75 @@ Each provider may result in a different integration pattern. Investigation findi
 
 **Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
 
-**Scope:** Implement the hash-based session identity model, two-sig model, container lifecycle redesign, and the settings.json ownership collision fix originally designed under M2.5. Work falls into the following groups:
+**Scope:** Implement the hash-based session identity model, two-sig model, container lifecycle redesign, and build pipeline cleanup. Items restructured per planning session 20260513-11.
 
-**1. run_id derivation** (`scripts/start_agent.sh`): Add `RUN_ID` as 6-char hex hash of `${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}`. Replace timestamp-based container naming with run_id-based naming (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`).
+---
 
-**2. Docker labels** (`libs/docker-compose.yml`): Add `agent-sandbox.project`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` labels for container lifecycle management. Retain `agent-sandbox.session-name` for backwards compatibility.
+### Track A — Container Identity & Lifecycle
 
-**3. make stop redesign** (`scripts/stop.sh`): Update to filter containers by `project + worktree-id` labels instead of Docker Compose project name. Enables parallel sessions from different worktrees without container collision.
+**1. run_id derivation** (`scripts/start_agent.sh`). 1 session.
+   Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Replace timestamp-based container naming with `run_id`-based (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`). SESSION_TS kept for logs/backwards compat.
+   → Depends on: nothing. Prerequisite for: item 2.
 
-**4. make prune implementation** (`scripts/prune.sh`, `libs/_templates/Makefile.template`): Add `make prune` target with:
-   - Targeted cleanup: `project + worktree-id` (same scope as stop)
-   - Time-based cleanup: `project + >3 days old` (ignores worktree-id)
-   - Cleans: build cache, layer cache, system cache, volume cache
+**2. Docker labels** (`libs/docker-compose.yml`). 1 session.
+   Add `agent-sandbox.project-name`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` to `x-session-labels`. Keep existing `session-ts`, `host-branch`, `project-dir`.
+   → Depends on: item 1 (run-id needed). Prerequisite for: item 3.
 
-**5. Two-sig model** (`libs/containers.sh`, `scripts/start_agent.sh`): container-sig = hash(libs/ + providers/<n>/base.Dockerfile + providers/<n>/provider.Dockerfile) baked as Docker label agent-sandbox.container-sig at build time, checked at preflight — mismatch triggers rebuild; harness-sig = hash(scripts/ + providers/<n>/setup.sh + providers/*.yml + providers/<n>/*.yml) computed at runtime, compared against SANDBOX_DIR/.harness-sig.ref written at session end — mismatch warns only.
+**3. make stop redesign** (`scripts/stop.sh`, `libs/containers.sh`). 1 session.
+   Move `worktree_id_derive` from `scripts/checkpoint.sh` to `libs/containers.sh`. Change `stop.sh` to filter by `project-name + worktree-id` labels instead of Docker Compose project name.
+   → Depends on: item 2 (labels must exist). Prerequisite for: item 4.
 
-**6. Paired refactor** (`libs/`, `providers/`): move libs/docker-compose.yml and libs/docker-compose.dry-run.yml into providers/ so the harness-sig hash boundary matches the folder boundary. Image rename dropping <project> suffix (sandbox, <provider>-agent) — blocked on prerequisite code review: verify agents.md is not COPY-ed in any provider Dockerfile before proceeding.
+**4. make prune** (`scripts/prune.sh`, `libs/_templates/Makefile.template`). 1 session.
+   New script: targeted cleanup (project + worktree-id) + time-based (project + >3 days). Cleans build cache, layer cache, volumes.
+   → Depends on: item 3 (same filtering logic).
 
-**Sub-stories:**
+---
 
-- `story_parallel_sessions_worktree.md` — Resolved. WORKTREE_ID and checkpoint tag namespace implemented in M2.3 Change 1. Container naming updated in M2.7.
-- `story_harness_packaging_and_install_versioning.md` — install workflow rewrite; deferred, does not block this milestone.
+### Track B — Build Pipeline & Staleness Detection
 
-**7. Context_dir removal** (`libs/containers.sh`, `libs/sandbox.Dockerfile`, `providers/*/provider.Dockerfile`, `tests/test_build_context.sh`):
-Remove `build_context_sandbox`, `build_context_agent`, and `_build_context_copy` from `libs/containers.sh`. Once container-sig (item 5) hashes source files at repo-root paths, the temp-directory staging layer is dead code. Pre-scoping findings:
+**7. Context_dir removal** (`libs/containers.sh`, `libs/sandbox.Dockerfile`, `providers/*/provider.Dockerfile`, `tests/test_build_context.sh`). 2 sessions.
+   Remove `build_context_sandbox`, `build_context_agent`, `_build_context_copy`, and `build_image`. Use repo root as build context directly — the COPY stanzas in Dockerfiles are the single source of truth. The ~3MB extra context size is acceptable; no runtime access risk since un-COPIED files don't enter the image.
 
-   - **Dead digest pipeline**: `build_image()` computes a digest of context_dir contents and bakes it as `agent-sandbox.digest` Docker label. No code anywhere reads this label back — the stale-detection read side was never implemented (M1.4 design was write-only). The label is metadata residue.
-   - **Known drift — package_branch.sh**: `sandbox.Dockerfile` COPYs `package_branch.sh` into the image, but `build_context_sandbox()` does not stage it into the context. Fresh `make build sandbox` would fail with `COPY failed: file not found`. (Reverse in agent build: `package_branch.sh` IS staged but never COPY'd by any `provider.Dockerfile` — harmless waste.)
-   - **Dual-maintenance surface**: Adding a file to an image requires edits in both the `build_context_*` file list and the Dockerfile COPY stanza. No cross-reference or test catches drift.
-   - **Dogfooding constraint**: Can't naively switch to `$repo_root` as build context because that sends the entire project tree (including tests/, docs/, .git/) to the Docker daemon, busting cache on irrelevant changes. The focused-context behaviour must be preserved — either via `.dockerignore` or by inlining the file list directly in the build caller.
-   - **Test file impact**: `tests/test_build_context.sh` (~47 tests) tests context_dir population and digest determinism. It must be either deleted or rewritten to test Dockerfile-based file selection instead.
-   - **`_build_context_copy`**: A 5-line wrapper over `cp` that checks source-file existence. Existence failures are already caught at Docker build time (COPY fails on missing source). The check adds no coverage beyond Docker's native behaviour.
-   - **Agent context files are also staged for base image builds** (`build_container.sh` line ~70): `build_context_agent` creates a context that is used for both the base image build and the provider image build. The base Dockerfile (`base.Dockerfile`) has no COPY commands — it ignores the context entirely. This is wasteful but harmless (context is small). Worth verifying on removal that the base image doesn't accidentally depend on context files.
+   Phase 1 — Implementation:
+   - Remove `build_context_sandbox()`, `build_context_agent()`, `_build_context_copy()`.
+   - Remove `build_image()`. Inline `docker build` into `build_sandbox()` and `build_agent()`.
+   - Remove dead digest pipeline (`agent-sandbox.digest` label).
+   - Remove stale `build_container.sh` references in comments.
+   - Move `worktree_id_derive` to `libs/containers.sh` (shared by items 3).
+
+   Phase 2 — Tests:
+   - Replace ~47 tests in `test_build_context.sh` with COPY contract tests.
+   - New tests assert each Dockerfile COPY target exists in the repo (file-not-found detection).
+   - No test for digest determinism (dead pipeline removed).
+
+   → Depends on: nothing (independent track). Prerequisite for: item 5.
+
+**5. Two-sig model** (`libs/containers.sh`, `scripts/start_agent.sh`). Design + implementation.
+   - **Container-sig: design settled** (see design doc §Container-sig). Hashes `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label, checked at preflight with a warning (not a hard block).
+   - **Harness-sig: deferred.** The scenarios where runtime drift detection adds value are not fully enumerated. Deferred to a separate investigation and design session — not part of M2.7 scope.
+
+   → Container-sig depends on: item 7 (context_dir removal removes the competing digest pipeline).
+
+---
+
+### Removed / Superseded
+
+**6. Paired refactor** — SUPERSEDED by item 10 (x-workspace anchor). The original goal (single authority for paths) was achieved via the compose template anchor. The compose template + provider overlay pattern is correct as-is.
+
+---
+
+### Implementation order
+
+```
+Track A (independent):  1 → 2 → 3 → 4
+Track B (independent):  7 → [design refresh] → 5
+```
+
+Both tracks can be done in parallel. Track A has clear dependency chains within it. Track B blocks on item 7 before item 5's design refresh makes sense.
+
+### Prior completed items (8–12)
+
+Item 8 (settings.json collision fix) ✅ | Item 9 (session-diffs + dry-run) ✅ | Item 10 (path refactor) ✅ | Item 11 (dual-layer seam testing) ✅ | Item 12 (AGENTS.md cleanup) ✅
 
 **8. Settings.json ownership collision fix** (`libs/provider-entrypoint.sh`, `libs/docker-compose.yml`, `scripts/run_agent.sh`, `providers/pi/config/agent/settings.json`, `providers/pi/provider.Dockerfile`):
 Implement the settled design from `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`. ✅
@@ -138,8 +175,7 @@ Implement the settled design from `docs/devlog/discussions/design_provider_confi
    - Pre-create `agent/sessions` in `scripts/run_agent.sh`. ✅
    - `/opt/workflow-host/` mounts deferred — image-baked paths are sufficient. ✅
    - `PROVIDER_CONFIG_DIR` removed from all provider Dockerfiles. ✅
-   - `tests/test_provider_entrypoint.sh` updated to test merge behavior. ✅"packages"` key and `/opt/workflow-host/` paths to `skills`/`prompts` arrays.
-   - Verify `provider.Dockerfile` does not COPY `agent/skills/` or `agent/prompts/` (those are now bind-mounted).
+   - `tests/test_provider_entrypoint.sh` updated to test merge behavior. ✅
 
 **9. Host-container seam testing via dry-run + session-diffs persistence fix** (`scripts/dry_run.sh`, `scripts/dirs.sh`, `libs/docker-compose.yml`, `libs/routing.sh`, `libs/package_branch.sh`):
 Fix the session-diffs path resolution mismatch between compose template and `dirs.sh`, then add dry-run tests that assert the host-container seam is intact:
@@ -217,9 +253,9 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Addressed in upcoming milestones
 
-- **Stale container images** *(M2.7)* — the preflight gate currently checks only whether an image exists, not whether it was built from the current source. M2.7 introduces `container-sig` (hash of `libs/` and provider Dockerfiles, baked as a Docker label) checked at preflight, and `harness-sig` (hash of `scripts/` and compose files) checked at runtime with a warning on drift. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
+- **Stale container images** *(M2.7)* — M2.7 introduces `container-sig` (hash of `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label) checked at preflight with a warning. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
 
-- **No automated Makefile or harness script staleness check** *(M2.7)* — `harness-sig` written to `SANDBOX_DIR/.harness-sig.ref` at session end will detect host-side script drift on subsequent runs. Full install-level isolation is a larger task deferred to [`story_harness_packaging_and_install_versioning.md`](discussions/story_harness_packaging_and_install_versioning.md).
+- **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.
 
 ---
 
