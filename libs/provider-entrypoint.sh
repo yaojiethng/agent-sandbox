@@ -5,16 +5,18 @@
 # a Docker layer cache miss on the COPY step in provider.Dockerfile.
 #
 # Responsibilities:
-#   1. Copy provider config from PROVIDER_CONFIG_DIR (bind-mounted from the host)
-#      into AGENT_HOME before the agent starts.
+#   1. Ensure harness-owned settings.json keys survive pi's runtime writes
+#      (skills, prompts, packages paths) via a targeted JSON merge.
 #   2. Run the provider's real entrypoint as a synchronous foreground child so
 #      that TUI input works correctly.
-#   3. After the agent exits, copy AGENT_HOME back to PROVIDER_CONFIG_DIR.
+#
+# The config directory ($AGENT_HOME) is bind-mounted directly — no copy-in or
+# copy-out needed. See docs/devlog/discussions/design_provider_config_ownership_and_loading.md
+# for the design rationale.
 #
 # Required environment variables (set via ENV in provider.Dockerfile):
 #   AGENT_HOME          — provider config dir inside the container
 #   PROVIDER_NAME       — provider identifier
-#   PROVIDER_CONFIG_DIR — bind-mount path for host-side provider config
 #
 # No filesystem paths are hardcoded in this script.
 #
@@ -49,8 +51,9 @@
 # SIGKILL and copy-out does not run.
 #
 # This only affects the "docker stop mid-session" path. For all normal exit
-# paths (user quits TUI, agent exits cleanly), copy-out runs as expected.
-# If copy-out on docker stop is required, implement it at the harness level:
+# paths (user quits TUI, agent exits cleanly), state is preserved because the
+# config directory is bind-mounted directly — no copy-out needed.
+# If cleanup on docker stop is required, implement it at the harness level:
 # run_agent.sh can copy provider config out via "docker cp" after the container
 # exits, independent of the entrypoint.
 
@@ -70,31 +73,29 @@ _require_var() {
 
 _require_var AGENT_HOME
 _require_var PROVIDER_NAME
-_require_var PROVIDER_CONFIG_DIR
 
 # ---------------------------------------------------------------------------
-# Copy-in
+# Harness key merge
 # ---------------------------------------------------------------------------
-# Copy provider config from the host bind-mount into AGENT_HOME before the
-# agent starts. Skipped silently if the source is absent or empty.
+# Ensures harness-owned settings.json keys survive pi's runtime writes.
+# Pi only writes keys it manages; this merge re-injects harness-owned keys
+# (skills, prompts, packages paths) without touching pi-managed keys.
+# Runs on every session start, before the provider starts.
+# Uses Node.js which is available in the base image.
 
-_copy_in() {
-  if [[ -d "$PROVIDER_CONFIG_DIR" ]] && [[ -n "$(ls -A "$PROVIDER_CONFIG_DIR" 2>/dev/null)" ]]; then
-    mkdir -p "$AGENT_HOME"
-    cp -r "$PROVIDER_CONFIG_DIR/." "$AGENT_HOME/"
-  fi
-}
-
-# ---------------------------------------------------------------------------
-# Copy-out
-# ---------------------------------------------------------------------------
-# Copy AGENT_HOME back to the host bind-mount after the agent exits.
-# Skipped silently if AGENT_HOME is absent or empty.
-
-_copy_out() {
-  if [[ -d "$AGENT_HOME" ]] && [[ -n "$(ls -A "$AGENT_HOME" 2>/dev/null)" ]]; then
-    mkdir -p "$PROVIDER_CONFIG_DIR"
-    cp -r "$AGENT_HOME/." "$PROVIDER_CONFIG_DIR/"
+_ensure_harness_keys() {
+  local settings="$AGENT_HOME/settings.json"
+  if [[ -f "$settings" ]]; then
+    node -e "
+      const fs = require('fs');
+      const p = process.argv[1];
+      let o;
+      try { o = JSON.parse(fs.readFileSync(p, 'utf8')); } catch(e) { o = {}; }
+      o.packages = [...new Set([...(o.packages||[]), '/opt/workflow/agent'])];
+      o.skills = [...new Set([...(o.skills||[]), '/opt/workflow/agent/skills'])];
+      o.prompts = [...new Set([...(o.prompts||[]), '/opt/workflow/agent/prompts'])];
+      fs.writeFileSync(p, JSON.stringify(o, null, 2) + '\n');
+    " "$settings"
   fi
 }
 
@@ -102,7 +103,7 @@ _copy_out() {
 # Run
 # ---------------------------------------------------------------------------
 
-_copy_in
+_ensure_harness_keys
 
 # Run the agent as a synchronous foreground child.
 # stdin, stdout, and stderr are inherited from the shell (PTY in Docker).
@@ -111,7 +112,5 @@ set +e
 "$@"
 EXIT_CODE=$?
 set -e
-
-_copy_out
 
 exit "$EXIT_CODE"

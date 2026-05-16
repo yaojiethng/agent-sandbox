@@ -17,14 +17,12 @@ COPY agent/skills/ /opt/workflow/agent/skills/
 COPY agent/prompts/ /opt/workflow/agent/prompts/
 
 RUN useradd -m -u 1001 -s /bin/bash agentuser
-RUN mkdir -p /opt/provider-config
 USER agentuser
 
 # AGENT_HOME — Pi's config and state directory inside the container.
-# PROVIDER_NAME — used by provider-entrypoint.sh to derive copy-out target.
+# Bind-mounted directly from host; no copy-in/copy-out needed.
 ENV PROVIDER_NAME=pi
 ENV AGENT_HOME=/home/agentuser/.pi
-ENV PROVIDER_CONFIG_DIR=/opt/provider-config
 
 RUN mkdir -p /home/agentuser/workspace/input \
              /home/agentuser/workspace/output

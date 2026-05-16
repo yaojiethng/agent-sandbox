@@ -131,12 +131,14 @@ Remove `build_context_sandbox`, `build_context_agent`, and `_build_context_copy`
    - **Agent context files are also staged for base image builds** (`build_container.sh` line ~70): `build_context_agent` creates a context that is used for both the base image build and the provider image build. The base Dockerfile (`base.Dockerfile`) has no COPY commands — it ignores the context entirely. This is wasteful but harmless (context is small). Worth verifying on removal that the base image doesn't accidentally depend on context files.
 
 **8. Settings.json ownership collision fix** (`libs/provider-entrypoint.sh`, `libs/docker-compose.yml`, `scripts/run_agent.sh`, `providers/pi/config/agent/settings.json`, `providers/pi/provider.Dockerfile`):
-Implement the settled design from `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`:
+Implement the settled design from `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`. ✅
 
-   - Replace `/opt/provider-config` bind mount with `agent/` directory bind mount, `bin/` tmpfs, and `/opt/workflow-host/` mounts for skills/prompts.
-   - Remove `_copy_in` and `_copy_out` from `libs/provider-entrypoint.sh`; add `_ensure_harness_keys` (Node.js pre-flight merge).
-   - Pre-create `agent/sessions` in `scripts/run_agent.sh` before compose generation.
-   - Update `providers/pi/config/agent/settings.json`: add `"packages"` key and `/opt/workflow-host/` paths to `skills`/`prompts` arrays.
+   - Replace `/opt/provider-config` bind mount with `agent/` directory bind mount + `bin/` tmpfs. ✅
+   - Remove `_copy_in` and `_copy_out`; add `_ensure_harness_keys` (Node.js pre-flight merge). ✅
+   - Pre-create `agent/sessions` in `scripts/run_agent.sh`. ✅
+   - `/opt/workflow-host/` mounts deferred — image-baked paths are sufficient. ✅
+   - `PROVIDER_CONFIG_DIR` removed from all provider Dockerfiles. ✅
+   - `tests/test_provider_entrypoint.sh` updated to test merge behavior. ✅"packages"` key and `/opt/workflow-host/` paths to `skills`/`prompts` arrays.
    - Verify `provider.Dockerfile` does not COPY `agent/skills/` or `agent/prompts/` (those are now bind-mounted).
 
 **9. Host-container seam testing via dry-run + session-diffs persistence fix** (`scripts/dry_run.sh`, `scripts/dirs.sh`, `libs/docker-compose.yml`, `libs/routing.sh`, `libs/package_branch.sh`):

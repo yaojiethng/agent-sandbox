@@ -36,7 +36,7 @@ x-workspace:
   changes_host:    "${CHANGES_DIR}"              → "/home/agentuser/workspace/session-diffs"
   input_host:      "${INPUT_DIR}"                → "/home/agentuser/workspace/input"
   output_host:     "${OUTPUT_DIR}"               → "/home/agentuser/workspace/output"
-  provider_config_host: "${SANDBOX_DIR}/.{{PROVIDER_NAME}}" → "/opt/provider-config"
+  provider_agent_host: "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent"  → "/home/agentuser/.pi/agent"
 
 services:
   sandbox:
@@ -85,9 +85,16 @@ services:
       - type: bind
         source: ${OUTPUT_DIR}
         target: /home/agentuser/workspace/output
+      # Provider config: directory bind mount directly at AGENT_HOME
+      # Replaces the old /opt/provider-config mount + copy-in/copy-out cycle.
+      # All writes (settings.json, auth.json, sessions/) go directly to host.
       - type: bind
-        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}
-        target: /opt/provider-config
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent
+        target: /home/agentuser/.pi/agent
+      # tmpfs at bin/ — keeps binary downloads (fd, rg) container-local
+      # so pi's cross-device mv from /tmp does not cross filesystem boundaries.
+      - type: tmpfs
+        target: /home/agentuser/.pi/agent/bin
     environment:
       - INPUT_DIR=/home/agentuser/workspace/input
       - OUTPUT_DIR=/home/agentuser/workspace/output
