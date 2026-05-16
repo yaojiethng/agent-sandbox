@@ -34,14 +34,19 @@ exec 1>&2
 
 ROOT="/home/agentuser"
 
-# Directory name defaults — single source of truth.
-# Override via environment variables without rebuilding the image.
-source /opt/sandbox/lib/dirs.sh
-
-# Use container workspace convention (visible directory, not hidden)
-WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-# SANDBOX_DIR is not set by dirs_resolve — derive from the same convention
+# Workspace paths are passed as absolute env vars from the compose template
+# (x-workspace anchor). Fallback to dirs_resolve only if unset (testing).
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
+SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
+CHANGES_DIR="${CHANGES_DIR:-}"
+INPUT_DIR="${INPUT_DIR:-}"
+OUTPUT_DIR="${OUTPUT_DIR:-}"
+
+if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+  # Fallback: derive paths from dirs.sh (testing env where compose not used)
+  source /opt/sandbox/lib/dirs.sh
+  WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+fi
 
 AUTOSAVE_INTERVAL="${AUTOSAVE_INTERVAL:-60}"  # 0 disables
 
@@ -69,7 +74,11 @@ snapshot_validate "$SNAPSHOT_DIR"
 }
 
 # SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
-# No additional writes needed — downstream consumers read from SESSION_STATE.
+# Write workspace paths so downstream consumers can read them deterministically.
+session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
+session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
+session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
+session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
 
 echo "Sandbox ready. Baseline recorded in SESSION_STATE."
 echo "Working tree status:"

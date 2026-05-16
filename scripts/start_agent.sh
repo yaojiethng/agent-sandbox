@@ -136,9 +136,12 @@ done < "$ENV_FILE"
 # Derive harness paths from SANDBOX_DIR
 # -------------------------
 # The .env file stores only the primitive (SANDBOX_DIR). Derived paths
-# (SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR) are produced here.
-source "$REPO_ROOT/libs/dirs.sh"
-dirs_resolve "$SANDBOX_DIR"
+# are produced here directly (no longer via dirs.sh/dirs_resolve).
+# These values must match the x-workspace anchor in libs/docker-compose.yml.
+export SNAPSHOT_DIR="${SANDBOX_DIR}/.snapshot"
+export CHANGES_DIR="${SANDBOX_DIR}/.workspace/session-diffs"
+export INPUT_DIR="${SANDBOX_DIR}/.workspace/input"
+export OUTPUT_DIR="${SANDBOX_DIR}/.workspace/output"
 
 # -------------------------
 # Image name derivation

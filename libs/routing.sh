@@ -24,13 +24,30 @@
 #   $INPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/     — host writes
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
-# functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR via
-# dirs_resolve. They do not read .env or detect container context.
+# functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
+# They first try SESSION_STATE (written by sandbox-entrypoint after init), then
+# fall back to dirs_resolve for host-side callers without a running container.
 
 set -euo pipefail
 
+SESSION_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session.sh"
+source "$SESSION_LIB"
 DIRS_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dirs.sh"
 source "$DIRS_LIB"
+
+# _resolve_path SANDBOX_DIR KEY
+# Tries SESSION_STATE first, falls back to dirs_resolve.
+# Sets CHANGES_DIR, INPUT_DIR, OUTPUT_DIR in the caller's scope.
+_resolve_paths() {
+  local SANDBOX_DIR="$1"
+  local _d
+  _d=$(session_state_read "$SANDBOX_DIR" "changes_dir" 2>/dev/null) && CHANGES_DIR="$_d"
+  _d=$(session_state_read "$SANDBOX_DIR" "input_dir" 2>/dev/null) && INPUT_DIR="$_d"
+  _d=$(session_state_read "$SANDBOX_DIR" "output_dir" 2>/dev/null) && OUTPUT_DIR="$_d"
+  if [[ -z "${CHANGES_DIR:-}" || -z "${INPUT_DIR:-}" || -z "${OUTPUT_DIR:-}" ]]; then
+    dirs_resolve "$SANDBOX_DIR"
+  fi
+}
 
 # =============================================================================
 # Session-export paths (used by entrypoint exit/autosave and CLI resolvers)
@@ -136,7 +153,7 @@ resolve_source_for_draft() {
   local CHANNEL="${2:-session}"
   local SESSION_ARG="${3:-}"
 
-  dirs_resolve "$SANDBOX_DIR"
+  _resolve_paths "$SANDBOX_DIR"
 
   local BASE_DIR=""
   case "$CHANNEL" in
@@ -213,7 +230,7 @@ resolve_diff_for_apply() {
   local CHANNEL="${2:-diffs}"
   local SESSION_ARG="${3:-}"
 
-  dirs_resolve "$SANDBOX_DIR"
+  _resolve_paths "$SANDBOX_DIR"
 
   local BASE_DIR=""
   case "$CHANNEL" in
