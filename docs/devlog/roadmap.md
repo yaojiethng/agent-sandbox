@@ -169,7 +169,7 @@ Design and implement a mechanism for dry-run to assert host-container seam behav
    - **11a. Design** — produce design document for the full mechanism. [This session.]
    - **11b. Pre-flight script** — add critical-invariant checks to `sandbox-entrypoint.sh` (every-container checks: mounts writable, SESSION_STATE valid, channels accessible). Warn-only for AGENTS.md/brief.md injection. ✅
    - **11c. dry_run_capability.sh** — new script running inside sandbox container. Deep investigation checks. Add bind mount to sandbox service in dry-run overlay. ✅
-   - **11d. dry_run.sh rewrite** — rewrite reasoning-layer checks as a separate script. Fully decoupled from capability layer checks. Subsumes old `dry_run.sh`.
+   - **11d. dry_run.sh rewrite** — rewrite reasoning-layer checks as a separate script. Fully decoupled from capability layer checks. Subsumes old `dry_run.sh`. ✅
    - **11e. Host-side verification** — after both containers exit, verify artifacts written by sandbox are visible on the host, and clean up temp files.
 
 **12. AGENTS.md injection path** (`scripts/start_agent.sh`, `libs/docker-compose.yml`, `libs/sandbox.Dockerfile` or provider Dockerfiles):

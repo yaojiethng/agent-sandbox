@@ -23,6 +23,7 @@ set -o pipefail
 ROOT="/home/agentuser"
 source /opt/sandbox/lib/dirs.sh
 source /opt/sandbox/lib/session.sh
+source /opt/sandbox/lib/diff.sh
 
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
@@ -104,19 +105,17 @@ warn_check "SESSION_STATE.session_ts readable" check_session_ts
 section "mounts"
 critical "CHANGES_DIR writable (session-diffs mount)" _is_writable "$CHANGES_DIR"
 critical "SNAPSHOT_DIR readable (snapshot mount)"     test -d "$SNAPSHOT_DIR"
-critical "INPUT_DIR readable (brief mount)"           test -d "$INPUT_DIR"
-critical "OUTPUT_DIR writable (output mount)"         _is_writable "$OUTPUT_DIR"
+warn_check "INPUT_DIR readable (brief mount)"           test -d "$INPUT_DIR"
+warn_check "OUTPUT_DIR writable (output mount)"         _is_writable "$OUTPUT_DIR"
 
 section "diff pipeline"
 # Verify the diff pipeline can be invoked without error.
 # Uses a temp directory so no artifacts pollute the session.
-local _diff_test_dir
 _diff_test_dir=$(mktemp -d) || {
   _fail "diff pipeline: could not create temp directory"
 }
 if diff_export "$SANDBOX_DIR" "$_diff_test_dir" 2>/dev/null; then
   _pass "diff_export: completed without error"
-  local _diff_files
   _diff_files=$(find "$_diff_test_dir" -name "*.diff" -type f 2>/dev/null | wc -l)
   if [[ "$_diff_files" -gt 0 ]]; then
     _pass "diff_export: produced $_diff_files diff file(s)"
@@ -131,9 +130,8 @@ rm -rf "$_diff_test_dir"
 section "session-diffs round-trip"
 # Write a capability-layer marker to CHANGES_DIR. The reasoning layer
 # (dry_run.sh) will later read this to verify cross-container communication.
-local _cap_marker="$CHANGES_DIR/.dryrun_capability_marker"
+_cap_marker="$CHANGES_DIR/.dryrun_capability_marker"
 if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "CAPABILITY_LAYER_OK" > "$_cap_marker" 2>/dev/null; then
-  local _readback
   _readback=$(cat "$_cap_marker" 2>/dev/null) || _readback=""
   if [[ "$_readback" == "CAPABILITY_LAYER_OK" ]]; then
     _pass "capability layer marker: wrote and read back at $CHANGES_DIR"

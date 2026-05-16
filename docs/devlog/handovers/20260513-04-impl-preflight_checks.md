@@ -66,34 +66,34 @@ None.
 **11c. dry_run_capability.sh.** Create the capability layer investigation script and add its bind mount to the dry-run compose overlay.
 
 ---
-[CORRECTION — 2026-05-21]: Three corrections to the pre-flight check implementation.
+[CORRECTION — 2026-05-21]: Five issues corrected across the pre-flight check implementation and related files.
 
-1. **Wrong container:** The CRITICAL checks for INPUT_DIR and OUTPUT_DIR were placed in
-   sandbox-entrypoint.sh (capability layer), but those directories are only mounted in
-   the agent container (reasoning layer). Per tool_interface.md — Mount Shape Guarantees,
-   the capability layer mounts only `.snapshot/` and `workspace/session-diffs/`.
-   The two CRITICAL checks were removed; the brief.md WARN check was kept (it naturally
-   reports WARN when INPUT_DIR is absent, which is the expected state in the sandbox
-   container).
+1. **Wrong container:** CRITICAL checks for INPUT_DIR and OUTPUT_DIR in
+   sandbox-entrypoint.sh asserted mounts that only exist in the agent container.
+   Removed; brief.md WARN check kept (non-fatal).
 
-2. **Silent failures:** `_preflight_crit` and `_preflight_warn` used `"$@" 2>/dev/null`
-   which suppressed the underlying error message from failing check commands (e.g.
-   "No such file or directory"). Fixed to capture stderr and append the first error line
-   to the FAIL/WARN message.
+2. **Silent failures:** `"$@" 2>/dev/null` suppressed underlying error messages.
+   Fixed to capture stderr and append to FAIL/WARN output.
 
-3. **set -e regression:** The stderr capture used `_err=$(cmd 2>&1 >/dev/null)` which
-   propagates the command's non-zero exit through command substitution. With `set -e`,
-   this kills the shell immediately — the pre-flight block stopped after the first
-   check that produced stderr. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then`
-   so the `if` clause suppresses errexit.
+3. **set -e regression:** `_err=$(cmd 2>&1 >/dev/null)` propagated non-zero exit through command substitution, killing the shell under `set -e`. Fixed by using
+   `if _err=$(cmd 2>&1 >/dev/null); then` so errexit is suppressed by the `if` clause.
+
+4. **local outside function in dry_run.sh:** `local _marker=...` at top-level scope.
+   Bash rejects `local` outside a function. Removed `local`.
+
+5. **Compound env vars in docker-compose.yml:** Agent service set
+   `INPUT_DIR_NAME=workspace/input` and `OUTPUT_DIR_NAME=workspace/output` (old
+   compound format). Combined with `dirs_resolve` prefixing this produced
+   double-workspace paths. Fixed to leaf names (`input`, `output`).
 
 Files changed:
   libs/sandbox-entrypoint.sh — removed 2 CRITICAL INPUT_DIR/OUTPUT_DIR checks;
-    fixed _preflight_crit/_preflight_warn to capture and display stderr;
-    fixed set -e regression (if _err=$(cmd) instead of _err=$(cmd))
-  libs/dirs.sh — updated container example to show INPUT_DIR/OUTPUT_DIR with
-    note that they are agent-container-only per tool_interface.md
-  tests/knowledge/diagnose_preflight.sh — new: reasoning-layer pre-flight diagnostic
-    test covering set -e safety, stderr capture, path resolution, SESSION_STATE,
-    mount checks, and a full pre-flight simulation
-  docs/devlog/changelog.md — added [CORRECTION] entry above M2.1
+    fixed _preflight_crit/_preflight_warn stderr capture and set -e regression
+  libs/dirs.sh — updated container docstring example with agent-container-only note
+  libs/docker-compose.yml — fixed agent env vars to leaf names
+  scripts/dry_run.sh — fixed local outside function
+  scripts/start_agent.sh — added dry-run mode guard (stop-previous-session skipped)
+  tests/knowledge/diagnose_preflight.sh — new diagnostic test
+  docs/devlog/changelog.md — added CORRECTION entry
+  docs/devlog/handovers/20260513-06-impl-dry_run_rewrite.md — see that handover's
+    CORRECTION block for the dry_run.sh context
