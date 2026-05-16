@@ -148,6 +148,8 @@ case "$MODE" in
     fi
     export DRY_RUN_SCRIPT
     DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
+    export DRY_RUN_CAPABILITY_SCRIPT
+    DRY_RUN_CAPABILITY_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_capability.sh")"
     COMPOSE_FILES+=("$DRY_RUN_OVERLAY")
     ;;
   serve)
@@ -178,7 +180,7 @@ compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT"
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    compose_dry_run "$DRY_RUN_SCRIPT"
+    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT"
     exit 0
     ;;
 

@@ -40,7 +40,8 @@
 #   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
 #   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
 #   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
-#   {{DRY_RUN_SCRIPT}}      → absolute path to dry_run.sh (dry-run mode only)
+#   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
+#   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run.sh (dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
 #   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
 #   ${CHANGES_DIR}          → host changes path (from .env, exported by start_agent.sh)
@@ -102,6 +103,7 @@ compose_generate() {
       -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
       -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
+      -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
       -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \
@@ -156,22 +158,77 @@ compose_args() {
 # -------------------------
 # compose_dry_run
 #
-# Runs the standard dry-run sequence against COMPOSE_ARGS and exits.
+# Runs the three-phase dry-run sequence against COMPOSE_ARGS and exits.
 # The dry-run overlay is already merged into the compose file — no extra
 # file args needed here.
 #
+# Phases:
+#   1. Capability layer — dry_run_capability.sh inside sandbox container
+#   2. Reasoning layer  — dry_run.sh inside agent container
+#   3. Host-side        — verify artifacts on host filesystem
+#
+# Each phase aborts on CRITICAL failure. Final cleanup via down -v.
+#
 # Args:
 #   $1  dry_run_script  — absolute path to dry_run.sh on the host
+#   $2  dry_run_capability_script  — path to dry_run_capability.sh (optional, skip phase 1 if empty)
 # -------------------------
 compose_dry_run() {
   local dry_run_script="$1"
+  local dry_run_capability_script="${2:-}"
 
-  DRY_RUN_SCRIPT="$dry_run_script" docker compose "${COMPOSE_ARGS[@]}" up -d
-  DRY_RUN_SCRIPT="$dry_run_script" docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh
-  DRY_RUN_SCRIPT="$dry_run_script" docker compose "${COMPOSE_ARGS[@]}" down -v
+  echo "Starting containers..."
+  DRY_RUN_SCRIPT="$dry_run_script" \
+    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+    docker compose "${COMPOSE_ARGS[@]}" up -d
+
+  # Phase 1: capability layer checks
+  if [[ -n "$dry_run_capability_script" ]]; then
+    echo ""
+    echo "=== Phase 1: capability layer ==="
+    if DRY_RUN_SCRIPT="$dry_run_script" \
+         DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+         docker compose "${COMPOSE_ARGS[@]}" exec sandbox bash /dry_run_capability.sh; then
+      echo "Phase 1 PASSED."
+    else
+      echo "Phase 1 FAILED — aborting." >&2
+      DRY_RUN_SCRIPT="$dry_run_script" \
+        DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+        docker compose "${COMPOSE_ARGS[@]}" down -v
+      exit 1
+    fi
+  fi
+
+  # Phase 2: reasoning layer checks
+  echo ""
+  echo "=== Phase 2: reasoning layer ==="
+  if DRY_RUN_SCRIPT="$dry_run_script" \
+       DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+       docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh; then
+    echo "Phase 2 PASSED."
+  else
+    echo "Phase 2 FAILED — aborting." >&2
+    DRY_RUN_SCRIPT="$dry_run_script" \
+      DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+      docker compose "${COMPOSE_ARGS[@]}" down -v
+    exit 1
+  fi
+
+  # Phase 3: host-side verification (placeholder — implemented in 11e)
+  echo ""
+  echo "=== Phase 3: host-side verification ==="
+  echo "(placeholder — full implementation in M2.7 item 11e)"
+  echo "Phase 3 SKIPPED."
+
+  # Cleanup
+  echo ""
+  echo "Cleaning up containers..."
+  DRY_RUN_SCRIPT="$dry_run_script" \
+    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+    docker compose "${COMPOSE_ARGS[@]}" down -v
 
   echo ""
-  echo "=== liveness: PASS ==="
+  echo "=== dry-run: ALL PHASES PASSED ==="
 }
 
 # -------------------------
