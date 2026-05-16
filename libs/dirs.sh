@@ -76,6 +76,12 @@ OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-output}"
 #   WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
 #   # → SNAPSHOT_DIR = /home/agentuser/.snapshot
 #   # → CHANGES_DIR  = /home/agentuser/workspace/session-diffs
+#   # → INPUT_DIR    = /home/agentuser/workspace/input
+#   # → OUTPUT_DIR   = /home/agentuser/workspace/output
+#   #
+#   # INPUT_DIR and OUTPUT_DIR derive correctly in both contexts but are mounted
+#   # only in the agent (reasoning layer) container, not the sandbox (capability
+#   # layer) container.  See tool_interface.md — Mount Shape Guarantees.
 # -------------------------
 dirs_resolve() {
   local BASE_DIR="$1"
