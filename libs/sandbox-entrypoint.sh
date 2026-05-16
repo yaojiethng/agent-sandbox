@@ -77,6 +77,56 @@ git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
 echo "  (empty = clean working tree)"
 
 # -------------------------
+# Pre-flight checks
+# -------------------------
+# Critical invariants that must hold for every session start.
+# CRITICAL failures exit non-zero (container fails healthcheck).
+# WARN failures log but do not exit — the session can proceed.
+
+PREFLIGHT_FAILS=0
+_preflight_crit() {
+  local msg="$1"; shift
+  if "$@" 2>/dev/null; then
+    echo "  PREFLIGHT PASS: $msg"
+  else
+    echo "  PREFLIGHT FAIL: $msg" >&2
+    PREFLIGHT_FAILS=$(( PREFLIGHT_FAILS + 1 ))
+  fi
+}
+_preflight_warn() {
+  local msg="$1"; shift
+  if "$@" 2>/dev/null; then
+    echo "  PREFLIGHT PASS: $msg"
+  else
+    echo "  PREFLIGHT WARN: $msg" >&2
+  fi
+}
+
+echo "--- pre-flight checks ---"
+
+# SESSION_STATE written by snapshot_init_git
+_preflight_crit "SESSION_STATE has init_sha" \
+  bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *init_sha=* ]]'
+_preflight_crit "SESSION_STATE has session_ts" \
+  bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
+
+# Mount checks
+_preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"           test -f "$SNAPSHOT_DIR/baseline.tar"
+_preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
+_preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"
+_preflight_crit "OUTPUT_DIR is writable (output mount)"              touch "$OUTPUT_DIR/.preflight_write_test" && rm -f "$OUTPUT_DIR/.preflight_write_test"
+
+# WARN: brief.md injection
+_preflight_warn "brief.md present in INPUT_DIR (AGENTS.md injected)"  test -f "$INPUT_DIR/brief.md"
+_preflight_warn "Working tree is clean"                              bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'
+
+echo "--- pre-flight: $([ "$PREFLIGHT_FAILS" -eq 0 ] && echo 'ALL CHECKS PASSED' || echo "$PREFLIGHT_FAILS FAILURE(S)") ---"
+
+if [[ "$PREFLIGHT_FAILS" -gt 0 ]]; then
+  exit 1
+fi
+
+# -------------------------
 # Diff pipeline
 # -------------------------
 source /opt/sandbox/lib/diff.sh
