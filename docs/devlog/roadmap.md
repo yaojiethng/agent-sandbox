@@ -22,8 +22,9 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
 | M2.3 — Apply Workflow: Capability Layer Diff Pipeline | [Complete — see changelog](changelog.md) |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | In progress |
+| [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | Deferred — see M2.5 section |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
+| M2.7 — Session Identity and Harness Versioning | Active |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -60,9 +61,11 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
-**Depends on:** M2.1, M2.2, M2.3. **Status:** In progress.
+**Depends on:** M2.1, M2.2, M2.3. **Status:** Deferred.
 
 **Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
+
+All tasks are shelved. Re-activate when KV5 timeline demands it.
 
 **Tasks:**
 
@@ -90,11 +93,11 @@ Each provider may result in a different integration pattern. Investigation findi
 
 **Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
 
-**Depends on:** M2.3. **Status:** Not started.
+**Depends on:** M2.3. **Status:** Active.
 
 **Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
 
-**Scope:** Implement the hash-based session identity model, two-sig model, and container lifecycle redesign. Work falls into seven groups:
+**Scope:** Implement the hash-based session identity model, two-sig model, container lifecycle redesign, and the settings.json ownership collision fix originally designed under M2.5. Work falls into the following groups:
 
 **1. run_id derivation** (`scripts/start_agent.sh`): Add `RUN_ID` as 6-char hex hash of `${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}`. Replace timestamp-based container naming with run_id-based naming (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`).
 
@@ -126,6 +129,22 @@ Remove `build_context_sandbox`, `build_context_agent`, and `_build_context_copy`
    - **Test file impact**: `tests/test_build_context.sh` (~47 tests) tests context_dir population and digest determinism. It must be either deleted or rewritten to test Dockerfile-based file selection instead.
    - **`_build_context_copy`**: A 5-line wrapper over `cp` that checks source-file existence. Existence failures are already caught at Docker build time (COPY fails on missing source). The check adds no coverage beyond Docker's native behaviour.
    - **Agent context files are also staged for base image builds** (`build_container.sh` line ~70): `build_context_agent` creates a context that is used for both the base image build and the provider image build. The base Dockerfile (`base.Dockerfile`) has no COPY commands — it ignores the context entirely. This is wasteful but harmless (context is small). Worth verifying on removal that the base image doesn't accidentally depend on context files.
+
+**8. Settings.json ownership collision fix** (`libs/provider-entrypoint.sh`, `libs/docker-compose.yml`, `scripts/run_agent.sh`, `providers/pi/config/agent/settings.json`, `providers/pi/provider.Dockerfile`):
+Implement the settled design from `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`:
+
+   - Replace `/opt/provider-config` bind mount with `agent/` directory bind mount, `bin/` tmpfs, and `/opt/workflow-host/` mounts for skills/prompts.
+   - Remove `_copy_in` and `_copy_out` from `libs/provider-entrypoint.sh`; add `_ensure_harness_keys` (Node.js pre-flight merge).
+   - Pre-create `agent/sessions` in `scripts/run_agent.sh` before compose generation.
+   - Update `providers/pi/config/agent/settings.json`: add `"packages"` key and `/opt/workflow-host/` paths to `skills`/`prompts` arrays.
+   - Verify `provider.Dockerfile` does not COPY `agent/skills/` or `agent/prompts/` (those are now bind-mounted).
+
+**9. Host-container seam testing via dry-run + session-diffs persistence fix** (`scripts/dry_run.sh`, `scripts/dirs.sh`, `libs/docker-compose.yml`, `libs/routing.sh`, `libs/package_branch.sh`):
+Fix the session-diffs path resolution mismatch between compose template and `dirs.sh`, then add dry-run tests that assert the host-container seam is intact:
+
+   - **session-diffs persistence fix**: resolve the destination path mismatch between the compose bind mount (`workspace/session-diffs`) and `dirs.sh` resolution (`session-diffs`). Ensure diffs written by sandbox-entrypoint land in the tree `routing.sh` reads from.
+   - **dry-run as seam test staging ground**: add a block in `dry_run.sh` that tests the session-diffs path round-trip — write a test diff, verify it appears at the expected host-relative path, read it back.
+   - **commit message capture**: extend `package_branch.sh` to embed the commit subject in the diff filename (e.g. `0001-<sha>-<subject>.diff`) or in a companion manifest. Extend the session-diffs pipeline to store commit messages alongside diffs.
 
 ---
 
