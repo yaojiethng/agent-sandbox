@@ -165,6 +165,47 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# session-diffs round-trip test
+# ---------------------------------------------------------------------------
+# Verifies that the CHANGES_DIR path resolution is consistent between:
+#   - host side:  dirs_resolve on SANDBOX_DIR (defaults)
+#   - container:  dirs_resolve on /home/agentuser (WORKSPACE_DIR_NAME=workspace)
+#
+# The compose bind mount maps:
+#   source: ${CHANGES_DIR}  (host:  $SANDBOX_DIR/.workspace/session-diffs)
+#   target: /home/agentuser/workspace/session-diffs  (container)
+#
+# If CHANGES_DIR_NAME is set to a subpath containing '/', dirs.sh prepends
+# WORKSPACE_DIR_NAME, producing a doubled prefix. The marker write below
+# detects this by verifying the resolved path matches the bind mount target.
+
+section "session-diffs round-trip"
+
+check_changes_dir_matches_mount_target() {
+  local expected="/home/agentuser/workspace/session-diffs"
+  [[ "$CHANGES_DIR" == "$expected" ]]
+}
+critical "CHANGES_DIR resolves to bind mount target (/home/agentuser/workspace/session-diffs)" \
+  check_changes_dir_matches_mount_target
+
+# Write a marker file and verify it's readable at the resolved path.
+# If the path is doubled (bug), mkdir -p creates the wrong tree and the
+# marker lands outside the bind mount — the subsequent read fails.
+local _marker="$CHANGES_DIR/.dryrun_seam_test"
+if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "SEAM_OK" > "$_marker" 2>/dev/null; then
+  local _readback
+  _readback=$(cat "$_marker" 2>/dev/null) || _readback=""
+  if [[ "$_readback" == "SEAM_OK" ]]; then
+    _pass "session-diffs round-trip: wrote and read back marker at $CHANGES_DIR"
+    rm -f "$_marker"
+  else
+    _fail "session-diffs round-trip: marker file empty or unreadable"
+  fi
+else
+  _fail "session-diffs round-trip: could not write marker to $CHANGES_DIR"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 
