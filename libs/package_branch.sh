@@ -99,7 +99,13 @@ package_commits() {
     local DIFF_FILE
     local PADDING
     PADDING=$(printf "%04d" "$INDEX")
-    DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
+    local COMMIT_SUBJECT
+    COMMIT_SUBJECT=$(git -C "$SANDBOX_DIR" log --format="%s" -1 "$COMMIT_SHA" 2>/dev/null | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 60) || COMMIT_SUBJECT=""
+    if [[ -n "$COMMIT_SUBJECT" ]]; then
+      DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}-${COMMIT_SUBJECT}.diff"
+    else
+      DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
+    fi
 
     git -C "$SANDBOX_DIR" diff --binary "${PREVIOUS_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
@@ -175,6 +181,9 @@ package_branch() {
 
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
+
+  # 5. Git history log (commit messages for review context)
+  git -C "$SANDBOX_DIR" log --oneline --reverse "${INIT_SHA}..HEAD" > "${OUTPUT_DIR}/git-history.txt" 2>/dev/null || true
 
   echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
 }
