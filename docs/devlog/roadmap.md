@@ -172,8 +172,12 @@ Design and implement a mechanism for dry-run to assert host-container seam behav
    - **11d. dry_run.sh rewrite** — rewrite reasoning-layer checks as a separate script. Fully decoupled from capability layer checks. Subsumes old `dry_run.sh`. ✅
    - **11e. Host-side verification** — after both containers exit, verify artifacts written by sandbox are visible on the host, and clean up temp files. ✅
 
-**12. AGENTS.md injection path** (`scripts/start_agent.sh`, `libs/docker-compose.yml`, `libs/sandbox.Dockerfile` or provider Dockerfiles):
-AGENTS.md is currently copied into `INPUT_DIR/brief.md` before agent start, which is inefficient — the brief is a one-shot file read at session start, not sent on every turn. The agent should read AGENTS.md from its working directory directly. Fix the injection path to mount AGENTS.md into the agent's CWD instead of copying into INPUT_DIR.
+**12. AGENTS.md injection cleanup + provider dry-run checks** (`scripts/start_agent.sh`, `libs/sandbox-entrypoint.sh`, `libs/_templates/Makefile.template`, `scripts/dry_run_reasoning.sh`, `providers/pi/docker-compose.pi.yml`):
+Three changes:
+
+   - **Remove redundant brief.md injection** (done). `start_agent.sh` no longer copies AGENTS.md into `INPUT_DIR/brief.md`. Pi discovers AGENTS.md via its own CWD-walk mechanism — the file at `SANDBOX_DIR/AGENTS.md` is loaded directly. The `--brief` flag and `AGENT_BRIEF` Makefile variable are preserved for CLI compat but are no-ops.
+   - **Update pre-flight checks** (done). Replace stale `brief.md` presence check with checks for `sandbox/AGENTS.md` (project context) and `AGENT_HOME/AGENTS.md` (provider context, file seeded in M2.7 item 8).
+   - **Provider dry-run checks** (planned, not yet implemented). `dry_run_reasoning.sh` should source a provider-specific check script from a path mounted by the provider overlay (`providers/<name>/docker-compose.<name>.yml`). For pi, `providers/pi/dry_run_checks.sh` would verify `~/.pi/agent/AGENTS.md` presence and any pi-specific config integrity. Implementation deferred to align with the provider config lifecycle fix (item 8) — mounting via provider overlay avoids adding new path resolution complexity before the workspace path refactor (item 10). See design doc §Provider dry-run checks.
 
 ---
 
