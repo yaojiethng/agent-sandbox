@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--provider=<n>]
+#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
 #
 # Modes:
 #   standard   — normal execution, network access allowed
@@ -14,13 +14,11 @@
 #
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
-#   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR;
-#                           copied into SANDBOX_DIR/.workspace/input/brief.md
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
 #   --provider=<n>          provider name (default: opencode)
 #
 # Responsibility: host-side pre-flight only — path validation, .env loading,
-# git validation, workspace setup, snapshot pipeline, brief resolution.
+# git validation, workspace setup, snapshot pipeline.
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 #
 # This script is designed to be executed, not sourced. It exports variables
@@ -43,7 +41,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--provider=<n>]"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]"
   exit 1
 fi
 
@@ -53,7 +51,6 @@ fi
 PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
-AGENT_BRIEF=""
 ENV_REL=".env"
 PROVIDER_NAME=""
 REFRESH=false
@@ -64,7 +61,7 @@ for ARG in "$@"; do
     --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
     --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
     --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
-    --brief=*)    AGENT_BRIEF="${ARG#--brief=}" ;;
+
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     --refresh)    REFRESH=true ;;
@@ -241,21 +238,7 @@ snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."
 
 # -------------------------
-# Brief resolution
-# -------------------------
-if [[ -n "$AGENT_BRIEF" ]]; then
-  BRIEF_PATH="$(cd "$SANDBOX_DIR" && realpath "$AGENT_BRIEF")"
-
-  validate_wsl_path "AGENT_BRIEF" "$BRIEF_PATH"
-
-  if [[ ! -f "$BRIEF_PATH" ]]; then
-    echo "Error: AGENT_BRIEF file not found: $BRIEF_PATH"
-    exit 1
-  fi
-
-  cp "$BRIEF_PATH" "$INPUT_DIR/brief.md"
-fi
-
+# Stop any running session containers
 # -------------------------
 # Stop any running session containers
 # -------------------------

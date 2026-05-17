@@ -44,7 +44,6 @@ export
 PROJECT_NAME := <project-name>
 PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-AGENT_BRIEF  := AGENTS.md
 ENV_FILE     := .env
 PROVIDER     ?=
 REFRESH      ?=
@@ -89,7 +88,6 @@ start:
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
 serve:
@@ -100,7 +98,6 @@ serve:
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
 dry-run:
@@ -111,7 +108,6 @@ dry-run:
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  --brief=$(AGENT_BRIEF) \
 	  --env=$(ENV_FILE)
 
 # -------------------------

@@ -246,13 +246,33 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 | SNAPSHOT_DIR readable | ✅ | — |
 | INPUT_DIR readable | ✅ | — |
 | OUTPUT_DIR writable | ✅ | — |
-| brief.md present (warn) | ✅ | — |
+| AGENTS.md in sandbox (warn) | ✅ | — |
+| AGENTS.md at AGENT_HOME (warn) | ✅ | — |
 | Working tree clean (warn) | ✅ | — |
 | CHANGES_DIR round-trip (write + read via mount) | — | ✅ |
 | Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | — | ✅ |
 | Diff pipeline invocable | — | ✅ |
-| Cross-container marker read (reasoning reads what capability wrote) | — | ✅ (dry_run.sh) |
-| Host-side artifact verification | — | ✅ (host-side phase) |
+| Cross-container marker read | — | — | ✅ |
+| Host-side artifact verification | — | — | — (Phase 3) |
+
+## Provider dry-run checks (future)
+
+`dry_run_reasoning.sh` should source provider-specific check scripts from a path mounted by the provider overlay (`providers/<name>/docker-compose.<name>.yml`). This enables providers to assert their own config integrity without the generic reasoning script knowing about provider internals.
+
+**Current state:** Not implemented. The mechanism was scoped during M2.7 item 12 investigation but deferred to align with the provider config lifecycle fix (M2.7 item 8) and workspace path refactor (M2.7 item 10), both of which touch the same path-resolution and mount infrastructure.
+
+**Future implementation sketch:**
+- Provider overlay adds a bind mount: `providers/<name>/dry_run_checks.sh` → `/opt/sandbox/providers/dry_run_checks.sh`
+- `dry_run_reasoning.sh` sources `/opt/sandbox/providers/dry_run_checks.sh` if present
+- Provider script has access to same env vars as the reasoning layer
+- For pi: checks `~/.pi/agent/AGENTS.md` presence, pi settings integrity, installed tooling
+
+## Changes made in item 12 investigation
+
+- Removed `brief.md` injection from `scripts/start_agent.sh` — dead code, pi never read it.
+- Removed `--brief` flag and `AGENT_BRIEF` Makefile variable entirely.
+- Updated pre-flight checks in `libs/sandbox-entrypoint.sh`: replaced `brief.md` presence with `sandbox/AGENTS.md` and `AGENT_HOME/AGENTS.md` checks.
+- Provider dry-run checks deferred to item 8/item 10.
 
 ---
 
