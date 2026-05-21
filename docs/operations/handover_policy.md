@@ -90,7 +90,20 @@ handover's Deferred items. If nothing was carried forward, write the canonical m
 | <deferred item description> | <YYYYMMDD-NN-TYPE-description> |
 
 ## Acceptance criteria
-<Criteria carried from prior session + any defined this session. Each criterion is an operator-runnable check — an action or command, expected output or behaviour, and pass/fail condition. Not file state. At session close, mark each as accepted or pushed to next session. Both must be visible under this header.>
+<Every AC describes a delta: something observable that was false or absent before the session and true or present after it. The operator verifies by running the system — never by reading source alone.
+
+For bugfixes, the delta is implicit: "error X no longer appears in command Y's output." The original error log or test failure is the requirement anchor — write the AC as a pass/fail check that asserts the error is gone.
+
+For features or reworks, the delta traces to a specific story pain point, requirement, or design decision. If the AC cannot be traced to something concrete (a story entry, a design record, a reported pain), it is likely not needed.
+
+Verification preference order: unit test > integration test > manual script > operator-run command with documented expected output. Use the minimal level that reliably asserts the delta. Manual verification is acceptable when automation is impractical.
+
+AC-level guidelines:
+- **Rename or delete:** include a paired negative check ("old path does not exist") alongside the positive check ("new path exists"). Both required.
+- **Rename companion files:** after defining the production ACs, grep for companion files (tests, knowledge tests, fixtures) matching the old path pattern and include or defer explicitly.
+- **Regression guard (bugfix only):** when the bug represents a recurring class — a bash trap, a common mis-pattern, something review often misses — add a generic guard (one repo-wide grep for all .sh files, not a per-file test). One-off logic errors do not need one.
+
+At session close, mark each criterion as accepted or pushed to next session. Both visible.>
 
 Not yet defined.
 
@@ -216,6 +229,8 @@ Implementation sessions should name their units consistently — `Unit 1`, `Unit
 ### At Step 5 — Acceptance criteria
 
 - Replace `Not yet defined.` with the confirmed criteria before the step exits. The null marker must not be present when implementation begins — a session that enters Step 6 with `Not yet defined.` in place has skipped the gate.
+- Universal preconditions (`make test passes clean`, `bash -n passes`) are preconditions, not acceptance criteria. They gate every session equally and add no session-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
+- When a hygiene AC references a validation tool, verify the tool actually catches the failure mode it is meant to guard. `bash -n` does not catch runtime-only bash errors such as `local` outside a function, `set -u` violations in conditional branches, or arithmetic evaluation errors — these pass syntax check cleanly and fail only when the script runs. For scripts, prefer a runtime check (capture stderr from an actual run) or a targeted grep for the specific anti-pattern, not syntax check alone.
 
 ### At pre-close verification (Step 7)
 

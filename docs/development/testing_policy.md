@@ -174,25 +174,35 @@ Do not add a third `tests/lib/` file without a clear category boundary. If a hel
 
 ---
 
-## Knowledge Tests
+## `tests/knowledge/` Directory
 
-Knowledge tests live in `tests/knowledge/` and document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. They are **not** run by `make test` or `scripts/run_tests.sh` - the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob.
+The `tests/knowledge/` directory contains three file categories with distinct purposes. None are run by `make test` or `scripts/run_tests.sh` — the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob. All files must be self-contained, create and clean up their own temporary directories, and exit 0 on success or non-zero on failure.
 
-**Purpose:** A knowledge test is a one-off executable document that:
-- Records what was learned about a tool's behaviour during investigation
-- Asserts that key assumptions still hold on the current system
-- Provides a reference for future developers modifying related code
-- Runs independently and self-validates (exit 0 = all assumptions confirmed)
+### 1. Knowledge tests (`knowledge_*.sh`)
 
-**Conventions:**
-- Naming: `tests/knowledge/knowledge_<topic>.sh`
-- Must be self-contained (no sourcing from `tests/lib/`, no shared fixtures)
-- Must create and clean up its own temporary directories
-- Must exit 0 when all assertions pass, non-zero otherwise
-- Not added to `run_tests.sh` or `make test`
-- Referenced by handover in relevant investigation or implementation sessions
+Document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. These are one-off executable documents produced during investigation sessions.
 
-**Rule:** A knowledge test's assertions are not acceptance criteria for implementation sessions. They document tool behaviour, not system behaviour. Implementation acceptance criteria are defined per-session in the handover.
+**Purpose:** Record what was learned about a tool's behaviour, assert key assumptions still hold, and provide a reference for future developers.
+
+**Rule:** A knowledge test's assertions are **not** acceptance criteria for implementation sessions. They document external tool behaviour, not internal system behaviour. Implementation acceptance criteria are defined per-session in the handover.
+
+### 2. Diagnostic scripts (`diagnose_*.sh`)
+
+Debug helpers that verify the internal invariants of a specific production script or subsystem. They are referenced when dry-run or pre-flight checks fail, to isolate the root cause.
+
+**Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does dry-run Phase 2 fail?"). Each section checks one link in the chain — environment, library sourcing, path resolution, script hygiene, etc.
+
+**Relation to ACs:** Unlike knowledge tests, diagnostic scripts test internal invariants and can be referenced from acceptance criteria — e.g. as a regression-guard AC for a recurring bug class. See handover policy §Acceptance criteria — Regression guard.
+
+**Naming:** `tests/knowledge/diagnose_<subsystem>.sh` — mirrors the production script name it diagnoses.
+
+### 3. Workflow tests (`workflow_*.sh`)
+
+End-to-end sequence validators that exercise a complete operator workflow (e.g. draft → confirm, draft → reject). They run against a mock repository to avoid side effects.
+
+**Purpose:** Validate that a multi-step workflow produces the expected repository state, file layout, and exit codes without requiring a full harness session. Used during implementation and regression-checked after refactors.
+
+**Relation to ACs:** Workflow test assertions are system behaviour and can be referenced from acceptance criteria. Prefer adding a workflow test over manual verification for any multi-step operator workflow.
 
 ## Running the Test Suite
 

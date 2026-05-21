@@ -47,7 +47,7 @@ Read this document at the start of any session. Read the relevant child document
 
 **Tests for non-trivial logic.** Any function with meaningful branching, error handling, or external dependencies gets tests. Tests are produced alongside implementation, not deferred.
 
-**Acceptance criteria describe outcomes, not implementations.** A criterion states what the operator runs and what they observe — not what a file contains or what internal state exists. A criterion satisfied by reading source rather than running the system is not an acceptance criterion.
+**Acceptance criteria describe a delta.** Every AC describes something observable that was false or absent before the session and true or present after it. The operator verifies by running the system — never by reading source alone. "Not file state" prohibits criteria verifiable only by reading source; it does not prohibit operator-runnable file-existence checks (`ls path` after a rename), which are observable behaviour.
 
 **Roadmap reflects reality.** Completed items are marked promptly. Cleanup follows `roadmap_policy.md`.
 
