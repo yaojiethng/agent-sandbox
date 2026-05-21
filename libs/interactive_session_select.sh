@@ -257,33 +257,15 @@ interactive_select_session() {
     return 1
   fi
 
-  # Determine display count (cap at MAX_ENTRIES)
+  # Pagination setup
   local TOTAL_COUNT="${#ENTRIES[@]}"
-  local DISPLAY_COUNT="$TOTAL_COUNT"
-  if [[ "$DISPLAY_COUNT" -gt "$INTERACTIVE_MAX_ENTRIES" ]]; then
-    DISPLAY_COUNT="$INTERACTIVE_MAX_ENTRIES"
-  fi
+  local PAGE_SIZE=$INTERACTIVE_MAX_ENTRIES
+  local TOTAL_PAGES=$(( (TOTAL_COUNT + PAGE_SIZE - 1) / PAGE_SIZE ))
+  local PAGE_OFFSET=0
 
-  # Check whether default session is within the displayed list
-  local INJECT_OPTION_ZERO=false
-  local INJECTED_SESSION_NAME=""
-  if [[ -n "$DEFAULT_SESSION" ]]; then
-    local FOUND_IN_DISPLAYED=false
-    for ((idx=0; idx<DISPLAY_COUNT; idx++)); do
-      if [[ "${ENTRIES[$idx]}" == "$DEFAULT_SESSION" ]]; then
-        FOUND_IN_DISPLAYED=true
-        break
-      fi
-    done
-    if [[ "$FOUND_IN_DISPLAYED" == false ]]; then
-      INJECT_OPTION_ZERO=true
-      INJECTED_SESSION_NAME="$DEFAULT_SESSION"
-    fi
-  fi
-
-  # Find default index (for non-injected default sessions)
+  # Find absolute index of default session (if any)
   local DEFAULT_INDEX=-1
-  if [[ -n "$DEFAULT_SESSION" && "$INJECT_OPTION_ZERO" == false ]]; then
+  if [[ -n "$DEFAULT_SESSION" ]]; then
     for idx in "${!ENTRIES[@]}"; do
       if [[ "${ENTRIES[$idx]}" == "$DEFAULT_SESSION" ]]; then
         DEFAULT_INDEX=$idx
@@ -292,58 +274,97 @@ interactive_select_session() {
     done
   fi
 
-  # Print table
-  echo "Available sessions (${CHANNEL}):" >&2
-  if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-    printf "  0: %-50s (selected session)\n" "$INJECTED_SESSION_NAME" >&2
-  fi
-  for ((idx=0; idx<DISPLAY_COUNT; idx++)); do
-    local BNAME="${ENTRIES[$idx]}"
-    local NUM=$((idx + 1))
-
-    # Check availability
-    local HAS_PATCHES="✗"
-    local HAS_UNCOMMITTED="✗"
-    local ENTRY_DIR="${BASE_DIR}/${BNAME}"
-    if [[ -d "$ENTRY_DIR/patches" ]] && find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' -print -quit | grep -q . 2>/dev/null; then
-      HAS_PATCHES="✓"
-    fi
-    if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
-      HAS_UNCOMMITTED="✓"
-    fi
-
-    # Truncate long names
-    local DISPLAY_NAME="$BNAME"
-    if [[ ${#DISPLAY_NAME} -gt 50 ]]; then
-      DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
-    fi
-
-    printf "  %d: %-50s patches: %s  uncommitted: %s\n" "$NUM" "$DISPLAY_NAME" "$HAS_PATCHES" "$HAS_UNCOMMITTED" >&2
-  done
-
-  # Overflow hint
-  if [[ "$TOTAL_COUNT" -gt "$INTERACTIVE_MAX_ENTRIES" ]]; then
-    local REMAINING=$((TOTAL_COUNT - INTERACTIVE_MAX_ENTRIES))
-    echo "  ... and $REMAINING more. Use SESSION=<name> to select older sessions directly." >&2
-  fi
-
-  # Prompt loop
+  # Pagination loop
   while true; do
+    # Calculate current page range
+    local DISPLAY_START=$((PAGE_OFFSET * PAGE_SIZE))
+    local DISPLAY_END=$((DISPLAY_START + PAGE_SIZE))
+    if [[ "$DISPLAY_END" -gt "$TOTAL_COUNT" ]]; then
+      DISPLAY_END=$TOTAL_COUNT
+    fi
+    local PAGE_COUNT=$((DISPLAY_END - DISPLAY_START))
+
+    # Check whether default session should be injected as option 0
+    # (injected when DEFAULT_SESSION is not on the current page)
+    local INJECT_OPTION_ZERO=false
+    local INJECTED_SESSION_NAME=""
+    if [[ -n "$DEFAULT_SESSION" ]]; then
+      if [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+        if [[ "$DEFAULT_INDEX" -lt "$DISPLAY_START" || "$DEFAULT_INDEX" -ge "$DISPLAY_END" ]]; then
+          INJECT_OPTION_ZERO=true
+          INJECTED_SESSION_NAME="$DEFAULT_SESSION"
+        fi
+      else
+        # DEFAULT_SESSION given but not found in entries — still inject as option 0
+        INJECT_OPTION_ZERO=true
+        INJECTED_SESSION_NAME="$DEFAULT_SESSION"
+      fi
+    fi
+
+    # Print header with page indicator
+    if [[ "$TOTAL_PAGES" -gt 1 ]]; then
+      echo "Available sessions (${CHANNEL}) — page $((PAGE_OFFSET + 1)) of $TOTAL_PAGES:" >&2
+    else
+      echo "Available sessions (${CHANNEL}):" >&2
+    fi
+
+    # Option 0 injection
+    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
+      printf "  0: %-50s (selected session)\n" "$INJECTED_SESSION_NAME" >&2
+    fi
+
+    # Print entries for current page
+    local REL_IDX=1
+    for ((abs=DISPLAY_START; abs<DISPLAY_END; abs++)); do
+      local BNAME="${ENTRIES[$abs]}"
+
+      # Check availability
+      local HAS_PATCHES="✗"
+      local HAS_UNCOMMITTED="✗"
+      local ENTRY_DIR="${BASE_DIR}/${BNAME}"
+      if [[ -d "$ENTRY_DIR/patches" ]] && find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' -print -quit | grep -q . 2>/dev/null; then
+        HAS_PATCHES="✓"
+      fi
+      if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
+        HAS_UNCOMMITTED="✓"
+      fi
+
+      # Truncate long names
+      local DISPLAY_NAME="$BNAME"
+      if [[ ${#DISPLAY_NAME} -gt 50 ]]; then
+        DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
+      fi
+
+      printf "  %d: %-50s patches: %s  uncommitted: %s\n" "$REL_IDX" "$DISPLAY_NAME" "$HAS_PATCHES" "$HAS_UNCOMMITTED" >&2
+      REL_IDX=$((REL_IDX + 1))
+    done
+
+    # Build prompt
     echo "" >&2
     local PROMPT="Selection ["
+    if [[ "$PAGE_OFFSET" -gt 0 ]]; then
+      PROMPT="${PROMPT}p=prev, "
+    fi
+    if [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]]; then
+      PROMPT="${PROMPT}n=next, "
+    fi
     if [[ "$INJECT_OPTION_ZERO" == true ]]; then
       PROMPT="${PROMPT}0-"
     fi
-    PROMPT="${PROMPT}1-${DISPLAY_COUNT}, q to quit"
+    PROMPT="${PROMPT}1-${PAGE_COUNT}, q to quit"
+    local SHOW_ENTER=false
     if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-      PROMPT="${PROMPT}, Enter for ${DEFAULT_SESSION}"
+      SHOW_ENTER=true
     elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+      SHOW_ENTER=true
+    fi
+    if [[ "$SHOW_ENTER" == true ]]; then
       PROMPT="${PROMPT}, Enter for ${DEFAULT_SESSION}"
     fi
     PROMPT="${PROMPT}]: "
     read -r -p "$PROMPT" REPLY || true
 
-    # Empty input with default (option 0 or matched index)
+    # Empty input with default
     if [[ -z "$REPLY" ]]; then
       if [[ "$INJECT_OPTION_ZERO" == true ]]; then
         echo "$INJECTED_SESSION_NAME"
@@ -352,6 +373,22 @@ interactive_select_session() {
         echo "$DEFAULT_SESSION"
         return 0
       fi
+      echo "Invalid selection. Try again." >&2
+      continue
+    fi
+
+    # n/p page navigation
+    if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
+      if [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]]; then
+        PAGE_OFFSET=$((PAGE_OFFSET + 1))
+      fi
+      continue
+    fi
+    if [[ "$REPLY" == "p" || "$REPLY" == "P" ]]; then
+      if [[ "$PAGE_OFFSET" -gt 0 ]]; then
+        PAGE_OFFSET=$((PAGE_OFFSET - 1))
+      fi
+      continue
     fi
 
     # Quit
@@ -366,11 +403,12 @@ interactive_select_session() {
       return 0
     fi
 
-    # Number selection (1-DISPLAY_COUNT)
+    # Number selection (1-PAGE_COUNT)
     if [[ "$REPLY" =~ ^[0-9]+$ ]] && [[ "$REPLY" -gt 0 ]]; then
-      local IDX=$((REPLY - 1))
-      if [[ "$IDX" -ge 0 && "$IDX" -lt "$DISPLAY_COUNT" ]]; then
-        echo "${ENTRIES[$IDX]}"
+      local REL=$((REPLY - 1))
+      local ABS=$((DISPLAY_START + REL))
+      if [[ "$ABS" -ge "$DISPLAY_START" && "$ABS" -lt "$DISPLAY_END" ]]; then
+        echo "${ENTRIES[$ABS]}"
         return 0
       fi
     fi

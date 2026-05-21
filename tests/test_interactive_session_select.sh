@@ -441,6 +441,127 @@ test_select_session_option_zero_not_present_without_default() {
 }
 
 # =============================================================================
+# interactive_select_session — pagination tests
+# =============================================================================
+
+# Helper: create N fixture sessions
+create_n_sessions() {
+  local BASE_DIR="$1"
+  local COUNT="$2"
+  for i in $(seq 1 "$COUNT"); do
+    local PADDING
+    PADDING=$(printf "%04d" "$i")
+    create_fixture_session "$BASE_DIR" "20260504-${PADDING}00-session-${i}" true false
+  done
+}
+
+test_select_session_pagination_next_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_next"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # 12 sessions sorted newest-first: session-12 .. session-1
+  # Page 1: entries 0-9 (session-12 .. session-3)
+  # Page 2: entries 10-11 (session-2, session-1)
+  # n, then 1 → selects first entry on page 2 = session-2
+  local SESSION
+  SESSION=$(printf "n\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-2"; then
+    pass "interactive_select_session 'n' then '1' selects first entry on page 2"
+  else
+    fail "interactive_select_session should select session-2 after n+1, got: '$SESSION'"
+  fi
+}
+
+test_select_session_pagination_previous_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_prev"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # n, p (back to page 1), then 1 → selects first entry on page 1 = session-12
+  local SESSION
+  SESSION=$(printf "n\np\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-12"; then
+    pass "interactive_select_session 'n' then 'p' returns to page 1"
+  else
+    fail "interactive_select_session should select session-12 after n+p+1, got: '$SESSION'"
+  fi
+}
+
+test_select_session_pagination_page_header() {
+  local SANDBOX="$FIXTURE_DIR/pg_header"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 15
+
+  # stderr should show "page 1 of 2"
+  local STDERR
+  STDERR=$(printf "q\n" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "page 1 of 2"; then
+    pass "interactive_select_session shows page header when multiple pages"
+  else
+    fail "interactive_select_session should show 'page 1 of 2', got: '$STDERR'"
+  fi
+}
+
+test_select_session_pagination_single_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_single"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 3
+
+  # Only 3 entries — no pagination, no "page 1 of 1"
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "page"; then
+    fail "interactive_select_session should NOT show page header for single page"
+  else
+    pass "interactive_select_session no page header for single page"
+  fi
+}
+
+test_select_session_pagination_option_zero_persists() {
+  local SANDBOX="$FIXTURE_DIR/pg_opt0"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # SESSION= outside the first 10 pages, inject option 0, n should still show it
+  local STDERR
+  STDERR=$(printf "n\nq\n" | interactive_select_session "$SANDBOX" "session" "20260504-000100-session-unknown" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "unknown"; then
+    pass "interactive_select_session option 0 persists across pages"
+  else
+    fail "interactive_select_session should show option 0 after 'n'"
+  fi
+}
+
+test_select_session_pagination_no_n_at_last_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_last"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # n (to page 2), n (stays on page 2), then 1 selects first entry on page 2
+  # Second n re-renders same page but stays — selection still works
+  local SESSION
+  SESSION=$(printf "n\nn\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-2"; then
+    pass "interactive_select_session stays on last page with extra 'n'"
+  else
+    fail "interactive_select_session should select session-2 after n+n+1, got: '$SESSION'"
+  fi
+}
+
+# =============================================================================
 # interactive_select_diff_type tests
 # =============================================================================
 
@@ -559,6 +680,13 @@ run_test test_select_session_option_zero_by_number
 run_test test_select_session_no_option_zero_when_in_displayed
 run_test test_select_session_option_zero_stderr_shows_entry
 run_test test_select_session_option_zero_not_present_without_default
+
+run_test test_select_session_pagination_next_page
+run_test test_select_session_pagination_previous_page
+run_test test_select_session_pagination_page_header
+run_test test_select_session_pagination_single_page
+run_test test_select_session_pagination_option_zero_persists
+run_test test_select_session_pagination_no_n_at_last_page
 
 run_test test_select_diff_type_uncommitted_default
 run_test test_select_diff_type_second_option
