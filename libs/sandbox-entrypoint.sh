@@ -86,10 +86,8 @@ echo "  (empty = clean working tree)"
 PREFLIGHT_FAILS=0
 _preflight_crit() {
   local msg="$1"; shift
-  local _err _rc
-  _err=$("$@" 2>&1 >/dev/null)
-  _rc=$?
-  if [[ $_rc -eq 0 ]]; then
+  local _err
+  if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
     echo "  PREFLIGHT FAIL: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
@@ -98,10 +96,8 @@ _preflight_crit() {
 }
 _preflight_warn() {
   local msg="$1"; shift
-  local _err _rc
-  _err=$("$@" 2>&1 >/dev/null)
-  _rc=$?
-  if [[ $_rc -eq 0 ]]; then
+  local _err
+  if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
     echo "  PREFLIGHT WARN: $msg${_err:+ — ${_err%%$'\n'*}}" >&2

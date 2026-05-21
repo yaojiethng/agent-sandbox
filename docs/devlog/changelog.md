@@ -6,6 +6,25 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
+## [CORRECTION — 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
+
+Three issues corrected in the pre-flight check block added in M2.7 item 11b:
+
+1. **Wrong container:** CRITICAL checks for INPUT_DIR and OUTPUT_DIR asserted mounts
+   that only exist in the agent container, not the sandbox container. Removed from
+   sandbox-entrypoint.sh; the brief.md WARN check was kept (non-fatal).
+
+2. **Silent failures:** `"$@" 2>/dev/null` suppressed the underlying error message
+   from failing check commands. Fixed to capture stderr and append to FAIL/WARN output.
+
+3. **set -e regression:** The initial stderr capture pattern (`_err=$(cmd 2>&1 >/dev/null)`)
+   propagated non-zero exit through command substitution, causing `set -e` to kill the
+   shell immediately. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then` so errexit
+   is suppressed by the `if` clause.
+
+A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify all
+three fixes and prevent future regressions.
+
 ## [CORRECTION — 2026-04-12] Historical Inconsistency Warning
 
 The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.

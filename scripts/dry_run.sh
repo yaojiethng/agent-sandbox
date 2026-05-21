@@ -191,7 +191,7 @@ critical "CHANGES_DIR resolves to bind mount target (/home/agentuser/workspace/s
 # Write a marker file and verify it's readable at the resolved path.
 # If the path is doubled (bug), mkdir -p creates the wrong tree and the
 # marker lands outside the bind mount — the subsequent read fails.
-local _marker="$CHANGES_DIR/.dryrun_seam_test"
+_marker="$CHANGES_DIR/.dryrun_seam_test"
 if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "SEAM_OK" > "$_marker" 2>/dev/null; then
   local _readback
   _readback=$(cat "$_marker" 2>/dev/null) || _readback=""

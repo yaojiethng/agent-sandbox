@@ -75,8 +75,8 @@ services:
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}
         target: /opt/provider-config
     environment:
-      - INPUT_DIR_NAME=workspace/input
-      - OUTPUT_DIR_NAME=workspace/output
+      - INPUT_DIR_NAME=input
+      - OUTPUT_DIR_NAME=output
       - SANDBOX_DIR_NAME=sandbox
     stdin_open: true
     tty: true

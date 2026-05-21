@@ -66,20 +66,34 @@ None.
 **11c. dry_run_capability.sh.** Create the capability layer investigation script and add its bind mount to the dry-run compose overlay.
 
 ---
-[CORRECTION — 2026-05-21]: The CRITICAL pre-flight checks for INPUT_DIR and OUTPUT_DIR
-were placed in sandbox-entrypoint.sh (capability layer), but those directories are only
-mounted in the agent container (reasoning layer). Per tool_interface.md — Mount Shape
-Guarantees, the capability layer mounts only `.snapshot/` and `workspace/session-diffs/`.
-The two CRITICAL checks were removed; the brief.md WARN check was kept (it naturally
-reports WARN when INPUT_DIR is absent, which is the expected state in the sandbox
-container).
-Additionally, `_preflight_crit` and `_preflight_warn` used `"$@" 2>/dev/null` which
-suppressed the underlying error message from failing check commands (e.g.
-"No such file or directory"). Fixed to capture stderr and append the first error line
-to the FAIL/WARN message.
+[CORRECTION — 2026-05-21]: Three corrections to the pre-flight check implementation.
+
+1. **Wrong container:** The CRITICAL checks for INPUT_DIR and OUTPUT_DIR were placed in
+   sandbox-entrypoint.sh (capability layer), but those directories are only mounted in
+   the agent container (reasoning layer). Per tool_interface.md — Mount Shape Guarantees,
+   the capability layer mounts only `.snapshot/` and `workspace/session-diffs/`.
+   The two CRITICAL checks were removed; the brief.md WARN check was kept (it naturally
+   reports WARN when INPUT_DIR is absent, which is the expected state in the sandbox
+   container).
+
+2. **Silent failures:** `_preflight_crit` and `_preflight_warn` used `"$@" 2>/dev/null`
+   which suppressed the underlying error message from failing check commands (e.g.
+   "No such file or directory"). Fixed to capture stderr and append the first error line
+   to the FAIL/WARN message.
+
+3. **set -e regression:** The stderr capture used `_err=$(cmd 2>&1 >/dev/null)` which
+   propagates the command's non-zero exit through command substitution. With `set -e`,
+   this kills the shell immediately — the pre-flight block stopped after the first
+   check that produced stderr. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then`
+   so the `if` clause suppresses errexit.
 
 Files changed:
   libs/sandbox-entrypoint.sh — removed 2 CRITICAL INPUT_DIR/OUTPUT_DIR checks;
-    fixed _preflight_crit/_preflight_warn to capture and display stderr
+    fixed _preflight_crit/_preflight_warn to capture and display stderr;
+    fixed set -e regression (if _err=$(cmd) instead of _err=$(cmd))
   libs/dirs.sh — updated container example to show INPUT_DIR/OUTPUT_DIR with
     note that they are agent-container-only per tool_interface.md
+  tests/knowledge/diagnose_preflight.sh — new: reasoning-layer pre-flight diagnostic
+    test covering set -e safety, stderr capture, path resolution, SESSION_STATE,
+    mount checks, and a full pre-flight simulation
+  docs/devlog/changelog.md — added [CORRECTION] entry above M2.1
