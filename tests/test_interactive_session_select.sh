@@ -349,6 +349,98 @@ test_select_session_name_truncation() {
 }
 
 # =============================================================================
+# interactive_select_session — option 0 injection tests
+# =============================================================================
+
+test_select_session_inject_option_zero() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_fixture_session "$BASE" "20260504-120000-alpha"
+  create_fixture_session "$BASE" "20260503-090000-beta"
+
+  # DEFAULT_SESSION not in list — inject as option 0
+  local SESSION
+  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_session injects option 0 for outside-default, Enter selects it"
+  else
+    fail "interactive_select_session should return '20260501-000000-remote' via option 0, got: '$SESSION'"
+  fi
+}
+
+test_select_session_option_zero_by_number() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_num"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_fixture_session "$BASE" "20260504-120000-alpha"
+  create_fixture_session "$BASE" "20260503-090000-beta"
+
+  # Select option 0 by typing "0"
+  local SESSION
+  SESSION=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_session option 0 selectable by typing '0'"
+  else
+    fail "interactive_select_session should return '20260501-000000-remote' on '0', got: '$SESSION'"
+  fi
+}
+
+test_select_session_no_option_zero_when_in_displayed() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_no"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_fixture_session "$BASE" "20260504-120000-alpha"
+  create_fixture_session "$BASE" "20260503-090000-beta"
+
+  # DEFAULT_SESSION IS in list — no option 0, Enter selects normally
+  local SESSION
+  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
+  if [[ "$SESSION" == "20260503-090000-beta" ]]; then
+    pass "interactive_select_session does not inject option 0 when default is in displayed list"
+  else
+    fail "interactive_select_session should return '20260503-090000-beta' normally, got: '$SESSION'"
+  fi
+}
+
+test_select_session_option_zero_stderr_shows_entry() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_stderr"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_fixture_session "$BASE" "20260504-120000-alpha"
+
+  # Check stderr shows option 0
+  local STDERR
+  STDERR=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "remote"; then
+    pass "interactive_select_session prints option 0 to stderr"
+  else
+    fail "interactive_select_session should show option 0 in stderr"
+  fi
+}
+
+test_select_session_option_zero_not_present_without_default() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_nodef"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_fixture_session "$BASE" "20260504-120000-alpha"
+
+  # No DEFAULT_SESSION — no option 0, normal numbers start at 1
+  local STDERR
+  STDERR=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "^  0:"; then
+    fail "interactive_select_session should NOT show option 0 without DEFAULT_SESSION"
+  else
+    pass "interactive_select_session no option 0 when no default is given"
+  fi
+}
+
+# =============================================================================
 # interactive_select_diff_type tests
 # =============================================================================
 
@@ -461,6 +553,12 @@ run_test test_select_session_availability_indicators
 run_test test_select_session_zero_entries
 run_test test_select_session_cap_at_ten
 run_test test_select_session_name_truncation
+
+run_test test_select_session_inject_option_zero
+run_test test_select_session_option_zero_by_number
+run_test test_select_session_no_option_zero_when_in_displayed
+run_test test_select_session_option_zero_stderr_shows_entry
+run_test test_select_session_option_zero_not_present_without_default
 
 run_test test_select_diff_type_uncommitted_default
 run_test test_select_diff_type_second_option

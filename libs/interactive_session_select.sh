@@ -264,9 +264,26 @@ interactive_select_session() {
     DISPLAY_COUNT="$INTERACTIVE_MAX_ENTRIES"
   fi
 
-  # Find default index
-  local DEFAULT_INDEX=-1
+  # Check whether default session is within the displayed list
+  local INJECT_OPTION_ZERO=false
+  local INJECTED_SESSION_NAME=""
   if [[ -n "$DEFAULT_SESSION" ]]; then
+    local FOUND_IN_DISPLAYED=false
+    for ((idx=0; idx<DISPLAY_COUNT; idx++)); do
+      if [[ "${ENTRIES[$idx]}" == "$DEFAULT_SESSION" ]]; then
+        FOUND_IN_DISPLAYED=true
+        break
+      fi
+    done
+    if [[ "$FOUND_IN_DISPLAYED" == false ]]; then
+      INJECT_OPTION_ZERO=true
+      INJECTED_SESSION_NAME="$DEFAULT_SESSION"
+    fi
+  fi
+
+  # Find default index (for non-injected default sessions)
+  local DEFAULT_INDEX=-1
+  if [[ -n "$DEFAULT_SESSION" && "$INJECT_OPTION_ZERO" == false ]]; then
     for idx in "${!ENTRIES[@]}"; do
       if [[ "${ENTRIES[$idx]}" == "$DEFAULT_SESSION" ]]; then
         DEFAULT_INDEX=$idx
@@ -277,6 +294,9 @@ interactive_select_session() {
 
   # Print table
   echo "Available sessions (${CHANNEL}):" >&2
+  if [[ "$INJECT_OPTION_ZERO" == true ]]; then
+    printf "  0: %-50s (selected session)\n" "$INJECTED_SESSION_NAME" >&2
+  fi
   for ((idx=0; idx<DISPLAY_COUNT; idx++)); do
     local BNAME="${ENTRIES[$idx]}"
     local NUM=$((idx + 1))
@@ -310,17 +330,28 @@ interactive_select_session() {
   # Prompt loop
   while true; do
     echo "" >&2
-    local PROMPT="Selection [1-${DISPLAY_COUNT}, q to quit"
-    if [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+    local PROMPT="Selection ["
+    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
+      PROMPT="${PROMPT}0-"
+    fi
+    PROMPT="${PROMPT}1-${DISPLAY_COUNT}, q to quit"
+    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
+      PROMPT="${PROMPT}, Enter for ${DEFAULT_SESSION}"
+    elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
       PROMPT="${PROMPT}, Enter for ${DEFAULT_SESSION}"
     fi
     PROMPT="${PROMPT}]: "
     read -r -p "$PROMPT" REPLY || true
 
-    # Empty input with default
-    if [[ -z "$REPLY" && "$DEFAULT_INDEX" -ge 0 ]]; then
-      echo "$DEFAULT_SESSION"
-      return 0
+    # Empty input with default (option 0 or matched index)
+    if [[ -z "$REPLY" ]]; then
+      if [[ "$INJECT_OPTION_ZERO" == true ]]; then
+        echo "$INJECTED_SESSION_NAME"
+        return 0
+      elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+        echo "$DEFAULT_SESSION"
+        return 0
+      fi
     fi
 
     # Quit
@@ -329,8 +360,14 @@ interactive_select_session() {
       return 1
     fi
 
-    # Number selection
-    if [[ "$REPLY" =~ ^[0-9]+$ ]]; then
+    # Option 0 selection (injected session)
+    if [[ "$REPLY" == "0" && "$INJECT_OPTION_ZERO" == true ]]; then
+      echo "$INJECTED_SESSION_NAME"
+      return 0
+    fi
+
+    # Number selection (1-DISPLAY_COUNT)
+    if [[ "$REPLY" =~ ^[0-9]+$ ]] && [[ "$REPLY" -gt 0 ]]; then
       local IDX=$((REPLY - 1))
       if [[ "$IDX" -ge 0 && "$IDX" -lt "$DISPLAY_COUNT" ]]; then
         echo "${ENTRIES[$IDX]}"
