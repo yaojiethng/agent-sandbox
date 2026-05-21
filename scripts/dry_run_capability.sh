@@ -138,7 +138,7 @@ rm -rf "$_diff_test_dir"
 
 section "session-diffs round-trip"
 # Write a capability-layer marker to CHANGES_DIR. The reasoning layer
-# (dry_run.sh) will later read this to verify cross-container communication.
+# (dry_run_reasoning.sh) will later read this to verify cross-container communication.
 _cap_marker="$CHANGES_DIR/.dryrun_capability_marker"
 if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "CAPABILITY_LAYER_OK" > "$_cap_marker" 2>/dev/null; then
   _readback=$(cat "$_cap_marker" 2>/dev/null) || _readback=""

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dry_run.sh
+# dry_run_reasoning.sh
 # Diagnostic checks run inside the reasoning layer (agent) container during a dry-run.
-# Bind-mounted at /dry_run.sh via the dry-run compose overlay.
+# Bind-mounted at /dry_run_reasoning.sh via the dry-run compose overlay.
 #
 # This script is the reasoning layer counterpart to dry_run_capability.sh (capability
 # layer). It validates the reasoning layer's perspective of the host-container seam:
@@ -137,9 +137,8 @@ warn_check "SESSION_STATE.session_ts readable" check_session_ts
 # ---------------------------------------------------------------------------
 
 section "cross-container communication"
-local _cap_marker="$SANDBOX_DIR/../workspace/session-diffs/.dryrun_capability_marker"
+_cap_marker="$SANDBOX_DIR/../workspace/session-diffs/.dryrun_capability_marker"
 if test -f "$_cap_marker"; then
-  local _content
   _content=$(cat "$_cap_marker" 2>/dev/null)
   if [[ "$_content" == "CAPABILITY_LAYER_OK" ]]; then
     _pass "capability layer marker: readable from reasoning layer"
@@ -169,7 +168,6 @@ critical "CHANGES_DIR resolves to bind mount target" check_changes_dir_matches_m
 # marker lands outside the bind mount — the subsequent read fails.
 _marker="$CHANGES_DIR/.dryrun_seam_test"
 if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "REASONING_OK" > "$_marker" 2>/dev/null; then
-  local _readback
   _readback=$(cat "$_marker" 2>/dev/null) || _readback=""
   if [[ "$_readback" == "REASONING_OK" ]]; then
     _pass "reasoning layer round-trip: wrote and read back marker"

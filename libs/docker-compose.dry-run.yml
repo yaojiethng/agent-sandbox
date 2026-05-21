@@ -22,5 +22,5 @@ services:
     volumes:
       - type: bind
         source: {{DRY_RUN_SCRIPT}}
-        target: /dry_run.sh
+        target: /dry_run_reasoning.sh
         read_only: true

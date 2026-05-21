@@ -41,7 +41,7 @@
 #   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
 #   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
-#   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run.sh (dry-run mode only)
+#   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
 #   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
 #   ${CHANGES_DIR}          → host changes path (from .env, exported by start_agent.sh)
@@ -164,13 +164,13 @@ compose_args() {
 #
 # Phases:
 #   1. Capability layer — dry_run_capability.sh inside sandbox container
-#   2. Reasoning layer  — dry_run.sh inside agent container
+#   2. Reasoning layer  — dry_run_reasoning.sh inside agent container
 #   3. Host-side        — verify artifacts on host filesystem
 #
 # Each phase aborts on CRITICAL failure. Final cleanup via down -v.
 #
 # Args:
-#   $1  dry_run_script  — absolute path to dry_run.sh on the host
+#   $1  dry_run_script  — absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
 #   $2  dry_run_capability_script  — path to dry_run_capability.sh (optional, skip phase 1 if empty)
 #   $3  sandbox_dir     — host-side SANDBOX_DIR (for Phase 3 host verification)
 # -------------------------
@@ -205,7 +205,7 @@ compose_dry_run() {
   echo "=== Phase 2: reasoning layer ==="
   if DRY_RUN_SCRIPT="$dry_run_script" \
        DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-       docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run.sh; then
+       docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run_reasoning.sh; then
     echo "Phase 2 PASSED."
   else
     echo "Phase 2 FAILED — aborting." >&2

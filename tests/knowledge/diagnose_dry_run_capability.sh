@@ -8,7 +8,7 @@
 # path resolution, script hygiene, mount expectations, and a live diff_export
 # test.
 #
-# This is the capability-layer counterpart to diagnose_dry_run.sh (reasoning
+# This is the capability-layer counterpart to diagnose_dry_run_reasoning.sh (reasoning
 # layer). Together they cover the full dry-run precondition space.
 
 set -uo pipefail

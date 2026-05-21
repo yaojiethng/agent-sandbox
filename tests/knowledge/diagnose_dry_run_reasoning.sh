@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# diagnose_dry_run.sh
+# diagnose_dry_run_reasoning.sh
 # Run inside the agent container:
-#   docker exec <agent-container> bash /path/to/diagnose_dry_run.sh
+#   docker exec <agent-container> bash /path/to/diagnose_dry_run_reasoning.sh
 #
-# Checks why the reasoning-layer dry-run checks (dry_run.sh) fail
+# Checks why the reasoning-layer dry-run checks (dry_run_reasoning.sh) fail
 # by verifying every link in the chain: environment, library availability,
 # path resolution, script hygiene, mount expectations, SESSION_STATE
 # access, cross-container marker read, and session-diffs round-trip.
@@ -58,7 +58,7 @@ echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
 echo ""
 echo "=== 4. Script hygiene: local keyword ==="
-SCRIPT="/dry_run.sh"
+SCRIPT="/dry_run_reasoning.sh"
 if [[ -f "$SCRIPT" ]]; then
   BAD_LOCALS=0
   IN_FUNC=0
@@ -203,7 +203,7 @@ echo "Passed: $PASS, Failed: $FAIL"
 echo ""
 echo "If any checks fail:"
 echo "  1. Library sourcing → check /opt/sandbox/lib/ contents"
-echo "  2. Top-level local  → edit dry_run.sh; remove 'local' from top-level vars"
+echo "  2. Top-level local  → edit dry_run_reasoning.sh; remove 'local' from top-level vars"
 echo "  3. Mount failures   → check docker-compose.dry-run.yml volume definitions"
 echo "  4. SESSION_STATE    → check sandbox init wrote init_sha and session_ts"
 echo "  5. Round-trip fail  → check CHANGES_DIR path matches volumes-from target"

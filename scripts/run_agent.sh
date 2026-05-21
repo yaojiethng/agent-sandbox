@@ -148,7 +148,7 @@ case "$MODE" in
       exit 1
     fi
     export DRY_RUN_SCRIPT
-    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
+    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_reasoning.sh")"
     export DRY_RUN_CAPABILITY_SCRIPT
     DRY_RUN_CAPABILITY_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_capability.sh")"
     COMPOSE_FILES+=("$DRY_RUN_OVERLAY")

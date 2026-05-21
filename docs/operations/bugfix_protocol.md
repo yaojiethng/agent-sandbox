@@ -117,7 +117,7 @@ A function may be defined in a library file that is not sourced by the script. T
 | Session | Bug pattern | Diagnostic created |
 |---|---|---|
 | 20260513-04 | Top-level `local` in pre-flight stderr capture; set -e regression; wrong-container mount checks | `tests/knowledge/diagnose_preflight.sh` |
-| 20260513-06 | Top-level `local` in both dry-run scripts; missing `diff.sh` source; agent-only mounts checked as critical in sandbox | `tests/knowledge/diagnose_dry_run_capability.sh`, `tests/knowledge/diagnose_dry_run.sh` |
+| 20260513-06 | Top-level `local` in both dry-run scripts; missing `diff.sh` source; agent-only mounts checked as critical in sandbox | `tests/knowledge/diagnose_dry_run_capability.sh`, `tests/knowledge/diagnose_dry_run_reasoning.sh` |
 
 ## Relationship to other documents
 
