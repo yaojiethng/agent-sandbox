@@ -389,6 +389,69 @@ echo "Results: $PASS passed, $FAIL failed"
 
 ---
 
+## [FINDINGS: 2026-05-22] — Proposed Testing Rules from Session Practice
+
+This section captures rule proposals derived from hands-on debugging and investigation patterns during sessions. These are **not adopted policy** — they are candidates observed to solve recurring problems. After multiple sessions produce overlapping proposals, common patterns will be distilled into the main testing policy sections above.
+
+Each entry states the observed symptom, the provisional rule that addressed it, and the reasoning.
+
+---
+
+### Finding: Layered debugging — strip orchestration to isolate root cause
+
+**Observed:** EPERM warnings in Pi's settings.json locking required tracing through five layers (main.js → settings-manager.js → proper-lockfile → fs.utimesSync → kernel). The root cause — 9p filesystem not supporting `utime()` — was confirmed by a 6-line Node.js script that bypassed all orchestration and called `fs.utimesSync` directly on a test path.
+
+**Proposed rule:** When debugging a failure that crosses abstraction layers, write a minimal reproduction that bypasses all but the suspected layer. The reproduction should:
+
+1. Import/call only the system call or primitive that is suspected to fail.
+2. Use literal paths (not configuration-derived paths) to eliminate indirection.
+3. Print only the error and exit — no logging framework, no orchestration.
+4. Run from a clean state (no prior setup, no environment variables beyond what is required for the call itself).
+
+```bash
+# Example: reproducing a filesystem permission issue
+node -e "
+const fs = require('fs');
+try {
+  fs.utimesSync('/path/to/test', new Date(), new Date());
+  console.log('OK');
+} catch(e) {
+  console.error('FAILED:', e.code, e.message);
+}
+"
+```
+
+**Rationale:** Each abstraction layer adds failure modes (caching, error handling, concurrency, retry logic). A minimal reproduction eliminates all of them. If the minimal reproduction succeeds, the bug is in the orchestration. If it fails, the orchestration is irrelevant — the root cause is at the tested layer.
+
+**When to apply:** Any investigation where the error message originates from a system call (filesystem, network, process) and the call chain is more than two layers deep from the entrypoint.
+
+---
+
+### Finding: Mount-as-evidence — verify filesystem type before debugging behaviour
+
+**Observed:** The filesystem type (9p) was the root cause of EPERM on `utime()` and EXDEV on cross-filesystem `mv()`. In both cases, running `mount | grep <path>` or `stat -f <path>` at the start of debugging would have identified the constraint immediately, saving the time spent tracing through application code.
+
+**Proposed rule:** When a bug involves file operations (read, write, rename, utime, chmod) and the path may be a bind mount or network filesystem, check the filesystem type first:
+
+```bash
+# Is the path on the expected filesystem?
+df -T /path/to/suspect   # Filesystem type (ext4, 9p, overlay, tmpfs, nfs)
+mount | grep /path       # Mount source and options
+stat -f /path/to/suspect  # Filesystem ID and type
+```
+
+If the filesystem type is unexpected (e.g., 9p for a path assumed to be ext4, or overlay for a path assumed to be a bind mount), stop debugging the application code — the behaviour is a filesystem constraint, not a software bug.
+
+---
+
+### Finding: Layer-jumping — test the innermost assumption first
+
+**Observed:** The EPERM debugging session followed a clean innermost-first chain: identify the system call (`utimesSync`) → test it directly → confirm failure → check filesystem type → confirm 9p constraint. This produced a definitive answer in minutes.
+
+**Proposed rule:** When investigating a failure, order your tests from innermost (system call) to outermost (application orchestration). Do not start by reading application code — start by testing the primitive that the error message names. If the primitive works, move outward. If it fails, you have found the layer where the bug lives.
+
+---
+
 ## Debugging Test Failures
 
 ### Symptom: Test Passes in Isolation, Fails in Sequence
