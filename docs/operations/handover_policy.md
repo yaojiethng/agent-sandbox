@@ -1,5 +1,7 @@
 # Handover Policy
 
+**Role:** This document defines the content rules for session handover files — what constitutes a valid handover, field by field, across the handover lifecycle. For the operational workflow (when to populate each field, step sequencing, gates), see [`iteration_policy.md`](iteration_policy.md).
+
 Governs the creation, population, and closure of session handover documents. A handover is a session log — it records what was done and what comes next, with enough fidelity that a new agent can continue without reconstructing state from the session history.
 
 A handover is not a document. It is not subject to `documentation_policy.md`. It is a session log — committed alongside other session changes, retained for the life of the milestone, and read-only once closed. It does not describe the system; it describes the session. This is what "ephemeral" means here: it is not a reference document. It does not mean excluded from version control or from packaging.
@@ -53,13 +55,13 @@ Each session type (Eg. workflow vs implementation) must declare its scope indepe
 
 ## Lifecycle
 
-A handover has three moments:
+A handover has three states:
 
-**Open** — created at the start of a session (Step 1 of the minor loop). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. **The agent must check the Status header of the previous handover; if it is not "Closed", the previous session may have ended prematurely and require recovery.**
+**Open** — created at session start (`iteration_policy.md` §Step 1). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", the previous session may have ended prematurely and require recovery.
 
 **Active** — updated throughout the session as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** — finalised at session end (Steps 8 and 9 of the minor loop). Records what was completed, marks deferrals explicitly, and seeds the next session. The Status header is set to "Closed".
+**Closed** — finalised at session end (`iteration_policy.md` §Steps 8–9). Records what was completed, marks deferrals explicitly, and seeds the next session. The Status header is set to "Closed".
 
 ---
 
@@ -82,8 +84,8 @@ do not copy the task list. If design questions are blocking, list them explicitl
 
 ## Carried forward
 <Items explicitly deferred from the prior session that this session is picking up. One row per
-item, with a reference to the handover it came from. Populated at Step 1 from the prior
-handover's Deferred items. If nothing was carried forward, write the canonical marker.>
+item, with a reference to the handover it came from. Populated per `iteration_policy.md` §Step 1
+from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
 
 | Item | From handover |
 |---|---|
@@ -109,8 +111,8 @@ Not yet defined.
 
 ## Hot files
 <Files in scope for this session. Each entry is a markdown link with a one-line note on why it
-is in scope. Populated at Step 1 from the roadmap task list. Updated at Step 8 as tasks
-complete or new files enter scope.>
+is in scope. Populated per `iteration_policy.md` §Step 1 from the roadmap task list. Updated
+per `iteration_policy.md` §Steps 8–9 as tasks complete or new files enter scope.>
 
 | File | Why in scope |
 |---|---|
@@ -173,122 +175,6 @@ When a section has nothing to record, write the canonical marker and nothing els
 
 ---
 
-## Population Rules
-
-### At session open (Step 1)
-
-- **Create a new handover — never modify a closed one.** Create a new file with today's date and the next sequential index. The prior handover is source material only — read it for context, then leave it untouched.
-- **Recovery check:** verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session notes Trigger B is pending (or the roadmap still shows a completed sub-milestone as active), the prior session's close sequence did not complete. Run Trigger B after creating this handover but before presenting the scope proposal (Step 2). Record the Trigger B execution in this handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
-- **Compaction check:** compact any fully-completed task groups from the previous session in `roadmap.md` per [`roadmap_policy.md`](roadmap_policy.md#session-open-step-1). A task group is fully complete when every item in it is checked. If no groups are fully complete, note this explicitly. **The Hot files section must not be populated until this step is confirmed done or declared not applicable.**
-- Write the session objective — what this session will achieve, scoped to the session type and step range.
-- Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
-- Read the prior handover if one exists. Populate the Carried forward section: for each item in the prior handover's Deferred items that is destined for this session, add a row with the item description and the prior handover filename. Transfer acceptance criteria that were explicitly pushed to this session. Do not re-litigate deferred decisions — they are recorded where they were made.
-- Reset the Completed this session table to the null marker. It records only files changed in the current session — never carried from a prior handover.
-- Populate the Hot files section: for each task in the roadmap groups targeted this session, add a markdown link and a one-line reason.
-- Set Session type to the dominant activity expected this session.
-- For all nullable sections with nothing yet to record, write the canonical marker — not a blank section, not an explanation.
-
-### At scope confirmation (Step 2)
-
-After the handover draft is complete, present a scope proposal in chat and wait for operator confirmation before producing any file, code, or structural output. This gate applies to every session type without exception.
-
-**If sufficient context is available** (handover and roadmap uploaded, task list readable), present the proposal directly. Cover:
-
-- What the agent proposes to attempt this session, and why each item is in scope now (dependency order, available context, estimated size)
-- What the agent is explicitly deferring from the roadmap task list, and why (too large for one session, blocked on missing context, depends on a prior group not yet complete)
-- Any questions that must be resolved before the first task can begin
-
-For housekeeping sessions, the scope proposal may simply be the target file list and the nature of the change — that is sufficient. The gate still applies; the operator must confirm before work begins.
-
-**If context is insufficient** (key files missing, roadmap task list unclear, prior handover not uploaded), do not guess at scope. Ask the operator one question at a time until a scope proposal can be made, then present it and wait for confirmation.
-
-**Exit condition:** Operator has confirmed the scope proposal in chat. The Scope section of the handover is updated to reflect the confirmed scope before proceeding.
-
-**Rule:** No output before scope is confirmed.
-
-**Rule:** When a session contains multiple implementation units (e.g. F0, F1, F2), the detailed per-step spec is written only for the currently active unit. The handover may list all units for orientation, but unit N+1's spec is not written until unit N's output is confirmed. Cross-unit dependencies written before prior units run are the primary source of spec contradictions.
-
-**Rule:** Any code block in the spec that will be copy-pasted into implementation requires a grep result or file excerpt from the same session confirming live variable names, paths, and call signatures. Memory is not a substitute. If the target file is not uploaded, ask for it before writing the spec.
-
-**Rule:** If the spec requires a structured output — coverage map, propagation table, diff summary — the format must be defined in the spec before implementation begins. An open-ended analysis requirement without a specified output format will produce inconsistent results across sessions.
-
-### During the session
-
-Implementation sessions should name their units consistently — `Unit 1`, `Unit 2`, etc. Tasks within a unit are working memory and need not be persisted unless they become a finding. The handover write-back fires at three moments:
-
-**On task completion:** When a task in the session task list is completed, mark it complete in the Scope section and update Completed this session. Check whether any findings from that task belong in Mid-session findings before picking up the next task. Do not accumulate updates — write immediately.
-
-**On discovery:** When a bug, contradiction, design gap, blocker, or new file enters scope, write it to Mid-session findings immediately. Do not continue to the next task until the finding is recorded. If the finding changes the current unit's approach, surface it in chat before proceeding.
-
-**On steering received:** When the operator provides instruction that modifies the scope of a current or future unit, write it to Mid-session findings before resuming work. If the steering affects a future unit's spec, write it to Deferred items or Next session as well. Do not resume until this is done.
-
-- Record decisions in the Decisions table as they are made, with the document where the decision was recorded. If a decision is only in chat, it does not exist for the next session.
-- Record new acceptance criteria as they are defined. Pushed (unresolved) criteria from prior sessions are already present in the handover from session open — do not re-copy them.
-- Update Deferred items immediately when something is flagged out of scope — do not accumulate them at session end.
-
-### At Step 5 — Acceptance criteria
-
-- Replace `Not yet defined.` with the confirmed criteria before the step exits. The null marker must not be present when implementation begins — a session that enters Step 6 with `Not yet defined.` in place has skipped the gate.
-- Universal preconditions (`make test passes clean`, `bash -n passes`) are preconditions, not acceptance criteria. They gate every session equally and add no session-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
-- When a hygiene AC references a validation tool, verify the tool actually catches the failure mode it is meant to guard. `bash -n` does not catch runtime-only bash errors such as `local` outside a function, `set -u` violations in conditional branches, or arithmetic evaluation errors — these pass syntax check cleanly and fail only when the script runs. For scripts, prefer a runtime check (capture stderr from an actual run) or a targeted grep for the specific anti-pattern, not syntax check alone.
-
-### At pre-close verification (Step 7)
-
-Step 7 is a mandatory gate before session close. The agent presents a pre-close summary and waits for an explicit operator release before advancing to Steps 8–9.
-
-- **Propose roadmap compaction entries** — for each fully-completed task group, present the outcome summary that would replace its checklist. The operator reviews this alongside the AC status at Gate 3. Accepted text is applied at Steps 8–9.
-
-**For any session that touched multiple files under a shared rule or naming convention**, the pre-close summary must include a propagation replay table — a row-by-row comparison of every file that was planned to receive the change against the Completed this session table:
-
-| File | Change planned | Status |
-|---|---|---|
-| `path/to/file.md` | `<what was supposed to change>` | `completed` / `deferred` / `not started` |
-
-Every row must have a status. A row with status `deferred` or `not started` must appear in the Deferred items section before the gate closes. The operator cannot release Step 7 while any row is unresolved.
-
-**A propagation replay is required when any of the following apply:**
-- The session applied a naming rule, structural rule, or interface change across more than two files
-- The spec produced an explicit file table at Step 4 (information gathering pass)
-- The task description used language like "all", "every", "throughout", or "wherever X appears"
-
-**When a propagation replay is not required**, the pre-close summary covers: what was built, tests produced, AC status per criterion, and recommended manual checks.
-
-The operator releases this gate with an explicit forward signal (e.g. "proceed", "close the session"). A message that reviews output without a clear forward signal does not satisfy the exit condition. Packaging changes (e.g. `/package-diff`) does not release this gate — session-close actions do not begin until the operator explicitly confirms after testing.
-
-### At session close (Steps 8–9)
-
-After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
-
-- **Apply approved compaction** — replace each fully-completed task group's checklist with the outcome summary approved at Gate 3. Keep the `- [x]` marker. Compaction applies at every level of nesting.
-- If all sub-milestone tasks are now complete and acceptance criteria are met, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover.
-- The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
-- Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
-- Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
-- **Scope reconciliation — do this before writing anything else in Steps 8–9.** Compare the confirmed scope from Step 2 against the Completed this session table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items — if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-session, it is deferred with the reason. The Deferred items section is not complete until this check passes.
-- For each deferred item, record: what it is, why it did not complete this session, and where it goes next (next session, a specific future sub-milestone, or `roadmap_future.md`). If nothing is deferred, write the canonical marker.
-- **Carry-forward resolution gate — do this after scope reconciliation but before seeding Next session.** Compare every item in the Carried forward section against the Completed this session table and the Deferred items section. Every carried-forward item must have a resolution: it was completed (in Completed table), it is re-deferred (in Deferred items table with reason), or it is escalated to the roadmap (a named entry in `roadmap.md`). Any carried-forward item that is absent from all three is a dropped item — find it, triage it, and write it to one of the three destinations. The Deferred items section is not complete until this gate passes.
-- **Carry-forward escalation:** a deferred item may be carried to the immediately following session via Next session. If it cannot be picked up in that session — because it depends on work spanning multiple sessions, or its destination is uncertain — it must be written as a named task entry in `roadmap.md` under the current sub-milestone, not left in the handover chain. A finding that would survive more than one hop as a deferred item belongs in the roadmap.
-- **Mid-session findings triage gate — do this after the carry-forward resolution gate.** For each entry in Mid-session findings, route it to its correct destination — Decisions table, Deferred items, Next session (via Carried forward), or `roadmap.md` (via a named task entry). An entry cannot remain in Mid-session findings unless it has been explicitly marked as triaged with its destination noted. The Mid-session findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding Next session:** this gate must pass before Next session is written.
-- **Spec amendment:** if any implementation gap discovered this session affects the spec — missing flag, unspecified behaviour, ambiguous fixture approach — amend the spec before closing. Do not leave spec gaps for the next session to re-derive.
-
-#### Seed next session
-
-- Identify the next session's scope from two sources: the roadmap task list, and the Deferred items just written. Deferred items take priority — they represent work already started or committed to that must not be silently dropped.
-- If this was the final session of a sub-milestone, note in Next session whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
-- List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
-- Populate the **Conclusions from this session** field: decisions made, approaches confirmed, dead ends ruled out this session. Only what the next agent would otherwise re-derive from scratch — not a full log.
-- Populate Next session with enough orientation that the next agent does not need to read this session's history. **This section is written for the next agent, not the current one — it is source material for that agent's Step 1, not a continuation directive. The next agent will create its own handover before acting on anything written here.**
-- If the completed sub-milestone was the last in the major milestone, write "Major loop required before next session" in Next session and leave the sub-milestone ID blank.
-- **If this session supersedes a prior implementation handover**, include a **Context handover** line in Next session with a markdown link to the last relevant implementation handover, so the next agent can load full context directly.
-
----
-
-## Related Skills
-
-`project_index.md` is the complete registry. The active handover's Hot files section is the session-scoped list. Update rules, trigger moments, and temperature definitions are in [`project_index.md` — Maintenance Rules](../development/project_index.md#maintenance-rules).
-
----
-
 ## Corrections to Closed Handovers
 
 Closed handovers are read-only records with one exception: documented corrections applied under the post-close correction policy (`docs/operations/documentation_policy.md` — Post-Close Document Corrections).
@@ -309,7 +195,7 @@ Apply a correction when a factual error is found in the document — an incorrec
 ```
 
 4. Do not alter the document's Status, timestamps, or any other metadata field.
-5. **Findings triage — if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next session or future sessions need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the session close Step 8 mid-session findings gate:
+5. **Findings triage — if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next session or future sessions need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the session close mid-session findings gate (`iteration_policy.md` §Steps 8–9):
 
    - If the finding belongs in the active handover (the current session's handover), add it to Mid-session findings there.
    - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
@@ -332,15 +218,16 @@ Skills and prompt templates that encode this policy. When this document is revis
 
 | Skill / Prompt | Purpose |
 |---|---|
-| [`agent/prompts/new-session-v2.md`](../agent/prompts/new-session-v2.md) | Session open — handover creation, recovery checks, scope/AC gates |
+| [`agent/prompts/new-session.md`](../agent/prompts/new-session.md) | Session open — handover creation, recovery checks, scope/AC gates |
 | [`agent/drafts/roadmap-audit.skill.md`](../agent/drafts/roadmap-audit.skill.md) | Roadmap format compliance, compaction audits |
+| [`agent/drafts/handover-audit.skill.md`](../agent/drafts/handover-audit.skill.md) | Handover format compliance — validates content rules defined here |
 
 Policy documents that this document depends on:
 
 | Policy | Relationship |
 |---|---|
-| [`roadmap_policy.md`](roadmap_policy.md) | Step 8 Trigger B reference, compaction rules |
-| [`iteration_policy.md`](iteration_policy.md) | Step ordering and gate placement |
+| [`roadmap_policy.md`](roadmap_policy.md) | Trigger B reference, compaction rules |
+| [`iteration_policy.md`](iteration_policy.md) | Operational workflow — governs when handover fields are populated |
 | [`documentation_policy.md`](documentation_policy.md) | Post-close document corrections |
 
 ---
@@ -352,7 +239,7 @@ Policy documents that this document depends on:
 | [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
 | [`story_policy.md`](story_policy.md) | Story lifecycle: creation, investigation trigger, graduation, closure |
 | [`investigation_policy.md`](investigation_policy.md) | Investigation lifecycle: structure, states, recommendation, closure |
-| [`handover_policy.md`](handover_policy.md) | Handover format, naming, population rules, session continuity |
+| [`handover_policy.md`](handover_policy.md) | Handover content rules: valid field states, null markers, format conventions, correction procedure |
 
 ---
 
@@ -360,5 +247,5 @@ Policy documents that this document depends on:
 
 | Document | Purpose |
 |---|---|
-| [`iteration_policy.md`](iteration_policy.md) | Session workflow — when handover is created, updated, and closed |
+| [`iteration_policy.md`](iteration_policy.md) | Operational workflow — when handover is created, updated, and closed |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — task checkbox discipline and Trigger B |

@@ -106,6 +106,8 @@ Use the cheapest tier that catches the failure class. Code-based for regressions
 
 3. **Golden dataset staleness.** When policy changes, add new invariants to the dataset. A stale dataset produces green results against broken prompts.
 
+4. **Modular threshold (deferred).** When `new-session.md` grows past ~120 lines or 10 invariants, extract handover-creation logic into a separate skill (`handover-create.skill.md`). At that point, `new-session.md` becomes a coordinator that loads skills rather than inlining all rules. Design note opened 2026-05-22 — no action until the threshold fires.
+
 ---
 
 ## Related

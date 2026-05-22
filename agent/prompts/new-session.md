@@ -62,10 +62,10 @@ If the directive slot is non-empty:
 Before creating the handover:
 
 ```
-grep -n "### At session open" docs/operations/handover_policy.md
+Range-read: docs/operations/iteration_policy.md §Step 1 — Open handover and §Step 1 Details.
 ```
 
-Range-read from that line through `### At scope confirmation`. Then create the handover per those rules. Set Status to `Active`.
+Create the handover per those rules. Set Status to `Active`.
 
 ---
 
@@ -84,8 +84,15 @@ Stop here and wait for the release before continuing.
 
 ## Gate 2 — What does done look like? (Step 5)
 
-Once Gate 1 is released, state what a successful output looks like. For each criterion, verify: can the operator run a command and observe a result without reading source code? If not, rewrite it. Criteria may be brief — one line is fine if it is specific. Every session that touches architecture must include: *"Architecture documents in scope describe the system as built."*
+Once Gate 1 is released, state what a successful output looks like. Define criteria in a table with three columns:
 
-Wait for the operator to confirm. Once confirmed, update the handover — replace `Not yet defined.` with the confirmed criteria. The handover is the canonical location for AC.
+| # | Criterion | Verifiable by | Verified by |
+|---|---|---|---|
+
+Each criterion must describe an observable delta — the operator verifies by running a command, not by reading source alone. A criterion may be one line if it is specific. Every session that touches architecture must include: *"Architecture documents in scope describe the system as built."*
+
+**Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`. Mark the Verified by column: `Agent ✅` (pass), `Agent ❌` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`.
+
+Present the full table with pre-verification results. Wait for the operator to confirm. Once confirmed, update the handover — replace `Not yet defined.` with the confirmed criteria. The handover is the canonical location for AC.
 
 Implementation does not begin until both gates are confirmed.
