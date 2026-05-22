@@ -27,17 +27,27 @@ for var in AGENT_HOME PROVIDER_NAME PROVIDER_CONFIG_DIR SNAPSHOT_DIR_NAME SANDBO
 done
 
 echo ""
-echo "=== 2. Library sourcing ==="
-for lib in dirs.sh session.sh; do
+echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
+# The agent image bakes library scripts at /opt/sandbox/lib/.
+# session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
+# The remaining files are WARN — used later in the session or conditionally.
+for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
+             "package_diff.sh:WARN"; do
+  lib="${entry%%:*}"
+  severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"
   if [[ -f "$libpath" ]]; then
     if source "$libpath" 2>/dev/null; then
       pass "source $libpath succeeded"
     else
-      fail "source $libpath FAILED (exit $?)"
+      fail "source $libpath FAILED (exit $?) [$severity]"
     fi
   else
-    fail "$libpath does not exist"
+    if [[ "$severity" == "CRITICAL" ]]; then
+      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+    else
+      fail "$libpath does not exist [WARN]"
+    fi
   fi
 done
 

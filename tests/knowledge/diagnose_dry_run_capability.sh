@@ -27,19 +27,28 @@ for var in SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAM
 done
 
 echo ""
-echo "=== 2. Library sourcing ==="
-# The capability script needs dirs.sh, session.sh, and diff.sh.
-# Verify each exists at the expected path and can be sourced.
-for lib in dirs.sh session.sh diff.sh; do
+echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
+# The sandbox image bakes library scripts at /opt/sandbox/lib/.
+# Files required at startup are CRITICAL (must exist).
+# Files used later in the session are WARN (missing = stale image).
+for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
+             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
+             "package_diff.sh:WARN"; do
+  lib="${entry%%:*}"
+  severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"
   if [[ -f "$libpath" ]]; then
     if source "$libpath" 2>/dev/null; then
       pass "source $libpath succeeded"
     else
-      fail "source $libpath FAILED (exit $?)"
+      fail "source $libpath FAILED (exit $?) [$severity]"
     fi
   else
-    fail "$libpath does not exist"
+    if [[ "$severity" == "CRITICAL" ]]; then
+      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+    else
+      fail "$libpath does not exist [WARN]"
+    fi
   fi
 done
 

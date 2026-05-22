@@ -16,6 +16,14 @@ You are running inside the **agent-sandbox** harness. Your working directory
 All changes you make are captured as diffs and reviewed by a human operator
 before being applied.
 
+### Two-layer container architecture
+
+Every session runs two containers. You are inside the **reasoning** (agent
+runtime) container. A separate **capability** (sandbox) layer container runs
+the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/`
+with a different subset of library files — a file missing in one container is
+not necessarily a regression; it may belong only to the other layer.
+
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
 - Do not commit or push changes — the harness handles that after review.

@@ -75,6 +75,38 @@ _require_var AGENT_HOME
 _require_var PROVIDER_NAME
 
 # ---------------------------------------------------------------------------
+# Preflight: verify container libs
+# ---------------------------------------------------------------------------
+# /opt/sandbox/lib/ is baked into the image at build time. If files are
+# missing, the image is stale and must be rebuilt with `make build`.
+#
+# session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
+# The remaining files are WARN — fine to start but certain diagnostics or
+# session operations will fail at runtime.
+LIB_DIR="/opt/sandbox/lib"
+for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
+             "package_diff.sh:WARN"; do
+  lib="${entry%%:*}"
+  severity="${entry##*:}"
+  if [[ ! -f "$LIB_DIR/$lib" ]]; then
+    if [[ "$severity" == "CRITICAL" ]]; then
+      echo "FATAL: $LIB_DIR/$lib is missing — image is stale, rebuild with 'make build'" >&2
+      exit 1
+    else
+      echo "WARN: $LIB_DIR/$lib is missing — image may be stale" >&2
+    fi
+  fi
+done
+unset LIB_DIR
+
+# ---------------------------------------------------------------------------
+# Preflight: verify provider context AGENTS.md
+# ---------------------------------------------------------------------------
+if [[ ! -f "$AGENT_HOME/AGENTS.md" ]]; then
+  echo "WARN: $AGENT_HOME/AGENTS.md is missing — provider context not available to agent" >&2
+fi
+
+# ---------------------------------------------------------------------------
 # Harness key merge
 # ---------------------------------------------------------------------------
 # Ensures harness-owned settings.json keys survive pi's runtime writes.

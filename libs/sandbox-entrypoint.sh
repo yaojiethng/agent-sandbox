@@ -55,6 +55,32 @@ AUTOSAVE_PID=""
 mkdir -p "$CHANGES_DIR"
 
 # -------------------------
+# Preflight: verify container libs
+# -------------------------
+# /opt/sandbox/lib/ is baked into the image at build time. If files are
+# missing, the image is stale and must be rebuilt with `make build`.
+#
+# Files required for startup are CRITICAL — container aborts if absent.
+# Files needed later are WARN — container continues but certain operations
+# (diff pipeline, routing) will fail at runtime.
+LIB_DIR="/opt/sandbox/lib"
+for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
+             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
+             "package_diff.sh:WARN"; do
+  lib="${entry%%:*}"
+  severity="${entry##*:}"
+  if [[ ! -f "$LIB_DIR/$lib" ]]; then
+    if [[ "$severity" == "CRITICAL" ]]; then
+      echo "FATAL: $LIB_DIR/$lib is missing — image is stale, rebuild with 'make build'" >&2
+      exit 1
+    else
+      echo "WARN: $LIB_DIR/$lib is missing — image may be stale" >&2
+    fi
+  fi
+done
+unset LIB_DIR
+
+# -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
 source /opt/sandbox/lib/session.sh

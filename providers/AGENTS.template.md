@@ -41,11 +41,16 @@
   - What the agent's relationship is to the host repository (snapshot, not live)
   - What happens to outputs on exit (diff pipeline, operator review)
   - That the agent runtime is explicitly untrusted
+  - Which layer of the two-layer architecture this container runs
 -->
 
 You are executing inside a container. Your working directory (`sandbox/`) contains a snapshot of the project repository. All changes you make are captured as a diff on container exit and reviewed by a human operator before being applied to the repository.
 
 The agent runtime is explicitly untrusted. The operator has final authority over all outputs.
+
+### Two-layer container architecture
+
+Every session runs two containers. This container is the **reasoning** layer (agent runtime). A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files — a file missing in this container may belong to the other layer.
 
 ---
 
