@@ -6,8 +6,10 @@
 #
 # Produces (under OUTPUT_DIR/):
 #   patches/
-#     0001-<sha>.diff       — per-commit diffs (index lines stripped)
-#     0002-<sha>.diff
+#     0001-<sha>[-<subject>].diff  — per-commit diffs (index lines stripped)
+#     0001-<sha>[-<subject>].msg   — full commit message for each diff
+#     0002-<sha>[-<subject>].diff
+#     0002-<sha>[-<subject>].msg
 #     ...
 #   uncommitted.diff        — uncommitted changes vs HEAD (with untracked)
 #   all-changes.diff        — net delta INIT_SHA..HEAD (with untracked)
@@ -113,6 +115,10 @@ package_commits() {
       | sed -e '$a\' \
       > "$DIFF_FILE"
 
+    # Write sibling .msg file with full commit message
+    local MSG_FILE="${DIFF_FILE%.diff}.msg"
+    git -C "$SANDBOX_DIR" log --format="%B" -1 "$COMMIT_SHA" > "$MSG_FILE" 2>/dev/null || true
+
     PREVIOUS_SHA="$COMMIT_SHA"
     INDEX=$((INDEX + 1))
   done
@@ -181,9 +187,6 @@ package_branch() {
 
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
-
-  # 5. Git history log (commit messages for review context)
-  git -C "$SANDBOX_DIR" log --oneline --reverse "${INIT_SHA}..HEAD" > "${OUTPUT_DIR}/git-history.txt" 2>/dev/null || true
 
   echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
 }

@@ -27,22 +27,23 @@ Always supply `--session-summary` — a concise snake_case phrase describing the
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
 Bad summaries: `changes`, `update_files`, `misc`, `package`.
 
-The script produces one numbered `.diff` file per commit since `init_sha`, with the commit subject embedded in the filename:
+The script produces one numbered `.diff` file per commit since `init_sha`, with the commit subject embedded in the filename, plus a sibling `.msg` file with the full commit message:
 
 ```
 <to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/
   patches/
-    0001-<sha>-<subject>.diff
+    0001-<sha>-<subject>.diff    — per-commit diff (index lines stripped)
+    0001-<sha>-<subject>.msg     — full original commit message
     0002-<sha>-<subject>.diff
+    0002-<sha>-<subject>.msg
     ...
   uncommitted.diff
   all-changes.diff
   changed-files/
     MANIFEST.txt
-  git-history.txt
 ```
 
-`git-history.txt` contains a `--oneline` log of all commits since `init_sha`, providing full commit messages for review context. This is produced automatically by the script — no manual step needed.
+The `.msg` files are consumed by `make draft` to recreate commits with their original messages.
 
 Each `.diff` is a unified diff with index lines stripped, suitable for sequential `git apply`.
 The numbered order reflects commit history from `init_sha` to `HEAD`.

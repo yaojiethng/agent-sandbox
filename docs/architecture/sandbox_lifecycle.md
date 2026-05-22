@@ -98,7 +98,8 @@ workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
-    0001-abc1234.diff   — per-commit diffs from package_branch
+    0001-abc1234-<subject>.diff  — per-commit diffs from package_branch
+    0001-abc1234-<subject>.msg   — full commit message for each diff
   changed-files/
     MANIFEST.txt
     <path>/<file>        — working tree copies of all changed files

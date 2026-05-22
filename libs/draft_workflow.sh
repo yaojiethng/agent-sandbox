@@ -164,6 +164,60 @@ draft_validate_branch() {
 }
 
 # =============================================================================
+# draft_resolve_commit_message — resolve commit message for a diff file
+# =============================================================================
+
+# draft_resolve_commit_message DIFF_FILE
+#
+# Returns the commit message to use for a given diff file, following this
+# priority:
+#   1. Sibling .msg file (full original commit message)
+#   2. Subject extracted from filename (NNNN-SHA-<subject>.diff)
+#   3. Fallback: "Apply <basename>"
+#
+# Output:
+#   stdout — the resolved commit message
+#
+# Returns:
+#   0 always
+draft_resolve_commit_message() {
+  local DIFF_FILE="$1"
+  local MSG_FILE="${DIFF_FILE%.diff}.msg"
+
+  # Priority 1: sibling .msg file
+  if [[ -f "$MSG_FILE" && -s "$MSG_FILE" ]]; then
+    cat "$MSG_FILE"
+    return 0
+  fi
+
+  local BNAME
+  BNAME=$(basename "$DIFF_FILE")
+
+  # Priority 2: extract subject from filename (NNNN-<sha>-<subject>.diff)
+  # The filename structure is: NNNN-<fullsha>[-<sanitized_subject>].diff
+  # SHA is hex-only (no dashes), so dashes are reliable separators.
+  local STEM="${BNAME%.diff}"          # strip .diff
+  local REST="${STEM#*-}"              # strip NNNN- prefix, leaving SHA[-subject]
+  if [[ "$REST" == *-* ]]; then
+    # Has a subject portion: strip SHA (first dash-separated token)
+    local SUBJECT="${REST#*-}"          # strip SHA-
+    if [[ -n "$SUBJECT" ]]; then
+      # Clean: trim leading underscores, collapse consecutive, trim trailing
+      while [[ "$SUBJECT" == _* ]]; do SUBJECT="${SUBJECT#_}"; done
+      while [[ "$SUBJECT" == *__* ]]; do SUBJECT="${SUBJECT//__/_}"; done
+      while [[ "$SUBJECT" == *_ ]]; do SUBJECT="${SUBJECT%_}"; done
+      # Convert remaining underscores to spaces
+      SUBJECT="${SUBJECT//_/ }"
+      echo "$SUBJECT"
+      return 0
+    fi
+  fi
+
+  # Priority 3: fallback
+  echo "Apply ${BNAME}"
+}
+
+# =============================================================================
 # draft_run — create draft branch, apply patches
 # =============================================================================
 
@@ -319,7 +373,9 @@ draft_run() {
       return 1
     fi
     git -C "$PROJECT_DIR" add -A
-    git -C "$PROJECT_DIR" commit -m "Apply $(basename "$diff_file")" --author="$AUTHOR"
+    local COMMIT_MSG
+    COMMIT_MSG=$(draft_resolve_commit_message "$diff_file")
+    git -C "$PROJECT_DIR" commit -m "$COMMIT_MSG" --author="$AUTHOR"
   done
 
   # --- Apply uncommitted.diff if present ---

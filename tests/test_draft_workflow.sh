@@ -439,6 +439,84 @@ test_draft_commit_messages() {
   fi
 }
 
+# =============================================================================
+# draft_resolve_commit_message tests
+# =============================================================================
+
+test_resolve_msg_file_used() {
+  local TMP="$FIXTURE_DIR/resolve_msg"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234.diff"
+  printf "Original subject\n\nFull body paragraph.\n" > "$TMP/0001-abc1234.msg"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234.diff")
+  if [[ "$MSG" == "Original subject"$'\n'""$'\n'"Full body paragraph." ]]; then
+    pass "draft_resolve_commit_message reads .msg file with full body"
+  else
+    fail "draft_resolve_commit_message should return .msg content"
+  fi
+}
+
+test_resolve_filename_subject_cleaned() {
+  local TMP="$FIXTURE_DIR/resolve_subj"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234-fix_widget_parsing.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-fix_widget_parsing.diff")
+  if [[ "$MSG" == "fix widget parsing" ]]; then
+    pass "draft_resolve_commit_message extracts subject from filename, cleans underscores"
+  else
+    fail "expected 'fix widget parsing', got '$MSG'"
+  fi
+}
+
+test_resolve_filename_subject_trim_underscores() {
+  local TMP="$FIXTURE_DIR/resolve_trim"
+  mkdir -p "$TMP"
+  # Subject with leading, trailing, and consecutive underscores
+  echo "dummy" > "$TMP/0001-abc1234-__hello___world__.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-__hello___world__.diff")
+  if [[ "$MSG" == "hello world" ]]; then
+    pass "draft_resolve_commit_message trims and collapses underscores"
+  else
+    fail "expected 'hello world', got '$MSG'"
+  fi
+}
+
+test_resolve_fallback_no_subject() {
+  local TMP="$FIXTURE_DIR/resolve_fb"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234.diff")
+  if [[ "$MSG" == "Apply 0001-abc1234.diff" ]]; then
+    pass "draft_resolve_commit_message falls back to 'Apply <basename>'"
+  else
+    fail "expected 'Apply 0001-abc1234.diff', got '$MSG'"
+  fi
+}
+
+test_resolve_msg_file_preferred_over_filename() {
+  local TMP="$FIXTURE_DIR/resolve_prefer"
+  mkdir -p "$TMP"
+  # Both .msg and filename subject exist — .msg should win
+  echo "dummy" > "$TMP/0001-abc1234-some_subject.diff"
+  echo "Message from .msg" > "$TMP/0001-abc1234-some_subject.msg"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-some_subject.diff")
+  if [[ "$MSG" == "Message from .msg" ]]; then
+    pass "draft_resolve_commit_message prefers .msg over filename subject"
+  else
+    fail "expected 'Message from .msg', got '$MSG'"
+  fi
+}
+
 test_draft_applies_uncommitted_diff() {
   local P="$FIXTURE_DIR/draft_uncomm_p"
   local S="$FIXTURE_DIR/draft_uncomm_s"
@@ -662,6 +740,12 @@ run_test test_draft_no_diffs_error
 run_test test_draft_strips_index_lines
 run_test test_draft_resets_author_to_operator
 run_test test_draft_commit_messages
+
+run_test test_resolve_msg_file_used
+run_test test_resolve_filename_subject_cleaned
+run_test test_resolve_filename_subject_trim_underscores
+run_test test_resolve_fallback_no_subject
+run_test test_resolve_msg_file_preferred_over_filename
 
 run_test test_confirm_deletes_draft_branch
 run_test test_confirm_merges_changes
