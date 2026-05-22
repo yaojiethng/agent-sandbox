@@ -2,7 +2,7 @@
 
 This roadmap defines milestones, incremental goals, and tasks for the agent-sandbox project. It is designed to allow stepwise development and learning, with progress tracking for agents or humans.
 
-Maintenance rules — task granularity, cleanup on completion, section removal — are defined in [`docs/development/roadmap_policy.md`](../development/roadmap_policy.md).
+Maintenance rules — task granularity, cleanup on completion, section removal — are defined in [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md).
 
 ---
 
@@ -34,6 +34,14 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | [M6.1 — Task Dispatch](roadmap_future.md#m61--task-dispatch) | Not started |
 | [M6.2 — Constraint Enforcement](roadmap_future.md#m62--constraint-enforcement) | Not started |
 | [M6.3 — Review & CI/CD Integration](roadmap_future.md#m63--review--cicd-integration) | Not started |
+
+---
+
+## User Stories
+
+Open stories under active investigation. Closed stories are removed from this list.
+
+- [`story_prompt_evals.md`](docs/discussions/story_prompt_evals.md) — How do we test that skills and prompt templates correctly reflect the policy documents they encode? Manual read-through comparison doesn't scale across N skills × M policy sections.
 | **Standalone** | |
 | [M7 — Safe vs Unsafe Mode (Policy Layer)](roadmap_future.md#m7--safe-vs-unsafe-mode-policy-layer) | Not started |
 | [M8 — Skills / Templates](roadmap_future.md#m8--skills--templates) | Not started |
@@ -103,121 +111,31 @@ Each provider may result in a different integration pattern. Investigation findi
 
 ### Track A — Container Identity & Lifecycle
 
-**1. run_id derivation** (`scripts/start_agent.sh`). 1 session.
-   Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Replace timestamp-based container naming with `run_id`-based (`sandbox-<project>-<runid>`, `<provider>-<project>-<runid>`). SESSION_TS kept for logs/backwards compat.
-   → Depends on: nothing. Prerequisite for: item 2.
-
-**2. Docker labels** (`libs/docker-compose.yml`). 1 session.
-   Add `agent-sandbox.project-name`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` to `x-session-labels`. Keep existing `session-ts`, `host-branch`, `project-dir`.
-   → Depends on: item 1 (run-id needed). Prerequisite for: item 3.
-
-**3. make stop redesign** (`scripts/stop.sh`, `libs/containers.sh`). 1 session.
-   Move `worktree_id_derive` from `scripts/checkpoint.sh` to `libs/containers.sh`. Change `stop.sh` to filter by `project-name + worktree-id` labels instead of Docker Compose project name.
-   → Depends on: item 2 (labels must exist). Prerequisite for: item 4.
-
-**4. make prune** (`scripts/prune.sh`, `libs/_templates/Makefile.template`). 1 session.
-   New script: targeted cleanup (project + worktree-id) + time-based (project + >3 days). Cleans build cache, layer cache, volumes.
-   → Depends on: item 3 (same filtering logic).
-
----
+- [ ] run_id derivation — Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Replace timestamp-based container naming. Depends on: nothing.
+- [ ] Docker labels — Add `agent-sandbox.project-name`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` to `x-session-labels`. Depends on: item 1.
+- [ ] make stop redesign — Move `worktree_id_derive` from `scripts/checkpoint.sh` to `libs/containers.sh`. Filter `stop.sh` by project-name + worktree-id labels. Depends on: item 2.
+- [ ] make prune — New script: targeted cleanup (project + worktree-id) + time-based (project + >3 days). Depends on: item 3.
 
 ### Track B — Build Pipeline & Staleness Detection
 
-**7. Context_dir removal** (`libs/containers.sh`, `libs/sandbox.Dockerfile`, `providers/*/provider.Dockerfile`, `tests/test_build_context.sh`). 2 sessions.
-   Remove `build_context_sandbox`, `build_context_agent`, `_build_context_copy`, and `build_image`. Use repo root as build context directly — the COPY stanzas in Dockerfiles are the single source of truth. The ~3MB extra context size is acceptable; no runtime access risk since un-COPIED files don't enter the image.
-
-   Phase 1 — Implementation:
-   - Remove `build_context_sandbox()`, `build_context_agent()`, `_build_context_copy()`.
-   - Remove `build_image()`. Inline `docker build` into `build_sandbox()` and `build_agent()`.
-   - Remove dead digest pipeline (`agent-sandbox.digest` label).
-   - Remove stale `build_container.sh` references in comments.
-   - Move `worktree_id_derive` to `libs/containers.sh` (shared by items 3).
-
-   Phase 2 — Tests:
-   - Replace ~47 tests in `test_build_context.sh` with COPY contract tests.
-   - New tests assert each Dockerfile COPY target exists in the repo (file-not-found detection).
-   - No test for digest determinism (dead pipeline removed).
-
-   → Depends on: nothing (independent track). Prerequisite for: item 5.
-
-**5. Two-sig model** (`libs/containers.sh`, `scripts/start_agent.sh`). Design + implementation.
-   - **Container-sig: design settled** (see design doc §Container-sig). Hashes `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label, checked at preflight with a warning (not a hard block).
-   - **Harness-sig: deferred.** The scenarios where runtime drift detection adds value are not fully enumerated. Deferred to a separate investigation and design session — not part of M2.7 scope.
-
-   → Container-sig depends on: item 7 (context_dir removal removes the competing digest pipeline).
+- [ ] Context_dir removal — Remove `build_context_*` and `build_image`. Use repo root as build context. Replace ~47 tests in `test_build_context.sh` with COPY contract tests. Depends on: nothing.
+- [ ] Two-sig model — Container-sig: hash `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label, checked at preflight. Depends on: item 7.
+    - Harness-sig: deferred to `roadmap_future.md`.
 
 ---
 
-### Removed / Superseded
-
-**6. Paired refactor** — SUPERSEDED by item 10 (x-workspace anchor). The original goal (single authority for paths) was achieved via the compose template anchor. The compose template + provider overlay pattern is correct as-is.
-
----
-
-### Implementation order
-
-```
-Track A (independent):  1 → 2 → 3 → 4
-Track B (independent):  7 → [design refresh] → 5
-```
-
-Both tracks can be done in parallel. Track A has clear dependency chains within it. Track B blocks on item 7 before item 5's design refresh makes sense.
-
-### Prior completed items (8–12)
-
-Item 8 (settings.json collision fix) ✅ | Item 9 (session-diffs + dry-run) ✅ | Item 10 (path refactor) ✅ | Item 11 (dual-layer seam testing) ✅ | Item 12 (AGENTS.md cleanup) ✅
-
-**8. Settings.json ownership collision fix** (`libs/provider-entrypoint.sh`, `libs/docker-compose.yml`, `scripts/run_agent.sh`, `providers/pi/config/agent/settings.json`, `providers/pi/provider.Dockerfile`):
-Implement the settled design from `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`. ✅
-
-   - Replace `/opt/provider-config` bind mount with `agent/` directory bind mount + `bin/` tmpfs. ✅
-   - Remove `_copy_in` and `_copy_out`; add `_ensure_harness_keys` (Node.js pre-flight merge). ✅
-   - Pre-create `agent/sessions` in `scripts/run_agent.sh`. ✅
-   - `/opt/workflow-host/` mounts deferred — image-baked paths are sufficient. ✅
-   - `PROVIDER_CONFIG_DIR` removed from all provider Dockerfiles. ✅
-   - `tests/test_provider_entrypoint.sh` updated to test merge behavior. ✅
-
-**9. Host-container seam testing via dry-run + session-diffs persistence fix** (`scripts/dry_run.sh`, `scripts/dirs.sh`, `libs/docker-compose.yml`, `libs/routing.sh`, `libs/package_branch.sh`):
-Fix the session-diffs path resolution mismatch between compose template and `dirs.sh`, then add dry-run tests that assert the host-container seam is intact:
-
-   - **session-diffs persistence fix**: resolve the destination path mismatch between the compose bind mount (`workspace/session-diffs`) and `dirs.sh` resolution (`session-diffs`). Ensure diffs written by sandbox-entrypoint land in the tree `routing.sh` reads from.
-   - **dry-run as seam test staging ground**: add a block in `dry_run.sh` that tests the session-diffs path round-trip — write a test diff, verify it appears at the expected host-relative path, read it back.
-   - **commit message capture**: extend `package_branch.sh` to embed the commit subject in the diff filename (e.g. `0001-<sha>-<subject>.diff`) or in a companion manifest. Extend the session-diffs pipeline to store commit messages alongside diffs.
-
-**10. Workspace path resolution refactor** (`libs/docker-compose.yml`, `libs/dirs.sh`, `libs/sandbox-entrypoint.sh`, `scripts/start_agent.sh`, `scripts/dry_run.sh`, `libs/routing.sh`, `libs/interactive_session_select.sh`, `scripts/agent-sandbox.sh`, `tests/`):
-Unify all workspace path definitions under a single `x-workspace` anchor in the compose template. Retire `libs/dirs.sh` from production code. Write paths to `SESSION_STATE` on container init so consumers read deterministically. ✅
-
-   Design document: [`docs/devlog/discussions/design_workspace_path_resolution.md`](../discussions/design_workspace_path_resolution.md)
-
-   - Add `x-workspace` anchor to `libs/docker-compose.yml` with host/container path pairs. ✅
-   - Export host paths in `scripts/start_agent.sh` (no more `dirs_resolve`). ✅
-   - Update compose template: replace `_NAME` env vars with absolute path vars; volumes reference anchor values. ✅
-   - Update `libs/sandbox-entrypoint.sh`: read paths from env vars, write to `SESSION_STATE` after init. ✅
-   - Update `scripts/dry_run.sh` and `scripts/dry_run_capability.sh`: read paths from env vars, fallback to dirs.sh only if unset. ✅
-   - Update `libs/routing.sh` and `libs/interactive_session_select.sh`: replace `dirs_resolve` with `_resolve_paths` (SESSION_STATE-first). ✅
-   - Update `scripts/agent-sandbox.sh`: use `_resolve_paths` from routing.sh for interactive path resolution. ✅
-   - Update tests — not needed (existing tests use dirs.sh via routing.sh which now falls back correctly). ✅
-   - Create knowledge test — deferred: existing `knowledge_session_diffs_path_resolution.sh` covers the core path semantics. ✅
-
-   **Not in scope:** SESSION_STATE append semantics fix (deferred to M2.6). `dirs.sh` remains in libs/ for test fixture use but is no longer sourced by any production startup path.
-
-**11. Dual-layer seam testing via dry-run** (`scripts/dry_run.sh`, `scripts/dry_run_capability.sh`, `libs/sandbox-entrypoint.sh`, `libs/docker-compose.yml`, `libs/docker-compose.dry-run.yml`, `libs/compose.sh`, `tests/test_capability_layer.sh`):
-Design and implement a mechanism for dry-run to assert host-container seam behaviour in both the reasoning layer AND the capability layer. Five sessions:
-
-   - **11a. Design** — produce design document for the full mechanism. [This session.]
-   - **11b. Pre-flight script** — add critical-invariant checks to `sandbox-entrypoint.sh` (every-container checks: mounts writable, SESSION_STATE valid, channels accessible). Warn-only for AGENTS.md/brief.md injection. ✅
-   - **11c. dry_run_capability.sh** — new script running inside sandbox container. Deep investigation checks. Add bind mount to sandbox service in dry-run overlay. ✅
-   - **11d. dry_run.sh rewrite** — rewrite reasoning-layer checks as a separate script. Fully decoupled from capability layer checks. Subsumes old `dry_run.sh`. ✅
-   - **11e. Host-side verification** — after both containers exit, verify artifacts written by sandbox are visible on the host, and clean up temp files. ✅
-
-**12. AGENTS.md injection cleanup + provider dry-run checks** (`scripts/start_agent.sh`, `libs/sandbox-entrypoint.sh`, `libs/_templates/Makefile.template`, `scripts/dry_run_reasoning.sh`, `providers/pi/docker-compose.pi.yml`):
-Three changes:
-
-   - **Remove redundant brief.md injection** (done). `start_agent.sh` no longer copies AGENTS.md into `INPUT_DIR/brief.md`. Pi discovers AGENTS.md via its own CWD-walk mechanism — the file at `SANDBOX_DIR/AGENTS.md` is loaded directly. The `--brief` flag and `AGENT_BRIEF` Makefile variable are preserved for CLI compat but are no-ops.
-   - **Update pre-flight checks** (done). Replace stale `brief.md` presence check with checks for `sandbox/AGENTS.md` (project context) and `AGENT_HOME/AGENTS.md` (provider context, file seeded in M2.7 item 8).
-   - **Provider dry-run checks** (planned, not yet implemented). `dry_run_reasoning.sh` should source a provider-specific check script from a path mounted by the provider overlay (`providers/<name>/docker-compose.<name>.yml`). For pi, `providers/pi/dry_run_checks.sh` would verify `~/.pi/agent/AGENTS.md` presence and any pi-specific config integrity. Implementation deferred to align with the provider config lifecycle fix (item 8) — mounting via provider overlay avoids adding new path resolution complexity before the workspace path refactor (item 10). See design doc §Provider dry-run checks.
-
----
+- [x] Settings.json ownership collision fix — Provider config lifecycle established: `agent/` directory bind mount replaces `/opt/provider-config`; `_ensure_harness_keys` handles pre-flight settings merge; `PROVIDER_CONFIG_DIR` removed from all provider Dockerfiles.
+- [x] Session-diffs persistence + dry-run seam — Session-diffs path resolution aligned between compose template and runtime; `diff_export` returns error codes; `package_branch.sh` added to sandbox image; commit messages embedded in diff filenames.
+- [x] Workspace path resolution refactor — Workspace paths unified under `x-workspace` anchor; `libs/dirs.sh` retired from production code; `SESSION_STATE` written on container init. Design document: [`design_workspace_path_resolution.md`](../discussions/design_workspace_path_resolution.md). Not in scope: SESSION_STATE append semantics fix (deferred to M2.6).
+- [ ] Dual-layer seam testing — Full dry-run pipeline asserting host-container seam in both layers.
+    - [x] Core mechanism — Capability-layer checks, pre-flight verification, dry-run rewrite, and host-side assertion pipeline.
+    - [ ] Subsume docker-dependent tests from `test_capability_layer.sh` — Migrate remaining checks; deprecation notice.
+- [ ] AGENTS.md injection cleanup — Brief.md injection removed; pre-flight checks updated.
+    - [x] Remove redundant brief.md injection.
+    - [x] Update pre-flight checks for `sandbox/AGENTS.md` and `AGENT_HOME/AGENTS.md`.
+    - [ ] Provider dry-run checks — Source provider-specific check script from provider overlay mount.
+- [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
+- [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
 
 ## Future Milestones
 
@@ -250,6 +168,8 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 ### Deferred (not milestone-scoped)
 
 - **Docs restructuring investigation** — The docs/ directory currently mixes architecture/concepts/operations/development/ discussions/devlog into a single tree. Architecture and concepts docs are baked into container images; operations and development docs are coding-agent workflow artifacts that should logically live in a separate namespace. Investigation deferred — no immediate use case warrants it, and the current layout is functional.
+
+- **`docker compose down -v` race with EXIT trap** — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3. No milestone assigned.
 
 ### Addressed in upcoming milestones
 
