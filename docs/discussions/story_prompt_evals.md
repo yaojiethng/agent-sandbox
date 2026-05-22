@@ -133,4 +133,7 @@ The three-way eval (v1/v2/v3, session 20260522-01) exposed a structural problem 
 
 3. **Where do regression evals live?** A CI step that runs on policy file changes, or a pre-commit hook, or a manual script invoked during session-open recovery checks?
 
-Not yet reached.
+## Working Documents
+
+- [`eval/eval_protocol.md`](../eval/eval_protocol.md) — Draft protocol formalizing the eval process (golden dataset, code-based evaluators, variant comparison, reporting, evaluator tiers).
+- [`eval/eval_new_session.sh`](../eval/eval_new_session.sh) — Concrete eval script for new-session prompts. Run with `bash eval/eval_new_session.sh` from repo root. Produces structured PASS/FAIL report against all 8 invariants.
