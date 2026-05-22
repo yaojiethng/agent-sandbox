@@ -8,6 +8,7 @@ FROM ${BASE_IMAGE}
 # Injected by build_context_agent — do not modify these paths.
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY provider-entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
+COPY provider-preflight.sh /opt/sandbox/bin/provider-preflight.sh
 COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
 COPY session.sh /opt/sandbox/lib/session.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh

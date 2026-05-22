@@ -5,10 +5,15 @@
 # a Docker layer cache miss on the COPY step in provider.Dockerfile.
 #
 # Responsibilities:
-#   1. Ensure harness-owned settings.json keys survive pi's runtime writes
-#      (skills, prompts, packages paths) via a targeted JSON merge.
-#   2. Run the provider's real entrypoint as a synchronous foreground child so
+#   1. Run generic pre-flight checks (env vars, container libs).
+#   2. Source provider-specific pre-flight script if present
+#      (/opt/sandbox/bin/provider-preflight.sh).
+#   3. Run the provider's real entrypoint as a synchronous foreground child so
 #      that TUI input works correctly.
+#
+# Provider-specific logic (settings.json merge, path overrides, custom checks)
+# belongs in providers/<n>/preflight.sh, staged as provider-preflight.sh in
+# the build context. The shared entrypoint stays generic.
 #
 # The config directory ($AGENT_HOME) is bind-mounted directly — no copy-in or
 # copy-out needed. See docs/devlog/discussions/design_provider_config_ownership_and_loading.md
@@ -100,42 +105,27 @@ done
 unset LIB_DIR
 
 # ---------------------------------------------------------------------------
-# Preflight: verify provider context AGENTS.md
+# Preflight: source provider-specific checks
 # ---------------------------------------------------------------------------
-if [[ ! -f "$AGENT_HOME/AGENTS.md" ]]; then
-  echo "WARN: $AGENT_HOME/AGENTS.md is missing — provider context not available to agent" >&2
+# Provider-specific pre-flight scripts are staged by build_context_agent
+# from providers/<n>/preflight.sh and baked into the image at
+# /opt/sandbox/bin/provider-preflight.sh. If the provider has no preflight
+# script, this file does not exist and the hook is a no-op.
+#
+# Provider-specific responsibilities (e.g. for Pi):
+#   - Verify provider-specific AGENTS.md path
+#   - Merge harness-owned settings.json keys (skills, prompts, packages)
+#   - Add custom warnings or validation
+
+_provider_preflight="/opt/sandbox/bin/provider-preflight.sh"
+if [[ -f "$_provider_preflight" ]]; then
+  source "$_provider_preflight"
 fi
-
-# ---------------------------------------------------------------------------
-# Harness key merge
-# ---------------------------------------------------------------------------
-# Ensures harness-owned settings.json keys survive pi's runtime writes.
-# Pi only writes keys it manages; this merge re-injects harness-owned keys
-# (skills, prompts, packages paths) without touching pi-managed keys.
-# Runs on every session start, before the provider starts.
-# Uses Node.js which is available in the base image.
-
-_ensure_harness_keys() {
-  local settings="$AGENT_HOME/settings.json"
-  if [[ -f "$settings" ]]; then
-    node -e "
-      const fs = require('fs');
-      const p = process.argv[1];
-      let o;
-      try { o = JSON.parse(fs.readFileSync(p, 'utf8')); } catch(e) { o = {}; }
-      o.packages = [...new Set([...(o.packages||[]), '/opt/workflow/agent'])];
-      o.skills = [...new Set([...(o.skills||[]), '/opt/workflow/agent/skills'])];
-      o.prompts = [...new Set([...(o.prompts||[]), '/opt/workflow/agent/prompts'])];
-      fs.writeFileSync(p, JSON.stringify(o, null, 2) + '\n');
-    " "$settings"
-  fi
-}
+unset _provider_preflight
 
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
-
-_ensure_harness_keys
 
 # Run the agent as a synchronous foreground child.
 # stdin, stdout, and stderr are inherited from the shell (PTY in Docker).

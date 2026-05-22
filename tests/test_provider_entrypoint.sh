@@ -2,6 +2,15 @@
 # tests/test_provider_entrypoint.sh
 # Regression tests for libs/provider-entrypoint.sh
 #
+# Tests generic shared entrypoint behaviour:
+#   - env var validation (AGENT_HOME, PROVIDER_NAME)
+#   - exit code forwarding
+#   - stdin preservation
+#
+# The Pi-specific harness key merge (_ensure_harness_keys) was moved to
+# providers/pi/preflight.sh. Those tests now live in:
+#   tests/test_providers_pi_preflight.sh
+#
 # Run:   bash tests/test_provider_entrypoint.sh
 # Exit:  0 = all passed, non-zero = failure count
 
@@ -47,54 +56,6 @@ test_missing_provider_name() {
     fail "missing PROVIDER_NAME env var"
   fi
 }
-
-# PROVIDER_CONFIG_DIR was removed in M2.7 item 8 — no longer validated.
-
-# Copy-in and copy-out removed in M2.7 item 8.
-# Config directory is bind-mounted directly at AGENT_HOME.
-# See design doc: docs/devlog/discussions/design_provider_config_ownership_and_loading.md
-
-# -- Harness key merge (settings.json protection) --
-
-test_ensure_harness_keys_adds_packages() {
-  local tmpdir; tmpdir=$(mktemp -d)
-  local ah="$tmpdir/ah"
-  mkdir -p "$ah"
-  echo '{"defaultModel":"test"}' > "$ah/settings.json"
-
-  _run "$ah" true
-
-  if grep -q '"packages"' "$ah/settings.json" && grep -q '/opt/workflow/agent' "$ah/settings.json"; then
-    pass "harness keys: packages added"
-  else
-    fail "harness keys: packages not found"
-  fi
-  rm -rf "$tmpdir"
-}
-
-test_ensure_harness_keys_preserves_user_keys() {
-  local tmpdir; tmpdir=$(mktemp -d)
-  local ah="$tmpdir/ah"
-  mkdir -p "$ah"
-  echo '{"defaultModel":"test","skills":["/custom/path"]}' > "$ah/settings.json"
-
-  _run "$ah" true
-
-  if grep -q '"defaultModel": "test"' "$ah/settings.json"; then
-    pass "harness keys: preserves user model setting"
-  else
-    fail "harness keys: lost user model setting"
-  fi
-  if grep -q '/custom/path' "$ah/settings.json"; then
-    pass "harness keys: preserves user skills path"
-  else
-    fail "harness keys: lost user skills path"
-  fi
-  rm -rf "$tmpdir"
-}
-
-# _ensure_harness_keys only merges into existing settings.json.
-# It does not create the file if absent — onboarding seeds it.
 
 # -- Exit code --
 
@@ -150,8 +111,6 @@ echo "====================================="
 
 run_test test_missing_agent_home
 run_test test_missing_provider_name
-run_test test_ensure_harness_keys_adds_packages
-run_test test_ensure_harness_keys_preserves_user_keys
 run_test test_exit_code_zero
 run_test test_exit_code_nonzero
 run_test test_stdin_not_devnull

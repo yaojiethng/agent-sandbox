@@ -133,7 +133,14 @@ Each provider may result in a different integration pattern. Investigation findi
 - [ ] AGENTS.md injection cleanup — Brief.md injection removed; pre-flight checks updated.
     - [x] Remove redundant brief.md injection.
     - [x] Update pre-flight checks for `sandbox/AGENTS.md` and `AGENT_HOME/AGENTS.md`.
-    - [ ] Provider dry-run checks — Source provider-specific check script from provider overlay mount.
+    - [x] Provider-specific pre-flight hook — Source provider-specific check script at startup, before agent runs.
+    - [x] Audit shared reasoning layer for Pi-specific logic — 6 shared libs audited; only `provider-entrypoint.sh` has Pi-specific logic (now provider-aware). Compose template has hardcoded Pi paths (lines 102, 106) — deferred (outside pre-flight scope).
+    - [x] Design hook mechanism — Convention: `/opt/sandbox/bin/provider-preflight.sh` (fixed name); sourced by shared entrypoint if present. Staged by `build_context_agent`; file exists only if provider defines one.
+    - [x] Implement hook in `provider-entrypoint.sh` — Source provider pre-flight script after generic preflight, before agent runs.
+    - [x] Move `_ensure_harness_keys` from shared entrypoint to Pi-specific preflight — Extracted merge logic into `providers/pi/preflight.sh`; staged as `provider-preflight.sh` in build context.
+    - [x] Add warn-on-skip and verify-keys-after-merge to Pi preflight — Proposals 1 and 2 from session findings. Both in `providers/pi/preflight.sh`.
+    - [ ] Add generic pre-flight validation to shared entrypoint — Validate AGENT_HOME bind mount, critical file presence (Proposal 3).
+    - [x] Rename knowledge test — `knowledge_provider_config_cycle.sh` → `knowledge_pi_config_cycle.sh`; remove old copy-in/copy-out tests, add merge test (Proposal 4).
 - [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
 

@@ -113,6 +113,13 @@ build_context_agent() {
   cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
   cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
 
+  # Provider-specific pre-flight script (optional — sourced at startup if present)
+  _provider_preflight="$repo_root/providers/$provider/preflight.sh"
+  if [[ -f "$_provider_preflight" ]]; then
+    cp "$_provider_preflight" "$context_dir/provider-preflight.sh" || return 1
+  fi
+  unset _provider_preflight
+
   echo "$context_dir"
 }
 
