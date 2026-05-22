@@ -103,6 +103,28 @@ v2 is the Pareto-dominant option for correctness — it's longer but every line 
 
 5. **Code-based evaluators can't parse negation.** The I2 check (`grep -qi "compact.*step 1"`) false-flags V3 which says "Compaction is no longer a Step 1 action." Dumb grep catches the proximity of "compaction" and "Step 1" but can't distinguish instruction ("compact at Step 1") from clarification ("do NOT compact at Step 1"). Fix: add exclusion patterns (`grep ... | grep -v "no longer"`) or accept that code-based evaluators produce false positives that require human triage.
 
+### Pre-state setup problem for new-session behavioral evals
+
+The three-way eval (v1/v2/v3, session 20260522-01) exposed a structural problem with evaluating session-start prompts:
+
+**Problem:** A session-start prompt needs specific pre-state to produce meaningful output (prior handovers to read, a roadmap to check, recovery conditions to detect). But running the prompt headless via `pi -p` would execute tools against the *real* project state — creating handover files, mutating the roadmap, and operating on actual git history. This conflicts with any active session and produces unrecoverable side effects.
+
+**What we tried:** We worked around this by comparing the prompts with code-based evaluators only (grep for policy invariants). This produced useful results — V3 was clearly the winner at 7/7 invariants — but couldn't validate that V3 actually *behaves* correctly when an agent follows its instructions (e.g., does it create the right handover? does it detect divergence correctly?).
+
+**Root cause:** The harness has no concept of a "sandboxed session" — a temporary environment with fake project state that can be created, evaluated, and discarded. Every `pi -p` invocation shares the same filesystem, handover directory, and git history as the active session. Parallel and sandboxed sessions are scoped under M2 but not yet assigned to a specific milestone.
+
+**Impact on eval approach:** Without sandboxed pre-state, behavioral evals for session-start prompts are blocked. Code-based evaluators (grep/diff on the prompt text itself) remain the only viable eval tier until the parallel session gap is closed.
+
+### Learnings from running the three-way eval
+
+**Code-based evaluators catch ~80% of policy drift at zero cost.** The eight grep checks (I1–I7 + BONUS) surfaced every policy regression without requiring LLM inference. Stale step numbers, old compaction wording, missing divergence detection — all caught by pattern matching. The 20% gap is semantic checks ("does this instruction mean the right thing?") and behavioral validation ("does the agent actually follow it correctly?").
+
+**False positives from negation are real but manageable.** V3's "Compaction is no longer a Step 1 action" triggered I2 — a clarification that read as an instruction. The fix is simple (`grep | grep -v "no longer"`) but the pattern class (negation, "do NOT", "instead of") needs a systematic exclusion list if the eval suite grows.
+
+**One variant per variable works for prompts too.** Comparing v1, v2, and v3 against the same golden dataset isolated exactly what each variant changed: v2 added divergence detection and explicit commands; v3 added Trigger B ordering and compaction clarification. If we'd compared them by read-through, we'd still be arguing about which was "better." The eval table settled it in seconds.
+
+**The golden dataset should grow with policy.** I8–I10 could be added as new invariants emerge (e.g., "references Related Skills table" when skills are added to policy docs, "includes compaction proposal in Step 7" for session-close prompts). The dataset is not static — it mirrors what the policy requires.
+
 ## Open Questions (revised)
 
 1. **What is the minimum viable eval?** The code-based evaluators above (grep for stale terms) can run immediately at zero cost. Is that sufficient for a first iteration, or do we need LLM-as-judge from day one?
