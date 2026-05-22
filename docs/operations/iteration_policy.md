@@ -120,12 +120,19 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 
 After the handover draft is complete, present a scope proposal in chat and wait for operator confirmation before producing any file, code, or structural output. This gate applies to every session type without exception.
 
-**If sufficient context is available** (handover and roadmap uploaded, task list readable), present the proposal directly. Cover:
+**If sufficient context is available** (handover and roadmap uploaded, task list readable), present the proposal directly using this template:
 
-- **The session type** (from the Session Types table) — and a brief justification. The type must match the task; if uncertain or if the type implied by the directive conflicts with Next session, ask the operator before proceeding.
-- What the agent proposes to attempt this session, and why each item is in scope now (dependency order, available context, estimated size)
-- What the agent is explicitly deferring from the roadmap task list, and why (too large for one session, blocked on missing context, depends on a prior group not yet complete)
-- Any questions that must be resolved before the first task can begin
+```
+**Session type:** <type> — <one-line justification>
+
+**In scope:**
+- <item> — <why now>
+
+**Deferred:**
+- <item> — <reason>
+
+**Questions:** <or "None.">
+```
 
 For housekeeping sessions, the scope proposal may simply be the target file list and the nature of the change — that is sufficient. The gate still applies; the operator must confirm before work begins.
 

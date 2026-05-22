@@ -136,3 +136,8 @@ Three sub-scopes:
 - Gate 2 format (`Verified by` — who can verify) and Step 7 format (`Status` — did it pass) are distinct and must not be conflated.
 - The three Amendments initially proposed were reduced to two (session type at Gate 1, Gate 2 exit harmonization); the "Next: Gate N" pointer amendment was dropped as a band-aid.
 - The gap report (14 migrate entries) was the real deliverable — every operational rule found a home in `iteration_policy.md`.
+
+---
+[CORRECTION — 2026-05-22]: Post-close eval of commit 3 found one defect — `new-session.md` Gate 2 prose said "three columns" while the table header defined four columns. Corrected to "four-column table." Full eval (35/35 PASS) confirmed all commit 3 changes effective: 16 iteration_policy checks, 9 handover_policy checks, 4 new-session checks, 4 audit skill checks, 2 cross-document consistency checks. Eval script persisted at `eval/eval_commit3.sh`.
+
+[CORRECTION — 2026-05-22]: Scope proposal in `iteration_policy.md` §Step 2 Details converted from prose bullet list to literal template (`**Session type:**`, `**In scope:**`, `**Deferred:**`, `**Questions:**`). Eval: 9/9 PASS. Script at `eval/eval_templates.sh`.

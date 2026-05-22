@@ -84,7 +84,7 @@ Stop here and wait for the release before continuing.
 
 ## Gate 2 — What does done look like? (Step 5)
 
-Once Gate 1 is released, state what a successful output looks like. Define criteria in a table with three columns:
+Once Gate 1 is released, state what a successful output looks like. Define criteria in a four-column table:
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
