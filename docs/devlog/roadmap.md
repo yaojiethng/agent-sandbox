@@ -152,6 +152,25 @@ Each provider may result in a different integration pattern. Investigation findi
 - [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
 
+### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
+
+**Design reference:** [`docs/devlog/discussions/design_settings_permissions_group_bind.md`](../discussions/design_settings_permissions_group_bind.md)
+
+- [x] Design session and surface area scoping (2026-05-23)
+- [ ] Implement UID Mapping in all 5 Dockerfiles
+    - [ ] providers/pi/provider.Dockerfile
+    - [ ] providers/hermes/provider.Dockerfile
+    - [ ] providers/claude-code/provider.Dockerfile
+    - [ ] providers/opencode/provider.Dockerfile
+    - [ ] libs/sandbox.Dockerfile
+- [ ] Thread build args through build pipeline (`libs/build.sh`, `scripts/start_agent.sh`, `scripts/run_agent.sh`)
+- [ ] Update compose templates — add `user:` and remove `group_add` (`libs/docker-compose.yml`)
+- [ ] Update `scripts/onboard.sh` — remove ACL commands
+- [ ] Clean up provider onboard hooks (`providers/pi/onboard.sh`)
+- [ ] Update documentation — user-facing contract per design doc §4
+- [ ] Update and verify tests
+- [ ] Build images and verify permissions on WSL, macOS, and Windows DD
+
 ## Future Milestones
 
 Detail sections for M2 onward are in [`roadmap_future.md`](roadmap_future.md). The summary table above links directly to each section.
