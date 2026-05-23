@@ -177,13 +177,17 @@ The `sessions/` subdirectory must exist on the host before the bind mount is cre
 No changes needed: `providers/pi/setup.sh`, `scripts/onboard.sh`, `libs/compose.sh`.
 
 ---
-[CORRECTION — 2026-05-22]: Filesystem compatibility gap — the bind mount at `AGENT_HOME` assumes the host filesystem supports `utime()`. When `SANDBOX_DIR` resides on a 9p mount (WSL2/Docker Desktop Windows drive), `proper-lockfile` (used by Pi's `settings-manager.js`) fails with `EPERM` on `fs.utimesSync()`. The lock acquisition throws before the settings file is read or written, causing all settings to silently fall back to defaults. The design did not account for filesystems that do not support timestamp modification.
+[CORRECTION — 2026-05-22]: Filesystem compatibility gap — the bind mount at `AGENT_HOME` assumes the host filesystem supports `utime()`. When `SANDBOX_DIR` resides on a 9p mount (WSL2/Docker Desktop Windows drive, macOS virtiofs), `proper-lockfile` (used by Pi's `settings-manager.js`) fails with `EPERM` on `fs.utimesSync()`. The lock acquisition throws before the settings file is read or written, causing all settings to silently fall back to defaults. The design did not account for filesystems that do not support timestamp modification.
 
-**Resolution:** Prefer approach 1 — keep `PROJECT_DIR` (and thus `SANDBOX_DIR`) on a Linux-native WSL2 path (e.g., `/home/user/projects/...`) rather than a Docker Desktop Windows drive (`/mnt/c/...`, `M:\`). When the project resides on the Linux-native ext4 filesystem, the `AGENT_HOME` bind mount inherits ext4's POSIX semantics and `utime()` succeeds. This avoids the 9p seam entirely with no code or mount changes.
+**Pi bump (0.75.4) was tested and did not resolve the issue** — Pi still falls back to default settings when settings.json resides on a cross-filesystem bind mount.
 
-Mitigation (if approach 1 is not possible): Pi's `settings-manager.js` must catch `EPERM` and proceed without locking, or `proper-lockfile`'s `mtimePrecision.probe()` must handle `EPERM` as a non-fatal error (falling back to second-level precision).
+**Resolution (original):** Prefer approach 1 — keep `PROJECT_DIR` (and thus `SANDBOX_DIR`) on a Linux-native WSL2 path (e.g., `/home/user/projects/...`) rather than a Docker Desktop Windows drive (`/mnt/c/...`, `M:\`). When the project resides on the Linux-native ext4 filesystem, the `AGENT_HOME` bind mount inherits ext4's POSIX semantics and `utime()` succeeds. This avoids the 9p seam entirely with no code or mount changes. **However, this only works for Windows + WSL2. macOS Docker Desktop uses virtiofs which has the same utime limitation.**
 
-See also: `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues (Issue 1: utime EPERM, Issue 2: bin/ cross-filesystem moves) and a proposed proactive detection mechanism.
+**Resolution (revised, 2026-05-22):** The bind mount approach is invalidated for cross-filesystem hosts. The favoured path is to revert to a copy-in model: copy config from a host-mounted source directory into a container-local filesystem at startup, avoiding the cross-fs utime issue entirely. This re-introduces a copy-out step on clean exit. See session `20260522-05-design-pi_agent_mount_strategy.md`.
+
+Mitigation (if copy-in is not possible): Pi's `settings-manager.js` must catch `EPERM` and proceed without locking, or `proper-lockfile`'s `mtimePrecision.probe()` must handle `EPERM` as a non-fatal error (falling back to second-level precision).
+
+See also: `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues, and `docs/devlog/handovers/20260522-05-design-pi_agent_mount_strategy.md` for the re-evaluation.
 
 ---
 

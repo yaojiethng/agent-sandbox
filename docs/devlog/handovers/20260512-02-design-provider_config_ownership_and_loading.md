@@ -92,3 +92,7 @@ After implementation, run:
 - The compose template uses `{{VAR}}` (substituted at compose generation) and `${VAR}` (resolved at runtime). The new mounts use both — `${SANDBOX_DIR}` (runtime) and `{{PROVIDER_NAME}}` (generation time). Ensure correct syntax.
 - `mkdir -p` for `agent/sessions` must happen BEFORE compose generation, so Docker finds the directory as an existing bind mount source (otherwise root-owned).
 - The `bin/` tmpfs must be tested: pi should download fd/rg to a container-local filesystem, not attempt cross-device mv.
+
+---
+
+[CORRECTION — 2026-05-22]: The bind mount approach (directory bind mount + tmpfs overlay at bin/) selected in this session was later found to fail on cross-filesystem mounts. Pi's `proper-lockfile` → `utime()` → `EPERM` on 9p/virtiofs (macOS/Windows Docker Desktop). Settings.json silently falls back to defaults, stripping harness-injected keys. Pi bump to 0.75.4 did not resolve the issue. All 4 candidate options from this session (merge-on-copy-in, split-config, hybrid bind-mounts, pi packages) were re-evaluated in session `20260522-05-design-pi_agent_mount_strategy.md`. The favoured path is option 1 (copy-in), reverting the bind mount for settings.json while keeping the pre-flight merge and other improvements.

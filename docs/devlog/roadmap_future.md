@@ -8,20 +8,6 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-## M2.4 — Session Persistence (Reasoning Layer)
-
-**Objective:** Preserve OpenCode session history across container runs. Provider-specific to the OpenCode reasoning layer; scoped here as a reasoning layer concern separate from the capability layer.
-
-**Depends on:** M2.2 (reasoning layer modularisation, so session DB mount is cleanly scoped to the provider).
-
-**Tasks:**
-- [ ] Identify host-side storage location for session DB (per-project, in `SANDBOX_DIR`)
-- [ ] Add mount for `~/.local/share/opencode/` into reasoning layer container
-- [ ] Update `execution_model.md` — document session DB mount
-- [ ] Verify DB survives container restart and is correctly re-attached on next run
-
----
-
 ## M2.5 — Vault Capability Layer Prototype
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
@@ -122,12 +108,33 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Implement `restricted` mode: Restrict outbound network access
   - Introduce outbound proxy or domain filtering to required AI endpoints
 
+#### Dependency Security
+
+Part of M7 — supply-chain hardening for provider runtime dependencies.
+
+- [x] Pi version pinned in base Dockerfile (current: `@earendil-works/pi-coding-agent@0.75.4`)
+- [x] Node base image pinned to specific version (`node:22.22.3-slim`)
+- [ ] Consider lockfile for `npm install -g` dependencies (transitive dependency locking)
+- [x] Bump policy — operator decides when to bump based on: new functionality needed, critical fix, or security vulnerability. No automation. Bump manually by editing the pinned version in `base.Dockerfile` and rebuilding.
+
 ---
 
 ### M8 — Skills / Templates
 - [ ] Introduce `.skills/` directory
 - [ ] Provide templates or skill definitions for agent
 - [ ] Integrate skills into agent workflow
+
+---
+
+### M9 — Governance Hardening
+
+Progressive enforcement maturity for the documentation and architecture governance model. Each level builds on the previous.
+
+- [x] Level 1 — Structural Separation — folder ownership, temperature classification, root document audience separation
+- [ ] Level 2 — Review Discipline — PR template with required "does this change system behaviour?" checkbox
+- [ ] Level 3 — Temperature & Freeze Policy — hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
+- [ ] Level 4 — Change Classification Matrix — explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
+- [ ] Level 5 — Automated Enforcement — CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
 
 
 ---

@@ -85,6 +85,7 @@ None.
 M2.7 items 1–7 (run_id derivation, Docker labels, stop redesign, prune, two-sig model, paired refactor, context_dir removal) are the remaining scope. Item 8, 9, 10, 11, 12 are complete.
 
 ---
+
 [CORRECTION — 2026-05-22]: Filesystem compatibility gap — the bind mount at `AGENT_HOME` (agent `~/.pi/agent` → `$SANDBOX_DIR/.$PROVIDER_NAME/agent`) assumes the host filesystem supports `utime()`. When `SANDBOX_DIR` resides on a 9p mount (WSL2/Docker Desktop Windows drive — `M:\`), `proper-lockfile`'s `fs.utimesSync()` call fails with `EPERM`. The lock acquisition in `settings-manager.js`'s `acquireLockSyncWithRetry` does not handle `EPERM` (only retries on `ELOCKED`), so the exception propagates to `tryLoadFromStorage()`, which returns empty settings `{}` and records the error. The error surfaces as a warning at every startup. No acceptance criterion or design note from this session identified the `utime` dependency or the 9p filesystem constraint. Fix: `settings-manager.js` should catch `EPERM` and proceed without locking, or `proper-lockfile`'s `mtimePrecision.probe()` should handle `EPERM` as a non-fatal error. See investigation in session 20260522-01.
 
 **Resolution:** Prefer approach 1 — keep `PROJECT_DIR` (and thus `SANDBOX_DIR`) on a Linux-native WSL2 path (e.g., `/home/user/projects/...`) rather than a Docker Desktop Windows drive (`/mnt/c/...`, `M:\`). When the project resides on the Linux-native ext4 filesystem, the `AGENT_HOME` bind mount inherits ext4's POSIX semantics and `utime()` succeeds. This avoids the 9p seam entirely with no code or mount changes.
@@ -92,3 +93,11 @@ M2.7 items 1–7 (run_id derivation, Docker labels, stop redesign, prune, two-si
 See also: `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues (Issue 1: utime EPERM, Issue 2: bin/ cross-filesystem moves) and a proposed proactive detection mechanism.
 
 [MID-SESSION FINDING — 2026-05-22]: The "No commit or push" constraint in `AGENTS.md` (project layer, sandbox) is stale. The diff pipeline handles in-sandbox commits successfully, as demonstrated by the correction commits in this session and prior sessions (e.g., commit `3248978`). The constraint was originally written under the assumption that any git mutation would break the baseline-diff comparison, but in practice the harness records its baseline at startup (before any agent action) and diff on exit — intervening commits are captured correctly. Recommend removing or rewording the constraint to reflect actual behaviour: "Commits are permitted but optional; the session diff captures all changes between session start and exit regardless of commit state."
+
+---
+
+[CORRECTION — 2026-05-22]: The bind mount approach implemented in this session was later found to fail on cross-filesystem mounts (macOS Docker Desktop virtiofs, Windows Docker Desktop 9p). Pi's `proper-lockfile` calls `utime()` for stale-lock detection, which returns `EPERM` on these filesystems. Settings.json silently falls back to defaults, stripping the harness-injected `skills`/`prompts`/`packages` keys. The `_ensure_harness_keys` merge is correct but its effect is nullified by Pi's inability to read the file.
+
+Pi bump to 0.75.4 was tested and did not resolve the issue.
+
+**Revised resolution:** Revert to a copy-in model — copy config from a host-mounted source into container-local filesystem at startup to avoid the cross-fs utime issue entirely. See session `20260522-05-design-pi_agent_mount_strategy.md` for the re-evaluation.

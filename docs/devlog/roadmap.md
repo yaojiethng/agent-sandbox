@@ -59,11 +59,17 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 #### M2.4 — Session and Config Persistence
 
-**Objective:** Establish the provider config lifecycle — onboarding-time population, copy-in at session start, copy-out at session end — replacing the implicit image-baking convention with an explicit bind-mount model.
+**Objective:** Establish the provider config lifecycle — onboarding-time population, seeding of provider-layer prompts/skills, and session history persistence — ensuring state survives between container restarts across all host filesystem types.
 
-**Depends on:** M2.2. **Status:** Complete. Design settled; implementation artifacts applied. Copy-out workflow validated (normal exit + SIGTERM). Acceptance criteria met — see handover `20260407-03-close-m2_4.md`.
+**Work completed:**
+- Directory bind mount + tmpfs overlay (M2.7) — session history persists via `sessions/` bind mount; `bin/` isolated via tmpfs for cross-device mv prevention
+- Provider-layer prompts/skills seeded from `providers/<n>/config/agent/` via onboarding
+- Auth tokens stored as env var references in `auth.json` (ephemeral by design — security feature, prevents write-back of secret values)
+- Selective bind mount pattern (`sessions/`, `prompts/`, `skills/` persisted; remaining config ephemeral via copy-in) — resolution for cross-filesystem `utime()`/`EPERM` issue on macOS/Windows Docker Desktop
 
-**Scope note:** M2.4 established the infrastructure for state to survive between sessions (home directory bind mount, config copy-in/out). It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
+**Status:** Complete. Design settled; implementation artifacts applied (M2.7+). See handovers `20260407-03-close-m2_4.md`, `20260513-10-impl-settings_json_collision_fix.md`, `20260522-05-design-pi_agent_mount_strategy.md`.
+
+**Scope note:** M2.4 covers config and state persistence infrastructure. It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
 
 #### M2.5 — Vault Capability Layer Prototype
 
@@ -183,15 +189,3 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **Stale container images** *(M2.7)* — M2.7 introduces `container-sig` (hash of `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label) checked at preflight with a warning. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
 
 - **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.
-
----
-
-### Governance Hardening
-
-Progressive enforcement maturity for the documentation and architecture governance model. Each level builds on the previous.
-
-- [x] Level 1 — Structural Separation — folder ownership, temperature classification, root document audience separation
-- [ ] Level 2 — Review Discipline — PR template with required "does this change system behaviour?" checkbox
-- [ ] Level 3 — Temperature & Freeze Policy — hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
-- [ ] Level 4 — Change Classification Matrix — explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
-- [ ] Level 5 — Automated Enforcement — CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
