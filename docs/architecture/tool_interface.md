@@ -264,6 +264,7 @@ A dry-run does not prove agent correctness — it proves the harness infrastruct
 | Topic | Document |
 |---|---|
 | Internal implementation | [execution_model.md](execution_model.md) |
+| CLI interaction standards | [../development/cli-standards.md](../development/cli-standards.md) |
 | Security model | [security.md](security.md) |
 | Onboarding a project | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
 | Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |

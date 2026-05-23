@@ -8,13 +8,20 @@ Package all commits since `init_sha` for export via the workspace output mount. 
 
 ## 1. Run the packaging script
 
-Inside the container, invoke the script with an explicit output base directory:
+Inside the container, invoke the script with an explicit output base directory
+and a descriptive `--session-summary`:
 
 ```bash
 bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --session-summary=add_format_patch_support
 ```
 
-This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE` and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.
+`--session-summary` is required — the script aborts with a usage message if
+omitted. Provide a concise snake_case phrase describing the nature of the change.
+Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
+Bad summaries: `changes`, `update_files`, `misc`, `package`, `snapshot`.
+
+This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE`
+and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.
 If `SESSION_STATE` is missing, the script aborts with a clear error.
 
 **To diff against an explicit baseline:**
@@ -23,11 +30,9 @@ If `SESSION_STATE` is missing, the script aborts with a clear error.
 bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --session-summary=<text>
 ```
 
-Always supply `--session-summary` — a concise snake_case phrase describing the nature of the change.
-Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
-Bad summaries: `changes`, `update_files`, `misc`, `package`.
-
-The script produces one numbered `.diff` file per commit since `init_sha`, with the commit subject embedded in the filename, plus a sibling `.msg` file with the full commit message:
+The script produces one numbered `.diff` file per commit since `init_sha`, with
+the commit subject embedded in the filename, plus a sibling `.msg` file with the
+full commit message:
 
 ```
 <to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/
@@ -43,16 +48,33 @@ The script produces one numbered `.diff` file per commit since `init_sha`, with 
     MANIFEST.txt
 ```
 
-The `.msg` files are consumed by `make draft` to recreate commits with their original messages.
-
-Each `.diff` is a unified diff with index lines stripped, suitable for sequential `git apply`.
-The numbered order reflects commit history from `init_sha` to `HEAD`.
+The `.msg` files are consumed by `make draft` to recreate commits with their
+original messages. Each `.diff` is a unified diff with index lines stripped,
+suitable for sequential `git apply`. The numbered order reflects commit history
+from `init_sha` to `HEAD`.
 
 On the host, invoke via:
 ```bash
 agent-sandbox package-branch --sandbox=<path> [--session-summary=<text>]
 make package-branch [SESSION_SUMMARY=<text>]
 ```
+
+## 1.5 Echo completion message
+
+After the script finishes, echo its final lines to the conversation. The script
+outputs three lines on stderr — repeat them verbatim so the operator sees the
+bundle path and the `make draft` command immediately:
+
+```
+package_branch: artefacts written to:
+  /home/agentuser/workspace/output/bundles/20260523-112813-<summary>-20260523-042607
+
+To draft this bundle on host, run:
+  make draft FROM=bundles SESSION=20260523-112813-<summary>-20260523-042607 BRANCH_SUMMARY=<slug>
+```
+
+The script's last line is always the actionable next step — echo it, then
+proceed to write the migration guide.
 
 ## 2. Write `migration-guide.md`
 

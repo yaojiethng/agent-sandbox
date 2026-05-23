@@ -189,6 +189,11 @@ package_branch() {
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
 
   echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
+
+  local bundle_name
+  bundle_name=$(basename "$OUTPUT_DIR")
+  echo "To draft this bundle on host, run:" >&2
+  echo "  make draft FROM=bundles SESSION=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
 }
 
 # If run directly (not sourced), parse flags and execute
@@ -208,7 +213,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         ;;
       *)
         echo "Unknown argument: $ARG" >&2
-        echo "Usage: package_branch.sh --to=<dir> [--session-summary=<text>] [--baseline=<sha>]" >&2
+        echo "Usage: package_branch.sh --to=<dir> --session-summary=<text> [--baseline=<sha>]" >&2
         exit 1
         ;;
     esac
@@ -230,11 +235,24 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     exit 1
   fi
 
-  # Resolve session summary
-  SESSION_SUMMARY="snapshot"
-  if [[ -n "$SESSION_SUMMARY_ARG" ]]; then
-    SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
+  # --session-summary is required (same class as --to)
+  if [[ -z "$SESSION_SUMMARY_ARG" ]]; then
+    echo "Error: --session-summary is required. Provide a concise snake_case label." >&2
+    echo "" >&2
+    echo "  Good: --session-summary=fix_provisioning_metadata_agnostic" >&2
+    echo "  Good: --session-summary=add_format_patch_support" >&2
+    echo "  Bad:  --session-summary=changes" >&2
+    echo "  Bad:  --session-summary=snapshot" >&2
+    echo "  Bad:  --session-summary=misc" >&2
+    echo "" >&2
+    echo "Usage: package_branch.sh --to=<dir> --session-summary=<text> [--baseline=<sha>]" >&2
+    echo "" >&2
+    echo "  --to=<dir>           Required. Base output directory." >&2
+    echo "  --session-summary    Required. Snake_case label for the bundle directory." >&2
+    echo "  --baseline=<sha>     Optional. Override baseline SHA (default: read from SESSION_STATE)." >&2
+    exit 1
   fi
+  SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
 
   # Auto-resolve SESSION_TS from SESSION_STATE
   SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
