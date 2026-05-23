@@ -254,6 +254,9 @@ if [[ "$REFRESH" != true ]]; then
 mkdir -p "$SANDBOX_DIR/.workspace/input"
 mkdir -p "$SANDBOX_DIR/.workspace/output"
 mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
+setfacl -R -m u:1001:rwx $SANDBOX_DIR/.workspace
+setfacl -R -d -m u:1001:rwx $SANDBOX_DIR/.workspace
+
 echo "  Created: .workspace/input/, .workspace/output/, .workspace/session-diffs/"
 fi
 
@@ -337,6 +340,11 @@ if [[ "$REFRESH" != true ]]; then
 
     mkdir -p "$PROVIDER_SANDBOX_DIR"
     cp -r "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
+    # 1. Give the user rwx
+    # 2. Force the mask to rwx (The Critical Step)
+    # 3. Set defaults for future files
+    sudo setfacl -R -m u:1001:rwx,m:rwx $PROVIDER_SANDBOX_DIR
+    sudo setfacl -R -d -m u:1001:rwx,m:rwx $PROVIDER_SANDBOX_DIR
 
     # Rename env.stub to .env if present.
     if [[ -f "$PROVIDER_SANDBOX_DIR/env.stub" ]]; then
@@ -344,6 +352,16 @@ if [[ "$REFRESH" != true ]]; then
     fi
 
     echo "  Created: .$PROVIDER_NAME/ (provider config — fill in secrets before first run)"
+
+    # Run provider-specific setup hooks from each providers/<name>/setup.sh
+    PROVIDER_SETUP="$REPO_ROOT/providers/$PROVIDER_NAME/onboard.sh"
+    if [[ -f "$PROVIDER_SETUP" ]]; then
+      if ! source "$PROVIDER_SETUP"; then
+        echo "Error: provider setup hook failed: $PROVIDER_SETUP"
+        echo "  Fix the error in $PROVIDER_SETUP before retrying."
+        exit 1
+      fi
+    fi
   done
 fi
 

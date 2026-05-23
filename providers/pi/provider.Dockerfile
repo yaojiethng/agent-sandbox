@@ -24,27 +24,31 @@ COPY agent/config/ /opt/workflow/agent/config/
 
 RUN useradd -m -u 1001 -s /bin/bash agentuser
 
-# Create AGENT_HOME directory tree before user switch so agentuser
+# AGENT_HOME — most files are container-local. Only prompts/, sessions/,
+# skills/ are bind-mounted from host per the selective mount layout.
+ENV AGENT_HOME=/home/agentuser/.pi
+ENV WORKSPACE_DIR=/home/agentuser/workspace
+ENV PROVIDER_NAME=pi
+
+# Create key directories before user switch so agentuser
 # owns it. Docker bind mounts create parent dirs as root when they
 # don't exist in the image, which would block the entrypoint's
 # copy-in provisioning step.
-RUN mkdir -p /home/agentuser/.pi/agent/prompts \
-             /home/agentuser/.pi/agent/sessions \
-             /home/agentuser/.pi/agent/skills \
-             /home/agentuser/.pi/agent/bin
-
-RUN chown -R agentuser:agentuser /home/agentuser/.pi
-RUN chown -R agentuser:agentuser /opt/workflow/agent
+RUN mkdir -p $AGENT_HOME/agent/prompts \
+             $AGENT_HOME/agent/sessions \
+             $AGENT_HOME/agent/skills \
+             $AGENT_HOME/agent/bin \
+             $WORKSPACE_DIR/input \
+             $WORKSPACE_DIR/output
 
 USER agentuser
 
-# AGENT_HOME — most files are container-local. Only prompts/, sessions/,
-# skills/ are bind-mounted from host per the selective mount layout.
 ENV PROVIDER_NAME=pi
 ENV AGENT_HOME=/home/agentuser/.pi
 
-RUN mkdir -p /home/agentuser/workspace/input \
-             /home/agentuser/workspace/output
+RUN chown -R agentuser:agentuser $AGENT_HOME
+RUN chown -R agentuser:agentuser /opt/workflow/agent
+RUN chown -R agentuser:agentuser $WORKSPACE_DIR
 
 WORKDIR /home/agentuser/sandbox
 
