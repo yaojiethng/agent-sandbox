@@ -17,11 +17,23 @@ COPY routing.sh /opt/sandbox/lib/routing.sh
 COPY agent/skills/ /opt/workflow/agent/skills/
 COPY agent/prompts/ /opt/workflow/agent/prompts/
 
+# Provider config template — copied to AGENT_HOME at startup by
+# _provision_agent_home (see provider-entrypoint.sh). Bind-mounted subdirs
+# (prompts/, sessions/, skills/) shadow the template at runtime.
+COPY agent/config/ /opt/workflow/agent/config/
+
 RUN useradd -m -u 1001 -s /bin/bash agentuser
+
+# Create AGENT_HOME directory tree before user switch so agentuser
+# owns it. Docker bind mounts create parent dirs as root when they
+# don't exist in the image, which would block the entrypoint's
+# copy-in provisioning step.
+RUN mkdir -p /home/agentuser/.pi/agent
+
 USER agentuser
 
-# AGENT_HOME — Pi's config and state directory inside the container.
-# Bind-mounted directly from host; no copy-in/copy-out needed.
+# AGENT_HOME — most files are container-local. Only prompts/, sessions/,
+# skills/ are bind-mounted from host per the selective mount layout.
 ENV PROVIDER_NAME=pi
 ENV AGENT_HOME=/home/agentuser/.pi
 

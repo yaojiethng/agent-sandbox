@@ -7,6 +7,7 @@
 #   - _ensure_harness_keys preserves existing user keys
 #   - Warn when settings.json is missing
 #   - Warn when AGENTS.md is missing (Pi-specific path)
+#   - _preflight_check_bind_mounts validates prompts/, sessions/, skills/
 #
 # Run:   bash tests/test_providers_pi_preflight.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -34,7 +35,7 @@ _source_preflight() {
 }
 
 # ---------------------------------------------------------------------------
-# Tests
+# Tests: harness key merge
 # ---------------------------------------------------------------------------
 
 test_merge_adds_harness_keys() {
@@ -168,6 +169,107 @@ test_merge_does_not_fail_on_missing_agents_md() {
 }
 
 # ---------------------------------------------------------------------------
+# Tests: bind mount checks
+# ---------------------------------------------------------------------------
+
+test_bind_mounts_ok_when_all_present() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -qv "missing"; then
+    pass "no warnings when all bind mounts present"
+  else
+    fail "unexpected warning for present bind mounts"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_bind_mount_warns_on_missing_prompts() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent/sessions" "$ah/agent/skills"
+  # No prompts/
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -q "prompts.*missing"; then
+    pass "warns when prompts/ is missing"
+  else
+    fail "no warning for missing prompts/"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_bind_mount_warns_on_missing_sessions() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent/prompts" "$ah/agent/skills"
+  # No sessions/
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -q "sessions.*missing"; then
+    pass "warns when sessions/ is missing"
+  else
+    fail "no warning for missing sessions/"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_bind_mount_warns_on_not_writable() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
+  chmod 000 "$ah/agent/skills"
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -q "skills.*not writable"; then
+    pass "warns when skills/ is not writable"
+  else
+    fail "no warning for non-writable skills/"
+  fi
+
+  chmod 755 "$ah/agent/skills" 2>/dev/null || true
+  rm -rf "$tmpdir"
+}
+
+test_bind_mount_messages_on_all_missing() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  # No bind-mounted dirs at all
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  local prompt_count
+  prompt_count=$(echo "$output" | grep -c "prompts.*missing\|sessions.*missing\|skills.*missing" || true)
+  if [[ "$prompt_count" -ge 3 ]]; then
+    pass "reports all three missing bind mounts"
+  else
+    fail "expected 3 missing messages, got $prompt_count"
+  fi
+
+  if echo "$output" | grep -q "bind-mounted directories"; then
+    pass "includes summary message about bind mounts"
+  else
+    fail "no summary message about bind mounts"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
@@ -180,5 +282,10 @@ run_test test_merge_deduplicates_paths
 run_test test_warn_on_missing_settings
 run_test test_warn_on_missing_agents_md
 run_test test_merge_does_not_fail_on_missing_agents_md
+run_test test_bind_mounts_ok_when_all_present
+run_test test_bind_mount_warns_on_missing_prompts
+run_test test_bind_mount_warns_on_missing_sessions
+run_test test_bind_mount_warns_on_not_writable
+run_test test_bind_mount_messages_on_all_missing
 
 test_done

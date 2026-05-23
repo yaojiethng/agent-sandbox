@@ -103,6 +103,8 @@ All tasks are shelved. Re-activate when KV5 timeline demands it.
 
 Each provider may result in a different integration pattern. Investigation findings should be recorded as named investigation documents before implementation begins.
 
+**Related story:** [`story_agent_state_persistence.md`](docs/devlog/discussions/story_agent_state_persistence.md) — Agent state under AGENT_HOME must survive across container restarts. The bind mount approach fails on cross-filesystem mounts (utime/EPERM). Defines the persistence model that M2.6's session resume mechanism depends on.
+
 #### M2.7 — Session Identity and Harness Versioning
 
 **Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.

@@ -86,8 +86,10 @@ build_context_sandbox() {
 # build_context_agent <repo_root> <provider>
 # Creates and populates a temp dir with files required for an agent image build.
 # Injects harness-owned files (dirs.sh, provider-entrypoint.sh).
-# Provider config is not baked into the image - it is populated at onboard time
-# into $SANDBOX_DIR/.<provider>/ and bind-mounted at runtime.
+# Provider config is baked into the image via agent/config/ — copy-in to
+# AGENT_HOME at startup for non-bind-mounted files (settings.json, auth.json,
+# models.json, AGENTS.md). Bind-mounted subdirs (prompts/, sessions/, skills/)
+# shadow the template copies at runtime.
 # Prints the temp dir path to stdout. Caller is responsible for cleanup.
 build_context_agent() {
   local repo_root="${1:?build_context_agent requires repo_root}"
@@ -112,6 +114,13 @@ build_context_agent() {
   mkdir -p "$context_dir/agent" || return 1
   cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
   cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
+
+  # Provider config template — baked into image, copy-in to AGENT_HOME at startup
+  # Each bind-mounted subdir (prompts/, sessions/, skills/) is excluded from
+  # the copy by _provision_agent_home — they are provided via Docker bind mount.
+  if [[ -d "$repo_root/providers/$provider/config" ]]; then
+    cp -r "$repo_root/providers/$provider/config" "$context_dir/agent/config" || return 1
+  fi
 
   # Provider-specific pre-flight script (optional — sourced at startup if present)
   _provider_preflight="$repo_root/providers/$provider/preflight.sh"

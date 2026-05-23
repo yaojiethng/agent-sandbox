@@ -382,6 +382,125 @@ assert_exit_nonzero "build_agent: fails when provider.Dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
+# -------------------------------------------------------------------------
+echo ""
+echo "-- Provider config in agent context --"
+# build_context_agent must copy the entire provider config directory when it
+# exists, and must not fail when it does not exist.
+
+test_agent_context_includes_provider_config() {
+  local repo; repo=$(make_mock_repo)
+  mkdir -p "$repo/providers/test-provider/config"
+  echo '{"model":"test"}' > "$repo/providers/test-provider/config/settings.json"
+  echo 'auth-stub' > "$repo/providers/test-provider/config/auth.json"
+  echo 'models-content' > "$repo/providers/test-provider/config/models.json"
+  echo '# AGENTS.md stub' > "$repo/providers/test-provider/config/AGENTS.md"
+  mkdir -p "$repo/providers/test-provider/config/prompts"
+  echo 'prompt-stub' > "$repo/providers/test-provider/config/prompts/pi-agent.md"
+
+  local context
+  context=$(build_context_agent "$repo" test-provider)
+
+  assert_file_exists "agent: contains provider settings.json"     "$context/agent/config/settings.json"
+  assert_file_exists "agent: contains provider auth.json"         "$context/agent/config/auth.json"
+  assert_file_exists "agent: contains provider models.json"       "$context/agent/config/models.json"
+  assert_file_exists "agent: contains provider AGENTS.md"         "$context/agent/config/AGENTS.md"
+  assert_file_exists "agent: contains provider prompts/pi-agent.md" "$context/agent/config/prompts/pi-agent.md"
+
+  assert_equal "agent: settings.json content matches source" \
+    "$(cat "$repo/providers/test-provider/config/settings.json")" \
+    "$(cat "$context/agent/config/settings.json")"
+  assert_equal "agent: AGENTS.md content matches source" \
+    "$(cat "$repo/providers/test-provider/config/AGENTS.md")" \
+    "$(cat "$context/agent/config/AGENTS.md")"
+
+  cleanup "$context"
+  cleanup "$repo"
+}
+
+test_agent_context_without_provider_config() {
+  local repo; repo=$(make_mock_repo)
+  mkdir -p "$repo/providers/test-provider"
+  # No config/ dir
+
+  assert_exit_zero "agent: succeeds when no provider config exists" \
+    build_context_agent "$repo" test-provider
+
+  local context
+  context=$(build_context_agent "$repo" test-provider)
+  assert_file_absent "agent: no agent/config/ when no provider config" \
+    "$context/agent/config"
+  cleanup "$context"
+  cleanup "$repo"
+}
+
+test_agent_context_provider_config_and_preflight() {
+  # Both provider config and preflight script should coexist
+  local repo; repo=$(make_mock_repo)
+  mkdir -p "$repo/providers/test-provider/config"
+  echo '{"model":"test"}' > "$repo/providers/test-provider/config/settings.json"
+  echo 'preflight-content' > "$repo/providers/test-provider/preflight.sh"
+
+  local context
+  context=$(build_context_agent "$repo" test-provider)
+
+  assert_file_exists "agent: provider config present alongside preflight" \
+    "$context/agent/config/settings.json"
+  assert_file_exists "agent: preflight script present alongside config" \
+    "$context/provider-preflight.sh"
+
+  cleanup "$context"
+  cleanup "$repo"
+}
+
+test_agent_context_provider_config_entire_dir() {
+  # Verify the entire config/dir is copied, not just known files
+  local repo; repo=$(make_mock_repo)
+  mkdir -p "$repo/providers/test-provider/config/subdir/nested"
+  echo 'deep-content' > "$repo/providers/test-provider/config/subdir/nested/file.txt"
+
+  local context
+  context=$(build_context_agent "$repo" test-provider)
+
+  assert_file_exists "agent: nested file in config/subdir/nested/" \
+    "$context/agent/config/subdir/nested/file.txt"
+  assert_equal "agent: deep file content matches" \
+    "deep-content" \
+    "$(cat "$context/agent/config/subdir/nested/file.txt")"
+
+  cleanup "$context"
+  cleanup "$repo"
+}
+
+test_agent_context_provider_config_skip_other_providers() {
+  # Only the requested provider's config should be copied
+  local repo; repo=$(make_mock_repo)
+  mkdir -p "$repo/providers/test-provider/config"
+  echo 'our-config' > "$repo/providers/test-provider/config/settings.json"
+  mkdir -p "$repo/providers/other-provider/config"
+  echo 'other-config' > "$repo/providers/other-provider/config/settings.json"
+
+  local context
+  context=$(build_context_agent "$repo" test-provider)
+
+  assert_file_exists "agent: our provider config present" \
+    "$context/agent/config/settings.json"
+  assert_file_absent "agent: other provider config absent" \
+    "$context/agent/config/../other-provider/config/settings.json"
+
+  cleanup "$context"
+  cleanup "$repo"
+}
+
+# -------------------------------------------------------------------------
+# Run provider config tests
+# -------------------------------------------------------------------------
+test_agent_context_includes_provider_config
+test_agent_context_without_provider_config
+test_agent_context_provider_config_and_preflight
+test_agent_context_provider_config_entire_dir
+test_agent_context_provider_config_skip_other_providers
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------

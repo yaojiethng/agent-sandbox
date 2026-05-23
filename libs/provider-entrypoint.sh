@@ -5,19 +5,23 @@
 # a Docker layer cache miss on the COPY step in provider.Dockerfile.
 #
 # Responsibilities:
-#   1. Run generic pre-flight checks (env vars, container libs).
-#   2. Source provider-specific pre-flight script if present
+#   1. Provision AGENT_HOME from image template (copy-in config files not
+#      provided by Docker bind mounts — prompts/, sessions/, skills/).
+#   2. Run generic pre-flight checks (env vars, container libs, AGENT_HOME).
+#   3. Source provider-specific pre-flight script if present
 #      (/opt/sandbox/bin/provider-preflight.sh).
-#   3. Run the provider's real entrypoint as a synchronous foreground child so
+#   4. Run the provider's real entrypoint as a synchronous foreground child so
 #      that TUI input works correctly.
 #
 # Provider-specific logic (settings.json merge, path overrides, custom checks)
 # belongs in providers/<n>/preflight.sh, staged as provider-preflight.sh in
 # the build context. The shared entrypoint stays generic.
 #
-# The config directory ($AGENT_HOME) is bind-mounted directly — no copy-in or
-# copy-out needed. See docs/devlog/discussions/design_provider_config_ownership_and_loading.md
-# for the design rationale.
+# Config files (settings.json, auth.json, models.json, AGENTS.md) are
+# copy-in from the baked template (/opt/workflow/agent/config/) at startup.
+# Subdirectories prompts/, sessions/, skills/ are Docker bind-mounted —
+# they shadow the template copies at runtime. See docs/devlog/roadmap.md
+# M2.4 for the design rationale.
 #
 # Required environment variables (set via ENV in provider.Dockerfile):
 #   AGENT_HOME          — provider config dir inside the container
@@ -56,8 +60,10 @@
 # SIGKILL and copy-out does not run.
 #
 # This only affects the "docker stop mid-session" path. For all normal exit
-# paths (user quits TUI, agent exits cleanly), state is preserved because the
-# config directory is bind-mounted directly — no copy-out needed.
+# paths (user quits TUI, agent exits cleanly), session state is preserved
+# because the sessions/ subdirectory is bind-mounted directly — no copy-out
+# needed. Config files (settings.json, auth.json) are regenerated from the
+# template on next startup (ephemeral by design, avoids utime/EPERM).
 # If cleanup on docker stop is required, implement it at the harness level:
 # run_agent.sh can copy provider config out via "docker cp" after the container
 # exits, independent of the entrypoint.
@@ -78,6 +84,43 @@ _require_var() {
 
 _require_var AGENT_HOME
 _require_var PROVIDER_NAME
+
+# ---------------------------------------------------------------------------
+# Provision AGENT_HOME from image template
+# ---------------------------------------------------------------------------
+# Provisions AGENT_HOME by copying files from the image template.
+# Docker bind-mounted subdirs overlay the copied content — the copy-in
+# seeds them on first run; subsequent runs use persisted host content.
+_provision_agent_home() {
+  local template="${1:?provision_agent_home requires template_dir}"
+  local target="${2:?provision_agent_home requires target_dir}"
+
+  if [[ ! -d "$template" ]]; then
+    echo "FATAL: Config template $template not found — image may be stale" >&2
+    exit 1
+  fi
+
+  mkdir -p "$target"
+
+  for item in "$template"/*; do
+    local name
+    name=$(basename "$item")
+    if [[ -d "$item" ]]; then
+      # Use /./ to copy the contents of the directory, not the directory
+      # itself — avoids double-nesting when the target dir already exists
+      # (e.g., $AGENT_HOME/agent/ already created by Docker bind mounts)
+      cp -r "$item"/. "$target/$name"
+    else
+      cp -r "$item" "$target/$name"
+    fi
+  done
+}
+
+PROVISION_TEMPLATE="/opt/workflow/agent/config"
+if [[ -d "$PROVISION_TEMPLATE" ]]; then
+  _provision_agent_home "$PROVISION_TEMPLATE" "$AGENT_HOME"
+fi
+unset PROVISION_TEMPLATE
 
 # ---------------------------------------------------------------------------
 # Preflight: verify container libs
@@ -103,6 +146,25 @@ for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
   fi
 done
 unset LIB_DIR
+
+# ---------------------------------------------------------------------------
+# Preflight: generic AGENT_HOME validation
+# ---------------------------------------------------------------------------
+# AGENT_HOME is created by _provision_agent_home when the image template is
+# present. If the template existed but AGENT_HOME is still missing, something
+# went wrong during provisioning and the image is unusable.
+#
+# In test environments (no /opt/workflow/agent/config), the provision step
+# is skipped by the guard above, so we don't FATAL — the test framework
+# handles setup separately.
+if [[ -d "/opt/workflow/agent/config" && ! -d "$AGENT_HOME" ]]; then
+  echo "FATAL: $AGENT_HOME missing — provisioning failed" >&2
+  exit 1
+fi
+if [[ -d "$AGENT_HOME" && ! -w "$AGENT_HOME" ]]; then
+  echo "FATAL: $AGENT_HOME is not writable" >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Preflight: source provider-specific checks

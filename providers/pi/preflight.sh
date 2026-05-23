@@ -27,6 +27,31 @@ _preflight_check_agents_md() {
 }
 
 # ---------------------------------------------------------------------------
+# Bind-mounted subdir check
+# ---------------------------------------------------------------------------
+# Verify the selective bind mounts (prompts/, sessions/, skills/) are present
+# and writable. These are Docker bind mounts from the host — if missing, the
+# compose template may not have set them up correctly.
+
+_preflight_check_bind_mounts() {
+  local ok=true
+  for d in prompts sessions skills; do
+    local path="$AGENT_HOME/agent/$d"
+    if [[ ! -d "$path" ]]; then
+      echo "WARN: $path missing — bind mount may not be configured" >&2
+      ok=false
+    elif [[ ! -w "$path" ]]; then
+      echo "WARN: $path not writable" >&2
+      ok=false
+    fi
+  done
+  if ! $ok; then
+    echo "WARN: Some bind-mounted directories are missing or not writable —" >&2
+    echo "WARN: session history and provider prompts/skills may not persist" >&2
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Harness key merge
 # ---------------------------------------------------------------------------
 # Ensures harness-owned settings.json keys survive pi's runtime writes.
@@ -59,5 +84,6 @@ _ensure_harness_keys() {
 # Run
 # ---------------------------------------------------------------------------
 
+_preflight_check_bind_mounts
 _preflight_check_agents_md
 _ensure_harness_keys
