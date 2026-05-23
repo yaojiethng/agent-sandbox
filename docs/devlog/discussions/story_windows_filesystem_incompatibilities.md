@@ -1,6 +1,6 @@
 # Story — Windows Filesystem Incompatibilities (9p Mount Seam)
 
-**Status:** Identified — two active issues, root cause confirmed. Resolution via avoidance (keep project on Linux-native WSL2 path) documented in CORRECTION blocks. A proactive detection mechanism is proposed below.
+**Status:** Identified — three active issues, root causes confirmed. Resolution via avoidance (keep project on Linux-native WSL2 path) documented in CORRECTION blocks. A proactive detection mechanism is proposed below.
 
 ---
 
@@ -8,7 +8,7 @@
 
 The agent-sandbox harness runs inside a Docker container. Container paths that are bind-mounted from the host inherit the host filesystem's semantics. When the host is a Windows machine running Docker Desktop via WSL2, the bind mount path crosses a **9p (Plan 9) filesystem** seam — the protocol used by Docker's Windows integration to surface host directories inside the Linux VM.
 
-The 9p implementation in Docker Desktop's WSL2 backend does not support several POSIX filesystem operations that the harness and its tools (notably Pi) rely on. Two distinct issues have been identified, both stemming from this single root cause.
+The 9p implementation in Docker Desktop's WSL2 backend does not support several POSIX filesystem operations that the harness and its tools (notably Pi) rely on. Three distinct issues have been identified, all stemming from this single root cause.
 
 ---
 
@@ -50,19 +50,65 @@ This shadows the bind-mount's `bin/` with a container-local tmpfs, so Pi's cross
 
 **First observed:** During the design phase of M2.7 item 8 (see `design_provider_config_ownership_and_loading.md`, constraint 2).
 
-**Status:** Mitigated via tmpfs overlay. Acceptable trade-off (binaries are small, downloads are fast).
+**Status:** Mitigated via tmpfs overlay — but this mitigation introduced Issue 3 below.
 
 ---
 
-### Root cause shared by both issues
+### Issue 3: `noexec` tmpfs overlay blocks binary execution
 
-| Aspect | Issue 1 (utime) | Issue 2 (bin mv) |
-|--------|-----------------|-------------------|
-| Trigger | `fs.utimesSync()` on lock dir | `rename()` from `/tmp/` to bind mount |
-| Error | `EPERM` | `EXDEV` |
-| 9p root cause | Windows 9p server doesn't implement utime | 9p mount is a different filesystem from overlay |
-| Existing mitigation | None (silent settings loss) | tmpfs overlay at `bin/` |
-| Ultimate fix | Avoid 9p for `AGENT_HOME` (see Resolution) | Already mitigated |
+**Manifestation:** Pi's `@` file reference popup (fuzzy file search) silently returns no results. `fd` and `rg` binaries are present at `~/.pi/agent/bin/` with `755` permissions and valid executables, but attempts to run them fail with `Permission denied` (exit code 126).
+
+**Root cause:** The tmpfs overlay mounted at `~/.pi/agent/bin/` (the mitigation for Issue 2) carries the default `tmpfs` mount flag `noexec`. The mount line from `/proc/mounts`:
+
+```
+tmpfs on /home/agentuser/.pi/agent/bin type tmpfs (rw,nosuid,nodev,noexec,relatime,mode=777)
+```
+
+Binaries stored on a `noexec` filesystem cannot be executed by the kernel regardless of file permissions. When Pi spawns `fd` via `child_process.spawn()`, the kernel denies execution and the child process emits an `error` event. Pi's `walkDirectoryWithFd()` in `autocomplete.js` catches this silently and returns an empty array — the popup never appears.
+
+Confirmation via direct test:
+
+```bash
+# Binary present with 755 permissions
+$ ls -la ~/.pi/agent/bin/fd
+-rwxr-xr-x 1 agentuser agentuser 4065136 Mar 10 07:38 fd
+
+# But cannot execute on noexec mount
+$ ~/.pi/agent/bin/fd --version
+-bash: /home/agentuser/.pi/agent/bin/fd: Permission denied
+
+# Works fine when copied off the noexec mount
+$ cp ~/.pi/agent/bin/fd /tmp/fd-test && /tmp/fd-test --version
+fd 10.4.2
+```
+
+**Impact breakdown:**
+
+| Tool | Feature | User-visible symptom |
+|------|---------|----------------------|
+| `fd` | `@` file reference popup (fuzzy file search) | Popup never appears; no error shown |
+| `fd` | Pi's built-in `find` tool (`seek`/`fd` backend) | Search may fall back or fail silently |
+| `rg` | Pi's built-in `grep` tool (`ripgrep` backend) | Grep may fall back or fail silently |
+
+Both `fd` and `rg` live on the same `noexec` tmpfs, so both are affected.
+
+**First observed:** 2026-05-23, during investigation of the `@` popup failure.
+
+**Status:** Active. Introduced by the Issue 2 mitigation. The `tmpfs` mount at `bin/` resolves the cross-filesystem `rename()` problem but imposes `noexec` by default, negating the purpose of storing binaries there.
+
+**Workaround applied (2026-05-23):** `fd-find` and `ripgrep` are now installed via `apt` in the Pi base Dockerfile (`providers/pi/base.Dockerfile`). This places them on the native overlay filesystem (`/usr/bin/`) where `exec` works unconditionally. Pi's `getToolPath()` (`tools-manager.js`) checks system `PATH` for `fdfind`/`rg` before falling back to `~/.pi/agent/bin/`, so the apt-installed binaries take priority. The tmpfs overlay at `bin/` remains in place (for other potential future binaries), but the two critical tools bypass it entirely.
+
+---
+
+### Root cause shared by all three issues
+
+| Aspect | Issue 1 (utime) | Issue 2 (bin mv) | Issue 3 (noexec) |
+|--------|-----------------|-------------------|-------------------|
+| Trigger | `fs.utimesSync()` on lock dir | `rename()` from `/tmp/` to bind mount | `spawn()` of binary on tmpfs |
+| Error | `EPERM` | `EXDEV` | `EACCES` / exit 126 |
+| 9p root cause | Windows 9p server doesn't implement utime | 9p mount is a different filesystem from overlay | *Indirect:* 9p EXDEV drove tmpfs overlay, which introduced noexec |
+| Existing mitigation | None (silent settings loss) | tmpfs overlay at `bin/` | apt install of `fd-find` and `ripgrep` in base Dockerfile (bypasses tmpfs); tmpfs overlay retained for other potential binaries |
+| Ultimate fix | Avoid 9p for `AGENT_HOME` (see Resolution) | Already mitigated | Drop `noexec` from the tmpfs mount, or keep apt-installed binaries (preferred — explicit dependency management) |
 
 ---
 
