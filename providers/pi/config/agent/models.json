@@ -19,7 +19,7 @@
             "cacheWrite": 0
           },
           "compat": {
-             "thinkingFormat": "deepseek",
+              "thinkingFormat": "deepseek",
               "requiresReasoningContentOnAssistantMessages": true,
               "reasoningEffortMap": {
               "minimal": "low",
@@ -127,19 +127,41 @@
           "id": "deepseek-v4-pro",
           "name": "DeepSeek V4 Pro (Opencode Go)",
           "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "compat": {
+            "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
         },
         {
           "id": "deepseek-v4-flash",
           "name": "DeepSeek V4 Flash (Opencode Go)",
           "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
+          "baseUrl": "https://opencode.ai/zen/go/v1",
+          "contextWindow": 1000000,
+          "maxTokens": 364000,
+          "compat": {
+            "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
         }
       ]
     },
     "openrouter": {
       "baseUrl": "https://openrouter.ai/api/v1",
-      "apiKey": "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",
+      "apiKey": "OPENROUTER_API_KEY",
       "api": "openai-completions",
       "models": [
         {
@@ -173,7 +195,18 @@
           "reasoning": true,
           "input": ["text"],
           "contextWindow": 1000000,
-          "maxTokens": 364000
+          "maxTokens": 364000,
+          "compat": {
+            "thinkingFormat": "deepseek",
+            "requiresReasoningContentOnAssistantMessages": true,
+            "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
         },
         {
           "id": "deepseek/deepseek-v4-pro",
@@ -181,7 +214,18 @@
           "reasoning": true,
           "input": ["text"],
           "contextWindow": 1000000,
-          "maxTokens": 364000
+          "maxTokens": 364000,
+          "compat": {
+            "thinkingFormat": "deepseek",
+            "requiresReasoningContentOnAssistantMessages": true,
+            "reasoningEffortMap": {
+              "minimal": "low",
+              "low": "low",
+              "medium": "medium",
+              "high": "high",
+              "xhigh": "max"
+            }
+          }
         }
       ]
     }
