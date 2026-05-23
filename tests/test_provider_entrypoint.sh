@@ -119,16 +119,7 @@ _provision_agent_home() {
   fi
 
   mkdir -p "$target"
-
-  for item in "$template"/*; do
-    local name
-    name=$(basename "$item")
-    if [[ -d "$item" ]]; then
-      cp -r "$item"/. "$target/$name"
-    else
-      cp -r "$item" "$target/$name"
-    fi
-  done
+  cp -RT --no-preserve=all "$template/" "$target/"
 }
 
 test_provision_copies_config_files() {

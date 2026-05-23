@@ -51,7 +51,7 @@ Implement the selective bind mount approach for `.pi/agent/` — mount only `pro
 | [`libs/containers.sh`](../../libs/containers.sh) | `build_context_agent`: copies entire `prov/<n>/config/` into build context as `agent/config/`. Updated header comment. |
 | [`providers/pi/provider.Dockerfile`](../../providers/pi/provider.Dockerfile) | Added `COPY agent/config/ /opt/workflow/agent/config/`. Updated header comments for new architecture. |
 | [`libs/provider-entrypoint.sh`](../../libs/provider-entrypoint.sh) | Added `_provision_agent_home()` helper — copies template files to AGENT_HOME, skipping bind-mounted subdirs. Added generic AGENT_HOME validation (writable, exists) in pre-flight block. Updated header comments. |
-| [`libs/docker-compose.yml`](../../libs/docker-compose.yml) | Replaced single parent bind mount with 3 selective bind mounts (prompts/, sessions/, skills/). Retained bin/ tmpfs. Removed constraint comment about cross-fs utime. |
+| [`libs/docker-compose.yml`](../../libs/docker-compose.yml) | Removed Pi-specific bind mounts (moved to `providers/pi/docker-compose.pi.yml`). Generic compose now has only sandbox-level mounts (snapshot, changes, input, output). |
 | [`providers/pi/preflight.sh`](../../providers/pi/preflight.sh) | Added `_preflight_check_bind_mounts` — verifies prompts/, sessions/, skills/ are present and writable. Integrated into run sequence. |
 | [`docs/devlog/discussions/story_agent_state_persistence.md`](../../docs/devlog/discussions/story_agent_state_persistence.md) | **New** — story document for agent state persistence under AGENT_HOME. |
 | [`docs/devlog/roadmap.md`](../../docs/devlog/roadmap.md) | Added M2.6 cross-reference to story. |
@@ -68,24 +68,43 @@ TBD. Rebuild and test after mount strategy change: verify skills/prompts/session
 
 ---
 
-## [CORRECTION — 2026-05-23] agent/agent/ double-nesting in _provision_agent_home
+## [CORRECTION — 2026-05-23] Volume ownership and metadata-agnostic provisioning
 
-**Root cause (two layers):**
-1. Docker creates the parent directory tree for bind mount targets at container
-   start. For Pi, bind mounts target `$AGENT_HOME/agent/prompts` etc., which
-   creates `$AGENT_HOME/agent/` before the entrypoint runs.
-2. Docker creates these parent dirs as **root**, and the entrypoint runs as
-   `agentuser`. Without the dir pre-existing in the image (agentuser-owned),
-   provisioning can't write into it.
+### Root cause
+
+When a bind mount target path doesn't exist in the image, the Docker Daemon
+(running as **root**) auto-creates it at container start. These directories are
+owned by `root:root`. The entrypoint runs as `agentuser` (uid 1001) — any `cp`
+into root-owned paths fails with "Permission denied".
+
+Additionally, standard archive-mode copy commands (`cp -a`, `rsync -av`) try to
+preserve ownership and timestamps. On cross-filesystem mounts (virtiofs, 9p),
+a non-privileged user cannot set these attributes — resulting in `EPERM`.
 
 The old parent bind mount of the entire `.pi/agent/` tree masked both issues.
 
-**Fixes:**
-- `providers/pi/provider.Dockerfile`: `RUN mkdir -p .pi/agent` before `USER agentuser`
-  so the directory is agentuser-owned when the entrypoint runs.
-- `libs/provider-entrypoint.sh`: For directory items, use `cp -r "$item"/.
-  "$target/$name"` — the trailing `/.` on the source copies the **contents** of
-  the directory, not the directory itself. Combined with the pre-existing
-  target directory, this avoids `agent/agent/` double-nesting.
+### Fixes applied
 
-**Documented in:** `providers/pi/onboard-readme.md` § Ephemeral vs Mounted.
+1. **`providers/pi/provider.Dockerfile`** — pre-emptive path claiming:
+   `mkdir -p` each bind mount target (`prompts/`, `sessions/`, `skills/`,
+   `bin/`) before the `USER agentuser` switch, followed by
+   `chown -R agentuser:agentuser /home/agentuser/.pi`. Docker doesn't
+   auto-create paths that already exist, so they stay agentuser-owned.
+
+2. **`libs/provider-entrypoint.sh`** — metadata-agnostic provisioning:
+   `_provision_agent_home` uses `cp -RT --no-preserve=all` (single command,
+   no per-item loop). `--no-preserve=all` skips ownership and timestamps;
+   `-T` prevents double-nesting when the target dir already exists.
+
+3. **Mount isolation:** Pi-specific bind mounts moved from generic
+   `libs/docker-compose.yml` to `providers/pi/docker-compose.pi.yml`.
+   The generic compose has only sandbox-level mounts (snapshot, changes,
+   input, output).
+
+4. **tmpfs removed:** `bin/` is now a regular dir on container overlayfs —
+   same filesystem as `/tmp/`, so Pi's `mv` uses native `rename()` without
+   cross-device fallback. `fd-find`/`ripgrep` via apt make auto-downloads
+   unnecessary anyway.
+
+**Documented in:** `providers/pi/onboard-readme.md` § Ephemeral vs Mounted and
+§ Binary Downloads.

@@ -62,7 +62,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 **Objective:** Establish the provider config lifecycle — onboarding-time population, seeding of provider-layer prompts/skills, and session history persistence — ensuring state survives between container restarts across all host filesystem types.
 
 **Work completed:**
-- Directory bind mount + tmpfs overlay (M2.7) — session history persists via `sessions/` bind mount; `bin/` isolated via tmpfs for cross-device mv prevention
+- Directory bind mount (M2.7) — session history persists via `sessions/` bind mount; `bin/` cross-device mv issue resolved by owning the directory in the image (see `providers/pi/provider.Dockerfile`) rather than tmpfs, which was removed for simplicity
 - Provider-layer prompts/skills seeded from `providers/<n>/config/agent/` via onboarding
 - Auth tokens stored as env var references in `auth.json` (ephemeral by design — security feature, prevents write-back of secret values)
 - Selective bind mount pattern (`sessions/`, `prompts/`, `skills/` persisted; remaining config ephemeral via copy-in) — resolution for cross-filesystem `utime()`/`EPERM` issue on macOS/Windows Docker Desktop

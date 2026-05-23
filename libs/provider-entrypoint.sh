@@ -102,18 +102,14 @@ _provision_agent_home() {
 
   mkdir -p "$target"
 
-  for item in "$template"/*; do
-    local name
-    name=$(basename "$item")
-    if [[ -d "$item" ]]; then
-      # Use /./ to copy the contents of the directory, not the directory
-      # itself — avoids double-nesting when the target dir already exists
-      # (e.g., $AGENT_HOME/agent/ already created by Docker bind mounts)
-      cp -r "$item"/. "$target/$name"
-    else
-      cp -r "$item" "$target/$name"
-    fi
-  done
+  # Metadata-agnostic provisioning: --no-preserve=all avoids EPERM
+  # on cross-filesystem hosts (macOS virtiofs, Windows 9p) where
+  # non-privileged users cannot set timestamps or ownership on
+  # bind-mounted subdirs. -T treats target as the destination
+  # directory (not a subdir inside it), preventing double-nesting
+  # when $target already exists (Docker pre-creates bind mount
+  # parent dirs at container start).
+  cp -RT --no-preserve=all "$template/" "$target/"
 }
 
 PROVISION_TEMPLATE="/opt/workflow/agent/config"

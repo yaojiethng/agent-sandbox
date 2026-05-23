@@ -13,7 +13,7 @@ Each provider container has an `AGENT_HOME` directory where the agent stores its
 | Claude Code | `~/.claude/` | Config, sessions | Session resumption, auth |
 | Hermes | `~/.hermes/` | Config, memories, sessions | Memory persistence, session resumption |
 
-The current mechanism (from M2.7) is a **directory bind mount** at `AGENT_HOME/agent` with a **tmpfs overlay** at `bin/`. This was intended to replace the earlier copy-in/copy-out cycle, providing live write-through for real-time sync.
+The current mechanism (from M2.7) is a **selective bind mount** — only `prompts/`, `sessions/`, and `skills/` are RW bind-mounted from the host. All other config files (`settings.json`, `auth.json`, `models.json`, `AGENTS.md`) are copy-in from the image template at startup (ephemeral, regenerated each session). This was settled after the earlier directory-wide bind mount + tmpfs overlay approach failed on cross-filesystem mounts.
 
 ## Pain Points
 
@@ -31,9 +31,9 @@ Pi's `settings-manager.js` uses `proper-lockfile` which calls `fs.utimesSync()` 
 - WSL2 Linux-native path: works for Windows only, not macOS
 - See session `20260522-05-design-pi_agent_mount_strategy.md` for full options evaluation
 
-### 2. Cross-filesystem binary downloads (resolved)
+### 2. Cross-filesystem binary downloads (resolved — removed)
 
-Pi downloads `fd`/`rg` to `/tmp/` then moves to `~/.pi/agent/bin/`. When `bin/` is on a bind mount, the move crosses filesystem boundaries and fails. **Resolved** by tmpfs overlay at `bin/` (existing mechanism, works correctly).
+Pi downloads `fd`/`rg` to `/tmp/` then moves to `~/.pi/agent/bin/`. When `bin/` is on a bind mount, the move crosses filesystem boundaries and fails. **Resolved** by pre-creating `bin/` in the Dockerfile before the `USER` switch — it lives on the same overlayfs as `/tmp/`, so `mv` uses native `rename()`. Additionally, `fd-find` and `ripgrep` are installed via `apt` in `base.Dockerfile`, making Pi's auto-downloads unnecessary. The tmpfs overlay that previously isolated `bin/` was removed for simplicity.
 
 ### 3. AGENT_HOME path is Pi-specific in compose template
 
@@ -45,7 +45,7 @@ The compose template at `libs/docker-compose.yml` line 102 hardcodes `target: /h
 2. **Must work across all providers.** Pi, OpenCode, Claude Code, Hermes each have different AGENT_HOME structures and different persistence requirements.
 3. **Session history must survive.** `/resume` and session continuity are non-negotiable across all providers.
 4. **Auth state must survive.** `/login` stores tokens that must persist — re-authenticating every session is unacceptable.
-5. **Binary downloads must not cross filesystems.** `bin/` must remain container-local (already resolved via tmpfs).
+5. **Binary downloads must not cross filesystems.** `bin/` must remain container-local. Resolved by owning the directory in the image (same overlayfs as `/tmp/`) + apt-installed alternatives.
 6. **Host-mounted content must remain editable.** Provider-layer prompts/skills and AGENTS.md should be editable on the host and visible to the agent without image rebuild.
 
 ## Design Rationale — auth.json should be ephemeral
@@ -57,7 +57,7 @@ The compose template at `libs/docker-compose.yml` line 102 hardcodes `target: /h
 ## Open Questions
 
 1. **Which AGENT_HOME files need write-through persistence (host sees changes) vs. session-only (regenerated each start)?** The answer differs per provider and per file type.
-2. **Should the persistence model be provider-agnostic or provider-specific?** A single mechanism (e.g., per-file tmpfs overlay + copy-out) could cover all providers, or each provider could define its own.
+2. **Should the persistence model be provider-agnostic or provider-specific?** A single mechanism (e.g., selective bind mounts + copy-in template) could cover all providers, or each provider could define its own.
 3. **What is the copy-out trigger?** On clean exit only (SIGTERM → EXIT trap), or also on periodic autosave?
 4. **Does the compose template's hardcoded Pi path block non-Pi providers from starting?** If another provider is used, does the bind mount silently no-op, or does the container fail to start?
 

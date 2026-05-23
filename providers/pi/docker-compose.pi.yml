@@ -17,3 +17,19 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OPENCODE_API_KEY=${OPENCODE_API_KEY:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    volumes:
+      # Provider config: selective bind mounts for persistent subdirs
+      # Only prompts/, sessions/, skills/ are RW bind-mounted from the host.
+      # Config files (settings.json, auth.json, models.json, AGENTS.md) are
+      # copy-in from the baked image template at startup — avoids utime/EPERM
+      # on cross-filesystem mounts (macOS virtiofs, Windows 9p).
+      # DESIGN: docs/devlog/roadmap.md M2.4
+      - type: bind
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts
+        target: /home/agentuser/.pi/agent/prompts
+      - type: bind
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/sessions
+        target: /home/agentuser/.pi/agent/sessions
+      - type: bind
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills
+        target: /home/agentuser/.pi/agent/skills

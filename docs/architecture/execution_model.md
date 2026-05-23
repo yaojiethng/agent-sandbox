@@ -48,7 +48,7 @@ Reasoning layer container (CWD: /home/agentuser/)
     │   ├── prompts/           ← RW bind mount: provider-layer prompts (persists)
     │   ├── sessions/          ← RW bind mount: session history (persists)
     │   ├── skills/            ← RW bind mount: provider-layer skills (persists)
-    │   ├── bin/               ← tmpfs: container-local binary downloads (noexec possible)
+    │   ├── bin/               ← overlayfs: container-local, same fs as /tmp/ (mv safe)
     │   ├── settings.json     ← ephemeral: copy-in from image template at startup
     │   ├── auth.json          ← ephemeral: copy-in from image template at startup
     │   ├── models.json        ← ephemeral: copy-in from image template at startup

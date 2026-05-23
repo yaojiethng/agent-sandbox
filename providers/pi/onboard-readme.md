@@ -16,10 +16,14 @@ enough patterns emerge.
 
 | Reference | Path | Where defined |
 |---|---|---|
-| Config dir (Pi convention) | `$AGENT_HOME/agent/` | `providers/pi/preflight.sh`, compose template |
+| Config dir (Pi convention) | `$AGENT_HOME/agent/` | `providers/pi/preflight.sh` |
 | Template (baked into image) | `/opt/workflow/agent/config/agent/` | Build context (`containers.sh`) + Dockerfile COPY |
-| Bind mounts | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `libs/docker-compose.yml` |
-| tmpfs for binaries | `$AGENT_HOME/agent/bin/` | `libs/docker-compose.yml` (noexec — see Binary Downloads) |
+| Bind mounts (host → container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `providers/pi/docker-compose.pi.yml` |
+
+Pi-specific volumes live in the Pi compose overlay (`docker-compose.pi.yml`),
+not the generic `docker-compose.yml`. This keeps provider isolation clean:
+the generic compose has only sandbox-level mounts (snapshot, changes, input,
+output); each provider overlays its own config mounts.
 
 ## Ephemeral vs Mounted
 
@@ -30,38 +34,84 @@ Everything else is ephemeral (copy-in from image template at startup) — includ
 This avoids `utime()`/`EPERM` on cross-filesystem mounts (macOS virtiofs, Windows 9p)
 where Pi's `proper-lockfile` would fail silently, falling back to default settings.
 
-### Copy-in provisioning
+### Root cause: Docker auto-provisioned mount points
 
-The template at `/opt/workflow/agent/config/agent/` is copied into
-`$AGENT_HOME/agent/` at startup by `_provision_agent_home`.
+When a bind mount target path doesn't exist in the image, the Docker Daemon
+(running as **root**) creates it at container start. These auto-created
+directories are owned by `root:root`. When the entrypoint runs as `agentuser`
+(uid 1001), any `mkdir` or `cp` into those paths fails with "Permission denied".
 
-**Why `mkdir -p .pi/agent` in the Dockerfile:** Docker creates parent directories
-for bind mount targets at container start. Without the image-owned directory,
-`.pi/agent/` is created by Docker as **root**, and the entrypoint (running as
-`agentuser`) cannot write into it. The Dockerfile creates it before the user
-switch so provisioning can copy in config files.
+### Why `rsync -av` and `cp -a` don't work
 
-**Why `cp -r "$item"/. "$target/$name"` for directories:** Docker's bind mount
-parent-creation means `.pi/agent/` already exists when `cp` runs. If `cp -r`
-copies the `agent/` directory into an already-existing `agent/` directory, the
-result is `.pi/agent/agent/` (double nesting). The trailing `/.` copies the
-**contents** of the source directory, not the directory itself.
+Standard copy commands in "archive" mode try to preserve file metadata:
+ownership (UID/GID) and timestamps (mtime/atime). On cross-filesystem mounts
+(macOS virtiofs, Linux bind mounts), a non-privileged user cannot set these
+attributes even on files they own — resulting in `Operation not permitted`.
+
+### Solution: pre-emptive path claiming + metadata-agnostic copy
+
+**A. Image-level ownership.** The Dockerfile `mkdir -p`s every bind mount
+target (`prompts/`, `sessions/`, `skills/`, `bin/`) before the `USER` switch.
+Since the paths already exist, Docker doesn't auto-create them as root at
+runtime. A follow-up `chown -R agentuser:agentuser` on the entire `.pi/` tree
+ensures everything is writable by the non-root user.
+
+```dockerfile
+RUN useradd -m -u 1001 -s /bin/bash agentuser
+RUN mkdir -p /home/agentuser/.pi/agent/prompts \
+             /home/agentuser/.pi/agent/sessions \
+             /home/agentuser/.pi/agent/skills \
+             /home/agentuser/.pi/agent/bin
+RUN chown -R agentuser:agentuser /home/agentuser/.pi
+USER agentuser
+```
+
+**B. Metadata-agnostic provisioning.** `_provision_agent_home` uses
+`cp -RT --no-preserve=all` to copy the template into `$AGENT_HOME`.
+`--no-preserve=all` skips ownership AND timestamps — files are created as
+"new" files owned by agentuser, avoiding EPERM on any metadata operations.
+The `-T` flag treats the destination as the target directory (not a subdir
+inside it), which prevents double-nesting when the target already exists.
+
+```bash
+# In provider-entrypoint.sh:
+cp -RT --no-preserve=all "$PROVISION_TEMPLATE/" "$AGENT_HOME/"
+```
+
+**Key principle:** In a non-root Docker environment, the image must be
+"volume-ready" before the container starts — the image skeleton claims the
+paths with correct ownership, and the volumes flesh them out without
+breaking permissions.
 
 ## Binary Downloads
 
 Pi auto-downloads `fd` and `rg` (ripgrep) to `$AGENT_HOME/agent/bin/`.
-Two separate issues with this:
 
-1. **cross-device mv:** Pi downloads to `/tmp/`, then moves to `bin/`. When
-   `bin/` is a bind mount, the move crosses filesystem boundaries and fails.
-   **Fixed:** `bin/` is a tmpfs (container-local), so mv stays on the same filesystem.
+**Problem (historical):** When `bin/` was on a bind-mounted filesystem, Pi's
+`mv` from `/tmp/` (container overlayfs) to `bin/` (host fs) crossed filesystem
+boundaries and failed. Adding a tmpfs made `bin/` a separate in-memory
+filesystem, but it was still cross-device from `/tmp/` (overlayfs) — and
+on some Docker configurations the tmpfs was mounted `noexec`, silently
+breaking the `@` file reference popup.
 
-2. **noexec tmpfs:** The `bin/` tmpfs is mounted `noexec` on some Docker configurations.
-   `fd`/`rg` downloaded by Pi fail to execute with `EACCES`. Pi silently swallows
-   the error and the `@` file reference popup stops working.
-   **Workaround:** `fd-find` and `ripgrep` are installed via `apt` in `base.Dockerfile`.
-   Pi's `getToolPath` checks system PATH first, so apt-installed binaries take
-   priority over the tmpfs copies.
+**Current solution:** `bin/` is a regular directory created in the Dockerfile
+before the `USER` switch — same overlayfs as `/tmp/`. `mv` uses native
+`rename()` (no cross-device fallback). `fd-find` and `ripgrep` are installed
+via `apt` in `base.Dockerfile`, so Pi's `getToolPath` picks them up from
+system PATH without needing auto-downloads at all.
+
+The tmpfs was removed for simplicity. If future tools add binaries that need
+a separate writable space, a tmpfs with explicit `uid`/`gid`/`mode` can be
+added back in `docker-compose.pi.yml`:
+
+```yaml
+- type: tmpfs
+  target: /home/agentuser/.pi/agent/bin
+  tmpfs:
+    mode: 0755
+    uid: 1001
+    gid: 1001
+```
 
 ## auth.json — Ephemeral by Design
 

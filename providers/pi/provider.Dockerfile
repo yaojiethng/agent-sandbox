@@ -28,7 +28,13 @@ RUN useradd -m -u 1001 -s /bin/bash agentuser
 # owns it. Docker bind mounts create parent dirs as root when they
 # don't exist in the image, which would block the entrypoint's
 # copy-in provisioning step.
-RUN mkdir -p /home/agentuser/.pi/agent
+RUN mkdir -p /home/agentuser/.pi/agent/prompts \
+             /home/agentuser/.pi/agent/sessions \
+             /home/agentuser/.pi/agent/skills \
+             /home/agentuser/.pi/agent/bin
+
+RUN chown -R agentuser:agentuser /home/agentuser/.pi
+RUN chown -R agentuser:agentuser /opt/workflow/agent
 
 USER agentuser
 
