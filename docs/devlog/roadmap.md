@@ -155,21 +155,40 @@ Each provider may result in a different integration pattern. Investigation findi
 ### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
 
 **Design reference:** [`docs/devlog/discussions/design_settings_permissions_group_bind.md`](../discussions/design_settings_permissions_group_bind.md)
+**Container layer spec:** [`docs/devlog/discussions/spec_container_layer_redesign.md`](../discussions/spec_container_layer_redesign.md)
 
 - [x] Design session and surface area scoping (2026-05-23)
-- [ ] Implement UID Mapping in all 5 Dockerfiles
-    - [ ] providers/pi/provider.Dockerfile
-    - [ ] providers/hermes/provider.Dockerfile
-    - [ ] providers/claude-code/provider.Dockerfile
-    - [ ] providers/opencode/provider.Dockerfile
-    - [ ] libs/sandbox.Dockerfile
-- [ ] Thread build args through build pipeline (`libs/build.sh`, `scripts/start_agent.sh`, `scripts/run_agent.sh`)
-- [ ] Update compose templates — add `user:` and remove `group_add` (`libs/docker-compose.yml`)
-- [ ] Update `scripts/onboard.sh` — remove ACL commands
-- [ ] Clean up provider onboard hooks (`providers/pi/onboard.sh`)
-- [ ] Update documentation — user-facing contract per design doc §4
-- [ ] Update and verify tests
-- [ ] Build images and verify permissions on WSL, macOS, and Windows DD
+- [x] Onboard.sh control flow refactor, tests, hardening (2026-05-23)
+
+**Implementation phases (each produces a self-contained commit):**
+
+#### Phase 1 — Build pipeline threading (no behaviour change)
+
+- [ ] `libs/build.sh` — `build_sandbox()` and `build_agent()` accept `--uid`/`--gid` flags
+- [ ] `scripts/start_agent.sh` — export `HOST_UID=$(id -u)` / `HOST_GID=$(id -g)`
+- [ ] `scripts/run_agent.sh` — propagate host IDs to compose generation
+
+No behaviour change until Phase 2 consumes the values.
+
+#### Phase 2 — Dockerfiles + compose (both paths functional)
+
+- [ ] 3 harness Dockerfiles: add `ARG HOST_UID=1000` / `ARG HOST_GID=1000`, UID collision handling via `usermod` rename, numeric `chown -R ${HOST_UID}:${HOST_GID}`
+    - [ ] `libs/Dockerfile.harness-node` (or `harness/reasoning/nodes/node.Dockerfile` per chore session)
+    - [ ] `libs/Dockerfile.harness-python` (or `harness/reasoning/nodes/python.Dockerfile` per chore session)
+    - [ ] `libs/sandbox.Dockerfile` (unchanged layer position)
+- [ ] `libs/docker-compose.yml`: add `user: "${HOST_UID:-1000}:${HOST_GID:-1000}"` to both services
+- [ ] Compose convention: only the base compose template sets `user:`. Verify provider compose overlays don't set `user:`.
+
+At this point both UID Mapping and ACL paths are functional — rollback-safe.
+
+#### Phase 3 — Onboard cleanup + ACL removal (after verification)
+
+Only once UID Mapping is verified (build + test on WSL, macOS, Windows DD):
+
+- [ ] `scripts/onboard.sh`: remove `setfacl` lines from `_run_onboard()` and `_provision_providers()`
+- [ ] `providers/pi/onboard.sh`: no permission-fixing code (already clean; verify)
+- [ ] `tests/test_onboard.sh`: remove `CAN_RUN_FULL` guard (setfacl no longer needed)
+- [ ] Documentation updates per design doc §4.5 (quickstart, security.md, execution_model.md, Dockerfile headers, compose header)
 
 ## Future Milestones
 
