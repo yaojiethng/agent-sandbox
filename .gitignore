@@ -10,7 +10,7 @@ output/
 .snapshot/
 .sandbox/
 .vault
-rough-notes.md
+.scratchpad/
 
 # === Python ===
 __pycache__/
