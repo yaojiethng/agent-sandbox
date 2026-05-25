@@ -1,243 +1,273 @@
-# Spec — Container Layer Redesign
+# Spec — Directory Restructuring (Structural Cleanup)
 
-**Status:** Design complete, awaiting implementation
-
-**Linked artifacts:**
-- Story: [`story_container_layer_model.md`](story_container_layer_model.md) — problem analysis, option evaluation, decision record
-- Design doc: [`design_settings_permissions_group_bind.md`](design_settings_permissions_group_bind.md) — UID Mapping strategy (consumes this spec)
+**Status:** Final. Ready for implementation.
 
 ---
 
-## 1. Proposal
+## 1. Decisions
 
-### Selected architecture
+### Principles
 
-Two harness base images (node + python) sitting between the official runtime images and the per-provider base images. The sandbox remains independent on its own `ubuntu:24.04` base.
+1. **Deployment target as primary split** — files grouped by where they execute: host, reasoning container, or capability container.
+2. **Life stage as secondary split** — build-time configuration separated from runtime code.
+3. **No intermediate nesting layer** — files land directly in their target directory under `src/`.
+4. **`devlog/` at root** — agent development history is not project documentation.
 
-```
-Current:                              Proposed:
+### Cross-cutting libs → `src/libs/`
 
-node:22-slim → pi-base → pi-agent     node:22.22.3-slim → node-harness → pi-base → pi-agent
-node:20-slim → cd-base → cd-agent    node:22.22.3-slim → node-harness → cd-base → cd-agent
-ubuntu:24.04 → oc-base → oc-agent    node:22.22.3-slim → node-harness → oc-base → oc-agent
-python:3.11 → hermes-base → agent     python:3.11-slim → python-harness → hermes-base → hermes-agent
-ubuntu:24.04 → sandbox               ubuntu:24.04 → sandbox (unchanged)
-```
-
-### What moves into the harness bases
-
-Only **stable plumbing** — things that change rarely or never:
-
-| Content | Rationale |
+| File | Rationale |
 |---|---|
-| `git`, `curl`, `ca-certificates`, `rsync`, `fd-find`, `ripgrep` (apt install) | Universal dependencies — all providers need these for the harness workflow, regardless of runtime. Installed via apt in both node-harness and python-harness. |
-| `ARG HOST_UID=1000` / `ARG HOST_GID=1000` | Stable — needed for UID Mapping |
-| `RUN useradd ...` + UID collision handling (`usermod` rename) | Written once, never changes |
-| `RUN chown -R ${HOST_UID}:${HOST_GID} ...` | Tied to useradd |
-| `ENV WORKSPACE_DIR=/home/agentuser/workspace` | Fixed path |
-| `RUN mkdir -p $WORKSPACE_DIR/input $WORKSPACE_DIR/output` | Bootstrap |
-| `WORKDIR /home/agentuser/sandbox` | Fixed |
-| `HEALTHCHECK ...` | Stable across providers |
-| `ENV PATH=/opt/sandbox/bin:$PATH` | Fixed |
+| `dirs.sh` | Sourced by host, reasoning container, and capability container |
+| `session.sh` | `session_state_read`/`write` used across all three |
+| `routing.sh` | Same |
+| `diff.sh` | Sourced by host (draft_workflow), reasoning (package_branch), capability (sandbox-entrypoint) |
+| `snapshot.sh` | Used by both host (start_agent.sh) and capability (sandbox-entrypoint). Kept whole. |
+| `package_branch.sh` | Paired with package_diff. Both exec'd from host AND present in containers. |
+| `package_diff.sh` | Same. |
 
-### What stays on the provider layer (fast-changing)
+### Reasoning container → `src/reasoning/`
 
-| Content | Why it stays |
+| File | Rationale |
 |---|---|
-| `COPY dirs.sh, session.sh, routing.sh, package_diff.sh` | Change with every harness update — would invalidate harness base cache |
-| `COPY provider-entrypoint.sh` | Rare changes, but belongs near the other harness libs |
-| `COPY agent/skills/, agent/prompts/, agent/config/` | Project-specific workflow files |
-| `ENV AGENT_HOME`, `ENV PROVIDER_NAME` | Per-provider identity |
+| `provider-entrypoint.sh` | Runs inside reasoning container |
+| `agent/` (skills, prompts, config) | Agent workflow files — kept together until coding-agent seam is clear |
+| `Dockerfile.node` / `Dockerfile.python` | Harness bases — live alongside providers they serve |
+| `providers/<n>/` (all files) | Per-provider files stay nested under their provider, including host-run files (setup.sh, onboard.sh) — provider ownership is the organising principle |
 
-### What stays on the provider layer (`provider.Dockerfile`)
+### Capability container → `src/capability/`
 
-| Content | Why it stays |
+| File | Rationale |
 |---|---|
-| `ENTRYPOINT [...]` | References `provider-entrypoint.sh`, which is a fast-changing harness file. Must be in the same layer as the script. |
-| `USER agentuser` | Provider base needs root for apt/npm installs. Setting `USER` at the end of each provider base ensures entrypoint runs as agentuser without burdening base builds with root elevation switches. |
-| `COPY dirs.sh, session.sh, routing.sh, package_diff.sh` | Change with every harness update — would invalidate harness base cache |
-| `COPY provider-entrypoint.sh` | Rare changes, but belongs near the other harness libs |
-| `COPY agent/skills/, agent/prompts/, agent/config/` | Project-specific workflow files |
-| `ENV AGENT_HOME`, `ENV PROVIDER_NAME` | Per-provider identity |
+| `sandbox-entrypoint.sh` | Runs inside capability container |
+| `Dockerfile.sandbox` | Capability layer image definition |
 
-Final resolved metadata: `ENTRYPOINT` (from provider layer) + `USER agentuser` (from provider base) = entrypoint runs as agentuser. Docker composes final image metadata from the nearest ancestor for each field independently.
+### Build pipeline → `src/build/`
 
-### What happens to each provider
-
-| Provider | Current base | Current runtime | New base | Change |
-|---|---|---|---|---|
-| Pi | `node:22.22.3-slim` | `npm i @earendil-works/pi` | `node-harness` | Trivial — `FROM node-harness` instead of `FROM node:22.22.3-slim` |
-| Claude Code | `node:20-slim` | `npm i @anthropic-ai/claude-code` | `node-harness` | Node version bump 20→22. npm backwards-compat expected. |
-| OpenCode | `ubuntu:24.04` + apt npm | `npm i opencode-ai` | `node-harness` | OS swap Ubuntu→Node. Eliminates apt npm dependency. |
-| Hermes | `python:3.11-slim` | git clone + uv venv | `python-harness` | Trivial — `FROM python-harness` instead of `FROM python:3.11-slim` |
-| Sandbox | `ubuntu:24.04` | none | unchanged | Stays on `ubuntu:24.04`, gets its own UID Mapping edit separately |
-
-### UID Mapping impact
-
-| Before (Track C, Phase 2) | After this redesign |
+| File | Rationale |
 |---|---|
-| 5 Dockerfiles to edit | **3 Dockerfiles to edit** (node-harness, python-harness, sandbox) |
+| `docker-compose.yml` | Build-time config, consumed by compose pipeline |
+| `docker-compose.dry-run.yml` | Same |
+| `compose.sh` | Build pipeline code — paired with compose templates |
+| `containers.sh` | Build pipeline code — Docker lifecycle |
+
+### Host orchestration → `src/scripts/`
+
+All existing `scripts/` files plus host-side workflow files from `libs/`.
 
 ---
 
-## 2. Problems Found During Evaluation
+## 2. Assignment Table
 
-### Cross-distro binary extraction is fragile
+### `src/libs/` — cross-target libraries
 
-Option 3 (single Ubuntu base + `COPY --from` from official Node/Python images) was evaluated and rejected. The Debian-compiled runtimes embed hardcoded `sysconfig` paths and link against Debian's `glibc` version. When the host system calls native C extensions (cryptography, ML libraries), `.so` path mismatches cause silent runtime failures that are difficult to debug.
+| File | Current path |
+|---|---|
+| `dirs.sh` | `libs/dirs.sh` |
+| `session.sh` | `libs/session.sh` |
+| `routing.sh` | `libs/routing.sh` |
+| `diff.sh` | `libs/diff.sh` |
+| `snapshot.sh` | `libs/snapshot.sh` |
+| `package_branch.sh` | `libs/package_branch.sh` |
+| `package_diff.sh` | `libs/package_diff.sh` |
 
-### `libs/` is a grab bag with no clean seam
+### `src/reasoning/` — agent container
 
-The current `libs/` directory mixes host-side scripts, reasoning layer files, capability layer files, compose templates, and shared libs. Each Dockerfile or build context selects a subset of files via `COPY`. This means:
-
-- A new file added to `libs/` implicitly enters every build context unless explicitly excluded
-- A file's destination is determined by how `build_context_*()` copies it, not by where it lives
-- Adding a new harness variant (e.g. a deno-harness) means duplicating the selection logic
-
-**Resolution:** A structural cleanup (chore session) is required before the harness Dockerfiles land. Proposed target structure: `harness/reasoning/nodes/`, `harness/reasoning/lib/`, `harness/capability/`, `harness/workflow/`, `harness/compose/`, `harness/host/`. The migration is mechanical path substitution.
-
-### Shared script for UID logic adds traceability cost
-
-Extracting the UID collision handling into a shared script (`libs/create-agentuser.sh`) would reduplicate the `RUN` block. However, the collision pattern is stable enough that the additional file adds traceability cost (4 files to trace instead of 3) with no maintenance benefit. **Decision: keep inline.**
-
-### Resolved audit findings
-
-These gaps were identified during a design audit and resolved before implementation:
-
-| # | Finding | Resolution |
+| File | Current path | New path |
 |---|---|---|
-| 1 | `USER agentuser` not in harness base — entrypoint runs as root | `USER` stays at end of each provider base (needs root for apt/npm installs). `ENTRYPOINT` stays in provider layer (references the entrypoint script). Docker resolves metadata from nearest ancestor. |
-| 2 | OpenCode loses `ubuntu:24.04` packages on swap to `node:22.22.3-slim` | `git`, `curl`, `ca-certificates`, `rsync`, `fd-find`, `ripgrep` moved into both harness bases as universal deps. OpenCode does not need python3 (stale dep). |
-| 3 | `PATH` composition — harness base PATH overridden by provider base `ENV PATH` | Docker's `ENV $PATH` build-time interpolation appends, not replaces. Harness base PATH is preserved. No change needed. |
-| 4 | Hermes multi-stage: `WORKDIR` triple override | Remove `WORKDIR /opt/hermes` from `hermes-base`. `COPY --from=builder` uses absolute paths. Multi-stage stays (strips build tools from runtime). |
-| 5 | No harness build context function | `build_context_harness()` as a peer of `build_context_agent()` and `build_context_sandbox()`. See §5 Open Question #4. |
-| 6 | `node-harness` missing system packages | Same as #2 — `git`, `curl`, `ca-certificates`, `rsync`, `fd-find`, `ripgrep` installed in both harness bases. |
-| 7 | `package_branch.sh` in agent context but not consumed | Pre-existing; document in chore session scope for cleanup. |
-| 8 | No `harness_image_name()` function | Add to `containers.sh` alongside existing naming functions. |
-| 9 | Session A/B ordering ambiguity | Session A (chore) must come before Session B (Dockerfiles). Harness Dockerfiles land in their final location directly. |
-| 10 | Provider compose overlays `user:` conflict | No current overlay sets `user:`. Document convention in spec: "Only the base compose template sets `user:`." |
+| `provider-entrypoint.sh` | `libs/provider-entrypoint.sh` | `src/reasoning/provider-entrypoint.sh` |
+| `agent/` dir | `agent/` (root) | `src/reasoning/agent/` |
+| `Dockerfile.node` | (to create) | `src/reasoning/Dockerfile.node` |
+| `Dockerfile.python` | (to create) | `src/reasoning/Dockerfile.python` |
+| `providers/pi/base.Dockerfile` | `providers/pi/base.Dockerfile` | `src/reasoning/providers/pi/base.Dockerfile` |
+| `providers/pi/provider.Dockerfile` | `providers/pi/provider.Dockerfile` | `src/reasoning/providers/pi/provider.Dockerfile` |
+| `providers/pi/preflight.sh` | `providers/pi/preflight.sh` | `src/reasoning/providers/pi/preflight.sh` |
+| `providers/pi/setup.sh` | `providers/pi/setup.sh` | `src/reasoning/providers/pi/setup.sh` |
+| `providers/pi/onboard.sh` | `providers/pi/onboard.sh` | `src/reasoning/providers/pi/onboard.sh` |
+| `providers/pi/docker-compose.pi.yml` | `providers/pi/docker-compose.pi.yml` | `src/reasoning/providers/pi/docker-compose.pi.yml` |
+| `providers/pi/docker-compose.serve.yml` | `providers/pi/docker-compose.serve.yml` | `src/reasoning/providers/pi/docker-compose.serve.yml` |
+| `providers/pi/config/` | `providers/pi/config/` | `src/reasoning/providers/pi/config/` |
+| `providers/pi/onboard-readme.md` | `providers/pi/onboard-readme.md` | `src/reasoning/providers/pi/onboard-readme.md` |
+| `providers/claude-code/base.Dockerfile` | — | `src/reasoning/providers/claude-code/base.Dockerfile` |
+| `providers/claude-code/provider.Dockerfile` | — | `src/reasoning/providers/claude-code/provider.Dockerfile` |
+| `providers/claude-code/setup.sh` | — | `src/reasoning/providers/claude-code/setup.sh` |
+| `providers/claude-code/docker-compose.claude-code.yml` | — | `src/reasoning/providers/claude-code/docker-compose.claude-code.yml` |
+| `providers/claude-code/docker-compose.serve.yml` | — | `src/reasoning/providers/claude-code/docker-compose.serve.yml` |
+| `providers/claude-code/AGENTS.md` | — | `src/reasoning/providers/claude-code/AGENTS.md` |
+| `providers/hermes/base.Dockerfile` | — | `src/reasoning/providers/hermes/base.Dockerfile` |
+| `providers/hermes/provider.Dockerfile` | — | `src/reasoning/providers/hermes/provider.Dockerfile` |
+| `providers/hermes/docker-compose.hermes.yml` | — | `src/reasoning/providers/hermes/docker-compose.hermes.yml` |
+| `providers/hermes/docker-compose.serve.yml` | — | `src/reasoning/providers/hermes/docker-compose.serve.yml` |
+| `providers/hermes/config/` | — | `src/reasoning/providers/hermes/config/` |
+| `providers/hermes/quickstart.md` | — | `src/reasoning/providers/hermes/quickstart.md` |
+| `providers/hermes/AGENTS.md` | — | `src/reasoning/providers/hermes/AGENTS.md` |
+| `providers/opencode/base.Dockerfile` | — | `src/reasoning/providers/opencode/base.Dockerfile` |
+| `providers/opencode/provider.Dockerfile` | — | `src/reasoning/providers/opencode/provider.Dockerfile` |
+| `providers/opencode/docker-compose.serve.yml` | — | `src/reasoning/providers/opencode/docker-compose.serve.yml` |
+| `providers/opencode/config/` | — | `src/reasoning/providers/opencode/config/` |
+| `providers/opencode/quickstart.md` | — | `src/reasoning/providers/opencode/quickstart.md` |
+| `providers/opencode/AGENTS.md` | — | `src/reasoning/providers/opencode/AGENTS.md` |
+| `providers/claude-ai/AGENTS.md` | — | `src/reasoning/providers/claude-ai/AGENTS.md` | Minimal provider — single AGENTS.md only |
 
----
+### `src/capability/` — sandbox container
 
-## 3. Existing Design (What We Start From)
-
-### Current Dockerfile tree
-
-```
-providers/<n>/
-├── base.Dockerfile          ← FROM node:22-slim (or python:3.11-slim, ubuntu:24.04)
-│   - apt packages (git, curl, rsync, fd-find, ripgrep)
-│   - runtime install (npm install -g agent, git clone + uv venv, etc.)
-│   - ends as root
-│
-├── provider.Dockerfile      ← FROM <n>-base
-│   - COPY harness libs (dirs.sh, session.sh, routing.sh, package_diff.sh)
-│   - COPY provider-entrypoint.sh
-│   - COPY provider-preflight.sh (if any)
-│   - RUN useradd -m -u 1001 agentuser
-│   - USER agentuser
-│   - mkdir -p $AGENT_HOME $WORKSPACE_DIR
-│   - chown -R agentuser:agentuser ...
-│   - WORKDIR, HEALTHCHECK, ENV PATH, ENTRYPOINT
-│
-libs/sandbox.Dockerfile      ← ubuntu:24.04
-│   - useradd -m -u 1001 agentuser
-│   - sandbox-specific libs + entrypoint
-```
-
-### Current build pipeline
-
-`libs/containers.sh` → `build_agent()`:
-1. Build `base.Dockerfile` → tag `<provider>-base` (skipped if exists)
-2. Build `provider.Dockerfile` → tag `<provider>-agent-<project>` (always rebuilt)
-
-`build_context_agent()` assembles a temp directory with:
-- Harness libs from `libs/` (dirs.sh, provider-entrypoint.sh, package_diff.sh, package_branch.sh, session.sh, routing.sh)
-- Workflow files from `agent/skills/`, `agent/prompts/`
-- Provider config from `providers/<n>/config/`
-- Provider preflight from `providers/<n>/preflight.sh`
-
-### Current libs/ contents
-
-| File | Used by | Category |
-|---|---|---|
-| `containers.sh` | `scripts/run_agent.sh`, `scripts/start_agent.sh` | Host-side |
-| `compose.sh` | `scripts/run_agent.sh` | Host-side |
-| `draft_workflow.sh` | `scripts/agent-sandbox.sh` | Host-side |
-| `diff_workflow.sh` | `scripts/agent-sandbox.sh` | Host-side |
-| `interactive_session_select.sh` | `scripts/agent-sandbox.sh` | Host-side |
-| `provider-entrypoint.sh` | `build_context_agent()` → reasoning layer | Reasoning |
-| `dirs.sh` | Both build contexts → both layers | Shared lib |
-| `session.sh` | Both build contexts → both layers | Shared lib |
-| `routing.sh` | Both build contexts → both layers | Shared lib |
-| `sandbox-entrypoint.sh` | `build_context_sandbox()` → capability | Capability |
-| `snapshot.sh` | `build_context_sandbox()` → capability | Capability |
-| `diff.sh` | `build_context_sandbox()` → capability | Capability |
-| `package_branch.sh` | Both build contexts | Capability |
-| `docker-compose.yml` | `compose.sh` (template) | Compose |
-| `docker-compose.dry-run.yml` | `compose.sh` (template) | Compose |
-| `sandbox.Dockerfile` | `build_sandbox()` | Capability |
-| `_templates/` | `scripts/onboard.sh` | Host-side |
-
----
-
-## 4. Unresolved Issues
-
-| Issue | Impact | Blocking? |
-|---|---|---|
-| `libs/` structural cleanup | The harness Dockerfiles need a clean home. If they land in `libs/`, they inherit the grab bag. If they land in a new `harness/` dir, existing files are split across two conventions until the chore session. | **Not blocking design** — chore session resolves this. |
-| `scripts/` vs `libs/` conflation | Some files in `scripts/` are end-to-end entrypoints, some in `libs/` are also entrypoints (`compose.sh`). Line between them is blurry. | Not blocking — separate cleanup concern. |
-
----
-
-## 5. Design Decisions
-
-These decisions were reached during the design audit and are ready for implementation:
-
-| # | Decision | Rationale |
-|---|---|---|
-| 1 | **Build pipeline:** `build_agent()` explicitly builds `harness-node` then `harness-python` before each provider's base, via a `build_harness()` helper function. Uses same cache-on-exists pattern as existing base/provider split. | Simpler than `FROM`-based on-missing resolution. Build pipeline already has the infrastructure for caching checks. |
-| 2 | **Provider base vs single file:** keep `base.Dockerfile` separate from `provider.Dockerfile`. | Changing this is mechanical and orthogonal to the layer redesign. Defer to a later cleanup if warranted. |
-| 3 | **Image tagging:** provider-agnostic (`harness-node`, `harness-python`). | Matches current pattern where `pi-base` is project-agnostic. Provider-agnostic means a `--refresh` on one project rebuilds the harness for all. |
-| 4 | **Build context:** new `build_context_harness()` function as a peer of `build_context_agent()` and `build_context_sandbox()`. | Harness base has no provider files, so it gets a minimal context. A flag on `build_context_agent()` would add complexity to a shared function for no benefit. |
-
-### Deferred to chore session
-
-| Item | Concern |
+| File | Current path |
 |---|---|
-| Directory structure (`harness/` vs `libs/` vs `scripts/`) | The harness Dockerfiles need a clean home. Resolved by the structural chore session — see §4 Unresolved Issues. |
+| `sandbox-entrypoint.sh` | `libs/sandbox-entrypoint.sh` |
+| `Dockerfile.sandbox` | `libs/sandbox.Dockerfile` |
+
+### `src/build/` — build pipeline
+
+| File | Current path |
+|---|---|
+| `docker-compose.yml` | `libs/docker-compose.yml` |
+| `docker-compose.dry-run.yml` | `libs/docker-compose.dry-run.yml` |
+| `compose.sh` | `libs/compose.sh` |
+| `containers.sh` | `libs/containers.sh` |
+
+### `src/scripts/` — host-level orchestration
+
+| File | Current path |
+|---|---|
+| `agent-sandbox.sh` | `scripts/agent-sandbox.sh` |
+| `start_agent.sh` | `scripts/start_agent.sh` |
+| `run_agent.sh` | `scripts/run_agent.sh` |
+| `stop.sh` | `scripts/stop.sh` |
+| `onboard.sh` | `scripts/onboard.sh` |
+| `checkpoint.sh` | `scripts/checkpoint.sh` |
+| `run_tests.sh` | `scripts/run_tests.sh` |
+| `check_test_coverage.sh` | `scripts/check_test_coverage.sh` |
+| `dry_run_reasoning.sh` | `scripts/dry_run_reasoning.sh` |
+| `dry_run_capability.sh` | `scripts/dry_run_capability.sh` |
+| `draft_workflow.sh` | `libs/draft_workflow.sh` |
+| `diff_workflow.sh` | `libs/diff_workflow.sh` |
+| `interactive_session_select.sh` | `libs/interactive_session_select.sh` |
+| `templates/Makefile.template` | `libs/_templates/Makefile.template` |
+| `templates/PULL_REQUEST.md.template` | `libs/_templates/PULL_REQUEST.md.template` |
+| `templates/TASK.md.template` | `libs/_templates/TASK.md.template` |
+| `templates/AGENTS.template.md` | `providers/AGENTS.template.md` | `src/scripts/templates/AGENTS.template.md` |
+
+### Root level
+
+| Path | Action |
+|---|---|
+| `devlog/` | Move from `docs/devlog/` to root |
+| `docs/` | Stays (architecture, concepts, operations) |
+| `tests/` | Stays |
+| `tests/eval/` | Move from `eval/` to `tests/eval/` |
+| `Makefile` | Stays at root |
+| `workflow/` | Stays at root (vault workflow, VSCode config) |
+| `.devcontainer/` | Stays at root (development infra, like `.gitignore`) |
+| `.gitignore` | Stays at root |
+| `AGENTS.md` | Stays at root (project-level) |
+| `LICENSE` | Stays at root |
+| `readme.md` | Stays at root |
 
 ---
 
-## 6. Implementation Sequence
+## 3. Implementation Sequence
 
 ```
-Session A: Chore (structural cleanup)
-  - Move files from libs/ → harness/ tree
-  - Update all source/COPY/path references
+Session 1: Structural cleanup
+  - Create new directory tree (src/libs/, src/reasoning/, src/capability/, src/scripts/, src/build/)
+  - Move files per assignment table
+  - Update all source/exec/COPY path references
+  - Update build_context_* functions in containers.sh
+  - Update mock_repo_fixtures.sh test fixture
+  - Migrate all test path references
+  - Move devlog/ to root
+  - Move eval/ to tests/eval/
   - Tests pass, no logic changes
+  - libs/ and old providers/ directories removed (or left empty with README)
 
-Session B: Dockerfile refactoring
-  - Create harness/reasoning/nodes/node.Dockerfile
-  - Create harness/reasoning/nodes/python.Dockerfile
-  - Trim 4 provider base.Dockerfile files
-  - Trim 4 provider provider.Dockerfile files
-  - Update build_context_agent() for harness base
-  - Update build_agent() for three-tier build
-  - Tests pass, UID Mapping not yet active
+Session 2: Dockerfile layer refactoring
+  - Create src/reasoning/Dockerfile.node, Dockerfile.python
+  - Trim per-provider base Dockerfiles
+  - Update build pipeline for three-tier build
+  - Tests pass
 
-Session C: UID Mapping Phase 1 (build pipeline threading)
-  - libs/build.sh: build_sandbox/agent accept --uid/--gid
-  - scripts/start_agent.sh: export HOST_UID/HOST_GID
-  - No behaviour change
-
-Session D: UID Mapping Phase 2 (Dockerfiles + compose)
-  - Edit node-harness, python-harness, sandbox Dockerfile with ARGs, collision, chown
-  - Add user: to compose template
-  - Both UID Mapping and ACL paths functional
-
-Session E: UID Mapping Phase 3 (ACL removal, after verification)
-  - Remove setfacl from onboard.sh
-  - Remove ACL test guards
-  - Documentation updates
+Session 3+: UID Mapping (per M2.7 Track C)
 ```
+
+---
+
+## 4. Reference: Current File Tree
+
+*For the implementer. Describes the starting state before any changes.*
+
+### Current `libs/` contents
+
+| File | Category | Consumed by |
+|---|---|---|
+| `containers.sh` | Host-side | scripts/run_agent.sh, scripts/start_agent.sh |
+| `compose.sh` | Host-side | scripts/run_agent.sh |
+| `draft_workflow.sh` | Host-side | scripts/agent-sandbox.sh |
+| `diff_workflow.sh` | Host-side | scripts/agent-sandbox.sh |
+| `interactive_session_select.sh` | Host-side | scripts/agent-sandbox.sh |
+| `provider-entrypoint.sh` | Reasoning | build_context_agent → reasoning image |
+| `dirs.sh` | Shared lib | Both build contexts → both images |
+| `session.sh` | Shared lib | Both build contexts → both images |
+| `routing.sh` | Shared lib | Both build contexts → both images |
+| `sandbox-entrypoint.sh` | Capability | build_context_sandbox → sandbox image |
+| `snapshot.sh` | Capability | build_context_sandbox → sandbox image |
+| `diff.sh` | Capability | build_context_sandbox → sandbox image |
+| `package_branch.sh` | Capability | Both build contexts → both images |
+| `package_diff.sh` | Reasoning | build_context_agent → reasoning image |
+| `docker-compose.yml` | Compose | compose.sh template |
+| `docker-compose.dry-run.yml` | Compose | compose.sh template |
+| `sandbox.Dockerfile` | Capability | build_sandbox() |
+| `_templates/` | Onboarding | scripts/onboard.sh |
+
+### Current `providers/` tree
+
+```
+providers/
+├── pi/            base.Dockerfile, provider.Dockerfile, preflight.sh,
+│                    setup.sh, onboard.sh, AGENTS.md, config/,
+│                    docker-compose.pi.yml, docker-compose.serve.yml
+├── claude-code/   base.Dockerfile, provider.Dockerfile, setup.sh,
+│                    AGENTS.md, docker-compose.*.yml
+├── hermes/        base.Dockerfile, provider.Dockerfile, config/,
+│                    AGENTS.md, docker-compose.*.yml, quickstart.md
+├── opencode/      base.Dockerfile, provider.Dockerfile, config/,
+│                    AGENTS.md, docker-compose.*.yml, quickstart.md
+└── claude-ai/     AGENTS.md only
+```
+
+### Current `scripts/` tree
+
+```
+scripts/
+├── agent-sandbox.sh         CLI entrypoint — dispatches to scripts/
+├── start_agent.sh           Session startup — preflight, snapshot, compose
+├── run_agent.sh              Container lifecycle — compose, up/down
+├── stop.sh                  Clean teardown
+├── onboard.sh               Project onboarding
+├── checkpoint.sh            Checkpoint tag management
+├── run_tests.sh              Test runner
+├── check_test_coverage.sh    Coverage checker
+├── dry_run_reasoning.sh      Reasoning layer dry-run
+└── dry_run_capability.sh     Capability layer dry-run
+```
+
+---
+
+## 5. Reference: Dependency Chain
+
+*For the implementer. Shows which files `source` which others — needed to validate path substitutions.*
+
+| File | Sources |
+|---|---|
+| `libs/routing.sh` | `session.sh`, `dirs.sh` |
+| `libs/diff.sh` | `session.sh`, `routing.sh` |
+| `libs/draft_workflow.sh` | `session.sh`, `routing.sh`, `diff.sh` |
+| `libs/diff_workflow.sh` | `session.sh`, `diff.sh` |
+| `libs/package_branch.sh` | `session.sh`, `diff.sh`, `routing.sh` |
+| `libs/package_diff.sh` | `session.sh`, `diff.sh`, `routing.sh` |
+| `libs/interactive_session_select.sh` | `routing.sh` |
+| `libs/sandbox-entrypoint.sh` | `dirs.sh`, `session.sh`, `snapshot.sh`, `diff.sh`, `routing.sh` (all from `/opt/sandbox/lib/`) |
+| `libs/provider-entrypoint.sh` | (none — it is sourced by the entrypoint) |
+| `scripts/agent-sandbox.sh` | `containers.sh`, `draft_workflow.sh`, `diff_workflow.sh`, `routing.sh` (host paths) + exec `package_diff.sh`, `package_branch.sh` |
+| `scripts/run_agent.sh` | `containers.sh`, `compose.sh` |
+| `scripts/start_agent.sh` | `containers.sh`, `snapshot.sh` |
+| `scripts/dry_run_reasoning.sh` | `session.sh`, `dirs.sh` (from `/opt/sandbox/lib/`) |
+| `scripts/dry_run_capability.sh` | `session.sh`, `diff.sh`, `dirs.sh` (from `/opt/sandbox/lib/`) |
