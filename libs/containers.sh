@@ -69,10 +69,11 @@ build_context_sandbox() {
 
   _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh"     "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/snapshot.sh"                "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/snapshot.sh"                "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1 || return 1
 
   # docs/
@@ -99,12 +100,13 @@ build_context_agent() {
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
   # Harness-owned files - required for all providers.
-  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
   _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
+  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1
   # docs/
   mkdir -p "$context_dir/docs" || return 1
   cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
