@@ -8,9 +8,9 @@
 
 set -euo pipefail
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/routing.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/diff.sh"
+source "$AGENT_SANDBOX_REPO/libs/session.sh"
+source "$AGENT_SANDBOX_REPO/libs/routing.sh"
+source "$AGENT_SANDBOX_REPO/libs/diff.sh"
 
 # =============================================================================
 # Internal helpers (absorbed from libs/draft.sh)

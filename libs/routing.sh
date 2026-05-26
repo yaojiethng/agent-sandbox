@@ -30,10 +30,9 @@
 
 set -euo pipefail
 
-SESSION_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session.sh"
-source "$SESSION_LIB"
-DIRS_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dirs.sh"
-source "$DIRS_LIB"
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/session.sh"
+source "$_self_dir/dirs.sh"
 
 # _resolve_path SANDBOX_DIR KEY
 # Tries SESSION_STATE first, falls back to dirs_resolve.

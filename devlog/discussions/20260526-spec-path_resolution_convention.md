@@ -205,6 +205,31 @@ Aside from source path updates, the libs files being moved need the following in
 
 ---
 
+## Control Flow Constraints
+
+The dependency graph must follow these directional rules:
+
+```
+scripts/  ──→ libs/shared/        (host scripts source shared libs)
+scripts/  ──→ scripts/            (host scripts may source other host
+            only if the target is    scripts if the target is logically
+            logically a library)      a library, e.g. checkpoint.sh)
+libs/*    ──→ libs/shared/ only   (libs never source scripts)
+tests/*   ──→ anything             (tests can source everything)
+☐ nothing ──→ tests/              (nothing sources tests)
+containers ──→ libs/shared/ only  (entrypoints only source shared libs)
+```
+
+### Current violations
+
+| Violation | Type | Fix |
+|---|---|---|
+| `checkpoint.sh` lives in `scripts/` but is a library (defines `worktree_id_derive()`, sourced by `start_agent.sh`) | Misplaced file | Move to `libs/host/checkpoint.sh` (or keep but document as exception) |
+
+No structural violations exist — the graph already respects the directional rules. The only issue is file placement (`checkpoint.sh` in wrong directory).
+
+---
+
 ## Findings
 
 | Finding | Impact |

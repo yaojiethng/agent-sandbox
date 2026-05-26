@@ -34,10 +34,10 @@
 #                     Default: "snapshot".
 #   --baseline=<sha>  Explicit baseline SHA for commit history.
 
-_PB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_PB_SCRIPT_DIR/session.sh"
-source "$_PB_SCRIPT_DIR/diff.sh"
-source "$_PB_SCRIPT_DIR/routing.sh"
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/session.sh"
+source "$_self_dir/diff.sh"
+source "$_self_dir/routing.sh"
 
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

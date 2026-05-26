@@ -15,7 +15,8 @@ unset SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
 unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/routing.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/libs/routing.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"

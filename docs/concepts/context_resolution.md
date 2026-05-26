@@ -104,18 +104,18 @@ source "$REPO_ROOT/src/libs/diff.sh"
 Files deployed to both the host filesystem and container images cannot assume any host-only or container-only variable exists. They determine their context dynamically by computing their own directory at source time:
 
 ```bash
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_SCRIPT_DIR/session-state.sh"
-source "$_SCRIPT_DIR/routing.sh"
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/session-state.sh"
+source "$_self_dir/routing.sh"
 ```
 
 This works in both contexts because `BASH_SOURCE[0]` resolves to the file's actual location:
-| Context | File location | `_SCRIPT_DIR` resolves to |
+| Context | File location | `_self_dir` resolves to |
 |---|---|---|
 | Host | `$AGENT_SANDBOX_REPO/src/libs/diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/` |
 | Container | `/opt/sandbox/lib/diff.sh` | `/opt/sandbox/lib/` |
 
-All ambiguous-context files use the canonical variable name `_SCRIPT_DIR`. This was standardised from six different naming conventions (`_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)`).
+All ambiguous-context files use the canonical variable name `_self_dir`. This was standardised from six different naming conventions (`_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)`).
 
 **Files in this layer:** `session-state.sh`, `routing.sh`, `diff.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh`
 
@@ -139,11 +139,11 @@ Context is not inherited — each file declares how it resolves its own location
 ```
 agent-sandbox.sh ── sets $AGENT_SANDBOX_REPO
   └─ sources ── workflow/draft.sh ── uses $AGENT_SANDBOX_REPO
-                   └─ sources ── src/libs/session-state.sh ── uses _SCRIPT_DIR (self-resolution)
-                                  └─ sources ── src/libs/routing.sh ── uses _SCRIPT_DIR
+                   └─ sources ── src/libs/session-state.sh ── uses _self_dir (self-resolution)
+                                  └─ sources ── src/libs/routing.sh ── uses _self_dir
 
 sandbox-entrypoint.sh ── hardcoded /opt/sandbox/lib/
-  └─ sources ── /opt/sandbox/lib/diff.sh ── uses _SCRIPT_DIR (→ /opt/sandbox/lib/)
+  └─ sources ── /opt/sandbox/lib/diff.sh ── uses _self_dir (→ /opt/sandbox/lib/)
 ```
 
 At the seam between host context and ambiguous-context libs, the host's variable (`$AGENT_SANDBOX_REPO`) provides the path to the ambiguous-context file, but once that file loads, it resolves its own siblings via self-resolution. The same ambiguous-context file, when loaded inside a container via a hardcoded path, resolves its siblings identically — the mechanism is the same, only the starting path differs.
@@ -158,10 +158,31 @@ At the seam between host context and ambiguous-context libs, the host's variable
 | Host — workflow libs | `$AGENT_SANDBOX_REPO` (inherited) | Repo-root-relative paths | `draft.sh`, `confirm.sh`, `reject.sh`, `apply.sh`, `interactive.sh`, `guards.sh` |
 | Host — repo scripts | `$REPO_ROOT` (derived) | Repo-root-relative paths | `start_agent.sh`, `run_agent.sh`, `onboard.sh` |
 | Host — tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
-| Ambiguous | `_SCRIPT_DIR` (self-resolution) | Sibling-relative paths | `session-state.sh`, `routing.sh`, `diff.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh` |
+| Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session-state.sh`, `routing.sh`, `diff.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
 
 ---
+
+## Control Flow Constraints
+
+The dependency graph follows directional rules that enforce separation between layers:
+
+```
+scripts/  ──→ libs/shared/          host scripts source shared libs
+scripts/  ──→ scripts/              may source other scripts if logically
+                                      a library (e.g. checkpoint.sh)
+libs/*    ──→ libs/shared/ only    libs never source scripts
+tests/*   ──→ anything              tests can source everything
+☐ nothing ──→ tests/               nothing sources tests
+containers ──→ libs/shared/ only   entrypoints only source shared libs
+```
+
+### Boundary rules
+
+- **libs/ → scripts/**: Forbidden. A library must not depend on a host script. If a script contains reusable functions, it belongs in `libs/`, not `scripts/`.
+- **scripts/ → scripts/**: Allowed only when the target script is logically a library (defines functions, has no `main()` entry point). `checkpoint.sh` is the canonical example — it lives in `scripts/` but defines `worktree_id_derive()` and is sourced by `start_agent.sh`.
+- **tests/ → anything**: Tests import whatever they need to test. They are not imported by anything else.
+- **Container → Container only**: Entrypoints inside containers source only from their own `libs/` directory hierarchy (`/opt/sandbox/lib/`).
 
 ## References
 

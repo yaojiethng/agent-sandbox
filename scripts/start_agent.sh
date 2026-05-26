@@ -174,7 +174,7 @@ fi
 # -------------------------
 # Source checkpoint library
 # -------------------------
-source "$REPO_ROOT/scripts/checkpoint.sh"
+source "$REPO_ROOT/libs/checkpoint.sh"
 
 # -------------------------
 # Session timestamp (single canonical definition)

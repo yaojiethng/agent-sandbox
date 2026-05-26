@@ -11,7 +11,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/interactive_session_select.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENT_SANDBOX_REPO="$REPO_ROOT"
+source "$REPO_ROOT/libs/interactive_session_select.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
 

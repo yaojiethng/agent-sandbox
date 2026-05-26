@@ -22,8 +22,7 @@
 set -euo pipefail
 
 # Source routing.sh for dirs_resolve
-_ISS_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_ISS_SCRIPT_DIR/routing.sh"
+source "$AGENT_SANDBOX_REPO/libs/routing.sh"
 
 # Max entries to display in session picker. Hardcoded — change here if needed.
 INTERACTIVE_MAX_ENTRIES=10

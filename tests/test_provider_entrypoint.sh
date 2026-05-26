@@ -17,7 +17,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENTRYPOINT="${SCRIPT_DIR}/../libs/provider-entrypoint.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENTRYPOINT="$REPO_ROOT/libs/provider-entrypoint.sh"
 
 source "$SCRIPT_DIR/libs/test_common.sh"
 

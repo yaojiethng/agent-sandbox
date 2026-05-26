@@ -25,9 +25,9 @@
 
 # -------------------------
 # Source session.sh for session_state_read; source routing.sh for path helpers
-_DIFF_SH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_DIFF_SH_DIR/session.sh"
-source "$_DIFF_SH_DIR/routing.sh"
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/session.sh"
+source "$_self_dir/routing.sh"
 
 # -------------------------
 # strip_index_lines

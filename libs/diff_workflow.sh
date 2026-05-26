@@ -114,6 +114,5 @@ apply_run() {
 }
 
 # Source session.sh for shared helpers
-_DW_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_DW_SCRIPT_DIR/session.sh"
-source "$_DW_SCRIPT_DIR/diff.sh"
+source "$AGENT_SANDBOX_REPO/libs/session.sh"
+source "$AGENT_SANDBOX_REPO/libs/diff.sh"
