@@ -39,7 +39,7 @@ COPY agent/prompts/ /opt/workflow/agent/prompts/
 # -------------------------
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.
 RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
-      useradd -m -u ${HOST_UID} -s /bin/bash agentuser; \
+      useradd -l -m -u ${HOST_UID} -s /bin/bash agentuser; \
     elif [ "$(id -nu ${HOST_UID})" != "agentuser" ]; then \
       existing_user="$(id -nu ${HOST_UID})"; \
       existing_group="$(id -ng ${HOST_UID})"; \
