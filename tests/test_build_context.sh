@@ -140,7 +140,7 @@ context=$(build_context_sandbox "$REPO")
 
 assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
 assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
-assert_file_set "sandbox: correct file set (sandbox build)" "$context" "diff.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh snapshot.sh"
+assert_file_set "sandbox: correct file set (sandbox build)" "$context" "diff.sh diff_export.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh snapshot.sh"
 
 cleanup "$context"
 cleanup "$REPO"
@@ -154,7 +154,7 @@ echo "-- File contents: agent image type --"
 REPO=$(make_mock_repo)
 context=$(build_context_agent "$REPO" test-provider)
 
-assert_file_set "agent: correct file set (agent build)" "$context" "diff.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh"
+assert_file_set "agent: correct file set (agent build)" "$context" "diff.sh diff_export.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh"
 
 cleanup "$context"
 cleanup "$REPO"

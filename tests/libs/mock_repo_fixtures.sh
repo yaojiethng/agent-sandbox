@@ -28,8 +28,9 @@ make_mock_repo() {
   dir=$(mktemp -d /tmp/XXXXXX)
 
   mkdir -p "$dir/src/libs"
-  echo "dirs-content"        > "$dir/src/libs/dirs.sh"
-  echo "diff-content"       > "$dir/src/libs/diff.sh"
+  echo "dirs-content"           > "$dir/src/libs/dirs.sh"
+  echo "diff-content"          > "$dir/src/libs/diff.sh"
+  echo "diff_export-content"   > "$dir/src/libs/diff_export.sh"
   echo "package_branch-content" > "$dir/src/libs/package_branch.sh"
   echo "package_diff-content"   > "$dir/src/libs/package_diff.sh"
   echo "session_state-content"  > "$dir/src/libs/session_state.sh"
