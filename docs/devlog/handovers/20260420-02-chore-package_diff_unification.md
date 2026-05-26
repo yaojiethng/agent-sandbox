@@ -7,11 +7,11 @@
 
 ## Objective
 
-Complete the `package-diff` unification chore: validate `libs/package-diff.sh` behaviour and confirm `make refresh` + git alias registration work end-to-end. Note: `diff_package` extraction into `libs/diff.sh` was dropped — `package-diff.sh` is standalone; no shared logic with `diff.sh` warrants extraction.
+Complete the `package-diff` unification chore: validate `libs/package_diff.sh` behaviour and confirm `make refresh` + git alias registration work end-to-end. Note: `diff_package` extraction into `libs/diff.sh` was dropped — `package_diff.sh` is standalone; no shared logic with `diff.sh` warrants extraction.
 
 ## Scope
 
-- [x] Validate `libs/package-diff.sh` — baseline fallback chain, `--name` flag, label derivation, file enumeration, host enforcement
+- [x] Validate `libs/package_diff.sh` — baseline fallback chain, `--name` flag, label derivation, file enumeration, host enforcement
 - [x] Confirm `scripts/onboard.sh` git alias registration path is correct
 - [x] Confirm `Makefile.template` `make refresh` target is correct
 
@@ -21,14 +21,14 @@ Explicitly out of scope: Change 3 implementation, any M2.3 architecture changes.
 
 | Item | From handover |
 |---|---|
-| Validate `package-diff.sh` behaviour | `20260420-01-plan-m2_3_apply_workflow_design` |
+| Validate `package_diff.sh` behaviour | `20260420-01-plan-m2_3_apply_workflow_design` |
 
 ## Acceptance criteria
 
-- [x] `package-diff.sh` run inside container with no `--baseline` flag resolves `BASELINE_SHA` from env var, then `.git/BASELINE_SHA`, then first repo commit
-- [x] `package-diff.sh` run on host with no `--baseline` flag exits with clear error
-- [x] `package-diff.sh --name=<n>` produces output directory with timestamp prefix `<timestamp>-<n>`
-- [x] `package-diff.sh --baseline=HEAD` produces `changes.diff` and `changed-files/`
+- [x] `package_diff.sh` run inside container with no `--baseline` flag resolves `BASELINE_SHA` from env var, then `.git/BASELINE_SHA`, then first repo commit
+- [x] `package_diff.sh` run on host with no `--baseline` flag exits with clear error
+- [x] `package_diff.sh --name=<n>` produces output directory with timestamp prefix `<timestamp>-<n>`
+- [x] `package_diff.sh --baseline=HEAD` produces `changes.diff` and `changed-files/`
 - [x] `make refresh` invokes `agent-sandbox onboard --refresh` with `--project=$(PROJECT_DIR)` — git alias re-registered
 - [x] `agent-sandbox onboard` registers `git alias.package-diff` in `PROJECT_DIR/.git/config`
 
@@ -36,7 +36,7 @@ Explicitly out of scope: Change 3 implementation, any M2.3 architecture changes.
 
 | File | Why in scope |
 |---|---|
-| [`libs/package-diff.sh`](libs/package-diff.sh) | Validated — baseline fallback, `--name` flag, host enforcement |
+| [`libs/package_diff.sh`](libs/package_diff.sh) | Validated — baseline fallback, `--name` flag, host enforcement |
 | [`scripts/onboard.sh`](scripts/onboard.sh) | Confirmed — alias registration correct |
 | [`libs/Makefile.template`](libs/Makefile.template) | Confirmed — `make refresh` passes `--project` |
 | [`.skills/package-diff.md`](.skills/package-diff.md) | Confirmed — invocation matches finalised script |
@@ -45,13 +45,13 @@ Explicitly out of scope: Change 3 implementation, any M2.3 architecture changes.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| `diff_package` extraction dropped | `package-diff.sh` operates on uncommitted state; `diff.sh` operates post-commit on sandbox. Different contexts, no shared logic warrants extraction | This handover |
+| `diff_package` extraction dropped | `package_diff.sh` operates on uncommitted state; `diff.sh` operates post-commit on sandbox. Different contexts, no shared logic warrants extraction | This handover |
 
 ## Completed this session
 
 | File | Change |
 |---|---|
-| `libs/package-diff.sh` | Validated — `--name` flag, baseline fallback chain, host enforcement |
+| `libs/package_diff.sh` | Validated — `--name` flag, baseline fallback chain, host enforcement |
 | `scripts/onboard.sh` | Validated — alias registration, `.env` fallback for refresh path |
 | `libs/Makefile.template` | Validated — `make refresh` with `--project=$(PROJECT_DIR)` |
 | `.skills/package-diff.md` | Validated — `--name` guidance, fallback chain documented |
@@ -83,7 +83,7 @@ Context handover: [`20260420-01-plan-m2_3_apply_workflow_design.md`](handovers/2
 - `design_apply_workflow_and_baseline_advancement.md`
 
 ---
-[CORRECTION — 2026-04-20]: Post-close fixes to `libs/package-diff.sh` and `.skills/package-diff.md` applied after this session closed.
+[CORRECTION — 2026-04-20]: Post-close fixes to `libs/package_diff.sh` and `.skills/package-diff.md` applied after this session closed.
 
 `--label` flag dropped. `--name` is now the sole labelling flag; output directory is always `<timestamp>-<name>`. This resolves: `NAME_ARG` unbound variable (was crashing under `set -u` inside the container), `--label`/`--name` semantic confusion, missing `--name` parser case. Baseline fallback chain extended with third level: first repo commit via `git rev-list --max-parents=0 HEAD`, applied inside container context only. `head -n -1` replaced with portable `sed '$d'`. Baseline validation tightened to `^{commit}`. `--help` added. Skill doc updated to match: alias-vs-direct-invocation guidance clarified (alias is host-only; container uses direct invocation), `--label` references removed, timestamp behaviour documented.
 

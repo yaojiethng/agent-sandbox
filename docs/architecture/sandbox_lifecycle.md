@@ -6,7 +6,7 @@ The reasoning layer lifecycle — provider config copy-in, input channels, copy-
 
 The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
 
-All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
+All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff_export.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
 
 ---
 

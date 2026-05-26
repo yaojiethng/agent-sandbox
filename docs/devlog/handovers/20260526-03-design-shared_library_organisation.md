@@ -56,8 +56,8 @@ Not yet defined.
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | Two-dimensional grouping: deployment target × lifecycle stage | Build-time files separate from runtime; host-only separate from container-deployed | Design doc §Principles |
-| Packaging pipeline symmetrical | diff.sh, package-branch.sh, package-diff.sh all deployed to both containers (fix current asymmetry) | Design doc §Deployment matrix |
-| session-state.sh separate from routing.sh | K/V store orthogonal to path layout conventions | Design doc §Key decisions 2 |
+| Packaging pipeline symmetrical | diff.sh, package_branch.sh, package_diff.sh all deployed to both containers (fix current asymmetry) | Design doc §Deployment matrix |
+| session_state.sh separate from routing.sh | K/V store orthogonal to path layout conventions | Design doc §Key decisions 2 |
 | draft_workflow.sh → 3 files (draft/confirm/reject) | Each workflow stage is independent with separate state | Design doc §Key decisions 3 |
 | containers.sh → build/image.sh + build/context.sh + libs/host/build.sh | Image naming (pure), context prep (file ops), and build orchestration are distinct responsibilities | Design doc §Key decisions 4 |
 | Dash convention for multi-word filenames | Consistent with docker-compose.yml | Design doc §Key decisions 5 |
@@ -69,7 +69,7 @@ Not yet defined.
 | Finding | Type | Impact | Triaged to |
 |---|---|---|---|
 | Agent does not pause at Gates 1 and 2 to ask for operator approval — tends to jump the gun and close prematurely | Process | Must explicitly wait for operator release before implementing, closing, or advancing to the next step | This session |
-| session_state is NOT container-only — used by package_branch.sh, package_diff.sh, dry_run scripts on host side | Correction | session-state.sh belongs in libs/shared/ (deployed to both) not in a container-only dir | Design doc §Proposed structure |
+| session_state is NOT container-only — used by package_branch.sh, package_diff.sh, dry_run scripts on host side | Correction | session_state.sh belongs in libs/shared/ (deployed to both) not in a container-only dir | Design doc §Proposed structure |
 | draft_clear_stale_lock always paired with validate_project_dir at all 4 call sites | Confirmed | They belong together in guards.sh — correct call | Design doc §Current state — session.sh |
 | Path resolution is wildly inconsistent across files — 6 different patterns with different variable names: `$AGENT_SANDBOX_REPO`, `$REPO_ROOT`, `$_PB_SCRIPT_DIR`, `$_DW_SCRIPT_DIR`, `$_PD_SCRIPT_DIR`, `$_ISS_SCRIPT_DIR`, `$_DIFF_SH_DIR`, inline `$(cd $(dirname ...))`, hardcoded `/opt/sandbox/lib/` | Technical debt | Must choose one convention and apply it consistently during the libs/ move, or at minimum ensure every source path gets updated correctly for its new target location | This session — design must specify the convention |
 

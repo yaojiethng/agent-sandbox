@@ -13,7 +13,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$REPO_ROOT/libs/snapshot.sh"
+source "$REPO_ROOT/src/capability/snapshot.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 

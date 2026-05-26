@@ -146,7 +146,9 @@ export OUTPUT_DIR="${SANDBOX_DIR}/.workspace/output"
 # -------------------------
 # Image name derivation
 # -------------------------
-source "$REPO_ROOT/libs/containers.sh"
+source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/build/context.sh"
+source "$REPO_ROOT/scripts/build.sh"
 
 export SANDBOX_IMAGE_NAME; SANDBOX_IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
 export AGENT_IMAGE_NAME;   AGENT_IMAGE_NAME="$(agent_image_name "$PROVIDER_NAME" "$PROJECT_NAME")"
@@ -174,7 +176,7 @@ fi
 # -------------------------
 # Source checkpoint library
 # -------------------------
-source "$REPO_ROOT/libs/checkpoint.sh"
+source "$REPO_ROOT/src/build/image.sh"
 
 # -------------------------
 # Session timestamp (single canonical definition)
@@ -231,7 +233,7 @@ mkdir -p "$OUTPUT_DIR"
 # -------------------------
 # Snapshot pipeline (host side)
 # -------------------------
-source "$REPO_ROOT/libs/snapshot.sh"
+source "$REPO_ROOT/src/capability/snapshot.sh"
 
 echo "Building snapshot..."
 snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"

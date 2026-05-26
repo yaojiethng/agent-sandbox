@@ -18,7 +18,7 @@ sandbox/host correspondence model; an architecture doc for the apply workflow (s
 command shapes deferred); and policy patches to `documentation_policy.md` and
 `iteration_policy.md` formalising concepts doc creation as an assessed, optional step.
 
-Adjacent implementation questions (untracked file bundling in `package-diff.sh`,
+Adjacent implementation questions (untracked file bundling in `package_diff.sh`,
 sequential `make apply` failures) were discussed and their resolutions documented in the
 concepts doc as model gaps.
 
@@ -78,7 +78,7 @@ None.
 | Item | Reason | Goes next |
 |---|---|---|
 | `docs/architecture/apply_workflow.md` | Command shapes and path mechanics are implementation detail — out of scope for a workflow/docs session; concepts doc was the priority | Next implementation or spec session for M2.3 — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — never created, not worth creating |
-| `package-diff.sh` untracked file tests | Test structure discussed but not written | M2.3 implementation work |
+| `package_diff.sh` untracked file tests | Test structure discussed but not written | M2.3 implementation work |
 
 ## Next session
 

@@ -13,7 +13,7 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
-source "$REPO_ROOT/libs/diff.sh"
+source "$REPO_ROOT/src/libs/diff.sh"
 
 # ===================================================================
 # write_uncommitted_diff

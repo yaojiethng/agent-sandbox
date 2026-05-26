@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # Source routing.sh for dirs_resolve
-source "$AGENT_SANDBOX_REPO/libs/routing.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 
 # Max entries to display in session picker. Hardcoded — change here if needed.
 INTERACTIVE_MAX_ENTRIES=10

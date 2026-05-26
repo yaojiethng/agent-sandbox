@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/libs/git_fixtures.sh"
 run_package_diff() {
   local SANDBOX_DIR="$1"
   shift
-  bash "$REPO_ROOT/libs/package_diff.sh" \
+  bash "$REPO_ROOT/src/libs/package_diff.sh" \
     --sandbox="$SANDBOX_DIR" "$@"
 }
 

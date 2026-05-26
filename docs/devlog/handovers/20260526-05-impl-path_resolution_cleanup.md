@@ -24,7 +24,7 @@ Apply the path resolution convention from the spec: standardise all `_*_DIR` var
 - Any test behaviour changes — only source path formatting updates
 - Dockerfile COPY paths — sources haven't moved yet
 
-**Question to resolve at Gate 1:** The migration table in the spec points to target directories that don't exist yet (`src/libs/session-state.sh`, `build/image.sh`, etc.). Do we:
+**Question to resolve at Gate 1:** The migration table in the spec points to target directories that don't exist yet (`src/libs/session_state.sh`, `build/image.sh`, etc.). Do we:
 
 A) Update paths to the current locations but using the new conventions only (e.g. `$AGENT_SANDBOX_REPO/libs/diff.sh` instead of `$_DIFF_SH_DIR/diff.sh` — same path, new mechanism)?
 

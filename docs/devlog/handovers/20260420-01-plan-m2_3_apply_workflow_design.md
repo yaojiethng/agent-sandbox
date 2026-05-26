@@ -48,26 +48,26 @@ Not yet defined.
 | `scripts/checkpoint.sh` introduced | Consolidates tag creation, pruning, lookup, `WORKTREE_ID` derivation across all scripts | Design doc — Container naming section |
 | Container naming moved from M2.7 to M2.3 Change 5 | Required for `make sync` and parallel session safety; unblocks Change 6 | roadmap.md — M2.3 and M2.7 |
 | Baseline advancement as M2.3 Change 6 | Logically part of apply workflow; depends on Change 5 only, not M2.7 | roadmap.md — M2.3 |
-| `package-diff` unification: `libs/package-diff.sh` + git alias | Logic must be versioned and shared, not reconstructed from prose; local git alias fits onboard pattern | Story resolution |
+| `package-diff` unification: `libs/package_diff.sh` + git alias | Logic must be versioned and shared, not reconstructed from prose; local git alias fits onboard pattern | Story resolution |
 | `story_parallel_sessions_worktree` closed | All OQs resolved: OQ1/OQ2 by Change 1, OQ3/OQ4/OQ5 by design | Story resolution + roadmap M2.7 |
 | `story_diff_pipeline_unification` closed | All OQs resolved by design doc | Story resolution |
 | `design_git_workflow_improvements.md` superseded | Retained as implementation log for Changes 1–4 only; pending deletion after bundle | Header update |
 | Short-form session aliases deferred | `latest` default covers 90% case; revisit on operator feedback | Design doc — Session resolution |
 | `make refresh` in `Makefile.template` passes `--project` | Needed for git alias re-registration; consistent with `make onboard` invocation | Makefile.template |
 | `make onboard` not in `Makefile.template` | Sandbox Makefile is post-onboard; bootstrapping is a one-time external operation | Makefile.template |
-| `--baseline` required on host for `package-diff.sh` | No synthetic baseline outside container; silent HEAD default would produce misleading diff | `libs/package-diff.sh` |
-| Container fallback chain for baseline | env var → `.git/BASELINE_SHA` file → hard error | `libs/package-diff.sh` |
+| `--baseline` required on host for `package_diff.sh` | No synthetic baseline outside container; silent HEAD default would produce misleading diff | `libs/package_diff.sh` |
+| Container fallback chain for baseline | env var → `.git/BASELINE_SHA` file → hard error | `libs/package_diff.sh` |
 
 ## Completed this session
 
 | File | Change |
 |---|---|
 | `docs/discussions/design_apply_workflow_and_baseline_advancement.md` | Created — authoritative design spec |
-| `docs/discussions/story_diff_pipeline_unification.md` | Closed — renamed, pain point added, unification target updated to `libs/package-diff.sh` + git alias, resolution rewritten |
+| `docs/discussions/story_diff_pipeline_unification.md` | Closed — renamed, pain point added, unification target updated to `libs/package_diff.sh` + git alias, resolution rewritten |
 | `docs/discussions/story_parallel_sessions_worktree.md` | Closed — Status Resolved, open questions resolved inline, resolution written |
 | `docs/discussions/design_git_workflow_improvements.md` | Header updated — superseded redirect added |
 | `docs/development/roadmap.md` | M2.3 change table expanded (Changes 5, 6 added); Change 1 note updated; Change 3 description updated; M2.7 container naming removed; M2.7 sub-stories updated |
-| `libs/package-diff.sh` | Created — shared diff packaging script, baseline fallback chain, mechanical label derivation with override, host enforcement |
+| `libs/package_diff.sh` | Created — shared diff packaging script, baseline fallback chain, mechanical label derivation with override, host enforcement |
 | `.skills/package-diff.md` | Rewritten — inline bash removed, script invocation, BASELINE_SHA documented, migration-guide structured |
 | `scripts/onboard.sh` | Git alias registration added; refresh path derives PROJECT_DIR from .env as safety net |
 | `libs/Makefile.template` | `make refresh` target added with `--project`; `make onboard` explicitly excluded |
@@ -80,7 +80,7 @@ Not yet defined.
 | `20260412-02-m2_3_onhold.md` deletion | Pending changes bundle and commit | After M2.3 Changes 3–6 committed |
 | `design_git_workflow_improvements.md` deletion | Retained as implementation log until Changes 1–4 bundle committed | After M2.3 complete |
 
-| Validate `package-diff.sh` behaviour | Script not yet tested against live repo | `20260420-02-chore-package_diff_unification` |
+| Validate `package_diff.sh` behaviour | Script not yet tested against live repo | `20260420-02-chore-package_diff_unification` |
 
 ## Next session
 
@@ -130,7 +130,7 @@ Not yet defined.
 | `scripts/checkpoint.sh` introduced | Consolidates tag creation, pruning, lookup, `WORKTREE_ID` derivation across all scripts | Design doc — Container naming section |
 | Container naming moved from M2.7 to M2.3 Change 5 | Required for `make sync` and parallel session safety; unblocks Change 6 | roadmap.md — M2.3 and M2.7 |
 | Baseline advancement as M2.3 Change 6 | Logically part of apply workflow; depends on Change 5 only, not M2.7 | roadmap.md — M2.3 |
-| `package-diff` unification: `libs/package-diff.sh` + git alias | Logic must be versioned and shared, not reconstructed from prose; local git alias fits onboard pattern | Story resolution |
+| `package-diff` unification: `libs/package_diff.sh` + git alias | Logic must be versioned and shared, not reconstructed from prose; local git alias fits onboard pattern | Story resolution |
 | `story_parallel_sessions_worktree` closed | All OQs resolved: OQ1/OQ2 by Change 1, OQ3/OQ4/OQ5 by design | Story resolution + roadmap M2.7 |
 | `story_diff_pipeline_unification` closed | All OQs resolved by design doc | Story resolution |
 | `design_git_workflow_improvements.md` superseded | Retained as implementation log for Changes 1–4 only; pending deletion after bundle | Header update |
@@ -141,12 +141,12 @@ Not yet defined.
 | File | Change |
 |---|---|
 | `docs/discussions/design_apply_workflow_and_baseline_advancement.md` | Created — authoritative design spec |
-| `docs/discussions/story_diff_pipeline_unification.md` | Closed — renamed, pain point added, unification target updated to `libs/package-diff.sh` + git alias, resolution rewritten |
+| `docs/discussions/story_diff_pipeline_unification.md` | Closed — renamed, pain point added, unification target updated to `libs/package_diff.sh` + git alias, resolution rewritten |
 | `docs/discussions/story_parallel_sessions_worktree.md` | Closed — Status Resolved, open questions resolved inline, resolution written |
 | `docs/discussions/design_git_workflow_improvements.md` | Header updated — superseded redirect added |
 | `docs/development/roadmap.md` | M2.3 change table expanded (Changes 5, 6 added); Change 1 note updated; Change 3 description updated; M2.7 container naming removed; M2.7 sub-stories updated |
-| `libs/package-diff.sh` | New script — shared diff packaging, baseline arg, mechanical label derivation with override |
-| `.skills/package-diff.md` | Updated — inline bash removed, invokes `libs/package-diff.sh` |
+| `libs/package_diff.sh` | New script — shared diff packaging, baseline arg, mechanical label derivation with override |
+| `.skills/package-diff.md` | Updated — inline bash removed, invokes `libs/package_diff.sh` |
 | `scripts/onboard.sh` | Git alias registration added for `package-diff` in `PROJECT_DIR/.git/config` |
 
 ## Deferred items
@@ -157,7 +157,7 @@ Not yet defined.
 | `checkpoint-latest.ref` removal from tests and docs | Implementation-time change; lands with Change 5 | M2.3 Change 5 session |
 | `20260412-02-m2_3_onhold.md` deletion | Pending changes bundle and commit | After M2.3 Changes 3–6 committed |
 | `design_git_workflow_improvements.md` deletion | Retained as implementation log until Changes 1–4 bundle committed | After M2.3 complete |
-| `package-diff` chore — remaining items | `libs/package-diff.sh` and `onboard.sh` produced this session. No `diff_package` extraction needed — script is standalone, no shared logic with `libs/diff.sh` warrants extraction. Remaining: validate script behaviour. Non-blocking on Change 3 | `20260420-02-chore-package_diff_unification` |
+| `package-diff` chore — remaining items | `libs/package_diff.sh` and `onboard.sh` produced this session. No `diff_package` extraction needed — script is standalone, no shared logic with `libs/diff.sh` warrants extraction. Remaining: validate script behaviour. Non-blocking on Change 3 | `20260420-02-chore-package_diff_unification` |
 
 ## Next session
 

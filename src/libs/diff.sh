@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# libs/diff.sh
+# libs/diff_export.sh
 # Diff pipeline functions for agent-sandbox.
 # Sourced by sandbox-entrypoint.sh (capability layer) and package_branch.sh.
 #
@@ -24,9 +24,9 @@
 #     <path>/<file>          — working tree copies of all changed files
 
 # -------------------------
-# Source session.sh for session_state_read; source routing.sh for path helpers
+# Source session_state.sh for session_state_read; source routing.sh for path helpers
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_self_dir/session.sh"
+source "$_self_dir/session_state.sh"
 source "$_self_dir/routing.sh"
 
 # -------------------------

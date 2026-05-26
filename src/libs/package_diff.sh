@@ -29,8 +29,8 @@
 # On the host, use agent-sandbox package-diff which resolves paths from .env.
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_self_dir/session.sh"
-source "$_self_dir/diff.sh"
+source "$_self_dir/session_state.sh"
+source "$_self_dir/diff_export.sh"
 source "$_self_dir/routing.sh"
 
 # Only set strict mode and run setup when run directly, not when sourced

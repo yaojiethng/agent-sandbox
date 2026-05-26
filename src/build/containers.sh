@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# libs/containers.sh
+# src/build/containers.sh
 # Shared container lifecycle library for agent-sandbox.
 #
 # Provides:
@@ -67,14 +67,14 @@ build_context_sandbox() {
   context_dir=$(mktemp -d)
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
-  _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh"     "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/snapshot.sh"                "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1 || return 1
+  _build_context_copy "$repo_root/src/capability/sandbox-entrypoint.sh"     "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/dirs.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/diff_export.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/session.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/snapshot.sh"                "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/routing.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/package_diff.sh"            "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/package_branch.sh"          "$context_dir/" || return 1 || return 1
 
   # docs/
   mkdir -p "$context_dir/docs" || return 1
@@ -100,13 +100,13 @@ build_context_agent() {
   trap '[[ -n "$context_dir" ]] && rm -rf "$context_dir"' ERR
 
   # Harness-owned files - required for all providers.
-  _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/dirs.sh"                    "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/diff.sh"                    "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/session.sh"                 "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/routing.sh"                 "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_diff.sh"            "$context_dir/" || return 1
-  _build_context_copy "$repo_root/libs/package_branch.sh"          "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/reasoning/provider-entrypoint.sh"     "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/dirs.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/diff_export.sh"                    "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/session.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/routing.sh"                 "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/package_diff.sh"            "$context_dir/" || return 1
+  _build_context_copy "$repo_root/src/libs/package_branch.sh"          "$context_dir/" || return 1
   # docs/
   mkdir -p "$context_dir/docs" || return 1
   cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 1
@@ -114,18 +114,18 @@ build_context_agent() {
 
   # agent workflow files/ — prompts and skills the agent uses at runtime
   mkdir -p "$context_dir/agent" || return 1
-  cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
-  cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
+  cp -r "$repo_root/src/reasoning/agent/skills"  "$context_dir/agent/skills"  || return 1
+  cp -r "$repo_root/src/reasoning/agent/prompts" "$context_dir/agent/prompts" || return 1
 
   # Provider config template — baked into image, copy-in to AGENT_HOME at startup
   # Each bind-mounted subdir (prompts/, sessions/, skills/) is excluded from
   # the copy by _provision_agent_home — they are provided via Docker bind mount.
-  if [[ -d "$repo_root/providers/$provider/config" ]]; then
-    cp -r "$repo_root/providers/$provider/config" "$context_dir/agent/config" || return 1
+  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
+    cp -r "$repo_root/src/reasoning/providers/$provider/config" "$context_dir/agent/config" || return 1
   fi
 
   # Provider-specific pre-flight script (optional — sourced at startup if present)
-  _provider_preflight="$repo_root/providers/$provider/preflight.sh"
+  _provider_preflight="$repo_root/src/reasoning/providers/$provider/preflight.sh"
   if [[ -f "$_provider_preflight" ]]; then
     cp "$_provider_preflight" "$context_dir/provider-preflight.sh" || return 1
   fi
@@ -178,9 +178,9 @@ build_agent() {
   fi
 
   local base_image; base_image="$(agent_base_image_name "$provider")"
-  local base_dockerfile="$repo_root/providers/$provider/base.Dockerfile"
+  local base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.Dockerfile"
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
-  local provider_dockerfile="$repo_root/providers/$provider/provider.Dockerfile"
+  local provider_dockerfile="$repo_root/src/reasoning/providers/$provider/provider.Dockerfile"
 
   if [[ ! -f "$base_dockerfile" ]]; then
     echo "Error: base Dockerfile not found: $base_dockerfile" >&2
@@ -215,7 +215,7 @@ build_sandbox() {
   local project="${1:?build_sandbox requires project name}"
   local repo_root="${2:?build_sandbox requires repo root}"
 
-  local dockerfile="$repo_root/libs/sandbox.Dockerfile"
+  local dockerfile="$repo_root/src/capability/sandbox.Dockerfile"
   if [[ ! -f "$dockerfile" ]]; then
     echo "Error: sandbox Dockerfile not found: $dockerfile" >&2
     exit 1

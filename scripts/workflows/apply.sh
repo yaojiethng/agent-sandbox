@@ -113,6 +113,7 @@ apply_run() {
   echo "Diff source: $DIFF_FILE"
 }
 
-# Source session.sh for shared helpers
-source "$AGENT_SANDBOX_REPO/libs/session.sh"
-source "$AGENT_SANDBOX_REPO/libs/diff.sh"
+# Source session_state.sh for shared helpers
+source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"

@@ -31,7 +31,7 @@
 set -euo pipefail
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_self_dir/session.sh"
+source "$_self_dir/session_state.sh"
 source "$_self_dir/dirs.sh"
 
 # _resolve_path SANDBOX_DIR KEY

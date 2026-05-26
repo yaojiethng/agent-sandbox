@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# libs/draft_workflow.sh
+# scripts/workflows/draft.sh
 #
-# Draft branch lifecycle workflow: draft, confirm, reject.
+# Draft branch workflow: create draft branch, apply patches.
 # Sourced by agent-sandbox.sh — not executed standalone.
 #
-# Depends on: libs/session.sh, git, standard shell utilities.
+# Depends on: libs/session_state.sh, git, standard shell utilities.
 
 set -euo pipefail
 
-source "$AGENT_SANDBOX_REPO/libs/session.sh"
-source "$AGENT_SANDBOX_REPO/libs/routing.sh"
-source "$AGENT_SANDBOX_REPO/libs/diff.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
+source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
 # =============================================================================
 # Internal helpers (absorbed from libs/draft.sh)
@@ -410,100 +411,3 @@ draft_run() {
 }
 
 # =============================================================================
-# confirm_run — rebase, fast-forward merge, delete draft branch
-# =============================================================================
-
-confirm_run() {
-  local PROJECT_DIR="$1"
-  local SANDBOX_DIR="$2"
-  local TARGET_BRANCH="$3"
-
-  validate_project_dir "$PROJECT_DIR" || return 1
-  draft_clear_stale_lock "$PROJECT_DIR" || return 1
-
-  # Validate draft branch and read .draft-state into local scope
-  local DRAFT_VALIDATION
-  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
-  eval "$DRAFT_VALIDATION"
-
-  local MERGE_TARGET="${TARGET_BRANCH:-$source_branch}"
-
-  if ! git -C "$PROJECT_DIR" rev-parse --verify "$MERGE_TARGET" >/dev/null 2>&1; then
-    echo "Error: target branch does not exist: $MERGE_TARGET" >&2
-    echo "  Specify a different target: make confirm TARGET=<branch>" >&2
-    return 1
-  fi
-
-  # 1. Drop .draft-state commit (if found — user may have already removed it during rebase)
-  if [[ -n "${DRAFT_STATE_COMMIT:-}" ]]; then
-    echo "Dropping .draft-state commit..."
-    if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
-      echo "Error: failed to drop .draft-state commit" >&2
-      return 1
-    fi
-  else
-    echo ".draft-state commit not found — skipping drop step."
-  fi
-
-  # 2. Rebase draft onto target
-  echo "Rebasing $CURRENT_BRANCH onto $MERGE_TARGET..."
-  if ! git -C "$PROJECT_DIR" rebase "$MERGE_TARGET" "$CURRENT_BRANCH"; then
-    echo ""
-    echo "Conflict rebasing $CURRENT_BRANCH onto $MERGE_TARGET."
-    echo ""
-    echo "Resolve conflicts, then run:"
-    echo ""
-    echo "  git rebase --continue          # after resolving each conflict"
-    echo "  make confirm                   # retry the merge once rebase is clean"
-    echo ""
-    echo "To abort and return to the draft branch:"
-    echo ""
-    echo "  git rebase --abort"
-    echo "  make confirm                   # retry from scratch once draft is ready"
-    echo ""
-    echo "To discard the draft entirely:"
-    echo ""
-    echo "  git rebase --abort"
-    echo "  make reject"
-    return 1
-  fi
-
-  # 3. Fast-forward merge
-  echo "Fast-forward merging $CURRENT_BRANCH into $MERGE_TARGET..."
-  git -C "$PROJECT_DIR" switch "$MERGE_TARGET"
-  git -C "$PROJECT_DIR" merge --ff-only "$CURRENT_BRANCH"
-
-  # 4. Delete draft branch
-  echo "Deleting draft branch: $CURRENT_BRANCH"
-  git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"
-
-  echo ""
-  echo "Done. Changes merged into $MERGE_TARGET."
-}
-
-# =============================================================================
-# reject_run — checkout source branch, delete draft branch
-# =============================================================================
-
-reject_run() {
-  local PROJECT_DIR="$1"
-  local SANDBOX_DIR="$2"
-
-  validate_project_dir "$PROJECT_DIR" || return 1
-  draft_clear_stale_lock "$PROJECT_DIR" || return 1
-
-  # Validate draft branch and read .draft-state into local scope
-  local DRAFT_VALIDATION
-  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
-  eval "$DRAFT_VALIDATION"
-
-  echo "Rejecting draft. Returning to $source_branch..."
-  git -C "$PROJECT_DIR" checkout "$source_branch"
-
-  if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH" 2>/dev/null; then
-    git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"
-    echo "Deleted draft branch: $CURRENT_BRANCH"
-  fi
-
-  echo "Draft rejected. PROJECT_DIR restored to $source_branch."
-}

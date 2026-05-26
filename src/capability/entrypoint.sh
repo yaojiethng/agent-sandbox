@@ -64,8 +64,8 @@ mkdir -p "$CHANGES_DIR"
 # Files needed later are WARN — container continues but certain operations
 # (diff pipeline, routing) will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
-for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
+for entry in "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
+             "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
              "package_diff.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
@@ -83,7 +83,7 @@ unset LIB_DIR
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source /opt/sandbox/lib/session.sh
+source /opt/sandbox/lib/session_state.sh
 source /opt/sandbox/lib/snapshot.sh
 
 # Gate 2 — confirm mounted snapshot is intact before unpacking.
@@ -169,7 +169,7 @@ fi
 # -------------------------
 # Diff pipeline
 # -------------------------
-source /opt/sandbox/lib/diff.sh
+source /opt/sandbox/lib/diff_export.sh
 source /opt/sandbox/lib/routing.sh
 
 # On exit: kill autosave subshell if running, write session export via

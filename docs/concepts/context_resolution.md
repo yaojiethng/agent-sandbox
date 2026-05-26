@@ -38,8 +38,8 @@ The codebase is organised into three deployment contexts. Each determines its id
 │                                                          │
 │  Constraint: cannot assume any host-only variable exists  │
 │                                                          │
-│  Files: session-state.sh, routing.sh, diff.sh,           │
-│         package-branch.sh, package-diff.sh, dirs.sh      │
+│  Files: session_state.sh, routing.sh, diff_export.sh,           │
+│         package_branch.sh, package_diff.sh, dirs.sh      │
 └─────────────────────┬───────────────────────────────────┘
                       │ sourced by (via self-resolution)
                       ▼
@@ -81,7 +81,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 
 ```bash
 # src/scripts/workflows/draft.sh (sourced by agent-sandbox.sh)
-source "$AGENT_SANDBOX_REPO/src/libs/session-state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 ```
 
 **Repo scripts** (`start_agent.sh`, `run_agent.sh`, `onboard.sh`): derive `$REPO_ROOT` from their own location. These always run from the repo checkout, so `$(cd "$SCRIPT_DIR/.." && pwd)` reliably resolves to the checkout root.
@@ -89,14 +89,14 @@ source "$AGENT_SANDBOX_REPO/src/libs/session-state.sh"
 ```bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$REPO_ROOT/src/libs/session-state.sh"
+source "$REPO_ROOT/src/libs/session_state.sh"
 ```
 
 **Test files** (`tests/test_*.sh`): follow the same pattern as repo scripts.
 
 ```bash
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$REPO_ROOT/src/libs/diff.sh"
+source "$REPO_ROOT/src/libs/diff_export.sh"
 ```
 
 ### Ambiguous Context — Self-resolution
@@ -105,27 +105,27 @@ Files deployed to both the host filesystem and container images cannot assume an
 
 ```bash
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_self_dir/session-state.sh"
+source "$_self_dir/session_state.sh"
 source "$_self_dir/routing.sh"
 ```
 
 This works in both contexts because `BASH_SOURCE[0]` resolves to the file's actual location:
 | Context | File location | `_self_dir` resolves to |
 |---|---|---|
-| Host | `$AGENT_SANDBOX_REPO/src/libs/diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/` |
-| Container | `/opt/sandbox/lib/diff.sh` | `/opt/sandbox/lib/` |
+| Host | `$AGENT_SANDBOX_REPO/src/libs/diff_export.sh` | `$AGENT_SANDBOX_REPO/src/libs/` |
+| Container | `/opt/sandbox/lib/diff_export.sh` | `/opt/sandbox/lib/` |
 
 All ambiguous-context files use the canonical variable name `_self_dir`. This was standardised from six different naming conventions (`_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)`).
 
-**Files in this layer:** `session-state.sh`, `routing.sh`, `diff.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh`
+**Files in this layer:** `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `package_diff.sh`, `dirs.sh`
 
 ### Container Context — Hardcoded paths
 
 Files that run exclusively inside a container know their layout from the image build. They source dependencies via absolute paths baked in by the Dockerfile:
 
 ```bash
-source /opt/sandbox/lib/session-state.sh
-source /opt/sandbox/lib/diff.sh
+source /opt/sandbox/lib/session_state.sh
+source /opt/sandbox/lib/diff_export.sh
 ```
 
 These paths are immutable at runtime. The entrypoint files and diagnostic scripts use this convention. The destination paths (`/opt/sandbox/lib/`) are stable across renames of the host-side source tree — only the COPY source paths in Dockerfiles change when files move.
@@ -139,11 +139,11 @@ Context is not inherited — each file declares how it resolves its own location
 ```
 agent-sandbox.sh ── sets $AGENT_SANDBOX_REPO
   └─ sources ── workflow/draft.sh ── uses $AGENT_SANDBOX_REPO
-                   └─ sources ── src/libs/session-state.sh ── uses _self_dir (self-resolution)
+                   └─ sources ── src/libs/session_state.sh ── uses _self_dir (self-resolution)
                                   └─ sources ── src/libs/routing.sh ── uses _self_dir
 
 sandbox-entrypoint.sh ── hardcoded /opt/sandbox/lib/
-  └─ sources ── /opt/sandbox/lib/diff.sh ── uses _self_dir (→ /opt/sandbox/lib/)
+  └─ sources ── /opt/sandbox/lib/diff_export.sh ── uses _self_dir (→ /opt/sandbox/lib/)
 ```
 
 At the seam between host context and ambiguous-context libs, the host's variable (`$AGENT_SANDBOX_REPO`) provides the path to the ambiguous-context file, but once that file loads, it resolves its own siblings via self-resolution. The same ambiguous-context file, when loaded inside a container via a hardcoded path, resolves its siblings identically — the mechanism is the same, only the starting path differs.
@@ -158,7 +158,7 @@ At the seam between host context and ambiguous-context libs, the host's variable
 | Host — workflow libs | `$AGENT_SANDBOX_REPO` (inherited) | Repo-root-relative paths | `draft.sh`, `confirm.sh`, `reject.sh`, `apply.sh`, `interactive.sh`, `guards.sh` |
 | Host — repo scripts | `$REPO_ROOT` (derived) | Repo-root-relative paths | `start_agent.sh`, `run_agent.sh`, `onboard.sh` |
 | Host — tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
-| Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session-state.sh`, `routing.sh`, `diff.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh` |
+| Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `package_diff.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
 
 ---

@@ -45,8 +45,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/libs/containers.sh"
-source "$REPO_ROOT/libs/compose.sh"
+source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/build/context.sh"
+source "$REPO_ROOT/scripts/build.sh"
+source "$REPO_ROOT/src/build/compose.sh"
 
 # -------------------------
 # Args
@@ -122,8 +124,8 @@ mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
 # -------------------------
 # Compose file assembly
 # -------------------------
-COMPOSE_TEMPLATE="$REPO_ROOT/libs/docker-compose.yml"
-DRY_RUN_OVERLAY="$REPO_ROOT/libs/docker-compose.dry-run.yml"
+COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
+DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
 PROVIDER_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
 SERVE_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.serve.yml"
 

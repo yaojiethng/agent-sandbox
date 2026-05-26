@@ -7,10 +7,13 @@ FROM ${BASE_IMAGE}
 
 # Injected by build_context_agent — do not modify these paths.
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
-COPY provider-entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
+COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
 COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
-COPY session.sh /opt/sandbox/lib/session.sh
+COPY session_state.sh /opt/sandbox/lib/session_state.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh
+COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
+COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
+COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
 
 # Workflow files — prompts and skills the agent uses at runtime.
 COPY agent/skills/ /opt/workflow/agent/skills/

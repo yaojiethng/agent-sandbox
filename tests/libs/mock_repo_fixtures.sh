@@ -27,18 +27,20 @@ make_mock_repo() {
   local dir
   dir=$(mktemp -d /tmp/XXXXXX)
 
-  mkdir -p "$dir/libs"
-  echo "dirs-content"        > "$dir/libs/dirs.sh"
-  echo "snapshot-content"   > "$dir/libs/snapshot.sh"
-  echo "diff-content"       > "$dir/libs/diff.sh"
-  echo "package_branch-content" > "$dir/libs/package_branch.sh"
-  echo "package_diff-content"   > "$dir/libs/package_diff.sh"
-  echo "session-content"        > "$dir/libs/session.sh"
-  echo "routing-content"        > "$dir/libs/routing.sh"
+  mkdir -p "$dir/src/libs"
+  echo "dirs-content"        > "$dir/src/libs/dirs.sh"
+  echo "diff-content"       > "$dir/src/libs/diff.sh"
+  echo "package_branch-content" > "$dir/src/libs/package_branch.sh"
+  echo "package_diff-content"   > "$dir/src/libs/package_diff.sh"
+  echo "session_state-content"  > "$dir/src/libs/session_state.sh"
+  echo "routing-content"        > "$dir/src/libs/routing.sh"
 
-  mkdir -p "$dir/scripts"
-  echo "entrypoint-content" > "$dir/libs/sandbox-entrypoint.sh"
-  echo "provider-entrypoint-content" > "$dir/libs/provider-entrypoint.sh"
+  mkdir -p "$dir/src/capability"
+  echo "snapshot-content"   > "$dir/src/capability/snapshot.sh"
+  echo "entrypoint-content" > "$dir/src/capability/entrypoint.sh"
+
+  mkdir -p "$dir/src/reasoning"
+  echo "provider-entrypoint-content" > "$dir/src/reasoning/entrypoint.sh"
 
   if [[ "$skip_docs" == false ]]; then
     mkdir -p "$dir/docs/architecture"

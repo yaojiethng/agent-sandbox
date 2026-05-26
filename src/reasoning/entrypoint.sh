@@ -124,11 +124,11 @@ unset PROVISION_TEMPLATE
 # /opt/sandbox/lib/ is baked into the image at build time. If files are
 # missing, the image is stale and must be rebuilt with `make build`.
 #
-# session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
+# session_state.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
 # The remaining files are WARN — fine to start but certain diagnostics or
 # session operations will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
-for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
+for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
              "package_diff.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"

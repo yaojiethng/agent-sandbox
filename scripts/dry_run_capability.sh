@@ -21,8 +21,8 @@
 set -o pipefail
 
 ROOT="/home/agentuser"
-source /opt/sandbox/lib/session.sh
-source /opt/sandbox/lib/diff.sh
+source /opt/sandbox/lib/session_state.sh
+source /opt/sandbox/lib/diff_export.sh
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
@@ -81,10 +81,10 @@ _is_readonly() {
 section "image file existence"
 critical "/opt/sandbox/bin/sandbox-entrypoint.sh present" test -f /opt/sandbox/bin/sandbox-entrypoint.sh
 critical "/opt/sandbox/lib/snapshot.sh present"           test -f /opt/sandbox/lib/snapshot.sh
-critical "/opt/sandbox/lib/diff.sh present"               test -f /opt/sandbox/lib/diff.sh
+critical "/opt/sandbox/lib/diff_export.sh present"               test -f /opt/sandbox/lib/diff_export.sh
 critical "/opt/sandbox/lib/dirs.sh present"               test -f /opt/sandbox/lib/dirs.sh
 critical "/opt/sandbox/lib/routing.sh present"             test -f /opt/sandbox/lib/routing.sh
-critical "/opt/sandbox/lib/session.sh present"             test -f /opt/sandbox/lib/session.sh
+critical "/opt/sandbox/lib/session_state.sh present"             test -f /opt/sandbox/lib/session_state.sh
 
 section "session state"
 # After pre-flight has already validated init_sha and session_ts,

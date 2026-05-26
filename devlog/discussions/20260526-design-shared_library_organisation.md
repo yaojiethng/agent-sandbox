@@ -37,7 +37,7 @@ Within each directory, files are grouped by responsibility boundary, not by call
 | Functions | Concern | Proposed home |
 |---|---|---|
 | `validate_project_dir`, `draft_clear_stale_lock` | **Git workflow guards** — validate repo usability, clear stale locks. Always called as an adjacent pair (4 call sites: apply_run, draft_run, confirm_run, reject_run). | `libs/host/guards.sh` |
-| `session_state_read`, `session_state_write` | **K/V metadata store** — reads/writes SESSION_STATE file (init_sha, session_ts, workspace paths). Written inside capability container, read from both containers + host. | `libs/shared/session-state.sh` |
+| `session_state_read`, `session_state_write` | **K/V metadata store** — reads/writes SESSION_STATE file (init_sha, session_ts, workspace paths). Written inside capability container, read from both containers + host. | `libs/shared/session_state.sh` |
 
 
 ### Deployment lapse — packaging pipeline asymmetry
@@ -78,16 +78,16 @@ build/                                    # Build-time only (host side)
 
 libs/
   shared/                                 # Deployed to BOTH containers
-    session-state.sh                      # K/V store: session_state_read + session_state_write
+    session_state.sh                      # K/V store: session_state_read + session_state_write
                                           #   (extracted from session.sh)
     routing.sh                            # Path layout conventions (unchanged)
     dirs.sh                               # Path resolution (unchanged)
     diff.sh                               # Diff utilities (unchanged — but now deployed
                                           #   to reasoning container too: fixed lapse)
-    diff-export.sh                        # diff_export orchestrator (extracted from diff.sh)
-    package-branch.sh                     # Branch packaging (unchanged — deployed to
+    diff_export.sh                        # diff_export orchestrator (extracted from diff.sh)
+    package_branch.sh                     # Branch packaging (unchanged — deployed to
                                           #   both containers: fixed lapse)
-    package-diff.sh                       # Diff packaging (unchanged — deployed to
+    package_diff.sh                       # Diff packaging (unchanged — deployed to
                                           #   both containers: fixed lapse)
 
   capability/                             # Capability container only
@@ -126,16 +126,16 @@ scripts/                                  # Host entry points (unchanged — pat
 |---|---|---|
 | `libs/containers.sh` | → split across `build/image.sh` + `build/context.sh` + `libs/host/build.sh` | Pure extraction — no logic change |
 | `libs/compose.sh` | → `build/compose.sh` | Move (unchanged content) |
-| `libs/session.sh` | → split across `libs/shared/session-state.sh` + `libs/host/guards.sh` | Pure extraction |
-| `libs/diff.sh` | → split across `libs/shared/diff.sh` + `libs/shared/diff-export.sh` | Extract orchestrator from utilities |
+| `libs/session.sh` | → split across `libs/shared/session_state.sh` + `libs/host/guards.sh` | Pure extraction |
+| `libs/diff.sh` | → split across `libs/shared/diff.sh` + `libs/shared/diff_export.sh` | Extract orchestrator from utilities |
 | `libs/diff_workflow.sh` | → `libs/host/workflows/apply.sh` | Rename + move |
 | `libs/draft_workflow.sh` | → split across `libs/host/workflows/draft.sh`, `confirm.sh`, `reject.sh` | Split by workflow stage |
 | `libs/interactive_session_select.sh` | → `libs/host/workflows/interactive.sh` | Rename + move |
 | `libs/sandbox-entrypoint.sh` | → `libs/capability/entrypoint.sh` | Rename + move |
 | `libs/snapshot.sh` | → `libs/capability/snapshot.sh` | Move |
 | `libs/provider-entrypoint.sh` | → `libs/reasoning/entrypoint.sh` | Rename + move |
-| `libs/package_branch.sh` | → `libs/shared/package-branch.sh` | Move + rename (dash convention) |
-| `libs/package_diff.sh` | → `libs/shared/package-diff.sh` | Move + rename (dash convention) |
+| `libs/package_branch.sh` | → `libs/shared/package_branch.sh` | Move + rename (dash convention) |
+| `libs/package_diff.sh` | → `libs/shared/package_diff.sh` | Move + rename (dash convention) |
 | `libs/dirs.sh` | → `libs/shared/dirs.sh` | Move |
 | `libs/routing.sh` | → `libs/shared/routing.sh` | Move |
 | `libs/sandbox.Dockerfile` | → `libs/capability/container.Dockerfile` | Rename |
@@ -155,13 +155,13 @@ scripts/                                  # Host entry points (unchanged — pat
 | `libs/host/build.sh` | ✅ sourced | ❌ | ❌ | Host runtime |
 | `libs/host/guards.sh` | ✅ sourced | ❌ | ❌ | Host runtime |
 | `libs/host/workflows/*` | ✅ sourced | ❌ | ❌ | Host runtime |
-| `libs/shared/session-state.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
+| `libs/shared/session_state.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
 | `libs/shared/routing.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
 | `libs/shared/dirs.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
 | `libs/shared/diff.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
-| `libs/shared/diff-export.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
-| `libs/shared/package-branch.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
-| `libs/shared/package-diff.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
+| `libs/shared/diff_export.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
+| `libs/shared/package_branch.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
+| `libs/shared/package_diff.sh` | ✅ sourced | ✅ deployed | ✅ deployed | Runtime |
 | `libs/capability/entrypoint.sh` | ❌ | ✅ deployed | ❌ | Runtime |
 | `libs/capability/snapshot.sh` | ❌ | ✅ deployed | ❌ | Runtime |
 | `libs/reasoning/entrypoint.sh` | ❌ | ❌ | ✅ deployed | Runtime |
@@ -170,15 +170,15 @@ scripts/                                  # Host entry points (unchanged — pat
 
 ## Key decisions
 
-1. **Packaging pipeline is symmetrical** — `diff.sh`, `package-branch.sh`, `package-diff.sh` all deployed to both containers. The build context for both containers includes all three; both Dockerfiles COPY all three.
+1. **Packaging pipeline is symmetrical** — `diff.sh`, `package_branch.sh`, `package_diff.sh` all deployed to both containers. The build context for both containers includes all three; both Dockerfiles COPY all three.
 
-2. **`session-state.sh` separated from `routing.sh`** — K/V metadata store is a different concern from path layout conventions. They're orthogonal.
+2. **`session_state.sh` separated from `routing.sh`** — K/V metadata store is a different concern from path layout conventions. They're orthogonal.
 
 3. **`draft_workflow.sh` split into three files** — draft / confirm / reject each get their own file under `libs/host/workflows/`.
 
 4. **`containers.sh` split into three files** — naming → `build/image.sh`, context → `build/context.sh`, build orchestration → `libs/host/build.sh`.
 
-5. **Dash convention** for multi-word filenames — `package-branch.sh` not `package_branch.sh`, `diff-export.sh` not `diff_export.sh`. Consistent with existing `docker-compose.yml`.
+5. **Dash convention** for multi-word filenames — `package_branch.sh` not `package_branch.sh`, `diff_export.sh` not `diff_export.sh`. Consistent with existing `docker-compose.yml`.
 
 6. **Entrypoints renamed** — `sandbox-entrypoint.sh` → `entrypoint.sh` under `capability/`, `provider-entrypoint.sh` → `entrypoint.sh` under `reasoning/`. The directory is sufficient disambiguation.
 

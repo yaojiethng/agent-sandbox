@@ -411,7 +411,7 @@ test_repo_commit_is_full_sha() {
 # -------------------------
 
 test_docker_compose_template_has_labels_anchor() {
-  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/libs/docker-compose.yml"; then
+  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/src/build/docker-compose.yml"; then
     pass "docker-compose.yml defines session labels as YAML anchor"
   else
     fail "docker-compose.yml missing YAML anchor for session labels"
@@ -419,7 +419,7 @@ test_docker_compose_template_has_labels_anchor() {
 }
 
 test_docker_compose_template_sandbox_uses_anchor() {
-  if grep -A3 "sandbox:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+  if grep -A3 "sandbox:" "$REPO_ROOT/src/build/docker-compose.yml" | grep -q "labels: \*session_labels"; then
     pass "sandbox service references session labels anchor"
   else
     fail "sandbox service does not reference session labels anchor"
@@ -427,7 +427,7 @@ test_docker_compose_template_sandbox_uses_anchor() {
 }
 
 test_docker_compose_template_agent_uses_anchor() {
-  if grep -A3 "agent:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+  if grep -A3 "agent:" "$REPO_ROOT/src/build/docker-compose.yml" | grep -q "labels: \*session_labels"; then
     pass "agent service references session labels anchor"
   else
     fail "agent service does not reference session labels anchor"
@@ -435,8 +435,8 @@ test_docker_compose_template_agent_uses_anchor() {
 }
 
 test_docker_compose_template_has_container_names() {
-  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
-     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/src/build/docker-compose.yml" && \
+     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/src/build/docker-compose.yml"; then
     pass "docker-compose.yml has container_name for both services"
   else
     fail "docker-compose.yml missing container_name placeholders"

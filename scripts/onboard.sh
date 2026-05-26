@@ -49,7 +49,7 @@ _maybe_cleanup() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-TEMPLATES="$REPO_ROOT/libs/_templates"
+TEMPLATES="$REPO_ROOT/scripts/templates"
 
 # ---------------------------------------------------------------------------
 # Helpers

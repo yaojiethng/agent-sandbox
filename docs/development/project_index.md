@@ -119,7 +119,7 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
-| `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
+| `diff_export.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
@@ -144,7 +144,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
-| `test_session.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
+| `test_session-state.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
 | `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
 | `test_snapshot_host.sh` | 🟢 Cold | M2.3 | Host-side snapshot tests: archive head, copy worktree, validate. |
 | `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |

@@ -1,6 +1,17 @@
 # Spec — Directory Restructuring (Structural Cleanup)
 
-**Status:** Final. Ready for implementation.
+**Status:** Active. Session 1 (libs/ stage) complete; sessions 2+ pending.
+
+---
+
+## 0. Progress Summary
+
+| Session | Scope | Status |
+|---|---|---|
+| 1 — libs/ stage | All `libs/` files moved to target directories per assignment table below | ✅ Complete (session `20260526-06`) |
+| 2 — providers/ + agent/ + devlog/ | Move `providers/`, `agent/`, and `docs/devlog/` to their target locations | ⬜ Pending |
+| 3 — Dockerfile layer refactoring | Create `src/reasoning/Dockerfile.node`, `Dockerfile.python`; trim per-provider bases | ⬜ Pending |
+| 4+ — UID Mapping | Per M2.7 Track C | ⬜ Pending |
 
 ---
 
@@ -10,183 +21,211 @@
 
 1. **Deployment target as primary split** — files grouped by where they execute: host, reasoning container, or capability container.
 2. **Life stage as secondary split** — build-time configuration separated from runtime code.
-3. **No intermediate nesting layer** — files land directly in their target directory under `src/`.
-4. **`devlog/` at root** — agent development history is not project documentation.
+3. **All code under `src/`** — build files, libs, scripts, entrypoints all land under `src/`. No top-level code directories outside `src/`, `docs/`, `devlog/`, `tests/`, `workflow/` and project root files.
+4. **Naming convention: underscores** — all `.sh` file names use underscores (`session_state.sh`). Dashes reserved for CLI subcommands (`agent-sandbox package-diff`). Exceptions: `docker-compose.yml` (Docker convention), `agent-sandbox.sh` (installed binary).
+5. **`devlog/` at root** — agent development history is not project documentation.
 
 ### Cross-cutting libs → `src/libs/`
 
-| File | Rationale |
-|---|---|
-| `dirs.sh` | Sourced by host, reasoning container, and capability container |
-| `session.sh` | `session_state_read`/`write` used across all three |
-| `routing.sh` | Same |
-| `diff.sh` | Sourced by host (draft_workflow), reasoning (package_branch), capability (sandbox-entrypoint) |
-| `snapshot.sh` | Used by both host (start_agent.sh) and capability (sandbox-entrypoint). Kept whole. |
-| `package_branch.sh` | Paired with package_diff. Both exec'd from host AND present in containers. |
-| `package_diff.sh` | Same. |
+| File | Rationale | Status |
+|---|---|---|
+| `dirs.sh` | Sourced by host, reasoning container, and capability container | ✅ |
+| `session_state.sh` | `session_state_read`/`write` — extracted from `session.sh` | ✅ |
+| `routing.sh` | Path layout conventions | ✅ |
+| `diff.sh` | Diff utilities (strip_index_lines, write_*_diff, write_changed_files) | ✅ |
+| `diff_export.sh` | `diff_export` orchestrator — extracted from `diff.sh` | ✅ |
+| `package_branch.sh` | Branch packaging — paired with package_diff | ✅ |
+| `package_diff.sh` | Diff packaging | ✅ |
+
+### Host-side guards → `scripts/guards.sh`
+
+`validate_project_dir` and `draft_clear_stale_lock` extracted from `session.sh`. Host-side only — not deployed to containers.
+
+| Function | Source | Status |
+|---|---|---|
+| `validate_project_dir()` | `session.sh` | ✅ |
+| `draft_clear_stale_lock()` | `session.sh` | ✅ |
 
 ### Reasoning container → `src/reasoning/`
 
-| File | Rationale |
-|---|---|
-| `provider-entrypoint.sh` | Runs inside reasoning container |
-| `agent/` (skills, prompts, config) | Agent workflow files — kept together until coding-agent seam is clear |
-| `Dockerfile.node` / `Dockerfile.python` | Harness bases — live alongside providers they serve |
-| `providers/<n>/` (all files) | Per-provider files stay nested under their provider, including host-run files (setup.sh, onboard.sh) — provider ownership is the organising principle |
+| File | Rationale | Status |
+|---|---|---|
+| `entrypoint.sh` | Runs inside reasoning container (was `provider-entrypoint.sh`) | ✅ |
+| `agent/` (skills, prompts, config) | Agent workflow files | ⬜ Pending |
+| `Dockerfile.node` / `Dockerfile.python` | Harness bases | ⬜ Pending |
+| `providers/<n>/` (all files) | Per-provider files | ⬜ Pending |
 
 ### Capability container → `src/capability/`
 
-| File | Rationale |
-|---|---|
-| `sandbox-entrypoint.sh` | Runs inside capability container |
-| `Dockerfile.sandbox` | Capability layer image definition |
+| File | Rationale | Status |
+|---|---|---|
+| `entrypoint.sh` | Runs inside capability container (was `sandbox-entrypoint.sh`) | ✅ |
+| `Dockerfile` | Capability layer image definition (was `sandbox.Dockerfile`) | ✅ |
+| `snapshot.sh` | Snapshot pipeline | ✅ |
 
 ### Build pipeline → `src/build/`
 
-| File | Rationale |
-|---|---|
-| `docker-compose.yml` | Build-time config, consumed by compose pipeline |
-| `docker-compose.dry-run.yml` | Same |
-| `compose.sh` | Build pipeline code — paired with compose templates |
-| `containers.sh` | Build pipeline code — Docker lifecycle |
+| File | Rationale | Status |
+|---|---|---|
+| `image.sh` | Image naming + container identity (extracted from `containers.sh`) | ✅ |
+| `context.sh` | Build context prep (extracted from `containers.sh`) | ✅ |
+| `compose.sh` | Compose file generation (was `libs/compose.sh`) | ✅ |
+| `docker-compose.yml` | Build-time config template | ✅ |
+| `docker-compose.dry-run.yml` | Dry-run compose overlay | ✅ |
+
+Build orchestration (`build_image`, `build_agent`, `build_sandbox`, `preflight`) moved to `scripts/build.sh`.
 
 ### Host orchestration → `src/scripts/`
 
-All existing `scripts/` files plus host-side workflow files from `libs/`.
+All existing `scripts/` files plus host-side workflow files from `libs/`. Build orchestration functions from `containers.sh` moved to `scripts/build.sh`.
+
+### Workflow files → `src/scripts/workflows/`
+
+| File | Source | Status |
+|---|---|---|
+| `draft.sh` | `libs/draft_workflow.sh` (draft_run + helpers) | ✅ |
+| `confirm.sh` | `libs/draft_workflow.sh` (confirm_run) | ✅ |
+| `reject.sh` | `libs/draft_workflow.sh` (reject_run) | ✅ |
+| `apply.sh` | `libs/diff_workflow.sh` | ✅ |
+| `interactive.sh` | `libs/interactive_session_select.sh` | ✅ |
 
 ---
 
 ## 2. Assignment Table
 
-### `src/libs/` — cross-target libraries
+### ✅ Completed — `src/libs/`
 
-| File | Current path |
-|---|---|
-| `dirs.sh` | `libs/dirs.sh` |
-| `session.sh` | `libs/session.sh` |
-| `routing.sh` | `libs/routing.sh` |
-| `diff.sh` | `libs/diff.sh` |
-| `snapshot.sh` | `libs/snapshot.sh` |
-| `package_branch.sh` | `libs/package_branch.sh` |
-| `package_diff.sh` | `libs/package_diff.sh` |
-
-### `src/reasoning/` — agent container
-
-| File | Current path | New path |
+| File | Current path (new) | Status |
 |---|---|---|
-| `provider-entrypoint.sh` | `libs/provider-entrypoint.sh` | `src/reasoning/provider-entrypoint.sh` |
-| `agent/` dir | `agent/` (root) | `src/reasoning/agent/` |
-| `Dockerfile.node` | (to create) | `src/reasoning/Dockerfile.node` |
-| `Dockerfile.python` | (to create) | `src/reasoning/Dockerfile.python` |
-| `providers/pi/base.Dockerfile` | `providers/pi/base.Dockerfile` | `src/reasoning/providers/pi/base.Dockerfile` |
-| `providers/pi/provider.Dockerfile` | `providers/pi/provider.Dockerfile` | `src/reasoning/providers/pi/provider.Dockerfile` |
-| `providers/pi/preflight.sh` | `providers/pi/preflight.sh` | `src/reasoning/providers/pi/preflight.sh` |
-| `providers/pi/setup.sh` | `providers/pi/setup.sh` | `src/reasoning/providers/pi/setup.sh` |
-| `providers/pi/onboard.sh` | `providers/pi/onboard.sh` | `src/reasoning/providers/pi/onboard.sh` |
-| `providers/pi/docker-compose.pi.yml` | `providers/pi/docker-compose.pi.yml` | `src/reasoning/providers/pi/docker-compose.pi.yml` |
-| `providers/pi/docker-compose.serve.yml` | `providers/pi/docker-compose.serve.yml` | `src/reasoning/providers/pi/docker-compose.serve.yml` |
-| `providers/pi/config/` | `providers/pi/config/` | `src/reasoning/providers/pi/config/` |
-| `providers/pi/onboard-readme.md` | `providers/pi/onboard-readme.md` | `src/reasoning/providers/pi/onboard-readme.md` |
-| `providers/claude-code/base.Dockerfile` | — | `src/reasoning/providers/claude-code/base.Dockerfile` |
-| `providers/claude-code/provider.Dockerfile` | — | `src/reasoning/providers/claude-code/provider.Dockerfile` |
-| `providers/claude-code/setup.sh` | — | `src/reasoning/providers/claude-code/setup.sh` |
-| `providers/claude-code/docker-compose.claude-code.yml` | — | `src/reasoning/providers/claude-code/docker-compose.claude-code.yml` |
-| `providers/claude-code/docker-compose.serve.yml` | — | `src/reasoning/providers/claude-code/docker-compose.serve.yml` |
-| `providers/claude-code/AGENTS.md` | — | `src/reasoning/providers/claude-code/AGENTS.md` |
-| `providers/hermes/base.Dockerfile` | — | `src/reasoning/providers/hermes/base.Dockerfile` |
-| `providers/hermes/provider.Dockerfile` | — | `src/reasoning/providers/hermes/provider.Dockerfile` |
-| `providers/hermes/docker-compose.hermes.yml` | — | `src/reasoning/providers/hermes/docker-compose.hermes.yml` |
-| `providers/hermes/docker-compose.serve.yml` | — | `src/reasoning/providers/hermes/docker-compose.serve.yml` |
-| `providers/hermes/config/` | — | `src/reasoning/providers/hermes/config/` |
-| `providers/hermes/quickstart.md` | — | `src/reasoning/providers/hermes/quickstart.md` |
-| `providers/hermes/AGENTS.md` | — | `src/reasoning/providers/hermes/AGENTS.md` |
-| `providers/opencode/base.Dockerfile` | — | `src/reasoning/providers/opencode/base.Dockerfile` |
-| `providers/opencode/provider.Dockerfile` | — | `src/reasoning/providers/opencode/provider.Dockerfile` |
-| `providers/opencode/docker-compose.serve.yml` | — | `src/reasoning/providers/opencode/docker-compose.serve.yml` |
-| `providers/opencode/config/` | — | `src/reasoning/providers/opencode/config/` |
-| `providers/opencode/quickstart.md` | — | `src/reasoning/providers/opencode/quickstart.md` |
-| `providers/opencode/AGENTS.md` | — | `src/reasoning/providers/opencode/AGENTS.md` |
-| `providers/claude-ai/AGENTS.md` | — | `src/reasoning/providers/claude-ai/AGENTS.md` | Minimal provider — single AGENTS.md only |
+| `dirs.sh` | `src/libs/dirs.sh` | ✅ |
+| `session_state.sh` | `src/libs/session_state.sh` | ✅ |
+| `routing.sh` | `src/libs/routing.sh` | ✅ |
+| `diff.sh` | `src/libs/diff.sh` | ✅ |
+| `diff_export.sh` | `src/libs/diff_export.sh` | ✅ |
+| `package_branch.sh` | `src/libs/package_branch.sh` | ✅ |
+| `package_diff.sh` | `src/libs/package_diff.sh` | ✅ |
 
-### `src/capability/` — sandbox container
+### ✅ Completed — `src/capability/`
 
-| File | Current path |
-|---|---|
-| `sandbox-entrypoint.sh` | `libs/sandbox-entrypoint.sh` |
-| `Dockerfile.sandbox` | `libs/sandbox.Dockerfile` |
+| File | New path | Status |
+|---|---|---|
+| `entrypoint.sh` | `src/capability/entrypoint.sh` | ✅ |
+| `Dockerfile` | `src/capability/Dockerfile` | ✅ |
+| `snapshot.sh` | `src/capability/snapshot.sh` | ✅ |
 
-### `src/build/` — build pipeline
+### ✅ Completed — `src/reasoning/`
 
-| File | Current path |
-|---|---|
-| `docker-compose.yml` | `libs/docker-compose.yml` |
-| `docker-compose.dry-run.yml` | `libs/docker-compose.dry-run.yml` |
-| `compose.sh` | `libs/compose.sh` |
-| `containers.sh` | `libs/containers.sh` |
+| File | New path | Status |
+|---|---|---|
+| `entrypoint.sh` | `src/reasoning/entrypoint.sh` | ✅ |
 
-### `src/scripts/` — host-level orchestration
+### ✅ Completed — `src/build/`
 
-| File | Current path |
-|---|---|
-| `agent-sandbox.sh` | `scripts/agent-sandbox.sh` |
-| `start_agent.sh` | `scripts/start_agent.sh` |
-| `run_agent.sh` | `scripts/run_agent.sh` |
-| `stop.sh` | `scripts/stop.sh` |
-| `onboard.sh` | `scripts/onboard.sh` |
-| `checkpoint.sh` | `scripts/checkpoint.sh` |
-| `run_tests.sh` | `scripts/run_tests.sh` |
-| `check_test_coverage.sh` | `scripts/check_test_coverage.sh` |
-| `dry_run_reasoning.sh` | `scripts/dry_run_reasoning.sh` |
-| `dry_run_capability.sh` | `scripts/dry_run_capability.sh` |
-| `draft_workflow.sh` | `libs/draft_workflow.sh` |
-| `diff_workflow.sh` | `libs/diff_workflow.sh` |
-| `interactive_session_select.sh` | `libs/interactive_session_select.sh` |
-| `templates/Makefile.template` | `libs/_templates/Makefile.template` |
-| `templates/PULL_REQUEST.md.template` | `libs/_templates/PULL_REQUEST.md.template` |
-| `templates/TASK.md.template` | `libs/_templates/TASK.md.template` |
-| `templates/AGENTS.template.md` | `providers/AGENTS.template.md` | `src/scripts/templates/AGENTS.template.md` |
+| File | New path | Status |
+|---|---|---|
+| `image.sh` | `src/build/image.sh` | ✅ |
+| `context.sh` | `src/build/context.sh` | ✅ |
+| `compose.sh` | `src/build/compose.sh` | ✅ |
+| `docker-compose.yml` | `src/build/docker-compose.yml` | ✅ |
+| `docker-compose.dry-run.yml` | `src/build/docker-compose.dry-run.yml` | ✅ |
 
-### Root level
+### ✅ Completed — `scripts/`
 
-| Path | Action |
-|---|---|
-| `devlog/` | Move from `docs/devlog/` to root |
-| `docs/` | Stays (architecture, concepts, operations) |
-| `tests/` | Stays |
-| `tests/eval/` | Move from `eval/` to `tests/eval/` |
-| `Makefile` | Stays at root |
-| `workflow/` | Stays at root (vault workflow, VSCode config) |
-| `.devcontainer/` | Stays at root (development infra, like `.gitignore`) |
-| `.gitignore` | Stays at root |
-| `AGENTS.md` | Stays at root (project-level) |
-| `LICENSE` | Stays at root |
-| `readme.md` | Stays at root |
+| File | New path | Status |
+|---|---|---|
+| `build.sh` | `scripts/build.sh` | ✅ |
+| `guards.sh` | `scripts/guards.sh` | ✅ |
+
+### ✅ Completed — `scripts/workflows/`
+
+| File | New path | Status |
+|---|---|---|
+| `draft.sh` | `scripts/workflows/draft.sh` | ✅ |
+| `confirm.sh` | `scripts/workflows/confirm.sh` | ✅ |
+| `reject.sh` | `scripts/workflows/reject.sh` | ✅ |
+| `apply.sh` | `scripts/workflows/apply.sh` | ✅ |
+| `interactive.sh` | `scripts/workflows/interactive.sh` | ✅ |
+
+### ✅ Completed — `scripts/templates/`
+
+All moved from `libs/_templates/`.
 
 ---
 
-## 3. Implementation Sequence
+### ⬜ Pending — `src/reasoning/` (remaining items)
+
+| Current path | Target path |
+|---|---|
+| `agent/` (root) | `src/reasoning/agent/` |
+| (to create) | `src/reasoning/Dockerfile.node` |
+| (to create) | `src/reasoning/Dockerfile.python` |
+| `providers/pi/base.Dockerfile` | `src/reasoning/providers/pi/base.Dockerfile` |
+| `providers/pi/provider.Dockerfile` | `src/reasoning/providers/pi/provider.Dockerfile` |
+| `providers/pi/preflight.sh` | `src/reasoning/providers/pi/preflight.sh` |
+| `providers/pi/setup.sh` | `src/reasoning/providers/pi/setup.sh` |
+| `providers/pi/onboard.sh` | `src/reasoning/providers/pi/onboard.sh` |
+| `providers/pi/docker-compose.pi.yml` | `src/reasoning/providers/pi/docker-compose.pi.yml` |
+| `providers/pi/docker-compose.serve.yml` | `src/reasoning/providers/pi/docker-compose.serve.yml` |
+| `providers/pi/config/` | `src/reasoning/providers/pi/config/` |
+| `providers/pi/onboard-readme.md` | `src/reasoning/providers/pi/onboard-readme.md` |
+| All claude-code, hermes, opencode, claude-ai files | `src/reasoning/providers/<n>/...` |
+
+### ⬜ Pending — `devlog/`
+
+`docs/devlog/` → root `devlog/`.
+
+### ⬜ Pending — `tests/eval/`
+
+`eval/` → `tests/eval/`.
+
+### Root level — stays
+
+`docs/`, `Makefile`, `workflow/`, `.devcontainer/`, `.gitignore`, `AGENTS.md`, `LICENSE`, `readme.md`.
+
+---
+
+## 3. Implementation Sequence (updated)
 
 ```
-Session 1: Structural cleanup
-  - Create new directory tree (src/libs/, src/reasoning/, src/capability/, src/scripts/, src/build/)
-  - Move files per assignment table
-  - Update all source/exec/COPY path references
-  - Update build_context_* functions in containers.sh
-  - Update mock_repo_fixtures.sh test fixture
-  - Migrate all test path references
-  - Move devlog/ to root
-  - Move eval/ to tests/eval/
-  - Tests pass, no logic changes
-  - libs/ and old providers/ directories removed (or left empty with README)
+Session 1: libs/ stage ✅ COMPLETE
+  - All src/libs/, src/build/, src/capability/, src/reasoning/entrypoint,
+    scripts/build.sh, scripts/guards.sh, scripts/workflows/, scripts/templates/
+  - containers.sh split, session.sh split, draft_workflow.sh split, diff.sh split
+  - Packaging pipeline made symmetrical across all providers
+  - File naming standardised to underscores
+  - Context resolution convention applied (_self_dir, $AGENT_SANDBOX_REPO, $REPO_ROOT)
+  - New tests: test_diff_export.sh, test_packaging_symmetry.sh
+  - Rename workflow formalised: agent/drafts/refactor-mv-rename-file.skill.md
 
-Session 2: Dockerfile layer refactoring
+Session 2: providers/ + agent/ + devlog/ ⬜ PENDING
+  - Move providers/*/ to src/reasoning/providers/<n>/
+  - Move agent/ to src/reasoning/agent/
+  - Move docs/devlog/ to root devlog/
+  - Update all path references
+  - Apply rename workflow (refactor-mv-rename-file.skill.md) per file
+  - Use rename propagation checklist (Step 1): grep every reference before mv
+  - Use file lifecycle gate (Steps 3-5): create → update refs → verify → delete old → re-verify
+
+Session 3: Dockerfile layer refactoring ⬜ PENDING
   - Create src/reasoning/Dockerfile.node, Dockerfile.python
   - Trim per-provider base Dockerfiles
   - Update build pipeline for three-tier build
-  - Tests pass
 
-Session 3+: UID Mapping (per M2.7 Track C)
+Session 4+: UID Mapping (per M2.7 Track C) ⬜ PENDING
 ```
+
+---
+
+## Workflow Amendments (from Session 1 learnings)
+
+These are now formalised in `agent/drafts/refactor-mv-rename-file.skill.md`:
+
+1. **Rename propagation checklist** — before any `git mv`, grep every reference across the entire tree, categorise by whether it must change, produce a propagation table.
+2. **File lifecycle gate** — create new → update refs → verify (make test) → delete old → re-verify. Never batch-remove before path updates are confirmed.
+3. **Convention-first design** — naming convention frozen in design doc before implementation. No mid-session changes.
+4. **Container-side path verification** — test that every `/opt/sandbox/lib/` source path has a matching Dockerfile COPY.
+
+These apply to all subsequent structural cleanup sessions.
 
 ---
 

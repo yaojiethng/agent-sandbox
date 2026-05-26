@@ -14,7 +14,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/libs/containers.sh"
+source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/build/context.sh"
+source "$REPO_ROOT/scripts/build.sh"
 
 # ---------------------------------------------------------------------------
 # Test harness
@@ -138,7 +140,7 @@ context=$(build_context_sandbox "$REPO")
 
 assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
 assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
-assert_file_set "sandbox: correct file set (sandbox build)" "$context" "diff.sh dirs.sh package_branch.sh package_diff.sh routing.sh sandbox-entrypoint.sh session.sh snapshot.sh"
+assert_file_set "sandbox: correct file set (sandbox build)" "$context" "diff.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh snapshot.sh"
 
 cleanup "$context"
 cleanup "$REPO"
@@ -152,7 +154,7 @@ echo "-- File contents: agent image type --"
 REPO=$(make_mock_repo)
 context=$(build_context_agent "$REPO" test-provider)
 
-assert_file_set "agent: correct file set (agent build)" "$context" "diff.sh dirs.sh package_branch.sh package_diff.sh provider-entrypoint.sh routing.sh session.sh"
+assert_file_set "agent: correct file set (agent build)" "$context" "diff.sh dirs.sh entrypoint.sh package_branch.sh package_diff.sh routing.sh session_state.sh"
 
 cleanup "$context"
 cleanup "$REPO"
@@ -165,12 +167,12 @@ echo "-- File content fidelity --"
 REPO=$(make_mock_repo)
 context=$(build_context_sandbox "$REPO")
 
-assert_equal "sandbox-entrypoint.sh content matches source" \
-    "$(cat "$REPO/libs/sandbox-entrypoint.sh")" \
-    "$(cat "$context/sandbox-entrypoint.sh")"
+assert_equal "entrypoint.sh content matches source" \
+    "$(cat "$REPO/src/capability/entrypoint.sh")" \
+    "$(cat "$context/entrypoint.sh")"
 
 assert_equal "dirs.sh content matches source" \
-    "$(cat "$REPO/libs/dirs.sh")" \
+    "$(cat "$REPO/src/libs/dirs.sh")" \
     "$(cat "$context/dirs.sh")"
 
 cleanup "$context"
@@ -221,7 +223,7 @@ assert_equal "same source files produce same digest" "$d1" "$d2"
 assert_equal "digest is 64 hex chars" 64 "${#d1}"
 
 # Change a source file — digest must change
-echo "modified-content" > "$REPO/libs/dirs.sh"
+echo "modified-content" > "$REPO/src/libs/dirs.sh"
 rm -rf "$fixed_context"/*
 context_tmp=$(build_context_sandbox "$REPO")
 cp -r "$context_tmp"/* "$fixed_context/"
@@ -231,7 +233,7 @@ d3=$(digest_of_context "$fixed_context")
 assert_not_equal "digest changes when source file changes" "$d1" "$d3"
 
 # Change a different source file
-echo "modified-entrypoint" > "$REPO/libs/sandbox-entrypoint.sh"
+echo "modified-entrypoint" > "$REPO/src/capability/entrypoint.sh"
 rm -rf "$fixed_context"/*
 context_tmp=$(build_context_sandbox "$REPO")
 cp -r "$context_tmp"/* "$fixed_context/"
@@ -261,52 +263,52 @@ echo "-- Error cases --"
 
 # Missing required arguments
 assert_exit_nonzero "fails when image_type arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox'
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox'
 assert_exit_nonzero "fails when repo_root arg is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox'
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox'
 
 
 
 # Missing source file: sandbox-entrypoint.sh
 REPO=$(make_mock_repo)
-rm "$REPO/libs/sandbox-entrypoint.sh"
-assert_exit_nonzero "fails when sandbox-entrypoint.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
+rm "$REPO/src/capability/entrypoint.sh"
+assert_exit_nonzero "fails when entrypoint.sh is missing" \
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: snapshot.sh
 REPO=$(make_mock_repo)
-rm "$REPO/libs/snapshot.sh"
+rm "$REPO/src/capability/snapshot.sh"
 assert_exit_nonzero "fails when snapshot.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: diff.sh
 REPO=$(make_mock_repo)
-rm "$REPO/libs/diff.sh"
+rm "$REPO/src/libs/diff.sh"
 assert_exit_nonzero "fails when diff.sh is missing" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (sandbox)
 REPO=$(make_mock_repo)
-rm "$REPO/libs/dirs.sh"
+rm "$REPO/src/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (sandbox)" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox '"$REPO"
 cleanup "$REPO"
 
 # Missing source file: dirs.sh (agent)
 REPO=$(make_mock_repo)
-rm "$REPO/libs/dirs.sh"
+rm "$REPO/src/libs/dirs.sh"
 assert_exit_nonzero "fails when dirs.sh is missing (agent)" \
-    bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_agent '"$REPO"
+    bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_agent '"$REPO"
 cleanup "$REPO"
 
 # No partial output on error: build_context_sandbox must clean up the temp dir
 # before returning on failure — the ERR trap handles this.
 REPO=$(make_mock_repo)
-rm "$REPO/libs/snapshot.sh"
-partial_output=$(bash -c 'source '"$REPO_ROOT"'/libs/containers.sh && build_context_sandbox '"$REPO" 2>/dev/null || true)
+rm "$REPO/src/capability/snapshot.sh"
+partial_output=$(bash -c 'source '"$REPO_ROOT"'/build/image.sh && source '"$REPO_ROOT"'/build/context.sh && source '"$REPO_ROOT"'/scripts/build.sh && build_context_sandbox '"$REPO" 2>/dev/null || true)
 if [[ -n "$partial_output" && -d "$partial_output" ]]; then
     fail "no partial output on error: partial context dir left behind at $partial_output"
     rm -rf "$partial_output"
@@ -322,18 +324,18 @@ echo "-- build_sandbox argument validation --"
 
 REPO=$(make_mock_repo)
 assert_exit_nonzero "build_sandbox: fails when project name is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox'
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_sandbox'
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 assert_exit_nonzero "build_sandbox: fails when repo_root is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_sandbox '"'"'test-project'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 # No sandbox.Dockerfile in fixture; should fail on missing file.
 assert_exit_nonzero "build_sandbox: fails when sandbox.Dockerfile is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_sandbox '"'"'test-project'"'"' '"'"'$REPO'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_sandbox '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 # -------------------------------------------------------------------------
@@ -343,23 +345,23 @@ echo "-- build_agent argument validation --"
 
 REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when provider name is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent'
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent'
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when project name is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 assert_exit_nonzero "build_agent: fails when repo_root is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 # No providers/ dir in fixture; should fail on missing base.Dockerfile.
 assert_exit_nonzero "build_agent: fails when base.Dockerfile is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
@@ -367,7 +369,7 @@ mkdir -p "$REPO/providers/test-provider"
 echo "base" > "$REPO/providers/test-provider/base.Dockerfile"
 # base.Dockerfile exists but provider.Dockerfile does not; should fail.
 assert_exit_nonzero "build_agent: fails when provider.Dockerfile is missing" \
-    bash -c 'source '"'"'$REPO_ROOT'"'"'/libs/containers.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
+    bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 # -------------------------------------------------------------------------

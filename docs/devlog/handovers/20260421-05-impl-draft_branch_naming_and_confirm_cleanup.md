@@ -15,7 +15,7 @@ Additionally, consolidate the timestamp variable: rename `CHECKPOINT_TS` → `SE
 
 ## Scope
 
-Script changes to `scripts/start_agent.sh` and `scripts/apply_workspace.sh`. Test updates to `tests/test_apply_workspace.sh`, `tests/test_apply.sh`, and `tests/test_start_agent.sh`. Documentation updates to 5 `.md` files. No changes to `libs/package-diff.sh` (its `TIMESTAMP` is a container-side packaging timestamp, intentionally separate from host-side `SESSION_TS`).
+Script changes to `scripts/start_agent.sh` and `scripts/apply_workspace.sh`. Test updates to `tests/test_apply_workspace.sh`, `tests/test_apply.sh`, and `tests/test_start_agent.sh`. Documentation updates to 5 `.md` files. No changes to `libs/package_diff.sh` (its `TIMESTAMP` is a container-side packaging timestamp, intentionally separate from host-side `SESSION_TS`).
 
 ## Carried forward
 
@@ -57,7 +57,7 @@ None.
 | `git branch -D` for draft branch cleanup on confirm/reject | The prior `git branch -d` (safe delete) could fail if git didn't consider the branch merged (e.g., after rebase); force-delete is safe because we've already fast-forward merged or are discarding | `apply_workspace.sh` |
 | `CHECKPOINT_TS` → `SESSION_TS` rename | Matches M2.7 story spec; the prior session `20260417-02` deferred this rename; now implemented alongside the branch-naming change that makes the variable's role as session identity clearer | `start_agent.sh`, `apply_workspace.sh` |
 | Historical handover docs left unchanged | They record past decisions accurately; `CHECKPOINT_TS` was the correct name at the time those sessions occurred | N/A |
-| `package-diff.sh` `TIMESTAMP` not renamed | Container-side packaging timestamp with different format (`%Y%m%d%H%M%S`); intentionally separate from host-side session identity | N/A |
+| `package_diff.sh` `TIMESTAMP` not renamed | Container-side packaging timestamp with different format (`%Y%m%d%H%M%S`); intentionally separate from host-side session identity | N/A |
 
 ## Completed this session
 

@@ -21,13 +21,15 @@ RUN apt-get update && apt-get install -y \
 # -------------------------
 # Build context is a temp directory populated by build_context in libs/build.sh;
 # files are copied flat so paths here match the temp dir layout.
-COPY sandbox-entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
+COPY entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
-COPY diff.sh /opt/sandbox/lib/diff.sh
-COPY session.sh /opt/sandbox/lib/session.sh
+COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
+COPY session_state.sh /opt/sandbox/lib/session_state.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh
 COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
+COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
+COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
 COPY docs/ /opt/sandbox/docs/
 RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 

@@ -25,7 +25,7 @@
 set -o pipefail
 
 ROOT="/home/agentuser"
-source /opt/sandbox/lib/session.sh
+source /opt/sandbox/lib/session_state.sh
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).

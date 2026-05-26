@@ -46,13 +46,13 @@ Each layer uses a different path resolution strategy, dictated by its deployment
 
 ## Layer 2 — Cross-context (shared libs)
 
-**Files:** `session.sh` → `session-state.sh`, `routing.sh`, `diff.sh` → `diff.sh` + `diff-export.sh`, `package-branch.sh`, `package-diff.sh`, `dirs.sh`
+**Files:** `session.sh` → `session_state.sh`, `routing.sh`, `diff.sh` → `diff.sh` + `diff_export.sh`, `package_branch.sh`, `package_diff.sh`, `dirs.sh`
 **Deployment:** Deployed to both host filesystem (via repo checkout) AND both container images (via Dockerfile COPY).
 **Path resolution:** **Self-resolution** — each file computes its own directory at source time, then sources siblings relative to that directory.
 
 ```
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$_SCRIPT_DIR/session-state.sh"
+source "$_SCRIPT_DIR/session_state.sh"
 source "$_SCRIPT_DIR/routing.sh"
 ```
 
@@ -107,7 +107,7 @@ _DW_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_DW_SCRIPT_DIR/session.sh"
 
 # After (uses parent's variable):
-source "$AGENT_SANDBOX_REPO/src/libs/session-state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 ```
 
 **Rationale:** These files are only ever sourced by `agent-sandbox.sh`, which sets `$AGENT_SANDBOX_REPO` before sourcing them. Using this variable eliminates the self-resolution variables and their naming inconsistencies. The source paths become self-documenting (they spell out the full target path).
@@ -159,27 +159,27 @@ Every source path that references a file that will move (per the libs/ refactor 
 | | `$AGENT_SANDBOX_REPO/libs/routing.sh` | `$AGENT_SANDBOX_REPO/src/libs/routing.sh` | |
 | | `$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh` | `$AGENT_SANDBOX_REPO/src/scripts/workflows/interactive.sh` | |
 | | `$AGENT_SANDBOX_REPO/libs/dirs.sh` | `$AGENT_SANDBOX_REPO/src/libs/dirs.sh` | |
-| | `$AGENT_SANDBOX_REPO/libs/package_diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/package-diff.sh` | |
-| | `$AGENT_SANDBOX_REPO/libs/package_branch.sh` | `$AGENT_SANDBOX_REPO/src/libs/package-branch.sh` | |
+| | `$AGENT_SANDBOX_REPO/libs/package_diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/package_diff.sh` | |
+| | `$AGENT_SANDBOX_REPO/libs/package_branch.sh` | `$AGENT_SANDBOX_REPO/src/libs/package_branch.sh` | |
 | `scripts/start_agent.sh` | `$REPO_ROOT/libs/containers.sh` | `$REPO_ROOT/scripts/build.sh` (or `$REPO_ROOT/build/*`) | `$REPO_ROOT` |
 | | `$REPO_ROOT/libs/snapshot.sh` | `$REPO_ROOT/src/capability/snapshot.sh` | |
 | `scripts/run_agent.sh` | `$REPO_ROOT/libs/containers.sh` | `$REPO_ROOT/scripts/build.sh` (or `$REPO_ROOT/build/*`) | `$REPO_ROOT` |
 | | `$REPO_ROOT/libs/compose.sh` | `$REPO_ROOT/build/compose.sh` | |
-| `libs/diff_workflow.sh → src/scripts/workflows/apply.sh` | `$_DW_SCRIPT_DIR/session.sh` | `$AGENT_SANDBOX_REPO/src/libs/session-state.sh` | `$AGENT_SANDBOX_REPO` |
+| `libs/diff_workflow.sh → src/scripts/workflows/apply.sh` | `$_DW_SCRIPT_DIR/session.sh` | `$AGENT_SANDBOX_REPO/src/libs/session_state.sh` | `$AGENT_SANDBOX_REPO` |
 | | `$_DW_SCRIPT_DIR/diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/diff.sh` | |
-| `libs/draft_workflow.sh → src/scripts/workflows/draft.sh` | `$(cd...)/session.sh` | `$AGENT_SANDBOX_REPO/src/libs/session-state.sh` | `$AGENT_SANDBOX_REPO` |
+| `libs/draft_workflow.sh → src/scripts/workflows/draft.sh` | `$(cd...)/session.sh` | `$AGENT_SANDBOX_REPO/src/libs/session_state.sh` | `$AGENT_SANDBOX_REPO` |
 | | `$(cd...)/routing.sh` | `$AGENT_SANDBOX_REPO/src/libs/routing.sh` | |
 | | `$(cd...)/diff.sh` | `$AGENT_SANDBOX_REPO/src/libs/diff.sh` | |
 | `libs/interactive_session_select.sh → src/scripts/workflows/interactive.sh` | `$_ISS_SCRIPT_DIR/routing.sh` | `$AGENT_SANDBOX_REPO/src/libs/routing.sh` | `$AGENT_SANDBOX_REPO` |
-| `libs/diff.sh → src/libs/diff.sh` | `$_DIFF_SH_DIR/session.sh` | `$_SCRIPT_DIR/session-state.sh` | Self-resolution (standardised) |
+| `libs/diff.sh → src/libs/diff.sh` | `$_DIFF_SH_DIR/session.sh` | `$_SCRIPT_DIR/session_state.sh` | Self-resolution (standardised) |
 | | `$_DIFF_SH_DIR/routing.sh` | `$_SCRIPT_DIR/routing.sh` | |
-| `libs/package_branch.sh → src/libs/package-branch.sh` | `$_PB_SCRIPT_DIR/session.sh` | `$_SCRIPT_DIR/session-state.sh` | Self-resolution (standardised) |
+| `libs/package_branch.sh → src/libs/package_branch.sh` | `$_PB_SCRIPT_DIR/session.sh` | `$_SCRIPT_DIR/session_state.sh` | Self-resolution (standardised) |
 | | `$_PB_SCRIPT_DIR/diff.sh` | `$_SCRIPT_DIR/diff.sh` | |
 | | `$_PB_SCRIPT_DIR/routing.sh` | `$_SCRIPT_DIR/routing.sh` | |
-| `libs/package_diff.sh → src/libs/package-diff.sh` | `$_PD_SCRIPT_DIR/session.sh` | `$_SCRIPT_DIR/session-state.sh` | Self-resolution (standardised) |
+| `libs/package_diff.sh → src/libs/package_diff.sh` | `$_PD_SCRIPT_DIR/session.sh` | `$_SCRIPT_DIR/session_state.sh` | Self-resolution (standardised) |
 | | `$_PD_SCRIPT_DIR/diff.sh` | `$_SCRIPT_DIR/diff.sh` | |
 | | `$_PD_SCRIPT_DIR/routing.sh` | `$_SCRIPT_DIR/routing.sh` | |
-| `libs/routing.sh → src/libs/routing.sh` | (sources session.sh, dirs.sh via internal self-resolution) | `$_SCRIPT_DIR/session-state.sh`, `$_SCRIPT_DIR/dirs.sh` | Self-resolution (standardised) |
+| `libs/routing.sh → src/libs/routing.sh` | (sources session.sh, dirs.sh via internal self-resolution) | `$_SCRIPT_DIR/session_state.sh`, `$_SCRIPT_DIR/dirs.sh` | Self-resolution (standardised) |
 | `libs/containers.sh → (split across build/* + scripts/build.sh)` | `$repo_root/libs/...` (build_context functions) | `$repo_root/build/...`, `$repo_root/src/libs/...`, `$repo_root/src/capability/...` | `$repo_root` (internal variable) |
 | `libs/sandbox.Dockerfile → src/capability/Dockerfile` | `COPY dirs.sh /opt/sandbox/lib/dirs.sh` | `COPY src/libs/dirs.sh /opt/sandbox/lib/dirs.sh` | Dockerfile COPY (container) |
 | `providers/pi/provider.Dockerfile` | `COPY dirs.sh /opt/sandbox/lib/dirs.sh` | `COPY src/libs/dirs.sh /opt/sandbox/lib/dirs.sh` | Dockerfile COPY (container) |
@@ -201,7 +201,7 @@ Aside from source path updates, the libs files being moved need the following in
 
 2. **guards.sh (new file)** — extracted from `session.sh`. `validate_project_dir` + `draft_clear_stale_lock`. Sources: none (it's self-contained). Sourced by: host-side workflows and agent-sandbox.sh via `$AGENT_SANDBOX_REPO`.
 
-3. **session-state.sh (new file)** — extracted from `session.sh`. `session_state_read` + `session_state_write`. Self-resolution for cross-context sourcing.
+3. **session_state.sh (new file)** — extracted from `session.sh`. `session_state_read` + `session_state_write`. Self-resolution for cross-context sourcing.
 
 ---
 

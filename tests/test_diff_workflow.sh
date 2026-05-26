@@ -12,7 +12,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 AGENT_SANDBOX_REPO="$REPO_ROOT"
-source "$REPO_ROOT/libs/diff_workflow.sh"
+source "$REPO_ROOT/scripts/workflows/apply.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
 

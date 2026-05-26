@@ -30,10 +30,14 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
-source "$AGENT_SANDBOX_REPO/libs/containers.sh"
-source "$AGENT_SANDBOX_REPO/libs/draft_workflow.sh"
-source "$AGENT_SANDBOX_REPO/libs/diff_workflow.sh"
-source "$AGENT_SANDBOX_REPO/libs/routing.sh"
+source "$AGENT_SANDBOX_REPO/src/build/image.sh"
+source "$AGENT_SANDBOX_REPO/src/build/context.sh"
+source "$AGENT_SANDBOX_REPO/scripts/build.sh"
+source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
+source "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh"
+source "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh"
+source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 
 # =============================================================================
 # CLI entry point
@@ -236,7 +240,7 @@ main() {
       fi
 
       if [[ "$INTERACTIVE" == true ]]; then
-        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+        source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
 
         if [[ -n "$DIFF_ARG" ]]; then
           # --diff=<path> given: skip selection steps, just confirm and apply
@@ -299,7 +303,7 @@ main() {
       fi
 
       if [[ "$INTERACTIVE" == true ]]; then
-        source "$AGENT_SANDBOX_REPO/libs/interactive_session_select.sh"
+        source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
 
         if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
           # Both channel and session given: skip pickers, show patch list + confirm
@@ -390,7 +394,7 @@ main() {
       fi
 
       # Derive INPUT_DIR from SANDBOX_DIR
-      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      source "$AGENT_SANDBOX_REPO/src/libs/dirs.sh"
       dirs_resolve "$SANDBOX_DIR"
 
       if [[ -n "$TO_ARG" ]]; then
@@ -399,7 +403,7 @@ main() {
         local TO_DIR="$INPUT_DIR"
       fi
 
-      exec bash "$AGENT_SANDBOX_REPO/libs/package_diff.sh" \
+      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_diff.sh" \
         --to="$TO_DIR" \
         $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
         $( [[ "$ALL_FLAG" == true ]] && echo "--all" ) \
@@ -414,7 +418,7 @@ main() {
       fi
 
       # Derive INPUT_DIR from SANDBOX_DIR
-      source "$AGENT_SANDBOX_REPO/libs/dirs.sh"
+      source "$AGENT_SANDBOX_REPO/src/libs/dirs.sh"
       dirs_resolve "$SANDBOX_DIR"
 
       if [[ -n "$TO_ARG" ]]; then
@@ -423,7 +427,7 @@ main() {
         local TO_DIR="$INPUT_DIR"
       fi
 
-      exec bash "$AGENT_SANDBOX_REPO/libs/package_branch.sh" \
+      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" \
         --to="$TO_DIR" \
         $( [[ -n "$SESSION_SUMMARY_ARG" ]] && echo "--session-summary=$SESSION_SUMMARY_ARG" ) \
         $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )

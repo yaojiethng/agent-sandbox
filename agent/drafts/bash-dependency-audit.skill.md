@@ -48,12 +48,12 @@ Classify each hit by pattern:
 
 | Pattern | Example | Context |
 |---|---|---|
-| **Hardcoded absolute** | `source /opt/sandbox/lib/session.sh` | Container-only — path baked into image |
+| **Hardcoded absolute** | `source /opt/sandbox/lib/session-state.sh` | Container-only — path baked into image |
 | **Macro** | `source "$AGENT_SANDBOX_REPO/libs/containers.sh"` | Host installed CLI — macro set at install time |
-| **Repo root variable** | `source "$REPO_ROOT/libs/session.sh"` | Host scripts running from checkout |
-| **Self-resolution variable** | `source "$_PB_SCRIPT_DIR/session.sh"` | Cross-context — file computes own location |
-| **Inline self-resolution** | `source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session.sh"` | Same as above but without cached variable |
-| **Relative path** | `source "$SCRIPT_DIR/../libs/diff.sh"` | Test files — relative from test dir |
+| **Repo root variable** | `source "$REPO_ROOT/libs/session-state.sh"` | Host scripts running from checkout |
+| **Self-resolution variable** | `source "$_PB_SCRIPT_DIR/session-state.sh"` | Cross-context — file computes own location |
+| **Inline self-resolution** | `source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session-state.sh"` | Same as above but without cached variable |
+| **Relative path** | `source "$SCRIPT_DIR/../libs/diff_export.sh"` | Test files — relative from test dir |
 | **Inline exec** | `bash "$(cd ... && pwd)/../libs/foo.sh"` | Executable call (not source) with dynamic path |
 
 ### Step 3 — Map the Self-Resolution Variable Names
@@ -133,7 +133,7 @@ For every source/COPY/exec path that will change, list:
 | File | Old path | New path | Convention |
 |---|---|---|---|
 | `scripts/agent-sandbox.sh` | `$AGENT_SANDBOX_REPO/libs/containers.sh` | `$AGENT_SANDBOX_REPO/build/image.sh` | `$AGENT_SANDBOX_REPO` |
-| `libs/diff.sh` | `$_DIFF_SH_DIR/session.sh` | `$_self_dir/session.sh` | Self-resolution |
+| `libs/diff_export.sh` | `$_DIFF_SH_DIR/session-state.sh` | `$_self_dir/session-state.sh` | Self-resolution |
 
 This table is the implementation spec.
 
