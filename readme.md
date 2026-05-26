@@ -1,4 +1,4 @@
-> **Current milestone status:** see the active handover in `docs/devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
+> **Current milestone status:** see the active handover in `devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
 
 # Autonomous Coding Agent Sandbox
 
@@ -70,7 +70,7 @@ Start here and follow the path in order. Architecture documents describe the sys
 | 3 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
 | 4 | [agent_workflow.md](docs/concepts/agent_workflow.md) | Workflow expression model and policy map (read once) |
 | 5 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
-| 6 | [roadmap.md](docs/devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
+| 6 | [roadmap.md](devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 

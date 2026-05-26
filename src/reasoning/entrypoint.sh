@@ -20,7 +20,7 @@
 # Config files (settings.json, auth.json, models.json, AGENTS.md) are
 # copy-in from the baked template (/opt/workflow/agent/config/) at startup.
 # Subdirectories prompts/, sessions/, skills/ are Docker bind-mounted —
-# they shadow the template copies at runtime. See docs/devlog/roadmap.md
+# they shadow the template copies at runtime. See devlog/roadmap.md
 # M2.4 for the design rationale.
 #
 # Required environment variables (set via ENV in provider.Dockerfile):

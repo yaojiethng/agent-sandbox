@@ -29,7 +29,7 @@ x-session-labels: &session_labels
 # Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.
 # Container paths (right) are literals fixed for the image architecture.
 # When adding a new bind mount, add the mapping here and reference ${VAR} below.
-# Design rationale: docs/devlog/discussions/design_workspace_path_resolution.md
+# Design rationale: devlog/discussions/design_workspace_path_resolution.md
 x-workspace:
   # Host → Container
   snapshot_host:   "${SNAPSHOT_DIR}"             # → "/home/agentuser/.snapshot"

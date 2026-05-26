@@ -51,7 +51,7 @@ A full handover audit covers:
 ### Step 1 — Scope the audit
 
 Determine the set of handovers to review:
-- **Periodic:** list all handovers in `docs/devlog/handovers/` within the date range. Sort by date.
+- **Periodic:** list all handovers in `devlog/handovers/` within the date range. Sort by date.
 - **Event-driven:** identify the chain by tracing the deferred item through handover `## Next session` and `## Carried forward` sections.
 
 ### Step 2 — Structural scan

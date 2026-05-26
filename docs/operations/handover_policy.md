@@ -31,7 +31,7 @@ YYYYMMDD-NN-TYPE-description.md
 
 Example: `20260316-02-workflow-scope_gate_and_preclose_verification.md`
 
-Stored in the `docs/devlog/handovers/` directory. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
+Stored in the `devlog/handovers/` directory. One file per session. Do not overwrite previous handovers — they are the session log for the milestone. The most recent date and highest index is the active handover.
 
 ---
 

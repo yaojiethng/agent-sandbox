@@ -2,7 +2,7 @@
 
 Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
 
-The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `docs/devlog/handovers/`).
+The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `devlog/handovers/`).
 
 Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
 

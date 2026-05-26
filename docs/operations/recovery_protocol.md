@@ -21,7 +21,7 @@ Check the working tree and git history against the expected state:
 ```bash
 git log --oneline <baseline>..HEAD
 git status --short
-ls docs/devlog/handovers/
+ls devlog/handovers/
 ```
 
 Identify which sessions' outputs are missing. The handovers tell you what was done; the git log tells you what survived. Any gap is a recovery target.
@@ -54,7 +54,7 @@ git commit -m "<message>"
 
 **4. Create handovers**
 
-For each replayed session, create a handover file at `docs/devlog/handovers/`:
+For each replayed session, create a handover file at `devlog/handovers/`:
 
 - Date the handover to the current day (the replay date), not the original session date.
 - Number it sequentially from the existing handovers in the repo.
@@ -71,7 +71,7 @@ bash scripts/run_tests.sh
 # Check total test count matches expected (may increase if new tests were added)
 
 # Verify all handovers exist with correct dating
-ls docs/devlog/handovers/
+ls devlog/handovers/
 ```
 
 **6. Renumber and date-check**
@@ -80,10 +80,10 @@ If handovers were created with the wrong date despite Step 4's instruction (e.g.
 
 ```bash
 # Rename files — replace placeholders with actual old/new date prefixes
-mv docs/devlog/handovers/20260511-*.md docs/devlog/handovers/20260512-*.md
+mv devlog/handovers/20260511-*.md devlog/handovers/20260512-*.md
 
 # Update date inside each file
-for f in docs/devlog/handovers/20260512-*.md; do
+for f in devlog/handovers/20260512-*.md; do
   sed -i 's/\*\*Session date:\*\* 2026-05-11/\*\*Session date:\*\* 2026-05-12/g' "$f"
 done
 ```
@@ -132,7 +132,7 @@ No matches for either command. If a match is found, the artifact was not fully e
 **2. Check for wrong-named files in any commit**
 
 ```bash
-git log --all --diff-filter=A -- 'docs/devlog/handovers/20260511*'
+git log --all --diff-filter=A -- 'devlog/handovers/20260511*'
 ```
 
 No matches. Any match indicates a stale file that should have been renamed or removed.
@@ -142,7 +142,7 @@ No matches. Any match indicates a stale file that should have been renamed or re
 For each commit that should have created a handover:
 
 ```bash
-git diff-tree --no-commit-id -r <sha> -- docs/devlog/handovers/
+git diff-tree --no-commit-id -r <sha> -- devlog/handovers/
 ```
 
 Each commit should create exactly one handover file with the correct name and `add` mode (`:000000 100644 A ...`).
@@ -150,7 +150,7 @@ Each commit should create exactly one handover file with the correct name and `a
 **4. Verify session date consistency across all handovers**
 
 ```bash
-for f in docs/devlog/handovers/YYYYMMDD-*.md; do
+for f in devlog/handovers/YYYYMMDD-*.md; do
   grep "^\\*\\*Session date:" "$f"
 done
 ```
@@ -162,7 +162,7 @@ All dates must match the date prefix in the filename. No `2026-05-11` dates in a
 ```bash
 for sha in <commits that should have handovers>; do
   echo "--- $(git log --oneline -1 $sha) ---"
-  git show $sha:docs/devlog/handovers/ | head -4
+  git show $sha:devlog/handovers/ | head -4
 done
 ```
 

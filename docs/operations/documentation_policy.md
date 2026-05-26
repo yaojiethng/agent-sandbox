@@ -129,7 +129,7 @@ Four documents govern agent behaviour. Each answers a distinct question and must
 
 **`AGENTS.md`** — provider-specific notes, collaboration protocol, role definition, read discipline, and output format rules. Governs all agents regardless of provider. Swapped out when the provider changes.
 
-**`docs/devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
+**`devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
 
 ---
 
