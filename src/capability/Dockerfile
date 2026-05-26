@@ -3,7 +3,11 @@
 # Default capability layer Dockerfile template.
 # Copy into SANDBOX_DIR as Dockerfile.sandbox and customise as needed.
 # Docker Compose references the project-level Dockerfile.sandbox.
-FROM ubuntu:24.04
+ARG BASE_IMAGE=sandbox-ubuntu-base
+FROM
+
+ARG HOST_UID=1000
+ARG HOST_GID=1000
 
 ENV DEBIAN_FRONTEND=noninteractive
 
