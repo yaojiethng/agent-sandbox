@@ -145,6 +145,95 @@ package_commits() {
 #   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
 #                       init_sha from SESSION_STATE
 # -------------------------
+# -------------------------
+# _package_preflight_check
+#
+# Verifies that the working tree has no uncommitted modifications to files
+# that appear in the committed diff between INIT_SHA and HEAD. Such
+# modifications would cause the committed patches' old-state context to
+# diverge from the baseline, making them unappliable.
+#
+# Also warns when a file in the committed diff was independently modified
+# between INIT_SHA and the parent commit that introduced the file's change
+# (intermediate committed reorders that cancel out).
+#
+# This check catches the class of divergence documented in:
+#   devlog/discussions/20260526-study-unappliable_patch_structural_cleanup.md
+#
+# Skips check when PACKAGE_BYPASS_PREFLIGHT=true is set.
+# Returns 0 always — warnings only, never blocks packaging.
+# -------------------------
+_package_preflight_check() {
+  local SANDBOX_DIR="$1"
+  local INIT_SHA="$2"
+
+  if [[ "${PACKAGE_BYPASS_PREFLIGHT:-false}" == "true" ]]; then
+    return 0
+  fi
+
+  local FLAGGED=0
+  local CHANGED_FILES
+  CHANGED_FILES=$(git -C "$SANDBOX_DIR" diff --name-only "${INIT_SHA}..HEAD" 2>/dev/null || true)
+
+  if [[ -z "$CHANGED_FILES" ]]; then
+    return 0
+  fi
+
+  for f in $CHANGED_FILES; do
+    # Skip deleted files
+    if ! git -C "$SANDBOX_DIR" cat-file -e "HEAD:$f" 2>/dev/null; then
+      continue
+    fi
+
+    # Check for uncommitted modifications (working tree differs from HEAD)
+    if ! git -C "$SANDBOX_DIR" diff --quiet -- "$f" 2>/dev/null; then
+      echo "Warning: '$f' has uncommitted modifications in the working tree." >&2
+      echo "  The committed patch for this file was generated against HEAD," >&2
+      echo "  but the working tree has additional changes. The committed patch" >&2
+      echo "  may not apply cleanly to the baseline." >&2
+      FLAGGED=1
+    fi
+
+    # Check for intermediate committed reorders: compare the file's blob
+    # at INIT_SHA vs HEAD. If they match but the file appears in the diff
+    # list, the file was modified and reverted during the session — the
+    # patch may reference a state that never existed at INIT_SHA.
+    if git -C "$SANDBOX_DIR" cat-file -e "${INIT_SHA}:$f" 2>/dev/null; then
+      if git -C "$SANDBOX_DIR" diff --quiet "$INIT_SHA" -- "$f" 2>/dev/null; then
+        echo "Warning: '$f' in the committed diff has identical content at" >&2
+        echo "  baseline and HEAD (intermediate modifications cancelled out)." >&2
+        echo "  The patch context may not match the baseline. Review before applying." >&2
+        FLAGGED=1
+      fi
+    fi
+  done
+
+  if [[ "$FLAGGED" -eq 1 ]]; then
+    echo "Warning: pre-flight check flagged potential patch divergence." >&2
+    echo "  Set PACKAGE_BYPASS_PREFLIGHT=true to skip this check." >&2
+  fi
+
+  return 0
+}
+
+# -------------------------
+# package_branch (dispatcher)
+#
+# Orchestrates all packaging output in a single call:
+#   1. package_commits  — per-commit diffs under patches/
+#   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
+#   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
+#   4. write_changed_files     — changed-files/ with MANIFEST.txt
+#
+# Reads init_sha from SESSION_STATE, or uses an explicit override if provided.
+# Overwrites OUTPUT_DIR on each run.
+#
+# Args:
+#   SANDBOX_DIR       — path to the git repository
+#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
+#   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
+#                       init_sha from SESSION_STATE
+# -------------------------
 package_branch() {
   local SANDBOX_DIR="${1:-}"
   local OUTPUT_DIR="${2:-}"
@@ -171,6 +260,9 @@ package_branch() {
     echo "package_branch: SANDBOX_DIR is not a git repository: $SANDBOX_DIR" >&2
     return 1
   fi
+
+  # Pre-flight: check for potential patch divergence from baseline
+  _package_preflight_check "$SANDBOX_DIR" "$INIT_SHA"
 
   # Remove and recreate OUTPUT_DIR
   rm -rf "$OUTPUT_DIR"

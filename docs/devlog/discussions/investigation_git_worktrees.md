@@ -186,3 +186,53 @@ Git worktrees require mounting a path rooted in PROJECT_DIR's `.git` into the ag
 When the assumptions shift (clean history, network-isolated container, main branch protection treated as an engineering problem), the worktree model is architecturally cleaner than the snapshot+diff pipeline. The three engineering problems are solvable. Full security analysis of the relaxed-assumptions model is in [`security_delta_worktree_model.md`](security_delta_worktree_model.md).
 
 Record in `roadmap_future.md` as a named candidate for a post-M2.3 milestone. No codebase changes arise now.
+
+---
+
+## Addendum — Bundle Patch Context Integrity via Worktrees
+
+**Source:** `20260526-study-unappliable_patch_structural_cleanup.md` — Proposal C
+
+A recurring failure mode in the current snapshot+diff pipeline is **patch context mismatch**: the generated patch's hunks refer to line context that doesn't match the baseline commit, because the working tree at bundle-generation time had accumulated divergent modifications. Recovery for the structural cleanup bundle required applying `--exclude` plus a manual `git mv`.
+
+Under the worktree model, this class of failure is eliminated by construction:
+
+### Tagged-baseline workflow
+
+1. **Tag the host-side commit when the session is created.** Before creating the worktree, `start_agent.sh` records the host commit SHA as a lightweight tag:
+
+   ```bash
+   git tag -f agent/session-<TS>/baseline HEAD
+   ```
+
+2. **Perform all session changes inside the worktree.** The agent works entirely within the worktree directory. All commits land on the session branch (`agent/session-<TS>`), sharing the host `.git` object store.
+
+3. **Generate the patch against the tagged baseline.** Packaging runs in the host context (or in the capability layer with access to the shared `.git`), using the tag as the anchor:
+
+   ```bash
+   git format-patch --stdout agent/session-<TS>/baseline..agent/session-<TS> > session-patch.diff
+   ```
+
+   The patch's old-state context is guaranteed to match the baseline because the baseline is the exact commit the tag points to — the same commit the operator would apply the patch against.
+
+4. **Natural linking.** The tag embeds the session timestamp, so any patch can be traced back to its session. The operator verifies by checking that the tag resolves to the current HEAD before applying:
+
+   ```bash
+   if [ "$(git rev-parse agent/session-<TS>/baseline)" != "$(git rev-parse HEAD)" ]; then
+     echo "WARNING: baseline has moved since session was created"
+   fi
+   ```
+
+### Why this solves the divergence problem
+
+In the current pipeline, patch generation runs against the agent's working tree inside `sandbox/`, which is a separate git repo from the host `PROJECT_DIR`. The two repos can diverge (independent commits, differing file states). The patch is then applied to the host repo, where context lines may not match.
+
+In the tagged-baseline worktree model:
+- The host tag and the session branch live in the **same** `.git` object store.
+- The tag is set before the agent starts — it cannot drift during the session.
+- The patch is generated from the session branch against the tag — the old-state context **is** the baseline.
+- No divergence is possible because there is only one `.git`.
+
+### Status
+
+Recorded as a named use-case for the worktree model. Implementation gated on the worktree pipeline adoption decision. No codebase changes arise from this addendum alone.

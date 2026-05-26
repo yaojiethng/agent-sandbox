@@ -12,7 +12,7 @@ set -euo pipefail
 # apply_run — apply a diff file
 # =============================================================================
 
-# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE
+# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE PERMISSIVE
 #
 # Applies a diff file to the project working tree. Does not create commits —
 # leaves changes unstaged for operator review.
@@ -22,6 +22,9 @@ set -euo pipefail
 #   DIFF_FILE     — absolute path to a diff file (uncommitted.diff or similar)
 #   APPLY_BRANCH  — optional branch to checkout/create before applying
 #   FORCE         — if true, apply with --reject; .rej files for conflicts
+#   PERMISSIVE    — if true, on git apply failure retry with --recount
+#                   to handle minor hunk-context drift (line reorders,
+#                   whitespace shifts that don't affect the content delta)
 #
 # No internal path resolution — the caller (router in agent-sandbox.sh or
 # explicit --diff=<path>) supplies the file path directly.
@@ -30,6 +33,7 @@ apply_run() {
   local DIFF_FILE="$2"
   local APPLY_BRANCH="${3:-}"
   local FORCE="${4:-false}"
+  local PERMISSIVE="${5:-false}"
 
   if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" ]]; then
     echo "apply_run: PROJECT_DIR and DIFF_FILE are required" >&2
@@ -64,13 +68,33 @@ apply_run() {
       echo "Warning: some hunks failed to apply." >&2
       echo "Review .rej files and resolve manually." >&2
     fi
+  elif [[ "$PERMISSIVE" == true ]]; then
+    # Permissive mode: try normal apply first, then retry with --recount
+    # on failure. --recount relaxes hunk-context matching so minor context
+    # shifts (line reorders, whitespace changes) don't cause rejection.
+    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
+      # Check if --recount might help
+      if git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
+        echo "Normal apply failed; retrying with --recount (relaxed context matching)..." >&2
+        git -C "$PROJECT_DIR" apply --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE")
+      else
+        echo "Error: git apply failed even with --recount." >&2
+        echo "  Diff file: $DIFF_FILE" >&2
+        echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
+        echo "" >&2
+        echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
+        return 1
+      fi
+    fi
   else
     if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
       echo "Error: git apply failed." >&2
       echo "  Diff file: $DIFF_FILE" >&2
       echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
       echo "" >&2
-      echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
+      echo "Hints:" >&2
+      echo "  Use --force to apply with --reject (.rej files for conflicts)." >&2
+      echo "  Use --permissive to retry with --recount (relaxed context matching)." >&2
       return 1
     fi
   fi
