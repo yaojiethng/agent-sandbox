@@ -89,16 +89,16 @@ build_context_agent() {
 
   # agent workflow files/ — prompts and skills the agent uses at runtime
   mkdir -p "$context_dir/agent" || return 1
-  cp -r "$repo_root/agent/skills"  "$context_dir/agent/skills"  || return 1
-  cp -r "$repo_root/agent/prompts" "$context_dir/agent/prompts" || return 1
+  cp -r "$repo_root/src/reasoning/agent/skills"  "$context_dir/agent/skills"  || return 1
+  cp -r "$repo_root/src/reasoning/agent/prompts" "$context_dir/agent/prompts" || return 1
 
   # Provider config template — baked into image, copy-in to AGENT_HOME at startup
-  if [[ -d "$repo_root/providers/$provider/config" ]]; then
-    cp -r "$repo_root/providers/$provider/config" "$context_dir/agent/config" || return 1
+  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
+    cp -r "$repo_root/src/reasoning/providers/$provider/config" "$context_dir/agent/config" || return 1
   fi
 
   # Provider-specific preflight script — staged as provider-preflight.sh
-  local _provider_preflight="$repo_root/providers/$provider/preflight.sh"
+  local _provider_preflight="$repo_root/src/reasoning/providers/$provider/preflight.sh"
   if [[ -f "$_provider_preflight" ]]; then
     _build_context_copy "$_provider_preflight" "$context_dir/provider-preflight.sh" || return 1
   fi

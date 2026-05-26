@@ -14,7 +14,7 @@
 #      that TUI input works correctly.
 #
 # Provider-specific logic (settings.json merge, path overrides, custom checks)
-# belongs in providers/<n>/preflight.sh, staged as provider-preflight.sh in
+# belongs in src/reasoning/providers/<n>/preflight.sh, staged as provider-preflight.sh in
 # the build context. The shared entrypoint stays generic.
 #
 # Config files (settings.json, auth.json, models.json, AGENTS.md) are
@@ -166,7 +166,7 @@ fi
 # Preflight: source provider-specific checks
 # ---------------------------------------------------------------------------
 # Provider-specific pre-flight scripts are staged by build_context_agent
-# from providers/<n>/preflight.sh and baked into the image at
+# from src/reasoning/providers/<n>/preflight.sh and baked into the image at
 # /opt/sandbox/bin/provider-preflight.sh. If the provider has no preflight
 # script, this file does not exist and the hook is a no-op.
 #

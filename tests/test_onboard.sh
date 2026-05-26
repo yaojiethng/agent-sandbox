@@ -118,7 +118,7 @@ test_fresh_onboard_creates_provider_configs() {
   run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
 
   local PROVIDERS_FOUND=0
-  for PROVIDER_CONFIG_DIR in "$REPO_ROOT/providers/"*/config; do
+  for PROVIDER_CONFIG_DIR in "$REPO_ROOT/src/reasoning/providers/"*/config; do
     [[ -d "$PROVIDER_CONFIG_DIR" ]] || continue
     [[ -n "$(ls -A "$PROVIDER_CONFIG_DIR" 2>/dev/null)" ]] || continue
     local PROVIDER_NAME

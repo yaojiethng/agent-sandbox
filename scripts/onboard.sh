@@ -24,7 +24,7 @@
 #   .workspace/output/           — reasoning layer output channel
 #   .workspace/session-diffs/    — diff pipeline output
 #   .env                         — paths + operator var stubs
-#   .<provider>/                 — provider config dir, seeded from providers/<n>/config/
+#   .<provider>/                 — provider config dir, seeded from src/reasoning/providers/<n>/config/
 #
 # Refresh mode (--refresh) updates versioned template files in an existing
 # SANDBOX_DIR without overwriting .env operator values or AGENTS.md.
@@ -210,7 +210,7 @@ _provision_providers() {
   local ENV_FILE="$SANDBOX_DIR/.env"
   echo "  Seeding provider configs..."
 
-  for PROVIDER_DIR in "$REPO_ROOT/providers/"*/; do
+  for PROVIDER_DIR in "$REPO_ROOT/src/reasoning/providers/"*/; do
     [[ -d "$PROVIDER_DIR" ]] || continue
     local PROVIDER_NAME
     PROVIDER_NAME="$(basename "$PROVIDER_DIR")"

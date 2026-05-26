@@ -60,9 +60,9 @@ build_agent() {
   fi
 
   local base_image; base_image="$(agent_base_image_name "$provider")"
-  local base_dockerfile="$repo_root/providers/$provider/base.Dockerfile"
+  local base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.Dockerfile"
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
-  local provider_dockerfile="$repo_root/providers/$provider/provider.Dockerfile"
+  local provider_dockerfile="$repo_root/src/reasoning/providers/$provider/provider.Dockerfile"
 
   if [[ ! -f "$base_dockerfile" ]]; then
     echo "Error: base Dockerfile not found: $base_dockerfile" >&2

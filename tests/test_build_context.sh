@@ -359,14 +359,14 @@ assert_exit_nonzero "build_agent: fails when repo_root is missing" \
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
-# No providers/ dir in fixture; should fail on missing base.Dockerfile.
+# No src/reasoning/providers/ dir in fixture; should fail on missing base.Dockerfile.
 assert_exit_nonzero "build_agent: fails when base.Dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
-mkdir -p "$REPO/providers/test-provider"
-echo "base" > "$REPO/providers/test-provider/base.Dockerfile"
+mkdir -p "$REPO/src/reasoning/providers/test-provider"
+echo "base" > "$REPO/src/reasoning/providers/test-provider/base.Dockerfile"
 # base.Dockerfile exists but provider.Dockerfile does not; should fail.
 assert_exit_nonzero "build_agent: fails when provider.Dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
@@ -380,13 +380,13 @@ echo "-- Provider config in agent context --"
 
 test_agent_context_includes_provider_config() {
   local repo; repo=$(make_mock_repo)
-  mkdir -p "$repo/providers/test-provider/config"
-  echo '{"model":"test"}' > "$repo/providers/test-provider/config/settings.json"
-  echo 'auth-stub' > "$repo/providers/test-provider/config/auth.json"
-  echo 'models-content' > "$repo/providers/test-provider/config/models.json"
-  echo '# AGENTS.md stub' > "$repo/providers/test-provider/config/AGENTS.md"
-  mkdir -p "$repo/providers/test-provider/config/prompts"
-  echo 'prompt-stub' > "$repo/providers/test-provider/config/prompts/pi-agent.md"
+  mkdir -p "$repo/src/reasoning/providers/test-provider/config"
+  echo '{"model":"test"}' > "$repo/src/reasoning/providers/test-provider/config/settings.json"
+  echo 'auth-stub' > "$repo/src/reasoning/providers/test-provider/config/auth.json"
+  echo 'models-content' > "$repo/src/reasoning/providers/test-provider/config/models.json"
+  echo '# AGENTS.md stub' > "$repo/src/reasoning/providers/test-provider/config/AGENTS.md"
+  mkdir -p "$repo/src/reasoning/providers/test-provider/config/prompts"
+  echo 'prompt-stub' > "$repo/src/reasoning/providers/test-provider/config/prompts/pi-agent.md"
 
   local context
   context=$(build_context_agent "$repo" test-provider)
@@ -398,10 +398,10 @@ test_agent_context_includes_provider_config() {
   assert_file_exists "agent: contains provider prompts/pi-agent.md" "$context/agent/config/prompts/pi-agent.md"
 
   assert_equal "agent: settings.json content matches source" \
-    "$(cat "$repo/providers/test-provider/config/settings.json")" \
+    "$(cat "$repo/src/reasoning/providers/test-provider/config/settings.json")" \
     "$(cat "$context/agent/config/settings.json")"
   assert_equal "agent: AGENTS.md content matches source" \
-    "$(cat "$repo/providers/test-provider/config/AGENTS.md")" \
+    "$(cat "$repo/src/reasoning/providers/test-provider/config/AGENTS.md")" \
     "$(cat "$context/agent/config/AGENTS.md")"
 
   cleanup "$context"
@@ -410,7 +410,7 @@ test_agent_context_includes_provider_config() {
 
 test_agent_context_without_provider_config() {
   local repo; repo=$(make_mock_repo)
-  mkdir -p "$repo/providers/test-provider"
+  mkdir -p "$repo/src/reasoning/providers/test-provider"
   # No config/ dir
 
   assert_exit_zero "agent: succeeds when no provider config exists" \
@@ -427,9 +427,9 @@ test_agent_context_without_provider_config() {
 test_agent_context_provider_config_and_preflight() {
   # Both provider config and preflight script should coexist
   local repo; repo=$(make_mock_repo)
-  mkdir -p "$repo/providers/test-provider/config"
-  echo '{"model":"test"}' > "$repo/providers/test-provider/config/settings.json"
-  echo 'preflight-content' > "$repo/providers/test-provider/preflight.sh"
+  mkdir -p "$repo/src/reasoning/providers/test-provider/config"
+  echo '{"model":"test"}' > "$repo/src/reasoning/providers/test-provider/config/settings.json"
+  echo 'preflight-content' > "$repo/src/reasoning/providers/test-provider/preflight.sh"
 
   local context
   context=$(build_context_agent "$repo" test-provider)
@@ -446,8 +446,8 @@ test_agent_context_provider_config_and_preflight() {
 test_agent_context_provider_config_entire_dir() {
   # Verify the entire config/dir is copied, not just known files
   local repo; repo=$(make_mock_repo)
-  mkdir -p "$repo/providers/test-provider/config/subdir/nested"
-  echo 'deep-content' > "$repo/providers/test-provider/config/subdir/nested/file.txt"
+  mkdir -p "$repo/src/reasoning/providers/test-provider/config/subdir/nested"
+  echo 'deep-content' > "$repo/src/reasoning/providers/test-provider/config/subdir/nested/file.txt"
 
   local context
   context=$(build_context_agent "$repo" test-provider)
@@ -465,10 +465,10 @@ test_agent_context_provider_config_entire_dir() {
 test_agent_context_provider_config_skip_other_providers() {
   # Only the requested provider's config should be copied
   local repo; repo=$(make_mock_repo)
-  mkdir -p "$repo/providers/test-provider/config"
-  echo 'our-config' > "$repo/providers/test-provider/config/settings.json"
-  mkdir -p "$repo/providers/other-provider/config"
-  echo 'other-config' > "$repo/providers/other-provider/config/settings.json"
+  mkdir -p "$repo/src/reasoning/providers/test-provider/config"
+  echo 'our-config' > "$repo/src/reasoning/providers/test-provider/config/settings.json"
+  mkdir -p "$repo/src/reasoning/providers/other-provider/config"
+  echo 'other-config' > "$repo/src/reasoning/providers/other-provider/config/settings.json"
 
   local context
   context=$(build_context_agent "$repo" test-provider)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_providers_pi_preflight.sh
-# Unit tests for providers/pi/preflight.sh
+# Unit tests for src/reasoning/providers/pi/preflight.sh
 #
 # Tests:
 #   - _ensure_harness_keys injects skills/prompts/packages keys
@@ -15,7 +15,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFLIGHT="${SCRIPT_DIR}/../providers/pi/preflight.sh"
+PREFLIGHT="${SCRIPT_DIR}/../src/reasoning/providers/pi/preflight.sh"
 
 source "$SCRIPT_DIR/libs/test_common.sh"
 

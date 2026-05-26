@@ -23,7 +23,7 @@
 #   removed — that mechanism was replaced by direct bind mount in M2.7 item 8.
 #
 # Reference:
-#   - providers/pi/config/agent/settings.json (onboard source — has custom keys)
+#   - src/reasoning/providers/pi/config/agent/settings.json (onboard source — has custom keys)
 #   - libs/provider-entrypoint.sh (_ensure_harness_keys merge function)
 #   - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
 #   - docs/concepts/agent_workflow.md ("Skills and Prompts Layer Model")
@@ -214,7 +214,7 @@ test_round_trip_preserves_keys() {
 # ---------------------------------------------------------------------------
 
 test_real_config_state() {
-  local onboard_source="/home/agentuser/sandbox/providers/pi/config/agent/settings.json"
+  local onboard_source="/home/agentuser/sandbox/src/reasoning/providers/pi/config/agent/settings.json"
   local bind_mount="/opt/provider-config/agent/settings.json"
   local agent_home="$HOME/.pi/agent/settings.json"
 

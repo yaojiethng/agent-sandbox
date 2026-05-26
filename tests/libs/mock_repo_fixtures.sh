@@ -51,10 +51,10 @@ make_mock_repo() {
   fi
 
   if [[ "$skip_agent_dir" == false ]]; then
-    mkdir -p "$dir/agent/skills"
-    echo "skill-content" > "$dir/agent/skills/test.md"
-    mkdir -p "$dir/agent/prompts"
-    echo "prompt-content" > "$dir/agent/prompts/test.md"
+    mkdir -p "$dir/src/reasoning/agent/skills"
+    echo "skill-content" > "$dir/src/reasoning/agent/skills/test.md"
+    mkdir -p "$dir/src/reasoning/agent/prompts"
+    echo "prompt-content" > "$dir/src/reasoning/agent/prompts/test.md"
   fi
 
   echo "$dir"

@@ -38,7 +38,7 @@ test_capability_dockerfile_has_all_packaging() {
 
 test_provider_dockerfiles_have_all_packaging() {
   local all_ok=true
-  for dockerfile in "$REPO_ROOT/providers/"*/provider.Dockerfile; do
+  for dockerfile in "$REPO_ROOT/src/reasoning/providers/"*/provider.Dockerfile; do
     local provider
     provider=$(basename "$(dirname "$dockerfile")")
     local copied

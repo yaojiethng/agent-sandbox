@@ -22,10 +22,10 @@
 #
 # Compose file assembly follows deterministic conventions:
 #   base:             libs/docker-compose.yml
-#   provider overlay: providers/<n>/docker-compose.<n>.yml  (merged if exists)
+#   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
 #     dry-run:        libs/docker-compose.dry-run.yml
-#     serve:          providers/<n>/docker-compose.serve.yml
+#     serve:          src/reasoning/providers/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
 #   providers/<n>/setup.sh  (sourced if exists, before compose generation)
@@ -103,12 +103,12 @@ fi
 # setup.sh is responsible for exporting provider-specific vars needed before
 # compose generation.
 # If setup.sh exits non-zero, the session aborts with an attribution message.
-PROVIDER_SETUP="$REPO_ROOT/providers/$PROVIDER_NAME/setup.sh"
+PROVIDER_SETUP="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
 
 if [[ -f "$PROVIDER_SETUP" ]]; then
   if ! source "$PROVIDER_SETUP"; then
     echo "Error: provider setup hook failed: $PROVIDER_SETUP"
-    echo "  Fix the error in providers/$PROVIDER_NAME/setup.sh before retrying."
+    echo "  Fix the error in src/reasoning/providers/$PROVIDER_NAME/setup.sh before retrying."
     exit 1
   fi
 fi
@@ -126,8 +126,8 @@ mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
 # -------------------------
 COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
 DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
-PROVIDER_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-SERVE_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.serve.yml"
+PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
+SERVE_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
 
 if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   echo "Error: compose template not found: $COMPOSE_TEMPLATE"
@@ -157,7 +157,7 @@ case "$MODE" in
   serve)
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at providers/$PROVIDER_NAME/docker-compose.serve.yml"
+      echo "  Expected at src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
       exit 1
     fi
     COMPOSE_FILES+=("$SERVE_OVERLAY")

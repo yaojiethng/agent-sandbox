@@ -8,7 +8,7 @@
 #   - stdin preservation
 #
 # The Pi-specific harness key merge (_ensure_harness_keys) was moved to
-# providers/pi/preflight.sh. Those tests now live in:
+# src/reasoning/providers/pi/preflight.sh. Those tests now live in:
 #   tests/test_providers_pi_preflight.sh
 #
 # Run:   bash tests/test_provider_entrypoint.sh
@@ -206,7 +206,7 @@ test_provision_no_double_nesting() {
   # must not produce agent/agent/ double-nesting.
   local tmpdir; tmpdir=$(mktemp -d)
 
-  # Template mirrors providers/pi/config/ structure
+  # Template mirrors src/reasoning/providers/pi/config/ structure
   local tpl="$tmpdir/tpl"
   mkdir -p "$tpl/agent"
   echo '{"key":"template"}' > "$tpl/agent/settings.json"
