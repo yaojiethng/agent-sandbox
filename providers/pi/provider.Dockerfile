@@ -41,14 +41,15 @@ RUN mkdir -p $AGENT_HOME/agent/prompts \
              $WORKSPACE_DIR/input \
              $WORKSPACE_DIR/output
 
+RUN chown -R agentuser:agentuser $AGENT_HOME
+RUN chown -R agentuser:agentuser /opt/workflow/agent
+RUN chown -R agentuser:agentuser $WORKSPACE_DIR
+
 USER agentuser
 
 ENV PROVIDER_NAME=pi
 ENV AGENT_HOME=/home/agentuser/.pi
 
-RUN chown -R agentuser:agentuser $AGENT_HOME
-RUN chown -R agentuser:agentuser /opt/workflow/agent
-RUN chown -R agentuser:agentuser $WORKSPACE_DIR
 
 WORKDIR /home/agentuser/sandbox
 
