@@ -56,8 +56,3 @@ agent_shared_base_name() {
     *)      echo "agent-node-base" ;;
   esac
 }
-
-# sandbox_shared_base_name
-sandbox_shared_base_name() {
-  echo "sandbox-ubuntu-base"
-}
