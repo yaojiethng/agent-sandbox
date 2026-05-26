@@ -12,20 +12,6 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/diff.sh"
 
-
-# -------------------------------------------------------------------
-# Helper: create a clean sandbox with a baseline commit
-# -------------------------------------------------------------------
-make_sandbox() {
-  make_committed_repo "$1"
-  local SHA
-  SHA=$(get_init_sha "$1")
-  write_session_state "$1"
-  # Rename default branch to main for consistency
-  git -C "$1" branch -M main 2>/dev/null || true
-  echo "$SHA"
-}
-
 # ===================================================================
 # write_uncommitted_diff
 # ===================================================================
@@ -34,7 +20,7 @@ test_uncommitted_writes_diff() {
   local DIR="$FIXTURE_DIR/uw_diff"
   local OUT="$FIXTURE_DIR/uw_diff_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   echo "unstaged change" > "$DIR/new.txt"
 
@@ -51,7 +37,7 @@ test_uncommitted_empty_on_clean() {
   local DIR="$FIXTURE_DIR/uw_clean"
   local OUT="$FIXTURE_DIR/uw_clean_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff"
 
@@ -66,7 +52,7 @@ test_uncommitted_includes_untracked() {
   local DIR="$FIXTURE_DIR/uw_untracked"
   local OUT="$FIXTURE_DIR/uw_untracked_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   echo "untracked content" > "$DIR/untracked.txt"
 
@@ -83,7 +69,7 @@ test_uncommitted_strips_index_lines() {
   local DIR="$FIXTURE_DIR/uw_index"
   local OUT="$FIXTURE_DIR/uw_index_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   echo "content" > "$DIR/file.txt"
 
@@ -113,7 +99,7 @@ test_all_changes_writes_diff() {
   local OUT="$FIXTURE_DIR/ac_diff_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   echo "second commit" > "$DIR/file2.txt"
   git -C "$DIR" add file2.txt
@@ -133,7 +119,7 @@ test_all_changes_includes_both_committed_and_uncommitted() {
   local DIR="$FIXTURE_DIR/ac_both"
   local OUT="$FIXTURE_DIR/ac_both_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   echo "committed" > "$DIR/c.txt"
   git -C "$DIR" add c.txt
@@ -156,7 +142,7 @@ test_all_changes_empty_on_clean() {
   local DIR="$FIXTURE_DIR/ac_clean"
   local OUT="$FIXTURE_DIR/ac_clean_out"
   mkdir -p "$OUT"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
 
   write_all_changes_diff "$DIR" "$OUT/all-changes.diff"
 
@@ -197,7 +183,7 @@ test_changed_files_copies_modified() {
   local OUT="$FIXTURE_DIR/cf_modified_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   echo "modified content" > "$DIR/file.txt"
   write_changed_files "$DIR" "$SHA" "$OUT"
@@ -214,7 +200,7 @@ test_changed_files_copies_untracked() {
   local OUT="$FIXTURE_DIR/cf_untracked_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   echo "new file" > "$DIR/new.txt"
 
@@ -232,7 +218,7 @@ test_changed_files_skips_deleted() {
   local OUT="$FIXTURE_DIR/cf_deleted_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   rm "$DIR/file.txt"
 
@@ -256,7 +242,7 @@ test_changed_files_writes_manifest() {
   local OUT="$FIXTURE_DIR/cf_manifest_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   echo "content" > "$DIR/a.txt"
   write_changed_files "$DIR" "$SHA" "$OUT"
@@ -273,7 +259,7 @@ test_changed_files_preserves_directory_structure() {
   local OUT="$FIXTURE_DIR/cf_subdir_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   mkdir -p "$DIR/sub"
   echo "nested" > "$DIR/sub/nested.txt"
@@ -292,7 +278,7 @@ test_changed_files_deduplicates() {
   local OUT="$FIXTURE_DIR/cf_dedup_out"
   mkdir -p "$OUT"
   local SHA
-  SHA=$(make_sandbox "$DIR")
+  SHA=$(make_sandbox_fixture "$DIR")
 
   # File that is both modified and untracked (should appear once)
   echo "modified" > "$DIR/file.txt"

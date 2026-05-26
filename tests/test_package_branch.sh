@@ -20,20 +20,12 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/package_branch.sh"
 
 # -------------------------------------------------------------------
-# Helper: create a clean sandbox with a baseline commit and SESSION_STATE
-# -------------------------------------------------------------------
-make_sandbox() {
-  make_committed_repo "$1"
-  local SHA
-  SHA=$(get_init_sha "$1")
-  write_session_state "$1"
-  git -C "$1" branch -M main 2>/dev/null || true
-  echo "$SHA"
-}
-
+# Helper: create a sandbox with a specific init SHA as session_ts
+# Compared to make_sandbox_fixture, this overwrites session_ts with the
+# actual commit SHA rather than using a fixed timestamp.
 make_sandbox_with_state() {
   local DIR="$1"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR" > /dev/null
   local SHA
   SHA=$(get_init_sha "$DIR")
   write_session_state "$DIR" "$SHA"

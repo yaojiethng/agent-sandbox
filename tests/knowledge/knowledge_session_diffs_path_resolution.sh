@@ -24,13 +24,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../libs/test_common.sh"
 DIRS_LIB="$SCRIPT_DIR/../../libs/dirs.sh"
-
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 
 # -------------------------
 # Test 1: Default host-side resolution

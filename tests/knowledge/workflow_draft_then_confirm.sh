@@ -18,14 +18,9 @@
 
 set -uo pipefail
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
 # SCRIPT_DIR = repo root (two levels up from tests/knowledge/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$SCRIPT_DIR/tests/libs/test_common.sh"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
 
@@ -78,10 +73,9 @@ EXPORT_DIR="$FIXTURE/sandbox/.workspace/session-diffs/$EXPORT_BASENAME"
 
 # Use the fixture helper to create proper session structure
 source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"
-make_export_with_diffs "$EXPORT_DIR" 2
+make_session_fixture "$EXPORT_DIR" 2
 
 echo "Session export created at: $EXPORT_DIR"
-ls -la "$EXPORT_DIR/session/patches/"
 echo ""
 
 # ============================================================================

@@ -10,7 +10,7 @@
 #
 # Usage:
 #   source /path/to/interactive_session_select.sh
-#   CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR" "session") || exit 1
+#   CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR") || exit 1
 #   SESSION=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL") || exit 1
 #
 # Functions:
@@ -29,6 +29,208 @@ source "$_ISS_SCRIPT_DIR/routing.sh"
 INTERACTIVE_MAX_ENTRIES=10
 
 # =============================================================================
+# Internal helpers
+# =============================================================================
+
+# _resolve_channel_dir CHANNEL
+#   Prints the base directory for the given channel name.
+#   Sets OUTPUT_DIR and CHANGES_DIR via dirs_resolve first (caller must do it).
+_resolve_channel_dir() {
+  local CHANNEL="$1"
+  case "$CHANNEL" in
+    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
+    autosave) echo "${CHANGES_DIR}/autosave" ;;
+    session)  echo "${CHANGES_DIR}/session" ;;
+    bundles)  echo "${OUTPUT_DIR}/bundles" ;;
+    *)
+      echo "Error: unknown channel: $CHANNEL" >&2
+      return 1
+      ;;
+  esac
+}
+
+# =============================================================================
+# interactive_pick — generic numbered picker
+# =============================================================================
+
+# interactive_pick LABEL ENTRIES_VAR [DEFAULT] [PAGE_SIZE] [AUTO_SELECT]
+#
+# Generic numbered picker. Displays a list of entries, lets the user pick one.
+# All display output goes to stderr. The selected entry value goes to stdout.
+#
+# Args:
+#   LABEL        — header text (printed to stderr)
+#   ENTRIES_VAR  — name of an array variable where each element is
+#                  "value|display-line". The picker splits on the first |:
+#                  value = text before | (printed to stdout on selection)
+#                  display-line = text after | (shown to stderr, or the
+#                  whole element if no | is present)
+#   DEFAULT      — optional default value; empty Enter selects it
+#   PAGE_SIZE    — max entries per page (default: 0 = no pagination)
+#   AUTO_SELECT  — if "true" and only one entry, skip prompt (default: false)
+#
+# Output:
+#   stdout — selected value
+#   stderr — display table, prompt, errors
+#
+# Returns:
+#   0 on selection, 1 on abort (q/Q or EOF)
+interactive_pick() {
+  local LABEL="$1"
+  local ENTRIES_VAR="$2"
+  local DEFAULT="${3:-}"
+  local PAGE_SIZE="${4:-0}"
+  local AUTO_SELECT="${5:-false}"
+
+  local -n _PICK_ENTRIES="$ENTRIES_VAR"
+  local TOTAL="${#_PICK_ENTRIES[@]}"
+
+  # Auto-select when only one entry
+  if [[ "$AUTO_SELECT" == "true" && "$TOTAL" -eq 1 ]]; then
+    local single="${_PICK_ENTRIES[0]}"
+    echo "${single%%|*}"
+    return 0
+  fi
+
+  if [[ "$TOTAL" -eq 0 ]]; then
+    echo "No items available." >&2
+    return 1
+  fi
+
+  # Pagination setup
+  local TOTAL_PAGES=1
+  if [[ "$PAGE_SIZE" -gt 0 ]]; then
+    TOTAL_PAGES=$(( (TOTAL + PAGE_SIZE - 1) / PAGE_SIZE ))
+  else
+    PAGE_SIZE="$TOTAL"
+  fi
+  local PAGE_OFFSET=0
+
+  # Find absolute index of default
+  local DEFAULT_INDEX=-1
+  if [[ -n "$DEFAULT" ]]; then
+    local idx
+    for idx in "${!_PICK_ENTRIES[@]}"; do
+      local val="${_PICK_ENTRIES[$idx]}"
+      val="${val%%|*}"
+      if [[ "$val" == "$DEFAULT" ]]; then
+        DEFAULT_INDEX=$idx
+        break
+      fi
+    done
+  fi
+
+  while true; do
+    local DISPLAY_START=$((PAGE_OFFSET * PAGE_SIZE))
+    local DISPLAY_END=$((DISPLAY_START + PAGE_SIZE))
+    [[ "$DISPLAY_END" -gt "$TOTAL" ]] && DISPLAY_END="$TOTAL"
+    local PAGE_COUNT=$((DISPLAY_END - DISPLAY_START))
+
+    # Decide whether to inject default as option 0
+    local INJECT_ZERO=false
+    local INJECTED_VALUE=""
+    if [[ -n "$DEFAULT" ]]; then
+      if [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+        if [[ "$DEFAULT_INDEX" -lt "$DISPLAY_START" || "$DEFAULT_INDEX" -ge "$DISPLAY_END" ]]; then
+          INJECT_ZERO=true
+          INJECTED_VALUE="$DEFAULT"
+        fi
+      else
+        INJECT_ZERO=true
+        INJECTED_VALUE="$DEFAULT"
+      fi
+    fi
+
+    # Header
+    if [[ "$TOTAL_PAGES" -gt 1 ]]; then
+      echo "$LABEL — page $((PAGE_OFFSET + 1)) of $TOTAL_PAGES:" >&2
+    else
+      echo "$LABEL" >&2
+    fi
+
+    # Option 0 (injected default)
+    if [[ "$INJECT_ZERO" == true ]]; then
+      printf "  0: %-50s (selected)\n" "$INJECTED_VALUE" >&2
+    fi
+
+    # Entries
+    local rel=1
+    local abs
+    for ((abs=DISPLAY_START; abs<DISPLAY_END; abs++)); do
+      local entry="${_PICK_ENTRIES[$abs]}"
+      local display="${entry#*|}"
+      [[ "$display" == "$entry" ]] && display="$entry"
+      printf "  %d: %s\n" "$rel" "$display" >&2
+      rel=$((rel + 1))
+    done
+
+    # Build prompt
+    echo "" >&2
+    local PROMPT="Selection ["
+    [[ "$PAGE_OFFSET" -gt 0 ]] && PROMPT="${PROMPT}p=prev, "
+    [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]] && PROMPT="${PROMPT}n=next, "
+    [[ "$INJECT_ZERO" == true ]] && PROMPT="${PROMPT}0-"
+    PROMPT="${PROMPT}1-${PAGE_COUNT}, q to quit"
+    local SHOW_ENTER=false
+    [[ "$INJECT_ZERO" == true ]] && SHOW_ENTER=true
+    [[ "$DEFAULT_INDEX" -ge 0 ]] && SHOW_ENTER=true
+    if [[ "$SHOW_ENTER" == true && -n "$DEFAULT" ]]; then
+      PROMPT="${PROMPT}, Enter for ${DEFAULT}"
+    fi
+    PROMPT="${PROMPT}]: "
+    read -r -p "$PROMPT" REPLY || true
+
+    # Empty input with default
+    if [[ -z "$REPLY" ]]; then
+      if [[ "$INJECT_ZERO" == true ]]; then
+        echo "$INJECTED_VALUE"
+        return 0
+      elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
+        echo "$DEFAULT"
+        return 0
+      fi
+      echo "Invalid selection. Try again." >&2
+      continue
+    fi
+
+    # Page navigation
+    if [[ "$REPLY" == [nN] ]]; then
+      [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]] && PAGE_OFFSET=$((PAGE_OFFSET + 1))
+      continue
+    fi
+    if [[ "$REPLY" == [pP] ]]; then
+      [[ "$PAGE_OFFSET" -gt 0 ]] && PAGE_OFFSET=$((PAGE_OFFSET - 1))
+      continue
+    fi
+
+    # Quit
+    if [[ "$REPLY" == [qQ] ]]; then
+      echo "Aborted." >&2
+      return 1
+    fi
+
+    # Option 0 (injected default)
+    if [[ "$REPLY" == "0" && "$INJECT_ZERO" == true ]]; then
+      echo "$INJECTED_VALUE"
+      return 0
+    fi
+
+    # Number selection (1-PAGE_COUNT)
+    if [[ "$REPLY" =~ ^[0-9]+$ ]] && [[ "$REPLY" -gt 0 ]]; then
+      local rel_idx=$((REPLY - 1))
+      local abs_idx=$((DISPLAY_START + rel_idx))
+      if [[ "$abs_idx" -ge "$DISPLAY_START" && "$abs_idx" -lt "$DISPLAY_END" ]]; then
+        local selected="${_PICK_ENTRIES[$abs_idx]}"
+        echo "${selected%%|*}"
+        return 0
+      fi
+    fi
+
+    echo "Invalid selection. Try again." >&2
+  done
+}
+
+# =============================================================================
 # interactive_confirm_or_abort
 # =============================================================================
 
@@ -37,17 +239,6 @@ INTERACTIVE_MAX_ENTRIES=10
 # Prints a label and list of items to stderr, then prompts "Proceed? [y/N]".
 # Reads from stdin. Warns to stderr if stdin is not a terminal.
 # Returns 0 on y/Y, 1 on anything else.
-#
-# Args:
-#   LABEL  — header text (empty string skips the label line)
-#   ITEMS  — one or more strings to display (one per line)
-#
-# Output:
-#   stderr — label, items, prompt, abort message
-#   stdout — nothing (selected value is the return code)
-#
-# Example:
-#   interactive_confirm_or_abort "Apply:" "/path/to/uncommitted.diff" || exit 1
 interactive_confirm_or_abort() {
   local LABEL="$1"
   shift
@@ -111,20 +302,12 @@ interactive_select_channel() {
       ;;
   esac
 
-  # Resolve base directory for each channel and count entries
-  local -a CH_NAMES=()
-  local -a CH_COUNTS=()
-  local -a CH_NEWEST=()
-  local CH_DEFAULT_INDEX=0
-
+  # Build display entries: "name|name (N entries, newest: TS)"
+  local -a ENTRIES=()
+  local ch
   for ch in "${CHANNELS[@]}"; do
-    local BASE_DIR=""
-    case "$ch" in
-      diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
-      autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-      session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-      bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
-    esac
+    local BASE_DIR
+    BASE_DIR=$(_resolve_channel_dir "$ch") || return 1
 
     local COUNT=0
     local NEWEST=""
@@ -136,69 +319,15 @@ interactive_select_channel() {
         NEWEST=$(echo "$DIR_LIST" | head -1 | xargs basename 2>/dev/null || true)
       fi
     fi
-    CH_NAMES+=("$ch")
-    CH_COUNTS+=("$COUNT")
-    CH_NEWEST+=("$NEWEST")
-  done
 
-  # Find default index
-  if [[ -n "$DEFAULT_CHANNEL" ]]; then
-    for idx in "${!CH_NAMES[@]}"; do
-      if [[ "${CH_NAMES[$idx]}" == "$DEFAULT_CHANNEL" ]]; then
-        CH_DEFAULT_INDEX=$idx
-        break
-      fi
-    done
-  fi
-
-  # Print table
-  echo "Available channels:" >&2
-  for idx in "${!CH_NAMES[@]}"; do
-    local NUM=$((idx + 1))
-    local CH_NAME="${CH_NAMES[$idx]}"
-    local COUNT="${CH_COUNTS[$idx]}"
-    local NEWEST_TS="${CH_NEWEST[$idx]}"
-    if [[ "$COUNT" -gt 0 && -n "$NEWEST_TS" ]]; then
-      printf "  %d: %-12s (%d entries, newest: %s)\n" "$NUM" "$CH_NAME" "$COUNT" "$NEWEST_TS" >&2
+    if [[ "$COUNT" -gt 0 && -n "$NEWEST" ]]; then
+      ENTRIES+=("${ch}|${ch} (${COUNT} entries, newest: ${NEWEST})")
     else
-      printf "  %d: %-12s (0 entries)\n" "$NUM" "$CH_NAME" >&2
+      ENTRIES+=("${ch}|${ch} (0 entries)")
     fi
   done
 
-  # Prompt loop
-  local TOTAL="${#CH_NAMES[@]}"
-  while true; do
-    echo "" >&2
-    local PROMPT="Selection [1-${TOTAL}, q to quit"
-    if [[ -n "$DEFAULT_CHANNEL" ]]; then
-      PROMPT="${PROMPT}, Enter for ${DEFAULT_CHANNEL}"
-    fi
-    PROMPT="${PROMPT}]: "
-    read -r -p "$PROMPT" REPLY || true
-
-    # Empty input with default
-    if [[ -z "$REPLY" && -n "$DEFAULT_CHANNEL" ]]; then
-      echo "$DEFAULT_CHANNEL"
-      return 0
-    fi
-
-    # Quit
-    if [[ "$REPLY" == "q" || "$REPLY" == "Q" ]]; then
-      echo "Aborted." >&2
-      return 1
-    fi
-
-    # Number selection
-    if [[ "$REPLY" =~ ^[0-9]+$ ]]; then
-      local IDX=$((REPLY - 1))
-      if [[ "$IDX" -ge 0 && "$IDX" -lt "$TOTAL" ]]; then
-        echo "${CH_NAMES[$IDX]}"
-        return 0
-      fi
-    fi
-
-    echo "Invalid selection. Try again." >&2
-  done
+  interactive_pick "Available channels:" ENTRIES "$DEFAULT_CHANNEL"
 }
 
 # =============================================================================
@@ -227,194 +356,51 @@ interactive_select_session() {
 
   dirs_resolve "$SANDBOX_DIR"
 
-  # Resolve base directory
-  local BASE_DIR=""
-  case "$CHANNEL" in
-    diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
-    autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-    session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-    bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
-    *)
-      echo "Error: unknown channel: $CHANNEL" >&2
-      return 1
-      ;;
-  esac
+  local BASE_DIR
+  BASE_DIR=$(_resolve_channel_dir "$CHANNEL") || return 1
 
   if [[ ! -d "$BASE_DIR" ]]; then
     echo "No sessions available in channel '$CHANNEL'." >&2
     return 1
   fi
 
-  # Collect entries, sorted newest-first (SESSION_TS prefix)
-  local -a ENTRIES=()
+  # Collect entries, sorted newest-first
+  local -a SESSION_DIRS=()
   while IFS= read -r dir; do
     [[ -z "$dir" ]] && continue
-    ENTRIES+=("$(basename "$dir")")
+    SESSION_DIRS+=("$(basename "$dir")")
   done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
 
-  if [[ "${#ENTRIES[@]}" -eq 0 ]]; then
+  if [[ "${#SESSION_DIRS[@]}" -eq 0 ]]; then
     echo "No sessions available in channel '$CHANNEL'." >&2
     return 1
   fi
 
-  # Pagination setup
-  local TOTAL_COUNT="${#ENTRIES[@]}"
-  local PAGE_SIZE=$INTERACTIVE_MAX_ENTRIES
-  local TOTAL_PAGES=$(( (TOTAL_COUNT + PAGE_SIZE - 1) / PAGE_SIZE ))
-  local PAGE_OFFSET=0
+  # Build display entries: "name|name  patches: ✓  uncommitted: ✓"
+  local -a ENTRIES=()
+  local bname
+  for bname in "${SESSION_DIRS[@]}"; do
+    local ENTRY_DIR="${BASE_DIR}/${bname}"
 
-  # Find absolute index of default session (if any)
-  local DEFAULT_INDEX=-1
-  if [[ -n "$DEFAULT_SESSION" ]]; then
-    for idx in "${!ENTRIES[@]}"; do
-      if [[ "${ENTRIES[$idx]}" == "$DEFAULT_SESSION" ]]; then
-        DEFAULT_INDEX=$idx
-        break
-      fi
-    done
-  fi
-
-  # Pagination loop
-  while true; do
-    # Calculate current page range
-    local DISPLAY_START=$((PAGE_OFFSET * PAGE_SIZE))
-    local DISPLAY_END=$((DISPLAY_START + PAGE_SIZE))
-    if [[ "$DISPLAY_END" -gt "$TOTAL_COUNT" ]]; then
-      DISPLAY_END=$TOTAL_COUNT
+    local HAS_PATCHES="✗"
+    local HAS_UNCOMMITTED="✗"
+    if [[ -d "$ENTRY_DIR/patches" ]] && find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' -print -quit | grep -q . 2>/dev/null; then
+      HAS_PATCHES="✓"
     fi
-    local PAGE_COUNT=$((DISPLAY_END - DISPLAY_START))
-
-    # Check whether default session should be injected as option 0
-    # (injected when DEFAULT_SESSION is not on the current page)
-    local INJECT_OPTION_ZERO=false
-    local INJECTED_SESSION_NAME=""
-    if [[ -n "$DEFAULT_SESSION" ]]; then
-      if [[ "$DEFAULT_INDEX" -ge 0 ]]; then
-        if [[ "$DEFAULT_INDEX" -lt "$DISPLAY_START" || "$DEFAULT_INDEX" -ge "$DISPLAY_END" ]]; then
-          INJECT_OPTION_ZERO=true
-          INJECTED_SESSION_NAME="$DEFAULT_SESSION"
-        fi
-      else
-        # DEFAULT_SESSION given but not found in entries — still inject as option 0
-        INJECT_OPTION_ZERO=true
-        INJECTED_SESSION_NAME="$DEFAULT_SESSION"
-      fi
+    if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
+      HAS_UNCOMMITTED="✓"
     fi
 
-    # Print header with page indicator
-    if [[ "$TOTAL_PAGES" -gt 1 ]]; then
-      echo "Available sessions (${CHANNEL}) — page $((PAGE_OFFSET + 1)) of $TOTAL_PAGES:" >&2
-    else
-      echo "Available sessions (${CHANNEL}):" >&2
+    # Truncate long names
+    local DISPLAY_NAME="$bname"
+    if [[ ${#DISPLAY_NAME} -gt 50 ]]; then
+      DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
     fi
 
-    # Option 0 injection
-    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-      printf "  0: %-50s (selected session)\n" "$INJECTED_SESSION_NAME" >&2
-    fi
-
-    # Print entries for current page
-    local REL_IDX=1
-    for ((abs=DISPLAY_START; abs<DISPLAY_END; abs++)); do
-      local BNAME="${ENTRIES[$abs]}"
-
-      # Check availability
-      local HAS_PATCHES="✗"
-      local HAS_UNCOMMITTED="✗"
-      local ENTRY_DIR="${BASE_DIR}/${BNAME}"
-      if [[ -d "$ENTRY_DIR/patches" ]] && find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' -print -quit | grep -q . 2>/dev/null; then
-        HAS_PATCHES="✓"
-      fi
-      if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
-        HAS_UNCOMMITTED="✓"
-      fi
-
-      # Truncate long names
-      local DISPLAY_NAME="$BNAME"
-      if [[ ${#DISPLAY_NAME} -gt 50 ]]; then
-        DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
-      fi
-
-      printf "  %d: %-50s patches: %s  uncommitted: %s\n" "$REL_IDX" "$DISPLAY_NAME" "$HAS_PATCHES" "$HAS_UNCOMMITTED" >&2
-      REL_IDX=$((REL_IDX + 1))
-    done
-
-    # Build prompt
-    echo "" >&2
-    local PROMPT="Selection ["
-    if [[ "$PAGE_OFFSET" -gt 0 ]]; then
-      PROMPT="${PROMPT}p=prev, "
-    fi
-    if [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]]; then
-      PROMPT="${PROMPT}n=next, "
-    fi
-    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-      PROMPT="${PROMPT}0-"
-    fi
-    PROMPT="${PROMPT}1-${PAGE_COUNT}, q to quit"
-    local SHOW_ENTER=false
-    if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-      SHOW_ENTER=true
-    elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
-      SHOW_ENTER=true
-    fi
-    if [[ "$SHOW_ENTER" == true ]]; then
-      PROMPT="${PROMPT}, Enter for ${DEFAULT_SESSION}"
-    fi
-    PROMPT="${PROMPT}]: "
-    read -r -p "$PROMPT" REPLY || true
-
-    # Empty input with default
-    if [[ -z "$REPLY" ]]; then
-      if [[ "$INJECT_OPTION_ZERO" == true ]]; then
-        echo "$INJECTED_SESSION_NAME"
-        return 0
-      elif [[ "$DEFAULT_INDEX" -ge 0 ]]; then
-        echo "$DEFAULT_SESSION"
-        return 0
-      fi
-      echo "Invalid selection. Try again." >&2
-      continue
-    fi
-
-    # n/p page navigation
-    if [[ "$REPLY" == "n" || "$REPLY" == "N" ]]; then
-      if [[ "$PAGE_OFFSET" -lt "$((TOTAL_PAGES - 1))" ]]; then
-        PAGE_OFFSET=$((PAGE_OFFSET + 1))
-      fi
-      continue
-    fi
-    if [[ "$REPLY" == "p" || "$REPLY" == "P" ]]; then
-      if [[ "$PAGE_OFFSET" -gt 0 ]]; then
-        PAGE_OFFSET=$((PAGE_OFFSET - 1))
-      fi
-      continue
-    fi
-
-    # Quit
-    if [[ "$REPLY" == "q" || "$REPLY" == "Q" ]]; then
-      echo "Aborted." >&2
-      return 1
-    fi
-
-    # Option 0 selection (injected session)
-    if [[ "$REPLY" == "0" && "$INJECT_OPTION_ZERO" == true ]]; then
-      echo "$INJECTED_SESSION_NAME"
-      return 0
-    fi
-
-    # Number selection (1-PAGE_COUNT)
-    if [[ "$REPLY" =~ ^[0-9]+$ ]] && [[ "$REPLY" -gt 0 ]]; then
-      local REL=$((REPLY - 1))
-      local ABS=$((DISPLAY_START + REL))
-      if [[ "$ABS" -ge "$DISPLAY_START" && "$ABS" -lt "$DISPLAY_END" ]]; then
-        echo "${ENTRIES[$ABS]}"
-        return 0
-      fi
-    fi
-
-    echo "Invalid selection. Try again." >&2
+    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${HAS_PATCHES}  uncommitted: ${HAS_UNCOMMITTED}")
   done
+
+  interactive_pick "Available sessions (${CHANNEL}):" ENTRIES "$DEFAULT_SESSION" "$INTERACTIVE_MAX_ENTRIES"
 }
 
 # =============================================================================
@@ -441,19 +427,10 @@ interactive_select_diff_type() {
   local SESSION_NAME="$2"
   local CHANNEL="$3"
 
-  _resolve_paths "$SANDBOX_DIR"
+  dirs_resolve "$SANDBOX_DIR"
 
-  local BASE_DIR=""
-  case "$CHANNEL" in
-    diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
-    autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-    session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-    bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
-    *)
-      echo "Error: unknown channel: $CHANNEL" >&2
-      return 1
-      ;;
-  esac
+  local BASE_DIR
+  BASE_DIR=$(_resolve_channel_dir "$CHANNEL") || return 1
 
   local SESSION_DIR="${BASE_DIR}/${SESSION_NAME}"
   local HAS_UNCOMMITTED=false
@@ -480,32 +457,10 @@ interactive_select_diff_type() {
     return 1
   fi
 
-  # Both available — prompt
-  echo "Select diff file:" >&2
-  echo "  1: uncommitted.diff (default)" >&2
-  echo "  2: all-changes.diff" >&2
-  echo "" >&2
-
-  while true; do
-    read -r -p "Selection [1-2, q to quit, Enter for uncommitted.diff]: " REPLY || true
-
-    if [[ -z "$REPLY" ]]; then
-      echo "uncommitted"
-      return 0
-    fi
-    if [[ "$REPLY" == "q" || "$REPLY" == "Q" ]]; then
-      echo "Aborted." >&2
-      return 1
-    fi
-    if [[ "$REPLY" == "1" ]]; then
-      echo "uncommitted"
-      return 0
-    fi
-    if [[ "$REPLY" == "2" ]]; then
-      echo "all-changes"
-      return 0
-    fi
-
-    echo "Invalid selection. Try again." >&2
-  done
+  # Both available — use picker
+  local -a ENTRIES=(
+    "uncommitted|1: uncommitted.diff (default)"
+    "all-changes|2: all-changes.diff"
+  )
+  interactive_pick "Select diff file:" ENTRIES "uncommitted" 0 true
 }

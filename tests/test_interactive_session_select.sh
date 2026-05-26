@@ -13,37 +13,10 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../libs/interactive_session_select.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# create_fixture_session BASE_DIR SESSION_NAME [HAS_PATCHES] [HAS_UNCOMMITTED]
-#   Creates a session directory under BASE_DIR with optional patches/ and
-#   uncommitted.diff for testing the interactive session picker.
-create_fixture_session() {
-  local BASE_DIR="$1"
-  local SESSION_NAME="$2"
-  local HAS_PATCHES="${3:-true}"
-  local HAS_UNCOMMITTED="${4:-true}"
-
-  mkdir -p "$BASE_DIR/$SESSION_NAME"
-
-  if [[ "$HAS_PATCHES" == true ]]; then
-    mkdir -p "$BASE_DIR/$SESSION_NAME/patches"
-    cat > "$BASE_DIR/$SESSION_NAME/patches/0001-abc.diff" <<'EOF'
-diff --git a/test.txt b/test.txt
-new file mode 100644
---- /dev/null
-+++ b/test.txt
-@@ -0,0 +1 @@
-+test
-EOF
-  fi
-
-  if [[ "$HAS_UNCOMMITTED" == true ]]; then
-    echo "uncommitted content" > "$BASE_DIR/$SESSION_NAME/uncommitted.diff"
-  fi
-}
 
 # =============================================================================
 # interactive_confirm_or_abort tests
@@ -229,8 +202,8 @@ test_select_session_picks_by_number() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   local SESSION
   SESSION=$(echo "2" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
@@ -246,8 +219,8 @@ test_select_session_default_highlighted() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   local SESSION
   SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
@@ -264,11 +237,11 @@ test_select_session_availability_indicators() {
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
   # Full availability
-  create_fixture_session "$BASE" "20260504-120000-full" true true
+  make_session_fixture "$BASE/20260504-120000-full" 1 content
   # No patches, no uncommitted
-  create_fixture_session "$BASE" "20260503-090000-empty" false false
+  make_session_fixture "$BASE/20260503-090000-empty"
   # Only patches
-  create_fixture_session "$BASE" "20260502-090000-patches-only" true false
+  make_session_fixture "$BASE/20260502-090000-patches-only" 1
 
   local SESSION
   SESSION=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
@@ -305,7 +278,7 @@ test_select_session_cap_at_ten() {
   for i in $(seq 1 12); do
     local PADDING
     PADDING=$(printf "%04d" "$i")
-    create_fixture_session "$BASE" "20260504-${PADDING}00-session-${i}" true false
+    make_session_fixture "$BASE/20260504-${PADDING}00-session-${i}" 1
   done
 
   # Feed input for entry 10 in newest-first order (session-3)
@@ -335,7 +308,7 @@ test_select_session_name_truncation() {
 
   # Create a session with a name > 50 chars
   local LONG_NAME="20260504-120000-this-is-a-very-long-branch-name-that-exceeds-fifty-characters"
-  create_fixture_session "$BASE" "$LONG_NAME" true false
+  make_session_fixture "$BASE/$LONG_NAME" 1
 
   local STDERR
   STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
@@ -357,8 +330,8 @@ test_select_session_inject_option_zero() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   # DEFAULT_SESSION not in list — inject as option 0
   local SESSION
@@ -375,8 +348,8 @@ test_select_session_option_zero_by_number() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   # Select option 0 by typing "0"
   local SESSION
@@ -393,8 +366,8 @@ test_select_session_no_option_zero_when_in_displayed() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   # DEFAULT_SESSION IS in list — no option 0, Enter selects normally
   local SESSION
@@ -411,7 +384,7 @@ test_select_session_option_zero_stderr_shows_entry() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
 
   # Check stderr shows option 0
   local STDERR
@@ -428,7 +401,7 @@ test_select_session_option_zero_not_present_without_default() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
 
   # No DEFAULT_SESSION — no option 0, normal numbers start at 1
   local STDERR
@@ -451,7 +424,7 @@ create_n_sessions() {
   for i in $(seq 1 "$COUNT"); do
     local PADDING
     PADDING=$(printf "%04d" "$i")
-    create_fixture_session "$BASE_DIR" "20260504-${PADDING}00-session-${i}" true false
+    make_session_fixture "$BASE_DIR/20260504-${PADDING}00-session-${i}" 1
   done
 }
 

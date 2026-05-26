@@ -76,14 +76,15 @@ make_session() {
 
 ### 4. Test Files Must Be Self-Contained
 
-A test file may only source helpers from `tests/lib/`. It must never source another test file, and must never depend on another test file having run first.
+A test file may only source helpers from `tests/libs/`. It must never source another test file, and must never depend on another test file having run first.
 
-`tests/lib/` files contain only helper functions - no test execution, no `run_test` calls, no pass/fail counters. A `tests/lib/` file sourced in isolation must produce no output and have no side effects.
+`tests/libs/` files contain only helper functions - no test execution, no `run_test` calls, no pass/fail counters. A `tests/libs/` file sourced in isolation must produce no output and have no side effects.
 
 ```bash
-# ✓ Correct: source only from tests/lib/
-source "$SCRIPT_DIR/../tests/lib/git_fixtures.sh"
-source "$SCRIPT_DIR/../tests/lib/session_fixtures.sh"
+# ✓ Correct: source only from tests/libs/
+source "$SCRIPT_DIR/tests/libs/test_common.sh"
+source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
+source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"
 
 # ✗ Wrong: sourcing another test file
 source "$SCRIPT_DIR/test_draft_workflow.sh"   # ← Executes tests, pollutes state
@@ -156,21 +157,38 @@ When tests create nested state, clean up in reverse order of creation:
 
 ---
 
-## Shared Fixtures (`tests/lib/`)
+## Shared Fixtures (`tests/libs/`)
 
-Helpers used by more than one test file live in `tests/lib/` and are sourced explicitly. Two fixture files are established:
+Helpers used by more than one test file live in `tests/libs/` and are sourced explicitly. Four fixture files are established:
 
 | File | Contains |
 |---|---|
-| `tests/lib/git_fixtures.sh` | Git repo setup helpers: `make_committed_repo`, `get_init_sha`, `current_branch`, `branch_exists`, `commit_change` |
-| `tests/lib/session_fixtures.sh` | Workspace/session structure helpers: `make_export_with_diffs`, `make_diffs_session`, `make_changes_session` |
+| `tests/libs/test_common.sh` | Pass/fail/skip counters and reporting: `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
+| `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
+| `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` — unified session directory creator with optional patches and uncommitted.diff |
+| `tests/libs/mock_repo_fixtures.sh` | Mock agent-sandbox repo layout: `make_mock_repo()` |
 
-**Rules for `tests/lib/` files:**
+**Rules for `tests/libs/` files:**
 - Helper functions only - no test execution
 - Every helper must follow Core Principles 1-3 (isolation, clean-before-create, no shared state)
-- A new helper belongs in `tests/lib/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
+- A new helper belongs in `tests/libs/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
 
-Do not add a third `tests/lib/` file without a clear category boundary. If a helper does not fit `git_fixtures.sh` or `session_fixtures.sh`, name the new file to reflect its distinct scope.
+Do not add a new `tests/libs/` file without a clear category boundary. If a helper does not fit an existing file, name the new file to reflect its distinct scope.
+
+### Using `test_common.sh`
+
+Always source `test_common.sh` instead of defining `pass()`, `fail()`, and counter variables inline. It provides:
+
+- `pass()` / `fail()` — identical formatting across all test files
+- `skip()` — for tests that cannot run in the current environment
+- `run_test()` — test runner that continues on failure
+- `test_done()` — summary reporter that exits with failure count
+
+```bash
+source "$SCRIPT_DIR/tests/libs/test_common.sh"
+```
+
+Every test file and knowledge test file must source `test_common.sh` instead of defining `pass()` / `fail()` locally. The only exception is diagnostic scripts (`diagnose_*.sh`) that run inside containers where `tests/libs/` is not available.
 
 ---
 
@@ -203,6 +221,25 @@ End-to-end sequence validators that exercise a complete operator workflow (e.g. 
 **Purpose:** Validate that a multi-step workflow produces the expected repository state, file layout, and exit codes without requiring a full harness session. Used during implementation and regression-checked after refactors.
 
 **Relation to ACs:** Workflow test assertions are system behaviour and can be referenced from acceptance criteria. Prefer adding a workflow test over manual verification for any multi-step operator workflow.
+
+### Shared Fixtures in Knowledge Tests
+
+Knowledge tests, workflow tests, and diagnostic scripts **must** source shared fixture libraries instead of defining boilerplate inline:
+
+| Boilerplate | Source instead | Files affected |
+|---|---|---|
+| `pass()`, `fail()`, `PASS=0`, `FAIL=0` | `tests/libs/test_common.sh` | All `knowledge_*.sh` and `workflow_*.sh` files |
+| `make_repo()` | `tests/libs/git_fixtures.sh` | Any file that creates git repos |
+| `make_export_with_diffs()`, etc. | `tests/libs/session_fixtures.sh` | Workflow tests needing session export fixtures |
+
+**Exception:** Diagnostic scripts (`diagnose_*.sh`) that run inside containers may keep inline `pass()` / `fail()` because `tests/libs/` is not available in the container filesystem.
+
+**Rules:**
+- Every new `knowledge_*.sh` or `workflow_*.sh` file must source `tests/libs/test_common.sh` for `pass()` / `fail()` instead of defining them inline.
+- If the test creates git repositories, source `tests/libs/git_fixtures.sh` for `make_repo()` / `make_committed_repo()` instead of defining them inline.
+- Domain-specific helpers used by only one file (e.g. `make_binary()`, `make_sandbox()`) stay local — do not add them to a shared library until a second consumer exists.
+
+These rules align with the core principle that `tests/libs/` is the only allowed source of shared test helpers.
 
 ## Running the Test Suite
 
@@ -326,7 +363,7 @@ make_project() {
 source "$SCRIPT_DIR/test_draft_workflow.sh"
 ```
 
-**Fix:** Move the shared helper to `tests/lib/` and source it from there in both files.
+**Fix:** Move the shared helper to `tests/libs/` and source it from there in both files.
 
 ---
 
@@ -341,22 +378,13 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_SCRIPT="$SCRIPT_DIR/../scripts/example.sh"
 
-# Shared fixtures - source only from tests/lib/
-source "$SCRIPT_DIR/../tests/lib/git_fixtures.sh"
-# source "$SCRIPT_DIR/../tests/lib/session_fixtures.sh"  # if needed
+# Shared fixtures - source only from tests/libs/
+source "$SCRIPT_DIR/tests/libs/test_common.sh"
+source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
+# source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"  # if needed
 
-PASS=0
-FAIL=0
 FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
-run_test() {
-  echo "[ $1 ]"
-  $1 || true
-}
 
 # -------------------------
 # Local helpers (not shared across files)
@@ -511,7 +539,8 @@ Before committing a new test:
 - [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
 - [ ] All helper functions clean their inputs before creating state
 - [ ] No hardcoded paths outside fixture directory
-- [ ] Sources only from `tests/lib/` - no sourcing of other test files
+- [ ] Sources shared fixtures from `tests/libs/` - no sourcing of other test files
+- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()` instead of defining them inline
 - [ ] Test passes when run in isolation
 - [ ] Test passes when run after every other test in the file
 - [ ] Test passes when run twice in a row

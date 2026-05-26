@@ -23,24 +23,12 @@
 
 set -uo pipefail
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../libs/test_common.sh"
+source "$SCRIPT_DIR/../libs/git_fixtures.sh"
 
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
-
-# ---------------------------------------------------------------
-# Helper: create a git repo with known content
-# ---------------------------------------------------------------
-make_repo() {
-  local DIR="$1"
-  git init --quiet "$DIR"
-  git -C "$DIR" config user.email "test@test"
-  git -C "$DIR" config user.name "test"
-}
 
 # ---------------------------------------------------------------
 # Helper: create a binary file (1500 bytes of known pattern)
@@ -61,7 +49,6 @@ make_other_binary() {
 strip_index_selectively() {
   awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1'
 }
-
 echo "=== Knowledge: binary file diff + apply behavior ==="
 echo ""
 echo "Fixture: $FIXTURE"

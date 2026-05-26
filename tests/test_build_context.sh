@@ -77,14 +77,16 @@ assert_file_absent() {
     fi
 }
 
-assert_dir_file_count() {
-    local label="$1" dir="$2" expected_count="$3"
-    local actual_count
-    actual_count=$(find "$dir" -maxdepth 1 -type f | wc -l)
-    if [[ "$actual_count" -eq "$expected_count" ]]; then
+assert_file_set() {
+    local label="$1" dir="$2" expected_set="$3"
+    local actual_files
+    actual_files=$(find "$dir" -maxdepth 1 -type f -printf '%f\n' | sort | tr '\n' ' ')
+    # Remove trailing space
+    actual_files="${actual_files% }"
+    if [[ "$actual_files" == "$expected_set" ]]; then
         pass "$label"
     else
-        fail "$label (expected $expected_count files, got $actual_count)"
+        fail "$label (expected: '$expected_set', got: '$actual_files')"
     fi
 }
 
@@ -134,15 +136,9 @@ echo "-- File contents: sandbox image type --"
 REPO=$(make_mock_repo)
 context=$(build_context_sandbox "$REPO")
 
-assert_file_exists  "sandbox: contains sandbox-entrypoint.sh" "$context/sandbox-entrypoint.sh"
-assert_file_exists  "sandbox: contains dirs.sh"               "$context/dirs.sh"
-assert_file_exists  "sandbox: contains snapshot.sh"           "$context/snapshot.sh"
-assert_file_exists  "sandbox: contains diff.sh"               "$context/diff.sh"
-assert_file_exists  "sandbox: contains routing.sh"            "$context/routing.sh"
-assert_file_exists  "sandbox: contains session.sh"            "$context/session.sh"
 assert_file_exists  "sandbox: contains docs/architecture/test.md" "$context/docs/architecture/test.md"
 assert_file_exists  "sandbox: contains docs/concepts/test.md"     "$context/docs/concepts/test.md"
-assert_dir_file_count "sandbox: contains at least 7 files"    "$context" 7
+assert_file_set "sandbox: correct file set (sandbox build)" "$context" "diff.sh dirs.sh package_branch.sh package_diff.sh routing.sh sandbox-entrypoint.sh session.sh snapshot.sh"
 
 cleanup "$context"
 cleanup "$REPO"
@@ -156,15 +152,7 @@ echo "-- File contents: agent image type --"
 REPO=$(make_mock_repo)
 context=$(build_context_agent "$REPO" test-provider)
 
-assert_file_exists    "agent: contains dirs.sh"               "$context/dirs.sh"
-assert_file_exists    "agent: contains provider-entrypoint.sh" "$context/provider-entrypoint.sh"
-assert_file_exists    "agent: contains package_diff.sh"        "$context/package_diff.sh"
-assert_file_exists    "agent: contains session.sh"             "$context/session.sh"
-assert_file_exists    "agent: contains routing.sh"             "$context/routing.sh"
-assert_file_absent    "agent: does not contain sandbox scripts" "$context/sandbox-entrypoint.sh"
-assert_file_absent    "agent: does not contain snapshot.sh"    "$context/snapshot.sh"
-assert_file_absent    "agent: does not contain diff.sh"        "$context/diff.sh"
-assert_dir_file_count "agent: contains at least 6 files"       "$context" 6
+assert_file_set "agent: correct file set (agent build)" "$context" "diff.sh dirs.sh package_branch.sh package_diff.sh provider-entrypoint.sh routing.sh session.sh"
 
 cleanup "$context"
 cleanup "$REPO"

@@ -30,17 +30,14 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR/../.."
 
+# Source shared test fixtures
+source "$REPO_ROOT/tests/libs/test_common.sh"
+
 # Source the exact libraries the EXIT trap uses
 source "$REPO_ROOT/libs/dirs.sh"
 source "$REPO_ROOT/libs/session.sh"
 source "$REPO_ROOT/libs/routing.sh"
 source "$REPO_ROOT/libs/diff.sh"
-
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 
 section() { echo ""; echo "=== $1 ==="; echo ""; }
 

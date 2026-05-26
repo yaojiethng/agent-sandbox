@@ -53,6 +53,17 @@ write_session_state() {
 
 # commit_change DIR [MSG]
 #   Creates a new file and commits it with the given message.
+# make_sandbox_fixture DIR
+#   Creates a git repository with a baseline commit, SESSION_STATE, and
+#   the default branch renamed to main. Prints the init SHA to stdout.
+#   Combines make_committed_repo + write_session_state + get_init_sha.
+make_sandbox_fixture() {
+  local DIR="$1"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+  get_init_sha "$DIR"
+}
+
 commit_change() {
   local DIR="$1"
   local MSG="${2:-agent commit}"

@@ -22,11 +22,9 @@
 
 set -uo pipefail
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../libs/test_common.sh"
+source "$SCRIPT_DIR/../libs/git_fixtures.sh"
 
 FIXTURE="$(mktemp -d)"
 echo "Fixture: $FIXTURE"
@@ -38,12 +36,6 @@ trap 'echo "Cleaning up..."; rm -rf "$FIXTURE"' EXIT
 # ---------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------
-make_repo() {
-  local DIR="$1"
-  git init --quiet "$DIR"
-  git -C "$DIR" config user.email "test@test"
-  git -C "$DIR" config user.name "test"
-}
 
 # Check if .git/index.lock exists and report status
 lock_status() {
