@@ -81,14 +81,16 @@ build_agent() {
 
   # Build base image if missing or --no-cache-base
   if ! docker image inspect "$base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-    build_image "$base_image" "$base_dockerfile" "$context" "$no_cache"
+    build_image "$base_image" "$base_dockerfile" "$context" "$no_cache" \
+      "${uid_args[@]+${uid_args[@]}}"
   else
     echo "Base image exists, skipping: $base_image"
   fi
 
   # Always build provider image
   build_image "$provider_image" "$provider_dockerfile" "$context" "" \
-    --build-arg "BASE_IMAGE=$base_image"
+    --build-arg "BASE_IMAGE=$base_image" \
+    "${uid_args[@]+${uid_args[@]}}"
 }
 
 # build_sandbox <project_name> <repo_root>
@@ -96,6 +98,8 @@ build_agent() {
 build_sandbox() {
   local project="${1:?build_sandbox requires project name}"
   local repo_root="${2:?build_sandbox requires repo root}"
+  local host_uid="${3:-}"
+  local host_gid="${4:-}"
 
   local dockerfile="$repo_root/src/capability/Dockerfile"
   if [[ ! -f "$dockerfile" ]]; then
@@ -110,7 +114,15 @@ build_sandbox() {
   # shellcheck disable=SC2064
   trap "rm -rf '$context_cleanup'" EXIT
 
-  build_image "$image" "$dockerfile" "$context" ""
+  local uid_args=()
+  if [[ -n "$host_uid" ]]; then
+    uid_args+=(--build-arg "HOST_UID=$host_uid")
+  fi
+  if [[ -n "$host_gid" ]]; then
+    uid_args+=(--build-arg "HOST_GID=$host_gid")
+  fi
+
+  build_image "$image" "$dockerfile" "$context" "" "${uid_args[@]+${uid_args[@]}}"
 }
 
 # -------------------------

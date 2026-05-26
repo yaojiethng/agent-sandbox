@@ -267,14 +267,18 @@ fi
 # -------------------------
 # --refresh: rebuild sandbox and provider (base skipped if exists).
 # --rebuild: rebuild everything from scratch including base (supersedes --refresh).
+# Export host UID/GID for build pipeline
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
+
 if [[ "$REBUILD" == true ]]; then
   echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
-  build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache-base"
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache-base" "$HOST_UID" "$HOST_GID"
 elif [[ "$REFRESH" == true ]]; then
   echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
-  build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "" "$HOST_UID" "$HOST_GID"
 fi
 
 # -------------------------

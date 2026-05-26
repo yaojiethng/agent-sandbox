@@ -43,6 +43,7 @@ services:
     image: {{SANDBOX_IMAGE_NAME}}
     container_name: {{SANDBOX_CONTAINER_NAME}}
     labels: *session_labels
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - type: bind
         source: ${SNAPSHOT_DIR}
@@ -72,6 +73,7 @@ services:
     image: {{AGENT_IMAGE_NAME}}
     container_name: {{AGENT_CONTAINER_NAME}}
     labels: *session_labels
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       sandbox:
         condition: service_healthy

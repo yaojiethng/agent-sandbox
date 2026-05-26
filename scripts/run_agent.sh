@@ -20,6 +20,7 @@
 #             is bind-mounted from $SANDBOX_DIR/.<provider>/, state is persisted
 #             to the host automatically — no move step required here.
 #
+# Host identity for UID mapping
 # Compose file assembly follows deterministic conventions:
 #   base:             libs/docker-compose.yml
 #   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
@@ -122,6 +123,12 @@ fi
 mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
 
 # -------------------------
+# Host identity for UID mapping
+export HOST_UID
+HOST_UID="$(id -u)"
+export HOST_GID
+HOST_GID="$(id -g)"
+
 # Compose file assembly
 # -------------------------
 COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"

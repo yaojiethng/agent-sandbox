@@ -7,12 +7,6 @@
 # These are behavioural tests — they assert the contract (what files exist,
 # what .env contains) not the internal implementation. They should pass
 # regardless of how onboard.sh is structured internally.
-#
-# ACL-dependent tests are skipped when setfacl is unavailable (no acl package
-# installed). The pre-refactor baseline requires setfacl for workspace and
-# provider config directory setup — without it, onboard.sh exits early.
-# After the UID Mapping migration (M2.7 Track C), setfacl is removed and
-# these tests will run unconditionally.
 
 set -uo pipefail
 
@@ -25,14 +19,7 @@ ONBOARD_SCRIPT="$REPO_ROOT/scripts/onboard.sh"
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-# Precondition: does the environment support a full onboard run?
-# Full onboard requires setfacl for workspace and provider config ACLs.
-# After UID Mapping migration (M2.7 Track C), setfacl is removed
-# and this guard becomes unconditional.
-CAN_RUN_FULL=false
-if command -v setfacl &>/dev/null; then
-  CAN_RUN_FULL=true
-fi
+# UID Mapping handles permissions — no ACL prerequisite needed.
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -45,16 +32,11 @@ make_project_dir() {
 }
 
 # Run a full fresh onboard and return the exit code + output.
-# Used by ACL-dependent tests; skipped when setfacl unavailable.
+# Run a full fresh onboard and return the exit code + output.
 run_full_onboard() {
   local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
   make_project_dir "$PROJECT_DIR"
-
-  if ! $CAN_RUN_FULL; then
-    skip "setfacl not available — skipping test that requires full onboard"
-    return 1
-  fi
 
   bash "$ONBOARD_SCRIPT" \
     --name="testproj" \

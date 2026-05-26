@@ -231,9 +231,7 @@ _provision_providers() {
       rsync -rt --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
         "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
 
-      # Interim ACL permission fix — replaced by UID Mapping in M2.7 Track C
-      setfacl -R -m u:1001:rwx,m:rwx "$PROVIDER_SANDBOX_DIR"
-      setfacl -R -d -m u:1001:rwx,m:rwx "$PROVIDER_SANDBOX_DIR"
+      # UID Mapping handles permissions — no ACL fix needed
 
       # Rename env.stub to .env if present
       if [[ -f "$PROVIDER_SANDBOX_DIR/env.stub" ]]; then
@@ -318,8 +316,7 @@ EOF
   mkdir -p "$SANDBOX_DIR/.workspace/input"
   mkdir -p "$SANDBOX_DIR/.workspace/output"
   mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
-  setfacl -R -m u:1001:rwx "$SANDBOX_DIR/.workspace"
-  setfacl -R -d -m u:1001:rwx "$SANDBOX_DIR/.workspace"
+  # UID Mapping handles permissions — no ACL fix needed
   echo "  Created: .workspace/input/, .workspace/output/, .workspace/session-diffs/"
 
   # -----------------------------------------------------------------------

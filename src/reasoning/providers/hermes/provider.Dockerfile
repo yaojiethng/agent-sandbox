@@ -14,6 +14,9 @@
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+
 # -------------------------
 # Shared libs (root, before USER switch)
 # -------------------------
@@ -34,7 +37,16 @@ COPY agent/prompts/ /opt/workflow/agent/prompts/
 # -------------------------
 # Non-root user
 # -------------------------
-RUN useradd -m -u 1001 -s /bin/bash agentuser
+# Create agentuser at the host's UID to avoid bind mount permission conflicts.
+RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
+      useradd -m -u ${HOST_UID} -s /bin/bash agentuser; \
+    elif [ "$(id -nu ${HOST_UID})" != "agentuser" ]; then \
+      existing_user="$(id -nu ${HOST_UID})"; \
+      existing_group="$(id -ng ${HOST_UID})"; \
+      usermod -l agentuser "$existing_user"; \
+      groupmod -n agentuser "$existing_group" 2>/dev/null || true; \
+      usermod -d /home/agentuser -m agentuser; \
+    fi
 USER agentuser
 
 # -------------------------

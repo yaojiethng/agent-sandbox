@@ -5,6 +5,9 @@
 ARG BASE_IMAGE=pi-base
 FROM ${BASE_IMAGE}
 
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+
 # Injected by build_context_agent — do not modify these paths.
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
@@ -25,7 +28,16 @@ COPY agent/prompts/ /opt/workflow/agent/prompts/
 # (prompts/, sessions/, skills/) shadow the template at runtime.
 COPY agent/config/ /opt/workflow/agent/config/
 
-RUN useradd -m -u 1001 -s /bin/bash agentuser
+# Create agentuser at the host's UID to avoid bind mount permission conflicts.
+RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
+      useradd -m -u ${HOST_UID} -s /bin/bash agentuser; \
+    elif [ "$(id -nu ${HOST_UID})" != "agentuser" ]; then \
+      existing_user="$(id -nu ${HOST_UID})"; \
+      existing_group="$(id -ng ${HOST_UID})"; \
+      usermod -l agentuser "$existing_user"; \
+      groupmod -n agentuser "$existing_group" 2>/dev/null || true; \
+      usermod -d /home/agentuser -m agentuser; \
+    fi
 
 # AGENT_HOME — most files are container-local. Only prompts/, sessions/,
 # skills/ are bind-mounted from host per the selective mount layout.
@@ -44,9 +56,9 @@ RUN mkdir -p $AGENT_HOME/agent/prompts \
              $WORKSPACE_DIR/input \
              $WORKSPACE_DIR/output
 
-RUN chown -R agentuser:agentuser $AGENT_HOME
-RUN chown -R agentuser:agentuser /opt/workflow/agent
-RUN chown -R agentuser:agentuser $WORKSPACE_DIR
+RUN chown -R ${HOST_UID}:${HOST_GID} $AGENT_HOME
+RUN chown -R ${HOST_UID}:${HOST_GID} /opt/workflow/agent
+RUN chown -R ${HOST_UID}:${HOST_GID} $WORKSPACE_DIR
 
 USER agentuser
 
