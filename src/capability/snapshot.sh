@@ -152,8 +152,81 @@ snapshot_archive_head() {
   fi
 
   mkdir -p "$DEST_DIR"
+  snapshot_check_case_mismatch "$SOURCE_DIR"
   git -C "$SOURCE_DIR" archive HEAD > "$DEST_DIR/baseline.tar" \
     || { echo "Error: git archive failed in $SOURCE_DIR" >&2; return 1; }
+}
+
+# -------------------------
+# snapshot_check_case_mismatch SOURCE_DIR
+# -------------------------
+# Detects tracked files whose git tree-object name differs from the filesystem
+# name in case only. Common on case-insensitive hosts (Windows, macOS) that
+# run case-sensitive Linux containers: git mv on a case-insensitive FS does
+# not update the tree object, so git archive (which reads the tree) produces
+# the old case, while rsync (which reads the filesystem) copies the new case.
+#
+# Compares every path from `git ls-tree -r HEAD --name-only` against the
+# filesystem. If a filesystem entry exists with a case-different name and the
+# git blob hash matches, it is a case mismatch.
+#
+# Writes warnings to stderr. Returns 0 always (non-blocking).
+# For the host-side fix, run: git mv <old> <tmp> && git mv <tmp> <new> && git commit
+snapshot_check_case_mismatch() {
+  local SOURCE_DIR="$1"
+
+  if [[ ! -d "$SOURCE_DIR" ]]; then
+    return 0
+  fi
+
+  local -a MISMATCHES=()
+  local tree_path
+
+  while IFS= read -r tree_path; do
+    [[ -z "$tree_path" ]] && continue
+
+    local dir fs_entry
+    dir=$(dirname "$tree_path")
+    # Find the actual filesystem entry for this directory+basename, case-insensitively
+    fs_entry=$(find "$SOURCE_DIR/$dir" -maxdepth 1 -iname "$(basename "$tree_path")" -printf '%f\n' 2>/dev/null | head -1)
+
+    [[ -z "$fs_entry" ]] && continue  # file not on disk
+
+    local tree_basename
+    tree_basename=$(basename "$tree_path")
+
+    # Same name → no mismatch
+    [[ "$fs_entry" == "$tree_basename" ]] && continue
+
+    # Different case → check if blob matches
+    local tree_blob fs_blob
+    tree_blob=$(git -C "$SOURCE_DIR" ls-tree HEAD -- "$tree_path" | awk '{print $3}') 2>/dev/null
+    fs_blob=$(git -C "$SOURCE_DIR" hash-object "$SOURCE_DIR/$dir/$fs_entry") 2>/dev/null
+
+    if [[ -n "$tree_blob" && "$tree_blob" == "$fs_blob" ]]; then
+      MISMATCHES+=("$tree_path → $dir/$fs_entry (same blob $tree_blob)")
+    fi
+  done < <(git -C "$SOURCE_DIR" ls-tree -r HEAD --name-only 2>/dev/null)
+
+  if [[ "${#MISMATCHES[@]}" -gt 0 ]]; then
+    echo "[snapshot] WARNING: case mismatch detected between git tree and filesystem:" >&2
+    for m in "${MISMATCHES[@]}"; do
+      echo "[snapshot]   $m" >&2
+    done
+    echo "[snapshot]   These files have the same content but different casing." >&2
+    echo "[snapshot]   The git tree object has the OLD case (from git archive)." >&2
+    echo "[snapshot]   The filesystem has the NEW case (from rsync, visible in the sandbox)." >&2
+    echo "[snapshot]   This is caused by git mv on a case-insensitive filesystem." >&2
+    echo "[snapshot]   To fix on the host, rename through an intermediate name:" >&2
+    for m in "${MISMATCHES[@]}"; do
+      local oldpath newpath
+      oldpath=$(echo "$m" | awk '{print $1}')
+      newpath=$(echo "$m" | awk '{print $3}')
+      echo "[snapshot]     git mv $oldpath ${oldpath}.tmp && git mv ${oldpath}.tmp $newpath && git commit" >&2
+    done
+  fi
+
+  return 0
 }
 
 # -------------------------
@@ -287,6 +360,8 @@ snapshot_init_git() {
     --exclude='baseline.tar' \
     "$SNAPSHOT_DIR/" "$SANDBOX_DIR/" \
     || { echo "Error: rsync overlay failed" >&2; return 1; }
+
+  snapshot_check_case_mismatch "$SANDBOX_DIR"
 
   echo "$sha"
 }

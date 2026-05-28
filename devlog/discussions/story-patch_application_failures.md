@@ -86,6 +86,44 @@ git apply --ignore-whitespace --index cumulative.diff
 
 **Status:** Encountered. Workaround successful.
 
+### Case 6: Case-insensitive filesystem produces case mismatch in snapshot pipeline
+
+**Scenario:** A file renamed on the host with only casing differences (e.g. `base.Dockerfile` → `base.dockerfile`) is committed. `git status` reports clean on a case-insensitive filesystem (Windows NTFS, macOS APFS). But the container runs on a case-sensitive Linux ext4 overlay. The snapshot pipeline produces a dirty working tree because the two layers disagree on the filename case.
+
+**Cause:** `git archive HEAD` on the host reads the EXACT filename from the git tree object, which retains the ORIGINAL case (`base.Dockerfile`, uppercase). The git tree object was never updated because `git mv` is a no-op on case-insensitive filesystems — the OS treats both names as the same file. The commit's tree object still references the old case, even though `git log --stat` and `git show` may display the new case (git resolves the display name from the filesystem, not the tree object).
+
+The snapshot pipeline produces:
+- **Layer 1** (`baseline.tar` → `git add -A` → commit): captures `base.Dockerfile` from the tree object. The sandbox HEAD tree has uppercase.
+- **Layer 2** (rsync overlay from host working tree): copies `base.dockerfile` (lowercase, what the filesystem actually has).
+
+Inside the container on case-sensitive ext4:
+```
+HEAD tree:    base.Dockerfile  (from git archive HEAD)
+Working tree:  base.dockerfile  (from rsync overlay)
+Index:         base.Dockerfile  (from git add -A at baseline creation)
+git status:    R  base.Dockerfile → base.dockerfile  (rename detected)
+```
+
+The same blob hash confirms content is identical. Only the filename casing differs.
+
+**Diagnosis confirmation (2026-05-28):** `baseline.tar` consistently contained `base.Dockerfile` (uppercase) across multiple `make start` restarts. The host's `git status` reported "working tree clean" at commit `7517dff` on a case-insensitive Windows NTFS filesystem. The container's `git status` consistently showed the rename as unstaged. `git config core.ignorecase` not set (not available in the container to check host value). The two layers of the snapshot pipeline faithfully reproduce a case mismatch that exists in the host's git repository but is invisible on case-insensitive filesystems.
+
+**The snapshot pipeline is working correctly.** This is not a stale snapshot, a bad cache, a Docker layer issue, a container restart issue, or a pipeline bug.
+
+**Permanent fix on host:** Force git to update the tree object with the correct case by renaming through an intermediate, distinctly-named path:
+
+```bash
+git mv base.Dockerfile base.Dockerfile.tmp
+git mv base.Dockerfile.tmp base.dockerfile
+git commit -m "fix: force lowercase base.dockerfile in tree object"
+```
+
+After this, `git archive HEAD` will produce `base.dockerfile` and all future container sessions will have a clean working tree.
+
+**Detection implemented:** `snapshot_check_case_mismatch()` (session 20260528-11) runs in both `snapshot_archive_head` (host-side, before `git archive`) and `snapshot_init_git` (container-side, after rsync overlay). It compares `git ls-tree HEAD` filenames against the filesystem using `find -iname` and warns on case mismatches with the same blob hash. Non-blocking — snapshot proceeds with the warning visible on stderr.
+
+**Applicability:** This affects any filename case change on a case-insensitive host that packages content for a case-sensitive Linux container. The fix (intermediate rename) is a one-time host-side action per case-changed file.
+
 ## Proposed Fixes
 
 Status after triage session `20260528-02-workflow-patch_application_findings_triage.md`:
