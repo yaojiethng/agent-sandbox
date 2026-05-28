@@ -34,7 +34,7 @@ source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
 
 # Only set strict mode and run setup when run directly, not when sourced
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
 
   # -------------------------
