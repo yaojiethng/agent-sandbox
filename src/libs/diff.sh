@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# libs/diff_export.sh
+# libs/diff.sh
 # Diff pipeline functions for agent-sandbox.
 # Sourced by sandbox-entrypoint.sh (capability layer) and package_branch.sh.
 #
@@ -7,9 +7,8 @@
 #   write_uncommitted_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_all_changes_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_changed_files      SANDBOX_DIR  SINCE_SHA  OUTPUT_DIR
-#   diff_export              SANDBOX_DIR  OUTPUT_DIR
 #
-# All four functions are pure primitives — no dispatch logic, no session
+# All three functions are pure primitives — no dispatch logic, no session
 # resolution. Path construction is the caller's responsibility.
 #
 # Directory layout under OUTPUT_DIR/ (caller constructs the path):

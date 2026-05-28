@@ -12,12 +12,12 @@ ARG HOST_GID=1000
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
 COPY provider-preflight.sh /opt/sandbox/bin/provider-preflight.sh
+COPY diff.sh /opt/sandbox/lib/diff.sh
 COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
 COPY session_state.sh /opt/sandbox/lib/session_state.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh
 COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
 COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
-COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
 
 # Workflow files — prompts and skills the agent uses at runtime.
 COPY agent/skills/ /opt/workflow/agent/skills/
