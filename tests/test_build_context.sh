@@ -98,8 +98,7 @@ assert_file_set() {
 
 digest_of_context() {
     local context_dir="$1"
-    # Must match the digest computation in build_sandbox.sh and build_agent.sh exactly.
-    find "$context_dir" -type f | sort | xargs sha256sum | sha256sum | awk '{print $1}'
+    context_digest "$context_dir"
 }
 
 cleanup() { rm -rf "$1"; }

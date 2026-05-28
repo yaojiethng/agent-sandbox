@@ -13,6 +13,14 @@
 # Helpers
 # -------------------------
 
+# context_digest <context_dir>
+# Compute a deterministic SHA-256 digest of all files in the context directory.
+# Uses null separators throughout to handle filenames with spaces.
+context_digest() {
+  local dir="${1:?context_digest requires context_dir}"
+  find "$dir" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}'
+}
+
 # _build_context_copy <src> <dst>
 # Copies a single file into the build context. Hard error if src is missing.
 _build_context_copy() {

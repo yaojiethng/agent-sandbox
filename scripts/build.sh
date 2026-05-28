@@ -48,7 +48,7 @@ build_image() {
   shift 4
 
   local digest
-  digest=$(find "$context_dir" -type f | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+  digest=$(context_digest "$context_dir")
 
   echo "Building image: $image_name"
   docker build $no_cache \
