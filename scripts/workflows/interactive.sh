@@ -19,7 +19,8 @@
 #   interactive_select_session     — pick a session entry within a channel
 #   interactive_select_diff_type   — pick uncommitted.diff or all-changes.diff
 
-set -euo pipefail
+# No set -euo pipefail here — this file is always sourced, never executed directly.
+# Safety settings are inherited from the parent script.
 
 # Source routing.sh for dirs_resolve
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"

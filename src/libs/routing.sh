@@ -28,7 +28,8 @@
 # They first try SESSION_STATE (written by sandbox-entrypoint after init), then
 # fall back to dirs_resolve for host-side callers without a running container.
 
-set -euo pipefail
+# No set -euo pipefail here — this file is always sourced, never executed directly.
+# Safety settings are inherited from the parent script.
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/session_state.sh"
