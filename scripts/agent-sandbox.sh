@@ -30,8 +30,8 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
-source "$AGENT_SANDBOX_REPO/scripts/build.sh"
-source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
+# No top-level sources — each dispatch case handles its own dependencies.
+# This file is a pure dispatch table: validate required flags, exec the target.
 
 # =============================================================================
 # CLI entry point
@@ -132,53 +132,29 @@ main() {
       ;;
 
     build)
-      local BUILD_TARGET=""
-      local REBUILD_FLAG=""
-      local TARGET_FLAG_SEEN=false
-      local -a REMAINING=()
-      for ARG in "$@"; do
-        case "$ARG" in
-          --target=*)
-            TARGET_FLAG_SEEN=true
-            BUILD_TARGET="${ARG#--target=}"
-            ;;
-          --rebuild) REBUILD_FLAG="--no-cache" ;;
-          *) REMAINING+=("$ARG") ;;
-        esac
-      done
-      parse_flags "${REMAINING[@]}"
-
-      if [[ "$TARGET_FLAG_SEEN" == true && -z "$BUILD_TARGET" ]]; then
-        echo "Error: --target requires a value. Use --target=all, --target=sandbox, or --target=<provider>[,<provider>]"
+      # Validate universal flags before dispatching to build.sh
+      parse_flags "$@"
+      if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --name, --project, and --sandbox are required" >&2
+        echo "  Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [--targets=<t>] [--rebuild]" >&2
         exit 1
       fi
 
-      if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
-        build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
-        for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/src/reasoning/providers/"*/base.dockerfile; do
-          [[ -f "$BASE_DOCKERFILE" ]] || continue
-          local DISCOVERED_PROVIDER
-          DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
-          build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_FLAG
-        done
-      else
-        IFS=',' read -ra BUILD_TARGETS <<< "$BUILD_TARGET"
-        local WANT_SANDBOX=false
-        local -a PROVIDER_TARGETS=()
-        for T in "${BUILD_TARGETS[@]}"; do
-          if [[ "$T" == "sandbox" ]]; then
-            WANT_SANDBOX=true
-          else
-            PROVIDER_TARGETS+=("$T")
-          fi
-        done
-        if [[ "$WANT_SANDBOX" == true ]]; then
-          build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
-        fi
-        for P in "${PROVIDER_TARGETS[@]}"; do
-          build_agent "$P" "$PROJECT_NAME" "$AGENT_SANDBOX_REPO" $REBUILD_FLAG
-        done
-      fi
+      # Normalise --target (singular, legacy) to --targets (plural, current)
+      local TARGETS_ARG=""
+      for ARG in "$@"; do
+        case "$ARG" in
+          --target=*)  TARGETS_ARG="--targets=${ARG#--target=}" ;;
+          --targets=*) TARGETS_ARG="$ARG" ;;
+        esac
+      done
+
+      exec bash "$SCRIPTS/build.sh" \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        ${TARGETS_ARG:---targets=all} \
+        $( [[ "$REBUILD" == true ]] && echo "--rebuild" )
       ;;
 
     start)
@@ -227,7 +203,6 @@ main() {
       ;;
 
     apply)
-      source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
@@ -235,6 +210,8 @@ main() {
       fi
 
       if [[ "$INTERACTIVE" == true ]]; then
+        # Interactive path: source workflow for function definitions, handle picks here
+        source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
         source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
 
         if [[ -n "$DIFF_ARG" ]]; then
@@ -271,22 +248,19 @@ main() {
           apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
         fi
       else
-        # Non-interactive: existing behaviour unchanged
-        if [[ -n "$DIFF_ARG" ]]; then
-          # Explicit diff path — bypass all channel resolution
-          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
-        else
-          # Resolve via router
-          local CHANNEL="${CHANNEL_ARG:-diffs}"
-          local DIFF_FILE
-          DIFF_FILE=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
-          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
-        fi
+        # Non-interactive: exec workflow script directly
+        exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+          --project="$PROJECT_DIR" \
+          --sandbox="$SANDBOX_DIR" \
+          --channel="${CHANNEL_ARG:-diffs}" \
+          $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
+          $( [[ -n "$DIFF_ARG" ]] && echo "--diff=$DIFF_ARG" ) \
+          $( [[ -n "$BRANCH" ]] && echo "--branch=$BRANCH" ) \
+          $( [[ "$FORCE" == true ]] && echo "--force" )
       fi
       ;;
 
     draft)
-      source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
@@ -294,6 +268,8 @@ main() {
       fi
 
       if [[ "$INTERACTIVE" == true ]]; then
+        # Interactive path: source workflow for function definitions, handle picks here
+        source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
         source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
 
         if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
@@ -304,7 +280,6 @@ main() {
           SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
           SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
 
-          # Build patch list
           local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
           local PATCH_COUNT=0
           while IFS= read -r f; do
@@ -332,7 +307,6 @@ main() {
           # Step 2: pick session
           local SESSION_NAME
           SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
-          # Use the selected channel and session for router resolution
           local ROUTER_RESULT
           ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_NAME") || exit 1
           local SOURCE_DIR
@@ -341,35 +315,39 @@ main() {
           draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
         fi
       else
-        # Non-interactive: existing behaviour unchanged
-        local CHANNEL="${CHANNEL_ARG:-session}"
-        local ROUTER_RESULT
-        ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
-        local SOURCE_DIR SESSION_NAME
-        SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-        SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
-        draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+        # Non-interactive: exec workflow script directly
+        exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
+          --project="$PROJECT_DIR" \
+          --sandbox="$SANDBOX_DIR" \
+          --channel="${CHANNEL_ARG:-session}" \
+          $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
+          $( [[ -n "$BRANCH_FROM" ]] && echo "--branch-from=$BRANCH_FROM" ) \
+          $( [[ -n "$DIFFS" ]] && echo "--diffs=$DIFFS" ) \
+          $( [[ -n "$BRANCH_SUMMARY" ]] && echo "--branch-summary=$BRANCH_SUMMARY" )
       fi
       ;;
 
     confirm)
-      source "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
         exit 1
       fi
-      confirm_run "$PROJECT_DIR" "$SANDBOX_DIR" "$TARGET_BRANCH"
+      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        $( [[ -n "$TARGET_BRANCH" ]] && echo "--target=$TARGET_BRANCH" )
       ;;
 
     reject)
-      source "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
         exit 1
       fi
-      reject_run "$PROJECT_DIR" "$SANDBOX_DIR"
+      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR"
       ;;
 
     package-diff)

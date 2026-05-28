@@ -64,7 +64,7 @@ Starts both containers, verifies the sandbox initialises correctly, then tears d
 
 Builds images. Safe to run at any time; does not start or stop any containers.
 
-`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`.
+`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`. `TARGET` (singular) is also accepted as a legacy alias.
 
 | TARGETS value | Builds |
 |---|---|
@@ -77,6 +77,8 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 `REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
 
 **Note:** `make start` and `make serve` also trigger builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — they always build the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
+
+**Note on the dispatch model:** The `build` subcommand is dispatched to `scripts/build.sh` as an independent process (`exec`). The workflow subcommands (`apply`, `draft`, `confirm`, `reject`) are similarly dispatched to their own scripts in `scripts/workflows/`. Each receives its flags directly from the dispatcher and handles its own argument parsing and execution. This means each subcommand script can also be invoked directly for testing or debugging: `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
 ---
 

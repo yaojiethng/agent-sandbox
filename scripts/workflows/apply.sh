@@ -8,6 +8,11 @@
 
 set -euo pipefail
 
+# Derive repo root from own path when exec'd (main() below uses this).
+# When sourced (by agent-sandbox.sh), AGENT_SANDBOX_REPO is already set.
+_apply_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_apply_self/../.." && pwd)}"
+
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
@@ -116,3 +121,57 @@ apply_run() {
   fi
   echo "Diff source: $DIFF_FILE"
 }
+
+# =============================================================================
+# main — entry point when exec'd by agent-sandbox apply
+# =============================================================================
+
+# Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
+# Expected flags: --project=<dir> --sandbox=<dir> [--diff=<path>] [--branch=<n>] [--force] [--permissive]
+main() {
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+  local DIFF_FILE=""
+  local APPLY_BRANCH=""
+  local FORCE=false
+  local PERMISSIVE=false
+  local CHANNEL=""
+  local SESSION=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --diff=*)        DIFF_FILE="${ARG#--diff=}" ;;
+      --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
+      --force)         FORCE=true ;;
+      --permissive)    PERMISSIVE=true ;;
+      --channel=*)     CHANNEL="${ARG#--channel=}" ;;
+      --session=*)     SESSION="${ARG#--session=}" ;;
+      *)
+        echo "Error: unknown flag: $ARG" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --project and --sandbox are required" >&2
+    exit 1
+  fi
+
+  if [[ -n "$DIFF_FILE" ]]; then
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+  else
+    source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
+    local CHANNEL="${CHANNEL:-diffs}"
+    local RESOLVED
+    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
+    apply_run "$PROJECT_DIR" "$RESOLVED" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+  fi
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

@@ -220,3 +220,86 @@ preflight() {
     build_agent   "$provider" "$project" "$repo_root"
   fi
 }
+
+# =============================================================================
+# main — entry point when exec'd by agent-sandbox build
+# =============================================================================
+
+# Parses operator-facing flags and calls build_sandbox/build_agent as needed.
+# Expected flags: --name=<n> --project=<p> --sandbox=<s> [--targets=<t,...>] [--rebuild]
+#
+# --targets defaults to "all" if omitted. Use comma-separated values:
+#   all               — sandbox + all providers
+#   sandbox           — sandbox only
+#   pi,hermes         — named providers only
+#   pi,sandbox        — named provider + sandbox
+main() {
+  local PROJECT_NAME=""
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+  local BUILD_TARGETS=""
+  local REBUILD_FLAG=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --targets=*) BUILD_TARGETS="${ARG#--targets=}" ;;
+      --rebuild)   REBUILD_FLAG="--no-cache" ;;
+      *)
+        echo "Error: unknown flag: $ARG" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --name, --project, and --sandbox are required" >&2
+    echo "  Usage: agent-sandbox build --name=<project> --project=<path> --sandbox=<path> [--targets=<t>] [--rebuild]" >&2
+    exit 1
+  fi
+
+  # Resolve repo root from our own path (scripts/build.sh → repo root)
+  local _build_self
+  _build_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local REPO_ROOT
+  REPO_ROOT="$(cd "$_build_self/.." && pwd)"
+  AGENT_SANDBOX_REPO="$REPO_ROOT"
+
+  # Source our dependencies (image naming, build context)
+  source "$REPO_ROOT/src/build/image.sh"
+  source "$REPO_ROOT/src/build/context.sh"
+
+  if [[ -z "$BUILD_TARGETS" || "$BUILD_TARGETS" == "all" ]]; then
+    build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
+    for BASE_DOCKERFILE in "$REPO_ROOT/src/reasoning/providers/"*/base.dockerfile; do
+      [[ -f "$BASE_DOCKERFILE" ]] || continue
+      local DISCOVERED_PROVIDER
+      DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
+      build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$REPO_ROOT" $REBUILD_FLAG
+    done
+  else
+    IFS=',' read -ra TARGET_LIST <<< "$BUILD_TARGETS"
+    local WANT_SANDBOX=false
+    local -a PROVIDER_TARGETS=()
+    for T in "${TARGET_LIST[@]}"; do
+      if [[ "$T" == "sandbox" ]]; then
+        WANT_SANDBOX=true
+      else
+        PROVIDER_TARGETS+=("$T")
+      fi
+    done
+    if [[ "$WANT_SANDBOX" == true ]]; then
+      build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
+    fi
+    for P in "${PROVIDER_TARGETS[@]}"; do
+      build_agent "$P" "$PROJECT_NAME" "$REPO_ROOT" $REBUILD_FLAG
+    done
+  fi
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+# Derive repo root from own path when exec'd.
+_confirm_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_confirm_self/../.." && pwd)}"
+
 source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
@@ -67,3 +71,39 @@ confirm_run() {
   echo ""
   echo "Done. Changes merged into $MERGE_TARGET."
 }
+
+# =============================================================================
+# main — entry point when exec'd by agent-sandbox confirm
+# =============================================================================
+
+# Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
+# Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>]
+main() {
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+  local TARGET_BRANCH=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
+      *)
+        echo "Error: unknown flag: $ARG" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --project and --sandbox are required" >&2
+    exit 1
+  fi
+
+  confirm_run "$PROJECT_DIR" "$SANDBOX_DIR" "$TARGET_BRANCH"
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

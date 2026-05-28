@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# tests/test_dispatch.sh
+# tests/test_dispatch.sh  (exec-based dispatch oracle)
 #
-# Dispatch oracle tests — assert that agent-sandbox.sh main() routes flags
-# and subcommands to the correct backend functions/scripts with the correct
-# arguments. These tests serve as a behaviour oracle before the dispatch
-# model refactor: they should pass before and after the refactor unchanged.
+# Dispatch oracle tests for the exec-based dispatch model. Asserts that
+# agent-sandbox.sh main() routes flags and subcommands to the correct
+# exec'd scripts with the correct arguments.
 #
-# Uses function overrides to capture backend invocations and mock source/exec
-# to prevent real execution. No Docker, no git, no filesystem fixtures needed.
+# Uses mock scripts on a temp SCRIPTS dir to capture invocations.
+# No Docker, no git, no filesystem fixtures needed.
 
 set -uo pipefail
 
@@ -19,197 +18,163 @@ source "$SCRIPT_DIR/libs/test_common.sh"
 # Mock infrastructure
 # =============================================================================
 
-# Stack of captured invocations. Each "capture:" line from stdout is appended.
 CAPTURED=()
-
-# mock_source — prevent workflow files from clobbering mocks
-# build.sh is skipped because build_sandbox/build_agent are mocked below;
-# workflow files are skipped because their functions are mocked below;
-# routing.sh is allowed through — it's stateless path resolution.
-mock_source() {
-  case "$1" in
-    *apply.sh|*draft.sh|*confirm.sh|*reject.sh|*interactive.sh|*build.sh)
-      return 0 ;;
-    *) builtin source "$1" ;;
-  esac
-}
 
 # mock_exec — capture exec calls without executing
 mock_exec() { echo "capture: exec $*"; }
 
 # =============================================================================
-# Mocked backend functions — match the real signatures
-# =============================================================================
-
-build_sandbox() { echo "capture: build_sandbox: project=$1 repo=$2 uid=${3:-} gid=${4:-}"; }
-build_agent()   { echo "capture: build_agent: provider=$1 project=$2 repo=$3 nocache=${4:-} uid=${5:-} gid=${6:-}"; }
-apply_run()     { echo "capture: apply_run: dir=$1 file=$2 branch=${3:-} force=${4:-false}"; }
-draft_run()     { echo "capture: draft_run: dir=$1 source=$2 session=$3 from=${4:-} diffs=${5:-} summary=${6:-}"; }
-confirm_run()   { echo "capture: confirm_run: dir=$1 sandbox=$2 target=$3"; }
-reject_run()    { echo "capture: reject_run: dir=$1 sandbox=$2"; }
-
-# =============================================================================
-# Setup: source agent-sandbox.sh with mocks in place
+# Setup: source agent-sandbox.sh with mocks
 # =============================================================================
 
 setup() {
   CAPTURED=()
 }
 
+MOCK_SCRIPTS_DIR=""
+setup_mocks() {
+  MOCK_SCRIPTS_DIR=$(mktemp -d /tmp/test_dispatch_mocks_XXXXXX)
+
+  # Create mock scripts for every subcommand that gets exec'd
+  local scripts=(
+    "onboard.sh"
+    "stop.sh"
+    "start_agent.sh"
+  )
+  local workflows=(
+    "apply.sh"
+    "draft.sh"
+    "confirm.sh"
+    "reject.sh"
+  )
+  local libs=(
+    "package_diff.sh"
+    "package_branch.sh"
+  )
+
+  for s in "${scripts[@]}"; do
+    cat > "$MOCK_SCRIPTS_DIR/$s" << SCRIPT
+echo "capture: MOCK $s \$@"
+SCRIPT
+    chmod +x "$MOCK_SCRIPTS_DIR/$s"
+  done
+
+  for s in "${workflows[@]}"; do
+    mkdir -p "$MOCK_SCRIPTS_DIR/workflows"
+    cat > "$MOCK_SCRIPTS_DIR/workflows/$s" << SCRIPT
+echo "capture: MOCK workflows/$s \$@"
+SCRIPT
+    chmod +x "$MOCK_SCRIPTS_DIR/workflows/$s"
+  done
+
+  for s in "${libs[@]}"; do
+    mkdir -p "$MOCK_SCRIPTS_DIR/libs"
+    cat > "$MOCK_SCRIPTS_DIR/libs/$s" << SCRIPT
+echo "capture: MOCK libs/$s \$@"
+SCRIPT
+    chmod +x "$MOCK_SCRIPTS_DIR/libs/$s"
+  done
+
+  # build.sh gets a mock too — it will be exec'd by agent-sandbox build
+  cat > "$MOCK_SCRIPTS_DIR/build.sh" << SCRIPT
+echo "capture: MOCK build.sh \$@"
+SCRIPT
+  chmod +x "$MOCK_SCRIPTS_DIR/build.sh"
+
+  # Point SCRIPTS at mock dir for all exec'd subcommands
+  SCRIPTS="$MOCK_SCRIPTS_DIR"
+}
+
 source_harness() {
-  # Create temporary file with @@AGENT_SANDBOX_REPO@@ placeholder resolved
   local resolved
   resolved=$(mktemp /tmp/test_dispatch_src_XXXXXX)
   sed "s|@@AGENT_SANDBOX_REPO@@|$REPO_ROOT|g" "$REPO_ROOT/scripts/agent-sandbox.sh" > "$resolved"
 
-  # Override source and exec
-  source() { mock_source "$@"; }
+  # Override exec to capture
   exec() { mock_exec "$@"; }
 
-  # Source the harness (routing.sh will be loaded, workflows skipped)
+  # Override SCRIPTS to point at mock dir AFTER top-level sources are done
+  # We need the real build.sh sourced at top level for now.
+  # Actually — after refactor, agent-sandbox.sh only sources build.sh and routing.sh
+  # at top level. We want build.sh sourced for real (it defines build_sandbox etc.),
+  # but we DON'T want it to execute.
+  # We DO want the SCRIPTS dir to point at mocks for the exec calls.
+  # Solution: source the harness with real AGENT_SANDBOX_REPO, then swap SCRIPTS.
+
+  # Source the harness (no top-level sources after refactor — pure dispatch table)
   source "$resolved"
   rm -f "$resolved"
 }
 
-# Create a mock SCRIPTS dir once for the test file
-MOCK_SCRIPTS_DIR=""
-setup_mock_scripts() {
-  MOCK_SCRIPTS_DIR=$(mktemp -d /tmp/test_dispatch_scripts_XXXXXX)
-  # Create a mock start_agent.sh that captures args
-  cat > "$MOCK_SCRIPTS_DIR/start_agent.sh" << 'SCRIPT'
-#!/usr/bin/env bash
-echo "capture: MOCK_START_AGENT $*"
-SCRIPT
-  chmod +x "$MOCK_SCRIPTS_DIR/start_agent.sh"
-  # Update SCRIPTS to point to mock dir
-  SCRIPTS="$MOCK_SCRIPTS_DIR"
-}
-
 # =============================================================================
-# Helper: run main and return captured output + stdout
+# Helper: run main and capture
 # =============================================================================
 
 dispatch_and_capture() {
   CAPTURED=()
   local stdout
   stdout=$(main "$@" 2>/dev/null) || true
-  # Parse lines from mock scripts — they start with "capture:" marker
   while IFS= read -r line; do
     if [[ "$line" == capture:* ]]; then
-      CAPTURED+=("${line#capture: }")  # trim "capture: " prefix
+      CAPTURED+=("${line#capture: }")
     fi
   done <<< "$stdout"
-  # exec captures are already in CAPTURED via mock_exec
 }
 
 # =============================================================================
-# Tests — build subcommand
+# Tests — build subcommand (exec's build.sh with --targets)
 # =============================================================================
 
 test_build_default_all() {
   setup
   dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s
 
-  local found_sandbox=false
-  local found_agent_count=0
+  local found=false
   for c in "${CAPTURED[@]}"; do
-    case "$c" in
-      "build_sandbox:"*) found_sandbox=true ;;
-      "build_agent:"*) found_agent_count=$((found_agent_count + 1)) ;;
-    esac
+    [[ "$c" == "exec"*"build.sh"* ]] && [[ "$c" != *"MOCK"* ]] && found=true
   done
 
-  if [[ "$found_sandbox" == true ]] && [[ "$found_agent_count" -gt 0 ]]; then
-    pass "build (default): calls build_sandbox + build_agent for all providers"
+  if [[ "$found" == true ]]; then
+    pass "build (default): execs build.sh"
   else
-    fail "build (default): expected build_sandbox + N build_agent calls, got: ${CAPTURED[*]}"
+    fail "build (default): expected exec build.sh, got: ${CAPTURED[*]}"
   fi
 }
 
-test_build_target_sandbox() {
+test_build_with_targets() {
   setup
-  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --target=sandbox
+  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --targets=pi
 
-  local found_sandbox=false
-  local found_agent=false
+  local found=false
   for c in "${CAPTURED[@]}"; do
-    case "$c" in
-      "build_sandbox:"*) found_sandbox=true ;;
-      "build_agent:"*) found_agent=true ;;
-    esac
+    [[ "$c" == "exec"*"build.sh"* ]] && [[ "$c" == *"--targets"* ]] && found=true
   done
 
-  if [[ "$found_sandbox" == true ]] && [[ "$found_agent" == false ]]; then
-    pass "build --target=sandbox: calls build_sandbox only"
+  if [[ "$found" == true ]]; then
+    pass "build --targets=pi: passes --targets flag through"
   else
-    fail "build --target=sandbox: expected only build_sandbox, got: ${CAPTURED[*]}"
+    fail "build --targets=pi: expected --targets in exec, got: ${CAPTURED[*]}"
   fi
 }
 
-test_build_target_single_provider() {
+test_build_with_rebuild() {
   setup
-  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --target=pi
+  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --rebuild
 
-  local found_sandbox=false
-  local found_pi=false
+  local found=false
   for c in "${CAPTURED[@]}"; do
-    case "$c" in
-      "build_sandbox:"*) found_sandbox=true ;;
-      "build_agent: provider=pi"*) found_pi=true ;;
-    esac
+    [[ "$c" == "exec"*"build.sh"* ]] && [[ "$c" == *"--rebuild"* ]] && found=true
   done
 
-  if [[ "$found_sandbox" == false ]] && [[ "$found_pi" == true ]]; then
-    pass "build --target=pi: calls build_agent for pi only, no sandbox"
+  if [[ "$found" == true ]]; then
+    pass "build --rebuild: passes --rebuild flag through"
   else
-    fail "build --target=pi: expected only pi agent, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_build_target_provider_and_sandbox() {
-  setup
-  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --target=pi,sandbox
-
-  local found_sandbox=false
-  local found_pi=false
-  for c in "${CAPTURED[@]}"; do
-    case "$c" in
-      "build_sandbox:"*) found_sandbox=true ;;
-      "build_agent: provider=pi"*) found_pi=true ;;
-    esac
-  done
-
-  if [[ "$found_sandbox" == true ]] && [[ "$found_pi" == true ]]; then
-    pass "build --target=pi,sandbox: calls build_sandbox + build_agent for pi"
-  else
-    fail "build --target=pi,sandbox: expected sandbox + pi, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_build_target_multiple_providers() {
-  setup
-  dispatch_and_capture build --name=test --project=/tmp/p --sandbox=/tmp/s --target=pi,hermes
-
-  local found_pi=false
-  local found_hermes=false
-  local found_sandbox=false
-  for c in "${CAPTURED[@]}"; do
-    case "$c" in
-      "build_agent: provider=pi"*) found_pi=true ;;
-      "build_agent: provider=hermes"*) found_hermes=true ;;
-      "build_sandbox:"*) found_sandbox=true ;;
-    esac
-  done
-
-  if [[ "$found_pi" == true ]] && [[ "$found_hermes" == true ]] && [[ "$found_sandbox" == false ]]; then
-    pass "build --target=pi,hermes: builds both providers, no sandbox"
-  else
-    fail "build --target=pi,hermes: expected pi + hermes only, got: ${CAPTURED[*]}"
+    fail "build --rebuild: expected --rebuild in exec, got: ${CAPTURED[*]}"
   fi
 }
 
 # =============================================================================
-# Tests — start / serve / dry-run subcommands
+# Tests — start / serve / dry-run (call start_agent.sh as subprocess)
 # =============================================================================
 
 test_start_default() {
@@ -218,13 +183,13 @@ test_start_default() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK_START_AGENT"* ]] && [[ "$c" == *"standard"* ]] && found=true
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"standard"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
     pass "start: calls start_agent.sh in standard mode"
   else
-    fail "start: expected MOCK_START_AGENT standard, got: ${CAPTURED[*]}"
+    fail "start: expected MOCK start_agent.sh standard, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -234,13 +199,13 @@ test_serve_mode() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == *"serve"* ]] && found=true
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"serve"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "serve: execs start_agent.sh in serve mode"
+    pass "serve: calls start_agent.sh in serve mode"
   else
-    fail "serve: expected exec start_agent.sh serve, got: ${CAPTURED[*]}"
+    fail "serve: expected MOCK start_agent.sh serve, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -250,13 +215,13 @@ test_dry_run_mode() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == *"dry-run"* ]] && found=true
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"dry-run"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "dry-run: execs start_agent.sh in dry-run mode"
+    pass "dry-run: calls start_agent.sh in dry-run mode"
   else
-    fail "dry-run: expected exec start_agent.sh dry-run, got: ${CAPTURED[*]}"
+    fail "dry-run: expected MOCK start_agent.sh dry-run, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -264,12 +229,12 @@ test_start_with_passthrough() {
   setup
   dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes --extra-flag
 
-  local found_passthrough=false
+  local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == *"extra-flag"* ]] && found_passthrough=true
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"extra-flag"* ]] && found=true
   done
 
-  if [[ "$found_passthrough" == true ]]; then
+  if [[ "$found" == true ]]; then
     pass "start: passes through extra flags"
   else
     fail "start: expected extra-flag in passthrough, got: ${CAPTURED[*]}"
@@ -277,7 +242,7 @@ test_start_with_passthrough() {
 }
 
 # =============================================================================
-# Tests — apply subcommand
+# Tests — apply subcommand (exec's workflows/apply.sh)
 # =============================================================================
 
 test_apply_with_diff() {
@@ -286,13 +251,13 @@ test_apply_with_diff() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "apply_run: dir=/tmp/p file=/tmp/mydiff.diff"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--diff"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "apply --diff=<path>: calls apply_run with the diff file"
+    pass "apply --diff=<path>: execs apply.sh with --diff flag"
   else
-    fail "apply --diff=<path>: expected apply_run with /tmp/mydiff.diff, got: ${CAPTURED[*]}"
+    fail "apply --diff=<path>: expected exec apply.sh, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -302,13 +267,13 @@ test_apply_with_branch() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "apply_run: dir=/tmp/p file=/tmp/mydiff.diff branch=feature-x"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--branch=feature-x"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "apply --diff --branch: passes branch to apply_run"
+    pass "apply --diff --branch: passes --branch flag through"
   else
-    fail "apply --diff --branch: expected apply_run with branch, got: ${CAPTURED[*]}"
+    fail "apply --diff --branch: expected --branch in exec, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -318,40 +283,56 @@ test_apply_with_force() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == *"force=true"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--force"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "apply --diff --force: passes force to apply_run"
+    pass "apply --diff --force: passes --force flag through"
   else
-    fail "apply --diff --force: expected force=true, got: ${CAPTURED[*]}"
+    fail "apply --diff --force: expected --force in exec, got: ${CAPTURED[*]}"
   fi
 }
 
 # =============================================================================
-# Tests — draft subcommand
+# Tests — draft subcommand (exec's workflows/draft.sh)
 # =============================================================================
 
-test_draft_default_channel() {
+test_draft_noninteractive() {
   setup
-  # draft needs a real session dir to resolve — for now test the non-interactive
-  # path fails early with a missing session rather than crashing
-  # We test that the routing layer is called at all
+  # Non-interactive draft resolves via router — will fail without session dirs.
+  # We just verify it execs draft.sh rather than exploding.
   dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s
 
-  # Non-interactive draft calls resolve_source_for_draft which will fail because
-  # no session dirs exist. We just verify no crash and that draft wasn't reached.
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "draft_run:"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && found=true
   done
 
-  # With mock routing, this will fail to resolve. Just assert no crash.
-  pass "draft (default): exits gracefully when no session found"
+  if [[ "$found" == true ]]; then
+    pass "draft: execs draft.sh"
+  else
+    fail "draft: expected exec draft.sh, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_draft_with_session() {
+  setup
+  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --session=my-session
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--session"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "draft --session: passes --session flag through"
+  else
+    fail "draft --session: expected --session in exec, got: ${CAPTURED[*]}"
+  fi
 }
 
 # =============================================================================
-# Tests — confirm / reject subcommands
+# Tests — confirm / reject (exec's workflows/confirm.sh, workflows/reject.sh)
 # =============================================================================
 
 test_confirm_default() {
@@ -360,13 +341,13 @@ test_confirm_default() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "confirm_run:"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/confirm.sh"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "confirm: calls confirm_run with project and sandbox"
+    pass "confirm: execs confirm.sh"
   else
-    fail "confirm: expected confirm_run, got: ${CAPTURED[*]}"
+    fail "confirm: expected exec confirm.sh, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -376,13 +357,13 @@ test_confirm_with_target() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "confirm_run: dir=/tmp/p sandbox=/tmp/s target=main" ]] && found=true
+    [[ "$c" == "exec"*"workflows/confirm.sh"* ]] && [[ "$c" == *"--target"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "confirm --target: passes target to confirm_run"
+    pass "confirm --target: passes --target flag through"
   else
-    fail "confirm --target: expected target=main, got: ${CAPTURED[*]}"
+    fail "confirm --target: expected --target in exec, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -392,18 +373,18 @@ test_reject_default() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "reject_run:"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/reject.sh"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "reject: calls reject_run with project and sandbox"
+    pass "reject: execs reject.sh"
   else
-    fail "reject: expected reject_run, got: ${CAPTURED[*]}"
+    fail "reject: expected exec reject.sh, got: ${CAPTURED[*]}"
   fi
 }
 
 # =============================================================================
-# Tests — stop / onboard (exec'd scripts)
+# Tests — stop / onboard / package-* (exec'd scripts)
 # =============================================================================
 
 test_stop() {
@@ -435,6 +416,42 @@ test_onboard() {
     pass "onboard: execs onboard.sh"
   else
     fail "onboard: expected exec onboard.sh, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_package_diff() {
+  setup
+  # package-diff checks for .env at SANDBOX_DIR/.env — create it
+  mkdir -p /tmp/s
+  touch /tmp/s/.env
+  dispatch_and_capture package-diff --sandbox=/tmp/s
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"package_diff.sh"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "package-diff: execs package_diff.sh"
+  else
+    fail "package-diff: expected exec package_diff.sh, got: ${CAPTURED[*]}"
+  fi
+  rm -rf /tmp/s
+}
+
+test_package_branch() {
+  setup
+  dispatch_and_capture package-branch --sandbox=/tmp/s
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"package_branch.sh"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "package-branch: execs package_branch.sh"
+  else
+    fail "package-branch: expected exec package_branch.sh, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -471,14 +488,11 @@ test_build_missing_args() {
   local output
   output=$(main build 2>&1) || true
 
-  # Current behaviour: build case does NOT validate --name/--project/--sandbox.
-  # It proceeds with empty values, calling build_sandbox/build_agent with
-  # empty project name. This is a pre-existing gap — the dispatch refactor
-  # should add validation. This test documents current behaviour.
-  if [[ "$output" != *"required"* ]]; then
-    pass "build without required args: proceeds without validation (known gap)"
+  # After refactor: build validates --name/--project/--sandbox before exec'ing
+  if [[ "$output" == *"required"* ]]; then
+    pass "build without required args: prints error (validation added in refactor)"
   else
-    fail "build without required args: expected no error (known gap), got: $output"
+    fail "build without required args: expected validation error, got: $output"
   fi
 }
 
@@ -487,13 +501,11 @@ test_build_missing_args() {
 # =============================================================================
 
 source_harness
-setup_mock_scripts
+setup_mocks
 
 run_test test_build_default_all
-run_test test_build_target_sandbox
-run_test test_build_target_single_provider
-run_test test_build_target_provider_and_sandbox
-run_test test_build_target_multiple_providers
+run_test test_build_with_targets
+run_test test_build_with_rebuild
 run_test test_start_default
 run_test test_serve_mode
 run_test test_dry_run_mode
@@ -501,12 +513,15 @@ run_test test_start_with_passthrough
 run_test test_apply_with_diff
 run_test test_apply_with_branch
 run_test test_apply_with_force
-run_test test_draft_default_channel
+run_test test_draft_noninteractive
+run_test test_draft_with_session
 run_test test_confirm_default
 run_test test_confirm_with_target
 run_test test_reject_default
 run_test test_stop
 run_test test_onboard
+run_test test_package_diff
+run_test test_package_branch
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args

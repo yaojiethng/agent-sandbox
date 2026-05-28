@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+# Derive repo root from own path when exec'd.
+_reject_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_reject_self/../.." && pwd)}"
+
 source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
@@ -35,3 +39,37 @@ reject_run() {
 
   echo "Draft rejected. PROJECT_DIR restored to $source_branch."
 }
+
+# =============================================================================
+# main — entry point when exec'd by agent-sandbox reject
+# =============================================================================
+
+# Parses flags forwarded from agent-sandbox.sh dispatch and calls reject_run.
+# Expected flags: --project=<dir> --sandbox=<dir>
+main() {
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      *)
+        echo "Error: unknown flag: $ARG" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --project and --sandbox are required" >&2
+    exit 1
+  fi
+
+  reject_run "$PROJECT_DIR" "$SANDBOX_DIR"
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

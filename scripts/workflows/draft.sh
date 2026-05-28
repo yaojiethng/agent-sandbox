@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+# Derive repo root from own path when exec'd.
+_draft_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_draft_self/../.." && pwd)}"
+
 source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
@@ -207,3 +211,51 @@ draft_run() {
 }
 
 # =============================================================================
+# main — entry point when exec'd by agent-sandbox draft
+# =============================================================================
+
+# Parses flags forwarded from agent-sandbox.sh dispatch and calls draft_run.
+# Expected flags: --project=<dir> --sandbox=<dir> [--session=<name>] [--channel=<c>] [--branch-from=<n>] [--diffs=<r>] [--branch-summary=<s>]
+main() {
+  local PROJECT_DIR=""
+  local SANDBOX_DIR=""
+  local SESSION_ARG=""
+  local CHANNEL_ARG=""
+  local BRANCH_FROM=""
+  local DIFFS=""
+  local BRANCH_SUMMARY=""
+
+  for ARG in "$@"; do
+    case "$ARG" in
+      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+      --channel=*)     CHANNEL_ARG="${ARG#--channel=}" ;;
+      --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
+      --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
+      --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
+      *)
+        echo "Error: unknown flag: $ARG" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --project and --sandbox are required" >&2
+    exit 1
+  fi
+
+  local CHANNEL="${CHANNEL_ARG:-session}"
+  local ROUTER_RESULT
+  ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
+  local SOURCE_DIR SESSION_NAME
+  SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+  SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
