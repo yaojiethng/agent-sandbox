@@ -274,7 +274,7 @@ HOST_GID="$(id -g)"
 if [[ "$REBUILD" == true ]]; then
   echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
   build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
-  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache-base" "$HOST_UID" "$HOST_GID"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache" "$HOST_UID" "$HOST_GID"
 elif [[ "$REFRESH" == true ]]; then
   echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
   build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"

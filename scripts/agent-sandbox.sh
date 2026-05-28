@@ -148,7 +148,7 @@ main() {
             TARGET_FLAG_SEEN=true
             BUILD_TARGET="${ARG#--target=}"
             ;;
-          --rebuild) REBUILD_FLAG="--no-cache-base" ;;
+          --rebuild) REBUILD_FLAG="--no-cache" ;;
           *) REMAINING+=("$ARG") ;;
         esac
       done

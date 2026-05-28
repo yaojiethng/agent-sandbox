@@ -23,6 +23,21 @@ source "$REPO_ROOT/src/build/context.sh"
 # Build execution
 # -------------------------
 
+# Track temp build contexts for trap cleanup
+_BUILD_CONTEXT_DIRS=()
+
+# cleanup_build_context
+# Removes any tracked temp build context directories on exit.
+# Called via EXIT trap set by build_agent and build_sandbox.
+cleanup_build_context() {
+  local rc=$?
+  local dir
+  for dir in "${_BUILD_CONTEXT_DIRS[@]}"; do
+    [[ -d "$dir" ]] && rm -rf "$dir"
+  done
+  exit $rc
+}
+
 # build_image <image_name> <dockerfile> <context_dir> <no_cache> [docker build args...]
 # Computes a digest of the context and runs docker build.
 build_image() {
@@ -45,7 +60,7 @@ build_image() {
   echo "Build complete: $image_name"
 }
 
-# build_agent <provider> <project_name> <repo_root> [--no-cache-base] [--uid UID] [--gid GID]
+# build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
 #   1. agent-node-base (shared — node.dockerfile)
 #   2. <provider>-base (provider-specific — providers/<n>/base.dockerfile)
@@ -55,19 +70,19 @@ build_image() {
 # Tier 2 cached per-provider.
 # Tier 3 rebuilt on every build_agent call (picks up project-specific content).
 #
-# --no-cache-base: rebuild tiers 1 and 2 from scratch.
+# --no-cache: rebuild tiers 1 and 2 from scratch.
 # --uid/--gid: thread host UID/GID into Dockerfiles for UID mapping.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
   local repo_root="${3:?build_agent requires repo root}"
-  local no_cache_base="${4:-}"
+  local no_cache="${4:-}"
   local host_uid="${5:-}"
   local host_gid="${6:-}"
-  local no_cache=""
 
-  if [[ -n "$no_cache_base" ]]; then
-    no_cache="--no-cache"
+  local cache_flag=""
+  if [[ -n "$no_cache" ]]; then
+    cache_flag="--no-cache"
   fi
 
   # Build args for UID mapping
@@ -80,7 +95,7 @@ build_agent() {
   fi
 
   # Tier 1: shared node base — doesn't need the provider build context
-  local shared_base="agent-node-base"
+  local shared_base; shared_base="$(shared_base_image_name)"
   local shared_dockerfile="$repo_root/src/reasoning/node.dockerfile"
 
   # Tier 2: provider-specific base
@@ -93,41 +108,48 @@ build_agent() {
 
   # Validate files exist
   if [[ ! -f "$shared_dockerfile" ]]; then
-    echo "Error: shared base Dockerfile not found: $shared_dockerfile" >&2
+    echo "build_agent: ERROR: shared base Dockerfile not found: $shared_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$agent_base_dockerfile" ]]; then
-    echo "Error: provider base Dockerfile not found: $agent_base_dockerfile" >&2
+    echo "build_agent: ERROR: provider base Dockerfile not found: $agent_base_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$provider_dockerfile" ]]; then
-    echo "Error: provider Dockerfile not found: $provider_dockerfile" >&2
+    echo "build_agent: ERROR: provider Dockerfile not found: $provider_dockerfile" >&2
     exit 1
   fi
 
   # Build context for tiers 2 and 3 (tier 1 uses repo root as context)
   local context
   context="$(build_context_agent "$repo_root" "$provider")"
-  local context_cleanup="$context"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$context_cleanup'" EXIT
+  _BUILD_CONTEXT_DIRS+=("$context")
+
+  # --- Helper: build image only if missing (or --no-cache forces rebuild) ---
+  # Named function in bash is always global, but defining it here keeps
+  # the code colocated with its usage. Defined fresh on each build_agent call.
+  # shellcheck disable=SC2119
+  build_if_missing() {
+    local image="$1" dockerfile="$2" context_dir="$3"
+    shift 3
+    if ! docker image inspect "$image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
+      build_image "$image" "$dockerfile" "$context_dir" "$cache_flag" "$@"
+    else
+      echo "Image exists, skipping: $image"
+    fi
+  }
+
+  # Trap to clean up temp build context on exit
+  trap cleanup_build_context EXIT
 
   # Tier 1: shared node base
-  if ! docker image inspect "$shared_base" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-    build_image "$shared_base" "$shared_dockerfile" "$repo_root" "$no_cache" \
-      "${uid_args[@]+${uid_args[@]}}"
-  else
-    echo "Shared base image exists, skipping: $shared_base"
-  fi
+  build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" \
+    "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 2: provider-specific base
-  if ! docker image inspect "$agent_base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-    build_image "$agent_base_image" "$agent_base_dockerfile" "$context" "$no_cache" \
-      --build-arg "BASE_IMAGE=$shared_base" \
-      "${uid_args[@]+${uid_args[@]}}"
-  else
-    echo "Provider base image exists, skipping: $agent_base_image"
-  fi
+  build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$context" \
+    --build-arg "BASE_IMAGE=$shared_base" \
+    "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 3: always build provider image
   build_image "$provider_image" "$provider_dockerfile" "$context" "" \
@@ -145,16 +167,16 @@ build_sandbox() {
 
   local dockerfile="$repo_root/src/capability/dockerfile"
   if [[ ! -f "$dockerfile" ]]; then
-    echo "Error: sandbox Dockerfile not found: $dockerfile" >&2
+    echo "build_sandbox: ERROR: Dockerfile not found: $dockerfile" >&2
     exit 1
   fi
 
   local image; image="$(sandbox_image_name "$project")"
   local context
   context="$(build_context_sandbox "$repo_root")"
-  local context_cleanup="$context"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$context_cleanup'" EXIT
+  _BUILD_CONTEXT_DIRS+=("$context")
+
+  trap cleanup_build_context EXIT
 
   local uid_args=()
   if [[ -n "$host_uid" ]]; then

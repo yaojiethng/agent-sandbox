@@ -29,6 +29,14 @@ agent_image_name() {
   echo "${provider}-agent-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
 
+# shared_base_image_name
+# Returns: agent-node-base (shared reasoning layer base image)
+# All providers inherit from this. Defined here rather than hardcoded in
+# build orchestrators so the constant has a single canonical source.
+shared_base_image_name() {
+  echo "agent-node-base"
+}
+
 # sandbox_image_name <project_name>
 # Returns: sandbox-<project> (lowercased)
 sandbox_image_name() {
