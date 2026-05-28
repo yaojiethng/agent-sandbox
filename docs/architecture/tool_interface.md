@@ -60,11 +60,23 @@ Starts both containers, verifies the sandbox initialises correctly, then tears d
 
 ---
 
-### `make build [TARGET=<provider>[,sandbox]]`
+### `make build [TARGETS=<target>[,<target>...]]`
 
 Builds images. Safe to run at any time; does not start or stop any containers.
 
-`TARGET` is optional. Without it, all provider images and the sandbox image are built. `TARGET=<provider>` builds the named provider only. `TARGET=<provider>,sandbox` builds the named provider and the sandbox image.
+`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`.
+
+| TARGETS value | Builds |
+|---|---|
+| `all` (default) | Sandbox image + every discovered provider |
+| `pi` | `pi` provider only |
+| `pi,hermes` | `pi` and `hermes` providers |
+| `sandbox` | Sandbox image only |
+| `pi,sandbox` | `pi` provider + sandbox image |
+
+`REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
+
+**Note:** `make start` and `make serve` also trigger builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — they always build the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
 
 ---
 
