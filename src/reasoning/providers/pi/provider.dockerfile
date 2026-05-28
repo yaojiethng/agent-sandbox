@@ -1,4 +1,4 @@
-# providers/pi/provider.Dockerfile
+# providers/pi/provider.dockerfile
 # Provider layer for Pi. Inherits from pi-base.
 # Tagged: pi-agent-<project>
 

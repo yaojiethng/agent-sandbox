@@ -1,4 +1,4 @@
-# providers/hermes/base.Dockerfile
+# providers/hermes/base.dockerfile
 # Stable install layers for the Hermes reasoning layer.
 # Built once per provider; rebuilt only when system packages, runtimes, or agent source change.
 # Tagged as hermes-base (no project suffix — contains no project-specific content).

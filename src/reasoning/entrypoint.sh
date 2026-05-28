@@ -2,7 +2,7 @@
 # libs/provider-entrypoint.sh
 # Harness-owned wrapper entrypoint for all reasoning layer provider containers.
 # Copied into the image via the build context — a change to this file triggers
-# a Docker layer cache miss on the COPY step in provider.Dockerfile.
+# a Docker layer cache miss on the COPY step in provider.dockerfile.
 #
 # Responsibilities:
 #   1. Provision AGENT_HOME from image template (copy-in config files not
@@ -23,7 +23,7 @@
 # they shadow the template copies at runtime. See devlog/roadmap.md
 # M2.4 for the design rationale.
 #
-# Required environment variables (set via ENV in provider.Dockerfile):
+# Required environment variables (set via ENV in provider.dockerfile):
 #   AGENT_HOME          — provider config dir inside the container
 #   PROVIDER_NAME       — provider identifier
 #

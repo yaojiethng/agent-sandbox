@@ -1,27 +1,26 @@
-# providers/opencode/provider.Dockerfile
-# Reasoning layer image for the OpenCode provider.
-# Inherits stable install layers from opencode-base (see base.Dockerfile).
-# Tagged as opencode-agent-<project>. Built by scripts/build_container.sh --type=agent --provider=opencode.
+# providers/hermes/provider.dockerfile
+# Reasoning layer image for the Hermes provider.
+# Inherits stable install layers from hermes-base (see base.dockerfile).
+# Tagged as hermes-agent-<project>. Built by scripts/build_container.sh --type=agent --provider=hermes.
 #
-# Rebuilt when provider interface, shared libs, or project-specific content changes.
-# Slow install layers (apt, npm, opencode-ai) live in base.Dockerfile.
+# Rebuilt when provider interface, config, or project-specific content changes.
+# Slow install layers (apt, uv, Hermes source, Playwright) live in base.dockerfile.
 #
 # Provider contract (harness interface):
-#   AGENT_HOME    — where OpenCode writes config and state
+#   AGENT_HOME    — where Hermes writes config, sessions, and memories
 #   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
 #   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
-#                   and registers copy-out trap before exec-ing opencode
-ARG BASE_IMAGE=opencode-base
+#                   and registers copy-out trap before exec-ing hermes
+ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 
 # -------------------------
-# Shared libs
+# Shared libs (root, before USER switch)
 # -------------------------
 # Injected by build_context_agent — cache miss if either file changes.
-# dirs.sh is sourced by dry_run.sh inside the container.
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
 COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
@@ -53,15 +52,14 @@ USER agentuser
 # -------------------------
 # Provider identity
 # -------------------------
-ENV PROVIDER_NAME=opencode
-ENV AGENT_HOME=/home/agentuser/.opencode
+ENV PROVIDER_NAME=hermes
+ENV AGENT_HOME=/home/agentuser/.hermes
 
 # -------------------------
 # Working directories
 # -------------------------
-# sandbox/ is NOT pre-created here — it is provided exclusively by the
-# capability layer container via --volumes-from. Pre-creating it would
-# shadow the capability layer's directory.
+# sandbox/ is NOT pre-created here — provided by the capability layer
+# via --volumes-from. workspace/ dirs are bind-mounted from SANDBOX_DIR.
 RUN mkdir -p /home/agentuser/workspace/input \
              /home/agentuser/workspace/output
 
@@ -73,10 +71,5 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh seeds config and registers copy-out trap,
-# then execs opencode. Subcommand and args passed via compose:
-#   standard: no override — runs as `opencode` with no args
-#   serve:    docker-compose.serve.yml sets command: ["serve", ...]
-#   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
 ENV PATH=/opt/sandbox/bin:$PATH
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "opencode"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "hermes"]

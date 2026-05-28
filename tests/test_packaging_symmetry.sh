@@ -24,34 +24,34 @@ REQUIRED_PACKAGING=(
 
 # Each Dockerfile's COPY lines (source filenames only, stripped of path)
 test_capability_dockerfile_has_all_packaging() {
-  local dockerfile="$REPO_ROOT/src/capability/Dockerfile"
+  local dockerfile="$REPO_ROOT/src/capability/dockerfile"
   local copied
   copied=$(grep '^COPY' "$dockerfile" | awk '{print $2}' | xargs -n1 basename 2>/dev/null || true)
   for pkg in "${REQUIRED_PACKAGING[@]}"; do
     if ! echo "$copied" | grep -q "$pkg"; then
-      fail "capability Dockerfile missing: $pkg"
+      fail "capability dockerfile missing: $pkg"
       return
     fi
   done
-  pass "capability Dockerfile has all packaging files"
+  pass "capability dockerfile has all packaging files"
 }
 
 test_provider_dockerfiles_have_all_packaging() {
   local all_ok=true
-  for dockerfile in "$REPO_ROOT/src/reasoning/providers/"*/provider.Dockerfile; do
+  for dockerfile in "$REPO_ROOT/src/reasoning/providers/"*/provider.dockerfile; do
     local provider
     provider=$(basename "$(dirname "$dockerfile")")
     local copied
     copied=$(grep '^COPY' "$dockerfile" | awk '{print $2}' | xargs -n1 basename 2>/dev/null || true)
     for pkg in "${REQUIRED_PACKAGING[@]}"; do
       if ! echo "$copied" | grep -q "$pkg"; then
-        fail "$provider provider Dockerfile missing: $pkg"
+        fail "$provider provider dockerfile missing: $pkg"
         all_ok=false
       fi
     done
   done
   if [[ "$all_ok" == true ]]; then
-    pass "all provider Dockerfiles have all packaging files"
+    pass "all provider dockerfiles have all packaging files"
   fi
 }
 

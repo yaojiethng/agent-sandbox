@@ -161,7 +161,7 @@ main() {
 
       if [[ -z "$BUILD_TARGET" || "$BUILD_TARGET" == "all" ]]; then
         build_sandbox "$PROJECT_NAME" "$AGENT_SANDBOX_REPO"
-        for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/src/reasoning/providers/"*/base.Dockerfile; do
+        for BASE_DOCKERFILE in "$AGENT_SANDBOX_REPO/src/reasoning/providers/"*/base.dockerfile; do
           [[ -f "$BASE_DOCKERFILE" ]] || continue
           local DISCOVERED_PROVIDER
           DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"

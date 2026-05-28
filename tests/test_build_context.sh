@@ -333,8 +333,8 @@ assert_exit_nonzero "build_sandbox: fails when repo_root is missing" \
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
-# No sandbox.Dockerfile in fixture; should fail on missing file.
-assert_exit_nonzero "build_sandbox: fails when sandbox.Dockerfile is missing" \
+# No sandbox.dockerfile in fixture; should fail on missing file.
+assert_exit_nonzero "build_sandbox: fails when sandbox.dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_sandbox '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
@@ -359,16 +359,16 @@ assert_exit_nonzero "build_agent: fails when repo_root is missing" \
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
-# No src/reasoning/providers/ dir in fixture; should fail on missing base.Dockerfile.
-assert_exit_nonzero "build_agent: fails when base.Dockerfile is missing" \
+# No src/reasoning/providers/ dir in fixture; should fail on missing base.dockerfile.
+assert_exit_nonzero "build_agent: fails when base.dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
 REPO=$(make_mock_repo)
 mkdir -p "$REPO/src/reasoning/providers/test-provider"
-echo "base" > "$REPO/src/reasoning/providers/test-provider/base.Dockerfile"
-# base.Dockerfile exists but provider.Dockerfile does not; should fail.
-assert_exit_nonzero "build_agent: fails when provider.Dockerfile is missing" \
+echo "base" > "$REPO/src/reasoning/providers/test-provider/base.dockerfile"
+# base.dockerfile exists but provider.dockerfile does not; should fail.
+assert_exit_nonzero "build_agent: fails when provider.dockerfile is missing" \
     bash -c 'source '"'"'$REPO_ROOT'"'"'/build/image.sh && source '"'"'$REPO_ROOT'"'"'/build/context.sh && source '"'"'$REPO_ROOT'"'"'/scripts/build.sh && build_agent '"'"'test-provider'"'"' '"'"'test-project'"'"' '"'"'$REPO'"'"
 cleanup "$REPO"
 
