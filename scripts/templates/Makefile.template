@@ -57,6 +57,12 @@ SESSION_SUMMARY ?=
 BASELINE ?=
 ALL ?=
 
+# Guard: reject known misspelled variables
+# Make silently ignores unknown variable overrides. Catch the common mistakes.
+ifdef CHANNEL
+$(error CHANNEL is not a Make variable. Did you mean FROM? Example: make $(MAKECMDGOALS) FROM=$(CHANNEL))
+endif
+
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)

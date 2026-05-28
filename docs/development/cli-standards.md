@@ -103,6 +103,28 @@ ambiguous when the caller may be in a different working directory.
 
 ---
 
+## 8. Makefile Variable Overrides Must Be Validated
+
+Make silently ignores unknown variable overrides. If a user types
+`make draft CHANNEL=bundles`, Make sets `CHANNEL` but no target reads
+it — the command proceeds with incorrect defaults. The user gets no
+error and the wrong behaviour.
+
+To prevent this, every Makefile template that accepts user-facing
+variable overrides **must** guard against the known misused names
+with an explicit `ifdef`/`$(error)` block:
+
+```makefile
+ifdef CHANNEL
+$(error CHANNEL is not a Make variable. Did you mean FROM? Example: make $(MAKECMDGOALS) FROM=$(CHANNEL))
+endif
+```
+
+All accepted variables must be declared with `?=` at the top of the
+Makefile so they are visible in one place. Any variable that a user
+might reasonably try but that is not in the accepted set must have
+a guard with an error message that points to the correct name.
+
 ## References
 
 | Document | Relevance |

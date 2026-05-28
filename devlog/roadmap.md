@@ -151,6 +151,7 @@ Each provider may result in a different integration pattern. Investigation findi
     - [x] Rename knowledge test — `knowledge_provider_config_cycle.sh` → `knowledge_pi_config_cycle.sh`; remove old copy-in/copy-out tests, add merge test (Proposal 4).
 - [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
+- [ ] Git diff `--no-renames` index conflict — `git diff --no-renames` produces `new file mode` entries for rename targets that already exist in the index, which `git apply` rejects. A proper fix (e.g. generating `diff --git` entries instead of `new file mode` across rename boundaries) is needed for the `--no-renames` fallback path in `package_branch`. Limitation documented in `story-patch_application_failures.md` §Finding 2.
 
 ### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
 

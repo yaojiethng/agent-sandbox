@@ -88,62 +88,23 @@ git apply --ignore-whitespace --index cumulative.diff
 
 ## Proposed Fixes
 
-1. **`apply_run`**: Before `git apply`, check whether any rename operations in the patch target files that already exist. If so, save existing content, remove target, apply patch, verify.
-2. **`package_branch`**: Either refuse to overwrite an existing bundle, or use a higher-resolution timestamp to avoid collisions within the same second.
-3. **`make draft`**: Expose `--recount` and `--reject` flags directly so operators can retry failed patches without manually invoking `git apply`.
-4. **Bundle generation**: Consider adding a `--no-renames` mode to `package_branch` that produces patches using `git diff --no-renames` instead of `git format-patch` or `git diff` with rename detection. This avoids the "rename target already exists" problem at the cost of slightly larger patch files.
-5. **`make draft`**: Add a git apply check that detects the "rename target already exists" pattern and offers to use `--no-renames` patches or a workaround.
+Status after triage session `20260528-02-workflow-patch_application_findings_triage.md`:
 
-## Mid-session Findings
+1. **`apply_run`** — rename conflict detection. **Open.** No change from original.
+2. **`package_branch`** — bundle overwrite protection. **Open.** No change from original.
+3. **`make draft`** — expose `--recount`/`--reject`. **Open.** No change from original.
+4. **Bundle generation** — `--no-renames` mode. **Open.** No change from original.
+5. **`make draft`** — rename conflict detection. **Open.** No change from original.
 
-### Finding 1: `Makefile.template` uses `FROM` not `CHANNEL` for draft channel
+**Closed findings** (moved to handover `20260528-02`):
 
-The Makefile template at `scripts/templates/Makefile.template` defines:
-
-```makefile
-DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
-```
-
-The variable is named `FROM`, but operators naturally try `CHANNEL=bundles`. Since `FROM` is unset, `DRAFT_CHANNEL` defaults to `session` and the draft resolves against `$CHANGES_DIR/session/` instead of `$OUTPUT_DIR/bundles/`.
-
-**Status:** Open. The operator can use `FROM=bundles` as a workaround. The template could accept both `FROM` and `CHANNEL`.
-
-### Finding 2: `git diff --no-renames` produces non-applyable patches for rename targets that already exist in index
-
-Even with `--no-renames`, `git diff` produces `new file mode` entries for files that appear only on the "to" side of the diff. `git apply` rejects `new file mode` with "already exists in index" when the target file is already tracked. This is a git limitation: `new file mode` strictly means "create this file" and there is no flag to allow overwriting.
-
-**Workaround:** The cumulative patch approach (`git diff --no-renames <host-state>..<final-state>`) works because it produces `diff` entries (content modifications) for files that exist in both states, `deleted file mode` for files only on the left side, and `new file mode` only for genuinely new files. The `diff` entries apply cleanly to existing tracked files.
-
-### Finding 3: `strip_index_lines` in `diff.sh` does not remove `similarity index` lines
-
-`strip_index_lines` only removes `index <hash>..<hash> <mode>` lines. The `similarity index` lines (used in git's rename detection) pass through unchanged. This is correct behaviour — `similarity index` is not an index line — but means patches with rename detection keep their rename semantics.
-
-### Finding 4: `package_branch` depends on `diff.sh` at runtime but Dockerfile was missing the COPY
-
-Patch 6 in this bundle fixes this: adds `COPY diff.sh /opt/sandbox/lib/diff.sh` to the capability Dockerfile. Without it, `package_branch.sh` fails with:
-
-```
-/opt/sandbox/lib/package_branch.sh: line 39: /opt/sandbox/lib/diff.sh: No such file or directory
-```
-
-**Status:** Fixed by patch 6.
-
-### Finding 5: `make draft` with `DIFFS=2..7` applies only the last N patches, skipping patch 1
-
-The `DIFFS` range filter in `draft_run` correctly filters by numeric prefix, allowing the operator to skip patches that were already applied manually. Usage:
-
-```bash
-make draft FROM=bundles SESSION=<name> DIFFS=2..7
-```
-
-This is a viable workaround for the rename problem: manually apply patch 1 (using `git rm` of uppercase originals + `git apply`), then let `make draft` handle patches 2-7.
-
-### Finding 6: Cumulative `git diff --no-renames` patch verified clean
-
-A cumulative patch generated from the "lowercase files present" state (simulating the host) to the fully-patched state was verified to apply cleanly:
-
-```bash
-git apply --ignore-whitespace --index cumulative.diff  # exit=0
-```
+| Finding | Status | Resolution |
+|---|---|---|
+| F1 — Makefile.template FROM/CHANNEL mismatch | **Resolved** | Echo messages in `agent-sandbox.sh` changed from `CHANNEL=` to `FROM=`; Makefile.template now errors on `CHANNEL=` with `FROM=` hint; convention documented in `cli-standards.md` |
+| F2 — `git diff --no-renames` index conflict | **Closed** | Git limitation. Workaround (cumulative diff) documented in Case 5. |
+| F3 — `strip_index_lines` and `similarity index` | **Closed** | Correct behaviour — not a bug. |
+| F4 — `package_branch` missing `diff.sh` COPY | **Closed** | Already fixed by original patch 6. |
+| F5 — `DIFFS` range filter skips patch 1 | **Closed** | Correct behaviour — feature, not a bug. |
+| F6 — Cumulative patch verified clean | **Closed** | Workaround confirmed functional. |
 
 This is the recommended fallback when per-commit patches cannot apply due to rename conflicts or baseline divergence.

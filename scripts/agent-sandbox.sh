@@ -274,7 +274,7 @@ main() {
           fi
           # Print command equivalent before running
           if [[ "$DIFF_TYPE" == "uncommitted" ]]; then
-            echo "Running: make apply CHANNEL=${CHANNEL} SESSION=${SESSION_NAME}"
+            echo "Running: make apply FROM=${CHANNEL} SESSION=${SESSION_NAME}"
           else
             echo "Running: make apply DIFF=${DIFF_FILE}"
           fi
@@ -332,7 +332,7 @@ main() {
           fi
 
           interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
-          echo "Running: make draft CHANNEL=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
+          echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
           draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
         else
           # Step 1: pick channel
@@ -346,7 +346,7 @@ main() {
           ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_NAME") || exit 1
           local SOURCE_DIR
           SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-          echo "Running: make draft CHANNEL=${CHANNEL} SESSION=${SESSION_NAME}"
+          echo "Running: make draft FROM=${CHANNEL} SESSION=${SESSION_NAME}"
           draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
         fi
       else
