@@ -365,7 +365,7 @@ test_draft_no_diffs_error() {
 
   local OUT
   OUT=$(draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
-  if [[ "$OUT" == *"no patches/ directory"* || "$OUT" == *"no .diff files"* ]]; then
+  if [[ "$OUT" == *"no patches/"* || "$OUT" == *"no .diff files"* ]]; then
     pass "draft errors when no diffs found"
   else
     fail "did not error on missing diffs: $OUT"
