@@ -24,7 +24,7 @@ REQUIRED_PACKAGING=(
 
 # Each Dockerfile's COPY lines (source filenames only, stripped of path)
 test_capability_dockerfile_has_all_packaging() {
-  local dockerfile="$REPO_ROOT/src/capability/dockerfile"
+  local dockerfile="$REPO_ROOT/src/capability/capability.dockerfile"
   local copied
   copied=$(grep '^COPY' "$dockerfile" | awk '{print $2}' | xargs -n1 basename 2>/dev/null || true)
   for pkg in "${REQUIRED_PACKAGING[@]}"; do

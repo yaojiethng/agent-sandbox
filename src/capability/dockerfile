@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
 COPY dirs.sh /opt/sandbox/lib/dirs.sh
 COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
+COPY diff.sh /opt/sandbox/lib/diff.sh
 COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
 COPY session_state.sh /opt/sandbox/lib/session_state.sh
 COPY routing.sh /opt/sandbox/lib/routing.sh

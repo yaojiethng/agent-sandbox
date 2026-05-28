@@ -4,9 +4,13 @@
 # Diff application workflow: apply a diff file to the project working tree.
 # Sourced by agent-sandbox.sh — not executed standalone.
 #
-# Depends on: git, standard shell utilities.
+# Depends on: AGENT_SANDBOX_REPO, git, standard shell utilities.
 
 set -euo pipefail
+
+source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
 # =============================================================================
 # apply_run — apply a diff file
@@ -112,8 +116,3 @@ apply_run() {
   fi
   echo "Diff source: $DIFF_FILE"
 }
-
-# Source session_state.sh for shared helpers
-source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
-source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
-source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
