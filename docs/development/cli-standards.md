@@ -125,7 +125,87 @@ Makefile so they are visible in one place. Any variable that a user
 might reasonably try but that is not in the accepted set must have
 a guard with an error message that points to the correct name.
 
-## References
+## 9. `exec` Over Sourcing for Subcommand Dispatch
+
+When a CLI entry point dispatches to subcommands, `exec` the subcommand
+script rather than sourcing it. This gives each subcommand a clean process
+boundary: its own `set -euo pipefail`, its own variable scope, and its own
+dependency loading. The dispatch layer stays thin — validate universal
+flags, then `exec`.
+
+```bash
+# Good — exec with flags
+apply)
+  parse_flags "$@"
+  if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --project and --sandbox are required" >&2
+    exit 1
+  fi
+  exec bash "$SCRIPTS/workflows/apply.sh" \
+    --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" \
+    "$@"
+  ;;
+```
+
+```bash
+# Avoid — sourcing merges state, dispatch layer has dual concerns
+apply)
+  source "$SCRIPTS/workflows/apply.sh"
+  parse_flags "$@"
+  if [[ "$INTERACTIVE" == true ]]; then
+    # picker logic lives here, duplicating what the workflow does
+    ...
+  else
+    apply_run "$PROJECT_DIR" ...
+  fi
+  ;;
+```
+
+Each subcommand script should have a `main()` function and a guard so it
+works both as an `exec`'d entry point and as a sourced library:
+
+```bash
+main() {
+  # parse flags, validate, execute
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
+```
+
+## 10. Guard Pattern for Dual-Use Scripts
+
+Any shell file that can be either executed directly or sourced by another
+script must include a guard that distinguishes the two cases. The standard
+pattern is:
+
+```bash
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
+```
+
+This passes (runs `main`) when the file is the top-level script, and
+rejects (skips `main`) when it is sourced by another script. The check
+is safe even if the parent script was itself sourced — `BASH_SOURCE[0]`
+will not match the shell path.
+
+Use `"$0"`, not `${0}`. Both expand identically, but `"$0"` is the
+conventional form.
+
+Do not use array-length variations:
+
+```bash
+# Broken — the || makes this pass when parent sourced the file
+if [[ "${BASH_SOURCE[0]}" == "$0" || \
+      ( "${#BASH_SOURCE[@]}" -gt 1 && \
+        "${BASH_SOURCE[0]}" != "${BASH_SOURCE[1]}" ) ]]; then
+```
+
+This formulation is logically inverted and creates a false positive.
+Stick with the simple comparison.
 
 | Document | Relevance |
 |---|---|

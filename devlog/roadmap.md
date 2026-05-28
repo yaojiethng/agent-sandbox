@@ -119,7 +119,7 @@ Each provider may result in a different integration pattern. Investigation findi
 
 ### Track A — Container Identity & Lifecycle
 
-- [ ] run_id derivation — Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Replace timestamp-based container naming. Depends on: nothing.
+- [ ] run_id derivation + host_sha — Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Write `host_sha` (host HEAD at session start) to SESSION_STATE alongside `init_sha`. Replace timestamp-based container naming. Depends on: nothing.
 - [ ] Docker labels — Add `agent-sandbox.project-name`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` to `x-session-labels`. Depends on: item 1.
 - [ ] make stop redesign — Move `worktree_id_derive` from `scripts/checkpoint.sh` to `libs/containers.sh`. Filter `stop.sh` by project-name + worktree-id labels. Depends on: item 2.
 - [ ] make prune — New script: targeted cleanup (project + worktree-id) + time-based (project + >3 days). Depends on: item 3.
@@ -152,6 +152,12 @@ Each provider may result in a different integration pattern. Investigation findi
 - [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
 - [ ] Git diff `--no-renames` index conflict — `git diff --no-renames` produces `new file mode` entries for rename targets that already exist in the index, which `git apply` rejects. A proper fix (e.g. generating `diff --git` entries instead of `new file mode` across rename boundaries) is needed for the `--no-renames` fallback path in `package_branch`. Limitation documented in `story-patch_application_failures.md` §Finding 2.
+
+### Process Improvements (from dispatch refactoring learnings)
+
+- [ ] Add fast-track criteria for chore/mechanical sessions — Gate 2 can be collapsed for purely mechanical changes (guard pattern hardening, `set -euo pipefail` cleanup). Document in `iteration_policy.md`.
+- [ ] Record decision rationale inline during sessions — Update `handover_policy.md` to recommend updating the Decisions table as decisions are made, not only at close.
+- [ ] Remove `subagent_type=Explore` reference from `improve-codebase-architecture` skill — The tool does not exist in this harness.
 
 ### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
 

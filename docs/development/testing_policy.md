@@ -547,6 +547,56 @@ Before committing a new test:
 - [ ] `make test` passes clean after the new test is added
 - [ ] Test failure message clearly describes what went wrong
 
+### Mock Infrastructure for Dispatch Tests
+
+When testing a CLI dispatch layer that routes flags to subcommand scripts
+(via `exec` or subprocess calls), use the following proven pattern:
+
+1. **Override `exec()`** with a bash function that captures invocations
+   instead of executing them:
+
+```bash
+exec() { echo "capture: exec $*"; }
+```
+
+2. **Create mock scripts** in a temp directory and point `SCRIPTS` at it:
+
+```bash
+MOCK_DIR=$(mktemp -d)
+cat > "$MOCK_DIR/start_agent.sh" << 'SCRIPT'
+echo "capture: MOCK start_agent.sh $*"
+SCRIPT
+chmod +x "$MOCK_DIR/start_agent.sh"
+SCRIPTS="$MOCK_DIR"
+```
+
+3. **Resolve placeholder variables** before sourcing the harness:
+
+```bash
+resolved=$(mktemp)
+sed "s|@@AGENT_SANDBOX_REPO@@|$REPO_ROOT|g" \
+  "$REPO_ROOT/scripts/agent-sandbox.sh" > "$resolved"
+source "$resolved"
+rm -f "$resolved"
+```
+
+4. **Parse captured output** by filtering stdout lines with a marker:
+
+```bash
+CAPTURED=()
+stdout=$(main "$@" 2>/dev/null) || true
+while IFS= read -r line; do
+  if [[ "$line" == capture:* ]]; then
+    CAPTURED+=("${line#capture: }")
+  fi
+done <<< "$stdout"
+```
+
+This pattern covers three invocation methods in one harness:
+- `exec` calls (via `exec()` override)
+- Subprocess scripts (via mock scripts on `SCRIPTS`)
+- Sourced function calls (via function shadowing before sourcing)
+
 ## Checklist for Lib and Script Changes
 
 Before marking a lib or script change complete:

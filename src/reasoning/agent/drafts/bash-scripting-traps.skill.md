@@ -200,3 +200,80 @@ ln -s "/absolute/path/to/target" "$LINK_PATH"
 
 Relative symlinks are appropriate within a single repository where the
 relative path is stable by definition.
+
+---
+
+## 11. Guard Pattern for Dual-Use Scripts
+
+A script that can be either executed directly or sourced by another
+script must distinguish the two cases. The standard guard is:
+
+```bash
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
+```
+
+This passes when the file is the top-level script and rejects when it is
+sourced. The check is safe even if the parent script was itself sourced.
+
+Use `"$0"`, not `${0}`. Both expand identically but `"$0"` is the
+conventional form. Do not use array-length variations:
+
+```bash
+# Broken — || makes this pass when parent sourced the file
+if [[ "${BASH_SOURCE[0]}" == "$0" || \
+      ( "${#BASH_SOURCE[@]}" -gt 1 && \
+        "${BASH_SOURCE[0]}" != "${BASH_SOURCE[1]}" ) ]]; then
+  # This should NOT run when sourced, but the || ensures it does
+```
+
+## 12. `exec` Over Sourcing for Subcommand Dispatch
+
+When a CLI entry point dispatches to subcommands, `exec` the subcommand
+script rather than sourcing it. Each subcommand gets a clean process
+boundary: its own `set -euo pipefail`, its own variables, its own
+dependency loading.
+
+```bash
+# dispatch layer: minimal, no subcommand state
+build)
+  parse_flags "$@"
+  exec bash "$SCRIPTS/build.sh" --target="$TARGET"
+  ;;
+
+apply)
+  exec bash "$SCRIPTS/workflows/apply.sh" "$@"
+  ;;
+```
+
+```bash
+# Avoid — dispatch layer accumulates subcommand concerns
+apply)
+  source "apply.sh"
+  if [[ "$INTERACTIVE" == true ]]; then
+    source "interactive.sh"
+    # picker logic, path construction, state management...
+    # all in the dispatch layer
+  fi
+  ;;
+```
+
+The visual indicator: every `case` branch in a dispatch-only file should
+be either `exec` or a short validation → `exec`. If a branch has more
+than 5 lines of logic, the logic likely belongs in the subcommand script.
+
+## 13. Self-Deriving the Repo Root for Dual-Use Scripts
+
+A script that can be `exec`'d (no `AGENT_SANDBOX_REPO` set) or sourced
+(`AGENT_SANDBOX_REPO` already set by parent) needs to handle both cases
+at the top of the file:
+
+```bash
+_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
+```
+
+The `../..` assumes a specific project layout. If the layout changes, all
+self-derivation paths must be updated together. Audit all files when the
+project root or directory structure shifts.
