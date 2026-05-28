@@ -209,55 +209,16 @@ main() {
         exit 1
       fi
 
-      if [[ "$INTERACTIVE" == true ]]; then
-        # Interactive path: source workflow for function definitions, handle picks here
-        source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
-        source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
-
-        if [[ -n "$DIFF_ARG" ]]; then
-          # --diff=<path> given: skip selection steps, just confirm and apply
-          interactive_confirm_or_abort "Apply:" "$DIFF_ARG" || exit 1
-          echo "Running: make apply DIFF=${DIFF_ARG}"
-          apply_run "$PROJECT_DIR" "$DIFF_ARG" "$BRANCH" "$FORCE"
-        else
-          # Step 1: pick channel
-          local CHANNEL
-          CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
-          # Step 2: pick session
-          local SESSION_NAME
-          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
-          # Step 3: pick diff type
-          local DIFF_TYPE
-          DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION_NAME" "$CHANNEL") || exit 1
-          # Construct the diff file path from channel + session + type
-          local DIFF_FILE
-          _resolve_paths "$SANDBOX_DIR"
-          local BASE_DIR
-          BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
-          DIFF_FILE="${BASE_DIR}/${SESSION_NAME}/${DIFF_TYPE}.diff"
-          if [[ ! -f "$DIFF_FILE" ]]; then
-            echo "Error: diff file not found: $DIFF_FILE" >&2
-            exit 1
-          fi
-          # Print command equivalent before running
-          if [[ "$DIFF_TYPE" == "uncommitted" ]]; then
-            echo "Running: make apply FROM=${CHANNEL} SESSION=${SESSION_NAME}"
-          else
-            echo "Running: make apply DIFF=${DIFF_FILE}"
-          fi
-          apply_run "$PROJECT_DIR" "$DIFF_FILE" "$BRANCH" "$FORCE"
-        fi
-      else
-        # Non-interactive: exec workflow script directly
-        exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
-          --project="$PROJECT_DIR" \
-          --sandbox="$SANDBOX_DIR" \
-          --channel="${CHANNEL_ARG:-diffs}" \
-          $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
-          $( [[ -n "$DIFF_ARG" ]] && echo "--diff=$DIFF_ARG" ) \
-          $( [[ -n "$BRANCH" ]] && echo "--branch=$BRANCH" ) \
-          $( [[ "$FORCE" == true ]] && echo "--force" )
-      fi
+      # exec workflow script — interactive handling is inside apply.sh's main()
+      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        $( [[ -n "$CHANNEL_ARG" ]] && echo "--channel=$CHANNEL_ARG" ) \
+        $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
+        $( [[ -n "$DIFF_ARG" ]] && echo "--diff=$DIFF_ARG" ) \
+        $( [[ -n "$BRANCH" ]] && echo "--branch=$BRANCH" ) \
+        $( [[ "$FORCE" == true ]] && echo "--force" ) \
+        $( [[ "$INTERACTIVE" == true ]] && echo "--interactive" )
       ;;
 
     draft)
@@ -267,64 +228,16 @@ main() {
         exit 1
       fi
 
-      if [[ "$INTERACTIVE" == true ]]; then
-        # Interactive path: source workflow for function definitions, handle picks here
-        source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
-        source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
-
-        if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
-          # Both channel and session given: skip pickers, show patch list + confirm
-          local ROUTER_RESULT
-          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_ARG") || exit 1
-          local SOURCE_DIR SESSION_NAME
-          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-          SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
-
-          local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
-          local PATCH_COUNT=0
-          while IFS= read -r f; do
-            [[ -z "$f" ]] && continue
-            PATCH_ITEMS+=("    $(basename "$f")")
-            PATCH_COUNT=$((PATCH_COUNT + 1))
-          done < <(find "$SOURCE_DIR/patches" -maxdepth 1 -name '*.diff' -print0 2>/dev/null | xargs -0 -I{} basename {} | sort)
-
-          if [[ "$PATCH_COUNT" -eq 0 ]]; then
-            echo "Error: no .diff files found in $SOURCE_DIR/patches" >&2
-            exit 1
-          fi
-
-          if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
-            PATCH_ITEMS+=("  Uncommitted: uncommitted.diff (non-empty)")
-          fi
-
-          interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
-          echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
-          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
-        else
-          # Step 1: pick channel
-          local CHANNEL
-          CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
-          # Step 2: pick session
-          local SESSION_NAME
-          SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "${SESSION_ARG:-}") || exit 1
-          local ROUTER_RESULT
-          ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_NAME") || exit 1
-          local SOURCE_DIR
-          SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-          echo "Running: make draft FROM=${CHANNEL} SESSION=${SESSION_NAME}"
-          draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
-        fi
-      else
-        # Non-interactive: exec workflow script directly
-        exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
-          --project="$PROJECT_DIR" \
-          --sandbox="$SANDBOX_DIR" \
-          --channel="${CHANNEL_ARG:-session}" \
-          $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
-          $( [[ -n "$BRANCH_FROM" ]] && echo "--branch-from=$BRANCH_FROM" ) \
-          $( [[ -n "$DIFFS" ]] && echo "--diffs=$DIFFS" ) \
-          $( [[ -n "$BRANCH_SUMMARY" ]] && echo "--branch-summary=$BRANCH_SUMMARY" )
-      fi
+      # exec workflow script — interactive handling is inside draft.sh's main()
+      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        $( [[ -n "$CHANNEL_ARG" ]] && echo "--channel=$CHANNEL_ARG" ) \
+        $( [[ -n "$SESSION_ARG" ]] && echo "--session=$SESSION_ARG" ) \
+        $( [[ -n "$BRANCH_FROM" ]] && echo "--branch-from=$BRANCH_FROM" ) \
+        $( [[ -n "$DIFFS" ]] && echo "--diffs=$DIFFS" ) \
+        $( [[ -n "$BRANCH_SUMMARY" ]] && echo "--branch-summary=$BRANCH_SUMMARY" ) \
+        $( [[ "$INTERACTIVE" == true ]] && echo "--interactive" )
       ;;
 
     confirm)

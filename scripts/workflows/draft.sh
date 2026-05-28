@@ -215,7 +215,7 @@ draft_run() {
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls draft_run.
-# Expected flags: --project=<dir> --sandbox=<dir> [--session=<name>] [--channel=<c>] [--branch-from=<n>] [--diffs=<r>] [--branch-summary=<s>]
+# Expected flags: --project=<dir> --sandbox=<dir> [--session=<name>] [--channel=<c>] [--branch-from=<n>] [--diffs=<r>] [--branch-summary=<s>] [--interactive]
 main() {
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
@@ -224,6 +224,7 @@ main() {
   local BRANCH_FROM=""
   local DIFFS=""
   local BRANCH_SUMMARY=""
+  local INTERACTIVE=false
 
   for ARG in "$@"; do
     case "$ARG" in
@@ -234,6 +235,7 @@ main() {
       --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
+      --interactive)   INTERACTIVE=true ;;
       *)
         echo "Error: unknown flag: $ARG" >&2
         exit 1
@@ -246,6 +248,57 @@ main() {
     exit 1
   fi
 
+  # Interactive mode (and non-interactive with both channel+session given)
+  if [[ "$INTERACTIVE" == true ]]; then
+    source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
+
+    if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
+      # Both channel and session given: skip pickers, show patch list + confirm
+      local ROUTER_RESULT
+      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_ARG") || exit 1
+      local SOURCE_DIR SESSION_NAME
+      SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+      SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+
+      local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
+      local PATCH_COUNT=0
+      while IFS= read -r f; do
+        [[ -z "$f" ]] && continue
+        PATCH_ITEMS+=("    $(basename "$f")")
+        PATCH_COUNT=$((PATCH_COUNT + 1))
+      done < <(find "$SOURCE_DIR/patches" -maxdepth 1 -name '*.diff' -print0 2>/dev/null | xargs -0 -I{} basename {} | sort)
+
+      if [[ "$PATCH_COUNT" -eq 0 ]]; then
+        echo "Error: no .diff files found in $SOURCE_DIR/patches" >&2
+        exit 1
+      fi
+
+      if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+        PATCH_ITEMS+=("  Uncommitted: uncommitted.diff (non-empty)")
+      fi
+
+      interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
+      echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
+      draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+      exit $?
+    fi
+
+    # Step 1: pick channel
+    CHANNEL_ARG=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
+    # Step 2: pick session
+    local SESSION_NAME
+    SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL_ARG" "${SESSION_ARG:-}") || exit 1
+
+    local ROUTER_RESULT
+    ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_NAME") || exit 1
+    local SOURCE_DIR
+    SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+    echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
+    draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY"
+    exit $?
+  fi
+
+  # Non-interactive path
   local CHANNEL="${CHANNEL_ARG:-session}"
   local ROUTER_RESULT
   ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
