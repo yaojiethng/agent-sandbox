@@ -101,14 +101,16 @@ main() {
     done
   }
 
-  require_run_args() {
-    local SUBCOMMAND="$1"
+  require_base_args() {
     if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
       echo "Error: --name, --project, and --sandbox are required"
       exit 1
     fi
+  }
+
+  require_provider_args() {
     if [[ -z "$PROVIDER_NAME" ]]; then
-      echo "Error: --provider is required. Example: agent-sandbox $SUBCOMMAND --provider=hermes ..."
+      echo "Error: --provider is required. Example: agent-sandbox start --provider=hermes ..."
       exit 1
     fi
   }
@@ -132,13 +134,8 @@ main() {
       ;;
 
     build)
-      # Validate universal flags before dispatching to build.sh
       parse_flags "$@"
-      if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --name, --project, and --sandbox are required" >&2
-        echo "  Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [--targets=<t>] [--rebuild]" >&2
-        exit 1
-      fi
+      require_base_args
 
       # Normalise --target (singular, legacy) to --targets (plural, current)
       local TARGETS_ARG=""
@@ -159,7 +156,8 @@ main() {
 
     start)
       parse_flags "$@"
-      require_run_args start
+      require_base_args
+      require_provider_args
       "$SCRIPTS/start_agent.sh" standard \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
@@ -171,7 +169,8 @@ main() {
 
     serve)
       parse_flags "$@"
-      require_run_args serve
+      require_base_args
+      require_provider_args
       "$SCRIPTS/start_agent.sh" serve \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
@@ -183,7 +182,8 @@ main() {
 
     dry-run)
       parse_flags "$@"
-      require_run_args dry-run
+      require_base_args
+      require_provider_args
       "$SCRIPTS/start_agent.sh" dry-run \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \

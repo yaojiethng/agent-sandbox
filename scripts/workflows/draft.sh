@@ -144,8 +144,7 @@ draft_create_and_init_branch() {
 # Returns 1 if any patch fails to apply.
 draft_apply_patches() {
   local PROJECT_DIR="$1"
-  local DIFF_LIST_FILE="$2"
-  local AUTHOR="$3"
+  local AUTHOR="$2"
 
   while IFS= read -r diff_file; do
     [[ -z "$diff_file" ]] && continue
@@ -160,7 +159,7 @@ draft_apply_patches() {
     local COMMIT_MSG
     COMMIT_MSG=$(draft_resolve_commit_message "$diff_file")
     git -C "$PROJECT_DIR" commit -m "$COMMIT_MSG" --author="$AUTHOR"
-  done < "$DIFF_LIST_FILE"
+  done
 }
 
 # =============================================================================
@@ -211,12 +210,12 @@ draft_run() {
   local SESSION_TS SANITIZED_HOST_BRANCH
   draft_parse_folder_name "$SESSION_NAME"
 
-  local PATCH_LIST; PATCH_LIST=$(mktemp /tmp/draft_patches_XXXXXX)
-  draft_collect_patches "$PATCHES_DIR" "$DIFFS_ARG" > "$PATCH_LIST" || {
-    local RC=$?; rm -f "$PATCH_LIST"
-    echo "Error: no .diff files found in $PATCHES_DIR" >&2; return $RC
-  }
-  local DIFF_COUNT; DIFF_COUNT=$(wc -l < "$PATCH_LIST")
+  # Count patches without temp file — passes file list via pipe later
+  local DIFF_COUNT=0
+  while IFS= read -r f; do DIFF_COUNT=$((DIFF_COUNT + 1)); done < <(
+    draft_collect_patches "$PATCHES_DIR" "$DIFFS_ARG" || { local RC=$?; [[ "$RC" -ne 1 ]] && echo "Error: no .diff files found in $PATCHES_DIR" >&2; return $RC; }
+  )
+  [[ "$DIFF_COUNT" -gt 0 ]] || { echo "Error: no .diff files found in $PATCHES_DIR" >&2; return 1; }
 
   local BASE_COMMIT="${BRANCH_FROM_ARG:-HEAD}"
   local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
@@ -232,10 +231,9 @@ draft_run() {
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
-    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" || { rm -f "$PATCH_LIST"; return 1; }
+    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" || return 1
 
-  draft_apply_patches "$PROJECT_DIR" "$PATCH_LIST" "$AUTHOR" || { rm -f "$PATCH_LIST"; return 1; }
-  rm -f "$PATCH_LIST"
+  draft_collect_patches "$PATCHES_DIR" "$DIFFS_ARG" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" || return 1
   draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" || return 1
 
   local UC=""
