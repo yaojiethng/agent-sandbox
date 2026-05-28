@@ -72,7 +72,7 @@ None.
 | `scripts/build.sh` | Added `main()` for `agent-sandbox build` entry point; accepts `--targets` (plural), `--rebuild`; validates `--name`/`--project`/`--sandbox`; `build_sandbox`, `build_agent`, `preflight` remain as library functions for `start_agent.sh` |
 | `scripts/agent-sandbox.sh` | Removed all top-level sources; build, apply, draft, confirm, reject cases now `exec` subcommand scripts; build case validates universal flags, supports `--target` legacy alias; interactive paths still source workflow files inline |
 | `docs/architecture/tool_interface.md` | Updated `make build` with `TARGETS` (plural) semantics table, legacy `TARGET` alias note, dispatch model explanation |
-| `tests/test_dispatch.sh` | Replaced with exec-based oracle tests (22 tests, all passing); old function-call tests preserved as `test_dispatch.old.sh` |
+| `tests/test_dispatch.sh` | Replaced with exec-based oracle tests (22 tests, all passing) |
 
 ## Deferred items
 
@@ -95,4 +95,4 @@ M2.7 — Session Identity and Harness Versioning:
 - build_sandbox, build_agent, preflight preserved as library functions for start_agent.sh
 - agent-sandbox.sh reduced to pure dispatch table: 0 top-level sources, 6 `exec` cases + 2 interactive source cases
 - Oracle tests updated to exec-based assertions: 22/22 pass
-- Full suite: 393/411 pass (12 old-test failures preserved for reference)
+- Full suite: 384/390 pass, 0 failed (old-test reference file removed post-close)
