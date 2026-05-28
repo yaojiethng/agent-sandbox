@@ -48,11 +48,4 @@ worktree_id_derive() {
   echo "$PROJECT_DIR" | sha256sum | cut -c1-8
 }
 
-# agent_shared_base_name <provider>
-agent_shared_base_name() {
-  local provider="${1:?agent_shared_base_name requires provider}"
-  case "$(echo "$provider" | tr '[:upper:]' '[:lower:]')" in
-    hermes) echo "agent-python-base" ;;
-    *)      echo "agent-node-base" ;;
-  esac
-}
+

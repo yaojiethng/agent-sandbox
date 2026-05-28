@@ -27,8 +27,8 @@ A conforming provider supplies four required files and up to four optional files
 **Required:**
 ```
 providers/<n>/
-├── base.Dockerfile               ← stable install layers; tagged <provider>-base
-├── provider.Dockerfile           ← provider layer inheriting from base; tagged <provider>-agent-<project>
+├── base.dockerfile               ← stable install layers; tagged <provider>-base
+├── provider.dockerfile           ← provider layer inheriting from base; tagged <provider>-agent-<project>
 ├── docker-compose.serve.yml      ← serve mode overlay
 └── .env.example                  ← provider-specific .env stubs
 ```
@@ -58,32 +58,32 @@ Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-cod
 
 ---
 
-## Step 2 — Write `base.Dockerfile`
+## Step 2 — Write `base.dockerfile`
 
-`base.Dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
+`base.dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
 The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `libs/containers.sh`'s `build_agent` function handles base-image skip logic (base is skipped if it already exists) unless `--rebuild-base` is passed.
 
 ```dockerfile
-# providers/<n>/base.Dockerfile
+# providers/<n>/base.dockerfile
 FROM <base-os>
 
 # System packages, runtimes, agent install
 RUN ...
 ```
 
-The base image ends as root. User creation and runtime configuration belong in `provider.Dockerfile`.
+The base image ends as root. User creation and runtime configuration belong in `provider.dockerfile`.
 
-**Reference:** `providers/claude-ai/base.Dockerfile`, `providers/claude-code/base.Dockerfile`
+**Reference:** `providers/claude-ai/base.dockerfile`, `providers/claude-code/base.dockerfile`
 
 ---
 
-## Step 3 — Write `provider.Dockerfile`
+## Step 3 — Write `provider.dockerfile`
 
-`provider.Dockerfile` inherits from `<provider>-base` and adds the fast-changing provider layer: shared libs, user creation, runtime config, working directories, healthcheck, and entrypoint. It is tagged `<provider>-agent-<project>`.
+`provider.dockerfile` inherits from `<provider>-base` and adds the fast-changing provider layer: shared libs, user creation, runtime config, working directories, healthcheck, and entrypoint. It is tagged `<provider>-agent-<project>`.
 
 ```dockerfile
-# providers/<n>/provider.Dockerfile
+# providers/<n>/provider.dockerfile
 ARG BASE_IMAGE=<provider>-base
 FROM ${BASE_IMAGE}
 
@@ -122,7 +122,7 @@ The `ARG BASE_IMAGE` declaration allows `libs/containers.sh`'s `build_agent` fun
 
 The operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
-**Reference:** `providers/claude-ai/provider.Dockerfile`, `providers/claude-code/provider.Dockerfile`
+**Reference:** `providers/claude-ai/provider.dockerfile`, `providers/claude-code/provider.dockerfile`
 
 ---
 
@@ -170,7 +170,7 @@ If the provider requires default configuration files to be present before the ag
 providers/<n>/config/
 ```
 
-`build_context_agent` copies this directory into the build context. `provider.Dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
+`build_context_agent` copies this directory into the build context. `provider.dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
 
 Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
 
@@ -183,7 +183,7 @@ providers/<n>/config/
 
 Files in `config/` are stubs — they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
 
-If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.Dockerfile`.
+If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.dockerfile`.
 
 ---
 
@@ -279,7 +279,7 @@ Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) an
 
 ## Step 11 — Register the provider
 
-No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.Dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
+No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 
 Operators onboarding new projects after the provider is added will receive the provider's `.env.example` stubs automatically. Operators with existing projects should run `agent-sandbox onboard --refresh` to append the new provider's stubs to their `.env`.
 

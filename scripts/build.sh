@@ -9,7 +9,7 @@
 #
 # Provides:
 #   build_image    - compute digest and run docker build
-#   build_agent    - build the reasoning layer images for a given provider + project
+#   build_agent    - three-tier build (shared → provider-base → provider-image)
 #   build_sandbox  - build the capability layer image for a given project
 #   preflight      - verify both images exist; build if missing
 
@@ -45,27 +45,59 @@ build_image() {
   echo "Build complete: $image_name"
 }
 
-# build_agent <provider> <project_name> <repo_root> [--no-cache-base]
-# Builds the reasoning layer provider image (<provider>-agent-<project>),
-# and the base image (<provider>-base) if it does not exist or --no-cache-base is set.
+# build_agent <provider> <project_name> <repo_root> [--no-cache-base] [--uid UID] [--gid GID]
+# Three-tier build:
+#   1. agent-node-base (shared — node.dockerfile)
+#   2. <provider>-base (provider-specific — providers/<n>/base.dockerfile)
+#   3. <provider>-agent-<project> (final — providers/<n>/provider.dockerfile)
+#
+# Tier 1 cached across all providers on this machine.
+# Tier 2 cached per-provider.
+# Tier 3 rebuilt on every build_agent call (picks up project-specific content).
+#
+# --no-cache-base: rebuild tiers 1 and 2 from scratch.
+# --uid/--gid: thread host UID/GID into Dockerfiles for UID mapping.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
   local repo_root="${3:?build_agent requires repo root}"
   local no_cache_base="${4:-}"
+  local host_uid="${5:-}"
+  local host_gid="${6:-}"
   local no_cache=""
 
   if [[ -n "$no_cache_base" ]]; then
     no_cache="--no-cache"
   fi
 
-  local base_image; base_image="$(agent_base_image_name "$provider")"
-  local base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+  # Build args for UID mapping
+  local uid_args=()
+  if [[ -n "$host_uid" ]]; then
+    uid_args+=(--build-arg "HOST_UID=$host_uid")
+  fi
+  if [[ -n "$host_gid" ]]; then
+    uid_args+=(--build-arg "HOST_GID=$host_gid")
+  fi
+
+  # Tier 1: shared node base — doesn't need the provider build context
+  local shared_base="agent-node-base"
+  local shared_dockerfile="$repo_root/src/reasoning/node.dockerfile"
+
+  # Tier 2: provider-specific base
+  local agent_base_image; agent_base_image="$(agent_base_image_name "$provider")"
+  local agent_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+
+  # Tier 3: final provider image
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
   local provider_dockerfile="$repo_root/src/reasoning/providers/$provider/provider.dockerfile"
 
-  if [[ ! -f "$base_dockerfile" ]]; then
-    echo "Error: base Dockerfile not found: $base_dockerfile" >&2
+  # Validate files exist
+  if [[ ! -f "$shared_dockerfile" ]]; then
+    echo "Error: shared base Dockerfile not found: $shared_dockerfile" >&2
+    exit 1
+  fi
+  if [[ ! -f "$agent_base_dockerfile" ]]; then
+    echo "Error: provider base Dockerfile not found: $agent_base_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$provider_dockerfile" ]]; then
@@ -73,27 +105,37 @@ build_agent() {
     exit 1
   fi
 
+  # Build context for tiers 2 and 3 (tier 1 uses repo root as context)
   local context
   context="$(build_context_agent "$repo_root" "$provider")"
   local context_cleanup="$context"
   # shellcheck disable=SC2064
   trap "rm -rf '$context_cleanup'" EXIT
 
-  # Build base image if missing or --no-cache-base
-  if ! docker image inspect "$base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-    build_image "$base_image" "$base_dockerfile" "$context" "$no_cache" \
+  # Tier 1: shared node base
+  if ! docker image inspect "$shared_base" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
+    build_image "$shared_base" "$shared_dockerfile" "$repo_root" "$no_cache" \
       "${uid_args[@]+${uid_args[@]}}"
   else
-    echo "Base image exists, skipping: $base_image"
+    echo "Shared base image exists, skipping: $shared_base"
   fi
 
-  # Always build provider image
+  # Tier 2: provider-specific base
+  if ! docker image inspect "$agent_base_image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
+    build_image "$agent_base_image" "$agent_base_dockerfile" "$context" "$no_cache" \
+      --build-arg "BASE_IMAGE=$shared_base" \
+      "${uid_args[@]+${uid_args[@]}}"
+  else
+    echo "Provider base image exists, skipping: $agent_base_image"
+  fi
+
+  # Tier 3: always build provider image
   build_image "$provider_image" "$provider_dockerfile" "$context" "" \
-    --build-arg "BASE_IMAGE=$base_image" \
+    --build-arg "BASE_IMAGE=$agent_base_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
 
-# build_sandbox <project_name> <repo_root>
+# build_sandbox <project_name> <repo_root> [--uid UID] [--gid GID]
 # Builds the capability layer image (sandbox-<project>).
 build_sandbox() {
   local project="${1:?build_sandbox requires project name}"

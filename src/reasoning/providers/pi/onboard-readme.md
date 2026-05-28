@@ -97,7 +97,7 @@ breaking the `@` file reference popup.
 **Current solution:** `bin/` is a regular directory created in the Dockerfile
 before the `USER` switch — same overlayfs as `/tmp/`. `mv` uses native
 `rename()` (no cross-device fallback). `fd-find` and `ripgrep` are installed
-via `apt` in `base.Dockerfile`, so Pi's `getToolPath` picks them up from
+via `apt` in `base.dockerfile`, so Pi's `getToolPath` picks them up from
 system PATH without needing auto-downloads at all.
 
 The tmpfs was removed for simplicity. If future tools add binaries that need

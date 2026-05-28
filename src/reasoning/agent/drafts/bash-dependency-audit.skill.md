@@ -32,7 +32,7 @@ ls scripts/*.sh
 ls tests/test_*.sh tests/knowledge/*.sh
 
 # Dockerfiles (COPY paths)
-grep '^COPY.*\.sh' libs/*.Dockerfile providers/*/*.Dockerfile
+grep '^COPY.*\.sh' libs/*.dockerfile providers/*/*.dockerfile
 ```
 
 ### Step 2 — Find Every Source Statement
@@ -77,7 +77,7 @@ Note inconsistencies:
 Dockerfiles copy source files from the host tree into the image. These paths will break when source files move:
 
 ```bash
-grep '^COPY' libs/*.Dockerfile providers/*/*.Dockerfile
+grep '^COPY' libs/*.dockerfile providers/*/*.dockerfile
 ```
 
 Mark each COPY line's source path and its target path in the container.

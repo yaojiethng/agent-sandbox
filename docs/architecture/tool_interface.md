@@ -229,8 +229,8 @@ A conforming provider supplies the following under `providers/<n>/` in the repo:
 
 | File | Required | Purpose |
 |---|---|---|
-| `base.Dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
-| `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
+| `base.dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
+| `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
 | `config/` | Optional | Onboarding template — copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
