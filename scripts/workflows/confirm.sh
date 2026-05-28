@@ -2,11 +2,12 @@
 # scripts/workflows/confirm.sh
 # Confirm workflow: rebase draft branch onto target, fast-forward merge, delete draft.
 # Sourced by agent-sandbox.sh — not executed standalone.
-# Sources draft.sh for shared helpers and guards.sh for git guard functions.
+# Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
 
 set -euo pipefail
 
-source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
+source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
 # =============================================================================
 # confirm_run — rebase, fast-forward merge, delete draft branch

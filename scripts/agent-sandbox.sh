@@ -30,13 +30,7 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
-source "$AGENT_SANDBOX_REPO/src/build/image.sh"
-source "$AGENT_SANDBOX_REPO/src/build/context.sh"
 source "$AGENT_SANDBOX_REPO/scripts/build.sh"
-source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
-source "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh"
-source "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh"
-source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 
 # =============================================================================
@@ -233,6 +227,7 @@ main() {
       ;;
 
     apply)
+      source "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
@@ -260,13 +255,8 @@ main() {
           # Construct the diff file path from channel + session + type
           local DIFF_FILE
           _resolve_paths "$SANDBOX_DIR"
-          local BASE_DIR=""
-          case "$CHANNEL" in
-            diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
-            autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-            session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-            bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
-          esac
+          local BASE_DIR
+          BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
           DIFF_FILE="${BASE_DIR}/${SESSION_NAME}/${DIFF_TYPE}.diff"
           if [[ ! -f "$DIFF_FILE" ]]; then
             echo "Error: diff file not found: $DIFF_FILE" >&2
@@ -296,6 +286,7 @@ main() {
       ;;
 
     draft)
+      source "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
@@ -362,6 +353,7 @@ main() {
       ;;
 
     confirm)
+      source "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"
@@ -371,6 +363,7 @@ main() {
       ;;
 
     reject)
+      source "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh"
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
         echo "Error: --project and --sandbox are required"

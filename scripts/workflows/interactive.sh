@@ -36,16 +36,7 @@ INTERACTIVE_MAX_ENTRIES=10
 #   Sets OUTPUT_DIR and CHANGES_DIR via dirs_resolve first (caller must do it).
 _resolve_channel_dir() {
   local CHANNEL="$1"
-  case "$CHANNEL" in
-    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
-    autosave) echo "${CHANGES_DIR}/autosave" ;;
-    session)  echo "${CHANGES_DIR}/session" ;;
-    bundles)  echo "${OUTPUT_DIR}/bundles" ;;
-    *)
-      echo "Error: unknown channel: $CHANNEL" >&2
-      return 1
-      ;;
-  esac
+  resolve_channel_base_dir "$CHANNEL"
 }
 
 # =============================================================================

@@ -49,6 +49,38 @@ _resolve_paths() {
 }
 
 # =============================================================================
+# Channel directory resolution
+# =============================================================================
+
+# resolve_channel_base_dir CHANNEL
+#
+# Resolves a channel name to its base directory.
+# Requires CHANGES_DIR and OUTPUT_DIR to be set (e.g. via _resolve_paths
+# or dirs_resolve) before calling.
+#
+# Channel name    → Directory
+#   session       → $CHANGES_DIR/session
+#   autosave      → $CHANGES_DIR/autosave
+#   diffs         → $OUTPUT_DIR/diffs
+#   bundles       → $OUTPUT_DIR/bundles
+#
+# Returns 1 with error message to stderr for unknown channel names.
+resolve_channel_base_dir() {
+  local CHANNEL="$1"
+  case "$CHANNEL" in
+    session)  echo "${CHANGES_DIR}/session" ;;
+    autosave) echo "${CHANGES_DIR}/autosave" ;;
+    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
+    bundles)  echo "${OUTPUT_DIR}/bundles" ;;
+    *)
+      echo "Error: unknown channel: $CHANNEL" >&2
+      echo "  Valid: session, autosave, diffs, bundles" >&2
+      return 1
+      ;;
+  esac
+}
+
+# =============================================================================
 # Session-export paths (used by entrypoint exit/autosave and CLI resolvers)
 # =============================================================================
 
@@ -154,17 +186,8 @@ resolve_source_for_draft() {
 
   _resolve_paths "$SANDBOX_DIR"
 
-  local BASE_DIR=""
-  case "$CHANNEL" in
-    session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-    autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-    bundles)  BASE_DIR="${OUTPUT_DIR}/bundles" ;;
-    *)
-      echo "Error: unknown draft channel: $CHANNEL" >&2
-      echo "  Valid: session, autosave, bundles" >&2
-      return 1
-      ;;
-  esac
+  local BASE_DIR
+  BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || return 1
 
   local RESOLVED_DIR=""
   local SESSION_NAME=""
@@ -231,17 +254,8 @@ resolve_diff_for_apply() {
 
   _resolve_paths "$SANDBOX_DIR"
 
-  local BASE_DIR=""
-  case "$CHANNEL" in
-    diffs)    BASE_DIR="${OUTPUT_DIR}/diffs" ;;
-    autosave) BASE_DIR="${CHANGES_DIR}/autosave" ;;
-    session)  BASE_DIR="${CHANGES_DIR}/session" ;;
-    *)
-      echo "Error: unknown apply channel: $CHANNEL" >&2
-      echo "  Valid: diffs, autosave, session" >&2
-      return 1
-      ;;
-  esac
+  local BASE_DIR
+  BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || return 1
 
   local RESOLVED_DIR=""
   local SESSION_NAME=""
