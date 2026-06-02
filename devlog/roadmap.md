@@ -119,10 +119,14 @@ Each provider may result in a different integration pattern. Investigation findi
 
 ### Track A — Container Identity & Lifecycle
 
-- [ ] run_id derivation + host_sha — Derive `RUN_ID = sha256(SESSION_TS:REPO_COMMIT:WORKTREE_ID)[:6]`. Write `host_sha` (host HEAD at session start) to SESSION_STATE alongside `init_sha`. Replace timestamp-based container naming. Depends on: nothing.
-- [ ] Docker labels — Add `agent-sandbox.project-name`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` to `x-session-labels`. Depends on: item 1.
-- [ ] make stop redesign — Move `worktree_id_derive` from `scripts/checkpoint.sh` to `libs/containers.sh`. Filter `stop.sh` by project-name + worktree-id labels. Depends on: item 2.
-- [ ] make prune — New script: targeted cleanup (project + worktree-id) + time-based (project + >3 days). Depends on: item 3.
+- [ ] **SANDBOX_ID and RUN_ID derivation** — Add `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` and `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]` to `scripts/start_agent.sh`. Rename `REPO_COMMIT` → `HOST_HEAD_SHA`. Remove `WORKTREE_ID` and `worktree_id_derive()`. Add `{{RUN_ID}}` and `{{HOST_HEAD_SHA}}` substitutions to `libs/compose.sh`. Depends on: nothing.
+- [ ] **Image naming with SANDBOX_ID** — `sandbox_image_name(project[, sandbox_id])` and `agent_image_name(provider, project[, sandbox_id])` accept optional `sandbox_id` arg; when present return `sandbox-<project>-<sandbox_id>` / `<provider>-agent-<project>-<sandbox_id>`. Update `scripts/build.sh` to propagate `sandbox_id` through `build_agent`, `build_sandbox`, `preflight`. Depends on: item 1.
+- [ ] **Container naming with RUN_ID** — Container names use `RUN_ID` instead of `SESSION_TS`. Format: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. Depends on: item 1.
+- [ ] **Docker labels** — Add `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts`, `agent-sandbox.run-id` to `x-session-labels`. Depends on: item 1.
+- [ ] **SESSION_STATE** — Write `host_head_sha` to SESSION_STATE alongside `init_sha` and `session_ts` in `src/capability/snapshot.sh`. Depends on: item 1.
+- [ ] **make stop redesign** — Filter by `project-name` + `sandbox-dir` labels (UNDECIDED: exact predicate may use `run-id`; to be determined during implementation). Depends on: item 4.
+- [ ] **make prune** — New script: targeted cleanup scoped to project + sandbox instance. Age threshold: `PRUNE_AGE_DAYS=3` (hardcoded variable at top of script). Covers containers, images, volumes uniformly. Depends on: item 6.
+- [ ] **Artefact paths** — Session export: `<SESSION_TS>-<BRANCH>-<RUN_ID>`. Output export: replace optional `SESSION_TS` suffix with `RUN_ID`. Draft branch: `draft/<RUN_ID>-<BRANCH_SLUG>-<FROM_SHA:0:6>`. Depends on: item 1.
 
 ### Track B — Build Pipeline & Staleness Detection
 
