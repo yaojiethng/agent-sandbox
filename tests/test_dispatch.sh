@@ -242,6 +242,134 @@ test_start_with_passthrough() {
 }
 
 # =============================================================================
+# Tests — --rebuild / --refresh passthrough (via start subcommand)
+# =============================================================================
+
+test_start_rebuild_passthrough() {
+  setup
+  dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes --rebuild
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"--rebuild"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "start --rebuild: --rebuild flag forwarded to start_agent.sh via PASSTHROUGH"
+  else
+    fail "start --rebuild: expected --rebuild in start_agent.sh args, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_start_refresh_passthrough() {
+  setup
+  dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes --refresh
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"--refresh"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "start --refresh: --refresh flag forwarded to start_agent.sh via PASSTHROUGH"
+  else
+    fail "start --refresh: expected --refresh in start_agent.sh args, got: ${CAPTURED[*]}"
+  fi
+}
+
+# =============================================================================
+# Tests — help subcommand
+# =============================================================================
+
+test_help_no_args() {
+  setup
+  local output
+  output=$(main help 2>&1) || true
+
+  if [[ "$output" == *"Valid subcommands"* ]]; then
+    pass "help (no args): prints subcommand list"
+  else
+    fail "help (no args): expected subcommand list, got: $output"
+  fi
+}
+
+test_help_apply() {
+  setup
+  dispatch_and_capture help apply
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"apply.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "help apply: execs apply.sh --help"
+  else
+    fail "help apply: expected exec apply.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_help_draft() {
+  setup
+  dispatch_and_capture help draft
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"draft.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "help draft: execs draft.sh --help"
+  else
+    fail "help draft: expected exec draft.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_help_build() {
+  setup
+  dispatch_and_capture help build
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"build.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "help build: execs build.sh --help"
+  else
+    fail "help build: expected exec build.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_help_package_diff() {
+  setup
+  dispatch_and_capture help package-diff
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"package_diff.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "help package-diff: execs package_diff.sh --help"
+  else
+    fail "help package-diff: expected exec package_diff.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_help_unknown() {
+  setup
+  local output
+  output=$(main help nonexistent 2>&1) || true
+
+  if [[ "$output" == *"Unknown subcommand"* ]]; then
+    pass "help nonexistent: prints error"
+  else
+    fail "help nonexistent: expected error, got: $output"
+  fi
+}
+
+# =============================================================================
 # Tests — apply subcommand (exec's workflows/apply.sh)
 # =============================================================================
 
@@ -504,12 +632,15 @@ source_harness
 setup_mocks
 
 run_test test_build_default_all
+run_test test_build_default_all_asserts_targets
 run_test test_build_with_targets
 run_test test_build_with_rebuild
 run_test test_start_default
 run_test test_serve_mode
 run_test test_dry_run_mode
 run_test test_start_with_passthrough
+run_test test_start_rebuild_passthrough
+run_test test_start_refresh_passthrough
 run_test test_apply_with_diff
 run_test test_apply_with_branch
 run_test test_apply_with_force
@@ -522,6 +653,12 @@ run_test test_stop
 run_test test_onboard
 run_test test_package_diff
 run_test test_package_branch
+run_test test_help_no_args
+run_test test_help_apply
+run_test test_help_draft
+run_test test_help_build
+run_test test_help_package_diff
+run_test test_help_unknown
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args
