@@ -44,3 +44,15 @@ Tools you have access to:
 - `/package-branch` — export committed changes as numbered diffs
 - `/package-diff` — export a single diff for review
 - Standard development tools (git, bash, common CLI utilities)
+
+## Fresh Subagent Invocation
+
+When a fresh perspective is needed for code review (e.g. thermo-nuclear review of changes made in the current session), invoke a fresh subagent using:
+
+```
+pi -p "Subagent instructions..."
+```
+
+The `-p` flag spawns a new subagent with a clean context — it does not inherit the current session's conversation history, loaded files, or tool state. Use this when the current agent may have blind spots from extended work on the same code.
+
+The subagent's output is returned inline. It cannot persist files to the sandbox or make git commits — it is a read-only reviewer. The results should be triaged by the primary agent.
