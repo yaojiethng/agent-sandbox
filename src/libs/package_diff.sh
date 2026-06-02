@@ -33,6 +33,28 @@ source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
 
+# =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox package-diff --sandbox=<path> [options]
+
+Packages changed files and a unified diff into the output directory.
+
+Required:
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --to=<dir>              Output directory (default: auto-resolved from sandbox)
+  --session-summary=<txt> Label for the output folder (default: snapshot)
+  --all                   Diff against session baseline
+  --baseline=<sha>        Diff against an explicit SHA
+EOF
+  exit 0
+}
+
 # Only set strict mode and run setup when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
@@ -55,6 +77,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 
   for ARG in "$@"; do
     case "$ARG" in
+      --help|-h) usage ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
       --all)               ALL_FLAG=true ;;

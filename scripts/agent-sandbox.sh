@@ -317,6 +317,28 @@ main() {
         $( [[ -n "$BASELINE_ARG" ]] && echo "--baseline=$BASELINE_ARG" )
       ;;
 
+    help)
+      if [[ -z "${1:-}" ]]; then
+        echo "Usage: agent-sandbox <subcommand> [flags]"
+        echo ""
+        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"
+        echo ""
+        echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
+        exit 0
+      fi
+      # Try scripts/ first, then scripts/workflows/
+      if [[ -f "$SCRIPTS/$1.sh" ]]; then
+        exec bash "$SCRIPTS/$1.sh" --help
+      elif [[ -f "$SCRIPTS/workflows/$1.sh" ]]; then
+        exec bash "$SCRIPTS/workflows/$1.sh" --help
+      elif [[ -f "$AGENT_SANDBOX_REPO/src/libs/$1.sh" ]]; then
+        exec bash "$AGENT_SANDBOX_REPO/src/libs/$1.sh" --help
+      else
+        echo "Unknown subcommand: $1" >&2
+        exit 1
+      fi
+      ;;
+
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
       echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"

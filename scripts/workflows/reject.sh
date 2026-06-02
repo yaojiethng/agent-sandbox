@@ -41,12 +41,35 @@ reject_run() {
 }
 
 # =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox reject --project=<path> --sandbox=<path>
+
+Discards the current draft branch and returns to the source branch.
+
+Required:
+  --project=<path>    Path to the git repository
+  --sandbox=<path>    Path to the sandbox directory
+EOF
+  exit 0
+}
+
+# =============================================================================
 # main — entry point when exec'd by agent-sandbox reject
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls reject_run.
 # Expected flags: --project=<dir> --sandbox=<dir>
 main() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --help|-h) usage ;;
+    esac
+  done
+
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
 
@@ -55,14 +78,14 @@ main() {
       --project=*) PROJECT_DIR="${ARG#--project=}" ;;
       --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
       *)
-        echo "Error: unknown flag: $ARG" >&2
+        usage >&2
         exit 1
         ;;
     esac
   done
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --project and --sandbox are required" >&2
+    usage >&2
     exit 1
   fi
 

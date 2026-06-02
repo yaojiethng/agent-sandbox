@@ -39,6 +39,27 @@ source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
 
+# =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox package-branch --sandbox=<path> [options]
+
+Packages branch artefacts: per-commit diffs, uncommitted diff, all-changes diff.
+
+Required:
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --to=<dir>              Output directory (default: auto-resolved from sandbox)
+  --session-summary=<txt> Required snake_case label for the bundle directory
+  --baseline=<sha>        Override baseline SHA (default: read from SESSION_STATE)
+EOF
+  exit 0
+}
+
 # Only set strict mode when run directly, not when sourced
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
@@ -296,16 +317,12 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 
   for ARG in "$@"; do
     case "$ARG" in
+      --help|-h) usage ;;
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
-      --help)
-        grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
-        exit 0
-        ;;
       *)
-        echo "Unknown argument: $ARG" >&2
-        echo "Usage: package_branch.sh --to=<dir> --session-summary=<text> [--baseline=<sha>]" >&2
+        usage >&2
         exit 1
         ;;
     esac

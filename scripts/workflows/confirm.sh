@@ -73,12 +73,38 @@ confirm_run() {
 }
 
 # =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox confirm --project=<path> --sandbox=<path> [options]
+
+Rebases the current draft branch onto its target and fast-forward merges.
+
+Required:
+  --project=<path>    Path to the git repository
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --target=<branch>   Target branch to merge into (default: source branch from .draft-state)
+EOF
+  exit 0
+}
+
+# =============================================================================
 # main — entry point when exec'd by agent-sandbox confirm
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>]
 main() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --help|-h) usage ;;
+    esac
+  done
+
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
   local TARGET_BRANCH=""
@@ -89,14 +115,14 @@ main() {
       --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
       --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
       *)
-        echo "Error: unknown flag: $ARG" >&2
+        usage >&2
         exit 1
         ;;
     esac
   done
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --project and --sandbox are required" >&2
+    usage >&2
     exit 1
   fi
 

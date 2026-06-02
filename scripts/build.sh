@@ -233,7 +233,32 @@ preflight() {
 #   sandbox           — sandbox only
 #   pi,hermes         — named providers only
 #   pi,sandbox        — named provider + sandbox
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [options]
+
+Builds Docker images for the sandbox and/or agent providers.
+
+Required:
+  --name=<name>       Project name (used for image tags)
+  --project=<path>    Path to the project directory
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --targets=<list>    Comma-separated targets: all, sandbox, <provider>[,<provider>] (default: all)
+  --rebuild           Force a full rebuild from scratch
+EOF
+  exit 0
+}
+
 main() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --help|-h) usage ;;
+    esac
+  done
+
   local PROJECT_NAME=""
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
@@ -248,15 +273,14 @@ main() {
       --targets=*) BUILD_TARGETS="${ARG#--targets=}" ;;
       --rebuild)   REBUILD_FLAG="--no-cache" ;;
       *)
-        echo "Error: unknown flag: $ARG" >&2
+        usage >&2
         exit 1
         ;;
     esac
   done
 
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --name, --project, and --sandbox are required" >&2
-    echo "  Usage: agent-sandbox build --name=<project> --project=<path> --sandbox=<path> [--targets=<t>] [--rebuild]" >&2
+    usage >&2
     exit 1
   fi
 

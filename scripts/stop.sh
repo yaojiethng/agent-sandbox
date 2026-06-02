@@ -14,8 +14,28 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<EOF
+Usage: agent-sandbox stop --name=<name> --sandbox=<path>
+
+Stops all containers and removes project-scoped volumes for a given sandbox.
+
+Required:
+  --name=<name>       Project name
+  --sandbox=<path>    Path to the sandbox directory
+EOF
+  exit 0
+}
+
 PROJECT_NAME=""
 SANDBOX_DIR=""
+
+# Handle --help before any validation
+for ARG in "$@"; do
+  case "$ARG" in
+    --help|-h) usage ;;
+  esac
+done
 
 for ARG in "$@"; do
   case "$ARG" in

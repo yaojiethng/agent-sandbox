@@ -243,12 +243,43 @@ draft_run() {
 
 
 # =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox draft --project=<path> --sandbox=<path> [options]
+
+Creates a draft branch and applies session patches.
+
+Required:
+  --project=<path>    Path to the git repository
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --session=<name>        Named session to apply (default: newest)
+  --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
+  --branch-from=<commit>  Base commit for the draft branch (default: HEAD)
+  --diffs=<start>..<end>  Range of patches to apply
+  --branch-summary=<slug> Override branch name suffix
+  --interactive           Interactive picker mode
+EOF
+  exit 0
+}
+
+# =============================================================================
 # main — entry point when exec'd by agent-sandbox draft
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls draft_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--session=<name>] [--channel=<c>] [--branch-from=<n>] [--diffs=<r>] [--branch-summary=<s>] [--interactive]
 main() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --help|-h) usage ;;
+    esac
+  done
+
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
   local SESSION_ARG=""
@@ -269,14 +300,14 @@ main() {
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
       --interactive)   INTERACTIVE=true ;;
       *)
-        echo "Error: unknown flag: $ARG" >&2
+        usage >&2
         exit 1
         ;;
     esac
   done
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --project and --sandbox are required" >&2
+    usage >&2
     exit 1
   fi
 

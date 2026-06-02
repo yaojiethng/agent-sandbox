@@ -123,12 +123,44 @@ apply_run() {
 }
 
 # =============================================================================
+# usage — print help text
+# =============================================================================
+
+usage() {
+  cat <<EOF
+Usage: agent-sandbox apply --project=<path> --sandbox=<path> [options]
+
+Applies a diff file to the project working tree. Does not commit.
+
+Required:
+  --project=<path>    Path to the git repository
+  --sandbox=<path>    Path to the sandbox directory
+
+Options:
+  --diff=<path>       Apply a specific diff file (default: auto-resolve)
+  --branch=<name>     Check out or create a branch before applying
+  --channel=<name>    Resolution channel: diffs, session, autosave (default: diffs)
+  --session=<name>    Named session to resolve from (default: newest)
+  --force             Apply with --reject for conflicts
+  --permissive        Retry with --recount on failure
+  --interactive       Interactive picker mode
+EOF
+  exit 0
+}
+
+# =============================================================================
 # main — entry point when exec'd by agent-sandbox apply
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--diff=<path>] [--branch=<n>] [--force] [--permissive] [--interactive]
 main() {
+  for ARG in "$@"; do
+    case "$ARG" in
+      --help|-h) usage ;;
+    esac
+  done
+
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
   local DIFF_FILE=""
@@ -151,14 +183,14 @@ main() {
       --session=*)     SESSION="${ARG#--session=}" ;;
       --interactive)   INTERACTIVE=true ;;
       *)
-        echo "Error: unknown flag: $ARG" >&2
+        usage >&2
         exit 1
         ;;
     esac
   done
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-    echo "Error: --project and --sandbox are required" >&2
+    usage >&2
     exit 1
   fi
 
