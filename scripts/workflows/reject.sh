@@ -54,7 +54,6 @@ Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory
 EOF
-  exit 0
 }
 
 # =============================================================================
@@ -66,7 +65,7 @@ EOF
 main() {
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
     esac
   done
 
@@ -78,6 +77,7 @@ main() {
       --project=*) PROJECT_DIR="${ARG#--project=}" ;;
       --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;

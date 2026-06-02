@@ -57,7 +57,6 @@ Options:
   --session-summary=<txt> Required snake_case label for the bundle directory
   --baseline=<sha>        Override baseline SHA (default: read from SESSION_STATE)
 EOF
-  exit 0
 }
 
 # Only set strict mode when run directly, not when sourced
@@ -317,11 +316,12 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;

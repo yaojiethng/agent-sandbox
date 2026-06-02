@@ -24,7 +24,6 @@ Required:
   --name=<name>       Project name
   --sandbox=<path>    Path to the sandbox directory
 EOF
-  exit 0
 }
 
 PROJECT_NAME=""
@@ -33,7 +32,7 @@ SANDBOX_DIR=""
 # Handle --help before any validation
 for ARG in "$@"; do
   case "$ARG" in
-    --help|-h) usage ;;
+    --help|-h) usage; exit 0 ;;
   esac
 done
 
@@ -42,8 +41,8 @@ for ARG in "$@"; do
     --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
     --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
     *)
-      echo "Unknown flag: $ARG" >&2
-      echo "Usage: stop.sh --name=<project_name> --sandbox=<path>" >&2
+        echo "Unknown argument: $ARG" >&2
+      usage >&2
       exit 1
       ;;
   esac

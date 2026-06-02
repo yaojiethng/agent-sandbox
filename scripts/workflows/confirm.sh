@@ -89,7 +89,6 @@ Required:
 Options:
   --target=<branch>   Target branch to merge into (default: source branch from .draft-state)
 EOF
-  exit 0
 }
 
 # =============================================================================
@@ -101,7 +100,7 @@ EOF
 main() {
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
     esac
   done
 
@@ -115,6 +114,7 @@ main() {
       --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
       --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;

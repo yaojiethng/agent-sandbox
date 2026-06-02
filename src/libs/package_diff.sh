@@ -52,7 +52,6 @@ Options:
   --all                   Diff against session baseline
   --baseline=<sha>        Diff against an explicit SHA
 EOF
-  exit 0
 }
 
 # Only set strict mode and run setup when run directly, not when sourced
@@ -77,18 +76,14 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
       --all)               ALL_FLAG=true ;;
       --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
-      --help)
-        grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
-        exit 0
-        ;;
       *)
         echo "Unknown argument: $ARG" >&2
-        echo "Usage: package_diff.sh --to=<dir> [--session-summary=<text>] [--all|--baseline=<sha>]" >&2
+        usage >&2
         exit 1
         ;;
     esac

@@ -145,7 +145,6 @@ Options:
   --permissive        Retry with --recount on failure
   --interactive       Interactive picker mode
 EOF
-  exit 0
 }
 
 # =============================================================================
@@ -157,7 +156,7 @@ EOF
 main() {
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
     esac
   done
 
@@ -183,6 +182,7 @@ main() {
       --session=*)     SESSION="${ARG#--session=}" ;;
       --interactive)   INTERACTIVE=true ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;

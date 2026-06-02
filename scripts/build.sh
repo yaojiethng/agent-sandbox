@@ -249,13 +249,12 @@ Options:
   --targets=<list>    Comma-separated targets: all, sandbox, <provider>[,<provider>] (default: all)
   --rebuild           Force a full rebuild from scratch
 EOF
-  exit 0
 }
 
 main() {
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
     esac
   done
 
@@ -273,6 +272,7 @@ main() {
       --targets=*) BUILD_TARGETS="${ARG#--targets=}" ;;
       --rebuild)   REBUILD_FLAG="--no-cache" ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;
@@ -289,11 +289,6 @@ main() {
   _build_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   local REPO_ROOT
   REPO_ROOT="$(cd "$_build_self/.." && pwd)"
-  AGENT_SANDBOX_REPO="$REPO_ROOT"
-
-  # Source our dependencies (image naming, build context)
-  source "$REPO_ROOT/src/build/image.sh"
-  source "$REPO_ROOT/src/build/context.sh"
 
   if [[ -z "$BUILD_TARGETS" || "$BUILD_TARGETS" == "all" ]]; then
     build_sandbox "$PROJECT_NAME" "$REPO_ROOT"

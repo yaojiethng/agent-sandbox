@@ -264,7 +264,6 @@ Options:
   --branch-summary=<slug> Override branch name suffix
   --interactive           Interactive picker mode
 EOF
-  exit 0
 }
 
 # =============================================================================
@@ -276,7 +275,7 @@ EOF
 main() {
   for ARG in "$@"; do
     case "$ARG" in
-      --help|-h) usage ;;
+      --help|-h) usage; exit 0 ;;
     esac
   done
 
@@ -300,6 +299,7 @@ main() {
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
       --interactive)   INTERACTIVE=true ;;
       *)
+        echo "Unknown argument: $ARG" >&2
         usage >&2
         exit 1
         ;;
