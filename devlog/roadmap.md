@@ -111,7 +111,7 @@ Each provider may result in a different integration pattern. Investigation findi
 
 **Depends on:** M2.3. **Status:** Active.
 
-**Design reference:** [`docs/discussions/design_session_identity_hash_based.md`](docs/discussions/design_session_identity_hash_based.md)
+**Design reference:** [`devlog/discussions/design_session_identity_hash_based.md`](devlog/discussions/design_session_identity_hash_based.md)
 
 **Scope:** Implement the hash-based session identity model, two-sig model, container lifecycle redesign, and build pipeline cleanup. Items restructured per planning session 20260513-11.
 
@@ -233,6 +233,6 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Addressed in upcoming milestones
 
-- **Stale container images** *(M2.7)* — M2.7 introduces `container-sig` (hash of `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label) checked at preflight with a warning. See [`design_session_identity_hash_based.md`](discussions/design_session_identity_hash_based.md).
+- **Stale container images** *(M2.7)* — M2.7 introduces `container-sig` (hash of `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label) checked at preflight with a warning. See [`devlog/discussions/design_session_identity_hash_based.md`](devlog/discussions/design_session_identity_hash_based.md).
 
 - **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.

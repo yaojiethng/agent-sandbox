@@ -2,7 +2,7 @@
 
 **Status:** Resolved
 
-**[SUPERSEDED: Container naming and session identity design replaced by hash-based approach. See [`docs/discussions/design_session_identity_hash_based.md`](../../discussions/design_session_identity_hash_based.md) for current design.]**
+**[SUPERSEDED: Container naming and session identity design replaced by hash-based approach. See [`devlog/discussions/design_session_identity_hash_based.md`](../discussions/design_session_identity_hash_based.md) for current design.]**
 
 ---
 

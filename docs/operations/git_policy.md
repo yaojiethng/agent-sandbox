@@ -318,7 +318,7 @@ Some operational patterns recur frequently enough that they should become first-
 > 3. For tracked files, use `git mv` to preserve history. For untracked files, use plain `mv` then `git add`.
 > 4. Do not leave stale references to the old name. A rename is incomplete until its old name produces zero grep matches outside the git reflog.
 
-**Reasoning:** Renaming is cheap in git (the rename is detected automatically) but expensive in documentation (paths are scattered across handovers, design docs, architecture docs, and READMEs). The stale reference from the 13→12 rename (`design_session_identity_hash_based.md` still referenced `20260513-12-design-two_sig_model.md`) was caught only because the operator noticed it — not because the protocol existed.
+**Reasoning:** Renaming is cheap in git (the rename is detected automatically) but expensive in documentation (paths are scattered across handovers, design docs, architecture docs, and READMEs). The stale reference from the 13→12 rename (`devlog/discussions/design_session_identity_hash_based.md` still referenced `20260513-12-design-two_sig_model.md`) was caught only because the operator noticed it — not because the protocol existed.
 
 ### Candidate: Amend protocol (from Finding 5)
 

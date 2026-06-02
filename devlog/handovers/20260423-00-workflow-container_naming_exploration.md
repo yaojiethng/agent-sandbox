@@ -26,7 +26,7 @@ Design session triggered by operator proposal: replace timestamp-based container
 - M2.3 implementation units C-G (pending per roadmap)
 
 **Files to change:**
-- `docs/discussions/design_session_identity_hash_based.md` (new)
+- `devlog/discussions/design_session_identity_hash_based.md` (new)
 - `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` (SUPERSEDED marker)
 - `docs/devlog/roadmap.md` (M2.7 design reference + prune task)
 
@@ -47,7 +47,7 @@ None.
 
 | File | Why in scope | Status |
 |---|---|---|
-| `docs/discussions/design_session_identity_hash_based.md` | New design document for hash-based run_id | ✓ Complete |
+| `devlog/discussions/design_session_identity_hash_based.md` | New design document for hash-based run_id | ✓ Complete |
 | `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` | Mark as SUPERSEDED | ✓ Complete |
 | `docs/devlog/roadmap.md` | Update M2.7 design reference + add prune task | ✓ Complete |
 | `scripts/start_agent.sh` | Read for SESSION_TS/WORKTREE_ID/REPO_COMMIT context | Read only |
@@ -63,7 +63,7 @@ None.
 
 | File | Change summary |
 |---|---|
-| `docs/discussions/design_session_identity_hash_based.md` | Created: hash-based run_id design, container naming, make stop/prune design |
+| `devlog/discussions/design_session_identity_hash_based.md` | Created: hash-based run_id design, container naming, make stop/prune design |
 | `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` | Added SUPERSEDED marker with link to new design |
 | `docs/devlog/roadmap.md` | Updated M2.7: design reference, stop/prune tasks, stale images reference |
 
@@ -76,7 +76,7 @@ None.
 **Sub-milestone:** M2.7 — Session Identity and Harness Versioning.
 **Session type:** Implementation — Phase 1 (run_id derivation and container naming).
 
-Read `docs/devlog/roadmap.md` M2.7 section for task list. Start with Phase 1 tasks in `docs/discussions/design_session_identity_hash_based.md`.
+Read `devlog/roadmap.md` M2.7 section for task list. Start with Phase 1 tasks in `devlog/discussions/design_session_identity_hash_based.md`.
 
 **Watch-outs:**
 - `SESSION_NAME` retained for backwards compatibility in Docker labels

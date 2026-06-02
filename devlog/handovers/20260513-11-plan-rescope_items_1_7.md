@@ -113,7 +113,7 @@ None.
 | `scripts/start_agent.sh` | Audited for run_id primitives (item 1) |
 | `scripts/stop.sh` | Audited for current filter mechanism (item 3) |
 | `tests/test_build_context.sh` | Audited for context_dir test count (item 7) |
-| `docs/devlog/discussions/design_session_identity_hash_based.md` | Original design for items 1–5 |
+| `devlog/discussions/design_session_identity_hash_based.md` | Original design for items 1–5 |
 
 ## Decisions made this session
 

@@ -114,7 +114,7 @@ No changelog entry was produced — M2.3 is a sub-milestone of M2, and M2 itself
 The next session should begin at **major loop Gate 2** — select sub-milestone. No sub-milestone has been promoted to active focus. The operator will choose which sub-milestone to target at session open.
 
 **Blocking questions for the next session:**
-- Select which sub-milestone to activate. Operator has indicated interest in M2.7 (Session Identity and Harness Versioning) but this is not final — formal selection and planning happens at session open. If M2.7 is selected, the next agent should read the design doc at `docs/discussions/design_session_identity_hash_based.md` before planning.
+- Select which sub-milestone to activate. Operator has indicated interest in M2.7 (Session Identity and Harness Versioning) but this is not final — formal selection and planning happens at session open. If M2.7 is selected, the next agent should read the design doc at `devlog/discussions/design_session_identity_hash_based.md` before planning.
 
 **Watch-out items:**
 1. The audit policy (`docs/operations/audit_policy.md`) exists but has never been exercised in a real audit session — verify procedure is workable if an audit is needed.
