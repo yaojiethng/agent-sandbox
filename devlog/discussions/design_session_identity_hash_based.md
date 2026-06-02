@@ -12,40 +12,71 @@ The harness currently uses timestamps (`SESSION_TS`) for container naming and se
 
 ---
 
+
 ## Design
 
 ### Primitive Set
 
-Three primitives, established once per session at the top of `scripts/start_agent.sh`:
+Five primitives, established once per session at the top of `scripts/start_agent.sh`:
 
 | Primitive | Value | Source |
 |---|---|---|
 | `SESSION_TS` | `$(date -u +%Y%m%d-%H%M%S)` | Timestamp |
-| `REPO_COMMIT` | `git -C "$PROJECT_DIR" rev-parse HEAD` | Full commit SHA |
-| `WORKTREE_ID` | `$(echo "$PROJECT_DIR" \| sha256sum \| cut -c1-8)` | 8-char hex hash of PROJECT_DIR absolute path |
+| `HOST_HEAD_SHA` | `git -C "$PROJECT_DIR" rev-parse HEAD` | Full SHA of host HEAD at session start |
+| `SANDBOX_DIR` | Operator-supplied at onboard | Absolute path to sandbox instance directory |
+| `PROJECT_NAME` | User-provided at onboard | Human-readable project identifier |
+| `PROJECT_DIR` | User-provided at onboard | Absolute path to project on host |
 
-### run_id Derivation
+### Derived Identifiers
+
+#### SANDBOX_ID — Sandbox Instance Identity
 
 ```bash
-export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${REPO_COMMIT}:${WORKTREE_ID}" | sha256sum | cut -c1-6)
+SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 ```
+
+An 8-character hex hash that identifies a specific sandbox instance at a specific host commit. Appended to Docker image names to prevent image collision when multiple sandboxes of the same project exist at different host commits.
+
+**Properties:**
+- Two sandboxes at different directories but the same `HOST_HEAD_SHA` produce different `SANDBOX_ID`s.
+- Same directory, different `HOST_HEAD_SHA` produces a different `SANDBOX_ID`.
+- 32 bits of entropy (8 hex chars), sufficient for sandbox-instance disambiguation.
+
+**Replaces:** `WORKTREE_ID` (was `sha256(PROJECT_DIR)[:8]`). The new formula adds `SANDBOX_DIR` as identity factor, distinguishing sandbox instances at the same host commit.
+
+#### RUN_ID — Session Run Identity
+
+```bash
+RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+```
+
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability.
 
 **Properties:**
 - 6-character hex hash (16^6 = ~16M combinations)
-- Encodes session timestamp, repo state, and worktree path
-- Unique per session even with same branch/worktree (timestamp component)
-- Same session factors always produce same run_id (deterministic)
+- Unique per session even with same sandbox instance (timestamp component)
+- Deterministic: same inputs produce same `RUN_ID`
+- Double-hashing is harmless — SHA-256 is collision-resistant regardless of input structure
+
+### Image Naming
+
+| Image | Format | Example |
+|---|---|---|
+| Sandbox (base) | `sandbox-<project>-<sandbox_id>` | `sandbox-agent-sandbox-a1b2c3d4` |
+| Agent | `<provider>-agent-<project>-<sandbox_id>` | `pi-agent-sandbox-a1b2c3d4` |
+
+Image naming functions accept an optional `sandbox_id` argument. When omitted, the unadorned name (`sandbox-<project>`, `<provider>-agent-<project>`) is returned for backward compatibility.
 
 ### Container Naming
 
 | Container | Format | Example |
 |---|---|---|
-| Sandbox | `sandbox-<project>-<runid>` | `sandbox-agent-sandbox-a1b2c3` |
-| Agent | `<provider>-<project>-<runid>` | `pi-agent-sandbox-a1b2c3` |
+| Sandbox | `sandbox-<project>-<run_id>` | `sandbox-agent-sandbox-f6e5d4` |
+| Agent | `<provider>-<project>-<run_id>` | `pi-agent-sandbox-f6e5d4` |
 
 **Replaces:**
-- Old: `sandbox-<project>-<timestamp>` (e.g., `sandbox-agent-sandbox-20260423-143022`)
-- Old: `<provider>-<project>-<timestamp>` (e.g., `pi-agent-sandbox-20260423-143022`)
+- Old: `sandbox-<project>-<SESSION_TS>` (e.g., `sandbox-agent-sandbox-20260423-143022`)
+- Old: `<provider>-<project>-<SESSION_TS>` (e.g., `pi-agent-sandbox-20260423-143022`)
 
 ### Docker Labels
 
@@ -53,232 +84,77 @@ All containers receive these labels for lifecycle management:
 
 ```yaml
 labels:
-  agent-sandbox.project: <project-name>
-  agent-sandbox.worktree-id: <worktree-id>
-  agent-sandbox.run-id: <run-id>
-  agent-sandbox.session-name: <sanitized-branch>-<session-ts>  # retained for backwards compat
+  agent-sandbox.project-name:     <PROJECT_NAME>
+  agent-sandbox.project-dir:      <PROJECT_DIR>
+  agent-sandbox.sandbox-dir:      <SANDBOX_DIR>
+  agent-sandbox.host-head-sha:    <HOST_HEAD_SHA>
+  agent-sandbox.host-branch:      <sanitised branch name>
+  agent-sandbox.session-ts:       <SESSION_TS>
+  agent-sandbox.run-id:           <RUN_ID>
 ```
 
 **Rationale:**
-- `project` and `worktree-id` together identify all sessions for a project from a specific worktree
+- `project-name` and `sandbox-dir` together identify all sessions for a project from a specific worktree
 - `run-id` identifies a single session uniquely
-- `session-name` retained for backwards compatibility with existing artefact directories
+- `host-head-sha` and `host-branch` provide provenance context for session artefacts
+- `session-ts` retained for human readability in `docker inspect`
 
 ### Session-Scoped Artefacts
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Diff output | `workspace/session-diffs/<branch-name>/` | Branch-based, not run_id-based |
-| Draft branch | `draft/<source-branch>-<session-ts>` | Retains timestamp for readability |
-| Session artefacts | `workspace/output/<run-id>/` | New: use run_id instead of session name |
+| Session diff export | `session-diffs/session/<SESSION_TS>-<BRANCH>-<RUN_ID>/` | `SESSION_TS` as sort key, `RUN_ID` for identity |
+| Autosave diffs | `session-diffs/autosave/<SESSION_TS>-<BRANCH>-<RUN_ID>/` | Same scheme as session export |
+| Package-diff output | `output/diffs/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | `EXPORT_TIME` is the sort key |
+| Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | Same scheme as package-diff |
+| Draft branch | `draft/<RUN_ID>-<BRANCH_SLUG>-<FROM_SHA:0:6>` | `RUN_ID` uniquely identifies session; `FROM_SHA` for operator `--branch-from` override disambiguation |
 
 **Rationale:**
-- Diff packaging uses branch name (not session identity) for grouping commits by branch
-- Draft branches retain timestamp for human readability in `git log`
-- Session output directories use run_id for uniqueness and brevity
-
----
+- `RUN_ID` preferred for brevity and unique addressing
+- `SESSION_TS` retained as sort key only when no alternative sort key exists (export paths)
+- `EXPORT_TIME` serves as sort key for package-diff/package-branch output, so `RUN_ID` replaces the optional `SESSION_TS` suffix
 
 ## make stop Redesign
 
-### Current Behaviour
+**Status: UNDECIDED.** Filter mechanism to be determined during implementation. The label schema now uses `project-name` and `sandbox-dir` labels; the exact filter predicate may use `run-id`. Investigate whether filtering by `run-id` label is sufficient, or whether additional scoping by `sandbox-dir` is needed for parallel worktree sessions.
 
-```bash
-# Current: stops all containers for project name (all worktrees)
-COMPOSE_PROJECT="$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
-COMPOSE_PROJECT="${_COMPOSE_PROJECT//[^a-z0-9-]/-}"
-docker ps -aq --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}"
-```
-
-### New Behaviour
-
-```bash
-# New: stops containers for project + worktree combination
-WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | cut -c1-8)
-CONTAINER_IDS=$(docker ps -aq \
-  --filter "label=agent-sandbox.project=${PROJECT_NAME}" \
-  --filter "label=agent-sandbox.worktree-id=${WORKTREE_ID}")
-```
-
-**Rationale:**
-- Same project from same worktree → same containers stopped
-- Same project from different worktree (parallel sessions) → different containers
-- Prevents stopping containers from parallel worktrees
-
----
+Behavioural requirements:
+- Must stop only containers belonging to the specified sandbox instance (parallel sessions from different worktrees must not be affected)
+- Must not require a running Docker Compose project (containers may have been started manually or by a different compose invocation)
+- Must clean up anonymous volumes associated with stopped containers
 
 ## make prune Design
 
-### Targeted Cleanup
+**Status: UNDECIDED.** Filter condition for current session cleanup to be determined (see make stop redesign above — likely same label predicate).
 
-```bash
-# Clean up old containers/images/volumes for project + worktree
-WORKTREE_ID=$(echo "$PROJECT_DIR" | sha256sum | cut -c1-8)
-
-# Stop and remove old containers
-docker ps -aq --filter "label=agent-sandbox.project=${PROJECT_NAME}" \
-  --filter "label=agent-sandbox.worktree-id=${WORKTREE_ID}" \
-  --filter "until=$(date -d '3 days ago' -u +%Y-%m-%dT%H:%M:%SZ)" | \
-  xargs -r docker rm
-
-# Remove old images (dangling or unused)
-docker image prune -f
-
-# Remove old volumes
-docker volume prune -f
-```
-
-### Time-Based Cleanup
-
-```bash
-# Clean up containers older than 3 days for project (ignores worktree)
-docker ps -aq --filter "label=agent-sandbox.project=${PROJECT_NAME}" \
-  --filter "until=$(date -d '3 days ago' -u +%Y-%m-%dT%H:%M:%SZ)" | \
-  xargs -r docker rm
-
-# Clean up old images
-docker image prune -f --filter "until=3d"
-
-# Clean up old volumes
-docker volume prune -f --filter "until=3d"
-```
-
-**Rationale:**
-- Targeted cleanup respects worktree boundaries (parallel sessions)
-- Time-based cleanup prevents indefinite accumulation of old artefacts
-- 3-day threshold balances disk usage with debugging capability
-
----
+Decided design aspects:
+- Age threshold: configurable via hardcoded variable at top of script (e.g. `PRUNE_AGE_DAYS=3`)
+- Covers containers, images, and volumes uniformly (age-based, no per-type differentiation)
+- Targeted cleanup scoped to one project + sandbox instance (parallel worktree sessions)
+- Time-based cleanup as fallback for orphaned artefacts (project-scoped, ignoring sandbox)
 
 ## Implementation Tasks
 
-### Phase 1: run_id Derivation
-
-- [ ] Add `RUN_ID` derivation to `scripts/start_agent.sh` (after primitive set)
-- [ ] Export `RUN_ID` for downstream use
-- [ ] Update `libs/compose.sh` to substitute `{{RUN_ID}}` placeholder
-
-### Phase 2: Container Naming
-
-- [ ] Update `scripts/start_agent.sh` container name derivation to use `RUN_ID`
-- [ ] Update `libs/docker-compose.yml` to use `{{RUN_ID}}` in container_name
-- [ ] Update `libs/compose.sh` documentation
-
-### Phase 3: Docker Labels
-
-- [ ] Add `agent-sandbox.project`, `agent-sandbox.worktree-id`, `agent-sandbox.run-id` labels to `libs/docker-compose.yml`
-- [ ] Retain `agent-sandbox.session-name` for backwards compatibility
-
-### Phase 4: make stop Redesign
-
-- [ ] Update `scripts/stop.sh` to filter by `project + worktree-id` labels
-- [ ] Update `libs/_templates/Makefile.template` stop target documentation
-
-### Phase 5: make prune Implementation
-
-- [ ] Add `prune` target to `libs/_templates/Makefile.template`
-- [ ] Create `scripts/prune.sh` with targeted and time-based cleanup logic
-- [ ] Add `agent-sandbox prune` CLI command
-
-### Phase 6: Session Artefacts
-
-- [ ] Update session output directory naming to use `RUN_ID`
-- [ ] Update `libs/diff.sh` documentation for new artefact paths
-
----
+Removed — moved to `devlog/roadmap.md` M2.7 Track A task list.
 
 ## Backwards Compatibility
 
 | Component | Migration Path |
 |---|---|
 | Existing containers | Continue to work; new sessions use run_id naming |
-| Existing artefact directories | Retain session-name-based paths; new sessions may use run_id |
-| `SESSION_NAME` | Retained for backwards compatibility in Docker labels |
-| Draft branches | Retain timestamp-based naming for human readability |
-
----
+| Existing artefact directories | Retain existing paths; new sessions use new path format |
+| `SESSION_NAME` | Retained as `session-ts` in Docker labels for backwards compatibility |
+| Draft branches | Old format (`draft/<SESSION_TS>-...`) continues to work; new sessions use `draft/<RUN_ID>-...` |
 
 ## Container-sig (Image Staleness Detection)
 
-### What it detects
+**Status: UNDECIDED.** Independent design colocated from earlier session (see handover 20260513-12). Requires separate investigation before Track B implementation. See `devlog/roadmap.md` M2.7 Track B for scope.
 
-Container-sig detects when the source files that were baked into a container image have changed since the image was built. If an operator modifies a lib script or workflow file and doesn't rebuild, the running container uses stale code.
-
-### What is hashed
-
-The hash covers everything the harness bundles into the image — the contents of `/opt/sandbox/` and `/opt/workflow/` at build time:
-
-```
-/opt/sandbox/bin/          — entrypoint scripts (provider-entrypoint.sh, sandbox-entrypoint.sh)
-/opt/sandbox/lib/          — library scripts (dirs.sh, snapshot.sh, diff.sh, session.sh, routing.sh, package_*.sh)
-/opt/sandbox/docs/         — architecture and concepts docs
-/opt/workflow/agent/skills/ — sandbox-layer workflow skills
-/opt/workflow/agent/prompts/ — sandbox-layer workflow prompts
-```
-
-Not included:
-- Base image layers (provider binary, OS packages, Node.js) — tracked separately by `--rebuild`
-- Bind-mounted directories (config, workspace, snapshot) — runtime state, not image state
-
-### Derivation
-
-Computed at build time in `build_sandbox()` and `build_agent()` after the image is built, using an empty container to inspect the image contents:
-
-```bash
-# Create a temporary container from the built image and hash its harness directories
-container_sig=$(docker run --rm "$image_name" bash -c '
-  find /opt/sandbox /opt/workflow -type f | sort | xargs sha256sum | sha256sum | cut -c1-16
-')
-
-# Bake as Docker label for later comparison
-docker build --label "agent-sandbox.container-sig=$container_sig" ...
-```
-
-Note: After item 7 (context_dir removal), `build_image()` is removed and `build_sandbox()`/`build_agent()` inline the `docker build` call. The container-sig computation happens after the build completes.
-
-### Preflight check
-
-Checked by `scripts/start_agent.sh` before starting a session. If the label doesn't match the current source files, the image is stale:
-
-```bash
-_check_container_sig() {
-  local image="$1"
-  local expected
-  # Compute expected sig from current repo source files
-  expected=$(find "$REPO_ROOT/libs" "$REPO_ROOT/agent" -type f | sort | xargs sha256sum | sha256sum | cut -c1-16)
-
-  local actual
-  actual=$(docker inspect --format '{{index .Config.Labels "agent-sandbox.container-sig"}}' "$image" 2>/dev/null) || actual=""
-
-  if [[ -z "$actual" ]]; then
-    echo "WARN: image has no container-sig label — may be outdated" >&2
-    return 0  # warn only, don't block
-  fi
-
-  if [[ "$expected" != "$actual" ]]; then
-    echo "WARN: image is stale (source files changed since build)" >&2
-    echo "  Run 'make refresh' or 'make rebuild' to update." >&2
-    return 0  # warn only, don't block
-  fi
-}
-```
-
-**Design decision:** Container-sig warns but does not block. A hard gate (refusing to start) would be too aggressive for development workflows where the operator deliberately modifies source files and wants to test without rebuilding. The warning is sufficient for the common case (forgot to rebuild).
-
-### When container-sig changes
-
-| Action | container-sig changes? |
-|---|---|
-| Edit `libs/sandbox-entrypoint.sh` | Yes — rebuild needed |
-| Edit `agent/skills/*.md` | Yes — rebuild needed if image-baked paths used |
-| Upgrade provider npm package | No — base image layer, covered by `--rebuild` |
-| Edit `scripts/start_agent.sh` | No — runtime script, not in image |
-| Edit `.env` | No — not in image |
-| `make refresh` | Yes — rebuilds images → new sig |
-| `make rebuild` | Yes — rebuilds from scratch → new sig |
-
----
-
+Behavioural requirements established from prior investigation:
+- Must warn but not block (a hard gate is too aggressive for development workflows)
+- Hashes `/opt/sandbox/` + `/opt/workflow/` at build time (excludes base image layers and bind-mounted directories)
+- Baked as Docker label, checked at preflight
+- Preflight source paths need updating to match current repository layout — the original design referenced `$REPO_ROOT/libs` and `$REPO_ROOT/agent` which are stale paths
 ## Harness-sig (Runtime Drift Detection)
 
 **Deferred.** See [`investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) §Harness Packaging and Versioning.
@@ -287,20 +163,17 @@ Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic 
 
 ---
 
+
 ## Open Questions
 
-1. **Hash collision handling:** 6-char hex has ~16M combinations. Should we add collision detection (check if run_id already exists, regenerate if so)?
-
-2. **Prune threshold:** Is 3 days appropriate, or should it be configurable (e.g., via `.env`)?
-
-3. **Image cleanup:** Should `make prune` also remove old provider images, or only dangling/unused images?
+1. **Prune threshold:** Should the age threshold be configurable via `.env` in addition to the hardcoded variable default? Currently planned as hardcoded variable at top of script (e.g. `PRUNE_AGE_DAYS=3`). If `.env` configurability is desired, add as part of prune implementation.
 
 ---
 
 ## References
 
 - [`story_session_identity_and_harness_versioning.md`](../devlog/discussions/story_session_identity_and_harness_versioning.md) — superseded design
+- [`docs/concepts/sandbox_identity.md`](../../docs/concepts/sandbox_identity.md) — stable reference for primitives, derivation, labels, and paths
 - [`scripts/start_agent.sh`](../../scripts/start_agent.sh) — primitive set implementation
-- [`scripts/checkpoint.sh`](../../scripts/checkpoint.sh) — WORKTREE_ID derivation
 - [`scripts/stop.sh`](../../scripts/stop.sh) — current stop implementation
 - [`docs/devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md`](../../devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md) — container-sig settlement and harness-sig investigation scope
