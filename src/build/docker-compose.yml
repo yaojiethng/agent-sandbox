@@ -21,9 +21,12 @@
 
 # Session labels — applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
-  agent-sandbox.project-dir: {{PROJECT_DIR}}
-  agent-sandbox.session-ts: {{SESSION_TS}}
+  agent-sandbox.project-name: {{PROJECT_NAME}}
+  agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+  agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
   agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
+  agent-sandbox.session-ts: {{SESSION_TS}}
+  agent-sandbox.run-id: {{RUN_ID}}
 
 # Workspace path documentation — single source of truth for all path mappings.
 # Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.

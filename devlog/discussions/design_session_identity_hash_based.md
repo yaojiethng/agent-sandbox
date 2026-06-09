@@ -89,7 +89,6 @@ All containers receive these labels for lifecycle management:
 ```yaml
 labels:
   agent-sandbox.project-name:     <PROJECT_NAME>
-  agent-sandbox.project-dir:      <PROJECT_DIR>
   agent-sandbox.sandbox-dir:      <SANDBOX_DIR>
   agent-sandbox.host-head-sha:    <HOST_HEAD_SHA>
   agent-sandbox.host-branch:      <sanitised branch name>
@@ -98,7 +97,7 @@ labels:
 ```
 
 **Rationale:**
-- `project-name` and `sandbox-dir` together identify all sessions for a project from a specific worktree
+- `project-name` and `sandbox-dir` together identify all sessions and images for a project from a specific sandbox instance
 - `run-id` identifies a single session uniquely
 - `host-head-sha` and `host-branch` provide provenance context for session artefacts
 - `session-ts` retained for human readability in `docker inspect`
