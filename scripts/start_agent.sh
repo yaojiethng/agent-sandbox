@@ -174,11 +174,6 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 # -------------------------
-# Source checkpoint library
-# -------------------------
-source "$REPO_ROOT/src/build/image.sh"
-
-# -------------------------
 # Session timestamp (single canonical definition)
 # -------------------------
 # SESSION_TS is the one source of truth for the session timestamp. All
@@ -187,15 +182,20 @@ source "$REPO_ROOT/src/build/image.sh"
 export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
 
 # -------------------------
-# Worktree ID
+# Derived identities: SANDBOX_ID, RUN_ID, HOST_HEAD_SHA
 # -------------------------
-export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
+# SANDBOX_ID — 8-char hex hash identifying a sandbox instance at a specific
+# host commit. Composed of SANDBOX_DIR (path identity) and HOST_HEAD_SHA
+# (codebase version). Two sandboxes at different directories or different
+# host commits produce different SANDBOX_IDs.
+export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 
-# -------------------------
-# REPO_COMMIT capture
-# -------------------------
-# Capture the current HEAD commit for image labeling (future use).
-export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+# RUN_ID — 6-char hex hash identifying a single session run. Composed of
+# SESSION_TS (temporal factor) and SANDBOX_ID (instance factor). Replaces
+# SESSION_TS in container names and artefact paths while SESSION_TS is
+# preserved for human readability.
+export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 
 # -------------------------
 # SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
@@ -214,6 +214,9 @@ export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_TS}"
 export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_TS}"
 unset BRANCH_NAME
 echo "Host branch: $SANITIZED_HOST_BRANCH"
+echo "Host HEAD SHA: $HOST_HEAD_SHA"
+echo "Sandbox ID: $SANDBOX_ID"
+echo "Run ID: $RUN_ID"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 

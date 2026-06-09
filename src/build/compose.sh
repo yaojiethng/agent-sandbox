@@ -102,6 +102,8 @@ compose_generate() {
       -e "s|{{SANDBOX_CONTAINER_NAME}}|${SANDBOX_CONTAINER_NAME:-}|g" \
       -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
       -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
+      -e "s|{{RUN_ID}}|${RUN_ID:-}|g" \
+      -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \

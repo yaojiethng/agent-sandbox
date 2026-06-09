@@ -35,7 +35,9 @@ unified diffs participates in the model.
 | **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `init_sha`, plus `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. On exit, written to `CHANGES_DIR/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` by the dispatcher. Overwrites on each run — always reflects full branch history since `init_sha`. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
-| **`WORKTREE_ID`** | Short hash of `PROJECT_DIR` absolute path. Namespaces container names per worktree instance. |
+| **`SANDBOX_ID`** | 8-char hex hash: `sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`. Identifies a sandbox instance at a specific host commit. Replaces `WORKTREE_ID`. |
+| **`RUN_ID`** | 6-char hex hash: `sha256(SESSION_TS:SANDBOX_ID)[:6]`. Identifies a single session run. Replaces `SESSION_TS` in container names and artefact paths. |
+| **`HOST_HEAD_SHA`** | Full SHA of host HEAD at session start. Replaces `REPO_COMMIT`. |
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` — `session/` holds exit artefacts, `autosave/` holds checkpoint artefacts. Each is overwritten on each invocation. |
 | **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |
 

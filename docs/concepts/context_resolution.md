@@ -180,7 +180,7 @@ containers ──→ libs/shared/ only   entrypoints only source shared libs
 ### Boundary rules
 
 - **libs/ → scripts/**: Forbidden. A library must not depend on a host script. If a script contains reusable functions, it belongs in `libs/`, not `scripts/`.
-- **scripts/ → scripts/**: Allowed only when the target script is logically a library (defines functions, has no `main()` entry point). `checkpoint.sh` is the canonical example — it lives in `scripts/` but defines `worktree_id_derive()` and is sourced by `start_agent.sh`.
+- **scripts/ → scripts/**: Allowed only when the target script is logically a library (defines functions, has no `main()` entry point). `src/build/image.sh` is the canonical example — it defines `sandbox_image_name()`, `agent_image_name()`, and the identity derivation functions sourced by `start_agent.sh` and `build.sh`.
 - **tests/ → anything**: Tests import whatever they need to test. They are not imported by anything else.
 - **Container → Container only**: Entrypoints inside containers source only from their own `libs/` directory hierarchy (`/opt/sandbox/lib/`).
 
