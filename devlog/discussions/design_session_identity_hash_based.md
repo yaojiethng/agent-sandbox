@@ -119,7 +119,12 @@ labels:
 
 ## make stop Redesign
 
-**Status: UNDECIDED.** Filter mechanism to be determined during implementation. The label schema now uses `project-name` and `sandbox-dir` labels; the exact filter predicate may use `run-id`. Investigate whether filtering by `run-id` label is sufficient, or whether additional scoping by `sandbox-dir` is needed for parallel worktree sessions.
+**Status: Decided.**
+
+**Filter mechanism:**
+- **Default** (`make stop`): filters by `agent-sandbox.project-name` + `agent-sandbox.sandbox-dir` labels. Stops all containers belonging to this sandbox instance, including parallel Compose projects from the same sandbox dir.
+- **With `--run-id=<ID>`** (`make stop RUN_ID=abc123`): adds `agent-sandbox.run-id` filter. Stops only the specific run's containers.
+- **With `PRUNE=1`** (`make stop PRUNE=1`): after stopping containers, runs prune on orphaned containers, images, and volumes for this project+sandbox instance. Semantics parallel to `REFRESH=1` / `REBUILD=1` for `make start`.
 
 Behavioural requirements:
 - Must stop only containers belonging to the specified sandbox instance (parallel sessions from different worktrees must not be affected)
@@ -128,13 +133,11 @@ Behavioural requirements:
 
 ## make prune Design
 
-**Status: UNDECIDED.** Filter condition for current session cleanup to be determined (see make stop redesign above — likely same label predicate).
+**Status: Decided.**
 
-Decided design aspects:
-- Age threshold: configurable via hardcoded variable at top of script (e.g. `PRUNE_AGE_DAYS=3`)
-- Covers containers, images, and volumes uniformly (age-based, no per-type differentiation)
-- Targeted cleanup scoped to one project + sandbox instance (parallel worktree sessions)
-- Time-based cleanup as fallback for orphaned artefacts (project-scoped, ignoring sandbox)
+Prune is invoked as `make stop PRUNE=1` (not a standalone script). See make stop redesign above for filter semantics.
+
+Age threshold: `PRUNE_AGE_DAYS=3` hardcoded at top of `stop.sh`. Covers containers, images, and volumes uniformly (age-based, no per-type differentiation). Targeted cleanup scoped to one project + sandbox instance. Time-based cleanup as fallback for orphaned artefacts (project-scoped, ignoring sandbox).
 
 ## Implementation Tasks
 
@@ -169,7 +172,7 @@ Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic 
 
 ## Open Questions
 
-1. **Prune threshold:** Should the age threshold be configurable via `.env` in addition to the hardcoded variable default? Currently planned as hardcoded variable at top of script (e.g. `PRUNE_AGE_DAYS=3`). If `.env` configurability is desired, add as part of prune implementation.
+- *(None — all M2.7 Track A design questions resolved)*
 
 ---
 
