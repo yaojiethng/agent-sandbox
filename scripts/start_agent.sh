@@ -258,7 +258,6 @@ if [[ "$MODE" != "dry-run" ]]; then
     echo "Stopping previous session ($PROJECT_NAME)..."
     "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
   fi
-  unset _COMPOSE_PROJECT
 fi
 
 # -------------------------

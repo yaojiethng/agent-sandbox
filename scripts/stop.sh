@@ -34,22 +34,21 @@ Optional:
 EOF
 }
 
-PROJECT_NAME=""
-SANDBOX_DIR=""
+# Source shared flag parsing (sets SCRIPT_DIR, PROJECT_NAME, SANDBOX_DIR;
+# provides parse_help_flag, parse_base_flags, check_base_flags).
+_common_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../src/libs" && pwd)"
+source "$_common_dir/common.sh"
+
 RUN_ID=""
 PRUNE=false
 
-# Handle --help before any validation
-for ARG in "$@"; do
-  case "$ARG" in
-    --help|-h) usage; exit 0 ;;
-  esac
-done
+parse_help_flag "$@"
+parse_base_flags "$@"
 
+# Parse stop-specific flags (after --name and --sandbox are consumed)
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+    --name=*|--sandbox=*) ;;
     --run-id=*)  RUN_ID="${ARG#--run-id=}" ;;
     --prune)     PRUNE=true ;;
     *)
@@ -60,21 +59,11 @@ for ARG in "$@"; do
   esac
 done
 
-if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-  echo "Error: --name and --sandbox are required" >&2
-  usage >&2
-  exit 1
-fi
+check_base_flags
 
 # -------------------------
 # Build label filters
 # -------------------------
-
-# Sanity-check the sandbox dir is not empty or a root path
-if [[ -z "$SANDBOX_DIR" || "$SANDBOX_DIR" == "/" ]]; then
-  echo "Error: invalid SANDBOX_DIR: $SANDBOX_DIR" >&2
-  exit 1
-fi
 
 LABEL_FILTERS=(
   --filter "label=agent-sandbox.project-name=${PROJECT_NAME}"
@@ -128,7 +117,7 @@ fi
 # -------------------------
 
 if [[ "$PRUNE" == true ]]; then
-  "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/prune.sh" \
+  "$SCRIPT_DIR/prune.sh" \
     --name="$PROJECT_NAME" \
     --sandbox="$SANDBOX_DIR"
 fi

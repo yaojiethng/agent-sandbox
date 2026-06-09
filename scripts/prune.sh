@@ -26,32 +26,14 @@ Required:
 EOF
 }
 
-PROJECT_NAME=""
-SANDBOX_DIR=""
+# Source shared flag parsing (sets SCRIPT_DIR, PROJECT_NAME, SANDBOX_DIR;
+# provides parse_help_flag, parse_base_flags, check_base_flags).
+_common_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../src/libs" && pwd)"
+source "$_common_dir/common.sh"
 
-for ARG in "$@"; do
-  case "$ARG" in
-    --help|-h) usage; exit 0 ;;
-  esac
-done
-
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-    --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    *)
-      echo "Unknown argument: $ARG" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
-done
-
-if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-  echo "Error: --name and --sandbox are required" >&2
-  usage >&2
-  exit 1
-fi
+parse_help_flag "$@"
+parse_base_flags "$@"
+check_base_flags
 
 echo "Pruning orphaned resources older than ${PRUNE_AGE_DAYS} days..."
 

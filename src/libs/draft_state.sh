@@ -73,8 +73,8 @@ host_branch: ${HOST_BRANCH}
 diff_count: ${DIFF_COUNT}
 exported-at: ${EXPORTED_AT}
 drafted-at: ${DRAFTED_AT}
-run_id: ${RUN_ID}
 EOF
+  [[ -n "$RUN_ID" ]] && echo "run_id: ${RUN_ID}"
 }
 
 # =============================================================================
