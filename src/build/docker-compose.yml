@@ -64,6 +64,7 @@ services:
       - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
       - SESSION_TS=${SESSION_TS:-}
       - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
+      - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s
