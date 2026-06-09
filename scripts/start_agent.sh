@@ -248,17 +248,13 @@ echo "Snapshot ready."
 # -------------------------
 # Stop any running session containers
 # -------------------------
-# Stop any running session containers
-# -------------------------
-# Checks for containers with the project's compose label before calling stop.sh.
+# Checks for containers with agent-sandbox labels before calling stop.sh.
 # Avoids noise from stop.sh's "no containers found" message on a clean start.
-# stop.sh uses Docker Compose project labels — catches all containers for this
-# project regardless of which provider ran previously.
+# stop.sh filters by agent-sandbox.project-name + agent-sandbox.sandbox-dir
+# labels — catches all containers for this sandbox regardless of provider.
 # Skipped for dry-run: no port binding, no container name conflict risk.
 if [[ "$MODE" != "dry-run" ]]; then
-  _COMPOSE_PROJECT="$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
-  _COMPOSE_PROJECT="${_COMPOSE_PROJECT//[^a-z0-9-]/-}"
-  if [[ -n "$(docker ps -aq --filter "label=com.docker.compose.project=${_COMPOSE_PROJECT}")" ]]; then
+  if [[ -n "$(docker ps -aq --filter "label=agent-sandbox.project-name=${PROJECT_NAME}" --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}")" ]]; then
     echo "Stopping previous session ($PROJECT_NAME)..."
     "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
   fi

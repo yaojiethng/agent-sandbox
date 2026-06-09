@@ -1,33 +1,43 @@
 #!/usr/bin/env bash
 # scripts/stop.sh
 #
-# Stops all containers and removes project-scoped volumes for a given sandbox.
-# Identifies containers by Docker Compose project label — does not invoke
+# Stops containers and removes project-scoped volumes for a given sandbox.
+# Identifies containers by label-based filtering — does not invoke
 # docker compose and does not require resolved compose environment variables.
 #
 # Usage:
-#   stop.sh --name=<project_name> --sandbox=<path>
+#   stop.sh --name=<project_name> --sandbox=<path> [--run-id=<id>] [--prune]
 #
-# The compose project name is derived from PROJECT_NAME using the same
-# normalisation Docker Compose applies: lowercase, non-alphanumeric chars
-# (except hyphens) replaced with hyphens.
+# Filter logic:
+#   Default: agent-sandbox.project-name + agent-sandbox.sandbox-dir labels
+#   --run-id: additionally filter by agent-sandbox.run-id label (stop specific run only)
+#   --prune:  after stopping, remove orphaned containers, images, and volumes
+#             for this project+sandbox instance older than PRUNE_AGE_DAYS
 
 set -euo pipefail
 
+PRUNE_AGE_DAYS=3
+
 usage() {
   cat <<EOF
-Usage: agent-sandbox stop --name=<name> --sandbox=<path>
+Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--run-id=<id>] [--prune]
 
-Stops all containers and removes project-scoped volumes for a given sandbox.
+Stops containers and removes project-scoped volumes for a given sandbox.
 
 Required:
   --name=<name>       Project name
   --sandbox=<path>    Path to the sandbox directory
+
+Optional:
+  --run-id=<id>       Stop only the specific run (by agent-sandbox.run-id label)
+  --prune             After stopping, remove orphaned resources older than ${PRUNE_AGE_DAYS} days
 EOF
 }
 
 PROJECT_NAME=""
 SANDBOX_DIR=""
+RUN_ID=""
+PRUNE=false
 
 # Handle --help before any validation
 for ARG in "$@"; do
@@ -40,8 +50,10 @@ for ARG in "$@"; do
   case "$ARG" in
     --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
     --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+    --run-id=*)  RUN_ID="${ARG#--run-id=}" ;;
+    --prune)     PRUNE=true ;;
     *)
-        echo "Unknown argument: $ARG" >&2
+      echo "Unknown argument: $ARG" >&2
       usage >&2
       exit 1
       ;;
@@ -50,35 +62,92 @@ done
 
 if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
   echo "Error: --name and --sandbox are required" >&2
-  echo "Usage: stop.sh --name=<project_name> --sandbox=<path>" >&2
+  usage >&2
   exit 1
 fi
 
-# Derive compose project name from PROJECT_NAME.
-# Docker Compose normalisation: lowercase; chars outside [a-z0-9-] → hyphen.
-COMPOSE_PROJECT="$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
-COMPOSE_PROJECT="${COMPOSE_PROJECT//[^a-z0-9-]/-}"
+# -------------------------
+# Build label filters
+# -------------------------
 
-CONTAINER_IDS=$(docker ps -aq --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}")
-
-if [[ -z "$CONTAINER_IDS" ]]; then
-  echo "No containers found for project: ${COMPOSE_PROJECT}"
-  exit 0
+# Sanity-check the sandbox dir is not empty or a root path
+if [[ -z "$SANDBOX_DIR" || "$SANDBOX_DIR" == "/" ]]; then
+  echo "Error: invalid SANDBOX_DIR: $SANDBOX_DIR" >&2
+  exit 1
 fi
 
-echo "Stopping containers for project: ${COMPOSE_PROJECT}"
-# Word splitting is intentional — CONTAINER_IDS is a newline-separated id list.
-# shellcheck disable=SC2086
-docker stop $CONTAINER_IDS
-# shellcheck disable=SC2086
-docker rm   $CONTAINER_IDS
+LABEL_FILTERS=(
+  --filter "label=agent-sandbox.project-name=${PROJECT_NAME}"
+  --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
+)
 
-# Remove project-scoped anonymous volumes.
-VOLUME_IDS=$(docker volume ls -q --filter "label=com.docker.compose.project=${COMPOSE_PROJECT}")
+if [[ -n "$RUN_ID" ]]; then
+  LABEL_FILTERS+=(--filter "label=agent-sandbox.run-id=${RUN_ID}")
+fi
+
+# -------------------------
+# Stop and remove containers
+# -------------------------
+
+CONTAINER_IDS=$(docker ps -aq "${LABEL_FILTERS[@]}")
+
+if [[ -z "$CONTAINER_IDS" ]]; then
+  echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
+else
+  echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
+  # Word splitting is intentional
+  # shellcheck disable=SC2086
+  docker stop $CONTAINER_IDS
+  # shellcheck disable=SC2086
+  docker rm $CONTAINER_IDS
+  echo "Containers stopped."
+fi
+
+# -------------------------
+# Remove project-scoped anonymous volumes
+# -------------------------
+
+VOLUME_FILTERS=(
+  --filter "label=agent-sandbox.project-name=${PROJECT_NAME}"
+  --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
+)
+
+if [[ -n "$RUN_ID" ]]; then
+  VOLUME_FILTERS+=(--filter "label=agent-sandbox.run-id=${RUN_ID}")
+fi
+
+VOLUME_IDS=$(docker volume ls -q "${VOLUME_FILTERS[@]}")
 if [[ -n "$VOLUME_IDS" ]]; then
-  echo "Removing volumes for project: ${COMPOSE_PROJECT}"
+  echo "Removing volumes for ${PROJECT_NAME}..."
   # shellcheck disable=SC2086
   docker volume rm $VOLUME_IDS
+fi
+
+# -------------------------
+# Prune (if requested)
+# -------------------------
+
+if [[ "$PRUNE" == true ]]; then
+  echo "Pruning orphaned resources older than ${PRUNE_AGE_DAYS} days..."
+
+  # Build a label filter string for docker system prune
+  # docker system prune --filter supports label=<key>=<value> format
+  local_filter="label=agent-sandbox.project-name=${PROJECT_NAME}"
+  local_filter="${local_filter},label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
+
+  # Prune containers, images, and volumes with the label filter and age threshold
+  docker system prune \
+    --force \
+    --all \
+    --filter "${local_filter}" \
+    --filter "until=${PRUNE_AGE_DAYS}d" \
+    2>/dev/null || true
+
+  # Also prune anonymous volumes that escaped the label filter
+  # (volumes created without labels during old sessions)
+  docker volume prune --force --filter "label!=agent-sandbox.project-name" 2>/dev/null || true
+
+  echo "Prune complete."
 fi
 
 echo "Done."

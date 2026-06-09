@@ -67,6 +67,8 @@ REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
+RUN_ID_FLAG       = $(if $(RUN_ID),--run-id=$(RUN_ID),)
+PRUNE_FLAG        = $(if $(PRUNE),--prune,)
 
 .PHONY: build start serve dry-run stop apply draft confirm reject refresh
 
@@ -123,7 +125,9 @@ dry-run:
 stop:
 	agent-sandbox stop \
 	  --name=$(PROJECT_NAME) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(RUN_ID_FLAG) \
+	  $(PRUNE_FLAG)
 
 # Apply workflow
 # -------------------------
