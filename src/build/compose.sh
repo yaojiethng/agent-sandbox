@@ -36,8 +36,8 @@
 #   {{SANDBOX_IMAGE_NAME}}  → derived image name
 #   {{AGENT_IMAGE_NAME}}    → derived image name
 #   {{PROVIDER_NAME}}       → provider name
-#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<timestamp>)
-#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<timestamp>)
+#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<run_id>)
+#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<run_id>)
 #   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
 #   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
