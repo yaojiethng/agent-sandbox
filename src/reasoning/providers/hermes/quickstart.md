@@ -33,7 +33,7 @@ make serve PROVIDER=hermes REBUILD=1
 
 ```sh
 # Review the diff first
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
 
 # Apply to current branch
 make apply
@@ -112,10 +112,10 @@ docker rmi hermes-base
 
 ```sh
 # Check staged diff (full session delta) after a run
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
 
 # Check autosave diff mid-session
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>/autosave/changes.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/autosave/changes.diff
 
 # Check snapshot contents before a run
 ls -la .snapshot/

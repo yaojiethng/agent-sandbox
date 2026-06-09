@@ -177,10 +177,10 @@ source /opt/sandbox/lib/routing.sh
 # SIGTERM, or error.
 #
 # Uses session_export_path from routing.sh to construct the output path
-# under CHANGES_DIR/session/<SESSION_TS>-<BRANCH>/, then calls diff_export
-# which delegates to package_branch.
+# under CHANGES_DIR/session/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then calls
+# diff_export which delegates to package_branch.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     local _exit_dir="$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}")"
+     local _exit_dir="$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")"
      mkdir -p "$_exit_dir"
      diff_export "$SANDBOX_DIR" "$_exit_dir"' EXIT
 
@@ -196,14 +196,14 @@ trap 'exit 0' TERM
 # Writes autosave checkpoint on interval without committing — provides
 # incremental checkpoints during a session without disturbing the baseline
 # diff. Uses session_export_path from routing.sh to construct the output
-# path under CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>/, then calls
-# diff_export which delegates to package_branch.
+# path under CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then
+# calls diff_export which delegates to package_branch.
 # PID is tracked so the EXIT trap can kill the subshell cleanly on shutdown.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      local _as_dir="$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}")"
+      local _as_dir="$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")"
       mkdir -p "$_as_dir"
       diff_export "$SANDBOX_DIR" "$_as_dir"
     done

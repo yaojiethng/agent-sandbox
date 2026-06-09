@@ -45,7 +45,7 @@ bash /opt/sandbox/lib/package_diff.sh --to=$HOME/workspace/output --baseline=<sh
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
 Bad summaries: `changes`, `update_files`, `misc`, `package`.
 
-The script creates a timestamped subdirectory under `<to>/diffs/<EXPORT_TIME>-<SESSION_SUMMARY>[-<SESSION_TS>]/`. The `EXPORT_TIME` is injected automatically from the time of script invocation — you do not control it and do not need to. `SESSION_TS` is read from the `SESSION_STATE` file first; the environment variable is checked as fallback if present. Omitting `--session-summary` falls back to "snapshot"; this is a safety net, not the intended path.
+The script creates a timestamped subdirectory under `<to>/diffs/<EXPORT_TIME>-<SESSION_SUMMARY>[-<RUN_ID>]/`. The `EXPORT_TIME` is injected automatically from the time of script invocation — you do not control it and do not need to. `RUN_ID` is read from the `SESSION_STATE` file. Omitting `--session-summary` falls back to "snapshot"; this is a safety net, not the intended path.
 
 The script produces:
 - `<outdir>/uncommitted.diff` — unified diff against HEAD (default)

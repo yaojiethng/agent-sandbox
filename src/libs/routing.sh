@@ -9,19 +9,19 @@
 #   resolve_source_for_draft  — resolve a source directory for draft operations
 #   resolve_diff_for_apply    — resolve a diff file for apply operations
 #
-# Session-diffs layout (new — introduced in A.2):
-#   $CHANGES_DIR/session/<SESSION_TS>-<BRANCH>/     — exit exports
+# Session-diffs layout:
+#   $CHANGES_DIR/session/<SESSION_TS>-<BRANCH>[-<RUN_ID>]/     — exit exports
 #     uncommitted.diff, all-changes.diff, EXPORT-TIME.txt, patches/, changed-files/
-#   $CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>/    — autosave checkpoints
+#   $CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>[-<RUN_ID>]/    — autosave checkpoints
 #     uncommitted.diff, all-changes.diff, EXPORT-TIME.txt, patches/, changed-files/
 #
 # Output layout (shared by package_branch and package_diff):
-#   $OUTPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/  — package_branch
-#   $OUTPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/    — package_diff
+#   $OUTPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/  — package_branch
+#   $OUTPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/    — package_diff
 #
 # Host-side input layout (symmetric, for host→container writes):
-#   $INPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/   — host writes
-#   $INPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<SESSION_TS>]/     — host writes
+#   $INPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/   — host writes
+#   $INPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/     — host writes
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
 # functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
@@ -85,7 +85,7 @@ resolve_channel_base_dir() {
 # Session-export paths (used by entrypoint exit/autosave and CLI resolvers)
 # =============================================================================
 
-# session_export_path CHANGES_DIR SUBDIR SESSION_TS BRANCH
+# session_export_path CHANGES_DIR SUBDIR SESSION_TS BRANCH [RUN_ID]
 #
 # Constructs the export output directory path for an auto-run (exit or autosave).
 #
@@ -94,31 +94,41 @@ resolve_channel_base_dir() {
 #   SUBDIR       — "session" or "autosave"
 #   SESSION_TS   — session timestamp (e.g. 20260408-120000)
 #   BRANCH       — sanitized host branch name (e.g. main)
+#   RUN_ID       — optional 6-char run hash (appended as suffix)
 #
 # Returns: absolute path to the export directory
 #
-# Example:
+# Examples:
+#   session_export_path "/home/agentuser/workspace/session-diffs" "session" "20260408-120000" "main" "a1b2c3"
+#   → /home/agentuser/workspace/session-diffs/session/20260408-120000-main-a1b2c3
+#
 #   session_export_path "/home/agentuser/workspace/session-diffs" "session" "20260408-120000" "main"
-#   → /home/agentuser/workspace/session-diffs/session/20260408-120000-main
+#   → /home/agentuser/workspace/session-diffs/session/20260408-120000-main (backward compat)
 session_export_path() {
   local CHANGES_DIR="$1"
   local SUBDIR="$2"
   local SESSION_TS="$3"
   local BRANCH="$4"
+  local RUN_ID="${5:-}"
 
   if [[ -z "$CHANGES_DIR" || -z "$SUBDIR" || -z "$SESSION_TS" || -z "$BRANCH" ]]; then
     echo "session_export_path: CHANGES_DIR, SUBDIR, SESSION_TS, and BRANCH are required" >&2
     return 1
   fi
 
-  echo "${CHANGES_DIR}/${SUBDIR}/${SESSION_TS}-${BRANCH}"
+  local base="${CHANGES_DIR}/${SUBDIR}/${SESSION_TS}-${BRANCH}"
+  if [[ -n "$RUN_ID" ]]; then
+    echo "${base}-${RUN_ID}"
+  else
+    echo "$base"
+  fi
 }
 
 # =============================================================================
 # Output export paths (used by package_branch.sh and package_diff.sh)
 # =============================================================================
 
-# output_export_path PARENT_DIR SUBDIR LABEL [SESSION_TS]
+# output_export_path PARENT_DIR SUBDIR LABEL [RUN_ID]
 #
 # Constructs a timestamped export path under a parent directory.
 #
@@ -126,13 +136,13 @@ session_export_path() {
 #   PARENT_DIR   — base directory (OUTPUT_DIR or INPUT_DIR, resolved by caller)
 #   SUBDIR       — "bundles" or "diffs"
 #   LABEL        — descriptive label (e.g. "snapshot", or agent-provided summary)
-#   SESSION_TS   — optional session timestamp suffix
+#   RUN_ID       — optional 6-char run hash (appended as suffix, replaces SESSION_TS)
 #
 # Returns: absolute path to the export directory (creates parent dirs)
 #
 # Examples:
-#   output_export_path "/home/agentuser/workspace/output" "diffs" "snapshot" "20260408-120000"
-#   → /home/agentuser/workspace/output/diffs/20260504-120000-snapshot-20260408-120000
+#   output_export_path "/home/agentuser/workspace/output" "diffs" "snapshot" "a1b2c3"
+#   → /home/agentuser/workspace/output/diffs/20260504-120000-snapshot-a1b2c3
 #
 #   output_export_path "/home/agentuser/workspace/output" "bundles" "my-feature"
 #   → /home/agentuser/workspace/output/bundles/20260504-120000-my-feature
@@ -140,7 +150,7 @@ output_export_path() {
   local PARENT_DIR="$1"
   local SUBDIR="$2"
   local LABEL="$3"
-  local SESSION_TS="${4:-}"
+  local RUN_ID="${4:-}"
 
   if [[ -z "$PARENT_DIR" || -z "$SUBDIR" || -z "$LABEL" ]]; then
     echo "output_export_path: PARENT_DIR, SUBDIR, and LABEL are required" >&2
@@ -151,8 +161,8 @@ output_export_path() {
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
 
   local OUTDIR
-  if [[ -n "$SESSION_TS" ]]; then
-    OUTDIR="${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${SESSION_TS}"
+  if [[ -n "$RUN_ID" ]]; then
+    OUTDIR="${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${RUN_ID}"
   else
     OUTDIR="${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}"
   fi

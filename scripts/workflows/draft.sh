@@ -83,7 +83,7 @@ draft_collect_patches() {
 
 # draft_create_and_init_branch PROJECT_DIR WORKING_BRANCH BASE_COMMIT \
 #   SOURCE_BRANCH FROM_HASH AUTHOR SESSION_TS SANITIZED_HOST_BRANCH \
-#   DIFF_COUNT EXPORT_TIME
+#   DIFF_COUNT EXPORT_TIME [RUN_ID]
 #
 # Runs guard checks, creates the draft branch, writes .draft-state, and
 # commits it. Prints the branch creation message. Returns 1 on guard failure.
@@ -98,6 +98,7 @@ draft_create_and_init_branch() {
   local SANITIZED_HOST_BRANCH="$8"
   local DIFF_COUNT="$9"
   local EXPORT_TIME="${10:-unknown}"
+  local RUN_ID="${11:-}"
 
   # Guard: don\''t draft from a draft branch
   local CURRENT_BRANCH
@@ -126,7 +127,8 @@ draft_create_and_init_branch() {
     "$SANITIZED_HOST_BRANCH" \
     "$DIFF_COUNT" \
     "$EXPORT_TIME" \
-    "$DRAFTED_AT")
+    "$DRAFTED_AT" \
+    "$RUN_ID")
 
   echo "$DRAFT_STATE_CONTENT" > "$PROJECT_DIR/.draft-state"
   git -C "$PROJECT_DIR" add .draft-state
@@ -207,7 +209,7 @@ draft_run() {
   local PATCHES_DIR="$SOURCE_DIR/patches"
   [[ -d "$PATCHES_DIR" ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }
 
-  local SESSION_TS SANITIZED_HOST_BRANCH
+  local SESSION_TS SANITIZED_HOST_BRANCH RUN_ID
   draft_parse_folder_name "$SESSION_NAME"
 
   # Count patches without temp file — passes file list via pipe later
@@ -222,7 +224,8 @@ draft_run() {
   [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
-  local WORKING_BRANCH="draft/${SESSION_TS}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
+  local IDENTITY="${RUN_ID:-$SESSION_TS}"
+  local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
 
   local AUTHOR; AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
   local EXPORT_TIME=""
@@ -231,7 +234,7 @@ draft_run() {
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
-    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" || return 1
+    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" "$RUN_ID" || return 1
 
   draft_collect_patches "$PATCHES_DIR" "$DIFFS_ARG" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" || return 1
   draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" || return 1

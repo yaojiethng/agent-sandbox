@@ -363,11 +363,11 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   fi
   SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
 
-  # Auto-resolve SESSION_TS from SESSION_STATE
-  SESSION_TS=$(session_state_read "$SANDBOX_DIR" "session_ts")
+  # Auto-resolve RUN_ID from SESSION_STATE
+  RUN_ID=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
 
   # Construct output directory via output_export_path
-  OUTPUT_DIR=$(output_export_path "$TO_ARG" "bundles" "$SESSION_SUMMARY" "$SESSION_TS")
+  OUTPUT_DIR=$(output_export_path "$TO_ARG" "bundles" "$SESSION_SUMMARY" "$RUN_ID")
 
   package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$BASELINE_ARG"
 fi

@@ -21,7 +21,7 @@ Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `upd
 Bad summaries: `changes`, `update_files`, `misc`, `package`, `snapshot`.
 
 This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE`
-and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/`.
+and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>[-<RUN_ID>]/`.
 If `SESSION_STATE` is missing, the script aborts with a clear error.
 
 **To diff against an explicit baseline:**
@@ -35,7 +35,7 @@ the commit subject embedded in the filename, plus a sibling `.msg` file with the
 full commit message:
 
 ```
-<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>-<SESSION_TS>/
+<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>[-<RUN_ID>]/
   patches/
     0001-<sha>-<subject>.diff    — per-commit diff (index lines stripped)
     0001-<sha>-<subject>.msg     — full original commit message

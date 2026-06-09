@@ -109,13 +109,13 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
   fi
 
-  # Resolve session timestamp (may be empty — fine, output_export_path handles it)
-  SESSION_TS=$(session_state_read "$REPO_ROOT" "session_ts" 2>/dev/null || true)
+  # Resolve run ID from session state (may be empty — fine, output_export_path handles it)
+  RUN_ID=$(session_state_read "$REPO_ROOT" "run_id" 2>/dev/null || true)
 
   # -------------------------
   # Create output directory via output_export_path
   # -------------------------
-  OUTDIR=$(output_export_path "$TO_ARG" "diffs" "$SESSION_SUMMARY" "$SESSION_TS")
+  OUTDIR=$(output_export_path "$TO_ARG" "diffs" "$SESSION_SUMMARY" "$RUN_ID")
 
   # -------------------------
   # Check for changes

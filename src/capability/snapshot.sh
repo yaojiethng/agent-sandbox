@@ -346,6 +346,7 @@ snapshot_init_git() {
   session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
   session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
   session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
+  session_state_write "$SANDBOX_DIR" "run_id" "${RUN_ID:-}"
 
   # --- Step 2: overlay the working tree without touching the index ---
   # rsync copies the operator's working tree state (from SNAPSHOT_DIR, produced

@@ -126,7 +126,7 @@ Each provider may result in a different integration pattern. Investigation findi
 - [x] **SESSION_STATE** — Write `host_head_sha` to SESSION_STATE alongside `init_sha` and `session_ts` in `src/capability/snapshot.sh`. Depends on: item 1.
 - [x] **make stop redesign** — Filter by `project-name` + `sandbox-dir` labels (default), with optional `--run-id` for run-specific stop and `--prune` for post-stop cleanup. Depends on: item 4.
 - [x] **make prune** — New script: targeted cleanup scoped to project + sandbox instance. Age threshold: `PRUNE_AGE_DAYS=3` (hardcoded variable at top of script). Covers containers, images, volumes uniformly. CLI dispatch in agent-sandbox.sh. Makefile target. Depends on: item 6.
-- [ ] **Artefact paths** — Session export: `<SESSION_TS>-<BRANCH>-<RUN_ID>`. Output export: replace optional `SESSION_TS` suffix with `RUN_ID`. Draft branch: `draft/<RUN_ID>-<BRANCH_SLUG>-<FROM_SHA:0:6>`. Depends on: item 1.
+- [x] **Artefact paths** — Session export: `<SESSION_TS>-<BRANCH>-<RUN_ID>`. Output export: replace optional `SESSION_TS` suffix with `RUN_ID`. Draft branch: `draft/<RUN_ID>-<BRANCH_SLUG>-<FROM_SHA:0:6>`. Depends on: item 1.
 
 ### Track B — Build Pipeline & Staleness Detection
 
