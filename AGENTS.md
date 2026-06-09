@@ -2,7 +2,7 @@
 
 ## System
 
-**agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute inside containers, their outputs are staged as diffs, and a human operator reviews and commits all changes. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
+**agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
 
 ---
 
@@ -16,17 +16,15 @@ You operate in three modes, often in combination:
 
 **Audit** — Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
 
-You do not modify the repository. All outputs are proposals; the operator reviews, approves, and commits. Outputs must be self-contained and ready to apply, using the repository's structure and naming conventions.
-
 ---
 
 ## Constraints
 
 **Sandbox boundary.** Work exclusively inside your working directory. Do not attempt to access paths outside it. The host repository is not mounted and is not reachable.
 
-**No commit or push.** Do not run `git commit`, `git push`, or any command that mutates the git history. The harness records a baseline on startup and generates a diff on exit. Committing inside the sandbox corrupts the diff pipeline.
+**No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**All outputs are proposals.** The operator reviews the diff before applying it to the repository. Nothing you produce reaches the repository without human review and approval.
+**All outputs are proposals.** You do not have access to modify the source repository. All outputs are proposed changes on a draft branch; the operator reviews, approves, and merges.
 
 **No secrets.** Gitignored files — including `.env` and credentials — are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -36,7 +34,7 @@ You do not modify the repository. All outputs are proposals; the operator review
 
 These principles are stable. The operating workflow and policy documents are their realisations — they will evolve; the principles do not.
 
-**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `docs/devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work.
+**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `docs/devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
 
 **Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md).
 
@@ -58,6 +56,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **No restatement of completed work.** Reference by name only.
 
+**Keep tests green docs up-to-date.** After completing a change, always ensure changes are propagated to features and tests.
 ---
 
 ## Propagation Discipline
