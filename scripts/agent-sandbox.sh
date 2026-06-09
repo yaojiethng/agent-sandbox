@@ -46,7 +46,7 @@ main() {
   shift || true
 
   if [[ -z "$SUBCOMMAND" ]]; then
-    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|apply|draft|confirm|reject> <flags>"
+    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|prune|apply|draft|confirm|reject> <flags>"
     exit 1
   fi
 
@@ -140,6 +140,15 @@ main() {
       exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
+    prune)
+      parse_flags "$@"
+      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
+        echo "Error: --name and --sandbox are required"
+        exit 1
+      fi
+      exec "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+      ;;
+
     apply)
       parse_flags "$@"
       if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
@@ -223,7 +232,7 @@ main() {
       if [[ -z "${1:-}" ]]; then
         echo "Usage: agent-sandbox <subcommand> [flags]"
         echo ""
-        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"
+        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
         echo ""
         echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
         exit 0
@@ -231,7 +240,7 @@ main() {
 
       local SUB="$1"
       case "$SUB" in
-        onboard|build|stop)
+        onboard|build|stop|prune)
           exec bash "$SCRIPTS/$SUB.sh" --help ;;
         apply|draft|confirm|reject)
           exec bash "$SCRIPTS/workflows/$SUB.sh" --help ;;
@@ -249,7 +258,7 @@ main() {
 
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
-      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, apply, draft, confirm, reject, package-diff, package-branch"
+      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
       exit 1
       ;;
   esac

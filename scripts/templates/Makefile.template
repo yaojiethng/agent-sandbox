@@ -129,6 +129,15 @@ stop:
 	  $(RUN_ID_FLAG) \
 	  $(PRUNE_FLAG)
 
+# -------------------------
+# Prune
+# -------------------------
+
+prune:
+	agent-sandbox prune \
+	  --name=$(PROJECT_NAME) \
+	  --sandbox=$(SANDBOX_DIR)
+
 # Apply workflow
 # -------------------------
 #
