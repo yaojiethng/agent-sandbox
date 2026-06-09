@@ -35,7 +35,9 @@ Five primitives, established once per session at the top of `scripts/start_agent
 SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 ```
 
-An 8-character hex hash that identifies a specific sandbox instance at a specific host commit. Appended to Docker image names to prevent image collision when multiple sandboxes of the same project exist at different host commits.
+An 8-character hex hash that identifies a specific sandbox instance at a specific host commit. Used as a component of `RUN_ID` for container naming and session artefact paths. Also recorded as a Docker label on containers for runtime identity.
+
+**NOT** appended to image names — images are versioned by the harness code and build context, not by the project repo state. The project repo state is captured at runtime by the snapshot pipeline, not the image build. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.run-id`), not by image tags.
 
 **Properties:**
 - Two sandboxes at different directories but the same `HOST_HEAD_SHA` produce different `SANDBOX_ID`s.
@@ -60,12 +62,14 @@ A 6-character hex hash that identifies a single session run. Replaces `SESSION_T
 
 ### Image Naming
 
+Images are named by project only — no `SANDBOX_ID` suffix. The image tag identifies the harness code and build context, not the project repo state.
+
 | Image | Format | Example |
 |---|---|---|
-| Sandbox (base) | `sandbox-<project>-<sandbox_id>` | `sandbox-agent-sandbox-a1b2c3d4` |
-| Agent | `<provider>-agent-<project>-<sandbox_id>` | `pi-agent-sandbox-a1b2c3d4` |
+| Sandbox (base) | `sandbox-<project>` | `sandbox-agent-sandbox` |
+| Agent | `<provider>-agent-<project>` | `pi-agent-sandbox` |
 
-Image naming functions accept an optional `sandbox_id` argument. When omitted, the unadorned name (`sandbox-<project>`, `<provider>-agent-<project>`) is returned for backward compatibility.
+**Provenance** for past sessions is carried by Docker image labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`), set at build time. These labels can be used as selectors for `docker images --filter`. Project repo state is independently captured by the snapshot pipeline — the image does not encode it.
 
 ### Container Naming
 

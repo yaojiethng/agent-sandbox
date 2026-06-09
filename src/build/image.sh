@@ -7,7 +7,6 @@
 #   agent_base_image_name  - compute reasoning layer base image name from provider
 #   agent_image_name       - compute reasoning layer image name from provider + project
 #   sandbox_image_name     - compute capability layer image name from project
-#   worktree_id_derive     - derive WORKTREE_ID from project directory path
 
 # -------------------------
 # Image naming
@@ -43,17 +42,3 @@ sandbox_image_name() {
   local project="${1:?sandbox_image_name requires project name}"
   echo "sandbox-$(echo "$project" | tr '[:upper:]' '[:lower:]')"
 }
-
-# -------------------------
-# Container identity
-# -------------------------
-
-# worktree_id_derive <project_dir>
-# Derive WORKTREE_ID from PROJECT_DIR absolute path.
-# Returns 8-character hex hash for namespacing per-worktree.
-worktree_id_derive() {
-  local PROJECT_DIR="$1"
-  echo "$PROJECT_DIR" | sha256sum | cut -c1-8
-}
-
-

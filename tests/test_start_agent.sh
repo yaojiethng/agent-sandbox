@@ -313,59 +313,73 @@ test_sanitized_host_branch_detached_head() {
 }
 
 # -------------------------
-# WORKTREE_ID tests
+# SANDBOX_ID derivation tests
 # -------------------------
 
-test_worktree_id_derived_from_path() {
-  local PROJECT_DIR="$FIXTURE_DIR/worktree_id_repo"
-  make_committed_repo "$PROJECT_DIR"
+# Helper: same formula as start_agent.sh
+g_sandbox_id_derive() {
+  local sandbox_dir="$1" host_head_sha="$2"
+  echo "${sandbox_dir}:${host_head_sha}" | sha256sum | cut -c1-8
+}
 
-  local WORKTREE_ID
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+test_sandbox_id_derived_from_dir_and_sha() {
+  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_repo"
+  make_committed_repo "$PROJECT_DIR"
+  local SANDBOX_DIR="$PROJECT_DIR-sandbox"
+  local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+  local SANDBOX_ID
+  SANDBOX_ID=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
 
   # Verify it's 8 characters
-  if [[ ${#WORKTREE_ID} -eq 8 ]]; then
-    pass "WORKTREE_ID is 8 characters"
+  if [[ ${#SANDBOX_ID} -eq 8 ]]; then
+    pass "SANDBOX_ID is 8 characters"
   else
-    fail "WORKTREE_ID wrong length: ${#WORKTREE_ID}"
+    fail "SANDBOX_ID wrong length: ${#SANDBOX_ID}"
   fi
 
   # Verify it's hex
-  if [[ "$WORKTREE_ID" =~ ^[a-f0-9]{8}$ ]]; then
-    pass "WORKTREE_ID is valid hex"
+  if [[ "$SANDBOX_ID" =~ ^[a-f0-9]{8}$ ]]; then
+    pass "SANDBOX_ID is valid hex"
   else
-    fail "WORKTREE_ID not valid hex: $WORKTREE_ID"
+    fail "SANDBOX_ID not valid hex: $SANDBOX_ID"
   fi
 }
 
-test_worktree_id_stable_across_runs() {
-  local PROJECT_DIR="$FIXTURE_DIR/worktree_stable_repo"
+test_sandbox_id_stable_across_runs() {
+  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_stable_repo"
   make_committed_repo "$PROJECT_DIR"
+  local SANDBOX_DIR="$PROJECT_DIR-sandbox"
+  local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
-  local WORKTREE_ID1 WORKTREE_ID2
-  WORKTREE_ID1=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-  WORKTREE_ID2=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  local SID1 SID2
+  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
+  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
 
-  if [[ "$WORKTREE_ID1" == "$WORKTREE_ID2" ]]; then
-    pass "WORKTREE_ID is stable across multiple derivations"
+  if [[ "$SID1" == "$SID2" ]]; then
+    pass "SANDBOX_ID is stable across multiple derivations"
   else
-    fail "WORKTREE_ID not stable: $WORKTREE_ID1 vs $WORKTREE_ID2"
+    fail "SANDBOX_ID not stable: $SID1 vs $SID2"
   fi
 }
 
-test_worktree_id_different_for_different_paths() {
-  local PROJECT_DIR1="$FIXTURE_DIR/worktree_diff_repo1"
-  local PROJECT_DIR2="$FIXTURE_DIR/worktree_diff_repo2"
+test_sandbox_id_different_for_different_dirs() {
+  local PROJECT_DIR1="$FIXTURE_DIR/sandbox_id_diff1"
+  local PROJECT_DIR2="$FIXTURE_DIR/sandbox_id_diff2"
   mkdir -p "$PROJECT_DIR1" "$PROJECT_DIR2"
 
-  local WORKTREE_ID1 WORKTREE_ID2
-  WORKTREE_ID1=$(echo "$PROJECT_DIR1" | sha1sum | head -c8)
-  WORKTREE_ID2=$(echo "$PROJECT_DIR2" | sha1sum | head -c8)
+  local SANDBOX_DIR1="$PROJECT_DIR1-sandbox"
+  local SANDBOX_DIR2="$PROJECT_DIR2-sandbox"
+  local SHA="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 
-  if [[ "$WORKTREE_ID1" != "$WORKTREE_ID2" ]]; then
-    pass "WORKTREE_ID differs for different paths"
+  local SID1 SID2
+  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR1" "$SHA")
+  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR2" "$SHA")
+
+  if [[ "$SID1" != "$SID2" ]]; then
+    pass "SANDBOX_ID differs for different SANDBOX_DIR paths"
   else
-    fail "WORKTREE_ID should differ for different paths"
+    fail "SANDBOX_ID should differ for different SANDBOX_DIR paths"
   fi
 }
 
@@ -459,9 +473,9 @@ run_test test_sanitized_host_branch_sanitizes_feature_branch
 run_test test_sanitized_host_branch_sanitizes_nested_branch
 run_test test_sanitized_host_branch_exported
 run_test test_sanitized_host_branch_detached_head
-run_test test_worktree_id_derived_from_path
-run_test test_worktree_id_stable_across_runs
-run_test test_worktree_id_different_for_different_paths
+run_test test_sandbox_id_derived_from_dir_and_sha
+run_test test_sandbox_id_stable_across_runs
+run_test test_sandbox_id_different_for_different_dirs
 run_test test_repo_commit_captured
 run_test test_repo_commit_is_full_sha
 
