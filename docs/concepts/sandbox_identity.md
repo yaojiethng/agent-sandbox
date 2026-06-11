@@ -44,12 +44,12 @@ A 6-character hex hash that identifies a single session run. Replaces `SESSION_T
 
 | Entity | Format | Example |
 |---|---|---|
-| Sandbox (base) image | `sandbox-<project>-<sandbox_id>` | `sandbox-agent-sandbox-a1b2c3d4` |
-| Agent image | `<provider>-agent-<project>-<sandbox_id>` | `pi-agent-sandbox-a1b2c3d4` |
+| Sandbox (base) image | `sandbox-<project>` | `sandbox-agent-sandbox` |
+| Agent image | `<provider>-agent-<project>` | `pi-agent-sandbox` |
 | Sandbox container | `sandbox-<project>-<run_id>` | `sandbox-agent-sandbox-f6e5d4` |
 | Agent container | `<provider>-<project>-<run_id>` | `pi-agent-sandbox-f6e5d4` |
 
-Image naming functions accept an optional `sandbox_id` argument. When omitted, the unadorned name (`sandbox-<project>`, `<provider>-agent-<project>`) is returned for backward compatibility.
+Images are tagged by harness code identity, not project repo state. Project repo state is captured at runtime by the snapshot pipeline. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.run-id`), not by image tags.
 
 ## Docker Label Schema
 
@@ -68,6 +68,40 @@ agent-sandbox.run-id:           <RUN_ID>
 These labels serve two purposes:
 - **Provenance:** Operators can inspect any container to determine which project, worktree, host commit, and session run it belongs to.
 - **Lifecycle management:** `make stop` and `make prune` filter by `project-name` + `sandbox-dir` labels to scope operations to a specific worktree.
+
+## Container-sig (Image Staleness Detection)
+
+Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
+
+### Derivation
+
+For the sandbox image, the hash covers all files under these repo-relative paths:
+- `src/libs/` (→ `/opt/sandbox/lib/`)
+- `src/capability/entrypoint.sh` (→ `/opt/sandbox/bin/sandbox-entrypoint.sh`)
+- `src/capability/snapshot.sh` (→ `/opt/sandbox/lib/snapshot.sh`)
+- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
+- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
+
+For an agent image, the hash covers:
+- `src/libs/` (→ `/opt/sandbox/lib/`)
+- `src/reasoning/entrypoint.sh` (→ `/opt/sandbox/bin/provider-entrypoint.sh`)
+- `src/reasoning/providers/<n>/preflight.sh` (if exists → `/opt/sandbox/bin/provider-preflight.sh`)
+- `src/reasoning/agent/skills/` (→ `/opt/workflow/agent/skills/`)
+- `src/reasoning/agent/prompts/` (→ `/opt/workflow/agent/prompts/`)
+- `src/reasoning/providers/<n>/config/` (if exists → `/opt/workflow/agent/config/`)
+- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
+- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
+
+### Preflight check
+
+The `preflight()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch. The check is non-blocking (warning only) — stale images are not an error to avoid blocking development workflows.
+
+### Scope
+
+Container-sig covers only the sandbox image and tier-3 agent images (the final provider image in the three-tier build). Tier 1 (shared node base) and tier 2 (provider base) images do not carry `/opt/sandbox/` or `/opt/workflow/` content and therefore have no container-sig label.
+
+Harness-sig (runtime drift detection for the harness binary itself) is deferred to a future milestone.
+
 
 ## SESSION_STATE Schema
 
@@ -101,5 +135,5 @@ host_head_sha=<40-char host HEAD SHA>
 | `SANDBOX_DIR` | Operator-supplied | `SANDBOX_ID` derivation, Docker labels, workspace path derivation |
 | `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SANDBOX_ID` derivation, SESSION_STATE, Docker labels |
 | `SESSION_TS` | `date -u` | `RUN_ID` derivation, Docker labels |
-| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | Image names, `RUN_ID` derivation |
+| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | `RUN_ID` derivation |
 | `RUN_ID` | `SESSION_TS:SANDBOX_ID` hash | Container names, artefact paths, Docker labels |
