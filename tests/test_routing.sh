@@ -15,7 +15,8 @@ unset SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
 unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/routing.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/src/libs/routing.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
@@ -331,6 +332,73 @@ test_resolve_apply_no_sessions() {
 }
 
 # =============================================================================
+# resolve_channel_base_dir
+# =============================================================================
+
+test_resolve_channel_base_dir_session() {
+  local SD="$FIXTURE_DIR/routing_c1"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  local RESULT
+  RESULT=$(resolve_channel_base_dir "session") || { fail "resolve_channel_base_dir session failed"; return; }
+  if [[ "$RESULT" == "${CHANGES_DIR}/session" ]]; then
+    pass "resolve_channel_base_dir: session → CHANGES_DIR/session"
+  else
+    fail "resolve_channel_base_dir session: expected ${CHANGES_DIR}/session, got $RESULT"
+  fi
+}
+
+test_resolve_channel_base_dir_autosave() {
+  local SD="$FIXTURE_DIR/routing_c2"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  local RESULT
+  RESULT=$(resolve_channel_base_dir "autosave") || { fail "resolve_channel_base_dir autosave failed"; return; }
+  if [[ "$RESULT" == "${CHANGES_DIR}/autosave" ]]; then
+    pass "resolve_channel_base_dir: autosave → CHANGES_DIR/autosave"
+  else
+    fail "resolve_channel_base_dir autosave: expected ${CHANGES_DIR}/autosave, got $RESULT"
+  fi
+}
+
+test_resolve_channel_base_dir_diffs() {
+  local SD="$FIXTURE_DIR/routing_c3"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  local RESULT
+  RESULT=$(resolve_channel_base_dir "diffs") || { fail "resolve_channel_base_dir diffs failed"; return; }
+  if [[ "$RESULT" == "${OUTPUT_DIR}/diffs" ]]; then
+    pass "resolve_channel_base_dir: diffs → OUTPUT_DIR/diffs"
+  else
+    fail "resolve_channel_base_dir diffs: expected ${OUTPUT_DIR}/diffs, got $RESULT"
+  fi
+}
+
+test_resolve_channel_base_dir_bundles() {
+  local SD="$FIXTURE_DIR/routing_c4"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  local RESULT
+  RESULT=$(resolve_channel_base_dir "bundles") || { fail "resolve_channel_base_dir bundles failed"; return; }
+  if [[ "$RESULT" == "${OUTPUT_DIR}/bundles" ]]; then
+    pass "resolve_channel_base_dir: bundles → OUTPUT_DIR/bundles"
+  else
+    fail "resolve_channel_base_dir bundles: expected ${OUTPUT_DIR}/bundles, got $RESULT"
+  fi
+}
+
+test_resolve_channel_base_dir_invalid() {
+  local SD="$FIXTURE_DIR/routing_c5"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  if resolve_channel_base_dir "invalid_channel" 2>/dev/null; then
+    fail "resolve_channel_base_dir should fail with invalid channel"
+  else
+    pass "resolve_channel_base_dir fails with invalid channel"
+  fi
+}
+
+# =============================================================================
 # Run
 # =============================================================================
 
@@ -357,5 +425,10 @@ run_test test_resolve_apply_absolute_path_rejected
 run_test test_resolve_apply_missing_diff
 run_test test_resolve_apply_invalid_channel
 run_test test_resolve_apply_no_sessions
+run_test test_resolve_channel_base_dir_session
+run_test test_resolve_channel_base_dir_autosave
+run_test test_resolve_channel_base_dir_diffs
+run_test test_resolve_channel_base_dir_bundles
+run_test test_resolve_channel_base_dir_invalid
 
 test_done

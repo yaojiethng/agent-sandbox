@@ -6,7 +6,7 @@ The reasoning layer lifecycle — provider config copy-in, input channels, copy-
 
 The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
 
-All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
+All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff_export.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
 
 ---
 
@@ -98,7 +98,8 @@ workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
-    0001-abc1234.diff   — per-commit diffs from package_branch
+    0001-abc1234-<subject>.diff  — per-commit diffs from package_branch
+    0001-abc1234-<subject>.msg   — full commit message for each diff
   changed-files/
     MANIFEST.txt
     <path>/<file>        — working tree copies of all changed files
@@ -118,7 +119,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make draft FROM=autosave`** — shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
 
-**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then session) instead of requiring explicit `SESSION=` or `FROM=` arguments.
+**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then session) instead of requiring explicit `SESSION=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session SESSION=<name>`). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
 
 **`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged.
 
@@ -128,7 +129,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make apply FROM=autosave`** — shorthand for `--channel=autosave`. Resolves `uncommitted.diff` from `session-diffs/autosave/`.
 
-**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags.
+**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>` or `Running: make apply DIFF=<path>` for all-changes.diff). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
 
 **`make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`** — runs `agent-sandbox package-diff --sandbox=$(SANDBOX_DIR)`, which sources `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`. Default: packages uncommitted changes only. `ALL=1` packages all changes since session baseline. `BASELINE=<sha>` packages against explicit SHA.
 

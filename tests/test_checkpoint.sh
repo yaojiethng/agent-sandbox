@@ -1,103 +1,119 @@
 #!/usr/bin/env bash
 # tests/test_checkpoint.sh
-# Unit tests for scripts/checkpoint.sh functions.
+# Unit tests for SHA-based identity derivation.
 #
 # Covers:
-#   worktree_id_derive   — 8-char hex hash from PROJECT_DIR path
+#   SANDBOX_ID derivation formula — 8-char hex hash from SANDBOX_DIR and HOST_HEAD_SHA
 #
-# Note: checkpoint_create, checkpoint_prune, checkpoint_latest, and
-# checkpoint_worktree_id alias were removed in 20260422-04-impl-remove_checkpoint_tags.md.
-# Only worktree_id_derive remains.
+# Note: checkpoint_* functions were removed in 20260422-04-impl-remove_checkpoint_tags.md.
+# worktree_id_derive tests migrated to SANDBOX_ID derivation tests in M2.7.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/scripts/checkpoint.sh"
-
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-# -------------------------
-# Fixture builder
-# -------------------------
-make_committed_repo() {
-  local DIR="$1"
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet --initial-branch=main 2>/dev/null || {
-    git -C "$DIR" init --quiet
-    git -C "$DIR" branch -M main 2>/dev/null || true
-  }
-  git -C "$DIR" config user.email "test@sandbox"
-  git -C "$DIR" config user.name "test"
-  echo "initial" > "$DIR/initial.txt"
-  git -C "$DIR" add initial.txt
-  git -C "$DIR" commit -m "initial commit" --quiet
+# Helper: compute SANDBOX_ID same way start_agent.sh does.
+sandbox_id_derive() {
+  local sandbox_dir="$1"
+  local host_head_sha="$2"
+  echo "${sandbox_dir}:${host_head_sha}" | sha256sum | cut -c1-8
 }
 
 # -------------------------
-# worktree_id_derive tests
+# SANDBOX_ID derivation tests
 # -------------------------
 
-test_worktree_id_derive_returns_8_chars() {
-  local PROJECT_DIR="$FIXTURE_DIR/wtid_8_repo"
-  make_committed_repo "$PROJECT_DIR"
+test_sandbox_id_returns_8_chars() {
+  local dir="$FIXTURE_DIR/sid_8_repo"
+  make_committed_repo "$dir"
+  local sha; sha=$(git -C "$dir" rev-parse HEAD)
+  local sid
+  sid=$(sandbox_id_derive "$dir" "$sha")
 
-  local WID
-  WID=$(worktree_id_derive "$PROJECT_DIR")
-
-  if [[ ${#WID} -eq 8 ]]; then
-    pass "worktree_id_derive returns 8 characters"
+  if [[ ${#sid} -eq 8 ]]; then
+    pass "SANDBOX_ID is 8 characters"
   else
-    fail "worktree_id_derive returned ${#WID} chars, expected 8"
+    fail "SANDBOX_ID returned ${#sid} chars, expected 8"
   fi
 }
 
-test_worktree_id_derive_is_hex() {
-  local PROJECT_DIR="$FIXTURE_DIR/wtid_hex_repo"
-  make_committed_repo "$PROJECT_DIR"
+test_sandbox_id_is_hex() {
+  local dir="$FIXTURE_DIR/sid_hex_repo"
+  make_committed_repo "$dir"
+  local sha; sha=$(git -C "$dir" rev-parse HEAD)
+  local sid
+  sid=$(sandbox_id_derive "$dir" "$sha")
 
-  local WID
-  WID=$(worktree_id_derive "$PROJECT_DIR")
-
-  if [[ "$WID" =~ ^[a-f0-9]{8}$ ]]; then
-    pass "worktree_id_derive returns valid hex"
+  if [[ "$sid" =~ ^[a-f0-9]{8}$ ]]; then
+    pass "SANDBOX_ID is valid hex"
   else
-    fail "worktree_id_derive returned non-hex: $WID"
+    fail "SANDBOX_ID returned non-hex: $sid"
   fi
 }
 
-test_worktree_id_derive_stable_across_calls() {
-  local PROJECT_DIR="$FIXTURE_DIR/wtid_stable_repo"
-  make_committed_repo "$PROJECT_DIR"
+test_sandbox_id_stable_across_calls() {
+  local dir="$FIXTURE_DIR/sid_stable_repo"
+  make_committed_repo "$dir"
+  local sha; sha=$(git -C "$dir" rev-parse HEAD)
 
-  local WID1 WID2
-  WID1=$(worktree_id_derive "$PROJECT_DIR")
-  WID2=$(worktree_id_derive "$PROJECT_DIR")
+  local sid1 sid2
+  sid1=$(sandbox_id_derive "$dir" "$sha")
+  sid2=$(sandbox_id_derive "$dir" "$sha")
 
-  if [[ "$WID1" == "$WID2" ]]; then
-    pass "worktree_id_derive is stable across multiple calls"
+  if [[ "$sid1" == "$sid2" ]]; then
+    pass "SANDBOX_ID is stable across multiple calls"
   else
-    fail "worktree_id_derive not stable: $WID1 vs $WID2"
+    fail "SANDBOX_ID not stable: $sid1 vs $sid2"
   fi
 }
 
-test_worktree_id_derive_different_for_different_paths() {
-  local DIR1="$FIXTURE_DIR/wtid_diff_repo1"
-  local DIR2="$FIXTURE_DIR/wtid_diff_repo2"
-  mkdir -p "$DIR1" "$DIR2"
+test_sandbox_id_different_for_different_sandbox_dirs() {
+  local dir1="$FIXTURE_DIR/sid_diff_dir1"
+  local dir2="$FIXTURE_DIR/sid_diff_dir2"
+  local sha_repo="$FIXTURE_DIR/sid_diff_sha_repo"
+  make_committed_repo "$sha_repo"
+  mkdir -p "$dir1" "$dir2"
+  local sha; sha=$(git -C "$sha_repo" rev-parse HEAD)
 
-  local WID1 WID2
-  WID1=$(worktree_id_derive "$DIR1")
-  WID2=$(worktree_id_derive "$DIR2")
+  local sid1 sid2
+  sid1=$(sandbox_id_derive "$dir1" "$sha")
+  sid2=$(sandbox_id_derive "$dir2" "$sha")
 
-  if [[ "$WID1" != "$WID2" ]]; then
-    pass "worktree_id_derive differs for different paths"
+  if [[ "$sid1" != "$sid2" ]]; then
+    pass "SANDBOX_ID differs for different SANDBOX_DIR paths"
   else
-    fail "worktree_id_derive should differ for different paths"
+    fail "SANDBOX_ID should differ for different SANDBOX_DIR paths"
+  fi
+}
+
+test_sandbox_id_different_for_different_commits() {
+  local dir="$FIXTURE_DIR/sid_diff_commit_repo"
+  make_committed_repo "$dir"
+
+  # Use two different commits in the same repo
+  local sha1; sha1=$(git -C "$dir" rev-parse HEAD)
+
+  # Create a second commit
+  echo "change" > "$dir/newfile.txt"
+  git -C "$dir" add -A
+  git -C "$dir" commit -m "second commit"
+  local sha2; sha2=$(git -C "$dir" rev-parse HEAD)
+
+  local sid1 sid2
+  sid1=$(sandbox_id_derive "$dir" "$sha1")
+  sid2=$(sandbox_id_derive "$dir" "$sha2")
+
+  if [[ "$sid1" != "$sid2" ]]; then
+    pass "SANDBOX_ID differs for different HOST_HEAD_SHA values"
+  else
+    fail "SANDBOX_ID should differ for different HOST_HEAD_SHA values"
   fi
 }
 
@@ -105,12 +121,13 @@ test_worktree_id_derive_different_for_different_paths() {
 # Run all tests
 # -------------------------
 
-echo "=== checkpoint.sh unit tests ==="
+echo "=== SANDBOX_ID derivation unit tests ==="
 echo
 
-run_test test_worktree_id_derive_returns_8_chars
-run_test test_worktree_id_derive_is_hex
-run_test test_worktree_id_derive_stable_across_calls
-run_test test_worktree_id_derive_different_for_different_paths
+run_test test_sandbox_id_returns_8_chars
+run_test test_sandbox_id_is_hex
+run_test test_sandbox_id_stable_across_calls
+run_test test_sandbox_id_different_for_different_sandbox_dirs
+run_test test_sandbox_id_different_for_different_commits
 
 test_done

@@ -20,12 +20,13 @@
 #             is bind-mounted from $SANDBOX_DIR/.<provider>/, state is persisted
 #             to the host automatically — no move step required here.
 #
+# Host identity for UID mapping
 # Compose file assembly follows deterministic conventions:
 #   base:             libs/docker-compose.yml
-#   provider overlay: providers/<n>/docker-compose.<n>.yml  (merged if exists)
+#   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
 #     dry-run:        libs/docker-compose.dry-run.yml
-#     serve:          providers/<n>/docker-compose.serve.yml
+#     serve:          src/reasoning/providers/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
 #   providers/<n>/setup.sh  (sourced if exists, before compose generation)
@@ -45,8 +46,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-source "$REPO_ROOT/libs/containers.sh"
-source "$REPO_ROOT/libs/compose.sh"
+source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/scripts/build.sh"
+source "$REPO_ROOT/src/build/compose.sh"
 
 # -------------------------
 # Args
@@ -101,12 +103,12 @@ fi
 # setup.sh is responsible for exporting provider-specific vars needed before
 # compose generation.
 # If setup.sh exits non-zero, the session aborts with an attribution message.
-PROVIDER_SETUP="$REPO_ROOT/providers/$PROVIDER_NAME/setup.sh"
+PROVIDER_SETUP="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
 
 if [[ -f "$PROVIDER_SETUP" ]]; then
   if ! source "$PROVIDER_SETUP"; then
     echo "Error: provider setup hook failed: $PROVIDER_SETUP"
-    echo "  Fix the error in providers/$PROVIDER_NAME/setup.sh before retrying."
+    echo "  Fix the error in src/reasoning/providers/$PROVIDER_NAME/setup.sh before retrying."
     exit 1
   fi
 fi
@@ -120,12 +122,18 @@ fi
 mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
 
 # -------------------------
+# Host identity for UID mapping
+export HOST_UID
+HOST_UID="$(id -u)"
+export HOST_GID
+HOST_GID="$(id -g)"
+
 # Compose file assembly
 # -------------------------
-COMPOSE_TEMPLATE="$REPO_ROOT/libs/docker-compose.yml"
-DRY_RUN_OVERLAY="$REPO_ROOT/libs/docker-compose.dry-run.yml"
-PROVIDER_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-SERVE_OVERLAY="$REPO_ROOT/providers/$PROVIDER_NAME/docker-compose.serve.yml"
+COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
+DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
+PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
+SERVE_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
 
 if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   echo "Error: compose template not found: $COMPOSE_TEMPLATE"
@@ -147,13 +155,15 @@ case "$MODE" in
       exit 1
     fi
     export DRY_RUN_SCRIPT
-    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run.sh")"
+    DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_reasoning.sh")"
+    export DRY_RUN_CAPABILITY_SCRIPT
+    DRY_RUN_CAPABILITY_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_capability.sh")"
     COMPOSE_FILES+=("$DRY_RUN_OVERLAY")
     ;;
   serve)
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at providers/$PROVIDER_NAME/docker-compose.serve.yml"
+      echo "  Expected at src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
       exit 1
     fi
     COMPOSE_FILES+=("$SERVE_OVERLAY")
@@ -178,7 +188,7 @@ compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT"
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    compose_dry_run "$DRY_RUN_SCRIPT"
+    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR"
     exit 0
     ;;
 

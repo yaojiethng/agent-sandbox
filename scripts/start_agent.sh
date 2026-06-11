@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--provider=<n>]
+#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
 #
 # Modes:
 #   standard   — normal execution, network access allowed
@@ -14,13 +14,11 @@
 #
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
-#   --brief=<rel>           path to agent brief, relative to SANDBOX_DIR;
-#                           copied into SANDBOX_DIR/.workspace/input/brief.md
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
 #   --provider=<n>          provider name (default: opencode)
 #
 # Responsibility: host-side pre-flight only — path validation, .env loading,
-# git validation, workspace setup, snapshot pipeline, brief resolution.
+# git validation, workspace setup, snapshot pipeline.
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 #
 # This script is designed to be executed, not sourced. It exports variables
@@ -43,7 +41,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--brief=<rel>] [--env=<rel>] [--provider=<n>]"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]"
   exit 1
 fi
 
@@ -53,18 +51,21 @@ fi
 PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR_OVERRIDE=""
-AGENT_BRIEF=""
 ENV_REL=".env"
 PROVIDER_NAME=""
+REFRESH=false
+REBUILD=false
 
 for ARG in "$@"; do
   case "$ARG" in
     --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
     --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
     --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
-    --brief=*)    AGENT_BRIEF="${ARG#--brief=}" ;;
+
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+    --refresh)    REFRESH=true ;;
+    --rebuild)    REBUILD=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -135,14 +136,18 @@ done < "$ENV_FILE"
 # Derive harness paths from SANDBOX_DIR
 # -------------------------
 # The .env file stores only the primitive (SANDBOX_DIR). Derived paths
-# (SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR) are produced here.
-source "$REPO_ROOT/libs/dirs.sh"
-dirs_resolve "$SANDBOX_DIR"
+# are produced here directly (no longer via dirs.sh/dirs_resolve).
+# These values must match the x-workspace anchor in libs/docker-compose.yml.
+export SNAPSHOT_DIR="${SANDBOX_DIR}/.snapshot"
+export CHANGES_DIR="${SANDBOX_DIR}/.workspace/session-diffs"
+export INPUT_DIR="${SANDBOX_DIR}/.workspace/input"
+export OUTPUT_DIR="${SANDBOX_DIR}/.workspace/output"
 
 # -------------------------
 # Image name derivation
 # -------------------------
-source "$REPO_ROOT/libs/containers.sh"
+source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/scripts/build.sh"
 
 export SANDBOX_IMAGE_NAME; SANDBOX_IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
 export AGENT_IMAGE_NAME;   AGENT_IMAGE_NAME="$(agent_image_name "$PROVIDER_NAME" "$PROJECT_NAME")"
@@ -168,11 +173,6 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 # -------------------------
-# Source checkpoint library
-# -------------------------
-source "$REPO_ROOT/scripts/checkpoint.sh"
-
-# -------------------------
 # Session timestamp (single canonical definition)
 # -------------------------
 # SESSION_TS is the one source of truth for the session timestamp. All
@@ -181,15 +181,20 @@ source "$REPO_ROOT/scripts/checkpoint.sh"
 export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
 
 # -------------------------
-# Worktree ID
+# Derived identities: SANDBOX_ID, RUN_ID, HOST_HEAD_SHA
 # -------------------------
-export WORKTREE_ID; WORKTREE_ID=$(worktree_id_derive "$PROJECT_DIR")
+# SANDBOX_ID — 8-char hex hash identifying a sandbox instance at a specific
+# host commit. Composed of SANDBOX_DIR (path identity) and HOST_HEAD_SHA
+# (codebase version). Two sandboxes at different directories or different
+# host commits produce different SANDBOX_IDs.
+export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 
-# -------------------------
-# REPO_COMMIT capture
-# -------------------------
-# Capture the current HEAD commit for image labeling (future use).
-export REPO_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+# RUN_ID — 6-char hex hash identifying a single session run. Composed of
+# SESSION_TS (temporal factor) and SANDBOX_ID (instance factor). Replaces
+# SESSION_TS in container names and artefact paths while SESSION_TS is
+# preserved for human readability.
+export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 
 # -------------------------
 # SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
@@ -204,10 +209,13 @@ if [[ "$BRANCH_NAME" == "HEAD" ]]; then
   BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
 fi
 export SANITIZED_HOST_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
-export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_TS}"
-export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_TS}"
+export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${RUN_ID}"
+export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${RUN_ID}"
 unset BRANCH_NAME
 echo "Host branch: $SANITIZED_HOST_BRANCH"
+echo "Host HEAD SHA: $HOST_HEAD_SHA"
+echo "Sandbox ID: $SANDBOX_ID"
+echo "Run ID: $RUN_ID"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 
@@ -227,7 +235,7 @@ mkdir -p "$OUTPUT_DIR"
 # -------------------------
 # Snapshot pipeline (host side)
 # -------------------------
-source "$REPO_ROOT/libs/snapshot.sh"
+source "$REPO_ROOT/src/capability/snapshot.sh"
 
 echo "Building snapshot..."
 snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
@@ -237,35 +245,38 @@ snapshot_validate "$SNAPSHOT_DIR"
 echo "Snapshot ready."
 
 # -------------------------
-# Brief resolution
-# -------------------------
-if [[ -n "$AGENT_BRIEF" ]]; then
-  BRIEF_PATH="$(cd "$SANDBOX_DIR" && realpath "$AGENT_BRIEF")"
-
-  validate_wsl_path "AGENT_BRIEF" "$BRIEF_PATH"
-
-  if [[ ! -f "$BRIEF_PATH" ]]; then
-    echo "Error: AGENT_BRIEF file not found: $BRIEF_PATH"
-    exit 1
-  fi
-
-  cp "$BRIEF_PATH" "$INPUT_DIR/brief.md"
-fi
-
-# -------------------------
 # Stop any running session containers
 # -------------------------
-# Checks for containers with the project's compose label before calling stop.sh.
+# Checks for containers with agent-sandbox labels before calling stop.sh.
 # Avoids noise from stop.sh's "no containers found" message on a clean start.
-# stop.sh uses Docker Compose project labels — catches all containers for this
-# project regardless of which provider ran previously.
-_COMPOSE_PROJECT="$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
-_COMPOSE_PROJECT="${_COMPOSE_PROJECT//[^a-z0-9-]/-}"
-if [[ -n "$(docker ps -aq --filter "label=com.docker.compose.project=${_COMPOSE_PROJECT}")" ]]; then
-  echo "Stopping previous session ($PROJECT_NAME)..."
-  "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+# stop.sh filters by agent-sandbox.project-name + agent-sandbox.sandbox-dir
+# labels — catches all containers for this sandbox regardless of provider.
+# Skipped for dry-run: no port binding, no container name conflict risk.
+if [[ "$MODE" != "dry-run" ]]; then
+  if [[ -n "$(docker ps -aq --filter "label=agent-sandbox.project-name=${PROJECT_NAME}" --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}")" ]]; then
+    echo "Stopping previous session ($PROJECT_NAME)..."
+    "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+  fi
 fi
-unset _COMPOSE_PROJECT
+
+# -------------------------
+# Rebuild (if requested)
+# -------------------------
+# --refresh: rebuild sandbox and provider (base skipped if exists).
+# --rebuild: rebuild everything from scratch including base (supersedes --refresh).
+# Export host UID/GID for build pipeline
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
+
+if [[ "$REBUILD" == true ]]; then
+  echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache" "$HOST_UID" "$HOST_GID"
+elif [[ "$REFRESH" == true ]]; then
+  echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
+  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "" "$HOST_UID" "$HOST_GID"
+fi
 
 # -------------------------
 # Preflight

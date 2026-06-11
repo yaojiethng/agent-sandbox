@@ -312,7 +312,7 @@ else
 
     if echo "$diff_without" | grep -q "Binary files differ"; then
       fail "Without --binary: binary silently dropped from diff"
-      log "  ACTION REQUIRED: patch libs/diff.sh — add --binary -M to diff_generate"
+      log "  ACTION REQUIRED: patch libs/diff_export.sh — add --binary -M to diff_generate"
     elif echo "$diff_without" | grep -q "git-lfs"; then
       ok "Without --binary: LFS pointer still appears (pointer files are text — fine)"
     else

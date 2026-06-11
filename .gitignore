@@ -10,7 +10,7 @@ output/
 .snapshot/
 .sandbox/
 .vault
-rough-notes.md
+.scratchpad/
 
 # === Python ===
 __pycache__/
@@ -18,13 +18,11 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -43,7 +41,6 @@ jspm_packages/
 # Build outputs
 dist/
 out/
-build/
 .next/
 .nuxt/
 

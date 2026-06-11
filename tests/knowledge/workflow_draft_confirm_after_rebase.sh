@@ -27,13 +27,8 @@
 
 set -uo pipefail
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$SCRIPT_DIR/tests/libs/test_common.sh"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
 

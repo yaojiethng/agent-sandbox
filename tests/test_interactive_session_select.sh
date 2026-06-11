@@ -11,39 +11,14 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/interactive_session_select.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENT_SANDBOX_REPO="$REPO_ROOT"
+source "$REPO_ROOT/scripts/workflows/interactive.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# create_fixture_session BASE_DIR SESSION_NAME [HAS_PATCHES] [HAS_UNCOMMITTED]
-#   Creates a session directory under BASE_DIR with optional patches/ and
-#   uncommitted.diff for testing the interactive session picker.
-create_fixture_session() {
-  local BASE_DIR="$1"
-  local SESSION_NAME="$2"
-  local HAS_PATCHES="${3:-true}"
-  local HAS_UNCOMMITTED="${4:-true}"
-
-  mkdir -p "$BASE_DIR/$SESSION_NAME"
-
-  if [[ "$HAS_PATCHES" == true ]]; then
-    mkdir -p "$BASE_DIR/$SESSION_NAME/patches"
-    cat > "$BASE_DIR/$SESSION_NAME/patches/0001-abc.diff" <<'EOF'
-diff --git a/test.txt b/test.txt
-new file mode 100644
---- /dev/null
-+++ b/test.txt
-@@ -0,0 +1 @@
-+test
-EOF
-  fi
-
-  if [[ "$HAS_UNCOMMITTED" == true ]]; then
-    echo "uncommitted content" > "$BASE_DIR/$SESSION_NAME/uncommitted.diff"
-  fi
-}
 
 # =============================================================================
 # interactive_confirm_or_abort tests
@@ -229,8 +204,8 @@ test_select_session_picks_by_number() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   local SESSION
   SESSION=$(echo "2" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
@@ -246,8 +221,8 @@ test_select_session_default_highlighted() {
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
-  create_fixture_session "$BASE" "20260504-120000-alpha"
-  create_fixture_session "$BASE" "20260503-090000-beta"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   local SESSION
   SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
@@ -264,11 +239,11 @@ test_select_session_availability_indicators() {
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
   # Full availability
-  create_fixture_session "$BASE" "20260504-120000-full" true true
+  make_session_fixture "$BASE/20260504-120000-full" 1 content
   # No patches, no uncommitted
-  create_fixture_session "$BASE" "20260503-090000-empty" false false
+  make_session_fixture "$BASE/20260503-090000-empty"
   # Only patches
-  create_fixture_session "$BASE" "20260502-090000-patches-only" true false
+  make_session_fixture "$BASE/20260502-090000-patches-only" 1
 
   local SESSION
   SESSION=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
@@ -305,7 +280,7 @@ test_select_session_cap_at_ten() {
   for i in $(seq 1 12); do
     local PADDING
     PADDING=$(printf "%04d" "$i")
-    create_fixture_session "$BASE" "20260504-${PADDING}00-session-${i}" true false
+    make_session_fixture "$BASE/20260504-${PADDING}00-session-${i}" 1
   done
 
   # Feed input for entry 10 in newest-first order (session-3)
@@ -335,7 +310,7 @@ test_select_session_name_truncation() {
 
   # Create a session with a name > 50 chars
   local LONG_NAME="20260504-120000-this-is-a-very-long-branch-name-that-exceeds-fifty-characters"
-  create_fixture_session "$BASE" "$LONG_NAME" true false
+  make_session_fixture "$BASE/$LONG_NAME" 1
 
   local STDERR
   STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
@@ -345,6 +320,219 @@ test_select_session_name_truncation() {
   else
     # If the name is actually <= 50 chars, that's also fine — just verify it works
     pass "interactive_select_session handles long names (no truncation needed if <= 50 chars)"
+  fi
+}
+
+# =============================================================================
+# interactive_select_session — option 0 injection tests
+# =============================================================================
+
+test_select_session_inject_option_zero() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
+
+  # DEFAULT_SESSION not in list — inject as option 0
+  local SESSION
+  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_session injects option 0 for outside-default, Enter selects it"
+  else
+    fail "interactive_select_session should return '20260501-000000-remote' via option 0, got: '$SESSION'"
+  fi
+}
+
+test_select_session_option_zero_by_number() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_num"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
+
+  # Select option 0 by typing "0"
+  local SESSION
+  SESSION=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_session option 0 selectable by typing '0'"
+  else
+    fail "interactive_select_session should return '20260501-000000-remote' on '0', got: '$SESSION'"
+  fi
+}
+
+test_select_session_no_option_zero_when_in_displayed() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_no"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+  make_session_fixture "$BASE/20260503-090000-beta" 1 content
+
+  # DEFAULT_SESSION IS in list — no option 0, Enter selects normally
+  local SESSION
+  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
+  if [[ "$SESSION" == "20260503-090000-beta" ]]; then
+    pass "interactive_select_session does not inject option 0 when default is in displayed list"
+  else
+    fail "interactive_select_session should return '20260503-090000-beta' normally, got: '$SESSION'"
+  fi
+}
+
+test_select_session_option_zero_stderr_shows_entry() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_stderr"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+
+  # Check stderr shows option 0
+  local STDERR
+  STDERR=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "remote"; then
+    pass "interactive_select_session prints option 0 to stderr"
+  else
+    fail "interactive_select_session should show option 0 in stderr"
+  fi
+}
+
+test_select_session_option_zero_not_present_without_default() {
+  local SANDBOX="$FIXTURE_DIR/ss_opt0_nodef"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1 content
+
+  # No DEFAULT_SESSION — no option 0, normal numbers start at 1
+  local STDERR
+  STDERR=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "^  0:"; then
+    fail "interactive_select_session should NOT show option 0 without DEFAULT_SESSION"
+  else
+    pass "interactive_select_session no option 0 when no default is given"
+  fi
+}
+
+# =============================================================================
+# interactive_select_session — pagination tests
+# =============================================================================
+
+# Helper: create N fixture sessions
+create_n_sessions() {
+  local BASE_DIR="$1"
+  local COUNT="$2"
+  for i in $(seq 1 "$COUNT"); do
+    local PADDING
+    PADDING=$(printf "%04d" "$i")
+    make_session_fixture "$BASE_DIR/20260504-${PADDING}00-session-${i}" 1
+  done
+}
+
+test_select_session_pagination_next_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_next"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # 12 sessions sorted newest-first: session-12 .. session-1
+  # Page 1: entries 0-9 (session-12 .. session-3)
+  # Page 2: entries 10-11 (session-2, session-1)
+  # n, then 1 → selects first entry on page 2 = session-2
+  local SESSION
+  SESSION=$(printf "n\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-2"; then
+    pass "interactive_select_session 'n' then '1' selects first entry on page 2"
+  else
+    fail "interactive_select_session should select session-2 after n+1, got: '$SESSION'"
+  fi
+}
+
+test_select_session_pagination_previous_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_prev"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # n, p (back to page 1), then 1 → selects first entry on page 1 = session-12
+  local SESSION
+  SESSION=$(printf "n\np\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-12"; then
+    pass "interactive_select_session 'n' then 'p' returns to page 1"
+  else
+    fail "interactive_select_session should select session-12 after n+p+1, got: '$SESSION'"
+  fi
+}
+
+test_select_session_pagination_page_header() {
+  local SANDBOX="$FIXTURE_DIR/pg_header"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 15
+
+  # stderr should show "page 1 of 2"
+  local STDERR
+  STDERR=$(printf "q\n" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "page 1 of 2"; then
+    pass "interactive_select_session shows page header when multiple pages"
+  else
+    fail "interactive_select_session should show 'page 1 of 2', got: '$STDERR'"
+  fi
+}
+
+test_select_session_pagination_single_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_single"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 3
+
+  # Only 3 entries — no pagination, no "page 1 of 1"
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "page"; then
+    fail "interactive_select_session should NOT show page header for single page"
+  else
+    pass "interactive_select_session no page header for single page"
+  fi
+}
+
+test_select_session_pagination_option_zero_persists() {
+  local SANDBOX="$FIXTURE_DIR/pg_opt0"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # SESSION= outside the first 10 pages, inject option 0, n should still show it
+  local STDERR
+  STDERR=$(printf "n\nq\n" | interactive_select_session "$SANDBOX" "session" "20260504-000100-session-unknown" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "unknown"; then
+    pass "interactive_select_session option 0 persists across pages"
+  else
+    fail "interactive_select_session should show option 0 after 'n'"
+  fi
+}
+
+test_select_session_pagination_no_n_at_last_page() {
+  local SANDBOX="$FIXTURE_DIR/pg_last"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  create_n_sessions "$BASE" 12
+
+  # n (to page 2), n (stays on page 2), then 1 selects first entry on page 2
+  # Second n re-renders same page but stays — selection still works
+  local SESSION
+  SESSION=$(printf "n\nn\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
+  if echo "$SESSION" | grep -q "session-2"; then
+    pass "interactive_select_session stays on last page with extra 'n'"
+  else
+    fail "interactive_select_session should select session-2 after n+n+1, got: '$SESSION'"
   fi
 }
 
@@ -461,6 +649,19 @@ run_test test_select_session_availability_indicators
 run_test test_select_session_zero_entries
 run_test test_select_session_cap_at_ten
 run_test test_select_session_name_truncation
+
+run_test test_select_session_inject_option_zero
+run_test test_select_session_option_zero_by_number
+run_test test_select_session_no_option_zero_when_in_displayed
+run_test test_select_session_option_zero_stderr_shows_entry
+run_test test_select_session_option_zero_not_present_without_default
+
+run_test test_select_session_pagination_next_page
+run_test test_select_session_pagination_previous_page
+run_test test_select_session_pagination_page_header
+run_test test_select_session_pagination_single_page
+run_test test_select_session_pagination_option_zero_persists
+run_test test_select_session_pagination_no_n_at_last_page
 
 run_test test_select_diff_type_uncommitted_default
 run_test test_select_diff_type_second_option

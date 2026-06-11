@@ -31,21 +31,24 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Commands
 
-### `make start PROVIDER=<provider> [REBUILD=1]`
+### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
 
 Stops any running session for this project, builds missing images if needed, snapshots the project, and starts the agent. The terminal attaches to the agent TUI.
 
-`PROVIDER` is required. `REBUILD=1` is optional — forces a full rebuild of all images from scratch before starting; without it, images are built only if missing.
+`PROVIDER` is required. `REFRESH=1` or `REBUILD=1` are optional:
+- `REFRESH=1` — rebuilds sandbox and provider images; base image is reused if it exists.
+- `REBUILD=1` — rebuilds everything from scratch including the base image. Supersedes `REFRESH=1` if both are set.
+Without either flag, images are built only if missing.
 
 **Leaves behind:** `session/` and `autosave/` subfolders in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`; updated provider session state in `.<provider>/`.
 
 ---
 
-### `make serve PROVIDER=<provider> [REBUILD=1]`
+### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
 
 Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
 
-`PROVIDER` is required. `REBUILD=1` behaves identically to `make start`.
+`PROVIDER` is required. `REFRESH=1` and `REBUILD=1` behave identically to `make start`.
 
 ---
 
@@ -57,11 +60,25 @@ Starts both containers, verifies the sandbox initialises correctly, then tears d
 
 ---
 
-### `make build [TARGET=<provider>[,sandbox]]`
+### `make build [TARGETS=<target>[,<target>...]]`
 
 Builds images. Safe to run at any time; does not start or stop any containers.
 
-`TARGET` is optional. Without it, all provider images and the sandbox image are built. `TARGET=<provider>` builds the named provider only. `TARGET=<provider>,sandbox` builds the named provider and the sandbox image.
+`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`. `TARGET` (singular) is also accepted as a legacy alias.
+
+| TARGETS value | Builds |
+|---|---|
+| `all` (default) | Sandbox image + every discovered provider |
+| `pi` | `pi` provider only |
+| `pi,hermes` | `pi` and `hermes` providers |
+| `sandbox` | Sandbox image only |
+| `pi,sandbox` | `pi` provider + sandbox image |
+
+`REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
+
+**Note:** `make start` and `make serve` also trigger builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — they always build the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
+
+**Note on the dispatch model:** The `build` subcommand is dispatched to `scripts/build.sh` as an independent process (`exec`). The workflow subcommands (`apply`, `draft`, `confirm`, `reject`) are similarly dispatched to their own scripts in `scripts/workflows/`. Each receives its flags directly from the dispatcher and handles its own argument parsing and execution. This means each subcommand script can also be invoked directly for testing or debugging: `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
 ---
 
@@ -79,7 +96,7 @@ By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resol
 
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, session selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, session selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>`) before execution. When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 in the session picker and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
@@ -97,7 +114,7 @@ By default, resolves from the `session` channel (`session-diffs/session/`) using
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and session selection. When both `SESSION=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and session selection. When both `SESSION=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session SESSION=<name>`) before execution. When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 in the session picker and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
@@ -188,7 +205,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
-`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `libs/containers.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
 
 ### Runtime-derived paths (not stored in `.env`)
 
@@ -226,8 +243,8 @@ A conforming provider supplies the following under `providers/<n>/` in the repo:
 
 | File | Required | Purpose |
 |---|---|---|
-| `base.Dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
-| `provider.Dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
+| `base.dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
+| `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
 | `config/` | Optional | Onboarding template — copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
@@ -261,6 +278,7 @@ A dry-run does not prove agent correctness — it proves the harness infrastruct
 | Topic | Document |
 |---|---|
 | Internal implementation | [execution_model.md](execution_model.md) |
+| CLI interaction standards | [../development/cli-standards.md](../development/cli-standards.md) |
 | Security model | [security.md](security.md) |
 | Onboarding a project | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
 | Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |

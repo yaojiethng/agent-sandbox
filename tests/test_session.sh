@@ -13,7 +13,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/session.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/src/libs/session_state.sh"
+source "$REPO_ROOT/scripts/guards.sh"
 source "$SCRIPT_DIR/libs/test_common.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"

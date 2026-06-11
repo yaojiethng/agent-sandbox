@@ -5,10 +5,13 @@
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 FIXTURE_DIR=$(mktemp -d)
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 
 # -------------------------------------------------------------------
@@ -17,7 +20,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
 run_package_diff() {
   local SANDBOX_DIR="$1"
   shift
-  bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/package_diff.sh" \
+  bash "$REPO_ROOT/src/libs/package_diff.sh" \
     --sandbox="$SANDBOX_DIR" "$@"
 }
 

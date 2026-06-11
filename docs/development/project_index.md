@@ -2,7 +2,7 @@
 
 Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
 
-The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `docs/devlog/handovers/`).
+The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `devlog/handovers/`).
 
 Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
 
@@ -36,7 +36,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `readme.md` | 🟢 Cold | M2 | System invariants and entry point. Should rarely need updating. |
 | `contributors.md` | 🟢 Cold | M2 | Contribution rules. Update only when workflow or security model changes. |
-| `agent_context_brief.md` | 🟡 Warm | M2 | Agent collaboration protocol. Update when working practices evolve. |
+| `agent_context_brief.md` | `[REMOVED]` | M2 | Content absorbed into `AGENTS.md`. Stale reference retained with `[REMOVED]` marker per documentation policy. |
 
 ### Development (`docs/development/`)
 
@@ -85,7 +85,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
-| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.3 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. |
+| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.7 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, RUN_ID, HOST_HEAD_SHA). |
 
 ### Operations (`docs/operations/`)
 
@@ -111,7 +111,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
 | `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
 | `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
-| `start_agent.sh` | 🟡 Warm | M2.3 | Starts agent session. Sources checkpoint.sh for WORKTREE_ID derivation. |
+| `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SANDBOX_ID, RUN_ID, HOST_HEAD_SHA. |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
 ### Lib (`libs/`)
@@ -119,13 +119,13 @@ Temperature reflects the stability of what a document describes — not how care
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
-| `diff.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
+| `diff_export.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
 | `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
-| `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
-| `compose.sh` | 🟡 Warm | M2.3 | Docker Compose generation. Template substitution for session variables. |
+| `build.sh` | 🟡 Warm | M2.7 | Build orchestration: `build_agent`, `build_sandbox`, `preflight`. Uses repo root as Docker build context. |
+| `compose.sh` | 🟡 Warm | M2.7 | Docker Compose generation. Template substitution for session variables (incl. RUN_ID, HOST_HEAD_SHA). |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. `BUNDLE=`/`AUTOSAVE=` replaced with `FROM=<channel>`; `INTERACTIVE=` added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |
@@ -134,17 +134,17 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
+| `test_capability_layer.sh` | — | M2.7 | Deleted. Static-file-existence checks subsumed by `scripts/dry_run_capability.sh`. See `devlog/roadmap.md` M2.7 Track B. |
 | `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
 | `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
 | `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
 | `test_interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection tests: confirm/abort, channel picker, session picker, diff type picker (25 tests). |
-| `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_build_context.sh` | 🟡 Warm | M2.7 | COPY contract tests: asserts every Dockerfile COPY source exists at its repo-relative path. |
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
-| `test_session.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
+| `test_session-state.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
 | `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
 | `test_snapshot_host.sh` | 🟢 Cold | M2.3 | Host-side snapshot tests: archive head, copy worktree, validate. |
 | `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |

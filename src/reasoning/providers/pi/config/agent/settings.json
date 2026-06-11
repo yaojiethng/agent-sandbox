@@ -1,0 +1,39 @@
+{
+  "lastChangelogVersion": "0.75.5",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingLevel": "off",
+  "followUpMode": "all",
+  "enablePromptCommands": true,
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 32768,
+    "keepRecentTokens": 20000
+  },
+  "tools": {
+    "web_fetch": {
+      "enabled": true,
+      "max_content_tokens": 50000,
+      "dynamic_filtering": true
+    }
+  },
+  "packages": [
+    "/opt/workflow/agent"
+  ],
+  "enabledModels": [
+    "openrouter/z-ai/*",
+    "openrouter/qwen/*",
+    "anthropic/*",
+    "opencode/*-free",
+    "opencode-go/*",
+    "openrouter/deepseek/*",
+    "deepseek/*"
+  ],
+  "hideThinkingBlock": false,
+  "skills": [
+    "/opt/workflow/agent/skills"
+  ],
+  "prompts": [
+    "/opt/workflow/agent/prompts"
+  ]
+}

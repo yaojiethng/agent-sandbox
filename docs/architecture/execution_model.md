@@ -43,8 +43,17 @@ Reasoning layer container (CWD: /home/agentuser/)
 ├── workspace/input/           ← RO bind mount: task briefs, operator addenda
 ├── workspace/output/          ← RW bind mount: agent progress (no binaries)
 ├── sandbox/                   ← RW Docker volume: shared from capability layer via --volumes-from
-├── /opt/provider-config/      ← RW bind mount: provider config ($SANDBOX_DIR/.<provider>/)
-└── .<provider>/               ← provider config dir (populated via copy-in from /opt/provider-config/)
+└── .<provider>/               ← provider config dir, layout defined by provider
+    ├── agent/                 ← Pi convention: nested config directory
+    │   ├── prompts/           ← RW bind mount: provider-layer prompts (persists)
+    │   ├── sessions/          ← RW bind mount: session history (persists)
+    │   ├── skills/            ← RW bind mount: provider-layer skills (persists)
+    │   ├── bin/               ← overlayfs: container-local, same fs as /tmp/ (mv safe)
+    │   ├── settings.json     ← ephemeral: copy-in from image template at startup
+    │   ├── auth.json          ← ephemeral: copy-in from image template at startup
+    │   ├── models.json        ← ephemeral: copy-in from image template at startup
+    │   └── AGENTS.md          ← ephemeral: copy-in from image template at startup
+    └── .env                   ← host-provided: API keys (never committed)
 ```
 
 Host path variables are defined in [`tool_interface.md` — `.env` Runtime Variables](tool_interface.md#env-runtime-variables).
@@ -193,9 +202,7 @@ flowchart TD
 
 ## Staleness Detection
 
-Docker's layer cache is the primary staleness mechanism. `build_context_agent` and `build_context_sandbox` assemble deterministic build contexts from fixed sets of repo files. If any input file changes, Docker invalidates that layer and all downstream layers at the next build — no separate digest comparison is required.
-
-A `agent-sandbox.digest` label is embedded in each image at build time for external tooling use.
+Docker's layer cache is the primary staleness mechanism. The repo root is used as the Docker build context with repo-relative COPY instructions in each Dockerfile. If any input file changes, Docker invalidates that layer and all downstream layers at the next build — no separate digest comparison or temp-dir assembly is required.
 
 ---
 

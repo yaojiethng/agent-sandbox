@@ -7,13 +7,18 @@
 #   confirm_run — rebases, merges, deletes branch
 #   reject_run  — returns to source, deletes branch
 #
-# Uses synthetic diffs (make_export_with_diffs) for all cases except
+# Uses make_session_fixture for synthetic session exports; for
 # author-rewrite and commit-message tests, which need make_real_session.
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/draft_workflow.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENT_SANDBOX_REPO="$REPO_ROOT"
+source "$REPO_ROOT/scripts/workflows/draft.sh"
+source "$REPO_ROOT/scripts/workflows/confirm.sh"
+source "$REPO_ROOT/scripts/workflows/reject.sh"
+source "$REPO_ROOT/scripts/guards.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
@@ -107,7 +112,7 @@ test_draft_creates_branch() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -126,7 +131,7 @@ test_draft_applies_diffs() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -146,7 +151,7 @@ test_draft_branch_name_format() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-feature-M2_3-agent"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -165,7 +170,7 @@ test_draft_branch_name_with_summary() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "my-feature" >/dev/null 2>&1
 
@@ -184,7 +189,7 @@ test_draft_creates_draft_state_commit() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -221,7 +226,8 @@ test_draft_state_has_correct_values() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 3
+  make_session_fixture "$EXPORT" 3
+  echo "20260420-120000" > "$EXPORT/EXPORT-TIME.txt"
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -245,7 +251,7 @@ test_draft_rejects_same_name_collision() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
@@ -265,7 +271,7 @@ test_draft_rejects_when_on_draft_branch() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -285,8 +291,8 @@ test_draft_allows_parallel_drafts() {
   local EXPORT2="$S/.workspace/session-diffs/20260420-130000-branch-b"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT1" 1
-  make_export_with_diffs "$EXPORT2" 1
+  make_session_fixture "$EXPORT1" 1
+  make_session_fixture "$EXPORT2" 1
 
   draft_run "$P" "$EXPORT1" "$(basename "$EXPORT1")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
@@ -307,7 +313,7 @@ test_draft_branch_from() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   echo "extra" > "$P/extra.txt"
   git -C "$P" add extra.txt
@@ -333,7 +339,7 @@ test_draft_diffs_range() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 4
+  make_session_fixture "$EXPORT" 4
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "2..3" "" >/dev/null 2>&1
 
@@ -359,7 +365,7 @@ test_draft_no_diffs_error() {
 
   local OUT
   OUT=$(draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
-  if [[ "$OUT" == *"no patches/ directory"* || "$OUT" == *"no .diff files"* ]]; then
+  if [[ "$OUT" == *"no patches/"* || "$OUT" == *"no .diff files"* ]]; then
     pass "draft errors when no diffs found"
   else
     fail "did not error on missing diffs: $OUT"
@@ -439,13 +445,91 @@ test_draft_commit_messages() {
   fi
 }
 
+# =============================================================================
+# draft_resolve_commit_message tests
+# =============================================================================
+
+test_resolve_msg_file_used() {
+  local TMP="$FIXTURE_DIR/resolve_msg"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234.diff"
+  printf "Original subject\n\nFull body paragraph.\n" > "$TMP/0001-abc1234.msg"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234.diff")
+  if [[ "$MSG" == "Original subject"$'\n'""$'\n'"Full body paragraph." ]]; then
+    pass "draft_resolve_commit_message reads .msg file with full body"
+  else
+    fail "draft_resolve_commit_message should return .msg content"
+  fi
+}
+
+test_resolve_filename_subject_cleaned() {
+  local TMP="$FIXTURE_DIR/resolve_subj"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234-fix_widget_parsing.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-fix_widget_parsing.diff")
+  if [[ "$MSG" == "fix widget parsing" ]]; then
+    pass "draft_resolve_commit_message extracts subject from filename, cleans underscores"
+  else
+    fail "expected 'fix widget parsing', got '$MSG'"
+  fi
+}
+
+test_resolve_filename_subject_trim_underscores() {
+  local TMP="$FIXTURE_DIR/resolve_trim"
+  mkdir -p "$TMP"
+  # Subject with leading, trailing, and consecutive underscores
+  echo "dummy" > "$TMP/0001-abc1234-__hello___world__.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-__hello___world__.diff")
+  if [[ "$MSG" == "hello world" ]]; then
+    pass "draft_resolve_commit_message trims and collapses underscores"
+  else
+    fail "expected 'hello world', got '$MSG'"
+  fi
+}
+
+test_resolve_fallback_no_subject() {
+  local TMP="$FIXTURE_DIR/resolve_fb"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234.diff"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234.diff")
+  if [[ "$MSG" == "Apply 0001-abc1234.diff" ]]; then
+    pass "draft_resolve_commit_message falls back to 'Apply <basename>'"
+  else
+    fail "expected 'Apply 0001-abc1234.diff', got '$MSG'"
+  fi
+}
+
+test_resolve_msg_file_preferred_over_filename() {
+  local TMP="$FIXTURE_DIR/resolve_prefer"
+  mkdir -p "$TMP"
+  # Both .msg and filename subject exist — .msg should win
+  echo "dummy" > "$TMP/0001-abc1234-some_subject.diff"
+  echo "Message from .msg" > "$TMP/0001-abc1234-some_subject.msg"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-some_subject.diff")
+  if [[ "$MSG" == "Message from .msg" ]]; then
+    pass "draft_resolve_commit_message prefers .msg over filename subject"
+  else
+    fail "expected 'Message from .msg', got '$MSG'"
+  fi
+}
+
 test_draft_applies_uncommitted_diff() {
   local P="$FIXTURE_DIR/draft_uncomm_p"
   local S="$FIXTURE_DIR/draft_uncomm_s"
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-uncommitted-test"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs_and_uncommitted "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2 content
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -476,7 +560,7 @@ test_confirm_deletes_draft_branch() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
@@ -497,7 +581,7 @@ test_confirm_merges_changes() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "" >/dev/null 2>&1
@@ -519,7 +603,7 @@ test_confirm_target_branch() {
   git -C "$P" checkout -b feature-branch --quiet
   git -C "$P" checkout main --quiet
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "feature-branch" >/dev/null 2>&1
@@ -559,7 +643,7 @@ test_confirm_conflict_recovery() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
@@ -595,7 +679,7 @@ test_reject_returns_to_source() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   reject_run "$P" "$S" >/dev/null 2>&1
@@ -615,7 +699,7 @@ test_reject_deletes_draft_branch() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_export_with_diffs "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1
 
   draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
@@ -662,6 +746,12 @@ run_test test_draft_no_diffs_error
 run_test test_draft_strips_index_lines
 run_test test_draft_resets_author_to_operator
 run_test test_draft_commit_messages
+
+run_test test_resolve_msg_file_used
+run_test test_resolve_filename_subject_cleaned
+run_test test_resolve_filename_subject_trim_underscores
+run_test test_resolve_fallback_no_subject
+run_test test_resolve_msg_file_preferred_over_filename
 
 run_test test_confirm_deletes_draft_branch
 run_test test_confirm_merges_changes

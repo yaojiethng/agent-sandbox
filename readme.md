@@ -1,4 +1,4 @@
-> **Current milestone status:** see the active handover in `docs/devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
+> **Current milestone status:** see the active handover in `devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
 
 # Autonomous Coding Agent Sandbox
 
@@ -7,9 +7,6 @@ for running autonomous coding agents safely.
 
 The system isolates agents inside containers, stages their changes as diffs,
 and requires human review before repository modification.
-
-Currently supported agent provider:
-- OpenCode
 
 ### System Invariants
 
@@ -68,12 +65,12 @@ Start here and follow the path in order. Architecture documents describe the sys
 
 | Step | Document | Purpose |
 |---|---|---|
-| 1 | [contributors.md](contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
+| 1 | [contributors.md](docs/development/contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
 | 2 | [project_index.md](docs/development/project_index.md) | Full file registry, freeze status, architecture layer assignments |
 | 3 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
 | 4 | [agent_workflow.md](docs/concepts/agent_workflow.md) | Workflow expression model and policy map (read once) |
 | 5 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
-| 6 | [roadmap.md](docs/devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
+| 6 | [roadmap.md](devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
 
 For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
 

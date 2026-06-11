@@ -22,11 +22,9 @@
 
 set -uo pipefail
 
-PASS=0
-FAIL=0
-
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../libs/test_common.sh"
+source "$SCRIPT_DIR/../libs/git_fixtures.sh"
 
 FIXTURE="$(mktemp -d)"
 echo "Fixture: $FIXTURE"
@@ -38,12 +36,6 @@ trap 'echo "Cleaning up..."; rm -rf "$FIXTURE"' EXIT
 # ---------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------
-make_repo() {
-  local DIR="$1"
-  git init --quiet "$DIR"
-  git -C "$DIR" config user.email "test@test"
-  git -C "$DIR" config user.name "test"
-}
 
 # Check if .git/index.lock exists and report status
 lock_status() {
@@ -695,7 +687,7 @@ if [[ -d "$BUNDLE_DIR/patches" ]]; then
   # Now reproduce the exact scenario
   make_repo "$FIXTURE/s6"
   echo "# agent-sandbox" > "$FIXTURE/s6/README.md"
-  mkdir -p "$FIXTURE/s6/libs" "$FIXTURE/s6/tests" "$FIXTURE/s6/docs/devlog/handovers" "$FIXTURE/s6/docs/development" "$FIXTURE/s6/tests/knowledge"
+  mkdir -p "$FIXTURE/s6/libs" "$FIXTURE/s6/tests" "$FIXTURE/s6/devlog/handovers" "$FIXTURE/s6/docs/development" "$FIXTURE/s6/tests/knowledge"
 
   # Populate the files that the patches modify (simulating the repo state before patches)
   # These are just placeholders to make the patches apply cleanly

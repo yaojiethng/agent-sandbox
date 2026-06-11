@@ -127,11 +127,9 @@ Four documents govern agent behaviour. Each answers a distinct question and must
 
 **`readme.md`** — entry point for humans and agents. System invariants, architecture layer model, and documentation guide path.
 
-**`agent_context_brief.md`** — governs all agents regardless of provider. Collaboration protocol, role definition, read discipline, and output format rules.
+**`AGENTS.md`** — provider-specific notes, collaboration protocol, role definition, read discipline, and output format rules. Governs all agents regardless of provider. Swapped out when the provider changes.
 
-**`AGENTS.md`** — provider-specific notes. Swapped out when the provider changes. Must not contain protocol rules that belong in `agent_context_brief.md`.
-
-**`docs/devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
+**`devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** — session log, not a document. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
 
 ---
 

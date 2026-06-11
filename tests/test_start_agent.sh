@@ -21,27 +21,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$SCRIPT_DIR/libs/test_common.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
 
 FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# -------------------------
-# Fixture builder
-# -------------------------
-make_committed_repo() {
-  local DIR="$1"
-  mkdir -p "$DIR"
-  # Explicitly set default branch to main for consistency across git versions
-  git -C "$DIR" init --quiet --initial-branch=main 2>/dev/null || {
-    git -C "$DIR" init --quiet
-    git -C "$DIR" branch -M main 2>/dev/null || true
-  }
-  git -C "$DIR" config user.email "test@sandbox"
-  git -C "$DIR" config user.name "test"
-  echo "tracked content" > "$DIR/tracked.txt"
-  git -C "$DIR" add tracked.txt
-  git -C "$DIR" commit -m "initial" --quiet
-}
 
 # -------------------------
 # Checkpoint tag creation tests
@@ -330,59 +313,73 @@ test_sanitized_host_branch_detached_head() {
 }
 
 # -------------------------
-# WORKTREE_ID tests
+# SANDBOX_ID derivation tests
 # -------------------------
 
-test_worktree_id_derived_from_path() {
-  local PROJECT_DIR="$FIXTURE_DIR/worktree_id_repo"
-  make_committed_repo "$PROJECT_DIR"
+# Helper: same formula as start_agent.sh
+g_sandbox_id_derive() {
+  local sandbox_dir="$1" host_head_sha="$2"
+  echo "${sandbox_dir}:${host_head_sha}" | sha256sum | cut -c1-8
+}
 
-  local WORKTREE_ID
-  WORKTREE_ID=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+test_sandbox_id_derived_from_dir_and_sha() {
+  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_repo"
+  make_committed_repo "$PROJECT_DIR"
+  local SANDBOX_DIR="$PROJECT_DIR-sandbox"
+  local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+
+  local SANDBOX_ID
+  SANDBOX_ID=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
 
   # Verify it's 8 characters
-  if [[ ${#WORKTREE_ID} -eq 8 ]]; then
-    pass "WORKTREE_ID is 8 characters"
+  if [[ ${#SANDBOX_ID} -eq 8 ]]; then
+    pass "SANDBOX_ID is 8 characters"
   else
-    fail "WORKTREE_ID wrong length: ${#WORKTREE_ID}"
+    fail "SANDBOX_ID wrong length: ${#SANDBOX_ID}"
   fi
 
   # Verify it's hex
-  if [[ "$WORKTREE_ID" =~ ^[a-f0-9]{8}$ ]]; then
-    pass "WORKTREE_ID is valid hex"
+  if [[ "$SANDBOX_ID" =~ ^[a-f0-9]{8}$ ]]; then
+    pass "SANDBOX_ID is valid hex"
   else
-    fail "WORKTREE_ID not valid hex: $WORKTREE_ID"
+    fail "SANDBOX_ID not valid hex: $SANDBOX_ID"
   fi
 }
 
-test_worktree_id_stable_across_runs() {
-  local PROJECT_DIR="$FIXTURE_DIR/worktree_stable_repo"
+test_sandbox_id_stable_across_runs() {
+  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_stable_repo"
   make_committed_repo "$PROJECT_DIR"
+  local SANDBOX_DIR="$PROJECT_DIR-sandbox"
+  local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
-  local WORKTREE_ID1 WORKTREE_ID2
-  WORKTREE_ID1=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
-  WORKTREE_ID2=$(echo "$PROJECT_DIR" | sha1sum | head -c8)
+  local SID1 SID2
+  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
+  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
 
-  if [[ "$WORKTREE_ID1" == "$WORKTREE_ID2" ]]; then
-    pass "WORKTREE_ID is stable across multiple derivations"
+  if [[ "$SID1" == "$SID2" ]]; then
+    pass "SANDBOX_ID is stable across multiple derivations"
   else
-    fail "WORKTREE_ID not stable: $WORKTREE_ID1 vs $WORKTREE_ID2"
+    fail "SANDBOX_ID not stable: $SID1 vs $SID2"
   fi
 }
 
-test_worktree_id_different_for_different_paths() {
-  local PROJECT_DIR1="$FIXTURE_DIR/worktree_diff_repo1"
-  local PROJECT_DIR2="$FIXTURE_DIR/worktree_diff_repo2"
+test_sandbox_id_different_for_different_dirs() {
+  local PROJECT_DIR1="$FIXTURE_DIR/sandbox_id_diff1"
+  local PROJECT_DIR2="$FIXTURE_DIR/sandbox_id_diff2"
   mkdir -p "$PROJECT_DIR1" "$PROJECT_DIR2"
 
-  local WORKTREE_ID1 WORKTREE_ID2
-  WORKTREE_ID1=$(echo "$PROJECT_DIR1" | sha1sum | head -c8)
-  WORKTREE_ID2=$(echo "$PROJECT_DIR2" | sha1sum | head -c8)
+  local SANDBOX_DIR1="$PROJECT_DIR1-sandbox"
+  local SANDBOX_DIR2="$PROJECT_DIR2-sandbox"
+  local SHA="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 
-  if [[ "$WORKTREE_ID1" != "$WORKTREE_ID2" ]]; then
-    pass "WORKTREE_ID differs for different paths"
+  local SID1 SID2
+  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR1" "$SHA")
+  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR2" "$SHA")
+
+  if [[ "$SID1" != "$SID2" ]]; then
+    pass "SANDBOX_ID differs for different SANDBOX_DIR paths"
   else
-    fail "WORKTREE_ID should differ for different paths"
+    fail "SANDBOX_ID should differ for different SANDBOX_DIR paths"
   fi
 }
 
@@ -428,7 +425,7 @@ test_repo_commit_is_full_sha() {
 # -------------------------
 
 test_docker_compose_template_has_labels_anchor() {
-  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/libs/docker-compose.yml"; then
+  if grep -q "x-session-labels: &session_labels" "$REPO_ROOT/src/build/docker-compose.yml"; then
     pass "docker-compose.yml defines session labels as YAML anchor"
   else
     fail "docker-compose.yml missing YAML anchor for session labels"
@@ -436,7 +433,7 @@ test_docker_compose_template_has_labels_anchor() {
 }
 
 test_docker_compose_template_sandbox_uses_anchor() {
-  if grep -A3 "sandbox:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+  if grep -A3 "sandbox:" "$REPO_ROOT/src/build/docker-compose.yml" | grep -q "labels: \*session_labels"; then
     pass "sandbox service references session labels anchor"
   else
     fail "sandbox service does not reference session labels anchor"
@@ -444,7 +441,7 @@ test_docker_compose_template_sandbox_uses_anchor() {
 }
 
 test_docker_compose_template_agent_uses_anchor() {
-  if grep -A3 "agent:" "$REPO_ROOT/libs/docker-compose.yml" | grep -q "labels: \*session_labels"; then
+  if grep -A3 "agent:" "$REPO_ROOT/src/build/docker-compose.yml" | grep -q "labels: \*session_labels"; then
     pass "agent service references session labels anchor"
   else
     fail "agent service does not reference session labels anchor"
@@ -452,8 +449,8 @@ test_docker_compose_template_agent_uses_anchor() {
 }
 
 test_docker_compose_template_has_container_names() {
-  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml" && \
-     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/libs/docker-compose.yml"; then
+  if grep -q "container_name: {{SANDBOX_CONTAINER_NAME}}" "$REPO_ROOT/src/build/docker-compose.yml" && \
+     grep -q "container_name: {{AGENT_CONTAINER_NAME}}" "$REPO_ROOT/src/build/docker-compose.yml"; then
     pass "docker-compose.yml has container_name for both services"
   else
     fail "docker-compose.yml missing container_name placeholders"
@@ -476,9 +473,9 @@ run_test test_sanitized_host_branch_sanitizes_feature_branch
 run_test test_sanitized_host_branch_sanitizes_nested_branch
 run_test test_sanitized_host_branch_exported
 run_test test_sanitized_host_branch_detached_head
-run_test test_worktree_id_derived_from_path
-run_test test_worktree_id_stable_across_runs
-run_test test_worktree_id_different_for_different_paths
+run_test test_sandbox_id_derived_from_dir_and_sha
+run_test test_sandbox_id_stable_across_runs
+run_test test_sandbox_id_different_for_different_dirs
 run_test test_repo_commit_captured
 run_test test_repo_commit_is_full_sha
 
@@ -490,5 +487,60 @@ run_test test_docker_compose_template_has_labels_anchor
 run_test test_docker_compose_template_sandbox_uses_anchor
 run_test test_docker_compose_template_agent_uses_anchor
 run_test test_docker_compose_template_has_container_names
+
+# -------------------------
+
+test_rebuild_flags_parsed_by_start_agent() {
+  if grep -q -- '--rebuild)' "$REPO_ROOT/scripts/start_agent.sh" && \
+     grep -q -- 'REBUILD=true' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh parses --rebuild flag (rebuild everything)"
+  else
+    fail "start_agent.sh missing --rebuild flag handling"
+  fi
+}
+
+test_refresh_flags_parsed_by_start_agent() {
+  if grep -q -- '--refresh)' "$REPO_ROOT/scripts/start_agent.sh" && \
+     grep -q -- 'REFRESH=true' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh parses --refresh flag (base skipped)"
+  else
+    fail "start_agent.sh missing --refresh flag handling"
+  fi
+}
+
+test_rebuild_base_flag_removed() {
+  if grep -q -- '--rebuild-base)' "$REPO_ROOT/scripts/start_agent.sh"; then
+    fail "start_agent.sh still has old --rebuild-base flag"
+  elif grep -q -- 'REBUILD_BASE' "$REPO_ROOT/scripts/start_agent.sh"; then
+    fail "start_agent.sh still has old REBUILD_BASE variable"
+  else
+    pass "start_agent.sh no longer has --rebuild-base flag"
+  fi
+}
+
+test_rebuild_block_exists_before_preflight() {
+  # Check that the rebuild/refresh block appears before the preflight call
+  local before_preflight
+  before_preflight=$(grep -n '^preflight' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+  # Matches either --rebuild or --refresh block (both appear before preflight)
+  local rebuild_block
+  rebuild_block=$(grep -nE 'if \[\[ .*(REBUILD|REFRESH).*true' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
+
+  if [[ -n "$before_preflight" && -n "$rebuild_block" && "$rebuild_block" -lt "$before_preflight" ]]; then
+    pass "rebuild block appears before preflight in start_agent.sh"
+  else
+    fail "rebuild block missing or not before preflight"
+  fi
+}
+
+run_test test_rebuild_flags_parsed_by_start_agent
+run_test test_refresh_flags_parsed_by_start_agent
+run_test test_rebuild_base_flag_removed
+run_test test_rebuild_block_exists_before_preflight
+
+run_test test_rebuild_flags_parsed_by_start_agent
+run_test test_refresh_flags_parsed_by_start_agent
+run_test test_rebuild_base_flag_removed
+run_test test_rebuild_block_exists_before_preflight
 
 test_done

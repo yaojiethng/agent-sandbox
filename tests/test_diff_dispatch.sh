@@ -8,37 +8,18 @@
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 FIXTURE_DIR=$(mktemp -d)
 FIXTURE="$FIXTURE_DIR"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/diff.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/package_branch.sh"
-
-# -------------------------------------------------------------------
-# Helper: create a clean sandbox with a baseline commit and SESSION_STATE
-# -------------------------------------------------------------------
-make_sandbox() {
-  make_committed_repo "$1"
-  local SHA
-  SHA=$(get_init_sha "$1")
-  write_session_state "$1"
-  git -C "$1" branch -M main 2>/dev/null || true
-  echo "$SHA"
-}
-
-# -------------------------------------------------------------------
-# Helper: commit a change to the sandbox
-# -------------------------------------------------------------------
-commit_change() {
-  local DIR="$1"
-  local MSG="${2:-agent commit}"
-  echo "$MSG" > "$DIR/change-${RANDOM}.txt"
-  git -C "$DIR" add .
-  git -C "$DIR" commit -m "$MSG" --quiet
-}
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
+source "$SCRIPT_DIR/libs/test_common.sh"
+source "$REPO_ROOT/src/libs/diff.sh"
+source "$REPO_ROOT/src/libs/diff_export.sh"
+source "$REPO_ROOT/src/libs/package_branch.sh"
 
 # ===================================================================
 # diff_export — entrypoint dispatch proxy
@@ -47,7 +28,7 @@ commit_change() {
 test_diff_export_creates_output() {
   local DIR="$FIXTURE_DIR/de_creates"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   local OUTPUT_DIR="${DIR}/export"
   mkdir -p "$OUTPUT_DIR"
 
@@ -63,7 +44,7 @@ test_diff_export_creates_output() {
 test_diff_export_writes_uncommitted_diff() {
   local DIR="$FIXTURE_DIR/de_uncommitted"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   echo "agent work" > "$DIR/result.txt"
 
   local OUTPUT_DIR="${DIR}/export"
@@ -80,7 +61,7 @@ test_diff_export_writes_uncommitted_diff() {
 test_diff_export_writes_all_changes_diff() {
   local DIR="$FIXTURE_DIR/de_allchanges"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   echo "agent work" > "$DIR/result.txt"
 
   local OUTPUT_DIR="${DIR}/export"
@@ -97,7 +78,7 @@ test_diff_export_writes_all_changes_diff() {
 test_diff_export_writes_patches() {
   local DIR="$FIXTURE_DIR/de_patches"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   commit_change "$DIR" "first"
   commit_change "$DIR" "second"
 
@@ -117,7 +98,7 @@ test_diff_export_writes_patches() {
 test_diff_export_writes_changed_files() {
   local DIR="$FIXTURE/de_changedfiles"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   echo "agent work" > "$DIR/result.txt"
 
   local OUTPUT_DIR="${DIR}/export"
@@ -134,7 +115,7 @@ test_diff_export_writes_changed_files() {
 test_diff_export_no_sweep_commit() {
   local DIR="$FIXTURE/de_nosweep"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   # Modify the committed file so git diff HEAD detects changes
   echo "agent modification" >> "$DIR/file.txt"
 
@@ -157,6 +138,26 @@ test_diff_export_missing_args_fails() {
   fi
 }
 
+test_diff_export_missing_session_state() {
+  local DIR="$FIXTURE/de_nostate"
+  mkdir -p "$DIR"
+  make_committed_repo "$DIR"
+  # Intentionally do NOT write SESSION_STATE
+
+  local OUTPUT_DIR="${DIR}/export"
+  mkdir -p "$OUTPUT_DIR"
+
+  # diff_export currently swallows package_branch's error.
+  # This test asserts that diff_export returns non-zero when
+  # package_branch fails due to missing SESSION_STATE.
+  # Initially FAILS — fix libs/diff.sh to propagate the error.
+  if ! diff_export "$DIR" "$OUTPUT_DIR" 2>/dev/null; then
+    pass "diff_export fails when SESSION_STATE is missing"
+  else
+    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0 — needs fix)"
+  fi
+}
+
 # ===================================================================
 # session_export_path + diff_export (entrypoint simulation)
 # ===================================================================
@@ -164,7 +165,7 @@ test_diff_export_missing_args_fails() {
 test_session_path_exit_export() {
   local DIR="$FIXTURE/sp_exit"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   echo "agent exit" > "$DIR/work.txt"
 
   local CHANGES_DIR="${FIXTURE}/changes"
@@ -188,7 +189,7 @@ test_session_path_exit_export() {
 test_session_path_autosave_export() {
   local DIR="$FIXTURE/sp_autosave"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   echo "agent checkpoint" > "$DIR/work.txt"
 
   local CHANGES_DIR="${FIXTURE}/changes2"
@@ -212,7 +213,7 @@ test_session_path_autosave_export() {
 test_session_path_session_and_autosave_independent() {
   local DIR="$FIXTURE/sp_independent"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   commit_change "$DIR" "work"
 
   local CHANGES_DIR="${FIXTURE}/changes3"
@@ -240,8 +241,8 @@ test_session_path_multiple_sessions_accumulate() {
   local DIR1="$FIXTURE/sp_multi1"
   local DIR2="$FIXTURE/sp_multi2"
   mkdir -p "$DIR1" "$DIR2"
-  make_sandbox "$DIR1"
-  make_sandbox "$DIR2"
+  make_sandbox_fixture "$DIR1"
+  make_sandbox_fixture "$DIR2"
 
   local CHANGES_DIR="${FIXTURE}/changes4"
 
@@ -276,7 +277,7 @@ test_session_path_multiple_sessions_accumulate() {
 test_session_path_export_time_written() {
   local DIR="$FIXTURE/sp_exporttime"
   mkdir -p "$DIR"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR"
   commit_change "$DIR" "work"
 
   local CHANGES_DIR="${FIXTURE}/changes5"
@@ -303,6 +304,7 @@ run_test test_diff_export_writes_patches
 run_test test_diff_export_writes_changed_files
 run_test test_diff_export_no_sweep_commit
 run_test test_diff_export_missing_args_fails
+run_test test_diff_export_missing_session_state
 run_test test_session_path_exit_export
 run_test test_session_path_autosave_export
 run_test test_session_path_session_and_autosave_independent

@@ -12,28 +12,23 @@
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 FIXTURE_DIR=$(mktemp -d)
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/git_fixtures.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../libs/package_branch.sh"
+source "$SCRIPT_DIR/libs/git_fixtures.sh"
+source "$SCRIPT_DIR/libs/test_common.sh"
+source "$REPO_ROOT/src/libs/package_branch.sh"
 
 # -------------------------------------------------------------------
-# Helper: create a clean sandbox with a baseline commit and SESSION_STATE
-# -------------------------------------------------------------------
-make_sandbox() {
-  make_committed_repo "$1"
-  local SHA
-  SHA=$(get_init_sha "$1")
-  write_session_state "$1"
-  git -C "$1" branch -M main 2>/dev/null || true
-  echo "$SHA"
-}
-
+# Helper: create a sandbox with a specific init SHA as session_ts
+# Compared to make_sandbox_fixture, this overwrites session_ts with the
+# actual commit SHA rather than using a fixed timestamp.
 make_sandbox_with_state() {
   local DIR="$1"
-  make_sandbox "$DIR"
+  make_sandbox_fixture "$DIR" > /dev/null
   local SHA
   SHA=$(get_init_sha "$DIR")
   write_session_state "$DIR" "$SHA"
@@ -290,6 +285,31 @@ test_dispatcher_missing_args() {
   fi
 }
 
+test_dispatcher_missing_session_state() {
+  local DIR="$FIXTURE_DIR/pb_nostate"
+  local OUT="$FIXTURE_DIR/pb_nostate_out"
+  mkdir -p "$OUT"
+  make_committed_repo "$DIR"
+  # Intentionally do NOT write SESSION_STATE
+
+  if package_branch "$DIR" "$OUT" 2>/dev/null; then
+    fail "package_branch should fail when SESSION_STATE is missing"
+  else
+    pass "package_branch fails when SESSION_STATE is missing"
+  fi
+
+  # Verify no artefacts were written (OUTPUT_DIR may have been created
+  # by package_branch's mkdir -p, but patches/ and diff files should be absent)
+  local HAS_PATCHES=false HAS_DIFFS=false
+  [[ -d "$OUT/patches" ]] && HAS_PATCHES=true
+  [[ -f "$OUT/uncommitted.diff" || -f "$OUT/all-changes.diff" ]] && HAS_DIFFS=true
+  if [[ "$HAS_PATCHES" == false && "$HAS_DIFFS" == false ]]; then
+    pass "package_branch produces no artefacts when SESSION_STATE is missing"
+  else
+    fail "package_branch should produce no artefacts when SESSION_STATE is missing"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -303,5 +323,6 @@ run_test test_dispatcher_binary_patch_applies_to_fresh_repo
 run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
 run_test test_dispatcher_missing_args
+run_test test_dispatcher_missing_session_state
 
 test_done
