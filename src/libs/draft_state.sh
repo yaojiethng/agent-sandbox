@@ -133,6 +133,11 @@ draft_validate_branch() {
     return 1
   }
 
+  # Clear state variables before parsing to avoid leaking from a previous call
+  # (printf -v inside a while loop does not localize the target variable)
+  local from_hash="" source_branch="" author="" session_ts=""
+  local host_branch="" diff_count="" exported_at="" drafted_at="" run_id=""
+
   while IFS=':' read -r KEY VALUE; do
     [[ -z "$KEY" ]] && continue
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
@@ -141,7 +146,7 @@ draft_validate_branch() {
     printf '%s="%s"\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
 
-  if [[ -z "${from_hash:-}" ]]; then
+  if [[ -z "$from_hash" ]]; then
     echo "Error: .draft-state on $CURRENT_BRANCH is missing 'from_hash' field" >&2
     return 1
   fi
