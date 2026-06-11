@@ -56,6 +56,7 @@ Options:
   --to=<dir>              Output directory (default: auto-resolved from sandbox)
   --session-summary=<txt> Required snake_case label for the bundle directory
   --baseline=<sha>        Override baseline SHA (default: read from SESSION_STATE)
+  --no-renames            Use git diff --no-renames (avoid rename operations in diffs)
 EOF
 }
 
@@ -75,6 +76,7 @@ package_commits() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
   local INIT_SHA_OVERRIDE="${3:-}"
+  local NO_RENAMES="${4:-false}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_commits: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -129,7 +131,11 @@ package_commits() {
       DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
     fi
 
-    git -C "$SANDBOX_DIR" diff --binary "${PREVIOUS_SHA}..${COMMIT_SHA}" \
+    local GIT_DIFF_OPTS="--binary"
+    if [[ "$NO_RENAMES" == "true" ]]; then
+      GIT_DIFF_OPTS="--binary --no-renames"
+    fi
+    git -C "$SANDBOX_DIR" diff $GIT_DIFF_OPTS "${PREVIOUS_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
       | sed -e '$a\' \
@@ -164,6 +170,9 @@ package_commits() {
 #   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
 #   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
 #                       init_sha from SESSION_STATE
+#   NO_RENAMES        — if true, use git diff --no-renames to produce diffs
+#                       without rename operations (avoids rename-target-already-exists
+#                       conflicts during apply at the cost of larger diffs)
 # -------------------------
 # -------------------------
 # _package_preflight_check
@@ -258,6 +267,7 @@ package_branch() {
   local SANDBOX_DIR="${1:-}"
   local OUTPUT_DIR="${2:-}"
   local INIT_SHA_OVERRIDE="${3:-}"
+  local NO_RENAMES="${4:-false}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -289,7 +299,7 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$INIT_SHA"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$INIT_SHA" "$NO_RENAMES"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"
@@ -313,6 +323,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   TO_ARG=""
   SESSION_SUMMARY_ARG=""
   BASELINE_ARG=""
+  NO_RENAMES_ARG=false
 
   for ARG in "$@"; do
     case "$ARG" in
@@ -320,6 +331,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
       --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
+      --no-renames)        NO_RENAMES_ARG=true ;;
       *)
         echo "Unknown argument: $ARG" >&2
         usage >&2
@@ -369,5 +381,5 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   # Construct output directory via output_export_path
   OUTPUT_DIR=$(output_export_path "$TO_ARG" "bundles" "$SESSION_SUMMARY" "$RUN_ID")
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$BASELINE_ARG"
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$BASELINE_ARG" "$NO_RENAMES_ARG"
 fi

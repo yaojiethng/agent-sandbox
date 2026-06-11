@@ -235,7 +235,8 @@ package-branch:
 	agent-sandbox package-branch \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
-	  $(if $(BASELINE),--baseline=$(BASELINE),)
+	  $(if $(BASELINE),--baseline=$(BASELINE),) \
+	  $(if $(NO_RENAMES),--no-renames,)
 
 # -------------------------
 # Harness maintenance

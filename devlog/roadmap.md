@@ -146,7 +146,7 @@ All 8 items complete. See handover chain `20260609-01` through `20260609-08`.
 - [x] Dual-layer seam testing — Full dry-run pipeline (capability checks, reasoning checks, host-side verification). Core mechanism and `test_capability_layer.sh` subsumption completed.
 - [x] AGENTS.md injection cleanup — All 8 sub-items complete. Brief.md injection removed, pre-flight hooks, Pi-specific preflight with `_ensure_harness_keys`, generic pre-flight validation in shared entrypoint, knowledge test rename.
 - [x] Makefile variable or CLI flag for diff type — `--diff-type=uncommitted|all-changes` flag added to apply.sh; `DIFF_TYPE` Makefile variable in template.
-- [ ] Git diff `--no-renames` index conflict — `git diff --no-renames` produces `new file mode` entries for rename targets that already exist in the index, which `git apply` rejects. A proper fix (e.g. generating `diff --git` entries instead of `new file mode` across rename boundaries) is needed for the `--no-renames` fallback path in `package_branch`. Limitation documented in `story-patch_application_failures.md` §Finding 2.
+- [x] Git diff `--no-renames` index conflict — Added `--no-renames` flag to `package_commits()` and `package_branch()` in `src/libs/package_branch.sh`, CLI flag in `package_branch.sh`, and `NO_RENAMES` variable in Makefile template. When set, produces diffs without rename operations via `git diff --no-renames`, avoiding rename-target conflicts during apply. See `story-patch_application_failures.md` §Finding 2 for scope.
 
 ### Deferred (not milestone-scoped)
 
