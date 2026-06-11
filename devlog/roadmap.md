@@ -145,14 +145,14 @@ All 8 items complete. See handover chain `20260609-01` through `20260609-08`.
 - [x] Workspace path resolution refactor — `x-workspace` anchor, `dirs.sh` retired from production. SESSION_STATE append semantics deferred to M2.6.
 - [x] Dual-layer seam testing — Full dry-run pipeline (capability checks, reasoning checks, host-side verification). Core mechanism and `test_capability_layer.sh` subsumption completed.
 - [x] AGENTS.md injection cleanup — All 8 sub-items complete. Brief.md injection removed, pre-flight hooks, Pi-specific preflight with `_ensure_harness_keys`, generic pre-flight validation in shared entrypoint, knowledge test rename.
-- [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
+- [x] Makefile variable or CLI flag for diff type — `--diff-type=uncommitted|all-changes` flag added to apply.sh; `DIFF_TYPE` Makefile variable in template.
 - [ ] Git diff `--no-renames` index conflict — `git diff --no-renames` produces `new file mode` entries for rename targets that already exist in the index, which `git apply` rejects. A proper fix (e.g. generating `diff --git` entries instead of `new file mode` across rename boundaries) is needed for the `--no-renames` fallback path in `package_branch`. Limitation documented in `story-patch_application_failures.md` §Finding 2.
 
-### Process Improvements (from dispatch refactoring learnings)
+### Deferred (not milestone-scoped)
 
-- [ ] Add fast-track criteria for chore/mechanical sessions — Gate 2 can be collapsed for purely mechanical changes (guard pattern hardening, `set -euo pipefail` cleanup). Document in `iteration_policy.md`.
-- [ ] Record decision rationale inline during sessions — Update `handover_policy.md` to recommend updating the Decisions table as decisions are made, not only at close.
-- [ ] Remove `subagent_type=Explore` reference from `improve-codebase-architecture` skill — The tool does not exist in this harness.
+- [ ] Add fast-track criteria for chore/mechanical sessions
+- [ ] Record decision rationale inline during sessions
+- [ ] Remove `subagent_type=Explore` reference from `improve-codebase-architecture` skill
 
 ### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
 

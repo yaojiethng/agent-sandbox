@@ -141,6 +141,7 @@ Options:
   --branch=<name>     Check out or create a branch before applying
   --channel=<name>    Resolution channel: diffs, session, autosave (default: diffs)
   --session=<name>    Named session to resolve from (default: newest)
+  --diff-type=<type>  Diff file type: uncommitted or all-changes (default: uncommitted)
   --force             Apply with --reject for conflicts
   --permissive        Retry with --recount on failure
   --interactive       Interactive picker mode
@@ -169,6 +170,7 @@ main() {
   local CHANNEL=""
   local SESSION=""
   local INTERACTIVE=false
+  local DIFF_TYPE=""
 
   for ARG in "$@"; do
     case "$ARG" in
@@ -181,6 +183,7 @@ main() {
       --channel=*)     CHANNEL="${ARG#--channel=}" ;;
       --session=*)     SESSION="${ARG#--session=}" ;;
       --interactive)   INTERACTIVE=true ;;
+      --diff-type=*)   DIFF_TYPE="${ARG#--diff-type=}" ;;
       *)
         echo "Unknown argument: $ARG" >&2
         usage >&2
@@ -242,9 +245,29 @@ main() {
   else
     source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
     local CHANNEL="${CHANNEL:-diffs}"
-    local RESOLVED
-    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
-    apply_run "$PROJECT_DIR" "$RESOLVED" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+    local DIFF_TYPE="${DIFF_TYPE:-uncommitted}"
+
+    # Resolve session dir, construct path with requested diff type
+    _resolve_paths "$SANDBOX_DIR"
+    local BASE_DIR
+    BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
+    local SESSION_DIR
+    if [[ -n "$SESSION" ]]; then
+      SESSION_DIR="${BASE_DIR}/${SESSION}"
+    else
+      SESSION_DIR=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
+    fi
+    if [[ -z "$SESSION_DIR" || ! -d "$SESSION_DIR" ]]; then
+      echo "Error: session directory not found under $BASE_DIR" >&2
+      exit 1
+    fi
+    local DIFF_FILE="${SESSION_DIR}/${DIFF_TYPE}.diff"
+    if [[ ! -f "$DIFF_FILE" ]]; then
+      echo "Error: diff file not found: $DIFF_FILE" >&2
+      echo "  Available types: uncommitted.diff, all-changes.diff" >&2
+      exit 1
+    fi
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
   fi
 }
 

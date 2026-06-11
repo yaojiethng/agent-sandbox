@@ -52,6 +52,8 @@ TARGET       ?=
 SESSION      ?=
 FROM         ?=
 INTERACTIVE  ?=
+DIFF_TYPE    ?=
+DIFF         ?=
 TARGET_BRANCH ?=
 SESSION_SUMMARY ?=
 BASELINE ?=
@@ -208,6 +210,7 @@ apply:
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
+	  $(if $(DIFF_TYPE),--diff-type=$(DIFF_TYPE),) \
 	  $(if $(FORCE),--force,)
 
 # -------------------------
