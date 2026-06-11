@@ -533,27 +533,14 @@ test_rebuild_block_exists_before_preflight() {
   fi
 }
 
-test_agent_sandbox_has_rebuild_flags_function() {
-  if grep -q 'rebuild_flags()' "$REPO_ROOT/scripts/agent-sandbox.sh" && \
-     grep -q 'rebuild_if_requested' "$REPO_ROOT/scripts/agent-sandbox.sh"; then
-    fail "agent-sandbox.sh still has old rebuild_if_requested function"
-  elif grep -q 'rebuild_flags()' "$REPO_ROOT/scripts/agent-sandbox.sh"; then
-    pass "agent-sandbox.sh has rebuild_flags() and no rebuild_if_requested"
-  else
-    fail "agent-sandbox.sh missing rebuild_flags()"
-  fi
-}
+run_test test_rebuild_flags_parsed_by_start_agent
+run_test test_refresh_flags_parsed_by_start_agent
+run_test test_rebuild_base_flag_removed
+run_test test_rebuild_block_exists_before_preflight
 
 run_test test_rebuild_flags_parsed_by_start_agent
 run_test test_refresh_flags_parsed_by_start_agent
 run_test test_rebuild_base_flag_removed
 run_test test_rebuild_block_exists_before_preflight
-run_test test_agent_sandbox_has_rebuild_flags_function
-
-run_test test_rebuild_flags_parsed_by_start_agent
-run_test test_refresh_flags_parsed_by_start_agent
-run_test test_rebuild_base_flag_removed
-run_test test_rebuild_block_exists_before_preflight
-run_test test_agent_sandbox_has_rebuild_flags_function
 
 test_done

@@ -36,33 +36,6 @@ SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 # This file is a pure dispatch table: validate required flags, exec the target.
 
 # =============================================================================
-# Rebuild flags
-# =============================================================================
-# rebuild_flags [--rebuild] [--refresh] [args...]
-# Parses --rebuild and --refresh from remaining args. Prints the parsed flags
-# (--no-cache for --rebuild, empty for --refresh) and remaining args.
-# Used by start_agent.sh to decide build cache strategy.
-rebuild_flags() {
-  local parsed_remaining=()
-  local parsed_rebuild=false
-  local parsed_refresh=false
-  for arg in "$@"; do
-    case "$arg" in
-      --rebuild) parsed_rebuild=true ;;
-      --refresh) parsed_refresh=true ;;
-      *) parsed_remaining+=("$arg") ;;
-    esac
-  done
-
-  if [[ "$parsed_rebuild" == true ]]; then
-    echo "--no-cache"
-  else
-    echo ""
-  fi
-  echo "${parsed_remaining[@]}"
-}
-
-# =============================================================================
 # CLI entry point
 # =============================================================================
 # When sourced (for tests), only functions are defined — dispatch is not run.

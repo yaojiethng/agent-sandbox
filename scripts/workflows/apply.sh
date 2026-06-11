@@ -247,21 +247,10 @@ main() {
     local CHANNEL="${CHANNEL:-diffs}"
     local DIFF_TYPE="${DIFF_TYPE:-uncommitted}"
 
-    # Resolve session dir, construct path with requested diff type
-    _resolve_paths "$SANDBOX_DIR"
-    local BASE_DIR
-    BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
-    local SESSION_DIR
-    if [[ -n "$SESSION" ]]; then
-      SESSION_DIR="${BASE_DIR}/${SESSION}"
-    else
-      SESSION_DIR=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
-    fi
-    if [[ -z "$SESSION_DIR" || ! -d "$SESSION_DIR" ]]; then
-      echo "Error: session directory not found under $BASE_DIR" >&2
-      exit 1
-    fi
-    local DIFF_FILE="${SESSION_DIR}/${DIFF_TYPE}.diff"
+    # Resolve session, then swap the diff file type (uncommitted vs all-changes)
+    local RESOLVED
+    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
+    local DIFF_FILE="${RESOLVED%/*}/${DIFF_TYPE}.diff"
     if [[ ! -f "$DIFF_FILE" ]]; then
       echo "Error: diff file not found: $DIFF_FILE" >&2
       echo "  Available types: uncommitted.diff, all-changes.diff" >&2

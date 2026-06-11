@@ -18,6 +18,35 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 source "$REPO_ROOT/src/build/image.sh"
 
 # -------------------------
+# Container-sig source lists
+# These define which source files map to /opt/sandbox/ and /opt/workflow/
+# in each image type. Both build_sandbox/build_agent and _check_container_sig
+# use these to compute the container-sig hash — single source of truth.
+# -------------------------
+
+# _sandbox_sig_sources
+# Source paths for the sandbox image (maps to /opt/sandbox/).
+_sandbox_sig_sources() {
+  echo "src/libs src/capability/entrypoint.sh src/capability/snapshot.sh docs/architecture docs/concepts"
+}
+
+# _agent_sig_sources <repo_root> <provider>
+# Source paths for an agent image (maps to /opt/sandbox/ + /opt/workflow/).
+# Provider-specific paths (config/, preflight.sh) included when they exist.
+_agent_sig_sources() {
+  local repo_root="$1"
+  local provider="$2"
+  local sources="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts"
+  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
+    sources="$sources src/reasoning/providers/$provider/config"
+  fi
+  if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
+    sources="$sources src/reasoning/providers/$provider/preflight.sh"
+  fi
+  echo "$sources"
+}
+
+# -------------------------
 # Build execution
 # -------------------------
 
@@ -155,14 +184,7 @@ build_agent() {
 
   # Tier 3: always build provider image — with container-sig
   local provider_sig
-  local sig_sources=("src/libs" "src/reasoning/entrypoint.sh" "docs/architecture" "docs/concepts" "src/reasoning/agent/skills" "src/reasoning/agent/prompts")
-  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
-    sig_sources+=("src/reasoning/providers/$provider/config")
-  fi
-  if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
-    sig_sources+=("src/reasoning/providers/$provider/preflight.sh")
-  fi
-  provider_sig="$(container_sig "$repo_root" "${sig_sources[@]}")"
+  provider_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
 
   build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$provider_sig" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
@@ -186,7 +208,7 @@ build_sandbox() {
   local image; image="$(sandbox_image_name "$project")"
 
   local sandbox_sig
-  sandbox_sig="$(container_sig "$repo_root" "src/libs" "src/capability/entrypoint.sh" "src/capability/snapshot.sh" "docs/architecture" "docs/concepts")"
+  sandbox_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
 
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
@@ -261,18 +283,11 @@ _check_container_sig() {
   local current_sig=""
   if [[ "$type" == "sandbox" ]]; then
     local repo_root="${1:?}"
-    current_sig="$(container_sig "$repo_root" "src/libs" "src/capability/entrypoint.sh" "src/capability/snapshot.sh" "docs/architecture" "docs/concepts")"
+    current_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
   elif [[ "$type" == "agent" ]]; then
     local provider="${1:?}"
     local repo_root="${2:?}"
-    local sig_sources=("src/libs" "src/reasoning/entrypoint.sh" "docs/architecture" "docs/concepts" "src/reasoning/agent/skills" "src/reasoning/agent/prompts")
-    if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
-      sig_sources+=("src/reasoning/providers/$provider/config")
-    fi
-    if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
-      sig_sources+=("src/reasoning/providers/$provider/preflight.sh")
-    fi
-    current_sig="$(container_sig "$repo_root" "${sig_sources[@]}")"
+    current_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
   fi
 
   if [[ "$baked_sig" != "$current_sig" ]]; then
