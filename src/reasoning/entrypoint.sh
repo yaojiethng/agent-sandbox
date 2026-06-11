@@ -129,7 +129,8 @@ unset PROVISION_TEMPLATE
 # session operations will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
 for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "package_diff.sh:WARN" "diff.sh:WARN" "diff_export.sh:WARN" \
+             "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   if [[ ! -f "$LIB_DIR/$lib" ]]; then
@@ -180,6 +181,24 @@ if [[ -f "$_provider_preflight" ]]; then
   source "$_provider_preflight"
 fi
 unset _provider_preflight
+
+# ---------------------------------------------------------------------------
+# Preflight: validate agent command
+# ---------------------------------------------------------------------------
+# The first argument to the entrypoint is the provider's agent binary.
+# If it's missing or not executable, the image is misconfigured.
+
+if [[ $# -eq 0 ]]; then
+  echo "FATAL: No agent command specified — image misconfigured" >&2
+  exit 1
+fi
+
+_agent_cmd="$1"
+if ! command -v "$_agent_cmd" >/dev/null 2>&1; then
+  echo "FATAL: Agent command not found: $_agent_cmd — image may be stale" >&2
+  exit 1
+fi
+unset _agent_cmd
 
 # ---------------------------------------------------------------------------
 # Run

@@ -151,7 +151,7 @@ Each provider may result in a different integration pattern. Investigation findi
     - [x] Implement hook in `provider-entrypoint.sh` — Source provider pre-flight script after generic preflight, before agent runs.
     - [x] Move `_ensure_harness_keys` from shared entrypoint to Pi-specific preflight — Extracted merge logic into `providers/pi/preflight.sh`; staged as `provider-preflight.sh` in build context.
     - [x] Add warn-on-skip and verify-keys-after-merge to Pi preflight — Proposals 1 and 2 from session findings. Both in `providers/pi/preflight.sh`.
-    - [ ] Add generic pre-flight validation to shared entrypoint — Validate AGENT_HOME bind mount, critical file presence (Proposal 3).
+    - [x] Add generic pre-flight validation to shared entrypoint — Validate AGENT_HOME bind mount, critical file presence (Proposal 3). Added missing lib file checks (diff.sh, diff_export.sh, package_branch.sh) and agent command presence validation to shared entrypoint.
     - [x] Rename knowledge test — `knowledge_provider_config_cycle.sh` → `knowledge_pi_config_cycle.sh`; remove old copy-in/copy-out tests, add merge test (Proposal 4).
 - [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
