@@ -165,9 +165,9 @@ fi
 # ---------------------------------------------------------------------------
 # Preflight: source provider-specific checks
 # ---------------------------------------------------------------------------
-# Provider-specific pre-flight scripts are staged by build_context_agent
-# from src/reasoning/providers/<n>/preflight.sh and baked into the image at
-# /opt/sandbox/bin/provider-preflight.sh. If the provider has no preflight
+# Provider-specific pre-flight scripts are baked into the image from
+# src/reasoning/providers/<n>/preflight.sh into /opt/sandbox/bin/provider-preflight.sh.
+# If the provider has no preflight
 # script, this file does not exist and the hook is a no-op.
 #
 # Provider-specific responsibilities (e.g. for Pi):

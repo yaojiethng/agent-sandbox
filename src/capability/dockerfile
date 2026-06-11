@@ -22,20 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # -------------------------
 # Entrypoint and libs (root, before USER switch)
 # -------------------------
-# Build context is a temp directory populated by build_context in libs/build.sh;
-# files are copied flat so paths here match the temp dir layout.
-COPY entrypoint.sh /opt/sandbox/bin/sandbox-entrypoint.sh
-COPY dirs.sh /opt/sandbox/lib/dirs.sh
-COPY snapshot.sh /opt/sandbox/lib/snapshot.sh
-COPY diff.sh /opt/sandbox/lib/diff.sh
-COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
-COPY session_state.sh /opt/sandbox/lib/session_state.sh
-COPY routing.sh /opt/sandbox/lib/routing.sh
-COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
-COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
-
-# docs/ is optional — skip if directory doesn't exist in context
-COPY docs/ /opt/sandbox/docs/
+# Build context is the repo root; COPY paths are repo-relative.
+COPY src/libs/                          /opt/sandbox/lib/
+COPY src/capability/entrypoint.sh       /opt/sandbox/bin/sandbox-entrypoint.sh
+COPY src/capability/snapshot.sh         /opt/sandbox/lib/snapshot.sh
+COPY docs/architecture/                 /opt/sandbox/docs/architecture/
+COPY docs/concepts/                     /opt/sandbox/docs/concepts/
 RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 
 # -------------------------

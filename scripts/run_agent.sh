@@ -47,7 +47,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/src/build/context.sh"
 source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
 

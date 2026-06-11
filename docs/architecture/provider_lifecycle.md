@@ -67,7 +67,7 @@ If `AGENT_HOME` is empty or absent at exit (e.g. the agent crashed before writin
 
 The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<provider>/` before the first run. These files are never baked into provider images.
 
-`providers/<n>/config/` is never copied into the image. `build_context_agent` does not include it in the build context.
+`providers/<n>/config/` is included in the build by repo-relative COPY instructions in the provider's `provider.dockerfile`. It is never baked into images directly — it is copied into the image at Docker build time.
 
 ---
 

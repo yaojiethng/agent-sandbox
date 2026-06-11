@@ -124,7 +124,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
 | `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
-| `containers.sh` | 🟡 Warm | M2.3 | Build context preparation: `build_context_sandbox` and `build_context_agent`. Creates mktemp dir, copies required files per image type, errors on missing file. |
+| `build.sh` | 🟡 Warm | M2.7 | Build orchestration: `build_agent`, `build_sandbox`, `preflight`. Uses repo root as Docker build context. |
 | `compose.sh` | 🟡 Warm | M2.7 | Docker Compose generation. Template substitution for session variables (incl. RUN_ID, HOST_HEAD_SHA). |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. `BUNDLE=`/`AUTOSAVE=` replaced with `FROM=<channel>`; `INTERACTIVE=` added. |
@@ -140,7 +140,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |
 | `test_draft_workflow.sh` | 🟢 Cold | M2.3 | Draft branch workflow tests: `draft_run`, `confirm_run`, `reject_run`. |
 | `test_interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection tests: confirm/abort, channel picker, session picker, diff type picker (25 tests). |
-| `test_build_context.sh` | 🟡 Warm | M2.3 | Property-based tests for `build_context_sandbox`/`build_context_agent`. Covers output contract, file contents, digest determinism, error cases. |
+| `test_build_context.sh` | 🟡 Warm | M2.7 | COPY contract tests: asserts every Dockerfile COPY source exists at its repo-relative path. |
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |

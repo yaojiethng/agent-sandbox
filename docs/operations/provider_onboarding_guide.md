@@ -14,7 +14,7 @@ Two directories contain scripts in the agent-sandbox repo. Understanding the dis
 
 **`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh` and `run_agent.sh` live here.
 
-**`libs/`** — reusable utility functions. Sourced by scripts and providers alike. No top-level control flow — only named functions. `compose.sh`, `containers.sh`, `snapshot.sh` live here.
+**`libs/`** — reusable utility functions. Sourced by scripts and providers alike. No top-level control flow — only named functions. `compose.sh`, `snapshot.sh` live here.
 
 Provider `setup.sh` hooks are sourced by `scripts/run_agent.sh` and have access to all functions in `libs/`. They must not source scripts from `scripts/` directly.
 
@@ -42,7 +42,7 @@ providers/<n>/
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
-Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by `build_context_agent` — providers do not author or maintain it.
+Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh` is injected into every provider image via repo-relative COPY in the provider's `provider.dockerfile` — providers do not author or maintain it.
 
 None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
 
@@ -62,7 +62,7 @@ Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-cod
 
 `base.dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
-The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `libs/containers.sh`'s `build_agent` function handles base-image skip logic (base is skipped if it already exists) unless `--rebuild-base` is passed.
+The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build.sh`'s `build_agent` function handles base-image skip logic (base is skipped if it already exists) unless `--rebuild-base` is passed.
 
 ```dockerfile
 # providers/<n>/base.dockerfile
@@ -87,11 +87,12 @@ The base image ends as root. User creation and runtime configuration belong in `
 ARG BASE_IMAGE=<provider>-base
 FROM ${BASE_IMAGE}
 
-# Injected by build_context_agent — do not modify these paths.
-COPY dirs.sh /libs/dirs.sh
-COPY provider-entrypoint.sh /usr/local/bin/provider-entrypoint.sh
+# Build context is the repo root; COPY paths are repo-relative.
+# Shared libs are injected by scripts/build.sh; do not modify these paths.
+COPY src/libs/ /libs/
+COPY src/reasoning/entrypoint.sh /usr/local/bin/provider-entrypoint.sh
 
-# Provider config seed — injected by build_context_agent from providers/<n>/config/.
+# Provider config seed — copied via repo-relative COPY from providers/<n>/config/.
 # Omit this line if the provider has no config/ directory.
 COPY config/ /opt/context/config/
 
@@ -116,9 +117,9 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
 ```
 
-The `ARG BASE_IMAGE` declaration allows `libs/containers.sh`'s `build_agent` function to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
+The `ARG BASE_IMAGE` declaration allows `scripts/build.sh`'s `build_agent` function to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
 
-`dirs.sh` and `provider-entrypoint.sh` are injected automatically by `build_context_agent` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also injected from `providers/<n>/config/` if that directory exists.
+Shared libs (`src/libs/`) and `entrypoint.sh` are injected automatically via repo-relative COPY in the provider's `provider.dockerfile` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also included from `providers/<n>/config/` if that directory exists.
 
 The operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
@@ -170,7 +171,7 @@ If the provider requires default configuration files to be present before the ag
 providers/<n>/config/
 ```
 
-`build_context_agent` copies this directory into the build context. `provider.dockerfile` then copies it into the image at `/opt/context/config/`. At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
+The provider's `provider.dockerfile` copies this directory into the image (via repo-relative COPY). At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
 
 Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
 

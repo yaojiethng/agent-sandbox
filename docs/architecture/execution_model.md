@@ -202,9 +202,7 @@ flowchart TD
 
 ## Staleness Detection
 
-Docker's layer cache is the primary staleness mechanism. `build_context_agent` and `build_context_sandbox` assemble deterministic build contexts from fixed sets of repo files. If any input file changes, Docker invalidates that layer and all downstream layers at the next build — no separate digest comparison is required.
-
-A `agent-sandbox.digest` label is embedded in each image at build time for external tooling use.
+Docker's layer cache is the primary staleness mechanism. The repo root is used as the Docker build context with repo-relative COPY instructions in each Dockerfile. If any input file changes, Docker invalidates that layer and all downstream layers at the next build — no separate digest comparison or temp-dir assembly is required.
 
 ---
 

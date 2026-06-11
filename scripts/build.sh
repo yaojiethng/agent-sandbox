@@ -5,10 +5,9 @@
 #
 # Sources:
 #   build/image.sh   — image naming functions
-#   build/context.sh — build context preparation
 #
 # Provides:
-#   build_image    - compute digest and run docker build
+#   build_image    - run docker build using repo root as context
 #   build_agent    - three-tier build (shared → provider-base → provider-image)
 #   build_sandbox  - build the capability layer image for a given project
 #   preflight      - verify both images exist; build if missing
@@ -17,46 +16,57 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/src/build/context.sh"
 
 # -------------------------
 # Build execution
 # -------------------------
 
-# Track temp build contexts for trap cleanup
-_BUILD_CONTEXT_DIRS=()
-
-# cleanup_build_context
-# Removes any tracked temp build context directories on exit.
-# Called via EXIT trap set by build_agent and build_sandbox.
-cleanup_build_context() {
-  local rc=$?
-  local dir
-  for dir in "${_BUILD_CONTEXT_DIRS[@]}"; do
-    [[ -d "$dir" ]] && rm -rf "$dir"
+# container_sig <repo_root> <sandbox_sources> <workflow_sources>
+# Computes a deterministic SHA-256 hash of all files under the given source
+# directories. The source paths are repo-relative (e.g. src/libs).
+# Returns a hex string suitable for use as a Docker label value.
+container_sig() {
+  local repo_root="${1:?container_sig requires repo_root}"
+  shift 1
+  local sources=("$@")
+  local find_args=()
+  local src
+  for src in "${sources[@]}"; do
+    find_args+=("$repo_root/$src")
   done
-  exit $rc
+  find "${find_args[@]}" -type f -print0 2>/dev/null \
+    | sort -z \
+    | xargs -0 sha256sum \
+    | sha256sum \
+    | awk '{print $1}'
 }
 
-# build_image <image_name> <dockerfile> <context_dir> <no_cache> [docker build args...]
-# Computes a digest of the context and runs docker build.
+# build_image <image_name> <dockerfile> <repo_root> <container_sig> <no_cache> [docker build args...]
+# Builds using repo root as docker build context.
+# Injects the container-sig label for staleness detection.
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
-  local context_dir="${3:?build_image requires context_dir}"
-  local no_cache="${4:-}"
-  shift 4
-
-  local digest
-  digest=$(context_digest "$context_dir")
+  local repo_root="${3:?build_image requires repo_root}"
+  local sig="${4:-}"
+  local no_cache="${5:-}"
+  shift 5
 
   echo "Building image: $image_name"
-  docker build $no_cache \
-    --label "agent-sandbox.digest=$digest" \
-    -t "$image_name" \
-    -f "$dockerfile" \
-    "$@" \
-    "$context_dir"
+  if [[ -n "$sig" ]]; then
+    docker build $no_cache \
+      --label "agent-sandbox.container-sig=$sig" \
+      -t "$image_name" \
+      -f "$dockerfile" \
+      "$@" \
+      "$repo_root"
+  else
+    docker build $no_cache \
+      -t "$image_name" \
+      -f "$dockerfile" \
+      "$@" \
+      "$repo_root"
+  fi
   echo "Build complete: $image_name"
 }
 
@@ -94,7 +104,7 @@ build_agent() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  # Tier 1: shared node base — doesn't need the provider build context
+  # Tier 1: shared node base
   local shared_base; shared_base="$(shared_base_image_name)"
   local shared_dockerfile="$repo_root/src/reasoning/node.dockerfile"
 
@@ -120,39 +130,41 @@ build_agent() {
     exit 1
   fi
 
-  # Build context for tiers 2 and 3 (tier 1 uses repo root as context)
-  local context
-  context="$(build_context_agent "$repo_root" "$provider")"
-  _BUILD_CONTEXT_DIRS+=("$context")
-
   # --- Helper: build image only if missing (or --no-cache forces rebuild) ---
-  # Named function in bash is always global, but defining it here keeps
-  # the code colocated with its usage. Defined fresh on each build_agent call.
-  # shellcheck disable=SC2119
+  # Arguments: image dockerfile context_dir [container_sig] [cache_flag] [extra docker build args...]
   build_if_missing() {
     local image="$1" dockerfile="$2" context_dir="$3"
-    shift 3
+    local sig="${4:-}"
+    local cache="${5:-}"
+    shift 5
     if ! docker image inspect "$image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-      build_image "$image" "$dockerfile" "$context_dir" "$cache_flag" "$@"
+      build_image "$image" "$dockerfile" "$context_dir" "$sig" "$cache" "$@"
     else
       echo "Image exists, skipping: $image"
     fi
   }
 
-  # Trap to clean up temp build context on exit
-  trap cleanup_build_context EXIT
-
-  # Tier 1: shared node base
-  build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" \
+  # Tier 1: shared node base — no container-sig (no sandbox/workflow content)
+  build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base
-  build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$context" \
+  # Tier 2: provider-specific base — no container-sig (no sandbox/workflow content)
+  build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image
-  build_image "$provider_image" "$provider_dockerfile" "$context" "" \
+  # Tier 3: always build provider image — with container-sig
+  local provider_sig
+  local sig_sources=("src/libs" "src/reasoning/entrypoint.sh" "docs/architecture" "docs/concepts" "src/reasoning/agent/skills" "src/reasoning/agent/prompts")
+  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
+    sig_sources+=("src/reasoning/providers/$provider/config")
+  fi
+  if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
+    sig_sources+=("src/reasoning/providers/$provider/preflight.sh")
+  fi
+  provider_sig="$(container_sig "$repo_root" "${sig_sources[@]}")"
+
+  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$provider_sig" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
@@ -172,11 +184,9 @@ build_sandbox() {
   fi
 
   local image; image="$(sandbox_image_name "$project")"
-  local context
-  context="$(build_context_sandbox "$repo_root")"
-  _BUILD_CONTEXT_DIRS+=("$context")
 
-  trap cleanup_build_context EXIT
+  local sandbox_sig
+  sandbox_sig="$(container_sig "$repo_root" "src/libs" "src/capability/entrypoint.sh" "src/capability/snapshot.sh" "docs/architecture" "docs/concepts")"
 
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
@@ -186,7 +196,7 @@ build_sandbox() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  build_image "$image" "$dockerfile" "$context" "" "${uid_args[@]+${uid_args[@]}}"
+  build_image "$image" "$dockerfile" "$repo_root" "$sandbox_sig" "" "${uid_args[@]+${uid_args[@]}}"
 }
 
 # -------------------------
@@ -218,6 +228,58 @@ preflight() {
     echo "One or more required images are missing. Building them now."
     build_sandbox "$project" "$repo_root"
     build_agent   "$provider" "$project" "$repo_root"
+    # Staleness check skipped for fresh builds
+    return 0
+  fi
+
+  # --- Container-sig staleness check (warning only) ---
+  # Check sandbox image
+  _check_container_sig "$sandbox_image" sandbox "$repo_root"
+  # Check agent image
+  _check_container_sig "$agent_image" agent "$provider" "$repo_root"
+}
+
+# _check_container_sig <image_name> <type: sandbox|agent> <...>
+# Reads the baked container-sig label from an existing image, re-computes
+# from current source files, and warns on mismatch.
+# Type-specific args:
+#   sandbox: <repo_root>
+#   agent:   <provider> <repo_root>
+_check_container_sig() {
+  local image_name="${1:?}"
+  local type="${2:?}"
+  shift 2
+
+  local baked_sig
+  baked_sig="$(docker image inspect --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' "$image_name" 2>/dev/null || true)"
+
+  if [[ -z "$baked_sig" ]]; then
+    echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
+    return 0
+  fi
+
+  local current_sig=""
+  if [[ "$type" == "sandbox" ]]; then
+    local repo_root="${1:?}"
+    current_sig="$(container_sig "$repo_root" "src/libs" "src/capability/entrypoint.sh" "src/capability/snapshot.sh" "docs/architecture" "docs/concepts")"
+  elif [[ "$type" == "agent" ]]; then
+    local provider="${1:?}"
+    local repo_root="${2:?}"
+    local sig_sources=("src/libs" "src/reasoning/entrypoint.sh" "docs/architecture" "docs/concepts" "src/reasoning/agent/skills" "src/reasoning/agent/prompts")
+    if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
+      sig_sources+=("src/reasoning/providers/$provider/config")
+    fi
+    if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
+      sig_sources+=("src/reasoning/providers/$provider/preflight.sh")
+    fi
+    current_sig="$(container_sig "$repo_root" "${sig_sources[@]}")"
+  fi
+
+  if [[ "$baked_sig" != "$current_sig" ]]; then
+    echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
+    echo "  baked:    $baked_sig" >&2
+    echo "  current:  $current_sig" >&2
+    echo "  Rebuild with --rebuild to update." >&2
   fi
 }
 
@@ -284,7 +346,6 @@ main() {
     exit 1
   fi
 
-  # Resolve repo root from our own path (scripts/build.sh → repo root)
   local _build_self
   _build_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   local REPO_ROOT

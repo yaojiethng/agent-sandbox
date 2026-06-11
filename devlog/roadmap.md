@@ -130,8 +130,8 @@ Each provider may result in a different integration pattern. Investigation findi
 
 ### Track B — Build Pipeline & Staleness Detection
 
-- [ ] Context_dir removal — Remove `build_context_*` and `build_image`. Use repo root as build context. Replace ~47 tests in `test_build_context.sh` with COPY contract tests. Depends on: nothing.
-- [ ] Two-sig model — Container-sig: hash `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label, checked at preflight. Depends on: item 7.
+- [x] Context_dir removal — Build context temp-dir assembly (`build_context_sandbox`, `build_context_agent`, `build_image`) replaced with repo-root Docker build context and subdirectory-level repo-relative COPY instructions in all 4 Dockerfiles (sandbox, pi, hermes, opencode). `src/build/context.sh` deleted (~112 lines). `scripts/build.sh` simplified: `build_image()`, `cleanup_build_context()`, `_BUILD_CONTEXT_DIRS`, `context_digest()` removed. `tests/test_build_context.sh` rewritten from ~496 lines of assembly tests to ~30 lines of COPY contract tests. All stale references to `context.sh`, `build_context_*`, `containers.sh` purged from docs and code. Design spec at `devlog/discussions/spec_context_dir_removal.md`.
+- [x] Two-sig model — Container-sig: SHA-256 hash of `/opt/sandbox/` + `/opt/workflow/` source files computed at build time by `container_sig()` in `scripts/build.sh`, baked as `agent-sandbox.container-sig` Docker label. `preflight()` warns on mismatch (non-blocking). Covers sandbox and tier-3 agent images. Depends on: context_dir removal.
     - Harness-sig: deferred to `roadmap_future.md`.
 
 ---
@@ -168,38 +168,10 @@ Each provider may result in a different integration pattern. Investigation findi
 **Design reference:** [`docs/devlog/discussions/design_settings_permissions_group_bind.md`](../discussions/design_settings_permissions_group_bind.md)
 **Container layer spec:** [`docs/devlog/discussions/spec_container_layer_redesign.md`](../discussions/spec_container_layer_redesign.md)
 
-- [x] Design session and surface area scoping (2026-05-23)
-- [x] Onboard.sh control flow refactor, tests, hardening (2026-05-23)
-
-**Implementation phases (each produces a self-contained commit):**
-
-#### Phase 1 — Build pipeline threading (no behaviour change)
-
-- [ ] `libs/build.sh` — `build_sandbox()` and `build_agent()` accept `--uid`/`--gid` flags
-- [ ] `scripts/start_agent.sh` — export `HOST_UID=$(id -u)` / `HOST_GID=$(id -g)`
-- [ ] `scripts/run_agent.sh` — propagate host IDs to compose generation
-
-No behaviour change until Phase 2 consumes the values.
-
-#### Phase 2 — Dockerfiles + compose (both paths functional)
-
-- [ ] 3 harness Dockerfiles: add `ARG HOST_UID=1000` / `ARG HOST_GID=1000`, UID collision handling via `usermod` rename, numeric `chown -R ${HOST_UID}:${HOST_GID}`
-    - [ ] `libs/Dockerfile.harness-node` (or `harness/reasoning/nodes/node.Dockerfile` per chore session)
-    - [ ] `libs/Dockerfile.harness-python` (or `harness/reasoning/nodes/python.Dockerfile` per chore session)
-    - [ ] `libs/sandbox.Dockerfile` (unchanged layer position)
-- [ ] `libs/docker-compose.yml`: add `user: "${HOST_UID:-1000}:${HOST_GID:-1000}"` to both services
-- [ ] Compose convention: only the base compose template sets `user:`. Verify provider compose overlays don't set `user:`.
-
-At this point both UID Mapping and ACL paths are functional — rollback-safe.
-
-#### Phase 3 — Onboard cleanup + ACL removal (after verification)
-
-Only once UID Mapping is verified (build + test on WSL, macOS, Windows DD):
-
-- [ ] `scripts/onboard.sh`: remove `setfacl` lines from `_run_onboard()` and `_provision_providers()`
-- [ ] `providers/pi/onboard.sh`: no permission-fixing code (already clean; verify)
-- [ ] `tests/test_onboard.sh`: remove `CAN_RUN_FULL` guard (setfacl no longer needed)
-- [ ] Documentation updates per design doc §4.5 (quickstart, security.md, execution_model.md, Dockerfile headers, compose header)
+**All items complete.** Implemented across M2.4, M2.7, and associated chore sessions:
+- Phase 1: build.sh `--uid`/`--gid` flags, start_agent.sh/run_agent.sh HOST_UID/HOST_GID exports and propagation
+- Phase 2: ARG HOST_UID/HOST_GID in all 4 Dockerfiles with `usermod` collision handling and `chown`; `user:` in compose template; verified no provider overlay sets `user:`
+- Phase 3: `setfacl` removed from onboard.sh, pi/onboard.sh verified clean, CAN_RUN_FULL guard removed, docs updated
 
 ## Future Milestones
 

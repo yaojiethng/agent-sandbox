@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # build/image.sh
 # Container image naming and identity functions.
-# Sourced by build/context.sh and scripts/build.sh.
+# Sourced by scripts/build.sh.
 #
 # Provides:
 #   agent_base_image_name  - compute reasoning layer base image name from provider

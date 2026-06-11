@@ -10,7 +10,7 @@ fi
 
 # make_mock_repo [--no-docs] [--no-agent-dir]
 #   Creates a temp directory with a minimal agent-sandbox repo layout,
-#   suitable as a repo_root for build_context_sandbox and build_context_agent.
+#   suitable as a repo_root for Docker build context testing.
 #   Options allow callers to request only the sub-tree they need.
 #   Prints the temp dir path to stdout.
 #   Caller is responsible for cleanup (via rm -rf).

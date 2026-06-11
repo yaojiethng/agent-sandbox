@@ -8,25 +8,15 @@ FROM ${BASE_IMAGE}
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 
-# Injected by build_context_agent — do not modify these paths.
-COPY dirs.sh /opt/sandbox/lib/dirs.sh
-COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
-COPY provider-preflight.sh /opt/sandbox/bin/provider-preflight.sh
-COPY diff.sh /opt/sandbox/lib/diff.sh
-COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
-COPY session_state.sh /opt/sandbox/lib/session_state.sh
-COPY routing.sh /opt/sandbox/lib/routing.sh
-COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
-COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
-
-# Workflow files — prompts and skills the agent uses at runtime.
-COPY agent/skills/ /opt/workflow/agent/skills/
-COPY agent/prompts/ /opt/workflow/agent/prompts/
-
-# Provider config template — copied to AGENT_HOME at startup by
-# _provision_agent_home (see provider-entrypoint.sh). Bind-mounted subdirs
-# (prompts/, sessions/, skills/) shadow the template at runtime.
-COPY agent/config/ /opt/workflow/agent/config/
+# Build context is the repo root; COPY paths are repo-relative.
+COPY src/libs/                                          /opt/sandbox/lib/
+COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provider-entrypoint.sh
+COPY src/reasoning/providers/pi/preflight.sh             /opt/sandbox/bin/provider-preflight.sh
+COPY src/reasoning/agent/skills/                         /opt/workflow/agent/skills/
+COPY src/reasoning/agent/prompts/                        /opt/workflow/agent/prompts/
+COPY src/reasoning/providers/pi/config/                  /opt/workflow/agent/config/
+COPY docs/architecture/                                  /opt/sandbox/docs/architecture/
+COPY docs/concepts/                                      /opt/sandbox/docs/concepts/
 
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.
 RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \

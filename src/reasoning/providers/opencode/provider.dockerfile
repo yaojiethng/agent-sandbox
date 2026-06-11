@@ -20,20 +20,13 @@ ARG HOST_GID=1000
 # -------------------------
 # Shared libs
 # -------------------------
-# Injected by build_context_agent — cache miss if either file changes.
-# dirs.sh is sourced by dry_run.sh inside the container.
-COPY dirs.sh /opt/sandbox/lib/dirs.sh
-COPY entrypoint.sh /opt/sandbox/bin/provider-entrypoint.sh
-COPY package_diff.sh /opt/sandbox/lib/package_diff.sh
-COPY session_state.sh /opt/sandbox/lib/session_state.sh
-COPY routing.sh /opt/sandbox/lib/routing.sh
-COPY diff.sh /opt/sandbox/lib/diff.sh
-COPY package_branch.sh /opt/sandbox/lib/package_branch.sh
-COPY diff_export.sh /opt/sandbox/lib/diff_export.sh
-
-# Workflow files — prompts and skills the agent uses at runtime.
-COPY agent/skills/ /opt/workflow/agent/skills/
-COPY agent/prompts/ /opt/workflow/agent/prompts/
+# Build context is the repo root; COPY paths are repo-relative.
+COPY src/libs/                                  /opt/sandbox/lib/
+COPY src/reasoning/entrypoint.sh                /opt/sandbox/bin/provider-entrypoint.sh
+COPY src/reasoning/agent/skills/                 /opt/workflow/agent/skills/
+COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
+COPY docs/architecture/                          /opt/sandbox/docs/architecture/
+COPY docs/concepts/                              /opt/sandbox/docs/concepts/
 
 # -------------------------
 # Non-root user

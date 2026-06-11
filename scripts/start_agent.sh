@@ -147,7 +147,6 @@ export OUTPUT_DIR="${SANDBOX_DIR}/.workspace/output"
 # Image name derivation
 # -------------------------
 source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/src/build/context.sh"
 source "$REPO_ROOT/scripts/build.sh"
 
 export SANDBOX_IMAGE_NAME; SANDBOX_IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"

@@ -205,7 +205,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
-`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `libs/containers.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
 
 ### Runtime-derived paths (not stored in `.env`)
 

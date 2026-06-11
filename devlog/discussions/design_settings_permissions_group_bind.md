@@ -198,29 +198,6 @@ The base compose template now explicitly sets `user:` on both services. Document
 
 ---
 
-## 5. Proposed Roadmap Task Entry
-
-Add the following task checklist under M2.7 in `roadmap.md`:
-
-```
-### Track C — Universal Bind Mount Permission Strategy
-
-- [x] Design session and surface area scoping (2026-05-23)
-- [ ] Implement UID Mapping in all 5 Dockerfiles (#3–#7)
-    - [ ] providers/pi/provider.Dockerfile
-    - [ ] providers/hermes/provider.Dockerfile
-    - [ ] providers/claude-code/provider.Dockerfile
-    - [ ] providers/opencode/provider.Dockerfile
-    - [ ] libs/sandbox.Dockerfile
-- [ ] Thread build args through build pipeline (#9, #10, #11)
-- [ ] Update compose templates — add `user:` and remove `group_add` (#2)
-- [ ] Update onboard.sh — remove ACL commands (#1)
-- [ ] Clean up provider onboard hooks (#8)
-- [ ] Update documentation — user-facing contract (#12, plus doc files above)
-- [ ] Update and verify tests (#14)
-- [ ] Build images and verify permissions on WSL, macOS, and Windows DD
-```
-
 ---
 
 ## 6. Acceptance Criteria (for the implementation session)

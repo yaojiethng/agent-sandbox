@@ -106,7 +106,7 @@ Read `agent/prompts/package-branch.md` for the correct invocation — do not gue
 - **Handovers need immediate dating to today.** It is tempting to use the original session date, but that creates inconsistency when the recovery spans a different day. Date handovers to the replay date and close them immediately.
 - **Rebase after replay, not during.** Replaying creates sequential commits that may include fixup commits for renumbering. The verification audit section (below) describes the rebase procedure as part of verifying and correcting the commit history — run it as a separate workflow session after replay is complete.
 - **Test counts may shift.** Adding tests that verify old patterns are gone (e.g. "old flag no longer present") increases the total test count. Document expected counts in the handover.
-- **Latent fixture bugs surface during inlining replay.** When production code is restructured (e.g. build_container.sh inlined into containers.sh), the restructured code may copy files the old test fixture never needed to provide. Fixture updates are legitimate replay work.
+- **Latent fixture bugs surface during restructuring replay.** When production code is restructured (e.g. build context assembly replaced with repo-root COPY), the new code may reference files the old test fixture never needed to provide. Fixture updates are legitimate replay work.
 
 ## Recovery verification audit
 
