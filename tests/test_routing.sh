@@ -14,13 +14,9 @@ unset WORKSPACE_DIR_NAME
 unset SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
 unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$REPO_ROOT/src/libs/routing.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # =============================================================================
 # session_export_path

@@ -18,6 +18,24 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); FAILURES+=("$1"); }
 skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); SKIPS+=("$1"); }
 run_test() { echo "[ $1 ]"; $1 || true; }
 
+# ---------------------------------------------------------------------------
+# test_setup — call at file scope after source lines to get standard vars
+# and automatic temp-dir cleanup.
+#
+# Sets: SCRIPT_DIR, REPO_ROOT, FIXTURE_DIR (mktemp -d)
+# Registers: trap 'rm -rf "$FIXTURE_DIR"' EXIT
+# ---------------------------------------------------------------------------
+test_setup() {
+  if [[ -z "${BASH_SOURCE[1]:-}" ]]; then
+    echo "Error: test_setup must be called from a sourced file, not interactively." >&2
+    return 1
+  fi
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
+  trap 'rm -rf "$FIXTURE_DIR"' EXIT
+}
+
 test_done() {
   local NAME="${1:-}"
   if [[ -n "$NAME" ]]; then

@@ -166,7 +166,7 @@ Helpers used by more than one test file live in `tests/libs/` and are sourced ex
 | `tests/libs/test_common.sh` | Pass/fail/skip counters and reporting: `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
 | `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
 | `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` — unified session directory creator with optional patches and uncommitted.diff |
-| `tests/libs/mock_repo_fixtures.sh` | Mock agent-sandbox repo layout: `make_mock_repo()` |
+
 
 **Rules for `tests/libs/` files:**
 - Helper functions only - no test execution

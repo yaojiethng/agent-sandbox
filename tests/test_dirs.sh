@@ -9,10 +9,9 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$REPO_ROOT/src/libs/dirs.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
 
 # =============================================================================
 # dirs_resolve — host convention (default WORKSPACE_DIR_NAME=.workspace)

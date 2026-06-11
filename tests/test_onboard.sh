@@ -10,14 +10,10 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 
 ONBOARD_SCRIPT="$REPO_ROOT/scripts/onboard.sh"
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # UID Mapping handles permissions — no ACL prerequisite needed.
 

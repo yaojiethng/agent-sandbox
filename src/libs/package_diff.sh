@@ -71,7 +71,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   # -------------------------
   TO_ARG=""
   SESSION_SUMMARY_ARG=""
-  ALL_FLAG=false
+  ALL_FLAG=
   BASELINE_ARG=""
 
   for ARG in "$@"; do

@@ -8,18 +8,13 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-FIXTURE_DIR=$(mktemp -d)
-FIXTURE="$FIXTURE_DIR"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
 source "$REPO_ROOT/src/libs/diff.sh"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 source "$REPO_ROOT/src/libs/package_branch.sh"
+FIXTURE="$FIXTURE_DIR"
 
 # ===================================================================
 # diff_export — entrypoint dispatch proxy

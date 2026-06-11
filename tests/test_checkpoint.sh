@@ -10,14 +10,9 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # Helper: compute SANDBOX_ID same way start_agent.sh does.
 sandbox_id_derive() {

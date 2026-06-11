@@ -11,14 +11,10 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$REPO_ROOT/src/libs/session_state.sh"
 source "$REPO_ROOT/src/capability/snapshot.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # -------------------------
 # Fixture builders

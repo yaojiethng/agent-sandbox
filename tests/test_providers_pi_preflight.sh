@@ -14,10 +14,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 PREFLIGHT="${SCRIPT_DIR}/../src/reasoning/providers/pi/preflight.sh"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -9,17 +9,12 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/apply.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 # =============================================================================
 # APPLY tests — 4-arg contract
