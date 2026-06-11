@@ -134,7 +134,7 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `test_capability_layer.sh` | 🟡 Warm | M2.3 | Standalone capability layer functional test. Skips cleanly when Docker unavailable. |
+| `test_capability_layer.sh` | — | M2.7 | Deleted. Static-file-existence checks subsumed by `scripts/dry_run_capability.sh`. See `devlog/roadmap.md` M2.7 Track B. |
 | `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
 | `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |

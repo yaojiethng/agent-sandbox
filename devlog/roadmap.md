@@ -81,15 +81,15 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 All tasks are shelved. Re-activate when KV5 timeline demands it.
 
-**Tasks:**
+**Tasks** (shelved — all unchecked):
 
-- [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](docs/discussions/investigation_mcp_server.md) candidates table)
-- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
-- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
-- [ ] Validate binary file handling (vault attachments) under selected MCP server
-- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
-- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
+- [ ] Validate vault workflow with sandbox-only configuration
+- [ ] Evaluate MCP server candidates
+- [ ] Build vault capability layer image
+- [ ] Configure OpenCode to connect to MCP server
+- [ ] Validate binary file handling under selected MCP server
+- [ ] Validate KV5 end-to-end
+- [ ] Update `execution_model.md` with capability layer variants
 
 #### M2.6 — Session Resume Across Provider Implementations
 
@@ -105,6 +105,9 @@ Each provider may result in a different integration pattern. Investigation findi
 
 **Related story:** [`story_agent_state_persistence.md`](docs/devlog/discussions/story_agent_state_persistence.md) — Agent state under AGENT_HOME must survive across container restarts. The bind mount approach fails on cross-filesystem mounts (utime/EPERM). Defines the persistence model that M2.6's session resume mechanism depends on.
 
+**Moved from M2.7:**
+- [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
+
 #### M2.7 — Session Identity and Harness Versioning
 
 **Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
@@ -119,41 +122,29 @@ Each provider may result in a different integration pattern. Investigation findi
 
 ### Track A — Container Identity & Lifecycle
 
-- [x] **SANDBOX_ID and RUN_ID derivation** — Add `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` and `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]` to `scripts/start_agent.sh`. Rename `REPO_COMMIT` → `HOST_HEAD_SHA`. Remove `WORKTREE_ID` and `worktree_id_derive()`. Add `{{RUN_ID}}` and `{{HOST_HEAD_SHA}}` substitutions to `libs/compose.sh`. Depends on: nothing.
-- [x] **Image naming** — `sandbox_image_name()` and `agent_image_name()` use project name only (no `SANDBOX_ID` suffix). Images are tagged by harness code identity, not project repo state. Provenance is carried by Docker labels, not tags. This item is design-validation only — no code change needed.
-- [x] **Container naming with RUN_ID** — Container names use `RUN_ID` instead of `SESSION_TS`. Format: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. Depends on: item 1.
-- [x] **Docker labels** — Add `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts`, `agent-sandbox.run-id` to `x-session-labels`. Depends on: item 1.
-- [x] **SESSION_STATE** — Write `host_head_sha` to SESSION_STATE alongside `init_sha` and `session_ts` in `src/capability/snapshot.sh`. Depends on: item 1.
-- [x] **make stop redesign** — Filter by `project-name` + `sandbox-dir` labels (default), with optional `--run-id` for run-specific stop and `--prune` for post-stop cleanup. Depends on: item 4.
-- [x] **make prune** — New script: targeted cleanup scoped to project + sandbox instance. Age threshold: `PRUNE_AGE_DAYS=3` (hardcoded variable at top of script). Covers containers, images, volumes uniformly. CLI dispatch in agent-sandbox.sh. Makefile target. Depends on: item 6.
-- [x] **Artefact paths** — Session export: `<SESSION_TS>-<BRANCH>-<RUN_ID>`. Output export: replace optional `SESSION_TS` suffix with `RUN_ID`. Draft branch: `draft/<RUN_ID>-<BRANCH_SLUG>-<FROM_SHA:0:6>`. Depends on: item 1.
+All 8 items complete. See handover chain `20260609-01` through `20260609-08`.
+
+- [x] **SANDBOX_ID and RUN_ID derivation** — Identity primitives established in `start_agent.sh`.
+- [x] **Image naming** — Project-only image names (no SANDBOX_ID suffix).
+- [x] **Container naming with RUN_ID** — `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`.
+- [x] **Docker labels** — All provenance labels on containers.
+- [x] **SESSION_STATE** — `host_head_sha` written alongside `init_sha` and `session_ts`.
+- [x] **make stop redesign** — Label-based filtering, optional `--run-id` and `--prune`.
+- [x] **make prune** — Targeted cleanup by project+sandbox, `PRUNE_AGE_DAYS=3`.
+- [x] **Artefact paths** — RUN_ID in session export paths and draft branch names.
 
 ### Track B — Build Pipeline & Staleness Detection
 
-- [x] Context_dir removal — Build context temp-dir assembly (`build_context_sandbox`, `build_context_agent`, `build_image`) replaced with repo-root Docker build context and subdirectory-level repo-relative COPY instructions in all 4 Dockerfiles (sandbox, pi, hermes, opencode). `src/build/context.sh` deleted (~112 lines). `scripts/build.sh` simplified: `build_image()`, `cleanup_build_context()`, `_BUILD_CONTEXT_DIRS`, `context_digest()` removed. `tests/test_build_context.sh` rewritten from ~496 lines of assembly tests to ~30 lines of COPY contract tests. All stale references to `context.sh`, `build_context_*`, `containers.sh` purged from docs and code. Design spec at `devlog/discussions/spec_context_dir_removal.md`.
-- [x] Two-sig model — Container-sig: SHA-256 hash of `/opt/sandbox/` + `/opt/workflow/` source files computed at build time by `container_sig()` in `scripts/build.sh`, baked as `agent-sandbox.container-sig` Docker label. `preflight()` warns on mismatch (non-blocking). Covers sandbox and tier-3 agent images. Depends on: context_dir removal.
-    - Harness-sig: deferred to `roadmap_future.md`.
+- [x] Context_dir removal — Temp-dir assembly replaced with repo-root build context and subdirectory COPY. `src/build/context.sh` deleted. `scripts/build.sh` simplified. COPY contract tests. All stale refs purged.
+- [x] Two-sig model — `container_sig()` in `build.sh`, `agent-sandbox.container-sig` Docker label, `preflight()` warns on mismatch (non-blocking). Container-sig done; harness-sig deferred.
 
 ---
 
-- [x] Settings.json ownership collision fix — Provider config lifecycle established: `agent/` directory bind mount replaces `/opt/provider-config`; `_ensure_harness_keys` handles pre-flight settings merge; `PROVIDER_CONFIG_DIR` removed from all provider Dockerfiles.
-- [x] Session-diffs persistence + dry-run seam — Session-diffs path resolution aligned between compose template and runtime; `diff_export` returns error codes; `package_branch.sh` added to sandbox image; commit messages embedded in diff filenames.
-- [x] Workspace path resolution refactor — Workspace paths unified under `x-workspace` anchor; `libs/dirs.sh` retired from production code; `SESSION_STATE` written on container init. Design document: [`design_workspace_path_resolution.md`](../discussions/design_workspace_path_resolution.md). Not in scope: SESSION_STATE append semantics fix (deferred to M2.6).
-- [ ] Dual-layer seam testing — Full dry-run pipeline asserting host-container seam in both layers.
-    - [x] Core mechanism — Capability-layer checks, pre-flight verification, dry-run rewrite, and host-side assertion pipeline.
-    - [ ] Subsume docker-dependent tests from `test_capability_layer.sh` — Migrate remaining checks; deprecation notice.
-- [ ] AGENTS.md injection cleanup — Brief.md injection removed; pre-flight checks updated.
-    - [x] Remove redundant brief.md injection.
-    - [x] Update pre-flight checks for `sandbox/AGENTS.md` and `AGENT_HOME/AGENTS.md`.
-    - [x] Provider-specific pre-flight hook — Source provider-specific check script at startup, before agent runs.
-    - [x] Audit shared reasoning layer for Pi-specific logic — 6 shared libs audited; only `provider-entrypoint.sh` has Pi-specific logic (now provider-aware). Compose template has hardcoded Pi paths (lines 102, 106) — deferred (outside pre-flight scope).
-    - [x] Design hook mechanism — Convention: `/opt/sandbox/bin/provider-preflight.sh` (fixed name); sourced by shared entrypoint if present. Staged by `build_context_agent`; file exists only if provider defines one.
-    - [x] Implement hook in `provider-entrypoint.sh` — Source provider pre-flight script after generic preflight, before agent runs.
-    - [x] Move `_ensure_harness_keys` from shared entrypoint to Pi-specific preflight — Extracted merge logic into `providers/pi/preflight.sh`; staged as `provider-preflight.sh` in build context.
-    - [x] Add warn-on-skip and verify-keys-after-merge to Pi preflight — Proposals 1 and 2 from session findings. Both in `providers/pi/preflight.sh`.
-    - [x] Add generic pre-flight validation to shared entrypoint — Validate AGENT_HOME bind mount, critical file presence (Proposal 3). Added missing lib file checks (diff.sh, diff_export.sh, package_branch.sh) and agent command presence validation to shared entrypoint.
-    - [x] Rename knowledge test — `knowledge_provider_config_cycle.sh` → `knowledge_pi_config_cycle.sh`; remove old copy-in/copy-out tests, add merge test (Proposal 4).
-- [ ] Autosave and session-save reliability — Autosave subshell has no resilience; EXIT trap discards `diff_export` return value. Scope permanent solution — test save behaviour within dry-run.
+- [x] Settings.json ownership collision fix — Provider config lifecycle established.
+- [x] Session-diffs persistence + dry-run seam — Session-diffs path resolution, diff_export error codes, package_branch.sh in sandbox.
+- [x] Workspace path resolution refactor — `x-workspace` anchor, `dirs.sh` retired from production. SESSION_STATE append semantics deferred to M2.6.
+- [x] Dual-layer seam testing — Full dry-run pipeline (capability checks, reasoning checks, host-side verification). Core mechanism and `test_capability_layer.sh` subsumption completed.
+- [x] AGENTS.md injection cleanup — All 8 sub-items complete. Brief.md injection removed, pre-flight hooks, Pi-specific preflight with `_ensure_harness_keys`, generic pre-flight validation in shared entrypoint, knowledge test rename.
 - [ ] Makefile variable or CLI flag for diff type — Add `DIFF_TYPE` variable for non-interactive `make apply`.
 - [ ] Git diff `--no-renames` index conflict — `git diff --no-renames` produces `new file mode` entries for rename targets that already exist in the index, which `git apply` rejects. A proper fix (e.g. generating `diff --git` entries instead of `new file mode` across rename boundaries) is needed for the `--no-renames` fallback path in `package_branch`. Limitation documented in `story-patch_application_failures.md` §Finding 2.
 
@@ -209,6 +200,6 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Addressed in upcoming milestones
 
-- **Stale container images** *(M2.7)* — M2.7 introduces `container-sig` (hash of `/opt/sandbox/` + `/opt/workflow/` at build time, baked as Docker label) checked at preflight with a warning. See [`devlog/discussions/design_session_identity_hash_based.md`](devlog/discussions/design_session_identity_hash_based.md).
+- **Stale container images** *(M2.7)* — `container-sig` implemented (hash baked as Docker label, preflight warning). See `design_session_identity_hash_based.md`.
 
 - **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.
