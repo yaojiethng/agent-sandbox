@@ -22,11 +22,7 @@ No other files are needed at this stage.
 
 Run before creating the handover.
 
-**Trigger B check:** Verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session notes Trigger B is pending (or the roadmap still shows a completed sub-milestone as active), the prior session's close sequence did not complete. Run Trigger B after creating this handover but before presenting the scope proposal (Step 2). Record the Trigger B execution in this handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
-
-**Compaction note:** Compaction is no longer a Step 1 action. It happens at Steps 8–9 after Gate 3 release per `roadmap_policy.md`. No compaction checks are needed at session open — read the roadmap as-is.
-
-Report the outcome of both checks before proceeding.
+**Trigger B check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, the prior session's close sequence did not complete. Run Trigger B after creating this handover but before presenting the scope proposal (Step 2). Record the Trigger B execution in this handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
 
 ---
 

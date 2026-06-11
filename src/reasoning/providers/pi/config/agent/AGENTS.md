@@ -17,8 +17,8 @@ not necessarily a regression; it may belong only to the other layer.
 
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
-- Do not commit or push changes — the harness handles that after review.
-- All output is a proposal; the operator reviews the diff before applying.
+- The changes in each session (represented by the task list of a single handover) should correspond to a single commit.
+- Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
 
