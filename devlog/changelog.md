@@ -105,3 +105,29 @@ The diff pipeline was redesigned around a single git-agnostic unified diff forma
 
 ---
 
+
+## M2.7 — Session Identity and Harness Versioning
+
+*Every session has a stable, traceable identity; containers are named by content hash not timestamp; images carry a build-time content digest for staleness detection; the build pipeline uses repo-root context with subdirectory COPY; and dry-run validates the two-layer seam end-to-end.*
+
+### Container Identity & Lifecycle (Track A)
+
+Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) — provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
+
+### Build Pipeline & Staleness Detection (Track B)
+
+Temp-dir build context replaced with repo-root Docker build context and subdirectory-relative COPY instructions in all 4 Dockerfiles. `src/build/context.sh` deleted. `build_image()` simplified (no temp-dir digest). COPY contract tests replace property-based assembly tests. Two-sig model: `container-sig` label baked at build time, `preflight()` warns on mismatch (non-blocking). Harness-sig deferred.
+
+### Pre-flight Validation & Dry-run Seam
+
+Generic pre-flight in shared entrypoint: all 7 lib files checked, AGENT_HOME validation, agent command presence. Provider-specific pre-flight hook (`providers/pi/preflight.sh`) for bind mount checks and settings.json merge. Dual-layer dry-run seam testing: capability checks, reasoning checks, host-side verification in three phases.
+
+### CLI & Makefile Extensions
+
+`--diff-type=uncommitted|all-changes` flag for `agent-sandbox apply` with `DIFF_TYPE` Makefile variable. `--no-renames` flag for `package_branch` to avoid rename conflicts during `git apply`.
+
+### Deferred
+
+- Harness-sig — self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
+- Autosave/session-save reliability — moved to M2.6.
+- Process improvements (fast-track criteria, decision recording, stale skill reference) — not milestone-scoped.

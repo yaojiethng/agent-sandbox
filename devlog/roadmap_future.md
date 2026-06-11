@@ -8,7 +8,9 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-## M2.5 — Vault Capability Layer Prototype
+## W1 — Vault Capability Layer Prototype
+
+**Status:** Deferred. Not a mainline milestone — separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it.
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
 

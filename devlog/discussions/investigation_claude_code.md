@@ -76,7 +76,7 @@ Note: a known directory restriction issue (GitHub #3139) affects `claude mcp ser
 
 ### 7. Document repository suitability
 
-Not yet validated. Requires a live test against an initialised vault. Deferred to M2.5 (Vault Capability Layer Prototype) — this is the same deferred item as in `investigation_claude_desktop.md` and is not a blocker for the provider integration recommendation.
+Not yet validated. Requires a live test against an initialised vault. Deferred to W1 (Vault Capability Layer Prototype) — this is the same deferred item as in `investigation_claude_desktop.md` and is not a blocker for the provider integration recommendation.
 
 ---
 
@@ -111,6 +111,6 @@ All harness invariants are preserved. The snapshot pipeline, diff mechanism, `ma
 
 Remote Control is the first-party `serve` equivalent: the operator runs `claude --remote-control` inside the container, which registers the session with the Anthropic API and exposes it via `claude.ai/code` and the Claude mobile app. No third-party wrapper is needed. The container requires outbound HTTPS to the Anthropic API, which is already the case in standard mode. The auth constraint (claude.ai subscription required; API key not supported for Remote Control) is an operator-level constraint, not a harness constraint. `providers/claude-code/run.sh` should handle `start`, `dry-run`, and `serve` (Remote Control) as named modes.
 
-The one remaining unknown — document repository suitability — is deferred to M2.5 and does not affect the integration recommendation.
+The one remaining unknown — document repository suitability — is deferred to W1 and does not affect the integration recommendation.
 
 No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/claude-code/` with `Dockerfile`, `build.sh`, and `run.sh`. This decision is recorded in the parent story [story_provider_knowledge_store.md](story_provider_knowledge_store.md).

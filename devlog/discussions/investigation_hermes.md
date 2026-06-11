@@ -74,7 +74,7 @@ Hermes loads `AGENTS.md` from the project working directory at session start, id
 
 ### 7. Document repository suitability
 
-Not yet validated. Requires a live test against an initialised vault. Deferred to M2.5 (Vault Capability Layer Prototype). Hermes's persistent memory and skill-creation features may be an advantage for long-running vault workflows, but this is speculative.
+Not yet validated. Requires a live test against an initialised vault. Deferred to W1 (Vault Capability Layer Prototype). Hermes's persistent memory and skill-creation features may be an advantage for long-running vault workflows, but this is speculative.
 
 ---
 
@@ -84,7 +84,7 @@ Not yet validated. Requires a live test against an initialised vault. Deferred t
 
 - **Dockerfile complexity:** Is the larger image size and submodule dependency acceptable, given that Pi and Claude Code offer simpler builds? This is a tradeoff decision, not a technical blocker.
 
-- **Document repository suitability** — unvalidated pending live test (M2.5).
+- **Document repository suitability** — unvalidated pending live test (W1).
 
 ---
 
@@ -109,6 +109,6 @@ All harness invariants are preserved. The snapshot pipeline, diff mechanism, `ma
 
 **Compose template scope:** Current compose templates are scoped to OpenCode only. Provider-specific templates need refactoring to be provider-agnostic before any second provider's `serve` mode works correctly. This is an M2.2 implementation task, not a blocker for this recommendation. Recorded in the handover for roadmap placement.
 
-**Remaining unknown:** Document repository suitability — deferred to M2.5. Not a blocker for the integration recommendation.
+**Remaining unknown:** Document repository suitability — deferred to W1. Not a blocker for the integration recommendation.
 
 No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/hermes/` with `Dockerfile`, `build.sh`, `run.sh`, and a compose template that includes the Open WebUI service. This decision is recorded in the parent story [story_provider_knowledge_store.md](story_provider_knowledge_store.md).

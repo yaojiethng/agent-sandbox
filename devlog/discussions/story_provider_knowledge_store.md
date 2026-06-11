@@ -108,7 +108,7 @@ These become reasoning layer candidates. Investigations continue as M2 prerequis
 This is the capability layer prototype and is the primary M2.1 work. `investigation_mcp_server.md` is the design document. Open questions (MCP server selection, working mount strategy) are M2.1 tasks.
 
 **Direction 2 — Workspace input channel**  
-Absorbed into the reporting workspace design. The operator input channel (`SANDBOX_DIR/input/`) is implemented in M1.5 as part of the directory restructuring. The `investigation_workspace_input_channel.md` open questions around mount shape and lifecycle are resolved by the M1.5 implementation. The `TASK.md` alignment with M2.5 (autonomous task execution) remains a pending decision in M2.5.
+Absorbed into the reporting workspace design. The operator input channel (`SANDBOX_DIR/input/`) is implemented in M1.5 as part of the directory restructuring. The `investigation_workspace_input_channel.md` open questions around mount shape and lifecycle are resolved by the M1.5 implementation. The `TASK.md` alignment remains a pending decision tracked in W1.
 
 ### Story status per use case
 

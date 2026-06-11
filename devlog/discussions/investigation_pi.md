@@ -100,13 +100,13 @@ Note: Pi's security warning about "full system access" refers to third-party Pi 
 
 ### 7. Document repository suitability
 
-Not yet validated. Requires a live test against an initialised vault. Deferred to M2.5 (Vault Capability Layer Prototype). Pi's multi-provider flexibility is a potential advantage here — the operator can select a model optimised for large-context text tasks without changing the harness or provider.
+Not yet validated. Requires a live test against an initialised vault. Deferred to W1 (Vault Capability Layer Prototype). Pi's multi-provider flexibility is a potential advantage here — the operator can select a model optimised for large-context text tasks without changing the harness or provider.
 
 ---
 
 ## Open Questions
 
-- **Document repository suitability** — unvalidated pending live test (M2.5).
+- **Document repository suitability** — unvalidated pending live test (W1).
 
 ---
 
@@ -127,6 +127,6 @@ All harness invariants are preserved. The snapshot pipeline, diff mechanism, `ma
 
 `serve` is confirmed unsupported — no native web UI or remote control equivalent exists. Two future paths exist if `serve` becomes a requirement: (1) RPC bridge using Pi's `--mode rpc`; (2) open-source web UI over the RPC bridge. Neither is recommended without a specific use case.
 
-The one remaining unknown — document repository suitability — is deferred to M2.5.
+The one remaining unknown — document repository suitability — is deferred to W1.
 
 Implementation is recorded in session handover `20260329-03-impl-pi_provider.md`. Provider files are under `providers/pi/`.

@@ -22,9 +22,9 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | M2.2 — Reasoning Layer Modularisation | [Complete — see changelog](changelog.md) |
 | M2.3 — Apply Workflow: Capability Layer Diff Pipeline | [Complete — see changelog](changelog.md) |
 | [M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| [M2.5 — Vault Capability Layer Prototype](#m25--vault-capability-layer-prototype) | Deferred — see M2.5 section |
+| W1 — Vault Capability Layer Prototype | Deferred |
 | M2.6 — Session Resume Across Provider Implementations | Not started |
-| M2.7 — Session Identity and Harness Versioning | Active |
+| M2.7 — Session Identity and Harness Versioning | [Complete — see changelog](changelog.md) |
 | **Single-Agent Coordination** | |
 | [M3 — Autonomous Task Execution, Manual Review Workflow](roadmap_future.md#m3--autonomous-task-execution-manual-review-workflow) | Not started |
 | **Multi-Agent Coordination** | |
@@ -71,25 +71,11 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Scope note:** M2.4 covers config and state persistence infrastructure. It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
 
-#### M2.5 — Vault Capability Layer Prototype
+#### W1 — Vault Capability Layer Prototype
+
+**Status:** Deferred. Not a mainline milestone — separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it. See `roadmap_future.md` for task checklist.
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
-
-**Depends on:** M2.1, M2.2, M2.3. **Status:** Deferred.
-
-**Scope:** Validate vault workflow with sandbox-only configuration. Evaluate and select MCP server candidate. Build vault capability layer image. Validate binary file handling and KV5 end-to-end.
-
-All tasks are shelved. Re-activate when KV5 timeline demands it.
-
-**Tasks** (shelved — all unchecked):
-
-- [ ] Validate vault workflow with sandbox-only configuration
-- [ ] Evaluate MCP server candidates
-- [ ] Build vault capability layer image
-- [ ] Configure OpenCode to connect to MCP server
-- [ ] Validate binary file handling under selected MCP server
-- [ ] Validate KV5 end-to-end
-- [ ] Update `execution_model.md` with capability layer variants
 
 #### M2.6 — Session Resume Across Provider Implementations
 
@@ -110,59 +96,11 @@ Each provider may result in a different integration pattern. Investigation findi
 
 #### M2.7 — Session Identity and Harness Versioning
 
-**Objective:** Establish a stable, content-addressed identity model for sessions, containers, and the harness itself — eliminating stale image regressions, timestamp drift, and the lack of provenance tracing for session artefacts.
+**Status:** Complete. Hash-based identity model (SANDBOX_ID, RUN_ID), container lifecycle (naming, labels, stop/prune), artefact paths, build pipeline simplification (repo-root context, COPY contract tests), two-sig model (container-sig label + preflight), generic pre-flight validation, dual-layer dry-run seam testing, DIFF_TYPE flag, --no-renames flag. See handover chain `20260609-01` through `20260611-04` and changelog entry.
 
-**Depends on:** M2.3. **Status:** Active.
-
-**Design reference:** [`devlog/discussions/design_session_identity_hash_based.md`](devlog/discussions/design_session_identity_hash_based.md)
-
-**Scope:** Implement the hash-based session identity model, two-sig model, container lifecycle redesign, and build pipeline cleanup. Items restructured per planning session 20260513-11.
-
----
-
-### Track A — Container Identity & Lifecycle
-
-All 8 items complete. See handover chain `20260609-01` through `20260609-08`.
-
-- [x] **SANDBOX_ID and RUN_ID derivation** — Identity primitives established in `start_agent.sh`.
-- [x] **Image naming** — Project-only image names (no SANDBOX_ID suffix).
-- [x] **Container naming with RUN_ID** — `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`.
-- [x] **Docker labels** — All provenance labels on containers.
-- [x] **SESSION_STATE** — `host_head_sha` written alongside `init_sha` and `session_ts`.
-- [x] **make stop redesign** — Label-based filtering, optional `--run-id` and `--prune`.
-- [x] **make prune** — Targeted cleanup by project+sandbox, `PRUNE_AGE_DAYS=3`.
-- [x] **Artefact paths** — RUN_ID in session export paths and draft branch names.
-
-### Track B — Build Pipeline & Staleness Detection
-
-- [x] Context_dir removal — Temp-dir assembly replaced with repo-root build context and subdirectory COPY. `src/build/context.sh` deleted. `scripts/build.sh` simplified. COPY contract tests. All stale refs purged.
-- [x] Two-sig model — `container_sig()` in `build.sh`, `agent-sandbox.container-sig` Docker label, `preflight()` warns on mismatch (non-blocking). Container-sig done; harness-sig deferred.
-
----
-
-- [x] Settings.json ownership collision fix — Provider config lifecycle established.
-- [x] Session-diffs persistence + dry-run seam — Session-diffs path resolution, diff_export error codes, package_branch.sh in sandbox.
-- [x] Workspace path resolution refactor — `x-workspace` anchor, `dirs.sh` retired from production. SESSION_STATE append semantics deferred to M2.6.
-- [x] Dual-layer seam testing — Full dry-run pipeline (capability checks, reasoning checks, host-side verification). Core mechanism and `test_capability_layer.sh` subsumption completed.
-- [x] AGENTS.md injection cleanup — All 8 sub-items complete. Brief.md injection removed, pre-flight hooks, Pi-specific preflight with `_ensure_harness_keys`, generic pre-flight validation in shared entrypoint, knowledge test rename.
-- [x] Makefile variable or CLI flag for diff type — `--diff-type=uncommitted|all-changes` flag added to apply.sh; `DIFF_TYPE` Makefile variable in template.
-- [x] Git diff `--no-renames` index conflict — Added `--no-renames` flag to `package_commits()` and `package_branch()` in `src/libs/package_branch.sh`, CLI flag in `package_branch.sh`, and `NO_RENAMES` variable in Makefile template. When set, produces diffs without rename operations via `git diff --no-renames`, avoiding rename-target conflicts during apply. See `story-patch_application_failures.md` §Finding 2 for scope.
-
-### Deferred (not milestone-scoped)
-
-- [ ] Add fast-track criteria for chore/mechanical sessions
-- [ ] Record decision rationale inline during sessions
-- [ ] Remove `subagent_type=Explore` reference from `improve-codebase-architecture` skill
-
-### Track C — Universal Bind Mount Permission Strategy (UID Mapping)
-
-**Design reference:** [`docs/devlog/discussions/design_settings_permissions_group_bind.md`](../discussions/design_settings_permissions_group_bind.md)
-**Container layer spec:** [`docs/devlog/discussions/spec_container_layer_redesign.md`](../discussions/spec_container_layer_redesign.md)
-
-**All items complete.** Implemented across M2.4, M2.7, and associated chore sessions:
-- Phase 1: build.sh `--uid`/`--gid` flags, start_agent.sh/run_agent.sh HOST_UID/HOST_GID exports and propagation
-- Phase 2: ARG HOST_UID/HOST_GID in all 4 Dockerfiles with `usermod` collision handling and `chown`; `user:` in compose template; verified no provider overlay sets `user:`
-- Phase 3: `setfacl` removed from onboard.sh, pi/onboard.sh verified clean, CAN_RUN_FULL guard removed, docs updated
+**Deferred from M2.7:**
+- Harness-sig — deferred to `roadmap_future.md`
+- Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred, not milestone-scoped
 
 ## Future Milestones
 
@@ -188,7 +126,7 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
 
-- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path. The image rename in M2.7 (dropping the `<project>` suffix) is a prerequisite step toward this.
+- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
 
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
 
@@ -199,7 +137,5 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **`docker compose down -v` race with EXIT trap** — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3. No milestone assigned.
 
 ### Addressed in upcoming milestones
-
-- **Stale container images** *(M2.7)* — `container-sig` implemented (hash baked as Docker label, preflight warning). See `design_session_identity_hash_based.md`.
 
 - **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.

@@ -1,6 +1,6 @@
 # Design — Provider Config Ownership and Loading
 
-**Target milestone:** M2.5 — Vault Capability Layer Prototype
+**Target milestone:** W1 — Vault Capability Layer Prototype
 
 **Status:** Design record — enumerates the problem, constraints, and candidate solutions for the settings.json ownership collision and skills/prompts loading architecture. Implemented in M2.7 item 8 (see handover 20260513-10). [CORRECTION — 2026-05-22]: Filesystem compatibility gap — see CORRECTION block below.
 

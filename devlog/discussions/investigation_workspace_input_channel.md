@@ -69,4 +69,4 @@ The brief in the input channel must have a defined lifecycle: written by operato
 
 The operator input channel (`SANDBOX_DIR/input/`) was implemented in M1.5 as part of the directory restructuring. The open questions around mount shape (sub-path vs separate RO mount) and git history exposure were resolved by the M1.5 implementation. The decision on mount shape is documented in `execution_model.md`.
 
-The `TASK.md` alignment question remains pending — it is a M2.5 (autonomous task execution) concern and is tracked there. This investigation is otherwise closed.
+The `TASK.md` alignment question remains pending — it is a W1 concern and is tracked there. This investigation is otherwise closed.
