@@ -23,6 +23,14 @@ set -o pipefail
 ROOT="/home/agentuser"
 source /opt/sandbox/lib/session_state.sh
 source /opt/sandbox/lib/diff_export.sh
+source /opt/sandbox/lib/routing.sh
+
+# Validate all expected symbols resolved from sourced libraries.
+# An absent symbol means the image is stale — fail fast rather than
+# scattering ad-hoc 'type' checks at each call site.
+for _cmd in wait_git_lockfile resolve_latest_dir; do
+  type "$_cmd" &>/dev/null || { echo "CRITICAL: $_cmd not found after sourcing libraries — image may be stale" >&2; exit 1; }
+done
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
@@ -157,12 +165,8 @@ warn_check "session_export_path: resolves with available env vars" \
 
 # Verify wait_git_lockfile returns quickly when no lockfile exists.
 # This asserts the function doesn't hang or error on a clean repo.
-if type wait_git_lockfile &>/dev/null; then
-  warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
-    wait_git_lockfile "$SANDBOX_DIR"
-else
-  _warn "wait_git_lockfile: not available (diff_export.sh may be stale)"
-fi
+warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
+  wait_git_lockfile "$SANDBOX_DIR"
 
 section "session-diffs round-trip"
 # Write a capability-layer marker to CHANGES_DIR. The reasoning layer

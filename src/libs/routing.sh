@@ -172,6 +172,23 @@ output_export_path() {
 }
 
 # =============================================================================
+# Directory resolution
+# =============================================================================
+
+# resolve_latest_dir BASE_DIR
+#   Finds the most recently created subdirectory under BASE_DIR.
+#   Returns 0 and prints the path on success, or returns 1 if BASE_DIR
+#   does not exist or has no subdirectories.
+resolve_latest_dir() {
+  local _base="$1"
+  if [[ ! -d "$_base" ]]; then return 1; fi
+  local _latest
+  _latest=$(find "$_base" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
+  if [[ -z "$_latest" ]]; then return 1; fi
+  echo "$_latest"
+}
+
+# =============================================================================
 # Draft source resolution
 # =============================================================================
 
@@ -213,15 +230,10 @@ resolve_source_for_draft() {
     SESSION_NAME="$SESSION_ARG"
   else
     # Auto-resolve: newest directory under BASE_DIR
-    if [[ ! -d "$BASE_DIR" ]]; then
+    RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
       echo "Error: no session directories found under $BASE_DIR" >&2
       return 1
-    fi
-    RESOLVED_DIR=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
-    if [[ -z "$RESOLVED_DIR" ]]; then
-      echo "Error: no session directories found under $BASE_DIR" >&2
-      return 1
-    fi
+    }
     SESSION_NAME=$(basename "$RESOLVED_DIR")
   fi
 
@@ -280,15 +292,10 @@ resolve_diff_for_apply() {
     RESOLVED_DIR="${BASE_DIR}/${SESSION_ARG}"
   else
     # Auto-resolve: newest directory under BASE_DIR
-    if [[ ! -d "$BASE_DIR" ]]; then
+    RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
       echo "Error: no session directories found under $BASE_DIR" >&2
       return 1
-    fi
-    RESOLVED_DIR=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1)
-    if [[ -z "$RESOLVED_DIR" ]]; then
-      echo "Error: no session directories found under $BASE_DIR" >&2
-      return 1
-    fi
+    }
   fi
 
   if [[ ! -d "$RESOLVED_DIR" ]]; then

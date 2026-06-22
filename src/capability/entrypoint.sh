@@ -198,10 +198,8 @@ _session_export() {
   # Fallback: find the most recent autosave directory
   local _autosave_base
   _autosave_base=$(resolve_channel_base_dir "autosave") || true
-  local _latest_autosave=""
-  if [[ -d "$_autosave_base" ]]; then
-    _latest_autosave=$(find "$_autosave_base" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -n 1) || true
-  fi
+  local _latest_autosave
+  _latest_autosave=$(resolve_latest_dir "${_autosave_base:-}" 2>/dev/null) || true
 
   if [[ -n "$_latest_autosave" ]]; then
     echo "session-export: falling back to autosave: $_latest_autosave" >&2
