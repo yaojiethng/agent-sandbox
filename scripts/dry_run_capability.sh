@@ -134,7 +134,51 @@ if diff_export "$SANDBOX_DIR" "$_diff_test_dir" 2>/dev/null; then
 else
   _fail "diff_export: command failed"
 fi
+
+# Verify .export-status was written by diff_export on success
+if [[ -f "$_diff_test_dir/.export-status" ]]; then
+  _export_status_content=$(cat "$_diff_test_dir/.export-status" 2>/dev/null)
+  if [[ "$_export_status_content" == *"STATUS=SUCCESS"* ]]; then
+    _pass "diff_export: .export-status reports SUCCESS"
+  else
+    _warn "diff_export: .export-status content unexpected: $_export_status_content"
+  fi
+else
+  _warn "diff_export: .export-status not created"
+fi
 rm -rf "$_diff_test_dir"
+
+section "autosave infrastructure"
+# Verify autosave directory structure exists. Even if no autosave
+# has run yet (AUTOSAVE_INTERVAL may be long), the base directory
+# should be created by the entrypoint at startup.
+warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
+
+# Verify session export path construction matches expectations.
+# This would catch regressions if session_export_path changes
+# in Phase 2 (mount model redesign).
+if [[ -n "${RUN_ID:-}" && -n "${SESSION_TS:-}" && -n "${SANITIZED_HOST_BRANCH:-}" ]]; then
+  _export_path=$(session_export_path "$CHANGES_DIR" "session" "$SESSION_TS" "$SANITIZED_HOST_BRANCH" "$RUN_ID" 2>/dev/null) || _export_path=""
+  if [[ -n "$_export_path" ]]; then
+    _pass "session_export_path: resolves to $_export_path"
+  else
+    _warn "session_export_path: could not resolve (env vars set but function failed)"
+  fi
+else
+  _warn "session_export_path: RUN_ID/SESSION_TS/SANITIZED_HOST_BRANCH not all set — skipping"
+fi
+
+# Verify wait_git_lockfile returns quickly when no lockfile exists.
+# This asserts the function doesn't hang or error on a clean repo.
+if type wait_git_lockfile &>/dev/null; then
+  if wait_git_lockfile "$SANDBOX_DIR" 1 100 2>/dev/null; then
+    _pass "wait_git_lockfile: returns 0 when no lockfile present"
+  else
+    _warn "wait_git_lockfile: returned non-zero without lockfile (unexpected)"
+  fi
+else
+  _warn "wait_git_lockfile: not available (diff_export.sh may be stale)"
+fi
 
 section "session-diffs round-trip"
 # Write a capability-layer marker to CHANGES_DIR. The reasoning layer
