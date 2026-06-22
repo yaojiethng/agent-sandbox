@@ -42,15 +42,23 @@ diff_export() {
 
   # Capture package_branch stderr so it can be included in the error log
   # on failure. stderr is also echoed live for immediate visibility.
+  # Uses a shared cleanup helper to avoid duplicating the read+remove logic
+  # on both the success and failure paths.
   local _pb_stderr
   _pb_stderr=$(mktemp "${OUTPUT_DIR}/.package_branch.stderr.XXXXXXXXXX" 2>/dev/null) || _pb_stderr=""
+
+  _read_and_remove_pb_stderr() {
+    local _dump=""
+    [[ -n "$_pb_stderr" && -f "$_pb_stderr" ]] && _dump=$(cat "$_pb_stderr" 2>/dev/null) && rm -f "$_pb_stderr"
+    echo "$_dump"
+  }
+
   package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" 2> >(tee "$_pb_stderr" >&2) || {
     local _exit_code=$?
     echo "diff_export: package_branch failed (exit $_exit_code) — export incomplete" >&2
 
-    local _stderr_dump=""
-    [[ -n "$_pb_stderr" && -f "$_pb_stderr" ]] && _stderr_dump=$(cat "$_pb_stderr" 2>/dev/null) || true
-    rm -f "$_pb_stderr" 2>/dev/null || true
+    local _stderr_dump
+    _stderr_dump=$(_read_and_remove_pb_stderr)
 
     # Write .export-status with failure
     _write_export_status "$OUTPUT_DIR" "FAIL" "$_export_ts" "$_exit_code"
@@ -59,7 +67,7 @@ diff_export() {
     _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$RUN_ID" "$_exit_code" "$_stderr_dump" "package_branch returned exit $_exit_code"
     return $_exit_code
   }
-  rm -f "$_pb_stderr" 2>/dev/null || true
+  _read_and_remove_pb_stderr > /dev/null  # cleanup on success
 
   # Record export time for audit trail (written after package_branch
   # since it removes and recreates OUTPUT_DIR internally)

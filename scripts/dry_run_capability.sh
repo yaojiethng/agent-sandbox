@@ -138,12 +138,8 @@ fi
 # Verify .export-status was written by diff_export on success
 warn_check "diff_export: .export-status exists after successful export" \
   test -f "$_diff_test_dir/.export-status"
-# Use a helper function so $_diff_test_dir is captured in scope
-_check_export_status_success() {
-  [[ -f "$_diff_test_dir/.export-status" ]] || return 1
-  grep -q "^STATUS=SUCCESS$" "$_diff_test_dir/.export-status" 2>/dev/null
-}
-warn_check "diff_export: .export-status reports SUCCESS" _check_export_status_success
+warn_check "diff_export: .export-status reports SUCCESS" \
+  bash -c 'test -f "$1" && grep -q "^STATUS=SUCCESS$" "$1"' _ "$_diff_test_dir/.export-status"
 rm -rf "$_diff_test_dir"
 
 section "autosave infrastructure"
@@ -155,12 +151,9 @@ warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 # Verify session export path construction matches expectations.
 # This would catch regressions if session_export_path changes
 # in Phase 2 (mount model redesign).
-_check_session_export_path() {
-  local _p
-  _p=$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}" "${RUN_ID:-}" 2>/dev/null) || return 1
-  [[ -n "$_p" ]]
-}
-warn_check "session_export_path: resolves with available env vars" _check_session_export_path
+warn_check "session_export_path: resolves with available env vars" \
+  bash -c 'p=$(session_export_path "$1" session "${2:-}" "${3:-}" "${4:-}" 2>/dev/null); [[ -n "$p" ]]' \
+  _ "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}" "${RUN_ID:-}"
 
 # Verify wait_git_lockfile returns quickly when no lockfile exists.
 # This asserts the function doesn't hang or error on a clean repo.
