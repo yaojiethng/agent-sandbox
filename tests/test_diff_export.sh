@@ -146,7 +146,7 @@ test_wait_git_lockfile_no_lockfile() {
   _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
   mkdir -p "$_tmpdir/.git"
 
-  if wait_git_lockfile "$_tmpdir" "1" "100"; then
+  if wait_git_lockfile "$_tmpdir"; then
     pass "wait_git_lockfile returns 0 when no lockfile present"
   else
     fail "wait_git_lockfile: expected 0 with no lockfile"
@@ -168,7 +168,7 @@ test_wait_git_lockfile_lockfile_appears_and_disappears() {
     rm -f "$_lockfile"
   ) &
 
-  if wait_git_lockfile "$_tmpdir" "3" "100"; then
+  if wait_git_lockfile "$_tmpdir" "3"; then
     pass "wait_git_lockfile returns 0 when lockfile is released within timeout"
   else
     fail "wait_git_lockfile: expected 0 when lockfile is released"
@@ -184,7 +184,7 @@ test_wait_git_lockfile_timeout() {
   # Create lockfile that never disappears
   touch "$_tmpdir/.git/index.lock"
 
-  if wait_git_lockfile "$_tmpdir" "1" "200"; then
+  if wait_git_lockfile "$_tmpdir" "1"; then
     rm -rf "$_tmpdir"
     fail "wait_git_lockfile: expected 1 on timeout"
   else
@@ -201,7 +201,7 @@ test_wait_git_lockfile_timeout_message() {
   touch "$_tmpdir/.git/index.lock"
 
   local _output
-  _output=$(wait_git_lockfile "$_tmpdir" "1" "200" 2>&1) || true
+  _output=$(wait_git_lockfile "$_tmpdir" "1" 2>&1) || true
 
   rm -rf "$_tmpdir"
 

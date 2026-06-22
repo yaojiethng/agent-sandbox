@@ -136,16 +136,14 @@ else
 fi
 
 # Verify .export-status was written by diff_export on success
-if [[ -f "$_diff_test_dir/.export-status" ]]; then
-  _export_status_content=$(cat "$_diff_test_dir/.export-status" 2>/dev/null)
-  if [[ "$_export_status_content" == *"STATUS=SUCCESS"* ]]; then
-    _pass "diff_export: .export-status reports SUCCESS"
-  else
-    _warn "diff_export: .export-status content unexpected: $_export_status_content"
-  fi
-else
-  _warn "diff_export: .export-status not created"
-fi
+warn_check "diff_export: .export-status exists after successful export" \
+  test -f "$_diff_test_dir/.export-status"
+# Use a helper function so $_diff_test_dir is captured in scope
+_check_export_status_success() {
+  [[ -f "$_diff_test_dir/.export-status" ]] || return 1
+  grep -q "^STATUS=SUCCESS$" "$_diff_test_dir/.export-status" 2>/dev/null
+}
+warn_check "diff_export: .export-status reports SUCCESS" _check_export_status_success
 rm -rf "$_diff_test_dir"
 
 section "autosave infrastructure"
@@ -157,25 +155,18 @@ warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 # Verify session export path construction matches expectations.
 # This would catch regressions if session_export_path changes
 # in Phase 2 (mount model redesign).
-if [[ -n "${RUN_ID:-}" && -n "${SESSION_TS:-}" && -n "${SANITIZED_HOST_BRANCH:-}" ]]; then
-  _export_path=$(session_export_path "$CHANGES_DIR" "session" "$SESSION_TS" "$SANITIZED_HOST_BRANCH" "$RUN_ID" 2>/dev/null) || _export_path=""
-  if [[ -n "$_export_path" ]]; then
-    _pass "session_export_path: resolves to $_export_path"
-  else
-    _warn "session_export_path: could not resolve (env vars set but function failed)"
-  fi
-else
-  _warn "session_export_path: RUN_ID/SESSION_TS/SANITIZED_HOST_BRANCH not all set — skipping"
-fi
+_check_session_export_path() {
+  local _p
+  _p=$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}" "${RUN_ID:-}" 2>/dev/null) || return 1
+  [[ -n "$_p" ]]
+}
+warn_check "session_export_path: resolves with available env vars" _check_session_export_path
 
 # Verify wait_git_lockfile returns quickly when no lockfile exists.
 # This asserts the function doesn't hang or error on a clean repo.
 if type wait_git_lockfile &>/dev/null; then
-  if wait_git_lockfile "$SANDBOX_DIR" 1 100 2>/dev/null; then
-    _pass "wait_git_lockfile: returns 0 when no lockfile present"
-  else
-    _warn "wait_git_lockfile: returned non-zero without lockfile (unexpected)"
-  fi
+  warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
+    wait_git_lockfile "$SANDBOX_DIR"
 else
   _warn "wait_git_lockfile: not available (diff_export.sh may be stale)"
 fi

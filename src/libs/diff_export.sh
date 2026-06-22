@@ -40,17 +40,26 @@ diff_export() {
   _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   source "$_self_dir/package_branch.sh"
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" || {
+  # Capture package_branch stderr so it can be included in the error log
+  # on failure. stderr is also echoed live for immediate visibility.
+  local _pb_stderr
+  _pb_stderr=$(mktemp "${OUTPUT_DIR}/.package_branch.stderr.XXXXXXXXXX" 2>/dev/null) || _pb_stderr=""
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" 2> >(tee "$_pb_stderr" >&2) || {
     local _exit_code=$?
     echo "diff_export: package_branch failed (exit $_exit_code) — export incomplete" >&2
+
+    local _stderr_dump=""
+    [[ -n "$_pb_stderr" && -f "$_pb_stderr" ]] && _stderr_dump=$(cat "$_pb_stderr" 2>/dev/null) || true
+    rm -f "$_pb_stderr" 2>/dev/null || true
 
     # Write .export-status with failure
     _write_export_status "$OUTPUT_DIR" "FAIL" "$_export_ts" "$_exit_code"
 
     # Write error log with stderr capture
-    _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$RUN_ID" "$_exit_code" "" "package_branch returned exit $_exit_code"
+    _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$RUN_ID" "$_exit_code" "$_stderr_dump" "package_branch returned exit $_exit_code"
     return $_exit_code
   }
+  rm -f "$_pb_stderr" 2>/dev/null || true
 
   # Record export time for audit trail (written after package_branch
   # since it removes and recreates OUTPUT_DIR internally)
@@ -77,10 +86,10 @@ _write_export_status() {
   fi
 
   # Atomic write: temp file + rename
+  # If mktemp fails, fall back to a deterministic temp name so the
+  # function degrades gracefully rather than silently discarding content.
   local _tmp
-  _tmp=$(mktemp "${_dir}/.export-status.XXXXXXXXXX") 2>/dev/null || {
-    echo "${_dir}/.export-status.$$"
-  }
+  _tmp=$(mktemp "${_dir}/.export-status.XXXXXXXXXX" 2>/dev/null) || _tmp="${_dir}/.export-status.$$"
   printf '%s\n' "$_content" > "$_tmp"
   mv -f "$_tmp" "${_dir}/.export-status" 2>/dev/null || true
 }
@@ -121,21 +130,20 @@ _write_export_error_log() {
 # Lockfile wait helper (shared by entrypoint and callers)
 # =============================================================================
 
-# wait_git_lockfile SANDBOX_DIR [TIMEOUT_SECS] [POLL_INTERVAL_MS]
+# wait_git_lockfile SANDBOX_DIR [TIMEOUT_SECS]
 #   Polls for a git index.lock file to disappear. Returns 0 once the lockfile
 #   is gone, or 1 if the lockfile persists beyond TIMEOUT_SECS.
 #   Default timeout: 3 seconds, poll interval: 200ms.
 wait_git_lockfile() {
   local _sandbox_dir="$1"
   local _timeout="${2:-3}"
-  local _interval="${3:-200}"
   local _lockfile="${_sandbox_dir}/.git/index.lock"
 
   if [[ ! -f "$_lockfile" ]]; then
     return 0
   fi
 
-  local _max_polls=$(( _timeout * 1000 / _interval ))
+  local _max_polls=$(( _timeout * 5 ))   # 5 polls/s (200ms each)
   local _poll=0
 
   while [[ -f "$_lockfile" ]] && [[ $_poll -lt $_max_polls ]]; do
