@@ -62,24 +62,6 @@
       "apiKey": "OPENCODE_API_KEY",
       "models": [
         {
-          "id": "glm-5.1",
-          "name": "GLM-5.1 (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
-        },
-        {
-          "id": "mimo-v2-pro",
-          "name": "MiMo-V2-Pro (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
-        },
-        {
-          "id": "mimo-v2-omni",
-          "name": "MiMo-V2-Omni (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
-        },
-        {
           "id": "qwen3.6-plus",
           "name": "Qwen3.6 Plus (Opencode Go)",
           "baseUrl": "https://opencode.ai/zen/go/v1",
@@ -104,24 +86,6 @@
           "compat": {
             "thinkingFormat": "qwen"
           }
-        },
-        {
-          "id": "kimi-k2.6",
-          "name": "Kimi K2.6 (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1"
-        },
-        {
-          "id": "minimax-m2.5",
-          "name": "MiniMax M2.5 (Opencode Go)",
-          "api": "anthropic-messages",
-          "baseUrl": "https://opencode.ai/zen/go"
-        },
-        {
-          "id": "minimax-m2.7",
-          "name": "MiniMax M2.7 (Opencode Go)",
-          "api": "anthropic-messages",
-          "baseUrl": "https://opencode.ai/zen/go"
         },
         {
           "id": "deepseek-v4-pro",
