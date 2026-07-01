@@ -25,6 +25,16 @@ Key behavioral rules:
 Code changes should be self-contained within a single session. The operator reviews per-session diffs — fragmented or half-applied changes across sessions
 create review burden.
 
+When writing code, always take into account the following:
+
+1. Does this need to exist?   → no: skip it (YAGNI)
+2. Already in this codebase?  → reuse it, don't rewrite
+3. Stdlib does it?            → use it
+4. Native platform feature?   → use it
+5. Installed dependency?      → use it
+6. One line?                  → one line
+7. Only then: the minimum that works
+
 ## Session Workflow
 
 Each session is independent. The prior session's git history is not available (container is ephemeral). The session starts from the project's committed HEAD.
