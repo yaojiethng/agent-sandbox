@@ -78,7 +78,7 @@ write_uncommitted_diff() {
   else
     git -C "$SANDBOX_DIR" diff HEAD \
       | strip_index_lines \
-      | sed 's/[[:space:]]*$//' \
+      | sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"
   fi
@@ -141,7 +141,7 @@ write_all_changes_diff() {
   else
     git -C "$SANDBOX_DIR" diff "$INIT_SHA" \
       | strip_index_lines \
-      | sed 's/[[:space:]]*$//' \
+      | sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"
   fi

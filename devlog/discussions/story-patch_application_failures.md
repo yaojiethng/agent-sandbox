@@ -124,6 +124,43 @@ After this, `git archive HEAD` will produce `base.dockerfile` and all future con
 
 **Applicability:** This affects any filename case change on a case-insensitive host that packages content for a case-sensitive Linux container. The fix (intermediate rename) is a one-time host-side action per case-changed file.
 
+### Case 7: Trailing whitespace stripped from context lines by diff pipeline
+
+**Scenario:** A source file has trailing whitespace on lines that serve as patch context (e.g. Markdown hard line breaks: `  ` at end of line). The diff pipeline strips trailing whitespace from ALL lines — including context (` `-prefixed) lines — via `sed 's/[[:space:]]*$//'`. `git apply` rejects the patch because the context lines no longer match the target file.
+
+**Error:**
+```
+error: patch failed: devlog/discussions/security_delta_worktree_model.md:1
+error: devlog/discussions/security_delta_worktree_model.md: patch does not apply
+```
+
+**Root cause chain:**
+1. Source file has trailing whitespace on context lines (lines 5–6 in the real case: Markdown companion/baseline references with hard breaks).
+2. `package_commits()`, `write_uncommitted_diff()`, and `write_all_changes_diff()` all run `sed 's/[[:space:]]*$//'` on the entire diff output — stripping trailing whitespace from `+` (addition), `-` (removal), AND ` ` (context) lines.
+3. `git apply --ignore-whitespace` still requires exact matching of context lines to locate where the hunk belongs. The flag only relaxes whitespace on `+`/`-` lines, not on context lines.
+4. The context lines in the patch (now without trailing spaces) don't match the file (which still has them). `git apply` rejects the hunk.
+
+**Why existing recovery modes don't help:**
+- `--recount` recalculates line counts but doesn't relax context string matching.
+- `--ignore-space-change` (advertised as "ignore changes in whitespace when finding context") still fails on trailing whitespace in git 2.x for this case.
+- `-C1` reduces required context to 1 line and can work as a fallback **if** at least one other context line in the hunk matches. It fails when ALL nearby context lines have trailing whitespace.
+
+**Fix applied (2026-07-01):** The `sed` was changed from stripping ALL lines to stripping only `+`/`-` lines in `package_commits()`, `write_uncommitted_diff()`, and `write_all_changes_diff()`:
+
+```bash
+# Before (strips context lines — breaks git apply):
+| sed 's/[[:space:]]*$//'
+
+# After (strips only change lines — preserves context fidelity):
+| sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//'
+```
+
+This preserves context line fidelity (required for `git apply` matching) while still cleaning trailing whitespace from changed lines (preventing cosmetic whitespace-only diffs).
+
+**Knowledge test:** `tests/knowledge/knowledge_trailing_whitespace_context_mismatch.sh` documents the git apply behaviour and validates the fix across three scenarios.
+
+**Status:** Fixed.
+
 ## Proposed Fixes
 
 Status after triage session `20260528-02-workflow-patch_application_findings_triage.md`:
