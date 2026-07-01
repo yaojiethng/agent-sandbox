@@ -1,6 +1,6 @@
 # Story — Agent-Git Surface
 
-**Status:** Investigation in progress
+**Status:** Resolved — superseded by M2.6 design decisions
 
 ---
 
@@ -86,3 +86,31 @@ The story exists so the surface is recorded with framing intact, not so that wor
 | [`security.md`](../architecture/security.md) | Security invariants this scope must preserve |
 | [`tool_interface.md`](../architecture/tool_interface.md) | `make apply` / `make draft` contract |
 | [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, graduation |
+
+## Resolution
+
+**Status:** Resolved — superseded by M2.6 design decisions.
+
+### Summary
+
+The agent-git relationship design questions raised in this story are settled by the M2.6 three-tier mount model:
+
+- **Tier 1 (copy + tar):** Status quo holds — agent does not interact with git. Operator uses `!`-hook for git commands. No change.
+- **Tier 2 (mount + tar):** Agent works in a mounted `.snapshot/` but still has no link to `PROJECT_DIR/.git`. No git interaction. No change.
+- **Tier 3 (mount + worktree):** Agent commits to a real branch on `PROJECT_DIR`. The commit boundary is managed by the capability layer (staging on behalf of the agent). The operator reviews and merges with native git tooling. Agent-authored commits, autosave sweeps, and operator `!`-hook commits all coexist on the same branch.
+
+### Open questions disposition
+
+| # | Question | Disposition |
+|---|---|---|
+| 1 | Should the agent ever commit on its own initiative? | In Tier 3, yes — the capability layer stages and commits on behalf of the agent. Under Tiers 1 and 2, no — operator only. |
+| 2 | Should the agent see git history beyond `INIT_SHA`? | Tier 3 makes this moot — the agent works on a branch connected to the full object store. For Tiers 1 and 2, the question is deferred (not load-bearing). |
+| 3 | Should the agent see other branches? | Deferred — not load-bearing in any tier. Can be addressed if the design session specifies a need. |
+| 4 | If the agent commits, should it perform branch hygiene? | The capability layer manages commit boundaries. Agent-authored commits are raw (no squash, reorder, or message rewrite). Branch hygiene is the operator's responsibility during merge review. |
+| 5 | How do agent-authored commits interact with `!`-hook commits and autosave sweeps? | All go onto the same agent branch. The per-commit `.patch` series in `session-diffs/` reflects this mixed authorship. No semantic separation is attempted. |
+| 6 | Does `staged.diff` + per-commit `.patch` remain useful? | Yes — `staged.diff` becomes `main..agent/session` diff (equivalent to net delta). Per-commit patches remain as a detailed series. Both are preserved for backward compatibility. |
+
+### References
+
+- Security model: [`docs/architecture/security.md`](../architecture/security.md) — Tier 3 invariant replacing mutation gate
+- Mount models: Trust Boundaries — Tier 3 worktree specification

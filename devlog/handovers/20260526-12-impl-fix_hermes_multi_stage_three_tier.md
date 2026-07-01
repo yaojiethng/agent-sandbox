@@ -3,7 +3,7 @@
 **Session date:** 2026-05-26
 **Milestone:** M2.7 — Session Identity and Harness Versioning
 **Session type:** Implementation
-**Status:** Active
+**Status:** Closed
 
 ## Objective
 
@@ -57,7 +57,7 @@ None.
 
 ## Deferred items
 
-None.
+- **Hermes base.dockerfile `agent-node-base` inheritance** — the builder-stage fix (`ARG BUILDER_BASE`) was applied in this session but subsequently lost. The current `hermes/base.dockerfile` is a fully independent `FROM python:3.11-slim` build. Deferred to W1 (Hermes python base refactor) — non-urgent, Hermes not actively used.
 
 ## Next session
 

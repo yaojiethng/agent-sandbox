@@ -1,9 +1,9 @@
 # Security Delta — Worktree Model vs Snapshot+Diff Model
 
-**Status:** Analysis complete. Feeds into `investigation_git_worktrees.md` and any future decision to adopt the worktree model.
+**Status:** Analysis complete — incorporated into M2.6 Phase 1 P1-B.
 
-**Companion document:** [`investigation_git_worktrees.md`](investigation_git_worktrees.md)  
-**Security baseline:** [`docs/architecture/security.md`](../architecture/security.md)  
+**Companion document:** [`investigation_git_worktrees.md`](investigation_git_worktrees.md)
+**Security baseline:** [`docs/architecture/security.md`](../architecture/security.md)
 **Threat model:** [`docs/architecture/threat_model_stride.md`](../architecture/threat_model_stride.md)
 
 ---
@@ -287,3 +287,30 @@ The proposed mitigations (`--network=none` + `chmod a-w packed-refs`) leave two 
 If all four mitigations are applied, the residual risks are: (a) the operator's "clean history" precondition is unverifiable by the harness, and (b) the review gate is now post-mutation rather than pre-mutation. Both are accepted model changes under the new assumptions, not engineering failures.
 
 The security model documentation (`security.md`, `threat_model_stride.md`) would need material revision before the worktree model is adopted. The invariant rewrites are itemised in Part 2 above.
+
+## Resolution
+
+**Status:** Analysis complete — incorporated into M2.6 Phase 1 P1-B.
+
+### Summary
+
+The invariant-by-invariant comparison (Part 2), the four required mitigations (Part 7), and the residual risk analysis (Parts 4–6) have been incorporated into [`docs/architecture/security.md`](../architecture/security.md) as the Tier 3 (Mount + Worktree) security invariants. Specifically:
+
+- **Invariant rewrites** (Part 2): Applied in `security.md` §Security Invariants — Tier 3 replacement table.
+- **Required mitigations** (Part 7): All four are encoded as invariants 8–10 and the revision to invariant 1 in `security.md` §Tier 3.
+- **Unverifiable precondition** (Part 5): Documented in `security.md` Tier 3 invariants and Non-goals section.
+- **New trust boundaries** (Part 3): Documented in `security.md` §Trust Boundaries and Mount Models — Tier 3.
+- **Residual risk table** (Part 6): Summary retained in `security.md` Tier 3 invariants preamble.
+
+### Remaining content for M2.6 Phase 2 design session
+
+The following sections are not encoded in `security.md` and remain relevant for the Phase 2 design session:
+
+- Part 4 (Assets at Risk After Proposed Mitigations) — detailed per-mitigation coverage analysis.
+- Part 6 (Summary Table) — reference table for design trade-off discussions.
+- Option A vs. Option B architecture choice (`.git/` in capability layer only vs. also in reasoning layer) — this is a Phase 2 design decision not yet made.
+
+### References
+
+- Security model: [`docs/architecture/security.md`](../architecture/security.md) — Tier 3 invariants and trust boundaries
+- M2.6 Phase 2 design session — deferred decisions (Option A/B, `.git/hooks/` restoration, worktree lifecycle)

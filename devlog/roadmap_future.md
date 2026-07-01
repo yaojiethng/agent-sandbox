@@ -16,6 +16,8 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Depends on:** M2.1 two-container foundation, M2.2 modularised provider scripts, M2.3 apply workflow.
 
+**Hermes python base refactor (non-urgent):** The shared `python-harness` base (`src/reasoning/python.dockerfile`) was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
+
 **Tasks:**
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
 - [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) candidates table)

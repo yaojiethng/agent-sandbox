@@ -1,6 +1,6 @@
 # Story — Container Layer Architecture: Consolidation vs. Isolation
 
-**Status:** Active — design in progress
+**Status:** Resolved — partially implemented; python harness deferred to W1
 
 > Framing the problem: should the harness's shared plumbing live in one Docker layer shared by all providers, or stay per-provider as it is today? The answer affects build speed, maintenance burden, security surface, and the trajectory of the UID Mapping implementation in M2.7 Track C.
 
@@ -129,3 +129,39 @@ All open questions from the initial design were resolved during the design audit
 | `containers.sh` — `build_agent()` | The build pipeline that assembles and caches the two-tier images |
 | `design_settings_permissions_group_bind.md` §3 | UID Mapping surface area table — the 5 Dockerfiles that need changes |
 | `roadmap.md` — Track C Phase 2 | The implementation phase that would benefit from consolidation |
+
+## Resolution
+
+**Status:** Resolved — partially implemented; python harness deferred to W1.
+
+### What was implemented
+
+Option 2 (two harness bases) was partially implemented:
+
+| Component | Location | Status |
+|---|---|---|
+| `node-harness` (Tier 1) | `src/reasoning/node.dockerfile` | ✅ `FROM node:22.22.3-slim` with common system packages |
+| Pi base (Tier 2) | `src/reasoning/providers/pi/base.dockerfile` | ✅ `FROM agent-node-base`, installs pi agent |
+| OpenCode base (Tier 2) | `src/reasoning/providers/opencode/base.dockerfile` | ✅ `FROM agent-node-base`, installs opencode |
+| Hermes base (Tier 2) | `src/reasoning/providers/hermes/base.dockerfile` | ❌ Independent `FROM python:3.11-slim` — does not inherit from any harness base |
+| Python harness (Tier 1) | `src/reasoning/python.dockerfile` | ❌ Never built |
+
+### Why Hermes diverges
+
+Hermes requires both Python (ML dependencies, Hermes runtime) and Node.js (WhatsApp bridge, MCP servers). The planned `python-harness` base was never created. Instead, Hermes builds entirely independently via a multi-stage `FROM python:3.11-slim` with Node.js installed on top via NodeSource.
+
+### UID Mapping
+
+UID Mapping (`ARG HOST_UID`/`ARG HOST_GID` with collision handling) was implemented in all 4 provider Dockerfiles (`pi`, `opencode`, `hermes`, `claude-ai` where applicable) plus the sandbox Dockerfile — matching the planned 3-edit target in spirit, though the actual mechanism forked per provider rather than centralising in harness bases.
+
+### Deferred
+
+- **Python harness base** (`src/reasoning/python.dockerfile`) — not built. Hermes builds independently. See `devlog/roadmap.md` §W1.
+- **HERMES removal question** — if W1 is made to work without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider with a divergent build.
+
+### References
+
+- Node harness: `src/reasoning/node.dockerfile`
+- Hermes base: `src/reasoning/providers/hermes/base.dockerfile`
+- Roadmap: `devlog/roadmap.md` §W1 — Hermes python base refactor deferred
+- UID Mapping: provider Dockerfiles (`pi`, `opencode`, `hermes`), sandbox Dockerfile

@@ -77,6 +77,12 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
+**Hermes python base refactor deferred — see `roadmap_future.md` §W1.**
+The shared python-harness base (`src/reasoning/python.dockerfile`) was designed but never built.
+Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness.
+This is non-urgent (Hermes not actively used). If W1 is made to work without Hermes,
+consider whether to remove Hermes support entirely rather than maintaining a dormant provider.
+
 #### M2.6 — Session Resume and Mount Model Redesign
 
 **Objective:** Replace the snapshot-copy + diff-pipeline model with a mount-based workflow where the agent works directly on a persistent repo branch. The agent's changes live on disk at all times — no fragile `git apply`, no anonymous docker volumes, no autosave-as-primary-persistence. Session resume becomes: mount the repo, create a branch, start the agent on that branch.
@@ -111,7 +117,7 @@ The user chooses the model per session. The default is snapshot mount (backward 
 - [`docs/discussions/security_delta_worktree_model.md`](../discussions/security_delta_worktree_model.md) — full invariant comparison, residual risk analysis, and required mitigations
 - [`docs/discussions/story_agent_git_surface.md`](../discussions/story_agent_git_surface.md) — agent-in-git design questions (resolved by design: agent commits to a branch, operator reviews)
 - [`docs/discussions/story_agent_state_persistence.md`](../discussions/story_agent_state_persistence.md) — persistence model (resolved: mount-based persistence)
-- [`docs/discussions/story_container_layer_model.md`](../discussions/story_container_layer_model.md) — harness base layer design (settled; implementation deferred to M2.6)
+- [`docs/discussions/story_container_layer_model.md`](../discussions/story_container_layer_model.md) — harness base layer design (settled; node harness implemented, python harness deferred — see W1)
 
 ---
 
@@ -127,13 +133,13 @@ Focus on pi. The architecture should be extensible to other providers (Hermes, o
 
 Fix what's broken under the current (snapshot) model before introducing new workflows.
 
-- [ ] **Autosave and session-save reliability** — The autosave subshell has no resilience; the EXIT trap discards `diff_export` return values. Scope a permanent solution — test save behaviour within dry-run.
-- [ ] **Security model update** — Rewrite `docs/architecture/security.md` invariants to reflect the user-choice mount model. Document the two options and their trade-offs. Link to `security_delta_worktree_model.md` for the full analysis. Close `story_agent_state_persistence.md`, `story_agent_git_surface.md`, `security_delta_worktree_model.md`, and `story_container_layer_model.md` with Resolution sections referencing the new security model.
-- [ ] **Pi session resume** — `pi export` and `pi --session` are agent-side commands, not harness-invocation flags. Verify the `sessions/` bind mount path is correct and sessions survive container restarts.
+- [x] **Autosave and session-save reliability** — Fixed EXIT trap `diff_export` return value capture, added `.export-status` + error logs, lockfile polling. Dry-run checks added. See `20260622-01` and `20260622-02` handovers.
+- [x] **Security model update** — Three-tier security model documented. 4 story docs closed with Resolution sections. See `20260622-P1-B` commit.
+- [x] **Pi session resume** — Confirmed done by operator. No action needed.
 
 #### Prefactors (before Phase 2 design, can overlap with Phase 1)
 
-- Evaluate the repo for pre-existing conditions that would make Phase 2 harder: hardcoded paths, container labels that assume snapshot-only lifecycle, scripts that assume `sandbox/` is an anonymous volume. These don't need fixing yet, but the design session should know about them.
+- [x] **Repo precondition audit** — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE). Key risks: `snapshot_init_git()` hardcodes copy lifecycle, `start_agent.sh` always `rm -rf` + copy, compose template mounts `.snapshot/` as `read_only`, entrypoint preflight aborts if `baseline.tar` missing. See `20260622-03-study-repo_audit_preconditions.md` for full table and recommendations.
 - Review `investigation_git_worktrees.md` — the worktree feasibility investigation. Confirm its conclusions still hold given the current codebase state (M2.7 changes to path resolution, RUN_ID, container lifecycle). Any new blockers discovered here feed into the Phase 2 design session.
 - Ensure the test suite (now 404 tests, 0 failures) covers the autosave and EXIT trap paths well enough to detect regressions when Phase 2 changes the model. If coverage is thin, add tests as part of the autosave reliability task.
 
@@ -145,7 +151,7 @@ Requires a design session. The security model must be updated (Phase 1) before t
 
 #### Pre-design investigations (inform the design session)
 
-- **Extensibility structure audit** — Audit where provider-specific paths leak into shared code: compose template (hardcoded `AGENT_HOME` target path), `start_agent.sh` (provider-specific flag handling), `onboard.sh` / `preflight.sh` / `setup.sh` (should these own the mount-wiring logic per-provider?). Produce a documented boundary: what lives in shared code vs. provider hooks.
+- [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-extensibility_structure_audit.md` for full table and recommendations.
 - **`PROJECT_DIR` mount wiring** — Investigate how the mount is specified (Makefile variable? CLI flag? config file?). The mount path must work across Linux, macOS (virtiofs), and Windows (9p/WSL2). The compose template needs a conditional volume entry.
 - **Unify `make apply` and `make draft`?** — Currently `apply` applies a single diff uncommitted to HEAD (mid-session sync), while `draft` takes all committed changes and creates a reviewable branch. Under the worktree model the agent commits directly to a branch — the distinction between "apply an uncommitted diff" and "turn commits into a reviewable branch" may no longer be meaningful. Consider combining into a single command that always works off a target ref, with an option to apply in-place instead of creating a draft branch. Trade-off: `make apply` is useful as a recovery path when `make draft` fails (selectively apply individual diffs). Record the decision for the design session.
 - **Hermes and opencode session resume** — Deferred. Not investigated unless explicitly needed.

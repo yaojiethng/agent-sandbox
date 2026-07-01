@@ -1,6 +1,6 @@
 # Story — Agent State Persistence Under AGENT_HOME
 
-**Status:** Investigation in progress (raised 2026-05-22)
+**Status:** Resolved — M2.6 Phase 1 P1-B
 
 ## Context
 
@@ -64,3 +64,33 @@ The compose template at `libs/docker-compose.yml` line 102 hardcodes `target: /h
 ## Prioritization
 
 This story is filed under M2.6 (Session Resume Across Provider Implementations) because session persistence (M2.4 scope) and session resume (M2.6 scope) share the same underlying mechanism — what state survives between containers and how it's loaded back on start. The mount strategy redesign resolved in parallel with M2.6 investigation.
+
+## Resolution
+
+**Status:** Settled — design decisions applied in M2.6 Phase 1 P1-B.
+
+### Summary
+
+The persistence model for AGENT_HOME state is a **selective bind mount + copy-in template**:
+
+- **Write-through (host sees changes):** `prompts/`, `skills/`, `sessions/` — these are RW bind-mounted from the host. Changes made by the agent or operator persist across container restarts.
+- **Session-only (regenerated each start from image template):** `settings.json`, `auth.json`, `models.json`, `AGENTS.md` — copy-in from `providers/<n>/config/agent/` at startup. Ephemeral by design.
+
+### Key decisions
+
+| Question | Decision | Rationale |
+|---|---|---|
+| Which files need write-through vs. session-only? | Prompts/skills/sessions are write-through. Config files (settings, auth, models) are copy-in. | Auth tokens stored as env var references in `auth.json` — making it ephemeral prevents write-back of secret values (security feature). Settings and models are regenerated from provider templates. |
+| Persistence model: provider-agnostic or provider-specific? | Provider-agnostic mechanism (selective bind mounts + copy-in template) shared by all providers. The list of which paths are write-through vs. session-only may differ per provider. | A single mechanism reduces maintenance burden; per-provider path lists are configured in provider templates. |
+| Copy-out trigger | Clean exit only (SIGTERM → EXIT trap). Autosave is for sandbox content, not for AGENT_HOME config files. | Config files change rarely (token refresh, model config). Autosave of AGENT_HOME state would create unnecessary write contention on host filesystem. |
+| Compose template hardcoded Pi path | Known issue — flagged for the M2.6 Phase 2 design session. The compose template's `target: /home/agentuser/.pi/agent` needs to become provider-parameterised. | Non-Pi providers cannot start with the current template. |
+
+### utime/EPERM on cross-filesystem mounts — accepted limitation
+
+Pi's `settings-manager.js` uses `proper-lockfile` which calls `fs.utimesSync()` for stale-lock detection. On cross-filesystem bind mounts (9p on Windows Docker Desktop, virtiofs on macOS Docker Desktop), `utime()` returns `EPERM`. **Accepted** — not fixable without changes to Docker Desktop's FUSE layer or to Pi's settings-manager. The impact is limited: `settings.json` falls back to defaults, which is functionally acceptable.
+
+### References
+
+- Security model update: [`docs/architecture/security.md`](../architecture/security.md) — Tier 2+3 mount boundaries
+- Extensibility audit: scoped to M2.6 Phase 2 design session
+- Compose template path resolution: scoped to M2.6 Phase 2 design session
