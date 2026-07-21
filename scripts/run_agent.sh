@@ -224,7 +224,11 @@ if [[ "$MODE" == "serve" ]]; then
   docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
 
   echo "+ tearing down..."
-  docker compose "${COMPOSE_ARGS[@]}" down -v
+  if [[ "${REFRESH:-false}" == "true" ]]; then
+    docker compose "${COMPOSE_ARGS[@]}" down -v
+  else
+    docker compose "${COMPOSE_ARGS[@]}" down
+  fi
 
 else
   echo "Starting agent: $PROJECT_NAME"
@@ -237,5 +241,9 @@ else
   docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent
 
   echo "+ tearing down..."
-  docker compose "${COMPOSE_ARGS[@]}" down -v
+  if [[ "${REFRESH:-false}" == "true" ]]; then
+    docker compose "${COMPOSE_ARGS[@]}" down -v
+  else
+    docker compose "${COMPOSE_ARGS[@]}" down
+  fi
 fi

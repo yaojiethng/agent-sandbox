@@ -64,7 +64,7 @@ for ARG in "$@"; do
 
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-    --refresh)    REFRESH=true ;;
+    --refresh)    export REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
     *)
       echo "Unknown flag: $ARG"
@@ -173,28 +173,60 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 # -------------------------
-# Session timestamp (single canonical definition)
+# Session identity — persisted as .run-identity for volume-based resume
 # -------------------------
-# SESSION_TS is the one source of truth for the session timestamp. All
-# derived names (container names, artefact directories) reference this
-# variable — no downstream date calls.
-export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+# On first start, identity values are computed fresh and written to
+# $SANDBOX_DIR/.run-identity. On resume, values are read from this file
+# so that the host-side env vars (SESSION_TS, RUN_ID, HOST_HEAD_SHA,
+# SANDBOX_ID) always match what the volume's SESSION_STATE contains.
+# This prevents divergence between diff_export (reads env vars) and
+# package_branch (reads SESSION_STATE).
+RUN_IDENTITY="$SANDBOX_DIR/.run-identity"
 
-# -------------------------
-# Derived identities: SANDBOX_ID, RUN_ID, HOST_HEAD_SHA
-# -------------------------
-# SANDBOX_ID — 8-char hex hash identifying a sandbox instance at a specific
-# host commit. Composed of SANDBOX_DIR (path identity) and HOST_HEAD_SHA
-# (codebase version). Two sandboxes at different directories or different
-# host commits produce different SANDBOX_IDs.
-export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
+if [[ -f "$RUN_IDENTITY" && "${REFRESH:-false}" != "true" ]]; then
+  # Resume path: read identity from file, re-export for compose
+  echo "Resuming session — reading identity from $RUN_IDENTITY"
+  while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
+    [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
+    KEY="${KEY//[$'\r\n\t ']/}"
+    VALUE="${VALUE//[$'\r\n']/}"
+    export "$KEY=$VALUE"
+  done < "$RUN_IDENTITY"
+  RESUME_SESSION=true
+else
+  RESUME_SESSION=false
+  if [[ "${REFRESH:-false}" == "true" ]]; then
+    echo "Refresh requested — clearing session identity and volume"
+    rm -f "$RUN_IDENTITY"
+  fi
 
-# RUN_ID — 6-char hex hash identifying a single session run. Composed of
-# SESSION_TS (temporal factor) and SANDBOX_ID (instance factor). Replaces
-# SESSION_TS in container names and artefact paths while SESSION_TS is
-# preserved for human readability.
-export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+  # Fresh init: compute identity values
+  # SESSION_TS is the one source of truth for the session timestamp.
+  # All derived names (container names, artefact directories) reference
+  # this variable — no downstream date calls.
+  export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+
+  # SANDBOX_ID — 8-char hex hash identifying a sandbox instance at a
+  # specific host commit. Composed of SANDBOX_DIR (path identity) and
+  # HOST_HEAD_SHA (codebase version). Two sandboxes at different directories
+  # or different host commits produce different SANDBOX_IDs.
+  export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
+
+  # RUN_ID — 6-char hex hash identifying a single session run. Composed of
+  # SESSION_TS (temporal factor) and SANDBOX_ID (instance factor). Replaces
+  # SESSION_TS in container names and artefact paths while SESSION_TS is
+  # preserved for human readability.
+  export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+
+  # Write .run-identity for future resumes
+  {
+    echo "SESSION_TS=${SESSION_TS}"
+    echo "RUN_ID=${RUN_ID}"
+    echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
+    echo "SANDBOX_ID=${SANDBOX_ID}"
+  } > "$RUN_IDENTITY"
+fi
 
 # -------------------------
 # SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
@@ -220,29 +252,31 @@ echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 
 # -------------------------
-# Workspace directory setup
+# Workspace directory setup and snapshot pipeline
 # -------------------------
-# Clean the snapshot directory before building a fresh snapshot.
-# Without this, files from a previous run that are no longer in PROJECT_DIR
-# (deleted, moved, or newly gitignored) would persist in the snapshot and
-# propagate into the sandbox.
-rm -rf "$SNAPSHOT_DIR"
-mkdir -p "$SNAPSHOT_DIR"
-mkdir -p "$CHANGES_DIR"
-mkdir -p "$INPUT_DIR"
-mkdir -p "$OUTPUT_DIR"
+if [[ "$RESUME_SESSION" == true ]]; then
+  # Resume path: workspace dirs should already exist (bind mounts),
+  # but ensure they do in case the user cleaned them manually.
+  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+  echo "Resuming session — snapshot pipeline skipped (volume has existing git state)"
+else
+  # Clean the snapshot directory before building a fresh snapshot.
+  # Without this, files from a previous run that are no longer in PROJECT_DIR
+  # (deleted, moved, or newly gitignored) would persist in the snapshot and
+  # propagate into the sandbox.
+  rm -rf "$SNAPSHOT_DIR"
+  mkdir -p "$SNAPSHOT_DIR"
+  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 
-# -------------------------
-# Snapshot pipeline (host side)
-# -------------------------
-source "$REPO_ROOT/src/capability/snapshot.sh"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
 
-echo "Building snapshot..."
-snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
-snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
+  echo "Building snapshot..."
+  snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
+  snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
 
-snapshot_validate "$SNAPSHOT_DIR"
-echo "Snapshot ready."
+  snapshot_validate "$SNAPSHOT_DIR"
+  echo "Snapshot ready."
+fi
 
 # -------------------------
 # Stop any running session containers

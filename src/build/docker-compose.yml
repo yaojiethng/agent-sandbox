@@ -19,6 +19,15 @@
 # Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
 
+# Named volume for sandbox state persistence.
+# Managed by compose lifecycle — preserved across `make stop` / `make start`,
+# destroyed only on `make start REFRESH=1` or `docker compose down -v`.
+# Labels enable lifecycle tooling (prune, inspect) without project-name prefix parsing.
+volumes:
+  sandbox-data:
+    labels:
+      agent-sandbox.project-name: {{PROJECT_NAME}}
+
 # Session labels — applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
   agent-sandbox.project-name: {{PROJECT_NAME}}
@@ -48,6 +57,9 @@ services:
     labels: *session_labels
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
+      - type: volume
+        source: sandbox-data
+        target: /home/agentuser/sandbox
       - type: bind
         source: ${SNAPSHOT_DIR}
         target: /home/agentuser/.snapshot

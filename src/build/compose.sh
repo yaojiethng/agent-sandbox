@@ -169,7 +169,8 @@ compose_args() {
 #   2. Reasoning layer  — dry_run_reasoning.sh inside agent container
 #   3. Host-side        — verify artifacts on host filesystem
 #
-# Each phase aborts on CRITICAL failure. Final cleanup via down -v.
+# Each phase aborts on CRITICAL failure. Final cleanup via down (down -v
+# only when REFRESH=true).
 #
 # Args:
 #   $1  dry_run_script  — absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
@@ -179,6 +180,10 @@ compose_args() {
 compose_dry_run() {
   local dry_run_script="$1"
   local dry_run_capability_script="${2:-}"
+
+  # Pre-compute the -v flag for compose down so all cleanup paths use the same pattern
+  local _down_vol=""
+  [[ "${REFRESH:-false}" == "true" ]] && _down_vol="-v"
 
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
@@ -195,9 +200,7 @@ compose_dry_run() {
       echo "Phase 1 PASSED."
     else
       echo "Phase 1 FAILED — aborting." >&2
-      DRY_RUN_SCRIPT="$dry_run_script" \
-        DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-        docker compose "${COMPOSE_ARGS[@]}" down -v
+      docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
       exit 1
     fi
   fi
@@ -211,9 +214,7 @@ compose_dry_run() {
     echo "Phase 2 PASSED."
   else
     echo "Phase 2 FAILED — aborting." >&2
-    DRY_RUN_SCRIPT="$dry_run_script" \
-      DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-      docker compose "${COMPOSE_ARGS[@]}" down -v
+    docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
     exit 1
   fi
 
@@ -276,9 +277,7 @@ compose_dry_run() {
   # Cleanup containers
   echo ""
   echo "Cleaning up containers..."
-  DRY_RUN_SCRIPT="$dry_run_script" \
-    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-    docker compose "${COMPOSE_ARGS[@]}" down -v
+  docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
 
   echo ""
   echo "=== dry-run: ALL PHASES PASSED ==="
@@ -287,11 +286,16 @@ compose_dry_run() {
 # -------------------------
 # compose_teardown
 #
-# Silently tears down containers and volumes for COMPOSE_ARGS.
+# Silently tears down containers for COMPOSE_ARGS.
+# When REFRESH=true, also removes named volumes via -v flag.
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
 compose_teardown() {
-  docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+  if [[ "${REFRESH:-false}" == "true" ]]; then
+    docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+  else
+    docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
+  fi
 }
 
 # -------------------------
