@@ -1,4 +1,4 @@
-# Spec — Directory Restructuring (Structural Cleanup)
+# Design — Directory Restructuring (Structural Cleanup)
 
 **Status:** Active. Session 1 (libs/ stage) complete; sessions 2+ pending.
 
