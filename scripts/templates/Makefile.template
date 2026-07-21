@@ -161,6 +161,8 @@ prune:
 #   make draft SESSION=<name>            — apply from a named session under the channel directory
 #   make draft FROM=bundles              — resolve from output/bundles/ instead of session-diffs/
 #   make draft FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
+#   make draft FORCE=1                   — apply with --reject; .rej files for conflicts
+#   make draft PERMISSIVE=1              — retry with --recount on apply failure
 #   make draft INTERACTIVE=1             — interactive picker for channel and session selection
 #   git log -p HEAD~N..HEAD              — review changes on the working branch
 #   make confirm                         — rebase + fast-forward merge to source branch
@@ -186,7 +188,9 @@ draft:
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
 	  $(if $(DIFFS),--diffs=$(DIFFS),) \
-	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
+	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),) \
+	  $(if $(FORCE),--force,) \
+	  $(if $(PERMISSIVE),--permissive,)
 
 confirm:
 	agent-sandbox confirm \

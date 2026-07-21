@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# libs/diff_workflow.sh
+# scripts/workflows/apply.sh
 #
 # Diff application workflow: apply a diff file to the project working tree.
 # Sourced by agent-sandbox.sh — not executed standalone.
 #
-# Depends on: AGENT_SANDBOX_REPO, git, standard shell utilities.
+# Depends on: AGENT_SANDBOX_REPO, src/libs/diff.sh, git, standard shell utilities.
 
 set -euo pipefail
 
@@ -72,41 +72,9 @@ apply_run() {
 
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
-    if ! git -C "$PROJECT_DIR" apply --reject < <(strip_index_lines < "$DIFF_FILE"); then
-      echo "" >&2
-      echo "Warning: some hunks failed to apply." >&2
-      echo "Review .rej files and resolve manually." >&2
-    fi
-  elif [[ "$PERMISSIVE" == true ]]; then
-    # Permissive mode: try normal apply first, then retry with --recount
-    # on failure. --recount relaxes hunk-context matching so minor context
-    # shifts (line reorders, whitespace changes) don't cause rejection.
-    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
-      # Check if --recount might help
-      if git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
-        echo "Normal apply failed; retrying with --recount (relaxed context matching)..." >&2
-        git -C "$PROJECT_DIR" apply --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE")
-      else
-        echo "Error: git apply failed even with --recount." >&2
-        echo "  Diff file: $DIFF_FILE" >&2
-        echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
-        echo "" >&2
-        echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
-        return 1
-      fi
-    fi
-  else
-    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
-      echo "Error: git apply failed." >&2
-      echo "  Diff file: $DIFF_FILE" >&2
-      echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
-      echo "" >&2
-      echo "Hints:" >&2
-      echo "  Use --force to apply with --reject (.rej files for conflicts)." >&2
-      echo "  Use --permissive to retry with --recount (relaxed context matching)." >&2
-      return 1
-    fi
   fi
+
+  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$PERMISSIVE" || return 1
 
   # Count changed files from the diff
   local FILES_CHANGED

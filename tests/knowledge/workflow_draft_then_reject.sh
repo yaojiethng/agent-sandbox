@@ -103,19 +103,33 @@ else
 fi
 
 echo ""
-echo "--- Executing draft_run ---"
+echo ""
+echo "--- Collecting patches ---"
+PATCHES_DIR="$EXPORT_DIR/patches"
+PATCH_LIST=$(draft_collect_patches "$PATCHES_DIR" "" || true)
+DIFF_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
+echo "Found $DIFF_COUNT patches"
+
+echo "--- Creating draft branch ---"
 set +e
-draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "" "" "" "$BRANCH_SUMMARY"
+draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "" "" "$BRANCH_SUMMARY" "$DIFF_COUNT"
 DRAFT_RESULT=$?
 set -e
 
 echo ""
-echo "--- draft_run exit code: $DRAFT_RESULT ---"
+echo "--- Branch creation exit code: $DRAFT_RESULT ---"
 if [[ "$DRAFT_RESULT" -eq 0 ]]; then
   pass "draft_run completed successfully"
 else
   fail "draft_run failed with exit code $DRAFT_RESULT"
 fi
+
+echo ""
+echo "--- Applying patches ---"
+AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
+echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false false
+draft_apply_uncommitted "$PROJECT_DIR" "$EXPORT_DIR" "$AUTHOR" false false
+echo "Patches applied successfully"
 
 echo ""
 echo "--- Post-condition: on draft branch ---"

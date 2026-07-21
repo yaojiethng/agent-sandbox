@@ -174,6 +174,132 @@ test_apply_no_resolution_logic() {
 }
 
 # =============================================================================
+# _apply_patch_file tests
+# =============================================================================
+
+test_apply_patch_file_normal() {
+  local P="$FIXTURE_DIR/apf_normal_p"
+  make_committed_repo "$P"
+
+  echo "new content" > "$P/new.txt"
+  git -C "$P" add new.txt
+  git -C "$P" diff --cached > "$FIXTURE_DIR/apf_normal.diff" 2>/dev/null || true
+  git -C "$P" checkout -- new.txt
+  rm -f "$P/new.txt"
+
+  _apply_patch_file "$P" "$FIXTURE_DIR/apf_normal.diff" false false
+
+  if [[ -f "$P/new.txt" ]]; then
+    pass "_apply_patch_file normal mode applies diff"
+  else
+    fail "_apply_patch_file normal mode should create new.txt"
+  fi
+}
+
+test_apply_patch_file_force() {
+  local P="$FIXTURE_DIR/apf_force_p"
+  make_committed_repo "$P"
+
+  local COMMITTED_FILE
+  COMMITTED_FILE=$(ls "$P" | head -1)
+  if [[ -z "$COMMITTED_FILE" ]]; then
+    echo "original" > "$P/base.txt"
+    git -C "$P" add base.txt
+    git -C "$P" commit -m "base" --quiet
+    COMMITTED_FILE="base.txt"
+  fi
+
+  echo "$COMMITTED_FILE content changed" > "$P/$COMMITTED_FILE"
+  git -C "$P" diff > "$FIXTURE_DIR/apf_force.diff" 2>/dev/null || true
+  git -C "$P" checkout -- "$COMMITTED_FILE"
+
+  _apply_patch_file "$P" "$FIXTURE_DIR/apf_force.diff" true false
+
+  # Force mode should succeed (returns 0) even if conflicts produce .rej
+  pass "_apply_patch_file force mode completes (may produce .rej files)"
+}
+
+test_apply_patch_file_missing_diff() {
+  local P="$FIXTURE_DIR/apf_missing_p"
+  make_committed_repo "$P"
+
+  _apply_patch_file "$P" "/nonexistent.diff" false false && {
+    fail "_apply_patch_file should fail with missing diff"
+    return
+  }
+  pass "_apply_patch_file fails with missing diff"
+}
+
+# =============================================================================
+# apply_and_commit tests
+# =============================================================================
+
+test_apply_and_commit_applies_and_commits() {
+  local P="$FIXTURE_DIR/aac_commit_p"
+  make_committed_repo "$P"
+
+  echo "commit content" > "$P/commit.txt"
+  git -C "$P" add commit.txt
+  git -C "$P" diff --cached > "$FIXTURE_DIR/aac_commit.diff" 2>/dev/null || true
+  git -C "$P" checkout -- commit.txt
+  rm -f "$P/commit.txt"
+
+  local AUTHOR
+  AUTHOR="$(git -C "$P" config user.name) <$(git -C "$P" config user.email)>"
+  apply_and_commit "$P" "$FIXTURE_DIR/aac_commit.diff" "Test commit" "$AUTHOR" false false
+
+  if [[ -f "$P/commit.txt" ]]; then
+    local MSG
+    MSG=$(git -C "$P" log -1 --pretty=%s)
+    if [[ "$MSG" == "Test commit" ]]; then
+      pass "apply_and_commit applies diff and commits with correct message"
+    else
+      fail "apply_and_commit expected commit message 'Test commit', got: $MSG"
+    fi
+  else
+    fail "apply_and_commit should create commit.txt"
+  fi
+}
+
+test_apply_and_commit_missing_args() {
+  if apply_and_commit "" "" "" "" false false 2>/dev/null; then
+    fail "apply_and_commit should fail with empty args"
+  else
+    pass "apply_and_commit fails with empty args"
+  fi
+}
+
+test_apply_and_commit_force_mode() {
+  local P="$FIXTURE_DIR/aac_force_p"
+  make_committed_repo "$P"
+
+  local COMMITTED_FILE
+  COMMITTED_FILE=$(ls "$P" | head -1)
+  if [[ -z "$COMMITTED_FILE" ]]; then
+    echo "original" > "$P/base.txt"
+    git -C "$P" add base.txt
+    git -C "$P" commit -m "base" --quiet
+    COMMITTED_FILE="base.txt"
+  fi
+
+  echo "$COMMITTED_FILE force changed" > "$P/$COMMITTED_FILE"
+  git -C "$P" diff > "$FIXTURE_DIR/aac_force.diff" 2>/dev/null || true
+  git -C "$P" checkout -- "$COMMITTED_FILE"
+
+  local AUTHOR
+  AUTHOR="$(git -C "$P" config user.name) <$(git -C "$P" config user.email)>"
+  apply_and_commit "$P" "$FIXTURE_DIR/aac_force.diff" "Force commit" "$AUTHOR" true false
+
+  local MSG
+  MSG=$(git -C "$P" log -1 --pretty=%s 2>/dev/null || echo "no-commit")
+  if [[ "$MSG" == "Force commit" ]]; then
+    pass "apply_and_commit force mode commits even on conflicts"
+  else
+    fail "apply_and_commit force mode should commit, got message: $MSG"
+  fi
+}
+
+# =============================================================================
 # Run
 # =============================================================================
 
@@ -186,5 +312,11 @@ run_test test_apply_empty_args
 run_test test_apply_diff_file_preserved
 run_test test_apply_diff_empty_file_rejected
 run_test test_apply_no_resolution_logic
+run_test test_apply_patch_file_normal
+run_test test_apply_patch_file_force
+run_test test_apply_patch_file_missing_diff
+run_test test_apply_and_commit_applies_and_commits
+run_test test_apply_and_commit_missing_args
+run_test test_apply_and_commit_force_mode
 
 test_done

@@ -22,6 +22,38 @@ source "$REPO_ROOT/scripts/guards.sh"
 source "$SCRIPT_DIR/libs/git_fixtures.sh"
 source "$SCRIPT_DIR/libs/session_fixtures.sh"
 
+# =============================================================================
+# _test_draft_run — backward-compat wrapper for old draft_run callers
+#
+# Replicates the old draft_run contract (create branch + apply patches +
+# apply uncommitted) using the new decomposed functions.
+# Signature matches old draft_run: PROJECT_DIR SOURCE_DIR SESSION_NAME
+# BRANCH_FROM DIFFS BRANCH_SUMMARY
+# =============================================================================
+_test_draft_run() {
+  local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
+  local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
+
+  local PATCHES_DIR="$SOURCE_DIR/patches"
+  local PATCH_LIST
+  PATCH_LIST=$(draft_collect_patches "$PATCHES_DIR" "$DIFFS" || true)
+  local DIFF_COUNT
+  DIFF_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
+  if [[ "$DIFF_COUNT" -eq 0 ]]; then
+    echo "Error: no .diff files found in $PATCHES_DIR" >&2
+    return 1
+  fi
+
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" || return 1
+
+  local AUTHOR
+  AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
+
+  echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false false || return 1
+  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" false false || return 1
+}
+
 # current_branch DIR
 _current_branch() {
   git -C "$1" rev-parse --abbrev-ref HEAD
@@ -109,7 +141,7 @@ test_draft_creates_branch() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local BRANCH
   BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
@@ -128,7 +160,7 @@ test_draft_applies_diffs() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   # initial + .draft-state + 2 diffs = 4
   local COUNT
@@ -148,7 +180,7 @@ test_draft_branch_name_format() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local BRANCH
   BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
@@ -167,7 +199,7 @@ test_draft_branch_name_with_summary() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "my-feature" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "my-feature" >/dev/null 2>&1
 
   local BRANCH
   BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
@@ -186,7 +218,7 @@ test_draft_creates_draft_state_commit() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
@@ -224,7 +256,7 @@ test_draft_state_has_correct_values() {
   make_session_fixture "$EXPORT" 3
   echo "20260420-120000" > "$EXPORT/EXPORT-TIME.txt"
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
@@ -248,11 +280,11 @@ test_draft_rejects_same_name_collision() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
 
   local OUT
-  OUT=$(draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
   if [[ "$OUT" == *"draft branch already exists"* ]]; then
     pass "draft rejects same-name collision"
   else
@@ -268,10 +300,10 @@ test_draft_rejects_when_on_draft_branch() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local OUT
-  OUT=$(draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
   if [[ "$OUT" == *"already on a draft branch"* ]]; then
     pass "draft rejects when already on a draft branch"
   else
@@ -289,9 +321,9 @@ test_draft_allows_parallel_drafts() {
   make_session_fixture "$EXPORT1" 1
   make_session_fixture "$EXPORT2" 1
 
-  draft_run "$P" "$EXPORT1" "$(basename "$EXPORT1")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT1" "$(basename "$EXPORT1")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
-  draft_run "$P" "$EXPORT2" "$(basename "$EXPORT2")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT2" "$(basename "$EXPORT2")" "" "" "" >/dev/null 2>&1
 
   local COUNT
   COUNT=$(git -C "$P" branch --list 'draft/*' | wc -l)
@@ -316,7 +348,7 @@ test_draft_branch_from() {
   local FROM_HASH
   FROM_HASH=$(git -C "$P" rev-parse HEAD)
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "$FROM_HASH" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "$FROM_HASH" "" "" >/dev/null 2>&1
 
   # initial + extra + .draft-state + 2 diffs = 5
   local COUNT
@@ -336,7 +368,7 @@ test_draft_diffs_range() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 4
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "2..3" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "2..3" "" >/dev/null 2>&1
 
   # .draft-state + 2 diffs + initial = 4
   local COUNT
@@ -359,7 +391,7 @@ test_draft_no_diffs_error() {
   > "$EXPORT/session/changes.diff"
 
   local OUT
-  OUT=$(draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
   if [[ "$OUT" == *"no patches/"* || "$OUT" == *"no .diff files"* ]]; then
     pass "draft errors when no diffs found"
   else
@@ -387,7 +419,7 @@ index 0000000..8a963d6
 +stripped content
 EOF
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   if [[ -f "$P/stripped.txt" ]]; then
     pass "draft strips index lines before applying"
@@ -403,7 +435,7 @@ test_draft_resets_author_to_operator() {
   make_real_session "$P" "$S"
   local EXPORT="$S/.workspace/session-diffs/20260408-120000-main"
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local BAD
   BAD=$(git -C "$P" log main..HEAD --format='%ae' | grep -v "test@fixture" || true)
@@ -421,7 +453,7 @@ test_draft_commit_messages() {
   make_real_session "$P" "$S"
   local EXPORT="$S/.workspace/session-diffs/20260408-120000-main"
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local FIRST_MSG
   FIRST_MSG=$(git -C "$P" log main..HEAD --reverse --format='%s' | head -1)
@@ -526,7 +558,7 @@ test_draft_applies_uncommitted_diff() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2 content
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   # Should have patches + uncommitted commits
   local COMMIT_COUNT
@@ -557,7 +589,7 @@ test_confirm_deletes_draft_branch() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
 
@@ -578,7 +610,7 @@ test_confirm_merges_changes() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "" >/dev/null 2>&1
 
   local COUNT
@@ -600,7 +632,7 @@ test_confirm_target_branch() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 2
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "feature-branch" >/dev/null 2>&1
 
   local CURR
@@ -640,7 +672,7 @@ test_confirm_conflict_recovery() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
 
@@ -676,7 +708,7 @@ test_reject_returns_to_source() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   reject_run "$P" "$S" >/dev/null 2>&1
 
   local CURR
@@ -696,7 +728,7 @@ test_reject_deletes_draft_branch() {
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 1
 
-  draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
 

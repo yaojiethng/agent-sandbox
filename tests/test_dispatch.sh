@@ -458,6 +458,38 @@ test_draft_with_session() {
   fi
 }
 
+test_draft_with_force() {
+  setup
+  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --force
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--force"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "draft --force: passes --force flag through"
+  else
+    fail "draft --force: expected --force in exec, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_draft_with_permissive() {
+  setup
+  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --permissive
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--permissive"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "draft --permissive: passes --permissive flag through"
+  else
+    fail "draft --permissive: expected --permissive in exec, got: ${CAPTURED[*]}"
+  fi
+}
+
 # =============================================================================
 # Tests — confirm / reject (exec's workflows/confirm.sh, workflows/reject.sh)
 # =============================================================================
@@ -645,6 +677,8 @@ run_test test_apply_with_branch
 run_test test_apply_with_force
 run_test test_draft_noninteractive
 run_test test_draft_with_session
+run_test test_draft_with_force
+run_test test_draft_with_permissive
 run_test test_confirm_default
 run_test test_confirm_with_target
 run_test test_reject_default

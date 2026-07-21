@@ -4,6 +4,8 @@
 # Sourced by sandbox-entrypoint.sh (capability layer) and package_branch.sh.
 #
 # Functions:
+#   _apply_patch_file        PROJECT_DIR  DIFF_FILE  FORCE  PERMISSIVE
+#   apply_and_commit         PROJECT_DIR  DIFF_FILE  COMMIT_MSG  AUTHOR  [FORCE]  [PERMISSIVE]
 #   write_uncommitted_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_all_changes_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_changed_files      SANDBOX_DIR  SINCE_SHA  OUTPUT_DIR
@@ -43,6 +45,107 @@ source "$_self_dir/routing.sh"
 # -------------------------
 strip_index_lines() {
   awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1'
+}
+
+# -------------------------
+# _apply_patch_file
+#
+# Core git apply logic shared by apply_run (apply-only) and
+# apply_and_commit (apply + commit). Strips index lines, handles three
+# modes:
+#   normal     — git apply --ignore-whitespace; returns 1 on failure
+#   force      — git apply --reject; creates .rej files for conflicts,
+#                never returns 1 (warnings printed to stderr)
+#   permissive — on normal failure, retries with --recount for relaxed
+#                hunk-context matching; returns 1 if both fail
+#
+# Usage:
+#   _apply_patch_file PROJECT_DIR DIFF_FILE FORCE PERMISSIVE
+#
+# Returns:
+#   0 — patch applied successfully (or force mode, conflicts tolerated)
+#   1 — patch failed to apply (normal/permissive mode, unrecoverable)
+# -------------------------
+_apply_patch_file() {
+  local PROJECT_DIR="$1"
+  local DIFF_FILE="$2"
+  local FORCE="${3:-false}"
+  local PERMISSIVE="${4:-false}"
+
+  if [[ "$FORCE" == true ]]; then
+    git -C "$PROJECT_DIR" apply --reject < <(strip_index_lines < "$DIFF_FILE") || \
+      echo "Warning: some hunks failed to apply. Review .rej files." >&2
+    return 0
+  fi
+
+  if [[ "$PERMISSIVE" == true ]]; then
+    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
+      if git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
+        echo "Normal apply failed; retrying with --recount (relaxed context matching)..." >&2
+        git -C "$PROJECT_DIR" apply --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE")
+      else
+        echo "Error: git apply failed even with --recount." >&2
+        echo "  Diff file: $DIFF_FILE" >&2
+        echo "  Target: $(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)" >&2
+        echo "" >&2
+        echo "Hint: use FORCE=true to apply with --reject and create .rej files." >&2
+        return 1
+      fi
+    fi
+    return 0
+  fi
+
+  # Normal mode
+  if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
+    echo "Error: git apply failed." >&2
+    echo "  Diff file: $DIFF_FILE" >&2
+    echo "  Target: $(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)" >&2
+    echo "" >&2
+    echo "Hints:" >&2
+    echo "  Use FORCE=true to apply with --reject (.rej files for conflicts)." >&2
+    echo "  Use PERMISSIVE=true to retry with --recount (relaxed context matching)." >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# -------------------------
+# apply_and_commit
+#
+# Applies a diff file via _apply_patch_file, then stages all changes and
+# commits. Used by draft_apply_patches for per-patch commit workflow.
+#
+# Usage:
+#   apply_and_commit PROJECT_DIR DIFF_FILE COMMIT_MSG AUTHOR [FORCE] [PERMISSIVE]
+#
+# Does NOT leave changes unstaged — after success, everything is committed.
+# Returns 1 if apply fails (and FORCE is not set).
+# -------------------------
+apply_and_commit() {
+  local PROJECT_DIR="$1"
+  local DIFF_FILE="$2"
+  local COMMIT_MSG="$3"
+  local AUTHOR="$4"
+  local FORCE="${5:-false}"
+  local PERMISSIVE="${6:-false}"
+
+  if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" || -z "$COMMIT_MSG" || -z "$AUTHOR" ]]; then
+    echo "apply_and_commit: PROJECT_DIR, DIFF_FILE, COMMIT_MSG, and AUTHOR are required" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$DIFF_FILE" ]]; then
+    echo "Error: diff file not found: $DIFF_FILE" >&2
+    return 1
+  fi
+
+  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$PERMISSIVE" || return 1
+
+  git -C "$PROJECT_DIR" add -A
+  git -C "$PROJECT_DIR" commit -m "$COMMIT_MSG" --author="$AUTHOR"
+
+  return 0
 }
 
 # -------------------------
