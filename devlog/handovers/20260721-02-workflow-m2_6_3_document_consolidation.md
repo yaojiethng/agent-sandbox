@@ -17,7 +17,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 | Item | Prior handover |
 |---|---|
-| Roll single-use spec files into handovers and delete | `20260721-01-workflow-document_system_overhaul.md` |
+| Roll single-use spec files into handovers and delete | `20260721-01-workflow-m2_6_3_document_system_overhaul.md` |
 | Write worktree mount model ADR | same |
 | Supersede mount-model discussion docs | same |
 | Policy file disambiguation pass | same |

@@ -11,7 +11,7 @@ Update all documentation to reflect the Phase 1.5 volume-based persistence model
 
 ## Scope
 
-Documentation updates as scoped in `20260701-02-design-phase_1_5_persistence_scoping.md`.
+Documentation updates as scoped in `20260701-02-design-m2_6_2_persistence_scoping.md`.
 
 ## Completed this session
 

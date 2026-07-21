@@ -17,7 +17,7 @@ M2.6 Phase 1.6 — spec file cleanup only.
 
 | Item | Prior handover |
 |---|---|
-| Roll single-use spec files into handovers and delete | `20260721-02-workflow-document_consolidation.md` |
+| Roll single-use spec files into handovers and delete | `20260721-02-workflow-m2_6_3_document_consolidation.md` |
 | Rename `spec_container_layer_redesign.md` to design type | same |
 
 ## Hot files

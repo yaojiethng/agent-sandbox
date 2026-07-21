@@ -158,7 +158,7 @@ warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 
 # Verify session export path construction matches expectations.
 # This would catch regressions if session_export_path changes
-# in Phase 2 (mount model redesign).
+# in M2.6.4 (mount model redesign).
 warn_check "session_export_path: resolves with available env vars" \
   bash -c 'p=$(session_export_path "$1" session "${2:-}" "${3:-}" "${4:-}" 2>/dev/null); [[ -n "$p" ]]' \
   _ "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}" "${RUN_ID:-}"

@@ -71,7 +71,7 @@ The two-step design ensures all four working tree states are handled correctly:
 
 `.snapshot/` is overwritten on each **first** start — rebuilt from `PROJECT_DIR` before the containers start. On a resumed session (volume with existing git state), the snapshot pipeline is skipped entirely. `.snapshot/` retains its previous content but is not accessed after initial git init. It is not archived or cleaned up between runs.
 
-### Resume path (Phase 1.5)
+### Resume path (M2.6.2 volume-based persistence)
 
 When the sandbox volume already contains a valid git repository (`.git/HEAD` resolves), the snapshot pipeline is skipped on the host side and `snapshot_init_git` is skipped in the entrypoint. The agent resumes with the exact working tree and git state from the previous session.
 

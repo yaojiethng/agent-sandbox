@@ -139,7 +139,7 @@ Fix what's broken under the current (snapshot) model before introducing new work
 
 #### Prefactors (before Phase 2 design, can overlap with Phase 1)
 
-- [x] **Repo precondition audit** — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE). Key risks: `snapshot_init_git()` hardcodes copy lifecycle, `start_agent.sh` always `rm -rf` + copy, compose template mounts `.snapshot/` as `read_only`, entrypoint preflight aborts if `baseline.tar` missing. See `20260622-03-study-repo_audit_preconditions.md` for full table and recommendations.
+- [x] **Repo precondition audit** — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE). Key risks: `snapshot_init_git()` hardcodes copy lifecycle, `start_agent.sh` always `rm -rf` + copy, compose template mounts `.snapshot/` as `read_only`, entrypoint preflight aborts if `baseline.tar` missing. See `20260622-03-study-m2_6_1_repo_audit_preconditions.md` for full table and recommendations.
 - Review `investigation_git_worktrees.md` — the worktree feasibility investigation. Confirm its conclusions still hold given the current codebase state (M2.7 changes to path resolution, RUN_ID, container lifecycle). Any new blockers discovered here feed into the Phase 2 design session.
 - Ensure the test suite (now 404 tests, 0 failures) covers the autosave and EXIT trap paths well enough to detect regressions when Phase 2 changes the model. If coverage is thin, add tests as part of the autosave reliability task.
 
@@ -149,8 +149,8 @@ Fix what's broken under the current (snapshot) model before introducing new work
 
 Implements named volume persistence, conditional `-v`, and entrypoint resume detection. The identity model (`run-identity`) ensures env vars and SESSION_STATE remain consistent across resume.
 
-- [x] **Scoping** — Decision model: .run-identity prefactor, named volume, conditional compose teardown, simplified entrypoint gating (check .git/HEAD only). Env var lifecycle documented per variable. See `20260701-02-design-phase_1_5_persistence_scoping.md`.
-- [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-phase_1_5_persistence.md`.
+- [x] **Scoping** — Decision model: .run-identity prefactor, named volume, conditional compose teardown, simplified entrypoint gating (check .git/HEAD only). Env var lifecycle documented per variable. See `20260701-02-design-m2_6_2_persistence_scoping.md`.
+- [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-m2_6_2_persistence.md`.
 - [ ] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag documented, provider_onboarding_guide.md named volume note added, sandbox_identity.md created (or linked).
 
 ### Phase 2 — Mount Model Design and Implementation
@@ -159,7 +159,7 @@ Requires a design session. The security model must be updated (Phase 1) before t
 
 #### Pre-design investigations (inform the design session)
 
-- [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-extensibility_structure_audit.md` for full table and recommendations.
+- [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-m2_6_4_extensibility_structure_audit.md` for full table and recommendations.
 - **`PROJECT_DIR` mount wiring** — Investigate how the mount is specified (Makefile variable? CLI flag? config file?). The mount path must work across Linux, macOS (virtiofs), and Windows (9p/WSL2). The compose template needs a conditional volume entry.
 - **Unify `make apply` and `make draft`?** — Currently `apply` applies a single diff uncommitted to HEAD (mid-session sync), while `draft` takes all committed changes and creates a reviewable branch. Under the worktree model the agent commits directly to a branch — the distinction between "apply an uncommitted diff" and "turn commits into a reviewable branch" may no longer be meaningful. Consider combining into a single command that always works off a target ref, with an option to apply in-place instead of creating a draft branch. Trade-off: `make apply` is useful as a recovery path when `make draft` fails (selectively apply individual diffs). Record the decision for the design session.
 - **Hermes and opencode session resume** — Deferred. Not investigated unless explicitly needed.

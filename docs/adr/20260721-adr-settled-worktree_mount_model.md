@@ -4,7 +4,7 @@
 
 ## Summary
 
-The sandbox mount model is structured as three tiers — Copy+Tar, Mount+Tar, Mount+Worktree — with increasing host access and decreasing pipeline overhead. Each tier carries a distinct set of security invariants. Adoption is phased: Tier 1 is the current default, Tier 2 is the next implementation target (Phase 1.5 persistence), and Tier 3 is a validated design for a future milestone.
+The sandbox mount model is structured as three tiers — Copy+Tar, Mount+Tar, Mount+Worktree — with increasing host access and decreasing pipeline overhead. Each tier carries a distinct set of security invariants. Adoption is phased: Tier 1 is the current default, Tier 2 is the next implementation target (M2.6.2 volume-based persistence), and Tier 3 is a validated design for a future milestone.
 
 ## Context
 
@@ -52,7 +52,7 @@ Each tier has a distinct invariant set in `security.md` §Security Invariants. T
 Adopt **Option C — Three-tier model**.
 
 - Tier 1 (Copy+Tar) remains the default for all sessions.
-- Tier 2 (Mount+Tar) is implemented when the Phase 1.5 named volume + host bind mount work lands.
+- Tier 2 (Mount+Tar) is implemented when the M2.6.2 named volume + host bind mount work lands.
 - Tier 3 (Mount+Worktree) is design-validated but gated behind operator precondition and not yet implemented.
 
 The three tiers are documented together in `security.md` because they share the same trust-boundary analysis — the differences are incremental (which paths are mounted, which invariants apply). Maintaining them in one document ensures that a change to a shared invariant (e.g. Docker socket access) propagates uniformly across all tiers.
