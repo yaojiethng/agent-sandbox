@@ -17,7 +17,7 @@ not necessarily a regression; it may belong only to the other layer.
 
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
-- The changes in each session (represented by the task list of a single handover) should correspond to a single commit.
+- The changes in each session (represented by the task list of a single handover) must correspond to a single commit at session close with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are acceptable.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
@@ -37,9 +37,12 @@ When writing code, always take into account the following:
 
 Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
 
-**Gotcha — handover type drift.** The session type in the handover header is set at creation but the actual scope may evolve during the session. At session close, validate that the type still matches the dominant activity. If it diverges, rename the file and update the header before closing. A `design` handover that produced only policy changes should be `workflow`.
+**Handover rules**
 
-## Session Workflow
+- Close → done. No commits after close. Open a new handover for new work.
+- Type must match dominant activity at close. Rename if it diverged.
+- Implementation needs its own handover. A design handover does not cover impl commits.
+- Every session updates the roadmap checkboxes for completed tasks.
 
 Each session is independent. The prior session's git history is not available (container is ephemeral). The session starts from the project's committed HEAD.
 

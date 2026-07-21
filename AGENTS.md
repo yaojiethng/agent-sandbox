@@ -24,7 +24,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**All outputs are proposals.** You do not have access to modify the source repository. All outputs are proposed changes on a draft branch; the operator reviews, approves, and merges.
+**Output is complete and ready for review when:** a single branch, one commit per session plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are free-form — only the delivery commit at session close is subject to format enforcement.
 
 **No secrets.** Gitignored files — including `.env` and credentials — are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -79,6 +79,8 @@ Update the checklist as each file is completed. Mark each row `done` before movi
 
 **Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage — show the table.
 
+**Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
+
 **The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
 
 ---
@@ -107,7 +109,7 @@ In interfaces without filesystem access (e.g. Claude Chat), run grep across uplo
 
 ## Output Format
 
-All document, code, and file outputs are proposals. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface — see your provider-layer `AGENTS.md` for interface-specific output instructions.
+Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface — see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 

@@ -1,7 +1,5 @@
 # Git Policy
 
-**Status:** Stub. Adopted types and branch naming are active. Scope field and future types are parked until usage patterns stabilise.
-
 Policy for commit messages and branch naming in agent-sandbox. Commit types are aligned with the session types defined in [`handover_policy.md`](handover_policy.md) so that the git log and session history tell the same story.
 
 ---
@@ -20,7 +18,7 @@ Body and footer are optional. Use a body when the "why" is not obvious from the 
 
 The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body — that is the diff's job.
 
-Every commit must use one of the types defined below. Commits without a valid prefix are rejected at review gate.
+Every delivery commit (at session close) must use one of the types defined below. Intermediate commits — WIP checkpoints, corrections, test rollbacks, amends — are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
 
 ---
 
@@ -30,14 +28,14 @@ These types are adopted now. Each maps to one or more session types from `handov
 
 | Type | When to use | Session type mapping |
 |---|---|---|
-| `feat` | New capability or behaviour | Implementation (`impl`) |
-| `fix` | Bug fix — corrects broken behaviour | Implementation (`impl`) |
-| `refactor` | Code restructuring with no behaviour change | Implementation (`impl`), Housekeeping (`chore`) |
-| `docs` | Documentation-only changes | Design (`design`), Spec (`spec`), Story (`story`), Investigation (`study`), Planning (`plan`) |
-| `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting | Housekeeping (`chore`) |
-| `workflow` | Changes that affect how other branches work — policy changes, CI/CD rules, branch restrictions, linter config, governance | Workflow (`workflow`) |
-| `test` | Adding or updating tests only | Implementation (`impl`) |
-| `build` | Changes to Dockerfile, build scripts, image pipeline | Implementation (`impl`) |
+| `feat` | New capability or behaviour | `impl` |
+| `fix` | Bug fix — corrects broken behaviour | `impl` |
+| `refactor` | Code restructuring with no behaviour change | `impl` |
+| `docs` | Documentation-only changes | `design` |
+| `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting | `chore` |
+| `workflow` | Policy changes, CI/CD rules, governance | `workflow` |
+| `test` | Adding or updating tests only | `impl` |
+| `build` | Changes to Dockerfile, build scripts, image pipeline | `impl` |
 
 ### Choosing between types
 
@@ -86,7 +84,7 @@ When a change is not tied to a specific sub-milestone (e.g. a cross-cutting poli
 
 ### Protected branches
 
-`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in [`standard_operating_procedures.md`](standard_operating_procedures.md) — Human / Operational Protocols.
+`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols).
 
 ---
 
@@ -155,12 +153,40 @@ A session that ends with uncommitted work is a risk — the handover records int
 **Rules:**
 - At session close, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
 - `wip` is not a commit type — it is a prefix that signals the commit is not reviewable. The next session amends or follows up.
-- Do not leave uncommitted changes across session boundaries. The handover cannot reconstruct files; the commit can.
+- Intermediate commits (WIP, corrections, amends) are not subject to the type enforcement rule — that rule applies only to the delivery commit at session close.
+- Do not leave uncommitted changes across session boundaries — this includes stashes. If work is incomplete at session close, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
 This is the git-level equivalent of the `autosave.diff` pattern in the execution model — a checkpoint that preserves state without implying completeness.
 
 ---
+
+## Amending
+
+Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:
+
+- **Squashing WIP commits** — WIP checkpoints accumulated during a session are squashed into the delivery commit at session close.
+- **Correcting a prior commit** — when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made this session. The amendment bundles the fix with the commit where the work was done.
+- **Early session close** — when the agent committed the delivery commit but the operator identifies a gap before the next session starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
+
+**Boundary:** Amend only within the current session's commit chain. Do not amend commits from prior sessions — those are part of the permanent reviewed record. If a prior session's commit needs fixing, file a new issue or create a new session.
+
+---
+
+## Recovery
+
+Procedures for recovering from situations where normal discipline breaks down.
+
+### Splitting interleaved changes
+
+When a single file contains changes from multiple sessions that must be split into separate commits:
+
+1. Save the full diff: `git diff > file.patch`
+2. Reset to HEAD: `git checkout HEAD -- file`
+3. For each commit, apply only the relevant hunks: `git apply file.patch` (then stage and commit)
+4. Repeat for each remaining session's changes
+
+If the file cannot be split by hunk boundaries (interleaved changes to the same logical section), consider splitting into two files or restructuring the changes so each session's work is disjoint.
 
 ## Merge Policy
 
@@ -228,108 +254,9 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | Document | Purpose |
 |---|---|
 | [`handover_policy.md`](handover_policy.md) | Session types that map to commit types |
-| [`contributors.md`](contributors.md) | General contribution rules and branch protection |
-| [`standard_operating_procedures.md`](standard_operating_procedures.md) | Human / Operational Protocols |
+| [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
 
 ---
 
-## [FINDINGS: 2026-05-22] — Proposed Rules from Session Practice
 
-This section captures rule proposals derived from hands-on git operations during sessions. These are **not adopted policy** — they are candidates observed to solve recurring problems. After multiple sessions produce overlapping proposals, common patterns will be distilled and elevated into the main policy sections above.
-
-Each entry states the observed symptom, the provisional rule that addressed it, and the reasoning. Refer to the handover chain for full session context.
-
----
-
-### Finding 1: In-sandbox commits are safe — the pipeline handles them
-
-**Observed:** The sandbox-level AGENTS.md states "Committing inside the sandbox corrupts the diff pipeline." In practice, commits made inside the sandbox are captured correctly by the startup-baseline / exit-diff pipeline. Multiple correction commits and this session's three-commit sequence confirmed the diff pipeline handles intervening commits without corruption.
-
-**Proposed rule:** The AGENTS.md constraint should be corrected to: "Commits are permitted but optional; the session diff captures all changes between session start and exit regardless of commit state." The original wording risks unnecessary avoidance of legitimate git operations.
-
-**Scope:** Policy document correction (AGENTS.md, not git_policy.md). Listed here because the practice of committing during a session is the subject of several other findings below.
-
----
-
-### Finding 2: Stash only single-session work — commit session boundaries
-
-**Observed:** A single stash contained changes from two distinct sessions (handover 11 and handover 12). Splitting them afterward required patch extraction, selective reset, and per-commit `git apply`. The interleaved changes in `roadmap.md` could not be cleanly separated without manual patch editing.
-
-**Proposed rule:** A stash should only hold in-progress changes from one session. If work spans multiple sessions (e.g., a planning session followed by an investigation session), commit the first session's output before starting the second — even if the branch is not yet ready for review. Use `wip:` prefix for incomplete states per the Checkpointing section above.
-
-**Rationale:** Session boundaries are the natural unit of git policy. Stashing across them merges independent intent into one diff, making later separation expensive and error-prone.
-
----
-
-### Finding 5: `amend` for corrections, new commits for new work
-
-**Observed:** When the EPERM correction commit already existed and we needed to add the resolution + story document, `git commit --amend` folded the new content into the existing commit cleanly — including an updated commit message documenting what was added. This was better than creating a separate "add resolution" follow-up commit.
-
-**Proposed rule:** Use `git commit --amend` to fold post-hoc discoveries, corrections, or additions into their parent commit when the new content is a completion of the same logical unit. Create a separate commit when the new content is substantively new work, a different type, or would make the parent commit's message misleading.
-
-**Rationale:** Amending preserves history shape and avoids orphaned one-line follow-up commits that clutter the log. The rule aligns with "a commit should be a coherent unit of change" — a correction to a commit is part of that unit, not a separate unit.
-
----
-
-### Finding 6: `mv` for untracked files, `git mv` for tracked; grep for cross-references
-
-**Observed:** Renaming an untracked handover file (`20260513-13` → `12`) required plain `mv` — `git mv` rejects untracked files. The renamed file then needed to be `git add`-ed explicitly. Cross-references to the old filename in other docs were caught by `grep -rn` across the tree.
-
-**Proposed rule (git operation):**
-- Use `git mv` for tracked files (preserves history, stages the rename automatically).
-- Use plain `mv` for untracked files, then `git add` the new path.
-- Before committing any rename, run `grep -rn "<old filename>" docs/` and update every reference.
-
-**Rationale:** Untracked files have no history to preserve — `git mv` adds ceremony without benefit. Tracked files need `git mv` so git detects the rename instead of recording a delete+add pair.
-
-**Proposed rule (elevation to AGENTS.md — see next section):** See §Rules for Elevation to AGENTS.md below.
-
----
-
-### Finding 7: Patch-based staging for files touched by multiple sessions
-
-**Observed:** `roadmap.md` was modified by both handover 11 and handover 12 sessions. Splitting the interleaved changes into two commits required: `git diff > file.patch`, `git checkout HEAD -- file`, then `git apply` per commit. This produced clean, reviewable commits with no cross-session noise.
-
-**Proposed rule:** When a single file contains changes from multiple sessions that must be split into separate commits:
-
-1. Save the full diff: `git diff > file.patch`
-2. Reset to HEAD: `git checkout HEAD -- file`
-3. For each commit, apply only the relevant hunks: `git apply file.patch` (then stage and commit)
-4. Repeat for each remaining session's changes
-
-If the file cannot be split by hunk boundaries (interleaved changes to the same logical section), consider splitting into two files or restructuring the changes so each session's work is disjoint. Modifying a file in multiple sessions without hunk-level separation is a signal that the sessions should have been committed sequentially.
-
-**Rationale:** This avoids interactive `git add -p`, produces a consistent file state per commit, and leaves a recoverable patch file while staging. The patch file can be discarded after all commits are created.
-
----
-
-## §Rules for Elevation to AGENTS.md
-
-Some operational patterns recur frequently enough that they should become first-class rules in the project-layer `AGENTS.md` — the document that governs agent behaviour in every session. Elevating a pattern there makes it discoverable without reading session-specific findings.
-
-**Gate for elevation:** A pattern observed in three or more sessions, or confirmed as structurally load-bearing (failure to follow it causes data loss or non-recoverable state).
-
-### Candidate: Rename protocol (from Finding 6)
-
-**Pattern:** Renaming a file requires updating all cross-references to the old name across the repository.
-
-**Draft AGENTS.md rule:**
-
-> **Rename protocol.** When renaming a file or directory, before committing:
-> 1. Search the entire repository for references to the old name: `grep -rn "<old name>" .`
-> 2. Update every reference — including paths in documentation, configuration files, and code comments.
-> 3. For tracked files, use `git mv` to preserve history. For untracked files, use plain `mv` then `git add`.
-> 4. Do not leave stale references to the old name. A rename is incomplete until its old name produces zero grep matches outside the git reflog.
-
-**Reasoning:** Renaming is cheap in git (the rename is detected automatically) but expensive in documentation (paths are scattered across handovers, design docs, architecture docs, and READMEs). The stale reference from the 13→12 rename (`devlog/discussions/design_session_identity_hash_based.md` still referenced `20260513-12-design-two_sig_model.md`) was caught only because the operator noticed it — not because the protocol existed.
-
-### Candidate: Amend protocol (from Finding 5)
-
-**Pattern:** Post-hoc corrections or completions should be folded into their parent commit rather than creating follow-up commits.
-
-**Draft AGENTS.md rule:**
-
-> **Amend for corrections.** When new information completes or corrects work from the current session's prior commit (not a prior session's commit), use `git commit --amend` to fold the change in. Create a separate commit only when the new work is substantively different in type, scope, or intent from the parent commit.
-
-**Reasoning:** Amending keeps the log linear and avoids clutter from "oops — also this" commits. The boundary is clear: correction of the same logical unit → amend; new work → new commit.

@@ -50,10 +50,10 @@ Each session type (Eg. workflow vs implementation) must declare its scope indepe
 | Session type | Shortform | Scope |
 |---|---|---|
 | Design | `design` | Minor loop Steps 3 + 4 (design and information gathering) |
-| Spec | `spec` | Minor loop Step 4 (information gathering pass — focused on spec and architecture docs) |
+| Spec | `spec` | Prepare to land: check consistency between roadmap, handover, and docs; surface prefactors; map surface area. Output goes to the handover and roadmap — no single-use document. |
 | Implementation | `impl` | Minor loop Step 6 |
 | Story | `story` | Major loop — problem framing |
-| Investigation | `study` | Major loop — candidate evaluation |
+| Study | `study` | Major loop — candidate evaluation |
 | Planning | `plan` | Major loop — milestone scoping |
 | Workflow | `workflow` | Policy changes, governance, audit |
 | Housekeeping | `chore` | Stale links, linting, index cleanup |
@@ -79,7 +79,7 @@ A handover has three states:
 
 **Session date:** YYYY-MM-DD
 **Milestone:** <sub-milestone ID and name — e.g. M2.1 — General Capability Layer Prototype>
-**Session type:** <Design | Spec | Implementation | Story | Investigation | Planning | Workflow | Housekeeping>
+**Session type:** <Design | Spec | Implementation | Story | Study | Planning | Workflow | Housekeeping>
 **Status:** <Active | Closed>
 
 ## Objective
