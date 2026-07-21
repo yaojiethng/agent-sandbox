@@ -151,7 +151,7 @@ Implements named volume persistence, conditional `-v`, and entrypoint resume det
 
 - [x] **Scoping** — Decision model: .run-identity prefactor, named volume, conditional compose teardown, simplified entrypoint gating (check .git/HEAD only). Env var lifecycle documented per variable. See `20260701-02-design-phase_1_5_persistence_scoping.md`.
 - [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-phase_1_5_persistence.md`.
-- [ ] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag documented, provider_onboarding_guide.md named volume note added, sandbox_identity.md created (or linked).
+- [x] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag and persistence documented, provider_onboarding_guide.md named volume note added, sandbox_lifecycle.md resume path subsection added, sandbox_identity.md .run-identity and env var lifecycle documented.
 
 ### Phase 2 — Mount Model Design and Implementation
 

@@ -69,7 +69,23 @@ The two-step design ensures all four working tree states are handled correctly:
 
 ### Harness directory lifecycle
 
-`.snapshot/` is overwritten on each run — rebuilt from `PROJECT_DIR` before the containers start. It is not archived or cleaned up between runs.
+`.snapshot/` is overwritten on each **first** start — rebuilt from `PROJECT_DIR` before the containers start. On a resumed session (volume with existing git state), the snapshot pipeline is skipped entirely. `.snapshot/` retains its previous content but is not accessed after initial git init. It is not archived or cleaned up between runs.
+
+### Resume path (Phase 1.5)
+
+When the sandbox volume already contains a valid git repository (`.git/HEAD` resolves), the snapshot pipeline is skipped on the host side and `snapshot_init_git` is skipped in the entrypoint. The agent resumes with the exact working tree and git state from the previous session.
+
+Host-side detection:
+- `$SANDBOX_DIR/.run-identity` exists and `REFRESH` is not set → resume path
+- Identity values (`SESSION_TS`, `RUN_ID`, `HOST_HEAD_SHA`, `SANDBOX_ID`) are read from `.run-identity` instead of recomputed
+- Copy pipeline (`snapshot_copy_worktree`, `snapshot_archive_head`, `snapshot_validate`) is skipped
+- Workspace bind mount directories (`CHANGES_DIR`, `INPUT_DIR`, `OUTPUT_DIR`) are created if absent
+
+Container-side detection:
+- `$SANDBOX_DIR/.git` exists on startup → resume path
+- `snapshot_validate` and `snapshot_init_git` are skipped
+- SESSION_STATE workspace path entries are refreshed (post-migration resilience)
+- Healthcheck passes immediately (`.git/` already exists)
 
 ---
 

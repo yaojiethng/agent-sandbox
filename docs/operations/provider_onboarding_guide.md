@@ -259,6 +259,8 @@ Run the dry-run sequence against an onboarded project to verify the provider int
 make dry-run PROVIDER=<n>
 ```
 
+The base compose template (`src/build/docker-compose.yml`) defines a named volume (`sandbox-data`) for sandbox state persistence. Provider overlays must not declare a volume with the same name. The volume lifecycle is managed by the harness — providers should not reference it directly.
+
 A passing dry-run confirms:
 - Both images build without error (`<provider>-base` and `<provider>-agent-<project>`)
 - Both containers start and the capability layer initialises `sandbox/`

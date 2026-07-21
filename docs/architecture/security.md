@@ -166,8 +166,8 @@ The harness cannot verify that `PROJECT_DIR`'s git history contains no committed
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Containers are ephemeral. Under Tier 2 and Tier 3 (mount models), the agent's working tree in `.snapshot/` survives container restarts via the host bind mount.
-- Only `.workspace/` persists agent outputs across runs. Under Tier 2 and Tier 3, `.snapshot/` additionally persists (it is a host bind mount rather than an anonymous volume).
+- Containers are ephemeral. The sandbox directory (`sandbox/`) persists across restarts via a named Docker volume (`sandbox-data`). Under Tier 2 and Tier 3 (mount models), the agent's working tree in `.snapshot/` additionally survives container restarts via the host bind mount.
+- `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. Under Tier 2 and Tier 3, `.snapshot/` additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 
 Network policy details are defined by configuration, not by this document.

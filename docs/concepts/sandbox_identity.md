@@ -9,8 +9,8 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 | `PROJECT_NAME` | User-provided at `onboard` | Host | Human-readable project identifier. Used in container names, image names, labels. |
 | `PROJECT_DIR` | User-provided at `onboard` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
 | `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`) | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
-| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. |
-| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` | Session run | Human-readable session timestamp. Retained in Docker labels and environment for operator inspection, not used for identity derivation. |
+| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start; persisted in `.run-identity` | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On resume, read from `.run-identity`, not recomputed. |
+| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` at first start; persisted in `.run-identity` | Session run | Human-readable session timestamp. On resume, read from `.run-identity` to ensure consistency with the volume's SESSION_STATE. |
 
 ## Derived Identifiers
 
@@ -103,17 +103,31 @@ Container-sig covers only the sandbox image and tier-3 agent images (the final p
 Harness-sig (runtime drift detection for the harness binary itself) is deferred to a future milestone.
 
 
+## `.run-identity` (persistence file)
+
+Written to `$SANDBOX_DIR/.run-identity` at first start. Read on resume to ensure host-side env vars match the volume's SESSION_STATE. Deleted on `REFRESH=1`.
+
+```
+SESSION_TS=20260622-104203
+RUN_ID=abc123
+HOST_HEAD_SHA=deadbeef0123456789abcdef0123456789abcdef
+SANDBOX_ID=12345678
+```
+
+On resume, `start_agent.sh` reads this file and exports the values as env vars instead of recomputing them. This guarantees that `diff_export` (reads env vars at teardown) and `package_branch` (reads SESSION_STATE from the volume) use the same identity values.
+
 ## SESSION_STATE Schema
 
-Written to the sandbox git repository's state file at container init:
+Written to the sandbox git repository's state file at container init (first start only):
 
 ```
 init_sha=<40-char sandbox baseline commit SHA>
 session_ts=<timestamp>
 host_head_sha=<40-char host HEAD SHA>
+run_id=<6-char session run ID>
 ```
 
-`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime.
+`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `run_id` is read by `package_branch` and `package_diff` to construct output paths consistent with the session's diff exports.
 
 ## Artefact Paths
 
