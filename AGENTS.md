@@ -111,6 +111,8 @@ All document, code, and file outputs are proposals. The operator reviews, approv
 
 **Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
 
+**Governance documents** (policy files, AGENTS.md, operational docs) — propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
+
 **Code** — Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
 **Audit findings** — Identify the document or code, state the rule violated, propose the correction.
@@ -158,3 +160,5 @@ Read these in addition to the above when opening a major loop planning session.
 | [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Any roadmap update |
 | [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session open or close, new task, story, investigation, or milestone transition |
 | [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Any session open or close, creating or updating a handover |
+| [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
+| [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |

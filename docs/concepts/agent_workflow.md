@@ -111,7 +111,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, Trigger B, Trigger A, changelog format, milestone promotion | Handover format, session step definitions |
 | Milestone planning (major loop) | [`milestone_policy.md`](../operations/milestone_policy.md) | Story and investigation process, scoping criteria, major loop closure | Minor loop session execution |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
-| Investigation lifecycle | [`investigation_policy.md`](../operations/investigation_policy.md) | Investigation structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
+| Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
 | Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing, file registry |
 | File registry and index maintenance | [`project_index.md`](../development/project_index.md) | File registry, freeze status, temperature, maintenance trigger rules | Documentation rules, workflow sequencing |
 | Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, session sequencing |

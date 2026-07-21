@@ -18,6 +18,10 @@ The short description completes the sentence "this commit will..." — e.g. `fea
 
 Body and footer are optional. Use a body when the "why" is not obvious from the summary. Use a footer for references (`Closes #12`, `See roadmap M2.1`).
 
+The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body — that is the diff's job.
+
+Every commit must use one of the types defined below. Commits without a valid prefix are rejected at review gate.
+
 ---
 
 ## Active Types

@@ -14,6 +14,13 @@ The handover serves two agents: the one closing the current session, and the one
 
 A well-written handover means the next session starts oriented. A missing or incomplete handover means the next session starts by reconstructing state — reading the roadmap, re-reading discussion documents, inferring what was decided. That reconstruction is waste. The handover eliminates it.
 
+## Brevity
+
+- Implementation steps (file-by-file changes, edit descriptions) belong in git commits, not handovers.
+- `Completed this session` table: one line per file — what changed and why. Not every edit within the file.
+- `Acceptance criteria`: one observable delta per criterion. If verification requires reading the handover, the criterion is too detailed.
+- `Hot files`: one-line reason per file. If it duplicates the Objective or Scope, it is redundant.
+
 ---
 
 ## File Naming Standard
@@ -238,7 +245,7 @@ Policy documents that this document depends on:
 |---|---|
 | [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
 | [`story_policy.md`](story_policy.md) | Story lifecycle: creation, investigation trigger, graduation, closure |
-| [`investigation_policy.md`](investigation_policy.md) | Investigation lifecycle: structure, states, recommendation, closure |
+| [`study_policy.md`](study_policy.md) | Study lifecycle: structure, states, recommendation, closure |
 | [`handover_policy.md`](handover_policy.md) | Handover content rules: valid field states, null markers, format conventions, correction procedure |
 
 ---

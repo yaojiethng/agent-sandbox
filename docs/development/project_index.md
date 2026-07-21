@@ -99,7 +99,9 @@ Temperature reflects the stability of what a document describes — not how care
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
 | `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
 | `story_policy.md` | 🟡 Warm | M2 | Story lifecycle: creation, graduation, closure. |
-| `investigation_policy.md` | 🟡 Warm | M2 | Investigation lifecycle: structure, states, recommendation, closure. |
+| `study_policy.md` | 🟡 Warm | M2 | Study lifecycle: structure, states, recommendation, closure (née `investigation_policy.md`). |
+| `discussion_policy.md` | 🟡 Warm | M2 | Discussion doc naming, type hub, lifecycle. |
+| `adr_policy.md` | 🟡 Warm | M2 | ADR lifecycle: creation, content, supersede protocol. |
 | `roadmap_policy.md` | 🟢 Cold | M2 | Roadmap maintenance rules. Session-boundary update model. |
 | `documentation_policy.md` | 🟢 Cold | M2 | Documentation structure rules. Only changes if the doc model changes. |
 | `task_policy.md` — retired | — | M2 | Replaced by `iteration_policy.md`. Deleted. |

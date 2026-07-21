@@ -79,7 +79,7 @@ Commission an investigation when:
 
 An investigation is not required when a story has only one viable approach — evaluate that approach within the story itself.
 
-See [`investigation_policy.md`](investigation_policy.md) for investigation format, lifecycle, and recommendation rules.
+See [`study_policy.md`](study_policy.md) for study format, lifecycle, and recommendation rules.
 
 ---
 
@@ -113,5 +113,5 @@ At this point, minor loop sessions may begin.
 |---|---|
 | [`iteration_policy.md`](iteration_policy.md) | Full two-loop workflow; minor loop session steps |
 | [`story_policy.md`](story_policy.md) | Story creation, lifecycle, graduation, closure |
-| [`investigation_policy.md`](investigation_policy.md) | Investigation structure, lifecycle, recommendation |
+| [`study_policy.md`](study_policy.md) | Study structure, lifecycle, recommendation |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |

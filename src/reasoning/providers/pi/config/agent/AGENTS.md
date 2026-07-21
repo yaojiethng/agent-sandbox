@@ -35,6 +35,10 @@ When writing code, always take into account the following:
 6. One line?                  → one line
 7. Only then: the minimum that works
 
+Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
+
+**Gotcha — handover type drift.** The session type in the handover header is set at creation but the actual scope may evolve during the session. At session close, validate that the type still matches the dominant activity. If it diverges, rename the file and update the header before closing. A `design` handover that produced only policy changes should be `workflow`.
+
 ## Session Workflow
 
 Each session is independent. The prior session's git history is not available (container is ephemeral). The session starts from the project's committed HEAD.

@@ -153,6 +153,16 @@ Implements named volume persistence, conditional `-v`, and entrypoint resume det
 - [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-phase_1_5_persistence.md`.
 - [x] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag and persistence documented, provider_onboarding_guide.md named volume note added, sandbox_lifecycle.md resume path subsection added, sandbox_identity.md .run-identity and env var lifecycle documented.
 
+### M2.6 Phase 1.6 — Document consolidation (deferred from Phase 1.5 session)
+
+Cleanup tasks scoped during the document system overhaul session but not completed.
+
+- [ ] **Roll single-use spec files into handovers** — `spec_context_dir_removal.md`, `spec_apply_workspace_refactor.md`, `spec_test_infrastructure.md`. Condense key decisions into the relevant handovers, then delete. `spec_container_layer_redesign.md` → rename to `design` format and keep (still active).
+- [ ] **Write worktree mount model ADR** — `docs/adr/20260721-adr-settled-worktree_mount_model.md`. Consolidate findings from `investigation_git_worktrees.md`, `story_agent_git_surface.md`, `story_parallel_sessions_worktree.md` into a single ADR.
+- [ ] **Supersede mount-model discussion docs** — Add supersede headers on old docs pointing to the new ADR.
+- [ ] **Policy file disambiguation pass** — `docs/operations/` has 14 files with overlapping boundaries. `documentation_policy.md`, `handover_policy.md`, `iteration_policy.md`, `story_policy.md` need clearer scope definitions or consolidation.
+- [ ] **Design policy extraction** — Whether a standalone design document policy should be extracted from references across `documentation_policy.md` and `iteration_policy.md` is unresolved.
+
 ### Phase 2 — Mount Model Design and Implementation
 
 Requires a design session. The security model must be updated (Phase 1) before the design session can proceed. All design decisions, mount path specifications, and compose template changes are scoped during the design session, not here.

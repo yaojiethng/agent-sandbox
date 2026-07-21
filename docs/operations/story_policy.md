@@ -98,7 +98,7 @@ A closed story is never deleted. It is the reasoning record for the decision. Fu
 
 A story may commission one or more investigation documents — one per candidate approach — when comparative evaluation is needed. The story owns the problem framing; investigations own the candidate evaluation. Investigation findings feed back into the story's Investigation Findings section as summary links.
 
-See [`investigation_policy.md`](investigation_policy.md) for investigation format and lifecycle.
+See [`study_policy.md`](study_policy.md) for study format and lifecycle.
 
 ---
 
@@ -113,6 +113,6 @@ Open stories are listed in the roadmap under a `## User Stories` section with a 
 | Document | Purpose |
 |---|---|
 | [`milestone_policy.md`](milestone_policy.md) | Major loop process — when stories are opened and closed |
-| [`investigation_policy.md`](investigation_policy.md) | Investigation format and lifecycle |
+| [`study_policy.md`](study_policy.md) | Study format and lifecycle |
 | [`iteration_policy.md`](iteration_policy.md) | Minor loop — where deferred stories resurface |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — User Stories section |

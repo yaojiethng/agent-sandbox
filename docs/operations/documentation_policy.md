@@ -203,8 +203,8 @@ The agent never deletes documents. Deletion is an operator action. The agent's r
 | Handover | Dated `[CORRECTION: ...]` amendment block appended at the bottom — see [`handover_policy.md`](handover_policy.md) — Corrections to Closed Handovers |
 | Changelog | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected sentence — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
 | Roadmap entry | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected claim — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
-| Investigation — valid content, minor error | Edits directly in the body + dated `[CORRECTION: ...]` amendment block at the bottom — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
-| Investigation — invalid or superseded content | `[SUPERSEDED]` status header with link to correct source — see [`investigation_policy.md`](investigation_policy.md) — Corrections to Closed Investigations |
+| Study — valid content, minor error | Edits directly in the body + dated `[CORRECTION: ...]` amendment block at the bottom — see [`study_policy.md`](study_policy.md) — Corrections to Closed Studies |
+| Study — invalid or superseded content | `[SUPERSEDED]` status header with link to correct source — see [`study_policy.md`](study_policy.md) — Corrections to Closed Studies |
 
 ### Amendment block format
 
