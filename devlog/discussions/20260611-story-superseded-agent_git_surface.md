@@ -1,5 +1,7 @@
 # Story — Agent-Git Surface
 
+> **Superseded by:** [20260721-adr-settled-worktree_mount_model.md](../../../docs/adr/20260721-adr-settled-worktree_mount_model.md)
+
 **Status:** Resolved — superseded by M2.6 design decisions
 
 ---

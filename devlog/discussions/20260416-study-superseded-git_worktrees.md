@@ -1,5 +1,7 @@
 # Investigation — Git Worktrees as Sandbox Isolation Mechanism
 
+> **Superseded by:** [20260721-adr-settled-worktree_mount_model.md](../../../docs/adr/20260721-adr-settled-worktree_mount_model.md)
+
 **Status:** Resolved — Reject for M2.3; feasible candidate for future milestone under relaxed assumptions.
 
 **Direction:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline

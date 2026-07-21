@@ -1,5 +1,7 @@
 # Story — Parallel Sessions via Git Worktree
 
+> **Superseded by:** [20260721-adr-settled-worktree_mount_model.md](../../../docs/adr/20260721-adr-settled-worktree_mount_model.md)
+
 **Status:** Resolved
 
 > **Resolved.** Design recorded in [`design_apply_workflow_and_baseline_advancement.md`](design_apply_workflow_and_baseline_advancement.md).
