@@ -136,7 +136,7 @@ The diff pipeline, apply script, and `.snapshot/` directory are eliminated entir
 
 **Blocking remote operations:** `--network=none` on the agent container. `git push` and `git fetch` fail at the TCP layer. Single-line change to compose template.
 
-**Protecting the main branch pointer:** After worktree creation, `git pack-refs --all` then `chmod a-w .git/packed-refs`. This makes all branch pointers read-only at the filesystem level from inside the container. Restored after session by the host. See `security_delta_worktree_model.md` for full analysis of residual gaps.
+**Protecting the main branch pointer:** After worktree creation, `git pack-refs --all` then `chmod a-w .git/packed-refs`. This makes all branch pointers read-only at the filesystem level from inside the container. Restored after session by the host. See `20260622-study-settled-security_delta_worktree_model.md` for full analysis of residual gaps.
 
 **History access:** Under the new assumptions, full history access is accepted. The shared `.git/` object store is present. The only concern is read performance on repos with deep binary history — the same class of problem as before and not worsened by worktrees.
 
@@ -185,7 +185,7 @@ Git worktrees require mounting a path rooted in PROJECT_DIR's `.git` into the ag
 
 **Under relaxed assumptions — Feasible. Candidate for a future milestone.**
 
-When the assumptions shift (clean history, network-isolated container, main branch protection treated as an engineering problem), the worktree model is architecturally cleaner than the snapshot+diff pipeline. The three engineering problems are solvable. Full security analysis of the relaxed-assumptions model is in [`security_delta_worktree_model.md`](security_delta_worktree_model.md).
+When the assumptions shift (clean history, network-isolated container, main branch protection treated as an engineering problem), the worktree model is architecturally cleaner than the snapshot+diff pipeline. The three engineering problems are solvable. Full security analysis of the relaxed-assumptions model is in [`20260622-study-settled-security_delta_worktree_model.md`](20260622-study-settled-security_delta_worktree_model.md).
 
 Record in `roadmap_future.md` as a named candidate for a post-M2.3 milestone. No codebase changes arise now.
 

@@ -83,7 +83,7 @@ The persistence model for AGENT_HOME state is a **selective bind mount + copy-in
 | Which files need write-through vs. session-only? | Prompts/skills/sessions are write-through. Config files (settings, auth, models) are copy-in. | Auth tokens stored as env var references in `auth.json` — making it ephemeral prevents write-back of secret values (security feature). Settings and models are regenerated from provider templates. |
 | Persistence model: provider-agnostic or provider-specific? | Provider-agnostic mechanism (selective bind mounts + copy-in template) shared by all providers. The list of which paths are write-through vs. session-only may differ per provider. | A single mechanism reduces maintenance burden; per-provider path lists are configured in provider templates. |
 | Copy-out trigger | Clean exit only (SIGTERM → EXIT trap). Autosave is for sandbox content, not for AGENT_HOME config files. | Config files change rarely (token refresh, model config). Autosave of AGENT_HOME state would create unnecessary write contention on host filesystem. |
-| Compose template hardcoded Pi path | Known issue — flagged for the M2.6 Phase 2 design session. The compose template's `target: /home/agentuser/.pi/agent` needs to become provider-parameterised. | Non-Pi providers cannot start with the current template. |
+| Compose template hardcoded Pi path | Known issue — flagged for the M2.6.4 design session. The compose template's `target: /home/agentuser/.pi/agent` needs to become provider-parameterised. | Non-Pi providers cannot start with the current template. |
 
 ### utime/EPERM on cross-filesystem mounts — accepted limitation
 
@@ -92,5 +92,5 @@ Pi's `settings-manager.js` uses `proper-lockfile` which calls `fs.utimesSync()` 
 ### References
 
 - Security model update: [`docs/architecture/security.md`](../architecture/security.md) — Tier 2+3 mount boundaries
-- Extensibility audit: scoped to M2.6 Phase 2 design session
-- Compose template path resolution: scoped to M2.6 Phase 2 design session
+- Extensibility audit: scoped to M2.6.4 design session
+- Compose template path resolution: scoped to M2.6.4 design session

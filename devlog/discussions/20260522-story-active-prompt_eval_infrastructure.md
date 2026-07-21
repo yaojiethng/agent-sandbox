@@ -69,10 +69,10 @@ A published case study describes selecting a local 3B model to replace Claude So
 |---|---|---|
 | I1 | References scope gate as "Step 2", not "Step 1b" | grep |
 | I2 | Does NOT perform compaction at Step 1 (moved to Steps 8-9) | grep |
-| I3 | Trigger B recovery: create handover → run Trigger B → record → present in scope | grep for ordering keywords |
+| I3 | Bookkeeping recovery: create handover → run post-close bookkeeping → record → present in scope | grep for ordering keywords |
 | I4 | Includes both scope gate (Gate 1) and AC gate (Gate 2 / Step 5) | grep |
 | I5 | References canonical policy docs rather than restating them | grep for policy file references |
-| I6 | Does NOT reference "before compacting or creating" (old Trigger B wording) | grep |
+| I6 | Does NOT reference "Trigger B" (old naming) | grep |
 | I7 | Does NOT reference old compaction model ("compact any fully-completed task groups" at Step 1) | grep |
 | I8 | Contains correct session type table (8 types) | grep |
 
@@ -82,8 +82,8 @@ A published case study describes selecting a local 3B model to replace Claude So
 # For each skill file $f:
 grep -qi "step.*1b" $f && echo "$f: STALE — references Step 1b instead of Step 2"
 grep -qi "compact.*step 1\|compaction.*step 1\|compact.*task groups.*previous session" $f && echo "$f: STALE — compaction referenced at Step 1"
-grep -qi "before compacting or creating" $f && echo "$f: STALE — old Trigger B fallback wording"
-grep -qi "recovery check.*trigger B\|trigger B.*recover" $f && echo "$f: CHECK — does Trigger B ordering match new policy?"
+grep -qi "Trigger B\|trigger B" $f && echo "$f: STALE — old Trigger B naming; should use post-close bookkeeping"
+grep -qi "recovery check.*bookkeeping\|bookkeeping.*recover" $f && echo "$f: CHECK — does bookkeeping ordering match current policy?"
 ```
 
 **Pareto tradeoff for v1 vs v2:**
@@ -121,7 +121,7 @@ The three-way eval (v1/v2/v3, session 20260522-01) exposed a structural problem 
 
 **False positives from negation are real but manageable.** V3's "Compaction is no longer a Step 1 action" triggered I2 — a clarification that read as an instruction. The fix is simple (`grep | grep -v "no longer"`) but the pattern class (negation, "do NOT", "instead of") needs a systematic exclusion list if the eval suite grows.
 
-**One variant per variable works for prompts too.** Comparing v1, v2, and v3 against the same golden dataset isolated exactly what each variant changed: v2 added divergence detection and explicit commands; v3 added Trigger B ordering and compaction clarification. If we'd compared them by read-through, we'd still be arguing about which was "better." The eval table settled it in seconds.
+**One variant per variable works for prompts too.** Comparing v1, v2, and v3 against the same golden dataset isolated exactly what each variant changed: v2 added divergence detection and explicit commands; v3 added post-close bookkeeping ordering and compaction clarification. If we'd compared them by read-through, we'd still be arguing about which was "better." The eval table settled it in seconds.
 
 **The golden dataset should grow with policy.** I8–I10 could be added as new invariants emerge (e.g., "references Related Skills table" when skills are added to policy docs, "includes compaction proposal in Step 7" for session-close prompts). The dataset is not static — it mirrors what the policy requires.
 

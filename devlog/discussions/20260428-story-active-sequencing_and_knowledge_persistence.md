@@ -64,7 +64,7 @@ These are not recommendations — they are options to evaluate.
 
 **A. Expand the roadmap to unit granularity.** Add a sub-section under each sub-milestone for implementation units, with explicit ordering and dependency notes. Cheap to introduce; risks polluting milestone planning with implementation detail.
 
-**B. Introduce a session plan document.** A new artifact type in `docs/devlog/` (alongside handovers) that represents the unit queue for the current sub-milestone. Persists across sessions within the sub-milestone; closed at Trigger B. Requires new policy and new tooling conventions.
+**B. Introduce a session plan document.** A new artifact type in `docs/devlog/` (alongside handovers) that represents the unit queue for the current sub-milestone. Persists across sessions within the sub-milestone; closed at sub-milestone close (post-close bookkeeping). Requires new policy and new tooling conventions.
 
 **C. Split the handover's Next session section.** Low cost; partially addresses the queue-of-one problem without introducing new artifacts. Does not solve the multi-hop fragility problem or the findings representation problem.
 

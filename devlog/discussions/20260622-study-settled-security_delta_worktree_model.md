@@ -302,15 +302,15 @@ The invariant-by-invariant comparison (Part 2), the four required mitigations (P
 - **New trust boundaries** (Part 3): Documented in `security.md` §Trust Boundaries and Mount Models — Tier 3.
 - **Residual risk table** (Part 6): Summary retained in `security.md` Tier 3 invariants preamble.
 
-### Remaining content for M2.6 Phase 2 design session
+### Remaining content for M2.6.4 design session
 
-The following sections are not encoded in `security.md` and remain relevant for the Phase 2 design session:
+The following sections are not encoded in `security.md` and remain relevant for the M2.6.4 design session:
 
 - Part 4 (Assets at Risk After Proposed Mitigations) — detailed per-mitigation coverage analysis.
 - Part 6 (Summary Table) — reference table for design trade-off discussions.
-- Option A vs. Option B architecture choice (`.git/` in capability layer only vs. also in reasoning layer) — this is a Phase 2 design decision not yet made.
+- Option A vs. Option B architecture choice (`.git/` in capability layer only vs. also in reasoning layer) — this is an M2.6.4 design decision not yet made.
 
 ### References
 
 - Security model: [`docs/architecture/security.md`](../architecture/security.md) — Tier 3 invariants and trust boundaries
-- M2.6 Phase 2 design session — deferred decisions (Option A/B, `.git/hooks/` restoration, worktree lifecycle)
+- M2.6.4 design session — deferred decisions (Option A/B, `.git/hooks/` restoration, worktree lifecycle)
