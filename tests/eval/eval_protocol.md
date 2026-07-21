@@ -1,6 +1,6 @@
 # Prompt Eval Protocol
 
-**Status:** Draft — working document linked from `story_prompt_evals.md`. Not yet formal policy.
+**Status:** Draft — working document linked from `20260522-story-active-prompt_eval_infrastructure.md`. Not yet formal policy.
 
 ## Purpose
 
@@ -34,7 +34,7 @@ Example (from new-session eval):
 |---|---|
 | I1 — No "Step 1b" references | `iteration_policy.md` Step naming |
 | I2 — No compaction at Step 1 | `roadmap_policy.md` Steps 8–9 |
-| I3 — Trigger B recovery present | `handover_policy.md` Step 1 recovery check |
+| I3 — Post-close bookkeeping recovery present | `handover_policy.md` Step 1 recovery check |
 | I4 — Scope + AC gates present | `handover_policy.md` Gates 1 and 2 |
 
 ### 2. Write code-based evaluators
@@ -77,7 +77,7 @@ Then state the verdict and which failures require fix.
 
 ### 5. Behavioral eval (when available)
 
-Code-based evaluators test prompt *content*. Behavioral eval tests prompt *execution* — does the agent following this prompt produce correct output? Currently blocked: session-start prompts require pre-state (handovers, roadmap) but headless `pi -p` shares the real project state. See pre-state setup gap in `story_prompt_evals.md`.
+Code-based evaluators test prompt *content*. Behavioral eval tests prompt *execution* — does the agent following this prompt produce correct output? Currently blocked: session-start prompts require pre-state (handovers, roadmap) but headless `pi -p` shares the real project state. See pre-state setup gap in `20260522-story-active-prompt_eval_infrastructure.md`.
 
 When the parallel session gap is resolved, behavioral eval adds:
 - Given a project with handover X and roadmap state Y, does the agent create the correct handover?
@@ -112,6 +112,6 @@ Use the cheapest tier that catches the failure class. Code-based for regressions
 
 ## Related
 
-- [`story_prompt_evals.md`](../discussions/story_prompt_evals.md) — Investigation findings, open questions, case study analysis
+- [`20260522-story-active-prompt_eval_infrastructure.md`](../discussions/20260522-story-active-prompt_eval_infrastructure.md) — Investigation findings, open questions, case study analysis
 - [`/tmp/eval-new-session.sh`](/tmp/eval-new-session.sh) — Concrete eval script for new-session prompts
 - `docs/operations/handover_policy.md#related-skills` — Skill→policy dependency mapping

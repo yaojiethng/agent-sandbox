@@ -6,10 +6,10 @@ Read this document at the start of any session. Read the relevant child document
 
 | Loop | Step | Governing document |
 |---|---|---|
-| **Major** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| **Major** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) — Top-level milestone close |
 | | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
-| | **Gate 2** | select sub-milestone (also entry point for Trigger B) |
+| | **Gate 2** | select sub-milestone (also entry point from post-close bookkeeping when a sub-milestone closes) |
 | | 3. Open or revise stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
 | | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
 | | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) — Stories |
@@ -70,10 +70,10 @@ Triggered after a major milestone closes. Performed once per major milestone bef
 
 | Step | Entry condition | Action | Exit condition | Governing document |
 |---|---|---|---|---|
-| **1 — Close prior milestone** | Prior milestone complete and no current milestone open. Skip to Gate 2 if a milestone is already open. | Write changelog entry and extract the completed milestone from `roadmap.md`. | Prior milestone removed from roadmap. Changelog entry written. | [`roadmap_policy.md`](roadmap_policy.md#major-loop-close-trigger-a) — Trigger A |
+| **1 — Close prior milestone** | Prior milestone complete and no current milestone open. Skip to Gate 2 if a milestone is already open. | Write changelog entry and extract the completed milestone from `roadmap.md`. | Prior milestone removed from roadmap. Changelog entry written. | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) — Top-level milestone close |
 | **Gate 1 — Select next milestone** | Prior milestone closed. Skip to Gate 2 if a milestone is already open. | Present available next milestones from `roadmap_future.md`. Wait for operator to select which to promote. | Operator selects next milestone. Explicit release required. | — |
 | **2 — Orient to next milestone** | Operator has selected next milestone. | Promote selected milestone from `roadmap_future.md` into `roadmap.md`. Read it. Present sub-milestones ready to progress (no unresolved dependencies) and which have open planning work. | Orientation presented. | `roadmap.md` |
-| **Gate 2 — Select sub-milestone** | Orientation presented. | Wait for operator to select which sub-milestone to plan first. This gate also fires when a sub-milestone closes mid-milestone (Trigger B) — enter here directly, skipping Gate 1 and Step 2. | Operator selects sub-milestone. Explicit release required. | — |
+| **Gate 2 — Select sub-milestone** | Orientation presented. | Wait for operator to select which sub-milestone to plan first. This gate also fires when post-close bookkeeping completes a sub-milestone — enter here directly, skipping Gate 1 and Step 2. | Operator selects sub-milestone. Explicit release required. | — |
 | **3 — Open or revise stories** | Operator has directed specific areas, OR open stories or unresolved questions exist under the chosen sub-milestone. Skip if neither applies. | For each directed or open area, produce a new story or revise an existing one in `docs/discussions/`. | All directed and existing open areas have a current story document. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
 | **4 — Investigate or design** | Unresolved stories exist under the chosen sub-milestone. | For each unresolved story: if direction is clear, produce a design document directly. If unclear, open discussion documents as warranted. | Every unresolved story has a corresponding discussion document. | [`discussion_policy.md`](discussion_policy.md) |
 | **5 — Resolve stories** | A story has a completed investigation or agreed approach. | Operator reviews each story and provides explicit sign-off with direction. Each story is either graduated to the roadmap or given an explicit status (deferred, abandoned, superseded) with a recorded reason. | All stories under the sub-milestone are resolved or carry an explicit status with recorded reason. Graduated stories are written as roadmap entries. | [`discussion_policy.md`](discussion_policy.md) — Stories |
@@ -87,7 +87,7 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 
 | Step | Tag | Entry condition | Action | Exit condition |
 |---|---|---|---|---|
-| **1 — Open handover** | always | Session begins | Run recovery checks (verify roadmap against prior handover; if Trigger B pending, run it after creating handover but before scope). Create handover: new file with date and sequential index, read prior handover for Carried forward, reset Completed table, populate Hot files and Session type, write canonical markers for nullable sections. Per §Step 1 Details. | Handover draft complete. |
+| **1 — Open handover** | always | Session begins | Run recovery checks (verify roadmap against prior handover; if post-close bookkeeping is pending, run it after creating handover but before scope). Create handover: new file with date and sequential index, read prior handover for Carried forward, reset Completed table, populate Hot files and Session type, write canonical markers for nullable sections. Per §Step 1 Details. | Handover draft complete. |
 | **2 — Confirm scope** | always | Handover draft complete | Present scope proposal including session type and justification. Cover: what is in scope and why, what is deferred and why, any unresolved questions. If context insufficient, ask one question at a time. For multi-unit sessions, spec only the active unit. Wait for explicit release before any output. Per §Step 2 Details. | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
 | **Gate 1** | always | Scope confirmed | No output until operator releases. Agent must present session type with justification in the scope proposal — operator confirms the type alongside scope. | Explicit release received. Session type confirmed. |
 | **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). If the design settles with an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
@@ -97,7 +97,7 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 | **6 — Implementation** | confirmed | Gate 2 released | Produce code against confirmed spec; tests alongside per [`testing_policy.md`](testing_policy.md). On spec divergence: correct architecture doc before continuing. Flag all other adjacent issues; Defer by default. Per §During the session. | All tasks complete. Tests pass. Architecture docs reflect system as built. |
 | **7 — Pre-close verification** | confirmed | Implementation complete | Present pre-close summary in a four-column AC status table. Mark each criterion as accepted or pushed. Run verifiable checks and show output. Propose compaction entries for fully-completed task groups. For multi-file changes under a shared rule, include a propagation replay table. Packaging does not release this gate. Wait for explicit release. Per §Step 7 Details. | Operator confirmed against AC and compaction text. |
 | **Gate 3** | always | Pre-close verified | The AC status table must be visible — every criterion shown, every status populated. No close until operator releases. | Explicit release received. |
-| **8–9 — Close and seed** | always | Gate 3 released | Apply approved compaction — replace each completed task group's checklist with outcome summary. If all sub-milestone tasks complete, run Trigger B per [`roadmap_policy.md`](roadmap_policy.md). Run scope reconciliation, carry-forward resolution gate, and mid-session findings triage gate. Mark each AC accepted or pushed. Update Hot files. Seed next session. Per §Steps 8–9 Details. | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. Next session actionable. |
+| **8–9 — Close and seed** | always | Gate 3 released | Apply approved compaction — replace each completed task group's checklist with outcome summary. Run post-close bookkeeping per [`roadmap_policy.md`](roadmap_policy.md#post-close-bookkeeping). Run scope reconciliation, carry-forward resolution gate, and mid-session findings triage gate. Mark each AC accepted or pushed. Update Hot files. Seed next session. Per §Steps 8–9 Details. | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. Next session actionable. |
 
 ---
 
@@ -106,8 +106,8 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 ### Step 1 — Open handover
 
 - **Create a new handover — never modify a closed one.** Create a new file with today's date and the next sequential index. The prior handover is source material only — read it for context, then leave it untouched.
-- **Recovery check:** verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session notes Trigger B is pending (or the roadmap still shows a completed sub-milestone as active), the prior session's close sequence did not complete. Run Trigger B after creating this handover but before presenting the scope proposal (Step 2). Record the Trigger B execution in this handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
-- **Compaction note:** compaction is no longer a Step 1 action. It happens at Steps 8–9 after Gate 3 release per [`roadmap_policy.md`](roadmap_policy.md). No compaction checks are needed at session open — read the roadmap as-is.
+- **Recovery check:** verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session notes bookkeeping is pending (or the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied), run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
+- No compaction checks are needed at session open — read the roadmap as-is.
 - Write the session objective — what this session will achieve, scoped to the session type and step range.
 - Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
 - Read the prior handover if one exists. Populate the Carried forward section: for each item in the prior handover's Deferred items that is destined for this session, add a row with the item description and the prior handover filename. Transfer acceptance criteria that were explicitly pushed to this session. Do not re-litigate deferred decisions.
@@ -209,7 +209,7 @@ Exit condition: Explicit release received.
 After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
 
 - **Apply approved compaction** — replace each fully-completed task group's checklist with the outcome summary approved at Gate 3. Keep the `- [x]` marker. Compaction applies at every level of nesting.
-- If all sub-milestone tasks are now complete and acceptance criteria are met, run [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) before closing the handover.
+- **Run post-close bookkeeping** — compaction cascading, summary table update, and top-level milestone close (if applicable). See [Post-close Bookkeeping](roadmap_policy.md#post-close-bookkeeping).
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
 - Update the Hot files section: mark completed files or remove them; add any files that entered scope during the session.
@@ -227,7 +227,7 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 #### Seed next session
 
 - Identify the next session's scope from two sources: the roadmap task list, and the Deferred items just written. Deferred items take priority — they represent work already started or committed to that must not be silently dropped.
-- If this was the final session of a sub-milestone, note in Next session whether [Trigger B](roadmap_policy.md#sub-milestone-close-trigger-b) has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
+- If this was the final session of a sub-milestone, note in Next session whether post-close bookkeeping has been run or is pending. This is the signal the next session uses in its Step 1 recovery check.
 - List any blocking design questions explicitly — these are not general notes, they are concrete blockers the next agent must resolve before advancing.
 - Populate the **Conclusions from this session** field: decisions made, approaches confirmed, dead ends ruled out this session. Only what the next agent would otherwise re-derive from scratch — not a full log.
 - Populate Next session with enough orientation that the next agent does not need to read this session's history. **This section is written for the next agent, not the current one — it is source material for that agent's Step 1, not a continuation directive. The next agent will create its own handover before acting on anything written here.**

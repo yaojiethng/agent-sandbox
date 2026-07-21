@@ -1,5 +1,5 @@
 ---
-description: Close a session. Runs Steps 7b, 8, and 9 of the minor loop (iteration_policy.md) — verifies acceptance criteria, runs propagation replay if applicable, reconciles scope, marks the roadmap, checks Trigger B, closes the handover, and seeds the next session. Use when implementation is complete and you are ready to close.
+description: Close a session. Runs Steps 7b, 8, and 9 of the minor loop (iteration_policy.md) — verifies acceptance criteria, runs propagation replay if applicable, reconciles scope, marks the roadmap, runs post-close bookkeeping, closes the handover, and seeds the next session. Use when implementation is complete and you are ready to close.
 ---
 
 Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.md).
@@ -12,9 +12,9 @@ Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.
 
 **Scope reconciliation (Step 8):** Compare the confirmed scope from session open against the Completed this session table. Every item that was in scope but is not completed must appear in Deferred items with what it is, why it did not complete, and where it goes next.
 
-**Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed this session table. Verify every in-scope architecture and concepts document describes the system as built — divergences must be resolved or recorded as deferred items that block Trigger B.
+**Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed this session table. Verify every in-scope architecture and concepts document describes the system as built — divergences must be resolved or recorded as deferred items with a reason.
 
-**Trigger B check (Step 8):** If all sub-milestone tasks are complete, all AC are met, and no doc divergence is deferred, run Trigger B per `roadmap_policy.md`. Otherwise state why it does not apply.
+**Post-close bookkeeping (Step 8):** Run post-close bookkeeping per `roadmap_policy.md` — compaction cascading, summary table update, and top-level milestone close if applicable.
 
 **Close the handover (Step 8):** Mark each AC as accepted or pushed to next session. Complete the Completed this session and Deferred items sections. Update Hot files. Set Status to `Closed`.
 

@@ -108,7 +108,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 |---|---|---|---|
 | Session sequencing and loop structure | [`iteration_policy.md`](../operations/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
 | Handover lifecycle | [`handover_policy.md`](../operations/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
-| Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, Trigger B, Trigger A, changelog format, milestone promotion | Handover format, session step definitions |
+| Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, post-close bookkeeping, top-level milestone close, changelog format, milestone promotion | Handover format, session step definitions |
 | Milestone planning (major loop) | [`milestone_policy.md`](../operations/milestone_policy.md) | Story and investigation process, scoping criteria, major loop closure | Minor loop session execution |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
 | Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
@@ -123,7 +123,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **iteration_policy.md and handover_policy.md** are the most adjacent pair. iteration_policy owns the step sequence and gate definitions — when steps run and what makes them complete. handover_policy owns what happens within each step from the handover's perspective — what to populate, what format to use, what constitutes a valid handover at each stage. An agent executing a step reads iteration_policy to know the step exists and what its exit condition is; it reads handover_policy to know how to produce a conforming handover for that step.
 
-**roadmap_policy.md and iteration_policy.md** share the session boundary. Trigger B and compaction rules are defined in roadmap_policy; iteration_policy's step table references them by link. An agent updating the roadmap reads roadmap_policy; an agent opening a session reads iteration_policy, which directs it to roadmap_policy at the moments roadmap updates are required.
+**roadmap_policy.md and iteration_policy.md** share the session boundary. Post-close bookkeeping and compaction rules are defined in roadmap_policy; iteration_policy's step table references them by link. An agent updating the roadmap reads roadmap_policy; an agent opening a session reads iteration_policy, which directs it to roadmap_policy at the moments roadmap updates are required.
 
 **documentation_policy.md and project_index.md** share index maintenance. documentation_policy owns the rules for how documents should be written and structured. project_index.md owns the registry of what documents exist and the rules for keeping it current. Neither owns the other's content.
 

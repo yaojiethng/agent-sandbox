@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Code-based capability eval for new-session prompt templates
-# Run against golden dataset invariants from story_prompt_evals.md
+# Run against golden dataset invariants from 20260522-story-active-prompt_eval_infrastructure.md
 
 set -euo pipefail
 
@@ -23,8 +23,8 @@ eval_one() {
     results+="I2:PASS "
   fi
 
-  # I3: Trigger B recovery referenced with correct ordering
-  if grep -qi "recovery check.*[Tt]rigger\|[Tt]rigger.*check\|Trigger B check\|run.*Trigger B" "$f"; then
+  # I3: Post-close bookkeeping recovery referenced with correct ordering
+  if grep -qi "bookkeeping recovery\|post-close bookkeeping\|run.*bookkeeping" "$f"; then
     results+="I3:PASS "
   else
     results+="I3:FAIL "
@@ -42,7 +42,7 @@ eval_one() {
   fi
 
   # I6: No old Trigger B wording
-  if grep -qi "before compacting or creating" "$f"; then
+  if grep -qi "Trigger B\|trigger B" "$f"; then
     results+="I6:FAIL "
   else
     results+="I6:PASS "

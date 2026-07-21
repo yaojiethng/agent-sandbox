@@ -22,14 +22,36 @@ Read the most recent handover (both the Objective and Next session
 sections). Work backwards through the chain if the context is thin.
 Closed handovers are read-only records — do not modify them.
 
-## Step 2 — Read the roadmap and deferred items
+## Step 2 — Read the roadmap frontmatter, summary, and active milestone
 
 ```bash
-head -80 devlog/roadmap.md
-grep -A5 "Deferred" devlog/roadmap.md
+head -5 devlog/roadmap.md                         # frontmatter — active milestone
+grep -A30 "^## Milestone Summary" devlog/roadmap.md | head -35  # milestone table
 ```
 
-Identify incomplete task groups and any deferred items.
+Read the active milestone's detailed section. The frontmatter `active-milestone:`
+field identifies the current target. Navigate to its section anchor to read the
+task list and deferred items.
+
+```bash
+# Find the active milestone section — reads from the frontmatter field
+ACTIVE=$(grep "^active-milestone:" devlog/roadmap.md | sed 's/.*: //' | tr -d '"')
+# Extract the section for the active milestone (between its heading and the next sibling)
+sed -n "/^#### ${ACTIVE%% — *}/,/^#### [A-Z0-9]/p" devlog/roadmap.md | head -80
+# Also extract deferred items within the active milestone
+sed -n "/^#### ${ACTIVE%% — *}/,/^#### [A-Z0-9]/p" devlog/roadmap.md | grep -A5 "^- \\[ \]\|Deferred\|deferred" | head -20
+```
+
+If the active milestone has nested sub-milestones (e.g. M2.6.1, M2.6.2),
+extract each sub-milestone section:
+
+```bash
+# Find and read sub-milestones under the active milestone
+PREFIX="${ACTIVE%% — *}"  # e.g. "M2.6"
+sed -n "/^### ${PREFIX}.[0-9]/,/^### /p" devlog/roadmap.md | head -60
+```
+
+Identify incomplete task groups and any deferred items from the detailed sections.
 
 ## Step 3 — Survey recent git history
 

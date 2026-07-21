@@ -22,7 +22,7 @@ No other files are needed at this stage.
 
 Run before creating the handover.
 
-**Trigger B check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, the prior session's close sequence did not complete. Run Trigger B after creating this handover but before presenting the scope proposal (Step 2). Record the Trigger B execution in this handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
+**Post-close bookkeeping check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied, the prior session's close sequence did not complete. Run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
 
 ---
 

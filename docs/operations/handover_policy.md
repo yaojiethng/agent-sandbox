@@ -157,7 +157,7 @@ None.
 
 ## Next session
 <Sub-milestone ID and name for the next session.>
-<Whether Trigger B has been run or is pending — omit if mid-milestone and no sub-milestone just completed.>
+<Whether post-close bookkeeping has been run or is pending — omit if mid-milestone and no sub-milestone just completed.>
 <Blocking design questions the next agent must resolve before advancing.>
 <Known watch-out items (capped at three).>
 <Grep or file reads to run at session start, if known.>
@@ -233,7 +233,7 @@ Policy documents that this document depends on:
 
 | Policy | Relationship |
 |---|---|
-| [`roadmap_policy.md`](roadmap_policy.md) | Trigger B reference, compaction rules |
+| [`roadmap_policy.md`](roadmap_policy.md) | Post-close bookkeeping, compaction rules |
 | [`iteration_policy.md`](iteration_policy.md) | Operational workflow — governs when handover fields are populated |
 | [`documentation_policy.md`](documentation_policy.md) | Post-close document corrections |
 
@@ -255,4 +255,4 @@ Policy documents that this document depends on:
 | Document | Purpose |
 |---|---|
 | [`iteration_policy.md`](iteration_policy.md) | Operational workflow — when handover is created, updated, and closed |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — task checkbox discipline and Trigger B |
+| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules — task checkbox discipline and post-close bookkeeping |

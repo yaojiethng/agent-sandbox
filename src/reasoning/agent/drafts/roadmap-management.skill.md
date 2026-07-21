@@ -14,8 +14,8 @@ Identify the task from the operator's request before reading any other files:
 
 - **Mark tasks** — during session, change `- [ ]` → `- [x]` when AC is satisfied
 - **Compact** — at Steps 8–9, replace fully-completed task group checklist with outcome summary
-- **Trigger B** — sub-milestone complete: remove section, promote next
-- **Trigger A** — major milestone complete: extract to changelog, remove from roadmap
+- **Sub-milestone close** — all children complete: compact, update summary table, promote next if applicable
+- **Top-level milestone close** — all sub-milestones complete: extract to changelog, remove from roadmap, promote next major milestone
 
 ---
 
@@ -25,8 +25,8 @@ Identify the task from the operator's request before reading any other files:
 |---|---|
 | Mark tasks | `roadmap.md` only |
 | Compact | `roadmap.md` only |
-| Trigger B | `roadmap.md`, `roadmap_future.md` |
-| Trigger A | `roadmap.md`, `changelog.md`, `roadmap_future.md` |
+| Sub-milestone close | `roadmap.md`, `roadmap_future.md` |
+| Top-level milestone close | `roadmap.md`, `changelog.md`, `roadmap_future.md` |
 
 ---
 
@@ -48,13 +48,12 @@ Identify the task from the operator's request before reading any other files:
 ## Output Shape
 
 - Roadmap changes: targeted edits only — section removal, table row update, `- [x]` marks, checklist → outcome summary replacements. No full-file rewrites.
-- Changelog entry (Trigger A): fenced `changelog` block, ready to append verbatim.
+- Changelog entry (top-level milestone close): fenced `changelog` block, ready to append verbatim.
 - State what you changed and what the operator needs to do (e.g. "append changelog block, apply roadmap edits").
 
 ---
 
 ## Constraints
 
-- Do not combine Trigger A and Trigger B in a single pass
 - Do not rewrite sections not affected by the current task
 - Do not mark tasks `- [x]` before AC is satisfied

@@ -4,9 +4,73 @@ Policy rules for `devlog/roadmap.md`, `devlog/roadmap_future.md`, and `devlog/ch
 
 ---
 
+## Fractal Milestone Numbering
+
+Milestones use a fractal numbering system that nests arbitrarily:
+
+```
+M{n}          — top-level milestone (e.g. M2)
+M{n}.{m}      — sub-milestone (e.g. M2.6)
+M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
+...           — extends infinitely
+```
+
+**Rules:**
+- Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited in milestone numbering. If a milestone has phases, they are numbered as discrete sub-milestones with distinct integers (M2.6.1, M2.6.2, ...).
+- The summary table in `roadmap.md` uses indentation to show parent-child nesting. The table displays each sub-milestone indented under its parent.
+- Completed nesting levels are shown as `[Complete — see changelog](changelog.md#...)` with a link to the relevant changelog section anchor.
+- Changelog links point to the individual milestone or sub-milestone section in `changelog.md`, not to the file root.
+
+## Post-close Bookkeeping
+
+After every session close (Steps 8–9), run bookkeeping on every node in the fractal tree whose children were modified this session. Bookkeeping is not an event or gate — it is a mechanical normalization step that always runs.
+
+### Compaction cascading
+
+For each node whose direct children were all completed in this session:
+
+1. **Compact the node** — replace each child's checklist with a `- [x]` outcome summary (1–3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them).
+2. **Check the node's own parent** — if all siblings of this node are also compacted, compact the parent node (its sibling list becomes a single `- [x]` entry).
+3. **Repeat upward** until reaching a node whose siblings are not all complete, or the top-level milestone is reached.
+4. If compaction reaches the top-level milestone (all direct sub-milestones complete), run **Top-level milestone close** (see below).
+
+### Top-level milestone close
+
+When post-close bookkeeping determines that all direct children of a top-level milestone are complete:
+
+1. **Write the changelog entry** — produce the entry for the completed milestone using [Changelog Format](#changelog-format). Output as a fenced block so the operator can append it verbatim to `changelog.md`.
+2. **Remove the milestone section** — delete the completed milestone's detail section from `roadmap.md` Upcoming Milestones. The detailed task breakdown is now in the changelog.
+3. **Update the Summary table** — change the milestone row to `[Complete — see changelog](changelog.md#m{n}--{title})` linking to the specific milestone section anchor.
+4. **Promote the next milestone** — move the next incomplete milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion)).
+
+This is part of bookkeeping — no separate trigger, no event gate. It runs automatically when the condition is met.
+
+### Summary table update
+
+After compaction, update the Milestone Summary table:
+
+- A node that was compacted to a single `- [x]` entry gets its status updated in the table.
+- A completed sub-milestone (all tasks done, no remaining items) shows as `Complete` with a changelog link.
+- The parent milestone's status remains `In progress` until all direct children are complete.
+
+### Carry-forward escalation
+
+If a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list. Do not create a new sub-milestone for a single deferred item — escalate within the existing node.
+
+## Pre-session Status Promotion Check
+
+At minor loop Step 2 (scope confirmation), before presenting the scope proposal:
+
+1. Read the Milestone Summary table.
+2. Identify the milestone targeted by this session (from roadmap frontmatter or session context).
+3. If the target milestone's status implies *less* progress than the session intends (e.g. `Not started` when starting a session), update the status to `In progress`.
+4. Record the promotion in the handover's Completed table.
+
+This check is self-healing — it catches both stale summaries and the first session targeting a new milestone.
+
 ## When the Roadmap Is Touched
 
-The roadmap is not updated continuously during a session. It is touched at two defined moments in the minor loop and once at major loop close. Do not update it outside these moments.
+The roadmap is not updated continuously during a session. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
 
 ### During the session
 
@@ -34,27 +98,10 @@ The operator reviews the compaction proposal alongside AC verification at Gate 3
 After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
 
 1. **Apply approved compaction** — replace each fully-completed task group's checklist with the outcome summary the operator reviewed at Gate 3. Keep the `- [x]` marker. Compaction applies at every level of nesting.
-2. If all tasks in the sub-milestone are now complete and acceptance criteria are met, run [Trigger B](#sub-milestone-close-trigger-b)
+2. **Run post-close bookkeeping** — see [Post-close Bookkeeping](#post-close-bookkeeping) above. Compaction cascading and summary table update.
 3. **Carry-forward escalation:** if a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list
 
-### Sub-milestone close (Trigger B)
-
-Trigger B fires when all tasks in the active sub-milestone are complete and acceptance criteria are met. It runs at Steps 8–9, after the operator has released Gate 3. If Trigger B is pending (the roadmap still shows the completed sub-milestone as active), the next session's Step 1 runs it after creating the handover but before presenting the scope proposal. Record the Trigger B execution in the handover's Completed table. Present the post-Trigger-B roadmap state as part of the scope proposal.
-
-1. **Remove** the completed sub-milestone section from `roadmap.md` entirely — do not collapse it to outcome sentences, remove it. This mirrors how Trigger A removes completed major milestones: the sub-milestone is gone from the active roadmap, not summarised within it.
-2. File any deferred items against the relevant future sub-milestone in `roadmap_future.md`
-3. Promote the next sub-milestone's section into `roadmap.md` with scope paragraph and task list
-4. Non-current sub-milestones retain scope paragraphs only — no accumulated deferrals from prior sub-milestones
-
-### Major loop close (Trigger A)
-
-1. Read `roadmap.md` and `changelog.md`
-2. Write and output the changelog entry for the completed milestone (see [Changelog Format](#changelog-format))
-3. Remove the completed milestone section from `roadmap.md` Upcoming Milestones
-4. Update the Milestone Summary table row: remove anchor link, set status to `[Complete — see changelog](changelog.md)`
-5. Promote the next milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion) below)
-
-**Compaction and verification.** Compaction runs after the operator has confirmed acceptance criteria at Step 7 and released at Gate 3. The operator reviews proposed compaction text as part of the pre-close summary — Gate 3 is the verification surface. Steps 8–9 apply the approved changes mechanically. Compaction does not lose auditability — the `- [x]` outcome summary persists in the roadmap, and the session handover retains full file-level change detail.
+**Compaction and verification.** Compaction runs after the operator has confirmed acceptance criteria at Step 7 and released at Gate 3. The operator reviews proposed compaction text as part of the pre-close summary — Gate 3 is the verification surface. Steps 8–9 apply the approved changes mechanically. Compaction does not lose auditability — the `- [x]` outcome summary persists in the roadmap, and the session handover retains full-file level change detail.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -62,7 +109,9 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 ## Rules
 
-**Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the changelog instead of the milestone anchor.
+**Milestone numbering** — use the [Fractal Milestone Numbering](#fractal-milestone-numbering) scheme. Non-integer or ad-hoc phase labels are prohibited.
+
+**Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the specific milestone section in the changelog (e.g. `[Complete — see changelog](changelog.md#m21--general-capability-layer-prototype)`).
 
 **Completed task groups** — compacted to a `- [x]` markdown task list entry with a 1–3 sentence outcome summary describing what was built. Task breakdowns, file lists, implementation notes, and "Depends on" / "Prerequisite for" lines referencing now-completed items are removed — the session handover retains the detail. Design document links and "Not in scope" / deferred tags survive. The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9.
 
@@ -78,13 +127,15 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Persistent sections** — Milestone Summary table, Upcoming Milestones, Known Limitations, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 
+**Summary table format** — the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors or changelog.md section anchors), never to file roots.
+
 **Empty sections** — remove immediately.
 
 ---
 
 ## Milestone Promotion
 
-Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focused on the active milestone. When a milestone completes (Trigger A), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
+Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focused on the active milestone. When top-level milestone close runs (bookkeeping compaction reaches the root), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
 
 **Promotion steps:**
 1. Move the milestone section from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones`

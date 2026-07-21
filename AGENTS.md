@@ -75,7 +75,9 @@ Propagation checklist — <change description>
 | docs/architecture/file.md | update reference to BAR_VAR | pending |
 ```
 
-Update the checklist as each file is completed. Mark each row `done` before moving to the next file.
+Update the checklist:
+- When a file is completed — mark it `done` before moving to the next file.
+- **When the task scope expands** — add new rows for the new scope before producing any output for it.
 
 **Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage — show the table.
 

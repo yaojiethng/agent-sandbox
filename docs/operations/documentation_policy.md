@@ -154,7 +154,7 @@ If none apply, recommend skipping and state why. If no design doc exists, note t
 3. Keep: primitives, invariants, design rationale, and collision or interaction tables.
 4. During active development, links to design and discussion documents are expected.
 
-**Trigger B cleanup:** at sub-milestone close, if a concepts doc was produced:
+**Post-close bookkeeping cleanup:** at sub-milestone close, if a concepts doc was produced:
 
 1. Firm up any invariants that shifted during implementation.
 2. Replace links to design and discussion documents with links to the architecture docs that now exist.

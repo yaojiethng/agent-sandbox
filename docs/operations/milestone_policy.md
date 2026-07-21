@@ -21,7 +21,7 @@ Sub-milestones that depend on earlier implementation decisions are flagged and d
 
 ## Trigger
 
-The major loop triggers when `roadmap_policy.md` Trigger A fires — a major milestone has been extracted to the changelog and the next major milestone has been promoted from `roadmap_future.md` into `roadmap.md`.
+The major loop triggers when a top-level milestone closes (via post-close bookkeeping in `roadmap_policy.md`) — the milestone has been extracted to the changelog and the next major milestone promoted from `roadmap_future.md` into `roadmap.md`.
 
 Do not begin the major loop before the prior milestone is fully closed in the changelog.
 
