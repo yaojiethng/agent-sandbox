@@ -27,6 +27,9 @@ volumes:
   sandbox-data:
     labels:
       agent-sandbox.project-name: {{PROJECT_NAME}}
+      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+      agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
+      agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
 
 # Session labels — applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels

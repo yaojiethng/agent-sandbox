@@ -69,6 +69,25 @@ These labels serve two purposes:
 - **Provenance:** Operators can inspect any container to determine which project, worktree, host commit, and session run it belongs to.
 - **Lifecycle management:** `make stop` and `make prune` filter by `project-name` + `sandbox-dir` labels to scope operations to a specific worktree.
 
+### Label Lifecycle by Artifact Type
+
+Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle — ephemeral artifacts (containers) carry all labels; persistent artifacts (volumes) carry only the stable subset because their labels are set at creation and never updated.
+
+| Label | Stability | On containers | On volumes | On images | Reason |
+|---|---|---|---|---|---|
+| `project-name` | Stable | ✅ | ✅ | ❌ | Never changes for a project; images are tagged by name, not labeled |
+| `sandbox-dir` | Stable | ✅ | ✅ | ❌ | Never changes for a sandbox instance; runtime-only label |
+| `host-head-sha` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to repo state; runtime-only |
+| `host-branch` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to branch; runtime-only |
+| `session-ts` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
+| `run-id` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
+| `project-dir` | Stable | ✅ | ❌ | ❌ | Host path; not relevant for volume or image lifecycle |
+| `container-sig` | Stable | ❌ | ❌ | ✅ | SHA-256 of source files baked at build time; never changes for a given image |
+
+Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. Volumes persist across sessions; carrying ephemeral labels like `run-id` would create dangling references pointing to a session that may no longer exist. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
+
+**Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (volume omitting session-scoped labels, images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
+
 ## Container-sig (Image Staleness Detection)
 
 Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.

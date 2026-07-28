@@ -149,6 +149,13 @@ compose_args() {
   normalised="$(echo "$project_name" | tr '[:upper:]' '[:lower:]')"
   normalised="${normalised//[^a-z0-9-]/-}"
 
+  # Incorporate sandbox_dir into the compose project name so each sandbox
+  # instance gets its own namespace (volume, network, etc.). Two worktrees
+  # with the same PROJECT_NAME produce different compose project names.
+  local sandbox_hash
+  sandbox_hash="$(echo "$sandbox_dir" | sha256sum | cut -c1-6)"
+  normalised="${normalised}-${sandbox_hash}"
+
   # Assign to caller's COMPOSE_ARGS (no local — intentional).
   COMPOSE_ARGS=(
     --project-name "$normalised"

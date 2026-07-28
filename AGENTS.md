@@ -40,7 +40,9 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form — only the delivery commit at session close is subject to format enforcement. A handover marked `Closed` with uncommitted changes is not closed.
 
-**Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md).
+**Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
+
+**Confirm acceptance before closing.** Before closing the session, present the status of every acceptance criterion in a visible table — each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
