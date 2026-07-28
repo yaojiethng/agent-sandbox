@@ -167,7 +167,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 - Version bump policy agreed and documented
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
 
-**Design reference:** [`docs/devlog/discussions/investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md)
+**Design reference:** [`devlog/discussions/investigation_harness_sig_requirements.md`](./discussions/investigation_harness_sig_requirements.md)
 
 ---
 
@@ -183,7 +183,7 @@ The current model standardises on a sandbox copy in the capability layer contain
 
 **Candidate for post-M2.3 architectural revision.**
 
-Investigation documented in [`docs/devlog/discussions/investigation_git_worktrees.md`](discussions/investigation_git_worktrees.md).
+Investigation documented in [`devlog/discussions/investigation_git_worktrees.md`](discussions/investigation_git_worktrees.md).
 
 **What it is:** Replace the snapshot + diff + apply pipeline with a `git worktree` per session. The agent's working directory is a real git worktree on a dedicated branch inside PROJECT_DIR's repo. On session end, the branch is already committed — no diff generation, no apply script. The operator reviews via `git log`/`git diff` and merges or discards the branch.
 

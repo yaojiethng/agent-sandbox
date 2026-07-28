@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Manage `docs/devlog/roadmap.md` and `docs/devlog/changelog.md` following project policy. Use this skill when asked to update the roadmap, mark completions, compact task groups, or extract a completed milestone.
+Manage `devlog/roadmap.md` and `devlog/changelog.md` following project policy. Use this skill when asked to update the roadmap, mark completions, compact task groups, or extract a completed milestone.
 
 ---
 

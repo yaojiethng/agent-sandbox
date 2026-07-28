@@ -14,7 +14,7 @@ A well-run investigation produces a clear recommendation that the parent story c
 
 ## Where Investigations Live
 
-Investigation documents live in `docs/discussions/` with the prefix `investigation_` (e.g. `investigation_mcp_server.md`). One document per candidate approach. Multiple investigations may be open simultaneously for the same parent story.
+Investigation documents live in `devlog/discussions/` with the prefix `investigation_` (e.g. `investigation_mcp_server.md`). One document per candidate approach. Multiple investigations may be open simultaneously for the same parent story.
 
 Investigations are reasoning records. They are not architecture documents and are not referenced from `architecture/` or `concepts/` documents. Once closed, they are background reading only.
 

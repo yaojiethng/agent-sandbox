@@ -10,8 +10,8 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 Read the most recent handover and the roadmap:
 
 ```
-ls docs/devlog/handovers/ | sort | tail -1 | xargs -I{} read docs/devlog/handovers/{}
-read docs/devlog/roadmap.md
+ls devlog/handovers/ | sort | tail -1 | xargs -I{} read devlog/handovers/{}
+read devlog/roadmap.md
 ```
 
 No other files are needed at this stage.

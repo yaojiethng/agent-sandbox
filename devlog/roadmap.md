@@ -45,7 +45,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 
 Open stories under active investigation. Closed stories are removed from this list.
 
-- [`20260522-story-active-prompt_eval_infrastructure.md`](docs/discussions/20260522-story-active-prompt_eval_infrastructure.md) — How do we test that skills and prompt templates correctly reflect the policy documents they encode? Manual read-through comparison doesn't scale across N skills × M policy sections.
+- [`20260522-story-active-prompt_eval_infrastructure.md`](./discussions/20260522-story-active-prompt_eval_infrastructure.md) — How do we test that skills and prompt templates correctly reflect the policy documents they encode? Manual read-through comparison doesn't scale across N skills × M policy sections.
 
 ---
 
@@ -56,7 +56,7 @@ Open stories under active investigation. Closed stories are removed from this li
 **Objective:** Separate the harness into a reasoning layer (agent container) and a capability layer (sandbox container, working content, optional MCP server). This is the foundational architectural change that enables vault workflows, webapp workflows, provider swapping, and autonomous task execution. All M1.x architecture documents are hot during this milestone and updated sub-milestone by sub-milestone.
 
 Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
-Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion
+Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mcp_server.md) — Conclusion
 
 #### M2.4 — Session and Config Persistence
 
@@ -96,17 +96,17 @@ A mount-based model addresses these by making the agent's working tree a real gi
 The current security invariant "`PROJECT_ROOT` must not be mounted into the container at runtime" is replaced by a user-choice model:
 
 > The sandbox inherits the security posture of the underlying repo. agent-sandbox cannot enforce that a repo has no secrets — if the user mounts a repo, the user is responsible for ensuring secrets are not present. The harness provides two mounting options at different security/convenience trade-offs:
-> 1. **Worktree mount** — a `git worktree` is created from `PROJECT_DIR` and mounted into the reasoning layer. `PROJECT_DIR/.git` is mounted RO into the capability layer only. Keeps `.git/config` and `.git/hooks/` out of the agent's reach. The agent commits to a real branch in the real repo; the operator reviews with native git tooling. See [`docs/discussions/20260622-study-settled-security_delta_worktree_model.md`](../discussions/20260622-study-settled-security_delta_worktree_model.md) for full analysis.
+> 1. **Worktree mount** — a `git worktree` is created from `PROJECT_DIR` and mounted into the reasoning layer. `PROJECT_DIR/.git` is mounted RO into the capability layer only. Keeps `.git/config` and `.git/hooks/` out of the agent's reach. The agent commits to a real branch in the real repo; the operator reviews with native git tooling. See [`devlog/discussions/20260622-study-settled-security_delta_worktree_model.md`](./discussions/20260622-study-settled-security_delta_worktree_model.md) for full analysis.
 > 2. **Snapshot mount** (default) — current model: `baseline.tar` unpacked into an anonymous volume, diff pipeline as sole output path. Maximum isolation. Agent changes flow through staged diffs; operator reviews before apply.
 
 The user chooses the model per session. The default is snapshot mount (backward compatible). M2.6 implements the worktree mount (option 1) for pi as the primary integration target, with the architecture structured so other providers can reuse the wiring.
 
 **Related documents:**
 - [`docs/architecture/security.md`](../architecture/security.md) — invariant rewrites required (itemised in `20260622-study-settled-security_delta_worktree_model.md` Part 2)
-- [`docs/discussions/20260622-study-settled-security_delta_worktree_model.md`](../discussions/20260622-study-settled-security_delta_worktree_model.md) — full invariant comparison, residual risk analysis, and required mitigations
-- [`docs/discussions/story_agent_git_surface.md`](../discussions/story_agent_git_surface.md) — agent-in-git design questions (resolved by design: agent commits to a branch, operator reviews)
-- [`docs/discussions/20260522-story-settled-agent_state_persistence.md`](../discussions/20260522-story-settled-agent_state_persistence.md) — persistence model (resolved: mount-based persistence)
-- [`docs/discussions/story_container_layer_model.md`](../discussions/story_container_layer_model.md) — harness base layer design (settled; node harness implemented, python harness deferred — see W1)
+- [`devlog/discussions/20260622-study-settled-security_delta_worktree_model.md`](./discussions/20260622-study-settled-security_delta_worktree_model.md) — full invariant comparison, residual risk analysis, and required mitigations
+- [`devlog/discussions/story_agent_git_surface.md`](./discussions/story_agent_git_surface.md) — agent-in-git design questions (resolved by design: agent commits to a branch, operator reviews)
+- [`devlog/discussions/20260522-story-settled-agent_state_persistence.md`](./discussions/20260522-story-settled-agent_state_persistence.md) — persistence model (resolved: mount-based persistence)
+- [`devlog/discussions/story_container_layer_model.md`](./discussions/story_container_layer_model.md) — harness base layer design (settled; node harness implemented, python harness deferred — see W1)
 
 ---
 
@@ -204,7 +204,7 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 ### Deferred (not milestone-scoped)
 
 - **Doc bloat: rotate out stale handovers and discussions** — `devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
-- **Docs directory restructuring** — The `docs/` directory currently mixes architecture/concepts/operations/development/discussions/devlog into a single tree. Architecture and concepts docs are baked into container images; operations and development docs are coding-agent workflow artifacts that should logically live in a separate namespace. Deferred — not urgent.
+- **Docs directory restructuring** — [Done — `devlog/` extracted as top-level directory, `docs/` now contains only architecture/concepts/development/operations/adr. Stale path references fixed in `20260722-04-chore`.]
 
 - **`docker compose down -v` race with EXIT trap** — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3. No milestone assigned.
 

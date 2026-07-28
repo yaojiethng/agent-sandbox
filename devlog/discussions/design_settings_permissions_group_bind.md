@@ -128,7 +128,7 @@ Host (UID 1000, GID 1000)          Container (UID 1000, GID 1000)
 | **9** | `libs/build.sh` (or `libs/containers.sh`) | `build_sandbox()` and `build_agent()` must accept `--uid`/`--gid` flags and pass them as `--build-arg HOST_UID=... --build-arg HOST_GID=...` to `docker build` | After #1, blocks #3–#7 |
 | **10** | `scripts/start_agent.sh` | Export `HOST_UID=$(id -u)` and `HOST_GID=$(id -g)` before compose invocation | After #1 |
 | **11** | `scripts/run_agent.sh` (if exists) | Ensure host IDs are propagated to compose generation | After #1 |
-| **12** | `docs/devlog/discussions/story_linux_filesystem_uid_mismatch.md` | Already updated with Strategy 4 | Done this session |
+| **12** | `devlog/discussions/story_linux_filesystem_uid_mismatch.md` | Already updated with Strategy 4 | Done this session |
 | **13** | All provider compose overlays | Verify `user:` override is not needed (base template handles it). If any provider overlay sets `user:`, remove or align. | After #2 |
 | **14** | Tests | Update any tests that assert ACL presence or specific UID 1001. Tests that check bind mount writability should pass without change. | After #1–#7 |
 

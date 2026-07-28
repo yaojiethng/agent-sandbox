@@ -23,7 +23,6 @@ services:
       # Config files (settings.json, auth.json, models.json, AGENTS.md) are
       # copy-in from the baked image template at startup — avoids utime/EPERM
       # on cross-filesystem mounts (macOS virtiofs, Windows 9p).
-      # DESIGN: docs/devlog/roadmap.md M2.4
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts
         target: /home/agentuser/.pi/agent/prompts

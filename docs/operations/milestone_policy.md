@@ -33,7 +33,7 @@ Before beginning, read:
 - The promoted milestone section in `roadmap.md` — objective, sub-milestones, any existing task lists or open decisions
 - `roadmap_future.md` — remaining future milestone context
 - `changelog.md` — the most recent entry, to confirm the prior milestone is fully closed
-- Any open stories or investigations in `docs/discussions/` that were deferred from the prior major loop
+- Any open stories or investigations in `devlog/discussions/` that were deferred from the prior major loop
 
 ---
 

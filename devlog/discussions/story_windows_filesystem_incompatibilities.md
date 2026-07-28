@@ -27,8 +27,8 @@ Warning: (runtime creation, global settings) EPERM: operation not permitted, uti
 **First observed:** 2026-05-22, session investigating EPERM warnings.
 
 **Status:** Investigated and documented. See CORRECTION blocks in:
-- `docs/devlog/handovers/20260513-10-impl-settings_json_collision_fix.md`
-- `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`
+- `devlog/handovers/20260513-10-impl-settings_json_collision_fix.md`
+- `devlog/discussions/design_provider_config_ownership_and_loading.md`
 - `libs/docker-compose.yml` (CONSTRAINT comment at the `AGENT_HOME` mount)
 
 ---
@@ -158,7 +158,7 @@ _check_filesystem_compat() {
     echo "Warning: AGENT_HOME ($test_path) does not support utime()."
     echo "  This is likely a 9p/Windows mount. Settings locking will fail."
     echo "  Move your project to a Linux-native WSL2 path to resolve."
-    echo "  See: docs/devlog/discussions/story_windows_filesystem_incompatibilities.md"
+    echo "  See: devlog/discussions/story_windows_filesystem_incompatibilities.md"
   fi
   rm -f "$probe_file"
 }

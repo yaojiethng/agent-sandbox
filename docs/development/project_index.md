@@ -48,7 +48,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `roadmap_future.md` | 🟡 Warm | M2.3 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
 | `changelog.md` | 🟡 Warm | M2.3 | Completed milestone records. Append-only. |
 
-### Discussions (`docs/discussions/`)
+### Discussions (`devlog/discussions/`)
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
@@ -170,7 +170,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `README.md` | 🟢 Cold | M1.5 | Entry point. Hot task note added. No further changes until M2.1. |
 | `changelog.md` | 🟢 Cold | M1.5 | KV1–KV4 completion record. Append-only; no edits to existing entries. |
 | `onboarding.md` | 🟢 Cold | M1.5 | Forward-compatibility note added. No further changes until M2.1. |
-| `story.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to `docs/discussions/story_obsidian_vault_onboarding.md`. |
+| `story.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to `devlog/discussions/story_obsidian_vault_onboarding.md`. |
 | `roadmap.md` | 🟢 Cold | M1.5 | Superseded stub. Redirect to README + changelog + main roadmap. |
 
 ---

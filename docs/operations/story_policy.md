@@ -14,7 +14,7 @@ A story that is never closed is a planning failure. A story that is closed witho
 
 ## Where Stories Live
 
-Stories live in `docs/discussions/` with the prefix `story_` (e.g. `story_capability_layer_mcp.md`).
+Stories live in `devlog/discussions/` with the prefix `story_` (e.g. `story_capability_layer_mcp.md`).
 
 They are investigation documents, not architecture. No live links to stories are required from `architecture/` or `concepts/` documents. Stories are background reading for the decisions that produced roadmap entries — they are not referenced from current system documentation.
 

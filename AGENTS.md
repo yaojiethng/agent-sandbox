@@ -34,7 +34,7 @@ You operate in three modes, often in combination:
 
 These principles are stable. The operating workflow and policy documents are their realisations — they will evolve; the principles do not.
 
-**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `docs/devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
+**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
 
 **Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses — not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
 
@@ -150,7 +150,7 @@ Read these in order. Each answers a distinct question — do not skip. Verify yo
 | `AGENTS.md` (this file) | How do I work here? |
 | Provider-layer `AGENTS.md` | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last session end? |
-| [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? — after reading, state your proposed scope and wait for confirmation before producing any output |
+| [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? — after reading, state your proposed scope and wait for confirmation before producing any output |
 
 ### Major loop only
 
@@ -158,8 +158,8 @@ Read these in addition to the above when opening a major loop planning session.
 
 | Document | Question it answers |
 |---|---|
-| [`docs/devlog/roadmap_future.md`](docs/devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
-| [`docs/devlog/changelog.md`](docs/devlog/changelog.md) | Is the prior milestone fully closed? |
+| [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
+| [`devlog/changelog.md`](devlog/changelog.md) | Is the prior milestone fully closed? |
 
 ### Policy documents — read before the relevant task type, not at session start
 

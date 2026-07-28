@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Audit `docs/devlog/roadmap.md` for policy compliance and structural integrity. Use this skill when asked to check the roadmap for deviations from `docs/operations/roadmap_policy.md`, to verify compaction state, or to prepare for a compaction pass.
+Audit `devlog/roadmap.md` for policy compliance and structural integrity. Use this skill when asked to check the roadmap for deviations from `docs/operations/roadmap_policy.md`, to verify compaction state, or to prepare for a compaction pass.
 
 ---
 

@@ -3,10 +3,10 @@
 **Status:** Complete. Outcome: deferred — see `roadmap_future.md` §Harness Packaging and Versioning.
 
 **Related:**
-- [`docs/devlog/roadmap.md`](../../devlog/roadmap.md) — M2.7 item 5 (container-sig settled, harness-sig deferred)
+- [`devlog/roadmap.md`](../../devlog/roadmap.md) — M2.7 item 5 (container-sig settled, harness-sig deferred)
 - [`devlog/discussions/design_session_identity_hash_based.md`](../discussions/design_session_identity_hash_based.md) — container-sig design
-- [`docs/devlog/handovers/20260513-11-plan-rescope_items_1_7.md`](../../devlog/handovers/20260513-11-plan-rescope_items_1_7.md) — rescoping context
-- [`docs/devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md`](../../devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md) — current open session
+- [`devlog/handovers/20260513-11-plan-rescope_items_1_7.md`](../../devlog/handovers/20260513-11-plan-rescope_items_1_7.md) — rescoping context
+- [`devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md`](../../devlog/handovers/20260513-12-study-grill_harness_sig_investigation.md) — current open session
 
 ---
 
