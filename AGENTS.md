@@ -36,6 +36,10 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `docs/devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
 
+**Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses — not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
+
+**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form — only the delivery commit at session close is subject to format enforcement. A handover marked `Closed` with uncommitted changes is not closed.
+
 **Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md).
 
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.

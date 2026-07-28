@@ -95,13 +95,9 @@ The operator reviews the compaction proposal alongside AC verification at Gate 3
 
 ### Session close (Steps 8–9)
 
-After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
+Completed task groups are compacted to a `- [x]` outcome summary (1–3 sentences). The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9. Implementation detail, file lists, and task breakdowns are removed — the session handover retains them. Design document links and "Not in scope" / deferred tags survive.
 
-1. **Apply approved compaction** — replace each fully-completed task group's checklist with the outcome summary the operator reviewed at Gate 3. Keep the `- [x]` marker. Compaction applies at every level of nesting.
-2. **Run post-close bookkeeping** — see [Post-close Bookkeeping](#post-close-bookkeeping) above. Compaction cascading and summary table update.
-3. **Carry-forward escalation:** if a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list
-
-**Compaction and verification.** Compaction runs after the operator has confirmed acceptance criteria at Step 7 and released at Gate 3. The operator reviews proposed compaction text as part of the pre-close summary — Gate 3 is the verification surface. Steps 8–9 apply the approved changes mechanically. Compaction does not lose auditability — the `- [x]` outcome summary persists in the roadmap, and the session handover retains full-file level change detail.
+If a deferred item from the handover cannot be picked up in the immediately following session, escalate it to a named task entry under the current sub-milestone — see [Carry-forward escalation](#carry-forward-escalation).
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -188,3 +184,14 @@ When producing a changelog entry during a milestone completion pass, output the 
 ````
 
 The operator appends the block contents verbatim to `changelog.md`.
+
+---
+
+## Corrections to Closed Roadmap and Changelog Entries
+
+Closed roadmap entries and changelog entries are corrected in-place by appending a `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag to the affected sentence or claim. The tag names the milestone that superseded or removed the content. The original text is preserved — the tag marks it as stale without deleting it.
+
+- `[SUPERSEDED in M2.3]` — the claim is still valid but has been superseded by a later implementation
+- `[REMOVED in M2.4]` — the claim is no longer accurate and has been removed from the active system description
+
+Do not rewrite the entry. The tag is sufficient notice that the reader must consult the referenced milestone.

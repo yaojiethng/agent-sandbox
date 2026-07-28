@@ -131,15 +131,9 @@ Focus on pi. The architecture should be extensible to other providers (Hermes, o
 - [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-m2_6_2_persistence.md`.
 - [x] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag and persistence documented, provider_onboarding_guide.md named volume note added, sandbox_lifecycle.md resume path subsection added, sandbox_identity.md .run-identity and env var lifecycle documented.
 
-### M2.6.3 — Document consolidation
+### M2.6.3 — Document consolidation (Complete)
 
-Cleanup tasks scoped during the document system overhaul session but not completed.
-
-- [x] **Roll single-use spec files into handovers** — `spec_context_dir_removal.md`, `spec_apply_workspace_refactor.md`, `spec_test_infrastructure.md`, `20260526-spec-path_resolution_convention.md`. Condensed into handovers and deleted. `spec_container_layer_redesign.md` → `20260523-design-active-container_layer_redesign.md`. See `20260721-03-workflow-m2_6_3_spec_file_cleanup.md`.
-- [x] **Write worktree mount model ADR** — `docs/adr/20260721-adr-settled-worktree_mount_model.md`. Consolidates findings from `investigation_git_worktrees.md`, `story_agent_git_surface.md`, `story_parallel_sessions_worktree.md`. See `20260721-02-workflow-m2_6_3_document_consolidation.md`.
-- [x] **Supersede mount-model discussion docs** — Supersede headers added on old docs pointing to ADR. See `20260721-02-workflow-m2_6_3_document_consolidation.md`.
-- [ ] **Policy file disambiguation pass** — `docs/operations/` has 14 files with overlapping boundaries. `documentation_policy.md`, `handover_policy.md`, `iteration_policy.md`, `story_policy.md` need clearer scope definitions or consolidation.
-- [ ] **Design policy extraction** — Whether a standalone design document policy should be extracted from references across `documentation_policy.md` and `iteration_policy.md` is unresolved.
+- [x] **Document consolidation completed.** Single-use spec files rolled into handovers. Worktree mount model ADR written. Mount-model discussion docs superseded. Policy file disambiguation pass resolved: content overlaps trimmed, 3 procedural policies migrated to skill drafts, Step detail sections linked to child policies. Design policy extraction resolved: no standalone document needed — format rules consolidated under `discussion_policy.md#designs`.
 
 ### M2.6.4 — Mount Model Design and Implementation (Not started)
 

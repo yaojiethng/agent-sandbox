@@ -54,44 +54,19 @@ A sub-milestone is **not ready to session** when:
 
 ## Stories in the Major Loop
 
-Stories are the planning tool for areas where the design is not settled. A story frames the problem and the investigation space — it does not propose a solution.
-
-Open a story when:
-- A sub-milestone objective is understood but the approach is not agreed
-- Multiple candidate approaches exist and need evaluation before a direction can be chosen
-- A constraint or threat surface needs investigation before the design can be confirmed
-
-Do not open a story when:
-- The design is already agreed and recorded (write the roadmap entry directly)
-- The uncertainty depends on an earlier sub-milestone's implementation decisions (defer and flag — the story opens during the relevant minor loop)
-
-See [`story_policy.md`](story_policy.md) for story format, lifecycle, and graduation rules.
+Stories frame the problem space when the approach is not yet settled. See [`story_policy.md`](story_policy.md) for when to open or skip a story, and for format, lifecycle, and graduation rules.
 
 ---
 
 ## Investigations in the Major Loop
 
-Investigations evaluate a specific candidate approach within a story. One investigation per candidate. An investigation runs until it can produce a recommendation.
-
-Commission an investigation when:
-- A story has identified two or more candidate approaches that need comparative evaluation
-- A specific option requires research, feasibility testing, or threat modelling before it can be recommended
-
-An investigation is not required when a story has only one viable approach — evaluate that approach within the story itself.
-
-See [`study_policy.md`](study_policy.md) for study format, lifecycle, and recommendation rules.
+Investigations evaluate a specific candidate approach within a story. See [`study_policy.md`](study_policy.md) for when to commission an investigation, and for format, lifecycle, and recommendation rules.
 
 ---
 
 ## Roadmap Entry Production
 
-When a story's open questions are resolved, graduate it to a roadmap entry:
-
-1. Close the story: add a Resolution section, update Status to `Resolved`, remove from the roadmap User Stories list. See [`story_policy.md`](story_policy.md) — Closure.
-2. Write the sub-milestone entry: objective, resolved design decisions with rationale, task list. Place in `roadmap_future.md` if the sub-milestone is not yet active; place directly in `roadmap.md` under the current milestone if it is next.
-3. Confirm the entry meets the scoping criteria above before marking the story closed.
-
-The roadmap entry is the canonical record of the scoped sub-milestone. The story is the reasoning record for how the design was reached. Both must exist before the sub-milestone is sessioned.
+When a story's open questions are resolved, graduate it to a roadmap entry per [`story_policy.md`](story_policy.md) (closure) and [`roadmap_policy.md`](roadmap_policy.md) (entry format and placement). Before marking the story closed, confirm the entry meets the scoping criteria above. Both the roadmap entry and the closed story must exist before the sub-milestone is sessioned.
 
 ---
 

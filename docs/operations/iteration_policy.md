@@ -66,7 +66,7 @@ The loops are sequential at the major level — a major milestone must be planne
 
 ## Major Loop — Milestone Planning
 
-Triggered after a major milestone closes. Performed once per major milestone before any session work begins. This is a planning and investigation cadence, not a coding one.
+Triggered after a major milestone closes. Performed once per major milestone before any session work begins. This is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for session execution — see [`milestone_policy.md`](milestone_policy.md) for readiness criteria.
 
 | Step | Entry condition | Action | Exit condition | Governing document |
 |---|---|---|---|---|
@@ -90,7 +90,7 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 | **1 — Open handover** | always | Session begins | Run recovery checks (verify roadmap against prior handover; if post-close bookkeeping is pending, run it after creating handover but before scope). Create handover: new file with date and sequential index, read prior handover for Carried forward, reset Completed table, populate Hot files and Session type, write canonical markers for nullable sections. Per §Step 1 Details. | Handover draft complete. |
 | **2 — Confirm scope** | always | Handover draft complete | Present scope proposal including session type and justification. Cover: what is in scope and why, what is deferred and why, any unresolved questions. If context insufficient, ask one question at a time. For multi-unit sessions, spec only the active unit. Wait for explicit release before any output. Per §Step 2 Details. | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
 | **Gate 1** | always | Scope confirmed | No output until operator releases. Agent must present session type with justification in the scope proposal — operator confirms the type alongside scope. | Explicit release received. Session type confirmed. |
-| **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). If the design settles with an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
+| **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Open a design doc in `devlog/discussions/` per [`discussion_policy.md`](discussion_policy.md#designs). Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). If the design settles with an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
 | **4 — Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
 | **5 — Acceptance criteria** | confirmed | Information gathering pass complete | Define criteria in a four-column table: `| # | Criterion | Verifiable by | Verified by |`. Pre-verify every verifiable criterion — for commands the agent can run, show output and mark `Agent ✅` (pass) or `Agent ❌` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`. Every session touching architecture must include: *"Architecture documents in scope describe the system as built."* Replace `Not yet defined.` before exiting. Per §Step 5 Details. | Operator confirmed acceptance criteria. |
 | **Gate 2** | always | Acceptance criteria confirmed | Before releasing: present the acceptance criteria table to the operator — every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug — resolve it now, not at pre-close. No implementation until operator releases. | Operator confirmed criteria are satisfiable. Explicit release received. |
@@ -105,16 +105,10 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 
 ### Step 1 — Open handover
 
-- **Create a new handover — never modify a closed one.** Create a new file with today's date and the next sequential index. The prior handover is source material only — read it for context, then leave it untouched.
+Per [`handover_policy.md`](handover_policy.md) for naming, section structure, null markers, and content rules. Create the handover file with today's date and the next sequential index.
+
 - **Recovery check:** verify the roadmap reflects the state the prior handover claims. If the prior handover's Next session notes bookkeeping is pending (or the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied), run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
 - No compaction checks are needed at session open — read the roadmap as-is.
-- Write the session objective — what this session will achieve, scoped to the session type and step range.
-- Write the Scope section: reference the roadmap task groups this session targets by name. If design questions are blocking, list them explicitly as blockers. Do not copy task items or carry checkbox state from the prior handover — the roadmap is the task list.
-- Read the prior handover if one exists. Populate the Carried forward section: for each item in the prior handover's Deferred items that is destined for this session, add a row with the item description and the prior handover filename. Transfer acceptance criteria that were explicitly pushed to this session. Do not re-litigate deferred decisions.
-- Reset the Completed this session table to the null marker. It records only files changed in the current session — never carried from a prior handover.
-- Populate the Hot files section: for each task in the roadmap groups targeted this session, add a markdown link and a one-line reason.
-- Set Session type to the dominant activity expected this session.
-- For all nullable sections with nothing yet to record, write the canonical marker — not a blank section, not an explanation.
 
 ### Step 2 — Confirm scope
 
@@ -150,7 +144,8 @@ No output until operator releases. The agent must present the session type with 
 
 ### Step 5 — Acceptance criteria
 
-- Replace `Not yet defined.` with the confirmed criteria before the step exits. The null marker must not be present when implementation begins — a session that enters Step 6 with `Not yet defined.` in place has skipped the gate.
+Per [`handover_policy.md`](handover_policy.md#acceptance-criteria) for AC format and null marker rules. The `Not yet defined.` marker must be replaced before Step 6.
+
 - Universal preconditions (`make test passes clean`, `bash -n passes`) are preconditions, not acceptance criteria. They gate every session equally and add no session-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
 - **Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. Mark the Verified by column: `Agent ✅` (pass), `Agent ❌` (fail, expected in pre-state). Criteria the agent cannot verify — manual review, head -N, operator-only access — are marked `Operator`.
 
@@ -208,7 +203,7 @@ Exit condition: Explicit release received.
 
 After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
 
-- **Apply approved compaction** — replace each fully-completed task group's checklist with the outcome summary approved at Gate 3. Keep the `- [x]` marker. Compaction applies at every level of nesting.
+- **Apply approved compaction** — per [`roadmap_policy.md`](roadmap_policy.md#session-close-steps-8-9). The operator-reviewed compaction proposal is applied mechanically.
 - **Run post-close bookkeeping** — compaction cascading, summary table update, and top-level milestone close (if applicable). See [Post-close Bookkeeping](roadmap_policy.md#post-close-bookkeeping).
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
 - Mark each acceptance criterion as accepted or pushed to next session. Both must be visible under the Acceptance criteria header.
@@ -218,7 +213,7 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 
 **Carry-forward resolution gate — do this after scope reconciliation but before seeding Next session.** Compare every item in the Carried forward section against the Completed this session table and the Deferred items section. Every carried-forward item must have a resolution: it was completed (in Completed table), it is re-deferred (in Deferred items table with reason), or it is escalated to the roadmap (a named entry in `roadmap.md`). Any carried-forward item that is absent from all three is a dropped item — find it, triage it, and write it to one of the three destinations. The Deferred items section is not complete until this gate passes.
 
-**Carry-forward escalation:** a deferred item may be carried to the immediately following session via Next session. If it cannot be picked up in that session — because it depends on work spanning multiple sessions, or its destination is uncertain — it must be written as a named task entry in `roadmap.md` under the current sub-milestone, not left in the handover chain. A finding that would survive more than one hop as a deferred item belongs in the roadmap.
+**Carry-forward escalation:** per [`roadmap_policy.md`](roadmap_policy.md#carry-forward-escalation) — if a deferred item cannot be picked up in the immediately following session, escalate it to a named task entry under the current sub-milestone.
 
 **Mid-session findings triage gate — do this after the carry-forward resolution gate.** For each entry in Mid-session findings, route it to its correct destination — Decisions table, Deferred items, Next session (via Carried forward), or `roadmap.md` (via a named task entry). An entry cannot remain in Mid-session findings unless it has been explicitly marked as triaged with its destination noted. The Mid-session findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding Next session:** this gate must pass before Next session is written.
 
@@ -261,4 +256,4 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 |---|---|
 | [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
-| [`audit_policy.md`](audit_policy.md) | Operator-invoked handover audit procedure — deferred chain integrity, structural completeness, dangling references |
+| [`audit.skill.md`](../../src/reasoning/agent/drafts/audit.skill.md) | Operator-invoked handover audit procedure — deferred chain integrity, structural completeness, dangling references |

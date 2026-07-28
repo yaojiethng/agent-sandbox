@@ -1,7 +1,5 @@
 # Discussion Policy
 
-**Status:** draft — content and consolidation with `story_policy.md` and `study_policy.md` is deferred to a separate pass. Only the naming and link-hub sections are settled.
-
 Governs files in `devlog/discussions/`. For ADRs, see `adr_policy.md`.
 
 ## Naming
@@ -54,6 +52,20 @@ See [`study_policy.md`](study_policy.md).
 Evaluates a specific candidate approach. One study per candidate. Runs until a recommendation can be made and fed back to the parent story.
 
 ### Designs (`design`)
-See [`iteration_policy.md`](iteration_policy.md) — minor loop step 3 (Design).
 
-Resolves trade-offs between options and recommends a decision. When a design settles with an implementation decision, the decision must be recorded as an ADR (see `adr_policy.md`).
+Opened during the minor loop Step 3 (Design) — see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
+
+#### Required sections
+
+Design docs follow this section order:
+
+| Section | Purpose |
+|---|---|
+| **Context** | What problem, what triggered the exploration |
+| **Options Considered** | Alternatives with trade-offs; at least two |
+| **Decision** | Recommended approach and why |
+| **Consequences** | What this changes, enables, or forecloses |
+
+#### Lifecycle
+
+Design docs use the standard discussion statuses (draft, active, settled, superseded). When a design settles with an implementation decision, record the decision as an ADR per [`adr_policy.md`](adr_policy.md) and update the design doc's status to `settled`. The design doc remains as the exploration record; the ADR is the authoritative decision record.

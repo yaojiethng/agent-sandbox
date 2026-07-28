@@ -198,22 +198,12 @@ The agent never deletes documents. Deletion is an operator action. The agent's r
 
 ### Correction forms by document type
 
-| Document type | Correction form |
+| Document type | See |
 |---|---|
-| Handover | Dated `[CORRECTION: ...]` amendment block appended at the bottom — see [`handover_policy.md`](handover_policy.md) — Corrections to Closed Handovers |
-| Changelog | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected sentence — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
-| Roadmap entry | Inline `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag appended to the affected claim — see [`roadmap_policy.md`](roadmap_policy.md) — Corrections to Closed Roadmap and Changelog Entries |
-| Study — valid content, minor error | Edits directly in the body + dated `[CORRECTION: ...]` amendment block at the bottom — see [`study_policy.md`](study_policy.md) — Corrections to Closed Studies |
-| Study — invalid or superseded content | `[SUPERSEDED]` status header with link to correct source — see [`study_policy.md`](study_policy.md) — Corrections to Closed Studies |
-
-### Amendment block format
-
-Used at the bottom of handover and investigation documents:
-
-```
----
-[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
-```
+| Handover | [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) — Corrections to Closed Handovers |
+| Changelog | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) — Corrections to Closed Roadmap and Changelog Entries |
+| Roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) — Corrections to Closed Roadmap and Changelog Entries |
+| Study | [`study_policy.md`](study_policy.md#corrections-to-closed-investigations) — Corrections to Closed Investigations |
 
 ### Missing documents
 

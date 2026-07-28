@@ -8,7 +8,7 @@ Audit `docs/devlog/roadmap.md` for policy compliance and structural integrity. U
 
 ## Before Acting
 
-Read `docs/operations/roadmap_policy.md` for the current rules. Read `docs/operations/audit_policy.md` if extending the audit to handover chain integrity. This skill covers roadmap-internal checks only.
+Read `docs/operations/roadmap_policy.md` for the current rules. Read `audit.skill.md` if extending the audit to handover chain integrity. This skill covers roadmap-internal checks only.
 
 ---
 
@@ -91,5 +91,5 @@ Severity levels:
 ## Constraints
 
 - Do not fix issues during the audit — report them and wait for operator direction
-- Do not audit closed handovers unless explicitly asked (handover chain audit is in `docs/operations/audit_policy.md`)
+- Do not audit closed handovers unless explicitly asked (handover chain audit is in `audit.skill.md`)
 - If a finding requires interpretation of policy, state your interpretation and ask for confirmation before flagging
