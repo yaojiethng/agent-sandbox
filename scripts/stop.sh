@@ -11,7 +11,7 @@
 # Filter logic:
 #   Default: agent-sandbox.project-name + agent-sandbox.sandbox-dir labels
 #   --run-id: additionally filter by agent-sandbox.run-id label (stop specific run only)
-#   --prune:  after stopping, remove orphaned containers, images, and volumes
+#   --prune:  after stopping, remove aged containers, images, networks, and volumes
 #             for this project+sandbox instance older than PRUNE_AGE_DAYS
 
 set -euo pipefail
@@ -30,7 +30,8 @@ Required:
 
 Optional:
   --run-id=<id>       Stop only the specific run (by agent-sandbox.run-id label)
-  --prune             After stopping, remove orphaned resources older than ${PRUNE_AGE_DAYS} days
+  --prune             After stopping, remove aged containers, images, networks, and volumes
+                        older than ${PRUNE_AGE_DAYS} days
 EOF
 }
 
