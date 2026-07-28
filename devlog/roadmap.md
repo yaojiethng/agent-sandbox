@@ -142,7 +142,7 @@ Requires a design session. The security model must be updated (M2.6.1) before th
 #### Pre-design investigations (inform the design session)
 
 - [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-m2_6_4_extensibility_structure_audit.md` for full table and recommendations.
-- **`PROJECT_DIR` mount wiring** — Investigate how the mount is specified (Makefile variable? CLI flag? config file?). The mount path must work across Linux, macOS (virtiofs), and Windows (9p/WSL2). The compose template needs a conditional volume entry.
+- [x] **`PROJECT_DIR` mount wiring** — Complete survey organised by tier. See `devlog/discussions/20260722-study-settled-mount_wiring_survey.md`. Tier 1 fully achieved; Tier 2 partial (3 gaps); Tier 3 not achieved (7 gaps + 4 doc gaps). Design questions remain open for the design session.
 - **Unify `make apply` and `make draft` apply logic** — [Done — see `20260721-06-impl`]. Internal apply logic unified: both now use `_apply_patch_file`/`apply_and_commit`. `make draft FORCE=1` works equivalently to `make apply FORCE=1`. The command-level unification question (combine the two CLI commands) remains open for the design session.
 - **Hermes and opencode session resume** — Deferred. Not investigated unless explicitly needed.
 
