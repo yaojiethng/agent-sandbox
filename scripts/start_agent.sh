@@ -64,7 +64,7 @@ for ARG in "$@"; do
 
     --env=*)      ENV_REL="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-    --refresh)    export REFRESH=true ;;
+    --refresh)    REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
     *)
       echo "Unknown flag: $ARG"
@@ -322,8 +322,14 @@ preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
 # -------------------------
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 # All .env variables and derived image names are already exported above.
+# REFRESH is passed as --refresh flag, not via env, to prevent leaking state
+# into downstream teardown decisions.
+local REFRESH_FLAG=""
+[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
+
 exec "$SCRIPT_DIR/run_agent.sh" "$MODE" \
   --name="$PROJECT_NAME" \
   --sandbox="$SANDBOX_DIR" \
   --env="$ENV_FILE" \
-  --provider="$PROVIDER_NAME"
+  --provider="$PROVIDER_NAME" \
+  $REFRESH_FLAG

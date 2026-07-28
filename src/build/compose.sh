@@ -170,20 +170,23 @@ compose_args() {
 #   3. Host-side        — verify artifacts on host filesystem
 #
 # Each phase aborts on CRITICAL failure. Final cleanup via down (down -v
-# only when REFRESH=true).
+# only when remove_volumes is true).
 #
 # Args:
 #   $1  dry_run_script  — absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
 #   $2  dry_run_capability_script  — path to dry_run_capability.sh (optional, skip phase 1 if empty)
 #   $3  sandbox_dir     — host-side SANDBOX_DIR (for Phase 3 host verification)
+#   $4  remove_volumes  — "true" to remove named volumes on teardown (default: false)
 # -------------------------
 compose_dry_run() {
   local dry_run_script="$1"
   local dry_run_capability_script="${2:-}"
+  local _sandbox_dir="${3:-}"
+  local _remove_volumes="${4:-false}"
 
   # Pre-compute the -v flag for compose down so all cleanup paths use the same pattern
   local _down_vol=""
-  [[ "${REFRESH:-false}" == "true" ]] && _down_vol="-v"
+  [[ "$_remove_volumes" == "true" ]] && _down_vol="-v"
 
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
@@ -222,7 +225,6 @@ compose_dry_run() {
   echo ""
   echo "=== Phase 3: host-side verification ==="
 
-  local _sandbox_dir="${3:-}"
   if [[ -z "$_sandbox_dir" ]]; then
     echo "HOST-VERIFY SKIP: no sandbox dir provided" >&2
   else
@@ -286,12 +288,13 @@ compose_dry_run() {
 # -------------------------
 # compose_teardown
 #
-# Silently tears down containers for COMPOSE_ARGS.
-# When REFRESH=true, also removes named volumes via -v flag.
+# Tears down containers for COMPOSE_ARGS. Named volumes are preserved
+# unless $1 is "true" (removes them via -v flag).
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
 compose_teardown() {
-  if [[ "${REFRESH:-false}" == "true" ]]; then
+  local _remove_volumes="${1:-false}"
+  if [[ "$_remove_volumes" == "true" ]]; then
     docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
   else
     docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true

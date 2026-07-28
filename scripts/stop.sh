@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/stop.sh
 #
-# Stops containers and removes project-scoped volumes for a given sandbox.
+# Stops containers for a given sandbox.
 # Identifies containers by label-based filtering — does not invoke
 # docker compose and does not require resolved compose environment variables.
 #
@@ -22,7 +22,7 @@ usage() {
   cat <<EOF
 Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--run-id=<id>] [--prune]
 
-Stops containers and removes project-scoped volumes for a given sandbox.
+Stops containers for a given sandbox.
 
 Required:
   --name=<name>       Project name
@@ -90,26 +90,6 @@ else
   # shellcheck disable=SC2086
   docker rm $CONTAINER_IDS
   echo "Containers stopped."
-fi
-
-# -------------------------
-# Remove project-scoped anonymous volumes
-# -------------------------
-
-VOLUME_FILTERS=(
-  --filter "label=agent-sandbox.project-name=${PROJECT_NAME}"
-  --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
-)
-
-if [[ -n "$RUN_ID" ]]; then
-  VOLUME_FILTERS+=(--filter "label=agent-sandbox.run-id=${RUN_ID}")
-fi
-
-VOLUME_IDS=$(docker volume ls -q "${VOLUME_FILTERS[@]}")
-if [[ -n "$VOLUME_IDS" ]]; then
-  echo "Removing volumes for ${PROJECT_NAME}..."
-  # shellcheck disable=SC2086
-  docker volume rm $VOLUME_IDS
 fi
 
 # -------------------------

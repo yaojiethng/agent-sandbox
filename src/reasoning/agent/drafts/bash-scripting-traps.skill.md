@@ -228,7 +228,28 @@ if [[ "${BASH_SOURCE[0]}" == "$0" || \
   # This should NOT run when sourced, but the || ensures it does
 ```
 
-## 12. `exec` Over Sourcing for Subcommand Dispatch
+## 12. Do not export state unnecessarily
+
+**Rule:** default to `local`. Pass behaviour-affecting values as CLI flags,
+not exported vars. An exported boolean like `REFRESH` set in one invocation
+leaks into every child process, including teardown that should not inherit it.
+
+```bash
+# Wrong — REFRESH leaks into downstream teardown
+export REFRESH=true
+exec "$SCRIPT_DIR/run.sh" --name="$PROJECT"
+
+# Right — passed as CLI flag, stays local
+local REFRESH_FLAG=""
+[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
+exec "$SCRIPT_DIR/run.sh" --name="$PROJECT" $REFRESH_FLAG
+```
+
+**Exceptions:** configuration (`.env` vars for `docker compose`) and identity
+values (`SESSION_TS`, `SANDBOX_ID`, `HOST_HEAD_SHA`) are safe to export —
+they describe context, they do not change behaviour.
+
+## 13. `exec` Over Sourcing for Subcommand Dispatch
 
 When a CLI entry point dispatches to subcommands, `exec` the subcommand
 script rather than sourcing it. Each subcommand gets a clean process
