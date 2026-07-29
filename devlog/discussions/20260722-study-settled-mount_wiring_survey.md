@@ -1,6 +1,6 @@
 # Study — Mount Wiring by Tier
 
-**Status:** In progress
+**Status:** settled
 
 **Direction + Parent story:** M2.6.4 — Mount Model Design and Implementation. Surveys the entire mount wiring in the codebase, organised by mount model tier, to inform design decisions.
 
@@ -16,7 +16,7 @@
 - `src/build/compose.sh` — Compose generation script
 - `scripts/start_agent.sh` — Host-side preflight and env var export
 - `scripts/onboard.sh` — .env creation
-- `docs/adr/20260721-adr-settled-worktree_mount_model.md` — Three-tier design ADR
+- `devlog/discussions/20260722-design-active-mount_model.md` — Mount model design (consolidates the earlier three-tier ADR, removed pre-settlement)
 
 ---
 

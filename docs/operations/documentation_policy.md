@@ -119,6 +119,10 @@ In workflow table Action cells: one imperative sentence stating what happens, fo
 
 `roadmap.md` lives in `development/` and serves as the designated destination for future language and TODO items removed from architecture documents. It is organized by milestone, where each milestone represents a feature completion boundary.
 
+### Character set
+
+Documents use plain ASCII punctuation. Do not use the section sign (`§`) — write "the Security Invariants section of `security.md`" or link with an anchor instead.
+
 ---
 
 ### Agent-facing documents

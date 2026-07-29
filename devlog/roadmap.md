@@ -135,23 +135,41 @@ Focus on pi. The architecture should be extensible to other providers (Hermes, o
 
 - [x] **Document consolidation completed.** Single-use spec files rolled into handovers. Worktree mount model ADR written. Mount-model discussion docs superseded. Policy file disambiguation pass resolved: content overlaps trimmed, 3 procedural policies migrated to skill drafts, Step detail sections linked to child policies. Design policy extraction resolved: no standalone document needed — format rules consolidated under `discussion_policy.md#designs`.
 
-### M2.6.4 — Mount Model Design and Implementation (Not started)
+### M2.6.4 — Mount Model Design and Implementation (In progress)
 
-Requires a design session. The security model must be updated (M2.6.1) before the design session can proceed. All design decisions, mount path specifications, and compose template changes are scoped during the design session, not here.
+The mount model is defined by two axes — delivery (copy vs. mount) × backing (fresh baseline vs. worktree). Canonical record: [`devlog/discussions/20260722-design-active-mount_model.md`](./discussions/20260722-design-active-mount_model.md). Copy + fresh baseline is the current default and the only supported configuration. Mount delivery is not yet implemented. Worktree backing is not supported — mechanism proposed in [`devlog/discussions/20260722-design-active-worktree_mount_mechanism.md`](./discussions/20260722-design-active-worktree_mount_mechanism.md); its security assertion is contingent on implementation and a safety audit.
 
-#### Pre-design investigations (inform the design session)
+**Decisions:**
+- Tier model replaced by delivery × backing axes; `security.md` asserts only implemented postures; mount-model ADRs consolidated into active design docs pending settlement — see the mount-model design doc, Consolidation note.
+- Capability-layer git mediation retired — the agent runs git in the reasoning layer; repository-integrity controls are filesystem- and network-level — see the mechanism design doc.
+- Raw project dir backing is a non-goal.
+
+#### Pre-design investigations (complete)
 
 - [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-m2_6_4_extensibility_structure_audit.md` for full table and recommendations.
-- [x] **`PROJECT_DIR` mount wiring** — Complete survey organised by tier. See `devlog/discussions/20260722-study-settled-mount_wiring_survey.md`. Tier 1 fully achieved; Tier 2 partial (3 gaps); Tier 3 not achieved (7 gaps + 4 doc gaps). Design questions remain open for the design session.
-- **Unify `make apply` and `make draft` apply logic** — [Done — see `20260721-06-impl`]. Internal apply logic unified: both now use `_apply_patch_file`/`apply_and_commit`. `make draft FORCE=1` works equivalently to `make apply FORCE=1`. The command-level unification question (combine the two CLI commands) remains open for the design session.
+- [x] **`PROJECT_DIR` mount wiring** — Complete survey: copy mode fully achieved; mount delivery not implemented (3 gaps); worktree not implemented (7 implementation + 4 documentation gaps). See `devlog/discussions/20260722-study-settled-mount_wiring_survey.md`.
+- [x] **Unify `make apply` and `make draft` apply logic** — Done (see `20260721-06-impl`). Internal apply logic unified: both now use `_apply_patch_file`/`apply_and_commit`. Command-level unification (combine the two CLI commands) remains open for the design session.
+- [x] **Security model reframe** — Tier terminology removed from `security.md`; delivery × backing model adopted. See `20260722-05-design-security_model_reframe.md`.
 - **Hermes and opencode session resume** — Deferred. Not investigated unless explicitly needed.
+
+#### Remaining design questions (design session)
+
+- WORKTREE_DIR as baked placeholder vs runtime variable (constraint C2 suggests baked)
+- Separate compose overlay vs conditional mount in the base template
+- Pi direct bind mounts (prompts/sessions/skills) under mount modes vs copy-in/copy-out
+- `--volumes-from` retained or dropped under mount modes
+- Role of `make apply` under worktree backing (branch diff vs `staged.diff`)
+- Snapshot pipeline under mount/worktree modes — skip, or what does it produce
+- Migration path — conditional flag at session start vs separate Makefile target
 
 #### Anticipated tasks (scoped and confirmed by design session)
 
-- Compose template — conditional mount for the worktree directory
-- Worktree lifecycle — create/remove worktrees, branch naming, operator review workflow
-- `make draft`/`make confirm`/`make reject` — adapt to operate on existing branches rather than applying diffs
-- Migration path — existing snapshot-model sessions continue to work; diff pipeline preserved as optional workflow
+- Mount delivery enablement — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect (survey gaps G2a–G2c)
+- Compose template — conditional mount entries per mode
+- Worktree lifecycle — per the mechanism design: `git worktree add/remove`, `refs/agent/` namespace, preflight permission hardening, teardown restore
+- `make draft`/`make confirm`/`make reject` — adapt to operate on branches rather than applying diffs
+- Migration path — copy-mode sessions continue to work; diff pipeline preserved as optional workflow
+- Worktree safety audit — on pass: assert the worktree posture in `security.md`, record the mechanism ADR, settle both design docs (canonical mount-model ADR recorded)
 
 #### W1 — Vault Capability Layer Prototype
 
