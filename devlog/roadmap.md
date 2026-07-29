@@ -187,10 +187,6 @@ consider whether to remove Hermes support entirely rather than maintaining a dor
 
 **Status:** Complete. Hash-based identity model (SANDBOX_ID, RUN_ID), container lifecycle (naming, labels, stop/prune), artefact paths, build pipeline simplification (repo-root context, COPY contract tests), two-sig model (container-sig label + preflight), generic pre-flight validation, dual-layer dry-run seam testing, DIFF_TYPE flag, --no-renames flag. See handover chain `20260609-01` through `20260611-04` and changelog entry.
 
-**Deferred from M2.7:**
-- Harness-sig — deferred to `roadmap_future.md`
-- Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred, not milestone-scoped
-
 ## Future Milestones
 
 Detail sections for M2 onward are in [`roadmap_future.md`](roadmap_future.md). The summary table above links directly to each section.
@@ -221,11 +217,4 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Deferred (not milestone-scoped)
 
-- **Doc bloat: rotate out stale handovers and discussions** — `devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
-- **Docs directory restructuring** — [Done — `devlog/` extracted as top-level directory, `docs/` now contains only architecture/concepts/development/operations/adr. Stale path references fixed in `20260722-04-chore`.]
-
 - **`docker compose down -v` race with EXIT trap** — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3. No milestone assigned.
-
-### Addressed in upcoming milestones
-
-- **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.
