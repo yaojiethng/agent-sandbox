@@ -284,7 +284,7 @@ The visual indicator: every `case` branch in a dispatch-only file should
 be either `exec` or a short validation → `exec`. If a branch has more
 than 5 lines of logic, the logic likely belongs in the subcommand script.
 
-## 13. Self-Deriving the Repo Root for Dual-Use Scripts
+## 14. Self-Deriving the Repo Root for Dual-Use Scripts
 
 A script that can be `exec`'d (no `AGENT_SANDBOX_REPO` set) or sourced
 (`AGENT_SANDBOX_REPO` already set by parent) needs to handle both cases
@@ -298,3 +298,25 @@ AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 The `../..` assumes a specific project layout. If the layout changes, all
 self-derivation paths must be updated together. Audit all files when the
 project root or directory structure shifts.
+
+## 15. Never use `local` at script top level
+
+**Rule:** `local` is only valid inside a function. At top-level scope it is
+a runtime error — `local: can only be used in a function` — that aborts the
+script at that line. `bash -n` does not catch it (it is not a syntax
+error), so it surfaces only when the code path executes.
+
+```bash
+# Wrong — runtime error, script aborts before exec
+local REFRESH_FLAG=""
+[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
+exec "$SCRIPT_DIR/run.sh" $REFRESH_FLAG
+
+# Right — plain assignment at top level
+REFRESH_FLAG=""
+[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
+exec "$SCRIPT_DIR/run.sh" $REFRESH_FLAG
+```
+
+Trap 12's examples assume function scope. When applying them at script top
+level, drop `local` and use a plain assignment.

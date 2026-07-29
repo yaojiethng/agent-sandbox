@@ -33,7 +33,7 @@ These types are adopted now. Each maps to one or more session types from `handov
 | `refactor` | Code restructuring with no behaviour change | `impl` |
 | `docs` | Documentation-only changes | `design` |
 | `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting | `chore` |
-| `workflow` | Policy changes, CI/CD rules, governance | `workflow` |
+| `workflow` | Policy changes, CI/CD rules, governance — skill files under `src/reasoning/agent/` count as governance | `workflow` |
 | `test` | Adding or updating tests only | `impl` |
 | `build` | Changes to Dockerfile, build scripts, image pipeline | `impl` |
 
