@@ -134,6 +134,7 @@ Focus on pi. The architecture should be extensible to other providers (Hermes, o
 ### M2.6.3 — Document consolidation (Complete)
 
 - [x] **Document consolidation completed.** Single-use spec files rolled into handovers. Worktree mount model ADR written. Mount-model discussion docs superseded. Policy file disambiguation pass resolved: content overlaps trimmed, 3 procedural policies migrated to skill drafts, Step detail sections linked to child policies. Design policy extraction resolved: no standalone document needed — format rules consolidated under `discussion_policy.md#designs`.
+- [x] **Docs directory restructuring** — `devlog/` extracted as top-level directory; stale path references fixed. See `20260722-04-chore`.
 
 ### M2.6.4 — Mount Model Design and Implementation (In progress)
 
@@ -214,7 +215,3 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 - **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
 
 - **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.
-
-### Deferred (not milestone-scoped)
-
-- **`docker compose down -v` race with EXIT trap** — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3. No milestone assigned.

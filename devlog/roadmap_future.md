@@ -44,6 +44,13 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Converting the roadmap to linear-style task tracking
 - [ ] Moving next-session seed out of handover and into a next-task subheader in the sub-milestone
 - [ ] AC-machinery policy discussion for chores, doc, plan type sessions
+- [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred from M2.7
+
+### Doc Bloat — Rotate Out Stale Handovers and Discussions
+
+**Deferred from `roadmap.md` (not milestone-scoped).**
+
+`devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
 
 ---
 
@@ -142,7 +149,6 @@ Progressive enforcement maturity for the documentation and architecture governan
 - [ ] Level 3 — Temperature & Freeze Policy — hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
 - [ ] Level 4 — Change Classification Matrix — explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
 - [ ] Level 5 — Automated Enforcement — CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
-- [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred from M2.7, not milestone-scoped
 
 
 ---
@@ -172,8 +178,6 @@ Progressive enforcement maturity for the documentation and architecture governan
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
 
 **Design reference:** [`devlog/discussions/investigation_harness_sig_requirements.md`](./discussions/investigation_harness_sig_requirements.md)
-
-**Deferred from M2.7:** harness-sig (runtime drift detection) — the follow-on task this section enables.
 
 ---
 
@@ -218,8 +222,14 @@ Investigation documented in [`devlog/discussions/investigation_git_worktrees.md`
 
 **Promote when:** M2.3 is complete and validated, and the operator confirms the three assumptions hold for their workflow.
 
-### Doc Bloat — Rotate Out Stale Handovers and Discussions
+### Harness-sig — Host-Side Staleness Detection
 
-**Deferred from `roadmap.md` (not milestone-scoped).**
+**Deferred from M2.7; combined with the host-side harness staleness item from `roadmap.md`.**
 
-`devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
+After `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). Harness-sig is the runtime drift-detection follow-on; the prerequisite is the self-contained binary and semantic versioning — see Harness Packaging and Versioning above.
+
+---
+
+## Known Issues
+
+- **`docker compose down -v` race with EXIT trap** *(won't fix)* — When `stop.sh` runs `docker compose down -v`, the `-v` flag removes anonymous volumes referenced by `volumes_from`. If Docker Compose removes those before the sandbox container's EXIT trap finishes writing the session export, the export could be interrupted. Triaged as a plausible error but unlikely to be causing current problems — session-diffs are a bind mount (not affected by `-v`), and anonymous volume references on the agent service do not block the sandbox trap. Recorded for completeness from handover audit finding F3.
