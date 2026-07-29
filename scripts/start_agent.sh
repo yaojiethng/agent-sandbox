@@ -324,7 +324,7 @@ preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
 # All .env variables and derived image names are already exported above.
 # REFRESH is passed as --refresh flag, not via env, to prevent leaking state
 # into downstream teardown decisions.
-local REFRESH_FLAG=""
+REFRESH_FLAG=""
 [[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
 
 exec "$SCRIPT_DIR/run_agent.sh" "$MODE" \
