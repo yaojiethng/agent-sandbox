@@ -99,7 +99,7 @@ if [[ -d "$SANDBOX_DIR/.git" ]]; then
     # SESSION_STATE may have identity values that don't match the current
     # env vars (set from .run-identity or freshly computed). Update to
     # match so that package_branch and diff_export use consistent identity.
-    local _sr
+    _sr
     _sr=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
     if [[ -n "$_sr" && "$_sr" != "${RUN_ID:-}" ]]; then
       echo "Upgrade path: SESSION_STATE.run_id ($_sr) differs from RUN_ID (${RUN_ID:-}) — updating" >&2
