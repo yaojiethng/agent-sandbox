@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# test/stubs/docker
+# Docker and docker-compose stub for trace testing.
+#
+# Intercepts docker invocations via PATH shadowing. Records all commands
+# to DOCKER_TRACE_LOG. Does not execute real docker commands.
+#
+# Special return-value stubs:
+#   compose config   — returns first input file unchanged (valid YAML from sed substitution)
+#   inspect (health) — returns "healthy"
+#   wait             — returns immediately (exit 0)
+#   ps -aq           — returns nothing (no containers)
+
+set -euo pipefail
+
+LOG="${DOCKER_TRACE_LOG:-/tmp/docker-trace.log}"
+mkdir -p "$(dirname "$LOG")"
+
+CMD="${0##*/}"
+
+log() {
+  echo "[$(date +%s)] $*" >> "$LOG"
+}
+
+# --- docker compose ---
+if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
+  shift
+
+  # Parse compose args: skip flags and their values until we find the subcommand
+  compose_files=()
+  compose_sub=""
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      -f)               compose_files+=("$2"); shift 2 ;;
+      --project-name)   shift 2 ;;
+      --project-directory) shift 2 ;;
+      --no-interpolate|--no-ansi|--rm) shift ;;
+      *) compose_sub="$1"; shift; break ;;
+    esac
+  done
+  compose_rest="$*"
+
+  case "$compose_sub" in
+    config)
+      log "compose config ${compose_files[*]} $compose_rest"
+      if [[ ${#compose_files[@]} -gt 0 && -f "${compose_files[0]}" ]]; then
+        cat "${compose_files[0]}"
+      else
+        echo "services: {}"
+      fi
+      ;;
+    up|down|run|exec)
+      log "compose $compose_sub $compose_rest"
+      ;;
+    *)
+      log "compose $compose_sub $compose_rest"
+      ;;
+  esac
+  exit 0
+fi
+
+# --- docker (standalone commands) ---
+if [[ "$CMD" == "docker" ]]; then
+  sub="${1:-}"; shift || true
+
+  case "$sub" in
+    inspect)
+      log "inspect $*"
+      if [[ "$*" == *"Health.Status"* ]]; then
+        echo "healthy"
+      elif [[ "$*" == *"State.Status"* ]]; then
+        echo "running"
+      else
+        echo '{"Config":{"Labels":{"agent-sandbox.container-sig":"stub"}}}'
+      fi
+      ;;
+    wait)
+      log "wait $*"
+      ;;
+    stop|rm)
+      log "$sub $*"
+      ;;
+    ps)
+      log "ps $*"
+      ;;
+    system)
+      log "system $*"
+      ;;
+    image)
+      log "image $*"
+      if [[ "$1" == "inspect" ]]; then
+        echo '[{"Id":"stub"}]'
+      fi
+      ;;
+    build)
+      log "build $*"
+      ;;
+    *)
+      log "$sub $*"
+      ;;
+  esac
+  exit 0
+fi
+
+log "UNKNOWN: $CMD $*"
+exit 0
