@@ -69,6 +69,7 @@ None.
 | [`test/stubs/docker`](test/stubs/docker) | Added `stop` to compose subcommand list |
 | [`tests/test_trace_start.sh`](tests/test_trace_start.sh) | Updated assertions: `compose down` → `compose stop` for compose_stop |
 | [`tests/test_trace_stop.sh`](tests/test_trace_stop.sh) | Updated assertion: `docker rm` no longer expected |
+| [`devlog/roadmap.md`](devlog/roadmap.md) | Major reorganization: M2.6.1–M2.6.4 compacted to completed foundation. Two competing paths: M2.6.5 (copy/volume) and M2.6.6 (mount/host). Worktree backing permanently deferred under M2.6.6 Not in scope. |
 
 ## Deferred items
 

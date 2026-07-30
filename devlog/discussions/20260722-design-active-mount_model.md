@@ -72,6 +72,22 @@ The agent is never given the operator's own checkout. Documented as a non-goal i
 ### Neutral
 
 - Implementation may still proceed in steps (mounted snapshot before worktree), without security semantics attached to the sequence.
+
+## Open questions
+
+These must be resolved before mount delivery implementation begins.
+
+- WORKTREE_DIR as baked placeholder vs runtime variable
+- Separate compose overlay vs conditional mount in the base template
+- Pi direct bind mounts (prompts/sessions/skills) under mount modes vs copy-in/copy-out
+- `--volumes-from` retained or dropped under mount modes
+- Role of `make apply` under mount modes (native git merge vs `staged.diff`)
+- Snapshot pipeline under mount modes — skip entirely, or produce what?
+- Migration path — conditional flag at session start vs separate Makefile target
+
+## Decision: Worktree backing deferred
+
+Worktree backing (git worktree add/remove, refs/agent/ namespace, gitdir pointer resolution, draft/confirm adaptation for branches, safety audit) is permanently deferred. Recorded in roadmap M2.6.6 under Not in scope. The mechanism design is preserved in [`20260722-design-active-worktree_mount_mechanism.md`](20260722-design-active-worktree_mount_mechanism.md) as a reference. May be revisited if mount delivery proves viable.
 - Tier terminology persists in historical documents (handovers, discussions, git history) as a record of the decision process.
 
 ### Settlement path

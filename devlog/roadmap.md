@@ -1,5 +1,5 @@
 ---
-active-milestone: M2.6 — Session Resume and Mount Model Redesign
+active-milestone: M2.6 — Session Persistence
 active-milestone-status: in-progress
 ---
 
@@ -26,7 +26,7 @@ Maintenance rules — task granularity, cleanup on completion, section removal �
 | &nbsp;&nbsp;[M2.2 — Reasoning Layer Modularisation](changelog.md#m22--reasoning-layer-modularisation) | Complete |
 | &nbsp;&nbsp;[M2.3 — Apply Workflow: Capability Layer Diff Pipeline](changelog.md#m23--apply-workflow-capability-layer-diff-pipeline) | Complete |
 | &nbsp;&nbsp;[M2.4 — Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
-| &nbsp;&nbsp;[M2.6 — Session Resume and Mount Model Redesign](#m26--session-resume-and-mount-model-redesign) | In progress |
+| &nbsp;&nbsp;[M2.6 — Session Persistence](#m26--session-persistence) | In progress |
 | &nbsp;&nbsp;[M2.7 — Session Identity and Harness Versioning](changelog.md#m27--session-identity-and-harness-versioning) | Complete |
 | **M3 — Autonomous Task Execution, Manual Review Workflow** | Not started |
 | **Multi-Agent** | |
@@ -72,150 +72,86 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 **Scope note:** M2.4 covers config and state persistence infrastructure. It does not define or validate provider-level session resume — the ability to continue a prior conversation. That is scoped to M2.6.
 
-#### M2.6 — Session Resume and Mount Model Redesign
+#### M2.6 — Session Persistence
 
-**Objective:** Replace the snapshot-copy + diff-pipeline model with a mount-based workflow where the agent works directly on a persistent repo branch. The agent's changes live on disk at all times — no fragile `git apply`, no anonymous docker volumes, no autosave-as-primary-persistence. Session resume becomes: mount the repo, create a branch, start the agent on that branch.
+**Objective:** Make the agent's working state survive container stop/start cycles. Two implementation paths offer different security/convenience trade-offs — both are valid and may coexist per session.
+
+**Foundation** (M2.6.1–M2.6.2): The shared infrastructure both paths depend on — session identity, volume lifecycle, container persistence, compose primitives.
+
+**Path A — Copy Model** (M2.6.5): Volume-backed sandbox. Snapshot pipeline copies host state into a Docker volume at session start. Agent works in the volume. Volume persists across stop/start. Highest isolation.
+
+**Path B — Mount Model** (M2.6.6): Host-backed sandbox. A host directory (`.sandbox` in `SANDBOX_DIR`) is bind-mounted into the container. Agent works directly on the host filesystem. No copy overhead, no diff pipeline. Higher convenience, lower isolation.
 
 **Depends on:** M2.4 (bind mount infrastructure), M2.7 (session identity, RUN_ID, container lifecycle).
 
 ---
 
-### Motivation
+##### M2.6.1 — Foundation: Autosave, Security, Preconditions (Complete)
 
-The current snapshot + diff pipeline model has known failure modes:
-- `git apply` on exported diffs fails under various conditions (binary files, rename detection, index-line SHA mismatches between container and host)
-- Autosave and session-save mechanisms are fragile — the EXIT trap discards `diff_export` return values, and anonymous docker volumes mean uncommitted work is lost on container death
-- The review workflow requires an export → review → apply cycle that fights git rather than using it
+- [x] Autosave and session-save reliability — Fixed EXIT trap `diff_export` return value capture, added `.export-status` + error logs, lockfile polling. Dry-run checks added.
+- [x] Security model documented. 4 story docs closed with Resolution sections.
+- [x] Pi session resume confirmed.
+- [x] Repo precondition audit — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE).
 
-A mount-based model addresses these by making the agent's working tree a real git checkout on the host filesystem. The agent commits to a branch; the operator reviews and merges with native git tooling.
+##### M2.6.2 — Foundation: Volume Lifecycle, Container Persistence (Complete)
 
----
+- [x] Named volume with conditional compose teardown, `.run-identity`-based resume path, volume-aware entrypoint gating.
+- [x] Volume teardown fix — post-agent no longer destroys volume on `--refresh`. `compose_teardown` split into `compose_stop` (`stop`) and `compose_destroy` (`down -v`). `--refresh` flag in run_agent.sh renamed to `--reset-volume`.
+- [x] Compose project name leak fix — volume `name:` lines injected by `compose config` now stripped, preventing new volumes per run.
+- [x] Container persistence — `compose_stop` uses `docker compose stop` (preserves stopped containers), `stop.sh` drops `docker rm`. Pre-start cleanup consolidated in `run_agent.sh`.
 
-### Security Model Amendment
+##### M2.6.3 — Document Consolidation (Complete)
 
-The current security invariant "`PROJECT_ROOT` must not be mounted into the container at runtime" is replaced by a user-choice model:
+- [x] Single-use spec files rolled into handovers. Policy disambiguation complete. `devlog/` extracted as top-level directory.
 
-> The sandbox inherits the security posture of the underlying repo. agent-sandbox cannot enforce that a repo has no secrets — if the user mounts a repo, the user is responsible for ensuring secrets are not present. The harness provides two mounting options at different security/convenience trade-offs:
-> 1. **Worktree mount** — a `git worktree` is created from `PROJECT_DIR` and mounted into the reasoning layer. `PROJECT_DIR/.git` is mounted RO into the capability layer only. Keeps `.git/config` and `.git/hooks/` out of the agent's reach. The agent commits to a real branch in the real repo; the operator reviews with native git tooling. See [`devlog/discussions/20260622-study-settled-security_delta_worktree_model.md`](./discussions/20260622-study-settled-security_delta_worktree_model.md) for full analysis.
-> 2. **Snapshot mount** (default) — current model: `baseline.tar` unpacked into an anonymous volume, diff pipeline as sole output path. Maximum isolation. Agent changes flow through staged diffs; operator reviews before apply.
+##### M2.6.4 — Mount Model Design (Complete)
 
-The user chooses the model per session. The default is snapshot mount (backward compatible). M2.6 implements the worktree mount (option 1) for pi as the primary integration target, with the architecture structured so other providers can reuse the wiring.
+- [x] Two-axis model settled (delivery: copy/mount × backing: fresh-baseline/worktree). Security model reframed. Capability-layer git mediation retired. Raw project dir backing is a non-goal.
+- [x] Four pre-design investigations complete: extensibility audit, mount wiring survey, apply/draft unification, security model reframe.
 
-**Related documents:**
-- [`docs/architecture/security.md`](../architecture/security.md) — invariant rewrites required (itemised in `20260622-study-settled-security_delta_worktree_model.md` Part 2)
-- [`devlog/discussions/20260622-study-settled-security_delta_worktree_model.md`](./discussions/20260622-study-settled-security_delta_worktree_model.md) — full invariant comparison, residual risk analysis, and required mitigations
-- [`devlog/discussions/story_agent_git_surface.md`](./discussions/story_agent_git_surface.md) — agent-in-git design questions (resolved by design: agent commits to a branch, operator reviews)
-- [`devlog/discussions/20260522-story-settled-agent_state_persistence.md`](./discussions/20260522-story-settled-agent_state_persistence.md) — persistence model (resolved: mount-based persistence)
-- [`devlog/discussions/story_container_layer_model.md`](./discussions/story_container_layer_model.md) — harness base layer design (settled; node harness implemented, python harness deferred — see W1)
+##### M2.6.5 — Copy Model: Volume-backed Sandbox (In progress)
 
----
+**Objective:** Complete the volume-based persistence model. The agent works in a Docker volume backed by the snapshot pipeline. Changes exported via diff pipeline. Volume survives stop/start. Maximum isolation from the host.
 
-### Scope
+- [ ] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Only prunes volumes with no associated containers (stopped or running). Container persistence makes this safe: a stopped container keeps its volume "in use" from Docker's perspective.
+- [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment to the same volume. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-active-multi_volume_concurrency.md`](./discussions/20260730-design-active-multi_volume_concurrency.md).
 
-Focus on pi. The architecture should be extensible to other providers (Hermes, opencode) without rewrite. M2.6 proceeds in a fractal sub-milestone numbering scheme — each level nests under its parent (M2.6 → M2.6.n → M2.6.n.m → ...).
+##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
 
-> **Ordering:** M2.6.1 and M2.6.2 are complete. M2.6.3 has remaining items. M2.6.4 requires a design session before any mount work begins. No mount work starts until M2.6.3 deliverables are accepted.
+**Objective:** Mount a host directory (`.sandbox` in `SANDBOX_DIR`) into the container instead of using a Docker volume. The agent works directly on the host filesystem — no copy-in, no diff pipeline, no autosave as primary persistence. Session resume is instant: the files are already there.
 
----
+**Security posture:** The sandbox inherits the security posture of the host directory. The operator is responsible for ensuring secrets are not present in the mounted directory. This is a lower-isolation model than the copy-based default — the trade-off is convenience.
 
-### M2.6.1 — Foundation (Complete)
+- [ ] **Resolve open design questions** — See [`devlog/discussions/20260722-design-active-mount_model.md`](./discussions/20260722-design-active-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
+- [ ] **Mount delivery enablement** — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect
+- [ ] **Compose template** — conditional mount entries per mode
 
-- [x] **Autosave and session-save reliability** — Fixed EXIT trap `diff_export` return value capture, added `.export-status` + error logs, lockfile polling. Dry-run checks added. See `20260622-01-impl-m2_6_1_autosave_reliability.md` and `20260622-02-impl-m2_6_1_autosave_dry_run_checks.md`.
-- [x] **Security model update** — Three-tier security model documented. 4 story docs closed with Resolution sections. See `20260622-P1-B` commit.
-- [x] **Pi session resume** — Confirmed done by operator. No action needed.
-- [x] **Repo precondition audit** — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE). Key risks: `snapshot_init_git()` hardcodes copy lifecycle, `start_agent.sh` always `rm -rf` + copy, compose template mounts `.snapshot/` as `read_only`, entrypoint preflight aborts if `baseline.tar` missing. See `20260622-03-study-m2_6_1_repo_audit_preconditions.md` for full table and recommendations.
+###### Not in scope — Worktree backing (Deferred)
 
-### M2.6.2 — Volume and Container Persistence (In progress)
+Worktree backing — linking the agent's working tree to the host repository via `git worktree add`, with `refs/agent/` namespace, gitdir pointer resolution, non-agent ref protection, and a safety audit — is permanently deferred. The mechanism design is preserved in [`devlog/discussions/20260722-design-active-worktree_mount_mechanism.md`](./discussions/20260722-design-active-worktree_mount_mechanism.md) as a reference. Implementation may be revisited if mount delivery proves viable and the operator requests tighter git integration.
 
-- [x] **Scoping** — Decision model: .run-identity prefactor, named volume, conditional compose teardown, simplified entrypoint gating (check .git/HEAD only). Env var lifecycle documented per variable. See `20260701-02-design-m2_6_2_persistence_scoping.md`.
-- [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-m2_6_2_persistence.md`.
-- [x] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag and persistence documented, provider_onboarding_guide.md named volume note added, sandbox_lifecycle.md resume path subsection added, sandbox_identity.md .run-identity and env var lifecycle documented.
-- [x] **Volume teardown fix** — Post-agent teardown no longer destroys volume on `--refresh`/`--rebuild`. `compose_teardown` split into `compose_stop` (`down`) and `compose_destroy` (`down -v`). `--refresh` flag in run_agent.sh renamed to `--reset-volume`. See `20260730-01-impl`.
-- [x] **Compose name leak fix** — Compose config injected volume `name:` lines survived grep filters, causing new volumes per run. Single-pattern fix strips all `name:` lines regardless of indentation. See `20260730-03-impl`.
-- [ ] **Container persistence** — `compose_stop` uses `docker compose stop` instead of `down`, preserving stopped containers. `stop.sh` drops `docker rm`. Containers and volumes share a unified lifecycle in `prune.sh`.
-- [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment. Interactive volume selector when multiple volumes exist. Design: [`devlog/discussions/20260730-design-active-multi_volume_concurrency.md`](./discussions/20260730-design-active-multi_volume_concurrency.md).
-
-### M2.6.3 — Document consolidation (Complete)
-
-- [x] **Document consolidation completed.** Single-use spec files rolled into handovers. Worktree mount model ADR written. Mount-model discussion docs superseded. Policy file disambiguation pass resolved: content overlaps trimmed, 3 procedural policies migrated to skill drafts, Step detail sections linked to child policies. Design policy extraction resolved: no standalone document needed — format rules consolidated under `discussion_policy.md#designs`.
-- [x] **Docs directory restructuring** — `devlog/` extracted as top-level directory; stale path references fixed. See `20260722-04-chore`.
-
-### M2.6.4 — Mount Model Design and Implementation (In progress)
-
-The mount model is defined by two axes — delivery (copy vs. mount) × backing (fresh baseline vs. worktree). Canonical record: [`devlog/discussions/20260722-design-active-mount_model.md`](./discussions/20260722-design-active-mount_model.md). Copy + fresh baseline is the current default and the only supported configuration. Mount delivery is not yet implemented. Worktree backing is not supported — mechanism proposed in [`devlog/discussions/20260722-design-active-worktree_mount_mechanism.md`](./discussions/20260722-design-active-worktree_mount_mechanism.md); its security assertion is contingent on implementation and a safety audit.
-
-**Decisions:**
-- Tier model replaced by delivery × backing axes; `security.md` asserts only implemented postures; mount-model ADRs consolidated into active design docs pending settlement — see the mount-model design doc, Consolidation note.
-- Capability-layer git mediation retired — the agent runs git in the reasoning layer; repository-integrity controls are filesystem- and network-level — see the mechanism design doc.
-- Raw project dir backing is a non-goal.
-
-#### Pre-design investigations (complete)
-
-- [x] **Extensibility structure audit** — 10 findings (1 HIGH, 2 MED, 2 LOW, 5 NONE). Key risk: AGENT_HOME bind mounts exist in Pi overlay only — Hermes/OpenCode have no AGENT_HOME persistence. Shared entrypoint is clean (no change needed). Produced documented shared vs. provider boundary. See `20260622-04-study-m2_6_4_extensibility_structure_audit.md` for full table and recommendations.
-- [x] **`PROJECT_DIR` mount wiring** — Complete survey: copy mode fully achieved; mount delivery not implemented (3 gaps); worktree not implemented (7 implementation + 4 documentation gaps). See `devlog/discussions/20260722-study-settled-mount_wiring_survey.md`.
-- [x] **Unify `make apply` and `make draft` apply logic** — Done (see `20260721-06-impl`). Internal apply logic unified: both now use `_apply_patch_file`/`apply_and_commit`. Command-level unification (combine the two CLI commands) remains open for the design session.
-- [x] **Security model reframe** — Tier terminology removed from `security.md`; delivery × backing model adopted. See `20260722-05-design-security_model_reframe.md`.
-- **Hermes and opencode session resume** — Deferred. Not investigated unless explicitly needed.
-
-#### Remaining design questions (design session)
-
-- WORKTREE_DIR as baked placeholder vs runtime variable (constraint C2 suggests baked)
-- Separate compose overlay vs conditional mount in the base template
-- Pi direct bind mounts (prompts/sessions/skills) under mount modes vs copy-in/copy-out
-- `--volumes-from` retained or dropped under mount modes
-- Role of `make apply` under worktree backing (branch diff vs `staged.diff`)
-- Snapshot pipeline under mount/worktree modes — skip, or what does it produce
-- Migration path — conditional flag at session start vs separate Makefile target
-
-#### Anticipated tasks (scoped and confirmed by design session)
-
-- Mount delivery enablement — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect (survey gaps G2a–G2c)
-- Compose template — conditional mount entries per mode
-- Worktree lifecycle — per the mechanism design: `git worktree add/remove`, `refs/agent/` namespace, preflight permission hardening, teardown restore
-- `make draft`/`make confirm`/`make reject` — adapt to operate on branches rather than applying diffs
-- Migration path — copy-mode sessions continue to work; diff pipeline preserved as optional workflow
-- Worktree safety audit — on pass: assert the worktree posture in `security.md`, record the mechanism ADR, settle both design docs (canonical mount-model ADR recorded)
-
-#### W1 — Vault Capability Layer Prototype
-
-**Status:** Deferred. Not a mainline milestone — separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it. See `roadmap_future.md` for task checklist.
-
-**Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
-
-**Hermes python base refactor deferred — see `roadmap_future.md` §W1.**
-The shared python-harness base (`src/reasoning/python.dockerfile`) was designed but never built.
-Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness.
-This is non-urgent (Hermes not actively used). If W1 is made to work without Hermes,
-consider whether to remove Hermes support entirely rather than maintaining a dormant provider.
+**Status:** Deferred. Specific items not in scope:
+- `git worktree add/remove` lifecycle
+- `refs/agent/` namespace and ref protection
+- Worktree gitdir pointer resolution
+- `make draft`/`make confirm`/`make reject` adaptation for branches
+- Worktree safety audit (the security assertion in `security.md` for worktree posture remains unwritten)
 
 #### M2.7 — Session Identity and Harness Versioning
 
-**Status:** Complete. Hash-based identity model (SANDBOX_ID, RUN_ID), container lifecycle (naming, labels, stop/prune), artefact paths, build pipeline simplification (repo-root context, COPY contract tests), two-sig model (container-sig label + preflight), generic pre-flight validation, dual-layer dry-run seam testing, DIFF_TYPE flag, --no-renames flag. See handover chain `20260609-01` through `20260611-04` and changelog entry.
+**Status:** Complete. Hash-based identity model (SANDBOX_ID, RUN_ID), container lifecycle (naming, labels, stop/prune), artefact paths, build pipeline simplification (repo-root context, COPY contract tests), two-sig model (container-sig label + preflight), generic pre-flight validation, dual-layer dry-run seam testing, DIFF_TYPE flag, --no-renames flag. See handover chain `20260609-01` through `20260611-04`.
 
-## Future Milestones
+#### Not in scope
 
-Detail sections for M2 onward are in [`roadmap_future.md`](roadmap_future.md). The summary table above links directly to each section.
+Items indefinitely deferred or explicitly excluded from M2 scope.
 
-Milestone definitions in `roadmap_future.md` are planning targets and expected to evolve. When a milestone becomes active, its section is promoted into this file under `## Upcoming Milestones`.
+- **Submodules not supported.** `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Operators must deinitialise submodules before running the harness.
+- **Bad diff applied to host repo corrupts future snapshots.** `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See Recovery in `docs/development/quickstart.md` for how to reset.
+- **Multi-service project composition not supported.** Projects requiring additional services (databases, test containers) have no mechanism to inject them alongside the harness-managed sandbox and agent. See `execution_model.md` for the deferred discussion.
 
 ---
 
 ## Notes
 
-- **Core minimum usable system:** M1 + M1.1 + M1.2
-- M2 introduces the two-layer architecture; all current single-container architecture docs are hot during M2
-- M3 introduces structured autonomy on top of the two-layer foundation
-- Manual review remains mandatory until automation is formally trusted
+- Future milestone detail: [`roadmap_future.md`](roadmap_future.md).
 - Security guarantees and current threat model are defined in [`docs/architecture/security.md`](../architecture/security.md).
-
----
-
-## Known Limitations
-
-- **Submodules not supported** — `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
-
-- **Bad diff applied to host repo corrupts future snapshots** — `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff — the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
-
-- **`make start opencode` and `make start hermes` do not share a capability layer** — each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
-
-- **Multi-service project composition not supported** — projects that run multiple services (e.g. a web app with a database and test containers) have no mechanism to inject additional services alongside the harness-managed sandbox and agent. A deferred design task is to define a composition method — likely an operator-supplied overlay that `start_agent.sh` merges with the generated base — that lets projects define their own containers without forking the harness template. See `execution_model.md` for the deferred discussion.

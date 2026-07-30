@@ -113,6 +113,8 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Decisions** — design decisions made during a session are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; session handovers log which decisions were made per session.
 
+**Open questions** — open design questions live in the design document, not the roadmap. The roadmap carries a single task entry referencing the design document (e.g. "Resolve open design questions — see [design doc]"). When questions are resolved, the decision is recorded in the design document (not as Q&A — as a named decision with rationale). The roadmap task is checked off. Design documents must not contain Q&A-style sections ("Q: ... A: ..." or numbered question/answer pairs).
+
 **Active sub-milestone task list** — the active sub-milestone carries a full task checklist grouped by functional area. This is the canonical task list; the handover references it, does not copy it.
 
 **Acceptance criteria** — the active sub-milestone carries an `**Acceptance criteria:**` block listing the end-to-end operator checks that must pass before the sub-milestone is considered complete. The task list records what is built; acceptance criteria record what the operator can verify once it is built. Criteria describe what the operator runs and observes — not what files contain or what tasks are checked off. A criterion that duplicates a task checklist item is not an acceptance criterion.
@@ -121,7 +123,9 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Task granularity** — identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 
-**Persistent sections** — Milestone Summary table, Upcoming Milestones, Known Limitations, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
+**Not in scope** — each milestone carries a `#### Not in scope` sub-section nested under its milestone header, listing items indefinitely deferred or explicitly excluded from that milestone's scope, in point form. One sentence per item with a link to the relevant discussion or architecture document if context is needed. This replaces the former `## Known Limitations` global section — limitations are scoped to the milestone that produced them, not accumulated in a catch-all. At milestone close, deferred items carry forward to `roadmap_future.md` or to the next active milestone's Not in scope section.
+
+**Persistent sections** — Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 
 **Summary table format** — the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors or changelog.md section anchors), never to file roots.
 

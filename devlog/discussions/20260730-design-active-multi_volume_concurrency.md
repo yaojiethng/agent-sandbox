@@ -114,14 +114,22 @@ The current default behavior — stop all containers for the sandbox dir — is 
 
 `compose_stop` uses `docker compose stop` instead of `docker compose down`. Stopped containers persist in Docker's state, keeping their associated volumes marked as in-use. `stop.sh` drops its `docker rm` call. Containers age out naturally via `prune.sh` — volumes follow the same lifecycle.
 
-## Open questions
+## Decisions
 
-Resolved during design review (session 20260730-03):
+These decisions were reached during the design review (session 20260730-03).
 
-1. **Volume selector scope.** Show all volumes for the sandbox dir. Flag mismatched `host-head-sha` entries as `[STALE]`. Operator decides whether to recover stale sessions or start fresh.
+### Decision: Show all volumes in selector, flag stale ones
 
-2. **Volume pruning.** Include volumes in `prune.sh` — label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`. Only prune volumes with no associated containers (stopped or running). Container persistence makes this safe: a stopped container keeps its volume "in use" from Docker's perspective.
+All volumes for the sandbox dir are shown in the interactive picker. Volumes whose `host-head-sha` doesn't match current HEAD are flagged as `[STALE]`. The operator decides whether to recover stale sessions or start fresh.
 
-3. **Volume name stability.** Settled by codebase audit. `.run-identity` persists `RUN_ID` across restarts. `RUN_ID` only changes on `--refresh`/`--rebuild` (which deletes `.run-identity`). Volume names are stable across normal stop/start cycles.
+### Decision: Volume pruning via prune.sh
 
-4. **Cross-dir concurrency.** Already supported today — different sandbox dirs produce different compose project names. No change needed.
+`prune.sh` includes volumes — label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`. Only prunes volumes with no associated containers (stopped or running). Container persistence makes this safe: a stopped container keeps its volume "in use" from Docker's perspective, preventing premature pruning.
+
+### Decision: Volume name stability via .run-identity
+
+`.run-identity` persists `RUN_ID` across restarts. `RUN_ID` only changes on `--refresh`/`--rebuild` (which deletes `.run-identity`). Volume names derived from `RUN_ID` are therefore stable across normal stop/start cycles. No additional mechanism needed.
+
+### Decision: Cross-dir concurrency already works
+
+Different sandbox dirs produce different compose project names today. No change needed for cross-directory concurrent sessions.
