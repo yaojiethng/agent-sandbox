@@ -68,7 +68,7 @@ PROJECT_NAME=""
 SANDBOX_DIR=""
 ENV_FILE=""
 PROVIDER_NAME=""
-REFRESH_MODE=false
+RESET_VOLUME=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -76,7 +76,7 @@ for ARG in "$@"; do
     --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
     --env=*)      ENV_FILE="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-    --refresh)    REFRESH_MODE=true ;;
+    --reset-volume) RESET_VOLUME=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -190,7 +190,7 @@ compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT"
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR" "$REFRESH_MODE"
+    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR" "$RESET_VOLUME"
     exit 0
     ;;
 
@@ -212,7 +212,11 @@ esac
 # -------------------------
 # Run
 # -------------------------
-compose_teardown "$REFRESH_MODE"
+if [[ "$RESET_VOLUME" == "true" ]]; then
+  compose_destroy
+else
+  compose_stop
+fi
 
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
@@ -226,11 +230,7 @@ if [[ "$MODE" == "serve" ]]; then
   docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
 
   echo "+ tearing down..."
-  if [[ "$REFRESH_MODE" == "true" ]]; then
-    docker compose "${COMPOSE_ARGS[@]}" down -v
-  else
-    docker compose "${COMPOSE_ARGS[@]}" down
-  fi
+  compose_stop
 
 else
   echo "Starting agent: $PROJECT_NAME"
@@ -243,9 +243,5 @@ else
   docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent
 
   echo "+ tearing down..."
-  if [[ "$REFRESH_MODE" == "true" ]]; then
-    docker compose "${COMPOSE_ARGS[@]}" down -v
-  else
-    docker compose "${COMPOSE_ARGS[@]}" down
-  fi
+  compose_stop
 fi

@@ -20,7 +20,8 @@
 #                         up, exec, down. Overlay already merged — no extra
 #                         file args needed.
 #
-#   compose_teardown      Silent down -v against COMPOSE_ARGS.
+#   compose_stop          docker compose down (preserves named volumes)
+#   compose_destroy       docker compose down -v (removes named volumes)
 #
 #   compose_sandbox_wait  Polls until sandbox container reports healthy.
 
@@ -191,9 +192,10 @@ compose_dry_run() {
   local _sandbox_dir="${3:-}"
   local _remove_volumes="${4:-false}"
 
-  # Pre-compute the -v flag for compose down so all cleanup paths use the same pattern
-  local _down_vol=""
-  [[ "$_remove_volumes" == "true" ]] && _down_vol="-v"
+  # Select the compose teardown function based on remove_volumes flag
+  local _compose_down
+  _compose_down="compose_stop"
+  [[ "$_remove_volumes" == "true" ]] && _compose_down="compose_destroy"
 
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
@@ -210,7 +212,7 @@ compose_dry_run() {
       echo "Phase 1 PASSED."
     else
       echo "Phase 1 FAILED — aborting." >&2
-      docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
+      $_compose_down
       exit 1
     fi
   fi
@@ -224,7 +226,7 @@ compose_dry_run() {
     echo "Phase 2 PASSED."
   else
     echo "Phase 2 FAILED — aborting." >&2
-    docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
+    $_compose_down
     exit 1
   fi
 
@@ -286,26 +288,30 @@ compose_dry_run() {
   # Cleanup containers
   echo ""
   echo "Cleaning up containers..."
-  docker compose "${COMPOSE_ARGS[@]}" down $_down_vol
+  $_compose_down
 
   echo ""
   echo "=== dry-run: ALL PHASES PASSED ==="
 }
 
 # -------------------------
-# compose_teardown
+# compose_stop
 #
-# Tears down containers for COMPOSE_ARGS. Named volumes are preserved
-# unless $1 is "true" (removes them via -v flag).
+# Tears down containers for COMPOSE_ARGS. Named volumes are preserved.
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
-compose_teardown() {
-  local _remove_volumes="${1:-false}"
-  if [[ "$_remove_volumes" == "true" ]]; then
-    docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
-  else
-    docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
-  fi
+compose_stop() {
+  docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
+}
+
+# -------------------------
+# compose_destroy
+#
+# Tears down containers for COMPOSE_ARGS and removes named volumes.
+# Must be called after compose_args has set COMPOSE_ARGS.
+# -------------------------
+compose_destroy() {
+  docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
 }
 
 # -------------------------

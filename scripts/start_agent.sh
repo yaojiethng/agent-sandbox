@@ -322,14 +322,14 @@ preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
 # -------------------------
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 # All .env variables and derived image names are already exported above.
-# REFRESH is passed as --refresh flag, not via env, to prevent leaking state
-# into downstream teardown decisions.
-REFRESH_FLAG=""
-[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
+# RESET_VOLUME is forwarded when --refresh or --rebuild is set, signalling
+# run_agent.sh to destroy the existing volume before starting new containers.
+RESET_VOLUME_FLAG=""
+[[ "${REFRESH:-false}" == "true" || "${REBUILD:-false}" == "true" ]] && RESET_VOLUME_FLAG="--reset-volume"
 
 exec "$SCRIPT_DIR/run_agent.sh" "$MODE" \
   --name="$PROJECT_NAME" \
   --sandbox="$SANDBOX_DIR" \
   --env="$ENV_FILE" \
   --provider="$PROVIDER_NAME" \
-  $REFRESH_FLAG
+  $RESET_VOLUME_FLAG
