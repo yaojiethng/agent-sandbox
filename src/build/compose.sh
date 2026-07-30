@@ -125,8 +125,7 @@ compose_generate() {
   #   networks.default.name: — Compose injects the staging dir name; we want the
   #                            project-scoped default, set at runtime by --project-name
   docker compose "${staged_files[@]}" config --no-interpolate \
-    | grep -v '^name:' \
-    | grep -v '^\s*name:.*_default$' \
+    | grep -v '^[[:space:]]*name:' \
     > "$output_file"
 }
 
