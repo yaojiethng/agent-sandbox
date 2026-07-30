@@ -106,7 +106,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 ##### M2.6.4 — Mount Model Design (Complete)
 
-- [x] Two-axis model settled (delivery: copy/mount × backing: fresh-baseline/worktree). Security model reframed. Capability-layer git mediation retired. Raw project dir backing is a non-goal.
+- [x] Two-axis model settled (delivery: copy/mount × backing: user-provided `.git`). Security model reframed. Capability-layer git mediation retired. Raw project dir backing is a non-goal. Worktree backing rejected — see [ADR](../../docs/adr/20260730-adr-settled-worktree_rejection.md).
 - [x] Four pre-design investigations complete: extensibility audit, mount wiring survey, apply/draft unification, security model reframe.
 
 ##### M2.6.5 — Copy Model: Volume-backed Sandbox (In progress)
@@ -123,20 +123,13 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 **Security posture:** The sandbox inherits the security posture of the host directory. The operator is responsible for ensuring secrets are not present in the mounted directory. This is a lower-isolation model than the copy-based default — the trade-off is convenience.
 
 - [ ] **Resolve open design questions** — See [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
-- [ ] **Update stale backlinks in `security.md`** — 3 references to deleted discussion documents (mount_model, worktree_mount_mechanism) need updating to point to `devlog/discussions/20260730-design-settled-mount_model.md`. Not done this session per operator instruction — security.md rewrite deferred.
+- [ ] **Update stale references in `security.md`** — Mount modes table references deleted documents. Needs update to reflect simplified model (user-provided `.git`, worktree rejected) and link to [ADR](../../docs/adr/20260730-adr-settled-worktree_rejection.md). Not done this session per operator instruction — security.md rewrite in next session.
 - [ ] **Mount delivery enablement** — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect
 - [ ] **Compose template** — conditional mount entries per mode
 
-###### Not in scope — Worktree backing (Deferred)
+###### Not in scope — Worktree backing (Rejected)
 
-Worktree backing — linking the agent's working tree to the host repository via `git worktree add`, with `refs/agent/` namespace, gitdir pointer resolution, non-agent ref protection, and a safety audit — is permanently deferred. The mechanism is summarized in [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) (Backing axis decision). Implementation may be revisited if mount delivery proves viable and the operator requests tighter git integration.
-
-**Status:** Deferred. Specific items not in scope:
-- `git worktree add/remove` lifecycle
-- `refs/agent/` namespace and ref protection
-- Worktree gitdir pointer resolution
-- `make draft`/`make confirm`/`make reject` adaptation for branches
-- Worktree safety audit (the security assertion in `security.md` for worktree posture remains unwritten)
+Worktree backing is rejected. See [ADR — Worktree Backing Rejected](../../docs/adr/20260730-adr-settled-worktree_rejection.md) and the [full investigation record](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
 
 #### M2.7 — Session Identity and Harness Versioning
 
