@@ -73,6 +73,8 @@ None.
 |---|---|
 | [`src/build/compose.sh`](src/build/compose.sh) | Single-line fix: `grep -v '^[[:space:]]*name:'` replaces two patterns, strips all injected `name:` lines including volume |
 | [`tests/test_trace_compose_gen.sh`](tests/test_trace_compose_gen.sh) | 3 tests: no `name:` lines in output, valid YAML structure, stub doesn't inject false positives |
+| [`devlog/discussions/20260730-design-active-multi_volume_concurrency.md`](devlog/discussions/20260730-design-active-multi_volume_concurrency.md) | Design doc: volume-per-session, container persistence, volume locking, interactive selector. All four open questions resolved via grill-me review. |
+| [`devlog/roadmap.md`](devlog/roadmap.md) | M2.6.2 reopened with two new task groups: container persistence and multi-volume concurrency |
 
 ## Deferred items
 
@@ -80,6 +82,6 @@ None.
 
 ## Next session
 
-Continue M2.6.4 mount model design.
+M2.6.2 — Container persistence implementation. `compose_stop` → `docker compose stop`, `stop.sh` drops `docker rm`, `prune.sh` includes volumes.
 
-**Conclusions from this session:** To be populated.
+**Conclusions from this session:** The compose project name leak was a one-pattern fix. The multi-volume design is complete with all questions resolved. M2.6.2 is now the active sub-milestone with container persistence and multi-volume concurrency as the next implementation targets.

@@ -125,11 +125,15 @@ Focus on pi. The architecture should be extensible to other providers (Hermes, o
 - [x] **Pi session resume** — Confirmed done by operator. No action needed.
 - [x] **Repo precondition audit** — 12 findings (5 HIGH, 2 MED, 4 LOW, 1 NONE). Key risks: `snapshot_init_git()` hardcodes copy lifecycle, `start_agent.sh` always `rm -rf` + copy, compose template mounts `.snapshot/` as `read_only`, entrypoint preflight aborts if `baseline.tar` missing. See `20260622-03-study-m2_6_1_repo_audit_preconditions.md` for full table and recommendations.
 
-### M2.6.2 — Volume-based Session Persistence (Complete)
+### M2.6.2 — Volume and Container Persistence (In progress)
 
 - [x] **Scoping** — Decision model: .run-identity prefactor, named volume, conditional compose teardown, simplified entrypoint gating (check .git/HEAD only). Env var lifecycle documented per variable. See `20260701-02-design-m2_6_2_persistence_scoping.md`.
 - [x] **Implementation** — .run-identity in start_agent.sh, named volume in compose template, conditional compose_teardown in compose.sh, volume-aware entrypoint gating, REFRESH flag documentation. See `20260701-03-impl-m2_6_2_persistence.md`.
 - [x] **Documentation** — security.md Execution Model Assumptions updated, quickstart.md REFRESH flag and persistence documented, provider_onboarding_guide.md named volume note added, sandbox_lifecycle.md resume path subsection added, sandbox_identity.md .run-identity and env var lifecycle documented.
+- [x] **Volume teardown fix** — Post-agent teardown no longer destroys volume on `--refresh`/`--rebuild`. `compose_teardown` split into `compose_stop` (`down`) and `compose_destroy` (`down -v`). `--refresh` flag in run_agent.sh renamed to `--reset-volume`. See `20260730-01-impl`.
+- [x] **Compose name leak fix** — Compose config injected volume `name:` lines survived grep filters, causing new volumes per run. Single-pattern fix strips all `name:` lines regardless of indentation. See `20260730-03-impl`.
+- [ ] **Container persistence** — `compose_stop` uses `docker compose stop` instead of `down`, preserving stopped containers. `stop.sh` drops `docker rm`. Containers and volumes share a unified lifecycle in `prune.sh`.
+- [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment. Interactive volume selector when multiple volumes exist. Design: [`devlog/discussions/20260730-design-active-multi_volume_concurrency.md`](./discussions/20260730-design-active-multi_volume_concurrency.md).
 
 ### M2.6.3 — Document consolidation (Complete)
 
