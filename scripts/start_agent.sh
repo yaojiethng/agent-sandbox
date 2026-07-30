@@ -279,21 +279,6 @@ else
 fi
 
 # -------------------------
-# Stop any running session containers
-# -------------------------
-# Checks for containers with agent-sandbox labels before calling stop.sh.
-# Avoids noise from stop.sh's "no containers found" message on a clean start.
-# stop.sh filters by agent-sandbox.project-name + agent-sandbox.sandbox-dir
-# labels — catches all containers for this sandbox regardless of provider.
-# Skipped for dry-run: no port binding, no container name conflict risk.
-if [[ "$MODE" != "dry-run" ]]; then
-  if [[ -n "$(docker ps -aq --filter "label=agent-sandbox.project-name=${PROJECT_NAME}" --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}")" ]]; then
-    echo "Stopping previous session ($PROJECT_NAME)..."
-    "$SCRIPT_DIR/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
-  fi
-fi
-
-# -------------------------
 # Rebuild (if requested)
 # -------------------------
 # --refresh: rebuild sandbox and provider (base skipped if exists).

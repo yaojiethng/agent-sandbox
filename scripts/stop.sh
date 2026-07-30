@@ -88,8 +88,6 @@ else
   # Word splitting is intentional
   # shellcheck disable=SC2086
   docker stop $CONTAINER_IDS
-  # shellcheck disable=SC2086
-  docker rm $CONTAINER_IDS
   echo "Containers stopped."
 fi
 

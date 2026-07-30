@@ -118,20 +118,21 @@ test_start_standard_has_compose_run_agent() {
   fi
 }
 
-test_start_standard_post_agent_down_no_v() {
+test_start_standard_post_agent_uses_stop() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard"
 
-  local down_count down_v_count
-  down_count=$(trace_count "compose down")
+  local stop_count down_v_count
+  stop_count=$(trace_count "compose stop")
   down_v_count=$(trace_count "compose down -v")
 
-  if [[ "$down_v_count" -eq 0 && "$down_count" -ge 1 ]]; then
-    pass "start (standard): post-agent down without -v (down_count=$down_count, down_v_count=$down_v_count)"
+  # compose_stop uses 'stop'; compose_destroy would use 'down -v' (not used for standard)
+  if [[ "$down_v_count" -eq 0 && "$stop_count" -ge 1 ]]; then
+    pass "start (standard): compose stop used (stop_count=$stop_count), no down -v"
   else
-    fail "start (standard): expected down_v_count=0 down_count>=1, got down_v_count=$down_v_count down_count=$down_count"
+    fail "start (standard): expected stop_count>=1 down_v_count=0, got stop_count=$stop_count down_v_count=$down_v_count"
   fi
 }
 
@@ -150,20 +151,22 @@ test_start_refresh_has_one_down_v() {
   fi
 }
 
-test_start_refresh_post_agent_no_v() {
+test_start_refresh_post_agent_uses_stop() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard" --reset-volume
 
-  local down_count down_v_count
-  down_count=$(trace_count "compose down")
+  local stop_count down_v_count
+  stop_count=$(trace_count "compose stop")
   down_v_count=$(trace_count "compose down -v")
 
-  if [[ "$down_v_count" -eq 1 && "$down_count" -ge 2 ]]; then
-    pass "start --refresh: pre-start destroy + post-agent stop (down_count=$down_count, down_v_count=$down_v_count)"
+  # pre-start: compose_destroy → down -v (1)
+  # post-agent: compose_stop → stop (1)
+  if [[ "$down_v_count" -eq 1 && "$stop_count" -eq 1 ]]; then
+    pass "start --refresh: pre-start destroy + post-agent stop (down_v=$down_v_count, stop=$stop_count)"
   else
-    fail "start --refresh: expected down_v_count=1 down_count>=2, got down_v_count=$down_v_count down_count=$down_count"
+    fail "start --refresh: expected down_v=1 stop=1, got down_v=$down_v_count stop=$stop_count"
   fi
 }
 
@@ -204,9 +207,9 @@ test_serve_post_agent_no_v() {
 run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
-run_test test_start_standard_post_agent_down_no_v
+run_test test_start_standard_post_agent_uses_stop
 run_test test_start_refresh_has_one_down_v
-run_test test_start_refresh_post_agent_no_v
+run_test test_start_refresh_post_agent_uses_stop
 run_test test_start_rebuild_has_one_down_v
 run_test test_serve_post_agent_no_v
 

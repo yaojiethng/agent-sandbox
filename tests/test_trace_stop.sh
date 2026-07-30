@@ -69,10 +69,10 @@ test_stop_uses_docker_ps() {
   setup_stop_fixture "$FIXTURE_DIR"
   invoke_stop "$FIXTURE_DIR"
 
-  if trace_has "ps "; then
-    pass "stop: uses docker ps -aq for container discovery"
+  if trace_has "ps " && ! trace_has "rm "; then
+    pass "stop: uses docker ps and docker stop, no docker rm"
   else
-    fail "stop: docker ps not found in trace"
+    fail "stop: expected ps+stop without rm"
   fi
 }
 

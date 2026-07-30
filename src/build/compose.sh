@@ -296,11 +296,11 @@ compose_dry_run() {
 # -------------------------
 # compose_stop
 #
-# Tears down containers for COMPOSE_ARGS. Named volumes are preserved.
+# Stops containers for COMPOSE_ARGS. Containers and named volumes are preserved.
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
 compose_stop() {
-  docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
+  docker compose "${COMPOSE_ARGS[@]}" stop 2>/dev/null || true
 }
 
 # -------------------------

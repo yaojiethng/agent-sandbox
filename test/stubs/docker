@@ -49,7 +49,7 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
         echo "services: {}"
       fi
       ;;
-    up|down|run|exec)
+    up|down|run|exec|stop)
       log "compose $compose_sub $compose_rest"
       ;;
     *)
