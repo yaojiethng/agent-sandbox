@@ -49,6 +49,6 @@ When a new ADR supersedes an existing one:
 
 1. The old ADR gets one edit — a `> **Superseded by:** [link](#section)` blockquote at the top, immediately after the title line.
 2. The new ADR lists what it supersedes in its Supersedes section:
-   - Full document: `[20260611-story-superseded-agent_git_surface.md](../../devlog/discussions/20260611-story-superseded-agent_git_surface.md)`
-   - Partial: `[20260416-study-superseded-git_worktrees.md](../../devlog/discussions/20260416-study-superseded-git_worktrees.md#finding-1-core-incompatibility-project_dir-is-never-mounted)`
+   - Full document: `[20260730-design-settled-mount_model.md](../../devlog/discussions/20260730-design-settled-mount_model.md)`
+   - Partial: `[20260622-study-settled-security_delta_worktree_model.md](../../devlog/discussions/20260622-study-settled-security_delta_worktree_model.md#part-1--assumption-comparison)`
 3. After the edit, the old ADR is frozen — no further changes.

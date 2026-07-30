@@ -114,7 +114,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 **Objective:** Complete the volume-based persistence model. The agent works in a Docker volume backed by the snapshot pipeline. Changes exported via diff pipeline. Volume survives stop/start. Maximum isolation from the host.
 
 - [ ] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Only prunes volumes with no associated containers (stopped or running). Container persistence makes this safe: a stopped container keeps its volume "in use" from Docker's perspective.
-- [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment to the same volume. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-active-multi_volume_concurrency.md`](./discussions/20260730-design-active-multi_volume_concurrency.md).
+- [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment to the same volume. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
 
 ##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
 
@@ -122,13 +122,14 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 **Security posture:** The sandbox inherits the security posture of the host directory. The operator is responsible for ensuring secrets are not present in the mounted directory. This is a lower-isolation model than the copy-based default — the trade-off is convenience.
 
-- [ ] **Resolve open design questions** — See [`devlog/discussions/20260722-design-active-mount_model.md`](./discussions/20260722-design-active-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
+- [ ] **Resolve open design questions** — See [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
+- [ ] **Update stale backlinks in `security.md`** — 3 references to deleted discussion documents (mount_model, worktree_mount_mechanism) need updating to point to `devlog/discussions/20260730-design-settled-mount_model.md`. Not done this session per operator instruction — security.md rewrite deferred.
 - [ ] **Mount delivery enablement** — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect
 - [ ] **Compose template** — conditional mount entries per mode
 
 ###### Not in scope — Worktree backing (Deferred)
 
-Worktree backing — linking the agent's working tree to the host repository via `git worktree add`, with `refs/agent/` namespace, gitdir pointer resolution, non-agent ref protection, and a safety audit — is permanently deferred. The mechanism design is preserved in [`devlog/discussions/20260722-design-active-worktree_mount_mechanism.md`](./discussions/20260722-design-active-worktree_mount_mechanism.md) as a reference. Implementation may be revisited if mount delivery proves viable and the operator requests tighter git integration.
+Worktree backing — linking the agent's working tree to the host repository via `git worktree add`, with `refs/agent/` namespace, gitdir pointer resolution, non-agent ref protection, and a safety audit — is permanently deferred. The mechanism is summarized in [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) (Backing axis decision). Implementation may be revisited if mount delivery proves viable and the operator requests tighter git integration.
 
 **Status:** Deferred. Specific items not in scope:
 - `git worktree add/remove` lifecycle
