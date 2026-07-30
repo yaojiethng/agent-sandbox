@@ -33,18 +33,17 @@ The system includes the following explicit trust boundaries, which hold in every
 
 ### Principle
 
-The sandbox adds no security beyond what the host provides — it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. See [Design — Mount Model](../../devlog/discussions/20260722-design-active-mount_model.md).
+The sandbox adds no security beyond what the host provides — it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design — Mount Model](../../devlog/discussions/20260730-design-settled-mount_model.md).
 
 ### Mount modes
 
-| Mode | `.snapshot/` | `PROJECT_DIR/.git` | Consequence |
+| Mode | `.snapshot/` | `.git` | Consequence |
 |---|---|---|---|
-| **Copy** (current default) | Copied into container storage at session start; frozen view | Reinitialized — fresh `git init`, no link to host repo | None — baseline posture |
-| **Mount** (not yet implemented) | Bind-mounted live from host | Reinitialized — fresh `git init`, no link to host repo | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface |
-| **Worktree** (not supported — [design proposed](../../devlog/discussions/20260722-design-active-worktree_mount_mechanism.md)) | Bind-mounted live; checkout is a `git worktree` of the host repo | Linked — agent commits land in the host object store | Mount consequence + repository coupling |
+| **Copy** (current default, M2.6.5) | Copied into container storage at session start; frozen view | Reinitialized — fresh `git init`, no link to host repo | None — baseline posture |
+| **Mount** (not yet implemented, M2.6.6) | Bind-mounted live from host | User-provided — whatever `.git` the user places in the mounted directory (fresh baseline, clone, snapshot). Harness does not mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
 | *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | — see [Non-goals](#non-goals) |
 
-Worktree mode is not supported. Its proposed mechanism and integrity controls live in the design proposal linked above; this document will assert its security posture only after implementation and audit.
+Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope — see [ADR — Worktree Backing Rejected](../../docs/adr/20260730-adr-settled-worktree_rejection.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
 
 **Invariants (all modes):**
 
@@ -54,7 +53,7 @@ Worktree mode is not supported. Its proposed mechanism and integrity controls li
 
 **Assumptions:**
 
-- *Mount containment* (mount, worktree) — the agent cannot escape the mount boundary to reach the backing filesystem. Container escapes are outside the current threat model, but the assumption's strength erodes over time.
+- *Mount containment* — the agent cannot escape the mount boundary to reach the backing filesystem. Container escapes are outside the current threat model, but the assumption's strength erodes over time.
 
 ---
 
@@ -77,14 +76,12 @@ Validation procedures for these invariants are defined in operational documentat
 >
 > 7. `SANDBOX_DIR/.snapshot/` must not be mounted into the reasoning layer. Only the capability layer accesses `.snapshot/` directly.
 
-**Worktree backing (not supported)** revises or replaces invariants 2, 4, 5, and 6 and adds integrity controls. They are not asserted here — the proposed controls live in the [worktree mechanism design](../../devlog/discussions/20260722-design-active-worktree_mount_mechanism.md); the posture is contingent on implementation and audit.
-
 ---
 
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Containers are ephemeral. The sandbox directory (`sandbox/`) persists across restarts via a named Docker volume (`sandbox-data`). With mount delivery (not yet implemented), the agent's working tree in `.snapshot/` additionally survives container restarts via the host bind mount.
+- Containers and volumes persist across restarts via `docker compose stop` (not `down`) and a named Docker volume (`sandbox-data`). With mount delivery (not yet implemented), the agent's working tree in `.snapshot/` additionally survives container restarts via the host bind mount.
 - `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. With mount delivery, `.snapshot/` additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 
@@ -102,9 +99,8 @@ This sandbox does not attempt to:
 - Protect secrets that are explicitly injected into the container
 - Prevent all forms of denial-of-service within resource limits
 - Offer the operator's own checkout as the agent's working tree (raw project dir mount)
-- Verify that no secrets have been committed to the project's git history (relevant to worktree backing, which is not supported — operator precondition, not harness-enforceable)
 
-Residual risk is acknowledged. Residual risk for worktree backing (not supported) additionally includes: post-mutation review gate (operator must reject the branch rather than decline to apply a diff), and the possibility of orphaned git objects after a session crash.
+Residual risk is acknowledged.
 
 ---
 

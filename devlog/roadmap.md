@@ -123,7 +123,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 **Security posture:** The sandbox inherits the security posture of the host directory. The operator is responsible for ensuring secrets are not present in the mounted directory. This is a lower-isolation model than the copy-based default — the trade-off is convenience.
 
 - [ ] **Resolve open design questions** — See [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
-- [ ] **Update stale references in `security.md`** — Mount modes table references deleted documents. Needs update to reflect simplified model (user-provided `.git`, worktree rejected) and link to [ADR](../../docs/adr/20260730-adr-settled-worktree_rejection.md). Not done this session per operator instruction — security.md rewrite in next session.
+- [x] **Security model updated** — `security.md` rewritten for simplified two-path model (Copy M2.6.5, Mount M2.6.6). Worktree row removed. Mount mode: user-provided `.git`, harness does not mediate git operations. See handover `20260730-07`.
 - [ ] **Mount delivery enablement** — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect
 - [ ] **Compose template** — conditional mount entries per mode
 

@@ -50,5 +50,5 @@ When a new ADR supersedes an existing one:
 1. The old ADR gets one edit — a `> **Superseded by:** [link](#section)` blockquote at the top, immediately after the title line.
 2. The new ADR lists what it supersedes in its Supersedes section:
    - Full document: `[20260730-design-settled-mount_model.md](../../devlog/discussions/20260730-design-settled-mount_model.md)`
-   - Partial: `[20260622-study-settled-security_delta_worktree_model.md](../../devlog/discussions/20260622-study-settled-security_delta_worktree_model.md#part-1--assumption-comparison)`
+   - Partial: `[20260730-study-settled-worktree_rejection.md](../../devlog/discussions/20260730-study-settled-worktree_rejection.md#detailed-security-analysis-preserved)`
 3. After the edit, the old ADR is frozen — no further changes.
