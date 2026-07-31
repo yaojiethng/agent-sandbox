@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # scripts/prune.sh
 #
-# Removes aged containers, images, and networks for a single
+# Removes aged containers, images, networks, and volumes for a single
 # project+sandbox instance. Never touches resources from other projects.
-# The named sandbox-data volume is managed by compose lifecycle
-# (docker compose down / down -v) and is not pruned here.
+# Volumes are only removed when no associated container (stopped or
+# running) references them — container persistence ensures a stopped
+# container keeps its volume until the container itself ages out.
 #
 # Usage:
 #   prune.sh --name=<project_name> --sandbox=<path>
@@ -45,14 +46,17 @@ echo "Pruning orphaned resources older than ${PRUNE_AGE_DAYS} days..."
 local_filter="label=agent-sandbox.project-name=${PROJECT_NAME}"
 local_filter="${local_filter},label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
 
-# Prune containers, images, and networks with the label filter and age
-# threshold. Volumes omitted intentionally — the named sandbox-data volume
-# is managed by compose lifecycle (docker compose down / down -v).
+# Prune containers, images, networks, and volumes with the label filter
+# and age threshold. Docker prevents volume removal while any container
+# (even stopped) references it — container and volume lifecycle are
+# naturally coupled: the container must age out before its volume can
+# be pruned.
 # The label filter scopes everything to this project — no other project's
 # resources are affected.
 docker system prune \
   --force \
   --all \
+  --volumes \
   --filter "${local_filter}" \
   --filter "until=${PRUNE_AGE_DAYS}d" \
   2>/dev/null || true

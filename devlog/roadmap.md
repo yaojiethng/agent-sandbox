@@ -113,7 +113,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 **Objective:** Complete the volume-based persistence model. The agent works in a Docker volume backed by the snapshot pipeline. Changes exported via diff pipeline. Volume survives stop/start. Maximum isolation from the host.
 
-- [ ] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Only prunes volumes with no associated containers (stopped or running). Container persistence makes this safe: a stopped container keeps its volume "in use" from Docker's perspective.
+- [x] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Docker prevents volume removal while any container references it — stopped container keeps volume until container ages out.
 - [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment to the same volume. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
 
 ##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
