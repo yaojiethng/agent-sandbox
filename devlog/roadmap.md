@@ -115,6 +115,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 - [x] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Docker prevents volume removal while any container references it — stopped container keeps volume until container ages out.
 - [ ] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume locking prevents concurrent attachment to the same volume. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
+- [ ] **Draft rollback on patch failure** — `make draft` applies a series of patches to a draft branch. If any patch fails partway through, the draft branch is left in a partially-applied state. Create a local tag savepoint before starting patch application; on failure, `git reset --hard <savepoint>` and delete the tag. Local tags don't push by default — no remote pollution. On success, delete the tag.
 
 ##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
 
