@@ -121,6 +121,8 @@ All volumes for the sandbox dir are shown. Mismatched `host-head-sha` entries ar
 
 `.run-identity` persists `RUN_ID` across restarts. `RUN_ID` only changes on `--refresh`/`--rebuild`. Volume names derived from `RUN_ID` are stable across normal stop/start cycles.
 
+In the multi-volume model, `.run-identity` becomes redundant — volume labels (`agent-sandbox.run-id`, `agent-sandbox.session-ts`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`) carry the same four identity values and are queried directly by the volume selector. The file persists as a backward-compatibility convenience (no label query needed for the single-volume case) but the selector does not depend on it.
+
 ### Decision: Cross-dir concurrency already works
 
 Different sandbox dirs produce different compose project names today. No change needed.

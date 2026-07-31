@@ -69,23 +69,37 @@ The two-step design ensures all four working tree states are handled correctly:
 
 ### Harness directory lifecycle
 
-`.snapshot/` is overwritten on each **first** start — rebuilt from `PROJECT_DIR` before the containers start. On a resumed session (volume with existing git state), the snapshot pipeline is skipped entirely. `.snapshot/` retains its previous content but is not accessed after initial git init. It is not archived or cleaned up between runs.
+`.snapshot/` is overwritten on each **first** start — rebuilt from `PROJECT_DIR` before the containers start. On a resumed session, the snapshot pipeline is skipped entirely. `.snapshot/` retains its previous content but is not accessed after initial git init. It is not archived or cleaned up between runs.
 
 ### Resume path (M2.6.2 volume-based persistence)
 
-When the sandbox volume already contains a valid git repository (`.git/HEAD` resolves), the snapshot pipeline is skipped on the host side and `snapshot_init_git` is skipped in the entrypoint. The agent resumes with the exact working tree and git state from the previous session.
+**Current — single-volume model:**
 
-Host-side detection:
-- `$SANDBOX_DIR/.run-identity` exists and `REFRESH` is not set → resume path
-- Identity values (`SESSION_TS`, `RUN_ID`, `HOST_HEAD_SHA`, `SANDBOX_ID`) are read from `.run-identity` instead of recomputed
-- Copy pipeline (`snapshot_copy_worktree`, `snapshot_archive_head`, `snapshot_validate`) is skipped
-- Workspace bind mount directories (`CHANGES_DIR`, `INPUT_DIR`, `OUTPUT_DIR`) are created if absent
+```
+.run-identity exists + REFRESH not set?
+  ├── No  → normal init
+  │         Host: compute identity, write .run-identity, run copy pipeline
+  │         Container: .git absent → snapshot_validate + snapshot_init_git
+  └── Yes → resume
+            Host: read identity from .run-identity, skip copy pipeline
+            Container: .git present → skip snapshot_validate + snapshot_init_git
+```
 
-Container-side detection:
-- `$SANDBOX_DIR/.git` exists on startup → resume path
-- `snapshot_validate` and `snapshot_init_git` are skipped
-- SESSION_STATE workspace path entries are refreshed (post-migration resilience)
-- Healthcheck passes immediately (`.git/` already exists)
+The `.run-identity` file (written to `$SANDBOX_DIR/.run-identity` at first start) is the single point of detection for resume vs fresh init. If the file exists and `REFRESH` is not set, the copy pipeline is skipped and identity values (`SESSION_TS`, `RUN_ID`, `HOST_HEAD_SHA`, `SANDBOX_ID`) are read from it instead of recomputed. `REFRESH=1` deletes `.run-identity` and forces a fresh init.
+
+**Planned — multi-volume model (M2.6.5):**
+
+```
+Volumes exist for sandbox dir?
+  ├── 0 → normal init (compute identity, create volume, copy pipeline)
+  ├── 1 → resume that volume (current behavior)
+  └── 2+ → interactive selector
+           └── operator picks volume or "new session"
+               Volumes whose host-head-sha label ≠ current HEAD
+               are flagged [STALE].
+```
+
+See [Design — Copy Model](../../devlog/discussions/20260730-design-settled-copy_model.md).
 
 ---
 
