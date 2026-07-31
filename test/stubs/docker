@@ -83,6 +83,39 @@ if [[ "$CMD" == "docker" ]]; then
     ps)
       log "ps $*"
       ;;
+    volume)
+      vol_sub="${1:-}"; shift || true
+      case "$vol_sub" in
+        ls)
+          log "volume ls $*"
+          # Return nothing by default (no existing volumes)
+          ;;
+        inspect)
+          log "volume inspect $*"
+          # Identity labels are read via --format. Return valid JSON with
+          # labels from env vars that start_agent.sh sets.
+          cat <<'STUBEOF'
+[
+  {
+    "Labels": {
+      "agent-sandbox.session-ts": "20260730-120000",
+      "agent-sandbox.run-id": "stub1d",
+      "agent-sandbox.host-head-sha": "abc123def456",
+      "agent-sandbox.host-branch": "master",
+      "agent-sandbox.project-name": "stub"
+    }
+  }
+]
+STUBEOF
+          ;;
+        rm)
+          log "volume rm $*"
+          ;;
+        *)
+          log "volume $vol_sub $*"
+          ;;
+      esac
+      ;;
     system)
       log "system $*"
       ;;

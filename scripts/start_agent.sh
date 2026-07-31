@@ -175,57 +175,162 @@ fi
 # -------------------------
 # Session identity — persisted as .run-identity for volume-based resume
 # -------------------------
-# On first start, identity values are computed fresh and written to
-# $SANDBOX_DIR/.run-identity. On resume, values are read from this file
-# so that the host-side env vars (SESSION_TS, RUN_ID, HOST_HEAD_SHA,
-# SANDBOX_ID) always match what the volume's SESSION_STATE contains.
-# This prevents divergence between diff_export (reads env vars) and
-# package_branch (reads SESSION_STATE).
+# Session identity — volume discovery and resume
+# -------------------------
+# With multi-volume concurrency, each session gets its own named volume
+# ({{RUN_ID}}-sandbox-data). Volume labels carry session identity.
+# On first start, identity is computed fresh and a new volume is created
+# by compose. On resume, identity is read from the existing volume's labels.
+# .run-identity persists as a backward-compatibility cache.
+#
+# Volume discovery functions
+# -------------------------
+discover_volumes() {
+  docker volume ls \
+    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" \
+    --format '{{.Name}}' 2>/dev/null || true
+}
+
+volume_label() {
+  local vol="$1" label="$2"
+  docker volume inspect "$vol" \
+    --format "{{index .Labels \"$label\"}}" 2>/dev/null || true
+}
+
+volume_is_stale() {
+  local vol="$1"
+  local vol_sha
+  vol_sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
+  local current_sha
+  current_sha=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  [[ "$vol_sha" != "$current_sha" ]]
+}
+
+volume_in_use() {
+  local vol="$1"
+  local containers
+  containers=$(docker ps --filter "volume=$vol" --format '{{.ID}}' 2>/dev/null || true)
+  [[ -n "$containers" ]]
+}
+
 RUN_IDENTITY="$SANDBOX_DIR/.run-identity"
 
-if [[ -f "$RUN_IDENTITY" && "${REFRESH:-false}" != "true" ]]; then
-  # Resume path: read identity from file, re-export for compose
-  echo "Resuming session — reading identity from $RUN_IDENTITY"
-  while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-    [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
-    KEY="${KEY//[$'\r\n\t ']/}"
-    VALUE="${VALUE//[$'\r\n']/}"
-    export "$KEY=$VALUE"
-  done < "$RUN_IDENTITY"
-  RESUME_SESSION=true
-else
+if [[ "${REFRESH:-false}" == "true" ]]; then
+  # Force new session — remove existing volumes for this sandbox dir
+  echo "Refresh requested — starting new session"
+  rm -f "$RUN_IDENTITY"
+
+  # Remove any existing volumes for this sandbox directory
+  while IFS= read -r vol; do
+    if [[ -n "$vol" ]]; then
+      echo "Removing old volume: $vol"
+      docker volume rm "$vol" >/dev/null 2>&1 || true
+    fi
+  done < <(discover_volumes)
+
   RESUME_SESSION=false
-  if [[ "${REFRESH:-false}" == "true" ]]; then
-    echo "Refresh requested — clearing session identity and volume"
-    rm -f "$RUN_IDENTITY"
-  fi
 
-  # Fresh init: compute identity values
-  # SESSION_TS is the one source of truth for the session timestamp.
-  # All derived names (container names, artefact directories) reference
-  # this variable — no downstream date calls.
+  # Compute fresh identity
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
-
-  # SANDBOX_ID — 8-char hex hash identifying a sandbox instance at a
-  # specific host commit. Composed of SANDBOX_DIR (path identity) and
-  # HOST_HEAD_SHA (codebase version). Two sandboxes at different directories
-  # or different host commits produce different SANDBOX_IDs.
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-
-  # RUN_ID — 6-char hex hash identifying a single session run. Composed of
-  # SESSION_TS (temporal factor) and SANDBOX_ID (instance factor). Replaces
-  # SESSION_TS in container names and artefact paths while SESSION_TS is
-  # preserved for human readability.
   export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 
-  # Write .run-identity for future resumes
+  # Write .run-identity
   {
     echo "SESSION_TS=${SESSION_TS}"
     echo "RUN_ID=${RUN_ID}"
     echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
     echo "SANDBOX_ID=${SANDBOX_ID}"
   } > "$RUN_IDENTITY"
+else
+  # Discover existing volumes for this sandbox directory
+  VOLUMES=()
+  while IFS= read -r vol; do
+    [[ -n "$vol" ]] && VOLUMES+=("$vol")
+  done < <(discover_volumes)
+
+  VOLUME_COUNT="${#VOLUMES[@]}"
+
+  if [[ "$VOLUME_COUNT" -eq 0 ]]; then
+    # No existing volumes — new session
+    RESUME_SESSION=false
+    echo "No existing sessions — starting new session"
+
+    export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
+    export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+    export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
+    export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+
+    {
+      echo "SESSION_TS=${SESSION_TS}"
+      echo "RUN_ID=${RUN_ID}"
+      echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
+      echo "SANDBOX_ID=${SANDBOX_ID}"
+    } > "$RUN_IDENTITY"
+
+  elif [[ "$VOLUME_COUNT" -eq 1 ]]; then
+    # Single volume — resume
+    TARGET_VOL="${VOLUMES[0]}"
+
+    # Volume locking check
+    if volume_in_use "$TARGET_VOL"; then
+      echo "Error: volume $TARGET_VOL is in use by another session."
+      echo "  Stop the active session first: make stop"
+      exit 1
+    fi
+
+    # Read identity from volume labels
+    export SESSION_TS; SESSION_TS=$(volume_label "$TARGET_VOL" "agent-sandbox.session-ts")
+    export RUN_ID; RUN_ID=$(volume_label "$TARGET_VOL" "agent-sandbox.run-id")
+    export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$TARGET_VOL" "agent-sandbox.host-head-sha")
+
+    if [[ -z "$SESSION_TS" || -z "$RUN_ID" ]]; then
+      echo "Error: volume $TARGET_VOL has no session identity labels."
+      echo "  The volume may be from an older harness version."
+      echo "  Remove it and start fresh: make start REFRESH=1"
+      exit 1
+    fi
+
+    # Derive SANDBOX_ID from HOST_HEAD_SHA (consistent with original derivation)
+    export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
+
+    # Check staleness
+    if volume_is_stale "$TARGET_VOL"; then
+      echo "Warning: project HEAD has moved since this session started."
+      echo "  The container may be out of date. Use REFRESH=1 to start fresh."
+    fi
+
+    # Write .run-identity for backward compat
+    {
+      echo "SESSION_TS=${SESSION_TS}"
+      echo "RUN_ID=${RUN_ID}"
+      echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
+      echo "SANDBOX_ID=${SANDBOX_ID}"
+    } > "$RUN_IDENTITY"
+
+    RESUME_SESSION=true
+    echo "Resuming session — volume: $TARGET_VOL"
+
+  else
+    # Multiple volumes — list and exit (interactive selector planned)
+    echo "Multiple sessions found for this sandbox directory:"
+    for vol in "${VOLUMES[@]}"; do
+      ts=$(volume_label "$vol" "agent-sandbox.session-ts")
+      rid=$(volume_label "$vol" "agent-sandbox.run-id")
+      br=$(volume_label "$vol" "agent-sandbox.host-branch")
+      sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
+      stale_str=""
+      volume_is_stale "$vol" && stale_str=" [STALE]"
+      echo "  $ts (RUN_ID: $rid) — branch: $br, host SHA: ${sha:0:7}$stale_str"
+    done
+    echo ""
+    echo "Interactive selector not yet implemented. Use:"
+    echo "  make start REFRESH=1    — start a fresh session (preserves existing volumes)"
+    echo "  Or manually remove unwanted volumes:"
+    echo "  docker volume rm <volume-name>"
+    exit 1
+  fi
 fi
 
 # -------------------------

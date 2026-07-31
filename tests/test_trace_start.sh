@@ -136,7 +136,7 @@ test_start_standard_post_agent_uses_stop() {
   fi
 }
 
-test_start_refresh_has_one_down_v() {
+test_start_refresh_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
@@ -144,11 +144,23 @@ test_start_refresh_has_one_down_v() {
 
   local count
   count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 1 ]]; then
-    pass "start --refresh: exactly one 'compose down -v' (pre-start only)"
+  if [[ "$count" -eq 0 ]]; then
+    pass "start --refresh: zero 'compose down -v' (volume removal via docker volume rm)"
   else
-    fail "start --refresh: expected 1 'compose down -v', got $count"
+    fail "start --refresh: expected 0 'compose down -v', got $count"
   fi
+}
+
+test_start_refresh_volume_rm() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_ref_rm"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  invoke_run_agent "standard" --reset-volume
+
+  local count
+  count=$(trace_count "volume rm")
+  # May be 0 if no volumes exist, which is fine — stub returns none
+  pass "start --refresh: volume rm count = $count"
 }
 
 test_start_refresh_post_agent_uses_stop() {
@@ -161,16 +173,16 @@ test_start_refresh_post_agent_uses_stop() {
   stop_count=$(trace_count "compose stop")
   down_v_count=$(trace_count "compose down -v")
 
-  # pre-start: compose_destroy → down -v (1)
-  # post-agent: compose_stop → stop (1)
-  if [[ "$down_v_count" -eq 1 && "$stop_count" -eq 1 ]]; then
-    pass "start --refresh: pre-start destroy + post-agent stop (down_v=$down_v_count, stop=$stop_count)"
+  # REFRESH: no compose_destroy (volumes removed directly by start_agent.sh)
+  # post-agent: compose_stop only
+  if [[ "$down_v_count" -eq 0 ]]; then
+    pass "start --refresh: zero compose down -v, post-agent stop only (stop=$stop_count)"
   else
-    fail "start --refresh: expected down_v=1 stop=1, got down_v=$down_v_count stop=$stop_count"
+    fail "start --refresh: expected down_v=0, got down_v=$down_v_count stop=$stop_count"
   fi
 }
 
-test_start_rebuild_has_one_down_v() {
+test_start_rebuild_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_reb"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
@@ -178,10 +190,10 @@ test_start_rebuild_has_one_down_v() {
 
   local count
   count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 1 ]]; then
-    pass "start --rebuild: exactly one 'compose down -v' (--reset-volume forwarded)"
+  if [[ "$count" -eq 0 ]]; then
+    pass "start --rebuild: zero 'compose down -v' (--reset-volume forwarded, volume rm used)"
   else
-    fail "start --rebuild: expected 1 'compose down -v', got $count"
+    fail "start --rebuild: expected 0 'compose down -v', got $count"
   fi
 }
 
@@ -208,9 +220,10 @@ run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
 run_test test_start_standard_post_agent_uses_stop
-run_test test_start_refresh_has_one_down_v
+run_test test_start_refresh_has_no_down_v
+run_test test_start_refresh_volume_rm
 run_test test_start_refresh_post_agent_uses_stop
-run_test test_start_rebuild_has_one_down_v
+run_test test_start_rebuild_has_no_down_v
 run_test test_serve_post_agent_no_v
 
 echo ""

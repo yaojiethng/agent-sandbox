@@ -182,7 +182,7 @@ compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILE
 # -------------------------
 # Compose args
 # -------------------------
-compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT"
+compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT" "${RUN_ID:-}"
 
 # -------------------------
 # Mode dispatch
@@ -213,7 +213,10 @@ esac
 # Run
 # -------------------------
 if [[ "$RESET_VOLUME" == "true" ]]; then
-  compose_destroy
+  # start_agent.sh already removed old volumes for this sandbox dir.
+  # Skip compose teardown — the new compose project (by RUN_ID) doesn't
+  # exist yet, and the old project used a different RUN_ID.
+  :
 else
   compose_stop
 fi

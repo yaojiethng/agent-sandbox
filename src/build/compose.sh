@@ -39,7 +39,7 @@
 #   {{PROVIDER_NAME}}       → provider name
 #   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<run_id>)
 #   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<run_id>)
-#   {{SESSION_TS}}            → session timestamp (YYYYMMDD-HHMMSS)
+#   {{RUN_ID}}              → session run ID (6-char hex, from start_agent.sh)
 #   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
 #   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
@@ -133,28 +133,35 @@ compose_generate() {
 # compose_args
 #
 # Sets COMPOSE_ARGS in the caller's scope from a pre-generated compose file.
-# The project name is normalised to match Docker Compose conventions.
+# The project name is normalised and incorporates RUN_ID so each session
+# gets its own compose namespace (volume, network, containers).
 #
 # Args:
 #   $1  project_name   — used for --project-name
 #   $2  sandbox_dir    — passed as --project-directory
 #   $3  compose_file   — absolute path to the generated compose file
+#   $4  run_id         — RUN_ID from session identity
 # -------------------------
 compose_args() {
   local project_name="$1"
   local sandbox_dir="$2"
   local compose_file="$3"
+  local run_id="${4:-}"
 
   local normalised
   normalised="$(echo "$project_name" | tr '[:upper:]' '[:lower:]')"
   normalised="${normalised//[^a-z0-9-]/-}"
 
-  # Incorporate sandbox_dir into the compose project name so each sandbox
-  # instance gets its own namespace (volume, network, etc.). Two worktrees
-  # with the same PROJECT_NAME produce different compose project names.
-  local sandbox_hash
-  sandbox_hash="$(echo "$sandbox_dir" | sha256sum | cut -c1-6)"
-  normalised="${normalised}-${sandbox_hash}"
+  # Incorporate RUN_ID into the compose project name so each session
+  # gets its own namespace. Falls back to sandbox_dir hash if RUN_ID
+  # is not available (e.g., dry-run before identity computation).
+  if [[ -n "$run_id" ]]; then
+    normalised="${normalised}-${run_id}"
+  else
+    local sandbox_hash
+    sandbox_hash="$(echo "$sandbox_dir" | sha256sum | cut -c1-6)"
+    normalised="${normalised}-${sandbox_hash}"
+  fi
 
   # Assign to caller's COMPOSE_ARGS (no local — intentional).
   COMPOSE_ARGS=(
