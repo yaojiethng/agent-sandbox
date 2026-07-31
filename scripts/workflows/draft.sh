@@ -308,11 +308,30 @@ _run_draft_workflow() {
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
+  # Create savepoint before applying patches. On failure, reset to this
+  # point to avoid leaving the draft branch in a partially-applied state.
+  # Local tag — never pushed by default git push.
+  git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
+  git -C "$PROJECT_DIR" tag draft-savepoint
+
   # Apply patches
-  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || return 1
+  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+    echo "Rolling back to savepoint..."
+    git -C "$PROJECT_DIR" reset --hard draft-savepoint
+    git -C "$PROJECT_DIR" tag -d draft-savepoint
+    return 1
+  }
 
   # Apply uncommitted.diff
-  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || return 1
+  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+    echo "Rolling back to savepoint..."
+    git -C "$PROJECT_DIR" reset --hard draft-savepoint
+    git -C "$PROJECT_DIR" tag -d draft-savepoint
+    return 1
+  }
+
+  # Success — clean up savepoint
+  git -C "$PROJECT_DIR" tag -d draft-savepoint
 
   # Summary
   local UC=""

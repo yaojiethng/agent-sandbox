@@ -63,6 +63,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 **Objective:** Establish the provider config lifecycle — onboarding-time population, seeding of provider-layer prompts/skills, and session history persistence — ensuring state survives between container restarts across all host filesystem types.
 
 **Work completed:**
+
 - Directory bind mount (M2.7) — session history persists via `sessions/` bind mount; `bin/` cross-device mv issue resolved by owning the directory in the image (see `providers/pi/provider.Dockerfile`) rather than tmpfs, which was removed for simplicity
 - Provider-layer prompts/skills seeded from `providers/<n>/config/agent/` via onboarding
 - Auth tokens stored as env var references in `auth.json` (ephemeral by design — security feature, prevents write-back of secret values)
@@ -114,8 +115,8 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 **Objective:** Complete the volume-based persistence model. The agent works in a Docker volume backed by the snapshot pipeline. Changes exported via diff pipeline. Volume survives stop/start. Maximum isolation from the host.
 
 - [x] **Volume prune** — `prune.sh` includes volumes (label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`). Docker prevents volume removal while any container references it — stopped container keeps volume until container ages out.
-- [x] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume discovery by sandbox-dir label. Volume locking prevents concurrent attachment. Interactive volume selector when multiple volumes exist under the same sandbox directory (multi-volume listing implemented, interactive picker deferred). Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
-- [ ] **Draft rollback on patch failure** — `make draft` applies a series of patches to a draft branch. If any patch fails partway through, the draft branch is left in a partially-applied state. Create a local tag savepoint before starting patch application; on failure, `git reset --hard <savepoint>` and delete the tag. Local tags don't push by default — no remote pollution. On success, delete the tag.
+- [x] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume discovery by sandbox-dir label. Volume locking prevents concurrent attachment. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
+- [x] **Draft rollback on patch failure** — `make draft` applies a series of patches to a draft branch. If any patch fails partway through, the draft branch is left in a partially-applied state. Create a local tag savepoint before starting patch application; on failure, `git reset --hard <savepoint>` and delete the tag. Local tags don't push by default — no remote pollution. On success, delete the tag.
 
 ##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
 

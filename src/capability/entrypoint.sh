@@ -99,7 +99,6 @@ if [[ -d "$SANDBOX_DIR/.git" ]]; then
     # SESSION_STATE may have identity values that don't match the current
     # env vars (set from .run-identity or freshly computed). Update to
     # match so that package_branch and diff_export use consistent identity.
-    _sr
     _sr=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
     if [[ -n "$_sr" && "$_sr" != "${RUN_ID:-}" ]]; then
       echo "Upgrade path: SESSION_STATE.run_id ($_sr) differs from RUN_ID (${RUN_ID:-}) — updating" >&2
@@ -274,16 +273,14 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      local _as_ts
       _as_ts=$(date -u +%Y%m%d-%H%M%S)
-      local _as_dir
       _as_dir=$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")
       mkdir -p "$_as_dir"
       echo "autosave: checkpoint started — ${_as_dir}" >&2
       if diff_export "$SANDBOX_DIR" "$_as_dir" "${RUN_ID:-}"; then
         echo "autosave: checkpoint SUCCESS — ${_as_dir}" >&2
       else
-        local _as_ec=$?
+        _as_ec=$?
         echo "autosave: checkpoint FAILED (exit $_as_ec) — ${_as_dir}" >&2
       fi
     done
