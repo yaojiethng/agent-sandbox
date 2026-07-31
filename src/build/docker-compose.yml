@@ -22,7 +22,8 @@
 # Named volume for sandbox state persistence — one per session.
 # Volume name incorporates RUN_ID so each session invocation gets its own
 # volume. Managed by compose lifecycle — preserved across `make stop` /
-# `make start`, destroyed on `make start REFRESH=1` or `docker compose down -v`.
+# `make start`. Destroyed by `docker compose down -v` or pruned via
+# `make prune --volumes`.
 # Labels enable lifecycle tooling (prune, inspect, volume discovery) without
 # project-name prefix parsing.
 volumes:
