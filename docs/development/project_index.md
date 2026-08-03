@@ -62,7 +62,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `investigation_hermes.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_pi.md` | 🟡 Warm | M1.5 | Not started. Resumes in M2. |
 | `investigation_workspace_input_channel.md` | 🟢 Cold | M1.5 | Resolved. Operator input channel implemented in M1.5. |
-| `design_diff_and_branch_packaging_workflow.md` | 🟡 Warm | M2.3 | Current design for diff pipeline and apply workflow. Supersedes prior apply_workflow_and_baseline_advancement design. |
+| `design_apply_draft_workflow.md` | 🟡 Warm | M2.6.5 | Unified design for diff packaging and apply/draft workflow. |
 
 ### Architecture (`docs/architecture/`)
 

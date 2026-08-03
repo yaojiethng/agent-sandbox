@@ -10,7 +10,7 @@ This document describes the model that keeps them in correspondence across three
 cases: live sandbox, stopped sandbox, and newly started sandbox.
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 — Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
-Reasoning record: [`design_diff_and_branch_packaging_workflow.md`](../discussions/design_diff_and_branch_packaging_workflow.md).
+Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
 
 ---
 
@@ -215,7 +215,6 @@ coordination becomes a real use case, it warrants a story at that time.
 
 | Document | Purpose |
 |---|---|
-| [`design_diff_and_branch_packaging_workflow.md`](../discussions/design_diff_and_branch_packaging_workflow.md) | Full design record — command shapes, implementation scope |
-| [`design_apply_workflow_and_baseline_advancement.md`](../discussions/design_apply_workflow_and_baseline_advancement.md) | Prior design record — preserved with SUPERSEDED markers |
+| [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | Full design record — export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |

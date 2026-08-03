@@ -30,7 +30,10 @@ reject_run() {
   eval "$DRAFT_VALIDATION"
 
   echo "Rejecting draft. Returning to $source_branch..."
-  git -C "$PROJECT_DIR" checkout "$source_branch"
+  if ! git -C "$PROJECT_DIR" checkout "$source_branch" 2>/dev/null; then
+    echo "Error: could not checkout $source_branch. Resolve working tree conflicts and retry." >&2
+    return 1
+  fi
 
   if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH" 2>/dev/null; then
     git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"

@@ -110,7 +110,7 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 - [x] Two-axis model settled (delivery: copy/mount × backing: user-provided `.git`). Security model reframed. Capability-layer git mediation retired. Raw project dir backing is a non-goal. Worktree backing rejected — see [ADR](../../docs/adr/20260730-adr-settled-worktree_rejection.md).
 - [x] Four pre-design investigations complete: extensibility audit, mount wiring survey, apply/draft unification, security model reframe.
 
-##### M2.6.5 — Copy Model: Volume-backed Sandbox (In progress)
+##### M2.6.5 — Copy Model: Volume-backed Sandbox (Complete)
 
 **Objective:** Complete the volume-based persistence model. The agent works in a Docker volume backed by the snapshot pipeline. Changes exported via diff pipeline. Volume survives stop/start. Maximum isolation from the host.
 

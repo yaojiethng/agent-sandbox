@@ -40,8 +40,17 @@ confirm_run() {
 
   # 1. Drop .draft-state commit (if found)
   if [[ -n "${DRAFT_STATE_COMMIT:-}" ]]; then
+    # Savepoint before rebase — roll back to this on failure.
+    # Local tag, never pushed by default git push.
+    git -C "$PROJECT_DIR" tag -d confirm-savepoint 2>/dev/null || true
+    git -C "$PROJECT_DIR" tag confirm-savepoint
+
     echo "Dropping .draft-state commit..."
     if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
+      echo "Rolling back to savepoint..." >&2
+      git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true
+      git -C "$PROJECT_DIR" reset --hard confirm-savepoint
+      git -C "$PROJECT_DIR" tag -d confirm-savepoint
       echo "Error: failed to drop .draft-state commit" >&2
       return 1
     fi
@@ -52,12 +61,20 @@ confirm_run() {
   # 2. Rebase draft onto target
   echo "Rebasing $CURRENT_BRANCH onto $MERGE_TARGET..."
   if ! git -C "$PROJECT_DIR" rebase "$MERGE_TARGET" "$CURRENT_BRANCH"; then
-    echo ""
-    echo "Conflict rebasing $CURRENT_BRANCH onto $MERGE_TARGET."
-    echo "Resolve conflicts, then run 'git rebase --continue', then 'make confirm'."
-    echo "To discard: 'git rebase --abort && make reject'."
+    echo "" >&2
+    echo "Conflict rebasing $CURRENT_BRANCH onto $MERGE_TARGET." >&2
+    echo "Resolve conflicts, then run 'git rebase --continue', then 'make confirm'." >&2
+    echo "To discard: 'git rebase --abort && make reject'." >&2
+    echo "" >&2
+    echo "Rolling back to savepoint..." >&2
+    git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true
+    git -C "$PROJECT_DIR" reset --hard confirm-savepoint
+    git -C "$PROJECT_DIR" tag -d confirm-savepoint
     return 1
   fi
+
+  # Success — clean up savepoint
+  git -C "$PROJECT_DIR" tag -d confirm-savepoint 2>/dev/null || true
 
   # 3. Fast-forward merge
   echo "Fast-forward merging $CURRENT_BRANCH into $MERGE_TARGET..."
