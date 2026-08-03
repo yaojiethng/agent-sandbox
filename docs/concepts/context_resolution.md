@@ -39,7 +39,7 @@ The codebase is organised into three deployment contexts. Each determines its id
 │  Constraint: cannot assume any host-only variable exists  │
 │                                                          │
 │  Files: session_state.sh, routing.sh, diff_export.sh,           │
-│         package_branch.sh, package_diff.sh, dirs.sh      │
+│         package_branch.sh, dirs.sh      │
 └─────────────────────┬───────────────────────────────────┘
                       │ sourced by (via self-resolution)
                       ▼
@@ -117,7 +117,7 @@ This works in both contexts because `BASH_SOURCE[0]` resolves to the file's actu
 
 All ambiguous-context files use the canonical variable name `_self_dir`. This was standardised from six different naming conventions (`_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)`).
 
-**Files in this layer:** `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `package_diff.sh`, `dirs.sh`
+**Files in this layer:** `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh`
 
 ### Container Context — Hardcoded paths
 
@@ -158,7 +158,7 @@ At the seam between host context and ambiguous-context libs, the host's variable
 | Host — workflow libs | `$AGENT_SANDBOX_REPO` (inherited) | Repo-root-relative paths | `draft.sh`, `confirm.sh`, `reject.sh`, `apply.sh`, `interactive.sh`, `guards.sh` |
 | Host — repo scripts | `$REPO_ROOT` (derived) | Repo-root-relative paths | `start_agent.sh`, `run_agent.sh`, `onboard.sh` |
 | Host — tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
-| Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `package_diff.sh`, `dirs.sh` |
+| Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
 
 ---

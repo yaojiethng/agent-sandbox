@@ -708,10 +708,6 @@ snapshot_init_git() { echo "init"; }
 set -euo pipefail
 git diff | grep -v index
 ' > "$FIXTURE/s6/libs/package_branch.sh"
-  echo '#!/usr/bin/env bash
-set -euo pipefail
-git diff | grep -v index
-' > "$FIXTURE/s6/libs/package_diff.sh"
 
   git -C "$FIXTURE/s6" add .
   git -C "$FIXTURE/s6" commit -m "initial state" --quiet

@@ -47,7 +47,6 @@ setup_mocks() {
     "reject.sh"
   )
   local libs=(
-    "package_diff.sh"
     "package_branch.sh"
   )
 
@@ -340,22 +339,6 @@ test_help_build() {
   fi
 }
 
-test_help_package_diff() {
-  setup
-  dispatch_and_capture help package-diff
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"package_diff.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "help package-diff: execs package_diff.sh --help"
-  else
-    fail "help package-diff: expected exec package_diff.sh --help, got: ${CAPTURED[*]}"
-  fi
-}
-
 test_help_unknown() {
   setup
   local output
@@ -578,26 +561,6 @@ test_onboard() {
   fi
 }
 
-test_package_diff() {
-  setup
-  # package-diff checks for .env at SANDBOX_DIR/.env — create it
-  mkdir -p /tmp/s
-  touch /tmp/s/.env
-  dispatch_and_capture package-diff --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"package_diff.sh"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "package-diff: execs package_diff.sh"
-  else
-    fail "package-diff: expected exec package_diff.sh, got: ${CAPTURED[*]}"
-  fi
-  rm -rf /tmp/s
-}
-
 test_package_branch() {
   setup
   dispatch_and_capture package-branch --sandbox=/tmp/s
@@ -684,13 +647,11 @@ run_test test_confirm_with_target
 run_test test_reject_default
 run_test test_stop
 run_test test_onboard
-run_test test_package_diff
 run_test test_package_branch
 run_test test_help_no_args
 run_test test_help_apply
 run_test test_help_draft
 run_test test_help_build
-run_test test_help_package_diff
 run_test test_help_unknown
 run_test test_unknown_subcommand
 run_test test_missing_subcommand

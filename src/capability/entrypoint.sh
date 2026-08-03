@@ -65,8 +65,7 @@ mkdir -p "$CHANGES_DIR"
 # (diff pipeline, routing) will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
 for entry in "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   if [[ ! -f "$LIB_DIR/$lib" ]]; then

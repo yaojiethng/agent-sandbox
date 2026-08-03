@@ -191,7 +191,7 @@ Every row must have a status. A row with status `deferred` or `not started` must
 
 **When a propagation replay is not required**, the pre-close summary covers: what was built, tests produced, AC status per criterion, and recommended manual checks.
 
-The operator releases this gate with an explicit forward signal (e.g. "proceed", "close the session"). A message that reviews output without a clear forward signal does not satisfy the exit condition. Packaging changes (e.g. `/package-diff`) does not release this gate — session-close actions do not begin until the operator explicitly confirms after testing.
+The operator releases this gate with an explicit forward signal (e.g. "proceed", "close the session"). A message that reviews output without a clear forward signal does not satisfy the exit condition. Packaging changes (e.g. `/package-branch`) does not release this gate — session-close actions do not begin until the operator explicitly confirms after testing.
 
 ### Gate 3
 

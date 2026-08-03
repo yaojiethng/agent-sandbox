@@ -133,11 +133,11 @@ Discards the current `draft/` branch, returns to the source branch. Artefacts un
 
 ---
 
-### `make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`
+### `make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`
 
-Host-side export. Packages uncommitted changes from `PROJECT_DIR` as `uncommitted.diff` + `changed-files/`. Delegates to `agent-sandbox package-diff`, which reads `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`.
+Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`.
 
-`ALL=1` packages all changes since session baseline (`all-changes.diff`). `BASELINE=<sha>` packages against an explicit SHA.
+`BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
 
 ---
 

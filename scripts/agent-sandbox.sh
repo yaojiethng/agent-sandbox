@@ -16,7 +16,6 @@
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
-#   agent-sandbox package-diff   --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--all|--baseline=<sha>]
 #   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--baseline=<sha>]
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
@@ -199,24 +198,6 @@ main() {
         "${PASSTHROUGH[@]}"
       ;;
 
-    package-diff)
-      parse_flags "$@"
-      if [[ -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --sandbox is required"
-        exit 1
-      fi
-
-      local ENV_FILE="$SANDBOX_DIR/.env"
-      if [[ ! -f "$ENV_FILE" ]]; then
-        echo "Error: .env not found in $SANDBOX_DIR" >&2
-        echo "  Run 'agent-sandbox onboard' first to create it." >&2
-        exit 1
-      fi
-
-      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_diff.sh" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
     package-branch)
       parse_flags "$@"
       if [[ -z "$SANDBOX_DIR" ]]; then
@@ -232,7 +213,7 @@ main() {
       if [[ -z "${1:-}" ]]; then
         echo "Usage: agent-sandbox <subcommand> [flags]"
         echo ""
-        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
+        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
         echo ""
         echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
         exit 0
@@ -246,8 +227,6 @@ main() {
           exec bash "$SCRIPTS/workflows/$SUB.sh" --help ;;
         start|serve|dry-run)
           exec bash "$SCRIPTS/start_agent.sh" --help ;;
-        package-diff)
-          exec bash "$AGENT_SANDBOX_REPO/src/libs/package_diff.sh" --help ;;
         package-branch)
           exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
         *)
@@ -258,7 +237,7 @@ main() {
 
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
-      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
+      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
       exit 1
       ;;
   esac

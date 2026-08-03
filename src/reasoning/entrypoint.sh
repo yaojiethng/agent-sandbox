@@ -129,7 +129,7 @@ unset PROVISION_TEMPLATE
 # session operations will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
 for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
-             "package_diff.sh:WARN" "diff.sh:WARN" "diff_export.sh:WARN" \
+             "diff.sh:WARN" "diff_export.sh:WARN" \
              "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"

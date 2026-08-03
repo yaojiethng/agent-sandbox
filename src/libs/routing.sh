@@ -22,8 +22,6 @@
 #   $CHANGES_DIR/autosave/<RUN_ID>/                  — autosave (single, overwritten)
 #   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<RUN_ID>/      — package_branch
 #   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/  — package_branch with label
-#   $OUTPUT_DIR/diffs/<EXPORT_TIME>-<RUN_ID>/        — package_diff
-#   $OUTPUT_DIR/diffs/<EXPORT_TIME>-<LABEL>-<RUN_ID>/    — package_diff with label
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
 # functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
@@ -64,7 +62,6 @@ _resolve_paths() {
 # Channel name    → Directory
 #   session       → $CHANGES_DIR/session
 #   autosave      → $CHANGES_DIR/autosave
-#   diffs         → $OUTPUT_DIR/diffs
 #   bundles       → $OUTPUT_DIR/bundles
 #
 # Returns 1 with error message to stderr for unknown channel names.
@@ -73,18 +70,17 @@ resolve_channel_base_dir() {
   case "$CHANNEL" in
     session)  echo "${CHANGES_DIR}/session" ;;
     autosave) echo "${CHANGES_DIR}/autosave" ;;
-    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
     bundles)  echo "${OUTPUT_DIR}/bundles" ;;
     *)
       echo "Error: unknown channel: $CHANNEL" >&2
-      echo "  Valid: session, autosave, diffs, bundles" >&2
+      echo "  Valid: session, autosave, bundles" >&2
       return 1
       ;;
   esac
 }
 
 # =============================================================================
-# Export path constructor (used by entrypoint, package_branch, package_diff)
+# Export path constructor (used by entrypoint and package_branch)
 # =============================================================================
 
 # export_path PARENT_DIR SUBDIR RUN_ID [LABEL]
@@ -98,7 +94,7 @@ resolve_channel_base_dir() {
 #
 # Args:
 #   PARENT_DIR  — base directory (CHANGES_DIR, OUTPUT_DIR, or INPUT_DIR)
-#   SUBDIR      — "session", "autosave", "bundles", or "diffs"
+#   SUBDIR      — "session", "autosave", or "bundles"
 #   RUN_ID      — mandatory 6-char session run hash
 #   LABEL       — optional human-readable descriptor; inserted before RUN_ID
 #                 when present. Not used for autosave.

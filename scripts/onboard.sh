@@ -195,7 +195,7 @@ _run_refresh() {
   echo "Refresh complete."
   echo ""
   echo "Template files updated to current versions."
-  echo "Use 'agent-sandbox package-diff' or 'make package-diff' for host-side exports."
+  echo "Use 'agent-sandbox package-branch' or 'make package-branch' for host-side exports."
   echo "Rebuild images to apply changes:"
   echo "  make -C $SANDBOX_DIR build"
 }

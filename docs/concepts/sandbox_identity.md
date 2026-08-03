@@ -146,7 +146,7 @@ host_head_sha=<40-char host HEAD SHA>
 run_id=<6-char session run ID>
 ```
 
-`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `run_id` is read by `package_branch` and `package_diff` to construct output paths consistent with the session's diff exports.
+`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `run_id` is read by `package_branch` to construct output paths consistent with the session's diff exports.
 
 ## Artefact Paths
 

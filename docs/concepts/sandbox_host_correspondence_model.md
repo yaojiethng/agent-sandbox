@@ -31,7 +31,7 @@ unified diffs participates in the model.
 | Primitive | Definition |
 |---|---|
 | **`init_sha`** (from SESSION_STATE) | SHA of the root (baseline) commit in the sandbox. Written once at container init to `.git/SESSION_STATE`, never updated. Defines the lower boundary for `package-branch` — all committed work after this commit belongs to the agent session. `session_ts` is written alongside it. |
-| **`package-diff` output** | Single unified diff of uncommitted working tree changes (`uncommitted.diff`), or all-changes since baseline (`all-changes.diff` with `--all`/`--baseline`). No git metadata. Applied with `git apply`. |
+| **`package-branch` output** | Numbered per-commit `.diff` files (`patches/`), uncommitted working tree changes (`uncommitted.diff`), all-changes since baseline (`all-changes.diff`), and `changed-files/`. All index lines stripped. Applied with `git apply`. |
 | **`package-branch` output** | Numbered series of unified diffs (`0001.diff`, `0002.diff`, ...), one per agent commit since `init_sha`, plus `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. On exit, written to `CHANGES_DIR/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` by the dispatcher. Overwrites on each run — always reflects full branch history since `init_sha`. |
 | **Draft branch** | `draft/<branch-name>` — temporary branch on the host. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
@@ -114,7 +114,7 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 use the same diff format and the same `make apply` command regardless of direction.
 
 - **Sandbox → host (mid-session checkpoint):** The autosave loop exports `uncommitted.diff`, `patches/`, and `changed-files/` under `autosave/<SESSION_TS>-<BRANCH>/`. Overwritten each tick. Operator runs `make apply FROM=autosave` (or `make apply --channel=autosave`) on the host, reviews, commits manually.
-- **Host → sandbox (amendment):** Operator packages a host change with `make package-diff` (host-side, writes to `INPUT_DIR`) and applies it inside the container via `bash .../package_diff.sh --to=$HOME/workspace/output`. Agent reviews and commits. The next `package-branch` includes this commit in the series.
+- **Host → sandbox (amendment):** Operator packages a host change with `make package-branch` (host-side, writes to `INPUT_DIR`). Agent reviews and commits. The next `package-branch` includes this commit in the series.
 - **Sandbox → host (committed work):** On container exit, `diff_export` writes `uncommitted.diff`, `all-changes.diff`, `patches/*.diff`, and `changed-files/` into `session/<SESSION_TS>-<BRANCH>/`. This runs automatically via the EXIT trap.
 
 **STOPPED — applying persisted artefacts**
@@ -163,9 +163,9 @@ directions and on both host and container.
 
 | Command | Available on | What it does |
 |---|---|---|
-| `bash .../package_diff.sh --to=<dir> [--all|--baseline=<sha>]` | Container | Packages uncommitted changes as `uncommitted.diff` + `changed-files/` under `<to>/diffs/<ts>-<label>/`. `--all` packages all-changes vs SESSION_STATE baseline. `--baseline=<sha>` against explicit SHA. |
+| `bash /opt/sandbox/lib/package_branch.sh --to=<dir>` | Container | Packages all artefacts (patches, uncommitted, all-changes, changed-files) into `<to>/bundles/<ts>[-<label>]-<runid>/`. |
 | `bash .../package_branch.sh --to=<dir> [--baseline=<sha>]` | Container | Packages all commits since `init_sha` as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/` under `<to>/bundles/<ts>-<label>/`. |
-| `agent-sandbox package-diff --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/diffs/<ts>-<label>/`. |
+
 | `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
 | `make apply [CHANNEL=<channel>] [DIFF=<path>] [INTERACTIVE=1]` | Host | Applies `uncommitted.diff` (resolved by router) uncommitted. Default: `diffs` channel. `DIFF=<path>` bypasses resolution. `INTERACTIVE=1` prompts through channel/session/diff-type picker. |
 | `make draft [CHANNEL=<channel>] [SESSION=<name>] [INTERACTIVE=1]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. `INTERACTIVE=1` prompts through channel/session picker. |
@@ -203,7 +203,7 @@ locations do not overlap and there is no shared application mechanism. No undefi
 behaviour remains.
 
 **Mixed session types across sessions:** Closed as explicitly out of scope. A project
-using both Claude Chat sessions (`package-diff` / `make apply`) and OpenCode sessions
+using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions
 (`package-branch` / `make draft`) against the same repo involves intentionally different
 workflows targeting different artefact channels. The harness makes no claim to coordinate
 across session types, and doing so is not intended behaviour. If cross-session-type

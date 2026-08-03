@@ -178,9 +178,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>` or `Running: make apply DIFF=<path>` for all-changes.diff). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
 
-**`make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`** — runs `agent-sandbox package-diff --sandbox=$(SANDBOX_DIR)`, which sources `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`. Default: packages uncommitted changes only. `ALL=1` packages all changes since session baseline. `BASELINE=<sha>` packages against explicit SHA.
-
-**`make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`** — runs `agent-sandbox package-branch`, which sources `.env` and writes to `INPUT_DIR/bundles/<ts>-<summary>/`.
+**`make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`** — runs `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`. Produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
 
 No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
 

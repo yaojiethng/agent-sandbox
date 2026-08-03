@@ -171,10 +171,9 @@ prune:
 # -------------------------
 #
 # CHANNELS:
-#   --channel=session  (draft default) — resolve from session-diffs/session/
-#   --channel=autosave                 — resolve from session-diffs/autosave/
-#   --channel=bundles  (draft only)    — resolve from output/bundles/
-#   --channel=diffs    (apply default) — resolve from output/diffs/
+#   --channel=session  (draft default, apply default) — resolve from session-diffs/session/
+#   --channel=autosave                                 — resolve from session-diffs/autosave/
+#   --channel=bundles  (draft only)                    — resolve from output/bundles/
 #
 # SHORTCUTS:
 #   make draft FROM=bundles  →  --channel=bundles
@@ -196,9 +195,9 @@ prune:
 #   make confirm TARGET_BRANCH=x         — merge to a different target branch
 #   make reject                          — discard draft branch, return to source branch
 #
-#   make apply                           — apply uncommitted changes (auto-resolves from output/diffs/)
+#   make apply                           — apply uncommitted changes (auto-resolves from session/)
 #   make apply SESSION=<name>            — apply from a named session under the channel directory
-#   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of output/diffs/
+#   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
 #   make apply DIFF=<path>               — apply a specific diff file (no session resolution needed)
 #   make apply BRANCH=<name>             — apply to a named branch
 #   make apply FORCE=1                   — apply with --reject; .rej files created for conflicts
@@ -230,7 +229,7 @@ reject:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
 
-APPLY_CHANNEL := $(if $(FROM),$(FROM),diffs)
+APPLY_CHANNEL := $(if $(FROM),$(FROM),session)
 
 apply:
 	agent-sandbox apply \
@@ -254,13 +253,6 @@ apply:
 # -------------------------
 # Package exports
 # -------------------------
-
-package-diff:
-	agent-sandbox package-diff \
-	  --sandbox=$(SANDBOX_DIR) \
-	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
-	  $(if $(ALL),--all,) \
-	  $(if $(BASELINE),--baseline=$(BASELINE),)
 
 package-branch:
 	agent-sandbox package-branch \

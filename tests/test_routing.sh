@@ -197,13 +197,13 @@ test_resolve_draft_invalid_channel() {
 
 test_resolve_apply_default_channel() {
   local SD="$FIXTURE_DIR/sandbox_a1"
-  mkdir -p "$SD/.workspace/output/diffs/20260408-120000-snapshot-abc"
-  echo "diff content" > "$SD/.workspace/output/diffs/20260408-120000-snapshot-abc/uncommitted.diff"
+  mkdir -p "$SD/.workspace/session-diffs/session/20260408-120000-run001"
+  echo "diff content" > "$SD/.workspace/session-diffs/session/20260408-120000-run001/uncommitted.diff"
 
   local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "diffs" "") || { fail "resolve_diff_for_apply failed"; return; }
+  RESULT=$(resolve_diff_for_apply "$SD" "session" "") || { fail "resolve_diff_for_apply failed"; return; }
   if [[ "$RESULT" == *"uncommitted.diff" ]] && [[ -f "$RESULT" ]]; then
-    pass "resolve_diff_for_apply: default channel resolves uncommitted.diff"
+    pass "resolve_diff_for_apply: session channel resolves uncommitted.diff"
   else
     fail "resolve_diff_for_apply: expected uncommitted.diff, got $RESULT"
   fi
@@ -239,12 +239,12 @@ test_resolve_apply_session_channel() {
 
 test_resolve_apply_named_session() {
   local SD="$FIXTURE_DIR/sandbox_a4"
-  mkdir -p "$SD/.workspace/output/diffs/my-session"
-  echo "diff content" > "$SD/.workspace/output/diffs/my-session/uncommitted.diff"
+  mkdir -p "$SD/.workspace/session-diffs/session/my-session"
+  echo "diff content" > "$SD/.workspace/session-diffs/session/my-session/uncommitted.diff"
 
   local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "diffs" "my-session") || { fail "resolve_diff_for_apply named failed"; return; }
-  if [[ "$RESULT" == "$SD/.workspace/output/diffs/my-session/uncommitted.diff" ]]; then
+  RESULT=$(resolve_diff_for_apply "$SD" "session" "my-session") || { fail "resolve_diff_for_apply named failed"; return; }
+  if [[ "$RESULT" == "$SD/.workspace/session-diffs/session/my-session/uncommitted.diff" ]]; then
     pass "resolve_diff_for_apply: named session resolves full path"
   else
     fail "resolve_diff_for_apply named: expected .../my-session/uncommitted.diff, got $RESULT"
@@ -325,18 +325,7 @@ test_resolve_channel_base_dir_autosave() {
   fi
 }
 
-test_resolve_channel_base_dir_diffs() {
-  local SD="$FIXTURE_DIR/routing_c3"
-  mkdir -p "$SD/.workspace"
-  dirs_resolve "$SD"
-  local RESULT
-  RESULT=$(resolve_channel_base_dir "diffs") || { fail "resolve_channel_base_dir diffs failed"; return; }
-  if [[ "$RESULT" == "${OUTPUT_DIR}/diffs" ]]; then
-    pass "resolve_channel_base_dir: diffs → OUTPUT_DIR/diffs"
-  else
-    fail "resolve_channel_base_dir diffs: expected ${OUTPUT_DIR}/diffs, got $RESULT"
-  fi
-}
+
 
 test_resolve_channel_base_dir_bundles() {
   local SD="$FIXTURE_DIR/routing_c4"
@@ -390,7 +379,6 @@ run_test test_resolve_apply_invalid_channel
 run_test test_resolve_apply_no_sessions
 run_test test_resolve_channel_base_dir_session
 run_test test_resolve_channel_base_dir_autosave
-run_test test_resolve_channel_base_dir_diffs
 run_test test_resolve_channel_base_dir_bundles
 run_test test_resolve_channel_base_dir_invalid
 

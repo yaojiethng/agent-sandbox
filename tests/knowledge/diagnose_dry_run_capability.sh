@@ -32,8 +32,7 @@ echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
 # Files required at startup are CRITICAL (must exist).
 # Files used later in the session are WARN (missing = stale image).
 for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"

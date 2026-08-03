@@ -122,7 +122,6 @@ Temperature reflects the stability of what a document describes — not how care
 | `snapshot.sh` | 🟢 Cold | M2.3 | Snapshot pipeline functions. Sourced by start_agent.sh and container-entrypoint.sh. |
 | `diff_export.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
-| `package_diff.sh` | 🟢 Cold | M2.3 | Package diffs for apply workflow. Reads init_sha from SESSION_STATE. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
 | `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
 | `build.sh` | 🟡 Warm | M2.7 | Build orchestration: `build_agent`, `build_sandbox`, `preflight`. Uses repo root as Docker build context. |
@@ -143,7 +142,6 @@ Temperature reflects the stability of what a document describes — not how care
 | `test_interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection tests: confirm/abort, channel picker, session picker, diff type picker (25 tests). |
 | `test_build_context.sh` | 🟡 Warm | M2.7 | COPY contract tests: asserts every Dockerfile COPY source exists at its repo-relative path. |
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
-| `test_package_diff.sh` | 🟢 Cold | M2.3 | Tests `package_diff` uncommitted-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
 | `test_session-state.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
 | `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
@@ -154,7 +152,6 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `package-diff.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-diff`. Documents uncommitted change packaging. |
 | `package-branch.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-branch`. Documents committed branch history packaging. |
 
 ### Providers (`providers/`)

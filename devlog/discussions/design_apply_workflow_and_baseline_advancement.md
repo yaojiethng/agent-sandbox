@@ -310,7 +310,7 @@ requirement.
 
 | Document | Purpose |
 |---|---|
-| [`story_diff_pipeline_unification_and_baseline_advancement.md`](story_diff_pipeline_unification_and_baseline_advancement.md) | Resolved — design recorded here |
+| [`design_remove_package_diff.md`](design_remove_package_diff.md) | Resolved — consolidated design; `story_diff_pipeline_unification.md` superseded |
 | [`story_parallel_sessions_worktree.md`](story_parallel_sessions_worktree.md) | Resolved pending Change 5 implementation |
 | [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) | Two-sig model; M2.7 scope |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; baseline commit construction |

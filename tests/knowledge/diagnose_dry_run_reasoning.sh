@@ -32,7 +32,7 @@ echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
 # session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
 # The remaining files are WARN — used later in the session or conditionally.
 for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "diff.sh:WARN" "diff_export.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"

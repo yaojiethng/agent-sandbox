@@ -47,8 +47,7 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 Each session is independent. The prior session's git history is not available (container is ephemeral). The session starts from the project's committed HEAD.
 
 Tools you have access to:
-- `/package-branch` — export committed changes as numbered diffs
-- `/package-diff` — export a single diff for review
+- `/package-branch` — export committed changes as numbered diffs, uncommitted diff, and changed files
 - Standard development tools (git, bash, common CLI utilities)
 
 ## Fresh Subagent Invocation
