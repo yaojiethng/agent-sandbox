@@ -85,21 +85,23 @@ The two-step design ensures all four working tree states are handled correctly:
             Container: .git present → skip snapshot_validate + snapshot_init_git
 ```
 
-The `.run-identity` file (written to `$SANDBOX_DIR/.run-identity` at first start) is the single point of detection for resume vs fresh init. If the file exists and `REFRESH` is not set, the copy pipeline is skipped and identity values (`SESSION_TS`, `RUN_ID`, `HOST_HEAD_SHA`, `SANDBOX_ID`) are read from it instead of recomputed. `REFRESH=1` deletes `.run-identity` and forces a fresh init.
+The `.run-identity` file (written to `$SANDBOX_DIR/.run-identity` at session start) records the session identity. It is always overwritten — for new sessions with fresh identity values, and for resumed sessions with values read from the volume's Docker labels.
 
-**Planned — multi-volume model (M2.6.5):**
+**Session start (M2.6.5):**
 
 ```
-Volumes exist for sandbox dir?
-  ├── 0 → normal init (compute identity, create volume, copy pipeline)
-  ├── 1 → resume that volume (current behavior)
-  └── 2+ → interactive selector
-           └── operator picks volume or "new session"
-               Volumes whose host-head-sha label ≠ current HEAD
-               are flagged [STALE].
+--resume passed?
+  ├── No → new session (default). Compute fresh identity, reset volume.
+  └── Yes → discover volumes for sandbox dir:
+            ├── 0 → new session (no volumes to resume)
+            ├── 1 → resume that volume
+            └── 2+ → interactive selector
+                     └── operator picks volume or "new session"
+                         Volumes whose host-head-sha label ≠ current HEAD
+                         are flagged [STALE].
 ```
 
-See [Design — Copy Model](../../devlog/discussions/20260730-design-settled-copy_model.md).
+`--refresh` always forces a new session even when combined with `--resume`.
 
 ---
 

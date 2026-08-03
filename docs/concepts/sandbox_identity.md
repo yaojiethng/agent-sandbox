@@ -124,7 +124,7 @@ Harness-sig (runtime drift detection for the harness binary itself) is deferred 
 
 ## `.run-identity` (persistence file)
 
-Written to `$SANDBOX_DIR/.run-identity` at first start. Read on resume to ensure host-side env vars match the volume's SESSION_STATE. Deleted on `REFRESH=1`.
+Written to `$SANDBOX_DIR/.run-identity` at every session start — with fresh identity for new sessions, and with values from volume labels for resumed sessions. Ensures host-side env vars match the volume's SESSION_STATE.
 
 ```
 SESSION_TS=20260622-104203

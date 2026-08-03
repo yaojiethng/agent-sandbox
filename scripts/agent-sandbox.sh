@@ -146,7 +146,7 @@ main() {
         echo "Error: --name and --sandbox are required"
         exit 1
       fi
-      exec "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+      exec "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     apply)

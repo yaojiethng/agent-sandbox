@@ -55,6 +55,7 @@ ENV_REL=".env"
 PROVIDER_NAME=""
 REFRESH=false
 REBUILD=false
+RESUME=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -66,6 +67,7 @@ for ARG in "$@"; do
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     --refresh)    REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
+    --resume)     RESUME=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -186,10 +188,15 @@ fi
 # Volume discovery functions
 # -------------------------
 discover_volumes() {
+  # Emit "session-ts|volume-name", sort descending by timestamp, extract names.
+  # docker volume ls has no sort flag; sorting on the label value requires
+  # emitting it into the format string alongside the name.
   docker volume ls \
     --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" \
     --filter "label=agent-sandbox.session-ts" \
-    --format '{{.Name}}' 2>/dev/null || true
+    --format '{{index .Labels "agent-sandbox.session-ts"}}|{{.Name}}' 2>/dev/null \
+    | sort -r \
+    | cut -d'|' -f2 || true
 }
 
 volume_label() {
@@ -216,29 +223,71 @@ volume_in_use() {
 
 RUN_IDENTITY="$SANDBOX_DIR/.run-identity"
 
-if [[ "${REFRESH:-false}" == "true" ]]; then
-  # Force new session — start fresh alongside existing volumes.
-  # Volumes from old sessions persist until pruned.
-  echo "Refresh requested — starting new session"
+_new_session_identity() {
+  # Compute fresh identity and write .run-identity.
+  # Called for both default new-session and --refresh paths.
+  RESUME_SESSION=false
   rm -f "$RUN_IDENTITY"
 
-  RESUME_SESSION=false
-
-  # Compute fresh identity
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
   export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 
-  # Write .run-identity
   {
     echo "SESSION_TS=${SESSION_TS}"
     echo "RUN_ID=${RUN_ID}"
     echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
     echo "SANDBOX_ID=${SANDBOX_ID}"
   } > "$RUN_IDENTITY"
-else
-  # Discover existing volumes for this sandbox directory
+}
+
+_resume_from_volume() {
+  # Read identity from a volume (passed as $1) and set up resume state.
+  # Exits with error if the volume lacks identity labels.
+  local vol="$1"
+
+  # Volume locking check
+  if volume_in_use "$vol"; then
+    echo "Error: volume $vol is in use by another session."
+    echo "  Stop the active session first: make stop"
+    exit 1
+  fi
+
+  export SESSION_TS; SESSION_TS=$(volume_label "$vol" "agent-sandbox.session-ts")
+  export RUN_ID; RUN_ID=$(volume_label "$vol" "agent-sandbox.run-id")
+  export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$vol" "agent-sandbox.host-head-sha")
+
+  if [[ -z "$SESSION_TS" || -z "$RUN_ID" ]]; then
+    echo "Error: volume $vol has no session identity labels."
+    echo "  The volume may be from an older harness version."
+    echo "  Remove it and start fresh: make start"
+    exit 1
+  fi
+
+  export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
+
+  if volume_is_stale "$vol"; then
+    echo "Warning: project HEAD has moved since this session started."
+    echo "  The container may be out of date. Start fresh with 'make start'."
+  fi
+
+  {
+    echo "SESSION_TS=${SESSION_TS}"
+    echo "RUN_ID=${RUN_ID}"
+    echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
+    echo "SANDBOX_ID=${SANDBOX_ID}"
+  } > "$RUN_IDENTITY"
+
+  RESUME_SESSION=true
+  echo "Resuming session — volume: $vol"
+}
+
+if [[ "${REFRESH:-false}" == "true" ]]; then
+  echo "Refresh requested — starting new session"
+  _new_session_identity
+elif [[ "${RESUME:-false}" == "true" ]]; then
+  # --resume: discover existing volumes and offer picker
   VOLUMES=()
   while IFS= read -r vol; do
     [[ -n "$vol" ]] && VOLUMES+=("$vol")
@@ -247,65 +296,10 @@ else
   VOLUME_COUNT="${#VOLUMES[@]}"
 
   if [[ "$VOLUME_COUNT" -eq 0 ]]; then
-    # No existing volumes — new session
-    RESUME_SESSION=false
     echo "No existing sessions — starting new session"
-
-    export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
-    export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-    export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-    export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
-
-    {
-      echo "SESSION_TS=${SESSION_TS}"
-      echo "RUN_ID=${RUN_ID}"
-      echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-      echo "SANDBOX_ID=${SANDBOX_ID}"
-    } > "$RUN_IDENTITY"
-
+    _new_session_identity
   elif [[ "$VOLUME_COUNT" -eq 1 ]]; then
-    # Single volume — resume
-    TARGET_VOL="${VOLUMES[0]}"
-
-    # Volume locking check
-    if volume_in_use "$TARGET_VOL"; then
-      echo "Error: volume $TARGET_VOL is in use by another session."
-      echo "  Stop the active session first: make stop"
-      exit 1
-    fi
-
-    # Read identity from volume labels
-    export SESSION_TS; SESSION_TS=$(volume_label "$TARGET_VOL" "agent-sandbox.session-ts")
-    export RUN_ID; RUN_ID=$(volume_label "$TARGET_VOL" "agent-sandbox.run-id")
-    export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$TARGET_VOL" "agent-sandbox.host-head-sha")
-
-    if [[ -z "$SESSION_TS" || -z "$RUN_ID" ]]; then
-      echo "Error: volume $TARGET_VOL has no session identity labels."
-      echo "  The volume may be from an older harness version."
-      echo "  Remove it and start fresh: make start REFRESH=1"
-      exit 1
-    fi
-
-    # Derive SANDBOX_ID from HOST_HEAD_SHA (consistent with original derivation)
-    export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-
-    # Check staleness
-    if volume_is_stale "$TARGET_VOL"; then
-      echo "Warning: project HEAD has moved since this session started."
-      echo "  The container may be out of date. Use REFRESH=1 to start fresh."
-    fi
-
-    # Write .run-identity for backward compat
-    {
-      echo "SESSION_TS=${SESSION_TS}"
-      echo "RUN_ID=${RUN_ID}"
-      echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-      echo "SANDBOX_ID=${SANDBOX_ID}"
-    } > "$RUN_IDENTITY"
-
-    RESUME_SESSION=true
-    echo "Resuming session — volume: $TARGET_VOL"
-
+    _resume_from_volume "${VOLUMES[0]}"
   else
     # Multiple volumes — interactive selector
     echo ""
@@ -328,7 +322,6 @@ else
     printf "  %d) [start new session]\n" "$NEW_OPTION"
     echo ""
 
-    # Read selection
     SELECTION=""
     while [[ -z "$SELECTION" ]]; do
       printf "Select (1-%d): " "$NEW_OPTION"
@@ -342,60 +335,15 @@ else
     done
 
     if [[ "$SELECTION" -eq "$NEW_OPTION" ]]; then
-      # Start new session
-      RESUME_SESSION=false
       echo "Starting new session"
-
-      export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
-      export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-      export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-      export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
-
-      {
-        echo "SESSION_TS=${SESSION_TS}"
-        echo "RUN_ID=${RUN_ID}"
-        echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-        echo "SANDBOX_ID=${SANDBOX_ID}"
-      } > "$RUN_IDENTITY"
+      _new_session_identity
     else
-      # Resume selected volume — same logic as single-volume resume
-      TARGET_VOL="${VOLUMES[$((SELECTION - 1))]}"
-
-      if volume_in_use "$TARGET_VOL"; then
-        echo "Error: volume $TARGET_VOL is in use by another session."
-        echo "  Stop the active session first: make stop"
-        exit 1
-      fi
-
-      export SESSION_TS; SESSION_TS=$(volume_label "$TARGET_VOL" "agent-sandbox.session-ts")
-      export RUN_ID; RUN_ID=$(volume_label "$TARGET_VOL" "agent-sandbox.run-id")
-      export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$TARGET_VOL" "agent-sandbox.host-head-sha")
-
-      if [[ -z "$SESSION_TS" || -z "$RUN_ID" ]]; then
-        echo "Error: volume $TARGET_VOL has no session identity labels."
-        echo "  The volume may be from an older harness version."
-        echo "  Remove it and start fresh: make start REFRESH=1"
-        exit 1
-      fi
-
-      export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-
-      if volume_is_stale "$TARGET_VOL"; then
-        echo "Warning: project HEAD has moved since this session started."
-        echo "  The container may be out of date. Use REFRESH=1 to start fresh."
-      fi
-
-      {
-        echo "SESSION_TS=${SESSION_TS}"
-        echo "RUN_ID=${RUN_ID}"
-        echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-        echo "SANDBOX_ID=${SANDBOX_ID}"
-      } > "$RUN_IDENTITY"
-
-      RESUME_SESSION=true
-      echo "Resuming session — volume: $TARGET_VOL"
+      _resume_from_volume "${VOLUMES[$((SELECTION - 1))]}"
     fi
   fi
+else
+  # Default: new session (no --resume, no --refresh)
+  _new_session_identity
 fi
 
 # -------------------------
@@ -480,7 +428,12 @@ preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
 # RESET_VOLUME is forwarded when --refresh or --rebuild is set, signalling
 # run_agent.sh to destroy the existing volume before starting new containers.
 RESET_VOLUME_FLAG=""
-[[ "${REFRESH:-false}" == "true" || "${REBUILD:-false}" == "true" ]] && RESET_VOLUME_FLAG="--reset-volume"
+if [[ "${REFRESH:-false}" == "true" || "${REBUILD:-false}" == "true" ]]; then
+  RESET_VOLUME_FLAG="--reset-volume"
+elif [[ "$RESUME_SESSION" != true ]]; then
+  # Default new-session path also resets the volume (fresh start).
+  RESET_VOLUME_FLAG="--reset-volume"
+fi
 
 exec "$SCRIPT_DIR/run_agent.sh" "$MODE" \
   --name="$PROJECT_NAME" \

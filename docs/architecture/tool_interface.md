@@ -31,24 +31,27 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Commands
 
-### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
+### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [--resume]`
 
 Stops any running session for this project, builds missing images if needed, snapshots the project, and starts the agent. The terminal attaches to the agent TUI.
 
-`PROVIDER` is required. `REFRESH=1` or `REBUILD=1` are optional:
+**Default behaviour:** always starts a new session with a fresh volume.
+
+`PROVIDER` is required. Optional flags:
 - `REFRESH=1` — rebuilds sandbox and provider images; base image is reused if it exists.
 - `REBUILD=1` — rebuilds everything from scratch including the base image. Supersedes `REFRESH=1` if both are set.
-Without either flag, images are built only if missing.
+- `--resume` — discover existing volumes for the sandbox directory and resume the most recent (or show a picker if multiple exist).
+Without REFRESH or REBUILD, images are built only if missing.
 
 **Leaves behind:** `session/` and `autosave/` subfolders in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`; updated provider session state in `.<provider>/`.
 
 ---
 
-### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
+### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [--resume]`
 
 Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
 
-`PROVIDER` is required. `REFRESH=1` and `REBUILD=1` behave identically to `make start`.
+`PROVIDER` is required. All flags behave identically to `make start`.
 
 ---
 
