@@ -199,19 +199,19 @@ fi
 source /opt/sandbox/lib/diff_export.sh
 source /opt/sandbox/lib/routing.sh
 
-# _session_export SANDBOX_DIR CHANGES_DIR SESSION_TS BRANCH RUN_ID
+# _session_export SANDBOX_DIR CHANGES_DIR RUN_ID
 # Runs the final session export on container exit.
 # 1. Waits for git lockfile to settle (autosave may have been mid-operation)
-# 2. Runs diff_export to the session export path
+# 2. Runs diff_export to the session export path (session/<EXPORT_TIME>-<RUN_ID>/)
 # 3. On failure, falls back to the most recent autosave if one exists
 # 4. Writes .export-status in both the session dir and CHANGES_DIR root
 _session_export() {
-  local _sandbox_dir="$1" _changes_dir="$2" _session_ts="$3" _branch="$4" _run_id="$5"
+  local _sandbox_dir="$1" _changes_dir="$2" _run_id="$3"
 
   wait_git_lockfile "$_sandbox_dir"
 
   local _exit_dir
-  _exit_dir=$(session_export_path "$_changes_dir" "session" "$_session_ts" "$_branch" "$_run_id")
+  _exit_dir=$(export_path "$_changes_dir" "session" "$_run_id")
   mkdir -p "$_exit_dir"
 
   if diff_export "$_sandbox_dir" "$_exit_dir" "$_run_id"; then
@@ -243,13 +243,13 @@ _session_export() {
 # On exit: kill autosave subshell if running, wait for git lockfile to settle,
 # then write session export via _session_export.
 #
-# Uses session_export_path from routing.sh to construct the output path
-# under CHANGES_DIR/session/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then calls
+# Uses export_path from routing.sh to construct the output path
+# under CHANGES_DIR/session/<EXPORT_TIME>-<RUN_ID>/, then calls
 # diff_export which delegates to package_branch.
 #
 # If diff_export fails, falls back to the most recent autosave.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     _session_export "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}"' EXIT
+     _session_export "$SANDBOX_DIR" "$CHANGES_DIR" "${RUN_ID:-}"' EXIT
 
 # On SIGTERM (docker stop): exit cleanly so EXIT trap fires with code 0.
 # Without this, SIGTERM interrupts wait and bash exits with 128+15=143,
@@ -260,11 +260,10 @@ trap 'exit 0' TERM
 # -------------------------
 # Optional autosave loop
 # -------------------------
-# Writes autosave checkpoint on interval without committing — provides
-# incremental checkpoints during a session without disturbing the baseline
-# diff. Uses session_export_path from routing.sh to construct the output
-# path under CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then
-# calls diff_export which delegates to package_branch.
+# Writes a single autosave checkpoint per session, overwritten on each
+# cycle. Uses export_path from routing.sh — autosave/<RUN_ID>/ (no
+# EXPORT_TIME in the path). Before writing, rm -rf the old directory
+# so only the latest checkpoint is retained.
 # PID is tracked so the EXIT trap can kill the subshell cleanly on shutdown.
 #
 # Every save attempt is logged to stderr (visible via docker logs).
@@ -273,8 +272,8 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
   (
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
-      _as_ts=$(date -u +%Y%m%d-%H%M%S)
-      _as_dir=$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")
+      _as_dir=$(export_path "$CHANGES_DIR" "autosave" "${RUN_ID:-}")
+      rm -rf "$_as_dir"
       mkdir -p "$_as_dir"
       echo "autosave: checkpoint started — ${_as_dir}" >&2
       if diff_export "$SANDBOX_DIR" "$_as_dir" "${RUN_ID:-}"; then

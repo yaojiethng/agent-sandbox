@@ -4,24 +4,26 @@
 # Path layout conventions and routing functions for agent-sandbox.
 #
 # Provides:
-#   session_export_path     — construct export paths under CHANGES_DIR
-#   output_export_path      — construct export paths under OUTPUT_DIR / INPUT_DIR
+#   export_path              — unified export path constructor (replaces session_export_path
+#                              and output_export_path)
 #   resolve_source_for_draft  — resolve a source directory for draft operations
 #   resolve_diff_for_apply    — resolve a diff file for apply operations
 #
-# Session-diffs layout:
-#   $CHANGES_DIR/session/<SESSION_TS>-<BRANCH>[-<RUN_ID>]/     — exit exports
-#     uncommitted.diff, all-changes.diff, EXPORT-TIME.txt, patches/, changed-files/
-#   $CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>[-<RUN_ID>]/    — autosave checkpoints
-#     uncommitted.diff, all-changes.diff, EXPORT-TIME.txt, patches/, changed-files/
+# Export path convention:
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<RUN_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<RUN_ID>/
 #
-# Output layout (shared by package_branch and package_diff):
-#   $OUTPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/  — package_branch
-#   $OUTPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/    — package_diff
+#   EXPORT_TIME = date -u at invocation time
+#   RUN_ID       = mandatory 6-char session run hash
+#   LABEL        = optional human-readable descriptor
 #
-# Host-side input layout (symmetric, for host→container writes):
-#   $INPUT_DIR/bundles/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/   — host writes
-#   $INPUT_DIR/diffs/<TIMESTAMP>-<LABEL>[-<RUN_ID>]/     — host writes
+# Layout:
+#   $CHANGES_DIR/session/<EXPORT_TIME>-<RUN_ID>/     — exit exports
+#   $CHANGES_DIR/autosave/<RUN_ID>/                  — autosave (single, overwritten)
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<RUN_ID>/      — package_branch
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/  — package_branch with label
+#   $OUTPUT_DIR/diffs/<EXPORT_TIME>-<RUN_ID>/        — package_diff
+#   $OUTPUT_DIR/diffs/<EXPORT_TIME>-<LABEL>-<RUN_ID>/    — package_diff with label
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
 # functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
@@ -82,94 +84,67 @@ resolve_channel_base_dir() {
 }
 
 # =============================================================================
-# Session-export paths (used by entrypoint exit/autosave and CLI resolvers)
+# Export path constructor (used by entrypoint, package_branch, package_diff)
 # =============================================================================
 
-# session_export_path CHANGES_DIR SUBDIR SESSION_TS BRANCH [RUN_ID]
+# export_path PARENT_DIR SUBDIR RUN_ID [LABEL]
 #
-# Constructs the export output directory path for an auto-run (exit or autosave).
+# Unified export path constructor. Replaces session_export_path and
+# output_export_path. All paths anchored on export-time wall clock.
+#
+# Convention:
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<RUN_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<RUN_ID>/
 #
 # Args:
-#   CHANGES_DIR  — base changes directory (e.g. /home/agentuser/workspace/session-diffs)
-#   SUBDIR       — "session" or "autosave"
-#   SESSION_TS   — session timestamp (e.g. 20260408-120000)
-#   BRANCH       — sanitized host branch name (e.g. main)
-#   RUN_ID       — optional 6-char run hash (appended as suffix)
+#   PARENT_DIR  — base directory (CHANGES_DIR, OUTPUT_DIR, or INPUT_DIR)
+#   SUBDIR      — "session", "autosave", "bundles", or "diffs"
+#   RUN_ID      — mandatory 6-char session run hash
+#   LABEL       — optional human-readable descriptor; inserted before RUN_ID
+#                 when present. Not used for autosave.
 #
-# Returns: absolute path to the export directory
+# Autosave is special: no EXPORT_TIME in the path (single directory, overwritten).
+#   export_path "$CHANGES_DIR" "autosave" "a1b2c3"
+#   → /.../session-diffs/autosave/a1b2c3
 #
-# Examples:
-#   session_export_path "/home/agentuser/workspace/session-diffs" "session" "20260408-120000" "main" "a1b2c3"
-#   → /home/agentuser/workspace/session-diffs/session/20260408-120000-main-a1b2c3
+# All other subdirs include EXPORT_TIME:
+#   export_path "$CHANGES_DIR" "session" "a1b2c3"
+#   → /.../session-diffs/session/20260408-120000-a1b2c3
 #
-#   session_export_path "/home/agentuser/workspace/session-diffs" "session" "20260408-120000" "main"
-#   → /home/agentuser/workspace/session-diffs/session/20260408-120000-main (backward compat)
-session_export_path() {
-  local CHANGES_DIR="$1"
-  local SUBDIR="$2"
-  local SESSION_TS="$3"
-  local BRANCH="$4"
-  local RUN_ID="${5:-}"
-
-  if [[ -z "$CHANGES_DIR" || -z "$SUBDIR" || -z "$SESSION_TS" || -z "$BRANCH" ]]; then
-    echo "session_export_path: CHANGES_DIR, SUBDIR, SESSION_TS, and BRANCH are required" >&2
-    return 1
-  fi
-
-  local base="${CHANGES_DIR}/${SUBDIR}/${SESSION_TS}-${BRANCH}"
-  if [[ -n "$RUN_ID" ]]; then
-    echo "${base}-${RUN_ID}"
-  else
-    echo "$base"
-  fi
-}
-
-# =============================================================================
-# Output export paths (used by package_branch.sh and package_diff.sh)
-# =============================================================================
-
-# output_export_path PARENT_DIR SUBDIR LABEL [RUN_ID]
-#
-# Constructs a timestamped export path under a parent directory.
-#
-# Args:
-#   PARENT_DIR   — base directory (OUTPUT_DIR or INPUT_DIR, resolved by caller)
-#   SUBDIR       — "bundles" or "diffs"
-#   LABEL        — descriptive label (e.g. "snapshot", or agent-provided summary)
-#   RUN_ID       — optional 6-char run hash (appended as suffix, replaces SESSION_TS)
-#
-# Returns: absolute path to the export directory (creates parent dirs)
-#
-# Examples:
-#   output_export_path "/home/agentuser/workspace/output" "diffs" "snapshot" "a1b2c3"
-#   → /home/agentuser/workspace/output/diffs/20260504-120000-snapshot-a1b2c3
-#
-#   output_export_path "/home/agentuser/workspace/output" "bundles" "my-feature"
-#   → /home/agentuser/workspace/output/bundles/20260504-120000-my-feature
-output_export_path() {
+#   export_path "$OUTPUT_DIR" "bundles" "a1b2c3" "my-feature"
+#   → /.../output/bundles/20260408-120000-my-feature-a1b2c3
+export_path() {
   local PARENT_DIR="$1"
   local SUBDIR="$2"
-  local LABEL="$3"
-  local RUN_ID="${4:-}"
+  local RUN_ID="$3"
+  local LABEL="${4:-}"
 
-  if [[ -z "$PARENT_DIR" || -z "$SUBDIR" || -z "$LABEL" ]]; then
-    echo "output_export_path: PARENT_DIR, SUBDIR, and LABEL are required" >&2
+  if [[ -z "$PARENT_DIR" || -z "$SUBDIR" || -z "$RUN_ID" ]]; then
+    echo "export_path: PARENT_DIR, SUBDIR, and RUN_ID are required" >&2
     return 1
   fi
 
   local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
 
-  local OUTDIR
-  if [[ -n "$RUN_ID" ]]; then
-    OUTDIR="${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${RUN_ID}"
-  else
-    OUTDIR="${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}"
+  # Autosave: no EXPORT_TIME in path — single directory, overwritten each cycle
+  if [[ "$SUBDIR" == "autosave" ]]; then
+    echo "${PARENT_DIR}/autosave/${RUN_ID}"
+    return 0
   fi
 
-  mkdir -p "$OUTDIR"
-  echo "$OUTDIR"
+  if [[ -n "$LABEL" ]]; then
+    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${RUN_ID}"
+  else
+    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${RUN_ID}"
+  fi
 }
+
+# =============================================================================
+# Channel resolution
+# =============================================================================
+
+
 
 # =============================================================================
 # Directory resolution

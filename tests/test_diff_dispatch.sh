@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Tests for entrypoint diff dispatch: session_export_path + diff_export.
+# Tests for entrypoint diff dispatch: export_path + diff_export.
 #
 # These tests simulate what sandbox-entrypoint.sh does: construct an export
-# path via session_export_path, then call diff_export.
+# path via export_path, then call diff_export.
 #
 # Sources libs/diff.sh and libs/routing.sh for function access.
 
@@ -154,7 +154,7 @@ test_diff_export_missing_session_state() {
 }
 
 # ===================================================================
-# session_export_path + diff_export (entrypoint simulation)
+# export_path + diff_export (entrypoint simulation)
 # ===================================================================
 
 test_session_path_exit_export() {
@@ -165,19 +165,19 @@ test_session_path_exit_export() {
 
   local CHANGES_DIR="${FIXTURE}/changes"
   local EXPORT_DIR
-  EXPORT_DIR=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  EXPORT_DIR=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$EXPORT_DIR"
   diff_export "$DIR" "$EXPORT_DIR"
 
-  if [[ -d "$CHANGES_DIR/session/20260408-120000-main" ]]; then
-    pass "session_export_path + diff_export: session dir created under session/"
-    if [[ -f "$CHANGES_DIR/session/20260408-120000-main/uncommitted.diff" ]]; then
-      pass "session_export_path + diff_export: uncommitted.diff inside session dir"
+  if [[ -d "$EXPORT_DIR" ]]; then
+    pass "export_path + diff_export: session dir created with EXPORT_TIME-RUN_ID pattern"
+    if [[ -f "$EXPORT_DIR/uncommitted.diff" ]]; then
+      pass "export_path + diff_export: uncommitted.diff inside session dir"
     else
-      fail "session_export_path + diff_export: uncommitted.diff not found"
+      fail "export_path + diff_export: uncommitted.diff not found"
     fi
   else
-    fail "session_export_path + diff_export: session dir not created"
+    fail "export_path + diff_export: session dir not created"
   fi
 }
 
@@ -189,19 +189,19 @@ test_session_path_autosave_export() {
 
   local CHANGES_DIR="${FIXTURE}/changes2"
   local EXPORT_DIR
-  EXPORT_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "20260408-120000" "main")
+  EXPORT_DIR=$(export_path "$CHANGES_DIR" "autosave" "a1b2c3")
   mkdir -p "$EXPORT_DIR"
   diff_export "$DIR" "$EXPORT_DIR"
 
-  if [[ -d "$CHANGES_DIR/autosave/20260408-120000-main" ]]; then
-    pass "session_export_path + diff_export: autosave dir created under autosave/"
-    if [[ -f "$CHANGES_DIR/autosave/20260408-120000-main/uncommitted.diff" ]]; then
-      pass "session_export_path + diff_export: uncommitted.diff inside autosave dir"
+  if [[ -d "$EXPORT_DIR" ]]; then
+    pass "export_path + diff_export: autosave dir created under autosave/ (no EXPORT_TIME)"
+    if [[ -f "$EXPORT_DIR/uncommitted.diff" ]]; then
+      pass "export_path + diff_export: uncommitted.diff inside autosave dir"
     else
-      fail "session_export_path + diff_export: uncommitted.diff not found in autosave"
+      fail "export_path + diff_export: uncommitted.diff not found in autosave"
     fi
   else
-    fail "session_export_path + diff_export: autosave dir not created"
+    fail "export_path + diff_export: autosave dir not created"
   fi
 }
 
@@ -215,17 +215,17 @@ test_session_path_session_and_autosave_independent() {
 
   # Write session export
   local SESSION_DIR
-  SESSION_DIR=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  SESSION_DIR=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$SESSION_DIR"
   diff_export "$DIR" "$SESSION_DIR"
 
   # Write autosave export
   local AUTOSAVE_DIR
-  AUTOSAVE_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "20260408-120000" "main")
+  AUTOSAVE_DIR=$(export_path "$CHANGES_DIR" "autosave" "a1b2c3")
   mkdir -p "$AUTOSAVE_DIR"
   diff_export "$DIR" "$AUTOSAVE_DIR"
 
-  if [[ -d "$CHANGES_DIR/session/20260408-120000-main" && -d "$CHANGES_DIR/autosave/20260408-120000-main" ]]; then
+  if [[ -d "$AUTOSAVE_DIR" && "$AUTOSAVE_DIR" == *"/autosave/a1b2c3" ]]; then
     pass "session and autosave exports go to separate subdirectories"
   else
     fail "session and autosave should go to separate subdirectories"
@@ -242,13 +242,13 @@ test_session_path_multiple_sessions_accumulate() {
   local CHANGES_DIR="${FIXTURE}/changes4"
 
   local OUT1
-  OUT1=$(session_export_path "$CHANGES_DIR" "session" "20260408-100000" "main")
+  OUT1=$(export_path "$CHANGES_DIR" "session" "run001")
   mkdir -p "$OUT1"
   echo "s1" > "$DIR1/s1.txt"
   diff_export "$DIR1" "$OUT1"
 
   local OUT2
-  OUT2=$(session_export_path "$CHANGES_DIR" "session" "20260408-110000" "main")
+  OUT2=$(export_path "$CHANGES_DIR" "session" "run002")
   mkdir -p "$OUT2"
   echo "s2" > "$DIR2/s2.txt"
   diff_export "$DIR2" "$OUT2"
@@ -261,11 +261,11 @@ test_session_path_multiple_sessions_accumulate() {
     fail "expected 2 session dirs under session/, got $COUNT"
   fi
 
-  # Check the directory naming includes SESSION_TS
-  if [[ -d "$CHANGES_DIR/session/20260408-100000-main" && -d "$CHANGES_DIR/session/20260408-110000-main" ]]; then
-    pass "session dirs use SESSION_TS-BRANCH naming"
+  # Check directory naming uses EXPORT_TIME-RUN_ID pattern
+  if ls "$CHANGES_DIR/session/" | grep -qE '^[0-9]{8}-[0-9]{6}-run00[12]$'; then
+    pass "session dirs use EXPORT_TIME-RUN_ID naming"
   else
-    fail "session dirs should use SESSION_TS-BRANCH naming"
+    fail "session dirs should use EXPORT_TIME-RUN_ID naming"
   fi
 }
 
@@ -277,7 +277,7 @@ test_session_path_export_time_written() {
 
   local CHANGES_DIR="${FIXTURE}/changes5"
   local OUT
-  OUT=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  OUT=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$OUT"
   diff_export "$DIR" "$OUT"
 

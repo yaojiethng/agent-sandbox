@@ -109,13 +109,20 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
   fi
 
-  # Resolve run ID from session state (may be empty — fine, output_export_path handles it)
+  # Resolve run ID from session state. RUN_ID is mandatory for export_path.
   RUN_ID=$(session_state_read "$REPO_ROOT" "run_id" 2>/dev/null || true)
+  if [[ -z "$RUN_ID" ]]; then
+    echo "Error: RUN_ID not found in session state. Is the capability layer running?" >&2
+    exit 1
+  fi
 
-  # -------------------------
-  # Create output directory via output_export_path
-  # -------------------------
-  OUTDIR=$(output_export_path "$TO_ARG" "diffs" "$SESSION_SUMMARY" "$RUN_ID")
+  # Create output directory via export_path. Skip LABEL when it's the default "snapshot".
+  if [[ -n "$SESSION_SUMMARY" && "$SESSION_SUMMARY" != "snapshot" ]]; then
+    OUTDIR=$(export_path "$TO_ARG" "diffs" "$RUN_ID" "$SESSION_SUMMARY")
+  else
+    OUTDIR=$(export_path "$TO_ARG" "diffs" "$RUN_ID")
+  fi
+  mkdir -p "$OUTDIR"
 
   # -------------------------
   # Check for changes

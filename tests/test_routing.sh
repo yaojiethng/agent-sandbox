@@ -2,8 +2,7 @@
 # Tests for libs/routing.sh
 #
 # Covers:
-#   session_export_path       — path construction for entrypoint exports
-#   output_export_path        — path construction for manual exports
+#   export_path               — unified path construction
 #   resolve_source_for_draft  — session resolution for draft operations
 #   resolve_diff_for_apply    — session resolution for apply operations
 
@@ -19,103 +18,72 @@ test_setup
 source "$REPO_ROOT/src/libs/routing.sh"
 
 # =============================================================================
-# session_export_path
+# export_path
 # =============================================================================
 
-test_session_export_path_session() {
+test_export_path_session() {
   local RESULT
-  RESULT=$(session_export_path "/changes" "session" "20260408-120000" "main")
-  if [[ "$RESULT" == "/changes/session/20260408-120000-main" ]]; then
-    pass "session_export_path constructs session path correctly"
+  RESULT=$(export_path "/changes" "session" "a1b2c3")
+  if [[ "$RESULT" =~ ^/changes/session/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
+    pass "export_path constructs session path with EXPORT_TIME-RUN_ID"
   else
-    fail "session_export_path: expected /changes/session/20260408-120000-main, got $RESULT"
+    fail "export_path session: expected /changes/session/<ts>-a1b2c3, got $RESULT"
   fi
 }
 
-test_session_export_path_autosave() {
+test_export_path_autosave() {
   local RESULT
-  RESULT=$(session_export_path "/changes" "autosave" "20260408-120000" "feature-x")
-  if [[ "$RESULT" == "/changes/autosave/20260408-120000-feature-x" ]]; then
-    pass "session_export_path constructs autosave path correctly"
+  RESULT=$(export_path "/changes" "autosave" "a1b2c3")
+  if [[ "$RESULT" == "/changes/autosave/a1b2c3" ]]; then
+    pass "export_path constructs autosave path without EXPORT_TIME (single, overwritten)"
   else
-    fail "session_export_path: expected /changes/autosave/20260408-120000-feature-x, got $RESULT"
+    fail "export_path autosave: expected /changes/autosave/a1b2c3, got $RESULT"
   fi
 }
 
-test_session_export_path_missing_args() {
-  if session_export_path "" "" "" "" 2>/dev/null; then
-    fail "session_export_path should fail with empty args"
-  else
-    pass "session_export_path fails with empty args"
-  fi
-}
-
-# =============================================================================
-# output_export_path
-# =============================================================================
-
-test_output_export_path_creates_dir() {
+test_export_path_bundles_with_label() {
   local RESULT
-  RESULT=$(output_export_path "$FIXTURE_DIR" "diffs" "snapshot" "20260408-120000")
-  if [[ -d "$RESULT" ]]; then
-    pass "output_export_path creates output directory"
+  RESULT=$(export_path "/output" "bundles" "a1b2c3" "my-feature")
+  if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-my-feature-a1b2c3$ ]]; then
+    pass "export_path bundles: EXPORT_TIME-LABEL-RUN_ID"
   else
-    fail "output_export_path should create output directory, got $RESULT"
+    fail "export_path bundles with label: expected /output/bundles/<ts>-my-feature-a1b2c3, got $RESULT"
   fi
-  rm -rf "$RESULT"
 }
 
-test_output_export_path_diffs() {
+test_export_path_bundles_no_label() {
   local RESULT
-  RESULT=$(output_export_path "$FIXTURE_DIR" "diffs" "snapshot" "20260408-120000")
-  local BASENAME
-  BASENAME=$(basename "$RESULT")
-  local PARENT
-  PARENT=$(basename "$(dirname "$RESULT")")
-  if [[ "$PARENT" == "diffs" ]]; then
-    pass "output_export_path places output under diffs/ subdir"
+  RESULT=$(export_path "/output" "bundles" "a1b2c3")
+  if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
+    pass "export_path bundles: EXPORT_TIME-RUN_ID (no label)"
   else
-    fail "output_export_path: expected .../diffs/<ts>-snapshot-..., got parent=$PARENT"
+    fail "export_path bundles no label: expected /output/bundles/<ts>-a1b2c3, got $RESULT"
   fi
-  if [[ "$BASENAME" == *"-snapshot-20260408-120000" ]]; then
-    pass "output_export_path includes session-ts suffix"
-  else
-    fail "output_export_path: expected <ts>-snapshot-20260408-120000, got $BASENAME"
-  fi
-  rm -rf "$RESULT"
 }
 
-test_output_export_path_bundles() {
+test_export_path_diffs_with_label() {
   local RESULT
-  RESULT=$(output_export_path "$FIXTURE_DIR" "bundles" "my-feature")
-  local PARENT
-  PARENT=$(basename "$(dirname "$RESULT")")
-  if [[ "$PARENT" == "bundles" ]]; then
-    pass "output_export_path places output under bundles/ subdir"
+  RESULT=$(export_path "/output" "diffs" "a1b2c3" "snapshot")
+  if [[ "$RESULT" =~ ^/output/diffs/[0-9]{8}-[0-9]{6}-snapshot-a1b2c3$ ]]; then
+    pass "export_path diffs: EXPORT_TIME-LABEL-RUN_ID"
   else
-    fail "output_export_path: expected .../bundles/<ts>-my-feature, got parent=$PARENT"
+    fail "export_path diffs with label: expected /output/diffs/<ts>-snapshot-a1b2c3, got $RESULT"
   fi
-  rm -rf "$RESULT"
 }
 
-test_output_export_path_no_session_ts() {
-  local RESULT
-  RESULT=$(output_export_path "$FIXTURE_DIR" "diffs" "snapshot")
-  local BASENAME
-  BASENAME=$(basename "$RESULT")
-  if [[ "$BASENAME" == *"-snapshot" ]] && [[ "$BASENAME" != *"-snapshot-"* ]]; then
-    pass "output_export_path omits session-ts when not provided"
+test_export_path_missing_args() {
+  if export_path "" "" "" 2>/dev/null; then
+    fail "export_path should fail with empty args"
   else
-    fail "output_export_path: expected <ts>-snapshot, got $BASENAME"
+    pass "export_path fails with empty args"
   fi
-  rm -rf "$RESULT"
 }
 
-test_output_export_path_missing_args() {
-  if output_export_path "" "" "" 2>/dev/null; then
-    fail "output_export_path should fail with empty args"
+test_export_path_missing_run_id() {
+  if export_path "/changes" "session" "" 2>/dev/null; then
+    fail "export_path should fail with empty RUN_ID"
   else
-    pass "output_export_path fails with empty args"
+    pass "export_path fails with empty RUN_ID"
   fi
 }
 
@@ -398,14 +366,13 @@ test_resolve_channel_base_dir_invalid() {
 # Run
 # =============================================================================
 
-run_test test_session_export_path_session
-run_test test_session_export_path_autosave
-run_test test_session_export_path_missing_args
-run_test test_output_export_path_creates_dir
-run_test test_output_export_path_diffs
-run_test test_output_export_path_bundles
-run_test test_output_export_path_no_session_ts
-run_test test_output_export_path_missing_args
+run_test test_export_path_session
+run_test test_export_path_autosave
+run_test test_export_path_bundles_with_label
+run_test test_export_path_bundles_no_label
+run_test test_export_path_diffs_with_label
+run_test test_export_path_missing_args
+run_test test_export_path_missing_run_id
 run_test test_resolve_draft_default_channel
 run_test test_resolve_draft_explicit_channel_autosave
 run_test test_resolve_draft_named_session

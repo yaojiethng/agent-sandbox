@@ -5,7 +5,7 @@
 # by the sandbox-entrypoint.sh EXIT trap.
 #
 # Tests the full function chain that the EXIT trap depends on:
-#   session_export_path → mkdir -p → diff_export → package_branch → artefacts
+#   export_path → mkdir -p → diff_export → package_branch → artefacts
 #
 # Validates:
 #   1. diff_export produces all 5 artefact types with a committed file
@@ -85,19 +85,16 @@ make_sandbox_no_state() {
 # Simulate the EXIT trap's path construction
 # ---------------------------------------------------------------------------
 # The EXIT trap in sandbox-entrypoint.sh does:
-#   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"   (ROOT=/home/agentuser)
-#   local _exit_dir="$(session_export_path "$CHANGES_DIR" "session" \
-#                      "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}")"
+#   _exit_dir="$(export_path "$CHANGES_DIR" "session" "${RUN_ID:-}")"
 #   mkdir -p "$_exit_dir"
 #   diff_export "$SANDBOX_DIR" "$_exit_dir"
 exit_trap_export() {
   local sandbox_dir="$1"
   local changes_dir="$2"
-  local session_ts="${3:-unknown}"
-  local branch="${4:-unknown}"
+  local run_id="${3:-unknown}"
 
   local _exit_dir
-  _exit_dir=$(session_export_path "$changes_dir" "session" "$session_ts" "$branch")
+  _exit_dir=$(export_path "$changes_dir" "session" "$run_id")
   mkdir -p "$_exit_dir"
   diff_export "$sandbox_dir" "$_exit_dir"
   echo "$_exit_dir"
@@ -240,7 +237,7 @@ CHANGES_DIR="$T4_DIR/changes"
 # does not check the return value.
 EXPORT_DIR=$(exit_trap_export "$T4_DIR/sandbox" "$CHANGES_DIR" "20260521-120003" "main") 2>/dev/null || true
 
-# The export dir IS created (session_export_path + mkdir -p ran)
+# The export dir IS created (export_path + mkdir -p ran)
 if [[ -d "$EXPORT_DIR" ]]; then
   pass "Export directory created even without SESSION_STATE"
 else
@@ -277,7 +274,7 @@ echo "content" > "$T5_DIR/sandbox/test.txt"
 # We simulate this with a CHANGES_DIR at the mount target
 CONTAINER_CHANGES_DIR="$T5_DIR/.container/changes"
 mkdir -p "$CONTAINER_CHANGES_DIR"
-EXPORT_CONTAINER_PATH=$(exit_trap_export "$T5_DIR/sandbox" "$CONTAINER_CHANGES_DIR" "20260521-120004" "main")
+EXPORT_CONTAINER_PATH=$(exit_trap_export "$T5_DIR/sandbox" "$CONTAINER_CHANGES_DIR" "run005")
 
 # The bind mount maps CONTAINER_CHANGES_DIR → HOST_CHANGES_DIR
 # On the host, CHANGES_DIR = SANDBOX_DIR/.workspace/session-diffs
@@ -319,11 +316,11 @@ CHANGES_DIR="$T6_DIR/changes"
 
 # First export
 echo "v1" > "$T6_DIR/sandbox/file1.txt"
-EXPORT1=$(exit_trap_export "$T6_DIR/sandbox" "$CHANGES_DIR" "20260521-100000" "main")
+EXPORT1=$(exit_trap_export "$T6_DIR/sandbox" "$CHANGES_DIR" "run006a")
 
 # Second export
 echo "v2" > "$T6_DIR/sandbox/file2.txt"
-EXPORT2=$(exit_trap_export "$T6_DIR/sandbox" "$CHANGES_DIR" "20260521-110000" "feature-x")
+EXPORT2=$(exit_trap_export "$T6_DIR/sandbox" "$CHANGES_DIR" "run006b")
 
 SESSION_COUNT=$(find "$CHANGES_DIR/session" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
 if [[ "$SESSION_COUNT" -eq 2 ]]; then

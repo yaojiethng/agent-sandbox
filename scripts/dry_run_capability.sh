@@ -156,12 +156,10 @@ section "autosave infrastructure"
 # should be created by the entrypoint at startup.
 warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 
-# Verify session export path construction matches expectations.
-# This would catch regressions if session_export_path changes
-# in M2.6.4 (mount model redesign).
-warn_check "session_export_path: resolves with available env vars" \
-  bash -c 'p=$(session_export_path "$1" session "${2:-}" "${3:-}" "${4:-}" 2>/dev/null); [[ -n "$p" ]]' \
-  _ "$CHANGES_DIR" "${SESSION_TS:-}" "${SANITIZED_HOST_BRANCH:-}" "${RUN_ID:-}"
+# Verify export path construction matches expectations.
+warn_check "export_path: resolves with available env vars" \
+  bash -c 'p=$(export_path "$1" session "${2:-}" 2>/dev/null); [[ -n "$p" ]]' \
+  _ "$CHANGES_DIR" "${RUN_ID:-}"
 
 # Verify wait_git_lockfile returns quickly when no lockfile exists.
 # This asserts the function doesn't hang or error on a clean repo.

@@ -89,9 +89,9 @@ echo "$PID1_CHILDREN" | sed 's/^/    /'
 echo ""
 echo "=== 5. Autosave path construction ==="
 source /opt/sandbox/lib/routing.sh 2>/dev/null
-AS_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
+AS_DIR=$(export_path "$CHANGES_DIR" "autosave" "${RUN_ID:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
 echo "Autosave target path: $AS_DIR"
-echo "Session target path:  $(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" 2>/dev/null || echo '<ERROR>')"
+echo "Session target path:  $(export_path "$CHANGES_DIR" "session" "${RUN_ID:-unknown}" 2>/dev/null || echo '<ERROR>')"
 
 # Manually try to write to the autosave path
 echo "" > "/tmp/autosave_writability_test" 2>/dev/null
@@ -100,7 +100,7 @@ if [[ "$TEST_AS_DIR" != "<ERROR>" ]]; then
   mkdir -p "$TEST_AS_DIR" 2>/dev/null && pass "Can mkdir -p autosave path ($TEST_AS_DIR)" || fail "Cannot mkdir -p autosave path"
   echo "test" > "$TEST_AS_DIR/.write_test" 2>/dev/null && { pass "Can write to autosave path"; rm -f "$TEST_AS_DIR/.write_test"; } || fail "Cannot write to autosave path"
 else
-  fail "Cannot construct autosave path (session_export_path failed)"
+  fail "Cannot construct autosave path (export_path failed)"
 fi
 
 echo ""

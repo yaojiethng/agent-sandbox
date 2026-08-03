@@ -113,7 +113,7 @@ The agent works exclusively inside `sandbox/`. The host repository is never moun
 
 ## Phase 3 — Join (Diff Pipeline)
 
-On capability layer container exit, an EXIT trap runs the diff pipeline. The entrypoint constructs the output path via `session_export_path` (from `routing.sh`) and calls `diff_export`, which delegates to `package_branch`:
+On capability layer container exit, an EXIT trap runs the diff pipeline. The entrypoint constructs the output path via `export_path` (from `routing.sh`) and calls `diff_export`, which delegates to `package_branch`:
 
 1. **`package_commits`** — Produces one numbered `.diff` file per agent commit since `init_sha`, written into `patches/`. Git index lines are stripped. No sweep commit — uncommitted changes are captured separately.
 2. **`write_uncommitted_diff`** — Captures working tree delta from HEAD as `uncommitted.diff`. Includes untracked files via temporary `git add -N` staging.
@@ -122,11 +122,12 @@ On capability layer container exit, an EXIT trap runs the diff pipeline. The ent
 
 No sweep commit is performed. Uncommitted changes are preserved in the working tree — `diff_export` never commits.
 
-All artefacts land in the session export directory constructed by `session_export_path`:
+All artefacts land in the session export directory constructed by `export_path`:
 
 ```
-workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
+workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
   EXPORT-TIME.txt       — timestamp of the exit export
+  .export-status        — SUCCESS/FAIL with timestamp
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
@@ -137,15 +138,29 @@ workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
     <path>/<file>        — working tree copies of all changed files
 ```
 
-The autosave loop uses the same pattern but writes to `workspace/session-diffs/autosave/<SESSION_TS>-<BRANCH>/`. `session/` and `autosave/` are separate subdirectories under the new flipped layout — they no longer share a parent `<SESSION>-<BRANCH>/` directory.
+### Autosave
 
-`workspace/session-diffs/` accumulates session and autosave directories over time and is not automatically pruned by the harness.
+The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle overwrites a single directory:
+
+```
+workspace/session-diffs/autosave/<RUN_ID>/
+  EXPORT-TIME.txt       — updated each cycle
+  .export-status        — SUCCESS/FAIL with timestamp
+  uncommitted.diff      — uncommitted changes vs HEAD
+  all-changes.diff      — net delta init_sha..HEAD
+  patches/
+  changed-files/
+```
+
+Only one autosave directory exists per session — the old one is `rm -rf`'d before each write. No accumulation, no pruning needed within a session.
+
+`workspace/session-diffs/session/` accumulates one directory per container stop and is not automatically pruned.
 
 ### Apply workflow
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [SESSION=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch. `SESSION` is name-only (rejected if absolute).
+**`make draft [SESSION=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<EXPORT_TIME>-<slug>-<sha6>` branch. `SESSION` is name-only (rejected if absolute).
 
 **`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
