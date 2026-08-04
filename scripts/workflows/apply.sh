@@ -21,7 +21,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 # apply_run — apply a diff file
 # =============================================================================
 
-# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE PERMISSIVE
+# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE STRICT
 #
 # Applies a diff file to the project working tree. Does not create commits —
 # leaves changes unstaged for operator review.
@@ -31,7 +31,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 #   DIFF_FILE     — absolute path to a diff file (uncommitted.diff or similar)
 #   APPLY_BRANCH  — optional branch to checkout/create before applying
 #   FORCE         — if true, apply with --reject; .rej files for conflicts
-#   PERMISSIVE    — if true, on git apply failure retry with --recount
+#   STRICT        — if true, disable --recount retry on apply failure
 #                   to handle minor hunk-context drift (line reorders,
 #                   whitespace shifts that don't affect the content delta)
 #
@@ -42,7 +42,7 @@ apply_run() {
   local DIFF_FILE="$2"
   local APPLY_BRANCH="${3:-}"
   local FORCE="${4:-false}"
-  local PERMISSIVE="${5:-false}"
+  local STRICT="${5:-false}"
 
   if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" ]]; then
     echo "apply_run: PROJECT_DIR and DIFF_FILE are required" >&2
@@ -74,7 +74,7 @@ apply_run() {
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
   fi
 
-  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$PERMISSIVE" || return 1
+  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$STRICT" || return 1
 
   # Count changed files from the diff
   local FILES_CHANGED
@@ -134,7 +134,7 @@ main() {
   local DIFF_FILE=""
   local APPLY_BRANCH=""
   local FORCE=false
-  local PERMISSIVE=false
+  local STRICT=false
   local CHANNEL=""
   local SESSION=""
   local INTERACTIVE=false
@@ -147,7 +147,7 @@ main() {
       --diff=*)        DIFF_FILE="${ARG#--diff=}" ;;
       --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
       --force)         FORCE=true ;;
-      --permissive)    PERMISSIVE=true ;;
+      --permissive)    true ;;  # no-op, kept for compatibility
       --channel=*)     CHANNEL="${ARG#--channel=}" ;;
       --session=*)     SESSION="${ARG#--session=}" ;;
       --interactive)   INTERACTIVE=true ;;
@@ -173,7 +173,7 @@ main() {
       # --diff given: confirm with y/N and apply directly
       interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
       echo "Running: make apply DIFF=${DIFF_FILE}"
-      apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+      apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
       exit $?
     fi
 
@@ -203,13 +203,13 @@ main() {
     else
       echo "Running: make apply DIFF=${DIFF_FILE}"
     fi
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
     exit $?
   fi
 
   # Non-interactive path
   if [[ -n "$DIFF_FILE" ]]; then
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
   else
     source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
     local CHANNEL="${CHANNEL:-diffs}"
@@ -224,7 +224,7 @@ main() {
       echo "  Available types: uncommitted.diff, all-changes.diff" >&2
       exit 1
     fi
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
   fi
 }
 

@@ -139,24 +139,24 @@ draft_create_and_init_branch() {
 # draft_apply_patches — apply and commit diffs sequentially
 # =============================================================================
 
-# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE] [PERMISSIVE]
+# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE] [STRICT]
 #
 # Reads diff file paths from stdin (one per line), applies each via
 # apply_and_commit with the resolved commit message.
-# FORCE=true applies with --reject; PERMISSIVE=true retries with --recount.
+# FORCE=true applies with --reject; STRICT=true disables --recount retry.
 # Returns 1 if any patch fails to apply (unless FORCE=true).
 draft_apply_patches() {
   local PROJECT_DIR="$1"
   local AUTHOR="$2"
   local FORCE="${3:-false}"
-  local PERMISSIVE="${4:-false}"
+  local STRICT="${4:-false}"
 
   while IFS= read -r diff_file; do
     [[ -z "$diff_file" ]] && continue
     local COMMIT_MSG
     COMMIT_MSG=$(draft_resolve_commit_message "$diff_file")
     echo "  Applying: $(basename "$diff_file")"
-    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" "$STRICT" || {
       echo "Error: failed to apply $(basename "$diff_file")" >&2
       echo "  Patch file: $diff_file" >&2
       git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
@@ -169,17 +169,17 @@ draft_apply_patches() {
 # draft_apply_uncommitted — apply uncommitted.diff if present
 # =============================================================================
 
-# draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE] [PERMISSIVE]
+# draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE] [STRICT]
 #
 # Applies uncommitted.diff from SOURCE_DIR if it exists and is non-empty.
 # Uses apply_and_commit. FORCE=true applies with --reject;
-# PERMISSIVE=true retries with --recount.
+# STRICT=true disables --recount retry.
 draft_apply_uncommitted() {
   local PROJECT_DIR="$1"
   local SOURCE_DIR="$2"
   local AUTHOR="$3"
   local FORCE="${4:-false}"
-  local PERMISSIVE="${5:-false}"
+  local STRICT="${5:-false}"
 
   local UNCOMMITTED_DIFF="$SOURCE_DIR/uncommitted.diff"
   if [[ ! -f "$UNCOMMITTED_DIFF" || ! -s "$UNCOMMITTED_DIFF" ]]; then
@@ -188,7 +188,7 @@ draft_apply_uncommitted() {
 
   echo ""
   echo "Applying uncommitted.diff..."
-  apply_and_commit "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "Apply uncommitted.diff" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+  apply_and_commit "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "Apply uncommitted.diff" "$AUTHOR" "$FORCE" "$STRICT" || {
     echo "Error: failed to apply uncommitted.diff" >&2
     echo "  File: $UNCOMMITTED_DIFF" >&2
     return 1
@@ -268,7 +268,8 @@ Options:
   --diffs=<start>..<end>  Range of patches to apply
   --branch-summary=<slug> Override branch name suffix
   --force                 Apply with --reject; .rej files for conflicts
-  --permissive            Retry with --recount on apply failure
+  --permissive            No-op: permissive apply is the default (kept for compatibility)
+  --strict                Disable --recount retry on apply failure
   --interactive           Interactive picker mode
 EOF
 }
@@ -278,7 +279,7 @@ EOF
 # =============================================================================
 
 # _run_draft_workflow PROJECT_DIR SOURCE_DIR SESSION_NAME
-#                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE PERMISSIVE
+#                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE STRICT
 #                      [PATCH_LIST]
 #
 # Orchestrates: collect patches → count → create branch → apply loop →
@@ -289,7 +290,7 @@ EOF
 _run_draft_workflow() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
-  local FORCE="$7" PERMISSIVE="$8"
+  local FORCE="$7" STRICT="$8"
   local PATCH_LIST="${9:-}"
 
   local PATCHES_DIR="$SOURCE_DIR/patches"
@@ -315,7 +316,7 @@ _run_draft_workflow() {
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
   # Apply patches
-  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
     echo "Rolling back to savepoint..."
     git -C "$PROJECT_DIR" reset --hard draft-savepoint
     git -C "$PROJECT_DIR" tag -d draft-savepoint
@@ -323,7 +324,7 @@ _run_draft_workflow() {
   }
 
   # Apply uncommitted.diff
-  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
+  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
     echo "Rolling back to savepoint..."
     git -C "$PROJECT_DIR" reset --hard draft-savepoint
     git -C "$PROJECT_DIR" tag -d draft-savepoint
@@ -371,7 +372,7 @@ main() {
   local DIFFS=""
   local BRANCH_SUMMARY=""
   local FORCE=false
-  local PERMISSIVE=false
+  local STRICT=false
   local INTERACTIVE=false
 
   for ARG in "$@"; do
@@ -384,7 +385,7 @@ main() {
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
       --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
       --force)         FORCE=true ;;
-      --permissive)    PERMISSIVE=true ;;
+      --permissive)    true ;;  # no-op: permissive is the default, kept for compatibility
       --interactive)   INTERACTIVE=true ;;
       *)
         echo "Unknown argument: $ARG" >&2
@@ -434,7 +435,7 @@ main() {
       interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
       echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
       _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
-        "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PERMISSIVE" "$PATCH_LIST"
+        "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT" "$PATCH_LIST"
       exit $?
     fi
 
@@ -450,7 +451,7 @@ main() {
     SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
     echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
     _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
-      "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PERMISSIVE"
+      "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
     exit $?
   fi
 
@@ -462,7 +463,7 @@ main() {
   SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
   SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
   _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
-    "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PERMISSIVE"
+    "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
 }
 
 # Guard: only run main() when executed directly, not when sourced

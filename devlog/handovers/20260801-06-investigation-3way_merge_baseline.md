@@ -53,13 +53,21 @@ Both solve the same problem: give `git am --3way` a merge base commit that both 
 
 3. **Bundle size is independent of history depth.** The bundle only contains commit + tree objects for the synthetic root — blobs are shared with host. 2.4KB for any repo size.
 
+4. **3-way merge (bundle→clone) is not a fix for the incident class.** The incident was caused by `FORCE=true` (`.rej` files), not by `git apply` limitation. The savepoint rollback (already implemented) is the correct defense. Both `git apply` and `git am --3way` fail at the same boundary: divergent host. The real fix for host-divergence is the Mount Model (M2.6.6).
+
+5. **Permissive apply is safe and now the default.** `git apply --recount` with a `--check` guard never applies to wrong code — it only relaxes context matching when it's unambiguously correct. `--ignore-whitespace` is also always safe. Both are now default behavior. `STRICT=true` disables --recount for conservative workflows.
+
 ## Mid-session findings
 
 None.
 
 ## Completed this session
 
-| [`tests/knowledge/knowledge_3way_merge_baseline.sh`](../../tests/knowledge/knowledge_3way_merge_baseline.sh) | New — 8 knowledge tests for 3-way merge baseline approach |
+| [`src/libs/diff.sh`](../../src/libs/diff.sh) | Permissive apply by default: permissive (--recount retry) is the default; STRICT=true disables it; removed PERMISSIVE flag |
+| [`scripts/workflows/draft.sh`](../../scripts/workflows/draft.sh) | Renamed PERMISSIVE→STRICT; --permissive is now no-op; --strict is the opt-out |
+| [`scripts/workflows/apply.sh`](../../scripts/workflows/apply.sh) | Same PERMISSIVE→STRICT rename |
+| [`tests/knowledge/knowledge_3way_merge_baseline.sh`](../../tests/knowledge/knowledge_3way_merge_baseline.sh) | Deleted — superseded by regression suite (knowledge exploration complete) |
+| [`tests/test_3way_merge_regression.sh`](../../tests/test_3way_merge_regression.sh) | New — regression tests for rename→modify, delete→recreate, tree integrity, simple modification |
 
 ## Deferred items
 
