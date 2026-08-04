@@ -89,7 +89,15 @@ template_version() {
 
 # Validates path format (must be absolute WSL/Linux path, not Windows)
 validate_path() {
-  local NAME="$1" VAL="$2"
+  local NAME="$1" VAL="$2" RESOLVED
+  # Resolve relative paths so the user sees the absolute form
+  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
+  if [[ -n "$RESOLVED" && "$RESOLVED" != "$VAL" ]]; then
+    echo "Resolving $NAME: $VAL -> $RESOLVED" >&2
+  fi
+  if [[ -n "$RESOLVED" ]]; then
+    VAL="$RESOLVED"
+  fi
   if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
     echo "Error: $NAME must be a WSL/Linux path, not a Windows path." >&2
     echo "  Got:      $VAL" >&2
@@ -101,6 +109,7 @@ validate_path() {
     echo "  Got: $VAL" >&2
     exit 1
   fi
+  echo "$VAL"
 }
 
 # ---------------------------------------------------------------------------
@@ -155,7 +164,7 @@ _validate_refresh() {
     echo "Error: --refresh requires --name and --sandbox." >&2
     usage
   fi
-  validate_path "--sandbox" "$SANDBOX_DIR"
+  SANDBOX_DIR="$(validate_path "--sandbox" "$SANDBOX_DIR")"
   for T in "Makefile.template"; do
     if [[ ! -f "$TEMPLATES/$T" ]]; then
       echo "Error: required template not found: $TEMPLATES/$T" >&2
@@ -261,8 +270,8 @@ _validate_onboard() {
     echo "Error: project name, project directory, and sandbox directory are all required." >&2
     usage
   fi
-  validate_path "--sandbox" "$SANDBOX_DIR"
-  validate_path "--project" "$PROJECT_DIR"
+  SANDBOX_DIR="$(validate_path "--sandbox" "$SANDBOX_DIR")"
+  PROJECT_DIR="$(validate_path "--project" "$PROJECT_DIR")"
   if [[ ! -d "$PROJECT_DIR" ]]; then
     echo "Error: project directory does not exist: $PROJECT_DIR" >&2
     exit 1
