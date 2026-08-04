@@ -172,8 +172,8 @@ draft_apply_patches() {
 # draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE] [STRICT]
 #
 # Applies uncommitted.diff from SOURCE_DIR if it exists and is non-empty.
-# Uses apply_and_commit. FORCE=true applies with --reject;
-# STRICT=true disables --recount retry.
+# Does NOT commit — the diff is applied to the working tree only, leaving
+# the operator to review and commit manually.
 draft_apply_uncommitted() {
   local PROJECT_DIR="$1"
   local SOURCE_DIR="$2"
@@ -187,8 +187,8 @@ draft_apply_uncommitted() {
   fi
 
   echo ""
-  echo "Applying uncommitted.diff..."
-  apply_and_commit "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "Apply uncommitted.diff" "$AUTHOR" "$FORCE" "$STRICT" || {
+  echo "Applying uncommitted.diff (working tree only — not committed)..."
+  _apply_patch_file "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "$FORCE" "$STRICT" || {
     echo "Error: failed to apply uncommitted.diff" >&2
     echo "  File: $UNCOMMITTED_DIFF" >&2
     return 1
@@ -216,12 +216,13 @@ draft_run() {
 
   [[ -d "$SOURCE_DIR" ]] || { echo "Error: source not found: $SOURCE_DIR" >&2; return 1; }
   local PATCHES_DIR="$SOURCE_DIR/patches"
-  [[ -d "$PATCHES_DIR" ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }
+  [[ -d "$PATCHES_DIR" ]] || [[ "$DIFF_COUNT" -eq 0 ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }
 
   local SESSION_TS SANITIZED_HOST_BRANCH RUN_ID
   draft_parse_folder_name "$SESSION_NAME"
 
-  [[ "$DIFF_COUNT" -gt 0 ]] || { echo "Error: no .diff files found in $PATCHES_DIR" >&2; return 1; }
+  # Allow DIFF_COUNT=0 when only uncommitted.diff is present
+  : "${DIFF_COUNT:?}"
 
   local BASE_COMMIT="${BRANCH_FROM_ARG:-HEAD}"
   local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
@@ -299,7 +300,14 @@ _run_draft_workflow() {
   fi
   local DIFF_COUNT
   DIFF_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
-  [[ "$DIFF_COUNT" -gt 0 ]] || { echo "Error: no .diff files found in $PATCHES_DIR" >&2; return 1; }
+  if [[ "$DIFF_COUNT" -eq 0 ]]; then
+    if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+      DIFF_COUNT=0
+    else
+      echo "Error: no .diff files in $PATCHES_DIR and no uncommitted.diff" >&2
+      return 1
+    fi
+  fi
 
   # Create savepoint at the branch point BEFORE .draft-state is committed.
   # On failure, reset to this to avoid leaving the draft branch partially applied.
@@ -418,8 +426,12 @@ main() {
       PATCH_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
 
       if [[ "$PATCH_COUNT" -eq 0 ]]; then
-        echo "Error: no .diff files found in $SOURCE_DIR/patches" >&2
-        exit 1
+        if [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]]; then
+          echo "No committed patches; uncommitted.diff will be applied."
+        else
+          echo "Error: no .diff files in $SOURCE_DIR/patches and no uncommitted.diff" >&2
+          exit 1
+        fi
       fi
 
       local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
