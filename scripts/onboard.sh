@@ -38,7 +38,7 @@ _HAS_SIDE_EFFECTS=false
 trap '_maybe_cleanup' ERR
 
 _maybe_cleanup() {
-  if $_HAS_SIDE_EFFECTS; then
+  if $_HAS_SIDE_EFFECTS && [[ -n "${SANDBOX_DIR:-}" ]]; then
     echo "Warning: onboard.sh failed after creating files in SANDBOX_DIR." >&2
     echo "  Partial state may remain in: $SANDBOX_DIR" >&2
     echo "  To start fresh:" >&2
@@ -51,6 +51,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEMPLATES="$REPO_ROOT/scripts/templates"
 
+# Detect if running non-interactively (piped stdin or --yes flag).
+# --yes bypasses the confirmation prompt for scripting/CI.
+_INTERACTIVE=true
+if [[ ! -t 0 ]]; then
+  _INTERACTIVE=false
+fi
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -62,19 +69,22 @@ Usage: agent-sandbox onboard [--refresh] --name=<n> --project=<path> --sandbox=<
   --name=<project_name>   Short name for the project (used for image naming,
                           container names). No spaces. Example: my-project
 
-  --project=<path>        Absolute WSL/Linux path to the project git repository.
+  --project=<path>        Absolute or relative path to the project git repository.
                           Required for first-time onboard; optional for --refresh
                           (read from .env if omitted).
 
-  --sandbox=<path>        Absolute WSL/Linux path to the sandbox directory
+  --sandbox=<path>        Absolute or relative path to the sandbox directory
                           (created if it does not exist).
+
+  --yes                   Skip the confirmation prompt (for scripting/CI).
 
   --refresh               Update stale template files in existing SANDBOX_DIR.
                           Preserves .env operator values and AGENTS.md.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
-  Valid:   /home/user/projects/my-project
+  Relative paths (., ~/foo) are resolved to absolute via realpath.
+  Valid:   /home/user/projects/my-project  .  ~/sandbox/my-project
            /mnt/c/Users/you/Projects/my-project
   Invalid: C:\\Users\\you\\Projects\\my-project
   Convert: wslpath 'C:\\Users\\you\\Projects\\my-project'
@@ -87,37 +97,62 @@ template_version() {
   grep -m1 "^# agent-sandbox template version:" "$1" | awk '{print $NF}'
 }
 
-# Validates path format (must be absolute WSL/Linux path, not Windows)
-validate_path() {
-  local NAME="$1" VAL="$2"
+# resolve_and_validate VAR_NAME FLAG_NAME VALUE [REQUIRE_EXIST]
+#
+# Resolves a potentially-relative path via realpath, validates it's an
+# absolute WSL/Linux path, and writes the resolved value into the named
+# variable. Exits on invalid format or Windows paths.
+# If REQUIRE_EXIST is true, exits if the path does not exist.
+resolve_and_validate() {
+  local VAR="$1" FLAG="$2" VAL="$3" REQUIRE_EXIST="${4:-false}"
+  local RESOLVED
+
+  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
+  if [[ -n "$RESOLVED" ]]; then
+    VAL="$RESOLVED"
+  elif [[ "$REQUIRE_EXIST" == true ]]; then
+    echo "Error: $FLAG path does not exist: $VAL" >&2
+    exit 1
+  fi
+
   if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
-    echo "Error: $NAME must be a WSL/Linux path, not a Windows path." >&2
+    echo "Error: $FLAG must be a WSL/Linux path, not a Windows path." >&2
     echo "  Got:      $VAL" >&2
     echo "  Convert:  wslpath '$VAL'" >&2
     exit 1
   fi
   if [[ "$VAL" != /* ]]; then
-    echo "Error: $NAME must be an absolute path." >&2
+    echo "Error: $FLAG must be an absolute or resolvable path." >&2
     echo "  Got: $VAL" >&2
     exit 1
   fi
+
+  printf -v "$VAR" '%s' "$VAL"
 }
 
-# ---------------------------------------------------------------------------
-# resolve_path VAR_NAME VALUE
+# confirm_or_exit
 #
-# Resolves a potentially-relative path to absolute via realpath.
-# Sets the named variable to the resolved value.
-# Returns 0 on success, 1 if the path doesn't exist or can't be resolved.
-# ---------------------------------------------------------------------------
-resolve_path() {
-  local VAR="$1" VAL="$2" RESOLVED
-  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
-  if [[ -z "$RESOLVED" ]]; then
-    return 1
+# Prints PROJECT_DIR and SANDBOX_DIR, then prompts for confirmation
+# unless running non-interactively or --yes was given.
+confirm_or_exit() {
+  echo ""
+  echo "Project:  $PROJECT_DIR"
+  echo "Sandbox:  $SANDBOX_DIR"
+  echo ""
+
+  if ! $_INTERACTIVE; then
+    echo "Non-interactive mode — proceeding."
+    echo ""
+    return 0
   fi
-  printf -v "$VAR" '%s' "$RESOLVED"
-  return 0
+
+  local REPLY
+  read -r -p "Continue with onboarding? [Y/n] " REPLY
+  if [[ -n "$REPLY" && "$REPLY" != [Yy] && "$REPLY" != [Yy][Ee][Ss] ]]; then
+    echo "Onboarding cancelled."
+    exit 0
+  fi
+  echo ""
 }
 
 # ---------------------------------------------------------------------------
@@ -127,6 +162,7 @@ PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR=""
 REFRESH=false
+YES_FLAG=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -134,6 +170,7 @@ for ARG in "$@"; do
     --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
     --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
     --refresh)    REFRESH=true ;;
+    --yes)        YES_FLAG=true ;;
     -h|--help)    usage ;;
     *)
       echo "Unknown flag: $ARG" >&2
@@ -141,6 +178,10 @@ for ARG in "$@"; do
       ;;
   esac
 done
+
+if $YES_FLAG; then
+  _INTERACTIVE=false
+fi
 
 # ---------------------------------------------------------------------------
 # Prompt for missing flags
@@ -150,19 +191,33 @@ if [[ -z "$PROJECT_NAME" ]]; then
 fi
 
 if [[ "$REFRESH" != true && -z "$PROJECT_DIR" ]]; then
-  echo "Project directory: absolute WSL/Linux path to the project git repo."
+  echo "Project directory: absolute or relative path to the project git repo."
   echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
   read -rp "Project directory: " PROJECT_DIR
 fi
 
 if [[ -z "$SANDBOX_DIR" ]]; then
-  echo "Sandbox directory: absolute WSL/Linux path where sandbox files will be created."
+  echo "Sandbox directory: absolute or relative path where sandbox files will be created."
   echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
   echo "  Convention: alongside the project dir, e.g. ${PROJECT_DIR:-<project-dir>}/../sandbox"
   read -rp "Sandbox directory: " SANDBOX_DIR
 fi
 
+# ---------------------------------------------------------------------------
+# Resolve and validate paths (always, for both modes)
+# ---------------------------------------------------------------------------
+resolve_and_validate SANDBOX_DIR "--sandbox" "$SANDBOX_DIR" false  # may not exist yet
 
+if [[ -n "$PROJECT_DIR" ]]; then
+  resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
+fi
+
+# Derive PROJECT_DIR from .env if not provided (refresh mode)
+if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
+  if [[ -f "$SANDBOX_DIR/.env" ]]; then
+    PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$SANDBOX_DIR/.env" | cut -d= -f2-)
+  fi
+fi
 
 # ===========================================================================
 # Refresh mode — update versioned template files only
@@ -172,11 +227,6 @@ _validate_refresh() {
     echo "Error: --refresh requires --name and --sandbox." >&2
     usage
   fi
-  resolve_path SANDBOX_DIR "$SANDBOX_DIR" || {
-    echo "Error: --sandbox path does not exist: $SANDBOX_DIR" >&2
-    exit 1
-  }
-  validate_path "--sandbox" "$SANDBOX_DIR"
   for T in "Makefile.template"; do
     if [[ ! -f "$TEMPLATES/$T" ]]; then
       echo "Error: required template not found: $TEMPLATES/$T" >&2
@@ -187,6 +237,7 @@ _validate_refresh() {
 }
 _run_refresh() {
   _validate_refresh
+  confirm_or_exit
   _HAS_SIDE_EFFECTS=true
   mkdir -p "$SANDBOX_DIR"
   echo "Sandbox directory: $SANDBOX_DIR"
@@ -194,11 +245,11 @@ _run_refresh() {
     "$TEMPLATES/Makefile.template" \
     > "$SANDBOX_DIR/Makefile"
   echo "  Created: Makefile"
-  local ENV_FILE="$SANDBOX_DIR/.env"
 
+  local ENV_FILE="$SANDBOX_DIR/.env"
   if [[ ! -f "$ENV_FILE" ]]; then
     if [[ -n "$PROJECT_DIR" ]]; then
-      _write_env_file "$SANDBOX_DIR" "$ENV_FILE"
+      _write_env_file
       echo "  Created: .env (recreated — PROJECT_DIR provided explicitly)"
     else
       echo "Warning: .env not found and --project not provided." >&2
@@ -210,11 +261,6 @@ _run_refresh() {
       -e "s/^MAKEFILE_VERSION=.*/MAKEFILE_VERSION=${MAKEFILE_VERSION}/" \
       "$ENV_FILE"
     echo "  Updated: .env (template versions)"
-
-    # Derive PROJECT_DIR from .env if not supplied via flag
-    if [[ -z "$PROJECT_DIR" ]]; then
-      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$ENV_FILE" | cut -d= -f2-)
-    fi
   fi
 
   # Sanity check: if we have a PROJECT_DIR now, verify it exists
@@ -233,16 +279,17 @@ _run_refresh() {
 }
 
 # ---------------------------------------------------------------------------
-# _write_env_file SANDBOX_DIR ENV_FILE
+# _write_env_file
 #
 # Writes the .env file with project paths, template versions, and operator
-# configuration stubs. Shared by _run_onboard (fresh) and _run_refresh
-# (recreation when .env is missing and PROJECT_DIR is available).
+# configuration stubs. Uses current values of PROJECT_DIR, SANDBOX_DIR,
+# PROJECT_NAME (all resolved and validated by this point).
+# Shared by _run_onboard (fresh) and _run_refresh (recreation).
 # ---------------------------------------------------------------------------
 _write_env_file() {
-  local SANDBOX_DIR="$1"
-  local ENV_FILE="$2"
-  MAKEFILE_VERSION=$(template_version "$TEMPLATES/Makefile.template")
+  local ENV_FILE="$SANDBOX_DIR/.env"
+  local VERSION
+  VERSION=$(template_version "$TEMPLATES/Makefile.template")
 
   cat > "$ENV_FILE" <<ENVEOF
 # agent-sandbox runtime configuration for: ${PROJECT_NAME}
@@ -256,7 +303,7 @@ SANDBOX_DIR=${SANDBOX_DIR}
 # --- Template versions (set at onboard time) ---
 # Used by build scripts to detect stale onboarded files.
 # To refresh: agent-sandbox onboard --refresh --name=${PROJECT_NAME} --project=${PROJECT_DIR} --sandbox=${SANDBOX_DIR}
-MAKEFILE_VERSION=${MAKEFILE_VERSION}
+MAKEFILE_VERSION=${VERSION}
 
 # --- Operator configuration (review and adjust before first run) ---
 # Install directory for the agent-sandbox CLI (used by: make install)
@@ -329,27 +376,6 @@ _validate_onboard() {
     echo "Error: project name, project directory, and sandbox directory are all required." >&2
     usage
   fi
-
-  # Resolve relative paths silently, then confirm with user
-  resolve_path PROJECT_DIR "$PROJECT_DIR" || {
-    echo "Error: --project path does not exist: $PROJECT_DIR" >&2
-    exit 1
-  }
-  resolve_path SANDBOX_DIR "$SANDBOX_DIR" || true  # sandbox may not exist yet
-
-  echo ""
-  echo "Project:  $PROJECT_DIR"
-  echo "Sandbox:  $SANDBOX_DIR"
-  echo ""
-  read -r -p "Continue with onboarding? [Y/n] " REPLY
-  if [[ -n "$REPLY" && "$REPLY" != [Yy] && "$REPLY" != [Yy][Ee][Ss] ]]; then
-    echo "Onboarding cancelled."
-    exit 0
-  fi
-  echo ""
-
-  validate_path "--sandbox" "$SANDBOX_DIR"
-  validate_path "--project" "$PROJECT_DIR"
   if [[ ! -d "$PROJECT_DIR" ]]; then
     echo "Error: project directory does not exist: $PROJECT_DIR" >&2
     exit 1
@@ -373,6 +399,7 @@ _validate_onboard() {
 }
 _run_onboard() {
   _validate_onboard
+  confirm_or_exit
   _HAS_SIDE_EFFECTS=true
   mkdir -p "$SANDBOX_DIR"
   echo "Sandbox directory: $SANDBOX_DIR"
@@ -409,8 +436,7 @@ EOF
   # -----------------------------------------------------------------------
   # .env
   # -----------------------------------------------------------------------
-  local ENV_FILE="$SANDBOX_DIR/.env"
-  _write_env_file "$SANDBOX_DIR" "$ENV_FILE"
+  _write_env_file
   echo "  Created: .env"
 
   # -----------------------------------------------------------------------

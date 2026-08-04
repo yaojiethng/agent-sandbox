@@ -171,7 +171,7 @@ test_refresh_updates_makefile() {
 
   rm "$SANDBOX_DIR/Makefile"
 
-  bash "$ONBOARD_SCRIPT" --refresh \
+  echo y | bash "$ONBOARD_SCRIPT" --refresh \
     --name="testproj" \
     --sandbox="$SANDBOX_DIR" 2>&1
 
@@ -192,7 +192,7 @@ test_refresh_preserves_env_values() {
 
   sed -i 's/^SERVE_PORT=.*/SERVE_PORT=99999/' "$SANDBOX_DIR/.env"
 
-  bash "$ONBOARD_SCRIPT" --refresh \
+  echo y | bash "$ONBOARD_SCRIPT" --refresh \
     --name="testproj" \
     --sandbox="$SANDBOX_DIR" 2>&1
 
