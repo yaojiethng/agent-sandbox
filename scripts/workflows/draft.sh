@@ -300,6 +300,12 @@ _run_draft_workflow() {
   DIFF_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
   [[ "$DIFF_COUNT" -gt 0 ]] || { echo "Error: no .diff files found in $PATCHES_DIR" >&2; return 1; }
 
+  # Create savepoint at the branch point BEFORE .draft-state is committed.
+  # On failure, reset to this to avoid leaving the draft branch partially applied.
+  # Local tag — never pushed by default git push.
+  git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
+  git -C "$PROJECT_DIR" tag draft-savepoint "$BRANCH_FROM"
+
   # Create branch (branch-creation only)
   draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" || return 1
@@ -307,12 +313,6 @@ _run_draft_workflow() {
   # Resolve author for apply+commit loop
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
-
-  # Create savepoint before applying patches. On failure, reset to this
-  # point to avoid leaving the draft branch in a partially-applied state.
-  # Local tag — never pushed by default git push.
-  git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
-  git -C "$PROJECT_DIR" tag draft-savepoint
 
   # Apply patches
   printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$PERMISSIVE" || {
