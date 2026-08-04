@@ -90,18 +90,22 @@ The `.run-identity` file (written to `$SANDBOX_DIR/.run-identity` at session sta
 **Session start (M2.6.5):**
 
 ```
---resume passed?
-  ├── No → new session (default). Compute fresh identity, reset volume.
-  └── Yes → discover volumes for sandbox dir:
-            ├── 0 → new session (no volumes to resume)
-            ├── 1 → resume that volume
-            └── 2+ → interactive selector
-                     └── operator picks volume or "new session"
-                         Volumes whose host-head-sha label ≠ current HEAD
-                         are flagged [STALE].
+--refresh/--rebuild passed?
+  ├── Yes → new session (rebuild images + fresh volume + full snapshot)
+  └── No → --resume passed?
+            ├── Yes → always interactive picker:
+            │         ├── 0 volumes → new session
+            │         └── 1+ volumes → picker (choose volume or "new session")
+            └── No → default auto-resume:
+                      ├── 0 volumes → new session
+                      ├── 1 non-stale volume → resume it (silent)
+                      ├── 1 stale volume → warn + auto-resume
+                      │     "Warning: project HEAD has moved since this session started.
+                      │      Run 'make start RESUME=1' to show the volume picker."
+                      └── 2+ volumes (any state) → interactive picker
+                          Volumes whose host-head-sha label ≠ current HEAD
+                          are flagged [STALE].
 ```
-
-`--refresh` always forces a new session even when combined with `--resume`.
 
 ---
 

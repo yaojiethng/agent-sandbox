@@ -269,7 +269,8 @@ _resume_from_volume() {
 
   if volume_is_stale "$vol"; then
     echo "Warning: project HEAD has moved since this session started."
-    echo "  The container may be out of date. Start fresh with 'make start'."
+    echo "  The sandbox repo may be out of date."
+    echo "  Run 'make start RESUME=1' to show the volume picker."
   fi
 
   {
@@ -283,11 +284,90 @@ _resume_from_volume() {
   echo "Resuming session — volume: $vol"
 }
 
+# auto_resume_or_new — default path when neither --refresh nor --resume is set.
+# Resumes the most recent non-stale volume if one exists, else new session.
+# On stale: warns and auto-resumes with a hint to use --resume for the picker.
+_auto_resume_or_new() {
+  VOLUMES=()
+  while IFS= read -r vol; do
+    [[ -n "$vol" ]] && VOLUMES+=("$vol")
+  done < <(discover_volumes)
+
+  VOLUME_COUNT="${#VOLUMES[@]}"
+
+  if [[ "$VOLUME_COUNT" -eq 0 ]]; then
+    _new_session_identity
+    return
+  fi
+
+  # Build lists of non-stale and stale volumes
+  local NON_STALE=() STALE=()
+  for vol in "${VOLUMES[@]}"; do
+    if volume_is_stale "$vol"; then
+      STALE+=("$vol")
+    else
+      NON_STALE+=("$vol")
+    fi
+  done
+
+  # Case: 1 non-stale — resume it silently
+  if [[ "${#NON_STALE[@]}" -eq 1 ]] && [[ "${#STALE[@]}" -eq 0 ]]; then
+    _resume_from_volume "${NON_STALE[0]}"
+    return
+  fi
+
+  # Case: multiple non-stale, or mixed — interactive picker
+  _show_volume_picker
+}
+
+# _show_volume_picker — interactive volume selection (shared by --resume and auto path)
+_show_volume_picker() {
+  echo ""
+  echo "Sessions found for this sandbox directory:"
+  echo ""
+
+  local i=1
+  for vol in "${VOLUMES[@]}"; do
+    local ts rid br sha stale_str
+    ts=$(volume_label "$vol" "agent-sandbox.session-ts")
+    rid=$(volume_label "$vol" "agent-sandbox.run-id")
+    br=$(volume_label "$vol" "agent-sandbox.host-branch")
+    sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
+    stale_str=""
+    volume_is_stale "$vol" && stale_str=" [STALE]"
+    printf "  %d) %s  RUN_ID: %s  branch: %s (%.7s)%s\n" \
+      "$i" "$ts" "$rid" "$br" "$sha" "$stale_str"
+    (( i++ )) || true
+  done
+  local NEW_OPTION="$i"
+  printf "  %d) [start new session]\n" "$NEW_OPTION"
+  echo ""
+
+  local SELECTION=""
+  while [[ -z "$SELECTION" ]]; do
+    printf "Select (1-%d): " "$NEW_OPTION"
+    read -r SELECTION
+    if [[ ! "$SELECTION" =~ ^[0-9]+$ ]] || \
+       [[ "$SELECTION" -lt 1 ]] || \
+       [[ "$SELECTION" -gt "$NEW_OPTION" ]]; then
+      echo "  Invalid selection. Enter 1-$NEW_OPTION."
+      SELECTION=""
+    fi
+  done
+
+  if [[ "$SELECTION" -eq "$NEW_OPTION" ]]; then
+    echo "Starting new session"
+    _new_session_identity
+  else
+    _resume_from_volume "${VOLUMES[$((SELECTION - 1))]}"
+  fi
+}
+
 if [[ "${REFRESH:-false}" == "true" ]]; then
   echo "Refresh requested — starting new session"
   _new_session_identity
 elif [[ "${RESUME:-false}" == "true" ]]; then
-  # --resume: discover existing volumes and offer picker
+  # --resume: always show the interactive picker
   VOLUMES=()
   while IFS= read -r vol; do
     [[ -n "$vol" ]] && VOLUMES+=("$vol")
@@ -298,52 +378,12 @@ elif [[ "${RESUME:-false}" == "true" ]]; then
   if [[ "$VOLUME_COUNT" -eq 0 ]]; then
     echo "No existing sessions — starting new session"
     _new_session_identity
-  elif [[ "$VOLUME_COUNT" -eq 1 ]]; then
-    _resume_from_volume "${VOLUMES[0]}"
   else
-    # Multiple volumes — interactive selector
-    echo ""
-    echo "Multiple sessions found for this sandbox directory:"
-    echo ""
-
-    i=1
-    for vol in "${VOLUMES[@]}"; do
-      ts=$(volume_label "$vol" "agent-sandbox.session-ts")
-      rid=$(volume_label "$vol" "agent-sandbox.run-id")
-      br=$(volume_label "$vol" "agent-sandbox.host-branch")
-      sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
-      stale_str=""
-      volume_is_stale "$vol" && stale_str=" [STALE]"
-      printf "  %d) %s  RUN_ID: %s  branch: %s (%.7s)%s\n" \
-        "$i" "$ts" "$rid" "$br" "$sha" "$stale_str"
-      (( i++ )) || true
-    done
-    NEW_OPTION="$i"
-    printf "  %d) [start new session]\n" "$NEW_OPTION"
-    echo ""
-
-    SELECTION=""
-    while [[ -z "$SELECTION" ]]; do
-      printf "Select (1-%d): " "$NEW_OPTION"
-      read -r SELECTION
-      if [[ ! "$SELECTION" =~ ^[0-9]+$ ]] || \
-         [[ "$SELECTION" -lt 1 ]] || \
-         [[ "$SELECTION" -gt "$NEW_OPTION" ]]; then
-        echo "  Invalid selection. Enter 1-$NEW_OPTION."
-        SELECTION=""
-      fi
-    done
-
-    if [[ "$SELECTION" -eq "$NEW_OPTION" ]]; then
-      echo "Starting new session"
-      _new_session_identity
-    else
-      _resume_from_volume "${VOLUMES[$((SELECTION - 1))]}"
-    fi
+    _show_volume_picker
   fi
 else
-  # Default: new session (no --resume, no --refresh)
-  _new_session_identity
+  # Default: auto-resume non-stale, or picker, or new session
+  _auto_resume_or_new
 fi
 
 # -------------------------

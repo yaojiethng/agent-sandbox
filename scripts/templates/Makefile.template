@@ -18,7 +18,7 @@
 #   Example: make start PROVIDER=hermes
 #
 # REFRESH
-#   Optional. Rebuilds sandbox and provider images before running (base skipped if exists).
+#   Optional. Rebuilds sandbox and provider images + starts a new session.
 #   Example: make start PROVIDER=hermes REFRESH=1
 #
 # REBUILD
@@ -29,9 +29,10 @@
 #   Example: make build REBUILD=1
 #
 # RESUME
-#   Optional. Resume an existing session instead of starting a new one.
-#   Discovers volumes for the sandbox directory and resumes the most recent
-#   (or shows a picker if multiple exist).
+#   Optional. Always shows the interactive volume picker (even for a single volume).
+#   Without RESUME, the default behavior auto-resumes the most recent non-stale
+#   volume, shows the picker for multiple non-stale volumes, or starts a new
+#   session when no volumes exist.
 #   Example: make start PROVIDER=hermes RESUME=1
 #
 # STALE

@@ -31,23 +31,22 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Commands
 
-### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [--resume]`
+### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [RESUME=1]`
 
 Stops any running session for this project, builds missing images if needed, snapshots the project, and starts the agent. The terminal attaches to the agent TUI.
 
-**Default behaviour:** always starts a new session with a fresh volume.
+**Default behaviour:** auto-resumes the most recent non-stale session volume if one exists. If no volumes exist, starts a new session. If multiple non-stale volumes exist, shows an interactive picker. Stale volumes (HEAD has moved) show a warning and auto-resume.
 
 `PROVIDER` is required. Optional flags:
-- `REFRESH=1` — rebuilds sandbox and provider images; base image is reused if it exists.
-- `REBUILD=1` — rebuilds everything from scratch including the base image. Supersedes `REFRESH=1` if both are set.
-- `--resume` — discover existing volumes for the sandbox directory and resume the most recent (or show a picker if multiple exist).
-Without REFRESH or REBUILD, images are built only if missing.
+- `REFRESH=1` — rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
+- `REBUILD=1` — rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
+- `RESUME=1` — always shows the interactive volume picker, even for a single volume. Useful after a stale warning to choose a specific session.
 
 **Leaves behind:** `session/` and `autosave/` subfolders in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`; updated provider session state in `.<provider>/`.
 
 ---
 
-### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [--resume]`
+### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [RESUME=1]`
 
 Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
 
