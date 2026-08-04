@@ -217,6 +217,12 @@ _run_refresh() {
     fi
   fi
 
+  # Sanity check: if we have a PROJECT_DIR now, verify it exists
+  if [[ -n "$PROJECT_DIR" && ! -d "$PROJECT_DIR" ]]; then
+    echo "Warning: PROJECT_DIR does not exist: $PROJECT_DIR" >&2
+    echo "  Has the project been moved? Update PROJECT_DIR in $ENV_FILE or pass --project." >&2
+  fi
+
   echo ""
   echo "Refresh complete."
   echo ""
