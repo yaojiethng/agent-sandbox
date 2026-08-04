@@ -206,7 +206,7 @@ compose_dry_run() {
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
     DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-    docker compose "${COMPOSE_ARGS[@]}" up -d
+    docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1 | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
 
   # Phase 1: capability layer checks
   if [[ -n "$dry_run_capability_script" ]]; then
