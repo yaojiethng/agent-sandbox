@@ -89,15 +89,7 @@ template_version() {
 
 # Validates path format (must be absolute WSL/Linux path, not Windows)
 validate_path() {
-  local NAME="$1" VAL="$2" RESOLVED
-  # Resolve relative paths so the user sees the absolute form
-  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
-  if [[ -n "$RESOLVED" && "$RESOLVED" != "$VAL" ]]; then
-    echo "Resolving $NAME: $VAL -> $RESOLVED" >&2
-  fi
-  if [[ -n "$RESOLVED" ]]; then
-    VAL="$RESOLVED"
-  fi
+  local NAME="$1" VAL="$2"
   if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
     echo "Error: $NAME must be a WSL/Linux path, not a Windows path." >&2
     echo "  Got:      $VAL" >&2
@@ -109,7 +101,23 @@ validate_path() {
     echo "  Got: $VAL" >&2
     exit 1
   fi
-  echo "$VAL"
+}
+
+# ---------------------------------------------------------------------------
+# resolve_path VAR_NAME VALUE
+#
+# Resolves a potentially-relative path to absolute via realpath.
+# Sets the named variable to the resolved value.
+# Returns 0 on success, 1 if the path doesn't exist or can't be resolved.
+# ---------------------------------------------------------------------------
+resolve_path() {
+  local VAR="$1" VAL="$2" RESOLVED
+  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
+  if [[ -z "$RESOLVED" ]]; then
+    return 1
+  fi
+  printf -v "$VAR" '%s' "$RESOLVED"
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -164,7 +172,11 @@ _validate_refresh() {
     echo "Error: --refresh requires --name and --sandbox." >&2
     usage
   fi
-  SANDBOX_DIR="$(validate_path "--sandbox" "$SANDBOX_DIR")"
+  resolve_path SANDBOX_DIR "$SANDBOX_DIR" || {
+    echo "Error: --sandbox path does not exist: $SANDBOX_DIR" >&2
+    exit 1
+  }
+  validate_path "--sandbox" "$SANDBOX_DIR"
   for T in "Makefile.template"; do
     if [[ ! -f "$TEMPLATES/$T" ]]; then
       echo "Error: required template not found: $TEMPLATES/$T" >&2
@@ -270,8 +282,27 @@ _validate_onboard() {
     echo "Error: project name, project directory, and sandbox directory are all required." >&2
     usage
   fi
-  SANDBOX_DIR="$(validate_path "--sandbox" "$SANDBOX_DIR")"
-  PROJECT_DIR="$(validate_path "--project" "$PROJECT_DIR")"
+
+  # Resolve relative paths silently, then confirm with user
+  resolve_path PROJECT_DIR "$PROJECT_DIR" || {
+    echo "Error: --project path does not exist: $PROJECT_DIR" >&2
+    exit 1
+  }
+  resolve_path SANDBOX_DIR "$SANDBOX_DIR" || true  # sandbox may not exist yet
+
+  echo ""
+  echo "Project:  $PROJECT_DIR"
+  echo "Sandbox:  $SANDBOX_DIR"
+  echo ""
+  read -r -p "Continue with onboarding? [Y/n] " REPLY
+  if [[ -n "$REPLY" && "$REPLY" != [Yy] && "$REPLY" != [Yy][Ee][Ss] ]]; then
+    echo "Onboarding cancelled."
+    exit 0
+  fi
+  echo ""
+
+  validate_path "--sandbox" "$SANDBOX_DIR"
+  validate_path "--project" "$PROJECT_DIR"
   if [[ ! -d "$PROJECT_DIR" ]]; then
     echo "Error: project directory does not exist: $PROJECT_DIR" >&2
     exit 1

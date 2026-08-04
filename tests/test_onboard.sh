@@ -34,7 +34,7 @@ run_full_onboard() {
   local SANDBOX_DIR="$2"
   make_project_dir "$PROJECT_DIR"
 
-  bash "$ONBOARD_SCRIPT" \
+  echo y | bash "$ONBOARD_SCRIPT" \
     --name="testproj" \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1
@@ -142,7 +142,7 @@ test_onboard_aborts_if_sandbox_exists() {
   touch "$SANDBOX_DIR/Makefile"
 
   set +e
-  OUTPUT=$(bash "$ONBOARD_SCRIPT" \
+  OUTPUT=$(echo y | bash "$ONBOARD_SCRIPT" \
     --name="testproj" \
     --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR" 2>&1)
