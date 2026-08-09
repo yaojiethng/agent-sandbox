@@ -98,6 +98,10 @@ Prompt templates are session tooling. Like skill files, they are consumers of po
 
 Prompt templates do not contain authoritative rules.
 
+### Persistent devlog records (interim)
+
+`devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` record the agent's friction and gotchas — non-authoritative living records populated at the Steps 8–9 review/publish step, distinct from policy documents (authoritative) and from ephemeral per-session handovers. These records are **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface they belong to is scoped for trim under the [Doc Bloat — Rotate Out Stale Handovers and Discussions](../../devlog/roadmap_future.md#doc-bloat--rotate-out-stale-handovers-and-discussions) task. Their precise end-state form is not yet determined (exact rules TBD).
+
 ---
 
 ## Policy Map
@@ -110,6 +114,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Handover lifecycle | [`handover_policy.md`](../operations/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
 | Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, post-close bookkeeping, top-level milestone close, changelog format, milestone promotion | Handover format, session step definitions |
 | Milestone planning (major loop) | [`milestone_policy.md`](../operations/milestone_policy.md) | Story and investigation process, scoping criteria, major loop closure | Minor loop session execution |
+| Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (Steps 8–9 review/publish); records: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md), [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md) | Entry classification (A/B/C), routing at close, record format and lifecycle (declared in the record files) | Rule authoring, session-step sequencing |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
 | Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
 | Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing, file registry |
