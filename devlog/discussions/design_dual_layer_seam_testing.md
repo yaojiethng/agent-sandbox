@@ -1,16 +1,16 @@
-# Design — Dual-Layer Seam Testing via Dry-Run
+# Design - Dual-Layer Seam Testing via Dry-Run
 
-**Target milestone:** M2.7 — Session Identity and Harness Versioning
+**Target milestone:** M2.7 -- Session Identity and Harness Versioning
 
-**Status:** Design record — settled architecture for extending dry-run to assert host-container seam behaviour in both the capability layer (sandbox) and reasoning layer (agent), plus host-side verification.
+**Status:** Design record -- settled architecture for extending dry-run to assert host-container seam behaviour in both the capability layer (sandbox) and reasoning layer (agent), plus host-side verification.
 
 **Related:**
-- [`libs/sandbox-entrypoint.sh`](../../libs/sandbox-entrypoint.sh) — pre-flight checks will be injected here (11b)
-- [`scripts/dry_run_capability.sh`](../../scripts/dry_run_capability.sh) — **new** capability layer checks (11c)
-- [`scripts/dry_run.sh`](../../scripts/dry_run.sh) — reasoning layer checks, to be rewritten (11d)
-- [`libs/docker-compose.dry-run.yml`](../../libs/docker-compose.dry-run.yml) — dry-run overlay, to expose both scripts (11c, 11d)
-- [`libs/compose.sh`](../../libs/compose.sh) — `compose_dry_run` orchestration, three-phase execution (11c, 11d, 11e)
-- [`tests/test_capability_layer.sh`](../../tests/test_capability_layer.sh) — docker-dependent tests to be subsumed
+- [`libs/sandbox-entrypoint.sh`](../../libs/sandbox-entrypoint.sh) -- pre-flight checks will be injected here
+- [`scripts/dry_run_capability.sh`](../../scripts/dry_run_capability.sh) -- **new** capability layer checks
+- [`scripts/dry_run.sh`](../../scripts/dry_run.sh) -- reasoning layer checks, to be rewritten
+- [`libs/docker-compose.dry-run.yml`](../../libs/docker-compose.dry-run.yml) -- dry-run overlay, to expose both scripts
+- [`libs/compose.sh`](../../libs/compose.sh) -- `compose_dry_run` orchestration, three-phase execution
+- [`tests/test_capability_layer.sh`](../../tests/test_capability_layer.sh) -- docker-dependent tests to be subsumed
 
 ---
 
@@ -104,14 +104,14 @@ The dry-run overlay (`libs/docker-compose.dry-run.yml`) must expose both scripts
 services:
   sandbox:
     volumes:
-      - type: bind
+     - type: bind
         source: {{DRY_RUN_CAPABILITY_SCRIPT}}
         target: /dry_run_capability.sh
         read_only: true
 
   agent:
     volumes:
-      - type: bind
+     - type: bind
         source: {{DRY_RUN_SCRIPT}}
         target: /dry_run.sh
         read_only: true
@@ -123,7 +123,7 @@ This requires `start_agent.sh` to export both `DRY_RUN_SCRIPT` and `DRY_RUN_CAPA
 
 ## Phase details
 
-### Phase 1 — Capability layer checks (`dry_run_capability.sh`)
+### Phase 1 - Capability layer checks (`dry_run_capability.sh`)
 
 New file at `scripts/dry_run_capability.sh`. Runs inside the sandbox container after the entrypoint has completed (sandbox healthcheck = healthy). Inherits the sandbox's env vars from the compose template.
 
@@ -148,9 +148,9 @@ New file at `scripts/dry_run_capability.sh`. Runs inside the sandbox container a
 | Working tree is clean | No stray files from prior state | `git -C "$SANDBOX_DIR" status --short` empty |
 | All mount paths match expected pattern | Bind mounts align with dirs.sh resolution | Compare `$CHANGES_DIR`, `$SNAPSHOT_DIR` to expected patterns |
 
-Subsumes the docker-dependent static-file-existence checks from `test_capability_layer.sh` (lines ~114–137: checks for `sandbox-entrypoint.sh`, `snapshot.sh`, `diff.sh`, `dirs.sh` existence in the image).
+Subsumes the docker-dependent static-file-existence checks from `test_capability_layer.sh` (lines ~114-137: checks for `sandbox-entrypoint.sh`, `snapshot.sh`, `diff.sh`, `dirs.sh` existence in the image).
 
-### Phase 2 — Reasoning layer checks (`dry_run.sh`, rewritten)
+### Phase 2 - Reasoning layer checks (`dry_run.sh`, rewritten)
 
 Existing file at `scripts/dry_run.sh`, rewritten to focus only on the reasoning layer's perspective. Runs inside the agent container.
 
@@ -170,9 +170,9 @@ Existing file at `scripts/dry_run.sh`, rewritten to focus only on the reasoning 
 |---|---|---|
 | SESSION_STATE has all expected keys | Entrypoint wrote full state | Check for `changes_dir`, `snapshot_dir`, etc. |
 
-The existing session-diffs round-trip test (written in session 20260513-02) stays here — it validates the reasoning layer side of the seam.
+The existing session-diffs round-trip test (written in session 20260513-02) stays here -- it validates the reasoning layer side of the seam.
 
-### Phase 3 — Host-side verification
+### Phase 3 - Host-side verification
 
 Inline in `compose_dry_run` or a small helper script. Runs on the host after both containers have exited.
 
@@ -196,27 +196,27 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 
 ## Implementation sequence
 
-### Session 11b — Pre-flight script (in sandbox-entrypoint)
+### Pre-flight script (in sandbox-entrypoint)
 
 - Add a `preflight_check` block at the end of `libs/sandbox-entrypoint.sh`, after `snapshot_init_git` and the diff pipeline sourcing, before the `wait` loop.
-- Inline the CRITICAL and WARN checks from Phase 1's table above (minus the CHANGES_DIR round-trip — that's a dry-run-only investigation check).
+- Inline the CRITICAL and WARN checks from Phase 1's table above (minus the CHANGES_DIR round-trip -- that's a dry-run-only investigation check).
 - CRITICAL failures: `echo "PREFLIGHT FAIL: ..." >&2; exit 1`
 - WARN failures: `echo "PREFLIGHT WARN: ..." >&2` (no exit)
 - `make test` must pass.
 
 **Files changed:** `libs/sandbox-entrypoint.sh`
 
-### Session 11c — dry_run_capability.sh + compose overlay
+### dry_run_capability.sh + compose overlay
 
-- Create `scripts/dry_run_capability.sh` with the full Phase 1 check table (including round-trip, minus the pre-flight checks that are now redundant — or keep them for double-validation).
+- Create `scripts/dry_run_capability.sh` with the full Phase 1 check table (including round-trip, minus the pre-flight checks that are now redundant -- or keep them for double-validation).
 - Update `libs/docker-compose.dry-run.yml` to add the sandbox bind mount.
 - Update `scripts/start_agent.sh` to export `DRY_RUN_CAPABILITY_SCRIPT`.
-- No orchestration changes yet — Phase 1 runs stand-alone for testing.
+- No orchestration changes yet -- Phase 1 runs stand-alone for testing.
 - `make test` must pass.
 
 **Files changed:** `scripts/dry_run_capability.sh` (new), `libs/docker-compose.dry-run.yml`, `scripts/start_agent.sh`
 
-### Session 11d — dry_run.sh rewrite (reasoning layer)
+### dry_run.sh rewrite (reasoning layer)
 
 - Rewrite `scripts/dry_run.sh` to focus solely on reasoning layer checks (Phase 2).
 - Remove any capability-layer checks that leaked into the original file.
@@ -225,7 +225,7 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 
 **Files changed:** `scripts/dry_run.sh`
 
-### Session 11e — Host-side verification + orchestration
+### Host-side verification + orchestration
 
 - Add `verify_host_artifacts` function or inline block to `libs/compose.sh`'s `compose_dry_run`.
 - Wire up the three-phase sequence.
@@ -240,26 +240,26 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 
 | Check | Pre-flight (every start) | dry_run_capability (dry-run only) |
 |---|---|---|
-| `.git` exists | ✅ | — |
-| SESSION_STATE has init_sha + session_ts | ✅ | — |
-| CHANGES_DIR writable | ✅ | — |
-| SNAPSHOT_DIR readable | ✅ | — |
-| INPUT_DIR readable | ✅ | — |
-| OUTPUT_DIR writable | ✅ | — |
-| AGENTS.md in sandbox (warn) | ✅ | — |
-| AGENTS.md at AGENT_HOME (warn) | ✅ | — |
-| Working tree clean (warn) | ✅ | — |
-| CHANGES_DIR round-trip (write + read via mount) | — | ✅ |
-| Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | — | ✅ |
-| Diff pipeline invocable | — | ✅ |
-| Cross-container marker read | — | — | ✅ |
-| Host-side artifact verification | — | — | — (Phase 3) |
+| `.git` exists | ✅ | -- |
+| SESSION_STATE has init_sha + session_ts | ✅ | -- |
+| CHANGES_DIR writable | ✅ | -- |
+| SNAPSHOT_DIR readable | ✅ | -- |
+| INPUT_DIR readable | ✅ | -- |
+| OUTPUT_DIR writable | ✅ | -- |
+| AGENTS.md in sandbox (warn) | ✅ | -- |
+| AGENTS.md at AGENT_HOME (warn) | ✅ | -- |
+| Working tree clean (warn) | ✅ | -- |
+| CHANGES_DIR round-trip (write + read via mount) | -- | ✅ |
+| Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | -- | ✅ |
+| Diff pipeline invocable | -- | ✅ |
+| Cross-container marker read | -- | -- | ✅ |
+| Host-side artifact verification | -- | -- | -- (Phase 3) |
 
 ## Provider dry-run checks (future)
 
 `dry_run_reasoning.sh` should source provider-specific check scripts from a path mounted by the provider overlay (`providers/<name>/docker-compose.<name>.yml`). This enables providers to assert their own config integrity without the generic reasoning script knowing about provider internals.
 
-**Current state:** Not implemented. The mechanism was scoped during M2.7 item 12 investigation but deferred to align with the provider config lifecycle fix (M2.7 item 8) and workspace path refactor (M2.7 item 10), both of which touch the same path-resolution and mount infrastructure.
+**Current state:** Not implemented. The mechanism was scoped during the M2.7 provider dry-run checks investigation but deferred to align with the provider config lifecycle fix and the workspace path refactor, both of which touch the same path-resolution and mount infrastructure.
 
 **Future implementation sketch:**
 - Provider overlay adds a bind mount: `providers/<name>/dry_run_checks.sh` → `/opt/sandbox/providers/dry_run_checks.sh`
@@ -267,18 +267,18 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 - Provider script has access to same env vars as the reasoning layer
 - For pi: checks `~/.pi/agent/AGENTS.md` presence, pi settings integrity, installed tooling
 
-## Changes made in item 12 investigation
+## Changes made in the provider dry-run checks investigation
 
-- Removed `brief.md` injection from `scripts/start_agent.sh` — dead code, pi never read it.
+- Removed `brief.md` injection from `scripts/start_agent.sh` -- dead code, pi never read it.
 - Removed `--brief` flag and `AGENT_BRIEF` Makefile variable entirely.
 - Updated pre-flight checks in `libs/sandbox-entrypoint.sh`: replaced `brief.md` presence with `sandbox/AGENTS.md` and `AGENT_HOME/AGENTS.md` checks.
-- Provider dry-run checks deferred to item 8/item 10.
+- Provider dry-run checks deferred to the provider config lifecycle fix and the workspace path refactor.
 
 ---
 
 ## SESSION_STATE key schema (pre-flight additions)
 
-The pre-flight reads existing SESSION_STATE keys but does not write any new ones. The dry_run_capability.sh may write a temporary key (e.g. `dryrun_marker`) that dry_run.sh reads and the host-side phase cleans up. This is an implementation detail to be decided in 11c.
+The pre-flight reads existing SESSION_STATE keys but does not write any new ones. The dry_run_capability.sh may write a temporary key (e.g. `dryrun_marker`) that dry_run.sh reads and the host-side phase cleans up. This is an implementation detail to be decided when `dry_run_capability.sh` is implemented.
 
 ---
 
@@ -287,4 +287,4 @@ The pre-flight reads existing SESSION_STATE keys but does not write any new ones
 - Any CRITICAL failure in any phase causes the entire dry-run to fail with a non-zero exit code and `docker compose down -v`.
 - WARN failures are logged but do not abort.
 - Cleanup (`down -v`) runs on success and on failure (after logging the failure).
-- Temp files created by the sandbox for round-trip testing are cleaned up by the host-side phase. If the host-side phase crashes before cleanup, temp files remain in `CHANGES_DIR` — acceptable because `SNAPSHOT_DIR` is cleaned on next `make start` anyway.
+- Temp files created by the sandbox for round-trip testing are cleaned up by the host-side phase. If the host-side phase crashes before cleanup, temp files remain in `CHANGES_DIR` -- acceptable because `SNAPSHOT_DIR` is cleaned on next `make start` anyway.

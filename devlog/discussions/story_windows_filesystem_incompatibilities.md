@@ -1,12 +1,12 @@
-# Story — Windows Filesystem Incompatibilities (9p Mount Seam)
+# Story - Windows Filesystem Incompatibilities (9p Mount Seam)
 
-**Status:** Identified — three active issues, root causes confirmed. Resolution via avoidance (keep project on Linux-native WSL2 path) documented in CORRECTION blocks. A proactive detection mechanism is proposed below.
+**Status:** Identified -- three active issues, root causes confirmed. Resolution via avoidance (keep project on Linux-native WSL2 path) documented in CORRECTION blocks. A proactive detection mechanism is proposed below.
 
 ---
 
 ## Context
 
-The agent-sandbox harness runs inside a Docker container. Container paths that are bind-mounted from the host inherit the host filesystem's semantics. When the host is a Windows machine running Docker Desktop via WSL2, the bind mount path crosses a **9p (Plan 9) filesystem** seam — the protocol used by Docker's Windows integration to surface host directories inside the Linux VM.
+The agent-sandbox harness runs inside a Docker container. Container paths that are bind-mounted from the host inherit the host filesystem's semantics. When the host is a Windows machine running Docker Desktop via WSL2, the bind mount path crosses a **9p (Plan 9) filesystem** seam -- the protocol used by Docker's Windows integration to surface host directories inside the Linux VM.
 
 The 9p implementation in Docker Desktop's WSL2 backend does not support several POSIX filesystem operations that the harness and its tools (notably Pi) rely on. Three distinct issues have been identified, all stemming from this single root cause.
 
@@ -48,9 +48,9 @@ Warning: (runtime creation, global settings) EPERM: operation not permitted, uti
 
 This shadows the bind-mount's `bin/` with a container-local tmpfs, so Pi's cross-filesystem `mv` from `/tmp/` to `~/.pi/agent/bin/` stays within the tmpfs (same filesystem). The trade-off is that binaries are re-downloaded every session.
 
-**First observed:** During the design phase of M2.7 item 8 (see `design_provider_config_ownership_and_loading.md`, constraint 2).
+**First observed:** During the design phase of the M2.7 config bind-mount change (see `design_provider_config_ownership_and_loading.md`, constraint 2).
 
-**Status:** Mitigated via tmpfs overlay — but this mitigation introduced Issue 3 below.
+**Status:** Mitigated via tmpfs overlay -- but this mitigation introduced Issue 3 below.
 
 ---
 
@@ -64,7 +64,7 @@ This shadows the bind-mount's `bin/` with a container-local tmpfs, so Pi's cross
 tmpfs on /home/agentuser/.pi/agent/bin type tmpfs (rw,nosuid,nodev,noexec,relatime,mode=777)
 ```
 
-Binaries stored on a `noexec` filesystem cannot be executed by the kernel regardless of file permissions. When Pi spawns `fd` via `child_process.spawn()`, the kernel denies execution and the child process emits an `error` event. Pi's `walkDirectoryWithFd()` in `autocomplete.js` catches this silently and returns an empty array — the popup never appears.
+Binaries stored on a `noexec` filesystem cannot be executed by the kernel regardless of file permissions. When Pi spawns `fd` via `child_process.spawn()`, the kernel denies execution and the child process emits an `error` event. Pi's `walkDirectoryWithFd()` in `autocomplete.js` catches this silently and returns an empty array -- the popup never appears.
 
 Confirmation via direct test:
 
@@ -108,7 +108,7 @@ Both `fd` and `rg` live on the same `noexec` tmpfs, so both are affected.
 | Error | `EPERM` | `EXDEV` | `EACCES` / exit 126 |
 | 9p root cause | Windows 9p server doesn't implement utime | 9p mount is a different filesystem from overlay | *Indirect:* 9p EXDEV drove tmpfs overlay, which introduced noexec |
 | Existing mitigation | None (silent settings loss) | tmpfs overlay at `bin/` | apt install of `fd-find` and `ripgrep` in base Dockerfile (bypasses tmpfs); tmpfs overlay retained for other potential binaries |
-| Ultimate fix | Avoid 9p for `AGENT_HOME` (see Resolution) | Already mitigated | Drop `noexec` from the tmpfs mount, or keep apt-installed binaries (preferred — explicit dependency management) |
+| Ultimate fix | Avoid 9p for `AGENT_HOME` (see Resolution) | Already mitigated | Drop `noexec` from the tmpfs mount, or keep apt-installed binaries (preferred -- explicit dependency management) |
 
 ---
 
@@ -116,7 +116,7 @@ Both `fd` and `rg` live on the same `noexec` tmpfs, so both are affected.
 
 1. **The 9p seam is a constraint of the host environment, not a bug in the harness.** Docker Desktop on Windows uses 9p for all bind mounts from the host. The harness cannot change this.
 
-2. **The `AGENT_HOME` bind mount is intentional and valuable.** It provides direct host persistence for settings, auth, sessions, and skills — eliminating the copy-in/copy-out cycle that was error-prone and slow.
+2. **The `AGENT_HOME` bind mount is intentional and valuable.** It provides direct host persistence for settings, auth, sessions, and skills -- eliminating the copy-in/copy-out cycle that was error-prone and slow.
 
 3. **The resolution must not break the existing workflow for users on Linux-native filesystems.** Any detection mechanism or guard added must be opt-in or passive (warn, don't block).
 
@@ -128,14 +128,14 @@ Both `fd` and `rg` live on the same `noexec` tmpfs, so both are affected.
 
 ### Primary: Keep the project on a Linux-native WSL2 path
 
-The most reliable fix is to avoid the 9p seam entirely. `SANDBOX_DIR` — and by extension `${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent` — is derived from `PROJECT_DIR`:
+The most reliable fix is to avoid the 9p seam entirely. `SANDBOX_DIR` -- and by extension `${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent` -- is derived from `PROJECT_DIR`:
 
 ```bash
 # start_agent.sh
 SANDBOX_DIR="$(dirname "$PROJECT_DIR")/$(basename "$PROJECT_DIR")-sandbox"
 ```
 
-If the user passes `--project` with a Linux-native WSL2 path (e.g., `/home/user/projects/myproject`), both `PROJECT_DIR` and `SANDBOX_DIR` reside on the Linux-native ext4 filesystem. The `AGENT_HOME` bind mount inherits ext4's POSIX semantics — `utime()` works, cross-filesystem moves stay within ext4 — and both issues are avoided.
+If the user passes `--project` with a Linux-native WSL2 path (e.g., `/home/user/projects/myproject`), both `PROJECT_DIR` and `SANDBOX_DIR` reside on the Linux-native ext4 filesystem. The `AGENT_HOME` bind mount inherits ext4's POSIX semantics -- `utime()` works, cross-filesystem moves stay within ext4 -- and both issues are avoided.
 
 **Requires:** The user's project must reside under a WSL2 Linux root (e.g., `/home/user/`, `/mnt/wsl/`, or a dedicated ext4 mount), not on a Docker Desktop Windows drive (`/mnt/c/`, `M:\`, etc.).
 
@@ -192,6 +192,6 @@ _check_filesystem_compat() {
 
 | Question | Status |
 |---|---|
-| Should the detection be a hard block or a soft warning? | Suggested: soft warning — the user can still proceed with degraded functionality. |
+| Should the detection be a hard block or a soft warning? | Suggested: soft warning -- the user can still proceed with degraded functionality. |
 | Should the check run on the host (start_agent.sh) or in the container (entrypoint)? | Container-side (`entrypoint.sh`) is more accurate because it tests the actual mount point, but host-side catches the problem before Docker starts. Both could run. |
 | Does Docker Desktop for Linux also exhibit this issue? | Untested. Docker Desktop on Linux does not use 9p; it uses a bind mount from the host Linux filesystem directly. Likely not affected. |

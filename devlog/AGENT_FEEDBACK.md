@@ -199,3 +199,24 @@ state: open
 scoped: none
 legacy: none
 mitigation: close touches many canonical surfaces (two persistent files, roadmap tasks, decisions, deferred items). Watch-outs: keep AGENT_FEEDBACK/GOTCHAS short (no-index, length → durable fix), and rely on the roadmap as the sole task list to avoid scattering.
+
+### [A] 2026-08-09 - A regex edit with a missing file operand silently does nothing
+
+state: open
+scoped: none
+legacy: none
+mitigation: when a sed -i pipeline omits the file operand while still parsing validly, it exits 0 and writes nothing; set -e does not catch it. Verify the file changed after a mechanical edit sweep. Cross-reference: bash-scripting-traps skill.
+
+### [A] 2026-08-09 - A "did the write land?" reflex is missing for rule edits
+
+state: open
+scoped: none
+legacy: none
+mitigation: session 08 proposed, refined, then swept an em-dash rule, but the rule text itself was never applied; the un-applied edit surfaced only at AC-verification grep. When an edit is intended to change a rule, grep the canonical line after writing to confirm the intended text landed.
+
+### [A] 2026-08-09 - Mid-session findings under-recorded during an edit-heavy session
+
+state: open
+scoped: none
+legacy: none
+mitigation: session 08 produced friction (dash-sweep tooling, un-applied rule, gate-velocity) but recorded none of it; the gap surfaced via operator review, not self-capture. The AGENTS.md pointer states what to record but not the reflex to stop and write findings when a session turns edit-heavy.

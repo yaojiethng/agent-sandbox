@@ -6,9 +6,9 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
-## [CORRECTION — 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
+## [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
 
-Three issues corrected in the pre-flight check block added in M2.7 item 11b:
+Three issues corrected in the pre-flight check block added in M2.7:
 
 1. **Wrong container:** CRITICAL checks for INPUT_DIR and OUTPUT_DIR asserted mounts
    that only exist in the agent container, not the sandbox container. Removed from
@@ -25,13 +25,13 @@ Three issues corrected in the pre-flight check block added in M2.7 item 11b:
 A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify all
 three fixes and prevent future regressions.
 
-## [CORRECTION — 2026-04-12] Historical Inconsistency Warning
+## [CORRECTION - 2026-04-12] Historical Inconsistency Warning
 
 The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
 
 ---
 
-## M1 — Barebones Agent Container
+## M1 - Barebones Agent Container
 
 *The agent runs inside an isolated Docker container with network access, driven by a per-project Makefile.*
 
@@ -39,7 +39,7 @@ The core harness was established: Docker image, per-project config system, works
 
 ---
 
-## M1.1 — Interactive Virtual Workspace / Serve Mode
+## M1.1 - Interactive Virtual Workspace / Serve Mode
 
 *The agent can be prompted interactively from a browser on the host without a local OpenCode installation.*
 
@@ -47,7 +47,7 @@ OpenCode runs in server mode inside the container, exposed on a configurable por
 
 ---
 
-## M1.2 — Sandbox File Isolation & Diff Workflow
+## M1.2 - Sandbox File Isolation & Diff Workflow
 
 *The agent works on a snapshot of the project and cannot access or modify the host repository directly; all changes are captured as a reviewable diff.*
 
@@ -55,7 +55,7 @@ Project files enter the sandbox via a host-built snapshot in `.bootstrap/`, cons
 
 ---
 
-## M1.3 — Invocation Cleanup & Onboarding Workflow
+## M1.3 - Invocation Cleanup & Onboarding Workflow
 
 *A single `agent-sandbox` CLI installed on the host dispatches all harness operations; new projects are onboarded via a Makefile and brief without touching the harness internals.*
 
@@ -63,7 +63,7 @@ The per-project conf file was removed in favour of named flags defined in the pr
 
 ---
 
-## M1.4 — Image Staleness Detection [SUPERSEDED/REMOVED in M2.1]
+## M1.4 - Image Staleness Detection [SUPERSEDED/REMOVED in M2.1]
 
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
 
@@ -73,23 +73,23 @@ A SHA-256 digest of all build inputs is embedded as a Docker image label at buil
 
 ---
 
-## M1.5 — Workflow Convergence & Directory Restructuring
+## M1.5 - Workflow Convergence & Directory Restructuring
 
 *The harness now separates the project repository from harness artefacts into sibling directories, keeping the project's git tree clean, and provides a dedicated operator input channel for passing task files and briefs to the agent before a run.*
 
-Harness artefacts — snapshot, brief, workspace output — moved from `PROJECT_ROOT` into a sibling `SANDBOX_DIR`, eliminating harness pollution of the project git tree. The `.bootstrap/` directory was renamed `.agent-input/` and expanded to serve as the unified input channel: snapshot, brief, and operator-placed task files all enter the container through a single read-only mount. Directory names are defined once in `start_agent.sh` and passed to the container as environment variables, giving both host and container scripts a single source of truth. The `apply` subcommand now takes explicit `--project` and `--sandbox` flags, with the Makefile defining both paths so the operator workflow is unchanged. Open user stories (vault onboarding, website dev, knowledge store provider) were resolved or explicitly deferred to M2, and the workflow convergence decision was recorded. The onboarding skill was updated to reflect the new directory layout and modularised so that future convention changes require only variable updates.
+Harness artefacts -- snapshot, brief, workspace output -- moved from `PROJECT_ROOT` into a sibling `SANDBOX_DIR`, eliminating harness pollution of the project git tree. The `.bootstrap/` directory was renamed `.agent-input/` and expanded to serve as the unified input channel: snapshot, brief, and operator-placed task files all enter the container through a single read-only mount. Directory names are defined once in `start_agent.sh` and passed to the container as environment variables, giving both host and container scripts a single source of truth. The `apply` subcommand now takes explicit `--project` and `--sandbox` flags, with the Makefile defining both paths so the operator workflow is unchanged. Open user stories (vault onboarding, website dev, knowledge store provider) were resolved or explicitly deferred to M2, and the workflow convergence decision was recorded. The onboarding skill was updated to reflect the new directory layout and modularised so that future convention changes require only variable updates.
 
 ---
 
-## M2.1 — General Capability Layer Prototype
+## M2.1 - General Capability Layer Prototype
 
-*The harness now runs two containers per session: a capability layer that owns the sandbox and diff pipeline, and a reasoning layer that runs the agent — proving the two-container model end-to-end against a real coding project.*
+*The harness now runs two containers per session: a capability layer that owns the sandbox and diff pipeline, and a reasoning layer that runs the agent -- proving the two-container model end-to-end against a real coding project.*
 
-The single container was split into two. The capability layer initialises `sandbox/` from the project snapshot, records a baseline git commit, and writes `staged.diff` on exit via an EXIT trap. The reasoning layer attaches to `sandbox/` through Docker's `--volumes-from` mechanism and cannot start if the capability layer is not healthy — enforcing the ownership boundary at the infrastructure level. Docker Compose manages the two-container lifecycle; Compose files are generated from templates at each run. Build context for each image is assembled into a `mktemp` directory by `build_context` and discarded after the build, replacing the `image-files.txt` manifest. Onboarded template files carry a version tag; `build_sandbox.sh` detects stale installed files and prints a targeted refresh command. `make onboard` and `make refresh` targets in the repo Makefile handle the dogfood sandbox.
+The single container was split into two. The capability layer initialises `sandbox/` from the project snapshot, records a baseline git commit, and writes `staged.diff` on exit via an EXIT trap. The reasoning layer attaches to `sandbox/` through Docker's `--volumes-from` mechanism and cannot start if the capability layer is not healthy -- enforcing the ownership boundary at the infrastructure level. Docker Compose manages the two-container lifecycle; Compose files are generated from templates at each run. Build context for each image is assembled into a `mktemp` directory by `build_context` and discarded after the build, replacing the `image-files.txt` manifest. Onboarded template files carry a version tag; `build_sandbox.sh` detects stale installed files and prints a targeted refresh command. `make onboard` and `make refresh` targets in the repo Makefile handle the dogfood sandbox.
 
 ---
 
-## M2.2 — Reasoning Layer Modularisation
+## M2.2 - Reasoning Layer Modularisation
 
 *Any reasoning layer provider can now be added under `providers/<n>/` without modifying shared harness scripts or libraries.*
 
@@ -97,22 +97,22 @@ The provider interface was formalised: each provider supplies a `base.Dockerfile
 
 ---
 
-## M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+## M2.3 - Apply Workflow: Capability Layer Diff Pipeline
 
-*The operator can review agent work as shaped commits on a draft branch, confirm via rebase and fast-forward merge, or reject with no trace — all through a git-agnostic diff pipeline that works identically in both directions between sandbox and host.*
+*The operator can review agent work as shaped commits on a draft branch, confirm via rebase and fast-forward merge, or reject with no trace -- all through a git-agnostic diff pipeline that works identically in both directions between sandbox and host.*
 
-The diff pipeline was redesigned around a single git-agnostic unified diff format with index lines stripped, consumed by `git apply` in both directions. `package-diff` exports uncommitted working tree changes; `package-branch` exports the full committed branch history since `INIT_SHA` as numbered diffs. `make draft` creates a `draft/<name>` branch from the host, applies the numbered diffs sequentially, and commits `.draft-state` as metadata on the branch. `make confirm` validates the draft branch, drops `.draft-state`, rebases onto target, fast-forward merges, and deletes the draft branch — printing exact recovery commands on rebase conflict. `make reject` returns to the source branch and discards the draft. `make apply` applies a single diff uncommitted for mid-session sync in either direction. No checkpoint git tags, no `make sync`, no `SYNC=1`, and no `ADVANCED_SESSIONS` tracking — the harness does not bookkeeping which diffs have been applied.
+The diff pipeline was redesigned around a single git-agnostic unified diff format with index lines stripped, consumed by `git apply` in both directions. `package-diff` exports uncommitted working tree changes; `package-branch` exports the full committed branch history since `INIT_SHA` as numbered diffs. `make draft` creates a `draft/<name>` branch from the host, applies the numbered diffs sequentially, and commits `.draft-state` as metadata on the branch. `make confirm` validates the draft branch, drops `.draft-state`, rebases onto target, fast-forward merges, and deletes the draft branch -- printing exact recovery commands on rebase conflict. `make reject` returns to the source branch and discards the draft. `make apply` applies a single diff uncommitted for mid-session sync in either direction. No checkpoint git tags, no `make sync`, no `SYNC=1`, and no `ADVANCED_SESSIONS` tracking -- the harness does not bookkeeping which diffs have been applied.
 
 ---
 
 
-## M2.7 — Session Identity and Harness Versioning
+## M2.7 - Session Identity and Harness Versioning
 
 *Every session has a stable, traceable identity; containers are named by content hash not timestamp; images carry a build-time content digest for staleness detection; the build pipeline uses repo-root context with subdirectory COPY; and dry-run validates the two-layer seam end-to-end.*
 
 ### Container Identity & Lifecycle (Track A)
 
-Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) — provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
+Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
 
 ### Build Pipeline & Staleness Detection (Track B)
 
@@ -128,6 +128,6 @@ Generic pre-flight in shared entrypoint: all 7 lib files checked, AGENT_HOME val
 
 ### Deferred
 
-- Harness-sig — self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
-- Autosave/session-save reliability — moved to M2.6.
-- Process improvements (fast-track criteria, decision recording, stale skill reference) — not milestone-scoped.
+- Harness-sig -- self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
+- Autosave/session-save reliability -- moved to M2.6.
+- Process improvements (fast-track criteria, decision recording, stale skill reference) -- not milestone-scoped.

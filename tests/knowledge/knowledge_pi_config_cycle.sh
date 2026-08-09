@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
 # tests/knowledge/knowledge_pi_config_cycle.sh
 #
-# Knowledge test: Pi-specific config lifecycle — settings.json merge, key persistence,
+# Knowledge test: Pi-specific config lifecycle - settings.json merge, key persistence,
 # and the agent/ subdirectory path convention.
 #
 # Documents the behavioural assumptions about:
-#   a) The _ensure_harness_keys merge — injects skills/prompts/packages paths into
+#   a) The _ensure_harness_keys merge - injects skills/prompts/packages paths into
 #      Pi's settings.json at startup to reference /opt/workflow/agent/ directories
-#   b) The provider-aware path convention — Pi uses $AGENT_HOME/agent/settings.json
+#   b) The provider-aware path convention - Pi uses $AGENT_HOME/agent/settings.json
 #      (agent/ subdirectory), unlike other providers which use $AGENT_HOME/settings.json
 #
 # This test is Pi-specific because:
-#   - settings.json is a Pi config file (other providers use their own format)
-#   - The agent/ subdirectory under AGENT_HOME is a Pi config quirk
-#   - /opt/workflow/agent/ paths only exist in Pi's provider image
-#   - _ensure_harness_keys is gated behind PROVIDER_NAME == pi
+#  - settings.json is a Pi config file (other providers use their own format)
+#  - The agent/ subdirectory under AGENT_HOME is a Pi config quirk
+#  - /opt/workflow/agent/ paths only exist in Pi's provider image
+#  - _ensure_harness_keys is gated behind PROVIDER_NAME == pi
 #
 # Historical note:
 #   Previously named knowledge_provider_config_cycle.sh. Renamed in session
 #   20260522-04 when it was recognised that the test covers Pi-specific behaviour,
 #   not a generic provider config cycle. The old copy-in/copy-out tests were
-#   removed — that mechanism was replaced by direct bind mount in M2.7 item 8.
+#   removed - that mechanism was replaced by the direct bind mount (M2.7 config change).
 #
 # Reference:
-#   - src/reasoning/providers/pi/config/agent/settings.json (onboard source — has custom keys)
-#   - libs/provider-entrypoint.sh (_ensure_harness_keys merge function)
-#   - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
-#   - docs/concepts/agent_workflow.md ("Skills and Prompts Layer Model")
-#   - docs/operations/testing_policy.md (knowledge test format)
+#  - src/reasoning/providers/pi/config/agent/settings.json (onboard source - has custom keys)
+#  - libs/provider-entrypoint.sh (_ensure_harness_keys merge function)
+#  - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
+#  - docs/concepts/agent_workflow.md ("Skills and Prompts Layer Model")
+#  - docs/operations/testing_policy.md (knowledge test format)
 #
 # Not run by make test. Run manually:
 #   bash tests/knowledge/knowledge_pi_config_cycle.sh

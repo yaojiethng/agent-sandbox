@@ -5,20 +5,20 @@
 #
 # This script is the reasoning layer counterpart to dry_run_capability.sh (capability
 # layer). It validates the reasoning layer's perspective of the host-container seam:
-#   - Can read what the capability layer wrote (SESSION_STATE, CHANGES_DIR markers)
-#   - Can access its own mounts (INPUT_DIR, OUTPUT_DIR)
-#   - stdin/TTY are correctly wired
+#  - Can read what the capability layer wrote (SESSION_STATE, CHANGES_DIR markers)
+#  - Can access its own mounts (INPUT_DIR, OUTPUT_DIR)
+#  - stdin/TTY are correctly wired
 #
 # For capability-layer checks (image files, sandbox entrypoint, diff pipeline),
 # see dry_run_capability.sh.
 #
 # Exit codes:
-#   0 — all CRITICAL checks passed (warnings may exist)
-#   1 — one or more CRITICAL checks failed
+#   0 - all CRITICAL checks passed (warnings may exist)
+#   1 - one or more CRITICAL checks failed
 #
 # Check severity:
-#   CRITICAL — infrastructure is broken; the run would fail or produce wrong results
-#   WARN     — something is missing or unexpected; worth reviewing before production use
+#   CRITICAL - infrastructure is broken; the run would fail or produce wrong results
+#   WARN     - something is missing or unexpected; worth reviewing before production use
 
 # Intentionally no set -e: all checks must run even when some fail.
 # Intentionally no set -u: env vars are checked explicitly with guards.
@@ -94,7 +94,7 @@ warn_check "running as non-root" bash -c '[[ "$(id -u)" -ne 0 ]]'
 section "environment variables"
 critical "AGENT_HOME is set"          bash -c '[[ -n "${AGENT_HOME:-}" ]]'
 critical "PROVIDER_NAME is set"       bash -c '[[ -n "${PROVIDER_NAME:-}" ]]'
-# PROVIDER_CONFIG_DIR was removed in M2.7 item 8 — config is now bind-mounted
+# PROVIDER_CONFIG_DIR was removed in the M2.7 config bind-mount change - config is now bind-mounted
 # directly at AGENT_HOME. This check is intentionally absent.
 
 # ---------------------------------------------------------------------------
@@ -165,7 +165,7 @@ critical "CHANGES_DIR resolves to bind mount target" check_changes_dir_matches_m
 
 # Write a marker file and verify it's readable at the resolved path.
 # If the path is doubled (bug), mkdir -p creates the wrong tree and the
-# marker lands outside the bind mount — the subsequent read fails.
+# marker lands outside the bind mount - the subsequent read fails.
 _marker="$CHANGES_DIR/.dryrun_seam_test"
 if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "REASONING_OK" > "$_marker" 2>/dev/null; then
   _readback=$(cat "$_marker" 2>/dev/null) || _readback=""

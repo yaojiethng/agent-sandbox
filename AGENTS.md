@@ -1,4 +1,4 @@
-# AGENTS.md — agent-sandbox
+# AGENTS.md - agent-sandbox
 
 ## System
 
@@ -10,11 +10,11 @@
 
 You operate in three modes, often in combination:
 
-**Design** — Propose architecture, system behaviour, and implementation plans grounded in the existing system. Do not propose designs that skip incomplete milestones.
+**Design** -- Propose architecture, system behaviour, and implementation plans grounded in the existing system. Do not propose designs that skip incomplete milestones.
 
-**Development** — Generate code against an agreed design. The design proposal is the spec; correctness and adherence are the primary evaluation criteria.
+**Development** -- Generate code against an agreed design. The design proposal is the spec; correctness and adherence are the primary evaluation criteria.
 
-**Audit** — Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
+**Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
 
 ---
 
@@ -24,25 +24,25 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per session plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are free-form — only the delivery commit at session close is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per session plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are free-form -- only the delivery commit at session close is subject to format enforcement.
 
-**No secrets.** Gitignored files — including `.env` and credentials — are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
+**No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
 ---
 
 ## Collaboration Protocol
 
-These principles are stable. The operating workflow and policy documents are their realisations — they will evolve; the principles do not.
+These principles are stable. The operating workflow and policy documents are their realisations -- they will evolve; the principles do not.
 
-**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous session — if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
+**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous session -- if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
 
-**Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses — not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
+**Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses -- not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
 
-**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form — only the delivery commit at session close is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
+**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form -- only the delivery commit at session close is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
 
-**Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
+**Confirm scope before producing output.** After the handover is created, state what you propose to do this session -- what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
-**Confirm acceptance before closing.** Before closing the session, present the status of every acceptance criterion in a visible table — each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
+**Confirm acceptance before closing.** Before closing the session, present the status of every acceptance criterion in a visible table -- each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
@@ -50,9 +50,11 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Diagnose before fixing.** Explain the root cause and confirm your understanding before proposing a fix.
 
-**Scope discipline.** Address only what was asked. Flag adjacent issues separately — never fix them silently.
+**Scope discipline.** Address only what was asked. Flag adjacent issues separately -- never fix them silently.
 
-**One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have — a question is only warranted if it genuinely cannot be resolved from what is available.
+**One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
+
+**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a persistent record, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/operations/documentation_policy.md#numbering-and-cross-references).
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -67,12 +69,12 @@ These principles are stable. The operating workflow and policy documents are the
 
 ## Propagation Discipline
 
-When a task requires applying a change across multiple files — a naming rule, a structural convention, an interface rename, a container label, a variable — use a propagation checklist to track coverage.
+When a task requires applying a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- use a propagation checklist to track coverage.
 
 **Before writing any file**, produce a checklist in chat:
 
 ```
-Propagation checklist — <change description>
+Propagation checklist -- <change description>
 
 | File | Change | Status |
 |---|---|---|
@@ -82,16 +84,16 @@ Propagation checklist — <change description>
 ```
 
 Update the checklist:
-- When a file is completed — mark it `done` before moving to the next file.
-- **When the task scope expands** — add new rows for the new scope before producing any output for it.
+- When a file is completed -- mark it `done` before moving to the next file.
+- **When the task scope expands** -- add new rows for the new scope before producing any output for it.
 
-**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage — show the table.
+**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage -- show the table.
 
 **Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
 
 **The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
 
-**Output contract changes require a propagation checklist regardless of task language.** A change that alters an output format, file layout, API surface, or any contract consumed by other code or documented in `docs/` must be accompanied by a checklist covering all consumers — tests, docs, downstream scripts, fixtures, and knowledge tests — even if the task is phrased as a single-file edit.
+**Output contract changes require a propagation checklist regardless of task language.** A change that alters an output format, file layout, API surface, or any contract consumed by other code or documented in `docs/` must be accompanied by a checklist covering all consumers -- tests, docs, downstream scripts, fixtures, and knowledge tests -- even if the task is phrased as a single-file edit.
 
 ---
 
@@ -103,8 +105,8 @@ Bash friction is one class of the agent-feedback record. It lives with the other
 
 Two persistent records live in `devlog/`:
 
-- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) — agent-experience feedback, recorded by the agent, reviewed by the operator. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
-- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) — recurring agent mistakes and code smells, recorded by the operator. At session open (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the session. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
+- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- agent-experience feedback, recorded by the agent, reviewed by the operator. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
+- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- recurring agent mistakes and code smells, recorded by the operator. At session open (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the session. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
 
 These files are tied into the session's Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 
@@ -136,17 +138,17 @@ In interfaces without filesystem access (e.g. Claude Chat), run grep across uplo
 
 ## Output Format
 
-Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface — see your provider-layer `AGENTS.md` for interface-specific output instructions.
+Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
-**Documents** — Markdown, one file per document, correct folder per `documentation_policy.md`.
+**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`.
 
-**Governance documents** (policy files, AGENTS.md, operational docs) — propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
+**Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
-**Code** — Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
+**Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
-**Audit findings** — Identify the document or code, state the rule violated, propose the correction.
+**Audit findings** -- Identify the document or code, state the rule violated, propose the correction.
 
-**Code comments** — Comments must describe what the code does or why — never that it was changed. The following are banned in all code output: `# (Change N)`, `# Updated`, `# Fixed`, `# Modified`, `# Added`, `# Removed`, `# As requested`, and any comment that only makes sense in the context of an editing session.
+**Code comments** -- Comments must describe what the code does or why -- never that it was changed. The following are banned in all code output: `# (Change N)`, `# Updated`, `# Fixed`, `# Modified`, `# Added`, `# Removed`, `# As requested`, and any comment that only makes sense in the context of an editing session. Do not reference transient numbering in a comment, for example a roadmap item position or a finding number. Name the change or link the document instead.
 
 ---
 
@@ -154,13 +156,13 @@ Agent output is complete and ready for review when it follows the format rules b
 
 If a required document is absent and carries no `[REMOVED]` marker on its referencing link, flag it as an error and prompt the operator before proceeding. Do not assume the document is optional. Do not proceed without resolution.
 
-If a document's referencing link is marked `[REMOVED]`, the absence is expected — no error.
+If a document's referencing link is marked `[REMOVED]`, the absence is expected -- no error.
 
 ---
 
 ## Session Start
 
-Read these in order. Each answers a distinct question — do not skip. Verify you have access to each before proceeding.
+Read these in order. Each answers a distinct question -- do not skip. Verify you have access to each before proceeding.
 
 ### Always
 
@@ -169,7 +171,7 @@ Read these in order. Each answers a distinct question — do not skip. Verify yo
 | `AGENTS.md` (this file) | How do I work here? |
 | Provider-layer `AGENTS.md` | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last session end? |
-| [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? — after reading, state your proposed scope and wait for confirmation before producing any output |
+| [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? -- after reading, state your proposed scope and wait for confirmation before producing any output |
 
 ### Major loop only
 
@@ -180,7 +182,7 @@ Read these in addition to the above when opening a major loop planning session.
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
 | [`devlog/changelog.md`](devlog/changelog.md) | Is the prior milestone fully closed? |
 
-### Policy documents — read before the relevant task type, not at session start
+### Policy documents - read before the relevant task type, not at session start
 
 | Document | Read before |
 |---|---|
