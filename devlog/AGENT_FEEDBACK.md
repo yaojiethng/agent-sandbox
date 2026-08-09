@@ -167,10 +167,10 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 
 ### [A] 2026-08-09 — Directive/policy granularity mismatch for governance changes causes run-ahead
 
-state: open
+state: probation
 scoped: none
 legacy: none
-mitigation: the session-open directive scaffolds Gate 1 (scope) and Gate 2 (acceptance criteria) as the whole-session permission points. AGENTS.md separately requires policy changes to be proposed section-by-section. A task-list confirmation is not policy-text approval. Restate the per-section policy gate in the directive when it names policy files; the directive's "implementation does not begin until both gates are confirmed" reads as blanket authorization (new-session.md line 96).
+mitigation: durable fix applied (session `20260810-02`): `new-session.md` no longer reads as blanket authorization — the "implementation does not begin until both gates are confirmed" line was deleted (redundant with the procedural stops), the gate sections state what they confirm in declarative headers, and the gates' permission language now matches the canonical model (gates are released; content — scope, acceptance criteria — is confirmed). Per operator decision, the per-section policy gate is NOT restated in the directive: AGENTS.md owns it and is always loaded. Monitor for resurfacing of run-ahead on policy changes. When confirmed durable, delete and record in changelog/roadmap.
 
 ### [A] 2026-08-09 — Mid-session findings duplicate-entry and rewrite churn
 

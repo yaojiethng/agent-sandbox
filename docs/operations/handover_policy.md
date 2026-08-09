@@ -181,7 +181,7 @@ Closed handovers are read-only records with one exception: documented correction
 
 ### When to apply
 
-Apply a correction when a factual error is found in the document — an incorrect status, a wrong filename, a misrecorded decision. Do not apply a correction to add new information, change scope, or extend the session record. New session work belongs in a new handover.
+Apply a correction when a factual error is found in the document — an incorrect status, a wrong filename, a misrecorded decision. Do not apply a correction to add new information, change scope, or extend the session record. New work belongs in a new handover.
 
 ### Procedure
 

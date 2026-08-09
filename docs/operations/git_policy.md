@@ -132,7 +132,7 @@ If none of these apply, the simple single-branch model is preferred.
 
 ### Branch lifecycle
 
-A session branch is merged or discarded when its session work is complete. An integration branch is merged when the sub-milestone is complete. Stale branches with no activity for two milestones are deleted.
+A session branch is merged or discarded when its work is complete. An integration branch is merged when the sub-milestone is complete. Stale branches with no activity for two milestones are deleted.
 
 ---
 

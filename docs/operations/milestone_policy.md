@@ -1,6 +1,6 @@
 # Milestone Policy
 
-Governs the major loop: the planning process that runs after a major milestone closes and before session work on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to session" means for a milestone.
+Governs the major loop: the planning process that runs after a major milestone closes and before session execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
 
 This document is read during the major loop. For session execution, see [`iteration_policy.md`](iteration_policy.md).
 
@@ -39,13 +39,13 @@ Before beginning, read:
 
 ## Scoping Criteria
 
-A sub-milestone is **ready to session** when:
+A sub-milestone is **ready to proceed** when:
 - Its objective is stated in one sentence
 - Its design decisions are resolved and recorded with rationale — not just listed as open questions
 - Its task list is specific enough that each item identifies a file and a nature of change
 - Its dependencies on prior sub-milestones are named explicitly
 
-A sub-milestone is **not ready to session** when:
+A sub-milestone is **not ready to proceed** when:
 - It has open design questions that can be answered now (these must be resolved before closing the major loop)
 - It has open design questions that depend on earlier implementation decisions (these are explicitly deferred and flagged)
 - Its task list is aspirational rather than specific

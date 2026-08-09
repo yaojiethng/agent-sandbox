@@ -58,29 +58,27 @@ If the directive slot is non-empty:
 Before creating the handover:
 
 ```
-Range-read: docs/operations/iteration_policy.md §Step 1 — Open handover and §Step 1 Details.
+Range-read: docs/operations/iteration_policy.md [Step 1 — Open handover and Step 1 Details](iteration_policy.md#step-1-open-handover).
 ```
 
 Create the handover per those rules. Set Status to `Active`.
 
 ---
 
-## Gate 1 — What is being asked? (Step 2)
-
-Both gates must be confirmed before any work begins. They apply to every session regardless of type or size.
+## Gate 1 — Confirm scope (Step 2)
 
 Derive scope from the argument, the prior handover, and the roadmap. Read any additional files needed to make the scope concrete — what files will change, what will not change, and why. Present:
 - What is in scope this session and why
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin
 
-If scope cannot be confidently derived, ask the operator one question at a time. Do not proceed with a best guess. Do not produce any file, code, or structural output until the operator confirms scope and sends an explicit release.
+If scope cannot be confidently derived, ask the operator one question at a time. Do not guess. Do not produce any file, code, or structural output until the operator confirms scope and sends an explicit release.
 
-Stop here and wait for the release before continuing.
+Stop here and wait for an explicit release before continuing.
 
-## Gate 2 — What does done look like? (Step 5)
+## Gate 2 — Acceptance criteria (Step 5)
 
-Once Gate 1 is released, state what a successful output looks like. Define criteria in a four-column table:
+Once Gate 1 is released, define the acceptance criteria in a four-column table:
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
@@ -91,6 +89,4 @@ Each criterion must describe an observable delta — the operator verifies by ru
 
 **When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs — they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see `testing_policy.md`).
 
-Present the full table with pre-verification results. Wait for the operator to confirm. Once confirmed, update the handover — replace `Not yet defined.` with the confirmed criteria. The handover is the canonical location for AC.
-
-Implementation does not begin until both gates are confirmed.
+Present the full table with pre-verification results. Wait for the operator to confirm the acceptance criteria. Once confirmed, update the handover — replace `Not yet defined.` with the confirmed criteria. The handover is the canonical location for AC.

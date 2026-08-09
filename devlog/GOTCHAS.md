@@ -43,7 +43,14 @@ This section holds the active gotcha backlog. The agent reads it at session open
 state: open
 scoped: none
 legacy: none
-mitigation: when a session directive names policy files (docs/operations/, AGENTS.md), treat a scope/AC gate confirmation as task-list approval only. Present each changed policy section and wait for operator approval before writing it. A gate confirmation is not policy-text approval.
+mitigation: when a session names policy files (`docs/operations/`, `AGENTS.md`), a released task-list gate confirms scope and acceptance criteria, not policy text. Content is confirmed; gates and policy text are released. Present each changed policy section verbatim in chat and wait for an explicit release before writing it.
+
+### [G] 2026-08-09 — Session-relative finding numbers used outside their source session
+
+state: open
+scoped: none
+legacy: none
+mitigation: a finding number (for example "finding 4") has meaning only inside the session that enumerated it. When a task is deferred, escalated, or referenced later, use the descriptive title (for example "Directive granularity — new-session.md per-section policy gate"), not the session-relative number. A cross-session record must stand alone.
 
 ### [G] 2026-08-09 — Set handover Status Closed before the final commit (close = the commit)
 

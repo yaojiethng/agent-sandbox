@@ -13,7 +13,7 @@ Read this document at the start of any session. Read the relevant child document
 | | 3. Open or revise stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
 | | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
 | | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) — Stories |
-| | **Gate 3** | confirm ready to session |
+| | **Gate 3** | release sub-milestone to session execution |
 | **Minor** | 1. Open handover | [Step 1 Details](#step-1-open-handover) |
 | | 2. Confirm scope | [Step 2 Details](#step-2-confirm-scope) |
 | | **Gate 1** | wait for operator release before any output |
@@ -66,7 +66,7 @@ The loops are sequential at the major level — a major milestone must be planne
 
 ## Major Loop — Milestone Planning
 
-Triggered after a major milestone closes. Performed once per major milestone before any session work begins. This is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for session execution — see [`milestone_policy.md`](milestone_policy.md) for readiness criteria.
+Triggered after a major milestone closes. Performed once per major milestone before any session execution begins. This is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for session execution — see [`milestone_policy.md`](milestone_policy.md) for readiness criteria.
 
 | Step | Entry condition | Action | Exit condition | Governing document |
 |---|---|---|---|---|
@@ -77,7 +77,7 @@ Triggered after a major milestone closes. Performed once per major milestone bef
 | **3 — Open or revise stories** | Operator has directed specific areas, OR open stories or unresolved questions exist under the chosen sub-milestone. Skip if neither applies. | For each directed or open area, produce a new story or revise an existing one in `devlog/discussions/`. | All directed and existing open areas have a current story document. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
 | **4 — Investigate or design** | Unresolved stories exist under the chosen sub-milestone. | For each unresolved story: if direction is clear, produce a design document directly. If unclear, open discussion documents as warranted. | Every unresolved story has a corresponding discussion document. | [`discussion_policy.md`](discussion_policy.md) |
 | **5 — Resolve stories** | A story has a completed investigation or agreed approach. | Operator reviews each story and provides explicit sign-off with direction. Each story is either graduated to the roadmap or given an explicit status (deferred, abandoned, superseded) with a recorded reason. | All stories under the sub-milestone are resolved or carry an explicit status with recorded reason. Graduated stories are written as roadmap entries. | [`discussion_policy.md`](discussion_policy.md) — Stories |
-| **Gate 3 — Confirm ready to session** | All stories resolved or explicitly statused. | Wait for operator to confirm the sub-milestone is ready to session. | Operator confirms sub-milestone has a complete roadmap entry. Explicit release required. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
+| **Gate 3 — Release sub-milestone to session execution** | All stories resolved or explicitly statused. | Wait for operator to confirm the sub-milestone is ready to proceed. | Operator confirms sub-milestone has a complete roadmap entry. Explicit release required. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
 
 ---
 
