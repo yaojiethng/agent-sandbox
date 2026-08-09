@@ -35,14 +35,17 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Depends on:** M2 two-layer architecture (headless mode requires the capability layer tool interface; task briefs are the operator input channel from M1.5).
 
+**Finding — Sub-milestone containment (recorded, not designed):** Milestones and sub-milestones are intended to be self-contained, but partial implementations from later milestones are frequently needed while the current milestone is incomplete. This suggests that how features are cut into sub-milestones, and how strictly they are sequenced, may be the wrong seam. The sub-milestone-as-container model is recognized as a candidate for re-examination, not as settled. Design and any restructuring is deferred to M3. The current deferred-items / sub-milestone task-list system is maintained until then.
+
 - [ ] Define Task Brief format (`TASK.md` — per-run brief placed in `SANDBOX_DIR/.agent-input/input/` before the run; aligns with the M1.5 input channel)
 - [ ] Define agent execution lifecycle for a single headless task run
 - [ ] Atomic install for `make install` — write to temp file, verify, then `mv` into place
 - [ ] Pre-snapshot validation gate — configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts
 - [ ] Store structured logs per agent and task run
 - [ ] Capture metadata with each commit (agent_id, task_id, timestamp) — prerequisite for trusting autonomous output
-- [ ] Converting the roadmap to linear-style task tracking
-- [ ] Moving next-session seed out of handover and into a next-task subheader in the sub-milestone
+- [ ] Converting the roadmap to linear-style task tracking — full linear redesign. The handover next-session trim and always-push-to-roadmap behavior are scoped for immediate implementation (outside M3); only the linear/management-app format remains.
+- [ ] Moving next-session seed out of handover and into a next-task subheader in the sub-milestone — the handover next-session trim is scoped for immediate implementation; next-task subheader placement within the linear format remains.
+- [ ] Close-milestone automation — replace the manual administrative close checklist with a single script (`make close-milestone`) that atomically bumps milestone state. Clean commit, no partial-close risk. Close is ceremonial (no decisions); all substantive work occurs in pre-close (see the milestone lifecycle reframe).
 - [ ] AC-machinery policy discussion for chores, doc, plan type sessions
 - [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred from M2.7
 
@@ -186,3 +189,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 ### Harness-sig — Host-Side Staleness Detection
 
 Described in Harness Packaging and Versioning above.
+
+### Doc Language Cleanup — STE-Clean Sweep
+
+**Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.

@@ -85,6 +85,8 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 **Depends on:** M2.4 (bind mount infrastructure), M2.7 (session identity, RUN_ID, container lifecycle).
 
+**Finding — handover close-order contradiction (current, routes to next session's policy work):** `iteration_policy.md` Steps 8–9 say commit then mark the handover Closed; `handover_policy.md` requires a Closed handover with no uncommitted changes. The two statements contradict. Preferred resolution: close = the commit itself — mark Closed, then the final commit includes the closed handover (no substantive action after close). Resolve alongside the Bucket-1 policy changes (P2, close-flow edit) in the session that implements the agent-feedback/gotchas workflow. Surfaced from session `20260809-03`; initially mis-routed to M3, corrected here.
+
 ---
 
 ##### M2.6.1 — Foundation: Autosave, Security, Preconditions (Complete)
