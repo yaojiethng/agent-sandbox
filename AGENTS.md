@@ -38,7 +38,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses — not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
 
-**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form — only the delivery commit at session close is subject to format enforcement. A handover marked `Closed` with uncommitted changes is not closed.
+**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form — only the delivery commit at session close is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
 
 **Confirm scope before producing output.** After the handover is created, state what you propose to do this session — what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
@@ -90,6 +90,12 @@ Update the checklist:
 **Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
 
 **The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
+
+---
+
+## Bash Friction Log
+
+A living catalogue of bash sharp edges, language limitations, and testing friction encountered during implementation lives at [`devlog/discussions/20260809-story-active-bash_complaints.md`](devlog/discussions/20260809-story-active-bash_complaints.md). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`src/reasoning/agent/drafts/bash-scripting-traps.skill.md`](src/reasoning/agent/drafts/bash-scripting-traps.skill.md) for existing mitigations.
 
 ---
 

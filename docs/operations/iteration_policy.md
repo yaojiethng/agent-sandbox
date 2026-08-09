@@ -203,6 +203,7 @@ Exit condition: Explicit release received.
 
 After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
 
+- **Commit all changes** — `git add -A && git commit`. The commit message matches the session type per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). The handover must be part of this commit. A handover marked `Closed` with uncommitted changes is not closed.
 - **Apply approved compaction** — per [`roadmap_policy.md`](roadmap_policy.md#session-close-steps-8-9). The operator-reviewed compaction proposal is applied mechanically.
 - **Run post-close bookkeeping** — compaction cascading, summary table update, and top-level milestone close (if applicable). See [Post-close Bookkeeping](roadmap_policy.md#post-close-bookkeeping).
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
