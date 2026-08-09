@@ -9,6 +9,7 @@
 #   all-changes.diff
 #   changed-files/MANIFEST.txt
 #   changed-files/<path>/<file>
+#   .init_sha
 
 set -uo pipefail
 
@@ -78,9 +79,10 @@ test_dispatcher_creates_all_artefacts() {
   [[ -f "$OUT/all-changes.diff" ]] || ALL_OK=false
   [[ -d "$OUT/changed-files" && -f "$OUT/changed-files/a.txt" && -f "$OUT/changed-files/b.txt" ]] || ALL_OK=false
   [[ -f "$OUT/changed-files/MANIFEST.txt" && -s "$OUT/changed-files/MANIFEST.txt" ]] || ALL_OK=false
+  [[ -f "$OUT/.init_sha" && -s "$OUT/.init_sha" ]] || ALL_OK=false
 
   if [[ "$ALL_OK" == true ]]; then
-    pass "package_branch creates all 5 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt)"
+    pass "package_branch creates all 6 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt, .init_sha)"
   else
     fail "package_branch missing one or more artefact types"
   fi

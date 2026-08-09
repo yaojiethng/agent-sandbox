@@ -20,11 +20,10 @@ Error: --session-summary is required. Provide a concise snake_case label.
   Bad:  --session-summary=changes
   Bad:  --session-summary=snapshot
 
-Usage: package_branch.sh --to=<dir> --session-summary=<text> [--baseline=<sha>]
+Usage: package_branch.sh --to=<dir> --session-summary=<text>
 
   --to=<dir>           Required. Base output directory.
   --session-summary    Required. Snake_case label for the bundle directory.
-  --baseline=<sha>     Optional. Override baseline SHA.
 ```
 
 The error must include:

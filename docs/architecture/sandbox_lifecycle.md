@@ -140,6 +140,7 @@ workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
   changed-files/
     MANIFEST.txt
     <path>/<file>        — working tree copies of all changed files
+  .init_sha             — baseline commit SHA the patches were generated against
 ```
 
 ### Autosave
