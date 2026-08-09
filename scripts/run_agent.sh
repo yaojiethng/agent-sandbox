@@ -238,7 +238,7 @@ if [[ "$MODE" == "serve" ]]; then
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
-  docker compose "${COMPOSE_ARGS[@]}" up -d sandbox 2>&1 | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
+  docker compose "${COMPOSE_ARGS[@]}" up -d sandbox 2>&1 | (grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true)
 
   compose_sandbox_wait "$PROJECT_NAME"
 

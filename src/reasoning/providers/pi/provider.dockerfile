@@ -11,12 +11,13 @@ ARG HOST_GID=1000
 # Build context is the repo root; COPY paths are repo-relative.
 COPY src/libs/                                          /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provider-entrypoint.sh
-COPY src/reasoning/providers/pi/preflight.sh             /opt/sandbox/bin/provider-preflight.sh
-COPY src/reasoning/agent/skills/                         /opt/workflow/agent/skills/
-COPY src/reasoning/agent/prompts/                        /opt/workflow/agent/prompts/
-COPY src/reasoning/providers/pi/config/                  /opt/workflow/agent/config/
-COPY docs/architecture/                                  /opt/sandbox/docs/architecture/
-COPY docs/concepts/                                      /opt/sandbox/docs/concepts/
+COPY src/reasoning/providers/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
+COPY src/reasoning/agent/skills/                        /opt/workflow/agent/skills/
+COPY src/reasoning/agent/prompts/                       /opt/workflow/agent/prompts/
+COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
+COPY docs/architecture/                                 /opt/sandbox/docs/architecture/
+COPY docs/concepts/                                     /opt/sandbox/docs/concepts/
+RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.
 RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
@@ -36,7 +37,7 @@ ENV WORKSPACE_DIR=/home/agentuser/workspace
 ENV PROVIDER_NAME=pi
 
 # Create key directories before user switch so agentuser
-# owns it. Docker bind mounts create parent dirs as root when they
+# owns them. Docker bind mounts on macOS create parent dirs as root when they
 # don't exist in the image, which would block the entrypoint's
 # copy-in provisioning step.
 RUN mkdir -p $AGENT_HOME/agent/prompts \

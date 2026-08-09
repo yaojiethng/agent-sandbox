@@ -44,18 +44,25 @@ RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
       groupmod -n agentuser "$existing_group" 2>/dev/null || true; \
       usermod -d /home/agentuser -m agentuser; \
     fi
-USER agentuser
 
 # -------------------------
 # Working directories
 # -------------------------
+# Create key directories before user switch so agentuser
+# owns them. Docker bind mounts on macOS create parent dirs as root
+# when they don't exist in the image, which blocks writes by the
+# unprivileged user.
 RUN mkdir -p /home/agentuser/sandbox \
              /home/agentuser/workspace/session-diffs \
-             /home/agentuser/.snapshot
+             /home/agentuser/.snapshot && \
+    chown -R agentuser:agentuser /home/agentuser
+
+USER agentuser
 
 VOLUME /home/agentuser/sandbox
 
 WORKDIR /home/agentuser
+
 
 # -------------------------
 # Health check

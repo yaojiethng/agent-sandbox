@@ -320,3 +320,20 @@ exec "$SCRIPT_DIR/run.sh" $REFRESH_FLAG
 
 Trap 12's examples assume function scope. When applying them at script top
 level, drop `local` and use a plain assignment.
+
+## 16. `|| true` on a pipeline swallows all errors under pipefail
+
+`set -o pipefail` makes a pipeline's exit code the first non-zero in the chain.
+Appending `|| true` to the entire pipeline swallows every command's failure —
+not just the last one.
+
+```bash
+# Broken — docker failure is swallowed silently
+docker compose up -d 2>&1 | grep -v '^Container ' || true
+
+# Right — scope || true to grep only via subshell
+docker compose up -d 2>&1 | (grep -v '^Container ' || true)
+```
+
+The subshell is the boundary: `grep`'s failure is absorbed, but the first
+command's failure still propagates through `pipefail` to `set -e`.
