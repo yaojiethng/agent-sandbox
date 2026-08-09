@@ -267,12 +267,6 @@ _resume_from_volume() {
 
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 
-  if volume_is_stale "$vol"; then
-    echo "Warning: project HEAD has moved since this session started."
-    echo "  The sandbox repo may be out of date."
-    echo "  Run 'make start RESUME=1' to show the volume picker."
-  fi
-
   {
     echo "SESSION_TS=${SESSION_TS}"
     echo "RUN_ID=${RUN_ID}"
@@ -285,8 +279,10 @@ _resume_from_volume() {
 }
 
 # auto_resume_or_new — default path when neither --refresh nor --resume is set.
-# Resumes the most recent non-stale volume if one exists, else new session.
-# On stale: warns and auto-resumes with a hint to use --resume for the picker.
+# 0 volumes          → new session
+# 1 non-stale        → resume silently
+# 0 non-stale, 1 stale → resume stale + warn
+# 2+ total           → interactive picker
 _auto_resume_or_new() {
   VOLUMES=()
   while IFS= read -r vol; do
@@ -310,13 +306,22 @@ _auto_resume_or_new() {
     fi
   done
 
-  # Case: 1 non-stale — resume it silently
+  # Case: 1 non-stale, 0 stale — resume it silently
   if [[ "${#NON_STALE[@]}" -eq 1 ]] && [[ "${#STALE[@]}" -eq 0 ]]; then
     _resume_from_volume "${NON_STALE[0]}"
     return
   fi
 
-  # Case: multiple non-stale, or mixed — interactive picker
+  # Case: 0 non-stale, 1 stale — resume with a warning
+  if [[ "${#NON_STALE[@]}" -eq 0 ]] && [[ "${#STALE[@]}" -eq 1 ]]; then
+    echo "Warning: project HEAD has moved since this session started."
+    echo "  The sandbox repo may be out of date."
+    echo "  Use --resume to select a different session if needed."
+    _resume_from_volume "${STALE[0]}"
+    return
+  fi
+
+  # Case: multiple volumes, or mixed — interactive picker
   _show_volume_picker
 }
 
