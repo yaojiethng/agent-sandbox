@@ -195,3 +195,7 @@ Described in Harness Packaging and Versioning above.
 ### Doc Language Cleanup — STE-Clean Sweep
 
 **Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.
+
+### Directive granularity — new-session.md per-section policy gate (finding 4)
+
+**Deferred (workflow session `20260810-01`).** The session-open directive (`src/reasoning/agent/prompts/new-session.md` line 96) scaffolds only whole-session gates (scope, acceptance criteria) and reads as blanket authorization, but AGENTS.md requires policy/AGENTS.md changes to be proposed one section at a time with confirmation before writing. Reword line 96 + add a per-section policy-gate note when a directive names policy files. Content addition needed (the directive is incomplete, not self-contradictory). Do NOT self-implement without operator-approved wording. Tracked open in `devlog/AGENT_FEEDBACK.md` (Class A) + `devlog/GOTCHAS.md` (Class B).

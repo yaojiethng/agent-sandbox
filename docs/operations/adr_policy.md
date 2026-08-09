@@ -11,8 +11,7 @@ YYYYMMDD-adr-{status}-{description}.md
 ```
 
 Type is always `adr` (enforced — no other type occurs in this directory).
-Same character rules as `discussion_policy.md`: hyphens as delimiters,
-underscores as word separators, charset `[a-z0-9][a-z0-9._-]*`.
+Same character rules as `discussion_policy.md`: hyphens as delimiters, underscores as word separators, charset `[a-z0-9][a-z0-9._-]*`.
 
 ### Statuses
 
@@ -24,8 +23,7 @@ underscores as word separators, charset `[a-z0-9][a-z0-9._-]*`.
 ## When an ADR is required
 
 An ADR is required when a design decision results in implemented code.
-Written during the session that implements the decision. The ADR is created
-before the session closes.
+Written during the session that implements the decision. The ADR is created before the session closes.
 
 An ADR is not required for:
 - Rejected decisions (recorded in the discussion doc as status `rejected`)

@@ -179,19 +179,19 @@ scoped: none
 legacy: none
 mitigation: recording every observation as a permanent distinct finding row invites duplicates and table corruption (finding text leaked into the AC table; overwritten CORRECTION blocks). Frame Mid-session findings as candidate records consolidated at the review/publish step. Edit task notes in place rather than appending duplicate steering records.
 
-### [A] 2026-08-09 — Hard-wrapped `<...>` instruction blocks in handover_policy
+### [A] 2026-08-09 — Hard-wrapped instruction blocks and inconsistent prose wrapping
 
-state: open
+state: probation
 scoped: none
 legacy: none
-mitigation: raw reading of handover_policy shows arbitrary ~70-char soft-wraps in the `<...>` guidance blocks, falsely implying paragraph breaks; inconsistent with sibling policy files. Remove the hard-wrap (single-flowing-paragraph) in blocks this session extended.
+mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` gained `### Line wrapping` (single-flowing prose; hard breaks on sentence/paragraph boundaries; ~80 cols for code comments) + audit-check entry. Wrap remediation applied across the frequently-read set (AGENTS.md x2, skills, policy files, cli-standards, adr_policy, handover_policy). Monitor for resurfacing; the M3 doc-bloat/audit sweeps the non-frequently-read remainder. When confirmed durable, delete and record in changelog/roadmap.
 
 ### [A] 2026-08-09 — Non-ASCII punctuation under a plain-ASCII doc policy
 
-state: open
+state: probation
 scoped: none
 legacy: none
-mitigation: documentation_policy.md:124 bans the section sign `§` ("plain ASCII punctuation"), but `§` is present in 43 files including the policy docs themselves. Consider a dedicated non-ASCII scrub in docs/operations/ (candidate for the STE/deferred doc sweep).
+mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` `### Character set` generalized to cover non-ASCII + control/formatting symbols + audit-check entry. Functional `§` scrubbed from frequently-read live docs; only deliberate literals remain (documentation_policy rule, AGENT_FEEDBACK finding record). Closed handovers retain `§` (read-only, out of scope). Monitor for resurfacing (new `§`/non-ASCII in live docs). When confirmed durable, delete and record in changelog/roadmap.
 
 ### [A] 2026-08-09 — Tracked-backlog proliferation at close
 

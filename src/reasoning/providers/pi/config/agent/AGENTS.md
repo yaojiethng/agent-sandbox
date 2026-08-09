@@ -12,8 +12,7 @@ You are running inside the **agent-sandbox** harness. Your working directory (`s
 
 ### Two-layer container architecture
 
-Every session runs two containers. You are inside the **reasoning** (agent runtime) container. A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files — a file missing in one container is
-not necessarily a regression; it may belong only to the other layer.
+Every session runs two containers. You are inside the **reasoning** (agent runtime) container. A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files — a file missing in one container is not necessarily a regression; it may belong only to the other layer.
 
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
@@ -22,8 +21,7 @@ Key behavioral rules:
 
 ## Write Discipline
 
-Code changes should be self-contained within a single session. The operator reviews per-session diffs — fragmented or half-applied changes across sessions
-create review burden.
+Code changes should be self-contained within a single session. The operator reviews per-session diffs — fragmented or half-applied changes across sessions create review burden.
 
 When writing code, always take into account the following:
 

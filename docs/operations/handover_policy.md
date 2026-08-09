@@ -64,11 +64,11 @@ Each session type (Eg. workflow vs implementation) must declare its scope indepe
 
 A handover has three states:
 
-**Open** — created at session start (`iteration_policy.md` §Step 1). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", the previous session may have ended prematurely and require recovery.
+**Open** — created at session start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1-open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", the previous session may have ended prematurely and require recovery.
 
 **Active** — updated throughout the session as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** — finalised at session end (`iteration_policy.md` §Steps 8–9). Records what was completed, marks deferrals explicitly, and seeds the next session. The Status header is set to "Closed".
+**Closed** — finalised at session end (`iteration_policy.md` [Steps 8–9 Details](iteration_policy.md#steps-89-close-and-seed)). Records what was completed, marks deferrals explicitly, and seeds the next session. The Status header is set to "Closed".
 
 ---
 
@@ -86,13 +86,10 @@ A handover has three states:
 <One sentence: what this session is trying to achieve. Scoped to the session, not the sub-milestone.>
 
 ## Scope
-<Which task groups or tasks from the roadmap this session targets. Reference by group name;
-do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
+<Which task groups or tasks from the roadmap this session targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
 
 ## Carried forward
-<Items explicitly deferred from the prior session that this session is picking up. One row per
-item, with a reference to the handover it came from. Populated per `iteration_policy.md` §Step 1
-from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
+<Items explicitly deferred from the prior session that this session is picking up. One row per item, with a reference to the handover it came from. Populated per `iteration_policy.md` Step 1 from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
 
 | Item | From handover |
 |---|---|
@@ -117,9 +114,7 @@ At session close, mark each criterion as accepted or pushed to next session. Bot
 Not yet defined.
 
 ## Hot files
-<Files in scope for this session. Each entry is a markdown link with a one-line note on why it
-is in scope. Populated per `iteration_policy.md` §Step 1 from the roadmap task list. Updated
-per `iteration_policy.md` §Steps 8–9 as tasks complete or new files enter scope.>
+<Files in scope for this session. Each entry is a markdown link with a one-line note on why it is in scope. Populated per `iteration_policy.md` Step 1 from the roadmap task list. Updated per `iteration_policy.md` Steps 8–9 Details as tasks complete or new files enter scope.>
 
 | File | Why in scope |
 |---|---|
@@ -131,14 +126,7 @@ per `iteration_policy.md` §Steps 8–9 as tasks complete or new files enter sco
 None.
 
 ## Mid-session findings
-<Append-only. Written immediately when something changes the plan: a bug or contradiction
-encountered, steering received from the operator, a blocker encountered, or a new file
-entering scope. Do not log routine reads or completed tasks here — only write when something
-changes what you are doing or what the next session needs to know. This is the shared
-agent-managed recording surface for the agent-feedback and gotchas records. Classify each
-entry at the review/publish step at session close and route it to its destination
-(`AGENT_FEEDBACK.md`, `GOTCHAS.md`, Decisions table, Deferred items, or `roadmap.md`).
-Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
+<Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here — only write when something changes what you are doing or what the next session needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at session close and route it to its destination (`AGENT_FEEDBACK.md`, `GOTCHAS.md`, Decisions table, Deferred items, or `roadmap.md`). Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
 | Finding | Type | Impact |
 |---|---|---|
@@ -152,9 +140,7 @@ None.
 No file changes this session.
 
 ## Deferred items
-<Items that were in scope but are not complete. Each item must have an explicit reason for
-deferral and a note on where it goes next (next session, different sub-milestone, or
-roadmap_future.md). If nothing is deferred, write the canonical marker.>
+<Items that were in scope but are not complete. Each item must have an explicit reason for deferral and a note on where it goes next (next session, different sub-milestone, or roadmap_future.md). If nothing is deferred, write the canonical marker.>
 
 Omit any item that is already a named task in `roadmap.md` or `roadmap_future.md`; do not re-list an item that has a roadmap home. The roadmap is the sole task list.
 
@@ -209,7 +195,7 @@ Apply a correction when a factual error is found in the document — an incorrec
 ```
 
 4. Do not alter the document's Status, timestamps, or any other metadata field.
-5. **Findings triage — if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next session or future sessions need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the session close mid-session findings gate (`iteration_policy.md` §Steps 8–9):
+5. **Findings triage — if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next session or future sessions need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the session close mid-session findings gate (`iteration_policy.md` [Steps 8–9 Details](iteration_policy.md#steps-89-close-and-seed)):
 
    - If the finding belongs in the active handover (the current session's handover), add it to Mid-session findings there.
    - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.

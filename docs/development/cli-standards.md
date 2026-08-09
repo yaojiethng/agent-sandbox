@@ -1,16 +1,12 @@
 # CLI Interaction Standards
 
-Principles for CLI tools (bash scripts, one-off functions, and entrypoints)
-used within the agent-sandbox harness. Designed to make tools recoverable
-by automated agents and predictable for human operators.
+Principles for CLI tools (bash scripts, one-off functions, and entrypoints) used within the agent-sandbox harness. Designed to make tools recoverable by automated agents and predictable for human operators.
 
 ---
 
 ## 1. Required Arguments Must Produce Self-Recovery Errors
 
-When a required argument is missing, the tool **must not** silently use a
-default or crash with a bare message like "Error: missing --to". It must
-emit a full error block that lets the caller immediately retry:
+When a required argument is missing, the tool **must not** silently use a default or crash with a bare message like "Error: missing --to". It must emit a full error block that lets the caller immediately retry:
 
 ```
 Error: --session-summary is required. Provide a concise snake_case label.
@@ -35,8 +31,7 @@ The error must include:
 
 ## 2. Success Output Includes an Actionable Next Step
 
-A tool that produces artefacts should not just print its output path — it
-should tell the caller what to do next:
+A tool that produces artefacts should not just print its output path — it should tell the caller what to do next:
 
 ```
 package_commits: generated 1 diff(s) in /path/to/bundles/TS-LABEL-TS/patches
@@ -62,9 +57,7 @@ The next step should be:
 **Rationale:** If stdout is the artefact path, `make apply DIFF=$(tool ...)` works.
 If stdout contains "generated 1 diff(s)", that pipeline breaks.
 
-When stdout is not meaningful (pure side-effect tools like `package_branch`),
-the tool may write only to stderr. The caller should capture stderr for
-the completion summary.
+When stdout is not meaningful (pure side-effect tools like `package_branch`), the tool may write only to stderr. The caller should capture stderr for the completion summary.
 
 ## 4. `--help` Is Mandatory
 
@@ -83,8 +76,7 @@ Every CLI tool must implement `--help` and display:
 | `1` | User error — bad/missing argument, invalid input |
 | `2+` | System error — missing directory, git failure, permission denied |
 
-This lets callers distinguish "the caller messed up" from "the system is
-broken" without parsing error messages.
+This lets callers distinguish "the caller messed up" from "the system is broken" without parsing error messages.
 
 ## 6. Use `--flags`, Not Implicit Env Vars
 
@@ -92,26 +84,19 @@ Tools read environment variables only if they are:
 - Documented in the tool's `--help` output
 - Prefixed with the tool name or a well-known namespace
 
-Uncontrolled env var reading leads to invisible state dependencies that
-are hard to debug. An explicit `--flag` is always preferred.
+Uncontrolled env var reading leads to invisible state dependencies that are hard to debug. An explicit `--flag` is always preferred.
 
 ## 7. Paths Are Absolute
 
-All paths printed by a tool must be absolute. Relative paths are
-ambiguous when the caller may be in a different working directory.
+All paths printed by a tool must be absolute. Relative paths are ambiguous when the caller may be in a different working directory.
 
 ---
 
 ## 8. Makefile Variable Overrides Must Be Validated
 
-Make silently ignores unknown variable overrides. If a user types
-`make draft CHANNEL=bundles`, Make sets `CHANNEL` but no target reads
-it — the command proceeds with incorrect defaults. The user gets no
-error and the wrong behaviour.
+Make silently ignores unknown variable overrides. If a user types `make draft CHANNEL=bundles`, Make sets `CHANNEL` but no target reads it — the command proceeds with incorrect defaults. The user gets no error and the wrong behaviour.
 
-To prevent this, every Makefile template that accepts user-facing
-variable overrides **must** guard against the known misused names
-with an explicit `ifdef`/`$(error)` block:
+To prevent this, every Makefile template that accepts user-facing variable overrides **must** guard against the known misused names with an explicit `ifdef`/`$(error)` block:
 
 ```makefile
 ifdef CHANNEL
@@ -119,18 +104,11 @@ $(error CHANNEL is not a Make variable. Did you mean FROM? Example: make $(MAKEC
 endif
 ```
 
-All accepted variables must be declared with `?=` at the top of the
-Makefile so they are visible in one place. Any variable that a user
-might reasonably try but that is not in the accepted set must have
-a guard with an error message that points to the correct name.
+All accepted variables must be declared with `?=` at the top of the Makefile so they are visible in one place. Any variable that a user might reasonably try but that is not in the accepted set must have a guard with an error message that points to the correct name.
 
 ## 9. `exec` Over Sourcing for Subcommand Dispatch
 
-When a CLI entry point dispatches to subcommands, `exec` the subcommand
-script rather than sourcing it. This gives each subcommand a clean process
-boundary: its own `set -euo pipefail`, its own variable scope, and its own
-dependency loading. The dispatch layer stays thin — validate universal
-flags, then `exec`.
+When a CLI entry point dispatches to subcommands, `exec` the subcommand script rather than sourcing it. This gives each subcommand a clean process boundary: its own `set -euo pipefail`, its own variable scope, and its own dependency loading. The dispatch layer stays thin — validate universal flags, then `exec`.
 
 ```bash
 # Good — exec with flags
@@ -161,8 +139,7 @@ apply)
   ;;
 ```
 
-Each subcommand script should have a `main()` function and a guard so it
-works both as an `exec`'d entry point and as a sourced library:
+Each subcommand script should have a `main()` function and a guard so it works both as an `exec`'d entry point and as a sourced library:
 
 ```bash
 main() {
@@ -176,9 +153,7 @@ fi
 
 ## 10. Guard Pattern for Dual-Use Scripts
 
-Any shell file that can be either executed directly or sourced by another
-script must include a guard that distinguishes the two cases. The standard
-pattern is:
+Any shell file that can be either executed directly or sourced by another script must include a guard that distinguishes the two cases. The standard pattern is:
 
 ```bash
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
@@ -186,13 +161,9 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 fi
 ```
 
-This passes (runs `main`) when the file is the top-level script, and
-rejects (skips `main`) when it is sourced by another script. The check
-is safe even if the parent script was itself sourced — `BASH_SOURCE[0]`
-will not match the shell path.
+This passes (runs `main`) when the file is the top-level script, and rejects (skips `main`) when it is sourced by another script. The check is safe even if the parent script was itself sourced — `BASH_SOURCE[0]` will not match the shell path.
 
-Use `"$0"`, not `${0}`. Both expand identically, but `"$0"` is the
-conventional form.
+Use `"$0"`, not `${0}`. Both expand identically, but `"$0"` is the conventional form.
 
 Do not use array-length variations:
 

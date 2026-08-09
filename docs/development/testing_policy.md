@@ -210,7 +210,7 @@ Debug helpers that verify the internal invariants of a specific production scrip
 
 **Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does dry-run Phase 2 fail?"). Each section checks one link in the chain — environment, library sourcing, path resolution, script hygiene, etc.
 
-**Relation to ACs:** Unlike knowledge tests, diagnostic scripts test internal invariants and can be referenced from acceptance criteria — e.g. as a regression-guard AC for a recurring bug class. See handover policy §Acceptance criteria — Regression guard.
+**Relation to ACs:** Unlike knowledge tests, diagnostic scripts test internal invariants and can be referenced from acceptance criteria — e.g. as a regression-guard AC for a recurring bug class. See [handover policy Acceptance criteria — Regression guard](handover_policy.md#acceptance-criteria).
 
 **Naming:** `tests/knowledge/diagnose_<subsystem>.sh` — mirrors the production script name it diagnoses.
 

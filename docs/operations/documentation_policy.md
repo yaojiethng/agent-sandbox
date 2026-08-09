@@ -121,7 +121,19 @@ In workflow table Action cells: one imperative sentence stating what happens, fo
 
 ### Character set
 
-Documents use plain ASCII punctuation. Do not use the section sign (`§`) — write "the Security Invariants section of `security.md`" or link with an anchor instead.
+Documents use plain ASCII punctuation. Do not use non-ASCII punctuation (for example the section sign (`§`), `¶`, or typographic dashes) or control/formatting symbols (for example indentation/space glyphs or chapter symbols). To reference a document or section, write its name or link with an anchor instead.
+
+---
+
+### Simplified Technical English
+
+New and changed prose meets ASD-STE100. The operative test for each word, phrase, and sentence: *can a reader delete it without changing the required meaning?* Delete what the test removes. A word, phrase, or sentence that adds no information (for example a throat-clearing opener such as "it is worth noting that") is deleted.
+
+---
+
+### Line wrapping
+
+Write prose as single-flowing paragraphs. A hard line break falls on a sentence or paragraph boundary, never mid-thought. Apply to all prose, including guidance blocks, `AGENTS.md`, and provider-layer files. Break code comments at `~80` columns.
 
 ---
 
@@ -247,3 +259,6 @@ Use these when reviewing documentation for policy compliance. They are diagnosti
 - A document that must be read in full to extract one fact
 - A bridge document — one that exists solely to connect two documents that could reference each other directly
 - A document-level reference link carrying a section anchor — anchors on document-level references imply narrower scope than intended
+- Prose with a hard line break that does not fall on a sentence or paragraph boundary
+- A word, phrase, or sentence a reader can delete without changing the required meaning
+- Non-ASCII punctuation or a control/formatting symbol (for example `§` or `¶`) in any document
