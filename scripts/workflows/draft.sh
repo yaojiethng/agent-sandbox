@@ -203,10 +203,19 @@ draft_apply_uncommitted() {
 # _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR \
 #     OUT_BASE_COMMIT OUT_EXPORT_TIME OUT_INIT_SHA
 #
-# Parses .export-status from SOURCE_DIR, validates required fields,
-# resolves BASE_COMMIT from BRANCH_FROM_ARG (or HEAD), and validates
-# the commit exists. Returns the three values via nameref output params.
-# Returns 1 with an error message on failure.
+# Parses .export-status from SOURCE_DIR (when present) and resolves
+# BASE_COMMIT from BRANCH_FROM_ARG (defaulting to HEAD). Returns the
+# three values via nameref output params.
+#
+# An explicit BRANCH_FROM_ARG takes control of the fork point, so it
+# skips metadata validation entirely (documented escape hatch for
+# sources without a .export-status, e.g. legacy bundles). Without one,
+# a missing or incomplete .export-status is an error.
+#
+# INIT_SHA records only the patch-generation point. Per design it is
+# "information, not the fork point" — it feeds the divergence warning
+# below and its absence is never fatal. Returns 1 with an error message
+# on failure.
 _ingest_export_metadata() {
   local _source_dir="$1"
   local _branch_from="$2"
@@ -215,26 +224,30 @@ _ingest_export_metadata() {
   local -n _out_time="$5"
   local -n _out_init="$6"
 
-  # Read .export-status
+  # An explicit --branch-from opts out of .export-status validation: the
+  # operator has chosen the fork point, so metadata is advisory only.
+  local _explicit_from=""
+  [[ -n "$_branch_from" ]] && _explicit_from=1
+
+  # Read .export-status (optional metadata). When absent, only proceed
+  # if --branch-from was explicitly given; otherwise error clearly.
   local _es="$_source_dir/.export-status"
   local _time="" _init=""
   if [[ -f "$_es" ]]; then
     _time=$(grep '^TIMESTAMP=' "$_es" | cut -d= -f2- || true)
     _init=$(grep '^INIT_SHA=' "$_es" | cut -d= -f2- || true)
-  else
+  elif [[ -z "$_explicit_from" ]]; then
     echo "Error: .export-status not found in $_source_dir" >&2
     echo "  This directory was not produced by a recent diff_export or package_branch run." >&2
     echo "  Re-export the session or use an explicit --branch-from to skip metadata validation." >&2
     return 1
   fi
 
-  # Validate required fields
-  if [[ -z "$_time" ]]; then
+  # TIMESTAMP is always written by the exporter; its absence here means
+  # the .export-status is incomplete. Accept when --branch-from was given
+  # (EXPORT_TIME then defaults to "unknown"); otherwise error.
+  if [[ -z "$_time" && -z "$_explicit_from" ]]; then
     echo "Error: TIMESTAMP field missing or empty in .export-status" >&2
-    return 1
-  fi
-  if [[ -z "$_init" ]]; then
-    echo "Error: INIT_SHA field missing or empty in .export-status" >&2
     return 1
   fi
 
@@ -387,8 +400,10 @@ _run_draft_workflow() {
   # Create savepoint at the branch point BEFORE .draft-state is committed.
   # On failure, reset to this to avoid leaving the draft branch partially applied.
   # Local tag — never pushed by default git push.
+  # Tag the RESOLVED base (_validated_base defaults to HEAD when --branch-from
+  # is omitted) — the raw BRANCH_FROM may be empty, which git would reject.
   git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
-  git -C "$PROJECT_DIR" tag draft-savepoint "$BRANCH_FROM"
+  git -C "$PROJECT_DIR" tag draft-savepoint "$_validated_base"
 
   # Create branch (branch-creation only)
   draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \

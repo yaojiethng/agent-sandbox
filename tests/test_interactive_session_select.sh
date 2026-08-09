@@ -250,6 +250,28 @@ test_select_session_availability_indicators() {
   fi
 }
 
+test_select_session_patch_count_shown() {
+  local SANDBOX="$FIXTURE_DIR/ss_patchcount"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  # 5 patches
+  make_session_fixture "$BASE/20260504-120000-five" 5
+  # 0 patches
+  make_session_fixture "$BASE/20260503-090000-zero"
+
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  local OK=true
+  echo "$STDERR" | grep -q "patches: 5" || OK=false
+  echo "$STDERR" | grep -q "patches: 0" || OK=false
+  if [[ "$OK" == true ]]; then
+    pass "interactive_select_session shows patch count instead of checkmark"
+  else
+    fail "interactive_select_session should show patch counts (5 and 0), got: $STDERR"
+  fi
+}
+
 test_select_session_zero_entries() {
   local SANDBOX="$FIXTURE_DIR/ss_zero"
   mkdir -p "$SANDBOX"
@@ -642,6 +664,7 @@ run_test test_select_channel_repeats_on_invalid
 run_test test_select_session_picks_by_number
 run_test test_select_session_default_highlighted
 run_test test_select_session_availability_indicators
+run_test test_select_session_patch_count_shown
 run_test test_select_session_zero_entries
 run_test test_select_session_cap_at_ten
 run_test test_select_session_name_truncation

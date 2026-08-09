@@ -351,6 +351,19 @@ test_resolve_channel_base_dir_invalid() {
   fi
 }
 
+test_resolve_channel_base_dir_diffs() {
+  local SD="$FIXTURE_DIR/routing_c6"
+  mkdir -p "$SD/.workspace"
+  dirs_resolve "$SD"
+  local RESULT
+  RESULT=$(resolve_channel_base_dir "diffs") || { fail "resolve_channel_base_dir diffs failed"; return; }
+  if [[ "$RESULT" == "${OUTPUT_DIR}/diffs" ]]; then
+    pass "resolve_channel_base_dir: diffs → OUTPUT_DIR/diffs"
+  else
+    fail "resolve_channel_base_dir diffs: expected ${OUTPUT_DIR}/diffs, got $RESULT"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -380,6 +393,7 @@ run_test test_resolve_apply_no_sessions
 run_test test_resolve_channel_base_dir_session
 run_test test_resolve_channel_base_dir_autosave
 run_test test_resolve_channel_base_dir_bundles
+run_test test_resolve_channel_base_dir_diffs
 run_test test_resolve_channel_base_dir_invalid
 
 test_done

@@ -489,6 +489,111 @@ test_draft_commit_messages() {
 }
 
 # =============================================================================
+# _ingest_export_metadata tests
+# =============================================================================
+
+# An explicit --branch-from skips .export-status validation entirely (the
+# documented escape hatch for sources without a .export-status, e.g. legacy
+# bundles). BASE_COMMIT resolves from the given ref.
+test_branch_from_skips_missing_export_status() {
+  local P="$FIXTURE_DIR/ingest_from_p"
+  local S="$FIXTURE_DIR/ingest_from_s"
+  make_committed_repo "$P"
+  mkdir -p "$S"
+
+  # Source dir with patches but NO .export-status
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+
+  local BASE TIME INIT
+  if _ingest_export_metadata "$EXPORT" "HEAD" "$P" BASE TIME INIT 2>/dev/null; then
+    if [[ "$BASE" == "HEAD" ]]; then
+      pass "--branch-from skips missing .export-status"
+    else
+      fail "expected BASE=HEAD, got: $BASE"
+    fi
+  else
+    fail "--branch-from should skip missing .export-status validation"
+  fi
+}
+
+# A draft command with no --branch-from must still error when .export-status
+# is missing — the escape hatch requires an explicit fork point.
+test_no_branch_from_errors_without_export_status() {
+  local P="$FIXTURE_DIR/ingest_nofrom_p"
+  local S="$FIXTURE_DIR/ingest_nofrom_s"
+  make_committed_repo "$P"
+  mkdir -p "$S"
+
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+
+  local BASE TIME INIT
+  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>/dev/null; then
+    fail "missing .export-status with no --branch-from should error"
+  else
+    pass "missing .export-status with no --branch-from errors"
+  fi
+}
+
+# INIT_SHA records the patch-generation point only (a warning signal, not the
+# fork point). The exporter omits it when empty, so draft must tolerate its
+# absence and default BASE_COMMIT to HEAD rather than erroring.
+test_missing_init_sha_defaults_to_head() {
+  local P="$FIXTURE_DIR/ingest_nohash_p"
+  local S="$FIXTURE_DIR/ingest_nohash_s"
+  make_committed_repo "$P"
+  mkdir -p "$S"
+
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+  } > "$EXPORT/.export-status"
+
+  local BASE TIME INIT
+  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>/dev/null; then
+    if [[ "$BASE" == "HEAD" ]] && [[ -z "$INIT" ]]; then
+      pass "missing INIT_SHA defaults to HEAD without error"
+    else
+      fail "expected BASE=HEAD, empty INIT; got BASE=$BASE INIT=$INIT"
+    fi
+  else
+    fail "missing INIT_SHA should default to HEAD, not error"
+  fi
+}
+
+# When INIT_SHA is present in the source it feeds the divergence warning;
+# verify the branch point still resolves (HEAD default) and does not error.
+test_init_sha_warns_on_divergence_but_proceeds() {
+  local P="$FIXTURE_DIR/ingest_hash_p"
+  local S="$FIXTURE_DIR/ingest_hash_s"
+  make_committed_repo "$P"
+  mkdir -p "$S"
+
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+    echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  } > "$EXPORT/.export-status"
+
+  local BASE TIME INIT
+  # Warning goes to stderr; here we assert success + HEAD default.
+  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>/dev/null; then
+    if [[ "$BASE" == "HEAD" && -n "$INIT" ]]; then
+      pass "INIT_SHA present: branch point resolves, divergence is warn-only"
+    else
+      fail "expected BASE=HEAD with INIT set; got BASE=$BASE INIT=$INIT"
+    fi
+  else
+    fail "INIT_SHA present should not error"
+  fi
+}
+
+# =============================================================================
 # draft_resolve_commit_message tests
 # =============================================================================
 
@@ -776,6 +881,12 @@ test_reject_rejects_non_draft() {
 # =============================================================================
 run_test test_draft_creates_branch
 run_test test_draft_applies_diffs
+
+run_test test_branch_from_skips_missing_export_status
+run_test test_no_branch_from_errors_without_export_status
+run_test test_missing_init_sha_defaults_to_head
+run_test test_init_sha_warns_on_divergence_but_proceeds
+
 run_test test_draft_branch_name_format
 run_test test_draft_branch_name_with_summary
 run_test test_draft_creates_draft_state_commit

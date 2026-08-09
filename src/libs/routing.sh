@@ -63,6 +63,7 @@ _resolve_paths() {
 #   session       → $CHANGES_DIR/session
 #   autosave      → $CHANGES_DIR/autosave
 #   bundles       → $OUTPUT_DIR/bundles
+#   diffs         → $OUTPUT_DIR/diffs
 #
 # Returns 1 with error message to stderr for unknown channel names.
 resolve_channel_base_dir() {
@@ -71,9 +72,10 @@ resolve_channel_base_dir() {
     session)  echo "${CHANGES_DIR}/session" ;;
     autosave) echo "${CHANGES_DIR}/autosave" ;;
     bundles)  echo "${OUTPUT_DIR}/bundles" ;;
+    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
     *)
       echo "Error: unknown channel: $CHANNEL" >&2
-      echo "  Valid: session, autosave, bundles" >&2
+      echo "  Valid: session, autosave, bundles, diffs" >&2
       return 1
       ;;
   esac

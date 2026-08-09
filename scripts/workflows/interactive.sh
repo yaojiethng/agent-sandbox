@@ -373,11 +373,14 @@ interactive_select_session() {
   for bname in "${SESSION_DIRS[@]}"; do
     local ENTRY_DIR="${BASE_DIR}/${bname}"
 
-    local HAS_PATCHES="✗"
-    local HAS_UNCOMMITTED="✗"
-    if [[ -d "$ENTRY_DIR/patches" ]] && find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' -print -quit | grep -q . 2>/dev/null; then
-      HAS_PATCHES="✓"
+    # Show the patch count rather than a binary presence indicator — the
+    # number of .diff files is far more informative for judging a session.
+    local PATCH_COUNT=0
+    if [[ -d "$ENTRY_DIR/patches" ]]; then
+      PATCH_COUNT=$(find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' 2>/dev/null | wc -l | tr -d ' ')
+      PATCH_COUNT=$((10#$PATCH_COUNT))
     fi
+    local HAS_UNCOMMITTED="✗"
     if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
       HAS_UNCOMMITTED="✓"
     fi
@@ -388,7 +391,7 @@ interactive_select_session() {
       DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
     fi
 
-    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${HAS_PATCHES}  uncommitted: ${HAS_UNCOMMITTED}")
+    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}")
   done
 
   interactive_pick "Available sessions (${CHANNEL}):" ENTRIES "$DEFAULT_SESSION" "$INTERACTIVE_MAX_ENTRIES"
