@@ -132,10 +132,13 @@ None.
 
 ## Mid-session findings
 <Append-only. Written immediately when something changes the plan: a bug or contradiction
-discovered, steering received from the operator, a blocker encountered, or a new file
+encountered, steering received from the operator, a blocker encountered, or a new file
 entering scope. Do not log routine reads or completed tasks here — only write when something
-changes what you are doing or what the next session needs to know. Triaged into the proper
-sections at session close.>
+changes what you are doing or what the next session needs to know. This is the shared
+agent-managed recording surface for the agent-feedback and gotchas records. Classify each
+entry at the review/publish step at session close and route it to its destination
+(`AGENT_FEEDBACK.md`, `GOTCHAS.md`, Decisions table, Deferred items, or `roadmap.md`).
+Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
 | Finding | Type | Impact |
 |---|---|---|
@@ -153,6 +156,8 @@ No file changes this session.
 deferral and a note on where it goes next (next session, different sub-milestone, or
 roadmap_future.md). If nothing is deferred, write the canonical marker.>
 
+Omit any item that is already a named task in `roadmap.md` or `roadmap_future.md`; do not re-list an item that has a roadmap home. The roadmap is the sole task list.
+
 None.
 
 ## Next session
@@ -164,6 +169,8 @@ None.
 
 **Conclusions from this session:** decisions made, approaches confirmed, dead ends ruled out. Not a full log — only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
+
+Next session is context-only. It does not carry a task list. The roadmap is the sole task list. Deferred items escalate into named roadmap entries at session close. When a session generates tasks, update the roadmap at end of session.
 
 ---
 

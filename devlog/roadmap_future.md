@@ -48,6 +48,8 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Close-milestone automation — replace the manual administrative close checklist with a single script (`make close-milestone`) that atomically bumps milestone state. Clean commit, no partial-close risk. Close is ceremonial (no decisions); all substantive work occurs in pre-close (see the milestone lifecycle reframe).
 - [ ] AC-machinery policy discussion for chores, doc, plan type sessions
 - [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred from M2.7
+- [ ] **Loop-documentation structure decision (deferred to M3)** — decide whether the major/minor loop documentation needs a structural split (e.g. `major_loop_policy` / `minor_loop_policy`), what form it takes, and where the canonical boundary between milestone_policy and iteration_policy lands. Deferred from session `20260809-04`; a split is one possible form, not a settled intent. The milestone_policy scope expansion to own the entire major loop (scoping → story/investigation → roadmap entry → minor-loop handoff → pre-close → formal close) rides on this decision.
+- [ ] **Formal state diagram of the major/minor loop workflow (deferred to M3)** — produce a state diagram of the entire loop workflow (major loop: scoping → story/investigation → roadmap entry → minor-loop handoff → pre-close → formal close; minor loop iterations inside the handoff). Supports the loop-documentation restructure and the combine/re-section effort.
 
 ### Doc Bloat — Rotate Out Stale Handovers and Discussions
 

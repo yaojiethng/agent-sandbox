@@ -97,7 +97,18 @@ Update the checklist:
 
 ## Bash Friction Log
 
-A living catalogue of bash sharp edges, language limitations, and testing friction encountered during implementation lives at [`devlog/discussions/20260809-story-active-bash_complaints.md`](devlog/discussions/20260809-story-active-bash_complaints.md). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`src/reasoning/agent/drafts/bash-scripting-traps.skill.md`](src/reasoning/agent/drafts/bash-scripting-traps.skill.md) for existing mitigations.
+Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`src/reasoning/agent/drafts/bash-scripting-traps.skill.md`](src/reasoning/agent/drafts/bash-scripting-traps.skill.md) for existing mitigations. The former separate friction-log file was subsumed here (session `20260809-04`).
+
+## Feedback and Gotchas Files
+
+Two persistent records live in `devlog/`:
+
+- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) — agent-experience feedback, recorded by the agent, reviewed by the operator. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
+- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) — recurring agent mistakes and code smells, recorded by the operator. At session open (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the session. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
+
+These files are tied into the session's Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation.
+
+**Roadmap as sole task list.** The roadmap is the sole task list. When a session generates a task, update the roadmap at end of session. Do not leave a task in the handover alone. Authoritative rule: [`roadmap_policy.md`](docs/operations/roadmap_policy.md#when-the-roadmap-is-touched).
 
 ---
 

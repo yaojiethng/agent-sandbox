@@ -118,3 +118,5 @@ Implement finalized workflow (Bucket 1): D1 create `AGENT_FEEDBACK.md`, D2 creat
 
 ---
 [CORRECTION — 2026-08-09]: A finding surfaced during the close review (handover close-order contradiction) was mis-routed to M3 (`roadmap_future.md`) instead of being treated as a mid-session finding routed to a current destination. It is corrected to a current-roadmap item under M2.6 in `roadmap.md`, with a companion note in the finalized-workflow artifact. Finding routed to `roadmap.md` (M2.6 — handover close-order contradiction) and the workflow artifact (close-order reconciliation / P2 companion).
+
+[CORRECTION — 2026-08-09]: The Hot files entry `devlog/discussions/20260809-story-active-bash_complaints.md` refers to a file deleted by session `20260809-04` (T1 migration into `devlog/AGENT_FEEDBACK.md`). The bash entries now live in `devlog/AGENT_FEEDBACK.md` (`## Bash` section, 8 entries). The AGENTS.md Bash Friction Log pointer was updated accordingly.

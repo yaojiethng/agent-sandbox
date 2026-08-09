@@ -55,7 +55,7 @@ After compaction, update the Milestone Summary table:
 
 ### Carry-forward escalation
 
-If a deferred item from the handover cannot be picked up in the immediately following session, add it as a named task entry under the current sub-milestone's task list. Do not create a new sub-milestone for a single deferred item — escalate within the existing node.
+If a deferred item will not be picked up in the next session, add it as a named task entry to the roadmap. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`. Nest new tasks under the current sub-milestone's task list unless directed otherwise.
 
 ## Pre-session Status Promotion Check
 
@@ -71,6 +71,8 @@ This check is self-healing — it catches both stale summaries and the first ses
 ## When the Roadmap Is Touched
 
 The roadmap is not updated continuously during a session. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
+
+**Roadmap-update timing rule:** when a session generates a task (an explicit named roadmap entry), update the roadmap at end of session. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
 
 ### During the session
 
@@ -96,8 +98,6 @@ The operator reviews the compaction proposal alongside AC verification at Gate 3
 ### Session close (Steps 8–9)
 
 Completed task groups are compacted to a `- [x]` outcome summary (1–3 sentences). The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9. Implementation detail, file lists, and task breakdowns are removed — the session handover retains them. Design document links and "Not in scope" / deferred tags survive.
-
-If a deferred item from the handover cannot be picked up in the immediately following session, escalate it to a named task entry under the current sub-milestone — see [Carry-forward escalation](#carry-forward-escalation).
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 

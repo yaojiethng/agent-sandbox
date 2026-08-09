@@ -62,7 +62,7 @@ Entries are **deleted when resolved**. A resolved durable fix is recorded in the
   - **To the agent itself:** friction the agent can mitigate (for example, a bash trap resolvable via a skill). Referenced for self-correction.
   - **To the operator:** friction requiring the operator to improve prompts, docs, or the stack.
 - **Operator integration:** the agent surfaces open entries to the operator at the sub-milestone pre-close review gate. The operator reviews and addresses prompt/stack pain points. Ad-hoc spot-check is optional.
-- **Migration:** subsume `devlog/discussions/20260809-story-active-bash_complaints.md` into a `## Bash` section of this file (8 entries), then remove the source file (operator action).
+- **Migration:** subsume `devlog/discussions/20260809-story-active-bash_complaints.md` (8 entries) into a `## Bash` section of `AGENT_FEEDBACK.md`, converting each to the new per-entry format, then delete the source file and correct its backlinks (implemented session `20260809-04`).
 
 ### `devlog/GOTCHAS.md`
 
@@ -186,7 +186,7 @@ New and changed policy language must be drafted in Simplified Technical English 
 - **M3-4.** Re-word "converting the roadmap to linear-style task tracking" if required.
 
 ### ADR
-- **None.** These are workflow-governance changes in `docs/operations/`, not architectural decisions.
+- **None.** The agent-feedback/gotchas workflow is architectural in nature, but no significant design decision was made by this workflow (the substantive decision — how to structure the major/minor loop documentation and whether to split into `major_loop_policy`/`minor_loop_policy` — is deferred to M3). Per the operator, recorded as a docs mention in the respective workflow document; no ADR. The workflow itself is specified in this artifact and the operations policy docs.
 
 ### Close-order reconciliation (P2 companion)
 - **P2 companion.** Reconcile the handover close-ordering contradiction: `iteration_policy.md` Steps 8–9 say commit then mark Closed; `handover_policy.md` requires a Closed handover with no uncommitted changes. This is a current friction point (recorded in the M2.6 roadmap item), carried into next session, and resolved when P2 edits the close flow. Preferred resolution: close = the commit itself — mark Closed, then the final commit includes the closed handover. No substantive action after close.

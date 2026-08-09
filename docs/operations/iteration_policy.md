@@ -97,7 +97,7 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 | **6 — Implementation** | confirmed | Gate 2 released | Produce code against confirmed spec; tests alongside per [`testing_policy.md`](testing_policy.md). On spec divergence: correct architecture doc before continuing. Flag all other adjacent issues; Defer by default. Per §During the session. | All tasks complete. Tests pass. Architecture docs reflect system as built. |
 | **7 — Pre-close verification** | confirmed | Implementation complete | Present pre-close summary in a four-column AC status table. Mark each criterion as accepted or pushed. Run verifiable checks and show output. Propose compaction entries for fully-completed task groups. For multi-file changes under a shared rule, include a propagation replay table. Packaging does not release this gate. Wait for explicit release. Per §Step 7 Details. | Operator confirmed against AC and compaction text. |
 | **Gate 3** | always | Pre-close verified | The AC status table must be visible — every criterion shown, every status populated. No close until operator releases. | Explicit release received. |
-| **8–9 — Close and seed** | always | Gate 3 released | Apply approved compaction — replace each completed task group's checklist with outcome summary. Run post-close bookkeeping per [`roadmap_policy.md`](roadmap_policy.md#post-close-bookkeeping). Run scope reconciliation, carry-forward resolution gate, and mid-session findings triage gate. Mark each AC accepted or pushed. Update Hot files. Seed next session. Per §Steps 8–9 Details. | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. Next session actionable. |
+| **8–9 — Close and seed** | always | Gate 3 released | Apply approved compaction — replace each completed task group's checklist with outcome summary. Run post-close bookkeeping per [`roadmap_policy.md`](roadmap_policy.md#post-close-bookkeeping). Run scope reconciliation, carry-forward resolution gate, and mid-session findings review/publish step. Mark each AC accepted or pushed. Update Hot files. Seed next session. Per §Steps 8–9 Details. | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. Next session actionable. |
 
 ---
 
@@ -165,6 +165,8 @@ Implementation sessions should name their units consistently — `Unit 1`, `Unit
 
 **On steering received:** When the operator provides instruction that modifies the scope of a current or future unit, write it to Mid-session findings before resuming work. If the steering affects a future unit's spec, write it to Deferred items or Next session as well. Do not resume until this is done.
 
+Mid-session findings is the shared agent-managed recording surface for the agent-feedback and gotchas records. Entries are classified at the review/publish step at session close, not at the moment of writing. Attribution is operator-owned; the agent proposes a class and the operator confirms it.
+
 - Record decisions in the Decisions table as they are made, with the document where the decision was recorded. If a decision is only in chat, it does not exist for the next session.
 - Record new acceptance criteria as they are defined. Pushed (unresolved) criteria from prior sessions are already present in the handover from session open — do not re-copy them.
 - Update Deferred items immediately when something is flagged out of scope — do not accumulate them at session end.
@@ -199,11 +201,34 @@ The AC status table must be visible — every criterion shown, every status popu
 
 Exit condition: Explicit release received.
 
+### Sub-milestone close
+
+A sub-milestone follows the sequence `active → pre-close → close`.
+
+- A sub-milestone is `active` while substantive work is in progress.
+- A sub-milestone is `pre-close` when its implementation is complete. In pre-close, the agent completes compaction, changelog drafting, escalation clearance, and the review gate.
+- A sub-milestone is `close` when its close checklist completes. At close, no new decisions are made. Substantive work does not occur after close.
+
+**Pre-close review gate.** At sub-milestone cleanup, the agent surfaces to the operator:
+
+- Open entries in `devlog/AGENT_FEEDBACK.md`.
+- Open entries in `devlog/GOTCHAS.md` and any pending sweeps.
+- Entries under `probation`, for a `dismiss` / `maintain` / `escalate` decision.
+
+For an entry under `probation`, the operator decides:
+
+- **dismiss** — the fix held. Delete the entry.
+- **maintain** — the fix is not stress-tested. Extend probation.
+- **escalate** — the problem resurfaced. Re-scope with awareness of the prior fix; optionally retire the prior fix.
+
+Escalation of high blast-radius correctness work defers the sub-milestone close until the escalated work clears. Low-urgency escalation is filed as a named task at the top of the next sub-milestone. There is no dedicated `close-blocked` state; a deferred close keeps the sub-milestone `active` until pre-close passes.
+
+---
 ### Steps 8–9 — Close and seed
 
 After Gate 3 is released, these steps are mechanical — the operator has already reviewed and approved the compaction text and AC status.
 
-- **Commit all changes** — `git add -A && git commit`. The commit message matches the session type per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). The handover must be part of this commit. A handover marked `Closed` with uncommitted changes is not closed.
+- **Commit all changes** — `git add -A && git commit`. The commit message matches the session type per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). The handover must be part of this commit. A handover marked `Closed` with uncommitted changes is not closed. **The close is the commit.** The agent sets the handover Status to `Closed` and then takes the final commit. There is no committed action after the final commit that changes the handover. If the Close marker is needed, set it before the commit so the committed handover already shows `Closed`.
 - **Apply approved compaction** — per [`roadmap_policy.md`](roadmap_policy.md#session-close-steps-8-9). The operator-reviewed compaction proposal is applied mechanically.
 - **Run post-close bookkeeping** — compaction cascading, summary table update, and top-level milestone close (if applicable). See [Post-close Bookkeeping](roadmap_policy.md#post-close-bookkeeping).
 - The Completed this session table must be accurate. One row per file changed. If no files changed, write the canonical marker.
@@ -216,7 +241,7 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 
 **Carry-forward escalation:** per [`roadmap_policy.md`](roadmap_policy.md#carry-forward-escalation) — if a deferred item cannot be picked up in the immediately following session, escalate it to a named task entry under the current sub-milestone.
 
-**Mid-session findings triage gate — do this after the carry-forward resolution gate.** For each entry in Mid-session findings, route it to its correct destination — Decisions table, Deferred items, Next session (via Carried forward), or `roadmap.md` (via a named task entry). An entry cannot remain in Mid-session findings unless it has been explicitly marked as triaged with its destination noted. The Mid-session findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding Next session:** this gate must pass before Next session is written.
+**Mid-session findings review/publish step — do this after the carry-forward resolution gate.** This step replaces the former mid-session findings triage gate. It performs the triage responsibilities and routes each entry to its destination. For each entry in Mid-session findings, route it: to the Decisions table, to Deferred items, to Next session (via Carried forward), to `roadmap.md` (via a named task entry), or to the feedback records [`devlog/AGENT_FEEDBACK.md`](../devlog/AGENT_FEEDBACK.md) and [`devlog/GOTCHAS.md`](../devlog/GOTCHAS.md). Class A (agent experience, friction, poor stack design, poor operator prompting) goes to `AGENT_FEEDBACK.md`. Class B (recurring agent mistakes and code smells) goes to `GOTCHAS.md`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not self-classify its own boo-boo as not-its-fault. An entry cannot remain in Mid-session findings unless it has been explicitly marked as triaged with its destination noted. The Mid-session findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding Next session:** this gate must pass before Next session is written.
 
 **Spec amendment:** if any implementation gap discovered this session affects the spec — missing flag, unspecified behaviour, ambiguous fixture approach — amend the spec before closing. Do not leave spec gaps for the next session to re-derive.
 

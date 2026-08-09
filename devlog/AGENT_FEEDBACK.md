@@ -1,0 +1,201 @@
+# Agent Feedback
+
+A persistent record of the coding agent's experience: friction points, poor stack design, poor operator prompting, and "this needs reinforcing" notes. Recorded by the agent. Reviewed and addressed by the operator.
+
+**Writer:** agent.
+**Reviewer:** operator.
+
+This file is tied into the session's Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
+
+---
+
+## Preamble — length
+
+If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
+
+---
+
+## Entry format
+
+Each entry follows this structural template.
+
+```markdown
+## [<A|G>] <date> — <short title>
+
+state: open                        // open | mitigated | probation
+scoped: <milestone or none>        // durable-fix destination when assigned
+legacy: <prior fix, if any>        // set only on resurfacing
+mitigation: <interim workaround, or none>
+```
+
+An entry is deleted when resolved. A resolved durable fix is recorded in the changelog and the roadmap, not in this file. This file holds only the active backlog.
+
+Attribution is operator-owned. The agent proposes a class and the operator confirms it. The agent does not self-classify its own boo-boos as not-its-fault.
+
+---
+
+## Bash
+
+Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted). See `src/reasoning/agent/drafts/bash-scripting-traps.skill.md` for existing skill coverage.
+
+### [A] 2026-08-09 — Empty string bypasses `${VAR:-default}`
+
+state: open
+scoped: none
+legacy: none
+mitigation: explicit emptiness check before the default:
+
+```bash
+local BASE_COMMIT="$BRANCH_FROM_ARG"
+[[ -n "$BASE_COMMIT" ]] || BASE_COMMIT="HEAD"
+```
+
+`${VAR:-default}` expands to `default` only when `VAR` is unset, not when it is an empty string. An empty `VAR=""` is a set value, so the fallback is skipped.
+
+Scope: could be linted. A shellcheck rule exists for this (`SC2086` adjacent), but the empty-vs-unset distinction is a language design issue, not a linting one. Cross-reference: no skill trap covers this.
+
+### [A] 2026-08-09 — `git rev-parse --verify 0000...` succeeds
+
+state: open
+scoped: none
+legacy: none
+mitigation: defensive coding only. Validate against a known commit set when dummy SHAs from test fixtures are a risk.
+
+Git treats the all-zero SHA as a valid reference to the empty tree object. `rev-parse --verify` returns 0. No warning, no error.
+
+Scope: upstream git behavior — not fixable in this project. Cross-reference: not applicable for trapping (upstream behavior).
+
+### [A] 2026-08-09 — `local FOO=$(cmd)` swallows exit codes under `set -e`
+
+state: open
+scoped: none
+legacy: none
+mitigation: split the assignment:
+
+```bash
+local FOO; FOO=$(failing_cmd)
+```
+
+`local` is a builtin that always returns 0. Under `set -e`, the exit code of command substitution in the value is silently absorbed.
+
+Scope: shellcheck warns on this (`SC2155`). Cross-reference: Trap 15 covers the top-level `local` scope only. The function-scope exit-code-swallowing pattern is distinct and unaddressed.
+
+### [A] 2026-08-09 — `|| true` required for failure-tolerant checks under `set -e`
+
+state: open
+scoped: none
+legacy: none
+mitigation: `command || true`; for grep counting use:
+
+```bash
+local COUNT
+COUNT=$(grep -c 'pattern' file 2>/dev/null) || true
+```
+
+Any command expected to sometimes fail (`ls missing*`, `grep -c` on absent patterns, `diff --quiet` on dirty trees) must be suffixed with `|| true`. The pattern is pervasive but easy to forget on new checks.
+
+Scope: language design limitation. The subshell-scoped `|| true` pattern (from session `20260805-01`) is the best available mitigation. Cross-reference: Trap 16 covers pipeline-level swallowing only; individual-command patterns are not addressed.
+
+### [A] 2026-08-09 — No test fixture lifecycle — manual `rm -rf` everywhere
+
+state: open
+scoped: none
+legacy: none
+mitigation: use `$FIXTURE_DIR` subdirectories instead of `mktemp -d`. For supplemental dirs, add `trap 'rm -rf "$_tmpdir"' RETURN`.
+
+Bash test files have no `setup`/`teardown` framework. Every test manually creates temp dirs with `mktemp -d` and cleans up with `rm -rf`. Tests that fail midway leak temp directories.
+
+Scope: could standardize a `test_teardown` helper. Not urgent — leaked temp dirs in CI are ephemeral. Cross-reference: no skill trap covers this.
+
+### [A] 2026-08-09 — Undefined-variable errors under `set -u` are opaque
+
+state: open
+scoped: none
+legacy: none
+mitigation: always declare `local` before use. Shellcheck catches this (`SC2154`).
+
+`set -u` causes any reference to an undefined variable to abort with only the variable name — no line number, no context.
+
+Scope: bash limitation. `set -u` has no built-in context reporting. Cross-reference: not applicable for trapping (bash limitation).
+
+### [A] 2026-08-09 — `grep -c` returns exit 1 on zero matches
+
+state: open
+scoped: none
+legacy: none
+mitigation: `grep -c 'pattern' file || true` always; or capture the exit code manually:
+
+```bash
+grep -c 'pattern' file 2>/dev/null; local _rc=$?
+```
+
+Under `set -e`, `grep -c` abort the script when zero matches is the expected result.
+
+Scope: language design. Could adopt a `_count_matches()` wrapper. Cross-reference: no skill trap covers this; Trap 9 is unrelated. Could pair with complaint #4 as a general expected-failure-commands trap.
+
+### [A] 2026-08-09 — Circular sourcing between `diff_export.sh` and `package_branch.sh`
+
+state: open
+scoped: none
+legacy: none
+mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators.
+
+`diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
+
+Scope: architecture decision recorded in ADR (not yet written). Cross-reference: no skill trap covers this; should be added as an architecture trap.
+
+---
+
+## Skill cross-reference — bash complaints to traps
+
+| # | Entry | Trap coverage | Assessment |
+|---|---|---|---|
+| 1 | Empty string bypasses `${VAR:-default}` | None | No mitigation exists. Should be added as a new trap. |
+| 2 | `git rev-parse --verify 0000...` succeeds | None | Upstream git behavior — not fixable. Defensive coding only. No trap to add. |
+| 3 | `local FOO=$(cmd)` swallows exit codes | Trap 15 (top-level `local`) | Function-scope pattern distinct and unaddressed. New trap, or merge into Trap 15. |
+| 4 | `|| true` required on individual commands | Trap 16 (pipeline `|| true`) | Individual-command patterns unaddressed. Broaden Trap 16, or add a companion trap. |
+| 5 | No test fixture lifecycle | None | Could add a `test_teardown` trap pattern. |
+| 6 | `set -u` errors are opaque | None | Bash limitation. No trap to add. |
+| 7 | `grep -c` returns exit 1 on zero matches | None (Trap 9 unrelated) | Could pair with #4 as a general expected-failure-commands trap. |
+| 8 | Circular sourcing between libs | None | Add an architecture trap: shared functions live in leaf libraries. |
+
+**Summary:** 8 bash entries, 5 with no skill coverage, 1 partially covered (#4 by Trap 16), 2 not applicable for trapping. Six new traps or trap expansions are warranted. Deferred to a future skill-maintenance session.
+
+---
+
+## Agent experience — session 20260809-04
+
+### [A] 2026-08-09 — Directive/policy granularity mismatch for governance changes causes run-ahead
+
+state: open
+scoped: none
+legacy: none
+mitigation: the session-open directive scaffolds Gate 1 (scope) and Gate 2 (acceptance criteria) as the whole-session permission points. AGENTS.md separately requires policy changes to be proposed section-by-section. A task-list confirmation is not policy-text approval. Restate the per-section policy gate in the directive when it names policy files; the directive's "implementation does not begin until both gates are confirmed" reads as blanket authorization (new-session.md line 96).
+
+### [A] 2026-08-09 — Mid-session findings duplicate-entry and rewrite churn
+
+state: open
+scoped: none
+legacy: none
+mitigation: recording every observation as a permanent distinct finding row invites duplicates and table corruption (finding text leaked into the AC table; overwritten CORRECTION blocks). Frame Mid-session findings as candidate records consolidated at the review/publish step. Edit task notes in place rather than appending duplicate steering records.
+
+### [A] 2026-08-09 — Hard-wrapped `<...>` instruction blocks in handover_policy
+
+state: open
+scoped: none
+legacy: none
+mitigation: raw reading of handover_policy shows arbitrary ~70-char soft-wraps in the `<...>` guidance blocks, falsely implying paragraph breaks; inconsistent with sibling policy files. Remove the hard-wrap (single-flowing-paragraph) in blocks this session extended.
+
+### [A] 2026-08-09 — Non-ASCII punctuation under a plain-ASCII doc policy
+
+state: open
+scoped: none
+legacy: none
+mitigation: documentation_policy.md:124 bans the section sign `§` ("plain ASCII punctuation"), but `§` is present in 43 files including the policy docs themselves. Consider a dedicated non-ASCII scrub in docs/operations/ (candidate for the STE/deferred doc sweep).
+
+### [A] 2026-08-09 — Tracked-backlog proliferation at close
+
+state: open
+scoped: none
+legacy: none
+mitigation: close touches many canonical surfaces (two persistent files, roadmap tasks, decisions, deferred items). Watch-outs: keep AGENT_FEEDBACK/GOTCHAS short (no-index, length → durable fix), and rely on the roadmap as the sole task list to avoid scattering.
