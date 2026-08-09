@@ -130,8 +130,7 @@ All artefacts land in the session export directory constructed by `export_path`:
 
 ```
 workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
-  EXPORT-TIME.txt       — timestamp of the exit export
-  .export-status        — SUCCESS/FAIL with timestamp
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA (and EXIT_CODE on failure)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
@@ -140,7 +139,6 @@ workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
   changed-files/
     MANIFEST.txt
     <path>/<file>        — working tree copies of all changed files
-  .init_sha             — baseline commit SHA the patches were generated against
 ```
 
 ### Autosave
@@ -149,8 +147,7 @@ The autosave loop runs inside the capability container on a configurable interva
 
 ```
 workspace/session-diffs/autosave/<RUN_ID>/
-  EXPORT-TIME.txt       — updated each cycle
-  .export-status        — SUCCESS/FAIL with timestamp
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA (updated each cycle)
   uncommitted.diff      — uncommitted changes vs HEAD
   all-changes.diff      — net delta init_sha..HEAD
   patches/

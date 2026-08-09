@@ -9,7 +9,7 @@
 #   all-changes.diff
 #   changed-files/MANIFEST.txt
 #   changed-files/<path>/<file>
-#   .init_sha
+#   .export-status
 
 set -uo pipefail
 
@@ -79,10 +79,10 @@ test_dispatcher_creates_all_artefacts() {
   [[ -f "$OUT/all-changes.diff" ]] || ALL_OK=false
   [[ -d "$OUT/changed-files" && -f "$OUT/changed-files/a.txt" && -f "$OUT/changed-files/b.txt" ]] || ALL_OK=false
   [[ -f "$OUT/changed-files/MANIFEST.txt" && -s "$OUT/changed-files/MANIFEST.txt" ]] || ALL_OK=false
-  [[ -f "$OUT/.init_sha" && -s "$OUT/.init_sha" ]] || ALL_OK=false
+  [[ -f "$OUT/.export-status" && -s "$OUT/.export-status" ]] || ALL_OK=false
 
   if [[ "$ALL_OK" == true ]]; then
-    pass "package_branch creates all 6 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt, .init_sha)"
+    pass "package_branch creates all 6 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt, .export-status)"
   else
     fail "package_branch missing one or more artefact types"
   fi
@@ -307,6 +307,45 @@ test_dispatcher_missing_session_state() {
   fi
 }
 
+test_dispatcher_export_status_contents() {
+  local DIR="$FIXTURE_DIR/pb_es_content"
+  local OUT="$FIXTURE_DIR/pb_es_content_out"
+  mkdir -p "$OUT"
+  local INIT_SHA
+  INIT_SHA=$(make_sandbox_with_state "$DIR")
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  local ES="$OUT/.export-status"
+  local ALL_OK=true
+  grep -q '^STATUS=SUCCESS$' "$ES" || ALL_OK=false
+  grep -q '^TIMESTAMP=' "$ES" || ALL_OK=false
+  grep -q "^INIT_SHA=${INIT_SHA}$" "$ES" || ALL_OK=false
+
+  if [[ "$ALL_OK" == true ]]; then
+    pass "package_branch writes .export-status with STATUS, TIMESTAMP, INIT_SHA"
+  else
+    fail "package_branch .export-status missing expected fields"
+  fi
+}
+
+test_dispatcher_no_init_sha_file() {
+  local DIR="$FIXTURE_DIR/pb_no_initsha"
+  local OUT="$FIXTURE_DIR/pb_no_initsha_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  if [[ ! -f "$OUT/.init_sha" ]]; then
+    pass "package_branch no longer writes .init_sha (consolidated into .export-status)"
+  else
+    fail "package_branch should not write .init_sha"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -321,5 +360,7 @@ run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
+run_test test_dispatcher_export_status_contents
+run_test test_dispatcher_no_init_sha_file
 
 test_done

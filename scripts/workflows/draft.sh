@@ -197,6 +197,73 @@ draft_apply_uncommitted() {
 }
 
 # =============================================================================
+# _ingest_export_metadata — parse and validate .export-status
+# =============================================================================
+
+# _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR \
+#     OUT_BASE_COMMIT OUT_EXPORT_TIME OUT_INIT_SHA
+#
+# Parses .export-status from SOURCE_DIR, validates required fields,
+# resolves BASE_COMMIT from BRANCH_FROM_ARG (or HEAD), and validates
+# the commit exists. Returns the three values via nameref output params.
+# Returns 1 with an error message on failure.
+_ingest_export_metadata() {
+  local _source_dir="$1"
+  local _branch_from="$2"
+  local _project_dir="$3"
+  local -n _out_base="$4"
+  local -n _out_time="$5"
+  local -n _out_init="$6"
+
+  # Read .export-status
+  local _es="$_source_dir/.export-status"
+  local _time="" _init=""
+  if [[ -f "$_es" ]]; then
+    _time=$(grep '^TIMESTAMP=' "$_es" | cut -d= -f2- || true)
+    _init=$(grep '^INIT_SHA=' "$_es" | cut -d= -f2- || true)
+  else
+    echo "Error: .export-status not found in $_source_dir" >&2
+    echo "  This directory was not produced by a recent diff_export or package_branch run." >&2
+    echo "  Re-export the session or use an explicit --branch-from to skip metadata validation." >&2
+    return 1
+  fi
+
+  # Validate required fields
+  if [[ -z "$_time" ]]; then
+    echo "Error: TIMESTAMP field missing or empty in .export-status" >&2
+    return 1
+  fi
+  if [[ -z "$_init" ]]; then
+    echo "Error: INIT_SHA field missing or empty in .export-status" >&2
+    return 1
+  fi
+
+  # Resolve BASE_COMMIT
+  local _base="$_branch_from"
+  [[ -n "$_base" ]] || _base="HEAD"
+
+  if ! git -C "$_project_dir" rev-parse --verify "$_base" >/dev/null 2>&1; then
+    echo "Error: BASE_COMMIT '$_base' does not resolve to a valid commit" >&2
+    echo "  Set --branch-from to a valid ref" >&2
+    return 1
+  fi
+
+  # Warn if baseline differs from patch generation point
+  if [[ -n "$_init" ]]; then
+    local _resolved
+    _resolved=$(git -C "$_project_dir" rev-parse "$_base")
+    if [[ "$_resolved" != "$_init" ]]; then
+      echo "Warning: patches were generated from ${_init:0:7} but branch is forking from ${_resolved:0:7}" >&2
+      echo "  If patches fail to apply, set --branch-from explicitly" >&2
+    fi
+  fi
+
+  _out_base="$_base"
+  _out_time="$_time"
+  _out_init="$_init"
+}
+
+# =============================================================================
 # draft_run — create draft branch (no apply)
 # =============================================================================
 
@@ -224,7 +291,11 @@ draft_run() {
   # Allow DIFF_COUNT=0 when only uncommitted.diff is present
   : "${DIFF_COUNT:?}"
 
-  local BASE_COMMIT="${BRANCH_FROM_ARG:-HEAD}"
+  # Ingest and validate export metadata
+  local BASE_COMMIT EXPORT_TIME INIT_SHA_FROM_EXPORT
+  _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
+    BASE_COMMIT EXPORT_TIME INIT_SHA_FROM_EXPORT || return 1
+
   local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
@@ -233,9 +304,6 @@ draft_run() {
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
 
   local AUTHOR; AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
-  local EXPORT_TIME=""
-  [[ ! -f "$SOURCE_DIR/EXPORT-TIME.txt" ]] || EXPORT_TIME=$(head -n 1 "$SOURCE_DIR/EXPORT-TIME.txt")
-  [[ -n "$EXPORT_TIME" ]] || EXPORT_TIME="unknown"
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
@@ -308,6 +376,13 @@ _run_draft_workflow() {
       return 1
     fi
   fi
+
+  # Validate BRANCH_FROM via shared metadata ingestion.
+  # Defaults empty to HEAD; validates the commit exists.
+  # Also reads .export-status for TIMESTAMP so draft_run can use it.
+  local _validated_base _dummy_time _dummy_init
+  _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM" "$PROJECT_DIR" \
+    _validated_base _dummy_time _dummy_init || return 1
 
   # Create savepoint at the branch point BEFORE .draft-state is committed.
   # On failure, reset to this to avoid leaving the draft branch partially applied.

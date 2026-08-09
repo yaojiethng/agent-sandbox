@@ -13,6 +13,7 @@
 #
 #   Patch files are valid git diffs adding file-N.txt.
 #   uncommitted.diff (when not "none") diffs uncommitted.txt.
+#   Also writes a minimal .export-status (consolidated metadata) for draft.sh.
 make_session_fixture() {
   local DIR="$1"
   local PATCHES="${2:-0}"
@@ -49,4 +50,11 @@ EOF
   elif [[ "$UNCOMMITTED" == "empty" ]]; then
     > "$DIR/uncommitted.diff"
   fi
+
+  # Write consolidated .export-status for draft.sh consumption
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260408-120000"
+    echo "INIT_SHA=0000000000000000000000000000000000000000"
+  } > "$DIR/.export-status"
 }

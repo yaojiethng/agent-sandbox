@@ -29,10 +29,10 @@ test_diff_export_creates_output() {
 
   diff_export "$DIR" "$OUTPUT_DIR"
 
-  if [[ -f "$OUTPUT_DIR/EXPORT-TIME.txt" ]]; then
-    pass "diff_export writes EXPORT-TIME.txt"
+  if [[ -f "$OUTPUT_DIR/.export-status" ]]; then
+    pass "diff_export writes .export-status"
   else
-    fail "diff_export should write EXPORT-TIME.txt"
+    fail "diff_export should write .export-status"
   fi
 }
 
@@ -281,10 +281,10 @@ test_session_path_export_time_written() {
   mkdir -p "$OUT"
   diff_export "$DIR" "$OUT"
 
-  if [[ -f "$OUT/EXPORT-TIME.txt" && -s "$OUT/EXPORT-TIME.txt" ]]; then
-    pass "diff_export writes EXPORT-TIME.txt in output dir"
+  if [[ -f "$OUT/.export-status" && -s "$OUT/.export-status" ]]; then
+    pass "diff_export writes .export-status in output dir"
   else
-    fail "diff_export should write EXPORT-TIME.txt"
+    fail "diff_export should write .export-status"
   fi
 }
 

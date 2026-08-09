@@ -4,6 +4,9 @@
 # Cross-context — deployed to capability container (sandbox-entrypoint).
 # Uses self-resolution for sibling sourcing (_self_dir).
 #
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/export_status.sh"
+source "$_self_dir/package_branch.sh"
 # Provides:
 #   diff_export          — package session artefacts via package-branch + export time
 #   _write_export_status — write .export-status atomically
@@ -19,8 +22,8 @@
 
 # diff_export SANDBOX_DIR OUTPUT_DIR [RUN_ID]
 #   Packages session artefacts into OUTPUT_DIR via package_branch,
-#   then writes EXPORT-TIME.txt and .export-status for audit trail.
-#   Optional RUN_ID is embedded in error log filenames for traceability.
+#   then writes .export-status (STATUS, TIMESTAMP, INIT_SHA, optional EXIT_CODE)
+#   for audit trail. Optional RUN_ID is embedded in error log filenames.
 diff_export() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
@@ -34,11 +37,13 @@ diff_export() {
   local _export_ts
   _export_ts=$(date -u +%Y%m%d-%H%M%S)
 
-  echo "diff_export: packaging artefacts..." >&2
+  # Read init_sha from SESSION_STATE for inclusion in .export-status.
+  # If the sandbox hasn't been initialised yet (no SESSION_STATE),
+  # init_sha is left empty — .export-status will be written without it.
+  local _init_sha=""
+  _init_sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || true
 
-  # Source sibling package-branch
-  _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  source "$_self_dir/package_branch.sh"
+  echo "diff_export: packaging artefacts..." >&2
 
   # Capture package_branch stderr so it can be included in the error log
   # on failure. stderr is also echoed live for immediate visibility.
@@ -61,7 +66,7 @@ diff_export() {
     _stderr_dump=$(_read_and_remove_pb_stderr)
 
     # Write .export-status with failure
-    _write_export_status "$OUTPUT_DIR" "FAIL" "$_export_ts" "$_exit_code"
+    _write_export_status "$OUTPUT_DIR" "FAIL" "$_export_ts" "$_exit_code" "$_init_sha"
 
     # Write error log with stderr capture
     _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$RUN_ID" "$_exit_code" "$_stderr_dump" "package_branch returned exit $_exit_code"
@@ -69,37 +74,8 @@ diff_export() {
   }
   _read_and_remove_pb_stderr > /dev/null  # cleanup on success
 
-  # Record export time for audit trail (written after package_branch
-  # since it removes and recreates OUTPUT_DIR internally)
-  echo "$_export_ts" > "$OUTPUT_DIR/EXPORT-TIME.txt"
-
   # Write .export-status with success
-  _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0"
-}
-
-# _write_export_status OUTPUT_DIR STATUS TIMESTAMP [EXIT_CODE]
-#   Writes a .export-status file in OUTPUT_DIR containing STATUS and TIMESTAMP.
-#   On failure, includes EXIT_CODE. The file is written atomically (write to
-#   temp, rename) so concurrent readers see either the old state or the new one.
-_write_export_status() {
-  local _dir="$1"
-  local _status="$2"
-  local _ts="$3"
-  local _exit_code="${4:-}"
-
-  local _content="STATUS=${_status}"
-  _content="${_content}"$'\n'"TIMESTAMP=${_ts}"
-  if [[ -n "$_exit_code" && "$_exit_code" != "0" ]]; then
-    _content="${_content}"$'\n'"EXIT_CODE=${_exit_code}"
-  fi
-
-  # Atomic write: temp file + rename
-  # If mktemp fails, fall back to a deterministic temp name so the
-  # function degrades gracefully rather than silently discarding content.
-  local _tmp
-  _tmp=$(mktemp "${_dir}/.export-status.XXXXXXXXXX" 2>/dev/null) || _tmp="${_dir}/.export-status.$$"
-  printf '%s\n' "$_content" > "$_tmp"
-  mv -f "$_tmp" "${_dir}/.export-status" 2>/dev/null || true
+  _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$_init_sha"
 }
 
 # _write_export_error_log OUTPUT_DIR TIMESTAMP [RUN_ID] [EXIT_CODE] [STDERR_DUMP] [SUMMARY]

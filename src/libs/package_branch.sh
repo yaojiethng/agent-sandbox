@@ -15,7 +15,7 @@
 #   all-changes.diff        — net delta INIT_SHA..HEAD (with untracked)
 #   changed-files/          — working tree copies of all changed files
 #     MANIFEST.txt
-#   .init_sha               — baseline commit SHA the patches were generated against
+#   .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Usage (library):
 #   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
@@ -39,6 +39,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
+source "$_self_dir/export_status.sh"
 
 # =============================================================================
 # usage — print help text
@@ -156,7 +157,7 @@ package_commits() {
 #   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
 #   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
 #   4. write_changed_files     — changed-files/ with MANIFEST.txt
-#   5. .init_sha               — baseline commit SHA the patches were generated against
+#   5. .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
@@ -244,7 +245,7 @@ _package_preflight_check() {
 #   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
 #   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
 #   4. write_changed_files     — changed-files/ with MANIFEST.txt
-#   5. .init_sha               — baseline commit SHA the patches were generated against
+#   5. .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
@@ -295,9 +296,12 @@ package_branch() {
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
 
-  # 5. Baseline metadata — so the host-side make draft knows which commit
-  #    the patches were generated against
-  echo "$INIT_SHA" > "${OUTPUT_DIR}/.init_sha"
+  # 5. Export metadata — .export-status with STATUS, TIMESTAMP, INIT_SHA
+  #    so the host-side make draft can resolve the baseline and timestamp
+  #    from a single file.
+  local _export_ts
+  _export_ts=$(date -u +%Y%m%d-%H%M%S)
+  _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
 
   echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
 

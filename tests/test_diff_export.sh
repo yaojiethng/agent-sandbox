@@ -28,7 +28,7 @@ test_export_status_writes_success() {
   local _tmpdir
   _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
 
-  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0"
+  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123"
 
   if [[ ! -f "$_tmpdir/.export-status" ]]; then
     rm -rf "$_tmpdir"
@@ -44,6 +44,40 @@ test_export_status_writes_success() {
     pass "_write_export_status writes SUCCESS with timestamp"
   else
     fail "_write_export_status: expected SUCCESS content, got: $_content"
+  fi
+}
+
+test_export_status_includes_init_sha() {
+  local _tmpdir
+  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+
+  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123def456"
+
+  local _content
+  _content=$(cat "$_tmpdir/.export-status")
+  rm -rf "$_tmpdir"
+
+  if [[ "$_content" == *"INIT_SHA=abc123def456"* ]]; then
+    pass "_write_export_status includes INIT_SHA when provided"
+  else
+    fail "_write_export_status: expected INIT_SHA, got: $_content"
+  fi
+}
+
+test_export_status_omits_init_sha_when_empty() {
+  local _tmpdir
+  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+
+  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" ""
+
+  local _content
+  _content=$(cat "$_tmpdir/.export-status")
+  rm -rf "$_tmpdir"
+
+  if [[ "$_content" != *"INIT_SHA"* ]]; then
+    pass "_write_export_status omits INIT_SHA when empty"
+  else
+    fail "_write_export_status: should not include empty INIT_SHA"
   fi
 }
 
@@ -281,6 +315,8 @@ test_diff_export_failure_writes_error_log() {
 run_test test_export_status_writes_success
 run_test test_export_status_writes_failure_with_exit_code
 run_test test_export_status_does_not_include_exit_code_on_success
+run_test test_export_status_includes_init_sha
+run_test test_export_status_omits_init_sha_when_empty
 run_test test_export_error_log_creates_file
 run_test test_export_error_log_includes_run_id
 run_test test_export_error_log_contains_error_details

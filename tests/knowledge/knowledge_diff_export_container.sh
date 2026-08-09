@@ -147,10 +147,10 @@ fi
 [[ -d "$EXPORT_DIR/changed-files" ]] || { echo "  MISSING: changed-files/"; ALL_OK=false; }
 [[ -f "$EXPORT_DIR/changed-files/newfile.py" ]] || { echo "  MISSING: changed-files/newfile.py"; ALL_OK=false; }
 [[ -f "$EXPORT_DIR/changed-files/MANIFEST.txt" ]] || { echo "  MISSING: changed-files/MANIFEST.txt"; ALL_OK=false; }
-[[ -f "$EXPORT_DIR/EXPORT-TIME.txt" ]] || { echo "  MISSING: EXPORT-TIME.txt"; ALL_OK=false; }
+[[ -f "$EXPORT_DIR/.export-status" ]] || { echo "  MISSING: .export-status"; ALL_OK=false; }
 
 if [[ "$ALL_OK" == true ]]; then
-  pass "All 5 artefact types present (patches/, uncommitted.diff, all-changes.diff, changed-files/, EXPORT-TIME.txt)"
+  pass "All 5 artefact types present (patches/, uncommitted.diff, all-changes.diff, changed-files/, .export-status)"
 else
   fail "One or more artefacts missing from $EXPORT_DIR"
 fi

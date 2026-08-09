@@ -15,7 +15,7 @@
 #
 # Directory layout under OUTPUT_DIR/ (caller constructs the path):
 #
-#   EXPORT-TIME.txt          — timestamp of the export (audit trail)
+#   .export-status           — consolidated metadata (STATUS, TIMESTAMP, INIT_SHA)
 #   uncommitted.diff         — uncommitted changes vs HEAD
 #   all-changes.diff         — net delta INIT_SHA..HEAD
 #   patches/

@@ -105,8 +105,12 @@ make_real_session() {
   rm -rf "$SESSION_DIR"
   mkdir -p "$SESSION_DIR/patches"
 
-  # Write EXPORT-TIME.txt
-  echo "20260408-120000" > "$SESSION_DIR/EXPORT-TIME.txt"
+  # Write .export-status (consolidated metadata file)
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260408-120000"
+    echo "INIT_SHA=${BASELINE_SHA}"
+  } > "$SESSION_DIR/.export-status"
 
   # Write numbered .diff files (index-stripped) from BASELINE_SHA..HEAD
   local COMMIT_NUM=1
@@ -254,7 +258,11 @@ test_draft_state_has_correct_values() {
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
   make_session_fixture "$EXPORT" 3
-  echo "20260420-120000" > "$EXPORT/EXPORT-TIME.txt"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+    echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
+  } > "$EXPORT/.export-status"
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -387,7 +395,11 @@ test_draft_no_diffs_error() {
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
   mkdir -p "$EXPORT/session"
-  echo "20260420-120000" > "$EXPORT/session/EXPORT-TIME.txt"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+    echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
+  } > "$EXPORT/session/.export-status"
   > "$EXPORT/session/changes.diff"
 
   local OUT
@@ -406,7 +418,11 @@ test_draft_strips_index_lines() {
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
   mkdir -p "$EXPORT/patches"
-  echo "20260420-120000" > "$EXPORT/EXPORT-TIME.txt"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+    echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
+  } > "$EXPORT/.export-status"
   > "$EXPORT/uncommitted.diff"
 
   cat > "$EXPORT/patches/0001-test.diff" <<'EOF'

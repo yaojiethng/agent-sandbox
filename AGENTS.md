@@ -91,6 +91,8 @@ Update the checklist:
 
 **The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
 
+**Output contract changes require a propagation checklist regardless of task language.** A change that alters an output format, file layout, API surface, or any contract consumed by other code or documented in `docs/` must be accompanied by a checklist covering all consumers — tests, docs, downstream scripts, fixtures, and knowledge tests — even if the task is phrased as a single-file edit.
+
 ---
 
 ## Bash Friction Log
