@@ -528,14 +528,51 @@ test_rebuild_block_exists_before_preflight() {
   fi
 }
 
-run_test test_rebuild_flags_parsed_by_start_agent
-run_test test_refresh_flags_parsed_by_start_agent
-run_test test_rebuild_base_flag_removed
-run_test test_rebuild_block_exists_before_preflight
+# Functional check: start_agent.sh --help prints the full usage (all modes, all
+# required flags, provider required with no default) and exits 0.
+test_help_flag_prints_full_usage() {
+  local output rc
+  output=$(bash "$REPO_ROOT/scripts/start_agent.sh" --help 2>&1) && rc=$? || rc=$?
+
+  if [[ "$rc" -eq 0 && "$output" == *"Usage: start_agent.sh"* \
+      && "$output" == *"--provider"* \
+      && "$output" == *"standard"* && "$output" == *"serve"* \
+      && "$output" == *"dry-run"* ]]; then
+    pass "start_agent.sh --help prints full usage and exits 0"
+  else
+    fail "start_agent.sh --help: expected full usage, rc=$rc output=$output"
+  fi
+}
+
+test_help_short_flag_prints_usage() {
+  local output rc
+  output=$(bash "$REPO_ROOT/scripts/start_agent.sh" -h 2>&1) && rc=$? || rc=$?
+
+  if [[ "$rc" -eq 0 && "$output" == *"Usage: start_agent.sh"* ]]; then
+    pass "start_agent.sh -h prints usage and exits 0"
+  else
+    fail "start_agent.sh -h: expected usage, rc=$rc output=$output"
+  fi
+}
+
+test_no_default_provider_in_help_or_flag() {
+  # The provider docstring must NOT claim a default (the no-default behavior is
+  # deliberate). The usage must say provider is required.
+  if grep -q -- 'default: opencode' "$REPO_ROOT/scripts/start_agent.sh"; then
+    fail "start_agent.sh still documents a default provider (should be required)"
+  elif grep -q -- 'provider name (required' "$REPO_ROOT/scripts/start_agent.sh"; then
+    pass "start_agent.sh documents --provider as required (no default)"
+  else
+    fail "start_agent.sh does not document --provider as required"
+  fi
+}
 
 run_test test_rebuild_flags_parsed_by_start_agent
 run_test test_refresh_flags_parsed_by_start_agent
 run_test test_rebuild_base_flag_removed
 run_test test_rebuild_block_exists_before_preflight
+run_test test_help_flag_prints_full_usage
+run_test test_help_short_flag_prints_usage
+run_test test_no_default_provider_in_help_or_flag
 
 test_done

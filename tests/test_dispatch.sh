@@ -351,6 +351,42 @@ test_help_unknown() {
   fi
 }
 
+# --help/-h on start/serve/dry-run must route to start_agent.sh --help WITHOUT
+# requiring base args (they are absent on a bare --help invocation).
+test_help_flag_routes_run_modes_to_start_agent() {
+  for mode in start serve dry-run; do
+    setup
+    dispatch_and_capture "$mode" --help
+
+    local found=false
+    for c in "${CAPTURED[@]}"; do
+      [[ "$c" == "MOCK start_agent.sh --help" ]] && found=true
+    done
+
+    if [[ "$found" == true ]]; then
+      pass "$mode --help: routes to start_agent.sh --help without requiring base args"
+    else
+      fail "$mode --help: expected MOCK start_agent.sh --help, got: ${CAPTURED[*]}"
+    fi
+  done
+}
+
+test_help_start_subcommand() {
+  setup
+  dispatch_and_capture help start
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec bash"*"start_agent.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "help start: execs start_agent.sh --help"
+  else
+    fail "help start: expected exec bash start_agent.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
 # =============================================================================
 # Tests — apply subcommand (exec's workflows/apply.sh)
 # =============================================================================
@@ -653,6 +689,8 @@ run_test test_help_apply
 run_test test_help_draft
 run_test test_help_build
 run_test test_help_unknown
+run_test test_help_flag_routes_run_modes_to_start_agent
+run_test test_help_start_subcommand
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args

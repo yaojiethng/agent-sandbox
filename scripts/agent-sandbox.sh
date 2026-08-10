@@ -75,6 +75,16 @@ main() {
     fi
   }
 
+  # --help/-h on start/serve/dry-run must short-circuit before require_base_args
+  # (which would otherwise fail on missing --name/--project/--sandbox) and
+  # route to start_agent.sh's usage().
+  wants_help() {
+    for _arg in "$@"; do
+      [[ "$_arg" == --help || "$_arg" == -h ]] && return 0
+    done
+    return 1
+  }
+
   # -------------------------
   # Dispatch
   # -------------------------
@@ -101,6 +111,7 @@ main() {
       ;;
 
     start)
+      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
       parse_flags "$@"
       require_base_args
       "$SCRIPTS/start_agent.sh" standard \
@@ -111,6 +122,7 @@ main() {
       ;;
 
     serve)
+      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
       parse_flags "$@"
       require_base_args
       "$SCRIPTS/start_agent.sh" serve \
@@ -121,6 +133,7 @@ main() {
       ;;
 
     dry-run)
+      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
       parse_flags "$@"
       require_base_args
       "$SCRIPTS/start_agent.sh" dry-run \

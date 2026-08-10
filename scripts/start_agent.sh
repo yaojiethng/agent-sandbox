@@ -15,7 +15,7 @@
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
-#   --provider=<n>          provider name (default: opencode)
+#   --provider=<n>          provider name (required)
 #
 # Responsibility: host-side pre-flight only — path validation, .env loading,
 # git validation, workspace setup, snapshot pipeline.
@@ -34,14 +34,65 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Shared helpers (parse_help_flag, parse_base_flags, check_base_flags).
+# common.sh sets SCRIPT_DIR from BASH_SOURCE[1], which here
+# resolves to this script's own dir (scripts/) — matching the value above.
+source "$REPO_ROOT/src/libs/common.sh"
+
 # -------------------------
 # Args
 # -------------------------
+usage() {
+  cat <<'EOF'
+Usage: start_agent.sh <mode> [flags]
+
+Host-side pre-flight and session setup for agent-sandbox. This script is an
+internal implementation detail of the agent-sandbox CLI — prefer invoking it
+through:
+
+  agent-sandbox start     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
+  agent-sandbox serve     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
+  agent-sandbox dry-run   --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
+
+or, from a sandbox Makefile:
+
+  make start PROVIDER=<n>
+  make serve PROVIDER=<n>
+  make dry-run PROVIDER=<n>
+
+Mode (required):
+  standard   — normal execution, network access allowed
+  serve      — provider serve mode, port exposed at SERVE_PORT
+  dry-run    — liveness check only, no agent started
+
+Flags (all required except --sandbox/--env):
+  --name=<n>       display name; used for image names and log output (required)
+  --project=<path> absolute WSL/Linux path to the project directory on the host (required)
+  --sandbox=<path> absolute WSL/Linux path to the sandbox directory
+  --env=<rel>      path to .env file, relative to SANDBOX_DIR (default: .env)
+  --provider=<n>   provider name (required — no default; e.g. pi, hermes, opencode)
+
+Optional flags:
+  --refresh   rebuild sandbox and provider images, then start a new session
+  --rebuild   force a full rebuild including base images, then start a new session
+  --resume    always show the interactive volume picker (session resume)
+
+Note: --provider is required and has no default. Pass it explicitly.
+EOF
+}
+
+# Handle --help/-h before any mode or flag validation, so both
+#   start_agent.sh --help
+#   start_agent.sh standard --help
+# print the full usage and exit cleanly. Reuses the canonical parse_help_flag.
+parse_help_flag "$@"
+
 MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]"
+  echo "Error: mode is required (standard|serve|dry-run)" >&2
+  usage >&2
   exit 1
 fi
 
@@ -77,6 +128,16 @@ done
 
 if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
   echo "Error: --name and --project are required"
+  exit 1
+fi
+
+# --provider is required and deliberately has no default — the harness does
+# not presume a provider. Fail with a clear diagnostic rather than a cryptic
+# image-naming error downstream.
+if [[ -z "$PROVIDER_NAME" ]]; then
+  echo "Error: --provider is required (no default)." >&2
+  echo "  Pass it explicitly, e.g. --provider=pi" >&2
+  echo "  or from a sandbox Makefile: make start PROVIDER=pi" >&2
   exit 1
 fi
 
