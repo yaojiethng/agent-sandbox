@@ -175,7 +175,7 @@ Status after triage session `20260528-02-workflow-patch_application_findings_tri
 
 | Finding | Status | Resolution |
 |---|---|---|
-| F1 — Makefile.template FROM/CHANNEL mismatch | **Resolved** | Echo messages in `agent-sandbox.sh` changed from `CHANNEL=` to `FROM=`; Makefile.template now errors on `CHANNEL=` with `FROM=` hint; convention documented in `cli-standards.md` |
+| F1 — Makefile.template FROM/CHANNEL mismatch | **Resolved** | Echo messages in `agent-sandbox.sh` changed from `CHANNEL=` to `FROM=`; Makefile.template now errors on `CHANNEL=` with `FROM=` hint; convention documented in `cli-conventions.md` |
 | F2 — `git diff --no-renames` index conflict | **Closed** | Git limitation. Workaround (cumulative diff) documented in Case 5. |
 | F3 — `strip_index_lines` and `similarity index` | **Closed** | Correct behaviour — not a bug. |
 | F4 — `package_branch` missing `diff.sh` COPY | **Closed** | Already fixed by original patch 6. |
@@ -183,3 +183,5 @@ Status after triage session `20260528-02-workflow-patch_application_findings_tri
 | F6 — Cumulative patch verified clean | **Closed** | Workaround confirmed functional. |
 
 This is the recommended fallback when per-commit patches cannot apply due to rename conflicts or baseline divergence.
+---
+[CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

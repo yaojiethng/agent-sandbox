@@ -35,7 +35,7 @@ None.
 | [`tests/test_package_branch.sh`](../../tests/test_package_branch.sh) | Update artefact count + add `.init_sha` check |
 | [`docs/architecture/sandbox_lifecycle.md`](../../docs/architecture/sandbox_lifecycle.md) | Add `.init_sha` to bundle layout |
 | [`docs/concepts/sandbox_host_correspondence_model.md`](../../docs/concepts/sandbox_host_correspondence_model.md) | Add `.init_sha` to output description |
-| [`docs/development/cli-standards.md`](../../docs/development/cli-standards.md) | Remove `--baseline` from usage |
+| [`docs/development/cli-conventions.md`](../../docs/development/cli-conventions.md) | Remove `--baseline` from usage |
 
 ## Decisions made this session
 
@@ -58,7 +58,7 @@ None.
 | `tests/test_package_branch.sh` | Updated artefact count to 6; added `.init_sha` check in `test_dispatcher_creates_all_artefacts` |
 | `docs/architecture/sandbox_lifecycle.md` | Added `.init_sha` to bundle layout listing |
 | `docs/concepts/sandbox_host_correspondence_model.md` | Added `.init_sha` to `package-branch` output description; consolidated duplicate row |
-| `docs/development/cli-standards.md` | Removed `--baseline` from usage example |
+| `docs/development/cli-conventions.md` | Removed `--baseline` from usage example |
 
 ## Deferred items
 
@@ -75,3 +75,5 @@ Blocking design questions: host-side `make draft` must read `init_sha` from bund
 Post-close bookkeeping: not applicable.
 
 **Conclusions from this session:** The `init_sha` value exists in the container (`SESSION_STATE`) and was always read correctly for diff generation — it just was never written to the bundle. The host-side `fatal: Failed to resolve '' as a valid ref` error is caused by `BRANCH_FROM=""` bypassing the `${BRANCH_FROM_ARG:-HEAD}` default in `draft.sh`. Both sides need fixing: container now writes `init_sha`; host must consume it.
+---
+[CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

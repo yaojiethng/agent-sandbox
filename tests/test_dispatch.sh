@@ -181,13 +181,13 @@ test_start_default() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"standard"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"standard"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
     pass "start: calls start_agent.sh in standard mode"
   else
-    fail "start: expected MOCK start_agent.sh standard, got: ${CAPTURED[*]}"
+    fail "start: expected exec bash start_agent.sh standard, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -197,13 +197,13 @@ test_serve_mode() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"serve"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"serve"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
     pass "serve: calls start_agent.sh in serve mode"
   else
-    fail "serve: expected MOCK start_agent.sh serve, got: ${CAPTURED[*]}"
+    fail "serve: expected exec bash start_agent.sh serve, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -213,13 +213,13 @@ test_dry_run_mode() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"dry-run"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"dry-run"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
     pass "dry-run: calls start_agent.sh in dry-run mode"
   else
-    fail "dry-run: expected MOCK start_agent.sh dry-run, got: ${CAPTURED[*]}"
+    fail "dry-run: expected exec bash start_agent.sh dry-run, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -229,7 +229,7 @@ test_start_with_passthrough() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"extra-flag"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"extra-flag"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
@@ -249,7 +249,7 @@ test_start_rebuild_passthrough() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"--rebuild"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"--rebuild"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
@@ -265,7 +265,7 @@ test_start_refresh_passthrough() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "MOCK start_agent.sh"* ]] && [[ "$c" == *"--refresh"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"--refresh"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
@@ -351,8 +351,8 @@ test_help_unknown() {
   fi
 }
 
-# --help/-h on start/serve/dry-run must route to start_agent.sh --help WITHOUT
-# requiring base args (they are absent on a bare --help invocation).
+# --help/-h on any subcommand routes to the child's own help via route_help,
+# WITHOUT requiring base args (they are absent on a bare --help invocation).
 test_help_flag_routes_run_modes_to_start_agent() {
   for mode in start serve dry-run; do
     setup
@@ -360,13 +360,13 @@ test_help_flag_routes_run_modes_to_start_agent() {
 
     local found=false
     for c in "${CAPTURED[@]}"; do
-      [[ "$c" == "MOCK start_agent.sh --help" ]] && found=true
+      [[ "$c" == "exec bash"*"start_agent.sh --help" ]] && found=true
     done
 
     if [[ "$found" == true ]]; then
       pass "$mode --help: routes to start_agent.sh --help without requiring base args"
     else
-      fail "$mode --help: expected MOCK start_agent.sh --help, got: ${CAPTURED[*]}"
+      fail "$mode --help: expected exec bash start_agent.sh --help, got: ${CAPTURED[*]}"
     fi
   done
 }
@@ -384,6 +384,58 @@ test_help_start_subcommand() {
     pass "help start: execs start_agent.sh --help"
   else
     fail "help start: expected exec bash start_agent.sh --help, got: ${CAPTURED[*]}"
+  fi
+}
+
+# <sub> --help must route to the child's own help for EVERY subcommand, and it
+# must do so WITHOUT requiring the subcommand's required args (the latent
+# Finding-A bug: required-arg validation used to run before help delegation).
+test_help_every_subcommand_no_base_args() {
+  # subcommand -> the marker that appears in the captured exec path
+  local -A expected=(
+    [onboard]="onboard.sh --help"
+    [build]="build.sh --help"
+    [start]="start_agent.sh --help"
+    [serve]="start_agent.sh --help"
+    [dry-run]="start_agent.sh --help"
+    [stop]="stop.sh --help"
+    [prune]="prune.sh --help"
+    [apply]="apply.sh --help"
+    [draft]="draft.sh --help"
+    [confirm]="confirm.sh --help"
+    [reject]="reject.sh --help"
+    [package-branch]="package_branch.sh --help"
+  )
+
+  for sub in "${!expected[@]}"; do
+    setup
+    dispatch_and_capture "$sub" --help
+
+    local marker="${expected[$sub]}"
+    local found=false
+    for c in "${CAPTURED[@]}"; do
+      [[ "$c" == "exec bash"*"$marker" ]] && found=true
+    done
+
+    if [[ "$found" == true ]]; then
+      pass "$sub --help: routes to $marker without requiring base args"
+    else
+      fail "$sub --help: expected exec bash ... $marker, got: ${CAPTURED[*]}"
+    fi
+  done
+}
+
+# help is itself a subcommand; its --help shows the subcommand list (not a
+# routed child script). No recursion.
+test_help_flag_shows_list() {
+  setup
+  local output
+  output=$(main help --help 2>&1) || true
+
+  if [[ "$output" == *"Valid subcommands"* ]]; then
+    pass "help --help: shows the subcommand list (help's own page)"
+  else
+    fail "help --help: expected subcommand list, got: $output"
   fi
 }
 
@@ -691,6 +743,8 @@ run_test test_help_build
 run_test test_help_unknown
 run_test test_help_flag_routes_run_modes_to_start_agent
 run_test test_help_start_subcommand
+run_test test_help_every_subcommand_no_base_args
+run_test test_help_flag_shows_list
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args

@@ -88,7 +88,6 @@ PATH FORMAT
   Invalid: C:\\Users\\you\\Projects\\my-project
   Convert: wslpath 'C:\\Users\\you\\Projects\\my-project'
 EOF
-  exit 1
 }
 
 # Reads the version tag from a template file (Format: # agent-sandbox template version: N)
@@ -170,10 +169,11 @@ for ARG in "$@"; do
     --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
     --refresh)    REFRESH=true ;;
     --yes)        YES_FLAG=true ;;
-    -h|--help)    usage ;;
+    -h|--help)    usage; exit 0 ;;
     *)
       echo "Unknown flag: $ARG" >&2
       usage
+      exit 1
       ;;
   esac
 done
@@ -225,6 +225,7 @@ _validate_refresh() {
   if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
     echo "Error: --refresh requires --name and --sandbox." >&2
     usage
+    exit 1
   fi
   for T in "Makefile.template"; do
     if [[ ! -f "$TEMPLATES/$T" ]]; then
@@ -374,6 +375,7 @@ _validate_onboard() {
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     echo "Error: project name, project directory, and sandbox directory are all required." >&2
     usage
+    exit 1
   fi
   if [[ ! -d "$PROJECT_DIR" ]]; then
     echo "Error: project directory does not exist: $PROJECT_DIR" >&2

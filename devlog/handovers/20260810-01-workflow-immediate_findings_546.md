@@ -27,7 +27,7 @@ None.
 | 1b | F5 durable rule: `documentation_policy.md` gains `### Simplified Technical English` + `### Line wrapping` subsections under `## Conventions`; audit-check additions | `grep -n "^### Simplified Technical English\\|^### Line wrapping" docs/operations/documentation_policy.md` | Agent |
 | 2 | F6: live/frequently-read docs have zero functional `§`; only deliberate literals (documentation_policy rule, AGENT_FEEDBACK finding record) remain | `grep -r "§" docs/operations docs/development docs/concepts docs/architecture AGENTS.md` shows only documentation_policy.md literal | Agent |
 | 2b | F6 rule generalized beyond `§`: banner + audit check now cover non-ASCII + control/formatting symbols | read docs/operations/documentation_policy.md lines 122-126, 264 | Agent |
-| 3 | Word-wrap remediation across frequently-read set: AGENTS.md x2, all skills, all policy files, cli-standards, project_index | definitive prose wrap scan = 0 across the set | Agent |
+| 3 | Word-wrap remediation across frequently-read set: AGENTS.md x2, all skills, all policy files, cli-conventions, project_index | definitive prose wrap scan = 0 across the set | Agent |
 | 4 | F6: closed handovers NOT modified (read-only preserved) | `git status` shows no `devlog/handovers/<closed>` changes | Agent |
 | 5 | Finding 4 (new-session directive granularity) DEFERRED to next session (no new-session.md change this session) | `git diff src/reasoning/agent/prompts/new-session.md` = empty | Agent |
 | 6 | Anchor-link conversion for `§` cross-references | `grep -c "§Step\|§Steps\|§Acceptance" docs/operations/*.md` = 0 | Agent |
@@ -40,7 +40,7 @@ None.
 | [src/reasoning/providers/pi/config/agent/AGENTS.md](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | F5 — fix mid-thought wraps lines 15-16, 25-26 | completed |
 | [docs/operations/iteration_policy.md](../../docs/operations/iteration_policy.md) | F6 — §Step N → anchor links (11 refs) | completed |
 | [docs/operations/adr_policy.md](../../docs/operations/adr_policy.md) | F6b — unwrap 2 prose wraps | completed |
-| [docs/development/cli-standards.md](../../docs/development/cli-standards.md) | F6b — unwrap 15 prose wraps (heaviest offender) | completed |
+| [docs/development/cli-conventions.md](../../docs/development/cli-conventions.md) | F6b — unwrap 15 prose wraps (heaviest offender) | completed |
 | [docs/development/testing_policy.md](../../docs/development/testing_policy.md) | F6 — §Acceptance criteria → anchor link | completed |
 | [src/reasoning/agent/prompts/new-session.md](../../src/reasoning/agent/prompts/new-session.md) | F4 — DEFERRED to next session | deferred |
 | live docs + AGENTS.md + AGENT_FEEDBACK + GOTCHAS | F6 — `§` scrub | pending |
@@ -65,7 +65,7 @@ None.
 | [src/reasoning/providers/pi/config/agent/AGENTS.md](/home/agentuser/sandbox/src/reasoning/providers/pi/config/agent/AGENTS.md) | F5: fixed mid-thought wraps (lines 15-16, 25-26) |
 | [docs/operations/iteration_policy.md](/home/agentuser/sandbox/docs/operations/iteration_policy.md) | F6: converted 11 §Step N cross-references to anchor links |
 | [docs/operations/adr_policy.md](/home/agentuser/sandbox/docs/operations/adr_policy.md) | F6b: unwrapped 2 prose wraps |
-| [docs/development/cli-standards.md](/home/agentuser/sandbox/docs/development/cli-standards.md) | F6b: unwrapped 15 prose wraps (heaviest offender in the frequently-read set) |
+| [docs/development/cli-conventions.md](/home/agentuser/sandbox/docs/development/cli-conventions.md) | F6b: unwrapped 15 prose wraps (heaviest offender in the frequently-read set) |
 | [docs/development/testing_policy.md](/home/agentuser/sandbox/docs/development/testing_policy.md) | F6: §Acceptance criteria → anchor link |
 | [devlog/handovers/20260810-01-workflow-immediate_findings_546.md](/home/agentuser/sandbox/devlog/handovers/20260810-01-workflow-immediate_findings_546.md) | this handover |
 | [devlog/roadmap_future.md](/home/agentuser/sandbox/devlog/roadmap_future.md) | Escalated finding 4 to `Deferred (Unplanned)` as a named entry (per always-push-to-roadmap) |
@@ -78,3 +78,5 @@ None.
 
 ## Next session
 Sub-milestone M2.6.6 (or current). See findings 5/6/4 completion.
+---
+[CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

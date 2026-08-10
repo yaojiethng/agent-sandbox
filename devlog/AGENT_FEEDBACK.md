@@ -184,7 +184,7 @@ mitigation: recording every observation as a permanent distinct finding row invi
 state: probation
 scoped: none
 legacy: none
-mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` gained `### Line wrapping` (single-flowing prose; hard breaks on sentence/paragraph boundaries; ~80 cols for code comments) + audit-check entry. Wrap remediation applied across the frequently-read set (AGENTS.md x2, skills, policy files, cli-standards, adr_policy, handover_policy). Monitor for resurfacing; the M3 doc-bloat/audit sweeps the non-frequently-read remainder. When confirmed durable, delete and record in changelog/roadmap.
+mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` gained `### Line wrapping` (single-flowing prose; hard breaks on sentence/paragraph boundaries; ~80 cols for code comments) + audit-check entry. Wrap remediation applied across the frequently-read set (AGENTS.md x2, skills, policy files, cli-conventions, adr_policy, handover_policy). Monitor for resurfacing; the M3 doc-bloat/audit sweeps the non-frequently-read remainder. When confirmed durable, delete and record in changelog/roadmap.
 
 ### [A] 2026-08-09 — Non-ASCII punctuation under a plain-ASCII doc policy
 
@@ -243,3 +243,5 @@ state: open
 scoped: none
 legacy: none
 mitigation: the first `edit` call on `common.sh` omitted the required `path` field and was rejected by tool validation. Self-corrected on the retry. Always pass `path` explicitly on edit calls.
+---
+[CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

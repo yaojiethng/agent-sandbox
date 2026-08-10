@@ -98,7 +98,7 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
 - [x] **Descriptive STE100 rename of the script-dir variable** — repo-wide
   cleanup, done only after the injection mechanism is removed. Includes a
   `tests/` sweep.
-- [ ] **Finding A/C — unify `--help` across all subcommands** — extract
+- [x] **Finding A/C — unify `--help` across all subcommands** — extract
   `route_help()` in the dispatcher; fix `--help` for every subcommand before arg
   validation; delete `wants_help`; update `test_dispatch.sh`.
 

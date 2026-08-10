@@ -75,15 +75,67 @@ main() {
     fi
   }
 
-  # --help/-h on start/serve/dry-run must short-circuit before require_base_args
-  # (which would otherwise fail on missing --name/--project/--sandbox) and
-  # route to start_agent.sh's usage().
-  wants_help() {
-    for _arg in "$@"; do
-      [[ "$_arg" == --help || "$_arg" == -h ]] && return 0
-    done
-    return 1
+  require_name_sandbox() {
+    if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --name and --sandbox are required"
+      exit 1
+    fi
   }
+
+  require_project_sandbox() {
+    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --project and --sandbox are required"
+      exit 1
+    fi
+  }
+
+  # Shared subcommand list — single source of truth for the valid set.
+  print_subcommand_list() {
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
+  }
+
+  # Route '<sub> --help', 'help <sub>', and 'help --help' to the child's own
+  # help (or, for help itself, to the subcommand list). Exec's so the child
+  # prints its own usage — the dispatcher only locates it.
+  route_help() {
+    local sub="$1"
+    case "$sub" in
+      help)
+        echo "Usage: agent-sandbox <subcommand> [flags]"
+        echo ""
+        print_subcommand_list
+        echo ""
+        echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
+        exit 0
+        ;;
+      onboard|build|stop|prune)
+        exec bash "$SCRIPTS/$sub.sh" --help ;;
+      apply|draft|confirm|reject)
+        exec bash "$SCRIPTS/workflows/$sub.sh" --help ;;
+      start|serve|dry-run)
+        exec bash "$SCRIPTS/start_agent.sh" --help ;;
+      package-branch)
+        exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
+      *)
+        echo "Unknown subcommand: $sub" >&2
+        exit 1 ;;
+    esac
+  }
+
+  # Parse shared flags once, then route. Every subcommand consumes the same
+  # flag set; only the required-arg and child-script differ per branch.
+  parse_flags "$@"
+
+  # --help/-h on any subcommand delegates to the child's own help BEFORE the
+  # per-case required-arg checks below — mirroring each leaf script's own
+  # convention (parse_help_flag runs before arg validation). This makes
+  # `agent-sandbox <sub> --help` work uniformly for every subcommand, and
+  # `agent-sandbox help --help` show help's own page (the subcommand list).
+  for _arg in "$@"; do
+    case "$_arg" in
+      --help|-h) route_help "$SUBCOMMAND" ;;
+    esac
+  done
 
   # -------------------------
   # Dispatch
@@ -91,9 +143,8 @@ main() {
   case "$SUBCOMMAND" in
 
     onboard)
-      parse_flags "$@"
       require_base_args
-      exec "$SCRIPTS/onboard.sh" \
+      exec bash "$SCRIPTS/onboard.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -101,7 +152,6 @@ main() {
       ;;
 
     build)
-      parse_flags "$@"
       require_base_args
       exec bash "$SCRIPTS/build.sh" \
         --name="$PROJECT_NAME" \
@@ -111,10 +161,8 @@ main() {
       ;;
 
     start)
-      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
-      parse_flags "$@"
       require_base_args
-      "$SCRIPTS/start_agent.sh" standard \
+      exec bash "$SCRIPTS/start_agent.sh" standard \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -122,10 +170,8 @@ main() {
       ;;
 
     serve)
-      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
-      parse_flags "$@"
       require_base_args
-      "$SCRIPTS/start_agent.sh" serve \
+      exec bash "$SCRIPTS/start_agent.sh" serve \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -133,10 +179,8 @@ main() {
       ;;
 
     dry-run)
-      if wants_help "$@"; then "$SCRIPTS/start_agent.sh" --help; exit 0; fi
-      parse_flags "$@"
       require_base_args
-      "$SCRIPTS/start_agent.sh" dry-run \
+      exec bash "$SCRIPTS/start_agent.sh" dry-run \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -144,30 +188,17 @@ main() {
       ;;
 
     stop)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --name and --sandbox are required"
-        exit 1
-      fi
-      exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      require_name_sandbox
+      exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     prune)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --name and --sandbox are required"
-        exit 1
-      fi
-      exec "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      require_name_sandbox
+      exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     apply)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
-
+      require_project_sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -175,12 +206,7 @@ main() {
       ;;
 
     draft)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
-
+      require_project_sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -188,11 +214,7 @@ main() {
       ;;
 
     confirm)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
+      require_project_sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -200,11 +222,7 @@ main() {
       ;;
 
     reject)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
+      require_project_sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -212,45 +230,24 @@ main() {
       ;;
 
     package-branch)
-      parse_flags "$@"
       if [[ -z "$SANDBOX_DIR" ]]; then
         echo "Error: --sandbox is required"
         exit 1
       fi
-
       exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" \
         "${PASSTHROUGH[@]}"
       ;;
 
     help)
-      if [[ -z "${1:-}" ]]; then
-        echo "Usage: agent-sandbox <subcommand> [flags]"
-        echo ""
-        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
-        echo ""
-        echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
-        exit 0
-      fi
-
-      local SUB="$1"
-      case "$SUB" in
-        onboard|build|stop|prune)
-          exec bash "$SCRIPTS/$SUB.sh" --help ;;
-        apply|draft|confirm|reject)
-          exec bash "$SCRIPTS/workflows/$SUB.sh" --help ;;
-        start|serve|dry-run)
-          exec bash "$SCRIPTS/start_agent.sh" --help ;;
-        package-branch)
-          exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
-        *)
-          echo "Unknown subcommand: $SUB" >&2
-          exit 1 ;;
-      esac
+      # help is itself a subcommand; its page is the subcommand list.
+      # Bare 'help' -> route_help help (prints the list). 'help <sub>' and
+      # 'help --help' are handled by route_help too (no recursion).
+      route_help "${1:-help}"
       ;;
 
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
-      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
+      print_subcommand_list
       exit 1
       ;;
   esac

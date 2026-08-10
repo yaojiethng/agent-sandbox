@@ -34,7 +34,7 @@ No behavioural change for `make apply`. `apply_run` in `scripts/workflows/apply.
 - `draft.sh` CLI parser: add `--force` and `--permissive` flags
 - `Makefile.template` `draft` target: add `$(if $(FORCE),--force,)` and `$(if $(PERMISSIVE),--permissive,)`
 - Update usage comments in both files
-- Update `docs/development/cli-standards.md` if it documents `draft` options
+- Update `docs/development/cli-conventions.md` if it documents `draft` options
 
 Not in scope: the broader `make apply` vs `make draft` command unification question for the worktree model remains a design decision for the M2.6.4 design session.
 
@@ -77,7 +77,7 @@ Not in scope: the broader `make apply` vs `make draft` command unification quest
 
 | File | Finding |
 |---|---|
-| [`docs/development/cli-standards.md`](../../docs/development/cli-standards.md) | Mentions `make draft` in examples only; no per-flag documentation to update |
+| [`docs/development/cli-conventions.md`](../../docs/development/cli-conventions.md) | Mentions `make draft` in examples only; no per-flag documentation to update |
 | [`docs/development/quickstart.md`](../../docs/development/quickstart.md) | Only references apply in recovery section; no draft FORCE/draft docs to update |
 
 ### Tests — all updated
@@ -99,7 +99,7 @@ Not in scope: the broader `make apply` vs `make draft` command unification quest
 | `scripts/workflows/draft.sh` | Decompose `draft_run`, refactor apply loop, add CLI flags | done |
 | `scripts/agent-sandbox.sh` | Updated usage comment to document `--force` and `--permissive` for draft |
 | `scripts/templates/Makefile.template` | Wire FORCE/PERMISSIVE + add per-target variable validation | done |
-| `docs/development/cli-standards.md` | Check for draft FORCE docs — no update needed (no per-flag docs) | done |
+| `docs/development/cli-conventions.md` | Check for draft FORCE docs — no update needed (no per-flag docs) | done |
 | `docs/development/quickstart.md` | Check for FORCE/draft drift — no update needed | done |
 | `tests/test_diff_workflow.sh` | Add `_apply_patch_file` + `apply_and_commit` tests | done |
 | `tests/test_draft_workflow.sh` | Update `draft_run` call sites via `_test_draft_run` helper | done |
@@ -152,3 +152,5 @@ Post-close bookkeeping: nothing pending (sub-milestone still in progress). The a
 4. Stripped empty `?=` declarations from `scripts/templates/Makefile.template` (redundant with `_validate_overrides`)
 
 All 418 tests still pass.
+---
+[CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.
