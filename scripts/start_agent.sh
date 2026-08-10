@@ -34,9 +34,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Shared helpers (parse_help_flag, parse_base_flags, check_base_flags).
-# common.sh sets SCRIPT_DIR from BASH_SOURCE[1], which here
-# resolves to this script's own dir (scripts/) — matching the value above.
+# Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
+# common.sh does not touch SCRIPT_DIR — this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
 
 # -------------------------

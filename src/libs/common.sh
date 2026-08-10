@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # libs/common.sh
 # Shared flag parsing and validation for agent-sandbox scripts.
-# Sources by scripts that need --name and --sandbox (stop.sh, prune.sh, etc.).
+# Sourced by scripts that need --name and --sandbox (stop.sh, prune.sh, etc.).
+#
+# Pure flag-parsing library: it parses flags and does NOT set caller-owned
+# path variables (SCRIPT_DIR, REPO_ROOT, etc.). Callers derive their own
+# paths self-referentially from BASH_SOURCE[0] and define their own usage().
 #
 # Sets in caller's scope:
-#   SCRIPT_DIR   — directory containing this script (from BASH_SOURCE of caller)
 #   PROJECT_NAME — parsed from --name flag
 #   SANDBOX_DIR  — parsed from --sandbox flag
 #
@@ -14,9 +17,6 @@
 #   parse_help_flag()    — check for --help/-h, print usage and exit
 #
 # Scripts should define their own usage() before sourcing this file.
-
-_common_self="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-SCRIPT_DIR="$_common_self"
 
 parse_help_flag() {
   for _arg in "$@"; do

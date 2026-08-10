@@ -85,6 +85,25 @@ Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mc
 
 **Depends on:** M2.4 (bind mount infrastructure), M2.7 (session identity, RUN_ID, container lifecycle).
 
+##### M2.6 — General CLI/infra refactor track (cross-cutting, deferred from handover `20260810-04`)
+
+Technical debt from the `c975d37` help-fix session — the interim `wants_help`
+workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three sessions
+(operator-directed):
+
+- [x] **Finding B — remove `SCRIPT_DIR` side effect from `common.sh`** — make
+  `common.sh` a pure flag-parsing library; `stop.sh`/`prune.sh` self-resolve
+  `SCRIPT_DIR` consistently; drop the obsolete comment in `start_agent.sh`. (This
+  session.)
+- [ ] **Descriptive STE100 rename of the script-dir variable** — repo-wide
+  cleanup, done only after the injection mechanism is removed. Includes a
+  `tests/` sweep.
+- [ ] **Finding A/C — unify `--help` across all subcommands** — extract
+  `route_help()` in the dispatcher; fix `--help` for every subcommand before arg
+  validation; delete `wants_help`; update `test_dispatch.sh`.
+
+---
+
 **Finding — handover close-order contradiction (current, routes to next session's policy work):** `iteration_policy.md` Steps 8–9 say commit then mark the handover Closed; `handover_policy.md` requires a Closed handover with no uncommitted changes. The two statements contradict. Preferred resolution: close = the commit itself — mark Closed, then the final commit includes the closed handover (no substantive action after close). Resolve alongside the Bucket-1 policy changes (P2, close-flow edit) in the session that implements the agent-feedback/gotchas workflow. Surfaced from session `20260809-03`; initially mis-routed to M3, corrected here.
 
 ---

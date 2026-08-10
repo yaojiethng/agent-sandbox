@@ -45,9 +45,11 @@ for ARG in "$@"; do
   esac
 done
 
-# Source shared flag parsing (sets SCRIPT_DIR, PROJECT_NAME, SANDBOX_DIR;
-# provides parse_help_flag, parse_base_flags, check_base_flags).
-_common_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../src/libs" && pwd)"
+# Self-resolution: this script's own directory (kept for consistency/predictability
+# even though prune.sh does not currently navigate by it). common.sh is a pure
+# flag-parsing library and no longer sets SCRIPT_DIR.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_common_dir="$SCRIPT_DIR/../src/libs"
 source "$_common_dir/common.sh"
 
 parse_help_flag "$@"

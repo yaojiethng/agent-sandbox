@@ -220,3 +220,26 @@ state: open
 scoped: none
 legacy: none
 mitigation: session 08 produced friction (dash-sweep tooling, un-applied rule, gate-velocity) but recorded none of it; the gap surfaced via operator review, not self-capture. The AGENTS.md pointer states what to record but not the reflex to stop and write findings when a session turns edit-heavy.
+
+## Agent experience — session 20260810-07
+
+### [A] 2026-08-10 — `SCRIPT_DIR` ambiguous about which scripts copy is meant (host/snapshot/sandbox)
+
+state: open
+scoped: M2.6 (general CLI refactor track)
+legacy: none
+mitigation: the initial Finding B under-diagnosed the ambiguity as a derivation-mechanism issue (self vs injected BASH_SOURCE index). The operator sharpened it: the name does not say WHICH scripts directory is meant — the harness can resolve scripts/ from the host repo, the snapshot, or inside the sandbox, and every one is a valid BASH_SOURCE[0] result depending on context. Session 2's descriptive STE100 rename must disambiguate which scripts tree, not just rename the mechanism. Feeds the M2.6 rename session.
+
+### [A] 2026-08-10 — Throwaway verification harness created a stray file in the repo tree
+
+state: open
+scoped: none
+legacy: none
+mitigation: during Finding-B verification, a `cp ... 2>/dev/null || true` wrote `tests/tests_common_verify.sh` (not a real test) into the repo. Caught via `git status` and removed. Run throwaway verification scripts in /tmp, never in the repo tree; the git-tracked tree surfaces strays in `git status`.
+
+### [A] 2026-08-10 — edit tool rejected a call for a missing required `path` argument
+
+state: open
+scoped: none
+legacy: none
+mitigation: the first `edit` call on `common.sh` omitted the required `path` field and was rejected by tool validation. Self-corrected on the retry. Always pass `path` explicitly on edit calls.
