@@ -47,8 +47,7 @@ _maybe_cleanup() {
   fi
 }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATES="$REPO_ROOT/scripts/templates"
 
 # Detect if running non-interactively (piped stdin or --yes flag).

@@ -82,12 +82,12 @@ A test file may only source helpers from `tests/libs/`. It must never source ano
 
 ```bash
 # ✓ Correct: source only from tests/libs/
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
-source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"
+source "$REPO_ROOT/tests/libs/test_common.sh"
+source "$REPO_ROOT/tests/libs/git_fixtures.sh"
+source "$REPO_ROOT/tests/libs/session_fixtures.sh"
 
 # ✗ Wrong: sourcing another test file
-source "$SCRIPT_DIR/test_draft_workflow.sh"   # ← Executes tests, pollutes state
+source "$REPO_ROOT/test_draft_workflow.sh"   # ← Executes tests, pollutes state
 ```
 
 ---
@@ -185,7 +185,7 @@ Always source `test_common.sh` instead of defining `pass()`, `fail()`, and count
 - `test_done()` — summary reporter that exits with failure count
 
 ```bash
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
+source "$REPO_ROOT/tests/libs/test_common.sh"
 ```
 
 Every test file and knowledge test file must source `test_common.sh` instead of defining `pass()` / `fail()` locally. The only exception is diagnostic scripts (`diagnose_*.sh`) that run inside containers where `tests/libs/` is not available.
@@ -360,7 +360,7 @@ make_project() {
 
 ```bash
 # ✗ Wrong: sources a test file to get its helpers
-source "$SCRIPT_DIR/test_draft_workflow.sh"
+source "$REPO_ROOT/test_draft_workflow.sh"
 ```
 
 **Fix:** Move the shared helper to `tests/libs/` and source it from there in both files.
@@ -375,13 +375,13 @@ source "$SCRIPT_DIR/test_draft_workflow.sh"
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_SCRIPT="$SCRIPT_DIR/../scripts/example.sh"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_SCRIPT="$TEST_DIR/../scripts/example.sh"
 
 # Shared fixtures - source only from tests/libs/
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
-source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
-# source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"  # if needed
+source "$TEST_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
+# source "$TEST_DIR/libs/session_fixtures.sh"  # if needed
 
 FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT

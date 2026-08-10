@@ -19,8 +19,8 @@ source "$REPO_ROOT/scripts/workflows/draft.sh"
 source "$REPO_ROOT/scripts/workflows/confirm.sh"
 source "$REPO_ROOT/scripts/workflows/reject.sh"
 source "$REPO_ROOT/scripts/guards.sh"
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/libs/session_fixtures.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
+source "$TEST_DIR/libs/session_fixtures.sh"
 
 # =============================================================================
 # _test_draft_run — backward-compat wrapper for old draft_run callers

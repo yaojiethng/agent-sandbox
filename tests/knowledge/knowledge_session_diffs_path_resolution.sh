@@ -23,9 +23,9 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/test_common.sh"
-DIRS_LIB="$SCRIPT_DIR/../../libs/dirs.sh"
+TEST_KNOWLEDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TEST_KNOWLEDGE_DIR/../libs/test_common.sh"
+DIRS_LIB="$TEST_KNOWLEDGE_DIR/../../libs/dirs.sh"
 
 # -------------------------
 # Test 1: Default host-side resolution

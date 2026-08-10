@@ -27,8 +27,8 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR/../.."
+TEST_KNOWLEDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$TEST_KNOWLEDGE_DIR/../.."
 
 # Source shared test fixtures
 source "$REPO_ROOT/tests/libs/test_common.sh"

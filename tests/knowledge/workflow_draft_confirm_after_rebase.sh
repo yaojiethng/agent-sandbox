@@ -27,8 +27,8 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$REPO_ROOT/tests/libs/test_common.sh"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
 
@@ -208,8 +208,8 @@ echo "================================================================"
 echo "Phase 3: make confirm (confirm_run with fixed code)"
 echo "================================================================"
 
-source "$SCRIPT_DIR/libs/draft_workflow.sh"
-source "$SCRIPT_DIR/libs/session.sh"
+source "$REPO_ROOT/libs/draft_workflow.sh"
+source "$REPO_ROOT/libs/session.sh"
 
 echo "--- Executing confirm_run (target: main) ---"
 set +e

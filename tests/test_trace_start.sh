@@ -4,13 +4,13 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$SCRIPT_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../test/stubs"
 
 setup_start_fixture() {
   local FIXTURE_DIR="$1"

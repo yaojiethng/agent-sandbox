@@ -28,9 +28,9 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../libs/test_common.sh"
-source "$SCRIPT_DIR/../libs/git_fixtures.sh"
+TEST_KNOWLEDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$TEST_KNOWLEDGE_DIR/../libs/test_common.sh"
+source "$TEST_KNOWLEDGE_DIR/../libs/git_fixtures.sh"
 
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT

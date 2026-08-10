@@ -35,11 +35,9 @@ Optional:
 EOF
 }
 
-# Self-resolution: this script's own directory (used for sibling invoke below).
-# common.sh is a pure flag-parsing library and no longer sets SCRIPT_DIR.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_common_dir="$SCRIPT_DIR/../src/libs"
-source "$_common_dir/common.sh"
+# REPO_ROOT assumes this script lives at scripts/
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$REPO_ROOT/src/libs/common.sh"
 
 RUN_ID=""
 PRUNE=false
@@ -97,7 +95,7 @@ fi
 # -------------------------
 
 if [[ "$PRUNE" == true ]]; then
-  "$SCRIPT_DIR/prune.sh" \
+  "$REPO_ROOT/scripts/prune.sh" \
     --name="$PROJECT_NAME" \
     --sandbox="$SANDBOX_DIR"
 fi

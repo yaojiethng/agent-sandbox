@@ -18,9 +18,9 @@
 
 set -uo pipefail
 
-# SCRIPT_DIR = repo root (two levels up from tests/knowledge/)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
+# REPO_ROOT = repo root (two levels up from tests/knowledge/)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$REPO_ROOT/tests/libs/test_common.sh"
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
 
@@ -28,8 +28,8 @@ echo "Fixture: $FIXTURE"
 echo ""
 
 # Source the real functions
-source "$SCRIPT_DIR/libs/draft_workflow.sh"
-source "$SCRIPT_DIR/libs/session.sh"
+source "$REPO_ROOT/libs/draft_workflow.sh"
+source "$REPO_ROOT/libs/session.sh"
 
 # ============================================================================
 # Setup: create a project repo (simulates the host project)
@@ -72,7 +72,7 @@ EXPORT_BASENAME="${SESSION_TS}-${SANITIZED_BRANCH}"
 EXPORT_DIR="$FIXTURE/sandbox/.workspace/session-diffs/$EXPORT_BASENAME"
 
 # Use the fixture helper to create proper session structure
-source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"
+source "$REPO_ROOT/tests/libs/session_fixtures.sh"
 make_session_fixture "$EXPORT_DIR" 2
 
 echo "Session export created at: $EXPORT_DIR"

@@ -95,7 +95,7 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   `common.sh` a pure flag-parsing library; `stop.sh`/`prune.sh` self-resolve
   `SCRIPT_DIR` consistently; drop the obsolete comment in `start_agent.sh`. (This
   session.)
-- [ ] **Descriptive STE100 rename of the script-dir variable** — repo-wide
+- [x] **Descriptive STE100 rename of the script-dir variable** — repo-wide
   cleanup, done only after the injection mechanism is removed. Includes a
   `tests/` sweep.
 - [ ] **Finding A/C — unify `--help` across all subcommands** — extract

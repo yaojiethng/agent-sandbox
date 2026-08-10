@@ -7,7 +7,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/diff.sh"
 
 # ===================================================================

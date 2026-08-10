@@ -14,7 +14,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/interactive.sh"
-source "$SCRIPT_DIR/libs/session_fixtures.sh"
+source "$TEST_DIR/libs/session_fixtures.sh"
 
 # =============================================================================
 # interactive_confirm_or_abort tests

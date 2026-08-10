@@ -45,12 +45,9 @@ for ARG in "$@"; do
   esac
 done
 
-# Self-resolution: this script's own directory (kept for consistency/predictability
-# even though prune.sh does not currently navigate by it). common.sh is a pure
-# flag-parsing library and no longer sets SCRIPT_DIR.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_common_dir="$SCRIPT_DIR/../src/libs"
-source "$_common_dir/common.sh"
+# REPO_ROOT assumes this script lives at scripts/
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$REPO_ROOT/src/libs/common.sh"
 
 parse_help_flag "$@"
 parse_base_flags "$@"

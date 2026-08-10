@@ -14,7 +14,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/capability/snapshot.sh"
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
 
 # -------------------------
 # Fixture builder

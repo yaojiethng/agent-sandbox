@@ -84,18 +84,18 @@ source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 ```
 
-**Repo scripts** (`start_agent.sh`, `run_agent.sh`, `onboard.sh`): derive `$REPO_ROOT` from their own location. These always run from the repo checkout, so `$(cd "$SCRIPT_DIR/.." && pwd)` reliably resolves to the checkout root.
+**Repo scripts** (`start_agent.sh`, `run_agent.sh`, `onboard.sh`): derive `$REPO_ROOT` from their own location. These always run from the repo checkout, so `$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)` reliably resolves to the checkout root.
 
 ```bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/session_state.sh"
 ```
 
-**Test files** (`tests/test_*.sh`): follow the same pattern as repo scripts.
+**Test files** (`tests/test_*.sh`): follow the same pattern as repo scripts, deriving `$TEST_DIR` from their own location.
 
 ```bash
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 ```
 

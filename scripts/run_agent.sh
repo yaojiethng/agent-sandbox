@@ -42,9 +42,8 @@ set -euo pipefail
 # -------------------------
 # Paths
 # -------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/scripts/build.sh"

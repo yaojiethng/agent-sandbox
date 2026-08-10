@@ -4,8 +4,7 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_DIR="$SCRIPT_DIR/../tests"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 
 usage() {
   echo "Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]"

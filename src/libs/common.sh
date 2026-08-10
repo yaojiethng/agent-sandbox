@@ -4,7 +4,7 @@
 # Sourced by scripts that need --name and --sandbox (stop.sh, prune.sh, etc.).
 #
 # Pure flag-parsing library: it parses flags and does NOT set caller-owned
-# path variables (SCRIPT_DIR, REPO_ROOT, etc.). Callers derive their own
+# path variables (REPO_ROOT, etc.). Callers derive their own
 # paths self-referentially from BASH_SOURCE[0] and define their own usage().
 #
 # Sets in caller's scope:

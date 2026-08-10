@@ -30,12 +30,11 @@ set -euo pipefail
 # -------------------------
 # Paths
 # -------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # REPO_ROOT assumes this script lives at scripts/
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
-# common.sh does not touch SCRIPT_DIR — this script's own value above stands.
+# common.sh does not touch script-dir variables — this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
 
 # -------------------------
@@ -540,7 +539,7 @@ elif [[ "$RESUME_SESSION" != true ]]; then
   RESET_VOLUME_FLAG="--reset-volume"
 fi
 
-exec "$SCRIPT_DIR/run_agent.sh" "$MODE" \
+exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" \
   --name="$PROJECT_NAME" \
   --sandbox="$SANDBOX_DIR" \
   --env="$ENV_FILE" \
