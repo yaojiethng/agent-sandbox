@@ -9,6 +9,7 @@ output/
 .workspace/
 .snapshot/
 .sandbox/
+.compose/
 .vault
 .scratchpad/
 

@@ -72,9 +72,18 @@ Container paths are fixed by the harness and not configurable via `.env`. The fu
 
 ## Compose Generation
 
-`scripts/run_agent.sh` generates the compose configuration on each run. Compose files are written to a tmpfile — never to `SANDBOX_DIR` — and are not operator-managed.
+`scripts/run_agent.sh` generates the compose configuration on each run and
+writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<run-id>.yml`. The
+file persists after the session ends — it is the session's compose record and
+an inspection handle (e.g. `docker compose -f .compose/<run-id>.yml config`).
+Resume reuses the same RUN_ID and overwrites its own file; each unique session
+leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the
+file is never visible in the agent workspace. `.compose/` is gitignored.
 
-**Tmpfile generation:** `compose_generate` in `libs/compose.sh` merges the base template with any applicable overlays using `docker compose config --no-interpolate`, bakes image names and host paths into the result, and preserves operator secrets as `${VAR}` for runtime resolution. The merged tmpfile is owned and cleaned up by `scripts/run_agent.sh` on exit.
+**Merged generation:** `compose_generate` in `libs/compose.sh` merges the base
+template with any applicable overlays using `docker compose config
+--no-interpolate`, bakes image names and host paths into the result, and
+preserves operator secrets as `${VAR}` for runtime resolution.
 
 **Baked vs `${VAR}` split:** Image names, container names, service dependencies, volume definitions, and internal mount paths are baked at generation time — they are stable per project and do not vary between runs. Machine-specific values — host paths, ports, credentials — are preserved as `${VARIABLE}` and resolved from `.env` at runtime by Docker Compose.
 
@@ -90,7 +99,11 @@ Container paths are fixed by the harness and not configurable via `.env`. The fu
 | `serve` | Base template + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
 | `dry-run` | Base template + provider overlay (if present) + `libs/docker-compose.dry-run.yml` |
 
-The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve and dry-run overlays are static files in the repo, never written to `SANDBOX_DIR`.
+The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve and dry-run overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<run-id>.yml`).
+
+**File accumulation:** compose files accumulate one per unique RUN_ID (KB-scale
+per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the
+roadmap — see the M2.6 deferred-items list.
 
 ---
 

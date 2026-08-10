@@ -351,6 +351,34 @@ test_standard_sandbox_unhealthy_still_tears_down() {
   fi
 }
 
+test_compose_file_persisted() {
+  local FIXTURE_DIR="$FIXTURE_DIR/compose_persist"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  local compose_file="$SANDBOX_DIR/.compose/test01.yml"
+  invoke_run_agent "standard"
+
+  # The merged compose file must survive the session (teardown already ran)
+  # at a stable identity-derived path, and compose invocations during the
+  # run must operate on that same file.
+  local last_file
+  last_file=$(trace_grep "compose-file" | tail -1)
+  if [[ -f "$compose_file" && -s "$compose_file" ]]; then
+    if grep -q "sandbox-test-project-test01" "$compose_file" && grep -q "pi-test-project-test01" "$compose_file"; then
+      if [[ "$last_file" == *"$compose_file"* ]]; then
+        pass "standard: compose file persisted at .compose/<run-id>.yml and used by compose"
+      else
+        fail "standard: compose file persisted but not used by compose invocations (last compose-file: $last_file)"
+      fi
+    else
+      fail "standard: compose file lacks baked container names"
+    fi
+  else
+    fail "standard: compose file missing or empty at $compose_file"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -370,6 +398,7 @@ run_test test_standard_agent_failure_still_tears_down_and_propagates_rc
 run_test test_serve_up_failure_still_tears_down
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
+run_test test_compose_file_persisted
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -125,6 +125,15 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   (replaces the docker-verb semantics decision — the bad `compose_stop` name
   is gone; what remains is the harness "session" vs ops "session" overlap);
   compose-file persistence; `compose_sandbox_wait` failure-skip teardown gap.
+- [x] **Compose-file persistence** — the merged compose file is written to
+  `$SANDBOX_DIR/.compose/<run-id>.yml` and persists after the session
+  (inspection/compose-aware tooling handle; devcontainer Shape-3 blocker
+  removed). RUN_ID available at generation time (start_agent.sh exports it).
+  Docs reversed the tmpfile model (execution_model.md §Compose Generation,
+  tool_interface.md, docker-compose.yml header); `.compose/` gitignored.
+  Session `20260810-14`. **Deferred: pruning of stale `.compose/*.yml`**
+  (accumulation is KB-scale; candidate: `stop.sh --prune` host-artifact
+  extension; routine implementation — no ADR needed).
 
 ---
 

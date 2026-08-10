@@ -173,16 +173,30 @@ case "$MODE" in
     ;;
 esac
 
-COMPOSE_OUT="$(mktemp /tmp/agent-sandbox-XXXXXX.yml)"
+# Persist the merged compose file at a stable path in the sandbox so the
+# session's compose configuration survives for inspection and compose-aware
+# tooling after the run (docker compose -f .compose/<run-id>.yml ...). Named
+# by RUN_ID — resume reuses the same RUN_ID and overwrites; each unique
+# session leaves one record. RUN_ID is always exported by start_agent.sh;
+# fall back to the sandbox-dir hash (as compose_args does) for direct
+# invocation. Containers mount only SANDBOX_DIR subdirectories, so this file
+# is never visible in the agent workspace.
+COMPOSE_DIR="$SANDBOX_DIR/.compose"
+mkdir -p "$COMPOSE_DIR"
+if [[ -n "${RUN_ID:-}" ]]; then
+  COMPOSE_OUT="$COMPOSE_DIR/$RUN_ID.yml"
+else
+  COMPOSE_OUT="$COMPOSE_DIR/$(echo "$SANDBOX_DIR" | sha256sum | cut -c1-6).yml"
+fi
 
 # Teardown runs on every exit after TEARDOWN_NEEDED is set — agent
 # completion, agent failure, compose up failure, sandbox-wait failure — so
 # containers and network never leak. The pre-run cleanup (stop-previous-
 # project), dry-run, headless, and flag-error exits all happen before
-# TEARDOWN_NEEDED is set and are therefore not re-torn-down.
+# TEARDOWN_NEEDED is set and are therefore not re-torn-down. The persisted
+# compose file is intentionally kept (session record), not removed here.
 # shellcheck disable=SC2317  # invoked via trap, not called directly
 _session_cleanup() {
-  rm -f "$COMPOSE_OUT"
   [[ "${TEARDOWN_NEEDED:-}" == "1" ]] || return 0
   echo "+ tearing down..."
   session_teardown

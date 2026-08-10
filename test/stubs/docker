@@ -32,7 +32,7 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
   compose_sub=""
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
-      -f)               compose_files+=("$2"); shift 2 ;;
+      -f)               compose_files+=("$2"); log "compose-file $2"; shift 2 ;;
       --project-name)   shift 2 ;;
       --project-directory) shift 2 ;;
       --no-interpolate|--no-ansi|--rm) shift ;;
