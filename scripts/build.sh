@@ -83,14 +83,14 @@ build_image() {
 
   echo "Building image: $image_name"
   if [[ -n "$sig" ]]; then
-    docker build $no_cache --progress=plain \
+    docker build $no_cache --progress=auto \
       --label "agent-sandbox.container-sig=$sig" \
       -t "$image_name" \
       -f "$dockerfile" \
       "$@" \
       "$repo_root"
   else
-    docker build $no_cache --progress=plain \
+    docker build $no_cache --progress=auto \
       -t "$image_name" \
       -f "$dockerfile" \
       "$@" \

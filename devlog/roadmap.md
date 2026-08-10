@@ -107,6 +107,11 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   teardown refactor; compose-file persistence (`.compose/<run-id>.yml`);
   docker-verb semantics decision; `stop.sh` string-as-list → array refactor
   (removes SC2086 disables).
+- [x] **Build-output single-line progress fix** — `build_image` in
+  `scripts/build.sh`: `--progress=plain` → `--progress=auto` (TTY-aware
+  single-line progress, plain fallback for non-TTY). Regression test added.
+  Session `20260810-11`. Carried finding: `$no_cache` unquoted expansion →
+  array (with the stop.sh SC2086 array refactor).
 
 ---
 

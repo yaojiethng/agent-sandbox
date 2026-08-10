@@ -97,6 +97,22 @@ test_build_has_build_command() {
   fi
 }
 
+test_build_uses_concise_progress() {
+  local FIXTURE_DIR="$FIXTURE_DIR/build_progress"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  invoke_build
+
+  # build_image passes --progress=auto (TTY-aware, plain fallback) so
+  # interactive builds show a single progress line. --progress=plain would
+  # regress to verbose per-step output; assert it is not used.
+  if trace_has "progress=plain"; then
+    fail "build: verbose --progress=plain must not be used"
+  else
+    pass "build: concise progress mode used"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -104,6 +120,7 @@ test_build_has_build_command() {
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
+run_test test_build_uses_concise_progress
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
