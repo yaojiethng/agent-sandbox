@@ -20,8 +20,8 @@
 #                         up, exec, down. Overlay already merged — no extra
 #                         file args needed.
 #
-#   compose_stop          docker compose down (preserves named volumes)
-#   compose_destroy       docker compose down -v (removes named volumes)
+#   session_teardown     docker compose down (ends session; preserves named volumes)
+#   session_destroy      docker compose down -v (ends session; removes named volumes)
 #
 #   compose_sandbox_wait  Polls until sandbox container reports healthy.
 
@@ -200,8 +200,8 @@ compose_dry_run() {
 
   # Select the compose teardown function based on remove_volumes flag
   local _compose_down
-  _compose_down="compose_stop"
-  [[ "$_remove_volumes" == "true" ]] && _compose_down="compose_destroy"
+  _compose_down="session_teardown"
+  [[ "$_remove_volumes" == "true" ]] && _compose_down="session_destroy"
 
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
@@ -301,12 +301,12 @@ compose_dry_run() {
 }
 
 # -------------------------
-# compose_stop
+# session_teardown
 #
-# Stops containers for COMPOSE_ARGS. Containers and named volumes are preserved.
-# Must be called after compose_args has set COMPOSE_ARGS.
+# Ends the session for COMPOSE_ARGS: removes containers + network, keeps named
+# volumes. Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
-compose_stop() {
+session_teardown() {
   # docker compose down: end the session, keep named volumes.
   # Removes containers + network (frees the default address pool); the
   # RUN_ID-scoped named volume persists so resume still works. The container
@@ -316,12 +316,12 @@ compose_stop() {
 }
 
 # -------------------------
-# compose_destroy
+# session_destroy
 #
-# Tears down containers for COMPOSE_ARGS and removes named volumes.
+# Ends the session for COMPOSE_ARGS and removes named volumes.
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
-compose_destroy() {
+session_destroy() {
   docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
 }
 

@@ -81,7 +81,7 @@ Validation procedures for these invariants are defined in operational documentat
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Containers and volumes persist across restarts via `docker compose stop` (not `down`) and a named Docker volume (`sandbox-data`). With mount delivery (not yet implemented), the agent's working tree in `.snapshot/` additionally survives container restarts via the host bind mount.
+- Session state persists across restarts via a named Docker volume (`{{RUN_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` → `compose down`, keeps named volumes). With mount delivery (not yet implemented), the agent's working tree in `.snapshot/` additionally survives container restarts via the host bind mount.
 - `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. With mount delivery, `.snapshot/` additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 

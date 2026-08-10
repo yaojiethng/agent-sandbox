@@ -116,6 +116,15 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   docker stub emits IDs via `DOCKER_STUB_PS_IDS`/`DOCKER_STUB_NETWORK_IDS`;
   stale `test_stop_uses_docker_ps` replaced by three behavior tests.
   Session `20260810-12`.
+- [x] **Run_agent unified teardown dispatch** — mode branch runs the session
+  only; single teardown dispatch after it; `compose_stop`/`compose_destroy`
+  renamed to `session_teardown`/`session_destroy`; standard mode now tears
+  down even on agent failure and propagates the agent's rc (exit semantics
+  documented); serve exits 0. Stale `security.md` `compose stop` claim
+  corrected. Session `20260810-13`. Carried: session-naming collision
+  (replaces the docker-verb semantics decision — the bad `compose_stop` name
+  is gone; what remains is the harness "session" vs ops "session" overlap);
+  compose-file persistence; `compose_sandbox_wait` failure-skip teardown gap.
 
 ---
 

@@ -174,7 +174,20 @@ case "$MODE" in
 esac
 
 COMPOSE_OUT="$(mktemp /tmp/agent-sandbox-XXXXXX.yml)"
-trap 'rm -f "$COMPOSE_OUT"' EXIT
+
+# Teardown runs on every exit after TEARDOWN_NEEDED is set — agent
+# completion, agent failure, compose up failure, sandbox-wait failure — so
+# containers and network never leak. The pre-run cleanup (stop-previous-
+# project), dry-run, headless, and flag-error exits all happen before
+# TEARDOWN_NEEDED is set and are therefore not re-torn-down.
+# shellcheck disable=SC2317  # invoked via trap, not called directly
+_session_cleanup() {
+  rm -f "$COMPOSE_OUT"
+  [[ "${TEARDOWN_NEEDED:-}" == "1" ]] || return 0
+  echo "+ tearing down..."
+  session_teardown
+}
+trap _session_cleanup EXIT
 
 compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"
 
@@ -217,9 +230,15 @@ if [[ "$RESET_VOLUME" == "true" ]]; then
   # exist yet, and the old project used a different RUN_ID.
   :
 else
-  compose_stop
+  session_teardown
 fi
 
+# The mode branch only runs the session; the EXIT trap (_session_cleanup)
+# ends it. Both modes block until the agent session is over (serve: docker
+# wait returns on make stop; standard: compose run returns when the agent
+# exits) — see the docker-wait comment below for why this ordering matters.
+agent_rc=0
+TEARDOWN_NEEDED=1
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
   docker compose "${COMPOSE_ARGS[@]}" up -d
@@ -227,12 +246,12 @@ if [[ "$MODE" == "serve" ]]; then
   echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
 
   # Wait for the agent container to exit (triggered by make stop / docker stop).
-  # Keeps run_agent.sh alive so teardown runs after the EXIT trap has fired
-  # and copy-out to /opt/provider-config/ is complete.
+  # Keeps run_agent.sh alive so teardown runs after the provider-entrypoint
+  # EXIT trap has fired and copy-out to /opt/provider-config/ is complete.
+  # The container's exit code on make stop is SIGTERM/SIGKILL (137/143) — not
+  # a session result — so it is swallowed here and serve exits 0 (teardown is
+  # handled by run_agent.sh's own EXIT trap, _session_cleanup).
   docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
-
-  echo "+ tearing down..."
-  compose_stop
 
 else
   echo "Starting agent: $PROJECT_NAME"
@@ -242,8 +261,13 @@ else
   compose_sandbox_wait "$PROJECT_NAME"
 
   echo "+ attaching to agent..."
-  docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent
-
-  echo "+ tearing down..."
-  compose_stop
+  # Capture the agent's exit code instead of letting set -e abort: teardown
+  # (via the EXIT trap) must run even when the agent fails (containers +
+  # network leak otherwise), and the rc is propagated to the caller below.
+  docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent || agent_rc=$?
 fi
+
+# Exit semantics: standard propagates the agent's exit code; serve exits 0
+# (its session ends via make stop, not agent completion). Teardown already
+# ran in the EXIT trap (_session_cleanup).
+exit "$agent_rc"

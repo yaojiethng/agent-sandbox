@@ -173,13 +173,30 @@ partially matches:
 |---|---|---|
 | `docker start` | start an existing stopped container | (unused) — our `start` is full setup: `compose up` + `compose run agent` |
 | `docker stop` | pause a container for later same-container restart | `scripts/stop.sh` previously used this; now teardown is `compose down` |
-| `docker compose down` | end the session; remove containers + network; keep named volumes | our teardown (`compose_stop` → `down`) |
-| `docker compose down -v` | also remove named volumes | our full reset (`compose_destroy`) |
+| `docker compose down` | end the session; remove containers + network; keep named volumes | our teardown (`session_teardown` → `down`) |
+| `docker compose down -v` | also remove named volumes | our full reset (`session_destroy`) |
 
 Our `start` = full setup and `stop` = session teardown do not match docker's
 `start`/`stop` pause-resume semantics. This is a known divergence; a future
 decision should choose whether to inherit docker's language (and therefore
-semantics) or rename to avoid ambiguity.
+semantics) or rename to avoid ambiguity. The harness functions are named
+`session_teardown`/`session_destroy` (intent-based) to avoid implying the
+docker `stop` verb.
+
+---
+
+## Session exit semantics
+
+`scripts/run_agent.sh` exits 0 on a clean session end in both modes:
+standard (agent completes) and serve (operator runs `make stop`). Standard
+mode propagates a non-zero agent exit code to the caller. Teardown is
+guaranteed on every exit path after the session starts — agent completion,
+agent failure, `compose up` failure, or sandbox health-wait failure — via
+run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session
+network never leak. Serve mode always exits 0 — its session ends via
+`make stop` → `docker stop`, and the container's exit code on that path
+(SIGTERM/SIGKILL, 137/143) is an artifact of the stop mechanism, not a
+session result.
 
 ---
 

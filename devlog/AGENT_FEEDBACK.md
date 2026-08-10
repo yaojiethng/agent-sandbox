@@ -300,3 +300,22 @@ mutation that reached for python3 failed with "command not found" and fell
 back to sed/awk. Use bash-native tools (sed, awk, perl if present) for
 text-mutation tasks in this container; do not reach for python3 without
 checking first.
+
+### [A] 2026-08-10 — `git checkout` normalized stub mode AND reverted uncommitted test edits (stash/checkout cycle)
+
+state: open
+scoped: none
+legacy: session 20260810-12 entry (git restore wipes uncommitted work)
+mitigation: the repo has `core.filemode=false`, so `test/stubs/docker`'s
+executable bit is invisible to git (index 100644, working tree 755 via the
+snapshot pipeline). A `git stash` (for a HEAD-vs-current shellcheck
+comparison) + `git checkout tests/test_trace_start.sh` (to remove a debug
+patch) did two things: (a) normalized the stub's working-tree mode to the
+index mode — 16 tests failed with "Permission denied" — and (b) reverted the
+test file's uncommitted session edits. The session-12 lesson (never `git
+restore` while uncommitted work exists) is broader than one command: ANY git
+operation that touches the index/working tree (stash, checkout, restore,
+switch) can revert uncommitted edits and normalize untracked-in-git modes.
+For negative-test mutation reverts and debug-patch removal, use temp copies
+(`cp file /tmp/x.bak`) only. To fix a lost executable bit under
+`core.filemode=false`: `chmod +x file` + `git update-index --chmod=+x`.

@@ -47,6 +47,9 @@ EOF
 
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
+  # Tests run in the same shell (run_test), so stub env vars must not leak
+  # between tests.
+  unset DOCKER_STUB_UP_RC DOCKER_STUB_RUN_RC DOCKER_STUB_SANDBOX_HEALTH
 }
 
 invoke_run_agent() {
@@ -54,7 +57,6 @@ invoke_run_agent() {
   shift
 
   (
-    exec() { echo "[exec overridden: $*]" >&2; return 0; }
     export PATH="$STUB_DIR:$PATH"
     bash "$REPO_ROOT/scripts/run_agent.sh" "$mode" \
       --name="$PROJECT_NAME" \
@@ -62,7 +64,25 @@ invoke_run_agent() {
       --env="$SANDBOX_DIR/.env" \
       --provider="$PROVIDER_NAME" \
       "$@"
-  ) > /dev/null 2>&1 || true
+  ) > /dev/null 2>&1
+}
+
+# invoke_run_agent_rc — like invoke_run_agent but captures run_agent.sh's exit
+# code instead of discarding it. Prints the rc to stdout (callers capture it).
+invoke_run_agent_rc() {
+  local mode="$1"
+  shift
+
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" "$mode" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      "$@"
+  ) > /dev/null 2>&1
+  echo $?
 }
 
 trace_grep() {
@@ -124,16 +144,17 @@ test_start_standard_post_agent_uses_down() {
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard"
 
-  local down_count down_v_count
-  down_count=$(trace_count "compose down")
+  # Session teardown is `compose down` (not `down -v`): named volumes must
+  # survive. The post-agent dispatch itself is locked by
+  # test_standard_teardown_is_last_compose (last compose op is down) — this
+  # test covers only the volume-preservation verb, since a pre-run teardown
+  # down would also satisfy a bare down_count>=1.
+  local down_v_count
   down_v_count=$(trace_count "compose down -v")
-
-  # compose_stop uses 'compose down' (end session, keep named volumes);
-  # compose_destroy would use 'down -v' (not used for standard).
-  if [[ "$down_v_count" -eq 0 && "$down_count" -ge 1 ]]; then
-    pass "start (standard): compose down used (down_count=$down_count), no down -v"
+  if [[ "$down_v_count" -eq 0 ]]; then
+    pass "start (standard): zero 'compose down -v' (session_teardown keeps named volumes)"
   else
-    fail "start (standard): expected down_count>=1 down_v_count=0, got down_count=$down_count down_v_count=$down_v_count"
+    fail "start (standard): expected 0 'compose down -v', got $down_v_count"
   fi
 }
 
@@ -174,8 +195,8 @@ test_start_refresh_post_agent_uses_down() {
   down_count=$(trace_count "compose down")
   down_v_count=$(trace_count "compose down -v")
 
-  # REFRESH: no compose_destroy (volumes removed directly by start_agent.sh)
-  # post-agent: compose_stop only
+  # REFRESH: no session_destroy (volumes removed directly by start_agent.sh)
+  # post-agent: session_teardown only
   if [[ "$down_v_count" -eq 0 ]]; then
     pass "start --refresh: zero compose down -v, post-agent down only (down=$down_count)"
   else
@@ -198,18 +219,135 @@ test_start_rebuild_has_no_down_v() {
   fi
 }
 
-test_serve_post_agent_no_v() {
+test_serve_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/serve_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "serve"
 
+  # Session teardown is `compose down` (not `down -v`): named volumes must
+  # survive. The post-agent dispatch itself is locked by
+  # test_serve_teardown_is_last_compose (last compose op is down) — this test
+  # covers only the volume-preservation verb, since serve also emits a pre-run
+  # teardown down that would satisfy a bare down_count>=1.
   local down_v_count
   down_v_count=$(trace_count "compose down -v")
   if [[ "$down_v_count" -eq 0 ]]; then
-    pass "serve: zero 'compose down -v' (post-agent uses compose_stop)"
+    pass "serve: zero 'compose down -v' (session_teardown keeps named volumes)"
   else
     fail "serve: expected 0 'compose down -v', got $down_v_count"
+  fi
+}
+
+test_teardown_is_last_compose() {
+  local mode="$1"
+  local FIXTURE_DIR="$FIXTURE_DIR/${mode}_last"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  invoke_run_agent "$mode"
+
+  # The unified teardown dispatch is the single final compose operation:
+  # nothing runs after `compose down`. (Pre-run session_teardown is the
+  # resume-path cleanup before `up`; the last down is the post-agent one.)
+  local last
+  last=$(trace_grep "compose " | tail -1)
+  if [[ "$last" == *"compose down"* ]]; then
+    pass "$mode: last compose op is down (teardown is final dispatch)"
+  else
+    fail "$mode: expected last compose op to be down, got: $last"
+  fi
+}
+
+test_standard_teardown_is_last_compose() {
+  test_teardown_is_last_compose standard
+}
+
+test_serve_teardown_is_last_compose() {
+  test_teardown_is_last_compose serve
+}
+
+test_standard_agent_failure_still_tears_down_and_propagates_rc() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_RUN_RC="42"
+
+  # run_agent.sh must (a) run teardown even when the agent exits non-zero
+  # (issue-1 fix: no container/network leak) and (b) exit with the agent's rc
+  # (defined exit semantics for standard mode).
+  local rc
+  rc=$(invoke_run_agent_rc "standard")
+
+  local down_count last
+  down_count=$(trace_count "compose down")
+  last=$(trace_grep "compose " | tail -1)
+  if [[ "$rc" -eq 42 && "$down_count" -ge 1 && "$last" == *"compose down"* ]]; then
+    pass "standard: agent failure (rc=42) still tears down; rc propagated"
+  else
+    fail "standard: expected rc=42 + teardown ran, got rc=$rc down_count=$down_count last=$last"
+  fi
+
+  unset DOCKER_STUB_RUN_RC
+}
+
+test_serve_up_failure_still_tears_down() {
+  local FIXTURE_DIR="$FIXTURE_DIR/serve_up_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_UP_RC="1"
+
+  # compose up fails -> set -e abort before the mode branch completes; the
+  # EXIT trap must still tear down (issue-1 class: no leak on up failure).
+  local rc
+  rc=$(invoke_run_agent_rc "serve")
+
+  local last
+  last=$(trace_grep "compose " | tail -1)
+  if [[ "$last" == *"compose down"* ]]; then
+    pass "serve: up failure still tears down (last=$last)"
+  else
+    fail "serve: expected teardown after up failure, got last=$last"
+  fi
+}
+
+test_standard_up_failure_still_tears_down() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_up_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_UP_RC="1"
+
+  # Pipefail propagates the up failure; set -e aborts; the EXIT trap must
+  # still tear down.
+  local rc
+  rc=$(invoke_run_agent_rc "standard")
+
+  local last
+  last=$(trace_grep "compose " | tail -1)
+  if [[ "$last" == *"compose down"* ]]; then
+    pass "standard: up failure still tears down (last=$last)"
+  else
+    fail "standard: expected teardown after up failure, got last=$last"
+  fi
+}
+
+test_standard_sandbox_unhealthy_still_tears_down() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_sb_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_SANDBOX_HEALTH="starting"
+  export SANDBOX_WAIT_TIMEOUT="1"
+
+  # compose_sandbox_wait exits 1 (never healthy) before the agent runs; the
+  # EXIT trap must still tear down the sandbox container + network.
+  local rc
+  rc=$(invoke_run_agent_rc "standard")
+
+  local last
+  last=$(trace_grep "compose " | tail -1)
+  if [[ "$last" == *"compose down"* ]]; then
+    pass "standard: sandbox unhealthy still tears down (last=$last)"
+  else
+    fail "standard: expected teardown after sandbox-wait failure, got last=$last"
   fi
 }
 
@@ -225,7 +363,13 @@ run_test test_start_refresh_has_no_down_v
 run_test test_start_refresh_volume_rm
 run_test test_start_refresh_post_agent_uses_down
 run_test test_start_rebuild_has_no_down_v
-run_test test_serve_post_agent_no_v
+run_test test_serve_post_agent_uses_down
+run_test test_standard_teardown_is_last_compose
+run_test test_serve_teardown_is_last_compose
+run_test test_standard_agent_failure_still_tears_down_and_propagates_rc
+run_test test_serve_up_failure_still_tears_down
+run_test test_standard_up_failure_still_tears_down
+run_test test_standard_sandbox_unhealthy_still_tears_down
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

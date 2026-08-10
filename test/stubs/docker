@@ -50,8 +50,17 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
         echo "services: {}"
       fi
       ;;
-    up|down|run|exec|stop)
+    up|down|exec|stop|run)
       log "compose $compose_sub $compose_rest"
+      # Failure simulation (env-gated, empty = success):
+      #   DOCKER_STUB_UP_RC   — exit code for compose up to return
+      #   DOCKER_STUB_RUN_RC  — exit code for compose run to return
+      if [[ "$compose_sub" == "up" && -n "${DOCKER_STUB_UP_RC:-}" ]]; then
+        exit "$DOCKER_STUB_UP_RC"
+      fi
+      if [[ "$compose_sub" == "run" && -n "${DOCKER_STUB_RUN_RC:-}" ]]; then
+        exit "$DOCKER_STUB_RUN_RC"
+      fi
       ;;
     *)
       log "compose $compose_sub $compose_rest"
@@ -68,7 +77,10 @@ if [[ "$CMD" == "docker" ]]; then
     inspect)
       log "inspect $*"
       if [[ "$*" == *"Health.Status"* ]]; then
-        echo "healthy"
+        # Failure simulation: DOCKER_STUB_SANDBOX_HEALTH overrides the sandbox
+        # health status (empty = healthy, as in production). compose_sandbox_wait
+        # loops until healthy, so a non-healthy value makes it time out/exit.
+        echo "${DOCKER_STUB_SANDBOX_HEALTH:-healthy}"
       elif [[ "$*" == *"State.Status"* ]]; then
         echo "running"
       else
