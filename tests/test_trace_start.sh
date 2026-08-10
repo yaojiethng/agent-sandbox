@@ -118,21 +118,22 @@ test_start_standard_has_compose_run_agent() {
   fi
 }
 
-test_start_standard_post_agent_uses_stop() {
+test_start_standard_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard"
 
-  local stop_count down_v_count
-  stop_count=$(trace_count "compose stop")
+  local down_count down_v_count
+  down_count=$(trace_count "compose down")
   down_v_count=$(trace_count "compose down -v")
 
-  # compose_stop uses 'stop'; compose_destroy would use 'down -v' (not used for standard)
-  if [[ "$down_v_count" -eq 0 && "$stop_count" -ge 1 ]]; then
-    pass "start (standard): compose stop used (stop_count=$stop_count), no down -v"
+  # compose_stop uses 'compose down' (end session, keep named volumes);
+  # compose_destroy would use 'down -v' (not used for standard).
+  if [[ "$down_v_count" -eq 0 && "$down_count" -ge 1 ]]; then
+    pass "start (standard): compose down used (down_count=$down_count), no down -v"
   else
-    fail "start (standard): expected stop_count>=1 down_v_count=0, got stop_count=$stop_count down_v_count=$down_v_count"
+    fail "start (standard): expected down_count>=1 down_v_count=0, got down_count=$down_count down_v_count=$down_v_count"
   fi
 }
 
@@ -163,22 +164,22 @@ test_start_refresh_volume_rm() {
   pass "start --refresh: volume rm count = $count"
 }
 
-test_start_refresh_post_agent_uses_stop() {
+test_start_refresh_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard" --reset-volume
 
-  local stop_count down_v_count
-  stop_count=$(trace_count "compose stop")
+  local down_count down_v_count
+  down_count=$(trace_count "compose down")
   down_v_count=$(trace_count "compose down -v")
 
   # REFRESH: no compose_destroy (volumes removed directly by start_agent.sh)
   # post-agent: compose_stop only
   if [[ "$down_v_count" -eq 0 ]]; then
-    pass "start --refresh: zero compose down -v, post-agent stop only (stop=$stop_count)"
+    pass "start --refresh: zero compose down -v, post-agent down only (down=$down_count)"
   else
-    fail "start --refresh: expected down_v=0, got down_v=$down_v_count stop=$stop_count"
+    fail "start --refresh: expected down_v=0, got down_v=$down_v_count down=$down_count"
   fi
 }
 
@@ -219,10 +220,10 @@ test_serve_post_agent_no_v() {
 run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
-run_test test_start_standard_post_agent_uses_stop
+run_test test_start_standard_post_agent_uses_down
 run_test test_start_refresh_has_no_down_v
 run_test test_start_refresh_volume_rm
-run_test test_start_refresh_post_agent_uses_stop
+run_test test_start_refresh_post_agent_uses_down
 run_test test_start_rebuild_has_no_down_v
 run_test test_serve_post_agent_no_v
 

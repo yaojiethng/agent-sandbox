@@ -118,15 +118,68 @@ The snapshot is an input prepared before the run. Mounting it read-only prevents
 
 Provider config cannot be bind-mounted directly as `AGENT_HOME` because agents may perform filesystem operations (cross-device moves from `/tmp`, binary writes) that fail on host-mounted paths, particularly on Windows. Mounting at `/opt/provider-config/` and having `provider-entrypoint.sh` copy into `AGENT_HOME` gives the agent full ownership of its working directory while keeping the host sync path clean.
 
-### Why `--volumes-from` rather than a named volume for `sandbox/`
+### Why `--volumes-from` rather than a named volume for the agent's `sandbox/` view
 
-A named Docker volume is daemon-managed and persists independently of any container. This breaks capability layer ownership: a second session would find the previous session's sandbox content in the volume, and any container could mount it regardless of whether the capability layer is running.
+The reasoning layer (agent) shares the capability layer's `sandbox/` mount via
+`--volumes-from` (see the compose `agent` service). This ties the agent's view
+of `sandbox/` to the capability layer container's lifecycle, so the agent can
+only access it while the capability container exists.
 
-`--volumes-from` ties the sandbox lifecycle to the capability layer container. The reasoning layer can only access `sandbox/` while the capability layer container exists.
+**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only
+exposes directories via `--volumes-from` if they are declared as volumes in the
+Dockerfile (`VOLUME /home/agentuser/sandbox`).
 
-**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only exposes directories via `--volumes-from` if they are declared as volumes in the Dockerfile (`VOLUME /home/agentuser/sandbox`). The `VOLUME` instruction promotes `sandbox/` to an anonymous Docker volume at container creation time.
+**The sandbox workdir itself is a named volume.** The compose file mounts a
+RUN_ID-scoped named volume (`{{RUN_ID}}-sandbox-data`) at `/home/agentuser/sandbox`
+on the sandbox service. This named volume persists across `docker compose down`
+(which keeps named volumes) so the session state survives stop/start — see
+[Container State Contract](#container-state-contract) and Session Lifecycle.
 
-The anonymous volume is created fresh at each session start and destroyed on teardown (`docker compose down -v`).
+---
+
+## Container State Contract
+
+This is the as-expected record of what lives where across a session, so future
+changes (for example allowing the agent to do environment setup) preserve the
+contract knowingly.
+
+**The container is disposable.** Removing or rebuilding a session's containers
+loses nothing user-authored. Durable state lives in the named volume and bind
+mounts; the container writable layer holds only regenerable content.
+
+| What | Where it lives | Survives `docker compose down`? |
+|---|---|---|
+| Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{RUN_ID}}-sandbox-data` | ✅ yes (named volume persists) |
+| Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | ✅ yes (host) |
+| Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | ✅ yes (host) |
+| Snapshot baseline `.snapshot/` | bind-mounted read-only | ✅ yes (host, read-only) |
+| Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, copy-in from baked image at startup | ❌ regenerated on start |
+| Caches `~/.npm`, `~/.cache` | container writable layer | ❌ disposable |
+
+Consequence: `make stop` and session teardown remove the containers (and the
+per-session network) and keep the named volume. Resume comes from the volume,
+not from stopped containers. If a future feature lets the agent do persistent
+environment setup, that state must be persisted to the named volume (or a bind
+mount), not left in the container writable layer, to keep the contract intact.
+
+---
+
+## Docker verb semantics note
+
+Docker's lifecycle verbs have specific meanings that our command shape only
+partially matches:
+
+| Docker verb | Docker meaning | Our use |
+|---|---|---|
+| `docker start` | start an existing stopped container | (unused) — our `start` is full setup: `compose up` + `compose run agent` |
+| `docker stop` | pause a container for later same-container restart | `scripts/stop.sh` previously used this; now teardown is `compose down` |
+| `docker compose down` | end the session; remove containers + network; keep named volumes | our teardown (`compose_stop` → `down`) |
+| `docker compose down -v` | also remove named volumes | our full reset (`compose_destroy`) |
+
+Our `start` = full setup and `stop` = session teardown do not match docker's
+`start`/`stop` pause-resume semantics. This is a known divergence; a future
+decision should choose whether to inherit docker's language (and therefore
+semantics) or rename to avoid ambiguity.
 
 ---
 
@@ -156,8 +209,7 @@ flowchart TD
         WAIT_HC([healthcheck ready])
         CRA["<b>compose run agent</b><br/>--volumes-from sandbox"]
         PP["<b>_provider_persist</b><br/>output → SANDBOX_DIR"]
-        DSS["<b>docker stop</b><br/>sandbox"]
-        CDV["<b>compose down -v</b>"]
+        CD["<b>compose down</b><br/>keep named volumes"]
         END([<b>COMPLETE</b>])
     end
 
@@ -188,12 +240,12 @@ flowchart TD
     WAIT_HC --> CRA
     CRA --> PE
     PE --> CI --> ET --> EX --> RDY --> AE
-    AE --> PP --> DSS
-    DSS -- triggers --> SIGTERM
-    SIGTERM --> DIFF --> CDV --> END
+    AE --> PP --> CD
+    CD -- triggers --> SIGTERM
+    SIGTERM --> DIFF --> END
 
     %% Apply Styles
-    class SA,RA,DEC,SH,CUS,WAIT_HC,CRA,PP,DSS,CDV host;
+    class SA,RA,DEC,SH,CUS,WAIT_HC,CRA,PP,CD host;
     class SE,TR,WAIT,SIGTERM,DIFF cap;
     class PE,CI,ET,EX,RDY,AE rsn;
 ```

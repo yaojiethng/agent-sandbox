@@ -101,6 +101,12 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
 - [x] **Finding A/C — unify `--help` across all subcommands** — extract
   `route_help()` in the dispatcher; fix `--help` for every subcommand before arg
   validation; delete `wants_help`; update `test_dispatch.sh`.
+- [x] **Docker network leak fix** — `compose_stop` → `docker compose down`
+  (keep named volumes), label the compose default network, label-based teardown
+  in `stop.sh`. Session `20260810-10`. Carried findings: run_agent unified
+  teardown refactor; compose-file persistence (`.compose/<run-id>.yml`);
+  docker-verb semantics decision; `stop.sh` string-as-list → array refactor
+  (removes SC2086 disables).
 
 ---
 

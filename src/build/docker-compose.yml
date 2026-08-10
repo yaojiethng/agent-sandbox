@@ -36,6 +36,17 @@ volumes:
       agent-sandbox.session-ts: {{SESSION_TS}}
       agent-sandbox.run-id: {{RUN_ID}}
 
+# The compose-created default network is labeled so lifecycle tooling can
+# find and clean up per-session networks by label (no project-name parsing).
+# Without these labels, docker system prune / network ls filters could not
+# match the per-RUN_ID network, leaking it and exhausting the default pool.
+networks:
+  default:
+    labels:
+      agent-sandbox.project-name: {{PROJECT_NAME}}
+      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+      agent-sandbox.run-id: {{RUN_ID}}
+
 # Session labels — applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
   agent-sandbox.project-name: {{PROJECT_NAME}}

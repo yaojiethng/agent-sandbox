@@ -87,7 +87,29 @@ else
   # Word splitting is intentional
   # shellcheck disable=SC2086
   docker stop $CONTAINER_IDS
-  echo "Containers stopped."
+  # Containers are disposable — durable state lives in the named volume +
+  # bind mounts (Container State Contract). Remove them so the network can
+  # be freed and no stopped containers accumulate.
+  # shellcheck disable=SC2086
+  docker rm $CONTAINER_IDS
+  echo "Containers stopped and removed."
+fi
+
+# -------------------------
+# Remove the session network (by label — no project-name parsing)
+# -------------------------
+
+# The compose-created default network carries the session labels, so it is
+# found by the same LABEL_FILTERS used for containers (including --run-id
+# scoping when set). It can only be removed once no container references it
+# (handled above by removing the containers).
+NETWORK_IDS=$(docker network ls -q "${LABEL_FILTERS[@]}")
+if [[ -n "$NETWORK_IDS" ]]; then
+  echo "Removing session networks for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})"
+  # Word splitting is intentional
+  # shellcheck disable=SC2086
+  docker network rm $NETWORK_IDS 2>/dev/null || true
+  echo "Networks removed."
 fi
 
 # -------------------------

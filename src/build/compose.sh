@@ -307,7 +307,12 @@ compose_dry_run() {
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
 compose_stop() {
-  docker compose "${COMPOSE_ARGS[@]}" stop 2>/dev/null || true
+  # docker compose down: end the session, keep named volumes.
+  # Removes containers + network (frees the default address pool); the
+  # RUN_ID-scoped named volume persists so resume still works. The container
+  # is disposable — durable state lives in the named volume + bind mounts
+  # (see docs/architecture/execution_model.md — Container State Contract).
+  docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
 }
 
 # -------------------------
