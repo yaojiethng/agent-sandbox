@@ -22,11 +22,11 @@
               "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         },
         {
@@ -47,11 +47,11 @@
               "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         }
       ]
@@ -105,11 +105,11 @@
             "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         },
         {
@@ -132,11 +132,11 @@
             "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         }
       ]
@@ -182,11 +182,11 @@
             "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         },
         {
@@ -201,11 +201,11 @@
             "requiresReasoningContentOnAssistantMessages": true
           },
           "thinkingLevelMap": {
-            "minimal": null,
-            "low": null,
-            "medium": null,
-            "high": null,
-            "xhigh": "max"
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
           }
         }
       ]
