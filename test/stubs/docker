@@ -9,7 +9,8 @@
 #   compose config   — returns first input file unchanged (valid YAML from sed substitution)
 #   inspect (health) — returns "healthy"
 #   wait             — returns immediately (exit 0)
-#   ps -aq           — returns nothing (no containers)
+#   ps -aq           — returns nothing unless DOCKER_STUB_PS_IDS is set
+#   network ls -q    — returns nothing unless DOCKER_STUB_NETWORK_IDS is set
 
 set -euo pipefail
 
@@ -82,6 +83,23 @@ if [[ "$CMD" == "docker" ]]; then
       ;;
     ps)
       log "ps $*"
+      # Tests stub container IDs via DOCKER_STUB_PS_IDS (whitespace-separated)
+      if [[ -n "${DOCKER_STUB_FAIL_PS:-}" ]]; then
+        echo "stub: docker ps failed" >&2
+        exit 1
+      fi
+      if [[ -n "${DOCKER_STUB_PS_IDS:-}" ]]; then
+        read -ra _ps_ids <<< "$DOCKER_STUB_PS_IDS"
+        printf '%s\n' "${_ps_ids[@]}"
+      fi
+      ;;
+    network)
+      log "network $*"
+      # Tests stub network IDs via DOCKER_STUB_NETWORK_IDS (whitespace-separated)
+      if [[ "${1:-}" == "ls" && -n "${DOCKER_STUB_NETWORK_IDS:-}" ]]; then
+        read -ra _net_ids <<< "$DOCKER_STUB_NETWORK_IDS"
+        printf '%s\n' "${_net_ids[@]}"
+      fi
       ;;
     volume)
       vol_sub="${1:-}"; shift || true

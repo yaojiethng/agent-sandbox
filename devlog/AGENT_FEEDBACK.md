@@ -245,3 +245,58 @@ legacy: none
 mitigation: the first `edit` call on `common.sh` omitted the required `path` field and was rejected by tool validation. Self-corrected on the retry. Always pass `path` explicitly on edit calls.
 ---
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.
+
+## Agent experience — session 20260810-12
+
+### [A] 2026-08-10 — `git restore` during negative-test verification wiped uncommitted session work
+
+state: open
+scoped: none
+legacy: none
+mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
+reverts to HEAD — destroying the session's uncommitted array refactor in that file (the
+mutation check itself passed: the test failed as expected; only the revert was wrong).
+Revert scratch mutations from a temp copy (`cp file /tmp/file.bak` before mutating,
+`cp /tmp/file.bak file` after), never from git, while the session has uncommitted changes
+in that file. The `git restore`/`git checkout` revert is only safe on committed-clean files.
+
+### [A] 2026-08-10 — Subagent review remedies need empirical verification, not blind acceptance
+
+state: open
+scoped: none
+legacy: none
+mitigation: the thermo-nuclear subagent correctly flagged that
+`mapfile -t X < <(cmd)` swallows the command's exit status under
+`set -euo pipefail`, but its proposed remedy (`cmd | mapfile`) was worse than
+the bug: `mapfile` in a pipeline runs in a subshell (lastpipe is off by
+default in non-interactive shells), so the array is silently empty in the
+parent. Only a minimal repro (`printf 'a\nb\n' | mapfile -t X; echo
+"${#X[@]}"` → 0, vs process substitution → 2) exposed it. Treat reviewer
+findings as hypotheses and their remedies as proposals: verify both with a
+repro before applying.
+
+### [A] 2026-08-10 — Negative-test mutations: verify syntax and intended-failure reason before trusting the result
+
+state: open
+scoped: none
+legacy: none
+mitigation: the first awk-based mutation for the P1 negative check produced a
+syntactically invalid stop.sh; the test "passed" vacuously (rc=2 from a
+syntax error, not from the bug being tested). Only a `bash -n` after mutating
+caught it. After any negative-test mutation, check (a) the mutated file is
+still valid (`bash -n`), and (b) the test fails for the intended reason, not
+a side effect. A vacuous pass is more dangerous than a detected failure —
+it looks green while testing nothing. Same family as the "did the write
+land?" reflex but distinct: that catches un-applied edits, this catches
+mis-applied ones.
+
+### [A] 2026-08-10 — `python3` is absent from the container
+
+state: open
+scoped: none
+legacy: none
+mitigation: `command -v python3` returns nothing in this sandbox; a text
+mutation that reached for python3 failed with "command not found" and fell
+back to sed/awk. Use bash-native tools (sed, awk, perl if present) for
+text-mutation tasks in this container; do not reach for python3 without
+checking first.

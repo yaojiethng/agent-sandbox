@@ -78,20 +78,25 @@ fi
 # Stop and remove containers
 # -------------------------
 
-CONTAINER_IDS=$(docker ps -aq "${LABEL_FILTERS[@]}")
+# Capture via command substitution, not `mapfile < <(cmd)`: under
+# `set -euo pipefail` a docker failure must abort, and process substitution
+# swallows the exit status. Convert the newline-separated capture to an array;
+# an empty capture yields one empty element from the here-string, so reset it.
+ids_out="$(docker ps -aq "${LABEL_FILTERS[@]}")"
+mapfile -t CONTAINER_IDS <<< "$ids_out"
+if [[ ${#CONTAINER_IDS[@]} -eq 1 && -z "${CONTAINER_IDS[0]}" ]]; then
+  CONTAINER_IDS=()
+fi
 
-if [[ -z "$CONTAINER_IDS" ]]; then
+if [[ ${#CONTAINER_IDS[@]} -eq 0 ]]; then
   echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
 else
   echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
-  # Word splitting is intentional
-  # shellcheck disable=SC2086
-  docker stop $CONTAINER_IDS
   # Containers are disposable — durable state lives in the named volume +
   # bind mounts (Container State Contract). Remove them so the network can
   # be freed and no stopped containers accumulate.
-  # shellcheck disable=SC2086
-  docker rm $CONTAINER_IDS
+  docker stop "${CONTAINER_IDS[@]}"
+  docker rm "${CONTAINER_IDS[@]}"
   echo "Containers stopped and removed."
 fi
 
@@ -103,12 +108,14 @@ fi
 # found by the same LABEL_FILTERS used for containers (including --run-id
 # scoping when set). It can only be removed once no container references it
 # (handled above by removing the containers).
-NETWORK_IDS=$(docker network ls -q "${LABEL_FILTERS[@]}")
-if [[ -n "$NETWORK_IDS" ]]; then
+net_ids_out="$(docker network ls -q "${LABEL_FILTERS[@]}")"
+mapfile -t NETWORK_IDS <<< "$net_ids_out"
+if [[ ${#NETWORK_IDS[@]} -eq 1 && -z "${NETWORK_IDS[0]}" ]]; then
+  NETWORK_IDS=()
+fi
+if [[ ${#NETWORK_IDS[@]} -gt 0 ]]; then
   echo "Removing session networks for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})"
-  # Word splitting is intentional
-  # shellcheck disable=SC2086
-  docker network rm $NETWORK_IDS 2>/dev/null || true
+  docker network rm "${NETWORK_IDS[@]}" 2>/dev/null || true
   echo "Networks removed."
 fi
 

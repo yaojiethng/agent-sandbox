@@ -81,16 +81,21 @@ build_image() {
   local no_cache="${5:-}"
   shift 5
 
+  local cache_args=()
+  if [[ -n "$no_cache" ]]; then
+    cache_args+=(--no-cache)
+  fi
+
   echo "Building image: $image_name"
   if [[ -n "$sig" ]]; then
-    docker build $no_cache --progress=auto \
+    docker build "${cache_args[@]+${cache_args[@]}}" --progress=auto \
       --label "agent-sandbox.container-sig=$sig" \
       -t "$image_name" \
       -f "$dockerfile" \
       "$@" \
       "$repo_root"
   else
-    docker build $no_cache --progress=auto \
+    docker build "${cache_args[@]+${cache_args[@]}}" --progress=auto \
       -t "$image_name" \
       -f "$dockerfile" \
       "$@" \

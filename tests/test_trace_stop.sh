@@ -19,6 +19,9 @@ setup_stop_fixture() {
   mkdir -p "$SANDBOX_DIR"
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
+  # Tests run in the same shell (run_test), so stub-ID vars must not leak
+  # between tests.
+  unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_FAIL_PS
 }
 
 invoke_stop() {
@@ -63,16 +66,68 @@ test_stop_no_compose() {
   fi
 }
 
-test_stop_uses_docker_ps() {
-  local FIXTURE_DIR="$FIXTURE_DIR/stop_ps"
+test_stop_no_containers_does_not_teardown() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_none"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   invoke_stop "$FIXTURE_DIR"
 
+  # Stub ps -aq returns nothing by default: no containers, no teardown.
   if trace_has "ps " && ! trace_has "rm "; then
-    pass "stop: uses docker ps and docker stop, no docker rm"
+    pass "stop: no containers -> ps only, no rm"
   else
-    fail "stop: expected ps+stop without rm"
+    fail "stop: expected ps without rm when no containers"
+  fi
+}
+
+test_stop_removes_containers() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_rm"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="abc123def456 fedcba654321"
+  invoke_stop "$FIXTURE_DIR"
+
+  if trace_has "stop abc123def456" && trace_has "rm abc123def456"; then
+    pass "stop: containers stopped and removed"
+  else
+    fail "stop: expected stop+rm for found containers"
+  fi
+}
+
+test_stop_removes_networks() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_net"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_NETWORK_IDS="net1 net2"
+  invoke_stop "$FIXTURE_DIR"
+
+  if trace_has "network rm net1"; then
+    pass "stop: session networks removed by label"
+  else
+    fail "stop: expected network rm for found networks"
+  fi
+}
+
+test_stop_docker_failure_aborts() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_FAIL_PS=1
+
+  # stop.sh must abort when docker ps fails (set -e semantics), not
+  # silently continue as if no containers exist.
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/stop.sh" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR"
+  ) > /dev/null 2>&1
+  local rc=$?
+
+  if [[ "$rc" -ne 0 ]]; then
+    pass "stop: docker ps failure aborts the script (rc=$rc)"
+  else
+    fail "stop: expected nonzero rc on docker ps failure, got 0"
   fi
 }
 
@@ -133,7 +188,10 @@ test_prune_standalone_has_system_prune() {
 # ---------------------------------------------------------------------------
 
 run_test test_stop_no_compose
-run_test test_stop_uses_docker_ps
+run_test test_stop_no_containers_does_not_teardown
+run_test test_stop_removes_containers
+run_test test_stop_removes_networks
+run_test test_stop_docker_failure_aborts
 run_test test_stop_prune_no_compose
 run_test test_stop_prune_has_system_prune
 run_test test_prune_standalone_no_compose

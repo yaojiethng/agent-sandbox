@@ -105,13 +105,17 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   (keep named volumes), label the compose default network, label-based teardown
   in `stop.sh`. Session `20260810-10`. Carried findings: run_agent unified
   teardown refactor; compose-file persistence (`.compose/<run-id>.yml`);
-  docker-verb semantics decision; `stop.sh` string-as-list → array refactor
-  (removes SC2086 disables).
+  docker-verb semantics decision.
 - [x] **Build-output single-line progress fix** — `build_image` in
   `scripts/build.sh`: `--progress=plain` → `--progress=auto` (TTY-aware
   single-line progress, plain fallback for non-TTY). Regression test added.
-  Session `20260810-11`. Carried finding: `$no_cache` unquoted expansion →
-  array (with the stop.sh SC2086 array refactor).
+  Session `20260810-11`.
+- [x] **String-as-list → array refactor (removes SC2086 disables)** —
+  `stop.sh` `CONTAINER_IDS`/`NETWORK_IDS` → `mapfile` arrays;
+  `build_image` `$no_cache` → `cache_args` array. Test-enablement rolled in:
+  docker stub emits IDs via `DOCKER_STUB_PS_IDS`/`DOCKER_STUB_NETWORK_IDS`;
+  stale `test_stop_uses_docker_ps` replaced by three behavior tests.
+  Session `20260810-12`.
 
 ---
 
