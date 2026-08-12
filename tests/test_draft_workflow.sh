@@ -411,6 +411,36 @@ test_draft_no_diffs_error() {
   fi
 }
 
+# Regression: when patch application fails, the operator must be returned to the
+# source branch — not left on the (now empty) draft/* branch. Formerly the
+# rollback did `git reset --hard draft-savepoint` but never checked back out to
+# the source branch. See handover 20260812-06.
+test_draft_failure_returns_to_source_branch() {
+  local P="$FIXTURE_DIR/draft_rollback_p"
+  local S="$FIXTURE_DIR/draft_rollback_s"
+  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
+  make_committed_repo "$P"
+  mkdir -p "$S/.workspace"
+  make_session_fixture "$EXPORT" 1
+
+  # Force the new-file patch to fail: file-1.txt already exists in the baseline,
+  # so git apply cannot create it. This drives _run_draft_workflow through its
+  # failure/rollback path.
+  echo "conflict" > "$P/file-1.txt"
+  git -C "$P" add file-1.txt
+  git -C "$P" commit -m "conflict file" --quiet
+
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false false >/dev/null 2>&1 || true
+
+  local CURR
+  CURR=$(_current_branch "$P")
+  if [[ "$CURR" == "main" ]]; then
+    pass "failed draft returns operator to source branch"
+  else
+    fail "expected source branch 'main' after failed draft, got: $CURR"
+  fi
+}
+
 test_draft_strips_index_lines() {
   local P="$FIXTURE_DIR/draft_strip_p"
   local S="$FIXTURE_DIR/draft_strip_s"
@@ -897,6 +927,7 @@ run_test test_draft_allows_parallel_drafts
 run_test test_draft_branch_from
 run_test test_draft_diffs_range
 run_test test_draft_no_diffs_error
+run_test test_draft_failure_returns_to_source_branch
 run_test test_draft_strips_index_lines
 run_test test_draft_resets_author_to_operator
 run_test test_draft_commit_messages

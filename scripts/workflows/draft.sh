@@ -356,6 +356,36 @@ EOF
 }
 
 # =============================================================================
+# _draft_rollback — failure rollback for _run_draft_workflow
+# =============================================================================
+
+# _draft_rollback PROJECT_DIR SOURCE_BRANCH
+#
+# Resets to the draft-savepoint (the fork point before .draft-state was
+# committed), returns the operator to the branch that was current before
+# draft_run checked out the draft branch, and deletes the savepoint tag.
+# Guards against restoring to a branch that no longer exists (fall back to
+# the savepoint commit) so the operator is never left on the empty draft/*
+# branch. The branch-creation guard in draft_create_and_init_branch already
+# refuses to draft from a draft/* branch, so a clean rollback must not leave
+# the operator there either.
+_draft_rollback() {
+  local PROJECT_DIR="$1" SOURCE_BRANCH="$2"
+
+  echo "Rolling back to savepoint..."
+  git -C "$PROJECT_DIR" reset --hard draft-savepoint
+
+  if git -C "$PROJECT_DIR" rev-parse --verify --quiet "refs/heads/$SOURCE_BRANCH" >/dev/null; then
+    git -C "$PROJECT_DIR" checkout -q "$SOURCE_BRANCH"
+  else
+    echo "Warning: source branch '$SOURCE_BRANCH' no longer exists; leaving at savepoint commit (detached)." >&2
+    git -C "$PROJECT_DIR" checkout -q --detach draft-savepoint
+  fi
+
+  git -C "$PROJECT_DIR" tag -d draft-savepoint
+}
+
+# =============================================================================
 # _run_draft_workflow — common orchestration after source resolution
 # =============================================================================
 
@@ -404,6 +434,12 @@ _run_draft_workflow() {
   git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
   git -C "$PROJECT_DIR" tag draft-savepoint "$_validated_base"
 
+  # Capture the branch current before draft_run checks out the draft branch, so
+  # a failed apply can return the operator to it (and never leave them on draft/*).
+  local SOURCE_BRANCH
+  SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+  [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+
   # Resolve author once for both branch creation and apply+commit
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
@@ -414,17 +450,13 @@ _run_draft_workflow() {
 
   # Apply patches
   printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
-    echo "Rolling back to savepoint..."
-    git -C "$PROJECT_DIR" reset --hard draft-savepoint
-    git -C "$PROJECT_DIR" tag -d draft-savepoint
+    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
     return 1
   }
 
   # Apply uncommitted.diff
   draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
-    echo "Rolling back to savepoint..."
-    git -C "$PROJECT_DIR" reset --hard draft-savepoint
-    git -C "$PROJECT_DIR" tag -d draft-savepoint
+    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
     return 1
   }
 
