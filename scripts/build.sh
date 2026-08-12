@@ -16,6 +16,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/libs/buildkit_progress.sh"
 
 # -------------------------
 # Container-sig source lists
@@ -81,27 +82,29 @@ build_image() {
   local no_cache="${5:-}"
   shift 5
 
-  local cache_args=()
-  if [[ -n "$no_cache" ]]; then
-    cache_args+=(--no-cache)
-  fi
+  local build_cmd=(docker build)
+  [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
+  build_cmd+=(--progress=plain -t "$image_name" -f "$dockerfile")
+  [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.container-sig=$sig")
+  build_cmd+=("$@" "$repo_root")
 
-  echo "Building image: $image_name"
-  if [[ -n "$sig" ]]; then
-    docker build "${cache_args[@]+${cache_args[@]}}" --progress=auto \
-      --label "agent-sandbox.container-sig=$sig" \
-      -t "$image_name" \
-      -f "$dockerfile" \
-      "$@" \
-      "$repo_root"
+  # On TTY, replace BuildKit's multi-line progress display with a single
+  # self-updating line showing the current build step (extracted from
+  # --progress=plain output).  The operator sees real BuildKit progress —
+  # not a blind spinner — so stalls are immediately visible (step text
+  # freezes while the elapsed counter keeps ticking).
+  # On non-TTY (CI, pipes), output streams normally so every line is
+  # preserved in the log.
+  if [[ -t 1 ]]; then
+    _buildkit_run "Building image: $image_name" "${build_cmd[@]}"
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
   else
-    docker build "${cache_args[@]+${cache_args[@]}}" --progress=auto \
-      -t "$image_name" \
-      -f "$dockerfile" \
-      "$@" \
-      "$repo_root"
+    echo "Building image: $image_name"
+    "${build_cmd[@]}"
+    echo "  Build complete: $image_name"
   fi
-  echo "  Build complete: $image_name"
 }
 
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]

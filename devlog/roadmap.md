@@ -106,10 +106,12 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   in `stop.sh`. Session `20260810-10`. Carried findings: run_agent unified
   teardown refactor; compose-file persistence (`.compose/<run-id>.yml`);
   docker-verb semantics decision.
-- [x] **Build-output single-line progress fix** — `build_image` in
-  `scripts/build.sh`: `--progress=plain` → `--progress=auto` (TTY-aware
-  single-line progress, plain fallback for non-TTY). Regression test added.
-  Session `20260810-11`.
+- [x] **Build-output single-line progress fix** — `build_image` uses array
+  dispatch (`build_cmd[]`) with a single self-updating progress line on TTY
+  via `_buildkit_run` (`src/libs/buildkit_progress.sh`), showing the real
+  current BuildKit step (parsed from `--progress=plain` output). Sessions
+  `20260810-11` (initial `--progress=auto` — incomplete — `auto` on TTY is
+  still multi-line) and `20260812-01` (array collapse + BuildKit step parsing).
 - [x] **String-as-list → array refactor (removes SC2086 disables)** —
   `stop.sh` `CONTAINER_IDS`/`NETWORK_IDS` → `mapfile` arrays;
   `build_image` `$no_cache` → `cache_args` array. Test-enablement rolled in:

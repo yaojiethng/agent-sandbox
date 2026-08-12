@@ -9,6 +9,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
+source "$REPO_ROOT/src/libs/buildkit_progress.sh"
 
 STUB_DIR="$TEST_DIR/../test/stubs"
 
@@ -97,30 +98,61 @@ test_build_has_build_command() {
   fi
 }
 
-test_build_uses_concise_progress() {
+test_build_uses_plain_progress() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_progress"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
   invoke_build
 
-  # build_image passes --progress=auto (TTY-aware, plain fallback) so
-  # interactive builds show a single progress line. --progress=plain would
-  # regress to verbose per-step output; assert it is not used.
+  # build_image uses --progress=plain on non-TTY (CI, pipes).  On TTY,
+  # --progress=plain output is captured to a temp file and a single spinner
+  # line is shown instead of BuildKit's multi-line blue progress display;
+  # the captured output is only dumped on failure.
   if trace_has "progress=plain"; then
-    fail "build: verbose --progress=plain must not be used"
+    pass "build: uses --progress=plain (captured on TTY, streams on non-TTY)"
   else
-    pass "build: concise progress mode used"
+    fail "build: --progress=plain not found in trace"
   fi
+}
+
+test_buildkit_current_step_parses_last_step() {
+  # _buildkit_current_step extracts the most recent BuildKit step header
+  # from --progress=plain output.  Verify it returns the last step, not
+  # intermediate steps or DONE/CACHED lines.
+  local log
+  log="$(mktemp)"
+  cat > "$log" << 'EOF'
+#1 [internal] load build definition from Dockerfile
+#1 DONE 0.0s
+#2 [stage-1 1/3] FROM node:22.22.3-slim
+#2 DONE 0.5s
+#3 [stage-1 2/3] RUN apt-get update && apt-get install -y curl
+#3 0.123 Get:1 http://deb.debian.org
+#3 1.456 Fetched 12.3 MB in 1s
+#3 DONE 5.2s
+#4 [stage-1 3/3] COPY src/ /app/
+EOF
+
+  local step
+  step="$(_buildkit_current_step "$log")"
+
+  if [[ "$step" == "COPY src/ /app/" ]]; then
+    pass "buildkit_progress: extracts most recent step header"
+  else
+    fail "buildkit_progress: expected 'COPY src/ /app/' but got '$step'"
+  fi
+  rm -f "$log"
 }
 
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
+run_test test_buildkit_current_step_parses_last_step
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
-run_test test_build_uses_concise_progress
+run_test test_build_uses_plain_progress
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
