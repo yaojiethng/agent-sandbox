@@ -136,6 +136,19 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   Session `20260810-14`. **Deferred: pruning of stale `.compose/*.yml`**
   (accumulation is KB-scale; candidate: `stop.sh --prune` host-artifact
   extension; routine implementation — no ADR needed).
+- [ ] **Pruning of stale `.compose/*.yml`** — `stop.sh --prune` should remove
+  stale compose files alongside containers and volumes. KB-scale accumulation;
+  deferred from session `20260810-14`.
+- [ ] **`compose_sandbox_wait` teardown gap** — sandbox health-check timeout
+  exits before unified teardown dispatch, leaving containers running.
+  Pre-existing bug surfaced in session `20260810-13`.
+- [ ] **Session-naming collision** — harness "session" (agent run:
+  RESUME_SESSION, volume labels) vs ops "session" (commit + handover).
+  Naming decision deferred from session `20260810-13`.
+- [ ] **Prune stale containers regardless of start time** — `prune.sh`
+  age-gates containers; a STALE=1 mode would skip the age check (sha-based
+  staleness). Semantic change entangled with M2.6.6. Deferred from session
+  `20260810-04`.
 
 ---
 
