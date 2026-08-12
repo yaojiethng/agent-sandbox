@@ -522,7 +522,7 @@ fi
 # -------------------------
 # Preflight
 # -------------------------
-preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "$SANDBOX_DIR"
+preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
 
 # -------------------------
 # Dispatch to run_agent.sh

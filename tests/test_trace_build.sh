@@ -10,6 +10,9 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/buildkit_progress.sh"
+# For container_sig / *_sig_sources behavior-lock tests. build.sh's main() is
+# guarded, so sourcing is safe and exposes only its library functions.
+source "$REPO_ROOT/scripts/build.sh"
 
 STUB_DIR="$TEST_DIR/../test/stubs"
 
@@ -165,11 +168,80 @@ test_buildkit_current_step_empty_log_returns_zero() {
   rm -f "$log"
 }
 
+# The (string-as-list → array) refactor is behavior-preserving at the LIST
+# level: for path sets whose entries are all whitespace-free, the old unquoted
+# word-split call and the new array call produce the SAME argument list. So a
+# content-hash pin would NOT detect a regression to the old string-as-list
+# form (identical arrays → identical hash) and would spurious-fail on any
+# legitimate edit to a source file. The correct lock is the list construction
+# itself: exact ordered membership. A hash test below only checks the plumbing
+# runs end-to-end, not the hash's value.
+test_container_sig_sources_list() {
+  local -a sandbox agent
+  mapfile -t sandbox < <(_sandbox_sig_sources)
+  # Count check catches string-as-list regressions: `echo "a b c"` yields a
+  # single element (the space-joined string), which `"${arr[*]}"` would stringify
+  # identically and hide. Element count + ordered string together lock the list.
+  local sandbox_expected="src/libs src/capability/entrypoint.sh src/capability/snapshot.sh docs/architecture docs/concepts"
+  if [[ "${#sandbox[@]}" -ne 5 || "${sandbox[*]}" != "$sandbox_expected" ]]; then
+    fail "container_sig: sandbox source list differs; got ${#sandbox[@]} elts '${sandbox[*]}'"
+    return
+  fi
+
+  mapfile -t agent < <(_agent_sig_sources "$REPO_ROOT" "pi")
+  local agent_expected="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts src/reasoning/providers/pi/config src/reasoning/providers/pi/preflight.sh"
+  if [[ "${#agent[@]}" -ne 8 || "${agent[*]}" != "$agent_expected" ]]; then
+    fail "container_sig: agent[pi] source list differs; got ${#agent[@]} elts '${agent[*]}'"
+    return
+  fi
+
+  pass "container_sig: sandbox + agent[pi] source lists exact and ordered"
+}
+
+# End-to-end plumbing check: container_sig over the loaded sources returns a
+# 64-hex hash (NOT pinned to a value — content is environmental and shifts on
+# any edit). The behavior-lock for the refactor is the list test above.
+test_container_sig_hashes_real_sources() {
+  local -a sandbox
+  mapfile -t sandbox < <(_sandbox_sig_sources)
+  local sig
+  sig="$(container_sig "$REPO_ROOT" "${sandbox[@]+${sandbox[@]}}")" || {
+    fail "container_sig: sandbox sources hashing failed with rc=$?"
+    return
+  }
+  if [[ "$sig" =~ ^[0-9a-f]{64}$ ]]; then
+    pass "container_sig: real-sources end-to-end hash is a 64-hex string (${sig:0:12})..."
+  else
+    fail "container_sig: expected 64-hex hash, got '$sig'"
+  fi
+}
+
+# A missing source path must fail loudly (diagnostic + non-zero), not silently
+# abort (no diagnostic) and not silently return a hash of an empty file set.
+# The `|| rc=$?` capture keeps this test from aborting if the harness is
+# switched to `set -e` (roadmap), while still recording the non-zero status.
+test_container_sig_missing_path_fails_with_diagnostic() {
+  local -a sources=( "src/libs" "src/capability/DOES_NOT_EXIST" )
+  local out err rc=0
+  out="$(container_sig "$REPO_ROOT" "${sources[@]+${sources[@]}}" 2>/tmp/csig_err)" || rc=$?
+  err="$(cat /tmp/csig_err)"
+  rm -f /tmp/csig_err
+
+  if [[ "$rc" -ne 0 && -z "$out" && "$err" == *"source path not found"* ]]; then
+    pass "container_sig: missing source path fails loudly with diagnostic"
+  else
+    fail "container_sig: expected rc!=0 + empty output + diagnostic, got rc=$rc out='$out' err='$err'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_buildkit_current_step_empty_log_returns_zero
+run_test test_container_sig_sources_list
+run_test test_container_sig_hashes_real_sources
+run_test test_container_sig_missing_path_fails_with_diagnostic
 run_test test_buildkit_current_step_parses_last_step
 run_test test_build_inspects_images
 run_test test_build_no_compose

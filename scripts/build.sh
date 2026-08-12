@@ -26,34 +26,47 @@ source "$REPO_ROOT/src/libs/buildkit_progress.sh"
 # -------------------------
 
 # _sandbox_sig_sources
-# Source paths for the sandbox image (maps to /opt/sandbox/).
+# Source paths for the sandbox image (maps to /opt/sandbox/). Emits each path
+# on its own line. Callers load them into a bash array (`mapfile`) and expand
+# with `"${arr[@]}"` — they are NOT a space-joined string to word-split.
 _sandbox_sig_sources() {
-  echo "src/libs src/capability/entrypoint.sh src/capability/snapshot.sh docs/architecture docs/concepts"
+  printf '%s\n' \
+    "src/libs" \
+    "src/capability/entrypoint.sh" \
+    "src/capability/snapshot.sh" \
+    "docs/architecture" \
+    "docs/concepts"
 }
 
 # _agent_sig_sources <repo_root> <provider>
 # Source paths for an agent image (maps to /opt/sandbox/ + /opt/workflow/).
-# Provider-specific paths (config/, preflight.sh) included when they exist.
+# Provider-specific paths (config/, preflight.sh) included only when they exist.
 _agent_sig_sources() {
   local repo_root="$1"
   local provider="$2"
-  local sources="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts"
+  printf '%s\n' \
+    "src/libs" \
+    "src/reasoning/entrypoint.sh" \
+    "docs/architecture" \
+    "docs/concepts" \
+    "src/reasoning/agent/skills" \
+    "src/reasoning/agent/prompts"
   if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
-    sources="$sources src/reasoning/providers/$provider/config"
+    printf '%s\n' "src/reasoning/providers/$provider/config"
   fi
   if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
-    sources="$sources src/reasoning/providers/$provider/preflight.sh"
+    printf '%s\n' "src/reasoning/providers/$provider/preflight.sh"
   fi
-  echo "$sources"
 }
 
 # -------------------------
 # Build execution
 # -------------------------
 
-# container_sig <repo_root> <sandbox_sources> <workflow_sources>
+# container_sig <repo_root> <source_path...>
 # Computes a deterministic SHA-256 hash of all files under the given source
-# directories. The source paths are repo-relative (e.g. src/libs).
+# directories. The source paths are repo-relative (e.g. src/libs) and are
+# passed positionally as individual arguments (typically via "${arr[@]}").
 # Returns a hex string suitable for use as a Docker label value.
 container_sig() {
   local repo_root="${1:?container_sig requires repo_root}"
@@ -64,6 +77,19 @@ container_sig() {
   for src in "${sources[@]}"; do
     find_args+=("$repo_root/$src")
   done
+
+  # Fail-closed guard: every source path must exist. `find` on a missing path
+  # returns non-zero, which under `set -e`/`pipefail` inside this command
+  # substitution would abort the whole script with no output. Surface it
+  # explicitly instead of hashing an empty set or failing silently.
+  local base
+  for base in "${find_args[@]}"; do
+    if [[ ! -e "$base" ]]; then
+      echo "container_sig: ERROR: source path not found: $base" >&2
+      return 1
+    fi
+  done
+
   find "${find_args[@]}" -type f -print0 2>/dev/null \
     | sort -z \
     | xargs -0 sha256sum \
@@ -201,8 +227,10 @@ build_agent() {
     "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 3: always build provider image — with container-sig
+  local agent_sources
+  mapfile -t agent_sources < <(_agent_sig_sources "$repo_root" "$provider")
   local provider_sig
-  provider_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
+  provider_sig="$(container_sig "$repo_root" "${agent_sources[@]+${agent_sources[@]}}")"
 
   build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$provider_sig" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
@@ -225,8 +253,10 @@ build_sandbox() {
 
   local image; image="$(sandbox_image_name "$project")"
 
+  local sandbox_sources
+  mapfile -t sandbox_sources < <(_sandbox_sig_sources)
   local sandbox_sig
-  sandbox_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
+  sandbox_sig="$(container_sig "$repo_root" "${sandbox_sources[@]+${sandbox_sources[@]}}")"
 
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
@@ -243,13 +273,12 @@ build_sandbox() {
 # Preflight
 # -------------------------
 
-# preflight <provider> <project_name> <repo_root> <sandbox_dir>
+# preflight <provider> <project_name> <repo_root>
 # Checks that both images exist. Build before running rather than failing.
 preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
-  local sandbox_dir="${4:?preflight requires sandbox dir}"
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -301,11 +330,15 @@ _check_container_sig() {
   local current_sig=""
   if [[ "$type" == "sandbox" ]]; then
     local repo_root="${1:?}"
-    current_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
+    local sandbox_sources
+    mapfile -t sandbox_sources < <(_sandbox_sig_sources)
+    current_sig="$(container_sig "$repo_root" "${sandbox_sources[@]+${sandbox_sources[@]}}")"
   elif [[ "$type" == "agent" ]]; then
     local provider="${1:?}"
     local repo_root="${2:?}"
-    current_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
+    local agent_sources
+    mapfile -t agent_sources < <(_agent_sig_sources "$repo_root" "$provider")
+    current_sig="$(container_sig "$repo_root" "${agent_sources[@]+${agent_sources[@]}}")"
   fi
 
   if [[ "$baked_sig" != "$current_sig" ]]; then

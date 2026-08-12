@@ -56,6 +56,27 @@ cp -- "$file" "$dest"
 "${array[@]}"
 ```
 
+**Never pass a string-as-list through word-splitting.** Storing multiple paths
+in one scalar (`a b c`) and expanding it unquoted — `$VAR` (SC2086) or
+`$(_list_fn)` in argument position (SC2046) — works only as long as every value
+is whitespace-free, and silently breaks the moment one isn't. Emit each item on
+its own line and load into a real array, then expand with `"${arr[@]}"`:
+
+```bash
+# Right — emit per-line, load with mapfile, expand as array
+list_files() { printf '%s\n' "src/libs" "docs/architecture" "docs/concepts"; }
+mapfile -t SOURCES < <(list_files)
+compute_hash "${SOURCES[@]}"
+
+# Wrong — string-as-list, word-splitting a command substitution (SC2046)
+echo_and_split() { echo "src/libs docs/architecture"; }
+compute_hash $(echo_and_split)
+```
+
+Sourced command output in a herestring: `read -ra` reads only the first line;
+use `mapfile -t ... < <(cmd)` or `mapfile -t ... <<< "$(cmd)"` to capture every
+line.
+
 ### 1.5 Check for symlinks before `cp --parents`
 
 `git ls-files --others` includes untracked symlinks. `cp --parents` cannot
