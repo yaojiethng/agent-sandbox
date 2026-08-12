@@ -316,6 +316,7 @@ calls in one harness.
 
 Before committing a new test:
 
+- [ ] **Placement decided per `testing_policy.md` Test Placement rule**: our maintained seam with an API → `tests/test_*.sh` under `make test`; unmodifiable external seam / legacy mid-refactor → `tests/knowledge/knowledge_*.sh`; still-not-runnable end-to-end flow → `tests/integration/`
 - [ ] Uses `mktemp -d` for fixture directory
 - [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
 - [ ] All helper functions clean their inputs before creating state
@@ -326,6 +327,7 @@ Before committing a new test:
 - [ ] Test passes when run after every other test in the file
 - [ ] Test passes when run twice in a row
 - [ ] `make test` passes clean after the new test is added
+- [ ] **`make test` invariant held**: the unit suite reports `failed 0, skipped 0`; no `skip()` in a `tests/test_*.sh` file
 - [ ] Test failure message clearly describes what went wrong
 
 ## Checklist for Lib and Script Changes

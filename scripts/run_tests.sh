@@ -56,7 +56,7 @@ run_single() {
   TOTAL_FAIL=$((TOTAL_FAIL + FILE_FAIL))
   TOTAL_SKIP=$((TOTAL_SKIP + FILE_SKIP))
 
-  if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 ]]; then
+  if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 || "$FILE_SKIP" -gt 0 ]]; then
     ANY_FAILED=1
   fi
 
@@ -105,6 +105,12 @@ main() {
   echo ""
   local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
   echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped"
+
+  if [[ "$TOTAL_SKIP" -gt 0 ]]; then
+    echo "ERROR: make test must have zero skips (expected deterministic unit/integration suite)." >&2
+    echo "       $TOTAL_SKIP skipped. Move non-deterministic/utility-gated tests to tests/integration/." >&2
+    ANY_FAILED=1
+  fi
 
   if [[ "$ANY_FAILED" -eq 1 ]]; then
     exit 1

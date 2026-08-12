@@ -14,13 +14,6 @@ REPO_ROOT="$(cd "$TEST_DIR/../.." && pwd)"
 
 source "$TEST_DIR/../libs/test_common.sh"
 
-# Source the production functions under test
-source "$REPO_ROOT/src/libs/session_state.sh"
-source "$REPO_ROOT/src/libs/routing.sh"
-source "$REPO_ROOT/src/libs/export_status.sh"
-source "$REPO_ROOT/src/libs/package_branch.sh"
-source "$REPO_ROOT/src/libs/diff_export.sh"
-
 FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
@@ -391,115 +384,6 @@ test_cross_directory_rename() {
 }
 
 # -------------------------
-# Case 9: package_branch() with NO_RENAMES=true produces delete+create diffs
-# -------------------------
-
-test_package_branch_no_renames() {
-  local REPO="$FIXTURE_DIR/case9_repo"
-  local OUT="$FIXTURE_DIR/case9_out"
-
-  _make_repo "$REPO"
-  _commit_file "$REPO" "config.yaml" "key: value"
-
-  # Write SESSION_STATE for package_branch
-  local INIT_SHA
-  INIT_SHA=$(git -C "$REPO" rev-parse HEAD)
-  echo "init_sha=$INIT_SHA" > "$REPO/.git/SESSION_STATE"
-
-  _commit_rename "$REPO" "config.yaml" "settings.yaml"
-
-  rm -rf "$OUT"
-  mkdir -p "$OUT"
-  package_branch "$REPO" "$OUT" "true" >/dev/null 2>&1
-
-  local PATCH
-  PATCH=$(ls "$OUT/patches/"*.diff 2>/dev/null | head -1)
-  if [[ -z "$PATCH" ]]; then
-    fail "package_branch --no-renames: no patch generated"
-    return
-  fi
-
-  if _assert_diff_lacks "$PATCH" "rename from" && \
-     _assert_diff_has "$PATCH" "deleted file mode" && \
-     _assert_diff_has "$PATCH" "new file mode"; then
-    pass "package_branch NO_RENAMES=true: produces delete+create, not rename"
-  else
-    fail "package_branch NO_RENAMES=true: produced rename or unexpected format"
-  fi
-}
-
-# -------------------------
-# Case 10: package_branch() without NO_RENAMES produces rename diffs (default git behavior)
-# -------------------------
-
-test_package_branch_default_detects_renames() {
-  local REPO="$FIXTURE_DIR/case10_repo"
-  local OUT="$FIXTURE_DIR/case10_out"
-
-  _make_repo "$REPO"
-  _commit_file "$REPO" "README.md" "# Project"
-
-  local INIT_SHA
-  INIT_SHA=$(git -C "$REPO" rev-parse HEAD)
-  echo "init_sha=$INIT_SHA" > "$REPO/.git/SESSION_STATE"
-
-  _commit_rename "$REPO" "README.md" "README.txt"
-
-  rm -rf "$OUT"
-  mkdir -p "$OUT"
-  package_branch "$REPO" "$OUT" "" >/dev/null 2>&1
-
-  local PATCH
-  PATCH=$(ls "$OUT/patches/"*.diff 2>/dev/null | head -1)
-  if [[ -z "$PATCH" ]]; then
-    fail "package_branch default: no patch generated"
-    return
-  fi
-
-  if _assert_diff_has "$PATCH" "rename from"; then
-    pass "package_branch NO_RENAMES=false: detects rename (default git behavior)"
-  else
-    fail "package_branch NO_RENAMES=false: did not detect rename"
-  fi
-}
-
-# -------------------------
-# Case 11: diff_export uses --no-renames (integration)
-# -------------------------
-
-test_diff_export_uses_no_renames() {
-  local REPO="$FIXTURE_DIR/case11_repo"
-  local OUT="$FIXTURE_DIR/case11_out"
-
-  _make_repo "$REPO"
-  _commit_file "$REPO" "file.txt" "content"
-
-  local INIT_SHA
-  INIT_SHA=$(git -C "$REPO" rev-parse HEAD)
-  echo "init_sha=$INIT_SHA" > "$REPO/.git/SESSION_STATE"
-
-  _commit_rename "$REPO" "file.txt" "renamed.txt"
-
-  rm -rf "$OUT"
-  mkdir -p "$OUT"
-  diff_export "$REPO" "$OUT" "" >/dev/null
-
-  local PATCH
-  PATCH=$(ls "$OUT/patches/"*.diff 2>/dev/null | head -1)
-  if [[ -z "$PATCH" ]]; then
-    fail "diff_export: no patch generated"
-    return
-  fi
-
-  # diff_export defaults to NO_RENAMES=true → delete+create
-  if _assert_diff_lacks "$PATCH" "rename from"; then
-    pass "diff_export: uses --no-renames by default (safe)"
-  else
-    fail "diff_export: produced rename — should use --no-renames by default"
-  fi
-}
-
-# -------------------------
 # Run all tests
 # -------------------------
 
@@ -511,9 +395,6 @@ run_test test_no_renames_survives_destination_conflict
 run_test test_binary_file_rename
 run_test test_multifile_rename_in_one_commit
 run_test test_cross_directory_rename
-run_test test_package_branch_no_renames
-run_test test_package_branch_default_detects_renames
-run_test test_diff_export_uses_no_renames
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

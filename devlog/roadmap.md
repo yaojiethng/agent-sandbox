@@ -169,6 +169,19 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   preservation, verbatim round-trip, 8-class funny-whitespace/CRLF matrix);
   stale `knowledge_trailing_whitespace_context_mismatch.sh` deleted. Sessions
   `20260812-07`.
+- [x] **Knowledge-test convention established (external seams vs unit tests)** —
+  `testing_policy.md` Test Placement rule: a test belongs under `make test` when
+  the seam is our maintained code with an API; a knowledge test is only for
+  unmodifiable seams (external binary/lib/network, legacy mid-refactor);
+  `tests/integration/` holds still-not-runnable flows. Reclassified the wrongly-
+  classified knowledge tests: internal `dirs.sh` path resolution → `test_dirs.sh`
+  (unit); internal diff_export rename pipeline → `test_diff_rename.sh` (unit);
+  `knowledge_diff_rename.sh` trimmed to git-external probing only; broken
+  `knowledge_diff_export_container.sh`/`knowledge_session_diffs_path_resolution.sh`
+  deleted (referenced a nonexistent `libs/` path). **`make test` invariant:**
+  failed 0, skipped 0 enforced by runner; the 6 provider-structure skips in
+  `test_run_agent.sh` made deterministic (option B — internal-consistency
+  invariants). Sessions `20260812-08`.
 
 ---
 

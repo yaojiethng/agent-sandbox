@@ -93,35 +93,62 @@ else
 fi
 
 echo ""
-echo "-- Provider file existence --"
+echo "-- Provider file existence (deterministic internal-consistency check) --"
+
+# Each provider dir may hold three optional files per run_agent.sh's contract:
+#   setup.sh                  — sourced if present
+#   docker-compose.<name>.yml — provider overlay, merged if present
+#   docker-compose.serve.yml  — required only in serve mode
+# These are optional by design, so presence is not asserted. Instead assert
+# internal consistency deterministically (no skips): every present file must be
+# non-empty and correctly named per the harness contract.
 
 RP="$REPO_ROOT"
+ANY_PROVIDER_FILE_BROKEN=false
 for PROVIDER_DIR in "$RP/src/reasoning/providers/"*/; do
   [[ -d "$PROVIDER_DIR" ]] || continue
   PROVIDER_NAME="$(basename "$PROVIDER_DIR")"
+  [[ "$PROVIDER_NAME" =~ ^[A-Za-z0-9._-]+$ ]] || {
+    fail "providers/$PROVIDER_NAME: directory name has forbidden characters"
+    ANY_PROVIDER_FILE_BROKEN=true; continue
+  }
 
-  expected_setup="$RP/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
-  expected_overlay="$RP/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-  expected_serve="$RP/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
+  expected_setup="$PROVIDER_DIR/setup.sh"
+  expected_overlay="$PROVIDER_DIR/docker-compose.${PROVIDER_NAME}.yml"
+  expected_serve="$PROVIDER_DIR/docker-compose.serve.yml"
 
   if [[ -f "$expected_setup" ]]; then
-    pass "$PROVIDER_NAME: setup.sh exists at expected path"
-  else
-    skip "$PROVIDER_NAME: no setup.sh (optional)"
+    if [[ -s "$expected_setup" ]]; then
+      pass "$PROVIDER_NAME: setup.sh present and non-empty"
+    else
+      fail "$PROVIDER_NAME: setup.sh present but empty"
+      ANY_PROVIDER_FILE_BROKEN=true
+    fi
   fi
 
   if [[ -f "$expected_overlay" ]]; then
-    pass "$PROVIDER_NAME: compose overlay exists at expected path"
-  else
-    skip "$PROVIDER_NAME: no compose overlay (optional)"
+    if [[ -s "$expected_overlay" ]]; then
+      pass "$PROVIDER_NAME: compose overlay present and non-empty"
+    else
+      fail "$PROVIDER_NAME: compose overlay present but empty"
+      ANY_PROVIDER_FILE_BROKEN=true
+    fi
   fi
 
   if [[ -f "$expected_serve" ]]; then
-    pass "$PROVIDER_NAME: serve overlay exists at expected path"
-  else
-    skip "$PROVIDER_NAME: no serve overlay (optional)"
+    if [[ -s "$expected_serve" ]]; then
+      pass "$PROVIDER_NAME: serve overlay present and non-empty"
+    else
+      fail "$PROVIDER_NAME: serve overlay present but empty"
+      ANY_PROVIDER_FILE_BROKEN=true
+    fi
   fi
 done
+
+if [[ "$ANY_PROVIDER_FILE_BROKEN" == false ]]; then
+  pass "All present provider optional files are consistent with the harness contract"
+fi
+
 echo ""
 echo "-- Compose template file existence --"
 

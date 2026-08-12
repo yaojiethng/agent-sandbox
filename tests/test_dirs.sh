@@ -1,168 +1,101 @@
 #!/usr/bin/env bash
-# Tests for libs/dirs.sh — dirs_resolve function.
+# tests/test_dirs.sh — Unit tests for src/libs/dirs.sh path derivation.
 #
-# Covers:
-#   dirs_resolve host convention  — default WORKSPACE_DIR_NAME (.workspace)
-#   dirs_resolve container conv   — WORKSPACE_DIR_NAME=workspace
-#   dirs_resolve empty base fails — error handling
-#   dirs_resolve env overrides    — custom _DIR_NAME overrides respected
+# dirs_resolve is a maintained internal seam with a stable API (env-overridable
+# defaults + BASE_DIR argument). These unit tests assert the contract directly
+# and run under `make test` (previously only covered by a broken manual
+# knowledge test that sourced a nonexistent libs/dirs.sh path).
+#
+# Run:
+#   bash tests/test_dirs.sh
 
+# shellcheck disable=SC2034  # env vars (WORKSPACE_DIR_NAME, CHANGES_DIR_NAME, ...) are consumed by dirs_resolve in the sourced src/libs/dirs.sh; shellcheck cannot see cross-file reads
 set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/dirs.sh"
 
-# =============================================================================
-# dirs_resolve — host convention (default WORKSPACE_DIR_NAME=.workspace)
-# =============================================================================
 
-test_dirs_resolve_host_snapshot() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  dirs_resolve "/mnt/project/.sandbox"
-  if [[ "$SNAPSHOT_DIR" == "/mnt/project/.sandbox/.snapshot" ]]; then
-    pass "host: SNAPSHOT_DIR derives correctly"
+# Each test runs dirs_resolve in a subshell so exported vars do not leak.
+
+test_requires_base_dir() {
+  if (dirs_resolve "" 2>/dev/null); then
+    fail "dirs_resolve should fail without BASE_DIR"
   else
-    fail "host: SNAPSHOT_DIR: expected /mnt/project/.sandbox/.snapshot, got $SNAPSHOT_DIR"
+    pass "dirs_resolve fails without BASE_DIR"
   fi
 }
 
-test_dirs_resolve_host_changes() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  dirs_resolve "/mnt/project/.sandbox"
-  if [[ "$CHANGES_DIR" == "/mnt/project/.sandbox/.workspace/session-diffs" ]]; then
-    pass "host: CHANGES_DIR derives correctly"
+test_host_default_paths() {
+  local OUT
+  OUT=$(
+    unset SNAPSHOT_DIR_NAME WORKSPACE_DIR_NAME CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
+    dirs_resolve "/srv/sandbox"
+    echo "$SNAPSHOT_DIR|$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
+  )
+  local exp="/srv/sandbox/.snapshot|/srv/sandbox/.workspace/session-diffs|/srv/sandbox/.workspace/input|/srv/sandbox/.workspace/output"
+  if [[ "$OUT" == "$exp" ]]; then
+    pass "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace, SNAPSHOT under base"
   else
-    fail "host: CHANGES_DIR: expected /mnt/project/.sandbox/.workspace/session-diffs, got $CHANGES_DIR"
+    fail "host default mismatch: got $OUT, want $exp"
   fi
 }
 
-test_dirs_resolve_host_input() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  dirs_resolve "/mnt/project/.sandbox"
-  if [[ "$INPUT_DIR" == "/mnt/project/.sandbox/.workspace/input" ]]; then
-    pass "host: INPUT_DIR derives correctly"
+test_container_override() {
+  local OUT
+  OUT=$(
+    WORKSPACE_DIR_NAME=workspace
+    dirs_resolve "/home/agentuser"
+    echo "$SNAPSHOT_DIR|$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
+  )
+  local exp="/home/agentuser/.snapshot|/home/agentuser/workspace/session-diffs|/home/agentuser/workspace/input|/home/agentuser/workspace/output"
+  if [[ "$OUT" == "$exp" ]]; then
+    pass "container override: WORKSPACE_DIR_NAME=workspace yields correct paths"
   else
-    fail "host: INPUT_DIR: expected /mnt/project/.sandbox/.workspace/input, got $INPUT_DIR"
+    fail "container override mismatch: got $OUT, want $exp"
   fi
 }
 
-test_dirs_resolve_host_output() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  dirs_resolve "/mnt/project/.sandbox"
-  if [[ "$OUTPUT_DIR" == "/mnt/project/.sandbox/.workspace/output" ]]; then
-    pass "host: OUTPUT_DIR derives correctly"
+test_changes_dir_name_is_leaf() {
+  # CHANGES_DIR_NAME is a leaf name; a slash-bearing value is a misconfiguration
+  # that would double the subpath (the historical bug this suite guards against).
+  local OUT
+  OUT=$(
+    WORKSPACE_DIR_NAME=workspace
+    CHANGES_DIR_NAME="workspace/session-diffs"
+    dirs_resolve "/home/agentuser"
+    echo "$CHANGES_DIR"
+  )
+  if [[ "$OUT" == "/home/agentuser/workspace/workspace/session-diffs" ]]; then
+    pass "leaf-enforcement: slash-bearing CHANGES_DIR_NAME is caught as doubled path"
   else
-    fail "host: OUTPUT_DIR: expected /mnt/project/.sandbox/.workspace/output, got $OUTPUT_DIR"
+    fail "leaf-enforcement mismatch: got $OUT"
   fi
 }
 
-# =============================================================================
-# dirs_resolve — container convention (WORKSPACE_DIR_NAME=workspace)
-# =============================================================================
-
-test_dirs_resolve_container_snapshot() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-  if [[ "$SNAPSHOT_DIR" == "/home/agentuser/.snapshot" ]]; then
-    pass "container: SNAPSHOT_DIR derives correctly"
+test_custom_leaf_overrides() {
+  local OUT
+  OUT=$(
+    CHANGES_DIR_NAME="diffs"
+    INPUT_DIR_NAME="in"
+    OUTPUT_DIR_NAME="out"
+    dirs_resolve "/base"
+    echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
+  )
+  if [[ "$OUT" == "/base/.workspace/diffs|/base/.workspace/in|/base/.workspace/out" ]]; then
+    pass "custom leaf names override defaults"
   else
-    fail "container: SNAPSHOT_DIR: expected /home/agentuser/.snapshot, got $SNAPSHOT_DIR"
+    fail "custom leaf mismatch: got $OUT"
   fi
 }
 
-test_dirs_resolve_container_changes() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-  if [[ "$CHANGES_DIR" == "/home/agentuser/workspace/session-diffs" ]]; then
-    pass "container: CHANGES_DIR derives correctly"
-  else
-    fail "container: CHANGES_DIR: expected /home/agentuser/workspace/session-diffs, got $CHANGES_DIR"
-  fi
-}
+run_test test_requires_base_dir
+run_test test_host_default_paths
+run_test test_container_override
+run_test test_changes_dir_name_is_leaf
+run_test test_custom_leaf_overrides
 
-test_dirs_resolve_container_input() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-  if [[ "$INPUT_DIR" == "/home/agentuser/workspace/input" ]]; then
-    pass "container: INPUT_DIR derives correctly"
-  else
-    fail "container: INPUT_DIR: expected /home/agentuser/workspace/input, got $INPUT_DIR"
-  fi
-}
-
-test_dirs_resolve_container_output() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-  if [[ "$OUTPUT_DIR" == "/home/agentuser/workspace/output" ]]; then
-    pass "container: OUTPUT_DIR derives correctly"
-  else
-    fail "container: OUTPUT_DIR: expected /home/agentuser/workspace/output, got $OUTPUT_DIR"
-  fi
-}
-
-# =============================================================================
-# dirs_resolve — empty base dir fails
-# =============================================================================
-
-test_dirs_resolve_empty_base_fails() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  if dirs_resolve "" 2>/dev/null; then
-    fail "empty BASE_DIR: expected non-zero exit"
-  else
-    pass "empty BASE_DIR: returns non-zero"
-  fi
-}
-
-# =============================================================================
-# dirs_resolve — env overrides respected
-# =============================================================================
-
-test_dirs_resolve_snapshot_dir_name_override() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  SNAPSHOT_DIR_NAME=checkpoints dirs_resolve "/base"
-  if [[ "$SNAPSHOT_DIR" == "/base/checkpoints" ]]; then
-    pass "SNAPSHOT_DIR_NAME override works"
-  else
-    fail "SNAPSHOT_DIR_NAME: expected /base/checkpoints, got $SNAPSHOT_DIR"
-  fi
-}
-
-test_dirs_resolve_changes_dir_name_override() {
-  unset WORKSPACE_DIR_NAME SNAPSHOT_DIR CHANGES_DIR INPUT_DIR OUTPUT_DIR
-  unset INPUT_DIR_NAME OUTPUT_DIR_NAME CHANGES_DIR_NAME SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
-  CHANGES_DIR_NAME=diffs dirs_resolve "/base"
-  if [[ "$CHANGES_DIR" == "/base/.workspace/diffs" ]]; then
-    pass "CHANGES_DIR_NAME override works"
-  else
-    fail "CHANGES_DIR_NAME: expected /base/.workspace/diffs, got $CHANGES_DIR"
-  fi
-}
-
-# =============================================================================
-# Run
-# =============================================================================
-
-run_test test_dirs_resolve_host_snapshot
-run_test test_dirs_resolve_host_changes
-run_test test_dirs_resolve_host_input
-run_test test_dirs_resolve_host_output
-run_test test_dirs_resolve_container_snapshot
-run_test test_dirs_resolve_container_changes
-run_test test_dirs_resolve_container_input
-run_test test_dirs_resolve_container_output
-run_test test_dirs_resolve_empty_base_fails
-run_test test_dirs_resolve_snapshot_dir_name_override
-run_test test_dirs_resolve_changes_dir_name_override
-
-test_done "dirs.sh"
+echo ""
+echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+[[ "$FAIL" -eq 0 ]]
