@@ -54,6 +54,20 @@ invoke_build() {
   ) > /dev/null 2>&1 || true
 }
 
+# invoke_build_err — like invoke_build but captures combined stdout+stderr and
+# the exit code, so tests can assert on build failure messages and semantics.
+invoke_build_err() {
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/build.sh" \
+      --name="$PROJECT_NAME" \
+      --project="$PROJECT_DIR" \
+      --sandbox="$SANDBOX_DIR" \
+      --targets="$PROVIDER_NAME" \
+      "$@"
+  ) 2>&1
+}
+
 trace_has() {
   grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
 }
@@ -115,6 +129,31 @@ test_build_uses_plain_progress() {
     pass "build: uses --progress=plain (captured on TTY, streams on non-TTY)"
   else
     fail "build: --progress=plain not found in trace"
+  fi
+}
+
+# Regression (session 20260812-12 / roadmap "set -e test-harness blind spot"):
+# build.sh relies on the caller setting `set -euo pipefail`; a standalone
+# `bash build.sh` (as the trace tests invoke it) previously inherited the
+# harness's no-`-e`, so the production failure-abort semantics were never
+# exercised. build.sh now self-enables `-e` on standalone invocation. Under a
+# failing docker build the result must be the descriptive `build_image: ERROR
+# build FAILED` message (the session-03 fix), not a silent bare `set -e` abort.
+test_build_image_failure_surfaces_descriptive_error_under_e() {
+  local FIXTURE_DIR="$FIXTURE_DIR/build_fail_e"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_BUILD_RC="42"
+
+  local out
+  out=$(invoke_build_err) || true
+
+  unset DOCKER_STUB_BUILD_RC
+
+  if echo "$out" | grep -q "build_image: ERROR build FAILED"; then
+    pass "build: failing docker build under standalone set -e surfaces descriptive error"
+  else
+    fail "build: expected descriptive build_image ERROR under set -e; got: $(echo "$out" | tail -3)"
   fi
 }
 
@@ -247,6 +286,7 @@ run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_uses_plain_progress
+run_test test_build_image_failure_surfaces_descriptive_error_under_e
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

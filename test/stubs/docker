@@ -157,6 +157,12 @@ STUBEOF
       ;;
     build)
       log "build $*"
+      # Failure simulation (env-gated, empty = success):
+      #   DOCKER_STUB_BUILD_RC  — exit code for `docker build` to return
+      if [[ -n "${DOCKER_STUB_BUILD_RC:-}" ]]; then
+        echo "stub: docker build failed" >&2
+        exit "$DOCKER_STUB_BUILD_RC"
+      fi
       ;;
     *)
       log "$sub $*"

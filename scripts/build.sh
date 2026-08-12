@@ -445,7 +445,13 @@ main() {
   fi
 }
 
-# Guard: only run main() when executed directly, not when sourced
+# Guard: only run main() when executed directly, not when sourced.
+# Also enforce the production runtime on standalone invocation: production
+# callers set `set -euo pipefail` before sourcing this file, but a standalone
+# `bash build.sh` (e.g. the trace tests) inherits the caller's options. Enabling
+# `-e` here makes standalone runs exercise the same failure-abort semantics as
+# production, so a silent `set -e` abort (the buildkit-progress class) is caught.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
   main "$@"
 fi
