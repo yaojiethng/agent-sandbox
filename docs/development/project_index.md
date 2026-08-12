@@ -42,11 +42,16 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `doc_status.md` — retired | — | M1.5 | Replaced by handover Hot files section. Deleted. |
-| `project_index.md` | 🟡 Warm | M2 | This file. Updated when files are added, removed, or freeze status changes. |
-| `roadmap.md` | 🔴 Hot | M2.3 | Active milestone tasks and milestone summary table. |
-| `roadmap_future.md` | 🟡 Warm | M2.3 | Future milestone detail sections. Updated when milestones are re-scoped or promoted. |
-| `changelog.md` | 🟡 Warm | M2.3 | Completed milestone records. Append-only. |
+| `conventions.md` | 🟡 Warm | M2.6 | Index of all coding and interface conventions. |
+| `interface-conventions.md` | 🟡 Warm | M2.6 | CLI, TUI, and API contract conventions. Formerly `cli-conventions.md`. |
+| `bash-coding-conventions.md` | 🟡 Warm | M2.6 | Bash coding rules. Supersedes `bash-scripting-traps.skill.md` and `bash-dependency-audit.skill.md`. |
+| `testing-conventions.md` | 🟡 Warm | M2.6 | Fixture patterns, anti-patterns, templates, checklists. Extracted from `testing_policy.md`. |
+| `testing_policy.md` | 🟡 Warm | M2.6 | Testing policy and rules. Mechanical content moved to `testing-conventions.md`. |
+| `project_index.md` | 🟡 Warm | M2.6 | This file. Updated when files are added, removed, or freeze status changes. |
+| `roadmap.md` | 🔴 Hot | M2.6 | Active milestone tasks and milestone summary table. |
+| `roadmap_future.md` | 🟡 Warm | M2.6 | Future milestone detail sections. |
+| `changelog.md` | 🟡 Warm | M2.6 | Completed milestone records. Append-only. |
+| `cli-conventions.md` — renamed | — | M2.6 | Renamed to `interface-conventions.md`. Retained for link resolution. |
 
 ### Discussions (`devlog/discussions/`)
 

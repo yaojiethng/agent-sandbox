@@ -69,6 +69,5 @@ not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero
 return triggers script exit identically. Bare `exit` in a sourced function
 is a latent bug if the function is ever called from a different context
 (e.g. test harness, sub-shell, interactive use). Entrypoint scripts
-(`scripts/*.sh`) may use `exit` legitimately. Check `bash-scripting-traps.skill.md`
-for related patterns.
+(`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) §3.1.
 

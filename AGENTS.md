@@ -99,7 +99,7 @@ Update the checklist:
 
 ## Bash Friction Log
 
-Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`src/reasoning/agent/drafts/bash-scripting-traps.skill.md`](src/reasoning/agent/drafts/bash-scripting-traps.skill.md) for existing mitigations. The former separate friction-log file was subsumed here (session `20260809-04`).
+Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md) for canonical rules. The former separate friction-log file was subsumed here (session `20260809-04`).
 
 ## Feedback and Gotchas Files
 

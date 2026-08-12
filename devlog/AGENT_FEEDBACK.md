@@ -36,7 +36,9 @@ Attribution is operator-owned. The agent proposes a class and the operator confi
 
 ## Bash
 
-Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted). See `src/reasoning/agent/drafts/bash-scripting-traps.skill.md` for existing skill coverage.
+Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md).
+
+Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
 ### [A] 2026-08-09 — Empty string bypasses `${VAR:-default}`
 
