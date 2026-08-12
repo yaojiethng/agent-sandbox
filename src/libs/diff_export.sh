@@ -21,7 +21,8 @@ source "$_self_dir/package_branch.sh"
 #     (prevents races with concurrent git operations)
 
 # diff_export SANDBOX_DIR OUTPUT_DIR [RUN_ID]
-#   Packages session artefacts into OUTPUT_DIR via package_branch,
+#   Packages session artefacts into OUTPUT_DIR via package_branch with
+#   --no-renames by default (safe: avoids rename conflicts during git apply).
 #   then writes .export-status (STATUS, TIMESTAMP, INIT_SHA, optional EXIT_CODE)
 #   for audit trail. Optional RUN_ID is embedded in error log filenames.
 diff_export() {
@@ -58,7 +59,7 @@ diff_export() {
     echo "$_dump"
   }
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" 2> >(tee "$_pb_stderr" >&2) || {
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "true" 2> >(tee "$_pb_stderr" >&2) || {
     local _exit_code=$?
     echo "diff_export: package_branch failed (exit $_exit_code) — export incomplete" >&2
 

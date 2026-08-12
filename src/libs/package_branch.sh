@@ -285,7 +285,7 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$INIT_SHA" "$NO_RENAMES"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"

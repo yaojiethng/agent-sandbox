@@ -149,6 +149,11 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   age-gates containers; a STALE=1 mode would skip the age check (sha-based
   staleness). Semantic change entangled with M2.6.6. Deferred from session
   `20260810-04`.
+- [x] **`diff_export --no-renames` by default** — `diff_export()` now
+  passes `--no-renames` to `package_branch` by default, producing delete+create
+  diffs instead of rename operations. Fixes pre-existing bug where
+  `package_branch` passed `INIT_SHA` as the NO_RENAMES argument, silently
+  disabling the flag. 15-case knowledge test. Session `20260812-02`.
 
 ---
 
