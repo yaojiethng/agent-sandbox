@@ -95,15 +95,25 @@ build_image() {
   # freezes while the elapsed counter keeps ticking).
   # On non-TTY (CI, pipes), output streams normally so every line is
   # preserved in the log.
+  #
+  # Both modes run the docker build and capture its exit status so a failure
+  # surfaces a single, descriptive message instead of a bare `set -e` abort.
+  # `_build_rc` defaults to a non-zero sentinel (fail closed): the `&& ... ||
+  # ...` capture clears it to 0 on success or the build's real status on
+  # failure, so a path that never runs a build still reports failure rather
+  # than silently passing.
+  local _build_rc=1
   if [[ -t 1 ]]; then
-    _buildkit_run "Building image: $image_name" "${build_cmd[@]}"
-    if [[ $? -ne 0 ]]; then
-      exit 1
-    fi
+    _buildkit_run "Building image: $image_name" "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
   else
     echo "Building image: $image_name"
-    "${build_cmd[@]}"
-    echo "  Build complete: $image_name"
+    "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
+    [[ $_build_rc -eq 0 ]] && echo "  Build complete: $image_name"
+  fi
+
+  if [[ $_build_rc -ne 0 ]]; then
+    echo "build_image: ERROR build FAILED for $image_name (exit $_build_rc)." >&2
+    exit 1
   fi
 }
 

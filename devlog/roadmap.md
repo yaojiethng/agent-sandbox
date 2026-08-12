@@ -112,6 +112,7 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   current BuildKit step (parsed from `--progress=plain` output). Sessions
   `20260810-11` (initial `--progress=auto` — incomplete — `auto` on TTY is
   still multi-line) and `20260812-01` (array collapse + BuildKit step parsing).
+- [x] **Silent build failure on `REFRESH`/`REBUILD`** — `make start PROVIDER=pi REFRESH=1` aborted with a bare exit 1 and no output in the build path. Root cause: three `set -euo pipefail` landmines in `_buildkit_run` (`_buildkit_current_step` returned non-zero on the still-empty log → poll-loop command substitution; bare `wait` on a failed child; and the non-zero `return` at the `build_image` call site), all aborting before any output/failure dump. Fixed with the repo-canonical `|| true` / `|| _rc=$?` capture idioms; `build_image` now handles TTY and non-TTY failure uniformly with a descriptive `build_image: ERROR build FAILED ...` message. Session `20260812-03`.
 - [x] **String-as-list → array refactor (removes SC2086 disables)** —
   `stop.sh` `CONTAINER_IDS`/`NETWORK_IDS` → `mapfile` arrays;
   `build_image` `$no_cache` → `cache_args` array. Test-enablement rolled in:
@@ -149,6 +150,9 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   age-gates containers; a STALE=1 mode would skip the age check (sha-based
   staleness). Semantic change entangled with M2.6.6. Deferred from session
   `20260810-04`.
+- [ ] **Run test scripts under `set -e`** — `tests/test_*.sh` and `tests/libs/test_common.sh` run under `set -uo pipefail` **without** `-e`, so the trace tests never execute scripts under the production `set -euo pipefail` runtime — which is how the silent `REFRESH`-build abort slipped through. Make the harness (or targeted `build.sh`/`start_agent.sh` tests) exercise the `set -e` runtime so this class of abort is caught. Escalated as a blind-spot finding from session `20260812-03`.
+- [ ] **Shellcheck findings cleanup in `build.sh`** — pre-existing `SC2046` (unquoted `$(_sandbox_sig_sources)`/`$(_agent_sig_sources)` in `container_sig`/`build_sandbox`) and `SC2034` (`sandbox_dir` unused in `preflight`). Unrelated to the `20260812-03` fix; cleanup task escalated from that session.
+- [ ] **`container_sig` defensive `|| true` guard** — `find ... 2>/dev/null` under `pipefail`/`set -e` would abort if a configured source path were invalid. All current paths are valid, so this works today, but the piped `find` has no error guard. Add `|| true` or an explicit guard. Escalated from session `20260812-03`.
 - [x] **`diff_export --no-renames` by default** — `diff_export()` now
   passes `--no-renames` to `package_branch` by default, producing delete+create
   diffs instead of rename operations. Fixes pre-existing bug where

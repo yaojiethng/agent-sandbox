@@ -4,6 +4,10 @@ Rules for writing bash scripts in this project. Supersedes the former
 `bash-scripting-traps.skill.md` and `bash-dependency-audit.skill.md`. For
 automated audit, see `src/reasoning/agent/drafts/bash-audit.skill.md`.
 
+**Authoritative style guide:** [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) (google/shellguide). Where this document and the Google guide conflict, this document wins on project-specific conventions (e.g. `set -euo pipefail`, library `return`/`exit` discipline, the `|| true` / `|| rc=$?` failure-tolerant idioms in §4); the Google guide is authoritative for general bash style (naming, quoting, `local`/`readonly`, function and command-substitution form, flags, output to stderr). The Google guide is silent on the `set -e`/`pipefail` failure-tolerant-check idioms we rely on — those are governed here.
+
+**Linting:** `shellcheck` is installed and run on scripts (see `scripts/run_tests.sh` and the bash-audit skill). Shellcheck warnings beyond documented `# shellcheck disable` disables are treated as defects. Shellcheck does not flag the `grep`-no-match / `|| true` class of `set -e` landmines — those are covered by §4 below and are caught by review, not the linter.
+
 ---
 
 ## 1. Language Rules

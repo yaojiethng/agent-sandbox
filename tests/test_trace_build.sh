@@ -144,10 +144,32 @@ EOF
   rm -f "$log"
 }
 
+# _buildkit_current_step must return exit 0 (and empty string) when the log
+# contains no BuildKit step header yet. Early in a build the captured log is
+# still empty; under the sourced `set -euo pipefail` context a non-zero return
+# would silently abort the whole poll loop (and the session start).
+test_buildkit_current_step_empty_log_returns_zero() {
+  local log
+  log="$(mktemp)"
+  : > "$log"
+
+  local step rc
+  step="$(_buildkit_current_step "$log")" || rc=$?
+  rc="${rc:-0}"
+
+  if [[ -z "$step" && "$rc" -eq 0 ]]; then
+    pass "buildkit_progress: empty log yields empty step and exit 0"
+  else
+    fail "buildkit_progress: expected empty step and exit 0, got step='$step' rc='$rc'"
+  fi
+  rm -f "$log"
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
+run_test test_buildkit_current_step_empty_log_returns_zero
 run_test test_buildkit_current_step_parses_last_step
 run_test test_build_inspects_images
 run_test test_build_no_compose
