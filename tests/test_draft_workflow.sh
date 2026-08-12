@@ -44,11 +44,11 @@ _test_draft_run() {
     return 1
   fi
 
-  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
-    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" || return 1
-
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
+
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false false || return 1
   draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" false false || return 1

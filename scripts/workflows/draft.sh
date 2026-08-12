@@ -281,7 +281,7 @@ _ingest_export_metadata() {
 # =============================================================================
 
 # draft_run PROJECT_DIR SOURCE_DIR SESSION_NAME BRANCH_FROM_ARG
-#           BRANCH_SUMMARY DIFF_COUNT
+#           BRANCH_SUMMARY DIFF_COUNT AUTHOR
 #
 # Creates a draft branch, writes .draft-state, and prints branch info.
 # Accepts DIFF_COUNT (pre-collected by main()) for the .draft-state record.
@@ -290,6 +290,7 @@ _ingest_export_metadata() {
 draft_run() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
   local BRANCH_FROM_ARG="$4" BRANCH_SUMMARY="$5" DIFF_COUNT="$6"
+  local AUTHOR="$7"
 
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
@@ -315,8 +316,6 @@ draft_run() {
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
   local IDENTITY="${RUN_ID:-$SESSION_TS}"
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
-
-  local AUTHOR; AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
@@ -405,13 +404,13 @@ _run_draft_workflow() {
   git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
   git -C "$PROJECT_DIR" tag draft-savepoint "$_validated_base"
 
-  # Create branch (branch-creation only)
-  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
-    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" || return 1
-
-  # Resolve author for apply+commit loop
+  # Resolve author once for both branch creation and apply+commit
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
+
+  # Create branch (branch-creation only)
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   # Apply patches
   printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
