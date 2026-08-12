@@ -70,4 +70,3 @@ return triggers script exit identically. Bare `exit` in a sourced function
 is a latent bug if the function is ever called from a different context
 (e.g. test harness, sub-shell, interactive use). Entrypoint scripts
 (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) §3.1.
-
