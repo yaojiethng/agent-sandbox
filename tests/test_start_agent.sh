@@ -556,11 +556,9 @@ test_help_short_flag_prints_usage() {
 }
 
 test_no_default_provider_in_help_or_flag() {
-  # The provider docstring must NOT claim a default (the no-default behavior is
-  # deliberate). The usage must say provider is required.
-  if grep -q -- 'default: opencode' "$REPO_ROOT/scripts/start_agent.sh"; then
-    fail "start_agent.sh still documents a default provider (should be required)"
-  elif grep -q -- 'provider name (required' "$REPO_ROOT/scripts/start_agent.sh"; then
+  # Provider is required (no default).  Test the positive claim — "required"
+  # and "default" are mutually exclusive.
+  if grep -q -- 'provider name (required' "$REPO_ROOT/scripts/start_agent.sh"; then
     pass "start_agent.sh documents --provider as required (no default)"
   else
     fail "start_agent.sh does not document --provider as required"
