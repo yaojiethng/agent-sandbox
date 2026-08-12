@@ -88,6 +88,129 @@ test_uncommitted_missing_args() {
   fi
 }
 
+test_uncommitted_preserves_content_whitespace() {
+  # Regression: the export pipeline must not content-mutate the patch. The
+  # removed `sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//'`
+  # step stripped trailing whitespace (and even CR on CRLF lines) from +/- line
+  # content, breaking git apply matching and silently corrupting content. The
+  # verbatim exporter keeps stack exact source bytes; the diff must round-trip.
+  local DIR="$FIXTURE_DIR/uw_ws"
+  local OUT="$FIXTURE_DIR/uw_ws_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR"
+
+  # A modified file whose diff has a trailing-space removed line.
+  printf 'line1\n  \nline3\n' > "$DIR/file.txt"
+  git -C "$DIR" add file.txt
+  git -C "$DIR" commit -m "baseline" --quiet
+  printf 'line1\nline3\n' > "$DIR/file.txt"   # removes the 2-space blank line
+
+  write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff"
+
+  # The removed line (-) must retain its 2 trailing spaces in the patch.
+  if grep -q -- '-  $' "$OUT/uncommitted.diff"; then
+    pass "write_uncommitted_diff preserves a removed line's trailing whitespace"
+  else
+    fail "write_uncommitted_diff stripped a removed line's trailing whitespace"
+  fi
+}
+
+test_uncommitted_roundtrip_verbatim() {
+  # The verbatim patch must apply to a clean baseline and reproduce the source
+  # bytes exactly (including trailing-space blank/added lines and a CRLF line).
+  local SRC="$FIXTURE_DIR/uw_rt_src"
+  local OUT="$FIXTURE_DIR/uw_rt_out"
+  local TGT="$FIXTURE_DIR/uw_rt_tgt"
+  mkdir -p "$OUT" "$TGT"
+  make_sandbox_fixture "$SRC" > /dev/null
+
+  # Commit the pre-state, then make the whitespace/CRLF change UNCOMMITTED so
+  # write_uncommitted_diff produces a diff against HEAD.
+  local PRE='line1\n  \nline3\r\n'
+  local POST='line1\n  \nADDED  \nline3\r\n'
+  printf '%b' "$PRE" > "$SRC/file.txt"
+  git -C "$SRC" add file.txt
+  git -C "$SRC" commit -m "pre-state" --quiet
+  printf '%b' "$POST" > "$SRC/file.txt"
+
+  write_uncommitted_diff "$SRC" "$OUT/uncommitted.diff"
+
+  # Target repo seeded with the pre-state (before the whitespace/crlf change).
+  git -C "$TGT" init --quiet
+  git -C "$TGT" config user.email "t@t"
+  git -C "$TGT" config user.name "t"
+  printf '%b' "$PRE" > "$TGT/file.txt"
+  git -C "$TGT" add file.txt
+  git -C "$TGT" commit -m "baseline" --quiet
+
+  if ! git -C "$TGT" apply "$OUT/uncommitted.diff" 2>/dev/null; then
+    fail "verbatim uncommitted.diff should apply cleanly"
+    return
+  fi
+
+  local GOT; GOT=$(cat "$TGT/file.txt")
+  if [[ "$GOT" == "$(printf '%b' "$POST")" ]]; then
+    pass "verbatim uncommitted.diff round-trips whitespace+CRLF content exactly"
+  else
+    fail "verbatim uncommitted.diff corrupted content (got: $(printf %q "$GOT"))"
+  fi
+}
+
+test_roundtrip_whitespace_matrix() {
+  # The verbatim exporter must round-trip every "funny-line" class byte-exactly
+  # through the real pipeline: trailing-space add/remove, space-only lines,
+  # blank lines at EOF, CRLF add/remove, and no-newline-at-EOF. The removed
+  # content-strip sed corrupted several of these (esp. CRLF, where POSIX
+  # [[:space:]] ate the trailing \r). These are the classes git itself handles
+  # correctly given a verbatim diff.
+  local MATRIX=(
+    'trailspace_add|a\nb\nc\n|a\nb\nc\nD  \n'
+    'trailspace_blank|a\n  \nc\n|a\n  \nD\nc\n'
+    'removed_trailws|a\nb  \nc\n|a\nb\nc\n'
+    'space_only_line|a\nb\n  \nc\n|a\nb\nc\n'
+    'blank_at_eof|a\nb\nc\n|a\nb\nc\n\n\n'
+    'crlf_add|l1\r\nl2\r\n|l1\r\nl2\r\nl3\r\n'
+    'crlf_remove|l1\r\nl2  \r\nl3\r\n|l1\r\nl3\r\n'
+    'no_eof_newline|aaa\nbbb|aaa\nbbb\nccc'
+  )
+
+  local ALL_OK=true
+  local entry pre post name d out tgt got
+  for entry in "${MATRIX[@]}"; do
+    name="${entry%%|*}"; local rest="${entry#*|}"; pre="${rest%%|*}"; post="${rest#*|}"
+    d="$FIXTURE_DIR/mx_${name}_src"; out="$FIXTURE_DIR/mx_${name}_out"; tgt="$FIXTURE_DIR/mx_${name}_tgt"
+    mkdir -p "$out" "$tgt"
+    make_sandbox_fixture "$d" > /dev/null
+
+    printf '%b' "$pre" > "$d/file.txt"
+    git -C "$d" add file.txt
+    git -C "$d" commit -m "pre" --quiet
+    printf '%b' "$post" > "$d/file.txt"
+    write_uncommitted_diff "$d" "$out/uncommitted.diff"
+
+    git -C "$tgt" init --quiet
+    git -C "$tgt" config user.email "t@t"
+    git -C "$tgt" config user.name "t"
+    printf '%b' "$pre" > "$tgt/file.txt"
+    git -C "$tgt" add file.txt
+    git -C "$tgt" commit -m "baseline" --quiet
+
+    if ! git -C "$tgt" apply "$out/uncommitted.diff" 2>/dev/null; then
+      ALL_OK=false; echo "  (matrix '$name' did not apply)" >&2; continue
+    fi
+    got=$(cat "$tgt/file.txt")
+    if [[ "$got" != "$(printf '%b' "$post")" ]]; then
+      ALL_OK=false; echo "  (matrix '$name' byte mismatch)" >&2
+    fi
+  done
+
+  if [[ "$ALL_OK" == true ]]; then
+    pass "verbatim pipeline round-trips all 8 funny-whitespace/CRLF classes byte-exactly"
+  else
+    fail "verbatim pipeline failed one or more funny-whitespace/CRLF round-trips (see stderr)"
+  fi
+}
+
 # ===================================================================
 # write_all_changes_diff
 # ===================================================================
@@ -408,6 +531,9 @@ run_test test_uncommitted_empty_on_clean
 run_test test_uncommitted_includes_untracked
 run_test test_uncommitted_strips_index_lines
 run_test test_uncommitted_missing_args
+run_test test_uncommitted_preserves_content_whitespace
+run_test test_uncommitted_roundtrip_verbatim
+run_test test_roundtrip_whitespace_matrix
 run_test test_all_changes_writes_diff
 run_test test_all_changes_includes_both_committed_and_uncommitted
 run_test test_all_changes_empty_on_clean

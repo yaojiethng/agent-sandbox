@@ -158,6 +158,17 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   diffs instead of rename operations. Fixes pre-existing bug where
   `package_branch` passed `INIT_SHA` as the NO_RENAMES argument, silently
   disabling the flag. 15-case knowledge test. Session `20260812-02`.
+- [x] **Whitespace round-trip hardening (git-verbatim diffs)** — the exporter's
+  `sed` strip of trailing whitespace on `+`/`-` lines was removed at all 3
+  sites (`package_branch.sh`, `diff.sh` ×2); exports are now git-verbatim
+  (only `strip_index_lines` blob-hash metadata is stripped). This fixes the
+  0009 draft-apply failure (a removed-line trailing-space byte broke `git apply`
+  pre-image matching) and prevents silent content corruption on added/CRLF
+  lines. git apply never refuses trailing whitespace under the default `warn`
+  policy. Covered by 3 new unit tests in `test_diff_helpers.sh` (removed-line
+  preservation, verbatim round-trip, 8-class funny-whitespace/CRLF matrix);
+  stale `knowledge_trailing_whitespace_context_mismatch.sh` deleted. Sessions
+  `20260812-07`.
 
 ---
 

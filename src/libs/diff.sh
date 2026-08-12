@@ -144,9 +144,11 @@ apply_and_commit() {
 # write_uncommitted_diff
 #
 # Writes uncommitted changes vs HEAD to OUTPUT_FILE.
-# Strips git index lines and trailing whitespace for clean git apply.
-# Stages untracked files temporarily (via git add -N) so they appear in the
-# diff, then restores staged state after. Writes an empty file if no changes.
+# Strips git index (blob-hash) metadata lines only, so the patch carries the
+# exact source bytes (trailing whitespace, CRLF, no-newline-at-EOF preserved)
+# and generation/application stay consistent. Stages untracked files
+# temporarily (via git add -N) so they appear in the diff, then restores
+# staged state after. Writes an empty file if no changes.
 # -------------------------
 write_uncommitted_diff() {
   local SANDBOX_DIR="$1"
@@ -173,7 +175,6 @@ write_uncommitted_diff() {
   else
     git -C "$SANDBOX_DIR" diff HEAD \
       | strip_index_lines \
-      | sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"
   fi
@@ -236,7 +237,6 @@ write_all_changes_diff() {
   else
     git -C "$SANDBOX_DIR" diff "$INIT_SHA" \
       | strip_index_lines \
-      | sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//' \
       | sed -e '$a\\' \
       > "$OUTPUT_FILE"
   fi

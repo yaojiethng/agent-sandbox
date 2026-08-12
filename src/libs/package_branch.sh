@@ -133,7 +133,6 @@ package_commits() {
     fi
     git -C "$SANDBOX_DIR" diff $GIT_DIFF_OPTS "${PREVIOUS_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
-      | sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//' \
       | sed -e '$a\' \
       > "$DIFF_FILE"
 
