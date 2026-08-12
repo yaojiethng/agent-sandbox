@@ -219,7 +219,7 @@ compose_dry_run() {
     else
       echo "Phase 1 FAILED — aborting." >&2
       $_compose_down
-      exit 1
+      return 1
     fi
   fi
 
@@ -233,7 +233,7 @@ compose_dry_run() {
   else
     echo "Phase 2 FAILED — aborting." >&2
     $_compose_down
-    exit 1
+    return 1
   fi
 
   # Phase 3: host-side verification
@@ -350,12 +350,12 @@ compose_sandbox_wait() {
     if [[ "$state" == "exited" || "$state" == "dead" || -z "$state" ]]; then
       echo "Error: sandbox container exited before becoming healthy." >&2
       echo "  Check logs: docker logs $container" >&2
-      exit 1
+      return 1
     fi
     if [[ "$elapsed" -ge "$timeout" ]]; then
       echo "Error: sandbox container did not become healthy within ${timeout}s." >&2
       echo "  Check logs: docker logs $container" >&2
-      exit 1
+      return 1
     fi
     sleep 1
     (( elapsed++ )) || true

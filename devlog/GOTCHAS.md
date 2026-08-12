@@ -59,3 +59,16 @@ scoped: none
 legacy: none
 mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker.
 
+### [H] 2026-08-12 — Library functions must `return`, not `exit`
+
+state: open
+scoped: `src/libs/*.sh`, `src/build/*.sh` (sourced libraries, not standalone scripts)
+legacy: not swept, fixed on contact
+mitigation: library functions sourced by entrypoint scripts must use `return 1`,
+not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero
+return triggers script exit identically. Bare `exit` in a sourced function
+is a latent bug if the function is ever called from a different context
+(e.g. test harness, sub-shell, interactive use). Entrypoint scripts
+(`scripts/*.sh`) may use `exit` legitimately. Check `bash-scripting-traps.skill.md`
+for related patterns.
+

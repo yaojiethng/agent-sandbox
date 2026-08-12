@@ -41,10 +41,10 @@ check_base_flags() {
   if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
     echo "Error: --name and --sandbox are required" >&2
     usage >&2
-    exit 1
+    return 1
   fi
   if [[ -z "$SANDBOX_DIR" || "$SANDBOX_DIR" == "/" ]]; then
     echo "Error: invalid SANDBOX_DIR: $SANDBOX_DIR" >&2
-    exit 1
+    return 1
   fi
 }
