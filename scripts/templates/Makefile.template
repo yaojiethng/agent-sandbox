@@ -92,7 +92,41 @@ RUN_ID_FLAG       = $(if $(RUN_ID),--run-id=$(RUN_ID),)
 PRUNE_FLAG        = $(if $(PRUNE),--prune,)
 STALE_FLAG        = $(if $(STALE),--stale,)
 
-.PHONY: build start serve dry-run stop apply draft confirm reject refresh
+.PHONY: build start serve dry-run stop apply draft confirm reject refresh help
+
+# -------------------------
+# Help
+# -------------------------
+
+help:
+	@echo "Usage: make [target] [VARIABLE=value ...]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make build                        — build sandbox + all provider images"
+	@echo "  make build TARGET=<p>             — build specific provider (e.g. TARGET=pi)"
+	@echo "  make start PROVIDER=<p>           — start an agent session"
+	@echo "  make serve PROVIDER=<p>           — start provider in serve mode"
+	@echo "  make dry-run PROVIDER=<p>         — liveness check only"
+	@echo "  make stop                         — stop and remove session containers"
+	@echo "  make prune                        — remove stale containers and volumes"
+	@echo "  make draft                        — apply session patches to a draft branch"
+	@echo "  make confirm                      — merge draft branch to source"
+	@echo "  make reject                       — discard draft branch"
+	@echo "  make apply                        — apply uncommitted changes"
+	@echo "  make package-branch               — export branch as numbered diffs"
+	@echo "  make refresh                      — update templates after harness upgrade"
+	@echo ""
+	@echo "Common variables:"
+	@echo "  PROVIDER=<p>    — provider name (required for start/serve/dry-run)"
+	@echo "  REFRESH=1        — rebuild images + start new session"
+	@echo "  REBUILD=1        — force full rebuild including base images"
+	@echo "  RESUME=1         — always show volume picker"
+	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
+	@echo "  FORCE=1          — apply with --reject (draft/apply)"
+	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles"
+	@echo "  INTERACTIVE=1    — enable interactive picker (draft/apply)"
+	@echo ""
+	@echo "See the comment block at the top of this Makefile for full usage."
 
 # -------------------------
 # Build
