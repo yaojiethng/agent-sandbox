@@ -180,8 +180,6 @@ _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHA
 # _preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"
 # _preflight_crit "OUTPUT_DIR is writable (output mount)"              touch "$OUTPUT_DIR/.preflight_write_test" && rm -f "$OUTPUT_DIR/.preflight_write_test"
 
-# WARN: AGENTS.md in sandbox (project context loaded by pi via CWD discovery)
-_preflight_warn "AGENTS.md present in sandbox (project context)"  test -f "$SANDBOX_DIR/AGENTS.md"
 # WARN: AGENTS.md at AGENT_HOME (pi-specific global context — seeded by provider config)
 _preflight_warn "AGENTS.md present at AGENT_HOME (pi context)"  test -f "${AGENT_HOME:-~/.pi}/AGENTS.md"
 _preflight_warn "Working tree is clean"                              bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'

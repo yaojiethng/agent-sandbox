@@ -19,7 +19,6 @@
 #
 # What this script produces in SANDBOX_DIR:
 #   Makefile                     — from template, PROJECT_NAME substituted
-#   AGENTS.md                    — stub; operator fills in project context
 #   .workspace/input/            — reasoning layer input channel
 #   .workspace/output/           — reasoning layer output channel
 #   .workspace/session-diffs/    — diff pipeline output
@@ -27,7 +26,7 @@
 #   .<provider>/                 — provider config dir, seeded from src/reasoning/providers/<n>/config/
 #
 # Refresh mode (--refresh) updates versioned template files in an existing
-# SANDBOX_DIR without overwriting .env operator values or AGENTS.md.
+# SANDBOX_DIR without overwriting .env operator values.
 
 set -euo pipefail
 
@@ -78,7 +77,7 @@ Usage: agent-sandbox onboard [--refresh] --name=<n> --project=<path> --sandbox=<
   --yes                   Skip the confirmation prompt (for scripting/CI).
 
   --refresh               Update stale template files in existing SANDBOX_DIR.
-                          Preserves .env operator values and AGENTS.md.
+                          Preserves .env operator values.
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
@@ -408,22 +407,6 @@ _run_onboard() {
     "$TEMPLATES/Makefile.template" \
     > "$SANDBOX_DIR/Makefile"
   echo "  Created: Makefile"
-  # -----------------------------------------------------------------------
-  # AGENTS.md stub
-  # -----------------------------------------------------------------------
-  cat > "$SANDBOX_DIR/AGENTS.md" <<EOF
-# Agent Context Brief — ${PROJECT_NAME}
-
-## Project
-<!-- Describe what this project is, what it does, and its current state. -->
-
-## Constraints
-<!-- Project-specific constraints: coding standards, conventions, files not to touch. -->
-
-## Output
-<!-- What good output looks like: expected file changes, patterns to follow. -->
-EOF
-  echo "  Created: AGENTS.md (stub — fill in before first run)"
 
   # -----------------------------------------------------------------------
   # Workspace directories
@@ -454,11 +437,10 @@ EOF
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
-  echo "  1. Edit $SANDBOX_DIR/AGENTS.md — add project context for the agent"
-  echo "  2. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
-  echo "  3. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
-  echo "  4. Run: make -C $SANDBOX_DIR build"
-  echo "  5. Run: make -C $SANDBOX_DIR dry-run"
+  echo "  1. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
+  echo "  2. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
+  echo "  3. Run: make -C $SANDBOX_DIR build"
+  echo "  4. Run: make -C $SANDBOX_DIR dry-run"
   echo ""
   echo "To start a session: make -C $SANDBOX_DIR start"
 }

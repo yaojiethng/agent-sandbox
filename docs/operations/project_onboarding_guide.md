@@ -30,7 +30,6 @@ WORKDIR/
 └── <project-dir>-sandbox/      ← SANDBOX_DIR (harness workspace)
     ├── Makefile
     ├── .env                    ← machine-specific vars; never committed
-    ├── AGENTS.md               ← agent context brief; operator-written
     └── .workspace/             ← created at run time by harness
 ```
 
@@ -48,32 +47,12 @@ This produces:
 |---|---|---|
 | `Makefile` | Copied from `libs/_templates/Makefile.template` | None — paths set automatically |
 | `.env` | Written by harness; path variables derived from `--project` and `--sandbox` | Fill in `SERVE_PORT` and any provider-specific variables (see `.env` comments) |
-| `AGENTS.md` | Stub written by harness | Fill in — see Step 3 |
 
 Provider-specific `.env` stubs are appended automatically from each `providers/<n>/.env.example` present in the repo at onboard time.
 
 ---
 
-## Step 3 — Write `AGENTS.md`
-
-`AGENTS.md` is the agent context brief. The harness places it in the reasoning layer image at build time — the agent reads it at the start of every session. It must be complete enough for a fresh agent to orient itself and begin work without further instruction.
-
-```markdown
-# Agent Context Brief — <project-name>
-
-## Project
-<one paragraph: what the project is, what it does, its current state>
-
-## Constraints
-<project-specific constraints: coding standards, conventions, files not to touch>
-
-## Output
-<what good output looks like: expected file changes, patterns to follow>
-```
-
----
-
-## Step 4 — Review `.env`
+## Step 3 — Review `.env`
 
 Open `SANDBOX_DIR/.env` and set:
 
@@ -84,7 +63,7 @@ Machine-specific variables are never committed. Confirm `.env` is covered by `.g
 
 ---
 
-## Step 5 — Build images and verify
+## Step 4 — Build images and verify
 
 Build all images:
 
@@ -106,7 +85,6 @@ See [Dry-Run Guarantees](../architecture/tool_interface.md#dry-run-guarantees) f
 
 - [ ] `SANDBOX_DIR` is not inside `PROJECT_DIR` — they must be siblings, not nested
 - [ ] `PROJECT_DIR` is a git repository with at least one commit
-- [ ] `AGENTS.md` contains enough context for a fresh agent to begin work
 - [ ] `.env` has `SERVE_PORT` and all provider-specific variables filled in
 - [ ] `.env` is gitignored in `PROJECT_DIR`
 - [ ] `make dry-run PROVIDER=<n>` passes

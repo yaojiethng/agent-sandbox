@@ -283,7 +283,7 @@ apply:
 # -------------------------
 #
 # refresh: update stale template files and re-register git aliases after a
-# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+# harness update. Safe to run repeatedly — does not overwrite .env.
 
 # -------------------------
 # Package exports
@@ -301,7 +301,7 @@ package-branch:
 # -------------------------
 #
 # refresh: update stale template files and re-register git aliases after a
-# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+# harness update. Safe to run repeatedly — does not overwrite .env.
 
 refresh:
 	agent-sandbox onboard --refresh \

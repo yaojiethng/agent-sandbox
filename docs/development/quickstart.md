@@ -46,7 +46,6 @@ After onboarding, `SANDBOX_DIR` contains:
 <project-dir>-sandbox/
 ├── Makefile
 ├── .env
-├── AGENTS.md               ← fill this in before the first run
 └── .workspace/
     ├── input/
     ├── output/
@@ -60,21 +59,6 @@ See [`project_onboarding_guide.md`](project_onboarding_guide.md) for the full pr
 ## 3. Complete the setup
 
 **Edit `.env`** — set `SERVE_PORT` and any provider-specific variables flagged in the file comments. Path variables are derived automatically; do not edit them.
-
-**Fill in `AGENTS.md`** — the agent reads this at the start of every session. It must be complete enough for a fresh agent to begin work without further instruction:
-
-```markdown
-# Agent Context Brief — <project-name>
-
-## Project
-<what the project is, what it does, its current state>
-
-## Constraints
-<coding standards, conventions, files not to touch>
-
-## Output
-<what a correct output looks like>
-```
 
 **Confirm prerequisites in `PROJECT_DIR`:**
 - `.env` is covered by `.gitignore`
@@ -110,7 +94,6 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 - [ ] `agent-sandbox` CLI installed (`which agent-sandbox`)
 - [ ] `agent-sandbox onboard` run; sandbox directory exists
-- [ ] `AGENTS.md` filled in
 - [ ] `.env` complete — `SERVE_PORT` and provider variables set
 - [ ] `.env` gitignored in `PROJECT_DIR`
 - [ ] `PROJECT_DIR` is a git repo with at least one commit

@@ -182,6 +182,16 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   failed 0, skipped 0 enforced by runner; the 6 provider-structure skips in
   `test_run_agent.sh` made deterministic (option B — internal-consistency
   invariants). Sessions `20260812-08`.
+- [x] **Remove dead onboard `AGENTS.md` stub + correct stale agent-capability claims** —
+  `onboard.sh` wrote an empty host `$SANDBOX_DIR/AGENTS.md` stub that was never mounted
+  into the agent container and shadowed by the committed repo-root `AGENTS.md` pi actually
+  loads; it was a premature implementation of M3's individual task-briefs feature, and its
+  name misleadingly implied it was live. Removed the stub (onboard.sh block + summary
+  instructions + header/refresh refs), the `_preflight_warn` that checked for it,
+  quickstart/onboarding-guide "fill in AGENTS.md" sections, and the asserting tests. Also
+  corrected the pi provider `AGENTS.md` claim that subagents "cannot persist/make git
+  commits — read-only reviewer" (false — they share the workspace and can commit).
+  Sessions `20260812-09`.
 
 ---
 

@@ -58,4 +58,4 @@ pi -p "Subagent instructions..."
 
 The `-p` flag spawns a new subagent with a clean context — it does not inherit the current session's conversation history, loaded files, or tool state. Use this when the current agent may have blind spots from extended work on the same code.
 
-The subagent's output is returned inline. It cannot persist files to the sandbox or make git commits — it is a read-only reviewer. The results should be triaged by the primary agent.
+The subagent runs in the same container/workspace as the primary agent, with the same tools — it **can** persist file edits and run git commits. It starts with a clean conversation context, so it cannot see this session's chat history, in-memory files, or tool state; pass everything it needs in the `-p` argument or on disk. Its output is returned inline. The results should be triaged by the primary agent.

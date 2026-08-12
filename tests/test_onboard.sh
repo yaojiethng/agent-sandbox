@@ -56,7 +56,6 @@ test_fresh_onboard_creates_structure() {
   run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
 
   [[ -f "$SANDBOX_DIR/Makefile" ]] || { fail "Makefile not created"; return; }
-  [[ -f "$SANDBOX_DIR/AGENTS.md" ]] || { fail "AGENTS.md not created"; return; }
   [[ -f "$SANDBOX_DIR/.env" ]] || { fail ".env not created"; return; }
   [[ -d "$SANDBOX_DIR/.workspace/input" ]] || { fail ".workspace/input/ not created"; return; }
   [[ -d "$SANDBOX_DIR/.workspace/output" ]] || { fail ".workspace/output/ not created"; return; }
@@ -117,21 +116,6 @@ test_fresh_onboard_creates_provider_configs() {
 }
 
 # ---------------------------------------------------------------------------
-# Test: AGENTS.md contains project name
-# ---------------------------------------------------------------------------
-test_fresh_onboard_agents_md_contains_project_name() {
-  local PROJECT_DIR="$FIXTURE_DIR/agents_project"
-  local SANDBOX_DIR="$FIXTURE_DIR/agents_sandbox"
-
-  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
-
-  grep -q "testproj" "$SANDBOX_DIR/AGENTS.md" \
-    || { fail "AGENTS.md does not contain project name"; return; }
-
-  pass "AGENTS.md contains project name"
-}
-
-# ---------------------------------------------------------------------------
 # Test: fresh onboard aborts if SANDBOX_DIR already has outputs
 # ---------------------------------------------------------------------------
 test_onboard_aborts_if_sandbox_exists() {
@@ -176,9 +160,8 @@ test_refresh_updates_makefile() {
     --sandbox="$SANDBOX_DIR" 2>&1
 
   [[ -f "$SANDBOX_DIR/Makefile" ]] || { fail "Makefile not recreated by refresh"; return; }
-  [[ -f "$SANDBOX_DIR/AGENTS.md" ]] || { fail "AGENTS.md was removed by refresh"; return; }
 
-  pass "Refresh recreates Makefile without clobbering AGENTS.md"
+  pass "Refresh recreates Makefile"
 }
 
 # ---------------------------------------------------------------------------
@@ -231,7 +214,6 @@ test_refresh_aborts_without_minimal_args() {
 run_test test_fresh_onboard_creates_structure
 run_test test_fresh_onboard_env_has_required_keys
 run_test test_fresh_onboard_creates_provider_configs
-run_test test_fresh_onboard_agents_md_contains_project_name
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
