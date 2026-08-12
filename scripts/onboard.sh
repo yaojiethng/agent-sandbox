@@ -256,10 +256,20 @@ _run_refresh() {
     fi
   else
     MAKEFILE_VERSION=$(template_version "$TEMPLATES/Makefile.template")
+    # Refresh derived path + template-version metadata in place. INSTALL_DIR is
+    # operator configuration and is intentionally left untouched (no --install-dir
+    # input exists to sync it to; clobbering it would undo an operator override).
+    # Escape & in replacement values so a path containing it is not interpreted
+    # by sed as the "whole match" substitution metacharacter.
+    local _esc_pd _esc_sd
+    _esc_pd=${PROJECT_DIR//&/\\&}
+    _esc_sd=${SANDBOX_DIR//&/\\&}
     sed -i \
       -e "s/^MAKEFILE_VERSION=.*/MAKEFILE_VERSION=${MAKEFILE_VERSION}/" \
+      -e "s|^PROJECT_DIR=.*|PROJECT_DIR=${_esc_pd}|" \
+      -e "s|^SANDBOX_DIR=.*|SANDBOX_DIR=${_esc_sd}|" \
       "$ENV_FILE"
-    echo "  Updated: .env (template versions)"
+    echo "  Updated: .env (project paths + template versions)"
   fi
 
   # Sanity check: if we have a PROJECT_DIR now, verify it exists

@@ -186,6 +186,38 @@ test_refresh_preserves_env_values() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR + SERVE_PORT
+# ---------------------------------------------------------------------------
+test_refresh_syncs_paths_preserves_config() {
+  local PROJECT_DIR="$FIXTURE_DIR/sync_paths_project"
+  local MOVED_DIR="$FIXTURE_DIR/sync_paths_project_moved"
+  local SANDBOX_DIR="$FIXTURE_DIR/sync_paths_sandbox"
+
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  # Operator edits config, then the project is renamed (moved) to a new path.
+  sed -i 's/^INSTALL_DIR=.*/INSTALL_DIR=\/custom\/install/; s/^SERVE_PORT=.*/SERVE_PORT=8123/' "$SANDBOX_DIR/.env"
+  mv "$PROJECT_DIR" "$MOVED_DIR"
+
+  echo y | bash "$ONBOARD_SCRIPT" --refresh \
+    --name="testproj" \
+    --project="$MOVED_DIR" \
+    --sandbox="$SANDBOX_DIR" 2>&1
+
+  local OK=true
+  grep -q "^PROJECT_DIR=$MOVED_DIR$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (PROJECT_DIR not synced)" >&2; }
+  grep -q "^SANDBOX_DIR=$SANDBOX_DIR$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (SANDBOX_DIR lost)" >&2; }
+  grep -q "^INSTALL_DIR=/custom/install$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (INSTALL_DIR clobbered)" >&2; }
+  grep -q "^SERVE_PORT=8123$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (SERVE_PORT clobbered)" >&2; }
+
+  if [[ "$OK" == true ]]; then
+    pass "Refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR and operator SERVE_PORT"
+  else
+    fail "Refresh path sync / config preservation incorrect (see stderr)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Test: refresh requires --name and --sandbox
 # ---------------------------------------------------------------------------
 test_refresh_aborts_without_minimal_args() {
@@ -217,6 +249,7 @@ run_test test_fresh_onboard_creates_provider_configs
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
+run_test test_refresh_syncs_paths_preserves_config
 run_test test_refresh_aborts_without_minimal_args
 
 test_done "scripts/onboard.sh"

@@ -192,6 +192,7 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   corrected the pi provider `AGENTS.md` claim that subagents "cannot persist/make git
   commits — read-only reviewer" (false — they share the workspace and can commit).
   Sessions `20260812-09`.
+- [x] **`onboard --refresh` syncs derived `.env` paths; preserves operator config** — verified no `.env`-overwrite path exists across all three refresh invocation points (`make refresh` from SANDBOX_DIR, `agent-sandbox onboard --refresh`, `make refresh` from project_dir): fresh `onboard` is guarded against clobbering an existing sandbox, and refresh only updated `MAKEFILE_VERSION` in place. Extended refresh to also re-sync `PROJECT_DIR`/`SANDBOX_DIR` (derived paths) while preserving `INSTALL_DIR` and operator config (SERVE_PORT/AUTOSAVE/provider stubs) — INSTALL_DIR is operator config with no `--install-dir` input to sync it to. Escaped `&` in sed values. Regression test `test_refresh_syncs_paths_preserves_config`. Sessions `20260812-10`.
 
 ---
 
