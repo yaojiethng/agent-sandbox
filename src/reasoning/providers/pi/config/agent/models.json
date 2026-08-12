@@ -1,26 +1,8 @@
 {
   "providers": {
     "deepseek": {
-      "baseUrl": "https://api.deepseek.com",
-      "api": "openai-completions",
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "name": "Deepseek V4 Flash",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "cost": {
-            "input": 0.14,
-            "output": 0.28,
-            "cacheRead": 0.028,
-            "cacheWrite": 0
-          },
-          "compat": {
-              "thinkingFormat": "deepseek",
-              "requiresReasoningContentOnAssistantMessages": true
-          },
+      "modelOverrides": {
+        "deepseek-v4-flash": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -29,23 +11,7 @@
             "max": "max"
           }
         },
-        {
-          "id": "deepseek-v4-pro",
-          "name": "Deepseek V4 Pro",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "cost": {
-            "input": 1.74,
-            "output": 3.48,
-            "cacheRead": 0.145,
-            "cacheWrite": 0
-          },
-          "compat": {
-             "thinkingFormat": "deepseek",
-              "requiresReasoningContentOnAssistantMessages": true
-          },
+        "deepseek-v4-pro": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -54,56 +20,11 @@
             "max": "max"
           }
         }
-      ]
+      }
     },
     "opencode-go": {
-      "baseUrl": "https://opencode.ai/zen/go/v1",
-      "models": [
-        {
-          "id": "qwen3.6-plus",
-          "name": "Qwen3.6 Plus (Opencode Go)",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "api": "openai-completions",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 128000,
-          "maxTokens": 8192,
-          "compat": {
-            "thinkingFormat": "qwen"
-          }
-        },
-        {
-          "id": "qwen3.5-plus",
-          "name": "Qwen3.5 Plus (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 128000,
-          "maxTokens": 8192,
-          "compat": {
-            "thinkingFormat": "qwen"
-          }
-        },
-        {
-          "id": "deepseek-v4-pro",
-          "name": "DeepSeek V4 Pro (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "reasoning": true,
-          "cost": {
-            "input": 1.74,
-            "output": 3.48,
-            "cacheRead": 0.145,
-            "cacheWrite": 0
-          },
-          "compat": {
-            "thinkingFormat": "deepseek",
-            "requiresReasoningContentOnAssistantMessages": true
-          },
+      "modelOverrides": {
+        "deepseek-v4-flash": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -112,25 +33,7 @@
             "max": "max"
           }
         },
-        {
-          "id": "deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash (Opencode Go)",
-          "api": "openai-completions",
-          "baseUrl": "https://opencode.ai/zen/go/v1",
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "reasoning": true,
-          "cost": {
-            "input": 0.14,
-            "output": 0.28,
-            "cacheRead": 0.028,
-            "cacheWrite": 0
-          },
-          "compat": {
-            "thinkingFormat": "deepseek",
-            "requiresReasoningContentOnAssistantMessages": true
-          },
+        "deepseek-v4-pro": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -139,48 +42,11 @@
             "max": "max"
           }
         }
-      ]
+      }
     },
     "openrouter": {
-      "baseUrl": "https://openrouter.ai/api/v1",
-      "api": "openai-completions",
-      "models": [
-        {
-          "id": "z-ai/glm-5.1",
-          "name": "GLM 5.1 (OpenRouter)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 204800,
-          "maxTokens": 131072,
-          "compat": {
-            "thinkingFormat": "zai",
-            "openRouterRouting": {
-              "order": ["z-ai"]
-            }
-          }
-        },
-        {
-          "id": "qwen/qwen3.5-27b",
-          "name": "Qwen3.5-27B Dense (OpenRouter)",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 128000,
-          "maxTokens": 8192,
-          "compat": {
-            "thinkingFormat": "qwen"
-          }
-        },
-        {
-          "id": "deepseek/deepseek-v4-flash",
-          "name": "Deepseek V4 Flash (OpenRouter)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "compat": {
-            "thinkingFormat": "deepseek",
-            "requiresReasoningContentOnAssistantMessages": true
-          },
+      "modelOverrides": {
+        "deepseek-v4-flash": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -189,17 +55,7 @@
             "max": "max"
           }
         },
-        {
-          "id": "deepseek/deepseek-v4-pro",
-          "name": "Deepseek V4 Pro (OpenRouter)",
-          "reasoning": true,
-          "input": ["text", "image"],
-          "contextWindow": 1000000,
-          "maxTokens": 384000,
-          "compat": {
-            "thinkingFormat": "deepseek",
-            "requiresReasoningContentOnAssistantMessages": true
-          },
+        "deepseek-v4-pro": {
           "thinkingLevelMap": {
             "minimal": "minimal",
             "low": "low",
@@ -208,7 +64,7 @@
             "max": "max"
           }
         }
-      ]
-    }
+      }
+    },
   }
 }
