@@ -140,9 +140,14 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
 - [ ] **Pruning of stale `.compose/*.yml`** — `stop.sh --prune` should remove
   stale compose files alongside containers and volumes. KB-scale accumulation;
   deferred from session `20260810-14`.
-- [ ] **`compose_sandbox_wait` teardown gap** — sandbox health-check timeout
+- [x] **`compose_sandbox_wait` teardown gap** — sandbox health-check timeout
   exits before unified teardown dispatch, leaving containers running.
-  Pre-existing bug surfaced in session `20260810-13`.
+  **Resolved** — the unified teardown dispatch (run_agent EXIT trap on
+  `TEARDOWN_NEEDED`, set before `compose_sandbox_wait`) tears down on
+  sandbox-wait failure; guarded by `test_standard_sandbox_unhealthy_still_tears_down`
+  (docker-stub forces never-healthy, asserts `compose down` runs).
+  Surfaced session `20260810-13`; resolved by the `20260810-14` teardown refactor,
+  confirmed `20260812-12`.
 - [ ] **Session-naming collision** — harness "session" (agent run:
   RESUME_SESSION, volume labels) vs ops "session" (commit + handover).
   Naming decision deferred from session `20260810-13`.
