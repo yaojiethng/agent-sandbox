@@ -137,9 +137,13 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   Session `20260810-14`. **Deferred: pruning of stale `.compose/*.yml`**
   (accumulation is KB-scale; candidate: `stop.sh --prune` host-artifact
   extension; routine implementation — no ADR needed).
-- [ ] **Pruning of stale `.compose/*.yml`** — `stop.sh --prune` should remove
-  stale compose files alongside containers and volumes. KB-scale accumulation;
-  deferred from session `20260810-14`.
+- [ ] **Prune-command redesign (`.compose` + STALE=1)** — `stop.sh --prune`
+  should remove stale `.compose/*.yml` files alongside containers and volumes
+  (KB-scale accumulation; deferred from session `20260810-14`); `prune.sh`
+  gains a STALE=1 mode that skips the container age-gate (sha-based
+  staleness; deferred from session `20260810-04`). Both are semantic changes
+  to the prune surface, entangled with M2.6.6 — settled in the M2.6.6 design
+  session (operator steering 2026-08-18).
 - [x] **`compose_sandbox_wait` teardown gap** — sandbox health-check timeout
   exits before unified teardown dispatch, leaving containers running.
   **Resolved** — the unified teardown dispatch (run_agent EXIT trap on
@@ -150,11 +154,14 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   confirmed `20260812-12`.
 - [ ] **Session-naming collision** — harness "session" (agent run:
   RESUME_SESSION, volume labels) vs ops "session" (commit + handover).
-  Naming decision deferred from session `20260810-13`.
-- [ ] **Prune stale containers regardless of start time** — `prune.sh`
-  age-gates containers; a STALE=1 mode would skip the age check (sha-based
-  staleness). Semantic change entangled with M2.6.6. Deferred from session
-  `20260810-04`.
+  M2.6 task — settled in the M2.6.6 design session; mount mode introduces a
+  new run/session shape. Deferred from session `20260810-13`.
+- [ ] **`start` command redesign (resumable/stale volume UX)** — `make start`
+  gives no clear signal of whether a resumable or stale volume is available:
+  resume-vs-fresh-vs-stale-warning is decided implicitly. Needs an explicit
+  decision/communication UX at session start. Entangled with M2.6.6 — mount
+  mode redefines start semantics (no volume, no copy-in). Settled in the
+  M2.6.6 design session (operator steering 2026-08-18).
 - [x] **Run test scripts under `set -e`** — `tests/test_*.sh` and `tests/libs/test_common.sh` run under `set -uo pipefail` **without** `-e`, so the trace tests never execute scripts under the production `set -euo pipefail` runtime — which is how the silent `REFRESH`-build abort slipped through. **Resolved — session `20260812-12`:** `build.sh` relied on the caller setting `-e`; a standalone `bash build.sh` (as the trace tests invoke) inherited the harness's no-`-e`, so the build path never ran under `-e`. `build.sh` now self-enables `set -euo pipefail` on standalone invocation (guarded by `BASH_SOURCE[0]==$0` so sourcing does not mutate callers) — the trace tests now exercise the build path under the production `-e` runtime, catching this abort class. Added `test_build_image_failure_surfaces_descriptive_error_under_e` (failing `docker build` under standalone `-e` surfaces the descriptive `build_image: ERROR build FAILED` message) + a `DOCKER_STUB_BUILD_RC` mock toggle. Escalated as a blind-spot finding from session `20260812-03`.
 - [x] **Shellcheck findings cleanup in `build.sh`** — pre-existing `SC2046` (unquoted `$(_sandbox_sig_sources)`/`$(_agent_sig_sources)` in `container_sig`/`build_sandbox`) and `SC2034` (`sandbox_dir` unused in `preflight`). Unrelated to the `20260812-03` fix; cleanup task escalated from that session. **Resolved — session `20260812-04`:** sig-sources emit per-line `printf` and are consumed via `mapfile` + `"${arr[@]}"` (SC2046 gone); `preflight` dropped the dead `sandbox_dir` param (SC2034 gone). Full suite green (474, 0 failed).
 - [x] **`container_sig` defensive `|| true` guard** — `find ... 2>/dev/null` under `pipefail`/`set -e` would abort if a configured source path were invalid. All current paths are valid, so this works today, but the piped `find` has no error guard. Add `|| true` or an explicit guard. Escalated from session `20260812-03`. **Resolved — session `20260812-04`:** `container_sig` now fail-closes on a missing source path (`container_sig: ERROR: source path not found: <path>` + `return 1`) — chose a loud diagnostic over a naive `|| true` (which would hash an empty set).
@@ -236,13 +243,13 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
 - [x] **Multi-volume concurrency** — Volume-per-session via `RUN_ID`-scoped compose projects. Volume discovery by sandbox-dir label. Volume locking prevents concurrent attachment. Interactive volume selector when multiple volumes exist under the same sandbox directory. Design: [`devlog/discussions/20260730-design-settled-copy_model.md`](./discussions/20260730-design-settled-copy_model.md).
 - [x] **Draft rollback on patch failure** — `make draft` applies a series of patches to a draft branch. If any patch fails partway through, the draft branch is left in a partially-applied state. Create a local tag savepoint before starting patch application; on failure, `git reset --hard <savepoint>` and delete the tag. Local tags don't push by default — no remote pollution. On success, delete the tag.
 
-##### M2.6.6 — Mount Model: Host-backed Sandbox (Not started)
+##### M2.6.6 — Mount Model: Host-backed Sandbox (In progress)
 
 **Objective:** Mount a host directory (`.sandbox` in `SANDBOX_DIR`) into the container instead of using a Docker volume. The agent works directly on the host filesystem — no copy-in, no diff pipeline, no autosave as primary persistence. Session resume is instant: the files are already there.
 
 **Security posture:** The sandbox inherits the security posture of the host directory. The operator is responsible for ensuring secrets are not present in the mounted directory. This is a lower-isolation model than the copy-based default — the trade-off is convenience.
 
-- [ ] **Resolve open design questions** — See [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime.
+- [ ] **Resolve open design questions** — See [`devlog/discussions/20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md) for the current design record. Seven questions remain unresolved: compose overlay vs conditional mount, Pi direct bind mounts under mount modes, `--volumes-from` under mount modes, role of `make apply`, snapshot pipeline under mount, migration path, WORKTREE_DIR baked vs runtime. The design session also settles the prune-command redesign (`.compose` pruning + STALE=1), the session-naming collision, and the `start`-command redesign (resumable/stale volume UX) (M2.6 tasks, grouped by operator steering 2026-08-18).
 - [x] **Security model updated** — `security.md` rewritten for simplified two-path model (Copy M2.6.5, Mount M2.6.6). Worktree row removed. Mount mode: user-provided `.git`, harness does not mediate git operations. See handover `20260730-07`.
 - [ ] **Mount delivery enablement** — `.snapshot/` mounted RW into the capability layer; agent works in `.snapshot/`; entrypoint redirect
 - [ ] **Compose template** — conditional mount entries per mode
