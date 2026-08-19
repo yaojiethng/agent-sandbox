@@ -321,3 +321,30 @@ switch) can revert uncommitted edits and normalize untracked-in-git modes.
 For negative-test mutation reverts and debug-patch removal, use temp copies
 (`cp file /tmp/x.bak`) only. To fix a lost executable bit under
 `core.filemode=false`: `chmod +x file` + `git update-index --chmod=+x`.
+
+### [A] 2026-08-18 — Multi-question turns and implicit acceptance during a grill-me design walk
+
+state: open
+scoped: grill-me walks (design sessions)
+legacy: none
+mitigation: during the M2.6.6 design walk the agent posed two questions in one
+turn (A+B, then D8+N1), skipped N2a to the next question without an explicit
+approval, and treated operator probes as implicit approval of a pending
+question — the operator corrected the pattern twice. One question per turn;
+when a side-question arises, queue it explicitly in the live pile and return to
+it after the main question is settled. An operator's probing question is not
+an approval of the pending question; re-pose the pending question for explicit
+approval, naming what the probes settled and what remains open.
+
+### [A] 2026-08-18 — Asserted "recorded" for a decision before the row landed
+
+state: open
+scoped: handover write-back
+legacy: none
+mitigation: the agent announced "N2a recorded" in chat but the row was never
+written (table-append slip, see GOTCHAS 2026-08-18 family); the omission was
+discovered only at the table-integrity check before the close pass. When
+announcing a write-back, verify the row exists (row-key grep) in the same
+turn; an un-landed assertion is invisible to the next agent until the close
+pass. Distinct from the GOTCHAS append-anchor entry: that catches
+overwrite-instead-of-append, this catches assert-without-write.

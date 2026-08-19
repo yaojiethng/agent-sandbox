@@ -70,3 +70,16 @@ return triggers script exit identically. Bare `exit` in a sourced function
 is a latent bug if the function is ever called from a different context
 (e.g. test harness, sub-shell, interactive use). Entrypoint scripts
 (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) §3.1.
+
+### [G] 2026-08-18 - Table-row append edits must keep the anchor row in newText
+
+state: open
+scoped: devlog markdown tables (handovers, design records, feedback/gotchas)
+legacy: not swept, fixed on contact
+mitigation: appending a row to a markdown table three times in one session replaced the
+anchor row instead of appending (N5-record twice, D7 once — each time newText carried
+only the new row, dropping the anchor). For any append, oldText must be the anchor row
+AND newText must be that same anchor row followed by the new row(s). After a multi-row
+table edit, re-grep the table's row keys and confirm every prior row still exists before
+continuing. Same family as the "did the write land?" reflex but distinct: that catches
+un-applied edits, this catches overwrite-instead-of-append.

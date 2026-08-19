@@ -197,3 +197,16 @@ Described in Harness Packaging and Versioning above.
 
 **Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.
 
+### Copy-Model Seeding — Host-Side Volume Seed (M2.6.5 follow-up)
+
+**Deferred (design walk `20260818-02`, decision: keep RO-mount-at-start for now).** A cleaner copy-in delivery mechanism exists but is not adopted: seed the volume host-side before `compose up` (one-shot `docker create` + `docker cp` reusing the sandbox image, or `docker run --rm` with both mounts), then bring the container up with no snapshot mount at all — fresh and resume compose files become identical and the one-time-copy-in semantics are captured exactly (staging exists only during the seed step). **Depends on the compose file-set mechanism** (settled in the M2.6.6 design, realized by the M2.6.6 compose-template task) must exist first — the copy-overlay snapshot-mount deletion is a single removal once the split is in place. Subtasks, to clean up after the seeding lands:
+- [ ] Drop the always-mounted `SNAPSHOT_DIR` from the compose template — no conditional mount needed once seeding is host-side
+- [ ] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only — vestigial on resume, where the volume's git state is authoritative
+- [ ] Re-examine `snapshot_dir`/SNAPSHOT_DIR env + session_state writes once the mount disappears
+
+Records: design record `20260730-design-settled-mount_model.md`, handover `20260818-02` (copy-in mechanism decision). The entrypoint branch inversion (if `! -d .git` → init; else → resume bookkeeping) is not filed here — it belongs to the M2.6.6 delivery implementation scope.
+
+### Environment-Change Persistence — Install Layers Across Runs (Not in scope, current model)
+
+**Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model — containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.
+

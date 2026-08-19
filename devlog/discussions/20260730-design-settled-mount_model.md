@@ -43,15 +43,21 @@ Constraint: none. Copy and mount are independent of backing — the user control
 
 ## Open questions
 
-Resolved before mount delivery implementation begins:
+**All resolved during the M2.6.6 design walk (2026-08-18** — live record: handover `20260818-02`). Terminology note: per the terminology decision (agent run / agent iteration), harness unit = *agent run*, ops unit = *agent iteration*; "session" reserved.
 
-- WORKTREE_DIR as baked placeholder vs runtime variable
-- Separate compose overlay vs conditional mount in the base template
-- Pi direct bind mounts (prompts/sessions/skills) under mount modes vs copy-in/copy-out
-- `--volumes-from` retained or dropped under mount modes
-- Role of `make apply` under mount modes (native git merge vs `staged.diff`)
-- Snapshot pipeline under mount modes — skip entirely, or produce what?
-- Migration path — conditional flag at session start vs separate Makefile target
+**Retired with evidence:** Q1 (WORKTREE_DIR — replaced by SANDBOX_ID/RUN_ID, M2.7); Q3 (pre-answered by M2.4 selective bind-mounts in `.pi/agent`); Q5 (downstream of the settled no-git-mediation principle: harness does not mediate git); Q6 (downstream of mount replacing copy-in — copy pipeline shapes per-run staging only).
+
+**Settled (see handover for full rationale):**
+- **Q2** — compose file set selectable at generation time per delivery; no YAML conditionals; volumes handled at generation time.
+- **Q4** — `--volumes-from` retained; reasoning layer reaches the worktree only via the capability layer's propagated mount; invariant 7 unchanged.
+- **Q7 / start redesign** — `make start` becomes the interactive-by-default wizard: agent-run inventory first (copy runs via labels; bind-mount runs via registry), resume-N or new; fresh = freshest container (implicit rebuild downgraded by staleness detection); config prefilled from the newest run's record; prints the full non-interactive command; `--run=<id>` resumes (absence = new); no subcommand split. (Includes: freshness-on-fresh-run clarification = container freshness, implicit rebuild auto-downgraded; the flag name was settled by the terminology decision — `--run`.)
+- **N1** — single shared worktree per sandbox at `.worktree/` (default; custom mount point as `make start` arg, injected into compose at generation); copy staging relocated to per-run tmp; `.snapshot` dropped from `SANDBOX_DIR`; resume stages nothing (copy: volume labels; bind-mount: registry); preflight delivery-aware.
+- **N2** — per-run RUN_ID (never reused); SANDBOX_ID frozen once per sandbox (derivation kept, `SANDBOX_DIR:HOST_HEAD_SHA` = branch-point tag); resume = config-recall from the resumed registry record; identity lives in the registry (registry fold; completely deprecates `.run-identity`); SESSION_STATE retained as container-side co-located provenance (see N4); mount-source per-run field/label.
+- **N3** — flock per mount point (`$SANDBOX_DIR/.locks/<hash(mount-source)>.lock`, held for run lifetime); copy keeps `volume_in_use` — no cross-blocking; parallel runs via distinct mount points; workspace paths verified unique; re-init always acquire-then-mutate.
+- **N4** — first run materializes the worktree via the shared snapshot primitive minus baseline.tar (future clone strategies incl. git history — roadmap task); start validation = `.git` + init marker, no clean-HEAD requirement; current branch, no silent switching; mount entrypoint minimal; port-back = existing package_branch/make draft diff machinery (no common ancestor); durable-rule for in-tree artifacts: harness declares non-management (see the in-tree-artifacts decision); SESSION_STATE retained both delivery shapes (container-side co-located provenance; mount writes it into the worktree `.git` — metadata, doubles as init marker).
+- **N5** — option (b): containers strictly per-run; persistence exclusively via mounted sources (worktree, workspace dirs, registry, explicitly-designated durable volumes), never container state; environment-change persistence out of scope, deferred item filed.
+
+**Grouped decisions:** prune — rule 2 confirmed; command-shape redesign deferred until after M2.6.5/M2.6.6 artifact shapes settle; `STALE=1` rejected. Terminology — agent run + agent iteration, session reserved; sweep is its own roadmap task. Start redesign — realized by the wizard (see Q7).
 
 ## Worktree backing: rejected
 
