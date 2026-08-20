@@ -165,17 +165,17 @@ resolve_latest_dir() {
 # Draft source resolution
 # =============================================================================
 
-# resolve_source_for_draft SANDBOX_DIR CHANNEL [SESSION_ARG]
+# resolve_source_for_draft SANDBOX_DIR CHANNEL [BUNDLE_ARG]
 #
-# Resolves the source directory and session name for draft operations.
-# Prints tab-separated values: SOURCE_DIR<TAB>SESSION_NAME
+# Resolves the source directory and bundle name for draft operations.
+# Prints tab-separated values: SOURCE_DIR<TAB>BUNDLE_NAME
 #
 # CHANNEL values:
 #   session  — resolve from $CHANGES_DIR/session/ (default)
 #   autosave — resolve from $CHANGES_DIR/autosave/
 #   bundles  — resolve from $OUTPUT_DIR/bundles/
 #
-# SESSION_ARG behaviours:
+# BUNDLE_ARG behaviours:
 #   non-empty — name-only, resolved under the channel's base directory
 #   empty     — auto-resolve to the newest directory under the channel
 #
@@ -183,7 +183,7 @@ resolve_latest_dir() {
 resolve_source_for_draft() {
   local SANDBOX_DIR="$1"
   local CHANNEL="${2:-session}"
-  local SESSION_ARG="${3:-}"
+  local BUNDLE_ARG="${3:-}"
 
   _resolve_paths "$SANDBOX_DIR"
 
@@ -191,44 +191,44 @@ resolve_source_for_draft() {
   BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || return 1
 
   local RESOLVED_DIR=""
-  local SESSION_NAME=""
+  local BUNDLE_NAME=""
 
-  if [[ -n "$SESSION_ARG" ]]; then
+  if [[ -n "$BUNDLE_ARG" ]]; then
     # Name-only resolution — reject anything that looks like an absolute path
-    if [[ "$SESSION_ARG" == /* ]]; then
-      echo "Error: --session is name-only; use --diff=<path> for explicit file paths" >&2
+    if [[ "$BUNDLE_ARG" == /* ]]; then
+      echo "Error: --bundle is name-only; use --diff=<path> for explicit file paths" >&2
       return 1
     fi
-    RESOLVED_DIR="${BASE_DIR}/${SESSION_ARG}"
-    SESSION_NAME="$SESSION_ARG"
+    RESOLVED_DIR="${BASE_DIR}/${BUNDLE_ARG}"
+    BUNDLE_NAME="$BUNDLE_ARG"
   else
     # Auto-resolve: newest directory under BASE_DIR
     RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
-      echo "Error: no session directories found under $BASE_DIR" >&2
+      echo "Error: no bundle directories found under $BASE_DIR" >&2
       return 1
     }
-    SESSION_NAME=$(basename "$RESOLVED_DIR")
+    BUNDLE_NAME=$(basename "$RESOLVED_DIR")
   fi
 
   if [[ ! -d "$RESOLVED_DIR" ]]; then
-    echo "Error: session directory not found: $RESOLVED_DIR" >&2
+    echo "Error: bundle directory not found: $RESOLVED_DIR" >&2
     return 1
   fi
 
   # Validate: must contain patches/ or uncommitted.diff
   if [[ ! -d "$RESOLVED_DIR/patches" ]] && [[ ! -f "$RESOLVED_DIR/uncommitted.diff" ]]; then
-    echo "Error: session directory has no patches/ or uncommitted.diff: $RESOLVED_DIR" >&2
+    echo "Error: bundle directory has no patches/ or uncommitted.diff: $RESOLVED_DIR" >&2
     return 1
   fi
 
-  printf '%s\t%s' "$RESOLVED_DIR" "$SESSION_NAME"
+  printf '%s\t%s' "$RESOLVED_DIR" "$BUNDLE_NAME"
 }
 
 # =============================================================================
 # Apply diff resolution
 # =============================================================================
 
-# resolve_diff_for_apply SANDBOX_DIR CHANNEL [SESSION_ARG]
+# resolve_diff_for_apply SANDBOX_DIR CHANNEL [BUNDLE_ARG]
 #
 # Resolves a diff file path for apply operations.
 # Prints the path to the resolved uncommitted.diff file.
@@ -238,7 +238,7 @@ resolve_source_for_draft() {
 #   autosave — resolve from $CHANGES_DIR/autosave/
 #   session  — resolve from $CHANGES_DIR/session/
 #
-# SESSION_ARG behaviours:
+# BUNDLE_ARG behaviours:
 #   non-empty — name-only, resolved under the channel's base directory
 #   empty     — auto-resolve to the newest directory under the channel
 #
@@ -246,7 +246,7 @@ resolve_source_for_draft() {
 resolve_diff_for_apply() {
   local SANDBOX_DIR="$1"
   local CHANNEL="${2:-diffs}"
-  local SESSION_ARG="${3:-}"
+  local BUNDLE_ARG="${3:-}"
 
   _resolve_paths "$SANDBOX_DIR"
 
@@ -254,25 +254,25 @@ resolve_diff_for_apply() {
   BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || return 1
 
   local RESOLVED_DIR=""
-  local SESSION_NAME=""
+  local BUNDLE_NAME=""
 
-  if [[ -n "$SESSION_ARG" ]]; then
+  if [[ -n "$BUNDLE_ARG" ]]; then
     # Name-only resolution — reject anything that looks like an absolute path
-    if [[ "$SESSION_ARG" == /* ]]; then
-      echo "Error: --session is name-only; use --diff=<path> for explicit file paths" >&2
+    if [[ "$BUNDLE_ARG" == /* ]]; then
+      echo "Error: --bundle is name-only; use --diff=<path> for explicit file paths" >&2
       return 1
     fi
-    RESOLVED_DIR="${BASE_DIR}/${SESSION_ARG}"
+    RESOLVED_DIR="${BASE_DIR}/${BUNDLE_ARG}"
   else
     # Auto-resolve: newest directory under BASE_DIR
     RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
-      echo "Error: no session directories found under $BASE_DIR" >&2
+      echo "Error: no bundle directories found under $BASE_DIR" >&2
       return 1
     }
   fi
 
   if [[ ! -d "$RESOLVED_DIR" ]]; then
-    echo "Error: session directory not found: $RESOLVED_DIR" >&2
+    echo "Error: bundle directory not found: $RESOLVED_DIR" >&2
     return 1
   fi
 

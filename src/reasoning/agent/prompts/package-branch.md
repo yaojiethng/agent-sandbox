@@ -9,25 +9,25 @@ Package all commits since `init_sha` for export via the workspace output mount. 
 ## 1. Run the packaging script
 
 Inside the container, invoke the script with an explicit output base directory
-and a descriptive `--session-summary`:
+and a descriptive `--bundle-summary`:
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --session-summary=add_format_patch_support
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --bundle-summary=add_format_patch_support
 ```
 
-`--session-summary` is required — the script aborts with a usage message if
+`--bundle-summary` is required — the script aborts with a usage message if
 omitted. Provide a concise snake_case phrase describing the nature of the change.
 Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
 Bad summaries: `changes`, `update_files`, `misc`, `package`, `snapshot`.
 
 This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE`
-and writes output to `<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>[-<SESSION_ID>]/`.
+and writes output to `<to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/`.
 If `SESSION_STATE` is missing, the script aborts with a clear error.
 
 **To diff against an explicit baseline:**
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --session-summary=<text>
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --bundle-summary=<text>
 ```
 
 The script produces one numbered `.diff` file per commit since `init_sha`, with
@@ -35,7 +35,7 @@ the commit subject embedded in the filename, plus a sibling `.msg` file with the
 full commit message:
 
 ```
-<to>/bundles/<EXPORT_TIME>-<SESSION_SUMMARY>[-<SESSION_ID>]/
+<to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/
   patches/
     0001-<sha>-<subject>.diff    — per-commit diff (index lines stripped)
     0001-<sha>-<subject>.msg     — full original commit message
@@ -55,8 +55,8 @@ from `init_sha` to `HEAD`.
 
 On the host, invoke via:
 ```bash
-agent-sandbox package-branch --sandbox=<path> [--session-summary=<text>]
-make package-branch [SESSION_SUMMARY=<text>]
+agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<text>]
+make package-branch [BUNDLE_SUMMARY=<text>]
 ```
 
 ## 1.5 Echo completion message
@@ -70,7 +70,7 @@ package_branch: artefacts written to:
   /home/agentuser/workspace/output/bundles/20260523-112813-<summary>-20260523-042607
 
 To draft this bundle on host, run:
-  make draft FROM=bundles SESSION=20260523-112813-<summary>-20260523-042607 BRANCH_SUMMARY=<slug>
+  make draft FROM=bundles BUNDLE=20260523-112813-<summary>-20260523-042607 BRANCH_SUMMARY=<slug>
 ```
 
 The script's last line is always the actionable next step — echo it, then
@@ -102,7 +102,7 @@ If nothing was deleted, write "None."
 The operator applies the numbered diffs to a draft branch for structured review:
 
 ```bash
-make draft [SESSION=<path>] [BRANCH_SUMMARY=<slug>]
+make draft [BUNDLE=<path>] [BRANCH_SUMMARY=<slug>]
 ```
 
 After review and commit shaping:

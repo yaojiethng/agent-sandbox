@@ -5,7 +5,7 @@
 # Covers:
 #   interactive_confirm_or_abort   — y/N prompt, return codes
 #   interactive_select_channel     — channel picker, entry counts
-#   interactive_select_session     — session picker, indicators, cap
+#   interactive_select_bundle     — session picker, indicators, cap
 #   interactive_select_diff_type   — diff type picker, auto-select
 
 set -uo pipefail
@@ -192,7 +192,7 @@ test_select_channel_repeats_on_invalid() {
 }
 
 # =============================================================================
-# interactive_select_session tests
+# interactive_select_bundle tests
 # =============================================================================
 
 test_select_session_picks_by_number() {
@@ -203,12 +203,12 @@ test_select_session_picks_by_number() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  local SESSION
-  SESSION=$(echo "2" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if [[ "$SESSION" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_session picks second session by number"
+  local BUNDLE
+  BUNDLE=$(echo "2" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
+    pass "interactive_select_bundle picks second session by number"
   else
-    fail "interactive_select_session should return '20260503-090000-beta', got: '$SESSION'"
+    fail "interactive_select_bundle should return '20260503-090000-beta', got: '$BUNDLE'"
   fi
 }
 
@@ -220,12 +220,12 @@ test_select_session_default_highlighted() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  local SESSION
-  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
-  if [[ "$SESSION" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_session returns default on empty input"
+  local BUNDLE
+  BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
+    pass "interactive_select_bundle returns default on empty input"
   else
-    fail "interactive_select_session should return default '20260503-090000-beta', got: '$SESSION'"
+    fail "interactive_select_bundle should return default '20260503-090000-beta', got: '$BUNDLE'"
   fi
 }
 
@@ -241,12 +241,12 @@ test_select_session_availability_indicators() {
   # Only patches
   make_session_fixture "$BASE/20260502-090000-patches-only" 1
 
-  local SESSION
-  SESSION=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if [[ "$SESSION" == "20260504-120000-full" ]]; then
-    pass "interactive_select_session shows availability indicators (first entry)"
+  local BUNDLE
+  BUNDLE=$(echo "1" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260504-120000-full" ]]; then
+    pass "interactive_select_bundle shows availability indicators (first entry)"
   else
-    fail "interactive_select_session should return first entry, got: '$SESSION'"
+    fail "interactive_select_bundle should return first entry, got: '$BUNDLE'"
   fi
 }
 
@@ -261,14 +261,14 @@ test_select_session_patch_count_shown() {
   make_session_fixture "$BASE/20260503-090000-zero"
 
   local STDERR
-  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   local OK=true
   echo "$STDERR" | grep -q "patches: 5" || OK=false
   echo "$STDERR" | grep -q "patches: 0" || OK=false
   if [[ "$OK" == true ]]; then
-    pass "interactive_select_session shows patch count instead of checkmark"
+    pass "interactive_select_bundle shows patch count instead of checkmark"
   else
-    fail "interactive_select_session should show patch counts (5 and 0), got: $STDERR"
+    fail "interactive_select_bundle should show patch counts (5 and 0), got: $STDERR"
   fi
 }
 
@@ -280,11 +280,11 @@ test_select_session_zero_entries() {
   # No session directories under BASE
 
   local RC=0
-  echo "1" | interactive_select_session "$SANDBOX" "session" 2>/dev/null || RC=$?
+  echo "1" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null || RC=$?
   if [[ "$RC" -ne 0 ]]; then
-    pass "interactive_select_session returns non-zero with zero entries"
+    pass "interactive_select_bundle returns non-zero with zero entries"
   else
-    fail "interactive_select_session should return non-zero with zero entries"
+    fail "interactive_select_bundle should return non-zero with zero entries"
   fi
 }
 
@@ -302,21 +302,21 @@ test_select_session_cap_at_ten() {
   done
 
   # Feed input for entry 10 in newest-first order (session-3)
-  local SESSION
-  SESSION=$(echo "10" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if echo "$SESSION" | grep -q "session-3"; then
-    pass "interactive_select_session caps at 10 entries, entry 10 selectable"
+  local BUNDLE
+  BUNDLE=$(echo "10" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if echo "$BUNDLE" | grep -q "session-3"; then
+    pass "interactive_select_bundle caps at 10 entries, entry 10 selectable"
   else
-    fail "interactive_select_session should select session-3 at entry 10 (newest-first), got: '$SESSION'"
+    fail "interactive_select_bundle should select session-3 at entry 10 (newest-first), got: '$BUNDLE'"
   fi
 
   # Try selecting entry 11 — should be invalid (capped at 10)
   local STDERR
-  STDERR=$(printf "11\nq\n" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(printf "11\nq\n" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "Invalid selection"; then
-    pass "interactive_select_session rejects entry beyond cap"
+    pass "interactive_select_bundle rejects entry beyond cap"
   else
-    fail "interactive_select_session should reject entry 11 (beyond cap)"
+    fail "interactive_select_bundle should reject entry 11 (beyond cap)"
   fi
 }
 
@@ -331,18 +331,18 @@ test_select_session_name_truncation() {
   make_session_fixture "$BASE/$LONG_NAME" 1
 
   local STDERR
-  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   # The displayed name should be truncated (contains "...")
   if echo "$STDERR" | grep -q "\.\.\."; then
-    pass "interactive_select_session truncates names longer than 50 chars"
+    pass "interactive_select_bundle truncates names longer than 50 chars"
   else
     # If the name is actually <= 50 chars, that's also fine — just verify it works
-    pass "interactive_select_session handles long names (no truncation needed if <= 50 chars)"
+    pass "interactive_select_bundle handles long names (no truncation needed if <= 50 chars)"
   fi
 }
 
 # =============================================================================
-# interactive_select_session — option 0 injection tests
+# interactive_select_bundle — option 0 injection tests
 # =============================================================================
 
 test_select_session_inject_option_zero() {
@@ -353,13 +353,13 @@ test_select_session_inject_option_zero() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  # DEFAULT_SESSION not in list — inject as option 0
-  local SESSION
-  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
-  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
-    pass "interactive_select_session injects option 0 for outside-default, Enter selects it"
+  # DEFAULT_BUNDLE not in list — inject as option 0
+  local BUNDLE
+  BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_bundle injects option 0 for outside-default, Enter selects it"
   else
-    fail "interactive_select_session should return '20260501-000000-remote' via option 0, got: '$SESSION'"
+    fail "interactive_select_bundle should return '20260501-000000-remote' via option 0, got: '$BUNDLE'"
   fi
 }
 
@@ -372,12 +372,12 @@ test_select_session_option_zero_by_number() {
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
   # Select option 0 by typing "0"
-  local SESSION
-  SESSION=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
-  if [[ "$SESSION" == "20260501-000000-remote" ]]; then
-    pass "interactive_select_session option 0 selectable by typing '0'"
+  local BUNDLE
+  BUNDLE=$(echo "0" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260501-000000-remote" ]]; then
+    pass "interactive_select_bundle option 0 selectable by typing '0'"
   else
-    fail "interactive_select_session should return '20260501-000000-remote' on '0', got: '$SESSION'"
+    fail "interactive_select_bundle should return '20260501-000000-remote' on '0', got: '$BUNDLE'"
   fi
 }
 
@@ -389,13 +389,13 @@ test_select_session_no_option_zero_when_in_displayed() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  # DEFAULT_SESSION IS in list — no option 0, Enter selects normally
-  local SESSION
-  SESSION=$(echo "" | interactive_select_session "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
-  if [[ "$SESSION" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_session does not inject option 0 when default is in displayed list"
+  # DEFAULT_BUNDLE IS in list — no option 0, Enter selects normally
+  local BUNDLE
+  BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
+  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
+    pass "interactive_select_bundle does not inject option 0 when default is in displayed list"
   else
-    fail "interactive_select_session should return '20260503-090000-beta' normally, got: '$SESSION'"
+    fail "interactive_select_bundle should return '20260503-090000-beta' normally, got: '$BUNDLE'"
   fi
 }
 
@@ -408,11 +408,11 @@ test_select_session_option_zero_stderr_shows_entry() {
 
   # Check stderr shows option 0
   local STDERR
-  STDERR=$(echo "0" | interactive_select_session "$SANDBOX" "session" "20260501-000000-remote" 2>&1 >/dev/null) || true
+  STDERR=$(echo "0" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "remote"; then
-    pass "interactive_select_session prints option 0 to stderr"
+    pass "interactive_select_bundle prints option 0 to stderr"
   else
-    fail "interactive_select_session should show option 0 in stderr"
+    fail "interactive_select_bundle should show option 0 in stderr"
   fi
 }
 
@@ -423,18 +423,18 @@ test_select_session_option_zero_not_present_without_default() {
   mkdir -p "$BASE"
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
 
-  # No DEFAULT_SESSION — no option 0, normal numbers start at 1
+  # No DEFAULT_BUNDLE — no option 0, normal numbers start at 1
   local STDERR
-  STDERR=$(echo "1" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(echo "1" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "^  0:"; then
-    fail "interactive_select_session should NOT show option 0 without DEFAULT_SESSION"
+    fail "interactive_select_bundle should NOT show option 0 without DEFAULT_BUNDLE"
   else
-    pass "interactive_select_session no option 0 when no default is given"
+    pass "interactive_select_bundle no option 0 when no default is given"
   fi
 }
 
 # =============================================================================
-# interactive_select_session — pagination tests
+# interactive_select_bundle — pagination tests
 # =============================================================================
 
 # Helper: create N fixture sessions
@@ -459,12 +459,12 @@ test_select_session_pagination_next_page() {
   # Page 1: entries 0-9 (session-12 .. session-3)
   # Page 2: entries 10-11 (session-2, session-1)
   # n, then 1 → selects first entry on page 2 = session-2
-  local SESSION
-  SESSION=$(printf "n\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if echo "$SESSION" | grep -q "session-2"; then
-    pass "interactive_select_session 'n' then '1' selects first entry on page 2"
+  local BUNDLE
+  BUNDLE=$(printf "n\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if echo "$BUNDLE" | grep -q "session-2"; then
+    pass "interactive_select_bundle 'n' then '1' selects first entry on page 2"
   else
-    fail "interactive_select_session should select session-2 after n+1, got: '$SESSION'"
+    fail "interactive_select_bundle should select session-2 after n+1, got: '$BUNDLE'"
   fi
 }
 
@@ -476,12 +476,12 @@ test_select_session_pagination_previous_page() {
   create_n_sessions "$BASE" 12
 
   # n, p (back to page 1), then 1 → selects first entry on page 1 = session-12
-  local SESSION
-  SESSION=$(printf "n\np\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if echo "$SESSION" | grep -q "session-12"; then
-    pass "interactive_select_session 'n' then 'p' returns to page 1"
+  local BUNDLE
+  BUNDLE=$(printf "n\np\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if echo "$BUNDLE" | grep -q "session-12"; then
+    pass "interactive_select_bundle 'n' then 'p' returns to page 1"
   else
-    fail "interactive_select_session should select session-12 after n+p+1, got: '$SESSION'"
+    fail "interactive_select_bundle should select session-12 after n+p+1, got: '$BUNDLE'"
   fi
 }
 
@@ -494,11 +494,11 @@ test_select_session_pagination_page_header() {
 
   # stderr should show "page 1 of 2"
   local STDERR
-  STDERR=$(printf "q\n" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(printf "q\n" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "page 1 of 2"; then
-    pass "interactive_select_session shows page header when multiple pages"
+    pass "interactive_select_bundle shows page header when multiple pages"
   else
-    fail "interactive_select_session should show 'page 1 of 2', got: '$STDERR'"
+    fail "interactive_select_bundle should show 'page 1 of 2', got: '$STDERR'"
   fi
 }
 
@@ -511,11 +511,11 @@ test_select_session_pagination_single_page() {
 
   # Only 3 entries — no pagination, no "page 1 of 1"
   local STDERR
-  STDERR=$(echo "q" | interactive_select_session "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "page"; then
-    fail "interactive_select_session should NOT show page header for single page"
+    fail "interactive_select_bundle should NOT show page header for single page"
   else
-    pass "interactive_select_session no page header for single page"
+    pass "interactive_select_bundle no page header for single page"
   fi
 }
 
@@ -526,13 +526,13 @@ test_select_session_pagination_option_zero_persists() {
   mkdir -p "$BASE"
   create_n_sessions "$BASE" 12
 
-  # SESSION= outside the first 10 pages, inject option 0, n should still show it
+  # BUNDLE= outside the first 10 pages, inject option 0, n should still show it
   local STDERR
-  STDERR=$(printf "n\nq\n" | interactive_select_session "$SANDBOX" "session" "20260504-000100-session-unknown" 2>&1 >/dev/null) || true
+  STDERR=$(printf "n\nq\n" | interactive_select_bundle "$SANDBOX" "session" "20260504-000100-session-unknown" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "0:" && echo "$STDERR" | grep -q "unknown"; then
-    pass "interactive_select_session option 0 persists across pages"
+    pass "interactive_select_bundle option 0 persists across pages"
   else
-    fail "interactive_select_session should show option 0 after 'n'"
+    fail "interactive_select_bundle should show option 0 after 'n'"
   fi
 }
 
@@ -545,12 +545,12 @@ test_select_session_pagination_no_n_at_last_page() {
 
   # n (to page 2), n (stays on page 2), then 1 selects first entry on page 2
   # Second n re-renders same page but stays — selection still works
-  local SESSION
-  SESSION=$(printf "n\nn\n1\n" | interactive_select_session "$SANDBOX" "session" 2>/dev/null)
-  if echo "$SESSION" | grep -q "session-2"; then
-    pass "interactive_select_session stays on last page with extra 'n'"
+  local BUNDLE
+  BUNDLE=$(printf "n\nn\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
+  if echo "$BUNDLE" | grep -q "session-2"; then
+    pass "interactive_select_bundle stays on last page with extra 'n'"
   else
-    fail "interactive_select_session should select session-2 after n+n+1, got: '$SESSION'"
+    fail "interactive_select_bundle should select session-2 after n+n+1, got: '$BUNDLE'"
   fi
 }
 

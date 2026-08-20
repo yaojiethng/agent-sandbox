@@ -12,11 +12,11 @@
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox stop     --name=<n> --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--session=<name>] [--diff=<path>] [--force]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--bundle=<name>] [--diff=<path>] [--force]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
-#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--baseline=<sha>]
+#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --targets=all

@@ -128,7 +128,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `diff_export.sh` | 🟢 Cold | M2.3 | Diff pipeline functions. Sourced by container-entrypoint.sh. |
 | `package_branch.sh` | 🟢 Cold | M2.3 | Package branch dispatcher: per-commit diffs, uncommitted.diff, all-changes.diff, changed-files/. Sourced by `diff_export`. |
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
-| `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
+| `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive bundle selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_bundle`, `interactive_select_diff_type`. |
 | `build.sh` | 🟡 Warm | M2.7 | Build orchestration: `build_agent`, `build_sandbox`, `preflight`. Uses repo root as Docker build context. |
 | `compose.sh` | 🟡 Warm | M2.7 | Docker Compose generation. Template substitution for session variables (incl. SESSION_ID, HOST_HEAD_SHA). |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |

@@ -11,12 +11,12 @@
 # Usage:
 #   source /path/to/interactive_session_select.sh
 #   CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR") || exit 1
-#   SESSION=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL") || exit 1
+#   BUNDLE=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL") || exit 1
 #
 # Functions:
 #   interactive_confirm_or_abort   — print items + y/N prompt
 #   interactive_select_channel     — pick a channel (draft or apply)
-#   interactive_select_session     — pick a session entry within a channel
+#   interactive_select_bundle     — pick a bundle entry within a channel
 #   interactive_select_diff_type   — pick uncommitted.diff or all-changes.diff
 
 # No set -euo pipefail here — this file is always sourced, never executed directly.
@@ -322,28 +322,28 @@ interactive_select_channel() {
 }
 
 # =============================================================================
-# interactive_select_session
+# interactive_select_bundle
 # =============================================================================
 
-# interactive_select_session SANDBOX_DIR CHANNEL [DEFAULT_SESSION]
+# interactive_select_bundle SANDBOX_DIR CHANNEL [DEFAULT_BUNDLE]
 #
-# Scans session entries under the resolved channel directory and presents
+# Scans bundle entries under the resolved channel directory and presents
 # a numbered list with availability indicators (patches, uncommitted.diff).
 #
 # Args:
 #   SANDBOX_DIR      — path to sandbox directory (for dirs_resolve)
 #   CHANNEL          — channel name (diffs, session, autosave, bundles)
-#   DEFAULT_SESSION  — optional session name to highlight as default
+#   DEFAULT_BUNDLE   — optional bundle name to highlight as default
 #
 # Output:
-#   stdout — selected session basename (e.g. "20260504-120000-feature-X")
+#   stdout — selected bundle basename (e.g. "20260504-120000-feature-X")
 #
 # Returns:
-#   0 on selection, 1 on abort or no sessions
-interactive_select_session() {
+#   0 on selection, 1 on abort or no bundles
+interactive_select_bundle() {
   local SANDBOX_DIR="$1"
   local CHANNEL="$2"
-  local DEFAULT_SESSION="${3:-}"
+  local DEFAULT_BUNDLE="${3:-}"
 
   dirs_resolve "$SANDBOX_DIR"
 
@@ -351,30 +351,30 @@ interactive_select_session() {
   BASE_DIR=$(_resolve_channel_dir "$CHANNEL") || return 1
 
   if [[ ! -d "$BASE_DIR" ]]; then
-    echo "No sessions available in channel '$CHANNEL'." >&2
+    echo "No bundles available in channel '$CHANNEL'." >&2
     return 1
   fi
 
   # Collect entries, sorted newest-first
-  local -a SESSION_DIRS=()
+  local -a BUNDLE_DIRS=()
   while IFS= read -r dir; do
     [[ -z "$dir" ]] && continue
-    SESSION_DIRS+=("$(basename "$dir")")
+    BUNDLE_DIRS+=("$(basename "$dir")")
   done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
 
-  if [[ "${#SESSION_DIRS[@]}" -eq 0 ]]; then
-    echo "No sessions available in channel '$CHANNEL'." >&2
+  if [[ "${#BUNDLE_DIRS[@]}" -eq 0 ]]; then
+    echo "No bundles available in channel '$CHANNEL'." >&2
     return 1
   fi
 
   # Build display entries: "name|name  patches: ✓  uncommitted: ✓"
   local -a ENTRIES=()
   local bname
-  for bname in "${SESSION_DIRS[@]}"; do
+  for bname in "${BUNDLE_DIRS[@]}"; do
     local ENTRY_DIR="${BASE_DIR}/${bname}"
 
     # Show the patch count rather than a binary presence indicator — the
-    # number of .diff files is far more informative for judging a session.
+    # number of .diff files is far more informative for judging a bundle.
     local PATCH_COUNT=0
     if [[ -d "$ENTRY_DIR/patches" ]]; then
       PATCH_COUNT=$(find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' 2>/dev/null | wc -l | tr -d ' ')
@@ -394,21 +394,21 @@ interactive_select_session() {
     ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}")
   done
 
-  interactive_pick "Available sessions (${CHANNEL}):" ENTRIES "$DEFAULT_SESSION" "$INTERACTIVE_MAX_ENTRIES"
+  interactive_pick "Available bundles (${CHANNEL}):" ENTRIES "$DEFAULT_BUNDLE" "$INTERACTIVE_MAX_ENTRIES"
 }
 
 # =============================================================================
 # interactive_select_diff_type
 # =============================================================================
 
-# interactive_select_diff_type SANDBOX_DIR SESSION_NAME CHANNEL
+# interactive_select_diff_type SANDBOX_DIR BUNDLE_NAME CHANNEL
 #
 # Presents a picker for diff file type (uncommitted.diff or all-changes.diff).
 # If only one type is available, skips the prompt and returns it directly.
 #
 # Args:
 #   SANDBOX_DIR   — path to sandbox directory (for dirs_resolve)
-#   SESSION_NAME  — session basename
+#   BUNDLE_NAME   — bundle basename
 #   CHANNEL       — channel name (diffs, session, autosave, bundles)
 #
 # Output:
@@ -418,7 +418,7 @@ interactive_select_session() {
 #   0 on selection, 1 on abort or no diff files found
 interactive_select_diff_type() {
   local SANDBOX_DIR="$1"
-  local SESSION_NAME="$2"
+  local BUNDLE_NAME="$2"
   local CHANNEL="$3"
 
   dirs_resolve "$SANDBOX_DIR"
@@ -426,14 +426,14 @@ interactive_select_diff_type() {
   local BASE_DIR
   BASE_DIR=$(_resolve_channel_dir "$CHANNEL") || return 1
 
-  local SESSION_DIR="${BASE_DIR}/${SESSION_NAME}"
+  local BUNDLE_DIR="${BASE_DIR}/${BUNDLE_NAME}"
   local HAS_UNCOMMITTED=false
   local HAS_ALL_CHANGES=false
 
-  if [[ -f "$SESSION_DIR/uncommitted.diff" && -s "$SESSION_DIR/uncommitted.diff" ]]; then
+  if [[ -f "$BUNDLE_DIR/uncommitted.diff" && -s "$BUNDLE_DIR/uncommitted.diff" ]]; then
     HAS_UNCOMMITTED=true
   fi
-  if [[ -f "$SESSION_DIR/all-changes.diff" && -s "$SESSION_DIR/all-changes.diff" ]]; then
+  if [[ -f "$BUNDLE_DIR/all-changes.diff" && -s "$BUNDLE_DIR/all-changes.diff" ]]; then
     HAS_ALL_CHANGES=true
   fi
 
@@ -447,7 +447,7 @@ interactive_select_diff_type() {
     return 0
   fi
   if [[ "$HAS_UNCOMMITTED" == false && "$HAS_ALL_CHANGES" == false ]]; then
-    echo "Error: no diff files found in $SESSION_DIR" >&2
+    echo "Error: no diff files found in $BUNDLE_DIR" >&2
     return 1
   fi
 

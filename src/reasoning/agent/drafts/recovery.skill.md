@@ -83,7 +83,7 @@ A rebase is needed after renaming to squash rename commits — the verification 
 **7. Package for review**
 
 ```bash
-bash libs/package_branch.sh --to=$HOME/workspace/output --session-summary=<snake_case_summary>
+bash libs/package_branch.sh --to=$HOME/workspace/output --bundle-summary=<snake_case_summary>
 ```
 
 Read `agent/prompts/package-branch.md` for the correct invocation.

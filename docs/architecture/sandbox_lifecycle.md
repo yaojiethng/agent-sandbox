@@ -162,13 +162,13 @@ Only one autosave directory exists per session — the old one is `rm -rf`'d bef
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [SESSION=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<EXPORT_TIME>-<slug>-<sha6>` branch. `SESSION` is name-only (rejected if absolute).
+**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<EXPORT_TIME>-<slug>-<sha6>` branch. `BUNDLE` is name-only (rejected if absolute).
 
 **`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
 **`make draft FROM=autosave`** — shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
 
-**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then session) instead of requiring explicit `SESSION=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session SESSION=<name>`). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
+**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then bundle) instead of requiring explicit `BUNDLE=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
 
 **`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged.
 
@@ -178,9 +178,9 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make apply FROM=autosave`** — shorthand for `--channel=autosave`. Resolves `uncommitted.diff` from `session-diffs/autosave/`.
 
-**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>` or `Running: make apply DIFF=<path>` for all-changes.diff). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
+**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, bundle, diff type) instead of requiring explicit flags. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make apply CHANNEL=session BUNDLE=<name>` or `Running: make apply DIFF=<path>` for all-changes.diff). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
 
-**`make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`** — runs `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`. Produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
+**`make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`** — runs `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`. Produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
 
 No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
 

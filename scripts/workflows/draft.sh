@@ -100,12 +100,12 @@ draft_create_and_init_branch() {
   local EXPORT_TIME="${10:-unknown}"
   local SESSION_ID="${11:-}"
 
-  # Guard: don\''t draft from a draft branch
+  # Guard: don't draft from a draft branch
   local CURRENT_BRANCH
   CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   if [[ "$CURRENT_BRANCH" == draft/* ]]; then
     echo "Error: already on a draft branch: $CURRENT_BRANCH" >&2
-    echo "  Run \''make reject\'' or \''make confirm\'' first." >&2
+    echo "  Run 'make reject' or 'make confirm' first." >&2
     return 1
   fi
 
@@ -113,7 +113,7 @@ draft_create_and_init_branch() {
   draft_guard_no_collision "$PROJECT_DIR" "$WORKING_BRANCH" || return 1
 
   # Create draft branch
-  echo "Creating draft branch \''$WORKING_BRANCH\'' from ${FROM_HASH:0:7}..."
+  echo "Creating draft branch '$WORKING_BRANCH' from ${FROM_HASH:0:7}..."
   git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$BASE_COMMIT"
 
   # Write .draft-state and commit it
@@ -280,7 +280,7 @@ _ingest_export_metadata() {
 # draft_run — create draft branch (no apply)
 # =============================================================================
 
-# draft_run PROJECT_DIR SOURCE_DIR SESSION_NAME BRANCH_FROM_ARG
+# draft_run PROJECT_DIR SOURCE_DIR BUNDLE_NAME BRANCH_FROM_ARG
 #           BRANCH_SUMMARY DIFF_COUNT AUTHOR
 #
 # Creates a draft branch, writes .draft-state, and prints branch info.
@@ -288,7 +288,7 @@ _ingest_export_metadata() {
 # Does NOT apply patches — the caller (main()) handles the apply loop.
 # Prints branch info to stdout for the caller's summary.
 draft_run() {
-  local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
+  local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM_ARG="$4" BRANCH_SUMMARY="$5" DIFF_COUNT="$6"
   local AUTHOR="$7"
 
@@ -300,15 +300,15 @@ draft_run() {
   [[ -d "$PATCHES_DIR" ]] || [[ "$DIFF_COUNT" -eq 0 ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }
 
   local SESSION_TS SANITIZED_HOST_BRANCH SESSION_ID
-  draft_parse_folder_name "$SESSION_NAME"
+  draft_parse_folder_name "$BUNDLE_NAME"
 
   # Allow DIFF_COUNT=0 when only uncommitted.diff is present
   : "${DIFF_COUNT:?}"
 
   # Ingest and validate export metadata
-  local BASE_COMMIT EXPORT_TIME INIT_SHA_FROM_EXPORT
+  local BASE_COMMIT EXPORT_TIME _dummy_init
   _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
-    BASE_COMMIT EXPORT_TIME INIT_SHA_FROM_EXPORT || return 1
+    BASE_COMMIT EXPORT_TIME _dummy_init || return 1
 
   local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
   [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
@@ -343,7 +343,7 @@ Required:
   --sandbox=<path>    Path to the sandbox directory
 
 Options:
-  --session=<name>        Named session to apply (default: newest)
+  --bundle=<name>         Named bundle to apply (default: newest)
   --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
   --branch-from=<commit>  Base commit for the draft branch (default: HEAD)
   --diffs=<start>..<end>  Range of patches to apply
@@ -389,7 +389,7 @@ _draft_rollback() {
 # _run_draft_workflow — common orchestration after source resolution
 # =============================================================================
 
-# _run_draft_workflow PROJECT_DIR SOURCE_DIR SESSION_NAME
+# _run_draft_workflow PROJECT_DIR SOURCE_DIR BUNDLE_NAME
 #                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE STRICT
 #                      [PATCH_LIST]
 #
@@ -399,7 +399,7 @@ _draft_rollback() {
 # instead of re-collecting — avoids double enumeration when the caller
 # (interactive path) has already collected the list for display.
 _run_draft_workflow() {
-  local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
+  local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
   local FORCE="$7" STRICT="$8"
   local PATCH_LIST="${9:-}"
@@ -445,7 +445,7 @@ _run_draft_workflow() {
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
   # Create branch (branch-creation only)
-  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   # Apply patches
@@ -483,7 +483,7 @@ _run_draft_workflow() {
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls
 # _run_draft_workflow after resolving the source.
-# Expected flags: --project=<dir> --sandbox=<dir> [--session=<name>]
+# Expected flags: --project=<dir> --sandbox=<dir> [--bundle=<name>]
 #   [--channel=<c>] [--branch-from=<n>] [--diffs=<r>]
 #   [--branch-summary=<s>] [--force] [--permissive] [--interactive]
 main() {
@@ -495,7 +495,7 @@ main() {
 
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
-  local SESSION_ARG=""
+  local BUNDLE_ARG=""
   local CHANNEL_ARG=""
   local BRANCH_FROM=""
   local DIFFS=""
@@ -508,7 +508,7 @@ main() {
     case "$ARG" in
       --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
       --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --session=*)     SESSION_ARG="${ARG#--session=}" ;;
+      --bundle=*)      BUNDLE_ARG="${ARG#--bundle=}" ;;
       --channel=*)     CHANNEL_ARG="${ARG#--channel=}" ;;
       --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
       --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
@@ -533,13 +533,13 @@ main() {
   if [[ "$INTERACTIVE" == true ]]; then
     source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
 
-    if [[ -n "$CHANNEL_ARG" && -n "$SESSION_ARG" ]]; then
-      # Both channel and session given: skip pickers, show patch list + confirm
+    if [[ -n "$CHANNEL_ARG" && -n "$BUNDLE_ARG" ]]; then
+      # Both channel and bundle given: skip pickers, show patch list + confirm
       local ROUTER_RESULT
-      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_ARG") || exit 1
-      local SOURCE_DIR SESSION_NAME
+      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_ARG") || exit 1
+      local SOURCE_DIR BUNDLE_NAME
       SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-      SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+      BUNDLE_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
 
       local PATCH_LIST
       PATCH_LIST=$(draft_collect_patches "$SOURCE_DIR/patches" "$DIFFS" || true)
@@ -555,7 +555,7 @@ main() {
         fi
       fi
 
-      local -a PATCH_ITEMS=("Draft from: $SESSION_NAME" "  Patches:")
+      local -a PATCH_ITEMS=("Draft from: $BUNDLE_NAME" "  Patches:")
       while IFS= read -r f; do
         [[ -z "$f" ]] && continue
         PATCH_ITEMS+=("    $(basename "$f")")
@@ -566,24 +566,24 @@ main() {
       fi
 
       interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
-      echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
-      _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+      echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
+      _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
         "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT" "$PATCH_LIST"
       exit $?
     fi
 
     # Step 1: pick channel
     CHANNEL_ARG=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
-    # Step 2: pick session
-    local SESSION_NAME
-    SESSION_NAME=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL_ARG" "${SESSION_ARG:-}") || exit 1
+    # Step 2: pick bundle
+    local BUNDLE_NAME
+    BUNDLE_NAME=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL_ARG" "${BUNDLE_ARG:-}") || exit 1
 
     local ROUTER_RESULT
-    ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$SESSION_NAME") || exit 1
+    ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_NAME") || exit 1
     local SOURCE_DIR
     SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-    echo "Running: make draft FROM=${CHANNEL_ARG} SESSION=${SESSION_NAME}"
-    _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+    echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
+    _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
       "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
     exit $?
   fi
@@ -591,11 +591,11 @@ main() {
   # Non-interactive path
   local CHANNEL="${CHANNEL_ARG:-session}"
   local ROUTER_RESULT
-  ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$SESSION_ARG") || exit 1
-  local SOURCE_DIR SESSION_NAME
+  ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE_ARG") || exit 1
+  local SOURCE_DIR BUNDLE_NAME
   SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-  SESSION_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
-  _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+  BUNDLE_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+  _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
 }
 

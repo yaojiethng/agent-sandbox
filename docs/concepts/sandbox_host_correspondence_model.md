@@ -85,7 +85,7 @@ HEAD = A                             (not yet started)
   │        [STOPPED]                   │
   │                                    X  container exits; artefacts persisted
   │
-  ├─ make draft [SESSION=<name>]
+  ├─ make draft [BUNDLE=<name>]
   │             [CHANNEL=<channel>]
   │    └─ draft/<branch> created
   │       diffs applied in order via git apply
@@ -168,7 +168,7 @@ directions and on both host and container.
 
 | `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
 | `make apply [CHANNEL=<channel>] [DIFF=<path>] [INTERACTIVE=1]` | Host | Applies `uncommitted.diff` (resolved by router) uncommitted. Default: `diffs` channel. `DIFF=<path>` bypasses resolution. `INTERACTIVE=1` prompts through channel/session/diff-type picker. |
-| `make draft [CHANNEL=<channel>] [SESSION=<name>] [INTERACTIVE=1]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. `INTERACTIVE=1` prompts through channel/session picker. |
+| `make draft [CHANNEL=<channel>] [BUNDLE=<name>] [INTERACTIVE=1]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. `INTERACTIVE=1` prompts through channel/bundle picker. |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
 | `make reject` | Host | Discards draft branch. Artefacts unchanged. |
 

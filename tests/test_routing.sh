@@ -99,13 +99,13 @@ test_resolve_draft_default_channel() {
 
   local RESULT
   RESULT=$(resolve_source_for_draft "$SD" "session" "") || { fail "resolve_source_for_draft failed"; return; }
-  local SOURCE_DIR SESSION_NAME
+  local SOURCE_DIR BUNDLE_NAME
   SOURCE_DIR=$(echo "$RESULT" | cut -f1)
-  SESSION_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$SESSION_NAME" == "20260408-120000-main" ]] && [[ -n "$SOURCE_DIR" ]]; then
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  if [[ "$BUNDLE_NAME" == "20260408-120000-main" ]] && [[ -n "$SOURCE_DIR" ]]; then
     pass "resolve_source_for_draft: default channel resolves latest session"
   else
-    fail "resolve_source_for_draft: expected 20260408-120000-main, got $SESSION_NAME / $SOURCE_DIR"
+    fail "resolve_source_for_draft: expected 20260408-120000-main, got $BUNDLE_NAME / $SOURCE_DIR"
   fi
 }
 
@@ -116,12 +116,12 @@ test_resolve_draft_explicit_channel_autosave() {
 
   local RESULT
   RESULT=$(resolve_source_for_draft "$SD" "autosave" "") || { fail "resolve_source_for_draft autosave failed"; return; }
-  local SESSION_NAME
-  SESSION_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$SESSION_NAME" == "20260408-120000-main" ]]; then
+  local BUNDLE_NAME
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  if [[ "$BUNDLE_NAME" == "20260408-120000-main" ]]; then
     pass "resolve_source_for_draft: autosave channel resolves correctly"
   else
-    fail "resolve_source_for_draft autosave: expected 20260408-120000-main, got $SESSION_NAME"
+    fail "resolve_source_for_draft autosave: expected 20260408-120000-main, got $BUNDLE_NAME"
   fi
 }
 
@@ -132,13 +132,13 @@ test_resolve_draft_named_session() {
 
   local RESULT
   RESULT=$(resolve_source_for_draft "$SD" "session" "my-session") || { fail "resolve_source_for_draft named failed"; return; }
-  local SOURCE_DIR SESSION_NAME
+  local SOURCE_DIR BUNDLE_NAME
   SOURCE_DIR=$(echo "$RESULT" | cut -f1)
-  SESSION_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$SESSION_NAME" == "my-session" ]]; then
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  if [[ "$BUNDLE_NAME" == "my-session" ]]; then
     pass "resolve_source_for_draft: named session resolves correctly"
   else
-    fail "resolve_source_for_draft named: expected my-session, got $SESSION_NAME"
+    fail "resolve_source_for_draft named: expected my-session, got $BUNDLE_NAME"
   fi
 }
 
@@ -171,12 +171,12 @@ test_resolve_draft_bundles_channel() {
 
   local RESULT
   RESULT=$(resolve_source_for_draft "$SD" "bundles" "") || { fail "resolve_source_for_draft bundles failed"; return; }
-  local SESSION_NAME
-  SESSION_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$SESSION_NAME" == "20260408-120000-my-bundle" ]]; then
+  local BUNDLE_NAME
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  if [[ "$BUNDLE_NAME" == "20260408-120000-my-bundle" ]]; then
     pass "resolve_source_for_draft: bundles channel resolves correctly"
   else
-    fail "resolve_source_for_draft bundles: expected 20260408-120000-my-bundle, got $SESSION_NAME"
+    fail "resolve_source_for_draft bundles: expected 20260408-120000-my-bundle, got $BUNDLE_NAME"
   fi
 }
 

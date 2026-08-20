@@ -513,19 +513,19 @@ test_draft_noninteractive() {
   fi
 }
 
-test_draft_with_session() {
+test_draft_with_bundle() {
   setup
-  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --session=my-session
+  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --bundle=my-session
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--session"* ]] && found=true
+    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--bundle"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "draft --session: passes --session flag through"
+    pass "draft --bundle: passes --bundle flag through"
   else
-    fail "draft --session: expected --session in exec, got: ${CAPTURED[*]}"
+    fail "draft --bundle: expected --bundle in exec, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -727,7 +727,7 @@ run_test test_apply_with_diff
 run_test test_apply_with_branch
 run_test test_apply_with_force
 run_test test_draft_noninteractive
-run_test test_draft_with_session
+run_test test_draft_with_bundle
 run_test test_draft_with_force
 run_test test_draft_with_permissive
 run_test test_confirm_default

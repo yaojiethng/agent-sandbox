@@ -108,7 +108,7 @@ Options:
   --diff=<path>       Apply a specific diff file (default: auto-resolve)
   --branch=<name>     Check out or create a branch before applying
   --channel=<name>    Resolution channel: diffs, session, autosave (default: diffs)
-  --session=<name>    Named session to resolve from (default: newest)
+  --bundle=<name>     Named bundle to resolve from (default: newest)
   --diff-type=<type>  Diff file type: uncommitted or all-changes (default: uncommitted)
   --force             Apply with --reject for conflicts
   --permissive        Retry with --recount on failure
@@ -136,7 +136,7 @@ main() {
   local FORCE=false
   local STRICT=false
   local CHANNEL=""
-  local SESSION=""
+  local BUNDLE=""
   local INTERACTIVE=false
   local DIFF_TYPE=""
 
@@ -149,7 +149,7 @@ main() {
       --force)         FORCE=true ;;
       --permissive)    true ;;  # no-op, kept for compatibility
       --channel=*)     CHANNEL="${ARG#--channel=}" ;;
-      --session=*)     SESSION="${ARG#--session=}" ;;
+      --bundle=*)      BUNDLE="${ARG#--bundle=}" ;;
       --interactive)   INTERACTIVE=true ;;
       --diff-type=*)   DIFF_TYPE="${ARG#--diff-type=}" ;;
       *)
@@ -181,25 +181,25 @@ main() {
     source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
     local CHANNEL
     CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL:-diffs}") || exit 1
-    # Step 2: pick session
-    local SESSION
-    SESSION=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
+    # Step 2: pick bundle
+    local BUNDLE
+    BUNDLE=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || exit 1
     # Step 3: pick diff type
     local DIFF_TYPE
-    DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION" "$CHANNEL") || exit 1
+    DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$BUNDLE" "$CHANNEL") || exit 1
 
     # Resolve the diff file path
     _resolve_paths "$SANDBOX_DIR"
     local BASE_DIR
     BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
-    local DIFF_FILE="${BASE_DIR}/${SESSION}/${DIFF_TYPE}.diff"
+    local DIFF_FILE="${BASE_DIR}/${BUNDLE}/${DIFF_TYPE}.diff"
     if [[ ! -f "$DIFF_FILE" ]]; then
       echo "Error: diff file not found: $DIFF_FILE" >&2
       exit 1
     fi
 
     if [[ "$DIFF_TYPE" == "uncommitted" ]]; then
-      echo "Running: make apply FROM=${CHANNEL} SESSION=${SESSION}"
+      echo "Running: make apply FROM=${CHANNEL} BUNDLE=${BUNDLE}"
     else
       echo "Running: make apply DIFF=${DIFF_FILE}"
     fi
@@ -215,9 +215,10 @@ main() {
     local CHANNEL="${CHANNEL:-diffs}"
     local DIFF_TYPE="${DIFF_TYPE:-uncommitted}"
 
-    # Resolve session, then swap the diff file type (uncommitted vs all-changes)
+    # Resolve the diff file within the selected bundle, then swap the diff
+    # file type (uncommitted vs all-changes)
     local RESOLVED
-    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
+    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || exit 1
     local DIFF_FILE="${RESOLVED%/*}/${DIFF_TYPE}.diff"
     if [[ ! -f "$DIFF_FILE" ]]; then
       echo "Error: diff file not found: $DIFF_FILE" >&2

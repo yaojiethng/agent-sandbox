@@ -84,12 +84,12 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make apply [CHANNEL=<channel>] [SESSION=<name>] [DIFF=<path>] [BRANCH=<branch>] [FORCE=1]`
+### `make apply [CHANNEL=<channel>] [BUNDLE=<name>] [DIFF=<path>] [BRANCH=<branch>] [FORCE=1]`
 
 Applies a diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session. `DIFF=<path>` bypasses all channel resolution — applies the specified file directly.
+By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle. `DIFF=<path>` bypasses all channel resolution — applies the specified file directly.
 
 **Channels:**
 - `diffs` (default) — resolves `uncommitted.diff` from `output/diffs/`
@@ -98,16 +98,16 @@ By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resol
 
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, session selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>`) before execution. When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 in the session picker and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, bundle selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make apply CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
-### `make draft [SESSION=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
+### `make draft [BUNDLE=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
 
 Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest session). `SESSION=<name>` pins to a named session (name-only — absolute paths rejected).
+By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only — absolute paths rejected).
 
 **Channels:**
 - `session` (default) — resolves from `session-diffs/session/`
@@ -116,7 +116,7 @@ By default, resolves from the `session` channel (`session-diffs/session/`) using
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and session selection. When both `SESSION=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session SESSION=<name>`) before execution. When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 in the session picker and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
@@ -132,7 +132,7 @@ Discards the current `draft/` branch, returns to the source branch. Artefacts un
 
 ---
 
-### `make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`
+### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 
 Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`.
 
@@ -140,7 +140,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 
 ---
 
-### `make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`
+### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 
 Host-side export. Packages committed branch history as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/`. Delegates to `agent-sandbox package-branch`, which reads `.env` and writes to `INPUT_DIR/bundles/<ts>-<summary>/`.
 

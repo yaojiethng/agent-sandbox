@@ -10,17 +10,17 @@ contracts.
 When a required argument is missing, the tool **must not** silently use a default or crash with a bare message like "Error: missing --to". It must emit a full error block that lets the caller immediately retry:
 
 ```
-Error: --session-summary is required. Provide a concise snake_case label.
+Error: --bundle-summary is required. Provide a concise snake_case label.
 
-  Good: --session-summary=fix_provisioning_metadata_agnostic
-  Good: --session-summary=add_format_patch_support
-  Bad:  --session-summary=changes
-  Bad:  --session-summary=snapshot
+  Good: --bundle-summary=fix_provisioning_metadata_agnostic
+  Good: --bundle-summary=add_format_patch_support
+  Bad:  --bundle-summary=changes
+  Bad:  --bundle-summary=snapshot
 
-Usage: package_branch.sh --to=<dir> --session-summary=<text>
+Usage: package_branch.sh --to=<dir> --bundle-summary=<text>
 
   --to=<dir>           Required. Base output directory.
-  --session-summary    Required. Snake_case label for the bundle directory.
+  --bundle-summary     Required. Snake_case label for the bundle directory.
 ```
 
 The error must include:
@@ -40,7 +40,7 @@ package_branch: artefacts written to:
   /path/to/bundles/TS-LABEL-TS
 
 To draft this bundle on host, run:
-  make draft FROM=bundles SESSION=TS-LABEL-TS BRANCH_SUMMARY=<slug>
+  make draft FROM=bundles BUNDLE=TS-LABEL-TS BRANCH_SUMMARY=<slug>
 ```
 
 The next step should be:

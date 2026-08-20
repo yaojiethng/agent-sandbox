@@ -62,13 +62,13 @@ REFRESH      ?=
 REBUILD      ?=
 RESUME       ?=
 TARGET       ?=
-SESSION      ?=
 FROM         ?=
 INTERACTIVE  ?=
 DIFF_TYPE    ?=
 DIFF         ?=
 TARGET_BRANCH ?=
-SESSION_SUMMARY ?=
+BUNDLE       ?=
+BUNDLE_SUMMARY ?=
 BASELINE ?=
 ALL ?=
 STALE        ?=
@@ -219,24 +219,24 @@ prune:
 #
 # WORKFLOW:
 #   make draft                           — apply session patches to a working branch for review
-#   make draft SESSION=<name>            — apply from a named session under the channel directory
+#   make draft BUNDLE=<name>             — apply from a named bundle under the channel directory
 #   make draft FROM=bundles              — resolve from output/bundles/ instead of session-diffs/
 #   make draft FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
 #   make draft FORCE=1                   — apply with --reject; .rej files for conflicts
 #   make draft PERMISSIVE=1              — retry with --recount on apply failure
-#   make draft INTERACTIVE=1             — interactive picker for channel and session selection
+#   make draft INTERACTIVE=1             — interactive picker for channel and bundle selection
 #   git log -p HEAD~N..HEAD              — review changes on the working branch
 #   make confirm                         — rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x         — merge to a different target branch
 #   make reject                          — discard draft branch, return to source branch
 #
 #   make apply                           — apply uncommitted changes (auto-resolves from session/)
-#   make apply SESSION=<name>            — apply from a named session under the channel directory
+#   make apply BUNDLE=<name>             — apply from a named bundle under the channel directory
 #   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
-#   make apply DIFF=<path>               — apply a specific diff file (no session resolution needed)
+#   make apply DIFF=<path>               — apply a specific diff file (no bundle resolution needed)
 #   make apply BRANCH=<name>             — apply to a named branch
 #   make apply FORCE=1                   — apply with --reject; .rej files created for conflicts
-#   make apply INTERACTIVE=1             — interactive picker for channel, session, and diff type
+#   make apply INTERACTIVE=1             — interactive picker for channel, bundle, and diff type
 
 DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
@@ -245,7 +245,7 @@ draft:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --channel=$(DRAFT_CHANNEL) \
-	  $(if $(SESSION),--session=$(SESSION),) \
+	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
 	  $(if $(DIFFS),--diffs=$(DIFFS),) \
@@ -271,7 +271,7 @@ apply:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  --channel=$(APPLY_CHANNEL) \
-	  $(if $(SESSION),--session=$(SESSION),) \
+	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
@@ -292,7 +292,7 @@ apply:
 package-branch:
 	agent-sandbox package-branch \
 	  --sandbox=$(SANDBOX_DIR) \
-	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
+	  $(if $(BUNDLE_SUMMARY),--bundle-summary=$(BUNDLE_SUMMARY),) \
 	  $(if $(BASELINE),--baseline=$(BASELINE),) \
 	  $(if $(NO_RENAMES),--no-renames,)
 

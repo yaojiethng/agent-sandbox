@@ -88,7 +88,7 @@ echo "================================================================"
 
 BRANCH_SUMMARY="knowledge_test"
 BRANCH_FROM=""  # use HEAD
-SESSION_ARG=""  # auto-resolve (newest)
+BUNDLE_ARG=""  # auto-resolve (newest)
 DIFFS_ARG=""
 FORCE=""
 
@@ -135,7 +135,7 @@ echo "Found $DIFF_COUNT patches"
 
 echo "--- Creating draft branch ---"
 set +e
-draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "$SESSION_ARG" "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT"
+draft_run "$PROJECT_DIR" "$SANDBOX_DIR" "$BUNDLE_ARG" "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT"
 DRAFT_RESULT=$?
 set -e
 

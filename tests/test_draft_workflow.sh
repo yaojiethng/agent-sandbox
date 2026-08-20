@@ -27,11 +27,11 @@ source "$TEST_DIR/libs/session_fixtures.sh"
 #
 # Replicates the old draft_run contract (create branch + apply patches +
 # apply uncommitted) using the new decomposed functions.
-# Signature matches old draft_run: PROJECT_DIR SOURCE_DIR SESSION_NAME
+# Signature matches old draft_run: PROJECT_DIR SOURCE_DIR BUNDLE_NAME
 # BRANCH_FROM DIFFS BRANCH_SUMMARY
 # =============================================================================
 _test_draft_run() {
-  local PROJECT_DIR="$1" SOURCE_DIR="$2" SESSION_NAME="$3"
+  local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
 
   local PATCHES_DIR="$SOURCE_DIR/patches"
@@ -47,7 +47,7 @@ _test_draft_run() {
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
-  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$SESSION_NAME" \
+  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false false || return 1
@@ -100,8 +100,8 @@ make_real_session() {
   mkdir -p "$SANDBOX_DIR/.workspace"
 
   # Write session directory
-  local SESSION_NAME="${SESSION_TS}-${BRANCH}"
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION_NAME"
+  local BUNDLE_NAME="${SESSION_TS}-${BRANCH}"
+  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$BUNDLE_NAME"
   rm -rf "$SESSION_DIR"
   mkdir -p "$SESSION_DIR/patches"
 

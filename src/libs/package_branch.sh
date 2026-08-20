@@ -21,7 +21,7 @@
 #   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
 #
 # Usage (direct):
-#   package_branch.sh --to=<dir> --session-summary=<text>
+#   package_branch.sh --to=<dir> --bundle-summary=<text>
 #
 # Arguments (library mode):
 #   SANDBOX_DIR       — path to the git repository
@@ -31,7 +31,7 @@
 # Flags (direct mode):
 #   --to=<dir>        Base parent directory (required). Script creates
 #                     <to>/bundles/<ts>-<label>[-<ts>]/ subdirectory.
-#   --session-summary Short snake_case label for the output directory.
+#   --bundle-summary Short snake_case label for the output directory.
 #                     Default: "snapshot".
 #   --no-renames      Use git diff --no-renames (avoid rename operations)
 
@@ -56,7 +56,7 @@ Required:
 
 Options:
   --to=<dir>              Output directory (default: auto-resolved from sandbox)
-  --session-summary=<txt> Required snake_case label for the bundle directory
+  --bundle-summary=<txt>  Required snake_case label for the bundle directory
   --no-renames            Use git diff --no-renames (avoid rename operations in diffs)
 EOF
 }
@@ -307,19 +307,19 @@ package_branch() {
   local bundle_name
   bundle_name=$(basename "$OUTPUT_DIR")
   echo "To draft this bundle on host, run:" >&2
-  echo "  make draft FROM=bundles SESSION=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
+  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
 }
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   TO_ARG=""
-  SESSION_SUMMARY_ARG=""
+  BUNDLE_SUMMARY_ARG=""
   NO_RENAMES_ARG=false
 
   for ARG in "$@"; do
     case "$ARG" in
       --help|-h) usage; exit 0 ;;
-      --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
+      --bundle-summary=*) BUNDLE_SUMMARY_ARG="${ARG#--bundle-summary=}" ;;
       --to=*)              TO_ARG="${ARG#--to=}" ;;
       --no-renames)        NO_RENAMES_ARG=true ;;
       *)
@@ -346,31 +346,31 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     exit 1
   fi
 
-  # --session-summary is required (same class as --to)
-  if [[ -z "$SESSION_SUMMARY_ARG" ]]; then
-    echo "Error: --session-summary is required. Provide a concise snake_case label." >&2
+  # --bundle-summary is required (same class as --to)
+  if [[ -z "$BUNDLE_SUMMARY_ARG" ]]; then
+    echo "Error: --bundle-summary is required. Provide a concise snake_case label." >&2
     echo "" >&2
-    echo "  Good: --session-summary=fix_provisioning_metadata_agnostic" >&2
-    echo "  Good: --session-summary=add_format_patch_support" >&2
-    echo "  Bad:  --session-summary=changes" >&2
-    echo "  Bad:  --session-summary=snapshot" >&2
-    echo "  Bad:  --session-summary=misc" >&2
+    echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
+    echo "  Good: --bundle-summary=add_format_patch_support" >&2
+    echo "  Bad:  --bundle-summary=changes" >&2
+    echo "  Bad:  --bundle-summary=snapshot" >&2
+    echo "  Bad:  --bundle-summary=misc" >&2
     echo "" >&2
-    echo "Usage: package_branch.sh --to=<dir> --session-summary=<text>" >&2
+    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<text>" >&2
     echo "" >&2
     echo "  --to=<dir>           Required. Base output directory." >&2
-    echo "  --session-summary    Required. Snake_case label for the bundle directory." >&2
+    echo "  --bundle-summary     Required. Snake_case label for the bundle directory." >&2
     exit 1
   fi
-  SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
+  BUNDLE_SUMMARY="$BUNDLE_SUMMARY_ARG"
 
   # Auto-resolve SESSION_ID from SESSION_STATE
   SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
-  # Construct output directory via export_path. LABEL (SESSION_SUMMARY)
+  # Construct output directory via export_path. LABEL (BUNDLE_SUMMARY)
   # is optional — when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
-  if [[ -n "$SESSION_SUMMARY" ]]; then
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$SESSION_SUMMARY")
+  if [[ -n "$BUNDLE_SUMMARY" ]]; then
+    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
   else
     OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID")
   fi
