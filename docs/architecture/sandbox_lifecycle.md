@@ -76,16 +76,16 @@ The two-step design ensures all four working tree states are handled correctly:
 **Current — single-volume model:**
 
 ```
-.run-identity exists + REFRESH not set?
+volume exists + REFRESH not set?
   ├── No  → normal init
-  │         Host: compute identity, write .run-identity, run copy pipeline
+  │         Host: compute fresh identity, run copy pipeline
   │         Container: .git absent → snapshot_validate + snapshot_init_git
   └── Yes → resume
-            Host: read identity from .run-identity, skip copy pipeline
+            Host: read identity from the volume's Docker labels, skip copy pipeline
             Container: .git present → skip snapshot_validate + snapshot_init_git
 ```
 
-The `.run-identity` file (written to `$SANDBOX_DIR/.run-identity` at session start) records the session identity. It is always overwritten — for new sessions with fresh identity values, and for resumed sessions with values read from the volume's Docker labels.
+Host-side identity is recorded in the per-run compose registry (`.compose/<run-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
 
 **Session start (M2.6.5):**
 

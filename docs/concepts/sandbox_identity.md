@@ -9,8 +9,8 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 | `PROJECT_NAME` | User-provided at `onboard` | Host | Human-readable project identifier. Used in container names, image names, labels. |
 | `PROJECT_DIR` | User-provided at `onboard` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
 | `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`) | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
-| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start; persisted in `.run-identity` | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On resume, read from `.run-identity`, not recomputed. |
-| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` at first start; persisted in `.run-identity` | Session run | Human-readable session timestamp. On resume, read from `.run-identity` to ensure consistency with the volume's SESSION_STATE. |
+| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On copy-mode resume, read from the volume label; on mount-mode resume, from the registry record. |
+| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` at first start | Session run | Human-readable session timestamp. On resume, read from the volume label / registry record to ensure consistency with the volume's SESSION_STATE. |
 
 ## Derived Identifiers
 
@@ -122,16 +122,9 @@ Container-sig covers only the sandbox image and tier-3 agent images (the final p
 Harness-sig (runtime drift detection for the harness binary itself) is deferred to a future milestone.
 
 
-## `.run-identity` (persistence file)
+## Identity persistence (registry)
 
-Written to `$SANDBOX_DIR/.run-identity` at every session start — with fresh identity for new sessions, and with values from volume labels for resumed sessions. Ensures host-side env vars match the volume's SESSION_STATE.
-
-```
-SESSION_TS=20260622-104203
-RUN_ID=abc123
-HOST_HEAD_SHA=deadbeef0123456789abcdef0123456789abcdef
-SANDBOX_ID=12345678
-```
+Host-side session identity is recorded in the per-run compose registry, the persisted file `$SANDBOX_DIR/.compose/<RUN_ID>.yml` (written every run by the compose pipeline). The merged file embeds the identity in the container labels and environment (`RUN_ID`, `HOST_HEAD_SHA`, `SESSION_TS`), so each run's effective identity survives for inspection and resume recall. Copy-mode resume additionally reads identity from the named volume's Docker labels; mount-mode resume reads it from the registry (M2.6.6). The legacy `.run-identity` cache file is deprecated and no longer written.
 
 On resume, `start_agent.sh` reads this file and exports the values as env vars instead of recomputing them. This guarantees that `diff_export` (reads env vars at teardown) and `package_branch` (reads SESSION_STATE from the volume) use the same identity values.
 

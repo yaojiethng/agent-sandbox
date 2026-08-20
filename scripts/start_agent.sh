@@ -238,7 +238,7 @@ if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
 fi
 
 # -------------------------
-# Session identity — persisted as .run-identity for volume-based resume
+# Session identity — volume discovery and resume
 # -------------------------
 # Session identity — volume discovery and resume
 # -------------------------
@@ -246,7 +246,8 @@ fi
 # ({{RUN_ID}}-sandbox-data). Volume labels carry session identity.
 # On first start, identity is computed fresh and a new volume is created
 # by compose. On resume, identity is read from the existing volume's labels.
-# .run-identity persists as a backward-compatibility cache.
+# The per-run compose record (.compose/<run-id>.yml) is the registry; it
+# embeds the identity (labels + env) and persists across runs.
 #
 # Volume discovery functions
 # -------------------------
@@ -284,25 +285,15 @@ volume_in_use() {
   [[ -n "$containers" ]]
 }
 
-RUN_IDENTITY="$SANDBOX_DIR/.run-identity"
-
 _new_session_identity() {
-  # Compute fresh identity and write .run-identity.
+  # Compute fresh identity and export it for this run.
   # Called for both default new-session and --refresh paths.
   RESUME_SESSION=false
-  rm -f "$RUN_IDENTITY"
 
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
   export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
-
-  {
-    echo "SESSION_TS=${SESSION_TS}"
-    echo "RUN_ID=${RUN_ID}"
-    echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-    echo "SANDBOX_ID=${SANDBOX_ID}"
-  } > "$RUN_IDENTITY"
 }
 
 _resume_from_volume() {
@@ -329,13 +320,6 @@ _resume_from_volume() {
   fi
 
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-
-  {
-    echo "SESSION_TS=${SESSION_TS}"
-    echo "RUN_ID=${RUN_ID}"
-    echo "HOST_HEAD_SHA=${HOST_HEAD_SHA}"
-    echo "SANDBOX_ID=${SANDBOX_ID}"
-  } > "$RUN_IDENTITY"
 
   RESUME_SESSION=true
   echo "Resuming session — volume: $vol"

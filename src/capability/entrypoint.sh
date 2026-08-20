@@ -119,7 +119,7 @@ else
   else
     # Upgrade path: on first resume after upgrading from pre-Phase-1.5,
     # SESSION_STATE may have identity values that don't match the current
-    # env vars (set from .run-identity or freshly computed). Update to
+    # env vars (set from the volume labels / compose record or freshly computed). Update to
     # match so that package_branch and diff_export use consistent identity.
     _sr=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
     if [[ -n "$_sr" && "$_sr" != "${RUN_ID:-}" ]]; then
