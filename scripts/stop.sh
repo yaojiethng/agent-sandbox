@@ -6,11 +6,11 @@
 # docker compose and does not require resolved compose environment variables.
 #
 # Usage:
-#   stop.sh --name=<project_name> --sandbox=<path> [--run-id=<id>] [--prune]
+#   stop.sh --name=<project_name> --sandbox=<path> [--session-id=<id>] [--prune]
 #
 # Filter logic:
 #   Default: agent-sandbox.project-name + agent-sandbox.sandbox-dir labels
-#   --run-id: additionally filter by agent-sandbox.run-id label (stop specific run only)
+#   --session-id: additionally filter by agent-sandbox.session-id label (stop specific session only)
 #   --prune:  after stopping, remove aged containers, images, and networks
 #             for this project+sandbox instance older than PRUNE_AGE_DAYS
 
@@ -20,7 +20,7 @@ PRUNE_AGE_DAYS=3
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--run-id=<id>] [--prune]
+Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--session-id=<id>] [--prune]
 
 Stops containers for a given sandbox.
 
@@ -29,7 +29,7 @@ Required:
   --sandbox=<path>    Path to the sandbox directory
 
 Optional:
-  --run-id=<id>       Stop only the specific run (by agent-sandbox.run-id label)
+  --session-id=<id>  Stop only the specific session (by agent-sandbox.session-id label)
   --prune             After stopping, remove aged containers, images, and networks
                         older than ${PRUNE_AGE_DAYS} days
 EOF
@@ -39,7 +39,7 @@ EOF
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
 
-RUN_ID=""
+SESSION_ID=""
 PRUNE=false
 
 parse_help_flag "$@"
@@ -49,7 +49,7 @@ parse_base_flags "$@"
 for ARG in "$@"; do
   case "$ARG" in
     --name=*|--sandbox=*) ;;
-    --run-id=*)  RUN_ID="${ARG#--run-id=}" ;;
+    --session-id=*)  SESSION_ID="${ARG#--session-id=}" ;;
     --prune)     PRUNE=true ;;
     *)
       echo "Unknown argument: $ARG" >&2
@@ -70,8 +70,8 @@ LABEL_FILTERS=(
   --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
 )
 
-if [[ -n "$RUN_ID" ]]; then
-  LABEL_FILTERS+=(--filter "label=agent-sandbox.run-id=${RUN_ID}")
+if [[ -n "$SESSION_ID" ]]; then
+  LABEL_FILTERS+=(--filter "label=agent-sandbox.session-id=${SESSION_ID}")
 fi
 
 # -------------------------
@@ -89,9 +89,9 @@ if [[ ${#CONTAINER_IDS[@]} -eq 1 && -z "${CONTAINER_IDS[0]}" ]]; then
 fi
 
 if [[ ${#CONTAINER_IDS[@]} -eq 0 ]]; then
-  echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
+  echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
 else
-  echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${RUN_ID:+ run: ${RUN_ID}}"
+  echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
   # Containers are disposable — durable state lives in the named volume +
   # bind mounts (Container State Contract). Remove them so the network can
   # be freed and no stopped containers accumulate.
@@ -105,7 +105,7 @@ fi
 # -------------------------
 
 # The compose-created default network carries the session labels, so it is
-# found by the same LABEL_FILTERS used for containers (including --run-id
+# found by the same LABEL_FILTERS used for containers (including --session-id
 # scoping when set). It can only be removed once no container references it
 # (handled above by removing the containers).
 net_ids_out="$(docker network ls -q "${LABEL_FILTERS[@]}")"

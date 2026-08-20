@@ -243,10 +243,10 @@ fi
 # Session identity — volume discovery and resume
 # -------------------------
 # With multi-volume concurrency, each session gets its own named volume
-# ({{RUN_ID}}-sandbox-data). Volume labels carry session identity.
+# ({{SESSION_ID}}-sandbox-data). Volume labels carry session identity.
 # On first start, identity is computed fresh and a new volume is created
 # by compose. On resume, identity is read from the existing volume's labels.
-# The per-run compose record (.compose/<run-id>.yml) is the registry; it
+# The per-run compose record (.compose/<session-id>.yml) is the registry; it
 # embeds the identity (labels + env) and persists across runs.
 #
 # Volume discovery functions
@@ -293,7 +293,7 @@ _new_session_identity() {
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-  export RUN_ID; RUN_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+  export SESSION_ID; SESSION_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 }
 
 _resume_from_volume() {
@@ -309,10 +309,10 @@ _resume_from_volume() {
   fi
 
   export SESSION_TS; SESSION_TS=$(volume_label "$vol" "agent-sandbox.session-ts")
-  export RUN_ID; RUN_ID=$(volume_label "$vol" "agent-sandbox.run-id")
+  export SESSION_ID; SESSION_ID=$(volume_label "$vol" "agent-sandbox.session-id")
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$vol" "agent-sandbox.host-head-sha")
 
-  if [[ -z "$SESSION_TS" || -z "$RUN_ID" ]]; then
+  if [[ -z "$SESSION_TS" || -z "$SESSION_ID" ]]; then
     echo "Error: volume $vol has no session identity labels."
     echo "  The volume may be from an older harness version."
     echo "  Remove it and start fresh: make start"
@@ -382,13 +382,13 @@ _show_volume_picker() {
   for vol in "${VOLUMES[@]}"; do
     local ts rid br sha stale_str
     ts=$(volume_label "$vol" "agent-sandbox.session-ts")
-    rid=$(volume_label "$vol" "agent-sandbox.run-id")
+    sid=$(volume_label "$vol" "agent-sandbox.session-id")
     br=$(volume_label "$vol" "agent-sandbox.host-branch")
     sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
     stale_str=""
     volume_is_stale "$vol" && stale_str=" [STALE]"
-    printf "  %d) %s  RUN_ID: %s  branch: %s (%.7s)%s\n" \
-      "$i" "$ts" "$rid" "$br" "$sha" "$stale_str"
+    printf "  %d) %s  SESSION_ID: %s  branch: %s (%.7s)%s\n" \
+      "$i" "$ts" "$sid" "$br" "$sha" "$stale_str"
     (( i++ )) || true
   done
   local NEW_OPTION="$i"
@@ -451,13 +451,13 @@ if [[ "$BRANCH_NAME" == "HEAD" ]]; then
   BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
 fi
 export SANITIZED_HOST_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
-export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${RUN_ID}"
-export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${RUN_ID}"
+export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_ID}"
+export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_ID}"
 unset BRANCH_NAME
 echo "Host branch: $SANITIZED_HOST_BRANCH"
 echo "Host HEAD SHA: $HOST_HEAD_SHA"
 echo "Sandbox ID: $SANDBOX_ID"
-echo "Run ID: $RUN_ID"
+echo "Session ID: $SESSION_ID"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 

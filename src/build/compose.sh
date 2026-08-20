@@ -43,9 +43,9 @@
 #   {{SANDBOX_IMAGE_NAME}}  → derived image name
 #   {{AGENT_IMAGE_NAME}}    → derived image name
 #   {{PROVIDER_NAME}}       → provider name
-#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<run_id>)
-#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<run_id>)
-#   {{RUN_ID}}              → session run ID (6-char hex, from start_agent.sh)
+#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<session_id>)
+#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<session_id>)
+#   {{SESSION_ID}}          → session ID (6-char hex, from start_agent.sh)
 #   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
 #   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
@@ -111,7 +111,7 @@ compose_generate() {
       -e "s|{{SANDBOX_CONTAINER_NAME}}|${SANDBOX_CONTAINER_NAME:-}|g" \
       -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
       -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
-      -e "s|{{RUN_ID}}|${RUN_ID:-}|g" \
+      -e "s|{{SESSION_ID}}|${SESSION_ID:-}|g" \
       -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
@@ -142,30 +142,30 @@ compose_generate() {
 # compose_args
 #
 # Sets COMPOSE_ARGS in the caller's scope from a pre-generated compose file.
-# The project name is normalised and incorporates RUN_ID so each session
+# The project name is normalised and incorporates SESSION_ID so each session
 # gets its own compose namespace (volume, network, containers).
 #
 # Args:
 #   $1  project_name   — used for --project-name
 #   $2  sandbox_dir    — passed as --project-directory
 #   $3  compose_file   — absolute path to the generated compose file
-#   $4  run_id         — RUN_ID from session identity
+#   $4  session_id     — SESSION_ID from session identity
 # -------------------------
 compose_args() {
   local project_name="$1"
   local sandbox_dir="$2"
   local compose_file="$3"
-  local run_id="${4:-}"
+  local session_id="${4:-}"
 
   local normalised
   normalised="$(echo "$project_name" | tr '[:upper:]' '[:lower:]')"
   normalised="${normalised//[^a-z0-9-]/-}"
 
-  # Incorporate RUN_ID into the compose project name so each session
-  # gets its own namespace. Falls back to sandbox_dir hash if RUN_ID
+  # Incorporate SESSION_ID into the compose project name so each session
+  # gets its own namespace. Falls back to sandbox_dir hash if SESSION_ID
   # is not available (e.g., dry-run before identity computation).
-  if [[ -n "$run_id" ]]; then
-    normalised="${normalised}-${run_id}"
+  if [[ -n "$session_id" ]]; then
+    normalised="${normalised}-${session_id}"
   else
     local sandbox_hash
     sandbox_hash="$(echo "$sandbox_dir" | sha256sum | cut -c1-6)"
@@ -318,7 +318,7 @@ compose_dry_run() {
 session_teardown() {
   # docker compose down: end the session, keep named volumes.
   # Removes containers + network (frees the default address pool); the
-  # RUN_ID-scoped named volume persists so resume still works. The container
+  # SESSION_ID-scoped named volume persists so resume still works. The container
   # is disposable — durable state lives in the named volume + bind mounts
   # (see docs/architecture/execution_model.md — Container State Contract).
   docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true

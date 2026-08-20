@@ -170,7 +170,7 @@ test_session_path_exit_export() {
   diff_export "$DIR" "$EXPORT_DIR"
 
   if [[ -d "$EXPORT_DIR" ]]; then
-    pass "export_path + diff_export: session dir created with EXPORT_TIME-RUN_ID pattern"
+    pass "export_path + diff_export: session dir created with EXPORT_TIME-SESSION_ID pattern"
     if [[ -f "$EXPORT_DIR/uncommitted.diff" ]]; then
       pass "export_path + diff_export: uncommitted.diff inside session dir"
     else
@@ -261,11 +261,11 @@ test_session_path_multiple_sessions_accumulate() {
     fail "expected 2 session dirs under session/, got $COUNT"
   fi
 
-  # Check directory naming uses EXPORT_TIME-RUN_ID pattern
+  # Check directory naming uses EXPORT_TIME-SESSION_ID pattern
   if ls "$CHANGES_DIR/session/" | grep -qE '^[0-9]{8}-[0-9]{6}-run00[12]$'; then
-    pass "session dirs use EXPORT_TIME-RUN_ID naming"
+    pass "session dirs use EXPORT_TIME-SESSION_ID naming"
   else
-    fail "session dirs should use EXPORT_TIME-RUN_ID naming"
+    fail "session dirs should use EXPORT_TIME-SESSION_ID naming"
   fi
 }
 

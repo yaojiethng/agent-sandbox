@@ -73,10 +73,10 @@ Container paths are fixed by the harness and not configurable via `.env`. The fu
 ## Compose Generation
 
 `scripts/run_agent.sh` generates the compose configuration on each run and
-writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<run-id>.yml`. The
+writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<session-id>.yml`. The
 file persists after the session ends — it is the session's compose record and
-an inspection handle (e.g. `docker compose -f .compose/<run-id>.yml config`).
-Resume reuses the same RUN_ID and overwrites its own file; each unique session
+an inspection handle (e.g. `docker compose -f .compose/<session-id>.yml config`).
+Resume reuses the same SESSION_ID and overwrites its own file; each unique session
 leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the
 file is never visible in the agent workspace. `.compose/` is gitignored.
 
@@ -110,9 +110,9 @@ the snapshot RO mount + env (`SNAPSHOT_DIR`). Copy mode only.
 `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable
 via `WORKTREE_DIR`). Mount mode only.
 
-The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<run-id>.yml`).
+The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<session-id>.yml`).
 
-**File accumulation:** compose files accumulate one per unique RUN_ID (KB-scale
+**File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale
 per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the
 roadmap — see the M2.6 deferred-items list.
 
@@ -154,7 +154,7 @@ exposes directories via `--volumes-from` if they are declared as volumes in the
 Dockerfile (`VOLUME /home/agentuser/sandbox`).
 
 **The sandbox workdir itself is a named volume.** The compose file mounts a
-RUN_ID-scoped named volume (`{{RUN_ID}}-sandbox-data`) at `/home/agentuser/sandbox`
+SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) at `/home/agentuser/sandbox`
 on the sandbox service. This named volume persists across `docker compose down`
 (which keeps named volumes) so the session state survives stop/start — see
 [Container State Contract](#container-state-contract) and Session Lifecycle.
@@ -173,7 +173,7 @@ mounts; the container writable layer holds only regenerable content.
 
 | What | Where it lives | Survives `docker compose down`? |
 |---|---|---|
-| Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{RUN_ID}}-sandbox-data` | ✅ yes (named volume persists) |
+| Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{SESSION_ID}}-sandbox-data` | ✅ yes (named volume persists) |
 | Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | ✅ yes (host) |
 | Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | ✅ yes (host) |
 | Snapshot baseline `.snapshot/` | bind-mounted read-only | ✅ yes (host, read-only) |

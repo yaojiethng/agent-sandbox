@@ -25,7 +25,7 @@ test_export_path_session() {
   local RESULT
   RESULT=$(export_path "/changes" "session" "a1b2c3")
   if [[ "$RESULT" =~ ^/changes/session/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
-    pass "export_path constructs session path with EXPORT_TIME-RUN_ID"
+    pass "export_path constructs session path with EXPORT_TIME-SESSION_ID"
   else
     fail "export_path session: expected /changes/session/<ts>-a1b2c3, got $RESULT"
   fi
@@ -45,7 +45,7 @@ test_export_path_bundles_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3" "my-feature")
   if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-my-feature-a1b2c3$ ]]; then
-    pass "export_path bundles: EXPORT_TIME-LABEL-RUN_ID"
+    pass "export_path bundles: EXPORT_TIME-LABEL-SESSION_ID"
   else
     fail "export_path bundles with label: expected /output/bundles/<ts>-my-feature-a1b2c3, got $RESULT"
   fi
@@ -55,7 +55,7 @@ test_export_path_bundles_no_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3")
   if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
-    pass "export_path bundles: EXPORT_TIME-RUN_ID (no label)"
+    pass "export_path bundles: EXPORT_TIME-SESSION_ID (no label)"
   else
     fail "export_path bundles no label: expected /output/bundles/<ts>-a1b2c3, got $RESULT"
   fi
@@ -65,7 +65,7 @@ test_export_path_diffs_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "diffs" "a1b2c3" "snapshot")
   if [[ "$RESULT" =~ ^/output/diffs/[0-9]{8}-[0-9]{6}-snapshot-a1b2c3$ ]]; then
-    pass "export_path diffs: EXPORT_TIME-LABEL-RUN_ID"
+    pass "export_path diffs: EXPORT_TIME-LABEL-SESSION_ID"
   else
     fail "export_path diffs with label: expected /output/diffs/<ts>-snapshot-a1b2c3, got $RESULT"
   fi
@@ -79,11 +79,11 @@ test_export_path_missing_args() {
   fi
 }
 
-test_export_path_missing_run_id() {
+test_export_path_missing_session_id() {
   if export_path "/changes" "session" "" 2>/dev/null; then
-    fail "export_path should fail with empty RUN_ID"
+    fail "export_path should fail with empty SESSION_ID"
   else
-    pass "export_path fails with empty RUN_ID"
+    pass "export_path fails with empty SESSION_ID"
   fi
 }
 
@@ -374,7 +374,7 @@ run_test test_export_path_bundles_with_label
 run_test test_export_path_bundles_no_label
 run_test test_export_path_diffs_with_label
 run_test test_export_path_missing_args
-run_test test_export_path_missing_run_id
+run_test test_export_path_missing_session_id
 run_test test_resolve_draft_default_channel
 run_test test_resolve_draft_explicit_channel_autosave
 run_test test_resolve_draft_named_session

@@ -10,18 +10,18 @@
 #   resolve_diff_for_apply    — resolve a diff file for apply operations
 #
 # Export path convention:
-#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<RUN_ID>/
-#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<RUN_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<SESSION_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/
 #
 #   EXPORT_TIME = date -u at invocation time
-#   RUN_ID       = mandatory 6-char session run hash
+#   SESSION_ID   = mandatory 6-char session hash
 #   LABEL        = optional human-readable descriptor
 #
 # Layout:
-#   $CHANGES_DIR/session/<EXPORT_TIME>-<RUN_ID>/     — exit exports
-#   $CHANGES_DIR/autosave/<RUN_ID>/                  — autosave (single, overwritten)
-#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<RUN_ID>/      — package_branch
-#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/  — package_branch with label
+#   $CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/     — exit exports
+#   $CHANGES_DIR/autosave/<SESSION_ID>/                  — autosave (single, overwritten)
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_ID>/      — package_branch
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/  — package_branch with label
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
 # functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
@@ -85,20 +85,20 @@ resolve_channel_base_dir() {
 # Export path constructor (used by entrypoint and package_branch)
 # =============================================================================
 
-# export_path PARENT_DIR SUBDIR RUN_ID [LABEL]
+# export_path PARENT_DIR SUBDIR SESSION_ID [LABEL]
 #
 # Unified export path constructor. Replaces session_export_path and
 # output_export_path. All paths anchored on export-time wall clock.
 #
 # Convention:
-#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<RUN_ID>/
-#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<RUN_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<SESSION_ID>/
+#   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/
 #
 # Args:
 #   PARENT_DIR  — base directory (CHANGES_DIR, OUTPUT_DIR, or INPUT_DIR)
 #   SUBDIR      — "session", "autosave", or "bundles"
-#   RUN_ID      — mandatory 6-char session run hash
-#   LABEL       — optional human-readable descriptor; inserted before RUN_ID
+#   SESSION_ID  — mandatory 6-char session hash
+#   LABEL       — optional human-readable descriptor; inserted before SESSION_ID
 #                 when present. Not used for autosave.
 #
 # Autosave is special: no EXPORT_TIME in the path (single directory, overwritten).
@@ -114,11 +114,11 @@ resolve_channel_base_dir() {
 export_path() {
   local PARENT_DIR="$1"
   local SUBDIR="$2"
-  local RUN_ID="$3"
+  local SESSION_ID="$3"
   local LABEL="${4:-}"
 
-  if [[ -z "$PARENT_DIR" || -z "$SUBDIR" || -z "$RUN_ID" ]]; then
-    echo "export_path: PARENT_DIR, SUBDIR, and RUN_ID are required" >&2
+  if [[ -z "$PARENT_DIR" || -z "$SUBDIR" || -z "$SESSION_ID" ]]; then
+    echo "export_path: PARENT_DIR, SUBDIR, and SESSION_ID are required" >&2
     return 1
   fi
 
@@ -127,14 +127,14 @@ export_path() {
 
   # Autosave: no EXPORT_TIME in path — single directory, overwritten each cycle
   if [[ "$SUBDIR" == "autosave" ]]; then
-    echo "${PARENT_DIR}/autosave/${RUN_ID}"
+    echo "${PARENT_DIR}/autosave/${SESSION_ID}"
     return 0
   fi
 
   if [[ -n "$LABEL" ]]; then
-    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${RUN_ID}"
+    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${LABEL}-${SESSION_ID}"
   else
-    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${RUN_ID}"
+    echo "${PARENT_DIR}/${SUBDIR}/${EXPORT_TIME}-${SESSION_ID}"
   fi
 }
 

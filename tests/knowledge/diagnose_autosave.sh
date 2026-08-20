@@ -89,9 +89,9 @@ echo "$PID1_CHILDREN" | sed 's/^/    /'
 echo ""
 echo "=== 5. Autosave path construction ==="
 source /opt/sandbox/lib/routing.sh 2>/dev/null
-AS_DIR=$(export_path "$CHANGES_DIR" "autosave" "${RUN_ID:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
+AS_DIR=$(export_path "$CHANGES_DIR" "autosave" "${SESSION_ID:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
 echo "Autosave target path: $AS_DIR"
-echo "Session target path:  $(export_path "$CHANGES_DIR" "session" "${RUN_ID:-unknown}" 2>/dev/null || echo '<ERROR>')"
+echo "Session target path:  $(export_path "$CHANGES_DIR" "session" "${SESSION_ID:-unknown}" 2>/dev/null || echo '<ERROR>')"
 
 # Manually try to write to the autosave path
 echo "" > "/tmp/autosave_writability_test" 2>/dev/null

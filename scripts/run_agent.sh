@@ -216,16 +216,16 @@ esac
 
 # Persist the merged compose file at a stable path in the sandbox so the
 # session's compose configuration survives for inspection and compose-aware
-# tooling after the run (docker compose -f .compose/<run-id>.yml ...). Named
-# by RUN_ID — resume reuses the same RUN_ID and overwrites; each unique
-# session leaves one record. RUN_ID is always exported by start_agent.sh;
+# tooling after the run (docker compose -f .compose/<session-id>.yml ...). Named
+# by SESSION_ID — resume reuses the same SESSION_ID and overwrites; each unique
+# session leaves one record. SESSION_ID is always exported by start_agent.sh;
 # fall back to the sandbox-dir hash (as compose_args does) for direct
 # invocation. Containers mount only SANDBOX_DIR subdirectories, so this file
 # is never visible in the agent workspace.
 COMPOSE_DIR="$SANDBOX_DIR/.compose"
 mkdir -p "$COMPOSE_DIR"
-if [[ -n "${RUN_ID:-}" ]]; then
-  COMPOSE_OUT="$COMPOSE_DIR/$RUN_ID.yml"
+if [[ -n "${SESSION_ID:-}" ]]; then
+  COMPOSE_OUT="$COMPOSE_DIR/$SESSION_ID.yml"
 else
   COMPOSE_OUT="$COMPOSE_DIR/$(echo "$SANDBOX_DIR" | sha256sum | cut -c1-6).yml"
 fi
@@ -249,7 +249,7 @@ compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILE
 # -------------------------
 # Compose args
 # -------------------------
-compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT" "${RUN_ID:-}"
+compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT" "${SESSION_ID:-}"
 
 # -------------------------
 # Mode dispatch
@@ -281,8 +281,8 @@ esac
 # -------------------------
 if [[ "$RESET_VOLUME" == "true" ]]; then
   # start_agent.sh already removed old volumes for this sandbox dir.
-  # Skip compose teardown — the new compose project (by RUN_ID) doesn't
-  # exist yet, and the old project used a different RUN_ID.
+  # Skip compose teardown — the new compose project (by SESSION_ID) doesn't
+  # exist yet, and the old project used a different SESSION_ID.
   :
 else
   session_teardown

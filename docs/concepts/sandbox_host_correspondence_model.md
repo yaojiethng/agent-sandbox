@@ -36,7 +36,7 @@ unified diffs participates in the model.
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge — never lands on the target branch. |
 | **`.export-status`** | Consolidated metadata file (key=value) written by both `diff_export` and `package_branch`. Contains STATUS, TIMESTAMP, INIT_SHA, and EXIT_CODE on failure. Consumed by `draft.sh` on the host to resolve baseline and timestamp. Replaces prior `EXPORT-TIME.txt` and `.init_sha`. |
 | **`SANDBOX_ID`** | 8-char hex hash: `sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`. Identifies a sandbox instance at a specific host commit. Replaces `WORKTREE_ID`. |
-| **`RUN_ID`** | 6-char hex hash: `sha256(SESSION_TS:SANDBOX_ID)[:6]`. Identifies a single session run. Replaces `SESSION_TS` in container names and artefact paths. |
+| **`SESSION_ID`** | 6-char hex hash: `sha256(SESSION_TS:SANDBOX_ID)[:6]`. Identifies a single session run. Replaces `SESSION_TS` in container names and artefact paths. |
 | **`HOST_HEAD_SHA`** | Full SHA of host HEAD at session start. Replaces `REPO_COMMIT`. |
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` — `session/` holds exit artefacts, `autosave/` holds checkpoint artefacts. Each is overwritten on each invocation. |
 | **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |

@@ -88,7 +88,7 @@ REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 RESUME_FLAG       = $(if $(RESUME),--resume,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
-RUN_ID_FLAG       = $(if $(RUN_ID),--run-id=$(RUN_ID),)
+SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
 PRUNE_FLAG        = $(if $(PRUNE),--prune,)
 STALE_FLAG        = $(if $(STALE),--stale,)
 
@@ -185,7 +185,7 @@ stop:
 	agent-sandbox stop \
 	  --name=$(PROJECT_NAME) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  $(RUN_ID_FLAG) \
+	  $(SESSION_ID_FLAG) \
 	  $(PRUNE_FLAG)
 
 # -------------------------

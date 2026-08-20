@@ -89,7 +89,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
-| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.7 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, RUN_ID, HOST_HEAD_SHA). |
+| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.7 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
 
 ### Operations (`docs/operations/`)
 
@@ -117,7 +117,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
 | `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
 | `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
-| `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SANDBOX_ID, RUN_ID, HOST_HEAD_SHA. |
+| `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA. |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
 ### Lib (`libs/`)
@@ -130,7 +130,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `routing.sh` | 🟡 Warm | M2.3 | Path layout conventions and routing functions. Sourced by agent-sandbox.sh and sandbox-entrypoint.sh. |
 | `interactive_session_select.sh` | 🟡 Hot | M2.3 | Interactive session selection: `interactive_confirm_or_abort`, `interactive_select_channel`, `interactive_select_session`, `interactive_select_diff_type`. |
 | `build.sh` | 🟡 Warm | M2.7 | Build orchestration: `build_agent`, `build_sandbox`, `preflight`. Uses repo root as Docker build context. |
-| `compose.sh` | 🟡 Warm | M2.7 | Docker Compose generation. Template substitution for session variables (incl. RUN_ID, HOST_HEAD_SHA). |
+| `compose.sh` | 🟡 Warm | M2.7 | Docker Compose generation. Template substitution for session variables (incl. SESSION_ID, HOST_HEAD_SHA). |
 | `docker-compose.yml` | 🟡 Warm | M2.3 | Base Docker Compose template. Session labels applied to all containers. |
 | `_templates/Makefile.template` | 🟡 Warm | M2.3 | Project Makefile template. Template version tag added. `BUNDLE=`/`AUTOSAVE=` replaced with `FROM=<channel>`; `INTERACTIVE=` added. |
 | `_templates/dockerfile-default.sandbox` | 🟡 Warm | M2.1 | Default capability layer Dockerfile template. COPY paths updated to flat layout; template version tag added. |

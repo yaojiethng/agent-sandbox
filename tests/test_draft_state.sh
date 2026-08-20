@@ -3,9 +3,9 @@
 # Unit tests for libs/draft_state.sh — folder name parsing, state I/O, branch validation.
 #
 # Covers:
-#   draft_parse_folder_name        — 3 parsing sub-cases (no run-id, with run-id, edge)
+#   draft_parse_folder_name        — 3 parsing sub-cases (no session-id, with session-id, edge)
 #   draft_guard_no_collision       — collision detection
-#   draft_write_state              — field ordering and optional run_id
+#   draft_write_state              — field ordering and optional session_id
 #   draft_read_state_from_branch   — key-value parsing from committed .draft-state
 #   draft_validate_branch          — branch shape, missing .draft-state, field invariants
 
@@ -22,7 +22,7 @@ source "$REPO_ROOT/src/libs/draft_state.sh"
 # =============================================================================
 
 test_parse_folder_name_basic() {
-  local SESSION_TS="" SANITIZED_HOST_BRANCH="" RUN_ID=""
+  local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch"
 
   if [[ "$SESSION_TS" == "20260420-120000" ]]; then
@@ -37,39 +37,39 @@ test_parse_folder_name_basic() {
     fail "draft_parse_folder_name: expected SANITIZED_HOST_BRANCH=feature-branch, got $SANITIZED_HOST_BRANCH"
   fi
 
-  if [[ -z "$RUN_ID" ]]; then
-    pass "draft_parse_folder_name leaves RUN_ID empty when no run-id present"
+  if [[ -z "$SESSION_ID" ]]; then
+    pass "draft_parse_folder_name leaves SESSION_ID empty when no session-id present"
   else
-    fail "draft_parse_folder_name: expected RUN_ID empty, got $RUN_ID"
+    fail "draft_parse_folder_name: expected SESSION_ID empty, got $SESSION_ID"
   fi
 }
 
-test_parse_folder_name_with_run_id() {
-  local SESSION_TS="" SANITIZED_HOST_BRANCH="" RUN_ID=""
+test_parse_folder_name_with_session_id() {
+  local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch-a1b2c3"
 
   if [[ "$SESSION_TS" == "20260420-120000" ]]; then
-    pass "draft_parse_folder_name extracts SESSION_TS with run-id present"
+    pass "draft_parse_folder_name extracts SESSION_TS with session-id present"
   else
     fail "draft_parse_folder_name: expected SESSION_TS=20260420-120000, got $SESSION_TS"
   fi
 
   if [[ "$SANITIZED_HOST_BRANCH" == "feature-branch" ]]; then
-    pass "draft_parse_folder_name strips run-id from SANITIZED_HOST_BRANCH"
+    pass "draft_parse_folder_name strips session-id from SANITIZED_HOST_BRANCH"
   else
     fail "draft_parse_folder_name: expected SANITIZED_HOST_BRANCH=feature-branch, got $SANITIZED_HOST_BRANCH"
   fi
 
-  if [[ "$RUN_ID" == "a1b2c3" ]]; then
-    pass "draft_parse_folder_name extracts RUN_ID from trailing hex"
+  if [[ "$SESSION_ID" == "a1b2c3" ]]; then
+    pass "draft_parse_folder_name extracts SESSION_ID from trailing hex"
   else
-    fail "draft_parse_folder_name: expected RUN_ID=a1b2c3, got $RUN_ID"
+    fail "draft_parse_folder_name: expected SESSION_ID=a1b2c3, got $SESSION_ID"
   fi
 }
 
 test_parse_folder_name_edge_cases() {
   # Branch with underscores and numbers
-  local SESSION_TS="" SANITIZED_HOST_BRANCH="" RUN_ID=""
+  local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature_M2_3-agent"
 
   if [[ "$SANITIZED_HOST_BRANCH" == "feature_M2_3-agent" ]]; then
@@ -79,21 +79,21 @@ test_parse_folder_name_edge_cases() {
   fi
 
   # Trailing chars that look like hex but aren't 6 chars
-  SESSION_TS="" SANITIZED_HOST_BRANCH="" RUN_ID=""
+  SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-branch-abc12"  # 5 chars
-  if [[ "$RUN_ID" == "" ]]; then
-    pass "draft_parse_folder_name does not treat 5-char hex suffix as RUN_ID"
+  if [[ "$SESSION_ID" == "" ]]; then
+    pass "draft_parse_folder_name does not treat 5-char hex suffix as SESSION_ID"
   else
-    fail "draft_parse_folder_name: expected RUN_ID empty for 5-char suffix, got $RUN_ID"
+    fail "draft_parse_folder_name: expected SESSION_ID empty for 5-char suffix, got $SESSION_ID"
   fi
 
   # Trailing non-hex
-  SESSION_TS="" SANITIZED_HOST_BRANCH="" RUN_ID=""
+  SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-branch-xyz789"
-  if [[ "$RUN_ID" == "" ]]; then
-    pass "draft_parse_folder_name does not treat non-hex suffix as RUN_ID"
+  if [[ "$SESSION_ID" == "" ]]; then
+    pass "draft_parse_folder_name does not treat non-hex suffix as SESSION_ID"
   else
-    fail "draft_parse_folder_name: expected RUN_ID empty for non-hex suffix, got $RUN_ID"
+    fail "draft_parse_folder_name: expected SESSION_ID empty for non-hex suffix, got $SESSION_ID"
   fi
 }
 
@@ -147,21 +147,21 @@ test_write_state_basic() {
   else
     fail "draft_write_state missing diff_count"
   fi
-  if ! echo "$OUTPUT" | grep -q "^run_id:"; then
-    pass "draft_write_state omits run_id when not given"
+  if ! echo "$OUTPUT" | grep -q "^session_id:"; then
+    pass "draft_write_state omits session_id when not given"
   else
-    fail "draft_write_state should omit run_id when absent"
+    fail "draft_write_state should omit session_id when absent"
   fi
 }
 
-test_write_state_with_run_id() {
+test_write_state_with_session_id() {
   local OUTPUT
   OUTPUT=$(draft_write_state "main" "abc123" "Agent" "20260420-120000" "feat-x" "3" "20260420-120000" "20260420-130000" "a1b2c3")
 
-  if echo "$OUTPUT" | grep -q "^run_id: a1b2c3$"; then
-    pass "draft_write_state includes run_id when given"
+  if echo "$OUTPUT" | grep -q "^session_id: a1b2c3$"; then
+    pass "draft_write_state includes session_id when given"
   else
-    fail "draft_write_state should include run_id when provided"
+    fail "draft_write_state should include session_id when provided"
   fi
 }
 
@@ -345,12 +345,12 @@ EOF
 # =============================================================================
 
 run_test test_parse_folder_name_basic
-run_test test_parse_folder_name_with_run_id
+run_test test_parse_folder_name_with_session_id
 run_test test_parse_folder_name_edge_cases
 run_test test_guard_no_collision_no_branch
 run_test test_guard_no_collision_detects_branch
 run_test test_write_state_basic
-run_test test_write_state_with_run_id
+run_test test_write_state_with_session_id
 run_test test_read_state_success
 run_test test_read_state_branch_nonexistent
 run_test test_read_state_missing_dot_draft_state

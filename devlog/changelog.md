@@ -6,6 +6,22 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
+## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID → SESSION_ID
+
+The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run→session phase). `SESSION_ID` identifies one container lifecycle (start → run → teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`).
+
+Renamed surfaces (current code/docs):
+- Identifier token `RUN_ID` → `SESSION_ID`
+- `SESSION_STATE`/`.draft-state` key `run_id` → `session_id`
+- Docker label `agent-sandbox.run-id` → `agent-sandbox.session-id`
+- Compose registry filename `.compose/<run-id>.yml` → `.compose/<session-id>.yml`
+- `--run-id` CLI flag → `--session-id`
+- Container/volume/project naming embeds the session id
+
+This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
+
+---
+
 ## [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
 
 Three issues corrected in the pre-flight check block added in M2.7:

@@ -27,17 +27,17 @@ An 8-character hex hash that identifies a specific sandbox instance at a specifi
 - Same directory, different `HOST_HEAD_SHA` produces a different `SANDBOX_ID` — a new sandbox state.
 - 32 bits of entropy (8 hex chars), sufficient for sandbox-instance disambiguation. Collision risk is 32:1 preimage-to-tag ratio before expected collision.
 
-### RUN_ID — Session Run Identity
+### SESSION_ID — Session Run Identity
 
 ```
-RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]
+SESSION_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]
 ```
 
 A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability.
 
 **Properties:**
 - Unique per session even with the same sandbox instance and branch (timestamp component).
-- Deterministic: same inputs produce same `RUN_ID`.
+- Deterministic: same inputs produce same `SESSION_ID`.
 - 24 bits of entropy (6 hex chars), sufficient for session disambiguation within a sandbox instance.
 
 ## Container and Image Naming
@@ -46,10 +46,10 @@ A 6-character hex hash that identifies a single session run. Replaces `SESSION_T
 |---|---|---|
 | Sandbox (base) image | `sandbox-<project>` | `sandbox-agent-sandbox` |
 | Agent image | `<provider>-agent-<project>` | `pi-agent-sandbox` |
-| Sandbox container | `sandbox-<project>-<run_id>` | `sandbox-agent-sandbox-f6e5d4` |
-| Agent container | `<provider>-<project>-<run_id>` | `pi-agent-sandbox-f6e5d4` |
+| Sandbox container | `sandbox-<project>-<session_id>` | `sandbox-agent-sandbox-f6e5d4` |
+| Agent container | `<provider>-<project>-<session_id>` | `pi-agent-sandbox-f6e5d4` |
 
-Images are tagged by harness code identity, not project repo state. Project repo state is captured at runtime by the snapshot pipeline. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.run-id`), not by image tags.
+Images are tagged by harness code identity, not project repo state. Project repo state is captured at runtime by the snapshot pipeline. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.session-id`), not by image tags.
 
 ## Docker Label Schema
 
@@ -62,7 +62,7 @@ agent-sandbox.sandbox-dir:      <SANDBOX_DIR>
 agent-sandbox.host-head-sha:    <HOST_HEAD_SHA>
 agent-sandbox.host-branch:      <sanitised branch name>
 agent-sandbox.session-ts:       <SESSION_TS>
-agent-sandbox.run-id:           <RUN_ID>
+agent-sandbox.session-id:           <SESSION_ID>
 ```
 
 These labels serve two purposes:
@@ -80,11 +80,11 @@ Labels are classified by stability: a label's value changes at most once per art
 | `host-head-sha` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to repo state; runtime-only |
 | `host-branch` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to branch; runtime-only |
 | `session-ts` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
-| `run-id` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
+| `session-id` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
 | `project-dir` | Stable | ✅ | ❌ | ❌ | Host path; not relevant for volume or image lifecycle |
 | `container-sig` | Stable | ❌ | ❌ | ✅ | SHA-256 of source files baked at build time; never changes for a given image |
 
-Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. Volumes persist across sessions; carrying ephemeral labels like `run-id` would create dangling references pointing to a session that may no longer exist. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
+Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. Volumes persist across sessions; carrying ephemeral labels like `session-id` would create dangling references pointing to a session that may no longer exist. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
 
 **Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (volume omitting session-scoped labels, images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
@@ -124,7 +124,7 @@ Harness-sig (runtime drift detection for the harness binary itself) is deferred 
 
 ## Identity persistence (registry)
 
-Host-side session identity is recorded in the per-run compose registry, the persisted file `$SANDBOX_DIR/.compose/<RUN_ID>.yml` (written every run by the compose pipeline). The merged file embeds the identity in the container labels and environment (`RUN_ID`, `HOST_HEAD_SHA`, `SESSION_TS`), so each run's effective identity survives for inspection and resume recall. Copy-mode resume additionally reads identity from the named volume's Docker labels; mount-mode resume reads it from the registry (M2.6.6). The legacy `.run-identity` cache file is deprecated and no longer written.
+Host-side session identity is recorded in the per-run compose registry, the persisted file `$SANDBOX_DIR/.compose/<SESSION_ID>.yml` (written every run by the compose pipeline). The merged file embeds the identity in the container labels and environment (`SESSION_ID`, `HOST_HEAD_SHA`, `SESSION_TS`), so each run's effective identity survives for inspection and resume recall. Copy-mode resume additionally reads identity from the named volume's Docker labels; mount-mode resume reads it from the registry (M2.6.6). The legacy `.run-identity` cache file is deprecated and no longer written.
 
 On resume, `start_agent.sh` reads this file and exports the values as env vars instead of recomputing them. This guarantees that `diff_export` (reads env vars at teardown) and `package_branch` (reads SESSION_STATE from the volume) use the same identity values.
 
@@ -136,21 +136,21 @@ Written to the sandbox git repository's state file at container init (first star
 init_sha=<40-char sandbox baseline commit SHA>
 session_ts=<timestamp>
 host_head_sha=<40-char host HEAD SHA>
-run_id=<6-char session run ID>
+session_id=<6-char session run ID>
 ```
 
-`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `run_id` is read by `package_branch` to construct output paths consistent with the session's diff exports.
+`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `session_id` is read by `package_branch` to construct output paths consistent with the session's diff exports.
 
 ## Artefact Paths
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Session diff export | `session-diffs/session/<RUN_ID>-<BRANCH>/` | Written on container exit |
-| Autosave diffs | `session-diffs/autosave/<RUN_ID>-<BRANCH>/` | Written on autosave ticks |
-| Package-diff output | `output/diffs/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | On explicit diff packaging |
-| Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | On explicit branch packaging |
+| Session diff export | `session-diffs/session/<SESSION_ID>-<BRANCH>/` | Written on container exit |
+| Autosave diffs | `session-diffs/autosave/<SESSION_ID>-<BRANCH>/` | Written on autosave ticks |
+| Package-diff output | `output/diffs/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/` | On explicit diff packaging |
+| Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/` | On explicit branch packaging |
 
-`RUN_ID` replaces `SESSION_TS` in artefact directory names. The branch name component (when present) provides human-readable context; `RUN_ID` provides unique addressing.
+`SESSION_ID` replaces `SESSION_TS` in artefact directory names. The branch name component (when present) provides human-readable context; `SESSION_ID` provides unique addressing.
 
 ## Where Primitives Are Consumed
 
@@ -160,6 +160,6 @@ run_id=<6-char session run ID>
 | `PROJECT_DIR` | User input | git operations, `HOST_HEAD_SHA` derivation, Docker labels |
 | `SANDBOX_DIR` | Operator-supplied | `SANDBOX_ID` derivation, Docker labels, workspace path derivation |
 | `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SANDBOX_ID` derivation, SESSION_STATE, Docker labels |
-| `SESSION_TS` | `date -u` | `RUN_ID` derivation, Docker labels |
-| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | `RUN_ID` derivation |
-| `RUN_ID` | `SESSION_TS:SANDBOX_ID` hash | Container names, artefact paths, Docker labels |
+| `SESSION_TS` | `date -u` | `SESSION_ID` derivation, Docker labels |
+| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | `SESSION_ID` derivation |
+| `SESSION_ID` | `SESSION_TS:SANDBOX_ID` hash | Container names, artefact paths, Docker labels |

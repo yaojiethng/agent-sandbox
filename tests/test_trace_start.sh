@@ -29,13 +29,13 @@ setup_start_fixture() {
   export SESSION_TS="20260730-000000"
   export HOST_HEAD_SHA="abc123def456"
   export SANDBOX_ID="testid01"
-  export RUN_ID="test01"
+  export SESSION_ID="test01"
   export SANITIZED_HOST_BRANCH="master"
 
   export SANDBOX_IMAGE_NAME="agent-sandbox-sandbox:test-project"
   export AGENT_IMAGE_NAME="agent-sandbox-pi:test-project"
-  export SANDBOX_CONTAINER_NAME="sandbox-test-project-${RUN_ID}"
-  export AGENT_CONTAINER_NAME="pi-test-project-${RUN_ID}"
+  export SANDBOX_CONTAINER_NAME="sandbox-test-project-${SESSION_ID}"
+  export AGENT_CONTAINER_NAME="pi-test-project-${SESSION_ID}"
 
   mkdir -p "$SANDBOX_DIR" "$SNAPSHOT_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
   mkdir -p "$SANDBOX_DIR/.pi"
@@ -367,7 +367,7 @@ test_compose_file_persisted() {
   if [[ -f "$compose_file" && -s "$compose_file" ]]; then
     if grep -q "sandbox-test-project-test01" "$compose_file" && grep -q "pi-test-project-test01" "$compose_file"; then
       if [[ "$last_file" == *"$compose_file"* ]]; then
-        pass "standard: compose file persisted at .compose/<run-id>.yml and used by compose"
+        pass "standard: compose file persisted at .compose/<session-id>.yml and used by compose"
       else
         fail "standard: compose file persisted but not used by compose invocations (last compose-file: $last_file)"
       fi

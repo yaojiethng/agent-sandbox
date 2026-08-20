@@ -137,7 +137,7 @@ test_export_error_log_creates_file() {
   fi
 }
 
-test_export_error_log_includes_run_id() {
+test_export_error_log_includes_session_id() {
   local _tmpdir
   _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
 
@@ -148,9 +148,9 @@ test_export_error_log_includes_run_id() {
   rm -rf "$_tmpdir"
 
   if [[ "$_files" == *"20260622-120000-abc123-EXPORT-ERROR.log"* ]]; then
-    pass "_write_export_error_log embeds RUN_ID in filename"
+    pass "_write_export_error_log embeds SESSION_ID in filename"
   else
-    fail "_write_export_error_log: expected RUN_ID in filename, got: $_files"
+    fail "_write_export_error_log: expected SESSION_ID in filename, got: $_files"
   fi
 }
 
@@ -164,7 +164,7 @@ test_export_error_log_contains_error_details() {
   _content=$(cat "$_tmpdir/20260622-120000-abc123-EXPORT-ERROR.log")
   rm -rf "$_tmpdir"
 
-  if [[ "$_content" == *"EXIT_CODE=2"* ]] && [[ "$_content" == *"RUN_ID=abc123"* ]] && [[ "$_content" == *"stderr line 1"* ]]; then
+  if [[ "$_content" == *"EXIT_CODE=2"* ]] && [[ "$_content" == *"SESSION_ID=abc123"* ]] && [[ "$_content" == *"stderr line 1"* ]]; then
     pass "_write_export_error_log contains exit code, run id, and stderr"
   else
     fail "_write_export_error_log: missing expected fields, got: $_content"
@@ -298,7 +298,7 @@ test_diff_export_failure_writes_error_log() {
 
   diff_export "$_bad_sandbox" "$_outdir" "test123" || true
 
-  # Should have an error log file with RUN_ID
+  # Should have an error log file with SESSION_ID
   local _files
   _files=$(ls "$_outdir" 2>/dev/null) || true
   rm -rf "$_tmpdir"
@@ -318,7 +318,7 @@ run_test test_export_status_does_not_include_exit_code_on_success
 run_test test_export_status_includes_init_sha
 run_test test_export_status_omits_init_sha_when_empty
 run_test test_export_error_log_creates_file
-run_test test_export_error_log_includes_run_id
+run_test test_export_error_log_includes_session_id
 run_test test_export_error_log_contains_error_details
 run_test test_wait_git_lockfile_no_lockfile
 run_test test_wait_git_lockfile_lockfile_appears_and_disappears

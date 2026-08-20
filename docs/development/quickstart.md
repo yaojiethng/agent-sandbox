@@ -111,7 +111,7 @@ The sandbox directory persists across `make start` / `make stop` cycles via a na
 - **Rebuild and fresh start:** `make start REFRESH=1` or `REBUILD=1` rebuilds images before starting a new session with a fresh volume.
 - **Stop without destroying:** `make stop` preserves the volume. The next `make start` resumes it automatically.
 
-The session identity (RUN_ID, SESSION_TS) is recorded in the per-run compose registry (`.compose/<run-id>.yml`) and the copy-mode volume labels, and reused across resumes. This ensures container labels, error logs, and export paths remain consistent.
+The session identity (SESSION_ID, SESSION_TS) is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and the copy-mode volume labels, and reused across resumes. This ensures container labels, error logs, and export paths remain consistent.
 
 ---
 

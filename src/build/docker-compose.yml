@@ -3,7 +3,7 @@
 # src/build/compose.sh (compose_generate) on every run together with the
 # delivery overlay selected by SANDBOX_TYPE (copy|mount, default copy), the
 # provider overlay (if present), and the mode overlay (dry-run/serve); the
-# merged result is written to SANDBOX_DIR/.compose/<run-id>.yml and persists
+# merged result is written to SANDBOX_DIR/.compose/<session-id>.yml and persists
 # after the session (see docs/architecture/execution_model.md).
 #
 # {{VAR}} placeholders are substituted at generation time:
@@ -29,13 +29,13 @@
 # The compose-created default network is labeled so lifecycle tooling can
 # find and clean up per-session networks by label (no project-name parsing).
 # Without these labels, docker system prune / network ls filters could not
-# match the per-RUN_ID network, leaking it and exhausting the default pool.
+# match the per-SESSION_ID network, leaking it and exhausting the default pool.
 networks:
   default:
     labels:
       agent-sandbox.project-name: {{PROJECT_NAME}}
       agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
-      agent-sandbox.run-id: {{RUN_ID}}
+      agent-sandbox.session-id: {{SESSION_ID}}
 
 # Session labels — applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
@@ -44,7 +44,7 @@ x-session-labels: &session_labels
   agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
   agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
   agent-sandbox.session-ts: {{SESSION_TS}}
-  agent-sandbox.run-id: {{RUN_ID}}
+  agent-sandbox.session-id: {{SESSION_ID}}
 
 # Workspace path documentation — single source of truth for all path mappings.
 # Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.
@@ -78,7 +78,7 @@ services:
       - SESSION_TS=${SESSION_TS:-}
       - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
       - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
-      - RUN_ID=${RUN_ID:-}
+      - SESSION_ID=${SESSION_ID:-}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s

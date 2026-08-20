@@ -16,20 +16,20 @@
 # draft_parse_folder_name — parse session identity from folder name
 # =============================================================================
 
-# Parse folder name format: <SESSION_TS>-<SANITIZED_HOST_BRANCH>[-<RUN_ID>]
-# Sets SESSION_TS, SANITIZED_HOST_BRANCH, and RUN_ID in the caller's scope.
-# RUN_ID is a 6-char hex hash appended as a suffix. When the last 6 chars
-# after the final dash match [a-f0-9]{6}, they are parsed as RUN_ID.
+# Parse folder name format: <SESSION_TS>-<SANITIZED_HOST_BRANCH>[-<SESSION_ID>]
+# Sets SESSION_TS, SANITIZED_HOST_BRANCH, and SESSION_ID in the caller's scope.
+# SESSION_ID is a 6-char hex hash appended as a suffix. When the last 6 chars
+# after the final dash match [a-f0-9]{6}, they are parsed as SESSION_ID.
 draft_parse_folder_name() {
   local BASENAME="$1"
   SESSION_TS="${BASENAME:0:15}"
   SANITIZED_HOST_BRANCH="${BASENAME:16}"
-  RUN_ID=""
+  SESSION_ID=""
 
-  # Check if the last 6 chars after the final dash look like a RUN_ID
+  # Check if the last 6 chars after the final dash look like a SESSION_ID
   if [[ "$SANITIZED_HOST_BRANCH" =~ -([a-f0-9]{6})$ ]]; then
-    RUN_ID="${BASH_REMATCH[1]}"
-    SANITIZED_HOST_BRANCH="${SANITIZED_HOST_BRANCH%-${RUN_ID}}"
+    SESSION_ID="${BASH_REMATCH[1]}"
+    SANITIZED_HOST_BRANCH="${SANITIZED_HOST_BRANCH%-${SESSION_ID}}"
   fi
 }
 
@@ -62,7 +62,7 @@ draft_write_state() {
   local DIFF_COUNT="$6"
   local EXPORTED_AT="$7"
   local DRAFTED_AT="$8"
-  local RUN_ID="${9:-}"
+  local SESSION_ID="${9:-}"
 
   cat <<EOF
 source_branch: ${SOURCE_BRANCH}
@@ -74,7 +74,7 @@ diff_count: ${DIFF_COUNT}
 exported-at: ${EXPORTED_AT}
 drafted-at: ${DRAFTED_AT}
 EOF
-  [[ -n "$RUN_ID" ]] && echo "run_id: ${RUN_ID}"
+  [[ -n "$SESSION_ID" ]] && echo "session_id: ${SESSION_ID}"
 }
 
 # =============================================================================
@@ -136,7 +136,7 @@ draft_validate_branch() {
   # Clear state variables before parsing to avoid leaking from a previous call
   # (printf -v inside a while loop does not localize the target variable)
   local from_hash="" source_branch="" author="" session_ts=""
-  local host_branch="" diff_count="" exported_at="" drafted_at="" run_id=""
+  local host_branch="" diff_count="" exported_at="" drafted_at="" session_id=""
 
   while IFS=':' read -r KEY VALUE; do
     [[ -z "$KEY" ]] && continue

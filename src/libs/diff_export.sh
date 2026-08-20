@@ -16,19 +16,19 @@ source "$_self_dir/package_branch.sh"
 # Reliability features:
 #   - Writes .export-status (SUCCESS/FAIL + timestamp) after every run
 #   - On failure, writes a timestamped error log for diagnosis
-#   - Supports optional RUN_ID parameter for tracing failures to a container
+#   - Supports optional SESSION_ID parameter for tracing failures to a container
 #   - wait_git_lockfile polls for git index.lock before proceeding
 #     (prevents races with concurrent git operations)
 
-# diff_export SANDBOX_DIR OUTPUT_DIR [RUN_ID]
+# diff_export SANDBOX_DIR OUTPUT_DIR [SESSION_ID]
 #   Packages session artefacts into OUTPUT_DIR via package_branch with
 #   --no-renames by default (safe: avoids rename conflicts during git apply).
 #   then writes .export-status (STATUS, TIMESTAMP, INIT_SHA, optional EXIT_CODE)
-#   for audit trail. Optional RUN_ID is embedded in error log filenames.
+#   for audit trail. Optional SESSION_ID is embedded in error log filenames.
 diff_export() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
-  local RUN_ID="${3:-}"
+  local SESSION_ID="${3:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "diff_export: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -70,7 +70,7 @@ diff_export() {
     _write_export_status "$OUTPUT_DIR" "FAIL" "$_export_ts" "$_exit_code" "$_init_sha"
 
     # Write error log with stderr capture
-    _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$RUN_ID" "$_exit_code" "$_stderr_dump" "package_branch returned exit $_exit_code"
+    _write_export_error_log "$OUTPUT_DIR" "$_export_ts" "$SESSION_ID" "$_exit_code" "$_stderr_dump" "package_branch returned exit $_exit_code"
     return $_exit_code
   }
   _read_and_remove_pb_stderr > /dev/null  # cleanup on success
@@ -79,27 +79,27 @@ diff_export() {
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$_init_sha"
 }
 
-# _write_export_error_log OUTPUT_DIR TIMESTAMP [RUN_ID] [EXIT_CODE] [STDERR_DUMP] [SUMMARY]
+# _write_export_error_log OUTPUT_DIR TIMESTAMP [SESSION_ID] [EXIT_CODE] [STDERR_DUMP] [SUMMARY]
 #   Writes a timestamped error log file in OUTPUT_DIR for diagnosis.
-#   Filename format: {TIMESTAMP}[-{RUN_ID}]-EXPORT-ERROR.log
+#   Filename format: {TIMESTAMP}[-{SESSION_ID}]-EXPORT-ERROR.log
 _write_export_error_log() {
   local _dir="$1"
   local _ts="$2"
-  local _run_id="${3:-}"
+  local _session_id="${3:-}"
   local _exit_code="${4:-}"
   local _stderr_dump="${5:-}"
   local _summary="${6:-}"
 
   local _filename="${_ts}"
-  if [[ -n "$_run_id" ]]; then
-    _filename="${_filename}-${_run_id}"
+  if [[ -n "$_session_id" ]]; then
+    _filename="${_filename}-${_session_id}"
   fi
   _filename="${_filename}-EXPORT-ERROR.log"
 
   {
     echo "=== Export Error ==="
     echo "TIMESTAMP=${_ts}"
-    [[ -n "$_run_id" ]] && echo "RUN_ID=${_run_id}"
+    [[ -n "$_session_id" ]] && echo "SESSION_ID=${_session_id}"
     [[ -n "$_exit_code" ]] && echo "EXIT_CODE=${_exit_code}"
     [[ -n "$_summary" ]] && echo "SUMMARY=${_summary}"
     echo "---"

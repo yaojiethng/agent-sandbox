@@ -159,7 +159,7 @@ warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 # Verify export path construction matches expectations.
 warn_check "export_path: resolves with available env vars" \
   bash -c 'p=$(export_path "$1" session "${2:-}" 2>/dev/null); [[ -n "$p" ]]' \
-  _ "$CHANGES_DIR" "${RUN_ID:-}"
+  _ "$CHANGES_DIR" "${SESSION_ID:-}"
 
 # Verify wait_git_lockfile returns quickly when no lockfile exists.
 # This asserts the function doesn't hang or error on a clean repo.

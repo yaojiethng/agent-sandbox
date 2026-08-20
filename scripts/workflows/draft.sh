@@ -83,7 +83,7 @@ draft_collect_patches() {
 
 # draft_create_and_init_branch PROJECT_DIR WORKING_BRANCH BASE_COMMIT \
 #   SOURCE_BRANCH FROM_HASH AUTHOR SESSION_TS SANITIZED_HOST_BRANCH \
-#   DIFF_COUNT EXPORT_TIME [RUN_ID]
+#   DIFF_COUNT EXPORT_TIME [SESSION_ID]
 #
 # Runs guard checks, creates the draft branch, writes .draft-state, and
 # commits it. Prints the branch creation message. Returns 1 on guard failure.
@@ -98,7 +98,7 @@ draft_create_and_init_branch() {
   local SANITIZED_HOST_BRANCH="$8"
   local DIFF_COUNT="$9"
   local EXPORT_TIME="${10:-unknown}"
-  local RUN_ID="${11:-}"
+  local SESSION_ID="${11:-}"
 
   # Guard: don\''t draft from a draft branch
   local CURRENT_BRANCH
@@ -128,7 +128,7 @@ draft_create_and_init_branch() {
     "$DIFF_COUNT" \
     "$EXPORT_TIME" \
     "$DRAFTED_AT" \
-    "$RUN_ID")
+    "$SESSION_ID")
 
   echo "$DRAFT_STATE_CONTENT" > "$PROJECT_DIR/.draft-state"
   git -C "$PROJECT_DIR" add .draft-state
@@ -299,7 +299,7 @@ draft_run() {
   local PATCHES_DIR="$SOURCE_DIR/patches"
   [[ -d "$PATCHES_DIR" ]] || [[ "$DIFF_COUNT" -eq 0 ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }
 
-  local SESSION_TS SANITIZED_HOST_BRANCH RUN_ID
+  local SESSION_TS SANITIZED_HOST_BRANCH SESSION_ID
   draft_parse_folder_name "$SESSION_NAME"
 
   # Allow DIFF_COUNT=0 when only uncommitted.diff is present
@@ -314,12 +314,12 @@ draft_run() {
   [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
-  local IDENTITY="${RUN_ID:-$SESSION_TS}"
+  local IDENTITY="${SESSION_ID:-$SESSION_TS}"
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
-    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" "$RUN_ID" || return 1
+    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" "$SESSION_ID" || return 1
 
   echo "Draft branch created: $WORKING_BRANCH"
   echo "Branch point: ${FROM_HASH:0:7}"

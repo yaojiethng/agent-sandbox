@@ -85,7 +85,7 @@ volume exists + REFRESH not set?
             Container: .git present → skip snapshot_validate + snapshot_init_git
 ```
 
-Host-side identity is recorded in the per-run compose registry (`.compose/<run-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
+Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
 
 **Session start (M2.6.5):**
 
@@ -129,7 +129,7 @@ No sweep commit is performed. Uncommitted changes are preserved in the working t
 All artefacts land in the session export directory constructed by `export_path`:
 
 ```
-workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
+workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
   .export-status        — STATUS, TIMESTAMP, INIT_SHA (and EXIT_CODE on failure)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
@@ -146,7 +146,7 @@ workspace/session-diffs/session/<EXPORT_TIME>-<RUN_ID>/
 The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle overwrites a single directory:
 
 ```
-workspace/session-diffs/autosave/<RUN_ID>/
+workspace/session-diffs/autosave/<SESSION_ID>/
   .export-status        — STATUS, TIMESTAMP, INIT_SHA (updated each cycle)
   uncommitted.diff      — uncommitted changes vs HEAD
   all-changes.diff      — net delta init_sha..HEAD

@@ -364,15 +364,15 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   fi
   SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
 
-  # Auto-resolve RUN_ID from SESSION_STATE
-  RUN_ID=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
+  # Auto-resolve SESSION_ID from SESSION_STATE
+  SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
   # Construct output directory via export_path. LABEL (SESSION_SUMMARY)
-  # is optional — when empty, path is bundles/<EXPORT_TIME>-<RUN_ID>/.
+  # is optional — when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
   if [[ -n "$SESSION_SUMMARY" ]]; then
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$RUN_ID" "$SESSION_SUMMARY")
+    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$SESSION_SUMMARY")
   else
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$RUN_ID")
+    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID")
   fi
   mkdir -p "$OUTPUT_DIR"
 
