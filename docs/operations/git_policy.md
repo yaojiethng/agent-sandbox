@@ -1,6 +1,6 @@
 # Git Policy
 
-Policy for commit messages and branch naming in agent-sandbox. Commit types are aligned with the session types defined in [`handover_policy.md`](handover_policy.md) so that the git log and session history tell the same story.
+Policy for commit messages and branch naming in agent-sandbox. Commit types are aligned with the iteration types defined in [`handover_policy.md`](handover_policy.md) so that the git log and iteration history tell the same story.
 
 ---
 
@@ -18,15 +18,15 @@ Body and footer are optional. Use a body when the "why" is not obvious from the 
 
 The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body — that is the diff's job.
 
-Every delivery commit (at session close) must use one of the types defined below. Intermediate commits — WIP checkpoints, corrections, test rollbacks, amends — are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
+Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits — WIP checkpoints, corrections, test rollbacks, amends — are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
 
 ---
 
 ## Active Types
 
-These types are adopted now. Each maps to one or more session types from `handover_policy.md`.
+These types are adopted now. Each maps to one or more iteration types from `handover_policy.md`.
 
-| Type | When to use | Session type mapping |
+| Type | When to use | Iteration type mapping |
 |---|---|---|
 | `feat` | New capability or behaviour | `impl` |
 | `fix` | Bug fix — corrects broken behaviour | `impl` |
@@ -39,7 +39,7 @@ These types are adopted now. Each maps to one or more session types from `handov
 
 ### Choosing between types
 
-A commit that changes both code and documentation uses the type of the primary change. A snapshot pipeline implementation that also updates `execution_model.md` is `feat`, not `docs`. A documentation session that only touches markdown files is `docs` even if the content describes a new feature.
+A commit that changes both code and documentation uses the type of the primary change. A snapshot pipeline implementation that also updates `execution_model.md` is `feat`, not `docs`. A documentation iteration that only touches markdown files is `docs` even if the content describes a new feature.
 
 `refactor` vs `feat`: if the system behaves identically before and after, it is a refactor. If an operator or agent can do something they could not do before, it is a feat.
 
@@ -140,21 +140,21 @@ A session branch is merged or discarded when its work is complete. An integratio
 
 A single commit should be a coherent unit of change. Prefer fewer, meaningful commits over many granular ones. Guidelines:
 
-- A policy restructuring session that touches six policy files is one `workflow` commit, not six.
+- A policy restructuring iteration that touches six policy files is one `workflow` commit, not six.
 - An implementation that adds a script and its tests is one `feat` commit, not separate `feat` + `test`.
-- A session that produces both a feature and an unrelated chore fix is two commits — do not bundle unrelated changes.
+- An iteration that produces both a feature and an unrelated chore fix is two commits — do not bundle unrelated changes.
 
 ---
 
 ## Checkpointing
 
-A session that ends with uncommitted work is a risk — the handover records intent, but the filesystem is the only copy. Commit at session end even if the work is incomplete.
+An iteration that ends with uncommitted work is a risk — the handover records intent, but the filesystem is the only copy. Commit at iteration end even if the work is incomplete.
 
 **Rules:**
-- At session close, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
-- `wip` is not a commit type — it is a prefix that signals the commit is not reviewable. The next session amends or follows up.
-- Intermediate commits (WIP, corrections, amends) are not subject to the type enforcement rule — that rule applies only to the delivery commit at session close.
-- Do not leave uncommitted changes across session boundaries — this includes stashes. If work is incomplete at session close, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
+- At iteration end, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
+- `wip` is not a commit type — it is a prefix that signals the commit is not reviewable. The next iteration amends or follows up.
+- Intermediate commits (WIP, corrections, amends) are not subject to the type enforcement rule — that rule applies only to the delivery commit at iteration end.
+- Do not leave uncommitted changes across iteration boundaries — this includes stashes. If work is incomplete at iteration end, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
 This is the git-level equivalent of the `autosave.diff` pattern in the execution model — a checkpoint that preserves state without implying completeness.
@@ -165,11 +165,11 @@ This is the git-level equivalent of the `autosave.diff` pattern in the execution
 
 Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:
 
-- **Squashing WIP commits** — WIP checkpoints accumulated during a session are squashed into the delivery commit at session close.
-- **Correcting a prior commit** — when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made this session. The amendment bundles the fix with the commit where the work was done.
-- **Early session close** — when the agent committed the delivery commit but the operator identifies a gap before the next session starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
+- **Squashing WIP commits** — WIP checkpoints accumulated during an iteration are squashed into the delivery commit at iteration end.
+- **Correcting a prior commit** — when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made this iteration. The amendment bundles the fix with the commit where the work was done.
+- **Early iteration end** — when the agent committed the delivery commit but the operator identifies a gap before the next iteration starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
 
-**Boundary:** Amend only within the current session's commit chain. Do not amend commits from prior sessions — those are part of the permanent reviewed record. If a prior session's commit needs fixing, file a new issue or create a new session.
+**Boundary:** Amend only within the current iteration's commit chain. Do not amend commits from prior iterations — those are part of the permanent reviewed record. If a prior iteration's commit needs fixing, file a new issue or create a new iteration.
 
 ---
 
@@ -179,14 +179,14 @@ Procedures for recovering from situations where normal discipline breaks down.
 
 ### Splitting interleaved changes
 
-When a single file contains changes from multiple sessions that must be split into separate commits:
+When a single file contains changes from multiple iterations that must be split into separate commits:
 
 1. Save the full diff: `git diff > file.patch`
 2. Reset to HEAD: `git checkout HEAD -- file`
 3. For each commit, apply only the relevant hunks: `git apply file.patch` (then stage and commit)
-4. Repeat for each remaining session's changes
+4. Repeat for each remaining iteration's changes
 
-If the file cannot be split by hunk boundaries (interleaved changes to the same logical section), consider splitting into two files or restructuring the changes so each session's work is disjoint.
+If the file cannot be split by hunk boundaries (interleaved changes to the same logical section), consider splitting into two files or restructuring the changes so each iteration's work is disjoint.
 
 ## Merge Policy
 
@@ -253,7 +253,7 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 
 | Document | Purpose |
 |---|---|
-| [`handover_policy.md`](handover_policy.md) | Session types that map to commit types |
+| [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
 | [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
 

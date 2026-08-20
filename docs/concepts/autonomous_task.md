@@ -6,9 +6,9 @@ This document marks the boundary between the interactive workflow and the future
 
 ## The Boundary
 
-The interactive workflow — defined in [`iteration_policy.md`](../operations/iteration_policy.md) — is a human-in-the-loop process. An operator and an agent collaborate through a session: the operator confirms designs, reviews proposals, and commits outputs. The agent does not act unilaterally.
+The interactive workflow — defined in [`iteration_policy.md`](../operations/iteration_policy.md) — is a human-in-the-loop process. An operator and an agent collaborate through an iteration: the operator confirms designs, reviews proposals, and commits outputs. The agent does not act unilaterally.
 
-M3 introduces structured autonomous task execution: a single headless agent run, no interactive session, driven by a task brief prepared in advance. The operator's role shifts from session participant to brief author and output reviewer.
+M3 introduces structured autonomous task execution: a single headless agent run, no interactive iteration, driven by a task brief prepared in advance. The operator's role shifts from iteration participant to brief author and output reviewer.
 
 The interactive workflow governs how briefs are produced. The autonomous workflow governs what the agent does with them inside the container. The two are complementary — the interactive lifecycle stages (design, spec, acceptance criteria) are the upstream process that makes a brief trustworthy enough to run autonomously.
 

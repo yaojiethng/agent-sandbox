@@ -16,12 +16,12 @@ Every session runs two containers. You are inside the **reasoning** (agent runti
 
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
-- The changes in each session (represented by the task list of a single handover) must correspond to a single commit at session close with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are acceptable.
+- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are acceptable.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
 
-Code changes should be self-contained within a single session. The operator reviews per-session diffs — fragmented or half-applied changes across sessions create review burden.
+Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs — fragmented or half-applied changes across iterations create review burden.
 
 When writing code, always take into account the following:
 
@@ -40,9 +40,9 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 - Close → done. No commits after close. Open a new handover for new work.
 - Type must match dominant activity at close. Rename if it diverged.
 - Implementation needs its own handover. A design handover does not cover impl commits.
-- Every session updates the roadmap checkboxes for completed tasks.
+- Every iteration updates the roadmap checkboxes for completed tasks.
 
-Each session is independent. The prior session's git history is not available (container is ephemeral). The session starts from the project's committed HEAD.
+Each iteration is independent. The prior iteration's git history is not available (container is ephemeral). The iteration starts from the project's committed HEAD.
 
 Tools you have access to:
 - `/package-branch` — export committed changes as numbered diffs, uncommitted diff, and changed files
@@ -50,7 +50,7 @@ Tools you have access to:
 
 ## Fresh Subagent Invocation
 
-When a fresh perspective is needed for code review (e.g. thermo-nuclear review of changes made in the current session), invoke a fresh subagent using:
+When a fresh perspective is needed for code review (e.g. thermo-nuclear review of changes made in the current iteration), invoke a fresh subagent using:
 
 ```
 pi -p "Subagent instructions..."

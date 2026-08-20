@@ -6,7 +6,7 @@ Governs the creation, lifecycle, and closure of user story documents. Stories ar
 
 ## Purpose
 
-A story exists when a sub-milestone objective is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant minor loop session).
+A story exists when a sub-milestone objective is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant minor loop iteration).
 
 A story that is never closed is a planning failure. A story that is closed without a Resolution section is not closed.
 
@@ -29,7 +29,7 @@ Open a story during the major loop when:
 
 Do not open a story when:
 - The design is already agreed — write the roadmap entry directly
-- The uncertainty depends on an earlier sub-milestone's implementation decisions — defer and flag in the roadmap entry; the story opens during the relevant minor loop session's design step
+- The uncertainty depends on an earlier sub-milestone's implementation decisions — defer and flag in the roadmap entry; the story opens during the relevant minor loop iteration's design step
 
 ---
 

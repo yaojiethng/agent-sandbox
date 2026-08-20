@@ -1,5 +1,5 @@
 ---
-description: Open a new session. Finds the latest handover, runs recovery checks, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every session. Accepts an optional argument describing the type and focus — this takes priority over the What's Next section of the prior handover.
+description: Open a new iteration. Finds the latest handover, runs recovery checks, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every iteration. Accepts an optional argument describing the type and focus — this takes priority over the What's Next section of the prior handover.
 argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus description>"
 ---
 
@@ -22,7 +22,7 @@ No other files are needed at this stage.
 
 Run before creating the handover.
 
-**Post-close bookkeeping check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied, the prior session's close sequence did not complete. Run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
+**Post-close bookkeeping check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied, the prior iteration's close sequence did not complete. Run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
 
 ---
 
@@ -46,10 +46,10 @@ If the directive slot is empty:
 
 If the directive slot is non-empty:
 - Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
-- **Step 1 — Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this session diverges — go to Diverges below.
-- **Step 2 — Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this session supersedes or adjusts prior work.
+- **Step 1 — Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this iteration diverges — go to Diverges below.
+- **Step 2 — Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this iteration supersedes or adjusts prior work.
   - **Continues or adjusts prior work:** The directive takes priority over What's Next's framing but does not change the type or supersede the work in progress.
-  - **Diverges from prior work:** This session supersedes the prior implementation thread. Record a Context handover line in What's Next so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Session Types section.
+  - **Diverges from prior work:** This iteration supersedes the prior implementation thread. Record a Context handover line in What's Next so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Types section.
 
 ---
 
@@ -68,7 +68,7 @@ Create the handover per those rules. Set Status to `Active`.
 ## Gate 1 — Confirm scope (Step 2)
 
 Derive scope from the argument, the prior handover, and the roadmap. Read any additional files needed to make the scope concrete — what files will change, what will not change, and why. Present:
-- What is in scope this session and why
+- What is in scope this iteration and why
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin
 
@@ -83,7 +83,7 @@ Once Gate 1 is released, define the acceptance criteria in a four-column table:
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
 
-Each criterion must describe an observable delta — the operator verifies by running a command, not by reading source alone. A criterion may be one line if it is specific. Every session that touches architecture must include: *"Architecture documents in scope describe the system as built."*
+Each criterion must describe an observable delta — the operator verifies by running a command, not by reading source alone. A criterion may be one line if it is specific. Every iteration that touches architecture must include: *"Architecture documents in scope describe the system as built."*
 
 **Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`. Mark the Verified by column: `Agent ✅` (pass), `Agent ❌` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`.
 

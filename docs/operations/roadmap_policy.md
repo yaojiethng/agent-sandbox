@@ -23,11 +23,11 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 ## Post-close Bookkeeping
 
-After every session close (Steps 8–9), run bookkeeping on every node in the fractal tree whose children were modified this session. Bookkeeping is not an event or gate — it is a mechanical normalization step that always runs.
+After every iteration end (Steps 8–9), run bookkeeping on every node in the fractal tree whose children were modified files. Bookkeeping is not an event or gate — it is a mechanical normalization step that always runs.
 
 ### Compaction cascading
 
-For each node whose direct children were all completed in this session:
+For each node whose direct children were all completed in this iteration:
 
 1. **Compact the node** — replace each child's checklist with a `- [x]` outcome summary (1–3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them).
 2. **Check the node's own parent** — if all siblings of this node are also compacted, compact the parent node (its sibling list becomes a single `- [x]` entry).
@@ -55,36 +55,36 @@ After compaction, update the Milestone Summary table:
 
 ### Carry-forward escalation
 
-If a deferred item will not be picked up in the next session, add it as a named task entry to the roadmap. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`. Nest new tasks under the current sub-milestone's task list unless directed otherwise.
+If a deferred item will not be picked up in the next iteration, add it as a named task entry to the roadmap. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`. Nest new tasks under the current sub-milestone's task list unless directed otherwise.
 
-## Pre-session Status Promotion Check
+## Milestone promotion check
 
 At minor loop Step 2 (scope confirmation), before presenting the scope proposal:
 
 1. Read the Milestone Summary table.
-2. Identify the milestone targeted by this session (from roadmap frontmatter or session context).
-3. If the target milestone's status implies *less* progress than the session intends (e.g. `Not started` when starting a session), update the status to `In progress`.
+2. Identify the milestone targeted by this iteration (from roadmap frontmatter or iteration context).
+3. If the target milestone's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update the status to `In progress`.
 4. Record the promotion in the handover's Completed table.
 
-This check is self-healing — it catches both stale summaries and the first session targeting a new milestone.
+This check is self-healing — it catches both stale summaries and the first iteration targeting a new milestone.
 
 ## When the Roadmap Is Touched
 
-The roadmap is not updated continuously during a session. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
+The roadmap is not updated continuously during an iteration. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
 
-**Roadmap-update timing rule:** when a session generates a task (an explicit named roadmap entry), update the roadmap at end of session. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
+**Roadmap-update timing rule:** when an iteration generates a task (an explicit named roadmap entry), update the roadmap at end of iteration. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
 
-### During the session
+### During the iteration
 
 1. Mark a task `- [x]` when its implementation satisfies the acceptance criteria — the agent's completion check
 2. The marker signals "ready for operator verification at Step 7"
 3. If the operator disagrees at Step 7, revert to `- [ ]`
-4. Record the discrepancy as a resolved mid-session finding, reformulate the scope, and rewrite the incomplete task
+4. Record the discrepancy as a resolved mid-iteration finding, reformulate the scope, and rewrite the incomplete task
 
-### Session open (Step 1)
+### Iteration start (Step 1)
 
 1. Read `roadmap.md`
-2. Read the task list as the session's pending work; do not copy it into the handover
+2. Read the task list as this iteration's pending work; do not copy it into the handover
 
 ### Step 7 — Pre-close verification
 
@@ -95,9 +95,9 @@ Per [`handover_policy.md`](handover_policy.md#at-pre-close-verification-step-7),
 
 The operator reviews the compaction proposal alongside AC verification at Gate 3. Accepted compaction text is applied mechanically at Steps 8–9.
 
-### Session close (Steps 8–9)
+### Iteration end (Steps 8–9)
 
-Completed task groups are compacted to a `- [x]` outcome summary (1–3 sentences). The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9. Implementation detail, file lists, and task breakdowns are removed — the session handover retains them. Design document links and "Not in scope" / deferred tags survive.
+Completed task groups are compacted to a `- [x]` outcome summary (1–3 sentences). The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9. Implementation detail, file lists, and task breakdowns are removed — the handover retains them. Design document links and "Not in scope" / deferred tags survive.
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
@@ -109,9 +109,9 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the specific milestone section in the changelog (e.g. `[Complete — see changelog](changelog.md#m21--general-capability-layer-prototype)`).
 
-**Completed task groups** — compacted to a `- [x]` markdown task list entry with a 1–3 sentence outcome summary describing what was built. Task breakdowns, file lists, implementation notes, and "Depends on" / "Prerequisite for" lines referencing now-completed items are removed — the session handover retains the detail. Design document links and "Not in scope" / deferred tags survive. The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9.
+**Completed task groups** — compacted to a `- [x]` markdown task list entry with a 1–3 sentence outcome summary describing what was built. Task breakdowns, file lists, implementation notes, and "Depends on" / "Prerequisite for" lines referencing now-completed items are removed — the handover retains the detail. Design document links and "Not in scope" / deferred tags survive. The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9.
 
-**Decisions** — design decisions made during a session are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; session handovers log which decisions were made per session.
+**Decisions** — design decisions made during an iteration are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; iteration handovers log which decisions were made per iteration.
 
 **Open questions** — open design questions live in the design document, not the roadmap. The roadmap carries a single task entry referencing the design document (e.g. "Resolve open design questions — see [design doc]"). When questions are resolved, the decision is recorded in the design document (not as Q&A — as a named decision with rationale). The roadmap task is checked off. Design documents must not contain Q&A-style sections ("Q: ... A: ..." or numbered question/answer pairs).
 

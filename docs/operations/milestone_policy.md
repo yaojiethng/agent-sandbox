@@ -1,8 +1,8 @@
 # Milestone Policy
 
-Governs the major loop: the planning process that runs after a major milestone closes and before session execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
+Governs the major loop: the planning process that runs after a major milestone closes and before iteration execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
 
-This document is read during the major loop. For session execution, see [`iteration_policy.md`](iteration_policy.md).
+This document is read during the major loop. For iteration execution, see [`iteration_policy.md`](iteration_policy.md).
 
 ---
 
@@ -11,11 +11,11 @@ This document is read during the major loop. For session execution, see [`iterat
 A major milestone (M1, M2, M3...) is a capability boundary — a meaningful change in what the system can do. Sub-milestones (M2.1, M2.2...) are the implementation increments that deliver it. The major loop exists to scope those increments before coding begins.
 
 The output of the major loop is not a complete plan for every sub-milestone. It is:
-- A scoped and ready M2.1 (the first sub-milestone to session)
+- A scoped and ready M2.1 (the first sub-milestone to iterate)
 - Sufficient understanding of M2.2 onward to sequence them correctly
 - Explicit records of what cannot yet be scoped and why
 
-Sub-milestones that depend on earlier implementation decisions are flagged and deferred. Their stories remain open. They are scoped during the design step of the relevant minor loop session, not during the major loop.
+Sub-milestones that depend on earlier implementation decisions are flagged and deferred. Their stories remain open. They are scoped during the design step of the relevant minor loop iteration, not during the major loop.
 
 ---
 
@@ -66,7 +66,7 @@ Investigations evaluate a specific candidate approach within a story. See [`stud
 
 ## Roadmap Entry Production
 
-When a story's open questions are resolved, graduate it to a roadmap entry per [`story_policy.md`](story_policy.md) (closure) and [`roadmap_policy.md`](roadmap_policy.md) (entry format and placement). Before marking the story closed, confirm the entry meets the scoping criteria above. Both the roadmap entry and the closed story must exist before the sub-milestone is sessioned.
+When a story's open questions are resolved, graduate it to a roadmap entry per [`story_policy.md`](story_policy.md) (closure) and [`roadmap_policy.md`](roadmap_policy.md) (entry format and placement). Before marking the story closed, confirm the entry meets the scoping criteria above. Both the roadmap entry and the closed story must exist before the sub-milestone is iterated.
 
 ---
 
@@ -75,10 +75,10 @@ When a story's open questions are resolved, graduate it to a roadmap entry per [
 The major loop closes when:
 - M2.1 (or the first active sub-milestone) has a complete, confirmed roadmap entry
 - All stories that could be resolved have been resolved and graduated
-- All stories that cannot be resolved (deferred dependencies) are explicitly flagged in the roadmap entry for the sub-milestone whose session will resolve them
+- All stories that cannot be resolved (deferred dependencies) are explicitly flagged in the roadmap entry for the sub-milestone whose iteration will resolve them
 - The next handover stub has been created and its Hot files section populated
 
-At this point, minor loop sessions may begin.
+At this point, minor loop iterations may begin.
 
 ---
 
@@ -86,7 +86,7 @@ At this point, minor loop sessions may begin.
 
 | Document | Purpose |
 |---|---|
-| [`iteration_policy.md`](iteration_policy.md) | Full two-loop workflow; minor loop session steps |
+| [`iteration_policy.md`](iteration_policy.md) | Full two-loop workflow; minor loop iteration steps |
 | [`story_policy.md`](story_policy.md) | Story creation, lifecycle, graduation, closure |
 | [`study_policy.md`](study_policy.md) | Study structure, lifecycle, recommendation |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |

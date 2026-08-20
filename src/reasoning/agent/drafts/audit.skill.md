@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Formalised handover audit workflow — operator-invoked reviews of closed handovers to catch deferred items dropped across sessions, incomplete close sequences, non-standard formatting, dangling references, and unresolved findings before they compound.
+Formalised handover audit workflow — operator-invoked reviews of closed handovers to catch deferred items dropped across iterations, incomplete close sequences, non-standard formatting, dangling references, and unresolved findings before they compound.
 
-An audit is not a session type. It is invoked by the operator as needed.
+An audit is not an iteration type. It is invoked by the operator as needed.
 
 ## Before Acting
 
@@ -16,9 +16,9 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 
 | Trigger | Scope | Recommendation |
 |---|---|---|
-| **Periodic** | Last N handovers (2 weeks or 20 sessions, whichever comes first) | Run when deferred items have survived multiple hops or operator suspects items have been dropped |
+| **Periodic** | Last N handovers (2 weeks or 20 iterations, whichever comes first) | Run when deferred items have survived multiple hops or operator suspects items have been dropped |
 | **Event-driven** | Handover chain containing a specific deferred item | Run when a deferred item has survived 2+ hops without resolution |
-| **Recovery** | Prior session's handover | Already covered by Step 1 recovery check per `handover_policy.md` |
+| **Recovery** | Prior iteration's handover | Already covered by Step 1 recovery check per `handover_policy.md` |
 
 ---
 
@@ -28,9 +28,9 @@ A full handover audit covers:
 
 1. **Status completeness** — every handover in scope must have `**Status:**` set to `Active` or `Closed`.
 2. **Structural completeness** — every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Findings, Completed, Deferred items, What's Next), with null markers where empty.
-3. **Deferred item chain integrity** — each deferred item with a next-session destination must have been resolved or re-deferred in the target session.
+3. **Deferred item chain integrity** — each deferred item with a next-iteration destination must have been resolved or re-deferred in the target iteration.
 4. **Carry-forward escalation** — a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
-5. **Mid-session findings triage** — all entries must be triaged at session close.
+5. **Findings triage** — all entries must be triaged at iteration close.
 6. **Dangling references** — files, functions, or paths referenced in Completed or Hot files sections that no longer exist.
 7. **Standardised status values** — `Active` or `Closed` only.
 
@@ -62,7 +62,7 @@ Anomalies fall into two categories:
 ### 3. Deferred chain audit
 
 For each non-null deferred item, trace forward:
-1. Read the destination session's `## Carried forward` — was the item picked up?
+1. Read the destination iteration's `## Carried forward` — was the item picked up?
 2. If yes, was it resolved (Completed table) or re-deferred (Deferred items)?
 3. If it disappeared without resolution, flag as **dropped**.
 4. If it survived 2+ hops, flag for **carry-forward escalation**.

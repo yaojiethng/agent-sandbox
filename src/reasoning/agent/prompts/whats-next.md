@@ -3,13 +3,13 @@ name: whats-next
 description: >
   Survey the current state of the codebase and produce a ranked list of
   remaining tasks, unfinished refactors, deferred items, and process
-  improvements. Use when opening a fresh session to re-establish
+  improvements. Use when opening a fresh iteration to re-establish
   context about what remains to be done.
 ---
 
 # What's Next?
 
-When you are starting a fresh session and need to understand what work
+When you are starting a fresh iteration and need to understand what work
 remains, this skill helps you survey the codebase systematically.
 
 ## Step 1 — Read the handover chain
@@ -69,7 +69,7 @@ grep -A30 -E "Mid-session findings|Findings" devlog/handovers/$(ls devlog/handov
 ```
 
 Findings that were triaged but not resolved are the highest
-priority items for the next session.
+priority items for the next iteration.
 
 ## Step 5 — Check for open design documents
 
@@ -78,7 +78,7 @@ ls devlog/discussions/ 2>/dev/null
 ```
 
 Design documents that exist but have no corresponding implementation
-handover are candidates for the next session.
+handover are candidates for the next iteration.
 
 ## Step 6 — Look for stale branches, temp files, or uncommitted work
 

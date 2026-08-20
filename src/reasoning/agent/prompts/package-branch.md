@@ -1,10 +1,10 @@
 ---
-description: Package committed branch history as numbered diffs for structured review. Use this skill when the agent has committed work that needs to be reviewed as a series of shaped commits — e.g. "package my branch", "export my commits", "prepare a commit series for review". Also use when the operator requests a full re-export of the session's committed work. Packaging does not affect session status — do not edit any of the session file contents while packaging.
+description: Package committed branch history as numbered diffs for structured review. Use this skill when the agent has committed work that needs to be reviewed as a series of shaped commits — e.g. "package my branch", "export my commits", "prepare a commit series for review". Also use when the operator requests a full re-export of the iteration's committed work. Packaging does not affect iteration status — do not edit any of the iteration file contents while packaging.
 trigger: /package-branch
 ---
 > $@
 
-Package all commits since `init_sha` for export via the workspace output mount. Execute the following steps immediately. This task is independent of session open housekeeping — Do not read the handover or roadmap first. Run the script, write the guide, then resume normal session flow.
+Package all commits since `init_sha` for export via the workspace output mount. Execute the following steps immediately. This task is independent of iteration open housekeeping — Do not read the handover or roadmap first. Run the script, write the guide, then resume normal iteration flow.
 
 ## 1. Run the packaging script
 
@@ -91,7 +91,7 @@ Not a list of files — explain the motivation and the problem being solved.
 Table: `| File | Nature of change |`.
 One row per file.
 Nature of change: added, modified, deleted, or renamed.
-For modifications add a brief phrase: "modified — added session-scoped artefact directory support".
+For modifications add a brief phrase: "modified — added iteration-scoped artefact directory support".
 
 **Deleted code**
 Describe any functions, classes, or blocks removed and why.

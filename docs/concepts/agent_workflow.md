@@ -2,7 +2,7 @@
 
 This document describes how work gets done in agent-sandbox — the principles the system is built on, the invariants it enforces, and the map of where each part of the workflow is governed. It is the conceptual entry point to the policy system.
 
-The workflow is expressed through three layers: policy documents (authoritative rules), skill files (execution helpers), and prompt templates (session tooling). This document maps what each policy document owns and where the boundaries between them lie.
+The workflow is expressed through three layers: policy documents (authoritative rules), skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
 
 ---
 
@@ -34,19 +34,19 @@ In summary: no unreviewed output reaches the repository; no direct mutation of t
 
 ## Agent Context Model
 
-Agents are oriented at session start through two sources of context, injected at different points and owned by different parties.
+Agents are oriented at iteration start through two sources of context, injected at different points and owned by different parties.
 
 ### Provider layer
 
 Each provider supplies an `AGENTS.md` at `providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
 
-Provider-layer content is narrow and environment-specific. It does not carry project workflow, session conventions, or collaboration principles.
+Provider-layer content is narrow and environment-specific. It does not carry project workflow, iteration conventions, or collaboration principles.
 
 ### Project layer
 
-Each project commits an `AGENTS.md` at its repository root. This file is discovered by the agent through working-directory lookup at session start. It carries everything project-specific: session workflow, navigation instructions (what to read and in what order), durable operational decisions, and collaboration principles scoped to this project.
+Each project commits an `AGENTS.md` at its repository root. This file is discovered by the agent through working-directory lookup at iteration start. It carries everything project-specific: iteration workflow, navigation instructions (what to read and in what order), durable operational decisions, and collaboration principles scoped to this project.
 
-Project-layer content is stable across sessions. It is not per-session state — that is carried by the handover. It is not policy — that is carried by the policy documents in `docs/operations/`. It is the orienting layer between the two.
+Project-layer content is stable across iterations. It is not per-iteration state — that is carried by the handover. It is not policy — that is carried by the policy documents in `docs/operations/`. It is the orienting layer between the two.
 
 ### Reference template
 
@@ -80,7 +80,7 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Policy documents
 
-Policy documents are the authoritative source for workflow rules. They describe the current system reality — what the system does, how sessions run, what constraints hold. They are complete in themselves: an agent following only the policy documents should produce correct behaviour.
+Policy documents are the authoritative source for workflow rules. They describe the current system reality — what the system does, how iterations run, what constraints hold. They are complete in themselves: an agent following only the policy documents should produce correct behaviour.
 
 Rules live in the policy document where they will be read and are most valuable contextually. Duplicate rules across documents are a defect — one document is the canonical owner and the other links to it.
 
@@ -94,13 +94,13 @@ A constraint that exists only in a skill file is not authoritative. If an operat
 
 ### Prompt templates
 
-Prompt templates are session tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce session startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files.
+Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files.
 
 Prompt templates do not contain authoritative rules.
 
 ### Persistent devlog records (interim)
 
-`devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` record the agent's friction and gotchas — non-authoritative living records populated at the Steps 8–9 review/publish step, distinct from policy documents (authoritative) and from ephemeral per-session handovers. These records are **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface they belong to is scoped for trim under the [Doc Bloat — Rotate Out Stale Handovers and Discussions](../../devlog/roadmap_future.md#doc-bloat--rotate-out-stale-handovers-and-discussions) task. Their precise end-state form is not yet determined (exact rules TBD).
+`devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` record the agent's friction and gotchas — non-authoritative living records populated at the Steps 8–9 review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. These records are **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface they belong to is scoped for trim under the [Doc Bloat — Rotate Out Stale Handovers and Discussions](../../devlog/roadmap_future.md#doc-bloat--rotate-out-stale-handovers-and-discussions) task. Their precise end-state form is not yet determined (exact rules TBD).
 
 ---
 
@@ -110,25 +110,25 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 | Workflow area | Canonical document | Owns | Does not own |
 |---|---|---|---|
-| Session sequencing and loop structure | [`iteration_policy.md`](../operations/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
+| Iteration sequencing and loop structure | [`iteration_policy.md`](../operations/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
 | Handover lifecycle | [`handover_policy.md`](../operations/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
-| Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, post-close bookkeeping, top-level milestone close, changelog format, milestone promotion | Handover format, session step definitions |
-| Milestone planning (major loop) | [`milestone_policy.md`](../operations/milestone_policy.md) | Story and investigation process, scoping criteria, major loop closure | Minor loop session execution |
-| Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (Steps 8–9 review/publish); records: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md), [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md) | Entry classification (A/B/C), routing at close, record format and lifecycle (declared in the record files) | Rule authoring, session-step sequencing |
+| Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, post-close bookkeeping, top-level milestone close, changelog format, milestone promotion | Handover format, iteration step definitions |
+| Milestone planning (major loop) | [`milestone_policy.md`](../operations/milestone_policy.md) | Story and investigation process, scoping criteria, major loop closure | Minor loop iteration execution |
+| Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (Steps 8–9 review/publish); records: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md), [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md) | Entry classification (A/B/C), routing at close, record format and lifecycle (declared in the record files) | Rule authoring, iteration-step sequencing |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
 | Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
 | Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing, file registry |
 | File registry and index maintenance | [`project_index.md`](../development/project_index.md) | File registry, freeze status, temperature, maintenance trigger rules | Documentation rules, workflow sequencing |
-| Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, session sequencing |
-| Execution mechanics | [`execution_model.md`](../architecture/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator session workflow |
-| External contract | [`tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, session sequencing |
-| Provider AGENTS.md contract | [`provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, session workflow |
+| Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
+| Execution mechanics | [`execution_model.md`](../architecture/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
+| External contract | [`tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
+| Provider AGENTS.md contract | [`provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
 
 ### Boundary notes
 
 **iteration_policy.md and handover_policy.md** are the most adjacent pair. iteration_policy owns the step sequence and gate definitions — when steps run and what makes them complete. handover_policy owns what happens within each step from the handover's perspective — what to populate, what format to use, what constitutes a valid handover at each stage. An agent executing a step reads iteration_policy to know the step exists and what its exit condition is; it reads handover_policy to know how to produce a conforming handover for that step.
 
-**roadmap_policy.md and iteration_policy.md** share the session boundary. Post-close bookkeeping and compaction rules are defined in roadmap_policy; iteration_policy's step table references them by link. An agent updating the roadmap reads roadmap_policy; an agent opening a session reads iteration_policy, which directs it to roadmap_policy at the moments roadmap updates are required.
+**roadmap_policy.md and iteration_policy.md** share the iteration boundary. Post-close bookkeeping and compaction rules are defined in roadmap_policy; iteration_policy's step table references them by link. An agent updating the roadmap reads roadmap_policy; an agent opening an iteration reads iteration_policy, which directs it to roadmap_policy at the moments roadmap updates are required.
 
 **documentation_policy.md and project_index.md** share index maintenance. documentation_policy owns the rules for how documents should be written and structured. project_index.md owns the registry of what documents exist and the rules for keeping it current. Neither owns the other's content.
 
@@ -148,6 +148,6 @@ When a rule appears to exist in two documents in this map, apply the canonical o
 | Security invariants and trust boundaries | [`../architecture/security.md`](../architecture/security.md) |
 | Container lifecycle and execution mechanics | [`../architecture/execution_model.md`](../architecture/execution_model.md) |
 | External contract: commands, naming, guarantees | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) |
-| Session workflow (authoritative) | [`../operations/iteration_policy.md`](../operations/iteration_policy.md) |
+| Iteration workflow (authoritative) | [`../operations/iteration_policy.md`](../operations/iteration_policy.md) |
 | Provider AGENTS.md contract and reference template | [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) |
 | Onboarding and running guide | [`../operations/quickstart.md`](../operations/quickstart.md) |

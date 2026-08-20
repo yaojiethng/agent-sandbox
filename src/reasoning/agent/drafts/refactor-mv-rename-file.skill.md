@@ -23,7 +23,7 @@ find libs/ scripts/ src/ -name '*.sh' | sort
 find . -name '*.sh' -name '*-*' -not -path './.git/*' | grep -v agent-sandbox
 ```
 
-Decision on naming convention (dashes vs underscores, directories, extensions) must be made before implementation begins. Changing convention mid-session guarantees missed references.
+Decision on naming convention (dashes vs underscores, directories, extensions) must be made before implementation begins. Changing convention mid-iteration guarantees missed references.
 
 ---
 

@@ -24,7 +24,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per session plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the session are free-form -- only the delivery commit at session close is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are free-form -- only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -34,15 +34,15 @@ You operate in three modes, often in combination:
 
 These principles are stable. The operating workflow and policy documents are their realisations -- they will evolve; the principles do not.
 
-**Handover first.** The first output of every session is a **new** handover document. No file, code, or structural change is produced before it exists. If the session opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous session -- if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other session work. Use a proper descriptive filename for the handover, and update it if scope changes.
+**Handover first.** The first output of every iteration is a **new** handover document. No file, code, or structural change is produced before it exists. If the iteration opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous iteration -- if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other iteration work. Use a proper descriptive filename for the handover, and update it if scope changes.
 
-**Keep the handover current.** Update the handover's Completed this session table, Decisions table, Mid-session findings, and Deferred items as work progresses -- not just at session close. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
+**Keep the handover current.** Update the handover's Completed table, Decisions table, Findings, and Deferred items as work progresses -- not just at iteration end. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
 
-**Commit when the handover closes.** Every session produces exactly one commit at close with the handover as part of that commit. The commit message matches the session type per `docs/operations/git_policy.md`. Intermediate WIP during the session is free-form -- only the delivery commit at session close is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
+**Commit when the handover closes.** Every iteration produces exactly one commit at close with the handover as part of that commit. The commit message matches the iteration type per `docs/operations/git_policy.md`. Intermediate WIP during the iteration is free-form -- only the delivery commit at iteration end is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
 
-**Confirm scope before producing output.** After the handover is created, state what you propose to do this session -- what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
+**Confirm scope before producing output.** After the handover is created, state what you propose to do this iteration -- what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
-**Confirm acceptance before closing.** Before closing the session, present the status of every acceptance criterion in a visible table -- each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
+**Confirm acceptance before closing.** Before closing the iteration, present the status of every acceptance criterion in a visible table -- each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
 
 **Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
 
@@ -87,7 +87,7 @@ Update the checklist:
 - When a file is completed -- mark it `done` before moving to the next file.
 - **When the task scope expands** -- add new rows for the new scope before producing any output for it.
 
-**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this session must be flagged explicitly with a reason. Do not summarise coverage -- show the table.
+**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this iteration must be flagged explicitly with a reason. Do not summarise coverage -- show the table.
 
 **Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
 
@@ -106,11 +106,11 @@ Bash friction is one class of the agent-feedback record. It lives with the other
 Two persistent records live in `devlog/`:
 
 - [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- agent-experience feedback, recorded by the agent, reviewed by the operator. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
-- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- recurring agent mistakes and code smells, recorded by the operator. At session open (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the session. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
+- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- recurring agent mistakes and code smells, recorded by the operator. At iteration start (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the iteration. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
 
-These files are tied into the session's Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation.
+These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 
-**Roadmap as sole task list.** The roadmap is the sole task list. When a session generates a task, update the roadmap at end of session. Do not leave a task in the handover alone. Authoritative rule: [`roadmap_policy.md`](docs/operations/roadmap_policy.md#when-the-roadmap-is-touched).
+**Roadmap as sole task list.** The roadmap is the sole task list. When an iteration generates a task, update the roadmap at iteration end. Do not leave a task in the handover alone. Authoritative rule: [`roadmap_policy.md`](docs/operations/roadmap_policy.md#when-the-roadmap-is-touched).
 
 ---
 
@@ -160,7 +160,7 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ---
 
-## Session Start
+## Iteration Start
 
 Read these in order. Each answers a distinct question -- do not skip. Verify you have access to each before proceeding.
 
@@ -170,26 +170,26 @@ Read these in order. Each answers a distinct question -- do not skip. Verify you
 |---|---|
 | `AGENTS.md` (this file) | How do I work here? |
 | Provider-layer `AGENTS.md` | What can I do in this specific interface? |
-| `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last session end? |
+| `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last iteration end? |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? -- after reading, state your proposed scope and wait for confirmation before producing any output |
 
 ### Major loop only
 
-Read these in addition to the above when opening a major loop planning session.
+Read these in addition to the above when opening a major loop planning iteration.
 
 | Document | Question it answers |
 |---|---|
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
 | [`devlog/changelog.md`](devlog/changelog.md) | Is the prior milestone fully closed? |
 
-### Policy documents - read before the relevant task type, not at session start
+### Policy documents - read before the relevant task type, not at iteration start
 
 | Document | Read before |
 |---|---|
 | [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Any roadmap update |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any session open or close, new task, story, investigation, or milestone transition |
-| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Any session open or close, creating or updating a handover |
+| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
+| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Any iteration start or end, creating or updating a handover |
 | [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
 | [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |

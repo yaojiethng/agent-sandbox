@@ -19,4 +19,4 @@ Per the propagation discipline in [AGENTS.md](AGENTS.md).
 
 **Report gaps.** For each row with status ❌ or ⚠️, state exactly what is missing and whether it should be fixed now or deferred. If all rows are ✅, state: "Propagation complete — no gaps found."
 
-**Fix or defer.** Apply fix-now gaps and update the row to ✅. Record deferred gaps in the active handover's Deferred items section before closing the session.
+**Fix or defer.** Apply fix-now gaps and update the row to ✅. Record deferred gaps in the active handover's Deferred items section before closing the iteration.

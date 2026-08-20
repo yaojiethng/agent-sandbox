@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Ad-hoc workflow for recovering committed artifacts that violate policy or convention. Not a policy — use when needed, not on every session.
+Ad-hoc workflow for recovering committed artifacts that violate policy or convention. Not a policy — use when needed, not on every iteration.
 
 Covers two scenarios: recovering lost work after a container/filesystem reset, and verifying that committed artifacts are correctly shaped after a recovery operation.
 
@@ -18,9 +18,9 @@ Confirm which scenario applies:
 
 ### Entry Conditions
 
-- Container or filesystem state was reset, losing committed work from one or more prior sessions.
+- Container or filesystem state was reset, losing committed work from one or more prior iterations.
 - The lost work is known to exist from a session log (JSONL file) or from chat history.
-- A handover documenting the lost sessions exists.
+- A handover documenting the lost iterations exists.
 
 ### Procedure
 
@@ -32,20 +32,20 @@ git status --short
 ls devlog/handovers/
 ```
 
-Identify which sessions' outputs are missing. The handovers tell you what was done; the git log tells you what survived.
+Identify which iterations' outputs are missing. The handovers tell you what was done; the git log tells you what survived.
 
 **2. Choose reconstruction method**
 
-- **Chat history replay** — replay edits session by session. Labor-intensive but reliable.
+- **Chat history replay** — replay edits iteration by iteration. Labor-intensive but reliable.
 - **JSONL session log replay** — if a session JSONL file survived the reset, it may contain tool calls and outputs. Faster but schema is not standardised.
 
 **3. Replay in order**
 
-Reconstruct one session at a time, in chronological order. Run the full test suite after each session before committing. If a session had no code output (e.g. a planning session), skip it.
+Reconstruct one iteration at a time, in chronological order. Run the full test suite after each iteration before committing. If an iteration had no code output (e.g. a planning iteration), skip it.
 
 ```bash
-# Per session:
-# 1. Apply all edits for the session
+# Per iteration:
+# 1. Apply all edits for the iteration
 # 2. Run tests
 bash scripts/run_tests.sh
 # 3. Commit
@@ -55,8 +55,8 @@ git commit -m "<message>"
 
 **4. Create handovers**
 
-For each replayed session, create a handover file at `devlog/handovers/`:
-- Date the handover to the current day (the replay date), not the original session date.
+For each replayed iteration, create a handover file at `devlog/handovers/`:
+- Date the handover to the current day (the replay date), not the original iteration date.
 - Number it sequentially from the existing handovers in the repo.
 - Set `Status: Closed` since the work was already completed.
 
@@ -94,7 +94,7 @@ Read `agent/prompts/package-branch.md` for the correct invocation.
 
 ### Entry Conditions
 
-- A previous agent session produced commits with known inconsistencies (wrong naming, missing artifacts, fixup commits).
+- A previous agent iteration produced commits with known inconsistencies (wrong naming, missing artifacts, fixup commits).
 - An interactive rebase or other history-rewriting operation has been performed to fix them.
 - The recovery is complete and needs verification.
 

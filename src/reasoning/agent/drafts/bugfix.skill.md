@@ -80,7 +80,7 @@ Document the bug and fix in two places:
 ### 6. Close
 
 - Confirm the original failing command now passes.
-- If the diagnostic was created as part of this session, note it in the `[CORRECTION]` block.
+- If the diagnostic was created as part of this iteration, note it in the `[CORRECTION]` block.
 - Do not alter the handover's `Status`, timestamps, or acceptance criteria markers.
 
 ---

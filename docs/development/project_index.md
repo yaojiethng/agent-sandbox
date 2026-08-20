@@ -2,7 +2,7 @@
 
 Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
 
-The session-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `devlog/handovers/`).
+The iteration-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `devlog/handovers/`).
 
 Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
 
@@ -99,14 +99,14 @@ Temperature reflects the stability of what a document describes — not how care
 | `provider_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to adding a new reasoning layer provider. References tool_interface.md for contract and execution_model.md for mechanics. |
 | `project_onboarding_guide.md` | 🟡 Warm | M2.2 | Step-by-step guide to onboarding a new project. Covers prerequisites, onboard command, AGENTS.md authoring, and verification. |
 | `quickstart.md` | 🟡 Warm | M2.3 | First-run setup guide. Covers install, onboard, build, and dry-run verification. Provider-specific commands in provider quickstart. |
-| `iteration_policy.md` | 🟡 Warm | M2 | Master session workflow. Replaces task_policy.md. Update when workflow steps change. |
+| `iteration_policy.md` | 🟡 Warm | M2 | Master iteration workflow. Replaces task_policy.md. Update when workflow steps change. |
 | `milestone_policy.md` | 🟡 Warm | M2 | Major loop: milestone planning, story and investigation process. |
-| `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, session continuity. |
+| `handover_policy.md` | 🟡 Warm | M2 | Handover format, naming, population rules, iteration continuity. |
 | `story_policy.md` | 🟡 Warm | M2 | Story lifecycle: creation, graduation, closure. |
 | `study_policy.md` | 🟡 Warm | M2 | Study lifecycle: structure, states, recommendation, closure (née `investigation_policy.md`). |
 | `discussion_policy.md` | 🟡 Warm | M2 | Discussion doc naming, type hub, lifecycle. |
 | `adr_policy.md` | 🟡 Warm | M2 | ADR lifecycle: creation, content, supersede protocol. |
-| `roadmap_policy.md` | 🟢 Cold | M2 | Roadmap maintenance rules. Session-boundary update model. |
+| `roadmap_policy.md` | 🟢 Cold | M2 | Roadmap maintenance rules. Iteration-boundary update model. |
 | `documentation_policy.md` | 🟢 Cold | M2 | Documentation structure rules. Only changes if the doc model changes. |
 | `task_policy.md` — retired | — | M2 | Replaced by `iteration_policy.md`. Deleted. |
 
@@ -183,7 +183,7 @@ Two documents serve as the project's file registry. Each has a defined owner and
 
 **`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
 
-**The active handover** is the session-scoped hot file list. The Hot files section of the handover is the only place the current session's file scope is recorded.
+**The active handover** is the iteration-scoped hot file list. The Hot files section of the handover is the only place the current iteration's file scope is recorded.
 
 ### Update triggers
 
@@ -193,19 +193,19 @@ Two documents serve as the project's file registry. Each has a defined owner and
 - Update temperature for any documents whose stability has changed
 - Only touched files get their `Last touched in` row updated — unchanged files are not updated
 
-**At minor loop Step 1 (session open):**
+**At minor loop Step 1 (iteration open):**
 - Create the new handover and populate the Hot files section from the roadmap task list
 - No changes to `project_index.md` at this step
 
-**At minor loop Step 8 (session close):**
+**At minor loop Step 8 (iteration close):**
 - For every file in the Completed table, update its `Last touched in` column to the current sub-milestone
-- Add new files created during the session
-- Remove files deleted during the session
-- Update the Hot files section of the handover to reflect final session state
+- Add new files created during the iteration
+- Remove files deleted during the iteration
+- Update the Hot files section of the handover to reflect final iteration state
 
 ### Temperature rules
 
-Temperature reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every session.
+Temperature reflects the stability of what a document describes — not how carefully it was written. It is updated at major loop close when a document's role changes, not at every iteration.
 
 | Temperature | Meaning |
 |---|---|
