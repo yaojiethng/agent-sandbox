@@ -125,11 +125,11 @@ git diff-tree --no-commit-id -r <sha> -- devlog/handovers/
 
 Each commit should create exactly one handover file with correct name and `add` mode.
 
-**4. Verify session date consistency**
+**4. Verify date consistency**
 
 ```bash
 for f in devlog/handovers/YYYYMMDD-*.md; do
-  grep "^\\*\\*Session date:" "$f"
+  grep -E "\*\*Session date:|\*\*Date:" "$f"
 done
 ```
 

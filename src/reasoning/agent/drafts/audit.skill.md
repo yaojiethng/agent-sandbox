@@ -27,7 +27,7 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 A full handover audit covers:
 
 1. **Status completeness** — every handover in scope must have `**Status:**` set to `Active` or `Closed`.
-2. **Structural completeness** — every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions made this session, Mid-session findings, Completed this session, Deferred items, Next session), with null markers where empty.
+2. **Structural completeness** — every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Findings, Completed, Deferred items, What's Next), with null markers where empty.
 3. **Deferred item chain integrity** — each deferred item with a next-session destination must have been resolved or re-deferred in the target session.
 4. **Carry-forward escalation** — a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
 5. **Mid-session findings triage** — all entries must be triaged at session close.
@@ -42,7 +42,7 @@ A full handover audit covers:
 
 Determine the set of handovers to review:
 - **Periodic:** list all handovers in `devlog/handovers/` within the date range. Sort by date.
-- **Event-driven:** trace the deferred item through `## Next session` and `## Carried forward` sections.
+- **Event-driven:** trace the deferred item through `## What's Next` and `## Carried forward` sections.
 
 ### 2. Structural scan
 
@@ -76,7 +76,7 @@ Check each handover's `**Status:**`:
 
 ### 5. Dangling reference check
 
-For each file mentioned in `## Completed this session` or `## Hot files`:
+For each file mentioned in `## Completed` or `## Hot files`:
 - Verify the file exists at the referenced path
 - If deleted or renamed, add a `[CORRECTION]` noting the deletion context
 

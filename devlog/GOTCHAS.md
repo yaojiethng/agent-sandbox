@@ -83,3 +83,20 @@ AND newText must be that same anchor row followed by the new row(s). After a mul
 table edit, re-grep the table's row keys and confirm every prior row still exists before
 continuing. Same family as the "did the write land?" reflex but distinct: that catches
 un-applied edits, this catches overwrite-instead-of-append.
+
+### [G] 2026-08-19 — Handover field-schema migration: dual-grep bridge (session-term neutralisation)
+
+state: open
+scoped: M2.6.6 (terminology — 2B field-schema migration)
+legacy: none
+mitigation: the handover field headings were renamed to schema-neutral names (`## Next
+session`→`## What's Next`, `## Mid-session findings`→`## Findings`, `## Completed this
+session`→`## Completed`, `## Decisions made this session`→`## Decisions`, `## Session
+directive`→`## Directive`, and the bold preamble fields `**Session date:**`→`**Date:**`,
+`**Session type:**`→`**Type:**`). HISTORICAL handovers keep the old headings (Bucket C3 —
+not retro-renamed). While closed handovers with old headings remain in `devlog/handovers/`,
+history-scanning consumers must match BOTH forms: `grep -A30 -E "Mid-session findings|Findings"`,
+`grep -E "\*\*Session date:|\*\*Date:"`. Once all old-heading handovers have passed out of
+any history scan (after ~30 NEW handovers / roughly one week), remove the dual-grep (keep
+only the new form) and delete this entry. Sweep trigger: at sub-milestone cleanup, check
+whether the newest handover index in `devlog/handovers/` has advanced by ≥30 since 20260819.

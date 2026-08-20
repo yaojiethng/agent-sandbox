@@ -17,7 +17,7 @@ A well-written handover means the next session starts oriented. A missing or inc
 ## Brevity
 
 - Implementation steps (file-by-file changes, edit descriptions) belong in git commits, not handovers.
-- `Completed this session` table: one line per file -- what changed and why. Not every edit within the file.
+- `Completed` table: one line per file -- what changed and why. Not every edit within the file.
 - `Acceptance criteria`: one observable delta per criterion. If verification requires reading the handover, the criterion is too detailed.
 - `Hot files`: one-line reason per file. If it duplicates the Objective or Scope, it is redundant.
 
@@ -31,9 +31,9 @@ YYYYMMDD-NN-TYPE-description.md
 
 | Component | Rule |
 |---|---|
-| `YYYYMMDD` | Session date |
+| `YYYYMMDD` | Date |
 | `NN` | Two-digit session index, reset daily. Derived at session start: list existing handovers for today's date, take `max + 1`. First session of the day is `01`. |
-| `TYPE` | Session type shortform (see table below) |
+| `TYPE` | Type shortform (see table below) |
 | `description` | The specific subject of this session -- what is being built, changed, or investigated. Name the concrete thing, not a restatement of the type. Use underscores for spaces and periods. No other special characters. A reader scanning a list of handover filenames should be able to distinguish this session from others of the same type without opening the file. Bad: `policy_audit`, `m2_3_impl`, `scope_confirm`. Good: `scope_gate_and_preclose_verification`, `snapshot_baseline_git_init`, `provider_config_copyout`. |
 
 Example: `20260316-02-workflow-scope_gate_and_preclose_verification.md`
@@ -47,7 +47,7 @@ Stored in the `devlog/handovers/` directory. One file per session. Do not overwr
 Each session has a type that reflects its dominant activity. The type appears in the handover header and in the filename shortform.
 Each session type (Eg. workflow vs implementation) must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior sessions of different types. 
 
-| Session type | Shortform | Scope |
+| Type | Shortform | Scope |
 |---|---|---|
 | Design | `design` | Minor loop Steps 3 + 4 (design and information gathering) |
 | Spec | `spec` | Prepare to land: check consistency between roadmap, handover, and docs; surface prefactors; map surface area. Output goes to the handover and roadmap -- no single-use document. |
@@ -77,9 +77,9 @@ A handover has three states:
 ```markdown
 # Agent Handover
 
-**Session date:** YYYY-MM-DD
+**Date:** YYYY-MM-DD
 **Milestone:** <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
-**Session type:** <Design | Spec | Implementation | Story | Study | Planning | Workflow | Housekeeping>
+**Type:** <Design | Spec | Implementation | Story | Study | Planning | Workflow | Housekeeping>
 **Status:** <Active | Closed>
 
 ## Objective
@@ -120,12 +120,12 @@ Not yet defined.
 |---|---|
 | [`path/to/file.md`](path/to/file.md) | <one-line reason> |
 
-## Decisions made this session
+## Decisions
 <Table: decision | rationale | where recorded. If none, write the canonical marker.>
 
 None.
 
-## Mid-session findings
+## Findings
 <Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next session needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at session close and route it to its destination (`AGENT_FEEDBACK.md`, `GOTCHAS.md`, Decisions table, Deferred items, or `roadmap.md`). Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
 | Finding | Type | Impact |
@@ -134,7 +134,7 @@ None.
 
 None.
 
-## Completed this session
+## Completed
 <Table: file | one-line change summary. If no files changed, write the canonical marker.>
 
 No file changes this session.
@@ -146,8 +146,8 @@ Omit any item that is already a named task in `roadmap.md` or `roadmap_future.md
 
 None.
 
-## Next session
-<Sub-milestone ID and name for the next session.>
+## What's Next
+<Sub-milestone ID and name for the next iteration.>
 <Whether post-close bookkeeping has been run or is pending -- omit if mid-milestone and no sub-milestone just completed.>
 <Blocking design questions the next agent must resolve before advancing.>
 <Known watch-out items (capped at three).>
@@ -156,7 +156,7 @@ None.
 **Conclusions from this session:** decisions made, approaches confirmed, dead ends ruled out. Not a full log -- only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
 
-Next session is context-only. It does not carry a task list. The roadmap is the sole task list. Deferred items escalate into named roadmap entries at session close. When a session generates tasks, update the roadmap at end of session.
+What's Next is context-only. It does not carry a task list. The roadmap is the sole task list. Deferred items escalate into named roadmap entries at session close. When a session generates tasks, update the roadmap at end of session.
 
 ---
 
@@ -167,9 +167,9 @@ When a section has nothing to record, write the canonical marker and nothing els
 | Section | Canonical marker |
 |---|---|
 | Acceptance criteria | `Not yet defined.` |
-| Decisions made this session | `None.` |
-| Mid-session findings | `None.` |
-| Completed this session | `No file changes this session.` |
+| Decisions | `None.` |
+| Findings | `None.` |
+| Completed | `No file changes this session.` |
 | Deferred items | `None.` |
 | Carried forward | `None.` |
 
@@ -197,7 +197,7 @@ Apply a correction when a factual error is found in the document -- an incorrect
 4. Do not alter the document's Status, timestamps, or any other metadata field.
 5. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next session or future sessions need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the session close mid-session findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
 
-  - If the finding belongs in the active handover (the current session's handover), add it to Mid-session findings there.
+  - If the finding belongs in the active handover (the current session's handover), add it to Findings there.
   - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
   - If the finding is a deferred item for the next session, add it to Deferred items in the active handover.
   - If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.

@@ -198,7 +198,7 @@ Two documents serve as the project's file registry. Each has a defined owner and
 - No changes to `project_index.md` at this step
 
 **At minor loop Step 8 (session close):**
-- For every file in the Completed this session table, update its `Last touched in` column to the current sub-milestone
+- For every file in the Completed table, update its `Last touched in` column to the current sub-milestone
 - Add new files created during the session
 - Remove files deleted during the session
 - Update the Hot files section of the handover to reflect final session state

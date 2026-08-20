@@ -1,5 +1,5 @@
 ---
-description: Open a new session. Finds the latest handover, runs recovery checks, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every session. Accepts an optional argument describing the session type and focus — this takes priority over the Next session section of the prior handover.
+description: Open a new session. Finds the latest handover, runs recovery checks, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every session. Accepts an optional argument describing the type and focus — this takes priority over the What's Next section of the prior handover.
 argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus description>"
 ---
 
@@ -26,11 +26,11 @@ Run before creating the handover.
 
 ---
 
-## Session directive
+## Directive
 
-Read the prior handover's Next session section before evaluating the directive.
+Read the prior handover's What's Next section before evaluating the directive.
 
-| Session type | Shortform |
+| Type | Shortform |
 |---|---|
 | Design | `design` |
 | Spec | `spec` |
@@ -42,14 +42,14 @@ Read the prior handover's Next session section before evaluating the directive.
 | Housekeeping | `chore` |
 
 If the directive slot is empty:
-- Follow handover policy. Derive session type and objective from Next session.
+- Follow handover policy. Derive type and objective from What's Next.
 
 If the directive slot is non-empty:
-- Identify the session type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
-- **Step 1 — Compare session types.** Extract the session type implied by Next session. If the directive's type and Next session's type do not match, this session diverges — go to Diverges below.
-- **Step 2 — Compare topics.** If types match, check whether the directive subject overlaps with Next session (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this session supersedes or adjusts prior work.
-  - **Continues or adjusts prior work:** The directive takes priority over Next session's framing but does not change the session type or supersede the work in progress.
-  - **Diverges from prior work:** This session supersedes the prior implementation thread. Record a Context handover line in Next session so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Session Types section.
+- Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
+- **Step 1 — Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this session diverges — go to Diverges below.
+- **Step 2 — Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this session supersedes or adjusts prior work.
+  - **Continues or adjusts prior work:** The directive takes priority over What's Next's framing but does not change the type or supersede the work in progress.
+  - **Diverges from prior work:** This session supersedes the prior implementation thread. Record a Context handover line in What's Next so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Session Types section.
 
 ---
 

@@ -10,12 +10,12 @@ Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.
 
 **Do not proceed past this point until the operator releases the gate** (e.g. "proceed", "close the session").
 
-**Scope reconciliation (Step 8):** Compare the confirmed scope from session open against the Completed this session table. Every item that was in scope but is not completed must appear in Deferred items with what it is, why it did not complete, and where it goes next.
+**Scope reconciliation (Step 8):** Compare the confirmed scope from session open against the Completed table. Every item that was in scope but is not completed must appear in Deferred items with what it is, why it did not complete, and where it goes next.
 
-**Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed this session table. Verify every in-scope architecture and concepts document describes the system as built — divergences must be resolved or recorded as deferred items with a reason.
+**Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed table. Verify every in-scope architecture and concepts document describes the system as built — divergences must be resolved or recorded as deferred items with a reason.
 
 **Post-close bookkeeping (Step 8):** Run post-close bookkeeping per `roadmap_policy.md` — compaction cascading, summary table update, and top-level milestone close if applicable.
 
-**Close the handover (Step 8):** Mark each AC as accepted or pushed to next session. Complete the Completed this session and Deferred items sections. Update Hot files. Set Status to `Closed`.
+**Close the handover (Step 8):** Mark each AC as accepted or pushed to next session. Complete the Completed and Deferred items sections. Update Hot files. Set Status to `Closed`.
 
-**Seed next session (Step 9):** Populate the Next session section per `handover_policy.md`. If the completed sub-milestone was the last in the major milestone, write: "Major loop required before next session."
+**Seed what's next (Step 9):** Populate the What's Next section per `handover_policy.md`. If the completed sub-milestone was the last in the major milestone, write: "Major loop required before next session."

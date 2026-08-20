@@ -18,7 +18,7 @@ remains, this skill helps you survey the codebase systematically.
 ls devlog/handovers/ | sort -r | head -5
 ```
 
-Read the most recent handover (both the Objective and Next session
+Read the most recent handover (both the Objective and What's Next
 sections). Work backwards through the chain if the context is thin.
 Closed handovers are read-only records — do not modify them.
 
@@ -62,13 +62,13 @@ git diff --stat HEAD~5..HEAD   # show scope of recent work
 
 Understand what changed recently and what areas were being worked on.
 
-## Step 4 — Check for mid-session findings in the last handover
+## Step 4 — Check for findings in the last handover
 
 ```bash
-grep -A30 "Mid-session findings" devlog/handovers/$(ls devlog/handovers/ | sort -r | head -1)
+grep -A30 -E "Mid-session findings|Findings" devlog/handovers/$(ls devlog/handovers/ | sort -r | head -1)
 ```
 
-Mid-session findings that were triaged but not resolved are the highest
+Findings that were triaged but not resolved are the highest
 priority items for the next session.
 
 ## Step 5 — Check for open design documents
