@@ -22,10 +22,12 @@
 #
 # Host identity for UID mapping
 # Compose file assembly follows deterministic conventions:
-#   base:             libs/docker-compose.yml
+#   base:             src/build/docker-compose.yml
+#   delivery overlay: src/build/docker-compose.copy.yml | src/build/docker-compose.mount.yml
+#                     (selected by SANDBOX_TYPE, default copy)
 #   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
-#     dry-run:        libs/docker-compose.dry-run.yml
+#     dry-run:        src/build/docker-compose.dry-run.yml
 #     serve:          src/reasoning/providers/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
@@ -131,7 +133,14 @@ HOST_GID="$(id -g)"
 
 # Compose file assembly
 # -------------------------
+# The compose file set is selected at generation time per delivery type
+# (SANDBOX_TYPE=copy|mount, default copy): base template + delivery overlay +
+# provider overlay (if present) + mode overlay (dry-run/serve). The delivery
+# overlay carries the per-delivery wiring: copy → named volume + SNAPSHOT_DIR
+# mount; mount → worktree bind mount (docker-compose.copy.yml /.mount.yml).
 COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
+COPY_OVERLAY="$REPO_ROOT/src/build/docker-compose.copy.yml"
+MOUNT_OVERLAY="$REPO_ROOT/src/build/docker-compose.mount.yml"
 DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
 PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
 SERVE_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
@@ -142,7 +151,39 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   exit 1
 fi
 
+# Delivery type — SANDBOX_TYPE=copy|mount, default copy. Copy is the only
+# implemented delivery today; mount is wired for the compose file set and
+# gains full behavior in M2.6.6 delivery enablement.
+DELIVERY_TYPE="${SANDBOX_TYPE:-copy}"
+case "$DELIVERY_TYPE" in
+  copy|mount) ;;
+  *)
+    echo "Error: invalid SANDBOX_TYPE: $DELIVERY_TYPE (expected 'copy' or 'mount')" >&2
+    exit 1
+    ;;
+esac
+
+# Mount delivery worktree — single shared host worktree per sandbox. Default
+# ${SANDBOX_DIR}/.worktree; overridable via WORKTREE_DIR (custom mount point,
+# injected into compose at generation). Only the mount overlay reads it.
+export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
+
 COMPOSE_FILES=("$COMPOSE_TEMPLATE")
+
+# Delivery overlay — selected by DELIVERY_TYPE.
+if [[ "$DELIVERY_TYPE" == "copy" ]]; then
+  if [[ ! -f "$COPY_OVERLAY" ]]; then
+    echo "Error: copy delivery overlay not found: $COPY_OVERLAY" >&2
+    exit 1
+  fi
+  COMPOSE_FILES+=("$COPY_OVERLAY")
+else
+  if [[ ! -f "$MOUNT_OVERLAY" ]]; then
+    echo "Error: mount delivery overlay not found: $MOUNT_OVERLAY" >&2
+    exit 1
+  fi
+  COMPOSE_FILES+=("$MOUNT_OVERLAY")
+fi
 
 # Provider overlay is optional — merged if present.
 if [[ -f "$PROVIDER_OVERLAY" ]]; then

@@ -13,6 +13,12 @@
 #                         and path variables are preserved as ${VAR} for
 #                         Docker Compose to resolve at runtime.
 #
+#                         The input file set is assembled by the caller
+#                         (run_agent.sh): base template + delivery overlay
+#                         (docker-compose.copy.yml / .mount.yml, selected by
+#                         SANDBOX_TYPE) + provider overlay (if present) + mode
+#                         overlay (dry-run/serve).
+#
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a
 #                         single pre-generated compose file and project name.
 #
@@ -44,7 +50,9 @@
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
 #   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
 #   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
-#   ${SNAPSHOT_DIR}         → host snapshot path (from .env, exported by start_agent.sh)
+#   ${SNAPSHOT_DIR}         → host snapshot path (copy delivery only)
+#   ${WORKTREE_DIR}         → host worktree path (mount delivery only; default
+#                             ${SANDBOX_DIR}/.worktree, set by run_agent.sh)
 #   ${CHANGES_DIR}          → host changes path (from .env, exported by start_agent.sh)
 #   ${INPUT_DIR}            → host input path (from .env, exported by start_agent.sh)
 #   ${OUTPUT_DIR}           → host output path (from .env, exported by start_agent.sh)
@@ -110,6 +118,7 @@ compose_generate() {
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
       -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \
+      -e "s|\${WORKTREE_DIR}|${WORKTREE_DIR:-}|g" \
       -e "s|\${CHANGES_DIR}|${CHANGES_DIR:-}|g" \
       -e "s|\${INPUT_DIR}|${INPUT_DIR:-}|g" \
       -e "s|\${OUTPUT_DIR}|${OUTPUT_DIR:-}|g" \

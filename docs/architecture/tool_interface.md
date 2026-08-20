@@ -194,7 +194,15 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
 | `.<provider>/` | Copied from `providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
-`docker-compose.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned templates — never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<run-id>.yml` and persists after the session (see [`execution_model.md` — Compose Generation](execution_model.md#compose-generation)).
+`docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`,
+`docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned
+templates — never written to `SANDBOX_DIR`. The merged result of
+`compose_generate` is written to `SANDBOX_DIR/.compose/<run-id>.yml` and
+persists after the session (see [`execution_model.md` — Compose
+Generation](execution_model.md#compose-generation)). The delivery overlays
+(`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by
+`SANDBOX_TYPE` at generation time — see the delivery-overlay note in
+[`execution_model.md`](execution_model.md#compose-generation).
 
 ---
 

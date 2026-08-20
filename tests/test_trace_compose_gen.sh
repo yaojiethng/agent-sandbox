@@ -23,6 +23,7 @@ setup_fixture() {
   export PROVIDER_NAME="pi"
   export SANDBOX_DIR="$FIXTURE_DIR/sandbox"
   export SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
+  export WORKTREE_DIR="$SANDBOX_DIR/.worktree"
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
@@ -47,6 +48,7 @@ setup_fixture() {
 # Source compose.sh functions and run compose_generate against the stub
 run_compose_generate() {
   local output_file="$1"
+  local delivery="${2:-copy}"
   (
     source "$REPO_ROOT/src/build/image.sh"
     source "$REPO_ROOT/scripts/build.sh"
@@ -54,6 +56,11 @@ run_compose_generate() {
     export PATH="$STUB_DIR:$PATH"
 
     local compose_files=("$REPO_ROOT/src/build/docker-compose.yml")
+    if [[ "$delivery" == "copy" ]]; then
+      compose_files+=("$REPO_ROOT/src/build/docker-compose.copy.yml")
+    else
+      compose_files+=("$REPO_ROOT/src/build/docker-compose.mount.yml")
+    fi
     local provider_overlay="$REPO_ROOT/src/reasoning/providers/pi/docker-compose.pi.yml"
     [[ -f "$provider_overlay" ]] && compose_files+=("$provider_overlay")
 
@@ -102,9 +109,12 @@ test_output_is_valid_yaml() {
     return
   fi
 
-  # Check that key sections are present (not a comprehensive YAML parse)
-  if grep -q 'services:' "$out" && grep -q 'volumes:' "$out"; then
-    pass "generated compose file contains services and volumes sections"
+  # Check that key sections are present. The stub's compose config returns
+  # the first input file (the base template), so the named sandbox volume
+  # (declared in the copy overlay) is not part of the stub-merged output —
+  # the volumes section is asserted statically against the overlay files.
+  if grep -q 'services:' "$out" && grep -q 'x-session-labels:' "$out"; then
+    pass "generated compose file contains services and session-labels sections"
   else
     fail "generated compose file missing expected sections"
   fi
@@ -139,12 +149,93 @@ test_stub_docker_config_preserves_structure() {
 }
 
 # ---------------------------------------------------------------------------
+# Delivery overlay file-set tests
+# ---------------------------------------------------------------------------
+
+# The base template must not carry copy-only wiring: the named sandbox volume
+# and SNAPSHOT_DIR references live in the copy overlay so bind-mount compose
+# never inherits them.
+test_base_template_has_no_copy_only_wiring() {
+  local base="$REPO_ROOT/src/build/docker-compose.yml"
+  local copy_only=0
+  grep -q 'SNAPSHOT_DIR' "$base" && copy_only=1
+  grep -q 'sandbox-data' "$base" && copy_only=1
+  grep -q '/home/agentuser/.snapshot' "$base" && copy_only=1
+
+  if [[ "$copy_only" -eq 0 ]]; then
+    pass "base template free of copy-only wiring (SNAPSHOT_DIR, named sandbox volume)"
+  else
+    fail "base template still carries copy-only wiring"
+  fi
+}
+
+# The copy overlay carries the named volume, the snapshot mount, and the
+# snapshot env.
+test_copy_overlay_carries_snapshot_and_volume() {
+  local overlay="$REPO_ROOT/src/build/docker-compose.copy.yml"
+
+  if grep -q 'sandbox-data' "$overlay" \
+      && grep -q '/home/agentuser/.snapshot' "$overlay" \
+      && grep -q 'SNAPSHOT_DIR=/home/agentuser/.snapshot' "$overlay"; then
+    pass "copy overlay carries named volume + snapshot mount + snapshot env"
+  else
+    fail "copy overlay missing volume/snapshot wiring"
+  fi
+}
+
+# The mount overlay carries the worktree bind mount and no copy wiring.
+test_mount_overlay_carries_worktree_not_copy_wiring() {
+  local overlay="$REPO_ROOT/src/build/docker-compose.mount.yml"
+  local copy_only=0
+  if ! grep -q 'WORKTREE_DIR' "$overlay" || ! grep -q '/home/agentuser/sandbox' "$overlay"; then
+    copy_only=1
+  fi
+  grep -q 'SNAPSHOT_DIR' "$overlay" && copy_only=1
+  grep -q 'sandbox-data' "$overlay" && copy_only=1
+
+  if [[ "$copy_only" -eq 0 ]]; then
+    pass "mount overlay carries worktree mount only"
+  else
+    fail "mount overlay missing worktree mount or carries copy wiring"
+  fi
+}
+
+# The mount-mode merged output (stub-limited) still contains no copy wiring.
+test_mount_output_has_no_snapshot_dir() {
+  local FIXTURE_DIR="$FIXTURE_DIR/mountoutput"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+
+  local out="$FIXTURE_DIR/compose-mount-output.yml"
+  run_compose_generate "$out" mount
+
+  if [[ ! -f "$out" ]]; then
+    fail "compose_generate (mount) did not produce output file"
+    return
+  fi
+
+  local copy_only=0
+  grep -q 'SNAPSHOT_DIR' "$out" && copy_only=1
+  grep -q 'sandbox-data' "$out" && copy_only=1
+
+  if [[ "$copy_only" -eq 0 ]]; then
+    pass "mount-mode merged output free of copy-only wiring"
+  else
+    fail "mount-mode merged output contains copy-only wiring"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_no_name_lines_in_output
 run_test test_output_is_valid_yaml
 run_test test_stub_docker_config_preserves_structure
+run_test test_base_template_has_no_copy_only_wiring
+run_test test_copy_overlay_carries_snapshot_and_volume
+run_test test_mount_overlay_carries_worktree_not_copy_wiring
+run_test test_mount_output_has_no_snapshot_dir
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

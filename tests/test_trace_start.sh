@@ -380,6 +380,65 @@ test_compose_file_persisted() {
 }
 
 # ---------------------------------------------------------------------------
+# Delivery overlay selection (SANDBOX_TYPE=copy|mount)
+# ---------------------------------------------------------------------------
+
+# Default (SANDBOX_TYPE unset) is copy: the copy overlay is merged, the mount
+# overlay is not.
+test_copy_delivery_default_merges_copy_overlay() {
+  local FIXTURE_DIR="$FIXTURE_DIR/copy_delivery"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  unset SANDBOX_TYPE
+  invoke_run_agent "standard"
+
+  local copy_count mount_count
+  copy_count=$(trace_count "docker-compose.copy.yml")
+  mount_count=$(trace_count "docker-compose.mount.yml")
+  if [[ "$copy_count" -ge 1 && "$mount_count" -eq 0 ]]; then
+    pass "copy delivery (default): copy overlay merged, mount overlay absent"
+  else
+    fail "copy delivery (default): copy=$copy_count mount=$mount_count (expected copy>=1 mount=0)"
+  fi
+}
+
+# SANDBOX_TYPE=mount: the mount overlay is merged, the copy overlay is not.
+test_mount_delivery_merges_mount_overlay() {
+  local FIXTURE_DIR="$FIXTURE_DIR/mount_delivery"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export SANDBOX_TYPE="mount"
+  invoke_run_agent "standard"
+
+  local copy_count mount_count
+  copy_count=$(trace_count "docker-compose.copy.yml")
+  mount_count=$(trace_count "docker-compose.mount.yml")
+  if [[ "$mount_count" -ge 1 && "$copy_count" -eq 0 ]]; then
+    pass "mount delivery: mount overlay merged, copy overlay absent"
+  else
+    fail "mount delivery: copy=$copy_count mount=$mount_count (expected mount>=1 copy=0)"
+  fi
+  unset SANDBOX_TYPE
+}
+
+# Unknown SANDBOX_TYPE values are rejected before any compose invocation.
+test_invalid_sandbox_type_rejected() {
+  local FIXTURE_DIR="$FIXTURE_DIR/bad_delivery"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+  export SANDBOX_TYPE="bogus"
+
+  local rc
+  rc=$(invoke_run_agent_rc "standard")
+  if [[ "$rc" -ne 0 ]]; then
+    pass "invalid SANDBOX_TYPE=bogus rejected (rc=$rc)"
+  else
+    fail "invalid SANDBOX_TYPE=bogus accepted (rc=0)"
+  fi
+  unset SANDBOX_TYPE
+}
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
@@ -399,6 +458,9 @@ run_test test_serve_up_failure_still_tears_down
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
 run_test test_compose_file_persisted
+run_test test_copy_delivery_default_merges_copy_overlay
+run_test test_mount_delivery_merges_mount_overlay
+run_test test_invalid_sandbox_type_rejected
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

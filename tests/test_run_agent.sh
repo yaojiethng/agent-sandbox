@@ -150,21 +150,6 @@ if [[ "$ANY_PROVIDER_FILE_BROKEN" == false ]]; then
 fi
 
 echo ""
-echo "-- Compose template file existence --"
-
-if [[ -f "$REPO_ROOT/src/build/docker-compose.yml" ]]; then
-  pass "compose template exists"
-else
-  fail "compose template missing: $REPO_ROOT/src/build/docker-compose.yml"
-fi
-
-if [[ -f "$REPO_ROOT/src/build/docker-compose.dry-run.yml" ]]; then
-  pass "dry-run overlay exists"
-else
-  fail "dry-run overlay missing: $REPO_ROOT/src/build/docker-compose.dry-run.yml"
-fi
-
-echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
 
 # Exit with non-zero if any test failed

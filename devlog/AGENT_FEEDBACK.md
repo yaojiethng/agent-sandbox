@@ -348,3 +348,22 @@ announcing a write-back, verify the row exists (row-key grep) in the same
 turn; an un-landed assertion is invisible to the next agent until the close
 pass. Distinct from the GOTCHAS append-anchor entry: that catches
 overwrite-instead-of-append, this catches assert-without-write.
+
+## Agent experience — session 20260818-03
+
+### [A] 2026-08-18 — Repo-presence assertions are trivial restatements; guard the injection point in production instead
+
+state: open
+scoped: none
+legacy: none
+mitigation: the agent added bare file-existence assertions to
+`test_run_agent.sh` (compose template + overlay existence at hardcoded repo
+paths). Operator corrected: presence of a committed repo file is trivially
+true — the meaningful guard is each injection point checking the file it
+needs and raising a descriptive error, which production already does
+(all 5 required compose files are existence-guarded in `run_agent.sh`;
+`compose_generate` re-checks each input). Behavioral coverage comes from
+trace tests asserting the file set flows (which fail if a file is absent)
+and static content checks. Presence assertions removed; production guards
+verified. When adding tests for file wiring, check the production guard
+first and test the behavior (selection/injection/error), not file existence.

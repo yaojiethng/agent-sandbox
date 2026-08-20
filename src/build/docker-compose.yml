@@ -1,7 +1,10 @@
 # docker-compose.yml.template
-# Harness base compose template. Merged by libs/compose.sh (compose_generate)
-# on every run; the merged result is written to SANDBOX_DIR/.compose/<run-id>.yml
-# and persists after the session (see docs/architecture/execution_model.md).
+# Harness base compose template — shared by both deliveries. Merged by
+# src/build/compose.sh (compose_generate) on every run together with the
+# delivery overlay selected by SANDBOX_TYPE (copy|mount, default copy), the
+# provider overlay (if present), and the mode overlay (dry-run/serve); the
+# merged result is written to SANDBOX_DIR/.compose/<run-id>.yml and persists
+# after the session (see docs/architecture/execution_model.md).
 #
 # {{VAR}} placeholders are substituted at generation time:
 #   {{PROJECT_NAME}}       → project name
@@ -12,30 +15,16 @@
 # ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
 # from the exported environment (set by start_agent.sh before compose).
 #
-# Workspace path variables (${SNAPSHOT_DIR}, ${CHANGES_DIR}, ${INPUT_DIR},
-# ${OUTPUT_DIR}) are exported by start_agent.sh — derived from SANDBOX_DIR.
-# The x-workspace anchor below documents the path mapping in one place.
+# Copy-only wiring (the per-run named sandbox volume and the snapshot mount /
+# env) lives in the copy delivery overlay (docker-compose.copy.yml) so
+# bind-mount compose never inherits it. Common workspace path variables
+# (${CHANGES_DIR}, ${INPUT_DIR}, ${OUTPUT_DIR}) are exported by start_agent.sh
+# — derived from SANDBOX_DIR. The x-workspace anchor below documents the path
+# mapping.
 #
 # Container names match image names — one session per project at a time.
 # Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
 # Do not invoke this file directly in normal operation.
-
-# Named volume for sandbox state persistence — one per session.
-# Volume name incorporates RUN_ID so each session invocation gets its own
-# volume. Managed by compose lifecycle — preserved across `make stop` /
-# `make start`. Destroyed by `docker compose down -v` or pruned via
-# `make prune --volumes`.
-# Labels enable lifecycle tooling (prune, inspect, volume discovery) without
-# project-name prefix parsing.
-volumes:
-  {{RUN_ID}}-sandbox-data:
-    labels:
-      agent-sandbox.project-name: {{PROJECT_NAME}}
-      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
-      agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
-      agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
-      agent-sandbox.session-ts: {{SESSION_TS}}
-      agent-sandbox.run-id: {{RUN_ID}}
 
 # The compose-created default network is labeled so lifecycle tooling can
 # find and clean up per-session networks by label (no project-name parsing).
@@ -64,7 +53,7 @@ x-session-labels: &session_labels
 # Design rationale: devlog/discussions/design_workspace_path_resolution.md
 x-workspace:
   # Host → Container
-  snapshot_host:   "${SNAPSHOT_DIR}"             # → "/home/agentuser/.snapshot"
+  # (snapshot mapping is copy-delivery only — documented in docker-compose.copy.yml)
   changes_host:    "${CHANGES_DIR}"              # → "/home/agentuser/workspace/session-diffs"
   input_host:      "${INPUT_DIR}"                # → "/home/agentuser/workspace/input"
   output_host:     "${OUTPUT_DIR}"               # → "/home/agentuser/workspace/output"
@@ -77,18 +66,10 @@ services:
     labels: *session_labels
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
-      - type: volume
-        source: {{RUN_ID}}-sandbox-data
-        target: /home/agentuser/sandbox
-      - type: bind
-        source: ${SNAPSHOT_DIR}
-        target: /home/agentuser/.snapshot
-        read_only: true
       - type: bind
         source: ${CHANGES_DIR}
         target: /home/agentuser/workspace/session-diffs
     environment:
-      - SNAPSHOT_DIR=/home/agentuser/.snapshot
       - CHANGES_DIR=/home/agentuser/workspace/session-diffs
       - INPUT_DIR=/home/agentuser/workspace/input
       - OUTPUT_DIR=/home/agentuser/workspace/output

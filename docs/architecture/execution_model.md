@@ -80,7 +80,7 @@ Resume reuses the same RUN_ID and overwrites its own file; each unique session
 leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the
 file is never visible in the agent workspace. `.compose/` is gitignored.
 
-**Merged generation:** `compose_generate` in `libs/compose.sh` merges the base
+**Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base
 template with any applicable overlays using `docker compose config
 --no-interpolate`, bakes image names and host paths into the result, and
 preserves operator secrets as `${VAR}` for runtime resolution.
@@ -95,11 +95,22 @@ preserves operator secrets as `${VAR}` for runtime resolution.
 
 | Mode | Compose files |
 |---|---|
-| `standard` | Base template only (+ provider overlay if present) |
-| `serve` | Base template + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
-| `dry-run` | Base template + provider overlay (if present) + `libs/docker-compose.dry-run.yml` |
+| `standard` | Base template + delivery overlay (+ provider overlay if present) |
+| `serve` | Base template + delivery overlay + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
+| `dry-run` | Base template + delivery overlay + provider overlay (if present) + `src/build/docker-compose.dry-run.yml` |
 
-The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve and dry-run overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<run-id>.yml`).
+**Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE`
+(`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The
+delivery overlay carries the per-delivery worktree wiring, so the base
+template stays shared:
+
+- `src/build/docker-compose.copy.yml` — the per-run named sandbox volume and
+the snapshot RO mount + env (`SNAPSHOT_DIR`). Copy mode only.
+- `src/build/docker-compose.mount.yml` — the worktree bind mount at
+`/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable
+via `WORKTREE_DIR`). Mount mode only.
+
+The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<run-id>.yml`).
 
 **File accumulation:** compose files accumulate one per unique RUN_ID (KB-scale
 per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the

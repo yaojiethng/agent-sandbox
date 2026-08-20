@@ -198,7 +198,11 @@ done < "$ENV_FILE"
 # -------------------------
 # The .env file stores only the primitive (SANDBOX_DIR). Derived paths
 # are produced here directly (no longer via dirs.sh/dirs_resolve).
-# These values must match the x-workspace anchor in libs/docker-compose.yml.
+# CHANGES_DIR/INPUT_DIR/OUTPUT_DIR are common to both deliveries and must
+# match the x-workspace anchor in src/build/docker-compose.yml. SNAPSHOT_DIR
+# is copy-delivery only (consumed by the copy overlay docker-compose.copy.yml),
+# exported unconditionally for now — the mount path drops the vestigial
+# snapshot operations in delivery enablement.
 export SNAPSHOT_DIR="${SANDBOX_DIR}/.snapshot"
 export CHANGES_DIR="${SANDBOX_DIR}/.workspace/session-diffs"
 export INPUT_DIR="${SANDBOX_DIR}/.workspace/input"
