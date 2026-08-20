@@ -105,6 +105,22 @@ The diff pipeline was redesigned around a single git-agnostic unified diff forma
 
 ---
 
+## M2.4 - Session and Config Persistence
+
+*The provider configuration lifecycle is established: config is populated at onboarding, provider-level prompts and skills are seeded, and session history persists across container restarts on every supported host filesystem.*
+
+Onboarding now populates provider config and seeds the provider-level prompts and skills into the agent home, with auth tokens stored as environment-variable references in `auth.json` (ephemeral by design - secrets are never written back to host files). Session history persists through a bind-mounted `sessions/` directory, with the cross-device `mv` issue on macOS/Windows Docker Desktop resolved by owning the directory inside the image. A selective bind-mount pattern persists `sessions/`, `prompts/`, and `skills/` while the remaining config stays ephemeral via copy-in, avoiding the cross-filesystem `utime()`/`EPERM` failure mode. Provider-level session resume (continuing a prior conversation) is scoped to M2.6, not this sub-milestone.
+
+---
+
+## M2.6 - Session Persistence (Foundation and Copy Model)
+
+*The agent's working state survives container stop/start cycles: session export is reliable, the volume lifecycle is managed per run, and the volume-backed copy model gives each sandbox a durable and isolated working copy.*
+
+Foundation work made autosave and session-save reliable (EXIT-trap export with return-value capture, `.export-status` metadata, lockfile polling), documented the security model, and audited repository preconditions. The volume lifecycle is per-run: named volumes keyed by run identity, resume via the host identity record and volume labels, conditional teardown (`compose stop` preserves the container, `down -v` destroys the volume), and container persistence across stops. The copy model adds label-filtered volume pruning, multi-volume concurrency with locking and an interactive selector, and draft-branch rollback via savepoint tags when patch application fails partway. A cross-cutting CLI/infra hardening track unified `--help` across subcommands, fixed the docker network-pool leak and the silent build-failure abort, persisted merged compose files under `SANDBOX_DIR/.compose/`, and closed the test-harness `set -e` blind spot so production scripts now run under the real runtime in trace tests. The mount model (M2.6.6) and its delivery tasks are in progress; their work is appended to this entry at milestone close.
+
+---
+
 
 ## M2.7 - Session Identity and Harness Versioning
 

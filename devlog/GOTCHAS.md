@@ -54,10 +54,10 @@ mitigation: durable fix applied (session `20260810-03`): `documentation_policy.m
 
 ### [G] 2026-08-09 - Set handover Status Closed before the final commit (close = the commit)
 
-state: open
+state: mitigated
 scoped: none
 legacy: none
-mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker.
+mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker. Marked mitigated 2026-08-19 (P1): the durable policy fix landed in session `20260809-05` (P2) — `iteration_policy.md` Step 8 now reads "The close is the commit" — and practice held across the intervening sessions. Monitored through the next few closes; delete when confirmed durable.
 
 ### [H] 2026-08-12 — Library functions must `return`, not `exit`
 
