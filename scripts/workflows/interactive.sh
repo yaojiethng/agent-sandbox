@@ -17,7 +17,6 @@
 #   interactive_confirm_or_abort   — print items + y/N prompt
 #   interactive_select_channel     — pick a channel (draft or apply)
 #   interactive_select_bundle     — pick a bundle entry within a channel
-#   interactive_select_diff_type   — pick uncommitted.diff or all-changes.diff
 
 # No set -euo pipefail here — this file is always sourced, never executed directly.
 # Safety settings are inherited from the parent script.
@@ -285,7 +284,6 @@ interactive_select_channel() {
   # Define eligible channels per subcommand
   local -a CHANNELS=()
   case "$SUBCOMMAND" in
-    apply) CHANNELS=("diffs" "autosave" "session") ;;
     draft) CHANNELS=("session" "autosave" "bundles") ;;
     *)
       echo "Error: unknown subcommand: $SUBCOMMAND" >&2
@@ -324,7 +322,6 @@ interactive_select_channel() {
 # =============================================================================
 # interactive_select_bundle
 # =============================================================================
-
 # interactive_select_bundle SANDBOX_DIR CHANNEL [DEFAULT_BUNDLE]
 #
 # Scans bundle entries under the resolved channel directory and presents
@@ -395,66 +392,4 @@ interactive_select_bundle() {
   done
 
   interactive_pick "Available bundles (${CHANNEL}):" ENTRIES "$DEFAULT_BUNDLE" "$INTERACTIVE_MAX_ENTRIES"
-}
-
-# =============================================================================
-# interactive_select_diff_type
-# =============================================================================
-
-# interactive_select_diff_type SANDBOX_DIR BUNDLE_NAME CHANNEL
-#
-# Presents a picker for diff file type (uncommitted.diff or all-changes.diff).
-# If only one type is available, skips the prompt and returns it directly.
-#
-# Args:
-#   SANDBOX_DIR   — path to sandbox directory (for dirs_resolve)
-#   BUNDLE_NAME   — bundle basename
-#   CHANNEL       — channel name (diffs, session, autosave, bundles)
-#
-# Output:
-#   stdout — "uncommitted" or "all-changes"
-#
-# Returns:
-#   0 on selection, 1 on abort or no diff files found
-interactive_select_diff_type() {
-  local SANDBOX_DIR="$1"
-  local BUNDLE_NAME="$2"
-  local CHANNEL="$3"
-
-  dirs_resolve "$SANDBOX_DIR"
-
-  local BASE_DIR
-  BASE_DIR=$(_resolve_channel_dir "$CHANNEL") || return 1
-
-  local BUNDLE_DIR="${BASE_DIR}/${BUNDLE_NAME}"
-  local HAS_UNCOMMITTED=false
-  local HAS_ALL_CHANGES=false
-
-  if [[ -f "$BUNDLE_DIR/uncommitted.diff" && -s "$BUNDLE_DIR/uncommitted.diff" ]]; then
-    HAS_UNCOMMITTED=true
-  fi
-  if [[ -f "$BUNDLE_DIR/all-changes.diff" && -s "$BUNDLE_DIR/all-changes.diff" ]]; then
-    HAS_ALL_CHANGES=true
-  fi
-
-  # Auto-select if only one type available
-  if [[ "$HAS_UNCOMMITTED" == true && "$HAS_ALL_CHANGES" == false ]]; then
-    echo "uncommitted"
-    return 0
-  fi
-  if [[ "$HAS_UNCOMMITTED" == false && "$HAS_ALL_CHANGES" == true ]]; then
-    echo "all-changes"
-    return 0
-  fi
-  if [[ "$HAS_UNCOMMITTED" == false && "$HAS_ALL_CHANGES" == false ]]; then
-    echo "Error: no diff files found in $BUNDLE_DIR" >&2
-    return 1
-  fi
-
-  # Both available — use picker
-  local -a ENTRIES=(
-    "uncommitted|1: uncommitted.diff (default)"
-    "all-changes|2: all-changes.diff"
-  )
-  interactive_pick "Select diff file:" ENTRIES "uncommitted" 0 true
 }

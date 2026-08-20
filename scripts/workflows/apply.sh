@@ -96,24 +96,50 @@ apply_run() {
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox apply --project=<path> --sandbox=<path> [options]
+Usage: agent-sandbox apply --project=<path> --sandbox=<path> --diff=<path> [options]
 
 Applies a diff file to the project working tree. Does not commit.
 
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory
+  --diff=<path>       Path to the exact diff file to apply
 
 Options:
-  --diff=<path>       Apply a specific diff file (default: auto-resolve)
   --branch=<name>     Check out or create a branch before applying
-  --channel=<name>    Resolution channel: diffs, session, autosave (default: diffs)
-  --bundle=<name>     Named bundle to resolve from (default: newest)
-  --diff-type=<type>  Diff file type: uncommitted or all-changes (default: uncommitted)
   --force             Apply with --reject for conflicts
   --permissive        Retry with --recount on failure
-  --interactive       Interactive picker mode
+  --interactive       Preview the changes, then ask for confirmation
 EOF
+}
+
+# =============================================================================
+# apply_preview — print a git-oneline-style summary of an external diff file
+# =============================================================================
+
+# apply_preview DIFF_FILE
+#
+# Prints each file the diff touches (from 'diff --git' headers), then the
+# total file count. The diff is external to the working tree, so the summary
+# is read from the file rather than from git.
+apply_preview() {
+  local DIFF_FILE="$1"
+  local has_changes=false
+  local file
+  while IFS= read -r line; do
+    if [[ "$line" == diff\ --git* ]]; then
+      has_changes=true
+      file=${line#diff --git }
+      file=${file#a/}
+      file=${file%% *}
+      printf '%s\n' "$file"
+    fi
+  done < "$DIFF_FILE"
+  if [[ "$has_changes" == false ]]; then
+    echo "No changes found in $DIFF_FILE"
+    return 0
+  fi
+  printf 'Total files: %s\n' "$(grep -c '^diff --git' "$DIFF_FILE" || echo 0)"
 }
 
 # =============================================================================
@@ -121,7 +147,7 @@ EOF
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
-# Expected flags: --project=<dir> --sandbox=<dir> [--diff=<path>] [--branch=<n>] [--force] [--permissive] [--interactive]
+# Expected flags: --project=<dir> --sandbox=<dir> --diff=<path> [--branch=<n>] [--force] [--permissive] [--interactive]
 main() {
   for ARG in "$@"; do
     case "$ARG" in
@@ -135,10 +161,7 @@ main() {
   local APPLY_BRANCH=""
   local FORCE=false
   local STRICT=false
-  local CHANNEL=""
-  local BUNDLE=""
   local INTERACTIVE=false
-  local DIFF_TYPE=""
 
   for ARG in "$@"; do
     case "$ARG" in
@@ -148,10 +171,7 @@ main() {
       --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
       --force)         FORCE=true ;;
       --permissive)    true ;;  # no-op, kept for compatibility
-      --channel=*)     CHANNEL="${ARG#--channel=}" ;;
-      --bundle=*)      BUNDLE="${ARG#--bundle=}" ;;
       --interactive)   INTERACTIVE=true ;;
-      --diff-type=*)   DIFF_TYPE="${ARG#--diff-type=}" ;;
       *)
         echo "Unknown argument: $ARG" >&2
         usage >&2
@@ -165,68 +185,24 @@ main() {
     exit 1
   fi
 
-  # Interactive mode: let the operator pick or confirm via picker
+  if [[ -z "$DIFF_FILE" ]]; then
+    echo "Error: --diff=<path> is required. apply applies an exact diff file; pass --diff=<full path>." >&2
+    usage >&2
+    exit 1
+  fi
+
+  # Interactive mode: preview the changes, then ask for confirmation
   if [[ "$INTERACTIVE" == true ]]; then
     source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
-
-    if [[ -n "$DIFF_FILE" ]]; then
-      # --diff given: confirm with y/N and apply directly
-      interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
-      echo "Running: make apply DIFF=${DIFF_FILE}"
-      apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
-      exit $?
-    fi
-
-    # Step 1: pick channel (default from --channel or diffs)
-    source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
-    local CHANNEL
-    CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL:-diffs}") || exit 1
-    # Step 2: pick bundle
-    local BUNDLE
-    BUNDLE=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || exit 1
-    # Step 3: pick diff type
-    local DIFF_TYPE
-    DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$BUNDLE" "$CHANNEL") || exit 1
-
-    # Resolve the diff file path
-    _resolve_paths "$SANDBOX_DIR"
-    local BASE_DIR
-    BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
-    local DIFF_FILE="${BASE_DIR}/${BUNDLE}/${DIFF_TYPE}.diff"
-    if [[ ! -f "$DIFF_FILE" ]]; then
-      echo "Error: diff file not found: $DIFF_FILE" >&2
-      exit 1
-    fi
-
-    if [[ "$DIFF_TYPE" == "uncommitted" ]]; then
-      echo "Running: make apply FROM=${CHANNEL} BUNDLE=${BUNDLE}"
-    else
-      echo "Running: make apply DIFF=${DIFF_FILE}"
-    fi
+    echo "Preview of $(basename "$DIFF_FILE"):" >&2
+    apply_preview "$DIFF_FILE" >&2
+    interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
+    echo "Running: make apply DIFF=${DIFF_FILE}"
     apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
     exit $?
   fi
 
-  # Non-interactive path
-  if [[ -n "$DIFF_FILE" ]]; then
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
-  else
-    source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
-    local CHANNEL="${CHANNEL:-diffs}"
-    local DIFF_TYPE="${DIFF_TYPE:-uncommitted}"
-
-    # Resolve the diff file within the selected bundle, then swap the diff
-    # file type (uncommitted vs all-changes)
-    local RESOLVED
-    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || exit 1
-    local DIFF_FILE="${RESOLVED%/*}/${DIFF_TYPE}.diff"
-    if [[ ! -f "$DIFF_FILE" ]]; then
-      echo "Error: diff file not found: $DIFF_FILE" >&2
-      echo "  Available types: uncommitted.diff, all-changes.diff" >&2
-      exit 1
-    fi
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
-  fi
+  apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
 }
 
 # Guard: only run main() when executed directly, not when sourced

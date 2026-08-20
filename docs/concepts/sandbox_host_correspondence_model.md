@@ -113,7 +113,7 @@ the fixed reference for all diff packaging in this container lifetime.
 Changes can flow in either direction at any time while the sandbox is live. All transfers
 use the same diff format and the same `make apply` command regardless of direction.
 
-- **Sandbox → host (mid-session checkpoint):** The autosave loop exports `uncommitted.diff`, `patches/`, and `changed-files/` under `autosave/<SESSION_TS>-<BRANCH>/`. Overwritten each tick. Operator runs `make apply FROM=autosave` (or `make apply --channel=autosave`) on the host, reviews, commits manually.
+- **Sandbox → host (mid-session checkpoint):** The autosave loop exports `uncommitted.diff`, `patches/`, and `changed-files/` under `autosave/<SESSION_TS>-<BRANCH>/`. Overwritten each tick. Operator runs `make apply DIFF=<full path to exact diff file>` on the host, reviews, commits manually.
 - **Host → sandbox (amendment):** Operator packages a host change with `make package-branch` (host-side, writes to `INPUT_DIR`). Agent reviews and commits. The next `package-branch` includes this commit in the series.
 - **Sandbox → host (committed work):** On container exit, `diff_export` writes `uncommitted.diff`, `all-changes.diff`, `patches/*.diff`, and `changed-files/` into `session/<SESSION_TS>-<BRANCH>/`. This runs automatically via the EXIT trap.
 
@@ -167,7 +167,7 @@ directions and on both host and container.
 | `bash .../package_branch.sh --to=<dir> [--baseline=<sha>]` | Container | Packages all commits since `init_sha` as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/` under `<to>/bundles/<ts>-<label>/`. |
 
 | `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
-| `make apply [CHANNEL=<channel>] [DIFF=<path>] [INTERACTIVE=1]` | Host | Applies `uncommitted.diff` (resolved by router) uncommitted. Default: `diffs` channel. `DIFF=<path>` bypasses resolution. `INTERACTIVE=1` prompts through channel/session/diff-type picker. |
+| `make apply DIFF=<path> [INTERACTIVE=1]` | Host | Applies an exact diff file (`--diff=<path>` required) uncommitted. `--interactive` previews the changes + asks for confirmation. |
 | `make draft [CHANNEL=<channel>] [BUNDLE=<name>] [INTERACTIVE=1]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. `INTERACTIVE=1` prompts through channel/bundle picker. |
 | `make confirm [TARGET=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
 | `make reject` | Host | Discards draft branch. Artefacts unchanged. |
@@ -195,12 +195,12 @@ merges.
 ## Model Gaps
 
 **Mixing `make apply` and `make draft` within a single session:** Resolved. Under the
-current model the two paths are structurally separate: `make apply` resolves from
-the `diffs` channel (`output/diffs/`) and lands changes uncommitted in the working tree;
-`make draft` resolves from the `session` channel (`session-diffs/session/`) or `bundles`
-channel (`output/bundles/`) and applies committed diffs to a branch. The artefact
-locations do not overlap and there is no shared application mechanism. No undefined
-behaviour remains.
+current model the two paths are structurally separate: `make apply` applies an exact
+diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in
+the working tree; `make draft` resolves from the `session` channel
+(`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies
+committed diffs to a branch. The artefact locations do not overlap and there is no
+shared application mechanism. No undefined behaviour remains.
 
 **Mixed session types across sessions:** Closed as explicitly out of scope. A project
 using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions

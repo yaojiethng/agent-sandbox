@@ -4,7 +4,6 @@
 # Covers:
 #   export_path               — unified path construction
 #   resolve_source_for_draft  — session resolution for draft operations
-#   resolve_diff_for_apply    — session resolution for apply operations
 
 set -uo pipefail
 
@@ -192,110 +191,6 @@ test_resolve_draft_invalid_channel() {
 }
 
 # =============================================================================
-# resolve_diff_for_apply
-# =============================================================================
-
-test_resolve_apply_default_channel() {
-  local SD="$FIXTURE_DIR/sandbox_a1"
-  mkdir -p "$SD/.workspace/session-diffs/session/20260408-120000-run001"
-  echo "diff content" > "$SD/.workspace/session-diffs/session/20260408-120000-run001/uncommitted.diff"
-
-  local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "session" "") || { fail "resolve_diff_for_apply failed"; return; }
-  if [[ "$RESULT" == *"uncommitted.diff" ]] && [[ -f "$RESULT" ]]; then
-    pass "resolve_diff_for_apply: session channel resolves uncommitted.diff"
-  else
-    fail "resolve_diff_for_apply: expected uncommitted.diff, got $RESULT"
-  fi
-}
-
-test_resolve_apply_autosave_channel() {
-  local SD="$FIXTURE_DIR/sandbox_a2"
-  mkdir -p "$SD/.workspace/session-diffs/autosave/20260408-120000-main"
-  echo "diff content" > "$SD/.workspace/session-diffs/autosave/20260408-120000-main/uncommitted.diff"
-
-  local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "autosave" "") || { fail "resolve_diff_for_apply autosave failed"; return; }
-  if [[ "$RESULT" == *"uncommitted.diff" ]]; then
-    pass "resolve_diff_for_apply: autosave channel resolves correctly"
-  else
-    fail "resolve_diff_for_apply autosave: expected uncommitted.diff, got $RESULT"
-  fi
-}
-
-test_resolve_apply_session_channel() {
-  local SD="$FIXTURE_DIR/sandbox_a3"
-  mkdir -p "$SD/.workspace/session-diffs/session/20260408-120000-main"
-  echo "diff content" > "$SD/.workspace/session-diffs/session/20260408-120000-main/uncommitted.diff"
-
-  local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "session" "") || { fail "resolve_diff_for_apply session failed"; return; }
-  if [[ "$RESULT" == *"uncommitted.diff" ]]; then
-    pass "resolve_diff_for_apply: session channel resolves correctly"
-  else
-    fail "resolve_diff_for_apply session: expected uncommitted.diff, got $RESULT"
-  fi
-}
-
-test_resolve_apply_named_session() {
-  local SD="$FIXTURE_DIR/sandbox_a4"
-  mkdir -p "$SD/.workspace/session-diffs/session/my-session"
-  echo "diff content" > "$SD/.workspace/session-diffs/session/my-session/uncommitted.diff"
-
-  local RESULT
-  RESULT=$(resolve_diff_for_apply "$SD" "session" "my-session") || { fail "resolve_diff_for_apply named failed"; return; }
-  if [[ "$RESULT" == "$SD/.workspace/session-diffs/session/my-session/uncommitted.diff" ]]; then
-    pass "resolve_diff_for_apply: named session resolves full path"
-  else
-    fail "resolve_diff_for_apply named: expected .../my-session/uncommitted.diff, got $RESULT"
-  fi
-}
-
-test_resolve_apply_absolute_path_rejected() {
-  local SD="$FIXTURE_DIR/sandbox_a5"
-  mkdir -p "$SD/.workspace/output/diffs"
-
-  if resolve_diff_for_apply "$SD" "diffs" "/absolute/path" 2>/dev/null; then
-    fail "resolve_diff_for_apply should reject absolute paths"
-  else
-    pass "resolve_diff_for_apply rejects absolute paths"
-  fi
-}
-
-test_resolve_apply_missing_diff() {
-  local SD="$FIXTURE_DIR/sandbox_a6"
-  mkdir -p "$SD/.workspace/output/diffs/empty-session"
-
-  if resolve_diff_for_apply "$SD" "diffs" "empty-session" 2>/dev/null; then
-    fail "resolve_diff_for_apply should fail when uncommitted.diff missing"
-  else
-    pass "resolve_diff_for_apply fails when uncommitted.diff missing"
-  fi
-}
-
-test_resolve_apply_invalid_channel() {
-  local SD="$FIXTURE_DIR/sandbox_a7"
-  mkdir -p "$SD/.workspace"
-
-  if resolve_diff_for_apply "$SD" "invalid" "" 2>/dev/null; then
-    fail "resolve_diff_for_apply should fail with invalid channel"
-  else
-    pass "resolve_diff_for_apply fails with invalid channel"
-  fi
-}
-
-test_resolve_apply_no_sessions() {
-  local SD="$FIXTURE_DIR/sandbox_a8"
-  mkdir -p "$SD/.workspace/output/diffs"
-
-  if resolve_diff_for_apply "$SD" "diffs" "" 2>/dev/null; then
-    fail "resolve_diff_for_apply should fail when no sessions exist"
-  else
-    pass "resolve_diff_for_apply fails when no sessions exist"
-  fi
-}
-
-# =============================================================================
 # resolve_channel_base_dir
 # =============================================================================
 
@@ -351,18 +246,6 @@ test_resolve_channel_base_dir_invalid() {
   fi
 }
 
-test_resolve_channel_base_dir_diffs() {
-  local SD="$FIXTURE_DIR/routing_c6"
-  mkdir -p "$SD/.workspace"
-  dirs_resolve "$SD"
-  local RESULT
-  RESULT=$(resolve_channel_base_dir "diffs") || { fail "resolve_channel_base_dir diffs failed"; return; }
-  if [[ "$RESULT" == "${OUTPUT_DIR}/diffs" ]]; then
-    pass "resolve_channel_base_dir: diffs → OUTPUT_DIR/diffs"
-  else
-    fail "resolve_channel_base_dir diffs: expected ${OUTPUT_DIR}/diffs, got $RESULT"
-  fi
-}
 
 # =============================================================================
 # Run
@@ -382,18 +265,9 @@ run_test test_resolve_draft_absolute_path_rejected
 run_test test_resolve_draft_missing_session
 run_test test_resolve_draft_bundles_channel
 run_test test_resolve_draft_invalid_channel
-run_test test_resolve_apply_default_channel
-run_test test_resolve_apply_autosave_channel
-run_test test_resolve_apply_session_channel
-run_test test_resolve_apply_named_session
-run_test test_resolve_apply_absolute_path_rejected
-run_test test_resolve_apply_missing_diff
-run_test test_resolve_apply_invalid_channel
-run_test test_resolve_apply_no_sessions
 run_test test_resolve_channel_base_dir_session
 run_test test_resolve_channel_base_dir_autosave
 run_test test_resolve_channel_base_dir_bundles
-run_test test_resolve_channel_base_dir_diffs
 run_test test_resolve_channel_base_dir_invalid
 
 test_done

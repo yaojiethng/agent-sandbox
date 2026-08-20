@@ -35,11 +35,11 @@ make serve PROVIDER=opencode REBUILD=1
 # Review the diff first
 cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/session/staged.diff
 
-# Apply to current branch
-make apply
+# Apply an exact diff file (required)
+make apply DIFF=<full path to the exact diff file>
 
 # Apply to a named branch (created if it does not exist)
-make apply BRANCH=<branch-name>
+make apply DIFF=<path> BRANCH=<branch-name>
 ```
 
 ---

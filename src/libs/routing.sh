@@ -7,7 +7,6 @@
 #   export_path              — unified export path constructor (replaces session_export_path
 #                              and output_export_path)
 #   resolve_source_for_draft  — resolve a source directory for draft operations
-#   resolve_diff_for_apply    — resolve a diff file for apply operations
 #
 # Export path convention:
 #   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<SESSION_ID>/
@@ -63,7 +62,6 @@ _resolve_paths() {
 #   session       → $CHANGES_DIR/session
 #   autosave      → $CHANGES_DIR/autosave
 #   bundles       → $OUTPUT_DIR/bundles
-#   diffs         → $OUTPUT_DIR/diffs
 #
 # Returns 1 with error message to stderr for unknown channel names.
 resolve_channel_base_dir() {
@@ -72,10 +70,9 @@ resolve_channel_base_dir() {
     session)  echo "${CHANGES_DIR}/session" ;;
     autosave) echo "${CHANGES_DIR}/autosave" ;;
     bundles)  echo "${OUTPUT_DIR}/bundles" ;;
-    diffs)    echo "${OUTPUT_DIR}/diffs" ;;
     *)
       echo "Error: unknown channel: $CHANNEL" >&2
-      echo "  Valid: session, autosave, bundles, diffs" >&2
+      echo "  Valid: session, autosave, bundles" >&2
       return 1
       ;;
   esac
@@ -164,7 +161,6 @@ resolve_latest_dir() {
 # =============================================================================
 # Draft source resolution
 # =============================================================================
-
 # resolve_source_for_draft SANDBOX_DIR CHANNEL [BUNDLE_ARG]
 #
 # Resolves the source directory and bundle name for draft operations.
@@ -222,66 +218,4 @@ resolve_source_for_draft() {
   fi
 
   printf '%s\t%s' "$RESOLVED_DIR" "$BUNDLE_NAME"
-}
-
-# =============================================================================
-# Apply diff resolution
-# =============================================================================
-
-# resolve_diff_for_apply SANDBOX_DIR CHANNEL [BUNDLE_ARG]
-#
-# Resolves a diff file path for apply operations.
-# Prints the path to the resolved uncommitted.diff file.
-#
-# CHANNEL values:
-#   diffs    — resolve from $OUTPUT_DIR/diffs/ (default)
-#   autosave — resolve from $CHANGES_DIR/autosave/
-#   session  — resolve from $CHANGES_DIR/session/
-#
-# BUNDLE_ARG behaviours:
-#   non-empty — name-only, resolved under the channel's base directory
-#   empty     — auto-resolve to the newest directory under the channel
-#
-# Returns 1 with error message to stderr on failure.
-resolve_diff_for_apply() {
-  local SANDBOX_DIR="$1"
-  local CHANNEL="${2:-diffs}"
-  local BUNDLE_ARG="${3:-}"
-
-  _resolve_paths "$SANDBOX_DIR"
-
-  local BASE_DIR
-  BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || return 1
-
-  local RESOLVED_DIR=""
-  local BUNDLE_NAME=""
-
-  if [[ -n "$BUNDLE_ARG" ]]; then
-    # Name-only resolution — reject anything that looks like an absolute path
-    if [[ "$BUNDLE_ARG" == /* ]]; then
-      echo "Error: --bundle is name-only; use --diff=<path> for explicit file paths" >&2
-      return 1
-    fi
-    RESOLVED_DIR="${BASE_DIR}/${BUNDLE_ARG}"
-  else
-    # Auto-resolve: newest directory under BASE_DIR
-    RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
-      echo "Error: no bundle directories found under $BASE_DIR" >&2
-      return 1
-    }
-  fi
-
-  if [[ ! -d "$RESOLVED_DIR" ]]; then
-    echo "Error: bundle directory not found: $RESOLVED_DIR" >&2
-    return 1
-  fi
-
-  # Resolve uncommitted.diff
-  local DIFF_FILE="${RESOLVED_DIR}/uncommitted.diff"
-  if [[ ! -f "$DIFF_FILE" ]]; then
-    echo "Error: uncommitted.diff not found in $RESOLVED_DIR" >&2
-    return 1
-  fi
-
-  echo "$DIFF_FILE"
 }

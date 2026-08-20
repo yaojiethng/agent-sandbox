@@ -64,7 +64,6 @@ RESUME       ?=
 TARGET       ?=
 FROM         ?=
 INTERACTIVE  ?=
-DIFF_TYPE    ?=
 DIFF         ?=
 TARGET_BRANCH ?=
 BUNDLE       ?=
@@ -123,8 +122,8 @@ help:
 	@echo "  RESUME=1         — always show volume picker"
 	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
 	@echo "  FORCE=1          — apply with --reject (draft/apply)"
-	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles"
-	@echo "  INTERACTIVE=1    — enable interactive picker (draft/apply)"
+	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles (draft only)"
+	@echo "  INTERACTIVE=1    — enable interactive preview/confirm (draft/apply)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."
 
@@ -205,22 +204,21 @@ prune:
 # Apply workflow
 # -------------------------
 #
-# CHANNELS:
-#   --channel=session  (draft default, apply default) — resolve from session-diffs/session/
-#   --channel=autosave                                 — resolve from session-diffs/autosave/
-#   --channel=bundles  (draft only)                    — resolve from output/bundles/
+# CHANNELS (draft only):
+#   --channel=session  (draft default) — resolve from session-diffs/session/
+#   --channel=autosave                 — resolve from session-diffs/autosave/
+#   --channel=bundles                  — resolve from output/bundles/
 #
 # SHORTCUTS:
 #   make draft FROM=bundles  →  --channel=bundles
 #   make draft FROM=autosave  →  --channel=autosave
-#   make apply FROM=autosave  →  --channel=autosave
-#   make draft INTERACTIVE=1  →  --interactive (multi-step picker)
-#   make apply INTERACTIVE=1  →  --interactive (multi-step picker)
+#   make draft INTERACTIVE=1  →  --interactive (channel + bundle picker)
+#   make apply INTERACTIVE=1  →  --interactive (preview + confirm)
 #
 # WORKFLOW:
 #   make draft                           — apply session patches to a working branch for review
 #   make draft BUNDLE=<name>             — apply from a named bundle under the channel directory
-#   make draft FROM=bundles              — resolve from output/bundles/ instead of session-diffs/
+#   make draft FROM=bundles              — resolve from output/bundles/ instead of session/
 #   make draft FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
 #   make draft FORCE=1                   — apply with --reject; .rej files for conflicts
 #   make draft PERMISSIVE=1              — retry with --recount on apply failure
@@ -230,13 +228,11 @@ prune:
 #   make confirm TARGET_BRANCH=x         — merge to a different target branch
 #   make reject                          — discard draft branch, return to source branch
 #
-#   make apply                           — apply uncommitted changes (auto-resolves from session/)
-#   make apply BUNDLE=<name>             — apply from a named bundle under the channel directory
-#   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
-#   make apply DIFF=<path>               — apply a specific diff file (no bundle resolution needed)
+#   make apply DIFF=<path>               — apply an exact diff file (required)
+#   make apply INTERACTIVE=1             — preview the changes, then confirm before applying
 #   make apply BRANCH=<name>             — apply to a named branch
 #   make apply FORCE=1                   — apply with --reject; .rej files created for conflicts
-#   make apply INTERACTIVE=1             — interactive picker for channel, bundle, and diff type
+
 
 DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
@@ -264,18 +260,13 @@ reject:
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR)
 
-APPLY_CHANNEL := $(if $(FROM),$(FROM),session)
-
 apply:
 	agent-sandbox apply \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  --channel=$(APPLY_CHANNEL) \
-	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
-	  $(if $(INTERACTIVE),--interactive,) \
-	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
-	  $(if $(DIFF_TYPE),--diff-type=$(DIFF_TYPE),) \
+	  $(if $(BRANCH),--branch=$(BRANCH),) \
+	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(FORCE),--force,)
 
 # -------------------------

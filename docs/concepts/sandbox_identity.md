@@ -147,7 +147,6 @@ session_id=<6-char session run ID>
 |---|---|---|
 | Session diff export | `session-diffs/session/<SESSION_ID>-<BRANCH>/` | Written on container exit |
 | Autosave diffs | `session-diffs/autosave/<SESSION_ID>-<BRANCH>/` | Written on autosave ticks |
-| Package-diff output | `output/diffs/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/` | On explicit diff packaging |
 | Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/` | On explicit branch packaging |
 
 `SESSION_ID` replaces `SESSION_TS` in artefact directory names. The branch name component (when present) provides human-readable context; `SESSION_ID` provides unique addressing.

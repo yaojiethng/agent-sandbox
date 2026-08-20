@@ -84,21 +84,15 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make apply [CHANNEL=<channel>] [BUNDLE=<name>] [DIFF=<path>] [BRANCH=<branch>] [FORCE=1]`
+### `make apply DIFF=<path> [BRANCH=<branch>] [FORCE=1]`
 
-Applies a diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
+Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
 
-The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `diffs` channel (`output/diffs/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle. `DIFF=<path>` bypasses all channel resolution — applies the specified file directly.
-
-**Channels:**
-- `diffs` (default) — resolves `uncommitted.diff` from `output/diffs/`
-- `session` — resolves `uncommitted.diff` from `session-diffs/session/`
-- `autosave` — resolves `uncommitted.diff` from `session-diffs/autosave/` (shorthand: `FROM=autosave`)
+`DIFF=<path>` (flag `--diff=<path>`) is **required** and must be the full path to an exact diff file. `apply` performs no channel, bundle, or auto-resolution — it applies the specified file directly.
 
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a three-step numbered picker: channel selection, bundle selection, and diff type selection (`uncommitted.diff` or `all-changes.diff`). When `DIFF=<path>` is supplied with `--interactive`, the picker is skipped — the path is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make apply CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) prints a git-oneline-style preview of the changes (the files the diff touches and the total file count), then asks for confirmation with a single y/N prompt before applying.
 
 ---
 

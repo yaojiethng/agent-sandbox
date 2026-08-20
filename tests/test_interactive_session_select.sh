@@ -6,7 +6,6 @@
 #   interactive_confirm_or_abort   — y/N prompt, return codes
 #   interactive_select_channel     — channel picker, entry counts
 #   interactive_select_bundle     — session picker, indicators, cap
-#   interactive_select_diff_type   — diff type picker, auto-select
 
 set -uo pipefail
 
@@ -112,21 +111,6 @@ test_select_channel_draft_lists_channels() {
     pass "interactive_select_channel draft picks first channel (session)"
   else
     fail "interactive_select_channel draft should return 'session', got: '$CHANNEL'"
-  fi
-}
-
-test_select_channel_apply_lists_channels() {
-  local SANDBOX="$FIXTURE_DIR/ch_apply"
-  mkdir -p "$SANDBOX"
-  mkdir -p "$SANDBOX/.workspace/output/diffs/20260504-120000-snap"
-  mkdir -p "$SANDBOX/.workspace/session-diffs/autosave/20260503-090000-old"
-
-  local CHANNEL
-  CHANNEL=$(echo "2" | interactive_select_channel "apply" "$SANDBOX" 2>/dev/null)
-  if [[ "$CHANNEL" == "autosave" ]]; then
-    pass "interactive_select_channel apply picks second channel (autosave)"
-  else
-    fail "interactive_select_channel apply should return 'autosave' on 2, got: '$CHANNEL'"
   fi
 }
 
@@ -555,94 +539,6 @@ test_select_session_pagination_no_n_at_last_page() {
 }
 
 # =============================================================================
-# interactive_select_diff_type tests
-# =============================================================================
-
-test_select_diff_type_uncommitted_default() {
-  local SANDBOX="$FIXTURE_DIR/dt_def"
-  mkdir -p "$SANDBOX"
-  local BASE="$SANDBOX/.workspace/session-diffs/session"
-  mkdir -p "$BASE/20260504-120000-test"
-  echo "content" > "$BASE/20260504-120000-test/uncommitted.diff"
-  echo "content" > "$BASE/20260504-120000-test/all-changes.diff"
-
-  local TYPE
-  TYPE=$(echo "" | interactive_select_diff_type "$SANDBOX" "20260504-120000-test" "session" 2>/dev/null)
-  if [[ "$TYPE" == "uncommitted" ]]; then
-    pass "interactive_select_diff_type defaults to uncommitted on empty input"
-  else
-    fail "interactive_select_diff_type should default to 'uncommitted', got: '$TYPE'"
-  fi
-}
-
-test_select_diff_type_second_option() {
-  local SANDBOX="$FIXTURE_DIR/dt_2"
-  mkdir -p "$SANDBOX"
-  local BASE="$SANDBOX/.workspace/session-diffs/session"
-  mkdir -p "$BASE/20260504-120000-test"
-  echo "content" > "$BASE/20260504-120000-test/uncommitted.diff"
-  echo "content" > "$BASE/20260504-120000-test/all-changes.diff"
-
-  local TYPE
-  TYPE=$(echo "2" | interactive_select_diff_type "$SANDBOX" "20260504-120000-test" "session" 2>/dev/null)
-  if [[ "$TYPE" == "all-changes" ]]; then
-    pass "interactive_select_diff_type returns 'all-changes' on option 2"
-  else
-    fail "interactive_select_diff_type should return 'all-changes', got: '$TYPE'"
-  fi
-}
-
-test_select_diff_type_auto_select_uncommitted_only() {
-  local SANDBOX="$FIXTURE_DIR/dt_only_u"
-  mkdir -p "$SANDBOX"
-  local BASE="$SANDBOX/.workspace/session-diffs/session"
-  mkdir -p "$BASE/20260504-120000-test"
-  echo "content" > "$BASE/20260504-120000-test/uncommitted.diff"
-  # No all-changes.diff
-
-  local TYPE
-  TYPE=$(interactive_select_diff_type "$SANDBOX" "20260504-120000-test" "session" 2>/dev/null)
-  if [[ "$TYPE" == "uncommitted" ]]; then
-    pass "interactive_select_diff_type auto-selects uncommitted when only that exists"
-  else
-    fail "interactive_select_diff_type should auto-select 'uncommitted', got: '$TYPE'"
-  fi
-}
-
-test_select_diff_type_auto_select_all_changes_only() {
-  local SANDBOX="$FIXTURE_DIR/dt_only_a"
-  mkdir -p "$SANDBOX"
-  local BASE="$SANDBOX/.workspace/session-diffs/session"
-  mkdir -p "$BASE/20260504-120000-test"
-  echo "content" > "$BASE/20260504-120000-test/all-changes.diff"
-  # No uncommitted.diff
-
-  local TYPE
-  TYPE=$(interactive_select_diff_type "$SANDBOX" "20260504-120000-test" "session" 2>/dev/null)
-  if [[ "$TYPE" == "all-changes" ]]; then
-    pass "interactive_select_diff_type auto-selects all-changes when only that exists"
-  else
-    fail "interactive_select_diff_type should auto-select 'all-changes', got: '$TYPE'"
-  fi
-}
-
-test_select_diff_type_neither_exists() {
-  local SANDBOX="$FIXTURE_DIR/dt_none"
-  mkdir -p "$SANDBOX"
-  local BASE="$SANDBOX/.workspace/session-diffs/session"
-  mkdir -p "$BASE/20260504-120000-test"
-  # No diff files at all
-
-  local RC=0
-  interactive_select_diff_type "$SANDBOX" "20260504-120000-test" "session" 2>/dev/null || RC=$?
-  if [[ "$RC" -ne 0 ]]; then
-    pass "interactive_select_diff_type errors when neither diff file exists"
-  else
-    fail "interactive_select_diff_type should error with neither diff file present"
-  fi
-}
-
-# =============================================================================
 # Run all
 # =============================================================================
 
@@ -655,7 +551,6 @@ run_test test_confirm_or_abort_stdout_empty
 run_test test_confirm_or_abort_no_label
 
 run_test test_select_channel_draft_lists_channels
-run_test test_select_channel_apply_lists_channels
 run_test test_select_channel_default_highlighted
 run_test test_select_channel_q_aborts
 run_test test_select_channel_zero_entries_shows_count
@@ -681,11 +576,5 @@ run_test test_select_session_pagination_page_header
 run_test test_select_session_pagination_single_page
 run_test test_select_session_pagination_option_zero_persists
 run_test test_select_session_pagination_no_n_at_last_page
-
-run_test test_select_diff_type_uncommitted_default
-run_test test_select_diff_type_second_option
-run_test test_select_diff_type_auto_select_uncommitted_only
-run_test test_select_diff_type_auto_select_all_changes_only
-run_test test_select_diff_type_neither_exists
 
 test_done

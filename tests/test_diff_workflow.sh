@@ -173,6 +173,21 @@ test_apply_no_resolution_logic() {
   fi
 }
 
+test_apply_requires_diff_flag() {
+  # Verify the apply entry point (main) refuses to run without --diff.
+  local P="$FIXTURE_DIR/apply_req_diff_p"
+  make_committed_repo "$P"
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/sb_req_diff" 2>&1) || RC=$?
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"Error: --diff=<path> is required"* ]]; then
+    pass "apply without --diff errors with required message"
+  else
+    fail "apply should require --diff; rc=$RC out=$OUT"
+  fi
+}
+
 # =============================================================================
 # _apply_patch_file tests
 # =============================================================================
@@ -312,6 +327,7 @@ run_test test_apply_empty_args
 run_test test_apply_diff_file_preserved
 run_test test_apply_diff_empty_file_rejected
 run_test test_apply_no_resolution_logic
+run_test test_apply_requires_diff_flag
 run_test test_apply_patch_file_normal
 run_test test_apply_patch_file_force
 run_test test_apply_patch_file_missing_diff
