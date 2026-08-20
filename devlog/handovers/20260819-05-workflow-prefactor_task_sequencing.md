@@ -3,7 +3,7 @@
 **Session date:** 2026-08-19
 **Milestone:** M2.6.6 — Mount Model: Host-backed Sandbox
 **Session type:** Workflow (task inventory + prefactor-first sequencing)
-**Status:** In progress
+**Status:** Closed
 
 ## Objective
 
@@ -50,16 +50,23 @@ Compile the complete outstanding-task inventory for the M2.6.6 program, sorted b
 2. **Which prefactor opens next** — recommendation: P1 housekeeping as a quick chore session, then P2 terminology sweep (largest, unblocks docs and feature naming).
 3. **P2/P3 ordering** — P3's registry fold writes the new names, so P2's identity surface shrinks if P3 lands first; either consistent. (Included in P2/P3 above as separate sessions; operator may merge.)
 
+## Completed this session
+
+- P1 housekeeping (chore `1bccde0`): changelog M2.4/M2.6 entries; close-order finding resolved annotation; Mount-delivery task text refresh; GOTCHAS close-order entry mitigated.
+- P4 entrypoint branch inversion (refactor `841788b`): fresh-init now the primary branch, resume the else.
+- P3 `.run-identity` deprecation (refactor `0f18786`): identity folded into the .compose registry + volume labels; file removed; docs/entrypoint swept.
+- P2 (terminology sweep) and P5 (docs sweep) **paused** — operator instructed to stop and wait before starting them.
+
 ## Decisions
 
 None yet — awaiting operator direction on scope.
 
 ## Acceptance criteria
 
-- [ ] Dependency-sorted inventory delivered and operator-visible
-- [ ] Prefactor-first order agreed (which prefactor session opens next)
-- [ ] Disposition of the `20260818-04` untracked handover settled
-- [ ] Roadmap write-back recorded at close (handover task list already mirrors roadmap rows)
+- [x] Dependency-sorted inventory delivered and operator-visible
+- [x] Prefactor-first order agreed (P1 → P4 → P3 executed; P2/P5 paused)
+- [x] Disposition of the `20260818-04` untracked handover settled (deleted per operator)
+- [x] Roadmap write-back recorded at close (handover task list mirrors roadmap rows)
 
 ## Operational notes
 
