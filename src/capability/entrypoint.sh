@@ -85,7 +85,30 @@ unset LIB_DIR
 source /opt/sandbox/lib/session_state.sh
 source /opt/sandbox/lib/snapshot.sh
 
-if [[ -d "$SANDBOX_DIR/.git" ]]; then
+if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+  # Fresh-init path: no git state, so initialise the sandbox from the snapshot.
+  # Gate 2 — confirm mounted snapshot is intact before unpacking.
+  snapshot_validate "$SNAPSHOT_DIR"
+
+  # The snapshot is already validated above and baseline.tar is read directly
+  # from the snapshot mount by snapshot_init_git — no copy needed.
+
+  # Initialise git baseline. Failure here means the container cannot start.
+  > /dev/null; snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" || {
+    echo "Error: sandbox git initialisation failed — container cannot start." >&2
+    echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
+    exit 1
+  }
+
+  # SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
+  # Write workspace paths so downstream consumers can read them deterministically.
+  session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
+  session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
+  session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
+  session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
+
+  echo "Sandbox ready. Baseline recorded in SESSION_STATE."
+else
   # Resume path: volume has existing git state from a previous session.
   # Skip snapshot_init_git and SESSION_STATE init — state is intact.
   # Workspace paths are still written in case this is a post-migration
@@ -110,28 +133,6 @@ if [[ -d "$SANDBOX_DIR/.git" ]]; then
   session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
   session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
-else
-  # Gate 2 — confirm mounted snapshot is intact before unpacking.
-  snapshot_validate "$SNAPSHOT_DIR"
-
-  # The snapshot is already validated above and baseline.tar is read directly
-  # from the snapshot mount by snapshot_init_git — no copy needed.
-
-  # Initialise git baseline. Failure here means the container cannot start.
-  > /dev/null; snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" || {
-    echo "Error: sandbox git initialisation failed — container cannot start." >&2
-    echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
-    exit 1
-  }
-
-  # SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
-  # Write workspace paths so downstream consumers can read them deterministically.
-  session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
-  session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
-  session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
-  session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
-
-  echo "Sandbox ready. Baseline recorded in SESSION_STATE."
 fi
 echo "Working tree status:"
 git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
