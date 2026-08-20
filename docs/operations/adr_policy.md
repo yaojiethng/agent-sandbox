@@ -40,6 +40,7 @@ ADR documents follow this section order:
 - **Decision** — what was chosen and why
 - **Consequences** — what this changes, what it enables, what it forecloses
 - **Supersedes** — links to superseded docs, with section anchor if partial
+- **Terminology** — if an ADR establishes or relies on a technical term that is reserved in [`docs/concepts/terminology.md`](../../concepts/terminology.md), link to the exact term section (e.g. `terminology.md#session`) at the point where the term is first used. Do not define reserved terms in the ADR; reference them.
 
 ## Supersede protocol
 

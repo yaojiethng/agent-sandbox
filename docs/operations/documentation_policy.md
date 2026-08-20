@@ -131,6 +131,8 @@ New and changed prose meets ASD-STE100. The operative test for each word, phrase
 
 State encoding rules (for example dash forms and punctuation characters) as instructions, not prohibitions. A prohibition forces laborious rephrasing; an instruction gives the allowed form directly. For example, state "write a dash as a space-separated hyphen" rather than "do not use an em-dash".
 
+**Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
+
 ### Numbering and cross-references
 
 A number is valid only in the conversation or document where it appears. Use a numbered list when the order matters or when readers refer to items by number; use a bulleted list otherwise. Outside the defining place, use the item's descriptive name or a link. A persistent record (a roadmap task, a handover entry, a code comment) does not take a number from a transient list; rename the item descriptively. When many references point to the same item, move the item to a heading.

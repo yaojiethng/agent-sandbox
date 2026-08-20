@@ -1,6 +1,6 @@
 # Sandbox Identity Model
 
-The agent-sandbox harness uses a content-addressed identity model with three scopes: project-level identity, sandbox-instance identity, and session-run identity. This document defines the primitives, derivation rules, and consumption patterns.
+The agent-sandbox harness uses a content-addressed identity model with three scopes: project-level identity, sandbox-instance identity, and session-run identity. This document defines the primitives, derivation rules, and consumption patterns. The terms [session](terminology.md#session) and [iteration](terminology.md#iteration) are reserved technical terms.
 
 ## Primitives
 
