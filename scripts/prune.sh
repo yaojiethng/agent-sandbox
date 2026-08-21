@@ -95,8 +95,8 @@ done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
+# session_inventory.sh also sources container_sig.sh (image-staleness criterion).
 source "$REPO_ROOT/src/libs/session_inventory.sh"
-source "$REPO_ROOT/src/libs/container_sig.sh"
 
 parse_help_flag "$@"
 parse_base_flags "$@"
@@ -138,49 +138,42 @@ fi
 # host-head-sha mismatch; image = referenced image container-sig mismatch),
 # and older than AGE_DAYS, narrowed by PROVIDER.
 rule1_selected_records() {
-  local compose_dir="$SANDBOX_DIR/.compose"
-  [[ -d "$compose_dir" ]] || return 0
-  local current_sha
-  current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
-  local cutoff_ts
+  [[ -d "$SANDBOX_DIR/.compose" ]] || return 0
+  local current_sha cutoff_ts
+  current_sha="$(project_current_sha)"
   cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null || true)"
 
-  local f sid provider ts branch delivery rec_day
-  for f in "$compose_dir"/*.yml; do
-    [[ -f "$f" ]] || continue
-    sid="$(basename "$f" .yml)"
-    provider="$(record_provider "$f")"
-    [[ -n "$provider" ]] || continue
-    if [[ -n "$PROVIDER_FILTER" && "$provider" != "$PROVIDER_FILTER" ]]; then
-      continue
-    fi
+  local line sid provider ts branch delivery rec_day
+  # Enumeration (glob → provider recovery → PROVIDER_FILTER) is the shared
+  # `enumerate_records` core from session_inventory.sh.
+  while IFS= read -r line; do
+    IFS='|' read -r sid provider ts branch <<< "$line"
+    local file="$SANDBOX_DIR/.compose/$sid.yml"
     # Staleness selection by kind. Each criterion is evaluated only when its
     # kind is enabled (sandbox-only / image-only / either for STALE=all).
     case "$STALE_KIND" in
       sandbox)
-        [[ "$(session_stale "$f" "$current_sha")" == "stale" ]] || continue
+        [[ "$(session_stale "$file" "$current_sha")" == "stale" ]] || continue
         ;;
       image)
-        [[ "$(record_image_stale "$f" "$REPO_ROOT")" == "stale" ]] || continue
+        [[ "$(record_image_stale "$file" "$REPO_ROOT")" == "stale" ]] || continue
         ;;
       ""|all)
-        [[ "$(session_stale "$f" "$current_sha")" == "stale" \
-           || "$(record_image_stale "$f" "$REPO_ROOT")" == "stale" ]] || continue
+        [[ "$(session_stale "$file" "$current_sha")" == "stale" \
+           || "$(record_image_stale "$file" "$REPO_ROOT")" == "stale" ]] || continue
         ;;
     esac
     # Age narrowing (applies to every selected record regardless of kind).
-    ts="$(record_label "$f" session-ts)"
     ts="${ts:-00000000-000000}"
     if [[ -n "$cutoff_ts" ]]; then
       rec_day="${ts:0:8}"
       [[ -z "$rec_day" || "$rec_day" > "$cutoff_ts" ]] && continue
     fi
-    branch="$(record_label "$f" host-branch)"
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
     # delivery overlay). Disclosure in the plan only — it gates neither rule.
-    delivery="$(env_field "$f" SANDBOX_TYPE)"
+    delivery="$(env_field "$file" SANDBOX_TYPE)"
     printf '%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
-  done
+  done < <(enumerate_records)
 }
 
 # env_field FILE VAR — read a `VAR=value` from any service `environment:`

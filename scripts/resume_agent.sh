@@ -85,42 +85,27 @@ done
 # Recover a field from a .compose/<session-id>.yml registry record. Provider is
 # read from the agent service image (`image: <provider>-agent-<lower-project>`);
 # session metadata from the agent-sandbox labels; staleness from the record's
-# host-head-sha vs the current project HEAD. Shared with prune.sh — see
-# src/libs/session_inventory.sh.
+# host-head-sha vs the current project HEAD (sandbox) and its images vs the
+# recomputed source sig (image). Shared with prune.sh. This lib also brings in
+# the image-staleness criterion (it sources src/libs/container_sig.sh).
 source "$REPO_ROOT/src/libs/session_inventory.sh"
-# Image-staleness criterion (container-sig label vs recomputed source sig) and
-# the record-level `record_image_stale` — shared with prune.sh and build.sh.
-source "$REPO_ROOT/src/libs/container_sig.sh"
 
 # Enumerate the session inventory into RESUME_INVENTORY: one line per record of
 # the form `SESSION_ID|provider|session-ts|branch|sandbox-stale|image-stale`,
-# optionally filtered by PROVIDER_FILTER. Records whose provider cannot be
-# recovered are skipped.
+# optionally filtered by PROVIDER_FILTER. Uses the shared `enumerate_records`
+# core from session_inventory.sh and layers the two staleness columns on top.
 # `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7 — see session_stale).
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
-  local compose_dir="${SANDBOX_DIR:-}/.compose"
-  [[ -n "$SANDBOX_DIR" && -d "$compose_dir" ]] || return 1
-  local current_sha stale
-  if [[ -n "$PROJECT_DIR" ]]; then
-    current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
-  fi
-  local f sid provider ts branch stale image_stale
-  for f in "$compose_dir"/*.yml; do
-    [[ -f "$f" ]] || continue
-    sid="$(basename "$f" .yml)"
-    provider="$(record_provider "$f")"
-    [[ -n "$provider" ]] || continue
-    if [[ -n "$PROVIDER_FILTER" && "$provider" != "$PROVIDER_FILTER" ]]; then
-      continue
-    fi
-    ts="$(record_label "$f" session-ts)"
-    branch="$(record_label "$f" host-branch)"
-    stale="$(session_stale "$f" "$current_sha")"
-    image_stale="$(record_image_stale "$f" "$REPO_ROOT")"
+  local current_sha stale image_stale line sid provider ts branch
+  current_sha="$(project_current_sha)"
+  while IFS= read -r line; do
+    IFS='|' read -r sid provider ts branch <<< "$line"
+    stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
+    image_stale="$(record_image_stale "$SANDBOX_DIR/.compose/$sid.yml" "$REPO_ROOT")"
     RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale" )
-  done
+  done < <(enumerate_records)
   # Newest first by session-ts.
   local sorted
   sorted="$(printf '%s\n' "${RESUME_INVENTORY[@]:-}" | sort -t'|' -k3 -r)"
@@ -184,9 +169,16 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
   chosen="$(interactive_pick "Resume which session?" PICKER "" "$RESUME_LIST_PAGE_SIZE")" || exit 1
 
-  disp_provider="$(record_provider "$SANDBOX_DIR/.compose/$chosen.yml")"
-  disp_ts="$(record_label "$SANDBOX_DIR/.compose/$chosen.yml" session-ts)"
-  disp_branch="$(record_label "$SANDBOX_DIR/.compose/$chosen.yml" host-branch)"
+  # Confirm display re-reads the chosen entry's fields from the in-memory
+  # inventory (build_inventory already parsed the record) rather than
+  # re-parsing it from disk.
+  disp_provider=""; disp_ts=""; disp_branch=""
+  for _line in "${RESUME_INVENTORY[@]}"; do
+    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
+    if [[ "$sid" == "$chosen" ]]; then
+      disp_provider="$provider"; disp_ts="$ts"; disp_branch="$branch"; break
+    fi
+  done
   if ! interactive_confirm_or_abort "Resume session $chosen?" \
        "provider: $disp_provider" "started: $disp_ts" "branch: $disp_branch"; then
     exit 1

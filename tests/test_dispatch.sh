@@ -733,7 +733,6 @@ source_harness
 setup_mocks
 
 run_test test_build_default_all
-run_test test_build_default_all_asserts_targets
 run_test test_build_with_targets
 run_test test_build_with_rebuild
 run_test test_start_default

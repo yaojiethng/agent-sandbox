@@ -149,6 +149,28 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
 # legitimate edit to a source file. The correct lock is the list construction
 # itself: exact ordered membership. A hash test below only checks the plumbing
 # runs end-to-end, not the hash's value.
+# build's default --targets (omitted) resolves to "all": sandbox + every
+# provider with a base.dockerfile. Deterministic count in this repo (3
+# providers) locks the default-target routing (the behavior a dangling
+# test_dispatch run_test previously claimed to cover but never did).
+test_build_default_targets_all() {
+  local FIXTURE_DIR="$FIXTURE_DIR/bld_default"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  ( export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/build.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR"
+  ) > /dev/null 2>&1 || true
+  local expected actual
+  expected="$(( 1 + $(ls "$REPO_ROOT"/src/reasoning/providers/*/base.dockerfile | wc -l) ))"
+  actual="$(grep -c " build " "$DOCKER_TRACE_LOG" || true)"
+  if [[ "$actual" -eq "$expected" ]]; then
+    pass "build (default no --targets): sandbox + all providers ($expected docker builds)"
+  else
+    fail "build (default no --targets): expected $expected 'docker build', got $actual"
+  fi
+}
+
 test_container_sig_sources_list() {
   local -a sandbox agent
   mapfile -t sandbox < <(_sandbox_sig_sources)
@@ -302,6 +324,7 @@ run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
+run_test test_build_default_targets_all
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

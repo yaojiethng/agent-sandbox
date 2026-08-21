@@ -83,6 +83,15 @@ main() {
     fi
   }
 
+  # Resume's inventory modes (--list / --interactive) need only --sandbox; the
+  # leaf (resume_agent.sh) enforces --name/--project on the actual resume path.
+  require_sandbox() {
+    if [[ -z "$SANDBOX_DIR" ]]; then
+      echo "Error: --sandbox is required (resume --list/--interactive; resume requires --name/--project too)"
+      exit 1
+    fi
+  }
+
   # Shared subcommand list — single source of truth for the valid set.
   print_subcommand_list() {
     echo "Valid subcommands: onboard, build, start, serve, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
@@ -189,7 +198,7 @@ main() {
       ;;
 
     resume)
-      require_base_args
+      require_sandbox
       exec bash "$SCRIPTS/resume_agent.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \

@@ -13,7 +13,9 @@
 #   container_sig            — deterministic SHA-256 of the source-file set
 #   current_sig              — memoized current sig for a layer type
 #   image_is_stale           — baked container-sig vs recomputed -> fresh|stale|unknown
-#   record_image_stale       — session-record image staleness (agent + sandbox)
+#
+# (record_image_stale — the record-level aggregation — lives in
+# src/libs/session_inventory.sh, which sources this lib.)
 #
 # Terminology: image staleness (see docs/concepts/terminology.md `## staleness`)
 # means the baked label differs from a recomputation of the current source,
@@ -148,29 +150,4 @@ image_is_stale() {
   current_s="$(current_sig "$type" "$repo_root" "$provider")" || { echo "unknown"; return 0; }
 
   if [[ "$baked_sig" == "$current_s" ]]; then echo "fresh"; else echo "stale"; fi
-}
-
-# record_image_stale FILE REPO_ROOT
-# Image-staleness of a session record: "stale" when either referenced image
-# (agent / sandbox) is image-stale, "fresh" when both are fresh, "unknown"
-# when not determinable. Both images are read from the record's own service
-# image lines (the rendered compose record carries `sandbox:` and `agent:`
-# images — src/build/docker-compose.yml), so no naming reconstruction is
-# needed. Only the provider prefix of the agent image is derived, to resolve
-# the provider-specific current sig.
-record_image_stale() {
-  local file="$1"
-  local repo_root="$2"
-  local agent_img sandbox_img provider as ss
-  agent_img="$(record_image "$file" agent)"
-  sandbox_img="$(record_image "$file" sandbox)"
-  [[ -n "$agent_img" && -n "$sandbox_img" ]] || { echo "unknown"; return 0; }
-  provider="${agent_img%%-agent-*}"
-
-  as="$(image_is_stale "$agent_img" agent "$repo_root" "$provider")"
-  ss="$(image_is_stale "$sandbox_img" sandbox "$repo_root")"
-
-  if [[ "$as" == "stale" || "$ss" == "stale" ]]; then echo "stale"
-  elif [[ "$as" == "fresh" && "$ss" == "fresh" ]]; then echo "fresh"
-  else echo "unknown"; fi
 }
