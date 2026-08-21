@@ -35,6 +35,13 @@
 #   session when no volumes exist.
 #   Example: make start PROVIDER=hermes RESUME=1
 #
+# INTERACTIVE
+#   Optional. Starts the interactive picker — a distinct layer from the resume
+#   picker (resume is a branch of the interactive picker). NOT YET IMPLEMENTED:
+#   passing --interactive errors with a `not yet implemented` message until the
+#   F2 start-wizard iteration lands. Do not use yet.
+#   Example: make start PROVIDER=hermes INTERACTIVE=1
+#
 # STALE
 #   Optional (prune only). Remove only stale volumes immediately (no age threshold).
 #   A volume is stale when its host-head-sha label differs from the current HEAD.
@@ -85,6 +92,7 @@ endif
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 RESUME_FLAG       = $(if $(RESUME),--resume,)
+INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
@@ -123,7 +131,7 @@ help:
 	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
 	@echo "  FORCE=1          — apply with --reject (draft/apply)"
 	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles (draft only)"
-	@echo "  INTERACTIVE=1    — enable interactive preview/confirm (draft/apply)"
+	@echo "  INTERACTIVE=1    — interactive start picker (NOT YET IMPLEMENTED; draft/apply: --interactive preview/confirm)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."
 
@@ -149,6 +157,7 @@ start:
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
 	  $(RESUME_FLAG) \
+	  $(INTERACTIVE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

@@ -16,7 +16,6 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/src/libs/buildkit_progress.sh"
 
 # -------------------------
 # Container-sig source lists
@@ -110,32 +109,20 @@ build_image() {
 
   local build_cmd=(docker build)
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
-  build_cmd+=(--progress=plain -t "$image_name" -f "$dockerfile")
+  build_cmd+=(-t "$image_name" -f "$dockerfile")
   [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.container-sig=$sig")
   build_cmd+=("$@" "$repo_root")
 
-  # On TTY, replace BuildKit's multi-line progress display with a single
-  # self-updating line showing the current build step (extracted from
-  # --progress=plain output).  The operator sees real BuildKit progress —
-  # not a blind spinner — so stalls are immediately visible (step text
-  # freezes while the elapsed counter keeps ticking).
-  # On non-TTY (CI, pipes), output streams normally so every line is
-  # preserved in the log.
-  #
-  # Both modes run the docker build and capture its exit status so a failure
-  # surfaces a single, descriptive message instead of a bare `set -e` abort.
-  # `_build_rc` defaults to a non-zero sentinel (fail closed): the `&& ... ||
-  # ...` capture clears it to 0 on success or the build's real status on
-  # failure, so a path that never runs a build still reports failure rather
-  # than silently passing.
+  # Run docker build with its default progress mode (auto).  The exit status
+  # is captured so a failure surfaces a single, descriptive message instead of
+  # a bare `set -e` abort. `_build_rc` defaults to a non-zero sentinel (fail
+  # closed): the `&& ... || ...` capture clears it to 0 on success or the
+  # build's real status on failure, so a path that never runs a build still
+  # reports failure rather than silently passing.
   local _build_rc=1
-  if [[ -t 1 ]]; then
-    _buildkit_run "Building image: $image_name" "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
-  else
-    echo "Building image: $image_name"
-    "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
-    [[ $_build_rc -eq 0 ]] && echo "  Build complete: $image_name"
-  fi
+  echo "Building image: $image_name"
+  "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
+  [[ $_build_rc -eq 0 ]] && echo "  Build complete: $image_name"
 
   if [[ $_build_rc -ne 0 ]]; then
     echo "build_image: ERROR build FAILED for $image_name (exit $_build_rc)." >&2
@@ -450,7 +437,8 @@ main() {
 # callers set `set -euo pipefail` before sourcing this file, but a standalone
 # `bash build.sh` (e.g. the trace tests) inherits the caller's options. Enabling
 # `-e` here makes standalone runs exercise the same failure-abort semantics as
-# production, so a silent `set -e` abort (the buildkit-progress class) is caught.
+# production, so a silent `set -e` abort after a backgrounded/piped build is
+# caught.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
   main "$@"

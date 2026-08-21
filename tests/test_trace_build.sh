@@ -9,7 +9,6 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
-source "$REPO_ROOT/src/libs/buildkit_progress.sh"
 # For container_sig / *_sig_sources behavior-lock tests. build.sh's main() is
 # guarded, so sourcing is safe and exposes only its library functions.
 source "$REPO_ROOT/scripts/build.sh"
@@ -115,23 +114,6 @@ test_build_has_build_command() {
   fi
 }
 
-test_build_uses_plain_progress() {
-  local FIXTURE_DIR="$FIXTURE_DIR/build_progress"
-  mkdir -p "$FIXTURE_DIR"
-  setup_build_fixture "$FIXTURE_DIR"
-  invoke_build
-
-  # build_image uses --progress=plain on non-TTY (CI, pipes).  On TTY,
-  # --progress=plain output is captured to a temp file and a single spinner
-  # line is shown instead of BuildKit's multi-line blue progress display;
-  # the captured output is only dumped on failure.
-  if trace_has "progress=plain"; then
-    pass "build: uses --progress=plain (captured on TTY, streams on non-TTY)"
-  else
-    fail "build: --progress=plain not found in trace"
-  fi
-}
-
 # Regression (session 20260812-12 / roadmap "set -e test-harness blind spot"):
 # build.sh relies on the caller setting `set -euo pipefail`; a standalone
 # `bash build.sh` (as the trace tests invoke it) previously inherited the
@@ -155,56 +137,6 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
   else
     fail "build: expected descriptive build_image ERROR under set -e; got: $(echo "$out" | tail -3)"
   fi
-}
-
-test_buildkit_current_step_parses_last_step() {
-  # _buildkit_current_step extracts the most recent BuildKit step header
-  # from --progress=plain output.  Verify it returns the last step, not
-  # intermediate steps or DONE/CACHED lines.
-  local log
-  log="$(mktemp)"
-  cat > "$log" << 'EOF'
-#1 [internal] load build definition from Dockerfile
-#1 DONE 0.0s
-#2 [stage-1 1/3] FROM node:22.22.3-slim
-#2 DONE 0.5s
-#3 [stage-1 2/3] RUN apt-get update && apt-get install -y curl
-#3 0.123 Get:1 http://deb.debian.org
-#3 1.456 Fetched 12.3 MB in 1s
-#3 DONE 5.2s
-#4 [stage-1 3/3] COPY src/ /app/
-EOF
-
-  local step
-  step="$(_buildkit_current_step "$log")"
-
-  if [[ "$step" == "COPY src/ /app/" ]]; then
-    pass "buildkit_progress: extracts most recent step header"
-  else
-    fail "buildkit_progress: expected 'COPY src/ /app/' but got '$step'"
-  fi
-  rm -f "$log"
-}
-
-# _buildkit_current_step must return exit 0 (and empty string) when the log
-# contains no BuildKit step header yet. Early in a build the captured log is
-# still empty; under the sourced `set -euo pipefail` context a non-zero return
-# would silently abort the whole poll loop (and the session start).
-test_buildkit_current_step_empty_log_returns_zero() {
-  local log
-  log="$(mktemp)"
-  : > "$log"
-
-  local step rc
-  step="$(_buildkit_current_step "$log")" || rc=$?
-  rc="${rc:-0}"
-
-  if [[ -z "$step" && "$rc" -eq 0 ]]; then
-    pass "buildkit_progress: empty log yields empty step and exit 0"
-  else
-    fail "buildkit_progress: expected empty step and exit 0, got step='$step' rc='$rc'"
-  fi
-  rm -f "$log"
 }
 
 # The (string-as-list → array) refactor is behavior-preserving at the LIST
@@ -277,15 +209,12 @@ test_container_sig_missing_path_fails_with_diagnostic() {
 # Run
 # ---------------------------------------------------------------------------
 
-run_test test_buildkit_current_step_empty_log_returns_zero
 run_test test_container_sig_sources_list
 run_test test_container_sig_hashes_real_sources
 run_test test_container_sig_missing_path_fails_with_diagnostic
-run_test test_buildkit_current_step_parses_last_step
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
-run_test test_build_uses_plain_progress
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 
 echo ""

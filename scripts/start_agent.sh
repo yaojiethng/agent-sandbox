@@ -74,6 +74,7 @@ Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session
   --rebuild   force a full rebuild including base images, then start a new session
   --resume    always show the interactive volume picker (session resume)
+  --interactive  interactive start picker — NOT YET IMPLEMENTED (F2 start-wizard iteration)
 
 Note: --provider is required and has no default. Pass it explicitly.
 EOF
@@ -105,6 +106,7 @@ PROVIDER_NAME=""
 REFRESH=false
 REBUILD=false
 RESUME=false
+INTERACTIVE=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -117,6 +119,7 @@ for ARG in "$@"; do
     --refresh)    REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
     --resume)     RESUME=true ;;
+    --interactive) INTERACTIVE=true ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -414,6 +417,14 @@ _show_volume_picker() {
     _resume_from_volume "${VOLUMES[$((SELECTION - 1))]}"
   fi
 }
+
+if [[ "${INTERACTIVE:-false}" == "true" ]]; then
+  # --interactive: interactive start picker is a distinct layer from the resume
+  # picker (resume is a branch of it). Not yet implemented — planned for the F2
+  # start-wizard iteration.
+  echo "Error: --interactive (interactive start picker) is not yet implemented — planned for the F2 start-wizard iteration." >&2
+  exit 1
+fi
 
 if [[ "${REFRESH:-false}" == "true" ]]; then
   echo "Refresh requested — starting new session"
