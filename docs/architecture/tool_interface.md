@@ -31,26 +31,35 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Commands
 
-### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [RESUME=1]`
+### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
 
-Stops any running session for this project, builds missing images if needed, snapshots the project, and starts the agent. The terminal attaches to the agent TUI.
+Stops any running session for this project, builds missing images if needed, snapshots the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
 
-**Default behaviour:** auto-resumes the most recent non-stale session volume if one exists. If no volumes exist, starts a new session. If multiple non-stale volumes exist, shows an interactive picker. Stale volumes (HEAD has moved) show a warning and auto-resume.
+**Default behaviour:** always starts a new session with fresh identity. To resume a previous session, use `make resume` (see below) — `start` carries no resume path.
 
 `PROVIDER` is required. Optional flags:
 - `REFRESH=1` — rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
 - `REBUILD=1` — rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
-- `RESUME=1` — always shows the interactive volume picker, even for a single volume. Useful after a stale warning to choose a specific session.
 
 **Leaves behind:** `session/` and `autosave/` subfolders in `.workspace/session-diffs/<SESSION_TS>-<BRANCH>/`; updated provider session state in `.<provider>/`.
 
 ---
 
-### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [RESUME=1]`
+### `make resume SESSION_ID=<id>`
+
+Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped.
+
+- `SESSION_ID=<id>` — resume that specific session silently (recommended).
+- `LIST=1` — list resumable session ids (no resume).
+- `INTERACTIVE=1` and `PROVIDER=<n>` are not yet implemented (interactive picker / inventory filter).
+
+---
+
+### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
 
 Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
 
-`PROVIDER` is required. All flags behave identically to `make start`.
+`PROVIDER` is required. All flags behave identically to `make start` (always a new session; no resume path).
 
 ---
 

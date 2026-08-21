@@ -31,8 +31,8 @@ Resume a previously-started agent session. To begin a NEW session, use
 
 Preferred invocation through the sandbox Makefile:
   make resume SESSION_ID=<id>     — resume a specific session (MOST COMMON)
-  make resume --list              — list resumable sessions
-  make resume --interactive       — interactive picker + confirm
+  make resume LIST=1              — list resumable sessions
+  make resume INTERACTIVE=1       — interactive picker + confirm
 
 or directly:
   agent-sandbox resume --list
@@ -45,7 +45,7 @@ Flags:
   --provider=<n>     NOT YET IMPLEMENTED — filter the session inventory by provider
 
 --session-id is the preferred resume path: it selects exactly one session and
-resumes silently. See `make resume --list` to discover a session's id.
+resumes silently. See `make resume LIST=1` to discover a session's id.
 EOF
 }
 

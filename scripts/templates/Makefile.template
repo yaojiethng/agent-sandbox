@@ -28,19 +28,15 @@
 #   Example: make start PROVIDER=hermes REBUILD=1
 #   Example: make build REBUILD=1
 #
-# RESUME
-#   Optional. Always shows the interactive volume picker (even for a single volume).
-#   Without RESUME, the default behavior auto-resumes the most recent non-stale
-#   volume, shows the picker for multiple non-stale volumes, or starts a new
-#   session when no volumes exist.
-#   Example: make start PROVIDER=hermes RESUME=1
-#
 # INTERACTIVE
-#   Optional. Starts the interactive picker — a distinct layer from the resume
-#   picker (resume is a branch of the interactive picker). NOT YET IMPLEMENTED:
+#   Optional. Starts the interactive start picker — NOT YET IMPLEMENTED:
 #   passing --interactive errors with a `not yet implemented` message until the
 #   F2 start-wizard iteration lands. Do not use yet.
 #   Example: make start PROVIDER=hermes INTERACTIVE=1
+#
+# NOTE ON RESUME
+#   start always begins a NEW session; do not pass RESUME to make start. To
+#   resume a previous session, use `make resume` (make resume SESSION_ID=<id>).
 #
 # STALE
 #   Optional (prune only). Remove only stale volumes immediately (no age threshold).
@@ -67,7 +63,6 @@ ENV_FILE     := .env
 PROVIDER     ?=
 REFRESH      ?=
 REBUILD      ?=
-RESUME       ?=
 TARGET       ?=
 FROM         ?=
 INTERACTIVE  ?=
@@ -91,7 +86,6 @@ endif
 
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
-RESUME_FLAG       = $(if $(RESUME),--resume,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
@@ -133,7 +127,6 @@ help:
 	@echo "  PROVIDER=<p>    — provider name (required for start/serve/dry-run)"
 	@echo "  REFRESH=1        — rebuild images + start new session"
 	@echo "  REBUILD=1        — force full rebuild including base images"
-	@echo "  RESUME=1         — always show volume picker"
 	@echo "  SESSION_ID=<id>  — resume a specific session (make resume)"
 	@echo "  LIST=1           — list resumable session ids (make resume)"
 	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
@@ -164,7 +157,6 @@ start:
 	  $(PROVIDER_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(RESUME_FLAG) \
 	  $(INTERACTIVE_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
@@ -176,7 +168,6 @@ serve:
 	  $(PROVIDER_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(RESUME_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -187,7 +178,6 @@ dry-run:
 	  $(PROVIDER_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  $(RESUME_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

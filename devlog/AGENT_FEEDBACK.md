@@ -369,3 +369,22 @@ trace tests asserting the file set flows (which fail if a file is absent)
 and static content checks. Presence assertions removed; production guards
 verified. When adding tests for file wiring, check the production guard
 first and test the behavior (selection/injection/error), not file existence.
+
+## Agent experience — session 20260821-03
+
+### [A] 2026-08-21 — Installed CLI staleness is hard to detect: new subcommand surfaces as `Unknown subcommand`
+
+state: open
+scoped: none
+legacy: none
+mitigation: adding a new subcommand (or flag) to `scripts/agent-sandbox.sh` does
+not reach the installed CLI until `make install` re-installs it (the dispatcher is
+copied verbatim, sed-substituting `@@AGENT_SANDBOX_REPO@@`). The operator symptom
+is a bare `Unknown subcommand: resume` with no hint that `make install` is needed —
+looks like the feature is un-hooked. Detection gap: the stale installed CLI still
+lists `package-branch` but omits newer entries (e.g. `resume`), and the source
+dispatcher matches. In this session the sandbox Makefile had refreshed (template
+`resume:` present, L221) while the installed CLI was stale — the two staleness axes
+(Makefile vs CLI) diverge. Lesson: when a subcommand/flag seems missing, diff the
+installed CLI's `Valid subcommands` against `scripts/agent-sandbox.sh` before
+assuming the implementation is wrong; a stale install is the first suspect.

@@ -73,8 +73,10 @@ Flags (all required except --sandbox/--env):
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session
   --rebuild   force a full rebuild including base images, then start a new session
-  --resume    always show the interactive volume picker (session resume)
   --interactive  interactive start picker — NOT YET IMPLEMENTED (F2 start-wizard iteration)
+
+Note: start always begins a NEW session. To resume a previous session, use
+`make resume` (agent-sandbox resume).
 
 Note: --provider is required and has no default. Pass it explicitly.
 EOF
@@ -105,7 +107,6 @@ ENV_REL=".env"
 PROVIDER_NAME=""
 REFRESH=false
 REBUILD=false
-RESUME=false
 INTERACTIVE=false
 
 for ARG in "$@"; do
@@ -118,7 +119,6 @@ for ARG in "$@"; do
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     --refresh)    REFRESH=true ;;
     --rebuild)    REBUILD=true ;;
-    --resume)     RESUME=true ;;
     --interactive) INTERACTIVE=true ;;
     *)
       echo "Unknown flag: $ARG"
@@ -180,181 +180,21 @@ source "$REPO_ROOT/src/libs/session_env.sh"
 session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
 
 # -------------------------
-# Session identity — volume discovery and resume
+# Session identity — always a fresh new session
 # -------------------------
-# Session identity — volume discovery and resume
-# -------------------------
-# With multi-volume concurrency, each session gets its own named volume
-# ({{SESSION_ID}}-sandbox-data). Volume labels carry session identity.
-# On first start, identity is computed fresh and a new volume is created
-# by compose. On resume, identity is read from the existing volume's labels.
-# The per-run compose record (.compose/<session-id>.yml) is the registry; it
-# embeds the identity (labels + env) and persists across runs.
-#
-# Volume discovery functions
-# -------------------------
-discover_volumes() {
-  # Emit "session-ts|volume-name", sort descending by timestamp, extract names.
-  # docker volume ls has no sort flag; sorting on the label value requires
-  # emitting it into the format string alongside the name.
-  docker volume ls \
-    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" \
-    --filter "label=agent-sandbox.session-ts" \
-    --format '{{index .Labels "agent-sandbox.session-ts"}}|{{.Name}}' 2>/dev/null \
-    | sort -r \
-    | cut -d'|' -f2 || true
-}
-
-volume_label() {
-  local vol="$1" label="$2"
-  docker volume inspect "$vol" \
-    --format "{{index .Labels \"$label\"}}" 2>/dev/null || true
-}
-
-volume_is_stale() {
-  local vol="$1"
-  local vol_sha
-  vol_sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
-  local current_sha
-  current_sha=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-  [[ "$vol_sha" != "$current_sha" ]]
-}
-
-volume_in_use() {
-  local vol="$1"
-  local containers
-  containers=$(docker ps --filter "volume=$vol" --format '{{.ID}}' 2>/dev/null || true)
-  [[ -n "$containers" ]]
-}
+# start unconditionally begins a NEW session (F2 design D10). All resume logic
+# (volume discovery, auto-resume, and the interactive picker) was moved out to
+# the split-out `make resume` command (scripts/resume_agent.sh) in 20260821-03.
+# Each start computes fresh identity; the per-run compose record
+# (.compose/<session-id>.yml) is the registry and embeds the identity.
 
 _new_session_identity() {
   # Compute fresh identity and export it for this run.
   # Called for both default new-session and --refresh paths.
-  RESUME_SESSION=false
-
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
   export SESSION_ID; SESSION_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
-}
-
-_resume_from_volume() {
-  # Read identity from a volume (passed as $1) and set up resume state.
-  # Exits with error if the volume lacks identity labels.
-  local vol="$1"
-
-  # Volume locking check
-  if volume_in_use "$vol"; then
-    echo "Error: volume $vol is in use by another session."
-    echo "  Stop the active session first: make stop"
-    exit 1
-  fi
-
-  export SESSION_TS; SESSION_TS=$(volume_label "$vol" "agent-sandbox.session-ts")
-  export SESSION_ID; SESSION_ID=$(volume_label "$vol" "agent-sandbox.session-id")
-  export HOST_HEAD_SHA; HOST_HEAD_SHA=$(volume_label "$vol" "agent-sandbox.host-head-sha")
-
-  if [[ -z "$SESSION_TS" || -z "$SESSION_ID" ]]; then
-    echo "Error: volume $vol has no session identity labels."
-    echo "  The volume may be from an older harness version."
-    echo "  Remove it and start fresh: make start"
-    exit 1
-  fi
-
-  export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-
-  RESUME_SESSION=true
-  echo "Resuming session — volume: $vol"
-}
-
-# auto_resume_or_new — default path when neither --refresh nor --resume is set.
-# 0 volumes          → new session
-# 1 non-stale        → resume silently
-# 0 non-stale, 1 stale → resume stale + warn
-# 2+ total           → interactive picker
-_auto_resume_or_new() {
-  VOLUMES=()
-  while IFS= read -r vol; do
-    [[ -n "$vol" ]] && VOLUMES+=("$vol")
-  done < <(discover_volumes)
-
-  VOLUME_COUNT="${#VOLUMES[@]}"
-
-  if [[ "$VOLUME_COUNT" -eq 0 ]]; then
-    _new_session_identity
-    return
-  fi
-
-  # Build lists of non-stale and stale volumes
-  local NON_STALE=() STALE=()
-  for vol in "${VOLUMES[@]}"; do
-    if volume_is_stale "$vol"; then
-      STALE+=("$vol")
-    else
-      NON_STALE+=("$vol")
-    fi
-  done
-
-  # Case: 1 non-stale, 0 stale — resume it silently
-  if [[ "${#NON_STALE[@]}" -eq 1 ]] && [[ "${#STALE[@]}" -eq 0 ]]; then
-    _resume_from_volume "${NON_STALE[0]}"
-    return
-  fi
-
-  # Case: 0 non-stale, 1 stale — resume with a warning
-  if [[ "${#NON_STALE[@]}" -eq 0 ]] && [[ "${#STALE[@]}" -eq 1 ]]; then
-    echo "Warning: project HEAD has moved since this session started."
-    echo "  The sandbox repo may be out of date."
-    echo "  Use --resume to select a different session if needed."
-    _resume_from_volume "${STALE[0]}"
-    return
-  fi
-
-  # Case: multiple volumes, or mixed — interactive picker
-  _show_volume_picker
-}
-
-# _show_volume_picker — interactive volume selection (shared by --resume and auto path)
-_show_volume_picker() {
-  echo ""
-  echo "Sessions found for this sandbox directory:"
-  echo ""
-
-  local i=1
-  for vol in "${VOLUMES[@]}"; do
-    local ts rid br sha stale_str
-    ts=$(volume_label "$vol" "agent-sandbox.session-ts")
-    sid=$(volume_label "$vol" "agent-sandbox.session-id")
-    br=$(volume_label "$vol" "agent-sandbox.host-branch")
-    sha=$(volume_label "$vol" "agent-sandbox.host-head-sha")
-    stale_str=""
-    volume_is_stale "$vol" && stale_str=" [STALE]"
-    printf "  %d) %s  SESSION_ID: %s  branch: %s (%.7s)%s\n" \
-      "$i" "$ts" "$sid" "$br" "$sha" "$stale_str"
-    (( i++ )) || true
-  done
-  local NEW_OPTION="$i"
-  printf "  %d) [start new session]\n" "$NEW_OPTION"
-  echo ""
-
-  local SELECTION=""
-  while [[ -z "$SELECTION" ]]; do
-    printf "Select (1-%d): " "$NEW_OPTION"
-    read -r SELECTION
-    if [[ ! "$SELECTION" =~ ^[0-9]+$ ]] || \
-       [[ "$SELECTION" -lt 1 ]] || \
-       [[ "$SELECTION" -gt "$NEW_OPTION" ]]; then
-      echo "  Invalid selection. Enter 1-$NEW_OPTION."
-      SELECTION=""
-    fi
-  done
-
-  if [[ "$SELECTION" -eq "$NEW_OPTION" ]]; then
-    echo "Starting new session"
-    _new_session_identity
-  else
-    _resume_from_volume "${VOLUMES[$((SELECTION - 1))]}"
-  fi
 }
 
 if [[ "${INTERACTIVE:-false}" == "true" ]]; then
@@ -367,26 +207,12 @@ fi
 
 if [[ "${REFRESH:-false}" == "true" ]]; then
   echo "Refresh requested — starting new session"
-  _new_session_identity
-elif [[ "${RESUME:-false}" == "true" ]]; then
-  # --resume: always show the interactive picker
-  VOLUMES=()
-  while IFS= read -r vol; do
-    [[ -n "$vol" ]] && VOLUMES+=("$vol")
-  done < <(discover_volumes)
-
-  VOLUME_COUNT="${#VOLUMES[@]}"
-
-  if [[ "$VOLUME_COUNT" -eq 0 ]]; then
-    echo "No existing sessions — starting new session"
-    _new_session_identity
-  else
-    _show_volume_picker
-  fi
-else
-  # Default: auto-resume non-stale, or picker, or new session
-  _auto_resume_or_new
 fi
+
+# start always begins a NEW session (F2 design D10). Resume lives in the
+# split-out `make resume` command; there is no resume branch here.
+echo "Starting new session"
+_new_session_identity
 
 # -------------------------
 # Shared host-side prelude — phase 2 (branch, image/container names, delivery)
@@ -406,12 +232,7 @@ echo "Agent container name: $AGENT_CONTAINER_NAME"
 # -------------------------
 # Workspace directory setup and snapshot pipeline
 # -------------------------
-if [[ "$RESUME_SESSION" == true ]]; then
-  # Resume path: workspace dirs should already exist (bind mounts),
-  # but ensure they do in case the user cleaned them manually.
-  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
-  echo "Resuming session — pipeline skipped (existing git state)"
-elif [[ "$SANDBOX_TYPE" == "mount" ]]; then
+if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   # Mount delivery: materialize the host worktree (bind-mounted into the
   # container). Use the shared snapshot primitive minus baseline.tar — rsync
   # the working tree, then git-init + baseline commit so .git exists. The
@@ -484,15 +305,9 @@ preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
 # -------------------------
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 # All .env variables and derived image names are already exported above.
-# RESET_VOLUME is forwarded when --refresh or --rebuild is set, signalling
-# run_agent.sh to destroy the existing volume before starting new containers.
-RESET_VOLUME_FLAG=""
-if [[ "${REFRESH:-false}" == "true" || "${REBUILD:-false}" == "true" ]]; then
-  RESET_VOLUME_FLAG="--reset-volume"
-elif [[ "$RESUME_SESSION" != true ]]; then
-  # Default new-session path also resets the volume (fresh start).
-  RESET_VOLUME_FLAG="--reset-volume"
-fi
+# start always begins a NEW session, so the previous session's volume is always
+# reset: run_agent.sh destroys the existing volume before starting fresh containers.
+RESET_VOLUME_FLAG="--reset-volume"
 
 exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" \
   --name="$PROJECT_NAME" \

@@ -87,25 +87,21 @@ volume exists + REFRESH not set?
 
 Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
 
-**Session start (M2.6.5):**
+**Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`.
 
 ```
 --refresh/--rebuild passed?
   ├── Yes → new session (rebuild images + fresh volume + full snapshot)
-  └── No → --resume passed?
-            ├── Yes → always interactive picker:
-            │         ├── 0 volumes → new session
-            │         └── 1+ volumes → picker (choose volume or "new session")
-            └── No → default auto-resume:
-                      ├── 0 volumes → new session
-                      ├── 1 non-stale volume → resume it (silent)
-                      ├── 1 stale volume → warn + auto-resume
-                      │     "Warning: project HEAD has moved since this session started.
-                      │      Run 'make start RESUME=1' to show the volume picker."
-                      └── 2+ volumes (any state) → interactive picker
-                          Volumes whose host-head-sha label ≠ current HEAD
-                          are flagged [STALE].
+  └── No  → new session (fresh volume + full snapshot)
+            start carries no resume path (F2 design D10); to resume a
+            previous session, use the split-out `make resume` command.
 ```
+
+**Session resume (`make resume`):** the resume command reads identity from
+the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker
+volume labels. `make resume SESSION_ID=<id>` selects exactly one session and
+resumes silently; `make resume LIST=1` lists registry ids. The legacy volume-label
+resume machinery was removed from `start` (see `20260821-04`).
 
 ---
 
