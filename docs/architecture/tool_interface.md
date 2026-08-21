@@ -50,8 +50,11 @@ Stops any running session for this project, builds missing images if needed, sna
 Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped.
 
 - `SESSION_ID=<id>` — resume that specific session silently (recommended).
-- `LIST=1` — list resumable session ids (no resume).
-- `INTERACTIVE=1` and `PROVIDER=<n>` are not yet implemented (interactive picker / inventory filter).
+- `LIST=1` — list resumable sessions as an enriched table (`SESSION_ID | provider | session-ts | branch`), newest first. Accepts an optional `PROVIDER=<n>` filter.
+- `INTERACTIVE=1` — interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Accepts an optional `PROVIDER=<n>` filter.
+- `PROVIDER=<n>` — filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
+
+`--interactive` always shows the picker and asks for confirmation, even when only one session matches — explicit interactivity is deliberate, not a shortcut.
 
 ---
 

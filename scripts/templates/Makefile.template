@@ -113,8 +113,8 @@ help:
 	@echo "  make dry-run PROVIDER=<p>         — liveness check only"
 	@echo "  make stop                         — stop and remove session containers"
 	@echo "  make resume SESSION_ID=<id>      — resume a specific session (silent, recommended)"
-	@echo "  make resume LIST=1               — list resumable session ids"
-	@echo "  make resume INTERACTIVE=1        — interactive picker (NOT YET IMPLEMENTED)"
+	@echo "  make resume LIST=1               — list resumable session ids (optional PROVIDER=<n> filter)"
+	@echo "  make resume INTERACTIVE=1        — interactive picker + confirm (optional PROVIDER=<n> filter)"
 	@echo "  make prune                        — remove stale containers and volumes"
 	@echo "  make draft                        — apply session patches to a draft branch"
 	@echo "  make confirm                      — merge draft branch to source"
@@ -204,8 +204,8 @@ stop:
 #
 #   make resume SESSION_ID=<id>  — resume that specific session (silent, recommended)
 #   make resume LIST=1           — list resumable session ids (no resume)
-#   make resume INTERACTIVE=1    — NOT YET IMPLEMENTED (interactive picker)
-#   make resume PROVIDER=<n>     — NOT YET IMPLEMENTED (inventory filter)
+#   make resume INTERACTIVE=1    — interactive picker + confirm (slow mode)
+#   make resume PROVIDER=<n>     — filter the session inventory by provider (use with LIST=1 or INTERACTIVE=1)
 
 resume:
 	agent-sandbox resume \

@@ -19,6 +19,9 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# interactive.sh sources routing.sh via ${AGENT_SANDBOX_REPO}; mirror the dispatcher.
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$REPO_ROOT}"
+
 # -------------------------
 # Usage / help
 # -------------------------
@@ -41,8 +44,8 @@ or directly:
 Flags:
   --list             list the `.compose/` session records (fast, no resume)
   --session-id=<id>  resume the session with this SESSION_ID (direct, silent; recommended)
-  --interactive      NOT YET IMPLEMENTED — interactive picker + confirm (slow mode)
-  --provider=<n>     NOT YET IMPLEMENTED — filter the session inventory by provider
+  --interactive      interactive picker + confirm over the session inventory
+  --provider=<n>     filter the session inventory by provider (with --list / --interactive)
 
 --session-id is the preferred resume path: it selects exactly one session and
 resumes silently. See `make resume LIST=1` to discover a session's id.
@@ -73,38 +76,123 @@ for ARG in "$@"; do
 done
 
 # -------------------------
+# Inventory helpers
+# -------------------------
+# Recover a field from a .compose/<session-id>.yml registry record. Provider is
+# read from the agent service image (`image: <provider>-agent-<lower-project>`);
+# session metadata from the agent-sandbox labels.
+record_provider() {
+  local file="$1"
+  grep -m1 -E '^[[:space:]]+image:[[:space:]]*[^.]+-agent-[^-]+' "$file" \
+    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+)-agent-.*/\1/'
+}
+
+record_label() {
+  local file="$1" label="$2"
+  grep -m1 -E '[[:space:]]*agent-sandbox\.'"$label"':' "$file" \
+    | sed -E 's/.*'"$label"':[[:space:]]*//'
+}
+
+# Enumerate the session inventory into RESUME_INVENTORY: one line per record of
+# the form `SESSION_ID|provider|session-ts|branch`, optionally filtered by
+# PROVIDER_FILTER. Records whose provider cannot be recovered are skipped.
+RESUME_INVENTORY=()
+build_inventory() {
+  RESUME_INVENTORY=()
+  local compose_dir="${SANDBOX_DIR:-}/.compose"
+  [[ -n "$SANDBOX_DIR" && -d "$compose_dir" ]] || return 1
+  local f sid provider ts branch
+  for f in "$compose_dir"/*.yml; do
+    [[ -f "$f" ]] || continue
+    sid="$(basename "$f" .yml)"
+    provider="$(record_provider "$f")"
+    [[ -n "$provider" ]] || continue
+    if [[ -n "$PROVIDER_FILTER" && "$provider" != "$PROVIDER_FILTER" ]]; then
+      continue
+    fi
+    ts="$(record_label "$f" session-ts)"
+    branch="$(record_label "$f" host-branch)"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch" )
+  done
+  # Newest first by session-ts.
+  local sorted
+  sorted="$(printf '%s\n' "${RESUME_INVENTORY[@]:-}" | sort -t'|' -k3 -r)"
+  RESUME_INVENTORY=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && RESUME_INVENTORY+=( "$line" )
+  done <<< "$sorted"
+  return 0
+}
+
+# -------------------------
 # Dispatch — command shape (ID 07)
 # -------------------------
-# 1) --list → list .compose record filenames.
-# 2) --interactive / --provider (without --session-id) → not yet implemented.
+# 1) --list → list .compose records (enriched, optional provider filter).
+# 2) --interactive → picker over the inventory, confirm, then resume.
 # 3) --session-id=<id> → resume path.
 # 4) bare (no target flags) → help hinting --list / --interactive.
 if [[ "$RESUME_LIST" == true ]]; then
-  COMPOSE_DIR="${SANDBOX_DIR:-}/.compose"
-  if [[ -z "$SANDBOX_DIR" || ! -d "$COMPOSE_DIR" ]]; then
-    echo "Error: no session records found (${COMPOSE_DIR})." >&2
-    echo "  Start a session first: make start" >&2
+  build_inventory
+  if [[ "${#RESUME_INVENTORY[@]}" -eq 0 ]]; then
+    if [[ -n "$PROVIDER_FILTER" ]]; then
+      echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
+    else
+      echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
+      echo "  Start a session first: make start" >&2
+    fi
     exit 1
   fi
   echo "Resumable sessions (make resume SESSION_ID=<id>):"
-  find "$COMPOSE_DIR" -maxdepth 1 -name '*.yml' -printf '%f\n' | sed 's/\.yml$//' | sort
+  _line=; sid=; provider=; ts=; branch=
+  for _line in "${RESUME_INVENTORY[@]}"; do
+    IFS='|' read -r sid provider ts branch <<< "$_line"
+    printf '  %-8s  %-10s  %-17s  %s\n' "$sid" "$provider" "$ts" "$branch"
+  done
   exit 0
 fi
 
 if [[ "$INTERACTIVE_FLAG" == true ]]; then
-  echo "Error: --interactive (interactive resume picker) is not yet implemented." >&2
-  echo "  Use --session-id=<id> to resume a specific session, or --list to discover ids." >&2
-  exit 1
+  build_inventory
+  if [[ "${#RESUME_INVENTORY[@]}" -eq 0 ]]; then
+    if [[ -n "$PROVIDER_FILTER" ]]; then
+      echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
+    else
+      echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
+      echo "  Start a session first: make start" >&2
+    fi
+    exit 1
+  fi
+
+  # Build the picker entries (value|display), then pick + confirm.
+  # Explicit --interactive always shows the picker + confirm, even for a sole
+  # record (decision I-1) — the deliberately slow mode.
+  PICKER=(); _line=; sid=; provider=; ts=; branch=
+  for _line in "${RESUME_INVENTORY[@]}"; do
+    IFS='|' read -r sid provider ts branch <<< "$_line"
+    PICKER+=( "$sid|$sid  $provider  $ts  $branch" )
+  done
+  source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
+  chosen="$(interactive_pick "Resume which session?" PICKER)" || exit 1
+
+  disp_provider="$(record_provider "$SANDBOX_DIR/.compose/$chosen.yml")"
+  disp_ts="$(record_label "$SANDBOX_DIR/.compose/$chosen.yml" session-ts)"
+  disp_branch="$(record_label "$SANDBOX_DIR/.compose/$chosen.yml" host-branch)"
+  if ! interactive_confirm_or_abort "Resume session $chosen?" \
+       "provider: $disp_provider" "started: $disp_ts" "branch: $disp_branch"; then
+    exit 1
+  fi
+
+  SESSION_ID_ARG="$chosen"
 fi
 
-if [[ -n "$PROVIDER_FILTER" ]]; then
-  echo "Error: --provider=<n> (inventory filter) is not yet implemented." >&2
-  echo "  Use --session-id=<id> to resume a specific session." >&2
+if [[ -n "$PROVIDER_FILTER" && -z "$SESSION_ID_ARG" && "$RESUME_LIST" != true && "$INTERACTIVE_FLAG" != true ]]; then
+  echo "Error: --provider=<n> is an inventory filter; use with --list or --interactive." >&2
+  usage >&2
   exit 1
 fi
 
 if [[ -z "$SESSION_ID_ARG" ]]; then
-  echo "Error: no resume target given (need --session-id=<id> or --list)." >&2
+  echo "Error: no resume target given (need --session-id=<id>, --list, or --interactive)." >&2
   usage >&2
   exit 1
 fi
@@ -131,9 +219,8 @@ if [[ ! -f "$RECORD_FILE" ]]; then
   exit 1
 fi
 
-# Agent image line → provider: `image: <provider>-agent-<lower-project>`.
-local_provider="$(grep -m1 -E '^[[:space:]]+image:[[:space:]]*[^.]+-agent-[^-]+' "$RECORD_FILE" \
-  | sed -E 's/.*image:[[:space:]]*([^[:space:]]+)-agent-.*/\1/')"
+# Agent image line → provider; session labels → SESSION_TS / HOST_HEAD_SHA.
+local_provider="$(record_provider "$RECORD_FILE")"
 if [[ -z "$local_provider" ]]; then
   echo "Error: could not recover provider from session record $RECORD_FILE" >&2
   exit 1
@@ -148,11 +235,9 @@ session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
 mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 
 # Session labels → SESSION_TS / HOST_HEAD_SHA.
-SESSION_TS="$(grep -m1 -E '[[:space:]]*agent-sandbox\.session-ts:' "$RECORD_FILE" \
-  | sed -E 's/.*session-ts:[[:space:]]*//')"
+SESSION_TS="$(record_label "$RECORD_FILE" session-ts)"
 export SESSION_TS
-HOST_HEAD_SHA="$(grep -m1 -E '[[:space:]]*agent-sandbox\.host-head-sha:' "$RECORD_FILE" \
-  | sed -E 's/.*host-head-sha:[[:space:]]*//')"
+HOST_HEAD_SHA="$(record_label "$RECORD_FILE" host-head-sha)"
 export HOST_HEAD_SHA
 export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
 

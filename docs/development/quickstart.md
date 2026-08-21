@@ -107,7 +107,7 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 The sandbox directory persists across `make start` / `make stop` cycles via a named Docker volume. All git state, uncommitted changes, and session artifacts are preserved.
 
 - **New session:** `make start` always starts a NEW session with a fresh volume.
-- **Resume a session:** `make resume SESSION_ID=<id>` resumes that session's git state and volume. `make resume LIST=1` lists resumable session ids.
+- **Resume a session:** `make resume SESSION_ID=<id>` resumes that session's git state and volume. `make resume LIST=1` lists resumable sessions; `make resume INTERACTIVE=1` picks + confirms; `PROVIDER=<n>` filters either by provider.
 - **Rebuild and fresh start:** `make start REFRESH=1` or `REBUILD=1` rebuilds images before starting a new session with a fresh volume.
 - **Stop without destroying:** `make stop` preserves the volume and prints the resume command (`make resume SESSION_ID=<id>`).
 

@@ -100,8 +100,12 @@ Host-side identity is recorded in the per-run compose registry (`.compose/<sessi
 **Session resume (`make resume`):** the resume command reads identity from
 the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker
 volume labels. `make resume SESSION_ID=<id>` selects exactly one session and
-resumes silently; `make resume LIST=1` lists registry ids. The legacy volume-label
-resume machinery was removed from `start` (see `20260821-04`).
+resumes silently. `make resume LIST=1` lists registry sessions in an enriched
+table (`SESSION_ID | provider | session-ts | branch`) filtered by an optional
+`PROVIDER=<n>`; `make resume INTERACTIVE=1` presents a picker over the
+inventory and confirms before resuming (also `PROVIDER=<n>`-filterable). The
+legacy volume-label resume machinery was removed from `start` (see
+`20260821-04`).
 
 ---
 
