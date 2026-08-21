@@ -65,4 +65,5 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 # provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
 # EXIT trap, then execs the agent command.
 ENV PATH=/opt/sandbox/bin:$PATH
+RUN pi install npm:pi-opencode-provider
 ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "pi"]
