@@ -97,13 +97,13 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make prune [STALE=<sandbox|all>] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
+### `make prune [STALE=<sandbox|image|all>] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
 
 Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** — Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
 
 **Rule 1 — stale records.** A `.compose/<session-id>.yml` record is selected when its recorded `host-head-sha` differs from the current project HEAD (sandbox staleness, registry-truth — see `docs/concepts/terminology.md` `## staleness`) and it is older than `AGE_DAYS` (default 3). Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
 
-- `STALE=<kind>` — staleness kind to target: `sandbox` (repo out of date) or `all`/unset (all implemented kinds). `STALE=image` (baked `container-sig` vs recomputed `container_sig`) is **not yet implemented** and errors (D8-6).
+- `STALE=<kind>` — staleness kind to target: `sandbox` (repo out of date — the session's `host-head-sha` ≠ current HEAD), `image` (image out of date — a referenced image's baked `agent-sandbox.container-sig` ≠ recomputed source sig, so even resume carries an incomplete feature set), or `all`/unset (either criterion — the "remove all stale" filter).
 - `PROVIDER=<n>` — narrow Rule 1's selection to records of that provider (same filter as `make resume`).
 
 **Rule 2 — orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy → volume + containers; mount → registry resources only. Worktrees are **never** touched.

@@ -24,6 +24,7 @@ setup_stop_fixture() {
   # between tests.
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_FAIL_PS
   unset DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
+  unset DOCKER_STUB_IMAGE_SIG_LABEL DOCKER_STUB_IMAGE_SIG_LABELS
 }
 
 make_committed_repo() {
@@ -242,19 +243,21 @@ test_prune_rule2_removes_orphan_container() {
   fi
 }
 
-test_prune_stale_image_not_implemented() {
-  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_ni"
+test_prune_stale_image_selects_image_stale_record() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_stale"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
+  make_committed_repo "$PROJECT_DIR"
+  write_record "$SANDBOX_DIR" "imgstale" "aaaa1111aaaa"
+  # Baked container-sig differs from the recomputed source sig -> image-stale.
+  export DOCKER_STUB_IMAGE_SIG_LABEL="definitely-stale-sig"
 
-  local OUT RC
-  OUT="$(invoke_prune "$FIXTURE_DIR" --stale=image 2>&1)"
-  RC=$?
+  invoke_prune "$FIXTURE_DIR" --stale=image > /dev/null 2>&1
 
-  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q "not yet implemented"; then
-    pass "prune --stale=image: not-yet-implemented error (rc=$RC)"
+  if [[ ! -f "$SANDBOX_DIR/.compose/imgstale.yml" ]]; then
+    pass "prune --stale=image: selects and removes an image-stale record"
   else
-    fail "prune --stale=image: expected not-yet-implemented error (rc=$RC)"
+    fail "prune --stale=image: expected image-stale record removed"
   fi
 }
 
@@ -289,7 +292,7 @@ run_test test_stop_prune_has_registrybased_prune
 run_test test_prune_standalone_nothing_to_prune
 run_test test_prune_rule1_removes_stale_records
 run_test test_prune_rule2_removes_orphan_container
-run_test test_prune_stale_image_not_implemented
+run_test test_prune_stale_image_selects_image_stale_record
 run_test test_prune_dry_run_removes_nothing
 
 echo ""

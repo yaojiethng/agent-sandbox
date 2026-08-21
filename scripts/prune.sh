@@ -36,11 +36,12 @@
 # Rule-1-selected session's record as already removed to predict Rule 2's
 # result. That prediction is render-only; the real action always re-scans.
 #
-# Rule 1 selection (registry-truth, D7 / `session_stale`):
-#   A record is selected when its recorded `host-head-sha` differs from the
-#   current project HEAD (`STALE=sandbox`) and it is older than AGE_DAYS.
-#   `--stale=sandbox|all` — the implemented staleness kinds.
-#   `--stale=image` is NOT yet implemented (D8-6) and errors.
+# Rule 1 selection (registry-truth, D7 / `session_stale` + image staleness):
+#   A record is selected, per the requested staleness kind, when it is
+#   sandbox-stale (host-head-sha != current project HEAD) and/or image-stale
+#   (referenced image's container-sig != current source) and older than
+#   AGE_DAYS. `STALE=sandbox|image|all` select the sandbox / image / either
+#   staleness dimension (STALE=all or unset = the "remove all stale" filter).
 #
 # Rule 2 scope: delivery-scoped in effect — copy sessions register a volume,
 # mount sessions do not, so removing labeled resources yields copy → volume +
@@ -66,7 +67,7 @@ resources). Simulation is --dry-run; confirmation is --interactive.
 
 Options:
   --stale=<kind>   Staleness kind to target: sandbox (repo out of date),
-                   or all (default when omitted). 'image' is not yet implemented.
+                   image (image out of date), or all (default; either).
   --provider=<n>   Narrow stale-record selection to this provider.
   --age-days=<n>   Stale-record age cutoff (default ${PRUNE_AGE_DAYS} days).
   --interactive    Show the prune plan + equivalent command, then confirm.
@@ -95,6 +96,7 @@ done
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
+source "$REPO_ROOT/src/libs/container_sig.sh"
 
 parse_help_flag "$@"
 parse_base_flags "$@"
@@ -110,16 +112,9 @@ if [[ -z "$PROJECT_DIR" ]]; then
   exit 1
 fi
 
-# Staleness-kind validation (D8-6): image staleness is not yet implemented.
+# Staleness-kind validation.
 case "$STALE_KIND" in
-  ""|sandbox|all) ;;
-  image)
-    echo "Error: --stale=image is not yet implemented." >&2
-    echo "  Image staleness (baked agent-sandbox.container-sig vs recomputed"
-    echo "  container_sig) is deferred to a future iteration. Use"
-    echo "  --stale=sandbox or --stale=all." >&2
-    exit 1
-    ;;
+  ""|sandbox|image|all) ;;
   *)
     echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox, image, or all)." >&2
     usage >&2
@@ -138,6 +133,10 @@ fi
 # -------------------------
 # Prints `session-id|provider|ts|branch|delivery|stale` for each selected stale
 # record. Best-effort; never fails the prune on a malformed record.
+# Selection is driven by the staleness kind (STALE=sandbox|image|all): a
+# record is selected when it is stale by the enabled criterion (sandbox =
+# host-head-sha mismatch; image = referenced image container-sig mismatch),
+# and older than AGE_DAYS, narrowed by PROVIDER.
 rule1_selected_records() {
   local compose_dir="$SANDBOX_DIR/.compose"
   [[ -d "$compose_dir" ]] || return 0
@@ -146,7 +145,7 @@ rule1_selected_records() {
   local cutoff_ts
   cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null || true)"
 
-  local f sid provider ts branch delivery stale rec_day
+  local f sid provider ts branch delivery rec_day
   for f in "$compose_dir"/*.yml; do
     [[ -f "$f" ]] || continue
     sid="$(basename "$f" .yml)"
@@ -155,9 +154,21 @@ rule1_selected_records() {
     if [[ -n "$PROVIDER_FILTER" && "$provider" != "$PROVIDER_FILTER" ]]; then
       continue
     fi
-    # Selection: sandbox-stale (STALE=sandbox/all) AND older than AGE_DAYS.
-    stale="$(session_stale "$f" "$current_sha")"
-    [[ "$stale" == "stale" ]] || continue
+    # Staleness selection by kind. Each criterion is evaluated only when its
+    # kind is enabled (sandbox-only / image-only / either for STALE=all).
+    case "$STALE_KIND" in
+      sandbox)
+        [[ "$(session_stale "$f" "$current_sha")" == "stale" ]] || continue
+        ;;
+      image)
+        [[ "$(record_image_stale "$f")" == "stale" ]] || continue
+        ;;
+      ""|all)
+        [[ "$(session_stale "$f" "$current_sha")" == "stale" \
+           || "$(record_image_stale "$f")" == "stale" ]] || continue
+        ;;
+    esac
+    # Age narrowing (applies to every selected record regardless of kind).
     ts="$(record_label "$f" session-ts)"
     ts="${ts:-00000000-000000}"
     if [[ -n "$cutoff_ts" ]]; then
@@ -168,8 +179,32 @@ rule1_selected_records() {
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
     # delivery overlay). Disclosure in the plan only — it gates neither rule.
     delivery="$(env_field "$f" SANDBOX_TYPE)"
-    printf '%s|%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery" "$stale"
+    printf '%s|%s|%s|%s|%s|stale\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
   done
+}
+
+# record_image_stale FILE — image-staleness of a session record: "stale" when
+# either referenced image (agent / sandbox) is image-stale, "fresh" when both
+# are fresh, "unknown" when not determinable. The images are derived from the
+# record's agent image line (`image: <provider>-agent-<lower-project>`): the
+# agent image references the provider layer, and the capability layer is
+# `sandbox-<lower-project>`.
+record_image_stale() {
+  local file="$1"
+  local agent_img provider lower_proj sandbox_img as ss
+  agent_img="$(grep -m1 -E 'image:[[:space:]]*[^[:space:]]+-agent-[^[:space:]]+' "$file" \
+    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+).*/\1/' || true)"
+  [[ -n "$agent_img" ]] || { echo "unknown"; return 0; }
+  provider="${agent_img%%-agent-*}"
+  lower_proj="${agent_img#*-agent-}"
+  sandbox_img="sandbox-${lower_proj}"
+
+  as="$(image_is_stale "$agent_img" agent "$REPO_ROOT" "$provider")"
+  ss="$(image_is_stale "$sandbox_img" sandbox "$REPO_ROOT")"
+
+  if [[ "$as" == "stale" || "$ss" == "stale" ]]; then echo "stale"
+  elif [[ "$as" == "fresh" && "$ss" == "fresh" ]]; then echo "fresh"
+  else echo "unknown"; fi
 }
 
 # env_field FILE VAR — read a `VAR=value` from any service `environment:`

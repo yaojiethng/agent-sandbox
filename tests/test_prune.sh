@@ -29,6 +29,25 @@ setup_prune_fixture() {
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
+  unset DOCKER_STUB_SESSION_ID_LABELS DOCKER_STUB_IMAGE_SIG_LABEL DOCKER_STUB_IMAGE_SIG_LABELS
+}
+
+# Recompute the container-sig the prune will compare against, for a "fresh"
+# image. Sources the shared lib; deterministic content hash over the repo.
+sandbox_sig() {
+  source "$REPO_ROOT/src/libs/container_sig.sh"
+  local -a s=(); mapfile -t s < <(_sandbox_sig_sources)
+  container_sig "$REPO_ROOT" "${s[@]}"
+}
+agent_sig() {
+  source "$REPO_ROOT/src/libs/container_sig.sh"
+  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "$1")
+  container_sig "$REPO_ROOT" "${s[@]}"
+}
+# Per-image fresh map for a pi provider record: both images carry their own
+# recomputed sig, so the session is image-fresh.
+fresh_sig_map() {
+  echo "pi-agent-test-project:$(agent_sig pi) sandbox-test-project:$(sandbox_sig)"
 }
 
 current_sha() { git -C "$PROJECT_DIR" rev-parse HEAD; }
@@ -255,6 +274,67 @@ test_complete_pass_end_to_end() {
   fi
 }
 
+test_stale_image_kind_removes_image_stale_record() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_stale"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  write_record "s_img" "pi" "aaaa1111aaaa" "20260801-000000"
+  # Baked container-sig differs from the recomputed source sig -> image-stale.
+  export DOCKER_STUB_IMAGE_SIG_LABEL="definitely-stale-sig"
+
+  invoke_prune --stale=image > /dev/null 2>&1
+
+  if ! record_exists "s_img"; then
+    pass "STALE=image: image-stale record selected and removed"
+  else
+    fail "STALE=image: expected image-stale record removed"
+  fi
+}
+
+test_stale_image_kind_keeps_fresh_record() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_fresh"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  # Note the record session-ts must be OLD (past AGE_DAYS) so the age gate does
+  # not skew the result; freshness is decided purely by the image sigs.
+  write_record "s_freshimg" "pi" "aaaa1111aaaa" "20260801-000000"
+  # Both images carry their own recomputed sig -> image-fresh -> not pruned.
+  export DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)"
+
+  invoke_prune --stale=image > /dev/null 2>&1
+
+  if record_exists "s_freshimg"; then
+    pass "STALE=image: image-fresh record kept"
+  else
+    fail "STALE=image: expected image-fresh record kept"
+  fi
+}
+
+test_stale_all_selects_either_criterion() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_or"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  # Sandbox-fresh (host-head-sha == HEAD) but image-stale (label differs).
+  local sha; sha="$(current_sha)"
+  write_record "s_or" "pi" "$sha" "20260801-000000"
+  export DOCKER_STUB_IMAGE_SIG_LABEL="definitely-stale-sig"
+
+  invoke_prune --stale=all > /dev/null 2>&1
+  local all_removed=n
+  [[ ! -f "$SANDBOX_DIR/.compose/s_or.yml" ]] && all_removed=y
+  # Rebuild the record (removed by all) and verify STALE=sandbox does NOT pick it.
+  write_record "s_or" "pi" "$sha" "20260801-000000"
+  invoke_prune --stale=sandbox > /dev/null 2>&1
+  local sandbox_kept=n
+  [[ -f "$SANDBOX_DIR/.compose/s_or.yml" ]] && sandbox_kept=y
+
+  if [[ "$all_removed" == y && "$sandbox_kept" == y ]]; then
+    pass "STALE=all: image-stale+sandbox-fresh session pruned by all, kept by sandbox-only"
+  else
+    fail "STALE=all: expected OR semantics (all=y sandbox-kept=y, got $all_removed/$sandbox_kept)"
+  fi
+}
+
 test_unknown_args_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_badarg"
   mkdir -p "$FIXTURE_DIR"
@@ -300,6 +380,9 @@ run_test test_interactive_prints_command
 run_test test_complete_pass_removes_stale_session_resources
 run_test test_complete_pass_end_to_end
 run_test test_rule2_removes_network_and_volume_orphans
+run_test test_stale_image_kind_removes_image_stale_record
+run_test test_stale_image_kind_keeps_fresh_record
+run_test test_stale_all_selects_either_criterion
 run_test test_unknown_args_rejected
 run_test test_missing_project_rejected
 

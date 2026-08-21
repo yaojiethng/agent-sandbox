@@ -4,7 +4,8 @@
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   build/image.sh   — image naming functions
+#   build/image.sh      — image naming functions
+#   libs/container_sig.sh — container-signature computation + staleness predicate
 #
 # Provides:
 #   build_image    - run docker build using repo root as context
@@ -16,85 +17,19 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/libs/container_sig.sh"
 
 # -------------------------
 # Container-sig source lists
 # These define which source files map to /opt/sandbox/ and /opt/workflow/
 # in each image type. Both build_sandbox/build_agent and _check_container_sig
 # use these to compute the container-sig hash — single source of truth.
+# (Defined in src/libs/container_sig.sh.)
 # -------------------------
-
-# _sandbox_sig_sources
-# Source paths for the sandbox image (maps to /opt/sandbox/). Emits each path
-# on its own line. Callers load them into a bash array (`mapfile`) and expand
-# with `"${arr[@]}"` — they are NOT a space-joined string to word-split.
-_sandbox_sig_sources() {
-  printf '%s\n' \
-    "src/libs" \
-    "src/capability/entrypoint.sh" \
-    "src/capability/snapshot.sh" \
-    "docs/architecture" \
-    "docs/concepts"
-}
-
-# _agent_sig_sources <repo_root> <provider>
-# Source paths for an agent image (maps to /opt/sandbox/ + /opt/workflow/).
-# Provider-specific paths (config/, preflight.sh) included only when they exist.
-_agent_sig_sources() {
-  local repo_root="$1"
-  local provider="$2"
-  printf '%s\n' \
-    "src/libs" \
-    "src/reasoning/entrypoint.sh" \
-    "docs/architecture" \
-    "docs/concepts" \
-    "src/reasoning/agent/skills" \
-    "src/reasoning/agent/prompts"
-  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
-    printf '%s\n' "src/reasoning/providers/$provider/config"
-  fi
-  if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
-    printf '%s\n' "src/reasoning/providers/$provider/preflight.sh"
-  fi
-}
 
 # -------------------------
 # Build execution
 # -------------------------
-
-# container_sig <repo_root> <source_path...>
-# Computes a deterministic SHA-256 hash of all files under the given source
-# directories. The source paths are repo-relative (e.g. src/libs) and are
-# passed positionally as individual arguments (typically via "${arr[@]}").
-# Returns a hex string suitable for use as a Docker label value.
-container_sig() {
-  local repo_root="${1:?container_sig requires repo_root}"
-  shift 1
-  local sources=("$@")
-  local find_args=()
-  local src
-  for src in "${sources[@]}"; do
-    find_args+=("$repo_root/$src")
-  done
-
-  # Fail-closed guard: every source path must exist. `find` on a missing path
-  # returns non-zero, which under `set -e`/`pipefail` inside this command
-  # substitution would abort the whole script with no output. Surface it
-  # explicitly instead of hashing an empty set or failing silently.
-  local base
-  for base in "${find_args[@]}"; do
-    if [[ ! -e "$base" ]]; then
-      echo "container_sig: ERROR: source path not found: $base" >&2
-      return 1
-    fi
-  done
-
-  find "${find_args[@]}" -type f -print0 2>/dev/null \
-    | sort -z \
-    | xargs -0 sha256sum \
-    | sha256sum \
-    | awk '{print $1}'
-}
 
 # build_image <image_name> <dockerfile> <repo_root> <container_sig> <no_cache> [docker build args...]
 # Builds using repo root as docker build context.
@@ -303,8 +238,10 @@ preflight() {
 }
 
 # _check_container_sig <image_name> <type: sandbox|agent> <...>
-# Reads the baked container-sig label from an existing image, re-computes
-# from current source files, and warns on mismatch.
+# Warns when an existing image is image-stale (baked `container-sig` label != a
+# recomputation of current source). Delegates the staleness decision to the
+# shared predicate `image_is_stale` (src/libs/container_sig.sh) so build and
+# prune agree on the exact criterion.
 # Type-specific args:
 #   sandbox: <repo_root>
 #   agent:   <provider> <repo_root>
@@ -313,34 +250,23 @@ _check_container_sig() {
   local type="${2:?}"
   shift 2
 
-  local baked_sig
-  baked_sig="$(docker image inspect --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' "$image_name" 2>/dev/null || true)"
-
-  if [[ -z "$baked_sig" ]]; then
-    echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
-    return 0
+  local provider="" repo_root=""
+  if [[ "$type" == "agent" ]]; then
+    provider="${1:?}"
+    repo_root="${2:?}"
+  else
+    repo_root="${1:?}"
   fi
 
-  local current_sig=""
-  if [[ "$type" == "sandbox" ]]; then
-    local repo_root="${1:?}"
-    local sandbox_sources
-    mapfile -t sandbox_sources < <(_sandbox_sig_sources)
-    current_sig="$(container_sig "$repo_root" "${sandbox_sources[@]+${sandbox_sources[@]}}")"
-  elif [[ "$type" == "agent" ]]; then
-    local provider="${1:?}"
-    local repo_root="${2:?}"
-    local agent_sources
-    mapfile -t agent_sources < <(_agent_sig_sources "$repo_root" "$provider")
-    current_sig="$(container_sig "$repo_root" "${agent_sources[@]+${agent_sources[@]}}")"
-  fi
-
-  if [[ "$baked_sig" != "$current_sig" ]]; then
-    echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
-    echo "  baked:    $baked_sig" >&2
-    echo "  current:  $current_sig" >&2
-    echo "  Rebuild with --rebuild to update." >&2
-  fi
+  case "$(image_is_stale "$image_name" "$type" "$repo_root" "$provider") " in
+    stale*)
+      echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
+      echo "  Rebuild with --rebuild to update." >&2
+      ;;
+    unknown*)
+      echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
+      ;;
+  esac
 }
 
 # =============================================================================

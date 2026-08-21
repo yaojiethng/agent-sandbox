@@ -120,7 +120,10 @@ staleness — `host-head-sha` vs current `HEAD` — plus optional `PROVIDER` /
 networks, volumes labeled `sandbox-dir` whose `session-id` has no record),
 delivery-scoped (copy → volume + containers; mount → registry resources only;
 worktrees never touched). `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
-`STALE=image` (image staleness) is not yet implemented and errors.
+`STALE=sandbox|image|all` select the sandbox-stale / image-stale / either
+criterion; image staleness compares the referenced image's baked
+`container-sig` label against a recomputation of the current source
+(`20260821-09`).
 
 ---
 

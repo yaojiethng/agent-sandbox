@@ -35,6 +35,17 @@ _session_id_for() {
   echo "${DOCKER_STUB_SESSION_ID_LABEL:-}"
 }
 
+# _sig_for IMAGE — resolve the container-sig label reported for an image.
+# DOCKER_STUB_IMAGE_SIG_LABELS is a space-separated `image:sig` map (per-image);
+# DOCKER_STUB_IMAGE_SIG_LABEL is a single fallback for all images.
+_sig_for() {
+  local img="$1" pair
+  for pair in ${DOCKER_STUB_IMAGE_SIG_LABELS:-}; do
+    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_IMAGE_SIG_LABEL:-}"
+}
+
 # --- docker compose ---
 if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
   shift
@@ -98,7 +109,7 @@ if [[ "$CMD" == "docker" ]]; then
       elif [[ "$*" == *"session-id"* ]]; then
         # Registry-truth Rule 2 orphan detection reads each resource's
         # agent-sandbox.session-id label (per-resource map or fallback).
-        echo "$(_session_id_for "${1:-}")"
+        _session_id_for "${1:-}"
       else
         echo '{"Config":{"Labels":{"agent-sandbox.container-sig":"stub"}}}'
       fi
@@ -128,7 +139,7 @@ if [[ "$CMD" == "docker" ]]; then
         read -ra _net_ids <<< "$DOCKER_STUB_NETWORK_IDS"
         printf '%s\n' "${_net_ids[@]}"
       elif [[ "${1:-}" == "inspect" && "$*" == *"session-id"* ]]; then
-        echo "$(_session_id_for "${2:-}")"
+        _session_id_for "${2:-}"
       fi
       ;;
     volume)
@@ -146,7 +157,7 @@ if [[ "$CMD" == "docker" ]]; then
           # Identity labels are read via --format. Return valid JSON with
           # labels from env vars that start_agent.sh sets.
           if [[ "$*" == *"session-id"* ]]; then
-            echo "$(_session_id_for "${1:-}")"
+            _session_id_for "${1:-}"
             exit 0
           fi
           cat <<'STUBEOF'
@@ -177,7 +188,13 @@ STUBEOF
     image)
       log "image $*"
       if [[ "$1" == "inspect" ]]; then
-        echo '[{"Id":"stub"}]'
+        # container-sig reads the baked label via --format; stub it via a
+        # per-image map or single fallback (empty = no label / missing image).
+        if [[ "$*" == *"container-sig"* ]]; then
+          _sig_for "${@: -1}"
+        else
+          echo '[{"Id":"stub"}]'
+        fi
       fi
       ;;
     build)
