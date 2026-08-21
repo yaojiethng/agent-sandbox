@@ -194,6 +194,7 @@ state: probation
 scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` `### Character set` generalized to cover non-ASCII + control/formatting symbols + audit-check entry. Functional `§` scrubbed from frequently-read live docs; only deliberate literals remain (documentation_policy rule, AGENT_FEEDBACK finding record). Closed handovers retain `§` (read-only, out of scope). Monitor for resurfacing (new `§`/non-ASCII in live docs). When confirmed durable, delete and record in changelog/roadmap.
+resurfaced: session `20260821-02` — introduced `§Q7`/`§N2`/`§Numbering` in the start/resume design handover's cross-references. Cause: imitating `§` from a closed-handover reference without checking the target doc or the policy. Not durable yet — keep monitoring; scrub on sight in live docs.
 
 ### [A] 2026-08-09 — Tracked-backlog proliferation at close
 
@@ -209,12 +210,13 @@ scoped: none
 legacy: none
 mitigation: when a sed -i pipeline omits the file operand while still parsing validly, it exits 0 and writes nothing; set -e does not catch it. Verify the file changed after a mechanical edit sweep. Cross-reference: bash-scripting-traps skill.
 
-### [A] 2026-08-09 - A "did the write land?" reflex is missing for rule edits
+### [A] 2026-08-09 — A "did the write land?" reflex is missing for rule edits
 
 state: open
 scoped: none
 legacy: none
 mitigation: session 08 proposed, refined, then swept an em-dash rule, but the rule text itself was never applied; the un-applied edit surfaced only at AC-verification grep. When an edit is intended to change a rule, grep the canonical line after writing to confirm the intended text landed.
+additional-resurfacing: session `20260821-02` — multi-edit rewrites of a single handover Decisions block repeatedly clobbered unrelated decision entries (D2, D5, D8 individually dropped across successive `edit` calls) because successive edits to the same block were matched against the pre-edit original and overlapped. Lesson: when editing a numbered block repeatedly, prefer one rewrite of the whole block (or verify decision integrity with a grep of all headers after each batch), not piecewise edits that can drop siblings.
 
 ### [A] 2026-08-09 - Mid-session findings under-recorded during an edit-heavy session
 
