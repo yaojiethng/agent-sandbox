@@ -51,7 +51,7 @@ Stops any running session for this project, builds missing images if needed, sna
 Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped.
 
 - `SESSION_ID=<id>` — resume that specific session silently (recommended).
-- `LIST=1` — list resumable sessions as an enriched table (`SESSION_ID | provider | session-ts | branch`), newest first. Accepts an optional `PROVIDER=<n>` filter.
+- `LIST=1` — list resumable sessions as an enriched table (`SESSION_ID | provider | session-ts | branch | sandbox-staleness`), newest first. The `sandbox-staleness` column is registry-truth (D7): `fresh` when the session's recorded `host-head-sha` equals the current project HEAD, `stale` when it differs, `unknown` when it cannot be determined. Accepts an optional `PROVIDER=<n>` filter.
 - `INTERACTIVE=1` — interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Accepts an optional `PROVIDER=<n>` filter.
 - `PROVIDER=<n>` — filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
 

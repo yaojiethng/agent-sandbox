@@ -32,8 +32,6 @@ set -euo pipefail
 # -------------------------
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# interactive.sh sources routing.sh via ${AGENT_SANDBOX_REPO}; mirror the dispatcher.
-AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$REPO_ROOT}"
 
 # Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
 # common.sh does not touch script-dir variables — this script's own value above stands.
@@ -172,9 +170,9 @@ validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 # created.
 _start_providers() {
   # Actionable providers = directories under src/reasoning/providers/ that
-  # carry a provider.dockerfile (same source build.sh enumerates).
+  # carry a provider.dockerfile (mirrors build_agent's dockerfile check).
   local p
-  for p in "$AGENT_SANDBOX_REPO"/src/reasoning/providers/*/; do
+  for p in "$REPO_ROOT"/src/reasoning/providers/*/; do
     [[ -f "${p}provider.dockerfile" ]] || continue
     basename "$p"
   done
@@ -189,7 +187,7 @@ _start_wizard() {
     exit 1
   fi
 
-  source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
+  source "$REPO_ROOT/scripts/workflows/interactive.sh"
 
   # Provider picker — only when --provider was not supplied (D1: supplied
   # args override the suggested default rather than being re-prompted).
@@ -201,7 +199,7 @@ _start_wizard() {
     done
 
     if [[ "${#PROVIDER_ENTRIES[@]}" -eq 0 ]]; then
-      echo "Error: no providers found under $AGENT_SANDBOX_REPO/src/reasoning/providers/" >&2
+      echo "Error: no providers found under $REPO_ROOT/src/reasoning/providers/" >&2
       exit 1
     fi
 

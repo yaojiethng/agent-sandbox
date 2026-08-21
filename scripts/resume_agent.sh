@@ -19,9 +19,6 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# interactive.sh sources routing.sh via ${AGENT_SANDBOX_REPO}; mirror the dispatcher.
-AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$REPO_ROOT}"
-
 # -------------------------
 # Usage / help
 # -------------------------
@@ -93,14 +90,38 @@ record_label() {
     | sed -E 's/.*'"$label"':[[:space:]]*//'
 }
 
+# session_stale FILE [CURRENT_SHA] — prints the registry-truth sandbox
+# staleness (D7) of a session record: "fresh" if its host-head-sha matches the
+# current project HEAD, "stale" if it differs, "unknown" if the record has no
+# host-head-sha or the current HEAD cannot be determined.
+session_stale() {
+  local file="$1" current_sha="${2:-}"
+  local rec_sha
+  rec_sha="$(record_label "$file" host-head-sha)"
+  [[ -n "$rec_sha" ]] || { echo "unknown"; return 0; }
+  if [[ -z "$current_sha" && -n "$PROJECT_DIR" ]]; then
+    current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
+  fi
+  if [[ -n "$current_sha" ]]; then
+    if [[ "$rec_sha" == "$current_sha" ]]; then echo "fresh"; else echo "stale"; fi
+  else
+    echo "unknown"
+  fi
+}
+
 # Enumerate the session inventory into RESUME_INVENTORY: one line per record of
-# the form `SESSION_ID|provider|session-ts|branch`, optionally filtered by
+# the form `SESSION_ID|provider|session-ts|branch|stale`, optionally filtered by
 # PROVIDER_FILTER. Records whose provider cannot be recovered are skipped.
+# `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7 — see session_stale).
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
   local compose_dir="${SANDBOX_DIR:-}/.compose"
   [[ -n "$SANDBOX_DIR" && -d "$compose_dir" ]] || return 1
+  local current_sha stale
+  if [[ -n "$PROJECT_DIR" ]]; then
+    current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
+  fi
   local f sid provider ts branch
   for f in "$compose_dir"/*.yml; do
     [[ -f "$f" ]] || continue
@@ -112,7 +133,8 @@ build_inventory() {
     fi
     ts="$(record_label "$f" session-ts)"
     branch="$(record_label "$f" host-branch)"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch" )
+    stale="$(session_stale "$f" "$current_sha")"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale" )
   done
   # Newest first by session-ts.
   local sorted
@@ -142,11 +164,11 @@ if [[ "$RESUME_LIST" == true ]]; then
     fi
     exit 1
   fi
-  echo "Resumable sessions (make resume SESSION_ID=<id>):"
-  _line=; sid=; provider=; ts=; branch=
+  echo "Resumable sessions (make resume SESSION_ID=<id>):  [sandbox stale/fresh/unknown]"
+  _line=; sid=; provider=; ts=; branch=; stale=
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch <<< "$_line"
-    printf '  %-8s  %-10s  %-17s  %s\n' "$sid" "$provider" "$ts" "$branch"
+    IFS='|' read -r sid provider ts branch stale <<< "$_line"
+    printf '  %-8s  %-10s  %-17s  %-22s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale"
   done
   exit 0
 fi
@@ -166,12 +188,13 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # Build the picker entries (value|display), then pick + confirm.
   # Explicit --interactive always shows the picker + confirm, even for a sole
   # record (decision I-1) — the deliberately slow mode.
-  PICKER=(); _line=; sid=; provider=; ts=; branch=
+  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch <<< "$_line"
-    PICKER+=( "$sid|$sid  $provider  $ts  $branch" )
+    IFS='|' read -r sid provider ts branch stale <<< "$_line"
+    _std="status"; [[ "$stale" == "stale" ]] && _std="STALE"
+    PICKER+=( "$sid|$sid  $provider  $ts  $branch  [$_std]" )
   done
-  source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
+  source "$REPO_ROOT/scripts/workflows/interactive.sh"
   chosen="$(interactive_pick "Resume which session?" PICKER)" || exit 1
 
   disp_provider="$(record_provider "$SANDBOX_DIR/.compose/$chosen.yml")"

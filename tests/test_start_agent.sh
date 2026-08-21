@@ -514,18 +514,13 @@ test_wizard_provider_supplied_no_reprompt() {
 # existing non-interactive start pipeline.
 test_wizard_accept_runs_to_completion() {
   local dir="$FIXTURE_DIR/wizard_accept"
-  mkdir -p "$dir/project" "$dir/sandbox/.workspace/session-diffs" \
+  mkdir -p "$dir/sandbox/.workspace/session-diffs" \
            "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
   cat > "$dir/sandbox/.env" <<EOF
 SANDBOX_DIR=$dir/sandbox
 PROJECT_DIR=$dir/project
 EOF
-  git -C "$dir/project" init -q
-  git -C "$dir/project" config user.email "t@t"
-  git -C "$dir/project" config user.name "t"
-  echo x > "$dir/project/f.txt"
-  git -C "$dir/project" add -A
-  git -C "$dir/project" commit -qm init
+  make_committed_repo "$dir/project"
 
   local out rc trace
   trace="$dir/trace.log"

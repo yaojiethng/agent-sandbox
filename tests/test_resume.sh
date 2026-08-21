@@ -187,6 +187,44 @@ EOF
   fi
 }
 
+# --list renders a sandbox-staleness column (registry-truth, D7): a record whose
+# host-head-sha matches the current project HEAD is 'fresh', a differing one is
+# 'stale' (restores the criterion lost in the command-split; finding 20260821-05).
+test_list_shows_sandbox_staleness() {
+  local dir="$FIXTURE_DIR/staleness"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  # A git project so current HEAD is determinable.
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  local head_sha
+  head_sha="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head_sha
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  agent:
+    image: pi-agent-test-project
+EOF
+  cat > "$dir/sandbox/.compose/bbb.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef99
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260820-120000
+services:
+  agent:
+    image: hermes-agent-test-project
+EOF
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -q "aaa.*main.*fresh" && echo "$out" | grep -q "bbb.*main.*stale"; then
+    pass "resume --list: sandbox-staleness column marks matching= fresh, differing= stale"
+  else
+    fail "resume --list: expected fresh+stale staleness column, got: $out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -200,6 +238,7 @@ run_test test_interactive_confirm_abort
 run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
+run_test test_list_shows_sandbox_staleness
 
 echo ""
 echo "Test complete: $PASS passed, $FAIL failed."

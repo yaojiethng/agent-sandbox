@@ -21,6 +21,10 @@
 # No set -euo pipefail here — this file is always sourced, never executed directly.
 # Safety settings are inherited from the parent script.
 
+# Self-locate the repo root (mirrors draft.sh/apply.sh) so routing.sh can be
+# sourced regardless of how interactive.sh is invoked. Callers may pre-set
+# AGENT_SANDBOX_REPO (e.g. the dispatcher) to override the default.
+: "${AGENT_SANDBOX_REPO:="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"}"
 # Source routing.sh for dirs_resolve
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 
