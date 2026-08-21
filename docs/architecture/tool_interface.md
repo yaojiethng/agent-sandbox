@@ -97,6 +97,22 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
+### `make prune [STALE=<sandbox|all>] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
+
+Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** — Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
+
+**Rule 1 — stale records.** A `.compose/<session-id>.yml` record is selected when its recorded `host-head-sha` differs from the current project HEAD (sandbox staleness, registry-truth — see `docs/concepts/terminology.md` `## staleness`) and it is older than `AGE_DAYS` (default 3). Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
+
+- `STALE=<kind>` — staleness kind to target: `sandbox` (repo out of date) or `all`/unset (all implemented kinds). `STALE=image` (baked `container-sig` vs recomputed `container_sig`) is **not yet implemented** and errors (D8-6).
+- `PROVIDER=<n>` — narrow Rule 1's selection to records of that provider (same filter as `make resume`).
+
+**Rule 2 — orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy → volume + containers; mount → registry resources only. Worktrees are **never** touched.
+
+- `INTERACTIVE=1` (flag `--interactive`) — show the prune plan (records + orphaned resources), print the equivalent non-interactive command, then confirm with a y/N prompt before acting.
+- `DRY_RUN=1` (flag `--dry-run`) — print the plan without acting.
+
+---
+
 ### `make apply DIFF=<path> [BRANCH=<branch>] [FORCE=1]`
 
 Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.

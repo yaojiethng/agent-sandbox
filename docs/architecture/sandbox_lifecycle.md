@@ -111,6 +111,17 @@ inventory and confirms before resuming (also `PROVIDER=<n>`-filterable). The
 legacy volume-label resume machinery was removed from `start` (see
 `20260821-04`).
 
+**Session prune (`make prune`):** the registry-based prune (Rules 1+2,
+`20260821-08`) replaces the legacy volume-label `--stale` + `docker system
+prune` path. It is always a complete pass: **Rule 1** removes stale
+`.compose/<session-id>.yml` records (selected by registry-truth sandbox
+staleness — `host-head-sha` vs current `HEAD` — plus optional `PROVIDER` /
+`AGE_DAYS` filters); **Rule 2** removes now-orphaned resources (containers,
+networks, volumes labeled `sandbox-dir` whose `session-id` has no record),
+delivery-scoped (copy → volume + containers; mount → registry resources only;
+worktrees never touched). `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
+`STALE=image` (image staleness) is not yet implemented and errors.
+
 ---
 
 ## Phase 2 — Work

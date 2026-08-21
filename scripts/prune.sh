@@ -1,109 +1,363 @@
 #!/usr/bin/env bash
 # scripts/prune.sh
 #
-# Removes aged containers, images, networks, and volumes for a single
-# project+sandbox instance. Never touches resources from other projects.
-# Volumes are only removed when no associated container (stopped or
-# running) references them — container persistence ensures a stopped
-# container keeps its volume until the container itself ages out.
+# Registry-based prune (Rules 1+2) for a single project+sandbox instance.
+# Replaces the legacy volume-label `--stale` + `docker system prune` path.
+# The `.compose/<session-id>.yml` registry is the source of truth for which
+# sessions exist and whether they are stale.
+#
+# INVARIANT — the prune outcome is a partition of sessions. After prune, every
+# session is either **fully pruned** (its record AND its resources are gone) or
+# **fully kept** (its record AND its resources are intact) — never partial, and
+# never collateral damage to a kept session's resources. A stale record is
+# removed by Rule 1; that makes its session's resources orphaned, and Rule 2
+# removes them in the same pass. A resource is orphaned iff its session has no
+# record on disk, so a kept session (record present) is never touched.
 #
 # Usage:
-#   prune.sh --name=<project_name> --sandbox=<path> [--stale]
+#   prune.sh --name=<project> --project=<path> --sandbox=<path> \
+#       [--stale=<sandbox|image|all>] [--provider=<n>] [--age-days=<n>] \
+#       [--interactive] [--dry-run]
 #
-#   --stale    Prune only stale volumes (host-head-sha != current HEAD) immediately,
-#              bypassing the age threshold. Non-stale volumes are left untouched.
-#              Also prunes aged containers, images, and networks as normal.
+# Two rules (design `20260818-02`, mount-model record #7), always run as a
+# complete pass (no partial/scope split; simulation is --dry-run):
+#   Rule 1 — remove stale `.compose/*.yml` records.
+#   Rule 2 — remove resources (containers, networks, volumes) labeled
+#            `agent-sandbox.sandbox-dir` whose session has NO `.compose` record.
 #
-# Can be called standalone or via `make stop PRUNE=1 STALE=1` (which delegates here).
+# Execution is strictly sequential: Rule 1 removes the records first, then
+# Rule 2 re-derives its orphan list against the updated registry — a resource
+# is an orphan iff its session has no record on disk. Removing a stale record
+# therefore makes that session's resources orphaned, and the fresh Rule 2 scan
+# catches them in the same pass. No in-memory contract couples the two rules;
+# the registry is the single source of truth at each step.
+#
+# Preview (--dry-run / --interactive) cannot delete-then-rescan, so it treats a
+# Rule-1-selected session's record as already removed to predict Rule 2's
+# result. That prediction is render-only; the real action always re-scans.
+#
+# Rule 1 selection (registry-truth, D7 / `session_stale`):
+#   A record is selected when its recorded `host-head-sha` differs from the
+#   current project HEAD (`STALE=sandbox`) and it is older than AGE_DAYS.
+#   `--stale=sandbox|all` — the implemented staleness kinds.
+#   `--stale=image` is NOT yet implemented (D8-6) and errors.
+#
+# Rule 2 scope: delivery-scoped in effect — copy sessions register a volume,
+# mount sessions do not, so removing labeled resources yields copy → volume +
+# containers and mount → registry resources only. Worktrees are never touched.
 
 set -euo pipefail
 
 PRUNE_AGE_DAYS=3
-STALE_ONLY=false
+STALE_KIND="${STALE_KIND:-}"      # sandbox|image|all (empty = all implemented)
+AGE_DAYS="${AGE_DAYS:-$PRUNE_AGE_DAYS}"
+PROVIDER_FILTER=""
+INTERACTIVE_FLAG=false
+DRY_RUN_FLAG=false
+PROJECT_DIR=""
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox prune --name=<name> --sandbox=<path> [--stale]
+Usage: agent-sandbox prune --name=<name> --project=<path> --sandbox=<path> [options]
 
-Removes aged containers, images, and networks for a given
-project+sandbox instance older than ${PRUNE_AGE_DAYS} days.
-Only touches resources belonging to this project.
+Registry-based prune: removes stale session records and orphaned resources
+for this project+sandbox. Always a complete pass (Rule 1 records + Rule 2
+resources). Simulation is --dry-run; confirmation is --interactive.
 
 Options:
-  --stale    Prune only stale volumes immediately (no age check).
+  --stale=<kind>   Staleness kind to target: sandbox (repo out of date),
+                   or all (default when omitted). 'image' is not yet implemented.
+  --provider=<n>   Narrow stale-record selection to this provider.
+  --age-days=<n>   Stale-record age cutoff (default ${PRUNE_AGE_DAYS} days).
+  --interactive    Show the prune plan + equivalent command, then confirm.
+  --dry-run        Print what would be pruned without acting.
 
 Required:
   --name=<name>       Project name
+  --project=<path>    Project repository path (for current HEAD)
   --sandbox=<path>    Path to the sandbox directory
 EOF
 }
 
-# Parse --stale before sourcing common.sh (which only handles --name/--sandbox).
+# -------------------------
+# Flag parsing + validation
+# -------------------------
 for ARG in "$@"; do
   case "$ARG" in
-    --stale) STALE_ONLY=true ;;
+    --stale=*)         STALE_KIND="${ARG#--stale=}" ;;
+    --provider=*)      PROVIDER_FILTER="${ARG#--provider=}" ;;
+    --age-days=*)      AGE_DAYS="${ARG#--age-days=}" ;;
+    --interactive)     INTERACTIVE_FLAG=true ;;
+    --dry-run)         DRY_RUN_FLAG=true ;;
   esac
 done
 
-# REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
+source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 parse_help_flag "$@"
 parse_base_flags "$@"
+for ARG in "$@"; do
+  case "$ARG" in
+    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+  esac
+done
 check_base_flags
+if [[ -z "$PROJECT_DIR" ]]; then
+  echo "Error: --project is required (need the current HEAD for staleness)." >&2
+  usage >&2
+  exit 1
+fi
 
-if [[ "$STALE_ONLY" == true ]]; then
-  echo "Pruning stale volumes immediately..."
+# Staleness-kind validation (D8-6): image staleness is not yet implemented.
+case "$STALE_KIND" in
+  ""|sandbox|all) ;;
+  image)
+    echo "Error: --stale=image is not yet implemented." >&2
+    echo "  Image staleness (baked agent-sandbox.container-sig vs recomputed"
+    echo "  container_sig) is deferred to a future iteration. Use"
+    echo "  --stale=sandbox or --stale=all." >&2
+    exit 1
+    ;;
+  *)
+    echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox, image, or all)." >&2
+    usage >&2
+    exit 1
+    ;;
+esac
 
-  current_sha=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+if [[ ! "$AGE_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "Error: --age-days must be a non-negative integer (got '$AGE_DAYS')." >&2
+  usage >&2
+  exit 1
+fi
 
-  docker volume ls \
-    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" \
-    --format '{{.Name}}' 2>/dev/null \
-  | while read -r vol; do
-    [[ -z "$vol" ]] && continue
+# -------------------------
+# Rule 1: selected stale records
+# -------------------------
+# Prints `session-id|provider|ts|branch|delivery|stale` for each selected stale
+# record. Best-effort; never fails the prune on a malformed record.
+rule1_selected_records() {
+  local compose_dir="$SANDBOX_DIR/.compose"
+  [[ -d "$compose_dir" ]] || return 0
+  local current_sha
+  current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
+  local cutoff_ts
+  cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null || true)"
 
-    vol_sha=$(docker volume inspect "$vol" \
-      --format '{{index .Labels "agent-sandbox.host-head-sha"}}' 2>/dev/null || true)
-
-    if [[ -z "$vol_sha" ]]; then
-      echo "  Skipping $vol (no host-head-sha label — may be from older harness)"
+  local f sid provider ts branch delivery stale rec_day
+  for f in "$compose_dir"/*.yml; do
+    [[ -f "$f" ]] || continue
+    sid="$(basename "$f" .yml)"
+    provider="$(record_provider "$f")"
+    [[ -n "$provider" ]] || continue
+    if [[ -n "$PROVIDER_FILTER" && "$provider" != "$PROVIDER_FILTER" ]]; then
       continue
     fi
-
-    if [[ "$vol_sha" != "$current_sha" ]]; then
-      echo "  Removing stale volume: $vol (SHA: ${vol_sha:0:7}, current: ${current_sha:0:7})"
-      docker volume rm "$vol" 2>/dev/null || \
-        echo "  Warning: could not remove $vol (may be in use by a container)"
-    else
-      echo "  Keeping fresh volume: $vol"
+    # Selection: sandbox-stale (STALE=sandbox/all) AND older than AGE_DAYS.
+    stale="$(session_stale "$f" "$current_sha")"
+    [[ "$stale" == "stale" ]] || continue
+    ts="$(record_label "$f" session-ts)"
+    ts="${ts:-00000000-000000}"
+    if [[ -n "$cutoff_ts" ]]; then
+      rec_day="${ts:0:8}"
+      [[ -z "$rec_day" || "$rec_day" > "$cutoff_ts" ]] && continue
     fi
+    branch="$(record_label "$f" host-branch)"
+    # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
+    # delivery overlay). Disclosure in the plan only — it gates neither rule.
+    delivery="$(env_field "$f" SANDBOX_TYPE)"
+    printf '%s|%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery" "$stale"
   done
+}
 
-  echo "Stale volume prune complete."
-else
-  echo "Pruning orphaned resources older than ${PRUNE_AGE_DAYS} days..."
+# env_field FILE VAR — read a `VAR=value` from any service `environment:`
+# block in a registry record (e.g. `SANDBOX_TYPE=mount`).
+env_field() {
+  local file="$1" var="$2"
+  grep -E "[[:space:]]*-[[:space:]]*${var}=[^[:space:]]+" "$file" \
+    | sed -E "s/.*[[:space:]]-*[[:space:]]*${var}=([^[:space:]]+).*/\1/" | head -1 || true
+}
 
-  # Build the label filter string for docker system prune.
-  # docker system prune --filter supports label=<key>=<value> format.
-  local_filter="label=agent-sandbox.project-name=${PROJECT_NAME}"
-  local_filter="${local_filter},label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}"
+# -------------------------
+# Rule 2: orphaned resources
+# -------------------------
+# ORPHAN_TEST — a resource's session-id is orphaned if it has no record on
+# disk. For a predictive preview (--dry-run / --interactive) the Rule-1-selected
+# SIDs are treated as already-removed, so a session whose record is about to be
+# deleted is reported as orphaned too. Execution clears this set and re-scans
+# the genuine registry.
+TREATED_REMOVED_SIDS=()
 
-  # Prune containers, images, networks, and volumes with the label filter
-  # and age threshold. Docker prevents volume removal while any container
-  # (even stopped) references it — container and volume lifecycle are
-  # naturally coupled: the container must age out before its volume can
-  # be pruned.
-  # The label filter scopes everything to this project — no other project's
-  # resources are affected.
-  docker system prune \
-    --force \
-    --all \
-    --volumes \
-    --filter "${local_filter}" \
-    --filter "until=${PRUNE_AGE_DAYS}d" \
-    2>/dev/null || true
+# _sid_is_orphaned SID — true when the session is not a keeper (no record).
+_sid_is_orphaned() {
+  local sid="$1"
+  [[ -n "$sid" ]] || return 1
+  [[ ! -f "$SANDBOX_DIR/.compose/$sid.yml" ]] && return 0
+  local s
+  for s in "${TREATED_REMOVED_SIDS[@]:-}"; do
+    [[ "$s" == "$sid" ]] && return 0
+  done
+  return 1
+}
 
-  echo "Prune complete."
+# _session_id_of KIND ID — read `agent-sandbox.session-id` from a docker
+# resource's labels.
+_session_id_of() {
+  local kind="$1" id="$2"
+  case "$kind" in
+    container) docker inspect "$id" --format '{{index .Config.Labels "agent-sandbox.session-id"}}' 2>/dev/null || true ;;
+    network)   docker network inspect "$id" --format '{{index .Labels "agent-sandbox.session-id"}}' 2>/dev/null || true ;;
+    volume)    docker volume inspect "$id" --format '{{index .Labels "agent-sandbox.session-id"}}' 2>/dev/null || true ;;
+  esac
+}
+
+# collect_orphans KIND ID... — emit `kind|id|sid` for each resource whose
+# session is not a keeper.
+collect_orphans() {
+  local kind="$1"; shift
+  local id sid
+  for id in "$@"; do
+    [[ -n "$id" ]] || continue
+    sid="$(_session_id_of "$kind" "$id")"
+    _sid_is_orphaned "$sid" && printf '%s|%s|%s\n' "$kind" "$id" "$sid"
+  done
+}
+
+# Emits `kind|id|sid` for every orphaned resource of this project+sandbox
+# across all three resource kinds.
+rule2_orphan_resources() {
+  local -a ids=()
+  local cids nets vols
+
+  cids="$(docker ps -aq \
+    --filter "label=agent-sandbox.project-name=${PROJECT_NAME}" \
+    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" 2>/dev/null || true)"
+  mapfile -t ids <<< "$cids"
+  collect_orphans container "${ids[@]}"
+
+  nets="$(docker network ls -q \
+    --filter "label=agent-sandbox.project-name=${PROJECT_NAME}" \
+    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" 2>/dev/null || true)"
+  mapfile -t ids <<< "$nets"
+  collect_orphans network "${ids[@]}"
+
+  vols="$(docker volume ls \
+    --filter "label=agent-sandbox.sandbox-dir=${SANDBOX_DIR}" \
+    --format '{{.Name}}' 2>/dev/null || true)"
+  mapfile -t ids <<< "$vols"
+  collect_orphans volume "${ids[@]}"
+}
+
+# -------------------------
+# Preview renderers (plan display)
+# -------------------------
+show_rule1() {
+  local line sid provider ts branch delivery stale
+  printf '  %-8s %-10s %-17s %-22s %-7s %s\n' "session-id" "provider" "session-ts" "branch" "delivery" "stale"
+  for line in "${RULE1_RECS[@]}"; do
+    IFS='|' read -r sid provider ts branch delivery stale <<< "$line"
+    printf '  %-8s %-10s %-17s %-22s %-7s %s\n' "$sid" "$provider" "$ts" "${branch:-}" "${delivery:-}" "$stale"
+  done
+}
+
+show_rule2() {
+  local line kind id sid
+  for line in "${ORPHANS[@]}"; do
+    IFS='|' read -r kind id sid <<< "$line"
+    echo "  $kind: $id  (session $sid)"
+  done
+}
+
+# -------------------------
+# Build the Rule-1 selection
+# -------------------------
+mapfile -t RULE1_RECS < <(rule1_selected_records)
+# SIDS_PRUNED — the list of SIDs Rule 1 will remove (its "removal result").
+SIDS_PRUNED=( "${RULE1_RECS[@]%%|*}" )
+
+# -------------------------
+# Preview / confirm (--dry-run and --interactive) — predictive, render-only
+# -------------------------
+if [[ "$DRY_RUN_FLAG" == true || "$INTERACTIVE_FLAG" == true ]]; then
+  TREATED_REMOVED_SIDS=( "${SIDS_PRUNED[@]}" )
+  mapfile -t ORPHANS < <(rule2_orphan_resources)
+
+  if [[ "${#RULE1_RECS[@]}" -eq 0 && "${#ORPHANS[@]}" -eq 0 ]]; then
+    echo "Nothing to prune — no stale records and no orphaned resources."
+    exit 0
+  fi
+  if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
+    echo "Rule 1 — ${#RULE1_RECS[@]} stale record(s) to remove:"
+    show_rule1
+  fi
+  if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
+    echo "Rule 2 — ${#ORPHANS[@]} orphaned resource(s) to remove:"
+    show_rule2
+  fi
+
+  if [[ "$DRY_RUN_FLAG" == true ]]; then
+    echo "Dry run: nothing was removed."
+    exit 0
+  fi
+
+  # Interactive: print the equivalent non-interactive command, then confirm.
+  source "$REPO_ROOT/scripts/workflows/interactive.sh"
+  echo ""
+  PRUNE_CMD="agent-sandbox prune"
+  PRUNE_CMD+=" --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+  [[ -n "$PROVIDER_FILTER" ]] && PRUNE_CMD+=" --provider=$PROVIDER_FILTER"
+  [[ -n "$STALE_KIND" ]] && PRUNE_CMD+=" --stale=$STALE_KIND"
+  [[ -n "$AGE_DAYS" ]] && PRUNE_CMD+=" --age-days=$AGE_DAYS"
+  echo "Equivalent non-interactive command:"
+  echo "  $PRUNE_CMD"
+  echo ""
+  interactive_confirm_or_abort "Proceed with the prune above?" "$PRUNE_CMD" || exit 1
 fi
+
+# -------------------------
+# Execute — strictly sequential, reading the real registry at each step
+# -------------------------
+DID_WORK=false
+
+# Rule 1 — remove stale records (iterate the removal result directly).
+if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
+  echo "Rule 1 — removing ${#SIDS_PRUNED[@]} stale record(s):"
+  for sid in "${SIDS_PRUNED[@]}"; do
+    [[ -n "$sid" ]] || continue
+    echo "  removing record: $SANDBOX_DIR/.compose/$sid.yml"
+    rm -f "$SANDBOX_DIR/.compose/$sid.yml"
+  done
+  DID_WORK=true
+fi
+
+# Rule 2 — remove orphaned resources. Fresh scan against the updated registry
+# (the deleted records are gone, so their sessions are now orphaned here).
+TREATED_REMOVED_SIDS=()
+mapfile -t ORPHANS < <(rule2_orphan_resources)
+if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
+  echo "Rule 2 — removing ${#ORPHANS[@]} orphaned resource(s):"
+  for line in "${ORPHANS[@]}"; do
+    IFS='|' read -r kind id _ <<< "$line"
+    case "$kind" in
+      container)
+        echo "  removing orphaned container: $id"
+        docker stop "$id" 2>/dev/null || true
+        docker rm "$id" 2>/dev/null || true
+        ;;
+      network)
+        echo "  removing orphaned network: $id"
+        docker network rm "$id" 2>/dev/null || true
+        ;;
+      volume)
+        echo "  removing orphaned volume: $id"
+        docker volume rm "$id" 2>/dev/null || true
+        ;;
+    esac
+  done
+  DID_WORK=true
+fi
+
+[[ "$DID_WORK" == true ]] || echo "Nothing to prune."
+echo "Prune complete."

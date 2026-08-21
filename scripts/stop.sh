@@ -16,11 +16,9 @@
 
 set -euo pipefail
 
-PRUNE_AGE_DAYS=3
-
 usage() {
   cat <<EOF
-Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--session-id=<id>] [--prune]
+Usage: agent-sandbox stop --name=<name> --sandbox=<path> [--project=<path>] [--session-id=<id>] [--prune]
 
 Stops containers for a given sandbox.
 
@@ -29,9 +27,9 @@ Required:
   --sandbox=<path>    Path to the sandbox directory
 
 Optional:
+  --project=<path>   Project repository path (forwarded to prune for staleness)
   --session-id=<id>  Stop only the specific session (by agent-sandbox.session-id label)
-  --prune             After stopping, remove aged containers, images, and networks
-                        older than ${PRUNE_AGE_DAYS} days
+  --prune             After stopping, run the registry-based prune (prune.sh)
 EOF
 }
 
@@ -41,6 +39,7 @@ source "$REPO_ROOT/src/libs/common.sh"
 
 SESSION_ID=""
 PRUNE=false
+PROJECT_DIR=""
 
 parse_help_flag "$@"
 parse_base_flags "$@"
@@ -49,6 +48,7 @@ parse_base_flags "$@"
 for ARG in "$@"; do
   case "$ARG" in
     --name=*|--sandbox=*) ;;
+    --project=*)       PROJECT_DIR="${ARG#--project=}" ;;
     --session-id=*)  SESSION_ID="${ARG#--session-id=}" ;;
     --prune)     PRUNE=true ;;
     *)
@@ -127,8 +127,13 @@ fi
 # -------------------------
 
 if [[ "$PRUNE" == true ]]; then
+  if [[ -z "$PROJECT_DIR" ]]; then
+    echo "Error: --prune requires --project (for registry staleness)." >&2
+    exit 1
+  fi
   "$REPO_ROOT/scripts/prune.sh" \
     --name="$PROJECT_NAME" \
+    --project="$PROJECT_DIR" \
     --sandbox="$SANDBOX_DIR"
 fi
 

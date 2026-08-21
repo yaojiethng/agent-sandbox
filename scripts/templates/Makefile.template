@@ -41,9 +41,23 @@
 #   resume a previous session, use `make resume` (make resume SESSION_ID=<id>).
 #
 # STALE
-#   Optional (prune only). Remove only stale volumes immediately (no age threshold).
-#   A volume is stale when its host-head-sha label differs from the current HEAD.
-#   Example: make prune STALE=1
+#   Optional (prune only). Staleness kind to target. sandbox = session's
+#   host-head-sha differs from the current HEAD (the repo moved on); all =
+#   all implemented kinds. Image staleness (STALE=image) is not yet
+#   implemented and errors.
+#   Example: make prune STALE=sandbox
+#
+# AGE_DAYS
+#   Optional (prune only). Stale-record age cutoff (default 3 days).
+#   Example: make prune STALE=sandbox AGE_DAYS=7
+#
+# DRY_RUN
+#   Optional (prune only). Print what would be pruned without acting.
+#   Example: make prune DRY_RUN=1
+#
+# INTERACTIVE (prune)
+#   Optional (prune only). Show the prune plan + equivalent non-interactive
+#   command, then confirm before acting. Example: make prune INTERACTIVE=1
 #
 # BUILD TARGETS
 #   make build                        — builds sandbox + all providers
@@ -75,6 +89,8 @@ BUNDLE_SUMMARY ?=
 BASELINE ?=
 ALL ?=
 STALE        ?=
+AGE_DAYS     ?=
+DRY_RUN      ?=
 
 # Guard: reject known misspelled variables
 # Make silently ignores unknown variable overrides. Catch the common mistakes.
@@ -83,7 +99,7 @@ $(error CHANNEL is not a Make variable. Did you mean FROM? Example: make $(MAKEC
 endif
 
 ifdef STALE_ONLY
-$(error STALE_ONLY is not a Make variable. Did you mean STALE? Example: make prune STALE=1)
+$(error STALE_ONLY is not a Make variable. Did you mean STALE? Example: make prune STALE=sandbox)
 endif
 
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
@@ -96,7 +112,9 @@ RESUME_LIST_FLAG        = $(if $(LIST),--list,)
 RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
 RESUME_PROVIDER_FLAG    = $(if $(PROVIDER),--provider=$(PROVIDER),)
 PRUNE_FLAG        = $(if $(PRUNE),--prune,)
-STALE_FLAG        = $(if $(STALE),--stale,)
+STALE_FLAG        = $(if $(STALE),--stale=$(STALE),)
+AGE_DAYS_FLAG     = $(if $(AGE_DAYS),--age-days=$(AGE_DAYS),)
+DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
 
 .PHONY: build start serve dry-run stop apply draft confirm reject refresh help
 
@@ -117,7 +135,9 @@ help:
 	@echo "  make resume SESSION_ID=<id>      — resume a specific session (silent, recommended)"
 	@echo "  make resume LIST=1               — list resumable session ids (optional PROVIDER=<n> filter)"
 	@echo "  make resume INTERACTIVE=1        — interactive picker + confirm (optional PROVIDER=<n> filter)"
-	@echo "  make prune                        — remove stale containers and volumes"
+	@echo "  make prune STALE=<sandbox|all>   — remove stale records + orphaned resources"
+	@echo "  make prune INTERACTIVE=1        — show plan + confirm before pruning"
+	@echo "  make prune DRY_RUN=1            — print what would be pruned without acting"
 	@echo "  make draft                        — apply session patches to a draft branch"
 	@echo "  make confirm                      — merge draft branch to source"
 	@echo "  make reject                       — discard draft branch"
@@ -131,7 +151,9 @@ help:
 	@echo "  REBUILD=1        — force full rebuild including base images"
 	@echo "  SESSION_ID=<id>  — resume a specific session (make resume)"
 	@echo "  LIST=1           — list resumable session ids (make resume)"
-	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
+	@echo "  STALE=<kind>     — prune staleness kind: sandbox or all (prune only)"
+	@echo "  AGE_DAYS=<n>     — prune stale-record age cutoff, default 3 (prune only)"
+	@echo "  DRY_RUN=1        — print the prune plan without acting (prune only)"
 	@echo "  FORCE=1          — apply with --reject (draft/apply)"
 	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles (draft only)"
 	@echo "  INTERACTIVE=1    — interactive config wizard: pick provider + build policy, then start (make start)"
@@ -223,15 +245,26 @@ resume:
 # Prune
 # -------------------------
 #
+# Registry-based prune (Rules 1+2). Always a complete pass: Rule 1 removes
+# stale .compose/*.yml records; Rule 2 removes resources whose session has no
+# matching record (orphaned). Simulation is DRY_RUN=1; confirmation is
+# INTERACTIVE=1.
+#
 # STALE:
-#   make prune STALE=1 — remove only stale volumes immediately (no age threshold).
-#   A volume is stale when its host-head-sha label differs from the current HEAD.
+#   make prune STALE=sandbox — prune sessions whose host-head-sha != current
+#   HEAD (repo moved on). STALE=all = all implemented kinds.
+#   STALE=image is not yet implemented and errors.
 
 prune:
 	agent-sandbox prune \
 	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
-	  $(STALE_FLAG)
+	  $(STALE_FLAG) \
+	  $(AGE_DAYS_FLAG) \
+	  $(PROVIDER_FLAG) \
+	  $(if $(INTERACTIVE),--interactive,) \
+	  $(DRY_RUN_FLAG)
 
 # Apply workflow
 # -------------------------

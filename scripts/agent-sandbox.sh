@@ -11,7 +11,8 @@
 #   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox stop     --name=<n> --sandbox=<path>
+#   agent-sandbox stop     --name=<n> --sandbox=<path> [--project=<path>]
+#   agent-sandbox prune    --name=<n> --project=<path> --sandbox=<path> [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
@@ -71,13 +72,6 @@ main() {
   require_base_args() {
     if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
       echo "Error: --name, --project, and --sandbox are required"
-      exit 1
-    fi
-  }
-
-  require_name_sandbox() {
-    if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name and --sandbox are required"
       exit 1
     fi
   }
@@ -190,8 +184,8 @@ main() {
       ;;
 
     stop)
-      require_name_sandbox
-      exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      require_base_args
+      exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --project="$PROJECT_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     resume)
@@ -204,8 +198,8 @@ main() {
       ;;
 
     prune)
-      require_name_sandbox
-      exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      require_base_args
+      exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     apply)

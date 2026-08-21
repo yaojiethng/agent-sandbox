@@ -23,6 +23,18 @@ log() {
   echo "[$(date +%s)] $*" >> "$LOG"
 }
 
+# _session_id_for ID — resolve the agent-sandbox.session-id label reported for
+# a resource. DOCKER_STUB_SESSION_ID_LABELS is a space-separated `id:sid` map
+# (per-resource); DOCKER_STUB_SESSION_ID_LABEL is a single fallback for all.
+# Empty (unset) means the resource has no session-id label.
+_session_id_for() {
+  local id="$1" pair
+  for pair in ${DOCKER_STUB_SESSION_ID_LABELS:-}; do
+    [[ "${pair%%:*}" == "$id" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_SESSION_ID_LABEL:-}"
+}
+
 # --- docker compose ---
 if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
   shift
@@ -83,6 +95,10 @@ if [[ "$CMD" == "docker" ]]; then
         echo "${DOCKER_STUB_SANDBOX_HEALTH:-healthy}"
       elif [[ "$*" == *"State.Status"* ]]; then
         echo "running"
+      elif [[ "$*" == *"session-id"* ]]; then
+        # Registry-truth Rule 2 orphan detection reads each resource's
+        # agent-sandbox.session-id label (per-resource map or fallback).
+        echo "$(_session_id_for "${1:-}")"
       else
         echo '{"Config":{"Labels":{"agent-sandbox.container-sig":"stub"}}}'
       fi
@@ -111,6 +127,8 @@ if [[ "$CMD" == "docker" ]]; then
       if [[ "${1:-}" == "ls" && -n "${DOCKER_STUB_NETWORK_IDS:-}" ]]; then
         read -ra _net_ids <<< "$DOCKER_STUB_NETWORK_IDS"
         printf '%s\n' "${_net_ids[@]}"
+      elif [[ "${1:-}" == "inspect" && "$*" == *"session-id"* ]]; then
+        echo "$(_session_id_for "${2:-}")"
       fi
       ;;
     volume)
@@ -118,12 +136,19 @@ if [[ "$CMD" == "docker" ]]; then
       case "$vol_sub" in
         ls)
           log "volume ls $*"
-          # Return nothing by default (no existing volumes)
+          # Return nothing by default; tests stub names via DOCKER_STUB_VOLUME_NAMES
+          if [[ -n "${DOCKER_STUB_VOLUME_NAMES:-}" ]]; then
+            printf '%s\n' $DOCKER_STUB_VOLUME_NAMES
+          fi
           ;;
         inspect)
           log "volume inspect $*"
           # Identity labels are read via --format. Return valid JSON with
           # labels from env vars that start_agent.sh sets.
+          if [[ "$*" == *"session-id"* ]]; then
+            echo "$(_session_id_for "${1:-}")"
+            exit 0
+          fi
           cat <<'STUBEOF'
 [
   {

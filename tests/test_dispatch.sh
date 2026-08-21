@@ -619,15 +619,16 @@ test_reject_default() {
 
 test_stop() {
   setup
-  dispatch_and_capture stop --name=test --sandbox=/tmp/s
+  dispatch_and_capture stop --name=test --project=/tmp/p --sandbox=/tmp/s
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"stop.sh"* ]] && [[ "$c" == *"--name=test"* ]] && [[ "$c" == *"--sandbox=/tmp/s"* ]] && found=true
+    [[ "$c" == "exec"*"stop.sh"* ]] && [[ "$c" == *"--name=test"* ]] \
+      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && [[ "$c" == *"--project=/tmp/p"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "stop: execs stop.sh with name and sandbox"
+    pass "stop: execs stop.sh with name, sandbox, and project"
   else
     fail "stop: expected exec stop.sh, got: ${CAPTURED[*]}"
   fi
@@ -646,6 +647,24 @@ test_onboard() {
     pass "onboard: execs onboard.sh"
   else
     fail "onboard: expected exec onboard.sh, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_prune_dispatch() {
+  setup
+  dispatch_and_capture prune --name=test --project=/tmp/p --sandbox=/tmp/s --stale=sandbox
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"prune.sh"* ]] && [[ "$c" == *"--name=test"* ]] \
+      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && [[ "$c" == *"--project=/tmp/p"* ]] \
+      && [[ "$c" == *"--stale=sandbox"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "prune: execs prune.sh with name, project, sandbox, and passthrough flags"
+  else
+    fail "prune: expected exec prune.sh, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -734,6 +753,7 @@ run_test test_confirm_default
 run_test test_confirm_with_target
 run_test test_reject_default
 run_test test_stop
+run_test test_prune_dispatch
 run_test test_onboard
 run_test test_package_branch
 run_test test_help_no_args
