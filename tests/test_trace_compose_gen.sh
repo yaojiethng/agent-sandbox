@@ -176,10 +176,11 @@ test_copy_overlay_carries_snapshot_and_volume() {
 
   if grep -q 'sandbox-data' "$overlay" \
       && grep -q '/home/agentuser/.snapshot' "$overlay" \
-      && grep -q 'SNAPSHOT_DIR=/home/agentuser/.snapshot' "$overlay"; then
-    pass "copy overlay carries named volume + snapshot mount + snapshot env"
+      && grep -q 'SNAPSHOT_DIR=/home/agentuser/.snapshot' "$overlay" \
+      && grep -q 'SANDBOX_TYPE=copy' "$overlay"; then
+    pass "copy overlay carries named volume + snapshot mount + snapshot env + SANDBOX_TYPE=copy"
   else
-    fail "copy overlay missing volume/snapshot wiring"
+    fail "copy overlay missing volume/snapshot wiring or SANDBOX_TYPE=copy"
   fi
 }
 
@@ -192,11 +193,12 @@ test_mount_overlay_carries_worktree_not_copy_wiring() {
   fi
   grep -q 'SNAPSHOT_DIR' "$overlay" && copy_only=1
   grep -q 'sandbox-data' "$overlay" && copy_only=1
+  grep -q 'SANDBOX_TYPE=mount' "$overlay" || copy_only=1
 
   if [[ "$copy_only" -eq 0 ]]; then
-    pass "mount overlay carries worktree mount only"
+    pass "mount overlay carries worktree mount + SANDBOX_TYPE=mount only"
   else
-    fail "mount overlay missing worktree mount or carries copy wiring"
+    fail "mount overlay missing worktree mount/SANDBOX_TYPE=mount or carries copy wiring"
   fi
 }
 

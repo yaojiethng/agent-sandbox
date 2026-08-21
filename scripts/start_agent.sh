@@ -461,6 +461,13 @@ echo "Session ID: $SESSION_ID"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
 
+# Delivery type — SANDBOX_TYPE=copy|mount, default copy. Copy builds a snapshot;
+# mount materializes a host worktree (WORKTREE_DIR, default $SANDBOX_DIR/.worktree)
+# that is bind-mounted into the container. run_agent.sh consumes the same variable
+# to select the compose delivery overlay.
+export SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
+export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
+
 # -------------------------
 # Workspace directory setup and snapshot pipeline
 # -------------------------
@@ -468,7 +475,28 @@ if [[ "$RESUME_SESSION" == true ]]; then
   # Resume path: workspace dirs should already exist (bind mounts),
   # but ensure they do in case the user cleaned them manually.
   mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
-  echo "Resuming session — snapshot pipeline skipped (volume has existing git state)"
+  echo "Resuming session — pipeline skipped (existing git state)"
+elif [[ "$SANDBOX_TYPE" == "mount" ]]; then
+  # Mount delivery: materialize the host worktree (bind-mounted into the
+  # container). Use the shared snapshot primitive minus baseline.tar — rsync
+  # the working tree, then git-init + baseline commit so .git exists. The
+  # container writes the SESSION_STATE init marker into the worktree .git.
+  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+
+  if [[ ! -d "$WORKTREE_DIR/.git" ]]; then
+    echo "Mount delivery: materializing worktree at $WORKTREE_DIR"
+    snapshot_copy_worktree "$PROJECT_DIR" "$WORKTREE_DIR"
+    git -C "$WORKTREE_DIR" init --quiet
+    git -C "$WORKTREE_DIR" config user.email "agent@sandbox"
+    git -C "$WORKTREE_DIR" config user.name "agent-sandbox"
+    git -C "$WORKTREE_DIR" config core.fileMode false
+    git -C "$WORKTREE_DIR" add -A
+    git -C "$WORKTREE_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet
+    echo "Mount worktree baseline ready."
+  else
+    echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
+  fi
 else
   # Clean the snapshot directory before building a fresh snapshot.
   # Without this, files from a previous run that are no longer in PROJECT_DIR

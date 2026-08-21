@@ -15,3 +15,5 @@ services:
       - type: bind
         source: ${WORKTREE_DIR}
         target: /home/agentuser/sandbox
+    environment:
+      - SANDBOX_TYPE=mount

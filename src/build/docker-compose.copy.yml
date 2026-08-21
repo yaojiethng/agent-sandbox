@@ -36,3 +36,4 @@ services:
         read_only: true
     environment:
       - SNAPSHOT_DIR=/home/agentuser/.snapshot
+      - SANDBOX_TYPE=copy

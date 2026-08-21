@@ -127,13 +127,13 @@ package_commits() {
       DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
     fi
 
-    local GIT_DIFF_OPTS="--binary"
+    local GIT_DIFF_OPTS=(--binary)
     if [[ "$NO_RENAMES" == "true" ]]; then
-      GIT_DIFF_OPTS="--binary --no-renames"
+      GIT_DIFF_OPTS=(--binary --no-renames)
     fi
-    git -C "$SANDBOX_DIR" diff $GIT_DIFF_OPTS "${PREVIOUS_SHA}..${COMMIT_SHA}" \
+    git -C "$SANDBOX_DIR" diff "${GIT_DIFF_OPTS[@]}" "${PREVIOUS_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
-      | sed -e '$a\' \
+      | awk '{print} END{print ""}' \
       > "$DIFF_FILE"
 
     # Write sibling .msg file with full commit message

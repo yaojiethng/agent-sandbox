@@ -121,7 +121,7 @@ make_real_session() {
     git -C "$SANDBOX" diff "${PREV_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
       | sed 's/[[:space:]]*$//' \
-      | sed -e '$a\' \
+      | awk '{print} END{print ""}' \
       > "$SESSION_DIR/patches/${PADDING}-${COMMIT_SHA}.diff"
     PREV_SHA="$COMMIT_SHA"
     COMMIT_NUM=$((COMMIT_NUM + 1))
@@ -130,7 +130,7 @@ make_real_session() {
   # Write all-changes.diff and uncommitted.diff
   git -C "$SANDBOX" diff --binary -M "${BASELINE_SHA}..HEAD" \
     > "$SESSION_DIR/all-changes.diff"
-  > "$SESSION_DIR/uncommitted.diff"
+  : > "$SESSION_DIR/uncommitted.diff"
 }
 
 # =============================================================================
@@ -400,7 +400,7 @@ test_draft_no_diffs_error() {
     echo "TIMESTAMP=20260420-120000"
     echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
   } > "$EXPORT/session/.export-status"
-  > "$EXPORT/session/changes.diff"
+  : > "$EXPORT/session/changes.diff"
 
   local OUT
   OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
@@ -453,7 +453,7 @@ test_draft_strips_index_lines() {
     echo "TIMESTAMP=20260420-120000"
     echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
   } > "$EXPORT/.export-status"
-  > "$EXPORT/uncommitted.diff"
+  : > "$EXPORT/uncommitted.diff"
 
   cat > "$EXPORT/patches/0001-test.diff" <<'EOF'
 diff --git a/stripped.txt b/stripped.txt

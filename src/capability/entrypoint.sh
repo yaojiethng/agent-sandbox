@@ -41,6 +41,7 @@ SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
 CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
+SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
 
 if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
@@ -85,7 +86,30 @@ unset LIB_DIR
 source /opt/sandbox/lib/session_state.sh
 source /opt/sandbox/lib/snapshot.sh
 
-if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+if [[ "$SANDBOX_TYPE" == "mount" ]]; then
+  # Mount delivery (bind-mount worktree): the host has already materialized the
+  # worktree into ${SANDBOX_DIR} (via snapshot_copy_worktree minus baseline.tar).
+  # No snapshot mount. Validate .git is present; write the SESSION_STATE init
+  # marker into the worktree .git (metadata) if absent; then write workspace paths.
+  echo "Mount delivery: validating worktree at $SANDBOX_DIR"
+  if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+    echo "Error: mount worktree has no .git — host materialization failed." >&2
+    echo "  Check WORKTREE_DIR contents: ls -la $SANDBOX_DIR" >&2
+    exit 1
+  fi
+  if [[ ! -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
+    # First mount run: write the init marker. init_sha = the baseline root commit.
+    echo "Mount delivery: writing SESSION_STATE init marker" >&2
+    _init_sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD 2>/dev/null || true)
+    session_state_write "$SANDBOX_DIR" "init_sha" "$_init_sha"
+    session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
+    session_state_write "$SANDBOX_DIR" "session_id" "${SESSION_ID:-}"
+    session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
+  fi
+  session_state_write "$SANDBOX_DIR" "changes_dir" "$CHANGES_DIR"
+  session_state_write "$SANDBOX_DIR" "input_dir"   "$INPUT_DIR"
+  session_state_write "$SANDBOX_DIR" "output_dir"  "$OUTPUT_DIR"
+elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
   # Fresh-init path: no git state, so initialise the sandbox from the snapshot.
   # Gate 2 — confirm mounted snapshot is intact before unpacking.
   snapshot_validate "$SNAPSHOT_DIR"
@@ -175,7 +199,9 @@ _preflight_crit "SESSION_STATE has session_ts" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
 
 # Mount checks
-_preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"           test -f "$SNAPSHOT_DIR/baseline.tar"
+if [[ "$SANDBOX_TYPE" == "copy" ]]; then
+  _preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"     test -f "$SNAPSHOT_DIR/baseline.tar"
+fi
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 # viable for provider-entrypoint only
 # _preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"

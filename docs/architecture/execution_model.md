@@ -112,6 +112,32 @@ via `WORKTREE_DIR`). Mount mode only.
 
 The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<session-id>.yml`).
 
+**Delivery-aware container init:** the capability-layer entrypoint branches on
+`SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
+
+- **Copy:** the existing snapshot pipeline — `snapshot_validate` (gate 2),
+  `snapshot_init_git` (baseline commit from `baseline.tar`), and the preflight
+  check on `SNAPSHOT_DIR/baseline.tar`.
+- **Mount:** no snapshot. The entrypoint validates `.git` is present in the
+  bind-mounted worktree, writes the `SESSION_STATE` init marker into the
+  worktree `.git` if absent (this is the start-validation init marker; `init_sha`
+  is the worktree baseline root commit), and skips the snapshot gate/init and the
+  `baseline.tar` preflight.
+
+`SESSION_STATE` is retained in both deliveries as container-side co-located
+provenance: copy writes it in `snapshot_init_git`; mount writes it into the
+worktree `.git`, where it doubles as the init marker (see
+[`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6
+Start-contract decision).
+
+**Mount worktree materialization:** on a fresh mount run, `start_agent.sh`
+materializes the host worktree (`${WORKTREE_DIR}`, default
+`${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive
+`snapshot_copy_worktree` minus `baseline.tar` — the rsync copy of the project
+working tree, then a git baseline commit so `.git` exists. The container then
+writes the `SESSION_STATE` init marker. On subsequent runs the worktree already
+has `.git` and is reused directly.
+
 **File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale
 per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the
 roadmap — see the M2.6 deferred-items list.
