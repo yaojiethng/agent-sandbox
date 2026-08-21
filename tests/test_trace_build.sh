@@ -12,6 +12,8 @@ test_setup
 # For container_sig / *_sig_sources behavior-lock tests. build.sh's main() is
 # guarded, so sourcing is safe and exposes only its library functions.
 source "$REPO_ROOT/scripts/build.sh"
+# record_image / record_provider live in session_inventory.sh (pure lib).
+source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 STUB_DIR="$TEST_DIR/../test/stubs"
 
@@ -211,6 +213,7 @@ test_container_sig_missing_path_fails_with_diagnostic() {
 # warns, a matching one stays silent. Locks the one-criterion-two-consumers
 # contract (20260821-09/10).
 test_check_container_sig_warns_via_shared_predicate() {
+
   local out
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
@@ -235,6 +238,56 @@ test_check_container_sig_warns_via_shared_predicate() {
   fi
 }
 
+# record_image / record_provider are service-scoped and anchored: a comment
+# or stray `image:` outside the service block (or another service) must not
+# shadow the service's own image, and the provider is recovered from the agent
+# image. Locks the one-parser contract (F2: no divergent -agent- grep).
+test_record_image_service_scoped() {
+  local dir="$FIXTURE_DIR/recimg"
+  mkdir -p "$dir"
+  cat > "$dir/r.yml" <<'EOF'
+# image: fake-shadow-comment must be ignored
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: hermes-agent-test-project
+  extra:
+    image: some-other-image
+EOF
+  local agent sandbox provider extra
+  agent="$(record_image "$dir/r.yml" agent)"
+  sandbox="$(record_image "$dir/r.yml" sandbox)"
+  extra="$(record_image "$dir/r.yml" extra)"
+  provider="$(record_provider "$dir/r.yml")"
+  if [[ "$agent" == "hermes-agent-test-project" \
+     && "$sandbox" == "sandbox-test-project" \
+     && "$extra" == "some-other-image" \
+     && "$provider" == "hermes" ]]; then
+    pass "record_image/record_provider: service-scoped, anchored, provider from agent image"
+  else
+    fail "record_image/record_provider: got agent=[$agent] sandbox=[$sandbox] extra=[$extra] provider=[$provider]"
+  fi
+}
+
+# current_sig is deterministic and memoized per (type, provider), distinct
+# across types — the hoisted computation that removes the O(2N) per-record
+# recomputation (F1).
+test_current_sig_deterministic() {
+  local a1 a2 s1 s2
+  a1="$(current_sig agent "$REPO_ROOT" pi)"
+  a2="$(current_sig agent "$REPO_ROOT" pi)"
+  s1="$(current_sig sandbox "$REPO_ROOT")"
+  s2="$(current_sig sandbox "$REPO_ROOT")"
+  if [[ -n "$a1" && "$a1" == "$a2" && -n "$s1" && "$s1" == "$s2" && "$a1" != "$s1" ]]; then
+    pass "current_sig: deterministic, memoized, distinct per type"
+  else
+    fail "current_sig: expected deterministic distinct per type, got agent=$a1 sandbox=$s1"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -243,6 +296,8 @@ run_test test_container_sig_sources_list
 run_test test_container_sig_hashes_real_sources
 run_test test_container_sig_missing_path_fails_with_diagnostic
 run_test test_check_container_sig_warns_via_shared_predicate
+run_test test_record_image_service_scoped
+run_test test_current_sig_deterministic
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command

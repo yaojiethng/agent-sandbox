@@ -11,6 +11,7 @@
 #   _sandbox_sig_sources     — source paths for the sandbox image (/opt/sandbox)
 #   _agent_sig_sources       — source paths for an agent image (/opt/workflow + provider)
 #   container_sig            — deterministic SHA-256 of the source-file set
+#   current_sig              — memoized current sig for a layer type
 #   image_is_stale           — baked container-sig vs recomputed -> fresh|stale|unknown
 #   record_image_stale       — session-record image staleness (agent + sandbox)
 #
@@ -85,6 +86,47 @@ container_sig() {
     | awk '{print $1}'
 }
 
+# current_sig <type: sandbox|agent> <repo_root> [provider]
+# Computes the current container-sig for a layer type (the value an up-to-date
+# image would carry in `agent-sandbox.container-sig`). Pure function of
+# (type, provider) — memoized so a multi-record inventory recomputes the full
+# source-tree hash once per (type, provider) instead of per record. Prints the
+# sig, or nothing + non-zero when the type is unknown or its sources cannot be
+# resolved.
+declare -A _current_sig_cache=()
+current_sig() {
+  local type="$1"
+  local repo_root="${2:?current_sig requires repo_root}"
+  local provider="${3:-}"
+  local key="${type}:${provider:-}"
+
+  local cached="${_current_sig_cache[$key]:-}"
+  if [[ -n "$cached" ]]; then
+    echo "$cached"
+    return 0
+  fi
+
+  local -a sources=()
+  case "$type" in
+    sandbox)
+      mapfile -t sources < <(_sandbox_sig_sources)
+      ;;
+    agent)
+      [[ -n "$provider" ]] || return 1
+      mapfile -t sources < <(_agent_sig_sources "$repo_root" "$provider")
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  local sig
+  sig="$(container_sig "$repo_root" "${sources[@]}" 2>/dev/null || true)"
+  [[ -n "$sig" ]] || return 1
+  _current_sig_cache[$key]="$sig"
+  echo "$sig"
+}
+
 # image_is_stale <image_name> <type: sandbox|agent> <repo_root> [provider]
 # Prints the image-staleness of an existing image: "stale" when its baked
 # `agent-sandbox.container-sig` label differs from a recomputation of the
@@ -97,54 +139,33 @@ image_is_stale() {
   local repo_root="${3:?image_is_stale requires repo_root}"
   local provider="${4:-}"
 
-  local baked_sig
+  local baked_sig current_s
   baked_sig="$(docker image inspect \
     --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' \
     "$image_name" 2>/dev/null || true)"
+  [[ -n "$baked_sig" ]] || { echo "unknown"; return 0; }
 
-  if [[ -z "$baked_sig" ]]; then
-    echo "unknown"
-    return 0
-  fi
+  current_s="$(current_sig "$type" "$repo_root" "$provider")" || { echo "unknown"; return 0; }
 
-  local sources=()
-  case "$type" in
-    sandbox)
-      mapfile -t sources < <(_sandbox_sig_sources)
-      ;;
-    agent)
-      [[ -n "$provider" ]] || { echo "unknown"; return 0; }
-      mapfile -t sources < <(_agent_sig_sources "$repo_root" "$provider")
-      ;;
-    *)
-      echo "unknown"
-      return 0
-      ;;
-  esac
-
-  local current_sig
-  current_sig="$(container_sig "$repo_root" "${sources[@]}" 2>/dev/null || true)"
-  [[ -n "$current_sig" ]] || { echo "unknown"; return 0; }
-
-  if [[ "$baked_sig" == "$current_sig" ]]; then echo "fresh"; else echo "stale"; fi
+  if [[ "$baked_sig" == "$current_s" ]]; then echo "fresh"; else echo "stale"; fi
 }
 
 # record_image_stale FILE REPO_ROOT
 # Image-staleness of a session record: "stale" when either referenced image
 # (agent / sandbox) is image-stale, "fresh" when both are fresh, "unknown"
-# when not determinable. The images are derived from the record's agent image
-# line (`image: <provider>-agent-<lower-project>`): the agent image references
-# the provider layer, and the capability layer is `sandbox-<lower-project>`.
+# when not determinable. Both images are read from the record's own service
+# image lines (the rendered compose record carries `sandbox:` and `agent:`
+# images — src/build/docker-compose.yml), so no naming reconstruction is
+# needed. Only the provider prefix of the agent image is derived, to resolve
+# the provider-specific current sig.
 record_image_stale() {
   local file="$1"
   local repo_root="$2"
-  local agent_img provider lower_proj sandbox_img as ss
-  agent_img="$(grep -m1 -E 'image:[[:space:]]*[^[:space:]]+-agent-[^[:space:]]+' "$file" \
-    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+).*/\1/' || true)"
-  [[ -n "$agent_img" ]] || { echo "unknown"; return 0; }
+  local agent_img sandbox_img provider as ss
+  agent_img="$(record_image "$file" agent)"
+  sandbox_img="$(record_image "$file" sandbox)"
+  [[ -n "$agent_img" && -n "$sandbox_img" ]] || { echo "unknown"; return 0; }
   provider="${agent_img%%-agent-*}"
-  lower_proj="${agent_img#*-agent-}"
-  sandbox_img="sandbox-${lower_proj}"
 
   as="$(image_is_stale "$agent_img" agent "$repo_root" "$provider")"
   ss="$(image_is_stale "$sandbox_img" sandbox "$repo_root")"

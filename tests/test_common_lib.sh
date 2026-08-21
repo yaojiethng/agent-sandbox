@@ -149,5 +149,14 @@ run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox
 run_test test_check_base_flags_rejects_root_sandbox
 run_test test_check_base_flags_rejects_empty_sandbox
+test_interactive_max_entries_default() {
+  if [[ "${INTERACTIVE_MAX_ENTRIES:-}" == "10" ]]; then
+    pass "common.sh: INTERACTIVE_MAX_ENTRIES defaults to 10"
+  else
+    fail "common.sh: expected INTERACTIVE_MAX_ENTRIES=10, got '${INTERACTIVE_MAX_ENTRIES:-}'"
+  fi
+}
+
+run_test test_interactive_max_entries_default
 
 test_done

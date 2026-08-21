@@ -18,6 +18,12 @@
 #
 # Scripts should define their own usage() before sourcing this file.
 
+# Max entries per page for numbered pickers (draft bundle select, resume
+# session select) and for the resume --list cap. Single canonical value; both
+# scripts/workflows/interactive.sh and scripts/resume_agent.sh read it from
+# here. Overridable via environment.
+: "${INTERACTIVE_MAX_ENTRIES:=10}"
+
 parse_help_flag() {
   for _arg in "$@"; do
     case "$_arg" in

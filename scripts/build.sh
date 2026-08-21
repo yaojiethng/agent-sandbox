@@ -258,12 +258,14 @@ _check_container_sig() {
     repo_root="${1:?}"
   fi
 
-  case "$(image_is_stale "$image_name" "$type" "$repo_root" "$provider") " in
-    stale*)
+  local st
+  st="$(image_is_stale "$image_name" "$type" "$repo_root" "$provider")"
+  case "$st" in
+    stale)
       echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
       echo "  Rebuild with --rebuild to update." >&2
       ;;
-    unknown*)
+    unknown)
       echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
       ;;
   esac

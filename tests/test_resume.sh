@@ -9,6 +9,7 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/sig_helpers.sh"
 test_setup
 
 RESUME="$REPO_ROOT/scripts/resume_agent.sh"
@@ -204,6 +205,8 @@ x-session-labels:
   agent-sandbox.host-branch: main
   agent-sandbox.session-ts: 20260821-120000
 services:
+  sandbox:
+    image: sandbox-test-project
   agent:
     image: pi-agent-test-project
 EOF
@@ -213,6 +216,8 @@ x-session-labels:
   agent-sandbox.host-branch: main
   agent-sandbox.session-ts: 20260820-120000
 services:
+  sandbox:
+    image: sandbox-test-project
   agent:
     image: hermes-agent-test-project
 EOF
@@ -225,36 +230,22 @@ EOF
   fi
 }
 
-# Recompute the container-sig the stub will report for a "fresh" image.
-# Sources the shared lib; deterministic content hash over the repo.
-sandbox_sig() {
-  source "$REPO_ROOT/src/libs/container_sig.sh"
-  local -a s=(); mapfile -t s < <(_sandbox_sig_sources)
-  container_sig "$REPO_ROOT" "${s[@]}"
-}
-agent_sig() {
-  source "$REPO_ROOT/src/libs/container_sig.sh"
-  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "$1")
-  container_sig "$REPO_ROOT" "${s[@]}"
-}
-# Per-image fresh map for a pi provider record: both images carry their own
-# recomputed sig, so the session is image-fresh.
-fresh_sig_map() {
-  echo "pi-agent-test-project:$(agent_sig pi) sandbox-test-project:$(sandbox_sig)"
-}
-
 # write_minimal_record DIR SID IMAGE
-# A record with a host-head-sha of deadbeef and the given agent image (the
-# sandbox-stale column is unknown without a git project; image tests assert
-# only the image column).
+# A record with a host-head-sha of deadbeef, the given agent image and a
+# sandbox image (the real compose record carries both service image lines).
+# The sandbox-stale column is unknown without a git project; image tests
+# assert only the image column.
 write_minimal_record() {
   local dir="$1" sid="$2" image="$3"
+  local sandbox_img="sandbox-${image#*-agent-}"
   cat > "$dir/sandbox/.compose/$sid.yml" <<EOF
 x-session-labels:
   agent-sandbox.host-head-sha: deadbeef
   agent-sandbox.host-branch: main
   agent-sandbox.session-ts: 20260821-120000
 services:
+  sandbox:
+    image: $sandbox_img
   agent:
     image: $image
 EOF
@@ -314,6 +305,8 @@ x-session-labels:
   agent-sandbox.host-branch: main
   agent-sandbox.session-ts: 20260821-120000
 services:
+  sandbox:
+    image: sandbox-test-project
   agent:
     image: pi-agent-test-project
 EOF

@@ -18,10 +18,12 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$REPO_ROOT/src/libs/common.sh"
 
-# Max inventory entries shown per page by --list and --interactive (same value
-# as draft's picker cap, `scripts/workflows/interactive.sh` INTERACTIVE_MAX_ENTRIES).
-RESUME_LIST_PAGE_SIZE=10
+# Max inventory entries shown per page by --list and --interactive. Canonical
+# value lives in src/libs/common.sh (INTERACTIVE_MAX_ENTRIES) — shared with
+# the draft picker so both consumers agree.
+RESUME_LIST_PAGE_SIZE="$INTERACTIVE_MAX_ENTRIES"
 
 # -------------------------
 # Usage / help
@@ -129,6 +131,18 @@ build_inventory() {
   return 0
 }
 
+# _no_sessions — emit the empty-inventory guidance and exit 1. Shared by the
+# --list and --interactive branches (same message in both).
+_no_sessions() {
+  if [[ -n "$PROVIDER_FILTER" ]]; then
+    echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
+  else
+    echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
+    echo "  Start a session first: make start" >&2
+  fi
+  exit 1
+}
+
 # -------------------------
 # Dispatch — command shape (ID 07)
 # -------------------------
@@ -138,55 +152,34 @@ build_inventory() {
 # 4) bare (no target flags) → help hinting --list / --interactive.
 if [[ "$RESUME_LIST" == true ]]; then
   build_inventory
-  if [[ "${#RESUME_INVENTORY[@]}" -eq 0 ]]; then
-    if [[ -n "$PROVIDER_FILTER" ]]; then
-      echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
-    else
-      echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
-      echo "  Start a session first: make start" >&2
-    fi
-    exit 1
-  fi
+  [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
   echo "Resumable sessions (make resume SESSION_ID=<id>):  [sandbox stale/fresh/unknown] [image stale/fresh/unknown]"
   _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
-  shown=0; remaining=0
-  for _line in "${RESUME_INVENTORY[@]}"; do
+  for _line in "${RESUME_INVENTORY[@]:0:$RESUME_LIST_PAGE_SIZE}"; do
     IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
-    if [[ "$shown" -ge "$RESUME_LIST_PAGE_SIZE" ]]; then
-      remaining=$((remaining + 1))
-      continue
-    fi
     printf '  %-8s  %-10s  %-17s  %-22s  %-7s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale" "$image_stale"
-    shown=$((shown + 1))
   done
-  if [[ "$remaining" -gt 0 ]]; then
-    echo "  (...$remaining more session(s) — use --interactive or --provider=<n> to narrow)" >&2
+  if [[ "${#RESUME_INVENTORY[@]}" -gt "$RESUME_LIST_PAGE_SIZE" ]]; then
+    echo "  (...$(( ${#RESUME_INVENTORY[@]} - RESUME_LIST_PAGE_SIZE )) more session(s) — use --interactive or --provider=<n> to narrow)" >&2
   fi
   exit 0
 fi
 
 if [[ "$INTERACTIVE_FLAG" == true ]]; then
   build_inventory
-  if [[ "${#RESUME_INVENTORY[@]}" -eq 0 ]]; then
-    if [[ -n "$PROVIDER_FILTER" ]]; then
-      echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
-    else
-      echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
-      echo "  Start a session first: make start" >&2
-    fi
-    exit 1
-  fi
+  [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
 
-  # Build the picker entries (value|display), then pick + confirm.
+  # Build the picker entries (value|display), then pick + confirm. Only the
+  # stale states are marked ([STALE] / [IMG-STALE]); fresh/unknown carry no
+  # marker (honest — unknown is not "ok"). Paged at RESUME_LIST_PAGE_SIZE.
   # Explicit --interactive always shows the picker + confirm, even for a sole
-  # record (decision I-1) — the deliberately slow mode. Paged at
-  # RESUME_LIST_PAGE_SIZE (same cap as --list).
+  # record (decision I-1) — the deliberately slow mode.
   PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
   for _line in "${RESUME_INVENTORY[@]}"; do
     IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
-    _std="status";   [[ "$stale" == "stale" ]]       && _std="STALE"
-    _img="img-ok";   [[ "$image_stale" == "stale" ]] && _img="IMG-STALE"
-    PICKER+=( "$sid|$sid  $provider  $ts  $branch  [$_std] [$_img]" )
+    _std=""; [[ "$stale" == "stale" ]]       && _std="[STALE]"
+    _img=""; [[ "$image_stale" == "stale" ]] && _img="[IMG-STALE]"
+    PICKER+=( "$sid|$sid  $provider  $ts  $branch  $_std $_img" )
   done
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
   chosen="$(interactive_pick "Resume which session?" PICKER "" "$RESUME_LIST_PAGE_SIZE")" || exit 1

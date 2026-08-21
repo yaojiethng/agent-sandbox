@@ -131,7 +131,7 @@ fi
 # -------------------------
 # Rule 1: selected stale records
 # -------------------------
-# Prints `session-id|provider|ts|branch|delivery|stale` for each selected stale
+# Prints `session-id|provider|ts|branch|delivery` for each selected stale
 # record. Best-effort; never fails the prune on a malformed record.
 # Selection is driven by the staleness kind (STALE=sandbox|image|all): a
 # record is selected when it is stale by the enabled criterion (sandbox =
@@ -179,7 +179,7 @@ rule1_selected_records() {
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
     # delivery overlay). Disclosure in the plan only — it gates neither rule.
     delivery="$(env_field "$f" SANDBOX_TYPE)"
-    printf '%s|%s|%s|%s|%s|stale\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
+    printf '%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
   done
 }
 
@@ -265,11 +265,11 @@ rule2_orphan_resources() {
 # Preview renderers (plan display)
 # -------------------------
 show_rule1() {
-  local line sid provider ts branch delivery stale
-  printf '  %-8s %-10s %-17s %-22s %-7s %s\n' "session-id" "provider" "session-ts" "branch" "delivery" "stale"
+  local line sid provider ts branch delivery
+  printf '  %-8s %-10s %-17s %-22s %-7s\n' "session-id" "provider" "session-ts" "branch" "delivery"
   for line in "${RULE1_RECS[@]}"; do
-    IFS='|' read -r sid provider ts branch delivery stale <<< "$line"
-    printf '  %-8s %-10s %-17s %-22s %-7s %s\n' "$sid" "$provider" "$ts" "${branch:-}" "${delivery:-}" "$stale"
+    IFS='|' read -r sid provider ts branch delivery <<< "$line"
+    printf '  %-8s %-10s %-17s %-22s %-7s\n' "$sid" "$provider" "$ts" "${branch:-}" "${delivery:-}"
   done
 }
 

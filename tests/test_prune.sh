@@ -10,6 +10,7 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/sig_helpers.sh"
 test_setup
 
 STUB_DIR="$TEST_DIR/../test/stubs"
@@ -34,22 +35,6 @@ setup_prune_fixture() {
 
 # Recompute the container-sig the prune will compare against, for a "fresh"
 # image. Sources the shared lib; deterministic content hash over the repo.
-sandbox_sig() {
-  source "$REPO_ROOT/src/libs/container_sig.sh"
-  local -a s=(); mapfile -t s < <(_sandbox_sig_sources)
-  container_sig "$REPO_ROOT" "${s[@]}"
-}
-agent_sig() {
-  source "$REPO_ROOT/src/libs/container_sig.sh"
-  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "$1")
-  container_sig "$REPO_ROOT" "${s[@]}"
-}
-# Per-image fresh map for a pi provider record: both images carry their own
-# recomputed sig, so the session is image-fresh.
-fresh_sig_map() {
-  echo "pi-agent-test-project:$(agent_sig pi) sandbox-test-project:$(sandbox_sig)"
-}
-
 current_sha() { git -C "$PROJECT_DIR" rev-parse HEAD; }
 
 write_record() {
@@ -58,6 +43,8 @@ write_record() {
   mkdir -p "$SANDBOX_DIR/.compose"
   cat > "$SANDBOX_DIR/.compose/$sid.yml" <<EOF
 services:
+  sandbox:
+    image: sandbox-test-project
   agent:
     image: ${provider}-agent-test-project
     labels:
@@ -299,7 +286,8 @@ test_stale_image_kind_keeps_fresh_record() {
   # not skew the result; freshness is decided purely by the image sigs.
   write_record "s_freshimg" "pi" "aaaa1111aaaa" "20260801-000000"
   # Both images carry their own recomputed sig -> image-fresh -> not pruned.
-  export DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)"
+  export DOCKER_STUB_IMAGE_SIG_LABELS
+  DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)"
 
   invoke_prune --stale=image > /dev/null 2>&1
 

@@ -25,11 +25,10 @@
 # sourced regardless of how interactive.sh is invoked. Callers may pre-set
 # AGENT_SANDBOX_REPO (e.g. the dispatcher) to override the default.
 : "${AGENT_SANDBOX_REPO:="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"}"
-# Source routing.sh for dirs_resolve
+# Source routing.sh for dirs_resolve; common.sh for the shared picker page cap
+# (INTERACTIVE_MAX_ENTRIES).
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
-
-# Max entries to display in session picker. Hardcoded — change here if needed.
-INTERACTIVE_MAX_ENTRIES=10
+source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
 
 # =============================================================================
 # Internal helpers

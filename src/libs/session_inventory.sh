@@ -10,22 +10,43 @@
 # Pure helper library: defines functions only, sets no caller-owned globals.
 #
 # Functions:
-#   record_provider FILE      — provider name from the agent service image
-#   record_label FILE LABEL   — value of an agent-sandbox.<label> record label
-#   session_stale FILE [SHA]  — registry-truth sandbox staleness
+#   record_image FILE SERVICE  — image value for a named service
+#   record_provider FILE       — provider name from the agent service image
+#   record_label FILE LABEL    — value of an agent-sandbox.<label> record label
+#   session_stale FILE [SHA]   — registry-truth sandbox staleness
 #                               (fresh|stale|unknown)
 #
 # Staleness semantics (see docs/concepts/terminology.md `## staleness`,
 # sandbox staleness): a session is stale when its recorded `host-head-sha`
 # differs from the current project HEAD.
 
-# record_provider FILE — recover the provider from a `.compose/<session-id>.yml`
-# record's agent service image line (`image: <provider>-agent-<lower-project>`).
+# record_image FILE SERVICE — print the `image:` value for a named service in
+# a `.compose/<session-id>.yml` registry record, or nothing if the service (or
+# its image) is absent. Service-scoped (awk tracks the service block), so a
+# comment or stray `image:` elsewhere cannot shadow the real value.
+record_image() {
+  local file="$1" service="$2"
+  awk -v svc="$service" '
+    $0 ~ "^  " svc ":" { in_svc=1; next }
+    in_svc && /^  [A-Za-z0-9_-]+:/ { in_svc=0 }
+    in_svc && /image:/ {
+      sub(/^.*image:[[:space:]]*/, "")
+      print
+      exit
+    }
+  ' "$file"
+}
+
+# record_provider FILE — recover the provider from the agent service image
+# (`<provider>-agent-<lower-project>`, the canonical agent_image_name shape).
 # Prints the provider name, or nothing if it cannot be recovered.
 record_provider() {
-  local file="$1"
-  grep -m1 -E '^[[:space:]]+image:[[:space:]]*[^.]+-agent-[^-]+' "$file" \
-    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+)-agent-.*/\1/' || true
+  local file="$1" agent_img
+  agent_img="$(record_image "$file" agent)"
+  # An agent image is always `<provider>-agent-<project>`; anything else is not
+  # a recoverable provider (mirrors the prior anchored `...-agent-...` gate).
+  [[ "$agent_img" == *"-agent-"* ]] || return 0
+  echo "${agent_img%%-agent-*}"
 }
 
 # record_label FILE LABEL — recover `agent-sandbox.<label>` from a registry

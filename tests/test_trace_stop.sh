@@ -43,6 +43,8 @@ write_record() {
   mkdir -p "$dir/.compose"
   cat > "$dir/.compose/$sid.yml" <<EOF
 services:
+  sandbox:
+    image: sandbox-test-project
   agent:
     image: testprovider-agent-test-project
     labels:
