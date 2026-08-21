@@ -96,6 +96,9 @@ INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
+RESUME_LIST_FLAG        = $(if $(LIST),--list,)
+RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
+RESUME_PROVIDER_FLAG    = $(if $(PROVIDER),--provider=$(PROVIDER),)
 PRUNE_FLAG        = $(if $(PRUNE),--prune,)
 STALE_FLAG        = $(if $(STALE),--stale,)
 
@@ -115,6 +118,9 @@ help:
 	@echo "  make serve PROVIDER=<p>           — start provider in serve mode"
 	@echo "  make dry-run PROVIDER=<p>         — liveness check only"
 	@echo "  make stop                         — stop and remove session containers"
+	@echo "  make resume SESSION_ID=<id>      — resume a specific session (silent, recommended)"
+	@echo "  make resume LIST=1               — list resumable session ids"
+	@echo "  make resume INTERACTIVE=1        — interactive picker (NOT YET IMPLEMENTED)"
 	@echo "  make prune                        — remove stale containers and volumes"
 	@echo "  make draft                        — apply session patches to a draft branch"
 	@echo "  make confirm                      — merge draft branch to source"
@@ -128,6 +134,8 @@ help:
 	@echo "  REFRESH=1        — rebuild images + start new session"
 	@echo "  REBUILD=1        — force full rebuild including base images"
 	@echo "  RESUME=1         — always show volume picker"
+	@echo "  SESSION_ID=<id>  — resume a specific session (make resume)"
+	@echo "  LIST=1           — list resumable session ids (make resume)"
 	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
 	@echo "  FORCE=1          — apply with --reject (draft/apply)"
 	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles (draft only)"
@@ -195,6 +203,29 @@ stop:
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(SESSION_ID_FLAG) \
 	  $(PRUNE_FLAG)
+
+# -------------------------
+# Resume
+# -------------------------
+#
+# Resumes a previously-started session (split-out resume command; see
+# scripts/resume_agent.sh). The unified session inventory is the
+# .compose/<session-id>.yml registry under SANDBOX_DIR.
+#
+#   make resume SESSION_ID=<id>  — resume that specific session (silent, recommended)
+#   make resume LIST=1           — list resumable session ids (no resume)
+#   make resume INTERACTIVE=1    — NOT YET IMPLEMENTED (interactive picker)
+#   make resume PROVIDER=<n>     — NOT YET IMPLEMENTED (inventory filter)
+
+resume:
+	agent-sandbox resume \
+	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
+	  --sandbox=$(SANDBOX_DIR) \
+	  $(RESUME_LIST_FLAG) \
+	  $(RESUME_INTERACTIVE_FLAG) \
+	  $(RESUME_PROVIDER_FLAG) \
+	  $(SESSION_ID_FLAG)
 
 # -------------------------
 # Prune

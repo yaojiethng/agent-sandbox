@@ -174,71 +174,10 @@ if [[ ! -d "$PROJECT_DIR" ]]; then
 fi
 
 # -------------------------
-# .env loading
+# Shared host-side prelude — phase 1 (env, git validation, derived paths, uid/gid)
 # -------------------------
-ENV_FILE="$SANDBOX_DIR/$ENV_REL"
-
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Error: .env not found: $ENV_FILE"
-  echo "  SANDBOX_DIR has not been onboarded. Run:"
-  echo "    agent-sandbox onboard --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
-  exit 1
-fi
-
-# Source only simple KEY=VALUE lines; skip comments and blanks.
-# Variables are exported for docker compose and run_agent.sh.
-while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-  [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
-  KEY="${KEY//[$'\r\n\t ']/}"
-  VALUE="${VALUE//[$'\r\n']/}"
-  VALUE="${VALUE#"${VALUE%%[! ]*}"}"
-  VALUE="${VALUE%"${VALUE##*[! ]}"}"
-  export "$KEY=$VALUE"
-done < "$ENV_FILE"
-
-# -------------------------
-# Derive harness paths from SANDBOX_DIR
-# -------------------------
-# The .env file stores only the primitive (SANDBOX_DIR). Derived paths
-# are produced here directly (no longer via dirs.sh/dirs_resolve).
-# CHANGES_DIR/INPUT_DIR/OUTPUT_DIR are common to both deliveries and must
-# match the x-workspace anchor in src/build/docker-compose.yml. SNAPSHOT_DIR
-# is copy-delivery only (consumed by the copy overlay docker-compose.copy.yml),
-# exported unconditionally for now — the mount path drops the vestigial
-# snapshot operations in delivery enablement.
-export SNAPSHOT_DIR="${SANDBOX_DIR}/.snapshot"
-export CHANGES_DIR="${SANDBOX_DIR}/.workspace/session-diffs"
-export INPUT_DIR="${SANDBOX_DIR}/.workspace/input"
-export OUTPUT_DIR="${SANDBOX_DIR}/.workspace/output"
-
-# -------------------------
-# Image name derivation
-# -------------------------
-source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/scripts/build.sh"
-
-export SANDBOX_IMAGE_NAME; SANDBOX_IMAGE_NAME="$(sandbox_image_name "$PROJECT_NAME")"
-export AGENT_IMAGE_NAME;   AGENT_IMAGE_NAME="$(agent_image_name "$PROVIDER_NAME" "$PROJECT_NAME")"
-
-# -------------------------
-# Git validation
-# -------------------------
-if [[ ! -d "$PROJECT_DIR/.git" ]]; then
-  echo "Error: PROJECT_DIR is not a git repository: $PROJECT_DIR"
-  echo "  Initialise it first:"
-  echo "    git -C '$PROJECT_DIR' init"
-  echo "    git -C '$PROJECT_DIR' add -A"
-  echo "    git -C '$PROJECT_DIR' commit -m 'initial'"
-  exit 1
-fi
-
-if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
-  echo "Error: git repository has no commits: $PROJECT_DIR"
-  echo "  Create an initial commit first:"
-  echo "    git -C '$PROJECT_DIR' add -A"
-  echo "    git -C '$PROJECT_DIR' commit -m 'initial'"
-  exit 1
-fi
+source "$REPO_ROOT/src/libs/session_env.sh"
+session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
 
 # -------------------------
 # Session identity — volume discovery and resume
@@ -450,34 +389,19 @@ else
 fi
 
 # -------------------------
-# SANITIZED_HOST_BRANCH and CONTAINER_NAME derivation
+# Shared host-side prelude — phase 2 (branch, image/container names, delivery)
 # -------------------------
-# SANITIZED_HOST_BRANCH is the host branch name captured at session start,
-# sanitised for use in directory names and Docker labels. Slashes are
-# replaced with dashes; all non-alphanumeric characters (except dash,
-# underscore, dot) are replaced with dashes.
-BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-# Handle detached HEAD: use short SHA instead of literal "HEAD"
-if [[ "$BRANCH_NAME" == "HEAD" ]]; then
-  BRANCH_NAME=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
-fi
-export SANITIZED_HOST_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
-export SANDBOX_CONTAINER_NAME="sandbox-${PROJECT_NAME}-${SESSION_ID}"
-export AGENT_CONTAINER_NAME="${PROVIDER_NAME}-${PROJECT_NAME}-${SESSION_ID}"
-unset BRANCH_NAME
+# Identity (SESSION_ID) is now known. Derive the remaining env consumed by
+# run_agent.sh and compose: sanitized host branch, image/container names,
+# delivery type, worktree dir.
+session_env_names "$PROJECT_NAME" "$PROVIDER_NAME" "$SANDBOX_DIR" "$SESSION_ID"
+
 echo "Host branch: $SANITIZED_HOST_BRANCH"
 echo "Host HEAD SHA: $HOST_HEAD_SHA"
 echo "Sandbox ID: $SANDBOX_ID"
 echo "Session ID: $SESSION_ID"
 echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
 echo "Agent container name: $AGENT_CONTAINER_NAME"
-
-# Delivery type — SANDBOX_TYPE=copy|mount, default copy. Copy builds a snapshot;
-# mount materializes a host worktree (WORKTREE_DIR, default $SANDBOX_DIR/.worktree)
-# that is bind-mounted into the container. run_agent.sh consumes the same variable
-# to select the compose delivery overlay.
-export SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
-export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
 
 # -------------------------
 # Workspace directory setup and snapshot pipeline
@@ -530,6 +454,10 @@ fi
 # -------------------------
 # Rebuild (if requested)
 # -------------------------
+# Build/preflight helpers (build_sandbox/build_agent/preflight) live in build.sh,
+# which also provides the image-name functions. Source it now that identity paths
+# are settled and we are ready to (re)build/preflight for this session.
+source "$REPO_ROOT/scripts/build.sh"
 # --refresh: rebuild sandbox and provider (base skipped if exists).
 # --rebuild: rebuild everything from scratch including base (supersedes --refresh).
 # Export host UID/GID for build pipeline

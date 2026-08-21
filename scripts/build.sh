@@ -266,6 +266,7 @@ preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
+  local build_missing="${4:-true}"  # resume passes false — a resume must not rebuild
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -281,11 +282,17 @@ preflight() {
   fi
 
   if [[ "$missing" == true ]]; then
-    echo "One or more required images are missing. Building them now."
-    build_sandbox "$project" "$repo_root"
-    build_agent   "$provider" "$project" "$repo_root"
-    # Staleness check skipped for fresh builds
-    return 0
+    if [[ "$build_missing" == "true" ]]; then
+      echo "One or more required images are missing. Building them now."
+      build_sandbox "$project" "$repo_root"
+      build_agent   "$provider" "$project" "$repo_root"
+      # Staleness check skipped for fresh builds
+      return 0
+    else
+      echo "Error: required images are missing and resume does not build." >&2
+      echo "  Run 'make start' (or 'make build') to build them first." >&2
+      return 1
+    fi
   fi
 
   # --- Container-sig staleness check (warning only) ---

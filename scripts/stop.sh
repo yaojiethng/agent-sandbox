@@ -98,6 +98,9 @@ else
   docker stop "${CONTAINER_IDS[@]}"
   docker rm "${CONTAINER_IDS[@]}"
   echo "Containers stopped and removed."
+  if [[ -n "$SESSION_ID" ]]; then
+    echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"
+  fi
 fi
 
 # -------------------------

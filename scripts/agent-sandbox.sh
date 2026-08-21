@@ -45,7 +45,7 @@ main() {
   shift || true
 
   if [[ -z "$SUBCOMMAND" ]]; then
-    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|prune|apply|draft|confirm|reject> <flags>"
+    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|resume|stop|prune|apply|draft|confirm|reject> <flags>"
     exit 1
   fi
 
@@ -91,7 +91,7 @@ main() {
 
   # Shared subcommand list — single source of truth for the valid set.
   print_subcommand_list() {
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-branch"
+    echo "Valid subcommands: onboard, build, start, serve, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
   }
 
   # Route '<sub> --help', 'help <sub>', and 'help --help' to the child's own
@@ -110,6 +110,8 @@ main() {
         ;;
       onboard|build|stop|prune)
         exec bash "$SCRIPTS/$sub.sh" --help ;;
+      resume)
+        exec bash "$SCRIPTS/resume_agent.sh" --help ;;
       apply|draft|confirm|reject)
         exec bash "$SCRIPTS/workflows/$sub.sh" --help ;;
       start|serve|dry-run)
@@ -190,6 +192,15 @@ main() {
     stop)
       require_name_sandbox
       exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      ;;
+
+    resume)
+      require_base_args
+      exec bash "$SCRIPTS/resume_agent.sh" \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        "${PASSTHROUGH[@]}"
       ;;
 
     prune)
