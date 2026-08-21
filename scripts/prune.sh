@@ -161,11 +161,11 @@ rule1_selected_records() {
         [[ "$(session_stale "$f" "$current_sha")" == "stale" ]] || continue
         ;;
       image)
-        [[ "$(record_image_stale "$f")" == "stale" ]] || continue
+        [[ "$(record_image_stale "$f" "$REPO_ROOT")" == "stale" ]] || continue
         ;;
       ""|all)
         [[ "$(session_stale "$f" "$current_sha")" == "stale" \
-           || "$(record_image_stale "$f")" == "stale" ]] || continue
+           || "$(record_image_stale "$f" "$REPO_ROOT")" == "stale" ]] || continue
         ;;
     esac
     # Age narrowing (applies to every selected record regardless of kind).
@@ -181,30 +181,6 @@ rule1_selected_records() {
     delivery="$(env_field "$f" SANDBOX_TYPE)"
     printf '%s|%s|%s|%s|%s|stale\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
   done
-}
-
-# record_image_stale FILE — image-staleness of a session record: "stale" when
-# either referenced image (agent / sandbox) is image-stale, "fresh" when both
-# are fresh, "unknown" when not determinable. The images are derived from the
-# record's agent image line (`image: <provider>-agent-<lower-project>`): the
-# agent image references the provider layer, and the capability layer is
-# `sandbox-<lower-project>`.
-record_image_stale() {
-  local file="$1"
-  local agent_img provider lower_proj sandbox_img as ss
-  agent_img="$(grep -m1 -E 'image:[[:space:]]*[^[:space:]]+-agent-[^[:space:]]+' "$file" \
-    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+).*/\1/' || true)"
-  [[ -n "$agent_img" ]] || { echo "unknown"; return 0; }
-  provider="${agent_img%%-agent-*}"
-  lower_proj="${agent_img#*-agent-}"
-  sandbox_img="sandbox-${lower_proj}"
-
-  as="$(image_is_stale "$agent_img" agent "$REPO_ROOT" "$provider")"
-  ss="$(image_is_stale "$sandbox_img" sandbox "$REPO_ROOT")"
-
-  if [[ "$as" == "stale" || "$ss" == "stale" ]]; then echo "stale"
-  elif [[ "$as" == "fresh" && "$ss" == "fresh" ]]; then echo "fresh"
-  else echo "unknown"; fi
 }
 
 # env_field FILE VAR — read a `VAR=value` from any service `environment:`

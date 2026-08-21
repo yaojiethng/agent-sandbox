@@ -205,6 +205,36 @@ test_container_sig_missing_path_fails_with_diagnostic() {
   fi
 }
 
+# The preflight warning — start's staleness surface (start_agent.sh → preflight
+# → _check_container_sig) — delegates the decision to the shared image_is_stale
+# predicate: a baked container-sig differing from the recomputed source sig
+# warns, a matching one stays silent. Locks the one-criterion-two-consumers
+# contract (20260821-09/10).
+test_check_container_sig_warns_via_shared_predicate() {
+  local out
+  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
+        _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
+  if [[ "$out" == *"container-sig mismatch (image is stale)"* ]]; then
+    pass "preflight: differing baked sig warns via shared image_is_stale"
+  else
+    fail "preflight: expected stale warning via shared predicate, got: $out"
+  fi
+
+  # Fresh: both images carry their own recomputed sig → no warning.
+  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "pi")
+  local agent_sig; agent_sig="$(container_sig "$REPO_ROOT" "${s[@]}")"
+  local -a ss=(); mapfile -t ss < <(_sandbox_sig_sources)
+  local sandbox_sig; sandbox_sig="$(container_sig "$REPO_ROOT" "${ss[@]}")"
+  out="$(PATH="$STUB_DIR:$PATH" \
+        DOCKER_STUB_IMAGE_SIG_LABELS="pi-agent-test-project:$agent_sig sandbox-test-project:$sandbox_sig" \
+        _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
+  if [[ -z "$out" ]]; then
+    pass "preflight: matching recomputed sig stays silent"
+  else
+    fail "preflight: expected no warning for fresh image, got: $out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -212,6 +242,7 @@ test_container_sig_missing_path_fails_with_diagnostic() {
 run_test test_container_sig_sources_list
 run_test test_container_sig_hashes_real_sources
 run_test test_container_sig_missing_path_fails_with_diagnostic
+run_test test_check_container_sig_warns_via_shared_predicate
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command

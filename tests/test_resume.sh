@@ -225,6 +225,171 @@ EOF
   fi
 }
 
+# Recompute the container-sig the stub will report for a "fresh" image.
+# Sources the shared lib; deterministic content hash over the repo.
+sandbox_sig() {
+  source "$REPO_ROOT/src/libs/container_sig.sh"
+  local -a s=(); mapfile -t s < <(_sandbox_sig_sources)
+  container_sig "$REPO_ROOT" "${s[@]}"
+}
+agent_sig() {
+  source "$REPO_ROOT/src/libs/container_sig.sh"
+  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "$1")
+  container_sig "$REPO_ROOT" "${s[@]}"
+}
+# Per-image fresh map for a pi provider record: both images carry their own
+# recomputed sig, so the session is image-fresh.
+fresh_sig_map() {
+  echo "pi-agent-test-project:$(agent_sig pi) sandbox-test-project:$(sandbox_sig)"
+}
+
+# write_minimal_record DIR SID IMAGE
+# A record with a host-head-sha of deadbeef and the given agent image (the
+# sandbox-stale column is unknown without a git project; image tests assert
+# only the image column).
+write_minimal_record() {
+  local dir="$1" sid="$2" image="$3"
+  cat > "$dir/sandbox/.compose/$sid.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  agent:
+    image: $image
+EOF
+}
+
+# --list renders an image-staleness column: a record whose referenced image
+# carries a container-sig differing from the recomputed source sig is image-
+# stale, independent of the sandbox (registry-truth) staleness.
+test_list_shows_image_staleness() {
+  local dir="$FIXTURE_DIR/img_stale"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+
+  local out
+  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
+        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
+        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+unknown[[:space:]]+stale"; then
+    pass "resume --list: image-stale column marks differing container-sig record"
+  else
+    fail "resume --list: expected image-stale column, got: $out"
+  fi
+}
+
+# Fresh images (baked sig == recomputed sig for BOTH agent and sandbox) are
+# image-fresh and are NOT marked stale.
+test_list_shows_image_fresh_when_sigs_match() {
+  local dir="$FIXTURE_DIR/img_fresh"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+
+  local out
+  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+        DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)" \
+        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
+        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+unknown[[:space:]]+fresh"; then
+    pass "resume --list: matching container-sig marks image-fresh"
+  else
+    fail "resume --list: expected image-fresh column, got: $out"
+  fi
+}
+
+# The two staleness dimensions are independent: a record sandbox-fresh (its
+# host-head-sha == current project HEAD) but image-stale shows BOTH columns.
+test_list_columns_are_independent() {
+  local dir="$FIXTURE_DIR/img_indep"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  local head_sha
+  head_sha="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head_sha
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  agent:
+    image: pi-agent-test-project
+EOF
+
+  local out
+  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
+        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
+        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+fresh[[:space:]]+stale"; then
+    pass "resume --list: sandbox-fresh + image-stale both reported (independent columns)"
+  else
+    fail "resume --list: expected fresh+stale independent columns, got: $out"
+  fi
+}
+
+# --interactive marks image-stale sessions in the picker (same backing
+# inventory as --list).
+test_interactive_marks_image_stale() {
+  local dir="$FIXTURE_DIR/img_marker"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+  write_minimal_record "$dir" "bbb" "hermes-agent-test-project"
+
+  local out
+  out="$(printf '1\nn\n' | PATH="$REPO_ROOT/test/stubs:$PATH" \
+        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
+        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
+        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?
+  if [[ $rc -ne 0 ]] && echo "$out" | grep -q "IMG-STALE"; then
+    pass "resume --interactive: picker marks image-stale session [IMG-STALE]"
+  else
+    fail "resume --interactive: expected [IMG-STALE] marker, got rc=$rc: $out"
+  fi
+}
+
+# --list caps the displayed rows at the shared page size (10, same as draft's
+# picker) and reports the remainder honestly.
+test_list_caps_at_page_size() {
+  local dir="$FIXTURE_DIR/list_cap"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  local i
+  for i in $(seq -w 1 12); do
+    write_minimal_record "$dir" "s$i" "pi-agent-test-project"
+  done
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list 2>&1)"
+  local rows shown
+  rows="$(echo "$out" | grep -cE '^  s[0-9]+  ' || true)"
+  shown="$(echo "$out" | grep -c 'more session' || true)"
+  if [[ "$rows" -eq 10 ]] && [[ "$shown" -eq 1 ]] && echo "$out" | grep -q "2 more session"; then
+    pass "resume --list: caps at 10 rows with remainder footer"
+  else
+    fail "resume --list: expected 10 rows + remainder footer, got rows=$rows footer=$shown: $out"
+  fi
+}
+
+# The interactive picker paginates at the same page size (10): page nav via n/p.
+test_interactive_paginates_at_page_size() {
+  local dir="$FIXTURE_DIR/img_page"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  local i
+  for i in $(seq -w 1 12); do
+    write_minimal_record "$dir" "s$i" "pi-agent-test-project"
+  done
+
+  local out
+  out="$(printf 'n\n1\nn\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?
+  if [[ $rc -ne 0 ]] && echo "$out" | grep -q "page 2 of 2"; then
+    pass "resume --interactive: picker paginates at page size (page 2 of 2)"
+  else
+    fail "resume --interactive: expected paginated picker, got rc=$rc: $out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -239,6 +404,12 @@ run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
 run_test test_list_shows_sandbox_staleness
+run_test test_list_shows_image_staleness
+run_test test_list_shows_image_fresh_when_sigs_match
+run_test test_list_columns_are_independent
+run_test test_interactive_marks_image_stale
+run_test test_list_caps_at_page_size
+run_test test_interactive_paginates_at_page_size
 
 echo ""
 echo "Test complete: $PASS passed, $FAIL failed."

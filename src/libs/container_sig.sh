@@ -12,6 +12,7 @@
 #   _agent_sig_sources       — source paths for an agent image (/opt/workflow + provider)
 #   container_sig            — deterministic SHA-256 of the source-file set
 #   image_is_stale           — baked container-sig vs recomputed -> fresh|stale|unknown
+#   record_image_stale       — session-record image staleness (agent + sandbox)
 #
 # Terminology: image staleness (see docs/concepts/terminology.md `## staleness`)
 # means the baked label differs from a recomputation of the current source,
@@ -126,4 +127,29 @@ image_is_stale() {
   [[ -n "$current_sig" ]] || { echo "unknown"; return 0; }
 
   if [[ "$baked_sig" == "$current_sig" ]]; then echo "fresh"; else echo "stale"; fi
+}
+
+# record_image_stale FILE REPO_ROOT
+# Image-staleness of a session record: "stale" when either referenced image
+# (agent / sandbox) is image-stale, "fresh" when both are fresh, "unknown"
+# when not determinable. The images are derived from the record's agent image
+# line (`image: <provider>-agent-<lower-project>`): the agent image references
+# the provider layer, and the capability layer is `sandbox-<lower-project>`.
+record_image_stale() {
+  local file="$1"
+  local repo_root="$2"
+  local agent_img provider lower_proj sandbox_img as ss
+  agent_img="$(grep -m1 -E 'image:[[:space:]]*[^[:space:]]+-agent-[^[:space:]]+' "$file" \
+    | sed -E 's/.*image:[[:space:]]*([^[:space:]]+).*/\1/' || true)"
+  [[ -n "$agent_img" ]] || { echo "unknown"; return 0; }
+  provider="${agent_img%%-agent-*}"
+  lower_proj="${agent_img#*-agent-}"
+  sandbox_img="sandbox-${lower_proj}"
+
+  as="$(image_is_stale "$agent_img" agent "$repo_root" "$provider")"
+  ss="$(image_is_stale "$sandbox_img" sandbox "$repo_root")"
+
+  if [[ "$as" == "stale" || "$ss" == "stale" ]]; then echo "stale"
+  elif [[ "$as" == "fresh" && "$ss" == "fresh" ]]; then echo "fresh"
+  else echo "unknown"; fi
 }

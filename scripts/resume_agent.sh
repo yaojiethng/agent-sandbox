@@ -19,6 +19,10 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Max inventory entries shown per page by --list and --interactive (same value
+# as draft's picker cap, `scripts/workflows/interactive.sh` INTERACTIVE_MAX_ENTRIES).
+RESUME_LIST_PAGE_SIZE=10
+
 # -------------------------
 # Usage / help
 # -------------------------
@@ -39,7 +43,8 @@ or directly:
   agent-sandbox resume --session-id=<id> --name=<n> --sandbox=<path>
 
 Flags:
-  --list             list the `.compose/` session records (fast, no resume)
+  --list             list the `.compose/` session records (fast, no resume;
+                     capped at 10 rows)
   --session-id=<id>  resume the session with this SESSION_ID (direct, silent; recommended)
   --interactive      interactive picker + confirm over the session inventory
   --provider=<n>     filter the session inventory by provider (with --list / --interactive)
@@ -81,10 +86,14 @@ done
 # host-head-sha vs the current project HEAD. Shared with prune.sh — see
 # src/libs/session_inventory.sh.
 source "$REPO_ROOT/src/libs/session_inventory.sh"
+# Image-staleness criterion (container-sig label vs recomputed source sig) and
+# the record-level `record_image_stale` — shared with prune.sh and build.sh.
+source "$REPO_ROOT/src/libs/container_sig.sh"
 
 # Enumerate the session inventory into RESUME_INVENTORY: one line per record of
-# the form `SESSION_ID|provider|session-ts|branch|stale`, optionally filtered by
-# PROVIDER_FILTER. Records whose provider cannot be recovered are skipped.
+# the form `SESSION_ID|provider|session-ts|branch|sandbox-stale|image-stale`,
+# optionally filtered by PROVIDER_FILTER. Records whose provider cannot be
+# recovered are skipped.
 # `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7 — see session_stale).
 RESUME_INVENTORY=()
 build_inventory() {
@@ -95,7 +104,7 @@ build_inventory() {
   if [[ -n "$PROJECT_DIR" ]]; then
     current_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || true)"
   fi
-  local f sid provider ts branch
+  local f sid provider ts branch stale image_stale
   for f in "$compose_dir"/*.yml; do
     [[ -f "$f" ]] || continue
     sid="$(basename "$f" .yml)"
@@ -107,7 +116,8 @@ build_inventory() {
     ts="$(record_label "$f" session-ts)"
     branch="$(record_label "$f" host-branch)"
     stale="$(session_stale "$f" "$current_sha")"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale" )
+    image_stale="$(record_image_stale "$f" "$REPO_ROOT")"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale" )
   done
   # Newest first by session-ts.
   local sorted
@@ -137,12 +147,21 @@ if [[ "$RESUME_LIST" == true ]]; then
     fi
     exit 1
   fi
-  echo "Resumable sessions (make resume SESSION_ID=<id>):  [sandbox stale/fresh/unknown]"
-  _line=; sid=; provider=; ts=; branch=; stale=
+  echo "Resumable sessions (make resume SESSION_ID=<id>):  [sandbox stale/fresh/unknown] [image stale/fresh/unknown]"
+  _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
+  shown=0; remaining=0
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale <<< "$_line"
-    printf '  %-8s  %-10s  %-17s  %-22s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale"
+    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
+    if [[ "$shown" -ge "$RESUME_LIST_PAGE_SIZE" ]]; then
+      remaining=$((remaining + 1))
+      continue
+    fi
+    printf '  %-8s  %-10s  %-17s  %-22s  %-7s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale" "$image_stale"
+    shown=$((shown + 1))
   done
+  if [[ "$remaining" -gt 0 ]]; then
+    echo "  (...$remaining more session(s) — use --interactive or --provider=<n> to narrow)" >&2
+  fi
   exit 0
 fi
 
@@ -160,15 +179,17 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
 
   # Build the picker entries (value|display), then pick + confirm.
   # Explicit --interactive always shows the picker + confirm, even for a sole
-  # record (decision I-1) — the deliberately slow mode.
-  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=
+  # record (decision I-1) — the deliberately slow mode. Paged at
+  # RESUME_LIST_PAGE_SIZE (same cap as --list).
+  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale <<< "$_line"
-    _std="status"; [[ "$stale" == "stale" ]] && _std="STALE"
-    PICKER+=( "$sid|$sid  $provider  $ts  $branch  [$_std]" )
+    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
+    _std="status";   [[ "$stale" == "stale" ]]       && _std="STALE"
+    _img="img-ok";   [[ "$image_stale" == "stale" ]] && _img="IMG-STALE"
+    PICKER+=( "$sid|$sid  $provider  $ts  $branch  [$_std] [$_img]" )
   done
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
-  chosen="$(interactive_pick "Resume which session?" PICKER)" || exit 1
+  chosen="$(interactive_pick "Resume which session?" PICKER "" "$RESUME_LIST_PAGE_SIZE")" || exit 1
 
   disp_provider="$(record_provider "$SANDBOX_DIR/.compose/$chosen.yml")"
   disp_ts="$(record_label "$SANDBOX_DIR/.compose/$chosen.yml" session-ts)"
