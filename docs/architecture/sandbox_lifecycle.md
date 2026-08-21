@@ -87,7 +87,7 @@ volume exists + REFRESH not set?
 
 Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
 
-**Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`.
+**Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`. `make start INTERACTIVE=1` opens the config wizard (pick a provider + build policy, confirm, then start); provider and `.env` values otherwise come from the Makefile/`.env`.
 
 ```
 --refresh/--rebuild passed?

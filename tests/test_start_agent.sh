@@ -452,6 +452,100 @@ test_docker_compose_template_has_container_names() {
   fi
 }
 # -------------------------
+# Interactive config wizard tests (F2 design D11)
+# -------------------------
+
+# Help surface: --interactive is described as the config wizard, no longer
+# "not yet implemented".
+test_wizard_help_describes_interactive() {
+  local out
+  out="$(bash "$REPO_ROOT/scripts/start_agent.sh" --help 2>&1)"
+  if echo "$out" | grep -q -- "--interactive  interactive config wizard" \
+     && ! echo "$out" | grep -q "NOT YET IMPLEMENTED"; then
+    pass "start --help: --interactive documented as config wizard (not 'not yet implemented')"
+  else
+    fail "start --help: --interactive not documented as config wizard; out=$out"
+  fi
+}
+
+# --interactive with no --provider: provider picker shown, build policy picker,
+# then confirm. Abort on 'n' → non-zero and no session record created (the
+# clean-abort gate — no partial start).
+test_wizard_picker_abort() {
+  local dir="$FIXTURE_DIR/wizard_pick_abort"
+  mkdir -p "$dir/project" "$dir/sandbox"
+  local out rc
+  out="$(printf '1\n\nn\n' | bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+      --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" \
+      --interactive 2>&1)"; rc=$?
+  if [[ $rc -ne 0 ]] \
+     && echo "$out" | grep -q "Select a provider" \
+     && echo "$out" | grep -iq "aborted" \
+     && ! ls "$dir/sandbox/.compose"/*.yml >/dev/null 2>&1; then
+    pass "start --interactive: picker + confirm, abort on 'n' → non-zero, no session record"
+  else
+    fail "start --interactive: expected picker+abort+no record, got rc=$rc: $out"
+  fi
+}
+
+# --interactive with --provider supplied: no provider re-prompt (D1 — supplied
+# args override the wizard's suggestions); the confirm shows the supplied
+# provider; abort on 'n'.
+test_wizard_provider_supplied_no_reprompt() {
+  local dir="$FIXTURE_DIR/wizard_provider_arg"
+  mkdir -p "$dir/project" "$dir/sandbox"
+  local out rc
+  out="$(printf '\nn\n' | bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+      --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" \
+      --provider=pi --interactive 2>&1)"; rc=$?
+  if [[ $rc -ne 0 ]] \
+     && ! echo "$out" | grep -q "Select a provider" \
+     && echo "$out" | grep -q "provider: pi" \
+     && echo "$out" | grep -iq "aborted"; then
+    pass "start --interactive: supplied --provider not re-prompted; confirm shows provider, abort"
+  else
+    fail "start --interactive: expected no provider re-prompt, got rc=$rc: $out"
+  fi
+}
+
+# --interactive accept path: the wizard's selections flow through to a real
+# session under the docker stub — run completes, the .compose record is
+# written, and compose up is issued. Proves the wizard integrates with the
+# existing non-interactive start pipeline.
+test_wizard_accept_runs_to_completion() {
+  local dir="$FIXTURE_DIR/wizard_accept"
+  mkdir -p "$dir/project" "$dir/sandbox/.workspace/session-diffs" \
+           "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  git -C "$dir/project" init -q
+  git -C "$dir/project" config user.email "t@t"
+  git -C "$dir/project" config user.name "t"
+  echo x > "$dir/project/f.txt"
+  git -C "$dir/project" add -A
+  git -C "$dir/project" commit -qm init
+
+  local out rc trace
+  trace="$dir/trace.log"
+  out="$(cd "$dir" && printf '1\n2\ny\n' | \
+    PATH="$REPO_ROOT/test/stubs:$PATH" \
+    DOCKER_TRACE_LOG="$trace" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+      --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" \
+      --interactive) 2>&1"; rc=$?
+  local rec
+  rec=$(ls "$dir/sandbox/.compose"/*.yml 2>/dev/null | head -1)
+  if [[ $rc -eq 0 && -n "$rec" && -f "$rec" ]] \
+     && grep -q "compose up" "$trace"; then
+    pass "start --interactive: accept path runs to completion (compose record + up)"
+  else
+    fail "start --interactive: accept path failed, rc=$rc record=$rec: $out"
+  fi
+}
+
+# -------------------------
 # Run all tests
 
 echo "=== start_agent.sh tests (session identity derivation + compose template) ==="
@@ -572,5 +666,11 @@ run_test test_rebuild_block_exists_before_preflight
 run_test test_help_flag_prints_full_usage
 run_test test_help_short_flag_prints_usage
 run_test test_no_default_provider_in_help_or_flag
+
+# Interactive config wizard tests (F2 design D11)
+run_test test_wizard_help_describes_interactive
+run_test test_wizard_picker_abort
+run_test test_wizard_provider_supplied_no_reprompt
+run_test test_wizard_accept_runs_to_completion
 
 test_done

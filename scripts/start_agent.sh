@@ -32,6 +32,8 @@ set -euo pipefail
 # -------------------------
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# interactive.sh sources routing.sh via ${AGENT_SANDBOX_REPO}; mirror the dispatcher.
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$REPO_ROOT}"
 
 # Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
 # common.sh does not touch script-dir variables — this script's own value above stands.
@@ -73,12 +75,13 @@ Flags (all required except --sandbox/--env):
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session
   --rebuild   force a full rebuild including base images, then start a new session
-  --interactive  interactive start picker — NOT YET IMPLEMENTED (F2 start-wizard iteration)
+  --interactive  interactive config wizard: pick provider + build policy, confirm, then start
 
 Note: start always begins a NEW session. To resume a previous session, use
 `make resume` (agent-sandbox resume).
 
-Note: --provider is required and has no default. Pass it explicitly.
+Note: --provider is required and has no default. Pass it explicitly, or use
+--interactive to pick a provider from a menu (recommended when unsure).
 EOF
 }
 
@@ -132,16 +135,6 @@ if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
   exit 1
 fi
 
-# --provider is required and deliberately has no default — the harness does
-# not presume a provider. Fail with a clear diagnostic rather than a cryptic
-# image-naming error downstream.
-if [[ -z "$PROVIDER_NAME" ]]; then
-  echo "Error: --provider is required (no default)." >&2
-  echo "  Pass it explicitly, e.g. --provider=pi" >&2
-  echo "  or from a sandbox Makefile: make start PROVIDER=pi" >&2
-  exit 1
-fi
-
 # -------------------------
 # SANDBOX_DIR derivation
 # -------------------------
@@ -167,6 +160,98 @@ validate_wsl_path() {
 
 validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
 validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
+
+# -------------------------
+# Interactive config wizard (F2 design D11)
+# -------------------------
+# `make start INTERACTIVE=1` collects the config (provider + build policy)
+# and confirms before starting. Fast path = supply PROVIDER= directly;
+# args already provided override the wizard's suggestions (D1). The wizard
+# runs before the provider required-check so a missing --provider can be
+# filled interactively; an abort exits cleanly before any session state is
+# created.
+_start_providers() {
+  # Actionable providers = directories under src/reasoning/providers/ that
+  # carry a provider.dockerfile (same source build.sh enumerates).
+  local p
+  for p in "$AGENT_SANDBOX_REPO"/src/reasoning/providers/*/; do
+    [[ -f "${p}provider.dockerfile" ]] || continue
+    basename "$p"
+  done
+}
+
+_start_wizard() {
+  # Interactive start wizard (D11). Start mode only — serve/dry-run
+  # interactive support is a deferred refactor (roadmap L153).
+  if [[ "$MODE" != "standard" ]]; then
+    echo "Error: --interactive (config wizard) is only available for start mode." >&2
+    echo "  Serve/dry-run interactive support is deferred (roadmap L153)." >&2
+    exit 1
+  fi
+
+  source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
+
+  # Provider picker — only when --provider was not supplied (D1: supplied
+  # args override the suggested default rather than being re-prompted).
+  if [[ -z "$PROVIDER_NAME" ]]; then
+    local -a PROVIDER_ENTRIES=()
+    local p
+    for p in $(_start_providers); do
+      PROVIDER_ENTRIES+=("$p|$p")
+    done
+
+    if [[ "${#PROVIDER_ENTRIES[@]}" -eq 0 ]]; then
+      echo "Error: no providers found under $AGENT_SANDBOX_REPO/src/reasoning/providers/" >&2
+      exit 1
+    fi
+
+    local chosen
+    chosen="$(interactive_pick "Select a provider:" PROVIDER_ENTRIES)" || exit 1
+    PROVIDER_NAME="$chosen"
+  fi
+
+  # Build policy — only when neither --refresh nor --rebuild was supplied (D1).
+  if [[ "$REFRESH" != true && "$REBUILD" != true ]]; then
+    # shellcheck disable=SC2034 # consumed by interactive_pick via nameref
+    local -a BUILD_ENTRIES=(
+      "none|default (no rebuild)"
+      "refresh|refresh sandbox and provider images"
+      "rebuild|full rebuild from scratch (incl. base)"
+    )
+    local policy
+    policy="$(interactive_pick "Image build policy:" BUILD_ENTRIES "none")" || exit 1
+    [[ "$policy" == "refresh" ]] && REFRESH=true
+    [[ "$policy" == "rebuild" ]] && REBUILD=true
+  fi
+
+  # Summary + confirm. Abort exits cleanly before any session state is created.
+  local build_label="default (no rebuild)"
+  [[ "$REFRESH" == true ]] && build_label="refresh"
+  [[ "$REBUILD" == true ]] && build_label="rebuild (full)"
+  if ! interactive_confirm_or_abort "Start a new session with:" \
+       "provider: $PROVIDER_NAME" \
+       "build:    $build_label" \
+       "name:     $PROJECT_NAME" \
+       "project:  $PROJECT_DIR" \
+       "sandbox:  $SANDBOX_DIR"; then
+    exit 1
+  fi
+}
+
+if [[ "${INTERACTIVE:-false}" == "true" ]]; then
+  _start_wizard
+fi
+
+# --provider is required and deliberately has no default — the harness does
+# not presume a provider. Fail with a clear diagnostic rather than a cryptic
+# image-naming error downstream.
+if [[ -z "$PROVIDER_NAME" ]]; then
+  echo "Error: --provider is required (no default)." >&2
+  echo "  Pass it explicitly, e.g. --provider=pi" >&2
+  echo "  or from a sandbox Makefile: make start PROVIDER=pi" >&2
+  echo "  or use --interactive to pick from a menu" >&2
+  exit 1
+fi
 
 if [[ ! -d "$PROJECT_DIR" ]]; then
   echo "Error: PROJECT_DIR does not exist: $PROJECT_DIR"
@@ -196,14 +281,6 @@ _new_session_identity() {
   export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
   export SESSION_ID; SESSION_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
 }
-
-if [[ "${INTERACTIVE:-false}" == "true" ]]; then
-  # --interactive: interactive start picker is a distinct layer from the resume
-  # picker (resume is a branch of it). Not yet implemented — planned for the F2
-  # start-wizard iteration.
-  echo "Error: --interactive (interactive start picker) is not yet implemented — planned for the F2 start-wizard iteration." >&2
-  exit 1
-fi
 
 if [[ "${REFRESH:-false}" == "true" ]]; then
   echo "Refresh requested — starting new session"

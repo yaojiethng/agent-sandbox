@@ -29,10 +29,12 @@
 #   Example: make build REBUILD=1
 #
 # INTERACTIVE
-#   Optional. Starts the interactive start picker — NOT YET IMPLEMENTED:
-#   passing --interactive errors with a `not yet implemented` message until the
-#   F2 start-wizard iteration lands. Do not use yet.
-#   Example: make start PROVIDER=hermes INTERACTIVE=1
+#   Optional. Starts the interactive config wizard: pick a provider and image
+#   build policy, confirm, then start a new session. Fast path supplies
+#   PROVIDER= (and optionally REFRESH=1/REBUILD=1) directly; --interactive is
+#   the explicit slow mode (recommended when unsure of the provider).
+#   Example: make start INTERACTIVE=1
+#            make start PROVIDER=hermes INTERACTIVE=1
 #
 # NOTE ON RESUME
 #   start always begins a NEW session; do not pass RESUME to make start. To
@@ -132,7 +134,7 @@ help:
 	@echo "  STALE=1          — remove stale volumes immediately (prune only)"
 	@echo "  FORCE=1          — apply with --reject (draft/apply)"
 	@echo "  FROM=<channel>   — resolution channel: session|autosave|bundles (draft only)"
-	@echo "  INTERACTIVE=1    — interactive start picker (NOT YET IMPLEMENTED; draft/apply: --interactive preview/confirm)"
+	@echo "  INTERACTIVE=1    — interactive config wizard: pick provider + build policy, then start (make start)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."
 
