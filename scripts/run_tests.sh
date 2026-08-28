@@ -5,6 +5,9 @@
 set -uo pipefail
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
+# RUN_TESTS_DIR overrides discovery for the runner self-test
+# (tests/test_runner_selftest.sh feeds it synthetic files).
+TEST_DIR="${RUN_TESTS_DIR:-$TEST_DIR}"
 
 VERBOSE="${VERBOSE:-0}"
 

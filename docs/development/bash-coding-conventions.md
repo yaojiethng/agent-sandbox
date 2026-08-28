@@ -274,6 +274,16 @@ Entrypoint scripts (`scripts/*.sh`) and standalone `main()` blocks may use
 Files in `src/libs/` may export functions (for sourcing) and also run
 standalone. The `BASH_SOURCE[0] == "$0"` guard separates the two modes.
 
+### 3.3 No speculative flags: boolean parameters need a production caller
+
+Do not add boolean/string mode parameters to a function unless at least one
+production call site passes a value that changes behaviour. A flag "for later"
+is dead API surface: it widens every signature it threads through, invites
+untested branches, and its eventual removal touches every file in between
+(`STRICT` and `AUTO_SELECT` were both removed for exactly this — see the
+2026-08-21 loc-reduction campaign). When a mode is genuinely needed, add the
+parameter and the call-site change in the same commit.
+
 ---
 
 ## 4. Common Pitfalls

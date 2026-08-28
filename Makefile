@@ -85,6 +85,20 @@ test:
 	VERBOSE=$(VERBOSE) bash scripts/run_tests.sh
 
 # -------------------------
+# Static checks (non-gating; see scripts/check_*.sh headers)
+# -------------------------
+
+.PHONY: lint test-smoke lib-liveness
+lint:
+	bash scripts/check_lint.sh
+
+test-smoke:
+	bash scripts/check_test_smoke.sh
+
+lib-liveness:
+	bash scripts/check_lib_liveness.sh
+
+# -------------------------
 # Help
 # -------------------------
 

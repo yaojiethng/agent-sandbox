@@ -429,11 +429,12 @@ counts) would lock the contract.
 
 ### [A] 2026-08-21 — Knowledge/diagnostic tests outside `make test` rot silently
 
-state: open
+state: mitigated
 scoped: none
 legacy: none
-mitigation: none — policy excludes them deliberately; no detection mechanism
-exists for their decay.
+mitigation: `make test-smoke` / `scripts/check_test_smoke.sh` (20260823-07)
+syntax-checks every excluded script non-gatingly; the 20260823-06 audit
+also removed the three scripts that had already rotted.
 
 `tests/knowledge/`, `tests/integration/` and `tests/eval/` are excluded from
 the runner glob by documented policy (testing_policy.md), which is correct for

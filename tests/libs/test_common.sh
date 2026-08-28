@@ -67,3 +67,49 @@ test_done() {
   fi
   exit "$FAIL"
 }
+
+# ---------------------------------------------------------------------------
+# Assertion helpers — the standard way to assert inside a test function.
+# Each calls pass/fail itself, so a test body can be one to three lines and
+# can never be assertion-less.
+#
+#   assert_eq ACTUAL EXPECTED [LABEL]      — string equality
+#   assert_ne ACTUAL UNEXPECTED [LABEL]    — string inequality
+#   assert_rc EXPECTED_RC ACTUAL_RC [LABEL] — exit-code comparison (integers)
+#   assert_contains HAYSTACK NEEDLE [LABEL] — substring match (literal)
+# ---------------------------------------------------------------------------
+assert_eq() {
+  local ACTUAL="$1" EXPECTED="$2" LABEL="${3:-values equal}"
+  if [[ "$ACTUAL" == "$EXPECTED" ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL (expected '$EXPECTED', got '$ACTUAL')"
+  fi
+}
+
+assert_ne() {
+  local ACTUAL="$1" UNEXPECTED="$2" LABEL="${3:-values differ}"
+  if [[ "$ACTUAL" != "$UNEXPECTED" ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL (both values are '$ACTUAL')"
+  fi
+}
+
+assert_rc() {
+  local EXPECTED_RC="$1" ACTUAL_RC="$2" LABEL="${3:-exit code}"
+  if [[ "$ACTUAL_RC" == "$EXPECTED_RC" ]]; then
+    pass "$LABEL (rc=$ACTUAL_RC)"
+  else
+    fail "$LABEL (expected rc=$EXPECTED_RC, got rc=$ACTUAL_RC)"
+  fi
+}
+
+assert_contains() {
+  local HAYSTACK="$1" NEEDLE="$2" LABEL="${3:-contains '$2'}"
+  if [[ "$HAYSTACK" == *"$NEEDLE"* ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL ('$NEEDLE' not found in output)"
+  fi
+}
