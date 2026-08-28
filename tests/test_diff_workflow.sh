@@ -140,16 +140,27 @@ test_apply_diff_file_preserved() {
   fi
 }
 
-test_apply_diff_empty_file_rejected() {
+# Empty diffs carry no valid patches: git rejects them, so apply_run must
+# fail cleanly (non-zero) and leave the target repository untouched.
+test_apply_empty_diff_rejected_without_touching_repo() {
   local P="$FIXTURE_DIR/apply_empty_p"
   make_committed_repo "$P"
+  local BEFORE
+  BEFORE=$(git -C "$P" rev-parse HEAD)
 
-  # Create an empty diff
-  > "$FIXTURE_DIR/empty.diff"
+  : > "$FIXTURE_DIR/empty.diff"
 
-  # Should still succeed — empty diff applied cleanly
-  apply_run "$P" "$FIXTURE_DIR/empty.diff" "" "false" && \
-    pass "apply_run handles empty diff gracefully"
+  if apply_run "$P" "$FIXTURE_DIR/empty.diff" "" "false" 2>/dev/null; then
+    fail "apply_run should reject an empty diff (git: no valid patches in input)"
+    return
+  fi
+  local AFTER
+  AFTER=$(git -C "$P" rev-parse HEAD)
+  if [[ -n $(git -C "$P" status --porcelain) || "$BEFORE" != "$AFTER" ]]; then
+    fail "rejected empty diff must leave repo untouched: no changes, HEAD unmoved"
+  else
+    pass "apply_run rejects empty diff and leaves repo untouched"
+  fi
 }
 
 test_apply_no_resolution_logic() {
@@ -325,7 +336,7 @@ run_test test_apply_missing_diff_file
 run_test test_apply_missing_project_dir
 run_test test_apply_empty_args
 run_test test_apply_diff_file_preserved
-run_test test_apply_diff_empty_file_rejected
+run_test test_apply_empty_diff_rejected_without_touching_repo
 run_test test_apply_no_resolution_logic
 run_test test_apply_requires_diff_flag
 run_test test_apply_patch_file_normal
@@ -333,6 +344,64 @@ run_test test_apply_patch_file_force
 run_test test_apply_patch_file_missing_diff
 run_test test_apply_and_commit_applies_and_commits
 run_test test_apply_and_commit_missing_args
+# =============================================================================
+# PREVIEW tests — apply_preview summary contract
+# =============================================================================
+
+# Multi-file diff: one line per file in diff order + Total line.
+test_apply_preview_lists_files_and_total() {
+  cat > "$FIXTURE_DIR/preview.diff" <<'EOF'
+diff --git a/alpha.txt b/alpha.txt
+index 111..222 100644
+--- a/alpha.txt
++++ b/alpha.txt
+@@ -1 +1 @@
+-old
++new
+diff --git a/sub/beta.txt b/sub/beta.txt
+index 333..444 100644
+--- a/sub/beta.txt
++++ b/sub/beta.txt
+@@ -1 +1 @@
+-old
++new
+EOF
+  local out
+  out=$(apply_preview "$FIXTURE_DIR/preview.diff")
+  if [[ "$out" == $'alpha.txt\nsub/beta.txt\nTotal files: 2' ]]; then
+    pass "apply_preview lists each file in order plus total"
+  else
+    fail "apply_preview output mismatch: '$out'"
+  fi
+}
+
+# Empty diff: exactly the no-changes message, exit 0, no Total line.
+test_apply_preview_empty_diff_reports_no_changes() {
+  : > "$FIXTURE_DIR/preview_empty.diff"
+  local out rc
+  out=$(apply_preview "$FIXTURE_DIR/preview_empty.diff" 2>&1); rc=$?
+  if [[ $rc -eq 0 && "$out" == "No changes found in $FIXTURE_DIR/preview_empty.diff" ]]; then
+    pass "apply_preview on empty diff reports no changes and exits 0"
+  else
+    fail "apply_preview empty diff: rc=$rc out='$out'"
+  fi
+}
+
+# Binary diffs have a header like any other; they must be counted.
+test_apply_preview_counts_binary_diffs() {
+  printf 'diff --git a/img.png b/img.png\nindex 111..222 100644\nGIT binary patch\n' > "$FIXTURE_DIR/preview_bin.diff"
+  local out
+  out=$(apply_preview "$FIXTURE_DIR/preview_bin.diff")
+  if [[ "$out" == $'img.png\nTotal files: 1' ]]; then
+    pass "apply_preview counts binary diffs by their header"
+  else
+    fail "apply_preview binary diff output mismatch: '$out'"
+  fi
+}
+
 run_test test_apply_and_commit_force_mode
+run_test test_apply_preview_lists_files_and_total
+run_test test_apply_preview_empty_diff_reports_no_changes
+run_test test_apply_preview_counts_binary_diffs
 
 test_done

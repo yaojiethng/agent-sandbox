@@ -250,6 +250,65 @@ run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
 run_test test_refresh_syncs_paths_preserves_config
+# ---------------------------------------------------------------------------
+# template_version — refresh version gating depends on reading the marker
+# line from a template file. onboard.sh auto-executes when sourced, so
+# extract by exact bounds.
+# ---------------------------------------------------------------------------
+_template_version_probe() {
+  local file="$1"
+  bash -c '
+    eval "$(sed -n "/^template_version()/,/^}/p" "$1")"
+    template_version "$2"
+  ' _ "$REPO_ROOT/scripts/onboard.sh" "$file"
+}
+
+test_template_version_reads_marker_line() {
+  local f="$FIXTURE_DIR/tpl_with_version"
+  printf '# agent-sandbox template version: 3\nother: line\n' > "$f"
+  local out
+  out=$(_template_version_probe "$f")
+  if [[ "$out" == "3" ]]; then
+    pass "template_version extracts number from marker line"
+  else
+    fail "template_version → '$out', want '3'"
+  fi
+}
+
+test_template_version_absent_marker_is_empty_and_clean() {
+  local f="$FIXTURE_DIR/tpl_no_version"
+  printf '# no marker here\ncontent: yes\n' > "$f"
+  local out rc
+  out=$(_template_version_probe "$f" 2>/dev/null); rc=$?
+  if [[ $rc -eq 0 && -z "$out" ]]; then
+    pass "template_version without marker → empty output, exit 0"
+  else
+    fail "template_version absent marker: rc=$rc out='$out'"
+  fi
+}
+
+test_template_version_real_makefile_template_parses() {
+  # The actual shipped template must carry a parseable numeric version —
+  # refresh gating silently degrades to "unknown" otherwise.
+  local out
+  out=$(template_version_probe_real)
+  if [[ "$out" =~ ^[0-9]+$ ]]; then
+    pass "shipped Makefile.template carries numeric template version ($out)"
+  else
+    fail "Makefile.template version unparsable: '$out'"
+  fi
+}
+
+template_version_probe_real() {
+  bash -c '
+    eval "$(sed -n "/^template_version()/,/^}/p" "$1")"
+    template_version "$2"
+  ' _ "$REPO_ROOT/scripts/onboard.sh" "$REPO_ROOT/scripts/templates/Makefile.template"
+}
+
 run_test test_refresh_aborts_without_minimal_args
+run_test test_template_version_reads_marker_line
+run_test test_template_version_absent_marker_is_empty_and_clean
+run_test test_template_version_real_makefile_template_parses
 
 test_done "scripts/onboard.sh"

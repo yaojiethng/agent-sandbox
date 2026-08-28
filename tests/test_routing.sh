@@ -268,6 +268,52 @@ run_test test_resolve_draft_invalid_channel
 run_test test_resolve_channel_base_dir_session
 run_test test_resolve_channel_base_dir_autosave
 run_test test_resolve_channel_base_dir_bundles
+# =============================================================================
+# resolve_latest_dir
+# =============================================================================
+
+# Missing base directory → exit 1, no output.
+test_resolve_latest_dir_missing_base_fails() {
+  local out rc
+  out=$(resolve_latest_dir "$FIXTURE_DIR/does-not-exist" 2>/dev/null); rc=$?
+  if [[ $rc -ne 0 && -z "$out" ]]; then
+    pass "resolve_latest_dir fails cleanly on missing base"
+  else
+    fail "resolve_latest_dir missing base: rc=$rc out='$out'"
+  fi
+}
+
+# Empty base directory → exit 1, no output.
+test_resolve_latest_dir_empty_base_fails() {
+  mkdir -p "$FIXTURE_DIR/empty_base"
+  local out rc
+  out=$(resolve_latest_dir "$FIXTURE_DIR/empty_base" 2>/dev/null); rc=$?
+  if [[ $rc -ne 0 && -z "$out" ]]; then
+    pass "resolve_latest_dir fails cleanly on empty base"
+  else
+    fail "resolve_latest_dir empty base: rc=$rc out='$out'"
+  fi
+}
+
+# Files are ignored; lexicographic max wins. Session dirs are zero-padded
+# timestamps, so lexicographic order equals chronological order — pin that
+# assumption with realistic names.
+test_resolve_latest_dir_picks_lexicographic_max_ignoring_files() {
+  local B="$FIXTURE_DIR/latest_base_dated"
+  mkdir -p "$B/20260501-120000" "$B/20260401-090000" "$B/20260601-010000"
+  touch "$B/stray-file.txt"
+  local out
+  out=$(resolve_latest_dir "$B")
+  if [[ "$out" == "$B/20260601-010000" ]]; then
+    pass "resolve_latest_dir picks lexicographic max dir, ignores files"
+  else
+    fail "resolve_latest_dir → '$out', want '$B/20260601-010000'"
+  fi
+}
+
 run_test test_resolve_channel_base_dir_invalid
+run_test test_resolve_latest_dir_missing_base_fails
+run_test test_resolve_latest_dir_empty_base_fails
+run_test test_resolve_latest_dir_picks_lexicographic_max_ignoring_files
 
 test_done

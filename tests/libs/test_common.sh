@@ -16,7 +16,18 @@ SKIPS=()
 pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
 fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); FAILURES+=("$1"); }
 skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); SKIPS+=("$1"); }
-run_test() { echo "[ $1 ]"; $1 || true; }
+# run_test NAME
+#   Invokes a test function. A test that returns without calling pass/fail/skip
+#   is counted as a failure: a silent test proves nothing.
+run_test() {
+  local _bp=$PASS _bf=$FAIL _bs=$SKIP
+  echo "[ $1 ]"
+  $1 || true
+  if (( PASS + FAIL + SKIP == _bp + _bf + _bs )); then
+    echo "  NO-ASSERTION: $1 completed without calling pass/fail/skip" >&2
+    FAIL=$((FAIL + 1)); FAILURES+=("$1 (no assertion)")
+  fi
+}
 
 # ---------------------------------------------------------------------------
 # test_setup — call at file scope after source lines to get standard vars
@@ -25,6 +36,7 @@ run_test() { echo "[ $1 ]"; $1 || true; }
 # Sets: TEST_DIR, REPO_ROOT, FIXTURE_DIR (mktemp -d)
 # Registers: trap 'rm -rf "$FIXTURE_DIR"' EXIT
 # ---------------------------------------------------------------------------
+# shellcheck disable=SC2034  # REPO_ROOT is consumed by test files after they call test_setup
 test_setup() {
   if [[ -z "${BASH_SOURCE[1]:-}" ]]; then
     echo "Error: test_setup must be called from a sourced file, not interactively." >&2
@@ -45,11 +57,13 @@ test_done() {
   echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
   if [[ ${#FAILURES[@]} -gt 0 ]]; then
     echo "Failed:"
-    for f in "${FAILURES[@]}"; do echo "  - $f"; done
+    # FAIL: prefix — scripts/run_tests.sh counts failures by grepping this
+    # exact marker from captured output.
+    for f in "${FAILURES[@]}"; do echo "  FAIL: $f"; done
   fi
   if [[ ${#SKIPS[@]} -gt 0 ]]; then
     echo "Skipped:"
     for s in "${SKIPS[@]}"; do echo "  - $s"; done
   fi
-  exit $FAIL
+  exit "$FAIL"
 }

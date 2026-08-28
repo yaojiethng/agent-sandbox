@@ -388,3 +388,59 @@ dispatcher matches. In this session the sandbox Makefile had refreshed (template
 (Makefile vs CLI) diverge. Lesson: when a subcommand/flag seems missing, diff the
 installed CLI's `Valid subcommands` against `scripts/agent-sandbox.sh` before
 assuming the implementation is wrong; a stale install is the first suspect.
+
+## Agent experience — session 20260821-14 (test-quality campaign)
+
+### [A] 2026-08-21 — Exec-style scripts without dual-use guards block unit seams
+
+state: open
+scoped: none
+legacy: none
+mitigation: bounded sed-extraction of the function body into a subshell
+(see `tests/test_prune.sh` `_env_field_probe`, `tests/test_onboard.sh`
+`_template_version_probe`, `tests/test_start_agent.sh` `_wsl_path_probe`).
+
+`scripts/prune.sh`, `scripts/onboard.sh` and the flag-parsing section of
+`scripts/start_agent.sh` execute unconditionally when sourced — no
+`BASH_SOURCE[0] == "$0"` guard, although `bash-coding-conventions.md` §1.11
+and §3.2 mandate exactly that for dual-use scripts. Consequence: every
+function inside them is unit-testable only by textually extracting its body,
+which breaks silently if the function is renamed or reformatted (the probes
+fail loudly by design, but the seam itself is fragile). Guards on those three
+entry points would let tests source and call directly, deleting the
+extraction layer entirely.
+
+### [A] 2026-08-21 — Marker-based pass/fail counting made silent tests invisible
+
+state: mitigated
+scoped: none
+legacy: none
+mitigation: landed this session — `run_test` fails assertion-less tests;
+`test_done` emits the exact `  FAIL:` marker the runner greps.
+
+Root cause was structural: the runner counts failures by grepping captured
+output for `^  FAIL:` and `run_test` used `$1 || true`. Anything that did not
+happen to print the marker — an undefined function (exit 127), a crashed
+fixture, a test whose only branch was `cmd && pass` — passed invisibly. One
+such zombie had survived multiple review passes. Residual risk: counting is
+still string-marker-based; a second output-format drift reintroduces the
+class. A runner self-test (feed it a synthetic PASS/FAIL stream, assert
+counts) would lock the contract.
+
+### [A] 2026-08-21 — Knowledge/diagnostic tests outside `make test` rot silently
+
+state: open
+scoped: none
+legacy: none
+mitigation: none — policy excludes them deliberately; no detection mechanism
+exists for their decay.
+
+`tests/knowledge/`, `tests/integration/` and `tests/eval/` are excluded from
+the runner glob by documented policy (testing_policy.md), which is correct for
+non-deterministic seams — but nothing ever executes or even lint-checks them,
+so they rot unnoticed. Precedent: `tests/test_dirs.sh`'s header records that
+its coverage previously lived in "a broken manual knowledge test that sourced
+a nonexistent libs/dirs.sh path" — rotted until noticed by accident. Cheapest
+fix: a non-gating `make test-knowledge-smoke` running each script under
+`bash -n` (syntax only) plus shellcheck, catching structural rot without
+asserting on their nondeterministic behavior.

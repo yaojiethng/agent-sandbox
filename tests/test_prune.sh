@@ -374,6 +374,89 @@ run_test test_stale_all_selects_either_criterion
 run_test test_unknown_args_rejected
 run_test test_missing_project_rejected
 
+# ---------------------------------------------------------------------------
+# env_field unit tests
+#
+# prune.sh auto-executes when sourced (no main guard), so the function is
+# extracted by its exact `env_field() {` ... `^}` bounds and run in a
+# subshell. If the function moves or is renamed, these tests fail loudly
+# rather than silently testing a stale copy.
+# ---------------------------------------------------------------------------
+_env_field_probe() {
+  local file="$1" var="$2"
+  bash -c '
+    eval "$(sed -n "/^env_field()/,/^}/p" "$1")"
+    env_field "$2" "$3"
+  ' _ "$REPO_ROOT/scripts/prune.sh" "$file" "$var"
+}
+
+test_env_field_reads_value_from_environment_block() {
+  local f="$FIXTURE_DIR/envfield_record"
+  printf '  environment:\n    - SANDBOX_TYPE=mount\n    - PROVIDER=pi\n' > "$f"
+  local out
+  out=$(_env_field_probe "$f" "SANDBOX_TYPE")
+  if [[ "$out" == "mount" ]]; then
+    pass "env_field reads value from environment block"
+  else
+    fail "env_field SANDBOX_TYPE → '$out', want 'mount'"
+  fi
+}
+
+test_env_field_no_substring_matches() {
+  local f="$FIXTURE_DIR/envfield_substr"
+  printf '    - NODE_PATH=/x\n    - PATH=/bin\n' > "$f"
+  local out
+  out=$(_env_field_probe "$f" "PATH")
+  if [[ "$out" == "/bin" ]]; then
+    pass "env_field does not substring-match NODE_PATH when asked for PATH"
+  else
+    fail "env_field PATH → '$out', want '/bin' (got NODE_PATH value?)"
+  fi
+}
+
+test_env_field_first_match_wins() {
+  local f="$FIXTURE_DIR/envfield_first"
+  printf '    - A=1\n    - A=2\n' > "$f"
+  local out
+  out=$(_env_field_probe "$f" "A")
+  if [[ "$out" == "1" ]]; then
+    pass "env_field returns first match only"
+  else
+    fail "env_field A → '$out', want '1'"
+  fi
+}
+
+test_env_field_missing_key_is_empty_and_clean() {
+  local f="$FIXTURE_DIR/envfield_missing"
+  printf '    - OTHER=x\n' > "$f"
+  local out rc
+  out=$(_env_field_probe "$f" "ABSENT"); rc=$?
+  if [[ $rc -eq 0 && -z "$out" ]]; then
+    pass "env_field missing key → empty output, exit 0"
+  else
+    fail "env_field ABSENT: rc=$rc out='$out'"
+  fi
+}
+
+test_env_field_tolerates_dash_spacing_variants() {
+  local f="$FIXTURE_DIR/envfield_spacing"
+  printf -- '- A=plain\n  -   B=spaced\n' > "$f"
+  local a b
+  a=$(_env_field_probe "$f" "A")
+  b=$(_env_field_probe "$f" "B")
+  if [[ "$a" == "plain" && "$b" == "spaced" ]]; then
+    pass "env_field tolerates dash/spacing variants"
+  else
+    fail "env_field spacing variants: A='$a' B='$b'"
+  fi
+}
+
+run_test test_env_field_reads_value_from_environment_block
+run_test test_env_field_no_substring_matches
+run_test test_env_field_first_match_wins
+run_test test_env_field_missing_key_is_empty_and_clean
+run_test test_env_field_tolerates_dash_spacing_variants
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

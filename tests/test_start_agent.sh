@@ -564,56 +564,146 @@ run_test test_repo_commit_captured
 run_test test_repo_commit_is_full_sha
 
 
-# Container labels tests (Change 5)
-# Note: These tests verify the template structure directly since docker compose
-# config requires a running Docker daemon which may not be available in test env.
-run_test test_docker_compose_template_has_labels_anchor
-run_test test_docker_compose_template_sandbox_uses_anchor
-run_test test_docker_compose_template_agent_uses_anchor
-run_test test_docker_compose_template_has_container_names
+# Rendered-compose behavioral tests are defined with the start-behavior block
+# below; their run_test calls live in the execution list at the bottom of this
+# file.
 
 # -------------------------
 
-test_rebuild_flags_parsed_by_start_agent() {
-  if grep -q -- '--rebuild)' "$REPO_ROOT/scripts/start_agent.sh" && \
-     grep -q -- 'REBUILD=true' "$REPO_ROOT/scripts/start_agent.sh"; then
-    pass "start_agent.sh parses --rebuild flag (rebuild everything)"
+# -------------------------
+# Behavioral start tests: run start_agent.sh end-to-end under docker stubs and
+# assert on observable outcomes (docker trace, persisted compose file).
+# -------------------------
+
+# run_start_session DIR ARGS...
+#   Builds a minimal start fixture under DIR (sandbox tree + .env + committed
+#   project repo), runs `start_agent.sh ARGS...` with docker stubs shadowing
+#   PATH, and captures results in globals:
+#     START_RC      — exit code
+#     START_OUT     — combined stdout+stderr
+#     START_TRACE   — path to the docker trace log
+#     START_COMPOSE — path to the persisted compose file (empty if none)
+run_start_session() {
+  local dir="$1"; shift
+  mkdir -p "$dir/sandbox/.workspace/session-diffs" \
+           "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  make_committed_repo "$dir/project"
+  START_TRACE="$dir/docker-trace.log"
+  : > "$START_TRACE"
+  START_OUT="$(cd "$dir" && \
+    PATH="$REPO_ROOT/test/stubs:$PATH" \
+    DOCKER_TRACE_LOG="$START_TRACE" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" "$@" 2>&1)"
+  START_RC=$?
+  START_COMPOSE="$(ls "$dir/sandbox/.compose"/*.yml 2>/dev/null | head -1)"
+}
+
+# Default policy (no --refresh/--rebuild) starts from existing images;
+# building is an explicit opt-in.
+test_default_policy_starts_without_building() {
+  local dir="$FIXTURE_DIR/start_default_nobuild"
+  run_start_session "$dir" standard \
+    --name=stest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "default start failed rc=$START_RC: $START_OUT"; return
+  fi
+  if grep -q "\] build " "$START_TRACE"; then
+    fail "default policy issued docker build (trace: $(cat "$START_TRACE"))"
   else
-    fail "start_agent.sh missing --rebuild flag handling"
+    pass "default policy starts a session without building images"
   fi
 }
 
-test_refresh_flags_parsed_by_start_agent() {
-  if grep -q -- '--refresh)' "$REPO_ROOT/scripts/start_agent.sh" && \
-     grep -q -- 'REFRESH=true' "$REPO_ROOT/scripts/start_agent.sh"; then
-    pass "start_agent.sh parses --refresh flag (base skipped)"
+# --rebuild forces a full rebuild: the agent image build carries --no-cache.
+test_rebuild_flag_builds_agent_with_no_cache() {
+  local dir="$FIXTURE_DIR/start_rebuild_flag"
+  run_start_session "$dir" standard \
+    --name=rtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi --rebuild
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "--rebuild start failed rc=$START_RC: $START_OUT"; return
+  fi
+  if grep -q "\] build .*--no-cache" "$START_TRACE"; then
+    pass "--rebuild builds images with --no-cache"
   else
-    fail "start_agent.sh missing --refresh flag handling"
+    fail "--rebuild produced no --no-cache build; trace: $(cat "$START_TRACE")"
   fi
 }
 
-test_rebuild_base_flag_removed() {
-  if grep -q -- '--rebuild-base)' "$REPO_ROOT/scripts/start_agent.sh"; then
-    fail "start_agent.sh still has old --rebuild-base flag"
-  elif grep -q -- 'REBUILD_BASE' "$REPO_ROOT/scripts/start_agent.sh"; then
-    fail "start_agent.sh still has old REBUILD_BASE variable"
+# --refresh rebuilds while preserving the layer cache: builds happen,
+# none of them with --no-cache.
+test_refresh_flag_builds_without_no_cache() {
+  local dir="$FIXTURE_DIR/start_refresh_flag"
+  run_start_session "$dir" standard \
+    --name=rtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi --refresh
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "--refresh start failed rc=$START_RC: $START_OUT"; return
+  fi
+  if ! grep -q "\] build " "$START_TRACE"; then
+    fail "--refresh produced no builds at all; trace: $(cat "$START_TRACE")"; return
+  fi
+  if grep -q "\] build .*--no-cache" "$START_TRACE"; then
+    fail "--refresh must not pass --no-cache (it is the cache-preserving path)"
   else
-    pass "start_agent.sh no longer has --rebuild-base flag"
+    pass "--refresh builds sandbox+agent without --no-cache"
   fi
 }
 
-test_rebuild_block_exists_before_preflight() {
-  # Check that the rebuild/refresh block appears before the preflight call
-  local before_preflight
-  before_preflight=$(grep -n '^preflight' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
-  # Matches either --rebuild or --refresh block (both appear before preflight)
-  local rebuild_block
-  rebuild_block=$(grep -nE 'if \[\[ .*(REBUILD|REFRESH).*true' "$REPO_ROOT/scripts/start_agent.sh" | head -1 | cut -d: -f1)
-
-  if [[ -n "$before_preflight" && -n "$rebuild_block" && "$rebuild_block" -lt "$before_preflight" ]]; then
-    pass "rebuild block appears before preflight in start_agent.sh"
+# The generated compose file is the container runtime's input: every {{VAR}}
+# placeholder must be substituted and both containers must be named from
+# project + provider + session.
+test_rendered_compose_fully_substituted_and_names_both_containers() {
+  local dir="$FIXTURE_DIR/start_render_compose"
+  run_start_session "$dir" standard \
+    --name=ctest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 || -z "$START_COMPOSE" ]]; then
+    fail "start did not persist a compose file: rc=$START_RC out=$START_OUT"; return
+  fi
+  local placeholders names
+  # Comments may legitimately mention the {{VAR}} syntax; only unsubstituted
+  # placeholders on active lines are defects.
+  placeholders=$(grep -v "^[[:space:]]*#" "$START_COMPOSE" | grep -c "{{") || placeholders=0
+  names=$(grep -c "container_name:" "$START_COMPOSE") || names=0
+  if [[ "$placeholders" -eq 0 && "$names" -ge 2 ]] \
+     && grep -q "container_name: sandbox-ctest-" "$START_COMPOSE" \
+     && grep -q "container_name: pi-ctest-" "$START_COMPOSE"; then
+    pass "persisted compose fully substituted; sandbox and agent containers named"
   else
-    fail "rebuild block missing or not before preflight"
+    fail "persisted compose bad: placeholders=$placeholders names=$names file=$START_COMPOSE"
+  fi
+}
+
+# Session labels are how prune/resume find a session's resources later, so the
+# generated compose must stamp concrete session identity onto the labels block.
+test_rendered_compose_labels_carry_concrete_session_identity() {
+  local dir="$FIXTURE_DIR/start_render_labels"
+  run_start_session "$dir" standard \
+    --name=ltest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 || -z "$START_COMPOSE" ]]; then
+    fail "start did not persist a compose file: rc=$START_RC out=$START_OUT"; return
+  fi
+  if grep -q "agent-sandbox.project-name: ltest" "$START_COMPOSE" \
+     && grep -Eq "agent-sandbox.session-id: [[:alnum:]]+" "$START_COMPOSE" \
+     && grep -Eq "agent-sandbox.host-branch: [[:alnum:]]+" "$START_COMPOSE"; then
+    pass "session labels carry concrete project, session id and branch"
+  else
+    fail "session labels missing or unsubstituted in $START_COMPOSE"
+  fi
+}
+
+# Removed flags stay removed: --rebuild-base must be rejected as unknown,
+# not silently accepted or half-recognized.
+test_removed_rebuild_base_flag_is_rejected() {
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+        --name=x --project="$FIXTURE_DIR" --rebuild-base 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"Unknown flag: --rebuild-base"* ]]; then
+    pass "removed --rebuild-base flag rejected as unknown"
+  else
+    fail "--rebuild-base not rejected cleanly: rc=$rc out=$out"
   fi
 }
 
@@ -644,23 +734,62 @@ test_help_short_flag_prints_usage() {
   fi
 }
 
-test_no_default_provider_in_help_or_flag() {
-  # Provider is required (no default).  Test the positive claim — "required"
-  # and "default" are mutually exclusive.
-  if grep -q -- 'provider name (required' "$REPO_ROOT/scripts/start_agent.sh"; then
-    pass "start_agent.sh documents --provider as required (no default)"
+# --provider has no default: omitting it must fail fast with a clear
+# diagnostic instead of a cryptic image-naming error downstream.
+test_missing_provider_fails_fast_with_clear_error() {
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+        --name=x --project="$FIXTURE_DIR" 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--provider is required"* ]]; then
+    pass "missing --provider fails fast with a clear diagnostic"
   else
-    fail "start_agent.sh does not document --provider as required"
+    fail "missing --provider: expected clear failure, got rc=$rc out=$out"
   fi
 }
 
-run_test test_rebuild_flags_parsed_by_start_agent
-run_test test_refresh_flags_parsed_by_start_agent
-run_test test_rebuild_base_flag_removed
-run_test test_rebuild_block_exists_before_preflight
+run_test test_rebuild_flag_builds_agent_with_no_cache
+run_test test_refresh_flag_builds_without_no_cache
+# validate_wsl_path rejects Windows drive paths with a WSL conversion hint.
+# start_agent.sh auto-executes its arg parsing when sourced, so the function
+# is extracted by exact bounds and run in a subshell (it calls exit on
+# failure).
+_wsl_path_probe() {
+  local value="$1"
+  bash -c '
+    eval "$(sed -n "/^validate_wsl_path()/,/^}/p" "$1")"
+    validate_wsl_path "PROJECT_DIR" "$2"
+  ' _ "$REPO_ROOT/scripts/start_agent.sh" "$value"
+}
+
+test_wsl_path_accepts_linux_paths() {
+  local out rc
+  out=$(_wsl_path_probe "/mnt/c/Users/proj" 2>&1); rc=$?
+  if [[ $rc -eq 0 && -z "$out" ]]; then
+    pass "validate_wsl_path accepts Linux paths silently"
+  else
+    fail "validate_wsl_path rejected a valid Linux path: rc=$rc out=$out"
+  fi
+}
+
+test_wsl_path_rejects_windows_drive_paths() {
+  local out rc
+  out=$(_wsl_path_probe 'C:\Users\proj' 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"must be a WSL/Linux path"* && "$out" == *"wslpath"* ]]; then
+    pass "validate_wsl_path rejects Windows drive path with conversion hint"
+  else
+    fail "validate_wsl_path C:\\... : rc=$rc out=$out"
+  fi
+}
+
+run_test test_removed_rebuild_base_flag_is_rejected
 run_test test_help_flag_prints_full_usage
 run_test test_help_short_flag_prints_usage
-run_test test_no_default_provider_in_help_or_flag
+run_test test_missing_provider_fails_fast_with_clear_error
+run_test test_wsl_path_accepts_linux_paths
+run_test test_wsl_path_rejects_windows_drive_paths
+run_test test_default_policy_starts_without_building
+run_test test_rendered_compose_fully_substituted_and_names_both_containers
+run_test test_rendered_compose_labels_carry_concrete_session_identity
 
 # Interactive config wizard tests (F2 design D11)
 run_test test_wizard_help_describes_interactive

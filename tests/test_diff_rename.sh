@@ -18,19 +18,11 @@ source "$REPO_ROOT/src/libs/session_state.sh"
 source "$REPO_ROOT/src/libs/routing.sh"
 source "$REPO_ROOT/src/libs/export_status.sh"
 source "$REPO_ROOT/src/libs/package_branch.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 
 FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-_make_repo() {
-  local DIR="$1"
-  rm -rf "$DIR"
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet --initial-branch=main
-  git -C "$DIR" config user.email "test@fixture"
-  git -C "$DIR" config user.name "Test Fixture"
-}
 
 _commit_file() {
   local REPO="$1" FILE="$2" CONTENT="$3"
@@ -56,18 +48,12 @@ _assert_diff_lacks() {
   ! grep -q "$PATTERN" "$DIFF_FILE"
 }
 
-_write_session_state() {
-  local REPO="$1"
-  local SHA; SHA=$(git -C "$REPO" rev-parse HEAD)
-  echo "init_sha=$SHA" > "$REPO/.git/SESSION_STATE"
-}
-
 test_package_branch_no_renames_true() {
   local REPO="$FIXTURE_DIR/rb_true_repo"
   local OUT="$FIXTURE_DIR/rb_true_out"
-  _make_repo "$REPO"
+  make_repo "$REPO"
   _commit_file "$REPO" "config.yaml" "key: value"
-  _write_session_state "$REPO"
+  write_session_state "$REPO"
   _commit_rename "$REPO" "config.yaml" "settings.yaml"
 
   rm -rf "$OUT"; mkdir -p "$OUT"
@@ -88,9 +74,9 @@ test_package_branch_no_renames_true() {
 test_package_branch_default_detects_rename() {
   local REPO="$FIXTURE_DIR/rb_default_repo"
   local OUT="$FIXTURE_DIR/rb_default_out"
-  _make_repo "$REPO"
+  make_repo "$REPO"
   _commit_file "$REPO" "README.md" "# Project"
-  _write_session_state "$REPO"
+  write_session_state "$REPO"
   _commit_rename "$REPO" "README.md" "README.txt"
 
   rm -rf "$OUT"; mkdir -p "$OUT"
@@ -109,9 +95,9 @@ test_package_branch_default_detects_rename() {
 test_diff_export_uses_no_renames_by_default() {
   local REPO="$FIXTURE_DIR/de_nr_repo"
   local OUT="$FIXTURE_DIR/de_nr_out"
-  _make_repo "$REPO"
+  make_repo "$REPO"
   _commit_file "$REPO" "file.txt" "content"
-  _write_session_state "$REPO"
+  write_session_state "$REPO"
   _commit_rename "$REPO" "file.txt" "renamed.txt"
 
   rm -rf "$OUT"; mkdir -p "$OUT"
