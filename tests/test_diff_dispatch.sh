@@ -261,8 +261,17 @@ test_session_path_multiple_sessions_accumulate() {
     fail "expected 2 session dirs under session/, got $COUNT"
   fi
 
-  # Check directory naming uses EXPORT_TIME-SESSION_ID pattern
-  if ls "$CHANGES_DIR/session/" | grep -qE '^[0-9]{8}-[0-9]{6}-run00[12]$'; then
+  # Check directory naming uses EXPORT_TIME-SESSION_ID pattern (glob, not
+  # ls | grep -- names are data)
+  local NAMING_OK=no d
+  for d in "$CHANGES_DIR/session/"*; do
+    [[ -d "$d" ]] || continue
+    if [[ "$(basename "$d")" =~ ^[0-9]{8}-[0-9]{6}-run00[12]$ ]]; then
+      NAMING_OK=yes
+      break
+    fi
+  done
+  if [[ "$NAMING_OK" == yes ]]; then
     pass "session dirs use EXPORT_TIME-SESSION_ID naming"
   else
     fail "session dirs should use EXPORT_TIME-SESSION_ID naming"

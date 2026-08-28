@@ -111,9 +111,14 @@ if [[ -d "$CHANGES_DIR/autosave" ]]; then
   ls -t "$CHANGES_DIR/autosave/" 2>/dev/null | head -5
   AS_COUNT=$(ls -U "$CHANGES_DIR/autosave/" 2>/dev/null | wc -l)
   echo "  Total autosave entries: $AS_COUNT"
-  # Check if any match our session
+  # Check if any match our session (glob, not ls | grep -- names are data)
   OUR_TS="${SESSION_TS:-unknown}"
-  MATCHING=$(ls "$CHANGES_DIR/autosave/" 2>/dev/null | grep "$OUR_TS" | wc -l)
+  MATCHING=0
+  if [[ -d "$CHANGES_DIR/autosave" ]]; then
+    for d in "$CHANGES_DIR/autosave/"*"$OUR_TS"*; do
+      [[ -e "$d" ]] && MATCHING=$((MATCHING + 1))
+    done
+  fi
   if [[ "$MATCHING" -gt 0 ]]; then
     pass "Found $MATCHING autosave entries matching session TS '$OUR_TS'"
   else

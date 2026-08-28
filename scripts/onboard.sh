@@ -286,9 +286,11 @@ _provision_providers() {
       echo "    .$PROVIDER_NAME/ (provider config  --  fill in secrets before first run)"
     fi
 
-    # Run provider-specific setup hook
+    # Run provider-specific setup hook. The path is provider-selected and
+    # validated by the -f check; ShellCheck cannot follow it statically.
     local PROVIDER_SETUP="$PROVIDER_DIR/onboard.sh"
     if [[ -f "$PROVIDER_SETUP" ]]; then
+      # shellcheck disable=SC1090
       if ! source "$PROVIDER_SETUP"; then
         echo "Error: provider setup hook failed: $PROVIDER_SETUP" >&2
         echo "  Fix the error in $PROVIDER_SETUP before retrying." >&2

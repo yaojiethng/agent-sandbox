@@ -67,7 +67,7 @@ section() { printf "\n=== %s ===\n" "$1"; }
 # ---------------------------------------------------------------------------
 
 _is_writable() {
-  local dir="$1" testfile="$1/.dryrun_write_test"
+  local testfile="$1/.dryrun_write_test"
   if touch "$testfile" 2>/dev/null; then rm -f "$testfile" 2>/dev/null; return 0; fi
   return 1
 }

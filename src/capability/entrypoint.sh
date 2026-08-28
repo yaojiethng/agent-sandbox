@@ -118,7 +118,7 @@ elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
   # from the snapshot mount by snapshot_init_git  --  no copy needed.
 
   # Initialise git baseline. Failure here means the container cannot start.
-  > /dev/null; snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" || {
+  snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" > /dev/null || {
     echo "Error: sandbox git initialisation failed  --  container cannot start." >&2
     echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
     exit 1

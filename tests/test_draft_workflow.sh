@@ -613,6 +613,7 @@ test_init_sha_warns_on_divergence_but_proceeds() {
   local BASE TIME INIT
   # Warning goes to stderr; here we assert success + HEAD default.
   if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>/dev/null; then
+    [[ -n "$TIME" ]] || fail "export metadata: TIME should be populated"
     if [[ "$BASE" == "HEAD" && -n "$INIT" ]]; then
       pass "INIT_SHA present: branch point resolves, divergence is warn-only"
     else

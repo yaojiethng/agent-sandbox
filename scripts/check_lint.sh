@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # scripts/check_lint.sh
-# ShellCheck report over all tracked shell scripts (src/, scripts/, tests/,
-# test/). Currently NON-GATING: reports the warning count and each finding.
+# ShellCheck gate over all tracked shell scripts (src/, scripts/, tests/,
+# test/). BLOCKING since handover 20260823-15: exits nonzero on any warning.
 #
-# Baseline at introduction (20260823-07): 31 warnings. The gate becomes
-# blocking once the baseline reaches zero  --  fix findings, do not grow them.
-# Known false-positive classes: SC2034 on `printf -v` dynamic assignment
-# targets in draft_state.sh (suppress with a targeted directive, not a
-# blanket disable).
-#
-# Exit 0 always while non-gating. To flip to gating: exit with the warning
-# count and wire the target as blocking in CI.
+# History: baseline at introduction (20260823-07) was 31 warnings, held
+# non-gating until cleared. Suppression policy: targeted `# shellcheck
+# disable=SCxxxx` with a rationale comment -- never a blanket disable.
+# Known intentional suppressions:
+#   - SC2034 in draft_state.sh: printf -v dynamic assignment targets
+#   - SC2064 in snapshot.sh: trap expansion-now is required because the
+#     variable is function-local and must be baked into the trap body
+#   - SC1090 on runtime-resolved source paths that are -f validated first
 
 set -uo pipefail
 
@@ -27,10 +27,11 @@ WARNINGS=$(shellcheck -S warning "${FILES[@]}" 2>/dev/null | grep -c '\^--' || t
 echo "ShellCheck (-S warning): $WARNINGS warnings across ${#FILES[@]} files"
 if (( WARNINGS > 0 )); then
   echo ""
-  echo "Run 'shellcheck -S warning <file>' for details. Gate flips to blocking at zero."
+  echo "Blocking gate: fix the findings above (targeted directives allowed
+with rationale for known false-positive classes; see file header)." >&2
 fi
 
 if (( WARNINGS == 0 )); then
-  echo "Clean  --  ready to enforce as a blocking gate."
+  echo "Clean"
 fi
-exit 0
+exit "$WARNINGS"

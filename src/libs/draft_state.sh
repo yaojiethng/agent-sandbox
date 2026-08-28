@@ -134,8 +134,12 @@ draft_validate_branch() {
   }
 
   # Clear state variables before parsing to avoid leaking from a previous call
-  # (printf -v inside a while loop does not localize the target variable)
+  # (printf -v inside a while loop does not localize the target variable).
+  # The names are assignment targets of printf -v below, hence "unused" to
+  # ShellCheck's dataflow.
+  # shellcheck disable=SC2034
   local from_hash="" source_branch="" author="" session_ts=""
+  # shellcheck disable=SC2034
   local host_branch="" diff_count="" exported_at="" drafted_at="" session_id=""
 
   while IFS=':' read -r KEY VALUE; do

@@ -178,6 +178,8 @@ fi
 
 _provider_preflight="/opt/sandbox/bin/provider-preflight.sh"
 if [[ -f "$_provider_preflight" ]]; then
+  # Container-provided path, validated above; not statically followable.
+  # shellcheck disable=SC1090
   source "$_provider_preflight"
 fi
 unset _provider_preflight

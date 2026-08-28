@@ -26,9 +26,8 @@ ANY_FAILED=0
 FILE_COUNT=0
 
 discover_tests() {
-  local PATTERN="$TEST_DIR"/test_*.sh
   local FILES=()
-  for F in $PATTERN; do
+  for F in "$TEST_DIR"/test_*.sh; do
     if [[ -f "$F" ]]; then
       FILES+=("$F")
     fi

@@ -50,8 +50,7 @@ invoke_build() {
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
-      --targets="$PROVIDER_NAME" \
-      "$@"
+      --targets="$PROVIDER_NAME"
   ) > /dev/null 2>&1 || true
 }
 
@@ -64,8 +63,7 @@ invoke_build_err() {
       --name="$PROJECT_NAME" \
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
-      --targets="$PROVIDER_NAME" \
-      "$@"
+      --targets="$PROVIDER_NAME"
   ) 2>&1
 }
 

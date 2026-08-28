@@ -48,7 +48,7 @@ new file mode 100644
 +uncommitted change
 EOF
   elif [[ "$UNCOMMITTED" == "empty" ]]; then
-    > "$DIR/uncommitted.diff"
+    : > "$DIR/uncommitted.diff"
   fi
 
   # Write consolidated .export-status for draft.sh consumption

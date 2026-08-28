@@ -18,10 +18,10 @@ source "$REPO_ROOT/src/libs/common.sh"
 # ---------------------------------------------------------------------------
 
 test_help_flag_detected() {
-  local RC=0
   # parse_help_flag calls usage() and exit  --  mock those to avoid aborting
   usage() { echo "usage called"; }
-  OUTPUT=$(parse_help_flag --help 2>&1) && RC=$? || RC=$?
+  local OUTPUT
+  OUTPUT=$(parse_help_flag --help 2>&1)
   if echo "$OUTPUT" | grep -q "usage called"; then
     pass "parse_help_flag detects --help and calls usage"
   else
@@ -30,9 +30,9 @@ test_help_flag_detected() {
 }
 
 test_help_flag_short() {
-  local RC=0
   usage() { echo "usage called"; }
-  OUTPUT=$(parse_help_flag -h 2>&1) && RC=$? || RC=$?
+  local OUTPUT
+  OUTPUT=$(parse_help_flag -h 2>&1)
   if echo "$OUTPUT" | grep -q "usage called"; then
     pass "parse_help_flag detects -h"
   else

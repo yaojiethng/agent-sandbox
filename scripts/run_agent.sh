@@ -109,7 +109,10 @@ fi
 PROVIDER_SETUP="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
 
 if [[ -f "$PROVIDER_SETUP" ]]; then
-  if ! source "$PROVIDER_SETUP"; then
+  # The setup path is provider-selected and validated by the -f check;
+# ShellCheck cannot follow it statically.
+# shellcheck disable=SC1090
+if ! source "$PROVIDER_SETUP"; then
     echo "Error: provider setup hook failed: $PROVIDER_SETUP"
     echo "  Fix the error in src/reasoning/providers/$PROVIDER_NAME/setup.sh before retrying."
     exit 1

@@ -37,6 +37,8 @@ for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
   severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"
   if [[ -f "$libpath" ]]; then
+# Runtime-resolved lib path, validated by the -f check above.
+    # shellcheck disable=SC1090
     if source "$libpath" 2>/dev/null; then
       pass "source $libpath succeeded"
     else

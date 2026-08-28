@@ -75,7 +75,7 @@ _diff_restore_untracked() {
 _write_git_diff() {
   local dir="$1" base="$2" out="$3"
   if git -C "$dir" diff --quiet "$base" 2>/dev/null; then
-    > "$out"
+    : > "$out"
   else
     git -C "$dir" diff "$base" \
       | strip_index_lines \

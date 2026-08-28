@@ -72,6 +72,9 @@ snapshot_copy_worktree() {
 
   if [[ "$has_global" -eq 1 || "$has_repo_exclude" -eq 1 ]]; then
     EXCLUDE_TMPFILE=$(mktemp /tmp/snapshot-exclude.XXXXXX)
+    # Expansion now is intentional: EXCLUDE_TMPFILE is local to this
+    # function, so it must be baked into the trap body before return.
+    # shellcheck disable=SC2064
     trap "snap_copy_worktree_cleanup '$EXCLUDE_TMPFILE'" EXIT
 
     if [[ "$has_global" -eq 1 ]]; then

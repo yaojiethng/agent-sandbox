@@ -38,7 +38,8 @@ session_state_write() {
   local VALUE="$3"
   local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
 
-  local DIR="$(dirname "$STATE_FILE")"
+  local DIR
+  DIR="$(dirname "$STATE_FILE")"
   if [[ ! -d "$DIR" ]]; then
     return 1
   fi

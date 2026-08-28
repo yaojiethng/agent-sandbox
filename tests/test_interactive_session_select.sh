@@ -20,7 +20,7 @@ source "$TEST_DIR/libs/session_fixtures.sh"
 # =============================================================================
 
 test_confirm_or_abort_yes_proceeds() {
-  if OUT=$(echo "y" | interactive_confirm_or_abort "Apply:" "/path/to/diff" 2>/dev/null); then
+  if echo "y" | interactive_confirm_or_abort "Apply:" "/path/to/diff" > /dev/null 2>&1; then
     pass "interactive_confirm_or_abort returns 0 on 'y'"
   else
     fail "interactive_confirm_or_abort should return 0 on 'y'"

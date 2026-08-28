@@ -46,7 +46,7 @@ write_session_state() {
   SHA=$(get_init_sha "$DIR")
 
   mkdir -p "$DIR/.git"
-  > "$DIR/.git/SESSION_STATE"
+  : > "$DIR/.git/SESSION_STATE"
   echo "init_sha=$SHA" >> "$DIR/.git/SESSION_STATE"
   echo "session_ts=$SESSION_TS" >> "$DIR/.git/SESSION_STATE"
 }

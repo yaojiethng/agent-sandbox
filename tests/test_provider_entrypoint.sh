@@ -34,7 +34,7 @@ _run() {
 
 test_missing_agent_home() {
   local out
-  out=$(unset AGENT_HOME; PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) && {
+  out=$(env -u AGENT_HOME PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) && {
     fail "missing AGENT_HOME env var"
     return
   }

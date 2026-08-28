@@ -79,8 +79,9 @@ echo "capture: MOCK build.sh \$@"
 SCRIPT
   chmod +x "$MOCK_SCRIPTS_DIR/build.sh"
 
-  # Point SCRIPTS at mock dir for all exec'd subcommands
-  SCRIPTS="$MOCK_SCRIPTS_DIR"
+  # Note: no SCRIPTS override here. exec is replaced by mock_exec (see
+  # source_harness), so the harness's dispatch never touches the real
+  # script directory; a SCRIPTS assignment would be dead in this file.
 }
 
 source_harness() {
@@ -100,6 +101,8 @@ source_harness() {
   # Solution: source the harness with real AGENT_SANDBOX_REPO, then swap SCRIPTS.
 
   # Source the harness (no top-level sources after refactor  --  pure dispatch table)
+  # Temp-rendered harness copy; path is generated per run.
+  # shellcheck disable=SC1090
   source "$resolved"
   rm -f "$resolved"
 }

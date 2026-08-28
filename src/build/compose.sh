@@ -101,7 +101,8 @@ compose_generate() {
       echo "compose_generate: input file not found: $src" >&2
       return 1
     fi
-    local dst="$staging_dir/$(printf '%02d' $i)-$(basename "$src")"
+    local dst
+    dst="$staging_dir/$(printf '%02d' "$i")-$(basename "$src")"
     sed \
       -e "s|{{PROJECT_NAME}}|${project_name}|g" \
       -e "s|{{PROJECT_DIR}}|${PROJECT_DIR:-}|g" \

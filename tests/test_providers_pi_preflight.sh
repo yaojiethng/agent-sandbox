@@ -29,6 +29,8 @@ _source_preflight() {
   (
     export AGENT_HOME="$ah"
     export PROVIDER_NAME="pi"
+    # Fixture-written preflight copy; not statically followable.
+    # shellcheck disable=SC1090
     source "$PREFLIGHT" 2>&1 || true
   )
 }

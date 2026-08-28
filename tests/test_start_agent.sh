@@ -262,7 +262,8 @@ test_sanitized_host_branch_exported() {
 
   local BRANCH SANITIZED_HOST_BRANCH
   BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  export SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
+  SANITIZED_HOST_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
+  export SANITIZED_HOST_BRANCH
 
   # Verify it's exported (available to subshells)
   local SUBSHELL_VALUE
