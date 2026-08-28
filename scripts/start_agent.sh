@@ -83,68 +83,6 @@ Note: --provider is required and has no default. Pass it explicitly, or use
 EOF
 }
 
-# Handle --help/-h before any mode or flag validation, so both
-#   start_agent.sh --help
-#   start_agent.sh standard --help
-# print the full usage and exit cleanly. Reuses the canonical parse_help_flag.
-parse_help_flag "$@"
-
-MODE="${1:-}"
-shift || true
-
-if [[ -z "$MODE" ]]; then
-  echo "Error: mode is required (standard|serve|dry-run)" >&2
-  usage >&2
-  exit 1
-fi
-
-# -------------------------
-# Flag parsing
-# -------------------------
-PROJECT_NAME=""
-PROJECT_DIR=""
-SANDBOX_DIR_OVERRIDE=""
-ENV_REL=".env"
-PROVIDER_NAME=""
-REFRESH=false
-REBUILD=false
-INTERACTIVE=false
-
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-    --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
-
-    --env=*)      ENV_REL="${ARG#--env=}" ;;
-    --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-    --refresh)    REFRESH=true ;;
-    --rebuild)    REBUILD=true ;;
-    --interactive) INTERACTIVE=true ;;
-    *)
-      echo "Unknown flag: $ARG"
-      exit 1
-      ;;
-  esac
-done
-
-if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
-  echo "Error: --name and --project are required"
-  exit 1
-fi
-
-# -------------------------
-# SANDBOX_DIR derivation
-# -------------------------
-if [[ -n "$SANDBOX_DIR_OVERRIDE" ]]; then
-  SANDBOX_DIR="$SANDBOX_DIR_OVERRIDE"
-else
-  SANDBOX_DIR="$(dirname "$PROJECT_DIR")/$(basename "$PROJECT_DIR")-sandbox"
-fi
-
-# -------------------------
-# Path validation
-# -------------------------
 validate_wsl_path() {
   local PATH_VAR="$1"
   local PATH_VAL="$2"
@@ -152,12 +90,10 @@ validate_wsl_path() {
     echo "Error: $PATH_VAR must be a WSL/Linux path, not a Windows path."
     echo "  Got:      $PATH_VAL"
     echo "  Convert:  wslpath '$PATH_VAL'"
-    exit 1
+    return 1
   fi
 }
 
-validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
-validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 
 # -------------------------
 # Interactive config wizard (F2 design D11)
@@ -236,32 +172,6 @@ _start_wizard() {
   fi
 }
 
-if [[ "${INTERACTIVE:-false}" == "true" ]]; then
-  _start_wizard
-fi
-
-# --provider is required and deliberately has no default — the harness does
-# not presume a provider. Fail with a clear diagnostic rather than a cryptic
-# image-naming error downstream.
-if [[ -z "$PROVIDER_NAME" ]]; then
-  echo "Error: --provider is required (no default)." >&2
-  echo "  Pass it explicitly, e.g. --provider=pi" >&2
-  echo "  or from a sandbox Makefile: make start PROVIDER=pi" >&2
-  echo "  or use --interactive to pick from a menu" >&2
-  exit 1
-fi
-
-if [[ ! -d "$PROJECT_DIR" ]]; then
-  echo "Error: PROJECT_DIR does not exist: $PROJECT_DIR"
-  exit 1
-fi
-
-# -------------------------
-# Shared host-side prelude — phase 1 (env, git validation, derived paths, uid/gid)
-# -------------------------
-source "$REPO_ROOT/src/libs/session_env.sh"
-session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
-
 # -------------------------
 # Session identity — always a fresh new session
 # -------------------------
@@ -280,113 +190,213 @@ _new_session_identity() {
   export SESSION_ID; SESSION_ID=$(session_id_derive "$SESSION_TS" "$SANDBOX_ID")
 }
 
-if [[ "${REFRESH:-false}" == "true" ]]; then
-  echo "Refresh requested — starting new session"
-fi
-
-# start always begins a NEW session (F2 design D10). Resume lives in the
-# split-out `make resume` command; there is no resume branch here.
-echo "Starting new session"
-_new_session_identity
-
 # -------------------------
-# Shared host-side prelude — phase 2 (branch, image/container names, delivery)
+# CLI entry point
 # -------------------------
-# Identity (SESSION_ID) is now known. Derive the remaining env consumed by
-# run_agent.sh and compose: sanitized host branch, image/container names,
-# delivery type, worktree dir.
-session_env_names "$PROJECT_NAME" "$PROVIDER_NAME" "$SANDBOX_DIR" "$SESSION_ID"
+main() {
+  # Handle --help/-h before any mode or flag validation, so both
+  #   start_agent.sh --help
+  #   start_agent.sh standard --help
+  # print the full usage and exit cleanly. Reuses the canonical parse_help_flag.
+  parse_help_flag "$@"
 
-echo "Host branch: $SANITIZED_HOST_BRANCH"
-echo "Host HEAD SHA: $HOST_HEAD_SHA"
-echo "Sandbox ID: $SANDBOX_ID"
-echo "Session ID: $SESSION_ID"
-echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
-echo "Agent container name: $AGENT_CONTAINER_NAME"
+  MODE="${1:-}"
+  shift || true
 
-# -------------------------
-# Workspace directory setup and snapshot pipeline
-# -------------------------
-if [[ "$SANDBOX_TYPE" == "mount" ]]; then
-  # Mount delivery: materialize the host worktree (bind-mounted into the
-  # container). Use the shared snapshot primitive minus baseline.tar — rsync
-  # the working tree, then git-init + baseline commit so .git exists. The
-  # container writes the SESSION_STATE init marker into the worktree .git.
-  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
-  source "$REPO_ROOT/src/capability/snapshot.sh"
-
-  if [[ ! -d "$WORKTREE_DIR/.git" ]]; then
-    echo "Mount delivery: materializing worktree at $WORKTREE_DIR"
-    snapshot_copy_worktree "$PROJECT_DIR" "$WORKTREE_DIR"
-    git -C "$WORKTREE_DIR" init --quiet
-    git -C "$WORKTREE_DIR" config user.email "agent@sandbox"
-    git -C "$WORKTREE_DIR" config user.name "agent-sandbox"
-    git -C "$WORKTREE_DIR" config core.fileMode false
-    git -C "$WORKTREE_DIR" add -A
-    git -C "$WORKTREE_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet
-    echo "Mount worktree baseline ready."
-  else
-    echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
+  if [[ -z "$MODE" ]]; then
+    echo "Error: mode is required (standard|serve|dry-run)" >&2
+    usage >&2
+    exit 1
   fi
-else
-  # Clean the snapshot directory before building a fresh snapshot.
-  # Without this, files from a previous run that are no longer in PROJECT_DIR
-  # (deleted, moved, or newly gitignored) would persist in the snapshot and
-  # propagate into the sandbox.
-  rm -rf "$SNAPSHOT_DIR"
-  mkdir -p "$SNAPSHOT_DIR"
-  mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 
-  source "$REPO_ROOT/src/capability/snapshot.sh"
+  # -------------------------
+  # Flag parsing
+  # -------------------------
+  PROJECT_NAME=""
+  PROJECT_DIR=""
+  SANDBOX_DIR_OVERRIDE=""
+  ENV_REL=".env"
+  PROVIDER_NAME=""
+  REFRESH=false
+  REBUILD=false
+  INTERACTIVE=false
 
-  echo "Building snapshot..."
-  snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
-  snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
+  local ARG
+  for ARG in "$@"; do
+    case "$ARG" in
+      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
 
-  snapshot_validate "$SNAPSHOT_DIR"
-  echo "Snapshot ready."
+      --env=*)      ENV_REL="${ARG#--env=}" ;;
+      --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
+      --refresh)    REFRESH=true ;;
+      --rebuild)    REBUILD=true ;;
+      --interactive) INTERACTIVE=true ;;
+      *)
+        echo "Unknown flag: $ARG"
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
+    echo "Error: --name and --project are required"
+    exit 1
+  fi
+
+  # -------------------------
+  # SANDBOX_DIR derivation
+  # -------------------------
+  if [[ -n "$SANDBOX_DIR_OVERRIDE" ]]; then
+    SANDBOX_DIR="$SANDBOX_DIR_OVERRIDE"
+  else
+    SANDBOX_DIR="$(dirname "$PROJECT_DIR")/$(basename "$PROJECT_DIR")-sandbox"
+  fi
+
+  validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
+  validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
+
+  if [[ "${INTERACTIVE:-false}" == "true" ]]; then
+    _start_wizard
+  fi
+  
+  # --provider is required and deliberately has no default — the harness does
+  # not presume a provider. Fail with a clear diagnostic rather than a cryptic
+  # image-naming error downstream.
+  if [[ -z "$PROVIDER_NAME" ]]; then
+    echo "Error: --provider is required (no default)." >&2
+    echo "  Pass it explicitly, e.g. --provider=pi" >&2
+    echo "  or from a sandbox Makefile: make start PROVIDER=pi" >&2
+    echo "  or use --interactive to pick from a menu" >&2
+    exit 1
+  fi
+  
+  if [[ ! -d "$PROJECT_DIR" ]]; then
+    echo "Error: PROJECT_DIR does not exist: $PROJECT_DIR"
+    exit 1
+  fi
+  
+  # -------------------------
+  # Shared host-side prelude — phase 1 (env, git validation, derived paths, uid/gid)
+  # -------------------------
+  source "$REPO_ROOT/src/libs/session_env.sh"
+  session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
+  
+  if [[ "${REFRESH:-false}" == "true" ]]; then
+    echo "Refresh requested — starting new session"
+  fi
+  
+  # start always begins a NEW session (F2 design D10). Resume lives in the
+  # split-out `make resume` command; there is no resume branch here.
+  echo "Starting new session"
+  _new_session_identity
+  
+  # -------------------------
+  # Shared host-side prelude — phase 2 (branch, image/container names, delivery)
+  # -------------------------
+  # Identity (SESSION_ID) is now known. Derive the remaining env consumed by
+  # run_agent.sh and compose: sanitized host branch, image/container names,
+  # delivery type, worktree dir.
+  session_env_names "$PROJECT_NAME" "$PROVIDER_NAME" "$SANDBOX_DIR" "$SESSION_ID"
+  
+  echo "Host branch: $SANITIZED_HOST_BRANCH"
+  echo "Host HEAD SHA: $HOST_HEAD_SHA"
+  echo "Sandbox ID: $SANDBOX_ID"
+  echo "Session ID: $SESSION_ID"
+  echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
+  echo "Agent container name: $AGENT_CONTAINER_NAME"
+  
+  # -------------------------
+  # Workspace directory setup and snapshot pipeline
+  # -------------------------
+  if [[ "$SANDBOX_TYPE" == "mount" ]]; then
+    # Mount delivery: materialize the host worktree (bind-mounted into the
+    # container). Use the shared snapshot primitive minus baseline.tar — rsync
+    # the working tree, then git-init + baseline commit so .git exists. The
+    # container writes the SESSION_STATE init marker into the worktree .git.
+    mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+    source "$REPO_ROOT/src/capability/snapshot.sh"
+  
+    if [[ ! -d "$WORKTREE_DIR/.git" ]]; then
+      echo "Mount delivery: materializing worktree at $WORKTREE_DIR"
+      snapshot_copy_worktree "$PROJECT_DIR" "$WORKTREE_DIR"
+      git -C "$WORKTREE_DIR" init --quiet
+      git -C "$WORKTREE_DIR" config user.email "agent@sandbox"
+      git -C "$WORKTREE_DIR" config user.name "agent-sandbox"
+      git -C "$WORKTREE_DIR" config core.fileMode false
+      git -C "$WORKTREE_DIR" add -A
+      git -C "$WORKTREE_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet
+      echo "Mount worktree baseline ready."
+    else
+      echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
+    fi
+  else
+    # Clean the snapshot directory before building a fresh snapshot.
+    # Without this, files from a previous run that are no longer in PROJECT_DIR
+    # (deleted, moved, or newly gitignored) would persist in the snapshot and
+    # propagate into the sandbox.
+    rm -rf "$SNAPSHOT_DIR"
+    mkdir -p "$SNAPSHOT_DIR"
+    mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+  
+    source "$REPO_ROOT/src/capability/snapshot.sh"
+  
+    echo "Building snapshot..."
+    snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
+    snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
+  
+    snapshot_validate "$SNAPSHOT_DIR"
+    echo "Snapshot ready."
+  fi
+  
+  # -------------------------
+  # Rebuild (if requested)
+  # -------------------------
+  # Build/preflight helpers (build_sandbox/build_agent/preflight) live in build.sh,
+  # which also provides the image-name functions. Source it now that identity paths
+  # are settled and we are ready to (re)build/preflight for this session.
+  source "$REPO_ROOT/scripts/build.sh"
+  # --refresh: rebuild sandbox and provider (base skipped if exists).
+  # --rebuild: rebuild everything from scratch including base (supersedes --refresh).
+  # Export host UID/GID for build pipeline
+  HOST_UID="$(id -u)"
+  HOST_GID="$(id -g)"
+  
+  if [[ "$REBUILD" == true ]]; then
+    echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
+    build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache" "$HOST_UID" "$HOST_GID"
+  elif [[ "$REFRESH" == true ]]; then
+    echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
+    build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
+    build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "" "$HOST_UID" "$HOST_GID"
+  fi
+  
+  # -------------------------
+  # Preflight
+  # -------------------------
+  preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+  
+  # -------------------------
+  # Dispatch to run_agent.sh
+  # -------------------------
+  # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
+  # All .env variables and derived image names are already exported above.
+  # start always begins a NEW session, so the previous session's volume is always
+  # reset: run_agent.sh destroys the existing volume before starting fresh containers.
+  RESET_VOLUME_FLAG="--reset-volume"
+  
+  exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" \
+    --name="$PROJECT_NAME" \
+    --sandbox="$SANDBOX_DIR" \
+    --env="$ENV_FILE" \
+    --provider="$PROVIDER_NAME" \
+    $RESET_VOLUME_FLAG
+
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
 fi
-
-# -------------------------
-# Rebuild (if requested)
-# -------------------------
-# Build/preflight helpers (build_sandbox/build_agent/preflight) live in build.sh,
-# which also provides the image-name functions. Source it now that identity paths
-# are settled and we are ready to (re)build/preflight for this session.
-source "$REPO_ROOT/scripts/build.sh"
-# --refresh: rebuild sandbox and provider (base skipped if exists).
-# --rebuild: rebuild everything from scratch including base (supersedes --refresh).
-# Export host UID/GID for build pipeline
-HOST_UID="$(id -u)"
-HOST_GID="$(id -g)"
-
-if [[ "$REBUILD" == true ]]; then
-  echo "Rebuilding everything from scratch: $PROVIDER_NAME..."
-  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
-  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "--no-cache" "$HOST_UID" "$HOST_GID"
-elif [[ "$REFRESH" == true ]]; then
-  echo "Refreshing sandbox and provider: $PROVIDER_NAME..."
-  build_sandbox "$PROJECT_NAME" "$REPO_ROOT" "$HOST_UID" "$HOST_GID"
-  build_agent "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "" "$HOST_UID" "$HOST_GID"
-fi
-
-# -------------------------
-# Preflight
-# -------------------------
-preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
-
-# -------------------------
-# Dispatch to run_agent.sh
-# -------------------------
-# Compose generation and container lifecycle are owned by scripts/run_agent.sh.
-# All .env variables and derived image names are already exported above.
-# start always begins a NEW session, so the previous session's volume is always
-# reset: run_agent.sh destroys the existing volume before starting fresh containers.
-RESET_VOLUME_FLAG="--reset-volume"
-
-exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" \
-  --name="$PROJECT_NAME" \
-  --sandbox="$SANDBOX_DIR" \
-  --env="$ENV_FILE" \
-  --provider="$PROVIDER_NAME" \
-  $RESET_VOLUME_FLAG

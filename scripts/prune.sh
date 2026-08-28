@@ -79,55 +79,6 @@ Required:
   --sandbox=<path>    Path to the sandbox directory
 EOF
 }
-
-# -------------------------
-# Flag parsing + validation
-# -------------------------
-for ARG in "$@"; do
-  case "$ARG" in
-    --stale=*)         STALE_KIND="${ARG#--stale=}" ;;
-    --provider=*)      PROVIDER_FILTER="${ARG#--provider=}" ;;
-    --age-days=*)      AGE_DAYS="${ARG#--age-days=}" ;;
-    --interactive)     INTERACTIVE_FLAG=true ;;
-    --dry-run)         DRY_RUN_FLAG=true ;;
-  esac
-done
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$REPO_ROOT/src/libs/common.sh"
-# session_inventory.sh also sources container_sig.sh (image-staleness criterion).
-source "$REPO_ROOT/src/libs/session_inventory.sh"
-
-parse_help_flag "$@"
-parse_base_flags "$@"
-for ARG in "$@"; do
-  case "$ARG" in
-    --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-  esac
-done
-check_base_flags
-if [[ -z "$PROJECT_DIR" ]]; then
-  echo "Error: --project is required (need the current HEAD for staleness)." >&2
-  usage >&2
-  exit 1
-fi
-
-# Staleness-kind validation.
-case "$STALE_KIND" in
-  ""|sandbox|image|all) ;;
-  *)
-    echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox, image, or all)." >&2
-    usage >&2
-    exit 1
-    ;;
-esac
-
-if [[ ! "$AGE_DAYS" =~ ^[0-9]+$ ]]; then
-  echo "Error: --age-days must be a non-negative integer (got '$AGE_DAYS')." >&2
-  usage >&2
-  exit 1
-fi
-
 # -------------------------
 # Rule 1: selected stale records
 # -------------------------
@@ -192,8 +143,6 @@ env_field() {
 # SIDs are treated as already-removed, so a session whose record is about to be
 # deleted is reported as orphaned too. Execution clears this set and re-scans
 # the genuine registry.
-TREATED_REMOVED_SIDS=()
-
 # _sid_is_orphaned SID — true when the session is not a keeper (no record).
 _sid_is_orphaned() {
   local sid="$1"
@@ -276,92 +225,154 @@ show_rule2() {
 
 # -------------------------
 # Build the Rule-1 selection
-# -------------------------
-mapfile -t RULE1_RECS < <(rule1_selected_records)
-# SIDS_PRUNED — the list of SIDs Rule 1 will remove (its "removal result").
-SIDS_PRUNED=( "${RULE1_RECS[@]%%|*}" )
 
 # -------------------------
-# Preview / confirm (--dry-run and --interactive) — predictive, render-only
+# CLI entry point
 # -------------------------
-if [[ "$DRY_RUN_FLAG" == true || "$INTERACTIVE_FLAG" == true ]]; then
-  TREATED_REMOVED_SIDS=( "${SIDS_PRUNED[@]}" )
-  mapfile -t ORPHANS < <(rule2_orphan_resources)
+main() {
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  source "$REPO_ROOT/src/libs/common.sh"
+  # session_inventory.sh also sources container_sig.sh (image-staleness criterion).
+  source "$REPO_ROOT/src/libs/session_inventory.sh"
 
-  if [[ "${#RULE1_RECS[@]}" -eq 0 && "${#ORPHANS[@]}" -eq 0 ]]; then
-    echo "Nothing to prune — no stale records and no orphaned resources."
-    exit 0
-  fi
-  if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
-    echo "Rule 1 — ${#RULE1_RECS[@]} stale record(s) to remove:"
-    show_rule1
-  fi
-  if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
-    echo "Rule 2 — ${#ORPHANS[@]} orphaned resource(s) to remove:"
-    show_rule2
-  fi
-
-  if [[ "$DRY_RUN_FLAG" == true ]]; then
-    echo "Dry run: nothing was removed."
-    exit 0
-  fi
-
-  # Interactive: print the equivalent non-interactive command, then confirm.
-  source "$REPO_ROOT/scripts/workflows/interactive.sh"
-  echo ""
-  PRUNE_CMD="agent-sandbox prune"
-  PRUNE_CMD+=" --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
-  [[ -n "$PROVIDER_FILTER" ]] && PRUNE_CMD+=" --provider=$PROVIDER_FILTER"
-  [[ -n "$STALE_KIND" ]] && PRUNE_CMD+=" --stale=$STALE_KIND"
-  [[ -n "$AGE_DAYS" ]] && PRUNE_CMD+=" --age-days=$AGE_DAYS"
-  echo "Equivalent non-interactive command:"
-  echo "  $PRUNE_CMD"
-  echo ""
-  interactive_confirm_or_abort "Proceed with the prune above?" "$PRUNE_CMD" || exit 1
-fi
-
-# -------------------------
-# Execute — strictly sequential, reading the real registry at each step
-# -------------------------
-DID_WORK=false
-
-# Rule 1 — remove stale records (iterate the removal result directly).
-if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
-  echo "Rule 1 — removing ${#SIDS_PRUNED[@]} stale record(s):"
-  for sid in "${SIDS_PRUNED[@]}"; do
-    [[ -n "$sid" ]] || continue
-    echo "  removing record: $SANDBOX_DIR/.compose/$sid.yml"
-    rm -f "$SANDBOX_DIR/.compose/$sid.yml"
-  done
-  DID_WORK=true
-fi
-
-# Rule 2 — remove orphaned resources. Fresh scan against the updated registry
-# (the deleted records are gone, so their sessions are now orphaned here).
-TREATED_REMOVED_SIDS=()
-mapfile -t ORPHANS < <(rule2_orphan_resources)
-if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
-  echo "Rule 2 — removing ${#ORPHANS[@]} orphaned resource(s):"
-  for line in "${ORPHANS[@]}"; do
-    IFS='|' read -r kind id _ <<< "$line"
-    case "$kind" in
-      container)
-        echo "  removing orphaned container: $id"
-        docker stop "$id" 2>/dev/null || true
-        docker rm "$id" 2>/dev/null || true
-        ;;
-      network)
-        echo "  removing orphaned network: $id"
-        docker network rm "$id" 2>/dev/null || true
-        ;;
-      volume)
-        echo "  removing orphaned volume: $id"
-        docker volume rm "$id" 2>/dev/null || true
-        ;;
+  parse_help_flag "$@"
+  parse_base_flags "$@"
+  local ARG
+  for ARG in "$@"; do
+    case "$ARG" in
+      --stale=*)         STALE_KIND="${ARG#--stale=}" ;;
+      --provider=*)      PROVIDER_FILTER="${ARG#--provider=}" ;;
+      --age-days=*)      AGE_DAYS="${ARG#--age-days=}" ;;
+      --interactive)     INTERACTIVE_FLAG=true ;;
+      --dry-run)         DRY_RUN_FLAG=true ;;
     esac
   done
-  DID_WORK=true
-fi
+  for ARG in "$@"; do
+    case "$ARG" in
+      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+    esac
+  done
+  check_base_flags
+  if [[ -z "$PROJECT_DIR" ]]; then
+    echo "Error: --project is required (need the current HEAD for staleness)." >&2
+    usage >&2
+    exit 1
+  fi
 
-[[ "$DID_WORK" == true ]] || echo "Nothing to prune."
-echo "Prune complete."
+  # Staleness-kind validation.
+  case "$STALE_KIND" in
+    ""|sandbox|image|all) ;;
+    *)
+      echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox, image, or all)." >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+
+  if [[ ! "$AGE_DAYS" =~ ^[0-9]+$ ]]; then
+    echo "Error: --age-days must be a non-negative integer (got '$AGE_DAYS')." >&2
+    usage >&2
+    exit 1
+  fi
+
+  # ORPHAN_TEST — a resource's session-id is orphaned if it has no record on
+  # disk. For a predictive preview (--dry-run / --interactive) the Rule-1-selected
+  # SIDs are treated as already-removed, so a session whose record is about to be
+  # deleted is reported as orphaned too. Execution clears this set and re-scans
+  # the genuine registry.
+  TREATED_REMOVED_SIDS=()
+
+  mapfile -t RULE1_RECS < <(rule1_selected_records)
+  # SIDS_PRUNED — the list of SIDs Rule 1 will remove (its "removal result").
+  SIDS_PRUNED=( "${RULE1_RECS[@]%%|*}" )
+  
+  # -------------------------
+  # Preview / confirm (--dry-run and --interactive) — predictive, render-only
+  # -------------------------
+  if [[ "$DRY_RUN_FLAG" == true || "$INTERACTIVE_FLAG" == true ]]; then
+    TREATED_REMOVED_SIDS=( "${SIDS_PRUNED[@]}" )
+    mapfile -t ORPHANS < <(rule2_orphan_resources)
+  
+    if [[ "${#RULE1_RECS[@]}" -eq 0 && "${#ORPHANS[@]}" -eq 0 ]]; then
+      echo "Nothing to prune — no stale records and no orphaned resources."
+      exit 0
+    fi
+    if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
+      echo "Rule 1 — ${#RULE1_RECS[@]} stale record(s) to remove:"
+      show_rule1
+    fi
+    if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
+      echo "Rule 2 — ${#ORPHANS[@]} orphaned resource(s) to remove:"
+      show_rule2
+    fi
+  
+    if [[ "$DRY_RUN_FLAG" == true ]]; then
+      echo "Dry run: nothing was removed."
+      exit 0
+    fi
+  
+    # Interactive: print the equivalent non-interactive command, then confirm.
+    source "$REPO_ROOT/scripts/workflows/interactive.sh"
+    echo ""
+    PRUNE_CMD="agent-sandbox prune"
+    PRUNE_CMD+=" --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
+    [[ -n "$PROVIDER_FILTER" ]] && PRUNE_CMD+=" --provider=$PROVIDER_FILTER"
+    [[ -n "$STALE_KIND" ]] && PRUNE_CMD+=" --stale=$STALE_KIND"
+    [[ -n "$AGE_DAYS" ]] && PRUNE_CMD+=" --age-days=$AGE_DAYS"
+    echo "Equivalent non-interactive command:"
+    echo "  $PRUNE_CMD"
+    echo ""
+    interactive_confirm_or_abort "Proceed with the prune above?" "$PRUNE_CMD" || exit 1
+  fi
+  
+  # -------------------------
+  # Execute — strictly sequential, reading the real registry at each step
+  # -------------------------
+  DID_WORK=false
+  
+  # Rule 1 — remove stale records (iterate the removal result directly).
+  if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
+    echo "Rule 1 — removing ${#SIDS_PRUNED[@]} stale record(s):"
+    for sid in "${SIDS_PRUNED[@]}"; do
+      [[ -n "$sid" ]] || continue
+      echo "  removing record: $SANDBOX_DIR/.compose/$sid.yml"
+      rm -f "$SANDBOX_DIR/.compose/$sid.yml"
+    done
+    DID_WORK=true
+  fi
+  
+  # Rule 2 — remove orphaned resources. Fresh scan against the updated registry
+  # (the deleted records are gone, so their sessions are now orphaned here).
+  TREATED_REMOVED_SIDS=()
+  mapfile -t ORPHANS < <(rule2_orphan_resources)
+  if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
+    echo "Rule 2 — removing ${#ORPHANS[@]} orphaned resource(s):"
+    for line in "${ORPHANS[@]}"; do
+      IFS='|' read -r kind id _ <<< "$line"
+      case "$kind" in
+        container)
+          echo "  removing orphaned container: $id"
+          docker stop "$id" 2>/dev/null || true
+          docker rm "$id" 2>/dev/null || true
+          ;;
+        network)
+          echo "  removing orphaned network: $id"
+          docker network rm "$id" 2>/dev/null || true
+          ;;
+        volume)
+          echo "  removing orphaned volume: $id"
+          docker volume rm "$id" 2>/dev/null || true
+          ;;
+      esac
+    done
+    DID_WORK=true
+  fi
+  
+  [[ "$DID_WORK" == true ]] || echo "Nothing to prune."
+  echo "Prune complete."
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

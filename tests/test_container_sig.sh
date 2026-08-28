@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # tests/test_container_sig.sh
 # Unit tests for src/libs/container_sig.sh — deterministic source-tree hashing,
-# memoized current-sig resolution, and image staleness classification.
+# current-sig resolution, and image staleness classification.
 #
 # Covers:
 #   container_sig        — determinism, order-independence, sensitivity to
-#                          content changes, fail-closed missing-path guard
+#                          content changes, fail-closed missing-path guard,
+#                          empty-set and empty-args edge cases
 #   current_sig          — unknown-type rejection, agent-without-provider
-#                          rejection, sandbox/agent derivation, memoization
+#                          rejection, sandbox/agent derivation, live recompute
 #   _sandbox_sig_sources — static path list contract
 #   _agent_sig_sources   — conditional provider config/preflight inclusion
 #   image_is_stale       — fresh/stale/unknown classification (docker stubbed)
@@ -123,17 +124,36 @@ test_container_sig_missing_path_fails_closed() {
 # `sha256sum`, which reads STDIN. With stdin at EOF (/dev/null) the call must
 # still return a valid hex sig instead of garbage. (timeout cannot wrap shell
 # functions, so the hang itself is guarded by deterministic stdin redirection.)
-test_container_sig_empty_set_returns_hex_without_hanging() {
+test_container_sig_empty_set_returns_pinned_digest() {
   local ROOT="$FIXTURE_DIR/emptyset"
   mkdir -p "$ROOT/src/libs"
+
+  # With `xargs -r`, an empty file set runs the hashing stage zero times; the
+  # outer sha256sum then hashes empty input. Pin that exact digest: the old
+  # no-`-r` behavior read stdin instead, producing a d41d8c-based value that
+  # fails this pin.
+  local EXPECTED="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
   local S RC=0
   S=$(container_sig "$ROOT" "src/libs" 2>/dev/null </dev/null) || RC=$?
 
-  if [[ $RC -eq 0 && "$S" =~ ^[a-f0-9]{64}$ ]]; then
-    pass "container_sig returns valid hex for a file-less source dir"
+  if [[ $RC -eq 0 && "$S" == "$EXPECTED" ]]; then
+    pass "container_sig pins the empty-set digest (-r: no stdin read)"
   else
-    fail "container_sig empty-set produced invalid output: '$S' rc=$RC"
+    fail "container_sig empty-set: got '$S' rc=$RC, want pinned digest rc=0"
+  fi
+}
+
+test_container_sig_empty_sources_fails_closed() {
+  # An empty sources array must error out, not fall back to bare `find` —
+  # which would silently hash whatever cwd the caller happens to be in.
+  local OUT RC=0
+  OUT=$(container_sig "${FIXTURE_DIR}/emptyargs_root" </dev/null 2>&1); RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"no source paths given"* ]]; then
+    pass "container_sig rejects an empty sources array (no cwd fallback)"
+  else
+    fail "container_sig empty args: rc=$RC out='$OUT'"
   fi
 }
 
@@ -233,20 +253,21 @@ test_current_sig_sandbox_matches_manual_hash() {
   fi
 }
 
-test_current_sig_memoization_cache_hit() {
-  local ROOT="$FIXTURE_DIR/memo"
+test_current_sig_recomputes_on_live_tree() {
+  local ROOT="$FIXTURE_DIR/live_recompute"
   make_sig_repo "$ROOT"
 
-  # Seed the cache directly; a cache hit must return the seeded value without
-  # recomputing (recompute would produce the real tree hash instead).
-  _current_sig_cache["sandbox:"]="cacheddeadbeef"
-  local OUT RC=0
-  OUT=$(current_sig "sandbox" "$ROOT" 2>/dev/null </dev/null) || RC=$?
+  # No memoization: consecutive calls must observe tree mutations between
+  # them (guards against a cache regressing in with a stale key).
+  local S1 S2
+  S1=$(current_sig "sandbox" "$ROOT" </dev/null)
+  echo mutated > "$ROOT/src/libs/a.sh"
+  S2=$(current_sig "sandbox" "$ROOT" </dev/null)
 
-  if [[ $RC -eq 0 && "$OUT" == "cacheddeadbeef" ]]; then
-    pass "current_sig returns memoized value without recompute"
+  if [[ -n "$S1" && -n "$S2" && "$S1" != "$S2" ]]; then
+    pass "current_sig recomputes per call (reflects live tree state)"
   else
-    fail "current_sig cache-hit path broken, got '$OUT' rc=$RC"
+    fail "current_sig returned identical sigs across a mutation: '$S1' vs '$S2'"
   fi
 }
 
@@ -257,9 +278,6 @@ test_current_sig_distinct_providers_distinct_keys() {
   mkdir -p "$ROOT/src/reasoning/providers/pi/config"
   echo cfg > "$ROOT/src/reasoning/providers/pi/config/extra.conf"
 
-  # NOTE: do NOT reset _current_sig_cache here. `unset` + `declare -A` inside
-  # a function corrupts the global array (key names get evaluated as indirect
-  # expansions under set -u). Distinct provider keys need no reset.
   local PI OC
   PI=$(current_sig "agent" "$ROOT" "pi"</dev/null)
   OC=$(current_sig "agent" "$ROOT" "opencode"</dev/null)
@@ -302,7 +320,7 @@ test_image_is_stale_unknown_when_no_label() {
 test_image_is_stale_fresh_when_labels_match() {
   local ROOT="$FIXTURE_DIR/fresh"
   make_sig_repo "$ROOT"
-  # Compute the expected sig in a FRESH shell: current_sig memoizes per
+  # Compute the expected sig in a FRESH shell: current_sig recomputes per
   # (type,provider) WITHOUT repo_root, so a cached value from an unrelated
   # fixture root would poison the comparison.
   local SIG
@@ -360,14 +378,15 @@ run_test test_container_sig_is_sha256_hex
 run_test test_container_sig_order_independent
 run_test test_container_sig_sensitive_to_content
 run_test test_container_sig_missing_path_fails_closed
-run_test test_container_sig_empty_set_returns_hex_without_hanging
+run_test test_container_sig_empty_set_returns_pinned_digest
+run_test test_container_sig_empty_sources_fails_closed
 run_test test_sandbox_sig_sources_static_paths
 run_test test_agent_sig_sources_conditional_config
 run_test test_agent_sig_sources_conditional_preflight
 run_test test_current_sig_unknown_type_rejected
 run_test test_current_sig_agent_requires_provider
 run_test test_current_sig_sandbox_matches_manual_hash
-run_test test_current_sig_memoization_cache_hit
+run_test test_current_sig_recomputes_on_live_tree
 run_test test_current_sig_distinct_providers_distinct_keys
 run_test test_image_is_stale_unknown_when_no_label
 run_test test_image_is_stale_fresh_when_labels_match

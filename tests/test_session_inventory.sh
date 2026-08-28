@@ -129,7 +129,7 @@ test_record_label_pipefail_safe_on_no_match() {
 # =============================================================================
 
 # fresh_sigs REPO_ROOT PROVIDER — print "<agentsig> <sandboxsig>" computed in
-# fresh shells (current_sig memoizes without repo_root; see container_sig tests).
+# fresh shells (process isolation; each call sources the lib cleanly).
 fresh_sigs() {
   local root="$1" provider="$2"
   local a s

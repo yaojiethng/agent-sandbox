@@ -29,13 +29,6 @@
 # SANDBOX_DIR without overwriting .env operator values.
 
 set -euo pipefail
-
-# If set to true after the first mkdir, an ERR trap prints a cleanup
-# warning so the user knows SANDBOX_DIR has partial state.
-_HAS_SIDE_EFFECTS=false
-
-trap '_maybe_cleanup' ERR
-
 _maybe_cleanup() {
   if $_HAS_SIDE_EFFECTS && [[ -n "${SANDBOX_DIR:-}" ]]; then
     echo "Warning: onboard.sh failed after creating files in SANDBOX_DIR." >&2
@@ -45,17 +38,6 @@ _maybe_cleanup() {
     echo "  Then re-run the command." >&2
   fi
 }
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TEMPLATES="$REPO_ROOT/scripts/templates"
-
-# Detect if running non-interactively (piped stdin or --yes flag).
-# --yes bypasses the confirmation prompt for scripting/CI.
-_INTERACTIVE=true
-if [[ ! -t 0 ]]; then
-  _INTERACTIVE=false
-fi
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -91,7 +73,9 @@ EOF
 
 # Reads the version tag from a template file (Format: # agent-sandbox template version: N)
 template_version() {
-  grep -m1 "^# agent-sandbox template version:" "$1" | awk '{print $NF}'
+  # Absent marker is an expected, non-error outcome (caller compares empty
+  # string): absorb grep's exit 1 per bash-coding-conventions §4.3.
+  { grep -m1 "^# agent-sandbox template version:" "$1" || true; } | awk '{print $NF}'
 }
 
 # resolve_and_validate VAR_NAME FLAG_NAME VALUE [REQUIRE_EXIST]
@@ -151,71 +135,6 @@ confirm_or_exit() {
   fi
   echo ""
 }
-
-# ---------------------------------------------------------------------------
-# Flag parsing
-# ---------------------------------------------------------------------------
-PROJECT_NAME=""
-PROJECT_DIR=""
-SANDBOX_DIR=""
-REFRESH=false
-YES_FLAG=false
-
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-    --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --refresh)    REFRESH=true ;;
-    --yes)        YES_FLAG=true ;;
-    -h|--help)    usage; exit 0 ;;
-    *)
-      echo "Unknown flag: $ARG" >&2
-      usage
-      exit 1
-      ;;
-  esac
-done
-
-if $YES_FLAG; then
-  _INTERACTIVE=false
-fi
-
-# ---------------------------------------------------------------------------
-# Prompt for missing flags
-# ---------------------------------------------------------------------------
-if [[ -z "$PROJECT_NAME" ]]; then
-  read -rp "Project name (no spaces, used for image/container naming): " PROJECT_NAME
-fi
-
-if [[ "$REFRESH" != true && -z "$PROJECT_DIR" ]]; then
-  echo "Project directory: absolute or relative path to the project git repo."
-  echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
-  read -rp "Project directory: " PROJECT_DIR
-fi
-
-if [[ -z "$SANDBOX_DIR" ]]; then
-  echo "Sandbox directory: absolute or relative path where sandbox files will be created."
-  echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
-  echo "  Convention: alongside the project dir, e.g. ${PROJECT_DIR:-<project-dir>}/../sandbox"
-  read -rp "Sandbox directory: " SANDBOX_DIR
-fi
-
-# ---------------------------------------------------------------------------
-# Resolve and validate paths (always, for both modes)
-# ---------------------------------------------------------------------------
-resolve_and_validate SANDBOX_DIR "--sandbox" "$SANDBOX_DIR" false  # may not exist yet
-
-if [[ -n "$PROJECT_DIR" ]]; then
-  resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
-fi
-
-# Derive PROJECT_DIR from .env if not provided (refresh mode)
-if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
-  if [[ -f "$SANDBOX_DIR/.env" ]]; then
-    PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$SANDBOX_DIR/.env" | cut -d= -f2-)
-  fi
-fi
 
 # ===========================================================================
 # Refresh mode — update versioned template files only
@@ -450,10 +369,98 @@ _run_onboard() {
 }
 
 # ===========================================================================
-# Mode dispatch
+# Mode dispatch + CLI entry point
 # ===========================================================================
-if [[ "$REFRESH" == true ]]; then
-  _run_refresh
-else
-  _run_onboard
+main() {
+  # If set to true after the first mkdir, the ERR trap prints a cleanup
+  # warning so the user knows SANDBOX_DIR has partial state.
+  _HAS_SIDE_EFFECTS=false
+  trap '_maybe_cleanup' ERR
+
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  TEMPLATES="$REPO_ROOT/scripts/templates"
+
+  # Detect if running non-interactively (piped stdin or --yes flag).
+  # --yes bypasses the confirmation prompt for scripting/CI.
+  _INTERACTIVE=true
+  if [[ ! -t 0 ]]; then
+    _INTERACTIVE=false
+  fi
+
+  # ---------------------------------------------------------------------------
+  # Flag parsing
+  # ---------------------------------------------------------------------------
+  PROJECT_NAME=""
+  PROJECT_DIR=""
+  SANDBOX_DIR=""
+  REFRESH=false
+  YES_FLAG=false
+
+  local ARG
+  for ARG in "$@"; do
+    case "$ARG" in
+      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
+      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
+      --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
+      --refresh)    REFRESH=true ;;
+      --yes)        YES_FLAG=true ;;
+      -h|--help)    usage; exit 0 ;;
+      *)
+        echo "Unknown flag: $ARG" >&2
+        usage
+        exit 1
+        ;;
+    esac
+  done
+
+  if $YES_FLAG; then
+    _INTERACTIVE=false
+  fi
+
+  # ---------------------------------------------------------------------------
+  # Prompt for missing flags
+  # ---------------------------------------------------------------------------
+  if [[ -z "$PROJECT_NAME" ]]; then
+    read -rp "Project name (no spaces, used for image/container naming): " PROJECT_NAME
+  fi
+
+  if [[ "$REFRESH" != true && -z "$PROJECT_DIR" ]]; then
+    echo "Project directory: absolute or relative path to the project git repo."
+    echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
+    read -rp "Project directory: " PROJECT_DIR
+  fi
+
+  if [[ -z "$SANDBOX_DIR" ]]; then
+    echo "Sandbox directory: absolute or relative path where sandbox files will be created."
+    echo "  To convert a Windows path: wslpath 'C:\\your\\path'"
+    echo "  Convention: alongside the project dir, e.g. ${PROJECT_DIR:-<project-dir>}/../sandbox"
+    read -rp "Sandbox directory: " SANDBOX_DIR
+  fi
+
+  # ---------------------------------------------------------------------------
+  # Resolve and validate paths (always, for both modes)
+  # ---------------------------------------------------------------------------
+  resolve_and_validate SANDBOX_DIR "--sandbox" "$SANDBOX_DIR" false  # may not exist yet
+
+  if [[ -n "$PROJECT_DIR" ]]; then
+    resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
+  fi
+
+  # Derive PROJECT_DIR from .env if not provided (refresh mode)
+  if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
+    if [[ -f "$SANDBOX_DIR/.env" ]]; then
+      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$SANDBOX_DIR/.env" | cut -d= -f2-)
+    fi
+  fi
+
+  if [[ "$REFRESH" == true ]]; then
+    _run_refresh
+  else
+    _run_onboard
+  fi
+}
+
+# Guard: only run main() when executed directly, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
 fi

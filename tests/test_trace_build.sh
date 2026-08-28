@@ -294,9 +294,9 @@ EOF
   fi
 }
 
-# current_sig is deterministic and memoized per (type, provider), distinct
-# across types — the hoisted computation that removes the O(2N) per-record
-# recomputation (F1).
+# current_sig is deterministic per (type, repo_root, provider) and distinct
+# across types — a pure recomputation on every call (the former memoization was
+# removed as inert; see handover 20260823-09).
 test_current_sig_deterministic() {
   local a1 a2 s1 s2
   a1="$(current_sig agent "$REPO_ROOT" pi)"
@@ -304,7 +304,7 @@ test_current_sig_deterministic() {
   s1="$(current_sig sandbox "$REPO_ROOT")"
   s2="$(current_sig sandbox "$REPO_ROOT")"
   if [[ -n "$a1" && "$a1" == "$a2" && -n "$s1" && "$s1" == "$s2" && "$a1" != "$s1" ]]; then
-    pass "current_sig: deterministic, memoized, distinct per type"
+    pass "current_sig: deterministic and distinct per type"
   else
     fail "current_sig: expected deterministic distinct per type, got agent=$a1 sandbox=$s1"
   fi

@@ -100,3 +100,16 @@ history-scanning consumers must match BOTH forms: `grep -A30 -E "Mid-session fin
 any history scan (after ~30 NEW handovers / roughly one week), remove the dual-grep (keep
 only the new form) and delete this entry. Sweep trigger: at sub-milestone cleanup, check
 whether the newest handover index in `devlog/handovers/` has advanced by ≥30 since 20260819.
+
+### [G] 2026-08-23 — Close-out propagation greps must sweep the full tests tree
+
+state: open
+scoped: M2.6 (any lib/production change with contract language)
+legacy: none
+mitigation: handover 20260823-09 changed `current_sig`'s contract but its close-out
+residue grep covered only `src/`, `scripts/`, and the directly-edited test file — stale
+"memoized" contract comments survived in `tests/test_trace_build.sh` and
+`tests/test_session_inventory.sh` until the operator challenged propagation (fixed within
+the same handover's scope). Rule: the AC "no references to <old contract> remain" sweep is always
+`grep -rn <term> scripts/ src/ tests/ docs/ Makefile`, never a file subset; test
+comments asserting removed behavior are contract references and count as residue.

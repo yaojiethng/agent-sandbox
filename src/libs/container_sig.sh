@@ -11,7 +11,7 @@
 #   _sandbox_sig_sources     — source paths for the sandbox image (/opt/sandbox)
 #   _agent_sig_sources       — source paths for an agent image (/opt/workflow + provider)
 #   container_sig            — deterministic SHA-256 of the source-file set
-#   current_sig              — memoized current sig for a layer type
+#   current_sig              — current sig for a layer type
 #   image_is_stale           — baked container-sig vs recomputed -> fresh|stale|unknown
 #
 # (record_image_stale — the record-level aggregation — lives in
@@ -81,9 +81,14 @@ container_sig() {
     fi
   done
 
+  if (( ${#find_args[@]} == 0 )); then
+    echo "container_sig: ERROR: no source paths given" >&2
+    return 1
+  fi
+
   find "${find_args[@]}" -type f -print0 2>/dev/null \
     | sort -z \
-    | xargs -0 sha256sum \
+    | xargs -0 -r sha256sum \
     | sha256sum \
     | awk '{print $1}'
 }
@@ -91,23 +96,13 @@ container_sig() {
 # current_sig <type: sandbox|agent> <repo_root> [provider]
 # Computes the current container-sig for a layer type (the value an up-to-date
 # image would carry in `agent-sandbox.container-sig`). Pure function of
-# (type, provider) — memoized so a multi-record inventory recomputes the full
-# source-tree hash once per (type, provider) instead of per record. Prints the
-# sig, or nothing + non-zero when the type is unknown or its sources cannot be
-# resolved.
-declare -A _current_sig_cache=()
+# (type, repo_root, provider): recomputes on every call and reflects live tree
+# state. Prints the sig, or nothing + non-zero when the type is unknown or its
+# sources cannot be resolved.
 current_sig() {
   local type="$1"
   local repo_root="${2:?current_sig requires repo_root}"
   local provider="${3:-}"
-  local key="${type}:${provider:-}"
-
-  local cached="${_current_sig_cache[$key]:-}"
-  if [[ -n "$cached" ]]; then
-    echo "$cached"
-    return 0
-  fi
-
   local -a sources=()
   case "$type" in
     sandbox)
@@ -125,7 +120,6 @@ current_sig() {
   local sig
   sig="$(container_sig "$repo_root" "${sources[@]}" 2>/dev/null || true)"
   [[ -n "$sig" ]] || return 1
-  _current_sig_cache[$key]="$sig"
   echo "$sig"
 }
 

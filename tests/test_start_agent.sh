@@ -750,20 +750,13 @@ test_missing_provider_fails_fast_with_clear_error() {
 run_test test_rebuild_flag_builds_agent_with_no_cache
 run_test test_refresh_flag_builds_without_no_cache
 # validate_wsl_path rejects Windows drive paths with a WSL conversion hint.
-# start_agent.sh auto-executes its arg parsing when sourced, so the function
-# is extracted by exact bounds and run in a subshell (it calls exit on
-# failure).
-_wsl_path_probe() {
-  local value="$1"
-  bash -c '
-    eval "$(sed -n "/^validate_wsl_path()/,/^}/p" "$1")"
-    validate_wsl_path "PROJECT_DIR" "$2"
-  ' _ "$REPO_ROOT/scripts/start_agent.sh" "$value"
-}
+# start_agent.sh is now dual-use (§1.11 guard) and validate_wsl_path returns
+# (§3.1), so it can be sourced and called in-process.
+source "$REPO_ROOT/scripts/start_agent.sh"
 
 test_wsl_path_accepts_linux_paths() {
   local out rc
-  out=$(_wsl_path_probe "/mnt/c/Users/proj" 2>&1); rc=$?
+  out=$(validate_wsl_path "PROJECT_DIR" "/mnt/c/Users/proj" 2>&1); rc=$?
   if [[ $rc -eq 0 && -z "$out" ]]; then
     pass "validate_wsl_path accepts Linux paths silently"
   else
@@ -773,7 +766,7 @@ test_wsl_path_accepts_linux_paths() {
 
 test_wsl_path_rejects_windows_drive_paths() {
   local out rc
-  out=$(_wsl_path_probe 'C:\Users\proj' 2>&1); rc=$?
+  out=$(validate_wsl_path "PROJECT_DIR" 'C:\Users\proj' 2>&1); rc=$?
   if [[ $rc -ne 0 && "$out" == *"must be a WSL/Linux path"* && "$out" == *"wslpath"* ]]; then
     pass "validate_wsl_path rejects Windows drive path with conversion hint"
   else
