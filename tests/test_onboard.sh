@@ -111,7 +111,7 @@ test_fresh_onboard_creates_provider_configs() {
   if [[ "$PROVIDERS_FOUND" -gt 0 ]]; then
     pass "Provider config directories created ($PROVIDERS_FOUND providers)"
   else
-    skip "No provider config directories in repo — skipping provider assertion"
+    fail "no provider config dirs under src/reasoning/providers/ — onboard had nothing to provision"
   fi
 }
 

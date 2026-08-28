@@ -50,8 +50,8 @@ _test_draft_run() {
   draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
-  echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false false || return 1
-  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" false false || return 1
+  echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false || return 1
+  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" false || return 1
 }
 
 # current_branch DIR
@@ -430,7 +430,7 @@ test_draft_failure_returns_to_source_branch() {
   git -C "$P" add file-1.txt
   git -C "$P" commit -m "conflict file" --quiet
 
-  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false false >/dev/null 2>&1 || true
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1 || true
 
   local CURR
   CURR=$(_current_branch "$P")
@@ -815,6 +815,45 @@ test_confirm_rejects_non_draft_branch() {
   fi
 }
 
+# .draft-state is located by commit message, not by being the branch tip —
+# covers the post-rebase scenario: a draft branch that gained commits (or was
+# rebased) after the draft run still confirms cleanly.
+test_confirm_after_draft_branch_advances() {
+  local P="$FIXTURE_DIR/confirm_advance_p"
+  local S="$FIXTURE_DIR/confirm_advance_s"
+  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
+  make_committed_repo "$P"
+  mkdir -p "$S/.workspace"
+  make_session_fixture "$EXPORT" 2
+
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+
+  # Advance the draft branch past the .draft-state commit (as a rebase or
+  # continued work would) — the state commit is no longer the branch tip.
+  # confirm_run runs FROM the draft branch (its own contract), so stay there.
+  git -C "$P" checkout "$DRAFT_BRANCH" --quiet
+  echo "post-draft work" > "$P/post-draft.txt"
+  git -C "$P" add post-draft.txt
+  git -C "$P" commit -m "post-draft work" --quiet
+
+  confirm_run "$P" "$S" "" >/dev/null 2>&1 || fail "confirm_run returned non-zero"
+
+  if _branch_exists "$P" "$DRAFT_BRANCH"; then
+    fail "confirm did not delete advanced draft branch"
+  else
+    pass "confirm deletes draft branch whose tip moved past .draft-state"
+  fi
+
+  if [[ -f "$P/post-draft.txt" && $(git -C "$P" rev-list --count main) -ge 4 ]]; then
+    pass "confirm merges post-draft commits along with relocated .draft-state"
+  else
+    fail "post-draft work lost or incomplete merge on main"
+  fi
+}
+
+# =============================================================================
 test_confirm_conflict_recovery() {
   local P="$FIXTURE_DIR/confirm_conflict_p"
   local S="$FIXTURE_DIR/confirm_conflict_s"
@@ -942,6 +981,7 @@ run_test test_confirm_deletes_draft_branch
 run_test test_confirm_merges_changes
 run_test test_confirm_target_branch
 run_test test_confirm_rejects_non_draft_branch
+run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
 
 run_test test_reject_returns_to_source

@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# tests/knowledge/knowledge_diff_rename.sh
+# tests/test_rename_apply.sh
 #
-# Knowledge test: git diff rename handling through the full pipeline.
-# Covers git diff, git apply, --no-renames flag, package_branch integration,
+# Rename handling through the full apply pipeline: git diff rename
+# detection, git apply, --no-renames flag, package_branch integration,
 # and diff_export default behavior.
 #
-# Run: bash tests/knowledge/knowledge_diff_rename.sh
+# Promoted from tests/knowledge/knowledge_diff_rename.sh — the seams it
+# probes are deterministic (git only), so per testing_policy.md it belongs
+# in the discovered suite, not in knowledge/.
 
-set -euo pipefail
+set -uo pipefail
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$TEST_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
-source "$TEST_DIR/../libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
+source "$TEST_DIR/libs/test_common.sh"
+test_setup
 
 # -------------------------
 # Helpers
@@ -396,6 +396,4 @@ run_test test_binary_file_rename
 run_test test_multifile_rename_in_one_commit
 run_test test_cross_directory_rename
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done
