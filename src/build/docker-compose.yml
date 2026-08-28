@@ -6,7 +6,7 @@
 # merged result is written to SANDBOX_DIR/.compose/<session-id>.yml and persists
 # after the session (see docs/architecture/execution_model.md).
 #
-# {{VAR}} placeholders are substituted at generation time:
+# Double-brace placeholders are substituted at generation time:
 #   {{PROJECT_NAME}}       -> project name
 #   {{SANDBOX_IMAGE_NAME}} -> capability layer image name
 #   {{AGENT_IMAGE_NAME}}   -> reasoning layer image name

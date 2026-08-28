@@ -2,7 +2,8 @@
 # scripts/workflows/draft.sh
 #
 # Draft branch workflow: create draft branch, apply patches.
-# Sourced by agent-sandbox.sh  --  not executed standalone.
+# Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
+# sourced, so test suites may source this file for its functions.
 #
 # Depends on: libs/session_state.sh, git, standard shell utilities.
 

@@ -21,7 +21,7 @@ agent_base_image_name() {
 }
 
 # agent_image_name <provider> <project_name>
-# Returns: <provider>-agent-<project> (lowercased)
+# Returns: <provider>-agent-<project> (project lowercased; provider verbatim)
 agent_image_name() {
   local provider="${1:?agent_image_name requires provider}"
   local project="${2:?agent_image_name requires project name}"

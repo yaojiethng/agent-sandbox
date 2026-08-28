@@ -2,7 +2,8 @@
 # scripts/workflows/apply.sh
 #
 # Diff application workflow: apply a diff file to the project working tree.
-# Sourced by agent-sandbox.sh  --  not executed standalone.
+# Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
+# sourced, so test suites may source this file for its functions.
 #
 # Depends on: AGENT_SANDBOX_REPO, src/libs/diff.sh, git, standard shell utilities.
 

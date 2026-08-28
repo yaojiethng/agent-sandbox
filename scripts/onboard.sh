@@ -72,6 +72,8 @@ EOF
 }
 
 # Reads the version tag from a template file (Format: # agent-sandbox template version: N)
+# Absent marker yields empty output with rc0 -- callers treat empty as
+# "unknown template version", not as failure.
 template_version() {
   # Absent marker is an expected, non-error outcome (caller compares empty
   # string): absorb grep's exit 1 per bash-coding-conventions rule 4.3.
@@ -173,6 +175,8 @@ _run_refresh() {
     fi
   else
     MAKEFILE_VERSION=$(template_version "$TEMPLATES/Makefile.template")
+    # Empty MAKEFILE_VERSION means the template lacks a version marker; .env
+    # then records an unknown version rather than failing the refresh.
     # Refresh derived path + template-version metadata in place. INSTALL_DIR is
     # operator configuration and is intentionally left untouched (no --install-dir
     # input exists to sync it to; clobbering it would undo an operator override).
