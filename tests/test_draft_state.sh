@@ -340,6 +340,36 @@ EOF
   fi
 }
 
+test_validate_dropped_state_commit_warns_and_continues() {
+  # If the '.draft-state' commit lost its message (e.g. rebase -i reword),
+  # the lookup finds nothing: function must WARN, emit DRAFT_STATE_COMMIT=,
+  # and still succeed with CURRENT_BRANCH (confirm's drop step is skipped).
+  local DIR="$FIXTURE_DIR/validate_dropped"
+  make_committed_repo "$DIR"
+  local INIT_SHA
+  INIT_SHA=$(git -C "$DIR" rev-parse HEAD)
+
+  git -C "$DIR" checkout -b "draft/dropped-state" --quiet
+  cat > "$DIR/.draft-state" <<EOF
+source_branch: main
+from_hash: $INIT_SHA
+author: Agent
+EOF
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m "reworded away" --quiet
+
+  local OUTPUT RC=0
+  OUTPUT=$(draft_validate_branch "$DIR" 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 && "$OUTPUT" == *"commit may have been dropped during rebase"* \
+     && "$OUTPUT" == *"DRAFT_STATE_COMMIT="* && "$OUTPUT" == *"CURRENT_BRANCH=draft/dropped-state"* ]]
+  then
+    pass "draft_validate_branch: dropped state commit -> warn, empty DRAFT_STATE_COMMIT, rc0"
+  else
+    fail "dropped-commit path broken: rc=$RC out='$OUTPUT'"
+  fi
+}
+
 # =============================================================================
 # Run all
 # =============================================================================
@@ -358,5 +388,6 @@ run_test test_validate_not_on_draft_branch
 run_test test_validate_missing_dot_draft_state
 run_test test_validate_success
 run_test test_validate_missing_from_hash
+run_test test_validate_dropped_state_commit_warns_and_continues
 
 test_done

@@ -347,6 +347,99 @@ test_dispatcher_no_init_sha_file() {
 }
 
 # =============================================================================
+# _package_preflight_check — warning-branch coverage
+# =============================================================================
+
+test_preflight_bypass_returns_before_any_git() {
+  # Bypass must short-circuit BEFORE touching git: a nonexistent dir proves it.
+  local OUT RC=0
+  OUT=$(PACKAGE_BYPASS_PREFLIGHT=true \
+    _package_preflight_check "$FIXTURE_DIR/does-not-exist" "deadbeef" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "preflight: PACKAGE_BYPASS_PREFLIGHT=true short-circuits before git access"
+  else
+    fail "bypass should be silent rc0, got rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_clean_tree_is_silent() {
+  local P="$FIXTURE_DIR/pf_clean"
+  make_committed_repo "$P"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "preflight: no changes since baseline -> silent success"
+  else
+    fail "clean tree should be silent, rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_flags_uncommitted_modifications() {
+  local P="$FIXTURE_DIR/pf_dirty"
+  make_committed_repo "$P"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD)
+  echo committed-change > "$P/file.txt"
+  git -C "$P" commit -qam c2
+  echo dirty-working-tree >> "$P/file.txt"
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == *"uncommitted modifications"* \
+     && "$OUT" == *"flagged potential patch divergence"* ]]
+  then
+    pass "preflight: dirty working tree flagged with bypass hint, still rc0 (advisory)"
+  else
+    fail "dirty-tree flagging broken: rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_flags_cancelled_out_modification() {
+  # Reachable path into the 'identical content' advisory: a committed change
+  # whose working tree was reverted back to baseline content (uncommitted).
+  # The file appears in the INIT..HEAD diff, yet `git diff --quiet $INIT -- f`
+  # (INIT tree vs WORKING TREE — note: the code comment claims HEAD, it is
+  # actually the worktree) finds them identical -> flagged.
+  local P="$FIXTURE_DIR/pf_cancel"
+  make_committed_repo "$P"
+  local BASE_CONTENT; BASE_CONTENT=$(cat "$P/file.txt")
+  echo changed > "$P/file.txt"
+  git -C "$P" commit -qam c2
+  printf '%s\n' "$BASE_CONTENT" > "$P/file.txt"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD~1)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == *"identical content at"* ]]; then
+    pass "preflight: committed-then-worktree-reverted change hits identical-content advisory"
+  else
+    fail "cancelled-modification branch broken: rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_skips_deleted_files_without_warning() {
+  # With rename detection disabled the diff lists BOTH rename sides; the old
+  # name is gone from HEAD and must be skipped silently (no uncommitted/
+  # identical-content warnings for it).
+  local P="$FIXTURE_DIR/pf_renamed"
+  make_committed_repo "$P"
+  git -C "$P" config diff.renames false
+  git -C "$P" mv file.txt renamed.txt
+  git -C "$P" commit -qm rename
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD~1)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" != *"file.txt"* ]]
+  then
+    pass "preflight: deleted side of a rename skipped without warnings"
+  else
+    fail "deleted-file skip broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# =============================================================================
 # Run
 # =============================================================================
 run_test test_dispatcher_creates_all_artefacts
@@ -362,5 +455,10 @@ run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
 run_test test_dispatcher_export_status_contents
 run_test test_dispatcher_no_init_sha_file
+run_test test_preflight_bypass_returns_before_any_git
+run_test test_preflight_clean_tree_is_silent
+run_test test_preflight_flags_uncommitted_modifications
+run_test test_preflight_flags_cancelled_out_modification
+run_test test_preflight_skips_deleted_files_without_warning
 
 test_done

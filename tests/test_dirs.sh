@@ -90,11 +90,26 @@ test_custom_leaf_overrides() {
   fi
 }
 
+test_snapshot_dir_name_override() {
+  local OUT
+  OUT=$(
+    SNAPSHOT_DIR_NAME="snap"
+    dirs_resolve "/base"
+    echo "$SNAPSHOT_DIR"
+  )
+  if [[ "$OUT" == "/base/snap" ]]; then
+    pass "SNAPSHOT_DIR_NAME env override respected"
+  else
+    fail "snapshot override mismatch: got $OUT"
+  fi
+}
+
 run_test test_requires_base_dir
 run_test test_host_default_paths
 run_test test_container_override
 run_test test_changes_dir_name_is_leaf
 run_test test_custom_leaf_overrides
+run_test test_snapshot_dir_name_override
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"

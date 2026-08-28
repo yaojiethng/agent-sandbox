@@ -136,10 +136,10 @@ test_provision_copies_config_files() {
   else
     fail "settings.json missing or wrong content"
   fi
-  if [[ -f "$ah/auth.json" ]]; then
+  if [[ -f "$ah/auth.json" ]] && grep -q 'auth-value' "$ah/auth.json"; then
     pass "copies auth.json"
   else
-    fail "auth.json missing"
+    fail "auth.json missing or wrong content"
   fi
 
   rm -rf "$tmpdir"
