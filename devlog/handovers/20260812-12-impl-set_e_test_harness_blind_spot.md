@@ -79,5 +79,5 @@ Recommendation: **(a) + (c)** — make `build.sh` self-set `-e` (so invocation s
 
 ## Operational notes
 
-- `-e` semantics: a sourced library function returning non-zero aborts the whole script under `set -e` unless guarded (`|| true` / `|| _rc=$?` — repo-canonical per `bash-coding-conventions.md` §4.3).
+- `-e` semantics: a sourced library function returning non-zero aborts the whole script under `set -e` unless guarded (`|| true` / `|| _rc=$?` — repo-canonical per `bash-coding-conventions.md` rule 4.3).
 - Follow `docs/development/bash-coding-conventions.md`; shellcheck-clean.

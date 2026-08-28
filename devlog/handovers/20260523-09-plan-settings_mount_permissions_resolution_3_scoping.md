@@ -65,18 +65,18 @@ None.
 | Finding | Triaged to |
 |---|---|
 | ACL-based approach (Resolution 1) suffers mask throttling, metadata reset, and `/mnt/c/` incompatibility | Already documented in `story_linux_filesystem_uid_mismatch.md` |
-| Group bind (Resolution 3) works on WSL but fails on macOS/Windows Docker Desktop | Recorded in design doc §2.1 (Platform Portability) |
-| UID Mapping requires build pipeline threading (`--build-arg HOST_UID`/`HOST_GID`) | Documented in design doc §3 surface area items #9–#11 |
-| Base images with pre-existing UID 1000 (node, ubuntu) require collision handling in Dockerfile | Resolved via `usermod` rename pattern, documented in design doc §2.4 |
-| Setgid bit only covers newly created inodes, not files provisioned via cp -r or mv | Correction applied to design doc §8.1, §8.2, and story doc Strategy 3 |
-| rsync --chmod is the recommended replacement for cp -r during provisioning | Documented in design doc §8.2 |
+| Group bind (Resolution 3) works on WSL but fails on macOS/Windows Docker Desktop | Recorded in design doc rule 2.1 (Platform Portability) |
+| UID Mapping requires build pipeline threading (`--build-arg HOST_UID`/`HOST_GID`) | Documented in design doc rule 3 surface area items #9–#11 |
+| Base images with pre-existing UID 1000 (node, ubuntu) require collision handling in Dockerfile | Resolved via `usermod` rename pattern, documented in design doc rule 2.4 |
+| Setgid bit only covers newly created inodes, not files provisioned via cp -r or mv | Correction applied to design doc rule 8.1, rule 8.2, and story doc Strategy 3 |
+| rsync --chmod is the recommended replacement for cp -r during provisioning | Documented in design doc rule 8.2 |
 
 ## Completed this session
 
 | File | Change |
 |---|---|
 | `docs/devlog/discussions/story_linux_filesystem_uid_mismatch.md` | Added Strategy 4 (UID Mapping / User Hijack) with full spec: platform breakdown, Dockerfile with collision handling, compose config, pipeline changes, pros/cons. Updated comparison matrix to 4 columns. Added setgid limitation note to Strategy 3. Updated status to "Resolved via Strategy 4". |
-| `docs/devlog/discussions/design_settings_permissions_group_bind.md` | New design document: problem statement, 6 design considerations with tradeoff tables, final solution with rationale, 14-item surface area with dependency ordering, user-facing documentation contract (§4 with 5 documentation subsections), roadmap task entry for M2.7 Track C, implementation ACs, supplementary techniques (GID+macOS, rsync provisioning), setgid correction. |
+| `docs/devlog/discussions/design_settings_permissions_group_bind.md` | New design document: problem statement, 6 design considerations with tradeoff tables, final solution with rationale, 14-item surface area with dependency ordering, user-facing documentation contract (rule 4 with 5 documentation subsections), roadmap task entry for M2.7 Track C, implementation ACs, supplementary techniques (GID+macOS, rsync provisioning), setgid correction. |
 | `docs/devlog/handovers/20260523-08-impl-acl_permissions_baseline.md` | Retroactive handover for the ACL baseline implementation (session 08). |
 | `docs/devlog/handovers/20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md` | This handover. |
 | `docs/devlog/roadmap.md` | Added Track C — Universal Bind Mount Permission Strategy (UID Mapping) under M2.7 with design reference link. |
@@ -93,7 +93,7 @@ Implementation session for the UID Mapping strategy. Priority order:
 2. **Dockerfile updates** — All 5 Dockerfiles: add `ARG HOST_UID`/`ARG HOST_GID`, collision handling via `usermod` rename, numeric `chown -R`. Parallel across providers.
 3. **Compose update** — `libs/docker-compose.yml`: add `user: "${HOST_UID:-1000}:${HOST_GID:-1000}"` to both services. Verify provider overlays don't conflict.
 4. **Onboard cleanup** — Only after UID Mapping is verified working: remove `setfacl` lines from `scripts/onboard.sh`.
-5. **Documentation** — Per design doc §4.5.
+5. **Documentation** — Per design doc rule 4.5.
 6. **Tests** — Switch ACL assertions to UID-based checks.
 
 **Pending operator action:** Confirm the commit sequence (ACL baseline as commit 01, design docs as commit 02, implementation as future commits) and close this session.

@@ -31,7 +31,7 @@ Implement the first M2.6.6 implementation task — **Compose template: realize t
 | `src/build/compose.sh` | File-set selection at generation (`SANDBOX_TYPE` selector, default copy) |
 | `scripts/start_agent.sh` / `scripts/run_agent.sh` | Export/surface the delivery selector; pass the file set per mode |
 | `tests/test_trace_compose_gen.sh` (+ compose tests) | File-set selection tests; copy overlay keeps `SNAPSHOT_DIR`; mount overlay does not inherit it |
-| `docs/architecture/execution_model.md` | §Compose Generation — file-set model |
+| `docs/architecture/execution_model.md` | Compose Generation — file-set model |
 | `docs/development/tool_interface.md` (if it documents the template) | Compose generation doc sync |
 
 ## Out of scope this session
@@ -70,7 +70,7 @@ Implement the first M2.6.6 implementation task — **Compose template: realize t
 - [x] `run_agent.sh` — delivery overlay selection (`SANDBOX_TYPE`, default copy, invalid rejected), `WORKTREE_DIR` default export; assembly header comment updated (also corrected stale `libs/` paths in the comment)
 - [x] `start_agent.sh` — path-derivation comment updated (snapshot is copy-delivery; exported unconditionally until delivery enablement)
 - [x] Tests — `test_trace_compose_gen.sh` (4 new: base-free-of-copy-wiring, copy overlay carries wiring, mount overlay worktree-only, mount output free of wiring), `test_trace_start.sh` (3 new: copy default merges copy overlay, mount merges mount overlay, invalid `SANDBOX_TYPE` rejected). Removed the 4 trivial repo-presence checks from `test_run_agent.sh` (operator-directed — presence assertions restate the repo's own committed structure; the meaningful guards are the production existence checks in `run_agent.sh`, present for all 5 required files, plus the trace/static tests). Suite 471 → 476 net, 0 failed / 0 skipped
-- [x] Docs — `execution_model.md` §Compose Generation (delivery overlays, `SANDBOX_TYPE`, corrected `libs/` → `src/build/`), `tool_interface.md` (repo-owned templates list + delivery-overlay note)
+- [x] Docs — `execution_model.md` Compose Generation (delivery overlays, `SANDBOX_TYPE`, corrected `libs/` → `src/build/`), `tool_interface.md` (repo-owned templates list + delivery-overlay note)
 
 ## Mid-session findings
 

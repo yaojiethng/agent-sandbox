@@ -210,7 +210,7 @@ The base compose template now explicitly sets `user:` on both services. Document
 | 4 | Bind-mounted `.<provider>/agent/` directories are writable by the agent container without any `setfacl` or `chmod` | Agent preflight bind mount check passes |
 | 5 | `onboard.sh` contains no `setfacl` references | `grep -c setfacl scripts/onboard.sh` is 0 |
 | 6 | Onboarding works end-to-end with no ACL package installed | `apt remove acl && agent-sandbox onboard --refresh ...` completes without error |
-| 7 | Documentation files listed in §4.5 are updated | `read` each file confirms coverage |
+| 7 | Documentation files listed in rule 4.5 are updated | `read` each file confirms coverage |
 
 ---
 
@@ -249,7 +249,7 @@ sudo chmod -R g+s "$SANDBOX_DIR"
 - **`mv`**: Preserves original attributes entirely — group does not change to the shared GID.
 - **ACL Mask Trap**: Even if the group is correct, the copy process can reset the ACL Mask to `r-x`, blocking write access.
 
-**Consequence:** The setgid bit reliably handles files the **container creates at runtime** (logs, session checkpoints). It does **not** handle provisioned files. A recursive permission fix after provisioning, or `rsync --chmod` (see §8.2), is required for deployment.
+**Consequence:** The setgid bit reliably handles files the **container creates at runtime** (logs, session checkpoints). It does **not** handle provisioned files. A recursive permission fix after provisioning, or `rsync --chmod` (see rule 8.2), is required for deployment.
 
 ### 8.2 rsync for Permission-Aware Provisioning
 

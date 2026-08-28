@@ -38,11 +38,11 @@ The SESSION_STATE migration (pre-clean Group 1) is the only implementation that 
 
 **File:** `docs/devlog/discussions/design_change_a_contract.md`
 
-A single coherent design record describing Change A's contract as it will be implemented. Covers: unified output format (§ 2), pipeline functions (§ 3), CLI contract (§ 4), session identity (§ 5), `diff_on_exit` repair strategy (§ 6), and dependency ordering (§ 7). No recovery framing, no "Contract Amendments" fragments.
+A single coherent design record describing Change A's contract as it will be implemented. Covers: unified output format ( 2), pipeline functions ( 3), CLI contract ( 4), session identity ( 5), `diff_on_exit` repair strategy ( 6), and dependency ordering ( 7). No recovery framing, no "Contract Amendments" fragments.
 
 ### D-2 — Roadmap entries
 
-**File:** `docs/devlog/roadmap.md` (§ A.0–A.4, inserted between pre-clean Group 3 completion and M2.5)
+**File:** `docs/devlog/roadmap.md` ( A.0–A.4, inserted between pre-clean Group 3 completion and M2.5)
 
 Five entries (A.0–A.4), each self-contained and executable without recovery context. Each includes objective, scope, hot files list, acceptance criteria, and dependency declaration. Entries are:
 
@@ -154,6 +154,6 @@ The handover `20260429-08-design-b_interactive.md` was found in the input direct
 **Hot files:**
 - `scripts/agent-sandbox.sh` — add `main` guard
 
-**Context handover:** This is an ordinary M2.3 implementation session. Read `docs/devlog/roadmap.md` § A.0 and `docs/devlog/discussions/design_change_a_contract.md`. No recovery context, no `staged.diff`, no lost-handover access. The file currently has no `main` guard — the sole task is adding one.
+**Context handover:** This is an ordinary M2.3 implementation session. Read `docs/devlog/roadmap.md`  A.0 and `docs/devlog/discussions/design_change_a_contract.md`. No recovery context, no `staged.diff`, no lost-handover access. The file currently has no `main` guard — the sole task is adding one.
 
 **After A.0:** A.1 (data model). A.1 is the largest entry; it rewrites the packaging pipeline end-to-end.

@@ -31,7 +31,7 @@ Create `docs/operations/adr_policy.md` — covers lifecycle and naming for docs 
 - **Creation trigger:** when a design decision reaches implementation
 - **Content:** summary, context, options considered, decision, consequences, supersedes
 - **Lifecycle:** created `settled`; only valid transition is `superseded`
-- **Supersede protocol:** old ADR gets one header edit — `> **Superseded by:**` — then frozen. Partial (§section) supported.
+- **Supersede protocol:** old ADR gets one header edit — `> **Superseded by:**` — then frozen. Partial (section) supported.
 
 ### Part 3 — Policy amendments to existing files
 

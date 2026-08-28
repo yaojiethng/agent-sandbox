@@ -106,5 +106,5 @@ The old parent bind mount of the entire `.pi/agent/` tree masked both issues.
    cross-device fallback. `fd-find`/`ripgrep` via apt make auto-downloads
    unnecessary anyway.
 
-**Documented in:** `providers/pi/onboard-readme.md` § Ephemeral vs Mounted and
-§ Binary Downloads.
+**Documented in:** `providers/pi/onboard-readme.md`  Ephemeral vs Mounted and
+ Binary Downloads.

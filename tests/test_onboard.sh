@@ -252,7 +252,7 @@ run_test test_refresh_preserves_env_values
 run_test test_refresh_syncs_paths_preserves_config
 # ---------------------------------------------------------------------------
 # template_version — refresh version gating depends on reading the marker
-# line from a template file. onboard.sh is now dual-use (§1.11 guard), so it
+# line from a template file. onboard.sh is now dual-use (rule 1.11 guard), so it
 # sources cleanly and the function is callable directly.
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/onboard.sh"

@@ -53,7 +53,7 @@ Transition M2.5 (Vault Capability Layer Prototype) to deferred, promote M2.7 (Se
 |---|---|---|
 | M2.5 tasks shelved, not removed | Tasks remain valid; re-activate when KV5 timeline demands it | roadmmap.md M2.5 section |
 | settings.json fix goes under M2.7 as item 8 | Design is complete, implementation belongs with the active milestone, and M2.7 already touches config lifecycle (docker-compose.yml, entrypoint.sh) | roadmmap.md M2.7 item 8 |
-| Recovery open questions documented but not assigned to a milestone | Neither item is a code change — both are procedural gaps for future recovery sessions | recovery_protocol.md §Open questions |
+| Recovery open questions documented but not assigned to a milestone | Neither item is a code change — both are procedural gaps for future recovery sessions | recovery_protocol.md Open questions |
 
 ## Mid-session findings
 

@@ -11,7 +11,7 @@ Audit where provider-specific paths leak into shared harness code, and where sha
 
 ## Scope
 
-P2-INV1 — extensibility structure audit per roadmap §Pre-design investigations.
+P2-INV1 — extensibility structure audit per roadmap Pre-design investigations.
 
 ## Files Examined
 

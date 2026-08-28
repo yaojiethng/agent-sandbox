@@ -12,7 +12,7 @@ Rename the container-lifecycle identifier `RUN_ID` → `SESSION_ID` across the r
 ## Context (verified)
 
 - Baseline `8d29640` (2A), clean tree.
-- Categorization working doc: `output/terminology-sweep/categorization.md` — Bucket A (`RUN_ID`→`SESSION_ID`, ~260 token occurrences across src/scripts/tests/docs/Makefile) + §5 sub-decisions.
+- Categorization working doc: `output/terminology-sweep/categorization.md` — Bucket A (`RUN_ID`→`SESSION_ID`, ~260 token occurrences across src/scripts/tests/docs/Makefile) + rule 5 sub-decisions.
 - Reserved terms registered: `docs/concepts/terminology.md` (session = container lifecycle; notes `SESSION_ID` formerly `RUN_ID`, deprecated).
 - `SNAPSHOT/SESSION` container tokens are Bucket C1: `SESSION_TS`, `SESSION_STATE`, `RESUME_SESSION`, `session-diffs`, `agent-sandbox.session-ts` label, `session_state.sh` — all KEEP.
 - Historical records (ADR `20260722-*session_identity*`, handovers, changelog) — Bucket C3, never retro-renamed.

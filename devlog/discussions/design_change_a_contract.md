@@ -241,7 +241,7 @@ A.4 was folded into A.1. A.5 (git alias removal, `agent-sandbox package-diff`/`p
 | Document | Purpose |
 |---|---|
 | `design_diff_and_branch_packaging_workflow.md` | Core design: diff format, primitives, invariants |
-| `roadmap.md` (§ A.0–A.4) | Executable task entries |
+| `roadmap.md` ( A.0–A.4) | Executable task entries |
 | `execution_model.md` | Architecture — diff pipeline |
 | `sandbox_lifecycle.md` | Container lifecycle — SESSION_STATE initialisation |
 | `tool_interface.md` | Operator-facing command reference |

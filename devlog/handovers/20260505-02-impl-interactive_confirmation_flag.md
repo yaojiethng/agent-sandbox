@@ -84,13 +84,13 @@ None.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Interactive mode is a 2-level (draft) or 3-level (apply) multi-step numbered picker | Original design proposed single-table; grill-me resolved to two-step flow | `design_interactive_confirmation_flag.md §3.1–3.3` |
-| `BUNDLE=` / `AUTOSAVE=` replaced by `FROM=<channel>` | Single variable, explicit channel names, no implicit mapping | `design_interactive_confirmation_flag.md §3.7` |
-| New file `libs/interactive_session_select.sh` | Avoids coupling `session.sh` to routing; domain-specific name | `design_interactive_confirmation_flag.md §3.5` |
-| Cap at 10 entries, hardcoded `INTERACTIVE_MAX_ENTRIES=10` | Prevents wall-of-text; easy to change | `design_interactive_confirmation_flag.md §3.4` |
-| Read stdin directly for prompts; warn on non-TTY but proceed | Enables test piping; no /dev/tty or FD trickery | `design_interactive_confirmation_flag.md §3.5` |
-| Pre-fill when `--session` provided; empty enter selects default | Acts as visual sanity check; composable with automation | `design_interactive_confirmation_flag.md §3.1` |
-| Both channel+session given → skip pickers, show patch list + confirm | Avoids redundant prompting when all info is supplied | `design_interactive_confirmation_flag.md §3.3` |
+| Interactive mode is a 2-level (draft) or 3-level (apply) multi-step numbered picker | Original design proposed single-table; grill-me resolved to two-step flow | `design_interactive_confirmation_flag.md rule 3.1–3.3` |
+| `BUNDLE=` / `AUTOSAVE=` replaced by `FROM=<channel>` | Single variable, explicit channel names, no implicit mapping | `design_interactive_confirmation_flag.md rule 3.7` |
+| New file `libs/interactive_session_select.sh` | Avoids coupling `session.sh` to routing; domain-specific name | `design_interactive_confirmation_flag.md rule 3.5` |
+| Cap at 10 entries, hardcoded `INTERACTIVE_MAX_ENTRIES=10` | Prevents wall-of-text; easy to change | `design_interactive_confirmation_flag.md rule 3.4` |
+| Read stdin directly for prompts; warn on non-TTY but proceed | Enables test piping; no /dev/tty or FD trickery | `design_interactive_confirmation_flag.md rule 3.5` |
+| Pre-fill when `--session` provided; empty enter selects default | Acts as visual sanity check; composable with automation | `design_interactive_confirmation_flag.md rule 3.1` |
+| Both channel+session given → skip pickers, show patch list + confirm | Avoids redundant prompting when all info is supplied | `design_interactive_confirmation_flag.md rule 3.3` |
 
 ## Mid-session findings
 

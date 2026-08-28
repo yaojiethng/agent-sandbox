@@ -48,22 +48,22 @@ Not yet defined.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Three-layer interface seam: container-only (hardcoded /opt/sandbox/lib/) ← cross-context (self-resolution) → host-only (\$AGENT_SANDBOX_REPO / \$REPO_ROOT) | Each layer has different deployment and invocation constraints that dictate its path resolution strategy | Spec doc §Interface Seam |
-| Cross-context libs use self-resolution with canonical `_SCRIPT_DIR` variable | Must work in both host and container; \$AGENT_SANDBOX_REPO and \$REPO_ROOT don't exist inside containers | Spec doc §Layer 2 |
-| Host libs sourced by agent-sandbox.sh use `$AGENT_SANDBOX_REPO` | Only ever sourced by agent-sandbox.sh which sets this variable; eliminates inconsistent self-resolution vars | Spec doc §3b |
-| Host scripts use `$REPO_ROOT` | Already the existing pattern; they always run from repo checkout | Spec doc §3c |
-| Test files use `$REPO_ROOT` | Always run from repo checkout; replaces mixed relative-path patterns | Spec doc §3d |
-| agent-sandbox.sh keeps `$AGENT_SANDBOX_REPO` macro | Must survive `make install` moving the script outside the repo | Spec doc §3a |
-| Container paths unchanged this session | Container-side reorganisation is a separate concern from host-side libs move | Spec doc §Layer 1 |
+| Three-layer interface seam: container-only (hardcoded /opt/sandbox/lib/) ← cross-context (self-resolution) → host-only (\$AGENT_SANDBOX_REPO / \$REPO_ROOT) | Each layer has different deployment and invocation constraints that dictate its path resolution strategy | Spec doc Interface Seam |
+| Cross-context libs use self-resolution with canonical `_SCRIPT_DIR` variable | Must work in both host and container; \$AGENT_SANDBOX_REPO and \$REPO_ROOT don't exist inside containers | Spec doc Layer 2 |
+| Host libs sourced by agent-sandbox.sh use `$AGENT_SANDBOX_REPO` | Only ever sourced by agent-sandbox.sh which sets this variable; eliminates inconsistent self-resolution vars | Spec doc rule 3b |
+| Host scripts use `$REPO_ROOT` | Already the existing pattern; they always run from repo checkout | Spec doc rule 3c |
+| Test files use `$REPO_ROOT` | Always run from repo checkout; replaces mixed relative-path patterns | Spec doc rule 3d |
+| agent-sandbox.sh keeps `$AGENT_SANDBOX_REPO` macro | Must survive `make install` moving the script outside the repo | Spec doc rule 3a |
+| Container paths unchanged this session | Container-side reorganisation is a separate concern from host-side libs move | Spec doc Layer 1 |
 
 ## Mid-session findings
 
 | Finding | Type | Impact | Triaged to |
 |---|---|---|---|
-| Six different self-resolution variable names across libs/ — `_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)` in draft_workflow.sh | Inconsistency | Standardise to `_SCRIPT_DIR` as part of the libs/ refactor; eliminates cognitive overhead | Spec doc §Findings |
-| draft_workflow.sh computes its own directory 3 times inline instead of storing it in a variable | Inefficiency | Fix when switching to `$AGENT_SANDBOX_REPO` — the self-resolution pattern is removed entirely | Spec doc §Findings |
-| Hardcoded `/opt/sandbox/lib/` in entrypoints is fragile but not broken — single source of truth per image | Observation | Could be replaced by an ENV variable in the Dockerfile, but out of scope for this session | Spec doc §Findings |
-| Dockerfile COPY paths reference `libs/` sources that will move (e.g., `COPY dirs.sh /opt/sandbox/lib/dirs.sh`) — the source side of every COPY will break | Impact | Must update COPY source paths in both sandbox.Dockerfile and provider.Dockerfile as part of the libs/ refactor | Spec doc §Summary table |
+| Six different self-resolution variable names across libs/ — `_DIFF_SH_DIR`, `_PB_SCRIPT_DIR`, `_PD_SCRIPT_DIR`, `_DW_SCRIPT_DIR`, `_ISS_SCRIPT_DIR`, plus inline `$(cd...)` in draft_workflow.sh | Inconsistency | Standardise to `_SCRIPT_DIR` as part of the libs/ refactor; eliminates cognitive overhead | Spec doc Findings |
+| draft_workflow.sh computes its own directory 3 times inline instead of storing it in a variable | Inefficiency | Fix when switching to `$AGENT_SANDBOX_REPO` — the self-resolution pattern is removed entirely | Spec doc Findings |
+| Hardcoded `/opt/sandbox/lib/` in entrypoints is fragile but not broken — single source of truth per image | Observation | Could be replaced by an ENV variable in the Dockerfile, but out of scope for this session | Spec doc Findings |
+| Dockerfile COPY paths reference `libs/` sources that will move (e.g., `COPY dirs.sh /opt/sandbox/lib/dirs.sh`) — the source side of every COPY will break | Impact | Must update COPY source paths in both sandbox.Dockerfile and provider.Dockerfile as part of the libs/ refactor | Spec doc Summary table |
 
 ## Completed this session
 

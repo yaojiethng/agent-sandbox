@@ -77,7 +77,7 @@ Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_m
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first, then add MCP server as enhancement. Unblocks KV5.
 
-**Hermes python base refactor deferred — see `roadmap_future.md` §W1.**
+**Hermes python base refactor deferred — see `roadmap_future.md` W1.**
 The shared python-harness base (`src/reasoning/python.dockerfile`) was designed but never built.
 Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness.
 This is non-urgent (Hermes not actively used). If W1 is made to work without Hermes,
@@ -216,4 +216,4 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 ### Addressed in upcoming milestones
 
-- **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) §Harness Packaging and Versioning.
+- **Host-side harness staleness** *(deferred)* — after `git pull`, the installed `agent-sandbox` CLI may silently execute changed scripts/libs from the repo checkout. `container-sig` does not detect this (it detects image staleness, not CLI staleness). A self-contained binary with semantic versioning is needed to close this gap. Scoped as a standalone future milestone in [`roadmap_future.md`](roadmap_future.md) Harness Packaging and Versioning.

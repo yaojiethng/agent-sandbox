@@ -107,7 +107,7 @@ UID Mapping impact: **3 Dockerfiles to edit** instead of 5 (node-harness, python
 
 ## Open Questions — Resolved
 
-All open questions from the initial design were resolved during the design audit (see `spec_container_layer_redesign.md` §5 Design Decisions):
+All open questions from the initial design were resolved during the design audit (see `spec_container_layer_redesign.md` rule 5 Design Decisions):
 
 | # | Question | Decision |
 |---|---|---|
@@ -127,7 +127,7 @@ All open questions from the initial design were resolved during the design audit
 | `execution_model.md` — Build Context | Describes how build contexts are assembled |
 | `provider_lifecycle.md` | Reasoning layer session arc |
 | `containers.sh` — `build_agent()` | The build pipeline that assembles and caches the two-tier images |
-| `design_settings_permissions_group_bind.md` §3 | UID Mapping surface area table — the 5 Dockerfiles that need changes |
+| `design_settings_permissions_group_bind.md` rule 3 | UID Mapping surface area table — the 5 Dockerfiles that need changes |
 | `roadmap.md` — Track C Phase 2 | The implementation phase that would benefit from consolidation |
 
 ## Resolution
@@ -156,12 +156,12 @@ UID Mapping (`ARG HOST_UID`/`ARG HOST_GID` with collision handling) was implemen
 
 ### Deferred
 
-- **Python harness base** (`src/reasoning/python.dockerfile`) — not built. Hermes builds independently. See `devlog/roadmap.md` §W1.
+- **Python harness base** (`src/reasoning/python.dockerfile`) — not built. Hermes builds independently. See `devlog/roadmap.md` W1.
 - **HERMES removal question** — if W1 is made to work without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider with a divergent build.
 
 ### References
 
 - Node harness: `src/reasoning/node.dockerfile`
 - Hermes base: `src/reasoning/providers/hermes/base.dockerfile`
-- Roadmap: `devlog/roadmap.md` §W1 — Hermes python base refactor deferred
+- Roadmap: `devlog/roadmap.md` W1 — Hermes python base refactor deferred
 - UID Mapping: provider Dockerfiles (`pi`, `opencode`, `hermes`), sandbox Dockerfile

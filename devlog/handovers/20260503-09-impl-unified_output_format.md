@@ -11,7 +11,7 @@ Restructure all diff packaging around a single unified output format: rewrite `p
 
 ## Scope
 
-Targets A.1 from the roadmap (`docs/devlog/roadmap.md` § A.1). This is the largest entry in the A.x sequence.
+Targets A.1 from the roadmap (`docs/devlog/roadmap.md`  A.1). This is the largest entry in the A.x sequence.
 
 **In scope:**
 - `libs/diff.sh` — remove `diff_commit_pending`, `diff_generate`, `diff_format_patch`; add `write_uncommitted_diff`, `write_all_changes_diff`; rewrite `diff_on_exit` / `diff_on_autosave` as thin dispatchers calling `package_branch`; drop `BASELINE_SHA` param, read `init_sha` from `SESSION_STATE`
@@ -94,8 +94,8 @@ None.
 
 **Objective:** Add `--channel` flag, router functions, new `apply_run`/`draft_run` signatures, Makefile flag mappings.
 
-**A.2 design reference:** `docs/devlog/discussions/design_change_a_contract.md` § 4.
-**A.2 roadmap:** `docs/devlog/roadmap.md` § A.2.
+**A.2 design reference:** `docs/devlog/discussions/design_change_a_contract.md`  4.
+**A.2 roadmap:** `docs/devlog/roadmap.md`  A.2.
 
 **Expanded A.2 scope (from mid-session finding):** Unify `diff_on_exit` and `diff_on_autosave` into a single `diff_export(SANDBOX_DIR, OUTPUT_DIR)` function. Path construction (subfolder, `EXPORT-TIME.txt`) moves to callers (`sandbox-entrypoint.sh`). Reduces test surface; aligns with A.2's path-resolution focus. Hot files expanded to include `libs/diff.sh`, `libs/sandbox-entrypoint.sh`, `tests/test_diff_dispatch.sh`.
 

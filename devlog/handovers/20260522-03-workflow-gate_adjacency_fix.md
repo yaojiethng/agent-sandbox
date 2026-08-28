@@ -105,14 +105,14 @@ Three sub-scopes:
 
 | Finding | Type | Impact |
 |---|---|---|
-| **Gate 2 AC format conflated with Step 7 AC format.** The columns `Verified by` (Gate 2 — who can verify) and `Status` (Step 7 — did it pass) were close enough that the agent reused the Gate 2 format at Step 7. | process gap | Triaged to: `iteration_policy.md` §Step 7 Details — added explicit "Do not reuse the Gate 2 format" directive. |
-| Triaged to: `iteration_policy.md` §Step 7 Details | — | — |
+| **Gate 2 AC format conflated with Step 7 AC format.** The columns `Verified by` (Gate 2 — who can verify) and `Status` (Step 7 — did it pass) were close enough that the agent reused the Gate 2 format at Step 7. | process gap | Triaged to: `iteration_policy.md` Step 7 Details — added explicit "Do not reuse the Gate 2 format" directive. |
+| Triaged to: `iteration_policy.md` Step 7 Details | — | — |
 
 ## Completed this session
 
 | File | Change |
 |---|---|
-| `docs/operations/iteration_policy.md` | Absorbed ~120 lines operational rules from handover_policy.md; expanded table rows; added §Step Details (Step 1, 2, Gate 1, Step 5, Gate 2, During the session, Step 7, Gate 3, Steps 8-9, Seed); Amendments 1+3 applied; Gate 2/3/Step 7 hardened; Verified by/Status distinction clarified |
+| `docs/operations/iteration_policy.md` | Absorbed ~120 lines operational rules from handover_policy.md; expanded table rows; added Step Details (Step 1, 2, Gate 1, Step 5, Gate 2, During the session, Step 7, Gate 3, Steps 8-9, Seed); Amendments 1+3 applied; Gate 2/3/Step 7 hardened; Verified by/Status distinction clarified |
 | `docs/operations/handover_policy.md` | Removed Population Rules (~110 lines); added role statement; rephrased Lifecycle to declarative; updated Format field refs to iteration_policy.md; fixed new-session-v2→new-session ref; added handover-audit.skill.md link |
 | `agent/drafts/handover-audit.skill.md` | New — spec-to-source integrity, structured output format, validation tool coverage audit checks |
 | `agent/prompts/new-session.md` | Updated Step 1 delegation (handover_policy → iteration_policy); hardened Gate 2 with pre-verification procedure + Verified by column |
@@ -140,4 +140,4 @@ Three sub-scopes:
 ---
 [CORRECTION — 2026-05-22]: Post-close eval of commit 3 found one defect — `new-session.md` Gate 2 prose said "three columns" while the table header defined four columns. Corrected to "four-column table." Full eval (35/35 PASS) confirmed all commit 3 changes effective: 16 iteration_policy checks, 9 handover_policy checks, 4 new-session checks, 4 audit skill checks, 2 cross-document consistency checks. Eval script persisted at `eval/eval_commit3.sh`.
 
-[CORRECTION — 2026-05-22]: Scope proposal in `iteration_policy.md` §Step 2 Details converted from prose bullet list to literal template (`**Session type:**`, `**In scope:**`, `**Deferred:**`, `**Questions:**`). Eval: 9/9 PASS. Script at `eval/eval_templates.sh`.
+[CORRECTION — 2026-05-22]: Scope proposal in `iteration_policy.md` Step 2 Details converted from prose bullet list to literal template (`**Session type:**`, `**In scope:**`, `**Deferred:**`, `**Questions:**`). Eval: 9/9 PASS. Script at `eval/eval_templates.sh`.

@@ -49,7 +49,7 @@ None.
 | Pre-flight check is warning-only (returns 0 always) | Divergence may be intentional or benign; a block would frustrate valid use cases | `_package_preflight_check` comment header |
 | `PACKAGE_BYPASS_PREFLIGHT` env var to skip | Gives callers an escape hatch for known false positives | `package_branch.sh` |
 | Permissive mode is opt-in via 5th arg | Changing default apply behaviour would be surprising; opt-in preserves backward compatibility | `diff_workflow.sh` `apply_run` |
-| Proposal C filed as addendum under worktree investigation doc | Natural home — it's a specific improvement enabled by the worktree model | `investigation_git_worktrees.md` §Addendum |
+| Proposal C filed as addendum under worktree investigation doc | Natural home — it's a specific improvement enabled by the worktree model | `investigation_git_worktrees.md` Addendum |
 
 ## Mid-session findings
 

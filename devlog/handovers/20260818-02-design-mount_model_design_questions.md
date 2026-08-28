@@ -15,7 +15,7 @@ The design walk is complete: all open mount-model questions settled, the grouped
 
 ## Decisions (compact)
 
-*Transient numbers would be misleading here — persistent records reference decisions by descriptive name (documentation_policy §Numbering and cross-references). Full rationale per decision lives in the design record; this list is the compact settlement.*
+*Transient numbers would be misleading here — persistent records reference decisions by descriptive name (documentation_policy Numbering and cross-references). Full rationale per decision lives in the design record; this list is the compact settlement.*
 
 **Delivery & compose**
 1. **Compose file sets** — mode-selectable file set chosen at generation time via the existing `compose_generate` pipeline (base + copy/mount overlays merged through `docker compose config`); no YAML conditionals; the sandbox `volumes:` block handled at generation. The copy-only `SNAPSHOT_DIR` mount/env moves into the copy overlay (not the base), so mount-mode compose never inherits it.

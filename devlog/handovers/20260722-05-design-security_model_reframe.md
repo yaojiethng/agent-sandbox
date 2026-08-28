@@ -60,13 +60,13 @@ All files completed. Files that entered scope mid-session (the two design docs, 
 | Worktree explicitly unsupported until implemented and audited; mechanism written as design proposal | Operator steering: the security model change is contingent on execution — cannot assert the posture before audit | `security.md` Mount modes + status line; `devlog/discussions/20260722-design-active-worktree_mount_mechanism.md` — gate |
 | Mount-model ADRs consolidated: both removed pre-settlement; canonical record is an active design doc (no `adr_policy.md` change) | Operator: the ADRs were labeled settled but revised within days with nothing implemented against them; the record started mid-exploration. Criterion: an ADR whose decision was never implemented and is still being revised is a design document, not a settled record. Settlement path: design doc → canonical ADR when the restructure lands and holds; worktree mechanism → own ADR post-audit | `devlog/discussions/20260722-design-active-mount_model.md` — Consolidation note |
 | ADR immutability retained — supersede-only rule unchanged | Operator considered allowing amendment, settled on keeping ADRs immutable records | `docs/operations/adr_policy.md` (unchanged) |
-| Section sign (`§`) banned in documentation | Operator style rule — non-standard character | `docs/operations/documentation_policy.md` — Character set |
+| Section sign (``) banned in documentation | Operator style rule — non-standard character | `docs/operations/documentation_policy.md` — Character set |
 
 ## Mid-session findings
 
 | Finding | Type | Impact |
 |---|---|---|
-| Existing `§` usage in 6 live files: `docs/development/testing_policy.md`, `docs/operations/handover_policy.md`, `docs/operations/iteration_policy.md`, `devlog/roadmap.md`, `src/reasoning/agent/prompts/new-session.md`, and the old worktree ADR (frozen — exempt) | scope note | next session — sweep as chore after the style rule lands |
+| Existing `` usage in 6 live files: `docs/development/testing_policy.md`, `docs/operations/handover_policy.md`, `docs/operations/iteration_policy.md`, `devlog/roadmap.md`, `src/reasoning/agent/prompts/new-session.md`, and the old worktree ADR (frozen — exempt) | scope note | next session — sweep as chore after the style rule lands |
 | Uncommitted modification to `scripts/start_agent.sh` present at container start (removes `local` from top-level `REFRESH_FLAG=""`) — not made by this session | scope note | operator — commit separately; excluded from this session's commit |
 | The acceptance-criteria machinery fails in practice for doc-only interactive design sessions: ACs were never defined upfront (Gate 2 never formally ran), scope evolved turn-by-turn via per-section confirmation, and at close there were no runnable checks to pre-verify. The formal AC table had to be retrofitted at close from the status summary | contradiction | next session — candidate policy discussion: how `iteration_policy.md` Gates 1–2 and the AC requirement should behave for doc-only interactive sessions. Triaged to: Next session |
 
@@ -82,7 +82,7 @@ All files completed. Files that entered scope mid-session (the two design docs, 
 | `devlog/discussions/20260722-study-settled-mount_wiring_survey.md` | Required-reading link retargeted from deleted ADR to the mount-model design doc; status line corrected to `settled` (filename already said so) |
 | `docs/architecture/security.md` | Section 2 (Security Invariants) restructured to universal set + mount-delivery revision + worktree not-asserted pointer; Execution Model Assumptions and Non-goals tier references retargeted; raw project dir added to Non-goals. File is tier-free |
 | `devlog/roadmap.md` | M2.6.4 section rewritten in new vocabulary: status → In progress, Decisions block, pre-design investigations marked complete (incl. this reframe), 7 remaining design questions, anticipated tasks incl. safety-audit gate |
-| `docs/operations/documentation_policy.md` | Added Character set convention banning `§` |
+| `docs/operations/documentation_policy.md` | Added Character set convention banning `` |
 
 ## Deferred items
 

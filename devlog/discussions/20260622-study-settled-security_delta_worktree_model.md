@@ -296,10 +296,10 @@ The security model documentation (`security.md`, `threat_model_stride.md`) would
 
 The invariant-by-invariant comparison (Part 2), the four required mitigations (Part 7), and the residual risk analysis (Parts 4–6) have been incorporated into [`docs/architecture/security.md`](../architecture/security.md) as the Tier 3 (Mount + Worktree) security invariants. Specifically:
 
-- **Invariant rewrites** (Part 2): Applied in `security.md` §Security Invariants — Tier 3 replacement table.
-- **Required mitigations** (Part 7): All four are encoded as invariants 8–10 and the revision to invariant 1 in `security.md` §Tier 3.
+- **Invariant rewrites** (Part 2): Applied in `security.md` Security Invariants — Tier 3 replacement table.
+- **Required mitigations** (Part 7): All four are encoded as invariants 8–10 and the revision to invariant 1 in `security.md` Tier 3.
 - **Unverifiable precondition** (Part 5): Documented in `security.md` Tier 3 invariants and Non-goals section.
-- **New trust boundaries** (Part 3): Documented in `security.md` §Trust Boundaries and Mount Models — Tier 3.
+- **New trust boundaries** (Part 3): Documented in `security.md` Trust Boundaries and Mount Models — Tier 3.
 - **Residual risk table** (Part 6): Summary retained in `security.md` Tier 3 invariants preamble.
 
 ### Remaining content for M2.6.4 design session

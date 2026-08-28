@@ -38,13 +38,13 @@ Not yet defined.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| **Directory model: `src/` tree with `libs/`, `reasoning/`, `capability/`, `scripts/`, `build/`** | Flat tree avoids unnecessary nesting; deployment target is primary split, life stage secondary | `spec_container_layer_redesign.md §7` |
-| **`package_branch.sh` and `package_diff.sh` → `src/libs/`** | Both are cross-target (host exec + container). Co-located for consistency. | §7.5 Q1 |
-| **`compose.sh` and `containers.sh` → `src/build/`** | Pure build pipeline code — paired with compose templates | §7.5 Q2, Q5 |
-| **`snapshot.sh` → `src/libs/` whole (no split)** | Host and capability both use it. Not worth splitting now. | §7.5 Q4 |
-| **Provider host-side files → nested under `src/reasoning/providers/<n>/`** | Provider-owned files stay with provider, even when host-executed | §7.5 Q3 |
-| **`devlog/` → root level** | Agent development history is not project documentation | §7.1 |
-| **`harness/` rejected** | Unnecessary nesting; files go directly into their deployment target directory | §7.1 |
+| **Directory model: `src/` tree with `libs/`, `reasoning/`, `capability/`, `scripts/`, `build/`** | Flat tree avoids unnecessary nesting; deployment target is primary split, life stage secondary | `spec_container_layer_redesign.md rule 7` |
+| **`package_branch.sh` and `package_diff.sh` → `src/libs/`** | Both are cross-target (host exec + container). Co-located for consistency. | rule 7.5 Q1 |
+| **`compose.sh` and `containers.sh` → `src/build/`** | Pure build pipeline code — paired with compose templates | rule 7.5 Q2, Q5 |
+| **`snapshot.sh` → `src/libs/` whole (no split)** | Host and capability both use it. Not worth splitting now. | rule 7.5 Q4 |
+| **Provider host-side files → nested under `src/reasoning/providers/<n>/`** | Provider-owned files stay with provider, even when host-executed | rule 7.5 Q3 |
+| **`devlog/` → root level** | Agent development history is not project documentation | rule 7.1 |
+| **`harness/` rejected** | Unnecessary nesting; files go directly into their deployment target directory | rule 7.1 |
 
 ## Mid-session findings
 
@@ -56,7 +56,7 @@ Not yet defined.
 
 | File | Change |
 |---|---|
-| [`spec_container_layer_redesign.md`](../discussions/spec_container_layer_redesign.md) | Added §7 with full directory model: 36 files assigned to new paths, 8 unresolved questions resolved to 0, dependency-trace-based rationale for every placement. |
+| [`spec_container_layer_redesign.md`](../discussions/spec_container_layer_redesign.md) | Added rule 7 with full directory model: 36 files assigned to new paths, 8 unresolved questions resolved to 0, dependency-trace-based rationale for every placement. |
 
 ## Deferred items
 

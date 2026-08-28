@@ -11,7 +11,7 @@ Make `scripts/agent-sandbox.sh` sourceable by adding a `main` guard, so that wor
 
 ## Scope
 
-Targets A.0 from the roadmap (`docs/devlog/roadmap.md` § A.0). Single task: add a `main` guard to `scripts/agent-sandbox.sh`.
+Targets A.0 from the roadmap (`docs/devlog/roadmap.md`  A.0). Single task: add a `main` guard to `scripts/agent-sandbox.sh`.
 
 **In scope:**
 - Add a main guard (function or `[[ $0 == ...]]` pattern) to `scripts/agent-sandbox.sh` so sourcing the file defines functions without executing dispatch logic
@@ -71,8 +71,8 @@ None.
 
 **Objective:** Restructure all diff packaging around a single unified output format. Rewrite `package_branch.sh` as a dispatcher. Rewrite `diff_on_exit` and `diff_on_autosave` as thin wrappers. No sweep commit, no `BASELINE_SHA` parameter.
 
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md` §§ 2–3, § 6.
-**Roadmap:** `docs/devlog/roadmap.md` § A.1.
+**Design reference:** `docs/devlog/discussions/design_change_a_contract.md`  2–3,  6.
+**Roadmap:** `docs/devlog/roadmap.md`  A.1.
 
 **Hot files:** `libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `libs/sandbox-entrypoint.sh`, `tests/test_diff.sh`, `tests/test_package_branch.sh`, `tests/test_package_diff.sh`
 

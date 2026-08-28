@@ -65,7 +65,7 @@ None.
 |---|---|
 | [`scripts/agent-sandbox.sh`](../scripts/agent-sandbox.sh) | Changed 3 echo messages from `CHANNEL=` to `FROM=` (lines 277, 335, 349) |
 | [`scripts/templates/Makefile.template`](../scripts/templates/Makefile.template) | Added `ifdef CHANNEL` guard that errors with `FROM=` hint |
-| [`docs/development/cli-conventions.md`](../docs/development/cli-conventions.md) | Added §8 — Makefile variable overrides must be validated |
+| [`docs/development/cli-conventions.md`](../docs/development/cli-conventions.md) | Added rule 8 — Makefile variable overrides must be validated |
 | [`devlog/discussions/story-patch_application_failures.md`](../discussions/story-patch_application_failures.md) | Removed Mid-session Findings section; updated Proposed Fixes with triage status table |
 | [`devlog/roadmap.md`](../roadmap.md) | Added F2 task: git diff `--no-renames` index conflict under Track B |
 

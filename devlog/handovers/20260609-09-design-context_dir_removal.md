@@ -62,8 +62,8 @@ Design the approach for removing the temp-dir build context mechanism. Evaluate 
 | Decision | Rationale | Recorded in |
 |---|---|---|
 | Subdirectory COPY with repo root as build context | Eliminates two-list drift; simpler than temp dir; more precise than whole-repo context | `devlog/discussions/spec_context_dir_removal.md` |
-| `src/libs/` as a whole subdirectory | Shared libs directory is clean enough (2 extra inert files); eliminates most common drift source | spec §Dockerfile rewrites |
-| Single-file COPY for entrypoints/preflight | Files sit in dirs with unrelated content (dockerfile, provider configs) | spec §Dockerfile rewrites |
+| `src/libs/` as a whole subdirectory | Shared libs directory is clean enough (2 extra inert files); eliminates most common drift source | spec Dockerfile rewrites |
+| Single-file COPY for entrypoints/preflight | Files sit in dirs with unrelated content (dockerfile, provider configs) | spec Dockerfile rewrites |
 | Defer two-sig model to next session | Need repo-root context first to add container-sig label at Dockerfile level | This handover |
 
 ## Deferred items

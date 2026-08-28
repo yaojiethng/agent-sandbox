@@ -74,7 +74,7 @@ EOF
 # Reads the version tag from a template file (Format: # agent-sandbox template version: N)
 template_version() {
   # Absent marker is an expected, non-error outcome (caller compares empty
-  # string): absorb grep's exit 1 per bash-coding-conventions §4.3.
+  # string): absorb grep's exit 1 per bash-coding-conventions rule 4.3.
   { grep -m1 "^# agent-sandbox template version:" "$1" || true; } | awk '{print $NF}'
 }
 

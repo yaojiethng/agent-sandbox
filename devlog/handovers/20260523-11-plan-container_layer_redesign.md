@@ -36,7 +36,7 @@ From session 09 (UID Mapping design): the roadmap Track C phases 1-3 remain the 
 | 1 | Story document (`story_container_layer_model.md`) documents the decision (Option 2: two harness bases + sandbox independent) with rationale | `read` the story doc | Operator |
 | 2 | Story document documents rejected options with reasons (Option 3: cross-distro `COPY --from` rejected due to native C extension risk) | `read` the story doc | Operator |
 | 3 | Handover records the session's decisions and open questions | `read` the handover | Operator |
-| 4 | The open questions from the story doc are resolved or assigned to a follow-up session | `read` story doc §Open Questions + handover §Next session | Operator |
+| 4 | The open questions from the story doc are resolved or assigned to a follow-up session | `read` story doc Open Questions + handover Next session | Operator |
 
 ## Recovery checks
 
@@ -74,7 +74,7 @@ From session 09 (UID Mapping design): the roadmap Track C phases 1-3 remain the 
 
 ## Audit findings
 
-A design audit (subagent running improve-codebase-architecture) identified 10 gaps. All were resolved during this session and documented in `spec_container_layer_redesign.md` §2.4:
+A design audit (subagent running improve-codebase-architecture) identified 10 gaps. All were resolved during this session and documented in `spec_container_layer_redesign.md` rule 2.4:
 
 | # | Finding | Severity | Resolution |
 |---|---|---|---|
@@ -92,7 +92,7 @@ A design audit (subagent running improve-codebase-architecture) identified 10 ga
 |---|---|
 | `docs/devlog/discussions/story_container_layer_model.md` | New story document — problem analysis, 3 options evaluated, Option 2 selected, rejection rationale for Option 3, open questions tagged by status. |
 | `docs/devlog/discussions/story_container_layer_model.md` | New story document — problem analysis, 3 options evaluated, Option 2 selected, rejection rationale for Option 3. Updated Open Questions section with all 5 resolutions from audit. |
-| `docs/devlog/discussions/spec_container_layer_redesign.md` | New spec document — proposal details, problems found, 10 audit findings resolved (§2.4), Design Decisions section, 5-session implementation sequence. |
+| `docs/devlog/discussions/spec_container_layer_redesign.md` | New spec document — proposal details, problems found, 10 audit findings resolved (rule 2.4), Design Decisions section, 5-session implementation sequence. |
 | `docs/devlog/handovers/20260523-11-plan-container_layer_redesign.md` | This handover — all decisions and findings recorded. |
 | `docs/devlog/roadmap.md` | Added link to container layer spec under Track C. |
 
@@ -102,7 +102,7 @@ None.
 
 ## Next session (after this design session closes)
 
-**1. Chore session** — structural cleanup of `libs/`, `scripts/`, and `agent/` into a `harness/` tree. No logic changes, purely mechanical path substitutions. Proposed target structure documented in story doc §Open Questions — Resolved.
+**1. Chore session** — structural cleanup of `libs/`, `scripts/`, and `agent/` into a `harness/` tree. No logic changes, purely mechanical path substitutions. Proposed target structure documented in story doc Open Questions — Resolved.
 
 **2. Dockerfile refactoring session** — create the two harness Dockerfiles (`harness/reasoning/node.Dockerfile`, `harness/reasoning/python.Dockerfile`), trim the 4 provider base/provider Dockerfiles, update `build_agent()` in `containers.sh`. Paths recalibrated after the chore session lands.
 

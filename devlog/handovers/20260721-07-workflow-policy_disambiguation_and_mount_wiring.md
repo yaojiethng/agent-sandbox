@@ -20,7 +20,7 @@ Three units:
 
 **Unit 2 — Design policy extraction decision**
 - Assess whether a standalone design policy document is warranted
-- Outcome: either extract a new `design_policy.md` or add a clear ownership anchor in `iteration_policy.md` §Step 3
+- Outcome: either extract a new `design_policy.md` or add a clear ownership anchor in `iteration_policy.md` Step 3
 
 **Unit 3 — PROJECT_DIR mount wiring investigation**
 - Trace how `PROJECT_DIR` flows through Makefile, compose template, `start_agent.sh`, config files

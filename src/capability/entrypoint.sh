@@ -232,7 +232,10 @@ source /opt/sandbox/lib/routing.sh
 _session_export() {
   local _sandbox_dir="$1" _changes_dir="$2" _session_id="$3"
 
-  wait_git_lockfile "$_sandbox_dir"
+  # Best-effort: export even if the lock never cleared. wait_git_lockfile
+  # prints its own diagnostic and returns 1 in that case; under set -e a bare
+  # call would abort the export at exactly the point of proceeding.
+  wait_git_lockfile "$_sandbox_dir" || true
 
   local _exit_dir
   _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")

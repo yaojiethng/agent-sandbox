@@ -21,7 +21,7 @@ None.
 |---|---|---|---|
 | 1 | `agent_workflow.md` gains the "Agent feedback and gotchas" Policy Map row naming iteration_policy (Steps 8–9 review/publish) as routing owner and the two devlog records as the record files | `grep -n "Agent feedback and gotchas" docs/concepts/agent_workflow.md` = 1 | Agent |
 | 2 | `agent_workflow.md` gains the "Persistent devlog records (interim)" subsection framing the files as interim and linking to the Doc Bloat M3 task via section anchor | `grep -n "Persistent devlog records" docs/concepts/agent_workflow.md` = 1; link target present at `devlog/roadmap_future.md#doc-bloat--rotate-out-stale-handovers-and-discussions` | Agent |
-| 3 | No `§` introduced (plain-ASCII respected); only `agent_workflow.md` changed this session | `grep -c "§" docs/concepts/agent_workflow.md` = 0; `git status` shows only this file | Agent |
+| 3 | No `` introduced (plain-ASCII respected); only `agent_workflow.md` changed this session | `grep -c "" docs/concepts/agent_workflow.md` = 0; `git status` shows only this file | Agent |
 
 ## Hot files
 | File | Why in scope | Status |

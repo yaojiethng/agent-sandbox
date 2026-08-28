@@ -51,7 +51,7 @@ None.
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | Phase 3 is a placeholder in this session | Host-side verification logic (checking artifacts on host after containers exit) is separate work scoped to 11e. The orchestration structure is in place; the verification body comes later. | This handover |
-| Capability marker left in CHANGES_DIR for reasoning layer to read | Cross-container communication test — reasoning layer reads what capability wrote. Cleaned up by host-side phase (11e). | Design doc §Phase 1 |
+| Capability marker left in CHANGES_DIR for reasoning layer to read | Cross-container communication test — reasoning layer reads what capability wrote. Cleaned up by host-side phase (11e). | Design doc Phase 1 |
 
 ## Mid-session findings
 

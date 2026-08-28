@@ -74,9 +74,11 @@ apply_run() {
 
   _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
 
-  # Count changed files from the diff
+  # Count changed files from the diff. grep -c self-reports zero on stdout
+  # while exiting 1; `|| echo 0` here would double-emit ("0\n0").
   local FILES_CHANGED
-  FILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || echo "0")
+  FILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)
+  FILES_CHANGED=${FILES_CHANGED:-0}
 
   echo ""
   echo "Done. Files changed: $FILES_CHANGED"
@@ -137,7 +139,7 @@ apply_preview() {
     echo "No changes found in $DIFF_FILE"
     return 0
   fi
-  printf 'Total files: %s\n' "$(grep -c '^diff --git' "$DIFF_FILE" || echo 0)"
+  printf 'Total files: %s\n' "$(grep -c '^diff --git' "$DIFF_FILE" || true)"
 }
 
 # =============================================================================

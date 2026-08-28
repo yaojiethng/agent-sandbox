@@ -39,7 +39,7 @@ operator called out.
 
 **Not in scope:**
 - Historical devlog handovers/discussions referencing `SCRIPT_DIR` — read-only
-  records per `handover_policy.md` § Corrections to Closed Handovers (only
+  records per `handover_policy.md`  Corrections to Closed Handovers (only
   factual-error corrections, not historical-referent updates). Zero stale-ref
   grep for the rename targets **live code/docs only**.
 - `workflow/knowledge-vault/` — a separate self-contained subproject with its

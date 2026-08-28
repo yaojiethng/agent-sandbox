@@ -11,7 +11,7 @@ Add `--channel` flag and router functions to `agent-sandbox.sh`, rewrite `apply_
 
 ## Scope
 
-Targets A.2 from the roadmap (`docs/devlog/roadmap.md` § A.2), expanded with three design refinements confirmed during Gate 1:
+Targets A.2 from the roadmap (`docs/devlog/roadmap.md`  A.2), expanded with three design refinements confirmed during Gate 1:
 
 - **C1** — Extract routing layer into `libs/routing.sh` (not inline in agent-sandbox.sh)
 - **C2** — Entrypoint path construction reuses routing logic via `session_export_path`; `diff_on_exit`/`diff_on_autosave` removed

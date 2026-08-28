@@ -19,11 +19,11 @@ The build path runs under `set -euo pipefail`. It is taken only when `REFRESH`/`
 
 Compounding these, `build_image`'s failure path was a bare `exit 1` (no message), and its **non-TTY branch** had the same class of defect (a bare `"${build_cmd[@]}"` under `set -e` would abort silently on a docker failure, surfacing only docker's raw stderr). The asymmetry meant the two branches handled the identical "docker build failed" condition differently.
 
-This is the exact class documented in `docs/development/bash-coding-conventions.md` §4.3 ("`grep` returns exit 1 on zero matches... Always append `|| true`") and mirrored in open `devlog/AGENT_FEEDBACK.md` bash entries. The `20260812-01` code violated it; the prior test did not catch it because it only exercised a populated log, and the harness runs `set -uo pipefail` without `-e`.
+This is the exact class documented in `docs/development/bash-coding-conventions.md` rule 4.3 ("`grep` returns exit 1 on zero matches... Always append `|| true`") and mirrored in open `devlog/AGENT_FEEDBACK.md` bash entries. The `20260812-01` code violated it; the prior test did not catch it because it only exercised a populated log, and the harness runs `set -uo pipefail` without `-e`.
 
 ## Fix approach
 
-Minimal, pattern-consistent (uses the `|| true` / `|| _rc=$?` idiom already canonized in the repo's bash conventions §4.3 and AGENT_FEEDBACK). Also makes the two `build_image` modes handle failure uniformly instead of split-brained.
+Minimal, pattern-consistent (uses the `|| true` / `|| _rc=$?` idiom already canonized in the repo's bash conventions rule 4.3 and AGENT_FEEDBACK). Also makes the two `build_image` modes handle failure uniformly instead of split-brained.
 
 ## Completed this session
 
@@ -48,7 +48,7 @@ Minimal, pattern-consistent (uses the `|| true` / `|| _rc=$?` idiom already cano
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | Use `\|\| true` / `\| _rc=$?` capture (repo-canonical) rather than a bare `set +e` region or `|| :` | matches `bash-coding-conventions.md` §4.3 and the open AGENT_FEEDBACK mitigation; `\|\| _rc=$?` preserves the child's exact exit code (e.g. 42), not just "non-zero". |
+| 1 | Use `\|\| true` / `\| _rc=$?` capture (repo-canonical) rather than a bare `set +e` region or `|| :` | matches `bash-coding-conventions.md` rule 4.3 and the open AGENT_FEEDBACK mitigation; `\|\| _rc=$?` preserves the child's exact exit code (e.g. 42), not just "non-zero". |
 | 2 | Unify `build_image` TTY/non-TTY failure handling | the two modes were handling the identical "docker failed" condition differently (one descriptive, one a silent `set -e` abort); unify failure, keep each mode's existing success rendering to avoid regression. |
 | 3 | Keep `_buildkit_run` contract "return child's exit status" | correct per GOTCHA [H]: a returned library function may return non-zero; the caller guarding with `\|\|` is the documented pattern. Do not silently swallow status. |
 

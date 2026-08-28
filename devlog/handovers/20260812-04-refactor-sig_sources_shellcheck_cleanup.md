@@ -7,7 +7,7 @@
 
 **Scope confirmed by operator (Gate 1 released):** array emission for sig-sources
 (SC2046), `container_sig` fail-closed path validation (roll-in), `preflight`
-`sandbox_dir` drop (SC2034), §1.4 doc rule, behavior-lock tests. SC1091 out of
+`sandbox_dir` drop (SC2034), rule 1.4 doc rule, behavior-lock tests. SC1091 out of
 scope per operator. `container_sig` guard confirmed as fail-closed-with-
 diagnostic (not `|| true`).
 
@@ -44,7 +44,7 @@ abort the whole script — currently dormant because all paths are valid.
    silent empty-hash pass. A naive `|| true` was rejected (would swallow the
    error and hash an empty set). Resolves the roadmap `container_sig` guard
    task (line 155).
-4. `docs/development/bash-coding-conventions.md` — add the missing §1.4 rule:
+4. `docs/development/bash-coding-conventions.md` — add the missing rule 1.4 rule:
    string-as-list / word-splitting a `$(cmd)` is an anti-pattern even when "it
    works today"; return and expand as a real array. Closes the convention gap
    that let this instance slip past `20260810-12`.
@@ -71,7 +71,7 @@ left as-is per operator instruction.
 | 3 | `container_sig` plumbing end-to-end: returns a 64-hex hash over real sources | `test_container_sig_hashes_real_sources` | Agent |
 | 4 | `container_sig` on a missing source path fails loudly: diagnostic + non-zero, no empty-hash pass, no silent abort | `test_container_sig_missing_path_fails_with_diagnostic` + manual `set -e` repro | Agent |
 | 5 | `preflight` signature 3 params (no `sandbox_dir`); only caller passes 3; negative grep for 4-arg/`$SANDBOX_DIR` call is clean | grep | Agent |
-| 6 | `bash-coding-conventions.md` §1.4 documents the string-as-list / unquoted-`$(cmd)` anti-pattern and array fix | read §1.4 | Agent |
+| 6 | `bash-coding-conventions.md` rule 1.4 documents the string-as-list / unquoted-`$(cmd)` anti-pattern and array fix | read rule 1.4 | Agent |
 | 7 | full test suite green | `scripts/run_tests.sh` | Agent |
 | 8 | conventions/conventions docs in scope describe the system as built (no stale comment in changed functions) | agent review | Agent |
 
@@ -80,7 +80,7 @@ left as-is per operator instruction.
 |---|---|
 | [`scripts/build.sh`](scripts/build.sh) | `_sandbox_sig_sources`/`_agent_sig_sources`/`container_sig` calls (SC2046); `container_sig` fail-closed path validation (roll-in); `preflight` `sandbox_dir` (SC2034) |
 | [`tests/test_trace_build.sh`](tests/test_trace_build.sh) | behavior-lock test for the sig computation |
-| [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md) | add §1.4 string-as-list / array rule |
+| [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md) | add rule 1.4 string-as-list / array rule |
 
 ## Decisions made this session
 None.
@@ -97,7 +97,7 @@ None.
 | 1 | `scripts/build.sh` — `_sandbox_sig_sources`/`_agent_sig_sources` → per-line `printf` array emission | 4 call sites consume via `mapfile -t ... < <(...)` + `"${sources[@]+${sources[@]}}"`; removes all 4 SC2046 |
 | 2 | `scripts/build.sh` — `container_sig` fail-closed path validation | asserts each source path exists; on miss `container_sig: ERROR: source path not found: <path>` + `return 1` (not silent abort, not empty-hash pass) |
 | 3 | `scripts/build.sh` — `preflight` dropped dead `sandbox_dir` param (SC2034) | signature now `<provider> <project> <repo_root>`; single caller `start_agent.sh` updated; negative grep clean |
-| 4 | `docs/development/bash-coding-conventions.md` — §1.4 rule | string-as-list / unquoted-`$(cmd)` (SC2046) anti-pattern; array emit + `mapfile` + `"${arr[@]}"`; `read -ra <<<` reads only first line |
+| 4 | `docs/development/bash-coding-conventions.md` — rule 1.4 rule | string-as-list / unquoted-`$(cmd)` (SC2046) anti-pattern; array emit + `mapfile` + `"${arr[@]}"`; `read -ra <<<` reads only first line |
 | 5 | `tests/test_trace_build.sh` — 3 new behavior tests | list-construction lock (element-count catches SC2046 regression), end-to-end 64-hex plumbing check, missing-path loud-fail check |
 | 6 | Fresh-subagent thermo-nuclear review findings triaged | reworked hash tests → list-lock (spurious-fail + blind-to-word-split); hardened missing-path test for `set -e` forward-compat; fixed stale `container_sig` doc comment |
 

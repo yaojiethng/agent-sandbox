@@ -103,4 +103,4 @@ None. The prior handover's deferred items are about structural cleanup, not test
 **Sub-milestone:** M2.7 — Session Identity and Harness Versioning
 **Trigger B:** Not run (mid-milestone, no sub-milestone completed)
 
-Structural cleanup implementation (file moves + path substitutions per `spec_container_layer_redesign.md` §7) — was the prior session's Next session and remains pending.
+Structural cleanup implementation (file moves + path substitutions per `spec_container_layer_redesign.md` rule 7) — was the prior session's Next session and remains pending.

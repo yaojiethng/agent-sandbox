@@ -378,7 +378,7 @@ run_test test_missing_project_rejected
 # env_field unit tests
 #
 # env_field — refresh-record parser in prune.sh. The script is now dual-use
-# (§1.11 guard), so it sources cleanly and the function is callable directly.
+# (rule 1.11 guard), so it sources cleanly and the function is callable directly.
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/prune.sh"
 

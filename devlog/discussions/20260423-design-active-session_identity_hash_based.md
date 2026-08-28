@@ -163,7 +163,7 @@ Behavioural requirements established from prior investigation:
 - Preflight source paths need updating to match current repository layout — the original design referenced `$REPO_ROOT/libs` and `$REPO_ROOT/agent` which are stale paths
 ## Harness-sig (Runtime Drift Detection)
 
-**Deferred.** See [`investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) §Harness Packaging and Versioning.
+**Deferred.** See [`investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) Harness Packaging and Versioning.
 
 Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic versioning. These are scoped as a standalone future milestone, not part of M2.7.
 

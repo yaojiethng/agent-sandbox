@@ -86,10 +86,10 @@ These ACs must pass after each refactoring step. They are guards, not completion
 |---|---|
 | Candidate 2 (unified provider loop) | Refactoring paused after mode dispatch; deferred to future session |
 | Candidate 3 (validation consolidation) | Not yet started |
-| UID Mapping implementation | Deferred to Track C implementation session (per design doc §3) |
+| UID Mapping implementation | Deferred to Track C implementation session (per design doc rule 3) |
 
 ## Next session
 
-UID Mapping implementation (build pipeline threading + Dockerfile changes + compose update). See design doc `docs/devlog/discussions/design_settings_permissions_group_bind.md` §3 for surface area and priority order.
+UID Mapping implementation (build pipeline threading + Dockerfile changes + compose update). See design doc `docs/devlog/discussions/design_settings_permissions_group_bind.md` rule 3 for surface area and priority order.
 
 

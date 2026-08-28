@@ -51,7 +51,7 @@ v2 sets `trap '_forward_signal' TERM INT` and forwards INT to the agent, which w
 `kill -INT` from another process but does not restore the SIGINT delivery that was suppressed
 at spawn time.
 
-**Verified:** confirmed by review of POSIX async-list signal semantics and bash manual §3.7.6.
+**Verified:** confirmed by review of POSIX async-list signal semantics and bash manual rule 3.7.6.
 
 ### Finding 2 — Background jobs are not the terminal foreground process group
 

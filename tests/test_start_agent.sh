@@ -750,8 +750,8 @@ test_missing_provider_fails_fast_with_clear_error() {
 run_test test_rebuild_flag_builds_agent_with_no_cache
 run_test test_refresh_flag_builds_without_no_cache
 # validate_wsl_path rejects Windows drive paths with a WSL conversion hint.
-# start_agent.sh is now dual-use (§1.11 guard) and validate_wsl_path returns
-# (§3.1), so it can be sourced and called in-process.
+# start_agent.sh is now dual-use (rule 1.11 guard) and validate_wsl_path returns
+# (rule 3.1), so it can be sourced and called in-process.
 source "$REPO_ROOT/scripts/start_agent.sh"
 
 test_wsl_path_accepts_linux_paths() {

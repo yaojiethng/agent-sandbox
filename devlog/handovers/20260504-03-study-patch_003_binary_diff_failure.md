@@ -91,7 +91,7 @@ None.
 
 ## Next session
 
-**A.3 — Documentation alignment** (from roadmap § M2.3 pending tasks).
+**A.3 — Documentation alignment** (from roadmap  M2.3 pending tasks).
 
 **Trigger B status:** Still pending. All A.0–A.5 implementation tasks are now complete (including the binary filter fix that was discovered mid-stream). A.3 (documentation) is the last block before Trigger B can fire.
 

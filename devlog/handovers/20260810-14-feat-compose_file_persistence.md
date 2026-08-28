@@ -20,7 +20,7 @@ debugging).
 - `src/build/compose.sh` — no functional change; verify `compose_args`/`compose_generate`
   doc comments still accurate (caller-supplied output path).
 - Docs reversing the documented "never written to SANDBOX_DIR" tmpfile decision:
-  `docs/architecture/execution_model.md` §Compose Generation, `docs/architecture/tool_interface.md`
+  `docs/architecture/execution_model.md` Compose Generation, `docs/architecture/tool_interface.md`
   (compose file row), `src/build/docker-compose.yml` header comment.
 - `.gitignore` — add `.compose/` (same class as `.workspace/`, `.snapshot/`).
 - `tests/test_trace_start.sh` — behavior test: file exists at stable path after run and
@@ -54,7 +54,7 @@ debugging).
 | [`scripts/run_agent.sh`](../../scripts/run_agent.sh) | COMPOSE_OUT source — mktemp → persisted path; trap keeps the file |
 | [`src/build/compose.sh`](../../src/build/compose.sh) | compose_generate/compose_args consumers of the output path; verify comments |
 | [`src/build/docker-compose.yml`](../../src/build/docker-compose.yml) | Header comment claims "never written to SANDBOX_DIR" — must be reversed |
-| [`docs/architecture/execution_model.md`](../../docs/architecture/execution_model.md) | §Compose Generation documents the tmpfile model |
+| [`docs/architecture/execution_model.md`](../../docs/architecture/execution_model.md) | Compose Generation documents the tmpfile model |
 | [`docs/architecture/tool_interface.md`](../../docs/architecture/tool_interface.md) | SANDBOX_DIR contents table claims compose files never written there |
 | [`tests/test_trace_start.sh`](../../tests/test_trace_start.sh) | New behavior test for persisted compose file |
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | Mark carried finding done |
@@ -64,7 +64,7 @@ debugging).
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | No ADR for the tmpfile-model reversal | Routine implementation choice (adr_policy exemption) — decision pre-settled in the carried finding + operator direction; pruning follow-up is minor and must not trigger ADR ceremony | execution_model.md lifecycle note, roadmap deferred item, this table |
-| Compose file persists after session (not deleted by EXIT trap) | Persistence is the finding's point — a failed session's file is the diagnostic artifact | execution_model.md §Compose Generation, run_agent.sh comment |
+| Compose file persists after session (not deleted by EXIT trap) | Persistence is the finding's point — a failed session's file is the diagnostic artifact | execution_model.md Compose Generation, run_agent.sh comment |
 | Path = `$SANDBOX_DIR/.compose/<run-id>.yml`; hash fallback when RUN_ID unset | Identity-derived, deterministic, consistent with compose_args project naming; containers never mount SANDBOX_DIR root so no workspace pollution | ADR-free; execution_model.md |
 
 ## Mid-session findings

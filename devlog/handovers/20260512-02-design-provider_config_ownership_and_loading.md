@@ -44,13 +44,13 @@ Design a long-term fix for the settings.json ownership collision between pi and 
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| **Eliminate copy-in/copy-out entirely** | Replaced by directory bind mount + tmpfs at bin/. Simpler, no ownership collision, real-time sync for hot-reloadable files. | Design doc §4.1 |
-| **Remove `/opt/provider-config` mount** | Config directory mounts directly at `~/.pi/agent/` — no intermediate path needed. | Design doc §4.1 |
-| **`bin/` as tmpfs** | Shadows the directory mount to keep pi's binary downloads container-local (cross-device mv from `/tmp`). | Design doc §4.1 |
-| **Sandbox-layer skills/prompts as RO bind mounts** | Mounted at `/opt/workflow-host/` for real-time dev iteration. Image-baked `/opt/workflow/` stays as fallback. | Design doc §4.1 |
-| **One directory mount for config, not N individual files** | Single `agent/` dir mount covers AGENTS.md, auth.json, models.json, settings.json, sessions/, prompts/. No N-volumes. | Design doc §4.1 |
-| **Pre-flight merge via Node.js** | Runs at session start to inject harness-owned keys into bind-mounted settings.json. Node already in base image (no jq needed). | Design doc §4.3 |
-| **`"packages"` + `"skills"`/`"prompts"` keys both kept** | Redundant discovery paths create a real seam with two adapters. | Design doc §4.2 |
+| **Eliminate copy-in/copy-out entirely** | Replaced by directory bind mount + tmpfs at bin/. Simpler, no ownership collision, real-time sync for hot-reloadable files. | Design doc rule 4.1 |
+| **Remove `/opt/provider-config` mount** | Config directory mounts directly at `~/.pi/agent/` — no intermediate path needed. | Design doc rule 4.1 |
+| **`bin/` as tmpfs** | Shadows the directory mount to keep pi's binary downloads container-local (cross-device mv from `/tmp`). | Design doc rule 4.1 |
+| **Sandbox-layer skills/prompts as RO bind mounts** | Mounted at `/opt/workflow-host/` for real-time dev iteration. Image-baked `/opt/workflow/` stays as fallback. | Design doc rule 4.1 |
+| **One directory mount for config, not N individual files** | Single `agent/` dir mount covers AGENTS.md, auth.json, models.json, settings.json, sessions/, prompts/. No N-volumes. | Design doc rule 4.1 |
+| **Pre-flight merge via Node.js** | Runs at session start to inject harness-owned keys into bind-mounted settings.json. Node already in base image (no jq needed). | Design doc rule 4.3 |
+| **`"packages"` + `"skills"`/`"prompts"` keys both kept** | Redundant discovery paths create a real seam with two adapters. | Design doc rule 4.2 |
 | **Copy-in/copy-out deletion test passes** | Delete `_copy_in`/`_copy_out` — no config persistence logic breaks. The bind mounts handle it. | Grill session finding |
 | **Real-time sync for skills/prompts is necessary** | Draft/confirm workflow on host modifies skills/prompts mid-session. Copy-in/copy-out loses those changes. | Grill session finding |
 

@@ -5,7 +5,7 @@ A persistent record of recurring agent mistakes and code smells witnessed by the
 **Writer:** operator.
 **Reader:** agent (session-open primer) and operator (pre-close review gate).
 
-This file is tied into the session's Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
+This file is tied into the session"s Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
 
@@ -57,9 +57,9 @@ mitigation: durable fix applied (session `20260810-03`): `documentation_policy.m
 state: mitigated
 scoped: none
 legacy: none
-mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker. Marked mitigated 2026-08-19 (P1): the durable policy fix landed in session `20260809-05` (P2) — `iteration_policy.md` Step 8 now reads "The close is the commit" — and practice held across the intervening sessions. Monitored through the next few closes; delete when confirmed durable.
+mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker. Marked mitigated 2026-08-19 (P1): the durable policy fix landed in session `20260809-05` (P2)  --  `iteration_policy.md` Step 8 now reads "The close is the commit"  --  and practice held across the intervening sessions. Monitored through the next few closes; delete when confirmed durable.
 
-### [H] 2026-08-12 — Library functions must `return`, not `exit`
+### [H] 2026-08-12  --  Library functions must `return`, not `exit`
 
 state: open
 scoped: `src/libs/*.sh`, `src/build/*.sh` (sourced libraries, not standalone scripts)
@@ -69,7 +69,7 @@ not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero
 return triggers script exit identically. Bare `exit` in a sourced function
 is a latent bug if the function is ever called from a different context
 (e.g. test harness, sub-shell, interactive use). Entrypoint scripts
-(`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) §3.1.
+(`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) rule 3.1.
 
 ### [G] 2026-08-18 - Table-row append edits must keep the anchor row in newText
 
@@ -77,39 +77,53 @@ state: open
 scoped: devlog markdown tables (handovers, design records, feedback/gotchas)
 legacy: not swept, fixed on contact
 mitigation: appending a row to a markdown table three times in one session replaced the
-anchor row instead of appending (N5-record twice, D7 once — each time newText carried
+anchor row instead of appending (N5-record twice, D7 once  --  each time newText carried
 only the new row, dropping the anchor). For any append, oldText must be the anchor row
 AND newText must be that same anchor row followed by the new row(s). After a multi-row
-table edit, re-grep the table's row keys and confirm every prior row still exists before
+table edit, re-grep the table"s row keys and confirm every prior row still exists before
 continuing. Same family as the "did the write land?" reflex but distinct: that catches
 un-applied edits, this catches overwrite-instead-of-append.
 
-### [G] 2026-08-19 — Handover field-schema migration: dual-grep bridge (session-term neutralisation)
+### [G] 2026-08-19  --  Handover field-schema migration: dual-grep bridge (session-term neutralisation)
 
 state: open
-scoped: M2.6.6 (terminology — 2B field-schema migration)
+scoped: M2.6.6 (terminology  --  2B field-schema migration)
 legacy: none
 mitigation: the handover field headings were renamed to schema-neutral names (`## Next
-session`→`## What's Next`, `## Mid-session findings`→`## Findings`, `## Completed this
-session`→`## Completed`, `## Decisions made this session`→`## Decisions`, `## Session
-directive`→`## Directive`, and the bold preamble fields `**Session date:**`→`**Date:**`,
-`**Session type:**`→`**Type:**`). HISTORICAL handovers keep the old headings (Bucket C3 —
+session`->`## What"s Next`, `## Mid-session findings`->`## Findings`, `## Completed this
+session`->`## Completed`, `## Decisions made this session`->`## Decisions`, `## Session
+directive`->`## Directive`, and the bold preamble fields `**Session date:**`->`**Date:**`,
+`**Session type:**`->`**Type:**`). HISTORICAL handovers keep the old headings (Bucket C3  -- 
 not retro-renamed). While closed handovers with old headings remain in `devlog/handovers/`,
 history-scanning consumers must match BOTH forms: `grep -A30 -E "Mid-session findings|Findings"`,
 `grep -E "\*\*Session date:|\*\*Date:"`. Once all old-heading handovers have passed out of
 any history scan (after ~30 NEW handovers / roughly one week), remove the dual-grep (keep
 only the new form) and delete this entry. Sweep trigger: at sub-milestone cleanup, check
-whether the newest handover index in `devlog/handovers/` has advanced by ≥30 since 20260819.
+whether the newest handover index in `devlog/handovers/` has advanced by >=30 since 20260819.
 
-### [G] 2026-08-23 — Close-out propagation greps must sweep the full tests tree
+### [G] 2026-08-23  --  Close-out propagation greps must sweep the full tests tree
 
 state: open
 scoped: M2.6 (any lib/production change with contract language)
 legacy: none
-mitigation: handover 20260823-09 changed `current_sig`'s contract but its close-out
-residue grep covered only `src/`, `scripts/`, and the directly-edited test file — stale
+mitigation: handover 20260823-09 changed `current_sig`"s contract but its close-out
+residue grep covered only `src/`, `scripts/`, and the directly-edited test file  --  stale
 "memoized" contract comments survived in `tests/test_trace_build.sh` and
 `tests/test_session_inventory.sh` until the operator challenged propagation (fixed within
-the same handover's scope). Rule: the AC "no references to <old contract> remain" sweep is always
+the same handover"s scope). Rule: the AC "no references to <old contract> remain" sweep is always
 `grep -rn <term> scripts/ src/ tests/ docs/ Makefile`, never a file subset; test
 comments asserting removed behavior are contract references and count as residue.
+
+### [G] 2026-08-23 - Hollow iterations: content that should be amendments to an open handover
+
+state: open
+scoped: session workflow (any active session)
+legacy: none
+mitigation: operator-authored. During 20260823, two standalone handovers were cut for
+content below the unit-of-work threshold: a two-line roadmap registration (-13, deleted)
+and a fix iteration that should have amended the same-day ASCII-sweep iteration (renumbered
+into -11). Rule: before opening a new handover, check whether the content amends, extends,
+or completes work from an Open or same-session Closed handover -- if so, extend that
+handover and let the delivery commit absorb it (squash per git policy). Minimum unit of
+work for a new handover: implementation, investigation, or a substantive decision. Pure
+record-keeping rides along with the next real unit of work.

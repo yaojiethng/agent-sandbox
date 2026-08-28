@@ -43,7 +43,7 @@ None.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Inline pre-flight in entrypoint rather than separate file | Tightly coupled — same env vars, same gate logic. Separate file would duplicate source/include boilerplate. | Design doc §Pre-flight vs dry-run |
+| Inline pre-flight in entrypoint rather than separate file | Tightly coupled — same env vars, same gate logic. Separate file would duplicate source/include boilerplate. | Design doc Pre-flight vs dry-run |
 
 ## Mid-session findings
 

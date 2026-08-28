@@ -1,6 +1,6 @@
 # Investigation - Harness-Sig Requirements
 
-**Status:** Complete. Outcome: deferred -- see `roadmap_future.md` §Harness Packaging and Versioning.
+**Status:** Complete. Outcome: deferred -- see `roadmap_future.md` Harness Packaging and Versioning.
 
 **Related:**
 - [`devlog/roadmap.md`](../../devlog/roadmap.md) -- M2.7 (container-sig settled, harness-sig deferred)
