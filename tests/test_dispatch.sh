@@ -196,17 +196,31 @@ test_start_default() {
 
 test_serve_mode() {
   setup
-  dispatch_and_capture serve --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes
+  # serve is no longer a subcommand: it is a toggle on start. The dispatcher
+  # forwards --serve through PASSTHROUGH; start_agent.sh maps it to MODE=serve.
+  dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes --serve
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"serve"* ]] && found=true
+    [[ "$c" == "exec"*"start_agent.sh"* ]] && [[ "$c" == *"--serve"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "serve: calls start_agent.sh in serve mode"
+    pass "serve toggle: start forwards --serve to start_agent.sh"
   else
-    fail "serve: expected exec bash start_agent.sh serve, got: ${CAPTURED[*]}"
+    fail "serve toggle: expected exec bash start_agent.sh standard --serve, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_removed_serve_subcommand_is_unknown() {
+  setup
+  local output rc=0
+  output=$(main serve --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes 2>&1) || rc=$?
+
+  if [[ "$rc" -ne 0 && "$output" == *"Unknown subcommand"* ]]; then
+    pass "removed serve verb falls through to unknown-subcommand error"
+  else
+    fail "expected unknown-subcommand failure for 'serve', got rc=$rc: $output"
   fi
 }
 
@@ -357,7 +371,8 @@ test_help_unknown() {
 # --help/-h on any subcommand routes to the child's own help via route_help,
 # WITHOUT requiring base args (they are absent on a bare --help invocation).
 test_help_flag_routes_run_modes_to_start_agent() {
-  for mode in start serve dry-run; do
+  # serve was removed as a verb; only start and dry-run route to start_agent.
+  for mode in start dry-run; do
     setup
     dispatch_and_capture "$mode" --help
 
@@ -399,7 +414,6 @@ test_help_every_subcommand_no_base_args() {
     [onboard]="onboard.sh --help"
     [build]="build.sh --help"
     [start]="start_agent.sh --help"
-    [serve]="start_agent.sh --help"
     [dry-run]="start_agent.sh --help"
     [stop]="stop.sh --help"
     [prune]="prune.sh --help"
@@ -740,6 +754,7 @@ run_test test_build_with_targets
 run_test test_build_with_rebuild
 run_test test_start_default
 run_test test_serve_mode
+run_test test_removed_serve_subcommand_is_unknown
 run_test test_dry_run_mode
 run_test test_start_with_passthrough
 run_test test_start_rebuild_passthrough

@@ -8,8 +8,7 @@
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--targets=<targets>] --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
+#   agent-sandbox start    [--serve] --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
 #   agent-sandbox stop     --name=<n> --sandbox=<path> [--project=<path>]
 #   agent-sandbox prune    --name=<n> --project=<path> --sandbox=<path> [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
@@ -46,7 +45,7 @@ main() {
   shift || true
 
   if [[ -z "$SUBCOMMAND" ]]; then
-    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|resume|stop|prune|apply|draft|confirm|reject> <flags>"
+    echo "Usage: agent-sandbox <onboard|build|start|dry-run|resume|stop|prune|apply|draft|confirm|reject> <flags>"
     exit 1
   fi
 
@@ -94,7 +93,7 @@ main() {
 
   # Shared subcommand list  --  single source of truth for the valid set.
   print_subcommand_list() {
-    echo "Valid subcommands: onboard, build, start, serve, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
+    echo "Valid subcommands: onboard, build, start, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
   }
 
   # Route '<sub> --help', 'help <sub>', and 'help --help' to the child's own
@@ -117,7 +116,7 @@ main() {
         exec bash "$SCRIPTS/resume_agent.sh" --help ;;
       apply|draft|confirm|reject)
         exec bash "$SCRIPTS/workflows/$sub.sh" --help ;;
-      start|serve|dry-run)
+      start|dry-run)
         exec bash "$SCRIPTS/start_agent.sh" --help ;;
       package-branch)
         exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
@@ -168,15 +167,6 @@ main() {
     start)
       require_base_args
       exec bash "$SCRIPTS/start_agent.sh" standard \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    serve)
-      require_base_args
-      exec bash "$SCRIPTS/start_agent.sh" serve \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \

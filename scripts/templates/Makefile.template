@@ -106,6 +106,7 @@ endif
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
+SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
@@ -117,7 +118,7 @@ STALE_FLAG        = $(if $(STALE),--stale=$(STALE),)
 AGE_DAYS_FLAG     = $(if $(AGE_DAYS),--age-days=$(AGE_DAYS),)
 DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
 
-.PHONY: build start serve dry-run stop apply draft confirm reject refresh help
+.PHONY: build start dry-run stop apply draft confirm reject refresh help
 
 # -------------------------
 # Help
@@ -129,8 +130,7 @@ help:
 	@echo "Targets:"
 	@echo "  make build                         --  build sandbox + all provider images"
 	@echo "  make build TARGET=<p>              --  build specific provider (e.g. TARGET=pi)"
-	@echo "  make start PROVIDER=<p>            --  start an agent session"
-	@echo "  make serve PROVIDER=<p>            --  start provider in serve mode"
+	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
 	@echo "  make dry-run PROVIDER=<p>          --  liveness check only"
 	@echo "  make stop                          --  stop and remove session containers"
 	@echo "  make resume SESSION_ID=<id>       --  resume a specific session (silent, recommended)"
@@ -147,7 +147,8 @@ help:
 	@echo "  make refresh                       --  update templates after harness upgrade"
 	@echo ""
 	@echo "Common variables:"
-	@echo "  PROVIDER=<p>     --  provider name (required for start/serve/dry-run)"
+	@echo "  PROVIDER=<p>     --  provider name (required for start/dry-run)"
+	@echo "  SERVE=1           --  run the started session in provider serve mode (start only)"
 	@echo "  REFRESH=1         --  rebuild images + start new session"
 	@echo "  REBUILD=1         --  force full rebuild including base images"
 	@echo "  SESSION_ID=<id>   --  resume a specific session (make resume)"
@@ -180,19 +181,10 @@ build:
 start:
 	agent-sandbox start \
 	  $(PROVIDER_FLAG) \
+	  $(SERVE_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
 	  $(INTERACTIVE_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --env=$(ENV_FILE)
-
-serve:
-	agent-sandbox serve \
-	  $(PROVIDER_FLAG) \
-	  $(REFRESH_FLAG) \
-	  $(REBUILD_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

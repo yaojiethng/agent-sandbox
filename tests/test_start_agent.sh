@@ -716,7 +716,7 @@ test_help_flag_prints_full_usage() {
 
   if [[ "$rc" -eq 0 && "$output" == *"Usage: start_agent.sh"* \
       && "$output" == *"--provider"* \
-      && "$output" == *"standard"* && "$output" == *"serve"* \
+      && "$output" == *"standard"* && "$output" == *"--serve"* \
       && "$output" == *"dry-run"* ]]; then
     pass "start_agent.sh --help prints full usage and exits 0"
   else

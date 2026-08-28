@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
+#   ./start_agent.sh <mode> [--serve] --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
 #
 # Modes:
-#   standard    --  normal execution, network access allowed
+#   standard    --  normal execution, network access allowed (--serve toggles
+#                   provider serve mode, port exposed at SERVE_PORT)
 #   dry-run     --  liveness check only, no agent started
-#   serve       --  provider serve mode, port exposed at SERVE_PORT
 #
 # Required flags:
 #   --name=<project_name>   display name; used for log output
@@ -48,19 +48,16 @@ Host-side pre-flight and session setup for agent-sandbox. This script is an
 internal implementation detail of the agent-sandbox CLI  --  prefer invoking it
 through:
 
-  agent-sandbox start     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
-  agent-sandbox serve     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
+  agent-sandbox start     [--serve] --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
   agent-sandbox dry-run   --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
 
 or, from a sandbox Makefile:
 
-  make start PROVIDER=<n>
-  make serve PROVIDER=<n>
+  make start PROVIDER=<n> [SERVE=1]
   make dry-run PROVIDER=<n>
 
 Mode (required):
   standard    --  normal execution, network access allowed
-  serve       --  provider serve mode, port exposed at SERVE_PORT
   dry-run     --  liveness check only, no agent started
 
 Flags (all required except --sandbox/--env):
@@ -118,7 +115,7 @@ _start_wizard() {
   # Interactive start wizard (D11). Start mode only  --  serve/dry-run
   # interactive support is a deferred refactor (roadmap L153).
   if [[ "$MODE" != "standard" ]]; then
-    echo "Error: --interactive (config wizard) is only available for start mode." >&2
+    echo "Error: --interactive (config wizard) is only available for standard mode." >&2
     echo "  Serve/dry-run interactive support is deferred (roadmap L153)." >&2
     exit 1
   fi
@@ -204,7 +201,7 @@ main() {
   shift || true
 
   if [[ -z "$MODE" ]]; then
-    echo "Error: mode is required (standard|serve|dry-run)" >&2
+    echo "Error: mode is required (standard|dry-run)" >&2
     usage >&2
     exit 1
   fi
@@ -220,6 +217,7 @@ main() {
   REFRESH=false
   REBUILD=false
   INTERACTIVE=false
+  SERVE=false
 
   local ARG
   for ARG in "$@"; do
@@ -233,12 +231,22 @@ main() {
       --refresh)    REFRESH=true ;;
       --rebuild)    REBUILD=true ;;
       --interactive) INTERACTIVE=true ;;
+      --serve)      SERVE=true ;;
       *)
         echo "Unknown flag: $ARG"
         exit 1
         ;;
     esac
   done
+
+  # Serve is a toggle on start, not a positional mode.
+  if [[ "$SERVE" == true ]]; then
+    if [[ "$MODE" != "standard" ]]; then
+      echo "Error: --serve requires standard mode." >&2
+      exit 1
+    fi
+    MODE="serve"
+  fi
 
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
     echo "Error: --name and --project are required"

@@ -31,13 +31,14 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ## Commands
 
-### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [INTERACTIVE=1]`
+### `make start PROVIDER=<provider> [SERVE=1] [REFRESH=1] [REBUILD=1] [INTERACTIVE=1]`
 
 Stops any running session for this project, builds missing images if needed, snapshots the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
 
 **Default behaviour:** always starts a new session with fresh identity. To resume a previous session, use `make resume` (see below) — `start` carries no resume path.
 
 `PROVIDER` is required (unless `INTERACTIVE=1`). Fast path supplies it explicitly. Optional flags:
+- `SERVE=1` — start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific (see the serve-overlay table under Container Naming).
 - `REFRESH=1` — rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
 - `REBUILD=1` — rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
 - `INTERACTIVE=1` — the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`, `hermes`, `opencode`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted — e.g. `make start PROVIDER=hermes INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
@@ -56,14 +57,6 @@ Resumes a previously-started session. The session inventory is the `.compose/<se
 - `PROVIDER=<n>` — filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
 
 `--interactive` always shows the picker and asks for confirmation, even when only one session matches — explicit interactivity is deliberate, not a shortcut.
-
----
-
-### `make serve PROVIDER=<provider> [REFRESH=1] [REBUILD=1]`
-
-Same as `make start` but starts the agent in serve mode. The terminal is returned to the shell immediately; the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`.
-
-`PROVIDER` is required. All flags behave identically to `make start` (always a new session; no resume path).
 
 ---
 
@@ -91,7 +84,7 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 `REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
 
-**Note:** `make start` and `make serve` also trigger builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — they always build the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
+**Note:** `make start` also triggers builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — it always builds the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
 
 **Note on the dispatch model:** The `build` subcommand is dispatched to `scripts/build.sh` as an independent process (`exec`). The workflow subcommands (`apply`, `draft`, `confirm`, `reject`) are similarly dispatched to their own scripts in `scripts/workflows/`. Each receives its flags directly from the dispatcher and handles its own argument parsing and execution. This means each subcommand script can also be invoked directly for testing or debugging: `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
@@ -176,7 +169,7 @@ Host-side export. Packages committed branch history as numbered diffs + `uncommi
 | Mode | Make target | Effect |
 |---|---|---|
 | `standard` | `make start PROVIDER=<n>` | Normal execution; agent TUI attaches to terminal |
-| `serve` | `make serve PROVIDER=<n>` | Provider-specific serve mode (see below) |
+| `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
 | `dry-run` | `make dry-run PROVIDER=<n>` | Liveness check only; no agent interaction |
 | `headless` | — | Reserved; not yet implemented |
 
