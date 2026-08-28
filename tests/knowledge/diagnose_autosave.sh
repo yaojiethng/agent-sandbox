@@ -27,12 +27,12 @@ if [[ -n "${AUTOSAVE_INTERVAL:-}" ]]; then
   if [[ "$AUTOSAVE_INTERVAL" =~ ^[0-9]+$ ]] && [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
     pass "AUTOSAVE_INTERVAL=$AUTOSAVE_INTERVAL (numeric, > 0)"
   elif [[ "$AUTOSAVE_INTERVAL" =~ ^[0-9]+$ ]] && [[ "$AUTOSAVE_INTERVAL" -eq 0 ]]; then
-    fail "AUTOSAVE_INTERVAL=0 — autosave loop is DISABLED"
+    fail "AUTOSAVE_INTERVAL=0  --  autosave loop is DISABLED"
   else
     fail "AUTOSAVE_INTERVAL='$AUTOSAVE_INTERVAL' is not a positive integer"
   fi
 else
-  fail "AUTOSAVE_INTERVAL is UNSET — sandbox-entrypoint defaults to 60 (line 46), but compose env may not have passed it"
+  fail "AUTOSAVE_INTERVAL is UNSET  --  sandbox-entrypoint defaults to 60 (line 46), but compose env may not have passed it"
 fi
 
 echo ""
@@ -76,9 +76,9 @@ echo "=== 4. Autosave process ==="
 # that are children of sandbox-entrypoint (PID 1)
 AUTOSAVE_PROC=$(ps -eo pid,ppid,args 2>/dev/null | grep -E '[s]leep.*[0-9]+' | awk '{print $1, $NF}')
 if [[ -n "$AUTOSAVE_PROC" ]]; then
-  pass "Found sleep process(es) — autosave loop may be alive: $AUTOSAVE_PROC"
+  pass "Found sleep process(es)  --  autosave loop may be alive: $AUTOSAVE_PROC"
 else
-  fail "No sleep processes found — autosave loop is NOT running or has crashed"
+  fail "No sleep processes found  --  autosave loop is NOT running or has crashed"
 fi
 
 # Check if there are any diff_export processes or children of PID 1

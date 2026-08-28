@@ -2,20 +2,20 @@
 # libs/package_branch.sh
 #
 # Package branch artefacts: per-commit diffs, uncommitted diff, all-changes
-# diff, and changed-file copies — all in a single dispatcher call.
+# diff, and changed-file copies  --  all in a single dispatcher call.
 #
 # Produces (under OUTPUT_DIR/):
 #   patches/
-#     0001-<sha>[-<subject>].diff  — per-commit diffs (index lines stripped)
-#     0001-<sha>[-<subject>].msg   — full commit message for each diff
+#     0001-<sha>[-<subject>].diff   --  per-commit diffs (index lines stripped)
+#     0001-<sha>[-<subject>].msg    --  full commit message for each diff
 #     0002-<sha>[-<subject>].diff
 #     0002-<sha>[-<subject>].msg
 #     ...
-#   uncommitted.diff        — uncommitted changes vs HEAD (with untracked)
-#   all-changes.diff        — net delta INIT_SHA..HEAD (with untracked)
-#   changed-files/          — working tree copies of all changed files
+#   uncommitted.diff         --  uncommitted changes vs HEAD (with untracked)
+#   all-changes.diff         --  net delta INIT_SHA..HEAD (with untracked)
+#   changed-files/           --  working tree copies of all changed files
 #     MANIFEST.txt
-#   .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Usage (library):
 #   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
@@ -24,9 +24,9 @@
 #   package_branch.sh --to=<dir> --bundle-summary=<text>
 #
 # Arguments (library mode):
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory path
-#   NO_RENAMES        — if true, use git diff --no-renames
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory path
+#   NO_RENAMES         --  if true, use git diff --no-renames
 #
 # Flags (direct mode):
 #   --to=<dir>        Base parent directory (required). Script creates
@@ -42,7 +42,7 @@ source "$_self_dir/routing.sh"
 source "$_self_dir/export_status.sh"
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -152,18 +152,18 @@ package_commits() {
 # package_branch (dispatcher)
 #
 # Orchestrates all packaging output in a single call:
-#   1. package_commits  — per-commit diffs under patches/
-#   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
-#   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
-#   4. write_changed_files     — changed-files/ with MANIFEST.txt
-#   5. .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   1. package_commits   --  per-commit diffs under patches/
+#   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
+#   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
+#   4. write_changed_files      --  changed-files/ with MANIFEST.txt
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
 # Args:
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
-#   NO_RENAMES        — if true, use git diff --no-renames
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
+#   NO_RENAMES         --  if true, use git diff --no-renames
 # -------------------------
 # -------------------------
 # _package_preflight_check
@@ -181,7 +181,7 @@ package_commits() {
 #   devlog/discussions/20260526-study-unappliable_patch_structural_cleanup.md
 #
 # Skips check when PACKAGE_BYPASS_PREFLIGHT=true is set.
-# Returns 0 always — warnings only, never blocks packaging.
+# Returns 0 always  --  warnings only, never blocks packaging.
 # -------------------------
 _package_preflight_check() {
   local SANDBOX_DIR="$1"
@@ -216,7 +216,7 @@ _package_preflight_check() {
 
     # Check for intermediate committed reorders: compare the file's blob
     # at INIT_SHA vs HEAD. If they match but the file appears in the diff
-    # list, the file was modified and reverted during the session — the
+    # list, the file was modified and reverted during the session  --  the
     # patch may reference a state that never existed at INIT_SHA.
     if git -C "$SANDBOX_DIR" cat-file -e "${INIT_SHA}:$f" 2>/dev/null; then
       if git -C "$SANDBOX_DIR" diff --quiet "$INIT_SHA" -- "$f" 2>/dev/null; then
@@ -240,18 +240,18 @@ _package_preflight_check() {
 # package_branch (dispatcher)
 #
 # Orchestrates all packaging output in a single call:
-#   1. package_commits  — per-commit diffs under patches/
-#   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
-#   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
-#   4. write_changed_files     — changed-files/ with MANIFEST.txt
-#   5. .export-status          — STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   1. package_commits   --  per-commit diffs under patches/
+#   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
+#   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
+#   4. write_changed_files      --  changed-files/ with MANIFEST.txt
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
 # Args:
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
-#   NO_RENAMES        — if true, use git diff --no-renames
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
+#   NO_RENAMES         --  if true, use git diff --no-renames
 # -------------------------
 package_branch() {
   local SANDBOX_DIR="${1:-}"
@@ -295,7 +295,7 @@ package_branch() {
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
 
-  # 5. Export metadata — .export-status with STATUS, TIMESTAMP, INIT_SHA
+  # 5. Export metadata  --  .export-status with STATUS, TIMESTAMP, INIT_SHA
   #    so the host-side make draft can resolve the baseline and timestamp
   #    from a single file.
   local _export_ts
@@ -368,7 +368,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
   # Construct output directory via export_path. LABEL (BUNDLE_SUMMARY)
-  # is optional — when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
+  # is optional  --  when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
   if [[ -n "$BUNDLE_SUMMARY" ]]; then
     OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
   else

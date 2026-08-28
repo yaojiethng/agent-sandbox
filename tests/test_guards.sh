@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # tests/test_guards.sh
-# Unit tests for scripts/guards.sh — git workflow guard functions.
+# Unit tests for scripts/guards.sh  --  git workflow guard functions.
 #
 # Covers:
-#   validate_project_dir    — existence, git repo, commits (already tested in test_session.sh)
-#   draft_clear_stale_lock  — stale lock detection and removal
+#   validate_project_dir     --  existence, git repo, commits (already tested in test_session.sh)
+#   draft_clear_stale_lock   --  stale lock detection and removal
 
 set -uo pipefail
 
@@ -28,7 +28,7 @@ test_clear_stale_lock_no_lock_file() {
   local DIR="$FIXTURE_DIR/stale_none"
   make_committed_repo "$DIR"
 
-  # No lock file exists — should be a no-op
+  # No lock file exists  --  should be a no-op
   if draft_clear_stale_lock "$DIR" 2>/dev/null; then
     pass "draft_clear_stale_lock passes when no lock file exists"
   else
@@ -57,11 +57,11 @@ test_clear_stale_lock_removes_stale_lock() {
 }
 
 test_clear_stale_lock_no_lsof_skips_check() {
-  # Simulate lsof not being available — should fall through to remove.
+  # Simulate lsof not being available  --  should fall through to remove.
   # The stub dir contains an `lsof` that always fails (command -v still finds
   # it, but its probe returns non-zero = no holder). A truly absent lsof is
   # simulated by shadowing with a dir lacking the binary is impossible once
-  # PATH already has one earlier — so we assert BOTH: (a) failing-lsof probe,
+  # PATH already has one earlier  --  so we assert BOTH: (a) failing-lsof probe,
   # and (b) genuinely absent binary via a minimal empty-PATH-style stub set.
   local DIR="$FIXTURE_DIR/stale_nolsof"
   make_committed_repo "$DIR"
@@ -80,7 +80,7 @@ test_clear_stale_lock_no_lsof_skips_check() {
   fi
 
   # (b) lsof binary absent from PATH (stub dir provides ONLY rm, which the
-  # function needs for removal — rm is an external binary, not a builtin)
+  # function needs for removal  --  rm is an external binary, not a builtin)
   make_committed_repo "$DIR"
   touch "$DIR/.git/index.lock"
   ln -sf "$(command -v rm)" "$FIXTURE_DIR/stub_lsof_fail/rm"

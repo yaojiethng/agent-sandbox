@@ -1,4 +1,4 @@
-# Hermes Provider — Quick Reference
+# Hermes Provider  --  Quick Reference
 
 Day-to-day command reference and troubleshooting for the Hermes provider. All commands run from `SANDBOX_DIR`.
 
@@ -102,7 +102,7 @@ docker images | grep hermes
 # Remove provider image (forces rebuild on next run)
 docker rmi hermes-agent-<PROJECT_NAME>
 
-# Remove base image (forces full rebuild — slow)
+# Remove base image (forces full rebuild  --  slow)
 docker rmi hermes-base
 ```
 
@@ -147,7 +147,7 @@ $EDITOR .workspace/output/.hermes/.env
 $EDITOR .workspace/output/.hermes/config.yaml
 ```
 
-Both files are bind-mounted into the container at runtime. Changes take effect on the next `make start` or `make serve` — no rebuild required.
+Both files are bind-mounted into the container at runtime. Changes take effect on the next `make start` or `make serve`  --  no rebuild required.
 
 If `.workspace/output/.hermes/config.yaml` does not exist, `setup.sh` seeds it from `providers/hermes/config.yaml` on first run.
 
@@ -156,7 +156,7 @@ If `.workspace/output/.hermes/config.yaml` does not exist, `setup.sh` seeds it f
 ## Troubleshooting
 
 **Container exits immediately**
-Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause — check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
 **`staged.diff` is empty after run**
 Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
@@ -232,7 +232,7 @@ environment:
 ```
 
 **Open WebUI shows no models**
-Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI ↔ Hermes connection has not been established — work through the connectivity steps above.
+Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI <-> Hermes connection has not been established  --  work through the connectivity steps above.
 
 ---
 

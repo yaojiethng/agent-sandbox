@@ -1,4 +1,4 @@
-# AGENTS.md — <Provider Name> (<project name>)
+# AGENTS.md  --  <Provider Name> (<project name>)
 
 <!--
   This is the reference template for provider-layer AGENTS.md files.
@@ -9,14 +9,14 @@
   - This file orients the agent to its immediate environment: container
     context, input/output channels, and provider-specific tools or commands.
   - Do not include project workflow, session conventions, collaboration
-    principles, or reading lists — those belong in the project-layer AGENTS.md
+    principles, or reading lists  --  those belong in the project-layer AGENTS.md
     at the repository root.
   - Do not duplicate content from the project-layer AGENTS.md. Link to it
     where context is needed.
   - Keep this file short. An agent reading it should finish in under 60 seconds
     of context consumption.
 
-  See docs/concepts/agent_workflow.md — Agent Context Model for the two-layer
+  See docs/concepts/agent_workflow.md  --  Agent Context Model for the two-layer
   model this file participates in.
   See docs/operations/provider_onboarding_guide.md for the authoring step.
 -->
@@ -50,7 +50,7 @@ The agent runtime is explicitly untrusted. The operator has final authority over
 
 ### Two-layer container architecture
 
-Every session runs two containers. This container is the **reasoning** layer (agent runtime). A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files — a file missing in this container may belong to the other layer.
+Every session runs two containers. This container is the **reasoning** layer (agent runtime). A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files  --  a file missing in this container may belong to the other layer.
 
 ---
 
@@ -72,7 +72,7 @@ Every session runs two containers. This container is the **reasoning** layer (ag
 ## Tools
 
 <!--
-  List the tools available in this provider. Be explicit — agents should not
+  List the tools available in this provider. Be explicit  --  agents should not
   assume tools exist if they are not listed here or discovered in the session.
 
   Example structure (adapt to provider):
@@ -90,7 +90,7 @@ Every session runs two containers. This container is the **reasoning** layer (ag
   Provider-specific tool use guidance. Examples:
   - Prefer `edit` over `write` for existing files
   - Parallelise independent reads and searches
-  - Use `bash` for grep, find, ls — not for git mutations
+  - Use `bash` for grep, find, ls  --  not for git mutations
 -->
 
 ### Discovery Protocol
@@ -121,7 +121,7 @@ Every session runs two containers. This container is the **reasoning** layer (ag
 
 <!--
   Provider-specific session initialisation instructions only.
-  Do not repeat the project-layer reading list — link to AGENTS.md at repo root.
+  Do not repeat the project-layer reading list  --  link to AGENTS.md at repo root.
   Cover only what is specific to this interface:
   - How the operator signals session start (if non-standard)
   - Any provider-specific checks or orientation steps

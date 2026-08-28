@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # tests/test_draft_state.sh
-# Unit tests for libs/draft_state.sh — folder name parsing, state I/O, branch validation.
+# Unit tests for libs/draft_state.sh  --  folder name parsing, state I/O, branch validation.
 #
 # Covers:
-#   draft_parse_folder_name        — 3 parsing sub-cases (no session-id, with session-id, edge)
-#   draft_guard_no_collision       — collision detection
-#   draft_write_state              — field ordering and optional session_id
-#   draft_read_state_from_branch   — key-value parsing from committed .draft-state
-#   draft_validate_branch          — branch shape, missing .draft-state, field invariants
+#   draft_parse_folder_name         --  3 parsing sub-cases (no session-id, with session-id, edge)
+#   draft_guard_no_collision        --  collision detection
+#   draft_write_state               --  field ordering and optional session_id
+#   draft_read_state_from_branch    --  key-value parsing from committed .draft-state
+#   draft_validate_branch           --  branch shape, missing .draft-state, field invariants
 
 set -uo pipefail
 
@@ -219,7 +219,7 @@ test_read_state_missing_dot_draft_state() {
   local DIR="$FIXTURE_DIR/read_missing_state"
   make_committed_repo "$DIR"
   git -C "$DIR" checkout -b "draft/no-state" --quiet
-  # Create an empty commit — no .draft-state
+  # Create an empty commit  --  no .draft-state
   echo "dummy" > "$DIR/dummy.txt"
   git -C "$DIR" add dummy.txt
   git -C "$DIR" commit -m "no draft state" --quiet

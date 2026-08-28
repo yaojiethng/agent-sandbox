@@ -1,4 +1,4 @@
-# Agent Context Brief — Pi-Specific Behavior (global)
+# Agent Context Brief  --  Pi-Specific Behavior (global)
 
 This file is loaded by pi on every session start as the first AGENTS.md layer, via its CWD-walk discovery mechanism (~/.pi/agent/AGENTS.md). It describes pi-specific behavior that applies regardless of the project being worked on.
 
@@ -12,7 +12,7 @@ You are running inside the **agent-sandbox** harness. Your working directory (`s
 
 ### Two-layer container architecture
 
-Every session runs two containers. You are inside the **reasoning** (agent runtime) container. A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files — a file missing in one container is not necessarily a regression; it may belong only to the other layer.
+Every session runs two containers. You are inside the **reasoning** (agent runtime) container. A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files  --  a file missing in one container is not necessarily a regression; it may belong only to the other layer.
 
 Key behavioral rules:
 - Do not modify files outside `sandbox/`.
@@ -21,23 +21,23 @@ Key behavioral rules:
 
 ## Write Discipline
 
-Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs — fragmented or half-applied changes across iterations create review burden.
+Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
 
 When writing code, always take into account the following:
 
-1. Does this need to exist?   → no: skip it (YAGNI)
-2. Already in this codebase?  → reuse it, don't rewrite
-3. Stdlib does it?            → use it
-4. Native platform feature?   → use it
-5. Installed dependency?      → use it
-6. One line?                  → one line
+1. Does this need to exist?   -> no: skip it (YAGNI)
+2. Already in this codebase?  -> reuse it, don't rewrite
+3. Stdlib does it?            -> use it
+4. Native platform feature?   -> use it
+5. Installed dependency?      -> use it
+6. One line?                  -> one line
 7. Only then: the minimum that works
 
 Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
 
 **Handover rules**
 
-- Close → done. No commits after close. Open a new handover for new work.
+- Close -> done. No commits after close. Open a new handover for new work.
 - Type must match dominant activity at close. Rename if it diverged.
 - Implementation needs its own handover. A design handover does not cover impl commits.
 - Every iteration updates the roadmap checkboxes for completed tasks.
@@ -45,7 +45,7 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 Each iteration is independent. The prior iteration's git history is not available (container is ephemeral). The iteration starts from the project's committed HEAD.
 
 Tools you have access to:
-- `/package-branch` — export committed changes as numbered diffs, uncommitted diff, and changed files
+- `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files
 - Standard development tools (git, bash, common CLI utilities)
 
 ## Fresh Subagent Invocation
@@ -56,6 +56,6 @@ When a fresh perspective is needed for code review (e.g. thermo-nuclear review o
 pi -p "Subagent instructions..."
 ```
 
-The `-p` flag spawns a new subagent with a clean context — it does not inherit the current session's conversation history, loaded files, or tool state. Use this when the current agent may have blind spots from extended work on the same code.
+The `-p` flag spawns a new subagent with a clean context  --  it does not inherit the current session's conversation history, loaded files, or tool state. Use this when the current agent may have blind spots from extended work on the same code.
 
-The subagent runs in the same container/workspace as the primary agent, with the same tools — it **can** persist file edits and run git commits. It starts with a clean conversation context, so it cannot see this session's chat history, in-memory files, or tool state; pass everything it needs in the `-p` argument or on disk. Its output is returned inline. The results should be triaged by the primary agent.
+The subagent runs in the same container/workspace as the primary agent, with the same tools  --  it **can** persist file edits and run git commits. It starts with a clean conversation context, so it cannot see this session's chat history, in-memory files, or tool state; pass everything it needs in the `-p` argument or on disk. Its output is returned inline. The results should be triaged by the primary agent.

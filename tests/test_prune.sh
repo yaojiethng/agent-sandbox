@@ -97,7 +97,7 @@ test_rule1_age_filter_skips_recent() {
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
   local today; today="$(date +%Y%m%d)"
-  # A stale record from TODAY is younger than the default 3-day cutoff → kept.
+  # A stale record from TODAY is younger than the default 3-day cutoff -> kept.
   write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
 
   invoke_prune > /dev/null 2>&1
@@ -164,7 +164,7 @@ test_interactive_abort_keeps_records() {
   setup_prune_fixture "$FIXTURE_DIR"
   write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
 
-  # Confirm input 'n' (or newline) → abort, record untouched.
+  # Confirm input 'n' (or newline) -> abort, record untouched.
   echo "n" | invoke_prune --interactive > /dev/null 2>&1 || true
 
   if record_exists "s_stale"; then
@@ -377,7 +377,7 @@ run_test test_missing_project_rejected
 # ---------------------------------------------------------------------------
 # env_field unit tests
 #
-# env_field — refresh-record parser in prune.sh. The script is now dual-use
+# env_field  --  refresh-record parser in prune.sh. The script is now dual-use
 # (rule 1.11 guard), so it sources cleanly and the function is callable directly.
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/prune.sh"
@@ -390,7 +390,7 @@ test_env_field_reads_value_from_environment_block() {
   if [[ "$out" == "mount" ]]; then
     pass "env_field reads value from environment block"
   else
-    fail "env_field SANDBOX_TYPE → '$out', want 'mount'"
+    fail "env_field SANDBOX_TYPE -> '$out', want 'mount'"
   fi
 }
 
@@ -402,7 +402,7 @@ test_env_field_no_substring_matches() {
   if [[ "$out" == "/bin" ]]; then
     pass "env_field does not substring-match NODE_PATH when asked for PATH"
   else
-    fail "env_field PATH → '$out', want '/bin' (got NODE_PATH value?)"
+    fail "env_field PATH -> '$out', want '/bin' (got NODE_PATH value?)"
   fi
 }
 
@@ -414,7 +414,7 @@ test_env_field_first_match_wins() {
   if [[ "$out" == "1" ]]; then
     pass "env_field returns first match only"
   else
-    fail "env_field A → '$out', want '1'"
+    fail "env_field A -> '$out', want '1'"
   fi
 }
 
@@ -424,7 +424,7 @@ test_env_field_missing_key_is_empty_and_clean() {
   local out rc
   out=$(env_field "$f" "ABSENT"); rc=$?
   if [[ $rc -eq 0 && -z "$out" ]]; then
-    pass "env_field missing key → empty output, exit 0"
+    pass "env_field missing key -> empty output, exit 0"
   else
     fail "env_field ABSENT: rc=$rc out='$out'"
   fi

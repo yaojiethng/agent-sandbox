@@ -8,7 +8,7 @@
 # check makes orphaning loud the day it happens.
 #
 # A lib is considered live when its basename appears in a non-test,
-# non-devlog file under src/, scripts/, test/ or Makefile — i.e. anything
+# non-devlog file under src/, scripts/, test/ or Makefile  --  i.e. anything
 # that could source or invoke it in production. Test-only references do not
 # count: coverage of dead code is still dead code.
 #
@@ -37,7 +37,7 @@ for LIB in "$REPO_ROOT"/src/libs/*.sh; do
     | wc -l)
 
   if (( REFS == 0 )); then
-    echo "ORPHANED: src/libs/$NAME — no non-test reference found" >&2
+    echo "ORPHANED: src/libs/$NAME  --  no non-test reference found" >&2
     ORPHANS=$((ORPHANS + 1))
   fi
 done

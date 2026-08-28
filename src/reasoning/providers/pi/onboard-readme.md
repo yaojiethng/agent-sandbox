@@ -18,7 +18,7 @@ enough patterns emerge.
 |---|---|---|
 | Config dir (Pi convention) | `$AGENT_HOME/agent/` | `providers/pi/preflight.sh` |
 | Template (baked into image) | `/opt/workflow/agent/config/agent/` | Build context (`containers.sh`) + Dockerfile COPY |
-| Bind mounts (host → container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `providers/pi/docker-compose.pi.yml` |
+| Bind mounts (host -> container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `providers/pi/docker-compose.pi.yml` |
 
 Pi-specific volumes live in the Pi compose overlay (`docker-compose.pi.yml`),
 not the generic `docker-compose.yml`. This keeps provider isolation clean:
@@ -28,7 +28,7 @@ output); each provider overlays its own config mounts.
 ## Ephemeral vs Mounted
 
 Only **`prompts/`**, **`sessions/`**, and **`skills/`** are RW bind-mounted from the host.
-Everything else is ephemeral (copy-in from image template at startup) — including
+Everything else is ephemeral (copy-in from image template at startup)  --  including
 `settings.json`, `auth.json`, `models.json`, and `AGENTS.md`.
 
 This avoids `utime()`/`EPERM` on cross-filesystem mounts (macOS virtiofs, Windows 9p)
@@ -46,7 +46,7 @@ directories are owned by `root:root`. When the entrypoint runs as `agentuser`
 Standard copy commands in "archive" mode try to preserve file metadata:
 ownership (UID/GID) and timestamps (mtime/atime). On cross-filesystem mounts
 (macOS virtiofs, Linux bind mounts), a non-privileged user cannot set these
-attributes even on files they own — resulting in `Operation not permitted`.
+attributes even on files they own  --  resulting in `Operation not permitted`.
 
 ### Solution: pre-emptive path claiming + metadata-agnostic copy
 
@@ -68,7 +68,7 @@ USER agentuser
 
 **B. Metadata-agnostic provisioning.** `_provision_agent_home` uses
 `cp -RT --no-preserve=all` to copy the template into `$AGENT_HOME`.
-`--no-preserve=all` skips ownership AND timestamps — files are created as
+`--no-preserve=all` skips ownership AND timestamps  --  files are created as
 "new" files owned by agentuser, avoiding EPERM on any metadata operations.
 The `-T` flag treats the destination as the target directory (not a subdir
 inside it), which prevents double-nesting when the target already exists.
@@ -79,7 +79,7 @@ cp -RT --no-preserve=all "$PROVISION_TEMPLATE/" "$AGENT_HOME/"
 ```
 
 **Key principle:** In a non-root Docker environment, the image must be
-"volume-ready" before the container starts — the image skeleton claims the
+"volume-ready" before the container starts  --  the image skeleton claims the
 paths with correct ownership, and the volumes flesh them out without
 breaking permissions.
 
@@ -90,12 +90,12 @@ Pi auto-downloads `fd` and `rg` (ripgrep) to `$AGENT_HOME/agent/bin/`.
 **Problem (historical):** When `bin/` was on a bind-mounted filesystem, Pi's
 `mv` from `/tmp/` (container overlayfs) to `bin/` (host fs) crossed filesystem
 boundaries and failed. Adding a tmpfs made `bin/` a separate in-memory
-filesystem, but it was still cross-device from `/tmp/` (overlayfs) — and
+filesystem, but it was still cross-device from `/tmp/` (overlayfs)  --  and
 on some Docker configurations the tmpfs was mounted `noexec`, silently
 breaking the `@` file reference popup.
 
 **Current solution:** `bin/` is a regular directory created in the Dockerfile
-before the `USER` switch — same overlayfs as `/tmp/`. `mv` uses native
+before the `USER` switch  --  same overlayfs as `/tmp/`. `mv` uses native
 `rename()` (no cross-device fallback). `fd-find` and `ripgrep` are installed
 via `apt` in `base.dockerfile`, so Pi's `getToolPath` picks them up from
 system PATH without needing auto-downloads at all.
@@ -113,11 +113,11 @@ added back in `docker-compose.pi.yml`:
     gid: 1001
 ```
 
-## auth.json — Ephemeral by Design
+## auth.json  --  Ephemeral by Design
 
 `auth.json` stores env var **references** (e.g. `DEEPSEEK_API_KEY`), not actual
 secret values. Real API keys are injected as container environment variables.
-Keeping `auth.json` ephemeral prevents write-back of env var values to the host —
+Keeping `auth.json` ephemeral prevents write-back of env var values to the host  -- 
 a **security feature**, not an implementation gap.
 
 Adding a new provider key requires a chore commit to update the template

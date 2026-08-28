@@ -5,7 +5,7 @@
 # The derivation formulas live in src/libs/session_env.sh (sandbox_id_derive,
 # session_id_derive) as the single canonical home. start_agent.sh and
 # resume_agent.sh both call them. These tests execute the PRODUCTION
-# functions directly — no copies, no drift guards needed.
+# functions directly  --  no copies, no drift guards needed.
 #
 # History: before extraction, the formula was duplicated inline in both
 # scripts and this suite tested a third copy of its own making (a tautology).
@@ -68,7 +68,7 @@ test_session_id_is_6_char_hex_and_sandbox_dependent() {
   fi
 }
 
-# Both entrypoints must go through the shared helpers — no inline re-derivation.
+# Both entrypoints must go through the shared helpers  --  no inline re-derivation.
 test_no_inline_identity_pipelines_remain() {
   local N
   N=$(grep -c 'SANDBOX_ID=.*sha256sum' "$REPO_ROOT/scripts/start_agent.sh" \
@@ -76,7 +76,7 @@ test_no_inline_identity_pipelines_remain() {
   if [[ "$N" -eq 0 ]]; then
     pass "no inline sha256sum identity pipelines remain in start/resume scripts"
   else
-    fail "inline SANDBOX_ID derivation reappeared ($N occurrences) — use sandbox_id_derive"
+    fail "inline SANDBOX_ID derivation reappeared ($N occurrences)  --  use sandbox_id_derive"
   fi
 }
 

@@ -8,13 +8,13 @@
 # lives in exactly one place.
 #
 # Functions:
-#   _sandbox_sig_sources     — source paths for the sandbox image (/opt/sandbox)
-#   _agent_sig_sources       — source paths for an agent image (/opt/workflow + provider)
-#   container_sig            — deterministic SHA-256 of the source-file set
-#   current_sig              — current sig for a layer type
-#   image_is_stale           — baked container-sig vs recomputed -> fresh|stale|unknown
+#   _sandbox_sig_sources      --  source paths for the sandbox image (/opt/sandbox)
+#   _agent_sig_sources        --  source paths for an agent image (/opt/workflow + provider)
+#   container_sig             --  deterministic SHA-256 of the source-file set
+#   current_sig               --  current sig for a layer type
+#   image_is_stale            --  baked container-sig vs recomputed -> fresh|stale|unknown
 #
-# (record_image_stale — the record-level aggregation — lives in
+# (record_image_stale  --  the record-level aggregation  --  lives in
 # src/libs/session_inventory.sh, which sources this lib.)
 #
 # Terminology: image staleness (see docs/concepts/terminology.md `## staleness`)
@@ -23,7 +23,7 @@
 
 # Source paths for the sandbox image (maps to /opt/sandbox/). Emits each path
 # on its own line. Callers load them into a bash array (`mapfile`) and expand
-# with `"${arr[@]}"` — they are NOT a space-joined string to word-split.
+# with `"${arr[@]}"`  --  they are NOT a space-joined string to word-split.
 _sandbox_sig_sources() {
   printf '%s\n' \
     "src/libs" \

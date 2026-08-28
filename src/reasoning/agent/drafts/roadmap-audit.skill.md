@@ -18,7 +18,7 @@ Read `docs/operations/roadmap_policy.md` for the current rules. Read `audit.skil
 
 Run through every task entry in the active sub-milestone.
 
-**A1. Marker format** -- all items use markdown task list syntax (`- [x]` or `- [ ]`), not emoji (`✅` / `❌`) or bold headers alone. Flag unconverted items.
+**A1. Marker format** -- all items use markdown task list syntax (`- [x]` or `- [ ]`), not emoji checkmarks or bold headers alone. Flag unconverted items.
 
 **A2. Nesting format** -- sub-items are indented `- [x]` / `- [ ]` bullets, not embedded in prose paragraphs. Flag prose-wrapped sub-items that need restructuring.
 
@@ -41,7 +41,7 @@ For each item in the active sub-milestone:
 | File lists (parentheses after item name) | Removed | Absent from header |
 | Implementation notes / partial specs | Removed | Absent from summary |
 | Sub-item checklists / task breakdowns | Removed | Absent from summary |
-| "Depends on" → now-completed items | Removed | Absent from summary |
+| "Depends on" -> now-completed items | Removed | Absent from summary |
 | "Prerequisite for" | Removed | Absent from summary |
 
 Flag any component present where it should be absent, or absent where it should survive.

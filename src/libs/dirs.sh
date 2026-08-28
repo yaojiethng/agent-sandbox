@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# libs/dirs.sh — Directory name defaults and path derivation for the
+# libs/dirs.sh  --  Directory name defaults and path derivation for the
 # agent-sandbox harness.
 #
 # Provides:
 #   1. Default leaf names for all harness-managed directories (settable via env)
-#   2. dirs_resolve — derive all harness paths from a base directory
+#   2. dirs_resolve  --  derive all harness paths from a base directory
 #
 # Both the capability layer and reasoning layer entrypoints source this file
 # so that directory names have a single source of truth.
@@ -19,7 +19,7 @@ SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
 
 # Working content directory: owned by the capability layer container.
 # Exposed to the reasoning layer via --volumes-from, not a named volume.
-# Lifecycle is tied to the capability layer container — if it is not
+# Lifecycle is tied to the capability layer container  --  if it is not
 # running, the reasoning layer cannot attach to this directory.
 SANDBOX_DIR_NAME="${SANDBOX_DIR_NAME:-sandbox}"
 
@@ -41,18 +41,18 @@ INPUT_DIR_NAME="${INPUT_DIR_NAME:-input}"
 OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-output}"
 
 # -------------------------
-# dirs_resolve — derive all harness paths from a base directory.
+# dirs_resolve  --  derive all harness paths from a base directory.
 #
 # Sets SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR in the caller's scope
 # and exports them for downstream consumers (compose, routing).
 #
-# Does NOT set SANDBOX_DIR — callers supply it explicitly (as CLI arg, ROOT
+# Does NOT set SANDBOX_DIR  --  callers supply it explicitly (as CLI arg, ROOT
 # convention, or via a separate derivation) because SANDBOX_DIR has different
 # base semantics on host (it IS the base) vs container (it is derived from
 # ROOT + SANDBOX_DIR_NAME).
 #
 # Args:
-#   $1  BASE_DIR  — root for derived paths
+#   $1  BASE_DIR   --  root for derived paths
 #                   Host: SANDBOX_DIR (e.g. /mnt/m/Projects/foo/.sandbox/win)
 #                   Container: /home/agentuser
 #
@@ -69,19 +69,19 @@ OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-output}"
 # Examples:
 #   # Host convention (default WORKSPACE_DIR_NAME=.workspace):
 #   dirs_resolve "$SANDBOX_DIR"
-#   # → SNAPSHOT_DIR = /mnt/project/.sandbox/.snapshot
-#   # → CHANGES_DIR  = /mnt/project/.sandbox/.workspace/session-diffs
+#   # -> SNAPSHOT_DIR = /mnt/project/.sandbox/.snapshot
+#   # -> CHANGES_DIR  = /mnt/project/.sandbox/.workspace/session-diffs
 #
 #   # Container convention:
 #   WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-#   # → SNAPSHOT_DIR = /home/agentuser/.snapshot
-#   # → CHANGES_DIR  = /home/agentuser/workspace/session-diffs
-#   # → INPUT_DIR    = /home/agentuser/workspace/input
-#   # → OUTPUT_DIR   = /home/agentuser/workspace/output
+#   # -> SNAPSHOT_DIR = /home/agentuser/.snapshot
+#   # -> CHANGES_DIR  = /home/agentuser/workspace/session-diffs
+#   # -> INPUT_DIR    = /home/agentuser/workspace/input
+#   # -> OUTPUT_DIR   = /home/agentuser/workspace/output
 #   #
 #   # INPUT_DIR and OUTPUT_DIR derive correctly in both contexts but are mounted
 #   # only in the agent (reasoning layer) container, not the sandbox (capability
-#   # layer) container.  See tool_interface.md — Mount Shape Guarantees.
+#   # layer) container.  See tool_interface.md  --  Mount Shape Guarantees.
 # -------------------------
 dirs_resolve() {
   local BASE_DIR="$1"

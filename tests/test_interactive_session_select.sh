@@ -3,9 +3,9 @@
 # Tests for libs/interactive_session_select.sh
 #
 # Covers:
-#   interactive_confirm_or_abort   — y/N prompt, return codes
-#   interactive_select_channel     — channel picker, entry counts
-#   interactive_select_bundle     — session picker, indicators, cap
+#   interactive_confirm_or_abort    --  y/N prompt, return codes
+#   interactive_select_channel      --  channel picker, entry counts
+#   interactive_select_bundle      --  session picker, indicators, cap
 
 set -uo pipefail
 
@@ -81,7 +81,7 @@ test_confirm_or_abort_no_label() {
   # Empty label should not print a header line
   local STDERR
   STDERR=$(echo "y" | interactive_confirm_or_abort "" "item" 2>&1 >/dev/null)
-  # Should not start with empty label line — first line should be the item
+  # Should not start with empty label line  --  first line should be the item
   local FIRST_LINE
   FIRST_LINE=$(echo "$STDERR" | head -1)
   if [[ "$FIRST_LINE" == "  item" ]]; then
@@ -148,7 +148,7 @@ test_select_channel_zero_entries_shows_count() {
   mkdir -p "$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$SANDBOX/.workspace/output/bundles"
 
-  # Channel 3 (bundles) has 0 entries — should show 0 entries but still be selectable
+  # Channel 3 (bundles) has 0 entries  --  should show 0 entries but still be selectable
   local CHANNEL
   CHANNEL=$(echo "3" | interactive_select_channel "draft" "$SANDBOX" 2>/dev/null)
   if [[ "$CHANNEL" == "bundles" ]]; then
@@ -292,7 +292,7 @@ test_select_session_cap_at_ten() {
     fail "interactive_select_bundle should select session-3 at entry 10 (newest-first), got: '$BUNDLE'"
   fi
 
-  # Try selecting entry 11 — should be invalid (capped at 10)
+  # Try selecting entry 11  --  should be invalid (capped at 10)
   local STDERR
   STDERR=$(printf "11\nq\n" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "Invalid selection"; then
@@ -318,13 +318,13 @@ test_select_session_name_truncation() {
   if echo "$STDERR" | grep -q "\.\.\."; then
     pass "interactive_select_bundle truncates names longer than 50 chars"
   else
-    # If the name is actually <= 50 chars, that's also fine — just verify it works
+    # If the name is actually <= 50 chars, that's also fine  --  just verify it works
     pass "interactive_select_bundle handles long names (no truncation needed if <= 50 chars)"
   fi
 }
 
 # =============================================================================
-# interactive_select_bundle — option 0 injection tests
+# interactive_select_bundle  --  option 0 injection tests
 # =============================================================================
 
 test_select_session_inject_option_zero() {
@@ -335,7 +335,7 @@ test_select_session_inject_option_zero() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  # DEFAULT_BUNDLE not in list — inject as option 0
+  # DEFAULT_BUNDLE not in list  --  inject as option 0
   local BUNDLE
   BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
   if [[ "$BUNDLE" == "20260501-000000-remote" ]]; then
@@ -371,7 +371,7 @@ test_select_session_no_option_zero_when_in_displayed() {
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
   make_session_fixture "$BASE/20260503-090000-beta" 1 content
 
-  # DEFAULT_BUNDLE IS in list — no option 0, Enter selects normally
+  # DEFAULT_BUNDLE IS in list  --  no option 0, Enter selects normally
   local BUNDLE
   BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
   if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
@@ -405,7 +405,7 @@ test_select_session_option_zero_not_present_without_default() {
   mkdir -p "$BASE"
   make_session_fixture "$BASE/20260504-120000-alpha" 1 content
 
-  # No DEFAULT_BUNDLE — no option 0, normal numbers start at 1
+  # No DEFAULT_BUNDLE  --  no option 0, normal numbers start at 1
   local STDERR
   STDERR=$(echo "1" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "^  0:"; then
@@ -416,7 +416,7 @@ test_select_session_option_zero_not_present_without_default() {
 }
 
 # =============================================================================
-# interactive_select_bundle — pagination tests
+# interactive_select_bundle  --  pagination tests
 # =============================================================================
 
 # Helper: create N fixture sessions
@@ -440,7 +440,7 @@ test_select_session_pagination_next_page() {
   # 12 sessions sorted newest-first: session-12 .. session-1
   # Page 1: entries 0-9 (session-12 .. session-3)
   # Page 2: entries 10-11 (session-2, session-1)
-  # n, then 1 → selects first entry on page 2 = session-2
+  # n, then 1 -> selects first entry on page 2 = session-2
   local BUNDLE
   BUNDLE=$(printf "n\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
   if echo "$BUNDLE" | grep -q "session-2"; then
@@ -457,7 +457,7 @@ test_select_session_pagination_previous_page() {
   mkdir -p "$BASE"
   create_n_sessions "$BASE" 12
 
-  # n, p (back to page 1), then 1 → selects first entry on page 1 = session-12
+  # n, p (back to page 1), then 1 -> selects first entry on page 1 = session-12
   local BUNDLE
   BUNDLE=$(printf "n\np\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
   if echo "$BUNDLE" | grep -q "session-12"; then
@@ -491,7 +491,7 @@ test_select_session_pagination_single_page() {
   mkdir -p "$BASE"
   create_n_sessions "$BASE" 3
 
-  # Only 3 entries — no pagination, no "page 1 of 1"
+  # Only 3 entries  --  no pagination, no "page 1 of 1"
   local STDERR
   STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   if echo "$STDERR" | grep -q "page"; then
@@ -526,7 +526,7 @@ test_select_session_pagination_no_n_at_last_page() {
   create_n_sessions "$BASE" 12
 
   # n (to page 2), n (stays on page 2), then 1 selects first entry on page 2
-  # Second n re-renders same page but stays — selection still works
+  # Second n re-renders same page but stays  --  selection still works
   local BUNDLE
   BUNDLE=$(printf "n\nn\n1\n" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
   if echo "$BUNDLE" | grep -q "session-2"; then

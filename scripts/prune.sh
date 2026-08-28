@@ -6,9 +6,9 @@
 # The `.compose/<session-id>.yml` registry is the source of truth for which
 # sessions exist and whether they are stale.
 #
-# INVARIANT — the prune outcome is a partition of sessions. After prune, every
+# INVARIANT  --  the prune outcome is a partition of sessions. After prune, every
 # session is either **fully pruned** (its record AND its resources are gone) or
-# **fully kept** (its record AND its resources are intact) — never partial, and
+# **fully kept** (its record AND its resources are intact)  --  never partial, and
 # never collateral damage to a kept session's resources. A stale record is
 # removed by Rule 1; that makes its session's resources orphaned, and Rule 2
 # removes them in the same pass. A resource is orphaned iff its session has no
@@ -21,12 +21,12 @@
 #
 # Two rules (design `20260818-02`, mount-model record #7), always run as a
 # complete pass (no partial/scope split; simulation is --dry-run):
-#   Rule 1 — remove stale `.compose/*.yml` records.
-#   Rule 2 — remove resources (containers, networks, volumes) labeled
+#   Rule 1  --  remove stale `.compose/*.yml` records.
+#   Rule 2  --  remove resources (containers, networks, volumes) labeled
 #            `agent-sandbox.sandbox-dir` whose session has NO `.compose` record.
 #
 # Execution is strictly sequential: Rule 1 removes the records first, then
-# Rule 2 re-derives its orphan list against the updated registry — a resource
+# Rule 2 re-derives its orphan list against the updated registry  --  a resource
 # is an orphan iff its session has no record on disk. Removing a stale record
 # therefore makes that session's resources orphaned, and the fresh Rule 2 scan
 # catches them in the same pass. No in-memory contract couples the two rules;
@@ -43,9 +43,9 @@
 #   AGE_DAYS. `STALE=sandbox|image|all` select the sandbox / image / either
 #   staleness dimension (STALE=all or unset = the "remove all stale" filter).
 #
-# Rule 2 scope: delivery-scoped in effect — copy sessions register a volume,
-# mount sessions do not, so removing labeled resources yields copy → volume +
-# containers and mount → registry resources only. Worktrees are never touched.
+# Rule 2 scope: delivery-scoped in effect  --  copy sessions register a volume,
+# mount sessions do not, so removing labeled resources yields copy -> volume +
+# containers and mount -> registry resources only. Worktrees are never touched.
 
 set -euo pipefail
 
@@ -95,7 +95,7 @@ rule1_selected_records() {
   cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null || true)"
 
   local line sid provider ts branch delivery rec_day
-  # Enumeration (glob → provider recovery → PROVIDER_FILTER) is the shared
+  # Enumeration (glob -> provider recovery -> PROVIDER_FILTER) is the shared
   # `enumerate_records` core from session_inventory.sh.
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
@@ -121,13 +121,13 @@ rule1_selected_records() {
       [[ -z "$rec_day" || "$rec_day" > "$cutoff_ts" ]] && continue
     fi
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
-    # delivery overlay). Disclosure in the plan only — it gates neither rule.
+    # delivery overlay). Disclosure in the plan only  --  it gates neither rule.
     delivery="$(env_field "$file" SANDBOX_TYPE)"
     printf '%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
   done < <(enumerate_records)
 }
 
-# env_field FILE VAR — read a `VAR=value` from any service `environment:`
+# env_field FILE VAR  --  read a `VAR=value` from any service `environment:`
 # block in a registry record (e.g. `SANDBOX_TYPE=mount`).
 env_field() {
   local file="$1" var="$2"
@@ -138,12 +138,12 @@ env_field() {
 # -------------------------
 # Rule 2: orphaned resources
 # -------------------------
-# ORPHAN_TEST — a resource's session-id is orphaned if it has no record on
+# ORPHAN_TEST  --  a resource's session-id is orphaned if it has no record on
 # disk. For a predictive preview (--dry-run / --interactive) the Rule-1-selected
 # SIDs are treated as already-removed, so a session whose record is about to be
 # deleted is reported as orphaned too. Execution clears this set and re-scans
 # the genuine registry.
-# _sid_is_orphaned SID — true when the session is not a keeper (no record).
+# _sid_is_orphaned SID  --  true when the session is not a keeper (no record).
 _sid_is_orphaned() {
   local sid="$1"
   [[ -n "$sid" ]] || return 1
@@ -155,7 +155,7 @@ _sid_is_orphaned() {
   return 1
 }
 
-# _session_id_of KIND ID — read `agent-sandbox.session-id` from a docker
+# _session_id_of KIND ID  --  read `agent-sandbox.session-id` from a docker
 # resource's labels.
 _session_id_of() {
   local kind="$1" id="$2"
@@ -166,7 +166,7 @@ _session_id_of() {
   esac
 }
 
-# collect_orphans KIND ID... — emit `kind|id|sid` for each resource whose
+# collect_orphans KIND ID...  --  emit `kind|id|sid` for each resource whose
 # session is not a keeper.
 collect_orphans() {
   local kind="$1"; shift
@@ -275,7 +275,7 @@ main() {
     exit 1
   fi
 
-  # ORPHAN_TEST — a resource's session-id is orphaned if it has no record on
+  # ORPHAN_TEST  --  a resource's session-id is orphaned if it has no record on
   # disk. For a predictive preview (--dry-run / --interactive) the Rule-1-selected
   # SIDs are treated as already-removed, so a session whose record is about to be
   # deleted is reported as orphaned too. Execution clears this set and re-scans
@@ -283,26 +283,26 @@ main() {
   TREATED_REMOVED_SIDS=()
 
   mapfile -t RULE1_RECS < <(rule1_selected_records)
-  # SIDS_PRUNED — the list of SIDs Rule 1 will remove (its "removal result").
+  # SIDS_PRUNED  --  the list of SIDs Rule 1 will remove (its "removal result").
   SIDS_PRUNED=( "${RULE1_RECS[@]%%|*}" )
   
   # -------------------------
-  # Preview / confirm (--dry-run and --interactive) — predictive, render-only
+  # Preview / confirm (--dry-run and --interactive)  --  predictive, render-only
   # -------------------------
   if [[ "$DRY_RUN_FLAG" == true || "$INTERACTIVE_FLAG" == true ]]; then
     TREATED_REMOVED_SIDS=( "${SIDS_PRUNED[@]}" )
     mapfile -t ORPHANS < <(rule2_orphan_resources)
   
     if [[ "${#RULE1_RECS[@]}" -eq 0 && "${#ORPHANS[@]}" -eq 0 ]]; then
-      echo "Nothing to prune — no stale records and no orphaned resources."
+      echo "Nothing to prune  --  no stale records and no orphaned resources."
       exit 0
     fi
     if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
-      echo "Rule 1 — ${#RULE1_RECS[@]} stale record(s) to remove:"
+      echo "Rule 1  --  ${#RULE1_RECS[@]} stale record(s) to remove:"
       show_rule1
     fi
     if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
-      echo "Rule 2 — ${#ORPHANS[@]} orphaned resource(s) to remove:"
+      echo "Rule 2  --  ${#ORPHANS[@]} orphaned resource(s) to remove:"
       show_rule2
     fi
   
@@ -326,13 +326,13 @@ main() {
   fi
   
   # -------------------------
-  # Execute — strictly sequential, reading the real registry at each step
+  # Execute  --  strictly sequential, reading the real registry at each step
   # -------------------------
   DID_WORK=false
   
-  # Rule 1 — remove stale records (iterate the removal result directly).
+  # Rule 1  --  remove stale records (iterate the removal result directly).
   if [[ "${#RULE1_RECS[@]}" -gt 0 ]]; then
-    echo "Rule 1 — removing ${#SIDS_PRUNED[@]} stale record(s):"
+    echo "Rule 1  --  removing ${#SIDS_PRUNED[@]} stale record(s):"
     for sid in "${SIDS_PRUNED[@]}"; do
       [[ -n "$sid" ]] || continue
       echo "  removing record: $SANDBOX_DIR/.compose/$sid.yml"
@@ -341,12 +341,12 @@ main() {
     DID_WORK=true
   fi
   
-  # Rule 2 — remove orphaned resources. Fresh scan against the updated registry
+  # Rule 2  --  remove orphaned resources. Fresh scan against the updated registry
   # (the deleted records are gone, so their sessions are now orphaned here).
   TREATED_REMOVED_SIDS=()
   mapfile -t ORPHANS < <(rule2_orphan_resources)
   if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
-    echo "Rule 2 — removing ${#ORPHANS[@]} orphaned resource(s):"
+    echo "Rule 2  --  removing ${#ORPHANS[@]} orphaned resource(s):"
     for line in "${ORPHANS[@]}"; do
       IFS='|' read -r kind id _ <<< "$line"
       case "$kind" in

@@ -4,7 +4,7 @@
 # test/). Currently NON-GATING: reports the warning count and each finding.
 #
 # Baseline at introduction (20260823-07): 31 warnings. The gate becomes
-# blocking once the baseline reaches zero — fix findings, do not grow them.
+# blocking once the baseline reaches zero  --  fix findings, do not grow them.
 # Known false-positive classes: SC2034 on `printf -v` dynamic assignment
 # targets in draft_state.sh (suppress with a targeted directive, not a
 # blanket disable).
@@ -31,6 +31,6 @@ if (( WARNINGS > 0 )); then
 fi
 
 if (( WARNINGS == 0 )); then
-  echo "Clean — ready to enforce as a blocking gate."
+  echo "Clean  --  ready to enforce as a blocking gate."
 fi
 exit 0

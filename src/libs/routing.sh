@@ -4,9 +4,9 @@
 # Path layout conventions and routing functions for agent-sandbox.
 #
 # Provides:
-#   export_path              — unified export path constructor (replaces session_export_path
+#   export_path               --  unified export path constructor (replaces session_export_path
 #                              and output_export_path)
-#   resolve_source_for_draft  — resolve a source directory for draft operations
+#   resolve_source_for_draft   --  resolve a source directory for draft operations
 #
 # Export path convention:
 #   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<SESSION_ID>/
@@ -17,17 +17,17 @@
 #   LABEL        = optional human-readable descriptor
 #
 # Layout:
-#   $CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/     — exit exports
-#   $CHANGES_DIR/autosave/<SESSION_ID>/                  — autosave (single, overwritten)
-#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_ID>/      — package_branch
-#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/  — package_branch with label
+#   $CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/      --  exit exports
+#   $CHANGES_DIR/autosave/<SESSION_ID>/                   --  autosave (single, overwritten)
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<SESSION_ID>/       --  package_branch
+#   $OUTPUT_DIR/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/   --  package_branch with label
 #
 # Callers must provide SANDBOX_DIR before calling these functions. The routing
 # functions derive CHANGES_DIR, INPUT_DIR, and OUTPUT_DIR from SANDBOX_DIR.
 # They first try SESSION_STATE (written by sandbox-entrypoint after init), then
 # fall back to dirs_resolve for host-side callers without a running container.
 
-# No set -euo pipefail here — this file is always sourced, never executed directly.
+# No set -euo pipefail here  --  this file is always sourced, never executed directly.
 # Safety settings are inherited from the parent script.
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,10 +58,10 @@ _resolve_paths() {
 # Requires CHANGES_DIR and OUTPUT_DIR to be set (e.g. via _resolve_paths
 # or dirs_resolve) before calling.
 #
-# Channel name    → Directory
-#   session       → $CHANGES_DIR/session
-#   autosave      → $CHANGES_DIR/autosave
-#   bundles       → $OUTPUT_DIR/bundles
+# Channel name    -> Directory
+#   session       -> $CHANGES_DIR/session
+#   autosave      -> $CHANGES_DIR/autosave
+#   bundles       -> $OUTPUT_DIR/bundles
 #
 # Returns 1 with error message to stderr for unknown channel names.
 resolve_channel_base_dir() {
@@ -92,22 +92,22 @@ resolve_channel_base_dir() {
 #   <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/
 #
 # Args:
-#   PARENT_DIR  — base directory (CHANGES_DIR, OUTPUT_DIR, or INPUT_DIR)
-#   SUBDIR      — "session", "autosave", or "bundles"
-#   SESSION_ID  — mandatory 6-char session hash
-#   LABEL       — optional human-readable descriptor; inserted before SESSION_ID
+#   PARENT_DIR   --  base directory (CHANGES_DIR, OUTPUT_DIR, or INPUT_DIR)
+#   SUBDIR       --  "session", "autosave", or "bundles"
+#   SESSION_ID   --  mandatory 6-char session hash
+#   LABEL        --  optional human-readable descriptor; inserted before SESSION_ID
 #                 when present. Not used for autosave.
 #
 # Autosave is special: no EXPORT_TIME in the path (single directory, overwritten).
 #   export_path "$CHANGES_DIR" "autosave" "a1b2c3"
-#   → /.../session-diffs/autosave/a1b2c3
+#   -> /.../session-diffs/autosave/a1b2c3
 #
 # All other subdirs include EXPORT_TIME:
 #   export_path "$CHANGES_DIR" "session" "a1b2c3"
-#   → /.../session-diffs/session/20260408-120000-a1b2c3
+#   -> /.../session-diffs/session/20260408-120000-a1b2c3
 #
 #   export_path "$OUTPUT_DIR" "bundles" "a1b2c3" "my-feature"
-#   → /.../output/bundles/20260408-120000-my-feature-a1b2c3
+#   -> /.../output/bundles/20260408-120000-my-feature-a1b2c3
 export_path() {
   local PARENT_DIR="$1"
   local SUBDIR="$2"
@@ -122,7 +122,7 @@ export_path() {
   local EXPORT_TIME
   EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
 
-  # Autosave: no EXPORT_TIME in path — single directory, overwritten each cycle
+  # Autosave: no EXPORT_TIME in path  --  single directory, overwritten each cycle
   if [[ "$SUBDIR" == "autosave" ]]; then
     echo "${PARENT_DIR}/autosave/${SESSION_ID}"
     return 0
@@ -167,13 +167,13 @@ resolve_latest_dir() {
 # Prints tab-separated values: SOURCE_DIR<TAB>BUNDLE_NAME
 #
 # CHANNEL values:
-#   session  — resolve from $CHANGES_DIR/session/ (default)
-#   autosave — resolve from $CHANGES_DIR/autosave/
-#   bundles  — resolve from $OUTPUT_DIR/bundles/
+#   session   --  resolve from $CHANGES_DIR/session/ (default)
+#   autosave  --  resolve from $CHANGES_DIR/autosave/
+#   bundles   --  resolve from $OUTPUT_DIR/bundles/
 #
 # BUNDLE_ARG behaviours:
-#   non-empty — name-only, resolved under the channel's base directory
-#   empty     — auto-resolve to the newest directory under the channel
+#   non-empty  --  name-only, resolved under the channel's base directory
+#   empty      --  auto-resolve to the newest directory under the channel
 #
 # Returns 1 with error message to stderr on failure.
 resolve_source_for_draft() {
@@ -190,7 +190,7 @@ resolve_source_for_draft() {
   local BUNDLE_NAME=""
 
   if [[ -n "$BUNDLE_ARG" ]]; then
-    # Name-only resolution — reject anything that looks like an absolute path
+    # Name-only resolution  --  reject anything that looks like an absolute path
     if [[ "$BUNDLE_ARG" == /* ]]; then
       echo "Error: --bundle is name-only; use --diff=<path> for explicit file paths" >&2
       return 1

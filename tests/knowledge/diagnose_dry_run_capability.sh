@@ -44,7 +44,7 @@ for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
     fi
   else
     if [[ "$severity" == "CRITICAL" ]]; then
-      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+      fail "$libpath does not exist  --  IMAGE STALE [CRITICAL]"
     else
       fail "$libpath does not exist [WARN]"
     fi
@@ -71,7 +71,7 @@ echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 echo ""
 echo "=== 4. Script hygiene: local keyword ==="
 # dry_run_capability.sh is bind-mounted at /dry_run_capability.sh.
-# 'local' at the top level of an executed script is invalid in bash —
+# 'local' at the top level of an executed script is invalid in bash  -- 
 # it works only inside functions. Grep for local assignments that
 # are not inside a function definition.
 SCRIPT="/dry_run_capability.sh"
@@ -109,13 +109,13 @@ if [[ -f "$SCRIPT" ]]; then
     fail "$BAD_LOCALS top-level local usage(s) found in $SCRIPT (must use plain variables in executed scripts)"
   fi
 else
-  fail "$SCRIPT not found — cannot check local keyword hygiene"
+  fail "$SCRIPT not found  --  cannot check local keyword hygiene"
 fi
 
 # Also check that the check framework helpers (critical, warn_check) use
 # 'local' correctly (inside function bodies). If they don't, the pass/fail
 # counting would break.
-echo "  (check framework helpers defined in script — verified above by function tracking)"
+echo "  (check framework helpers defined in script  --  verified above by function tracking)"
 
 echo ""
 echo "=== 5. Mount expectations ==="
@@ -151,17 +151,17 @@ else
   fail "CHANGES_DIR missing (session-diffs mount not attached)"
 fi
 
-# Agent-only mounts — expected to be ABSENT in sandbox
+# Agent-only mounts  --  expected to be ABSENT in sandbox
 if [[ -d "$INPUT_DIR" ]]; then
-  pass "INPUT_DIR exists (unexpected — agent mount present in sandbox)"
+  pass "INPUT_DIR exists (unexpected  --  agent mount present in sandbox)"
 else
-  pass "INPUT_DIR absent (expected — agent-only mount)"
+  pass "INPUT_DIR absent (expected  --  agent-only mount)"
 fi
 
 if [[ -d "$OUTPUT_DIR" ]]; then
-  pass "OUTPUT_DIR exists (unexpected — agent mount present in sandbox)"
+  pass "OUTPUT_DIR exists (unexpected  --  agent mount present in sandbox)"
 else
-  pass "OUTPUT_DIR absent (expected — agent-only mount)"
+  pass "OUTPUT_DIR absent (expected  --  agent-only mount)"
 fi
 
 echo ""
@@ -169,7 +169,7 @@ echo "=== 6. diff_export live test ==="
 # Test that the diff pipeline can be invoked without error.
 # This validates that diff.sh was sourced and diff_export is available.
 source /opt/sandbox/lib/diff.sh 2>/dev/null || {
-  fail "Cannot source diff.sh — diff_export unavailable"
+  fail "Cannot source diff.sh  --  diff_export unavailable"
 }
 
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
@@ -229,10 +229,10 @@ echo "=== Summary ==="
 echo "Passed: $PASS, Failed: $FAIL"
 echo ""
 echo "If any checks fail:"
-echo "  1. Library sourcing → check /opt/sandbox/lib/ contents"
-echo "  2. Top-level local  → edit dry_run_capability.sh; remove 'local' from top-level vars"
-echo "  3. Mount failures   → check docker-compose.dry-run.yml volume definitions"
-echo "  4. diff_export fail  → check diff.sh is sourced before calling diff_export"
-echo "  5. Marker write fail → check CHANGES_DIR mount is writable"
+echo "  1. Library sourcing -> check /opt/sandbox/lib/ contents"
+echo "  2. Top-level local  -> edit dry_run_capability.sh; remove 'local' from top-level vars"
+echo "  3. Mount failures   -> check docker-compose.dry-run.yml volume definitions"
+echo "  4. diff_export fail  -> check diff.sh is sourced before calling diff_export"
+echo "  5. Marker write fail -> check CHANGES_DIR mount is writable"
 
 [[ "$FAIL" -eq 0 ]]

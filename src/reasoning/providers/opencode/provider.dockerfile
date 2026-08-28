@@ -7,9 +7,9 @@
 # Slow install layers (apt, npm, opencode-ai) live in base.dockerfile.
 #
 # Provider contract (harness interface):
-#   AGENT_HOME    — where OpenCode writes config and state
-#   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
+#   AGENT_HOME     --  where OpenCode writes config and state
+#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
 #                   and registers copy-out trap before exec-ing opencode
 ARG BASE_IMAGE=opencode-base
 FROM ${BASE_IMAGE}
@@ -62,7 +62,7 @@ ENV AGENT_HOME=/home/agentuser/.opencode
 # -------------------------
 # Working directories
 # -------------------------
-# sandbox/ is NOT pre-created here — it is provided exclusively by the
+# sandbox/ is NOT pre-created here  --  it is provided exclusively by the
 # capability layer container via --volumes-from. Pre-creating it would
 # shadow the capability layer's directory.
 
@@ -76,7 +76,7 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 
 # provider-entrypoint.sh seeds config and registers copy-out trap,
 # then execs opencode. Subcommand and args passed via compose:
-#   standard: no override — runs as `opencode` with no args
+#   standard: no override  --  runs as `opencode` with no args
 #   serve:    docker-compose.serve.yml sets command: ["serve", ...]
 #   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
 ENV PATH=/opt/sandbox/bin:$PATH

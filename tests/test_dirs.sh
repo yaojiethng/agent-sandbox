@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_dirs.sh — Unit tests for src/libs/dirs.sh path derivation.
+# tests/test_dirs.sh  --  Unit tests for src/libs/dirs.sh path derivation.
 #
 # dirs_resolve is a maintained internal seam with a stable API (env-overridable
 # defaults + BASE_DIR argument). These unit tests assert the contract directly

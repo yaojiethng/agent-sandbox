@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # -------------------------
 # System packages (root)
 # -------------------------
-# No Node/npm/opencode — the capability layer owns the sandbox and diff
+# No Node/npm/opencode  --  the capability layer owns the sandbox and diff
 # pipeline only. The reasoning layer container handles agent invocation.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         bash ca-certificates curl git jq rsync \

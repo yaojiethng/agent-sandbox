@@ -4,7 +4,7 @@
 # Tests the directory tree and files produced by a fresh onboard,
 # the guard check that prevents clobbering, and refresh mode behaviour.
 #
-# These are behavioural tests — they assert the contract (what files exist,
+# These are behavioural tests  --  they assert the contract (what files exist,
 # what .env contains) not the internal implementation. They should pass
 # regardless of how onboard.sh is structured internally.
 
@@ -15,7 +15,7 @@ test_setup
 
 ONBOARD_SCRIPT="$REPO_ROOT/scripts/onboard.sh"
 
-# UID Mapping handles permissions — no ACL prerequisite needed.
+# UID Mapping handles permissions  --  no ACL prerequisite needed.
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -111,7 +111,7 @@ test_fresh_onboard_creates_provider_configs() {
   if [[ "$PROVIDERS_FOUND" -gt 0 ]]; then
     pass "Provider config directories created ($PROVIDERS_FOUND providers)"
   else
-    fail "no provider config dirs under src/reasoning/providers/ — onboard had nothing to provision"
+    fail "no provider config dirs under src/reasoning/providers/  --  onboard had nothing to provision"
   fi
 }
 
@@ -251,7 +251,7 @@ run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
 run_test test_refresh_syncs_paths_preserves_config
 # ---------------------------------------------------------------------------
-# template_version — refresh version gating depends on reading the marker
+# template_version  --  refresh version gating depends on reading the marker
 # line from a template file. onboard.sh is now dual-use (rule 1.11 guard), so it
 # sources cleanly and the function is callable directly.
 # ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ test_template_version_reads_marker_line() {
   if [[ "$out" == "3" ]]; then
     pass "template_version extracts number from marker line"
   else
-    fail "template_version → '$out', want '3'"
+    fail "template_version -> '$out', want '3'"
   fi
 }
 
@@ -275,14 +275,14 @@ test_template_version_absent_marker_is_empty_and_clean() {
   local out rc
   out=$(template_version "$f" 2>/dev/null); rc=$?
   if [[ $rc -eq 0 && -z "$out" ]]; then
-    pass "template_version without marker → empty output, exit 0"
+    pass "template_version without marker -> empty output, exit 0"
   else
     fail "template_version absent marker: rc=$rc out='$out'"
   fi
 }
 
 test_template_version_real_makefile_template_parses() {
-  # The actual shipped template must carry a parseable numeric version —
+  # The actual shipped template must carry a parseable numeric version  -- 
   # refresh gating silently degrades to "unknown" otherwise.
   local out
   out=$(template_version_probe_real)

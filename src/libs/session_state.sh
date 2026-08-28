@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # src/libs/session_state.sh
-# Session state K/V store — reads and writes the SESSION_STATE file.
-# Cross-context — deployed to both host and container.
+# Session state K/V store  --  reads and writes the SESSION_STATE file.
+# Cross-context  --  deployed to both host and container.
 # Uses self-resolution for sibling sourcing (_self_dir).
 #
 # Provides:
-#   session_state_read   — read a key from SESSION_STATE
-#   session_state_write  — write a key=value pair to SESSION_STATE
+#   session_state_read    --  read a key from SESSION_STATE
+#   session_state_write   --  write a key=value pair to SESSION_STATE
 
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.

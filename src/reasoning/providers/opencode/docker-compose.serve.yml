@@ -1,6 +1,6 @@
 # providers/opencode/docker-compose.serve.yml
 # Serve mode overlay for the OpenCode provider.
-# Referenced directly by providers/opencode/run.sh — not copied to SANDBOX_DIR.
+# Referenced directly by providers/opencode/run.sh  --  not copied to SANDBOX_DIR.
 # Apply on top of docker-compose.yml:
 #   docker compose -f docker-compose.yml -f <repo>/providers/opencode/docker-compose.serve.yml up
 #

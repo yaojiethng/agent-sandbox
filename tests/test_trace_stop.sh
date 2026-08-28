@@ -186,7 +186,7 @@ test_stop_prune_has_registrybased_prune() {
   setup_stop_fixture "$FIXTURE_DIR"
   invoke_stop "$FIXTURE_DIR" --prune
 
-  # stop --prune delegates to prune.sh (now registry-based — no docker system prune).
+  # stop --prune delegates to prune.sh (now registry-based  --  no docker system prune).
   if trace_has "system prune"; then
     fail "stop --prune: docker system prune should not be invoked (registry-based prune)"
   else

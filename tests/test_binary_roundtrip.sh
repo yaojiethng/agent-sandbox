@@ -2,15 +2,15 @@
 # tests/test_binary_roundtrip.sh
 #
 # Binary file handling through the diff pipeline end-to-end:
-# git diff --binary → strip_index_lines → git apply → content verified.
+# git diff --binary -> strip_index_lines -> git apply -> content verified.
 #
-# Sections 1–2 pin external git behaviour our pipeline relies on
+# Sections 1-2 pin external git behaviour our pipeline relies on
 # (default diffs carry no applyable binary payload; index-line SHA
-# mismatch does not block cross-repo apply). Sections 3–7 assert our
+# mismatch does not block cross-repo apply). Sections 3-7 assert our
 # pipeline contract: selective index stripping keeps binary patches
 # applyable while stripping cosmetic text index lines.
 #
-# Promoted from tests/knowledge/knowledge_binary_diff_apply.sh — the
+# Promoted from tests/knowledge/knowledge_binary_diff_apply.sh  --  the
 # seams are deterministic (git only), so per testing_policy.md this
 # belongs in the discovered suite, not in knowledge/.
 #
@@ -33,7 +33,7 @@ test_setup
 # Helpers
 # ---------------------------------------------------------------
 
-# make_binary FILE — 1500 bytes of known 0x00-01-02 pattern
+# make_binary FILE  --  1500 bytes of known 0x00-01-02 pattern
 make_binary() {
   local FILE="$1"
   printf '\x00\x01\x02%.0s' $(seq 1 500) > "$FILE"
@@ -68,9 +68,9 @@ test_default_diff_has_no_applyable_binary_payload() {
   _init_repo_with_binary "$FIXTURE_DIR/s1_apply"
 
   if git -C "$FIXTURE_DIR/s1_apply" apply "$FIXTURE_DIR/default.diff" 2>/dev/null; then
-    fail "default diff (with index) applied — unexpected"
+    fail "default diff (with index) applied  --  unexpected"
   else
-    pass "default diff (with index) fails to apply (expected — no binary content)"
+    pass "default diff (with index) fails to apply (expected  --  no binary content)"
   fi
 
   if git -C "$FIXTURE_DIR/s1_apply" apply "$FIXTURE_DIR/binary.diff" 2>/dev/null; then
@@ -96,7 +96,7 @@ test_cross_repo_apply_tolerates_sha_mismatch() {
   echo "text line 2" >> "$FIXTURE_DIR/repo_a/file.txt"
   git -C "$FIXTURE_DIR/repo_a" diff --binary > "$FIXTURE_DIR/cross_repo.diff"
 
-  # Repo B (simulates host — same files, different history)
+  # Repo B (simulates host  --  same files, different history)
   make_repo "$FIXTURE_DIR/repo_b"
   make_binary "$FIXTURE_DIR/repo_b/file.bin"
   echo "text content" > "$FIXTURE_DIR/repo_b/file.txt"
@@ -109,7 +109,7 @@ test_cross_repo_apply_tolerates_sha_mismatch() {
   if [[ "$SHA_A" != "$SHA_B" ]]; then
     pass "repo A and B have different HEAD SHAs"
   else
-    fail "repo A and B have the same SHA — test setup broken"
+    fail "repo A and B have the same SHA  --  test setup broken"
     return
   fi
 
@@ -134,7 +134,7 @@ test_cross_repo_apply_tolerates_sha_mismatch() {
 }
 
 # ===============================================================
-# Section 3: selective index stripping — exactly one index line
+# Section 3: selective index stripping  --  exactly one index line
 # survives (the binary file's), and the patch applies cleanly.
 # ===============================================================
 test_selective_strip_keeps_single_binary_index() {
@@ -216,7 +216,7 @@ test_binary_addition_patch_applies() {
 }
 
 # ===============================================================
-# Section 6: naive `grep -v '^index '` destroys binary patches —
+# Section 6: naive `grep -v '^index '` destroys binary patches  -- 
 # the root cause of the patch-003 failure (20260504-03). The
 # selective filter must keep such patches applyable.
 # ===============================================================
@@ -245,7 +245,7 @@ test_grep_v_index_destroys_binary_patches() {
   if git -C "$FIXTURE_DIR/s6_bad" apply "$FIXTURE_DIR/broken.diff" 2>/dev/null; then
     fail "grep -v '^index ' patch applied unexpectedly (binary data may have been lost)"
   else
-    pass "grep -v '^index ' patch fails to apply (expected — index line missing for binary)"
+    pass "grep -v '^index ' patch fails to apply (expected  --  index line missing for binary)"
   fi
 
   if grep -q "line 2" "$FIXTURE_DIR/s6_good/file.txt"; then
@@ -256,7 +256,7 @@ test_grep_v_index_destroys_binary_patches() {
 }
 
 # ===============================================================
-# Section 7: sequential mixed patches (text → binary → text+binary),
+# Section 7: sequential mixed patches (text -> binary -> text+binary),
 # generated per-commit as package_commits would.
 # ===============================================================
 test_sequential_mixed_patches_apply() {
@@ -302,7 +302,7 @@ test_sequential_mixed_patches_apply() {
   done
 
   if [[ "$ALL_APPLIED" == true ]]; then
-    pass "all 3 sequential patches (text → binary → text+binary) apply cleanly"
+    pass "all 3 sequential patches (text -> binary -> text+binary) apply cleanly"
   fi
 
   if [[ -f "$FIXTURE_DIR/s7_apply/feature-a.txt" && -f "$FIXTURE_DIR/s7_apply/feature-b.txt" ]]; then

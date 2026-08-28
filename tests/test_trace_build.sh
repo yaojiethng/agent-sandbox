@@ -55,7 +55,7 @@ invoke_build() {
   ) > /dev/null 2>&1 || true
 }
 
-# invoke_build_err — like invoke_build but captures combined stdout+stderr and
+# invoke_build_err  --  like invoke_build but captures combined stdout+stderr and
 # the exit code, so tests can assert on build failure messages and semantics.
 invoke_build_err() {
   (
@@ -141,11 +141,11 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
   fi
 }
 
-# The (string-as-list → array) refactor is behavior-preserving at the LIST
+# The (string-as-list -> array) refactor is behavior-preserving at the LIST
 # level: for path sets whose entries are all whitespace-free, the old unquoted
 # word-split call and the new array call produce the SAME argument list. So a
 # content-hash pin would NOT detect a regression to the old string-as-list
-# form (identical arrays → identical hash) and would spurious-fail on any
+# form (identical arrays -> identical hash) and would spurious-fail on any
 # legitimate edit to a source file. The correct lock is the list construction
 # itself: exact ordered membership. A hash test below only checks the plumbing
 # runs end-to-end, not the hash's value.
@@ -194,7 +194,7 @@ test_container_sig_sources_list() {
 }
 
 # End-to-end plumbing check: container_sig over the loaded sources returns a
-# 64-hex hash (NOT pinned to a value — content is environmental and shifts on
+# 64-hex hash (NOT pinned to a value  --  content is environmental and shifts on
 # any edit). The behavior-lock for the refactor is the list test above.
 test_container_sig_hashes_real_sources() {
   local -a sandbox
@@ -229,8 +229,8 @@ test_container_sig_missing_path_fails_with_diagnostic() {
   fi
 }
 
-# The preflight warning — start's staleness surface (start_agent.sh → preflight
-# → _check_container_sig) — delegates the decision to the shared image_is_stale
+# The preflight warning  --  start's staleness surface (start_agent.sh -> preflight
+# -> _check_container_sig)  --  delegates the decision to the shared image_is_stale
 # predicate: a baked container-sig differing from the recomputed source sig
 # warns, a matching one stays silent. Locks the one-criterion-two-consumers
 # contract (20260821-09/10).
@@ -245,7 +245,7 @@ test_check_container_sig_warns_via_shared_predicate() {
     fail "preflight: expected stale warning via shared predicate, got: $out"
   fi
 
-  # Fresh: both images carry their own recomputed sig → no warning.
+  # Fresh: both images carry their own recomputed sig -> no warning.
   local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "pi")
   local agent_sig; agent_sig="$(container_sig "$REPO_ROOT" "${s[@]}")"
   local -a ss=(); mapfile -t ss < <(_sandbox_sig_sources)
@@ -295,7 +295,7 @@ EOF
 }
 
 # current_sig is deterministic per (type, repo_root, provider) and distinct
-# across types — a pure recomputation on every call (the former memoization was
+# across types  --  a pure recomputation on every call (the former memoization was
 # removed as inert; see handover 20260823-09).
 test_current_sig_deterministic() {
   local a1 a2 s1 s2

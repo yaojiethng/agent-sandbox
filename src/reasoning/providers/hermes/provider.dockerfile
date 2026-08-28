@@ -7,9 +7,9 @@
 # Slow install layers (apt, uv, Hermes source, Playwright) live in base.dockerfile.
 #
 # Provider contract (harness interface):
-#   AGENT_HOME    — where Hermes writes config, sessions, and memories
-#   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
+#   AGENT_HOME     --  where Hermes writes config, sessions, and memories
+#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
 #                   and registers copy-out trap before exec-ing hermes
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
@@ -62,7 +62,7 @@ ENV AGENT_HOME=/home/agentuser/.hermes
 # -------------------------
 # Working directories
 # -------------------------
-# sandbox/ is NOT pre-created here — provided by the capability layer
+# sandbox/ is NOT pre-created here  --  provided by the capability layer
 # via --volumes-from.
 
 WORKDIR /home/agentuser/sandbox

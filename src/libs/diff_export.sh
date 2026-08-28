@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # src/libs/diff_export.sh
-# diff_export orchestrator — packages session artefacts into an output directory.
-# Cross-context — deployed to capability container (sandbox-entrypoint).
+# diff_export orchestrator  --  packages session artefacts into an output directory.
+# Cross-context  --  deployed to capability container (sandbox-entrypoint).
 # Uses self-resolution for sibling sourcing (_self_dir).
 #
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/export_status.sh"
 source "$_self_dir/package_branch.sh"
 # Provides:
-#   diff_export          — package session artefacts via package-branch + export time
-#   _write_export_status — write .export-status atomically
-#   _write_export_error_log — write timestamped error log
-#   wait_git_lockfile    — poll for git index.lock to disappear
+#   diff_export           --  package session artefacts via package-branch + export time
+#   _write_export_status  --  write .export-status atomically
+#   _write_export_error_log  --  write timestamped error log
+#   wait_git_lockfile     --  poll for git index.lock to disappear
 #
 # Reliability features:
 #   - Writes .export-status (SUCCESS/FAIL + timestamp) after every run
@@ -40,7 +40,7 @@ diff_export() {
 
   # Read init_sha from SESSION_STATE for inclusion in .export-status.
   # If the sandbox hasn't been initialised yet (no SESSION_STATE),
-  # init_sha is left empty — .export-status will be written without it.
+  # init_sha is left empty  --  .export-status will be written without it.
   local _init_sha=""
   _init_sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || true
 
@@ -61,7 +61,7 @@ diff_export() {
 
   package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "true" 2> >(tee "$_pb_stderr" >&2) || {
     local _exit_code=$?
-    echo "diff_export: package_branch failed (exit $_exit_code) — export incomplete" >&2
+    echo "diff_export: package_branch failed (exit $_exit_code)  --  export incomplete" >&2
 
     local _stderr_dump
     _stderr_dump=$(_read_and_remove_pb_stderr)
@@ -137,7 +137,7 @@ wait_git_lockfile() {
   done
 
   if [[ -f "$_lockfile" ]]; then
-    echo "wait_git_lockfile: lockfile persisted after ${_timeout}s — proceeding anyway" >&2
+    echo "wait_git_lockfile: lockfile persisted after ${_timeout}s  --  proceeding anyway" >&2
     return 1
   fi
   return 0

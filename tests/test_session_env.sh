@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # tests/test_session_env.sh
-# Unit tests for src/libs/session_env.sh — host-side session environment
+# Unit tests for src/libs/session_env.sh  --  host-side session environment
 # bootstrap (.env loading, git validation, name/branch derivation).
 #
 # Covers:
-#   session_env_common_init — .env parse rules (comments, blanks, CR/LF/TAB in
+#   session_env_common_init  --  .env parse rules (comments, blanks, CR/LF/TAB in
 #                             keys, space-trimmed values), missing-.env failure,
 #                             non-git and commit-less project rejection,
 #                             HOST_UID/GID + ENV_FILE exports
-#   session_env_names       — branch sanitisation, detached-HEAD fallback,
+#   session_env_names        --  branch sanitisation, detached-HEAD fallback,
 #                             deterministic image/container naming, delivery
 #                             var defaults vs preserved overrides
 
@@ -19,14 +19,14 @@ test_setup
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/session_env.sh"
 
-# make_sandbox DIR — onboarding-minimal sandbox skeleton (only what the lib reads)
+# make_sandbox DIR  --  onboarding-minimal sandbox skeleton (only what the lib reads)
 make_sandbox() {
   local DIR="$1"
   mkdir -p "$DIR"
 }
 
 # =============================================================================
-# session_env_common_init — .env parsing
+# session_env_common_init  --  .env parsing
 # =============================================================================
 
 test_env_missing_file_fails_with_onboard_hint() {
@@ -82,14 +82,14 @@ test_env_inline_comment_is_kept_as_value() {
   session_env_common_init "$SBX" proj "$PROJ" >/dev/null 2>&1
 
   if [[ "${K:-}" == "val # not-a-comment" ]]; then
-    pass ".env parser keeps inline text after value (no inline comments) — pinned"
+    pass ".env parser keeps inline text after value (no inline comments)  --  pinned"
   else
-    fail "inline handling changed: K='[${K:-}]' — update this pin if intentional"
+    fail "inline handling changed: K='[${K:-}]'  --  update this pin if intentional"
   fi
 }
 
 # =============================================================================
-# session_env_common_init — validation + derived exports
+# session_env_common_init  --  validation + derived exports
 # =============================================================================
 
 test_common_init_rejects_non_git_project() {

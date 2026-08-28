@@ -1,11 +1,11 @@
-# docker-compose.mount.yml — MOUNT (bind-mount) delivery overlay.
+# docker-compose.mount.yml  --  MOUNT (bind-mount) delivery overlay.
 # Merged by src/build/compose.sh (compose_generate) when SANDBOX_TYPE=mount.
 # The agent works directly on the host worktree, bind-mounted at
-# /home/agentuser/sandbox. No snapshot, no named sandbox volume — the worktree
-# is the durable place (see docs/architecture/execution_model.md — Container
+# /home/agentuser/sandbox. No snapshot, no named sandbox volume  --  the worktree
+# is the durable place (see docs/architecture/execution_model.md  --  Container
 # State Contract; design record devlog/discussions/20260730-design-settled-mount_model.md).
 #
-# Path mapping: ${WORKTREE_DIR} (host) → /home/agentuser/sandbox (container)
+# Path mapping: ${WORKTREE_DIR} (host) -> /home/agentuser/sandbox (container)
 # WORKTREE_DIR defaults to ${SANDBOX_DIR}/.worktree in run_agent.sh; a custom
 # mount point can override it (injected into compose at generation).
 

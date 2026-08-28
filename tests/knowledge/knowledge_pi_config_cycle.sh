@@ -228,8 +228,8 @@ test_real_config_state() {
     if [[ -f "$path" ]]; then
       local size skills prompts
       size=$(wc -c < "$path")
-      grep -q '"skills"' "$path" && skills="PRESENT ✓" || skills="MISSING ✗"
-      grep -q '"prompts"' "$path" && prompts="PRESENT ✓" || prompts="MISSING ✗"
+      grep -q '"skills"' "$path" && skills="PRESENT" || skills="MISSING"
+      grep -q '"prompts"' "$path" && prompts="PRESENT" || prompts="MISSING"
       echo "    ${label%% (*)}: ${size} bytes, skills=${skills}, prompts=${prompts}"
     else
       echo "    ${label%% (*)}: NOT FOUND"

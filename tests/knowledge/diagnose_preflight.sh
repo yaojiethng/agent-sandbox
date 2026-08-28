@@ -81,7 +81,7 @@ _preflight_crit() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "PASS: $msg"
   else
-    echo "FAIL: $msg${_err:+ — ${_err%%$'\''\n'\''*}}" >&2
+    echo "FAIL: $msg${_err:+  --  ${_err%%$'\''\n'\''*}}" >&2
   fi
 }
 PREFLIGHT_FAILS=0
@@ -132,7 +132,7 @@ _preflight_crit() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT FAIL: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT FAIL: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
     PREFLIGHT_FAILS=$(( PREFLIGHT_FAILS + 1 ))
   fi
 }
@@ -142,7 +142,7 @@ _preflight_warn() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT WARN: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT WARN: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
   fi
 }
 
@@ -187,9 +187,9 @@ echo "Passed: $PASS, Failed: $FAIL"
 
 echo ""
 echo "If any checks fail:"
-echo "  1. set -e safety failure → _preflight_crit uses _err=\$(cmd) instead of if _err=\$(cmd); then"
-echo "  2. stderr capture failure → the 2>&1 >/dev/null redirection may be misordered"
-echo "  3. SESSION_STATE failure  → snapshot_init_git did not write it, or .git is missing"
-echo "  4. Mount failures         → check compose volume definitions for the sandbox service"
+echo "  1. set -e safety failure -> _preflight_crit uses _err=\$(cmd) instead of if _err=\$(cmd); then"
+echo "  2. stderr capture failure -> the 2>&1 >/dev/null redirection may be misordered"
+echo "  3. SESSION_STATE failure  -> snapshot_init_git did not write it, or .git is missing"
+echo "  4. Mount failures         -> check compose volume definitions for the sandbox service"
 
 [[ "$FAIL" -eq 0 ]]

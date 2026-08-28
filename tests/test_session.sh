@@ -3,11 +3,11 @@
 # Tests for libs/session.sh
 #
 # Covers:
-#   validate_project_dir     — checks existence, git repo, commits
-#   session_state_read       — key-value lookup from SESSION_STATE
-#   session_state_write      — key-value append to SESSION_STATE
+#   validate_project_dir      --  checks existence, git repo, commits
+#   session_state_read        --  key-value lookup from SESSION_STATE
+#   session_state_write       --  key-value append to SESSION_STATE
 #
-# Note: resolve_session_dir was removed in A.2 — routing concerns moved
+# Note: resolve_session_dir was removed in A.2  --  routing concerns moved
 # to libs/routing.sh (tested in test_routing.sh).
 
 set -uo pipefail

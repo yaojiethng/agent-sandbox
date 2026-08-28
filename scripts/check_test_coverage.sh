@@ -21,7 +21,7 @@ check_file() {
   MATCHES=$(grep -rl "$BASENAME" "$TEST_DIR" 2>/dev/null | grep -v "^$TEST_DIR/libs/" || true)
 
   if [[ -z "$MATCHES" ]]; then
-    echo "  (no test files found — review whether coverage is needed)"
+    echo "  (no test files found  --  review whether coverage is needed)"
   else
     while IFS= read -r MATCH; do
       [[ -n "$MATCH" ]] || continue

@@ -1,4 +1,4 @@
-# docker-compose.copy.yml — COPY delivery overlay (default).
+# docker-compose.copy.yml  --  COPY delivery overlay (default).
 # Merged by src/build/compose.sh (compose_generate) when SANDBOX_TYPE=copy.
 # Carries the copy-in wiring that bind-mount compose must never inherit:
 #   - the SESSION_ID-scoped named sandbox volume (per-run state persistence,
@@ -7,12 +7,12 @@
 #     at session start)
 #
 # Volume name incorporates SESSION_ID so each session gets its own volume.
-# Managed by compose lifecycle — preserved across `make stop` / `make start`;
+# Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
 # destroyed by `docker compose down -v` or pruned via `make prune --volumes`.
 # Labels enable lifecycle tooling (prune, inspect, volume discovery) without
 # project-name prefix parsing.
 #
-# Path mapping: ${SNAPSHOT_DIR} (host) → /home/agentuser/.snapshot (container)
+# Path mapping: ${SNAPSHOT_DIR} (host) -> /home/agentuser/.snapshot (container)
 
 volumes:
   {{SESSION_ID}}-sandbox-data:

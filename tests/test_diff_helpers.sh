@@ -489,7 +489,7 @@ acmezW@9+OnG'
   local OUTPUT
   OUTPUT=$(echo "$INPUT" | strip_index_lines)
 
-  # Count remaining index lines — should be exactly 1 (binary only)
+  # Count remaining index lines  --  should be exactly 1 (binary only)
   local COUNT
   COUNT=$(echo "$OUTPUT" | grep -c '^index ' || echo 0)
 

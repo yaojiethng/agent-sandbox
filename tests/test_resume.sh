@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_resume.sh
-# Command-shape tests for scripts/resume_agent.sh — the split-out resume command
+# Command-shape tests for scripts/resume_agent.sh  --  the split-out resume command
 # (F2 two-command design, design session `20260821-02`, impl `20260821-03`).
 
 set -uo pipefail
@@ -88,20 +88,20 @@ test_list_provider_filter() {
   fi
 }
 
-# --list --provider=<n> with no matching records → clear error, non-zero.
+# --list --provider=<n> with no matching records -> clear error, non-zero.
 test_list_provider_no_match() {
   local sandbox
   sandbox="$(build_fixture "nonnatch")"
   local out rc
   out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/nonnatch/project" --sandbox="$sandbox" --list --provider=nope 2>&1)"; rc=$?
   if [[ $rc -ne 0 ]] && echo "$out" | grep -q "no resumable sessions for provider"; then
-    pass "resume --list --provider=<n>: no match → clear error, non-zero"
+    pass "resume --list --provider=<n>: no match -> clear error, non-zero"
   else
     fail "resume --list --provider=<n>: expected no-match error, got rc=$rc: $out"
   fi
 }
 
-# Bare resume (no target flags) → help hinting --list / --interactive, non-zero.
+# Bare resume (no target flags) -> help hinting --list / --interactive, non-zero.
 test_bare_resume_prints_help() {
   local out rc
   out="$(bash "$RESUME" 2>&1)"; rc=$?
@@ -114,7 +114,7 @@ test_bare_resume_prints_help() {
   fi
 }
 
-# Unknown flag → help + non-zero (D2).
+# Unknown flag -> help + non-zero (D2).
 test_unknown_flag_prints_help() {
   local out rc
   out="$(bash "$RESUME" --bogus 2>&1)"; rc=$?
@@ -135,13 +135,13 @@ test_interactive_confirm_abort() {
      && echo "$out" | grep -q "Resume which session?" \
      && echo "$out" | grep -qi "pi-agent\|abc123" \
      && echo "$out" | grep -qi "aborted"; then
-    pass "resume --interactive: picker + confirm, abort on 'n' → non-zero"
+    pass "resume --interactive: picker + confirm, abort on 'n' -> non-zero"
   else
     fail "resume --interactive: expected picker+abort on n, got rc=$rc: $out"
   fi
 }
 
-# --interactive with no records → clear error, non-zero.
+# --interactive with no records -> clear error, non-zero.
 test_interactive_no_records() {
   local dir="$FIXTURE_DIR/int_none"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -152,13 +152,13 @@ EOF
   local out rc
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?
   if [[ $rc -ne 0 ]] && echo "$out" | grep -q "No resumable sessions found"; then
-    pass "resume --interactive: no records → clear error, non-zero"
+    pass "resume --interactive: no records -> clear error, non-zero"
   else
     fail "resume --interactive: expected no-records error, got rc=$rc: $out"
   fi
 }
 
-# --provider alone (no --list / --interactive / --session-id) → guidance, non-zero.
+# --provider alone (no --list / --interactive / --session-id) -> guidance, non-zero.
 test_provider_alone_guidance() {
   local out rc
   out="$(bash "$RESUME" --provider=pi 2>&1)"; rc=$?
@@ -169,7 +169,7 @@ test_provider_alone_guidance() {
   fi
 }
 
-# --session-id with a missing record → clear error, non-zero.
+# --session-id with a missing record -> clear error, non-zero.
 test_session_id_missing_record() {
   local dir="$FIXTURE_DIR/missing"
   mkdir -p "$dir/sandbox/.compose" "$dir/project/.git"
@@ -182,7 +182,7 @@ EOF
   local out rc
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --session-id=nope 2>&1)"; rc=$?
   if [[ $rc -ne 0 ]] && echo "$out" | grep -qi "no session record"; then
-    pass "resume --session-id: missing record → clear error, non-zero"
+    pass "resume --session-id: missing record -> clear error, non-zero"
   else
     fail "resume --session-id: expected 'no session record', got rc=$rc: $out"
   fi

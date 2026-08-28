@@ -2,8 +2,8 @@
 # Tests for libs/routing.sh
 #
 # Covers:
-#   export_path               — unified path construction
-#   resolve_source_for_draft  — session resolution for draft operations
+#   export_path                --  unified path construction
+#   resolve_source_for_draft   --  session resolution for draft operations
 
 set -uo pipefail
 
@@ -201,7 +201,7 @@ test_resolve_channel_base_dir_session() {
   local RESULT
   RESULT=$(resolve_channel_base_dir "session") || { fail "resolve_channel_base_dir session failed"; return; }
   if [[ "$RESULT" == "${CHANGES_DIR}/session" ]]; then
-    pass "resolve_channel_base_dir: session → CHANGES_DIR/session"
+    pass "resolve_channel_base_dir: session -> CHANGES_DIR/session"
   else
     fail "resolve_channel_base_dir session: expected ${CHANGES_DIR}/session, got $RESULT"
   fi
@@ -214,7 +214,7 @@ test_resolve_channel_base_dir_autosave() {
   local RESULT
   RESULT=$(resolve_channel_base_dir "autosave") || { fail "resolve_channel_base_dir autosave failed"; return; }
   if [[ "$RESULT" == "${CHANGES_DIR}/autosave" ]]; then
-    pass "resolve_channel_base_dir: autosave → CHANGES_DIR/autosave"
+    pass "resolve_channel_base_dir: autosave -> CHANGES_DIR/autosave"
   else
     fail "resolve_channel_base_dir autosave: expected ${CHANGES_DIR}/autosave, got $RESULT"
   fi
@@ -229,7 +229,7 @@ test_resolve_channel_base_dir_bundles() {
   local RESULT
   RESULT=$(resolve_channel_base_dir "bundles") || { fail "resolve_channel_base_dir bundles failed"; return; }
   if [[ "$RESULT" == "${OUTPUT_DIR}/bundles" ]]; then
-    pass "resolve_channel_base_dir: bundles → OUTPUT_DIR/bundles"
+    pass "resolve_channel_base_dir: bundles -> OUTPUT_DIR/bundles"
   else
     fail "resolve_channel_base_dir bundles: expected ${OUTPUT_DIR}/bundles, got $RESULT"
   fi
@@ -297,7 +297,7 @@ test_latest_dir_empty_base_fails() {
 }
 
 test_latest_dir_picks_lexicographically_last() {
-  # Implementation is `find | sort | tail` — the contract is LEXICOGRAPHIC,
+  # Implementation is `find | sort | tail`  --  the contract is LEXICOGRAPHIC,
   # not mtime. Pin that so nobody 'fixes' it silently.
   local B="$FIXTURE_DIR/latest_base"
   mkdir -p "$B/aaa" "$B/mmm" "$B/zzz"
@@ -313,7 +313,7 @@ test_latest_dir_picks_lexicographically_last() {
 }
 
 # =============================================================================
-# _resolve_paths — SESSION_STATE overrides vs dirs_resolve fallback
+# _resolve_paths  --  SESSION_STATE overrides vs dirs_resolve fallback
 # =============================================================================
 
 test_resolve_paths_state_overrides_win() {
@@ -388,7 +388,7 @@ run_test test_resolve_channel_base_dir_bundles
 # resolve_latest_dir
 # =============================================================================
 
-# Missing base directory → exit 1, no output.
+# Missing base directory -> exit 1, no output.
 test_resolve_latest_dir_missing_base_fails() {
   local out rc
   out=$(resolve_latest_dir "$FIXTURE_DIR/does-not-exist" 2>/dev/null); rc=$?
@@ -399,7 +399,7 @@ test_resolve_latest_dir_missing_base_fails() {
   fi
 }
 
-# Empty base directory → exit 1, no output.
+# Empty base directory -> exit 1, no output.
 test_resolve_latest_dir_empty_base_fails() {
   mkdir -p "$FIXTURE_DIR/empty_base"
   local out rc
@@ -412,7 +412,7 @@ test_resolve_latest_dir_empty_base_fails() {
 }
 
 # Files are ignored; lexicographic max wins. Session dirs are zero-padded
-# timestamps, so lexicographic order equals chronological order — pin that
+# timestamps, so lexicographic order equals chronological order  --  pin that
 # assumption with realistic names.
 test_resolve_latest_dir_picks_lexicographic_max_ignoring_files() {
   local B="$FIXTURE_DIR/latest_base_dated"
@@ -423,7 +423,7 @@ test_resolve_latest_dir_picks_lexicographic_max_ignoring_files() {
   if [[ "$out" == "$B/20260601-010000" ]]; then
     pass "resolve_latest_dir picks lexicographic max dir, ignores files"
   else
-    fail "resolve_latest_dir → '$out', want '$B/20260601-010000'"
+    fail "resolve_latest_dir -> '$out', want '$B/20260601-010000'"
   fi
 }
 

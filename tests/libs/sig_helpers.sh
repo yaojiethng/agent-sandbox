@@ -6,9 +6,9 @@
 # carry. Sourced by test_prune.sh, test_resume.sh and test_trace_build.sh.
 # Requires REPO_ROOT in the caller's scope.
 #
-#   sandbox_sig              — current container-sig of the sandbox layer
-#   agent_sig <provider>     — current container-sig of an agent layer
-#   fresh_sig_map            — per-image `image:sig` map marking the pi
+#   sandbox_sig               --  current container-sig of the sandbox layer
+#   agent_sig <provider>      --  current container-sig of an agent layer
+#   fresh_sig_map             --  per-image `image:sig` map marking the pi
 #                              provider's agent + sandbox images fresh
 
 sandbox_sig() {

@@ -17,7 +17,7 @@ source "$REPO_ROOT/src/libs/package_branch.sh"
 FIXTURE="$FIXTURE_DIR"
 
 # ===================================================================
-# diff_export — entrypoint dispatch proxy
+# diff_export  --  entrypoint dispatch proxy
 # ===================================================================
 
 test_diff_export_creates_output() {
@@ -145,11 +145,11 @@ test_diff_export_missing_session_state() {
   # diff_export currently swallows package_branch's error.
   # This test asserts that diff_export returns non-zero when
   # package_branch fails due to missing SESSION_STATE.
-  # Initially FAILS — fix libs/diff.sh to propagate the error.
+  # Initially FAILS  --  fix libs/diff.sh to propagate the error.
   if ! diff_export "$DIR" "$OUTPUT_DIR" 2>/dev/null; then
     pass "diff_export fails when SESSION_STATE is missing"
   else
-    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0 — needs fix)"
+    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0  --  needs fix)"
   fi
 }
 

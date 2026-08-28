@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/workflows/confirm.sh
 # Confirm workflow: rebase draft branch onto target, fast-forward merge, delete draft.
-# Sourced by agent-sandbox.sh — not executed standalone.
+# Sourced by agent-sandbox.sh  --  not executed standalone.
 # Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
 
 set -euo pipefail
@@ -14,7 +14,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
 # =============================================================================
-# confirm_run — rebase, fast-forward merge, delete draft branch
+# confirm_run  --  rebase, fast-forward merge, delete draft branch
 # =============================================================================
 
 confirm_run() {
@@ -40,7 +40,7 @@ confirm_run() {
 
   # 1. Drop .draft-state commit (if found)
   if [[ -n "${DRAFT_STATE_COMMIT:-}" ]]; then
-    # Savepoint before rebase — roll back to this on failure.
+    # Savepoint before rebase  --  roll back to this on failure.
     # Local tag, never pushed by default git push.
     git -C "$PROJECT_DIR" tag -d confirm-savepoint 2>/dev/null || true
     git -C "$PROJECT_DIR" tag confirm-savepoint
@@ -55,7 +55,7 @@ confirm_run() {
       return 1
     fi
   else
-    echo ".draft-state commit not found — skipping drop step."
+    echo ".draft-state commit not found  --  skipping drop step."
   fi
 
   # 2. Rebase draft onto target
@@ -73,7 +73,7 @@ confirm_run() {
     return 1
   fi
 
-  # Success — clean up savepoint
+  # Success  --  clean up savepoint
   git -C "$PROJECT_DIR" tag -d confirm-savepoint 2>/dev/null || true
 
   # 3. Fast-forward merge
@@ -90,7 +90,7 @@ confirm_run() {
 }
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -109,7 +109,7 @@ EOF
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox confirm
+# main  --  entry point when exec'd by agent-sandbox confirm
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.

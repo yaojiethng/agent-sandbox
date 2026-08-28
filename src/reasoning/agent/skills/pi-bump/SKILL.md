@@ -7,7 +7,7 @@ description: Bump the pinned pi version in the agent-sandbox reasoning layer. Us
 
 Updates the pinned `@earendil-works/pi-coding-agent` version used by the
 pi reasoning-layer provider, in the repo config (the source of truth). The
-running container's pi is updated at the next image rebuild — it is not updated
+running container's pi is updated at the next image rebuild  --  it is not updated
 in place during a bump.
 
 ## Version policy
@@ -39,7 +39,7 @@ the same data `pi update --self` would use, and commit the pin.
 |---|---|
 | `src/reasoning/providers/pi/base.dockerfile` | `RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@<NEW>` |
 | `src/reasoning/providers/pi/config/agent/settings.json` | `"lastChangelogVersion": "<NEW>"` |
-| `devlog/roadmap_future.md` | Refresh the stale pinned-version note under M7 → Dependency Security |
+| `devlog/roadmap_future.md` | Refresh the stale pinned-version note under M7 -> Dependency Security |
 
 ## Steps
 
@@ -69,7 +69,7 @@ subsequent starts. Source the notes from
 - Bump `lastChangelogVersion` in
   `src/reasoning/providers/pi/config/agent/settings.json`.
 - Refresh the pinned-version note in `devlog/roadmap_future.md`
-  (M7 → Dependency Security) to the same `<NEW>`.
+  (M7 -> Dependency Security) to the same `<NEW>`.
 
 Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for
 immediate record consistency (it is reseeded from the baked template on next
@@ -82,7 +82,7 @@ container start regardless).
       `roadmap_future.md` note
 - [ ] No stale `0.x` pin remains in those files (`grep -rn "0\.8[0-3]\."`)
 - [ ] `settings.json` is valid JSON (`node -e "require('./... settings.json')"`)
-- [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh` — its version
+- [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh`  --  its version
       fixtures are intentional and decoupled from the installed version
 
 ### 5. Commit
@@ -102,7 +102,7 @@ skill addition makes this a workflow commit rather than a chore.
 - `lastChangelogVersion` only gates the post-update changelog display. With
   `PI_SKIP_VERSION_CHECK=1` it is effectively the installed-version record;
   keeping it in step prevents drift and avoids a huge changelog on first start.
-- No changelog entry in `devlog/changelog.md` — version bumps are not milestone
+- No changelog entry in `devlog/changelog.md`  --  version bumps are not milestone
   completions.
 - No lockfile is produced for the global install (open roadmap item under M7
   Dependency Security: "Consider lockfile for npm install -g dependencies").

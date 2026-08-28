@@ -67,7 +67,7 @@ invoke_run_agent() {
   ) > /dev/null 2>&1
 }
 
-# invoke_run_agent_rc — like invoke_run_agent but captures run_agent.sh's exit
+# invoke_run_agent_rc  --  like invoke_run_agent but captures run_agent.sh's exit
 # code instead of discarding it. Prints the rc to stdout (callers capture it).
 invoke_run_agent_rc() {
   local mode="$1"
@@ -146,7 +146,7 @@ test_start_standard_post_agent_uses_down() {
 
   # Session teardown is `compose down` (not `down -v`): named volumes must
   # survive. The post-agent dispatch itself is locked by
-  # test_standard_teardown_is_last_compose (last compose op is down) — this
+  # test_standard_teardown_is_last_compose (last compose op is down)  --  this
   # test covers only the volume-preservation verb, since a pre-run teardown
   # down would also satisfy a bare down_count>=1.
   local down_v_count
@@ -181,7 +181,7 @@ test_start_refresh_volume_rm() {
 
   local count
   count=$(trace_count "volume rm")
-  # May be 0 if no volumes exist, which is fine — stub returns none
+  # May be 0 if no volumes exist, which is fine  --  stub returns none
   pass "start --refresh: volume rm count = $count"
 }
 
@@ -227,7 +227,7 @@ test_serve_post_agent_uses_down() {
 
   # Session teardown is `compose down` (not `down -v`): named volumes must
   # survive. The post-agent dispatch itself is locked by
-  # test_serve_teardown_is_last_compose (last compose op is down) — this test
+  # test_serve_teardown_is_last_compose (last compose op is down)  --  this test
   # covers only the volume-preservation verb, since serve also emits a pre-run
   # teardown down that would satisfy a bare down_count>=1.
   local down_v_count

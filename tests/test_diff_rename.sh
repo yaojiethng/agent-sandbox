@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_diff_rename.sh — Unit tests for rename handling through our
+# tests/test_diff_rename.sh  --  Unit tests for rename handling through our
 # package_branch / diff_export pipeline.
 #
 # These assertions were previously housed in a manual knowledge test
@@ -109,7 +109,7 @@ test_diff_export_uses_no_renames_by_default() {
   if _assert_diff_lacks "$PATCH" "rename from"; then
     pass "diff_export uses --no-renames by default"
   else
-    fail "diff_export produced rename — should default to --no-renames"
+    fail "diff_export produced rename  --  should default to --no-renames"
   fi
 }
 

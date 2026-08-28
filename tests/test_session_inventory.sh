@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # tests/test_session_inventory.sh
-# Unit tests for src/libs/session_inventory.sh — registry-record parsing and
+# Unit tests for src/libs/session_inventory.sh  --  registry-record parsing and
 # staleness classification.
 #
 # Covers:
-#   record_image        — service-block extraction, boundary handling
-#   record_provider     — canonical <provider>-agent-<project> recovery
-#   record_label        — label extraction incl. pipefail-safety on no-match
-#   record_image_stale  — stale/fresh/unknown aggregation (docker stubbed)
-#   project_current_sha — empty/non-git/git branches
-#   enumerate_records   — registry enumeration, provider filter, skip rules
-#   session_stale       — registry-truth staleness vs explicit/derived SHA
+#   record_image         --  service-block extraction, boundary handling
+#   record_provider      --  canonical <provider>-agent-<project> recovery
+#   record_label         --  label extraction incl. pipefail-safety on no-match
+#   record_image_stale   --  stale/fresh/unknown aggregation (docker stubbed)
+#   project_current_sha  --  empty/non-git/git branches
+#   enumerate_records    --  registry enumeration, provider filter, skip rules
+#   session_stale        --  registry-truth staleness vs explicit/derived SHA
 
 set -uo pipefail
 
@@ -128,7 +128,7 @@ test_record_label_pipefail_safe_on_no_match() {
 # record_image_stale (docker via stubs)
 # =============================================================================
 
-# fresh_sigs REPO_ROOT PROVIDER — print "<agentsig> <sandboxsig>" computed in
+# fresh_sigs REPO_ROOT PROVIDER  --  print "<agentsig> <sandboxsig>" computed in
 # fresh shells (process isolation; each call sources the lib cleanly).
 fresh_sigs() {
   local root="$1" provider="$2"

@@ -3,10 +3,10 @@
 # Shared library: writes .export-status key=value file atomically.
 # Sourced by diff_export.sh and package_branch.sh.
 #
-# Safe to source multiple times — defines only a function, no variables.
+# Safe to source multiple times  --  defines only a function, no variables.
 #
 # Provides:
-#   _write_export_status — write .export-status atomically
+#   _write_export_status  --  write .export-status atomically
 
 # _write_export_status OUTPUT_DIR STATUS TIMESTAMP [EXIT_CODE] [INIT_SHA]
 #   Writes a .export-status file in OUTPUT_DIR containing STATUS, TIMESTAMP,

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # scripts/guards.sh
-# Git workflow guard functions — validate repo state and clear stale locks.
+# Git workflow guard functions  --  validate repo state and clear stale locks.
 # Sourced by host-side workflow files (draft, apply) and agent-sandbox.sh.
 #
 # Provides:
-#   validate_project_dir    — check PROJECT_DIR exists, is git repo, has commits
-#   draft_clear_stale_lock  — remove stale .git/index.lock
+#   validate_project_dir     --  check PROJECT_DIR exists, is git repo, has commits
+#   draft_clear_stale_lock   --  remove stale .git/index.lock
 
 # validate_project_dir PROJECT_DIR
 #   Checks PROJECT_DIR exists, is a git repository, and has at least one commit.

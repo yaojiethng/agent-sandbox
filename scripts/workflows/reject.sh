@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/workflows/reject.sh
 # Reject workflow: checkout source branch, delete draft branch.
-# Sourced by agent-sandbox.sh — not executed standalone.
+# Sourced by agent-sandbox.sh  --  not executed standalone.
 # Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
 
 set -euo pipefail
@@ -14,7 +14,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
 # =============================================================================
-# reject_run — checkout source branch, delete draft branch
+# reject_run  --  checkout source branch, delete draft branch
 # =============================================================================
 
 reject_run() {
@@ -44,7 +44,7 @@ reject_run() {
 }
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -60,7 +60,7 @@ EOF
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox reject
+# main  --  entry point when exec'd by agent-sandbox reject
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls reject_run.

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Tests for libs/diff_export.sh — reliability features
+# Tests for libs/diff_export.sh  --  reliability features
 #
 # Covers:
-#   _write_export_status    — writes correct SUCCESS/FAIL content atomically
-#   _write_export_error_log — creates timestamped error log files
-#   wait_git_lockfile       — polls for git index.lock with timeout
-#   diff_export failure     — error log + .export-status on package_branch failure
+#   _write_export_status     --  writes correct SUCCESS/FAIL content atomically
+#   _write_export_error_log  --  creates timestamped error log files
+#   wait_git_lockfile        --  polls for git index.lock with timeout
+#   diff_export failure      --  error log + .export-status on package_branch failure
 
 set -uo pipefail
 
@@ -260,7 +260,7 @@ test_diff_export_failure_writes_export_status() {
   local _outdir="$_tmpdir/out"
   mkdir -p "$_outdir"
 
-  # SANDBOX_DIR without .git — package_branch will fail
+  # SANDBOX_DIR without .git  --  package_branch will fail
   local _bad_sandbox="$_tmpdir/nogit"
   mkdir -p "$_bad_sandbox"
 

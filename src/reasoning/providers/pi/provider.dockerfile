@@ -30,7 +30,7 @@ RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
       usermod -d /home/agentuser -m agentuser; \
     fi
 
-# AGENT_HOME — most files are container-local. Only prompts/, sessions/,
+# AGENT_HOME  --  most files are container-local. Only prompts/, sessions/,
 # skills/ are bind-mounted from host per the selective mount layout.
 ENV AGENT_HOME=/home/agentuser/.pi
 ENV WORKSPACE_DIR=/home/agentuser/workspace

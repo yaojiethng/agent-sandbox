@@ -4,9 +4,9 @@
 #   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
 #
 # Modes:
-#   standard   — normal execution, network access allowed
-#   dry-run    — liveness check only, no agent started
-#   serve      — provider serve mode, port exposed at SERVE_PORT
+#   standard    --  normal execution, network access allowed
+#   dry-run     --  liveness check only, no agent started
+#   serve       --  provider serve mode, port exposed at SERVE_PORT
 #
 # Required flags:
 #   --name=<project_name>   display name; used for log output
@@ -17,12 +17,12 @@
 #   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
 #   --provider=<n>          provider name (required)
 #
-# Responsibility: host-side pre-flight only — path validation, .env loading,
+# Responsibility: host-side pre-flight only  --  path validation, .env loading,
 # git validation, workspace setup, snapshot pipeline.
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 #
 # This script is designed to be executed, not sourced. It exports variables
-# for docker compose and run_agent.sh, then replaces itself via exec —
+# for docker compose and run_agent.sh, then replaces itself via exec  -- 
 # exports do not leak back into the caller's shell.
 
 set -euo pipefail
@@ -34,7 +34,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
-# common.sh does not touch script-dir variables — this script's own value above stands.
+# common.sh does not touch script-dir variables  --  this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
 
 # -------------------------
@@ -45,7 +45,7 @@ usage() {
 Usage: start_agent.sh <mode> [flags]
 
 Host-side pre-flight and session setup for agent-sandbox. This script is an
-internal implementation detail of the agent-sandbox CLI — prefer invoking it
+internal implementation detail of the agent-sandbox CLI  --  prefer invoking it
 through:
 
   agent-sandbox start     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
@@ -59,16 +59,16 @@ or, from a sandbox Makefile:
   make dry-run PROVIDER=<n>
 
 Mode (required):
-  standard   — normal execution, network access allowed
-  serve      — provider serve mode, port exposed at SERVE_PORT
-  dry-run    — liveness check only, no agent started
+  standard    --  normal execution, network access allowed
+  serve       --  provider serve mode, port exposed at SERVE_PORT
+  dry-run     --  liveness check only, no agent started
 
 Flags (all required except --sandbox/--env):
   --name=<n>       display name; used for image names and log output (required)
   --project=<path> absolute WSL/Linux path to the project directory on the host (required)
   --sandbox=<path> absolute WSL/Linux path to the sandbox directory
   --env=<rel>      path to .env file, relative to SANDBOX_DIR (default: .env)
-  --provider=<n>   provider name (required — no default; e.g. pi, hermes, opencode)
+  --provider=<n>   provider name (required  --  no default; e.g. pi, hermes, opencode)
 
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session
@@ -115,7 +115,7 @@ _start_providers() {
 }
 
 _start_wizard() {
-  # Interactive start wizard (D11). Start mode only — serve/dry-run
+  # Interactive start wizard (D11). Start mode only  --  serve/dry-run
   # interactive support is a deferred refactor (roadmap L153).
   if [[ "$MODE" != "standard" ]]; then
     echo "Error: --interactive (config wizard) is only available for start mode." >&2
@@ -125,7 +125,7 @@ _start_wizard() {
 
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
 
-  # Provider picker — only when --provider was not supplied (D1: supplied
+  # Provider picker  --  only when --provider was not supplied (D1: supplied
   # args override the suggested default rather than being re-prompted).
   if [[ -z "$PROVIDER_NAME" ]]; then
     local -a PROVIDER_ENTRIES=()
@@ -144,7 +144,7 @@ _start_wizard() {
     PROVIDER_NAME="$chosen"
   fi
 
-  # Build policy — only when neither --refresh nor --rebuild was supplied (D1).
+  # Build policy  --  only when neither --refresh nor --rebuild was supplied (D1).
   if [[ "$REFRESH" != true && "$REBUILD" != true ]]; then
     # shellcheck disable=SC2034 # consumed by interactive_pick via nameref
     local -a BUILD_ENTRIES=(
@@ -173,7 +173,7 @@ _start_wizard() {
 }
 
 # -------------------------
-# Session identity — always a fresh new session
+# Session identity  --  always a fresh new session
 # -------------------------
 # start unconditionally begins a NEW session (F2 design D10). All resume logic
 # (volume discovery, auto-resume, and the interactive picker) was moved out to
@@ -261,7 +261,7 @@ main() {
     _start_wizard
   fi
   
-  # --provider is required and deliberately has no default — the harness does
+  # --provider is required and deliberately has no default  --  the harness does
   # not presume a provider. Fail with a clear diagnostic rather than a cryptic
   # image-naming error downstream.
   if [[ -z "$PROVIDER_NAME" ]]; then
@@ -278,13 +278,13 @@ main() {
   fi
   
   # -------------------------
-  # Shared host-side prelude — phase 1 (env, git validation, derived paths, uid/gid)
+  # Shared host-side prelude  --  phase 1 (env, git validation, derived paths, uid/gid)
   # -------------------------
   source "$REPO_ROOT/src/libs/session_env.sh"
   session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
   
   if [[ "${REFRESH:-false}" == "true" ]]; then
-    echo "Refresh requested — starting new session"
+    echo "Refresh requested  --  starting new session"
   fi
   
   # start always begins a NEW session (F2 design D10). Resume lives in the
@@ -293,7 +293,7 @@ main() {
   _new_session_identity
   
   # -------------------------
-  # Shared host-side prelude — phase 2 (branch, image/container names, delivery)
+  # Shared host-side prelude  --  phase 2 (branch, image/container names, delivery)
   # -------------------------
   # Identity (SESSION_ID) is now known. Derive the remaining env consumed by
   # run_agent.sh and compose: sanitized host branch, image/container names,
@@ -312,7 +312,7 @@ main() {
   # -------------------------
   if [[ "$SANDBOX_TYPE" == "mount" ]]; then
     # Mount delivery: materialize the host worktree (bind-mounted into the
-    # container). Use the shared snapshot primitive minus baseline.tar — rsync
+    # container). Use the shared snapshot primitive minus baseline.tar  --  rsync
     # the working tree, then git-init + baseline commit so .git exists. The
     # container writes the SESSION_STATE init marker into the worktree .git.
     mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"

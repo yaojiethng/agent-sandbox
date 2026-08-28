@@ -1,14 +1,14 @@
 # libs/docker-compose.dry-run.yml
 # Dry-run overlay for agent-sandbox.
-# Merged at generation time by compose_generate — not operator-visible.
+# Merged at generation time by compose_generate  --  not operator-visible.
 #
 # Adds dry-run scripts to both the sandbox (capability) and agent (reasoning)
 # services. Each runs inside its respective container during the three-phase
-# dry-run sequence (capability → reasoning → host).
+# dry-run sequence (capability -> reasoning -> host).
 #
 # {{DRY_RUN_CAPABILITY_SCRIPT}} and {{DRY_RUN_SCRIPT}} are resolved by
 # start_agent.sh before compose_generate is called and baked into the
-# generated compose file — not runtime variables.
+# generated compose file  --  not runtime variables.
 
 services:
   sandbox:

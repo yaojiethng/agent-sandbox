@@ -19,7 +19,7 @@ test_setup
 
 CAPTURED=()
 
-# mock_exec — capture exec calls without executing
+# mock_exec  --  capture exec calls without executing
 mock_exec() { echo "capture: exec $*"; }
 
 # =============================================================================
@@ -73,7 +73,7 @@ SCRIPT
     chmod +x "$MOCK_SCRIPTS_DIR/libs/$s"
   done
 
-  # build.sh gets a mock too — it will be exec'd by agent-sandbox build
+  # build.sh gets a mock too  --  it will be exec'd by agent-sandbox build
   cat > "$MOCK_SCRIPTS_DIR/build.sh" << SCRIPT
 echo "capture: MOCK build.sh \$@"
 SCRIPT
@@ -93,13 +93,13 @@ source_harness() {
 
   # Override SCRIPTS to point at mock dir AFTER top-level sources are done
   # We need the real build.sh sourced at top level for now.
-  # Actually — after refactor, agent-sandbox.sh only sources build.sh and routing.sh
+  # Actually  --  after refactor, agent-sandbox.sh only sources build.sh and routing.sh
   # at top level. We want build.sh sourced for real (it defines build_sandbox etc.),
   # but we DON'T want it to execute.
   # We DO want the SCRIPTS dir to point at mocks for the exec calls.
   # Solution: source the harness with real AGENT_SANDBOX_REPO, then swap SCRIPTS.
 
-  # Source the harness (no top-level sources after refactor — pure dispatch table)
+  # Source the harness (no top-level sources after refactor  --  pure dispatch table)
   source "$resolved"
   rm -f "$resolved"
 }
@@ -120,7 +120,7 @@ dispatch_and_capture() {
 }
 
 # =============================================================================
-# Tests — build subcommand (exec's build.sh with --targets)
+# Tests  --  build subcommand (exec's build.sh with --targets)
 # =============================================================================
 
 test_build_default_all() {
@@ -172,7 +172,7 @@ test_build_with_rebuild() {
 }
 
 # =============================================================================
-# Tests — start / serve / dry-run (call start_agent.sh as subprocess)
+# Tests  --  start / serve / dry-run (call start_agent.sh as subprocess)
 # =============================================================================
 
 test_start_default() {
@@ -240,7 +240,7 @@ test_start_with_passthrough() {
 }
 
 # =============================================================================
-# Tests — --rebuild / --refresh passthrough (via start subcommand)
+# Tests  --  --rebuild / --refresh passthrough (via start subcommand)
 # =============================================================================
 
 test_start_rebuild_passthrough() {
@@ -276,7 +276,7 @@ test_start_refresh_passthrough() {
 }
 
 # =============================================================================
-# Tests — help subcommand
+# Tests  --  help subcommand
 # =============================================================================
 
 test_help_no_args() {
@@ -440,7 +440,7 @@ test_help_flag_shows_list() {
 }
 
 # =============================================================================
-# Tests — apply subcommand (exec's workflows/apply.sh)
+# Tests  --  apply subcommand (exec's workflows/apply.sh)
 # =============================================================================
 
 test_apply_with_diff() {
@@ -492,12 +492,12 @@ test_apply_with_force() {
 }
 
 # =============================================================================
-# Tests — draft subcommand (exec's workflows/draft.sh)
+# Tests  --  draft subcommand (exec's workflows/draft.sh)
 # =============================================================================
 
 test_draft_noninteractive() {
   setup
-  # Non-interactive draft resolves via router — will fail without session dirs.
+  # Non-interactive draft resolves via router  --  will fail without session dirs.
   # We just verify it execs draft.sh rather than exploding.
   dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s
 
@@ -562,7 +562,7 @@ test_draft_with_permissive() {
 }
 
 # =============================================================================
-# Tests — confirm / reject (exec's workflows/confirm.sh, workflows/reject.sh)
+# Tests  --  confirm / reject (exec's workflows/confirm.sh, workflows/reject.sh)
 # =============================================================================
 
 test_confirm_default() {
@@ -614,7 +614,7 @@ test_reject_default() {
 }
 
 # =============================================================================
-# Tests — stop / onboard / package-* (exec'd scripts)
+# Tests  --  stop / onboard / package-* (exec'd scripts)
 # =============================================================================
 
 test_stop() {
@@ -685,7 +685,7 @@ test_package_branch() {
 }
 
 # =============================================================================
-# Tests — error handling
+# Tests  --  error handling
 # =============================================================================
 
 test_unknown_subcommand() {

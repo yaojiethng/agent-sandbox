@@ -1,15 +1,15 @@
 # providers/pi/docker-compose.pi.yml
-# Provider overlay — merged in all modes (standard, serve, dry-run).
+# Provider overlay  --  merged in all modes (standard, serve, dry-run).
 # Sets Pi-specific environment variables and injects API keys from the host .env.
 
 services:
   agent:
     environment:
-      # Suppress Pi's version check on every startup — reduces noise in containers.
+      # Suppress Pi's version check on every startup  --  reduces noise in containers.
       - PI_SKIP_VERSION_CHECK=1
-      # Provider identity — allows the agent to know which provider it's running.
+      # Provider identity  --  allows the agent to know which provider it's running.
       - PROVIDER_NAME=pi
-      # API keys — injected from host .env; only set if non-empty.
+      # API keys  --  injected from host .env; only set if non-empty.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_TOKEN=${ANTHROPIC_TOKEN:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -21,7 +21,7 @@ services:
       # Provider config: selective bind mounts for persistent subdirs
       # Only prompts/, sessions/, skills/ are RW bind-mounted from the host.
       # Config files (settings.json, auth.json, models.json, AGENTS.md) are
-      # copy-in from the baked image template at startup — avoids utime/EPERM
+      # copy-in from the baked image template at startup  --  avoids utime/EPERM
       # on cross-filesystem mounts (macOS virtiofs, Windows 9p).
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts

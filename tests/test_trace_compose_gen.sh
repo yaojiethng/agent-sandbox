@@ -111,7 +111,7 @@ test_output_is_valid_yaml() {
 
   # Check that key sections are present. The stub's compose config returns
   # the first input file (the base template), so the named sandbox volume
-  # (declared in the copy overlay) is not part of the stub-merged output —
+  # (declared in the copy overlay) is not part of the stub-merged output  -- 
   # the volumes section is asserted statically against the overlay files.
   if grep -q 'services:' "$out" && grep -q 'x-session-labels:' "$out"; then
     pass "generated compose file contains services and session-labels sections"
@@ -137,7 +137,7 @@ test_stub_docker_config_preserves_structure() {
   rm -rf "$staging_dir"
 
   # Stub returns the file directly; source templates have no name: lines
-  # But container_name: has "name:" as a substring — confirm grep doesn't match it
+  # But container_name: has "name:" as a substring  --  confirm grep doesn't match it
   local name_lines
   name_lines=$(echo "$out" | grep -c '^[[:space:]]*name:') || name_lines=0
 

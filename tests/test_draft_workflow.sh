@@ -3,9 +3,9 @@
 # Tests for libs/draft_workflow.sh
 #
 # Covers:
-#   draft_run   — creates branch, applies patches, .draft-state, guards
-#   confirm_run — rebases, merges, deletes branch
-#   reject_run  — returns to source, deletes branch
+#   draft_run    --  creates branch, applies patches, .draft-state, guards
+#   confirm_run  --  rebases, merges, deletes branch
+#   reject_run   --  returns to source, deletes branch
 #
 # Uses make_session_fixture for synthetic session exports; for
 # author-rewrite and commit-message tests, which need make_real_session.
@@ -23,7 +23,7 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 
 # =============================================================================
-# _test_draft_run — backward-compat wrapper for old draft_run callers
+# _test_draft_run  --  backward-compat wrapper for old draft_run callers
 #
 # Replicates the old draft_run contract (create branch + apply patches +
 # apply uncommitted) using the new decomposed functions.
@@ -65,7 +65,7 @@ _branch_exists() {
 }
 
 # =============================================================================
-# make_real_session — creates a session with real git-generated diffs
+# make_real_session  --  creates a session with real git-generated diffs
 # for testing author rewrite and commit message format.
 # =============================================================================
 make_real_session() {
@@ -412,7 +412,7 @@ test_draft_no_diffs_error() {
 }
 
 # Regression: when patch application fails, the operator must be returned to the
-# source branch — not left on the (now empty) draft/* branch. Formerly the
+# source branch  --  not left on the (now empty) draft/* branch. Formerly the
 # rollback did `git reset --hard draft-savepoint` but never checked back out to
 # the source branch. See handover 20260812-06.
 test_draft_failure_returns_to_source_branch() {
@@ -548,7 +548,7 @@ test_branch_from_skips_missing_export_status() {
 }
 
 # A draft command with no --branch-from must still error when .export-status
-# is missing — the escape hatch requires an explicit fork point.
+# is missing  --  the escape hatch requires an explicit fork point.
 test_no_branch_from_errors_without_export_status() {
   local P="$FIXTURE_DIR/ingest_nofrom_p"
   local S="$FIXTURE_DIR/ingest_nofrom_s"
@@ -688,7 +688,7 @@ test_resolve_fallback_no_subject() {
 test_resolve_msg_file_preferred_over_filename() {
   local TMP="$FIXTURE_DIR/resolve_prefer"
   mkdir -p "$TMP"
-  # Both .msg and filename subject exist — .msg should win
+  # Both .msg and filename subject exist  --  .msg should win
   echo "dummy" > "$TMP/0001-abc1234-some_subject.diff"
   echo "Message from .msg" > "$TMP/0001-abc1234-some_subject.msg"
 
@@ -815,7 +815,7 @@ test_confirm_rejects_non_draft_branch() {
   fi
 }
 
-# .draft-state is located by commit message, not by being the branch tip —
+# .draft-state is located by commit message, not by being the branch tip  -- 
 # covers the post-rebase scenario: a draft branch that gained commits (or was
 # rebased) after the draft run still confirms cleanly.
 test_confirm_after_draft_branch_advances() {
@@ -831,7 +831,7 @@ test_confirm_after_draft_branch_advances() {
   DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
 
   # Advance the draft branch past the .draft-state commit (as a rebase or
-  # continued work would) — the state commit is no longer the branch tip.
+  # continued work would)  --  the state commit is no longer the branch tip.
   # confirm_run runs FROM the draft branch (its own contract), so stay there.
   git -C "$P" checkout "$DRAFT_BRANCH" --quiet
   echo "post-draft work" > "$P/post-draft.txt"

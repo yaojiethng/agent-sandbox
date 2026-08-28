@@ -64,7 +64,7 @@ run_single() {
   fi
 
   if [[ "$RC" -eq 0 && "$FILE_PASS" -eq 0 && "$FILE_FAIL" -eq 0 && "$FILE_SKIP" -eq 0 ]]; then
-    echo "WARN $BASENAME (0 tests executed — file may be missing run_test calls)" >&2
+    echo "WARN $BASENAME (0 tests executed  --  file may be missing run_test calls)" >&2
   fi
 
   case "$VERBOSE" in

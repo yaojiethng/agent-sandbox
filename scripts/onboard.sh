@@ -15,15 +15,15 @@
 #     --name=<project_name> \
 #     --sandbox=<path>
 #
-# Flags may be omitted — the script will prompt for any that are missing.
+# Flags may be omitted  --  the script will prompt for any that are missing.
 #
 # What this script produces in SANDBOX_DIR:
-#   Makefile                     — from template, PROJECT_NAME substituted
-#   .workspace/input/            — reasoning layer input channel
-#   .workspace/output/           — reasoning layer output channel
-#   .workspace/session-diffs/    — diff pipeline output
-#   .env                         — paths + operator var stubs
-#   .<provider>/                 — provider config dir, seeded from src/reasoning/providers/<n>/config/
+#   Makefile                      --  from template, PROJECT_NAME substituted
+#   .workspace/input/             --  reasoning layer input channel
+#   .workspace/output/            --  reasoning layer output channel
+#   .workspace/session-diffs/     --  diff pipeline output
+#   .env                          --  paths + operator var stubs
+#   .<provider>/                  --  provider config dir, seeded from src/reasoning/providers/<n>/config/
 #
 # Refresh mode (--refresh) updates versioned template files in an existing
 # SANDBOX_DIR without overwriting .env operator values.
@@ -122,7 +122,7 @@ confirm_or_exit() {
   echo ""
 
   if ! $_INTERACTIVE; then
-    echo "Non-interactive mode — proceeding."
+    echo "Non-interactive mode  --  proceeding."
     echo ""
     return 0
   fi
@@ -137,7 +137,7 @@ confirm_or_exit() {
 }
 
 # ===========================================================================
-# Refresh mode — update versioned template files only
+# Refresh mode  --  update versioned template files only
 # ===========================================================================
 _validate_refresh() {
   if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
@@ -166,7 +166,7 @@ _run_refresh() {
   if [[ ! -f "$ENV_FILE" ]]; then
     if [[ -n "$PROJECT_DIR" ]]; then
       _write_env_file
-      echo "  Created: .env (recreated — PROJECT_DIR provided explicitly)"
+      echo "  Created: .env (recreated  --  PROJECT_DIR provided explicitly)"
     else
       echo "Warning: .env not found and --project not provided." >&2
       echo "  Run 'agent-sandbox onboard --refresh --project=<path> ...' to recreate." >&2
@@ -242,7 +242,7 @@ ENVEOF
 }
 
 # ===========================================================================
-# Provider provisioning — shared by _run_onboard
+# Provider provisioning  --  shared by _run_onboard
 # ===========================================================================
 # Single loop: appends .env.example stubs, seeds config directories with
 # ACL permissions, renames env.stub, and runs provider-specific hooks.
@@ -272,14 +272,14 @@ _provision_providers() {
       rsync -rt --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
         "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
 
-      # UID Mapping handles permissions — no ACL fix needed
+      # UID Mapping handles permissions  --  no ACL fix needed
 
       # Rename env.stub to .env if present
       if [[ -f "$PROVIDER_SANDBOX_DIR/env.stub" ]]; then
         mv "$PROVIDER_SANDBOX_DIR/env.stub" "$PROVIDER_SANDBOX_DIR/.env"
       fi
 
-      echo "    .$PROVIDER_NAME/ (provider config — fill in secrets before first run)"
+      echo "    .$PROVIDER_NAME/ (provider config  --  fill in secrets before first run)"
     fi
 
     # Run provider-specific setup hook
@@ -295,7 +295,7 @@ _provision_providers() {
 }
 
 # ===========================================================================
-# Onboard mode — first-time full setup
+# Onboard mode  --  first-time full setup
 # ===========================================================================
 _validate_onboard() {
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
@@ -339,7 +339,7 @@ _run_onboard() {
   mkdir -p "$SANDBOX_DIR/.workspace/input"
   mkdir -p "$SANDBOX_DIR/.workspace/output"
   mkdir -p "$SANDBOX_DIR/.workspace/session-diffs"
-  # UID Mapping handles permissions — no ACL fix needed
+  # UID Mapping handles permissions  --  no ACL fix needed
   echo "  Created: .workspace/input/, .workspace/output/, .workspace/session-diffs/"
 
   # -----------------------------------------------------------------------
@@ -360,7 +360,7 @@ _run_onboard() {
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
-  echo "  1. Review $SANDBOX_DIR/.env — set SERVE_PORT, INSTALL_DIR, and any provider credentials"
+  echo "  1. Review $SANDBOX_DIR/.env  --  set SERVE_PORT, INSTALL_DIR, and any provider credentials"
   echo "  2. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
   echo "  3. Run: make -C $SANDBOX_DIR build"
   echo "  4. Run: make -C $SANDBOX_DIR dry-run"

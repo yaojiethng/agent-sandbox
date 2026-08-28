@@ -1,4 +1,4 @@
-# OpenCode Provider — Quick Reference
+# OpenCode Provider  --  Quick Reference
 
 Day-to-day command reference and troubleshooting for the OpenCode provider. All commands run from `SANDBOX_DIR`.
 
@@ -116,7 +116,7 @@ rm .workspace/input/*
 ## Troubleshooting
 
 **Container exits immediately**
-Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause — check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
 **`staged.diff` is empty after run**
 Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.

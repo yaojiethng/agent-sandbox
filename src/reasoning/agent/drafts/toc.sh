@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# toc — print header outline of a markdown file with line numbers
+# toc  --  print header outline of a markdown file with line numbers
 # usage: toc <file.md>
 # output: indent-by-level header map suitable for view_range targeting
 

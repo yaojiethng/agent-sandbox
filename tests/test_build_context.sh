@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# tests/test_build_context.sh — COPY contract tests
+# tests/test_build_context.sh  --  COPY contract tests
 #
 # Asserts that every COPY source in every Dockerfile exists at its
-# repo-relative path. This is the invariant that matters — if a COPY
+# repo-relative path. This is the invariant that matters  --  if a COPY
 # instruction references a file that doesn't exist, the build fails.
 #
 # Run:

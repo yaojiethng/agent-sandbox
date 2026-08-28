@@ -1,7 +1,7 @@
-# Task Brief — <project-name>
+# Task Brief  --  <project-name>
 
 <!-- Per-run task brief. Passed to the agent alongside agent_context_brief.md.
-     Do not restate collaboration protocol, output format, or system invariants — those are in the context brief. -->
+     Do not restate collaboration protocol, output format, or system invariants  --  those are in the context brief. -->
 
 ## Task
 

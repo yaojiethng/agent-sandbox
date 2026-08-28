@@ -23,7 +23,7 @@
 #                         single pre-generated compose file and project name.
 #
 #   compose_dry_run       Full dry-run sequence against COMPOSE_ARGS:
-#                         up, exec, down. Overlay already merged — no extra
+#                         up, exec, down. Overlay already merged  --  no extra
 #                         file args needed.
 #
 #   session_teardown     docker compose down (ends session; preserves named volumes)
@@ -38,36 +38,36 @@
 # for Docker Compose runtime resolution. Writes merged output to a file.
 #
 # Substitutions applied here (baked into generated file):
-#   {{PROJECT_NAME}}        → project name
-#   {{PROJECT_DIR}}         → absolute path to project directory
-#   {{SANDBOX_IMAGE_NAME}}  → derived image name
-#   {{AGENT_IMAGE_NAME}}    → derived image name
-#   {{PROVIDER_NAME}}       → provider name
-#   {{SANDBOX_CONTAINER_NAME}}      → sandbox container name (sandbox-<project>-<session_id>)
-#   {{AGENT_CONTAINER_NAME}} → agent container name (<provider>-<project>-<session_id>)
-#   {{SESSION_ID}}          → session ID (6-char hex, from start_agent.sh)
-#   {{SANITIZED_HOST_BRANCH}} → host branch name, sanitised (replaces former SESSION_NAME)
-#   {{DRY_RUN_CAPABILITY_SCRIPT}} → absolute path to dry_run_capability.sh (dry-run mode only)
-#   {{DRY_RUN_SCRIPT}}             → absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
-#   ${SANDBOX_DIR}          → host sandbox path (from .env, exported by start_agent.sh)
-#   ${SNAPSHOT_DIR}         → host snapshot path (copy delivery only)
-#   ${WORKTREE_DIR}         → host worktree path (mount delivery only; default
+#   {{PROJECT_NAME}}        -> project name
+#   {{PROJECT_DIR}}         -> absolute path to project directory
+#   {{SANDBOX_IMAGE_NAME}}  -> derived image name
+#   {{AGENT_IMAGE_NAME}}    -> derived image name
+#   {{PROVIDER_NAME}}       -> provider name
+#   {{SANDBOX_CONTAINER_NAME}}      -> sandbox container name (sandbox-<project>-<session_id>)
+#   {{AGENT_CONTAINER_NAME}} -> agent container name (<provider>-<project>-<session_id>)
+#   {{SESSION_ID}}          -> session ID (6-char hex, from start_agent.sh)
+#   {{SANITIZED_HOST_BRANCH}} -> host branch name, sanitised (replaces former SESSION_NAME)
+#   {{DRY_RUN_CAPABILITY_SCRIPT}} -> absolute path to dry_run_capability.sh (dry-run mode only)
+#   {{DRY_RUN_SCRIPT}}             -> absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
+#   ${SANDBOX_DIR}          -> host sandbox path (from .env, exported by start_agent.sh)
+#   ${SNAPSHOT_DIR}         -> host snapshot path (copy delivery only)
+#   ${WORKTREE_DIR}         -> host worktree path (mount delivery only; default
 #                             ${SANDBOX_DIR}/.worktree, set by run_agent.sh)
-#   ${CHANGES_DIR}          → host changes path (from .env, exported by start_agent.sh)
-#   ${INPUT_DIR}            → host input path (from .env, exported by start_agent.sh)
-#   ${OUTPUT_DIR}           → host output path (from .env, exported by start_agent.sh)
+#   ${CHANGES_DIR}          -> host changes path (from .env, exported by start_agent.sh)
+#   ${INPUT_DIR}            -> host input path (from .env, exported by start_agent.sh)
+#   ${OUTPUT_DIR}           -> host output path (from .env, exported by start_agent.sh)
 #
 # Preserved as ${VAR} for Docker Compose runtime resolution (operator-set):
-#   ${SERVE_PORT}           → port for serve mode
-#   ${AUTOSAVE_INTERVAL}    → autosave interval
-#   ${OPENCODE_SERVER_PASSWORD} → OpenCode serve mode credential
+#   ${SERVE_PORT}           -> port for serve mode
+#   ${AUTOSAVE_INTERVAL}    -> autosave interval
+#   ${OPENCODE_SERVER_PASSWORD} -> OpenCode serve mode credential
 #   Any other provider-specific secrets
 #
 # Args:
-#   $1       output_file      — absolute path to write merged compose file
-#   $2       project_name     — value for {{PROJECT_NAME}}
-#   $3       provider_name    — used to derive {{AGENT_IMAGE_NAME}}
-#   $4...$N  input_files      — compose files to merge, in order
+#   $1       output_file       --  absolute path to write merged compose file
+#   $2       project_name      --  value for {{PROJECT_NAME}}
+#   $3       provider_name     --  used to derive {{AGENT_IMAGE_NAME}}
+#   $4...$N  input_files       --  compose files to merge, in order
 #
 # Requires: containers.sh sourced (sandbox_image_name, agent_image_name)
 # -------------------------
@@ -83,7 +83,7 @@ compose_generate() {
     return 1
   fi
 
-  # Derive image names — baked into generated file.
+  # Derive image names  --  baked into generated file.
   local sandbox_image agent_image
   sandbox_image="$(sandbox_image_name "$project_name")"
   agent_image="$(agent_image_name "$provider_name" "$project_name")"
@@ -130,8 +130,8 @@ compose_generate() {
   # Merge via docker compose config. --no-interpolate preserves ${VAR}
   # references so Docker Compose resolves them from the environment at
   # runtime. Two injected fields are stripped:
-  #   name:             — top-level project name (set via --project-name in compose_args)
-  #   networks.default.name: — Compose injects the staging dir name; we want the
+  #   name:              --  top-level project name (set via --project-name in compose_args)
+  #   networks.default.name:  --  Compose injects the staging dir name; we want the
   #                            project-scoped default, set at runtime by --project-name
   docker compose "${staged_files[@]}" config --no-interpolate \
     | grep -v '^[[:space:]]*name:' \
@@ -146,10 +146,10 @@ compose_generate() {
 # gets its own compose namespace (volume, network, containers).
 #
 # Args:
-#   $1  project_name   — used for --project-name
-#   $2  sandbox_dir    — passed as --project-directory
-#   $3  compose_file   — absolute path to the generated compose file
-#   $4  session_id     — SESSION_ID from session identity
+#   $1  project_name    --  used for --project-name
+#   $2  sandbox_dir     --  passed as --project-directory
+#   $3  compose_file    --  absolute path to the generated compose file
+#   $4  session_id      --  SESSION_ID from session identity
 # -------------------------
 compose_args() {
   local project_name="$1"
@@ -172,7 +172,7 @@ compose_args() {
     normalised="${normalised}-${sandbox_hash}"
   fi
 
-  # Assign to caller's COMPOSE_ARGS (no local — intentional).
+  # Assign to caller's COMPOSE_ARGS (no local  --  intentional).
   COMPOSE_ARGS=(
     --project-name "$normalised"
     --project-directory "$sandbox_dir"
@@ -184,22 +184,22 @@ compose_args() {
 # compose_dry_run
 #
 # Runs the three-phase dry-run sequence against COMPOSE_ARGS and exits.
-# The dry-run overlay is already merged into the compose file — no extra
+# The dry-run overlay is already merged into the compose file  --  no extra
 # file args needed here.
 #
 # Phases:
-#   1. Capability layer — dry_run_capability.sh inside sandbox container
-#   2. Reasoning layer  — dry_run_reasoning.sh inside agent container
-#   3. Host-side        — verify artifacts on host filesystem
+#   1. Capability layer  --  dry_run_capability.sh inside sandbox container
+#   2. Reasoning layer   --  dry_run_reasoning.sh inside agent container
+#   3. Host-side         --  verify artifacts on host filesystem
 #
 # Each phase aborts on CRITICAL failure. Final cleanup via down (down -v
 # only when remove_volumes is true).
 #
 # Args:
-#   $1  dry_run_script  — absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
-#   $2  dry_run_capability_script  — path to dry_run_capability.sh (optional, skip phase 1 if empty)
-#   $3  sandbox_dir     — host-side SANDBOX_DIR (for Phase 3 host verification)
-#   $4  remove_volumes  — "true" to remove named volumes on teardown (default: false)
+#   $1  dry_run_script   --  absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
+#   $2  dry_run_capability_script   --  path to dry_run_capability.sh (optional, skip phase 1 if empty)
+#   $3  sandbox_dir      --  host-side SANDBOX_DIR (for Phase 3 host verification)
+#   $4  remove_volumes   --  "true" to remove named volumes on teardown (default: false)
 # -------------------------
 compose_dry_run() {
   local dry_run_script="$1"
@@ -226,7 +226,7 @@ compose_dry_run() {
          docker compose "${COMPOSE_ARGS[@]}" exec sandbox bash /dry_run_capability.sh; then
       echo "Phase 1 PASSED."
     else
-      echo "Phase 1 FAILED — aborting." >&2
+      echo "Phase 1 FAILED  --  aborting." >&2
       $_compose_down
       return 1
     fi
@@ -240,7 +240,7 @@ compose_dry_run() {
        docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run_reasoning.sh; then
     echo "Phase 2 PASSED."
   else
-    echo "Phase 2 FAILED — aborting." >&2
+    echo "Phase 2 FAILED  --  aborting." >&2
     $_compose_down
     return 1
   fi
@@ -295,7 +295,7 @@ compose_dry_run() {
     if [[ "$host_verify_fails" -eq 0 ]]; then
       echo "Phase 3 PASSED."
     else
-      echo "Phase 3 FAILED — $host_verify_fails check(s) failed." >&2
+      echo "Phase 3 FAILED  --  $host_verify_fails check(s) failed." >&2
     fi
   fi
 
@@ -318,8 +318,8 @@ session_teardown() {
   # docker compose down: end the session, keep named volumes.
   # Removes containers + network (frees the default address pool); the
   # SESSION_ID-scoped named volume persists so resume still works. The container
-  # is disposable — durable state lives in the named volume + bind mounts
-  # (see docs/architecture/execution_model.md — Container State Contract).
+  # is disposable  --  durable state lives in the named volume + bind mounts
+  # (see docs/architecture/execution_model.md  --  Container State Contract).
   docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
 }
 

@@ -6,7 +6,7 @@
 # Each case builds a fixture that includes both a baseline.tar (via git archive HEAD)
 # and an rsync working tree copy, then asserts git status --porcelain output.
 #
-# All fixtures created under /tmp — no git repos created inside the harness repo.
+# All fixtures created under /tmp  --  no git repos created inside the harness repo.
 # Can be run directly on the host or inside the container.
 
 set -uo pipefail
@@ -60,7 +60,7 @@ make_init_fixture() {
 # Re-sync the working tree into an existing SNAPSHOT_DIR after the caller
 # has made working tree changes to PROJECT_DIR.
 # Uses --delete so that files removed from the working tree are also removed
-# from SNAPSHOT_DIR — this is required for deletion cases (4 and 5) to work
+# from SNAPSHOT_DIR  --  this is required for deletion cases (4 and 5) to work
 # correctly. snapshot_copy_worktree does not use --delete (it is a one-way
 # copy, not a mirror), so we call rsync directly here.
 resync_snapshot() {
@@ -116,22 +116,22 @@ test_validate_missing_baseline_tar() {
   fi
 }
 
-# This function was removed — it was superfluous:
+# This function was removed  --  it was superfluous:
 # snapshot_init_git reads baseline.tar directly from the snapshot mount.
 
 # -------------------------
-# snapshot_init_git — working tree state matrix
+# snapshot_init_git  --  working tree state matrix
 #
 # Each test:
 #   1. Builds a project repo with committed content
 #   2. Produces baseline.tar + rsync copy into a snapshot dir
 #   3. Optionally modifies the working tree
-#   4. Re-syncs the snapshot (rsync copy only — baseline.tar is unchanged)
+#   4. Re-syncs the snapshot (rsync copy only  --  baseline.tar is unchanged)
 #   5. Calls snapshot_init_git SANDBOX SNAPSHOT
 #   6. Asserts git status --porcelain output in sandbox
 # -------------------------
 
-# Case 1: tracked file, no changes — clean
+# Case 1: tracked file, no changes  --  clean
 test_init_git_case1_clean() {
   local PROJECT="$FIXTURE_DIR/case1_project"
   local SNAPSHOT="$FIXTURE_DIR/case1_snapshot"
@@ -159,7 +159,7 @@ test_init_git_case1_clean() {
   fi
 }
 
-# Case 2: tracked file with unstaged edits — shows as M (unstaged)
+# Case 2: tracked file with unstaged edits  --  shows as M (unstaged)
 test_init_git_case2_unstaged_edit() {
   local PROJECT="$FIXTURE_DIR/case2_project"
   local SNAPSHOT="$FIXTURE_DIR/case2_snapshot"
@@ -194,7 +194,7 @@ test_init_git_case2_unstaged_edit() {
   fi
 }
 
-# Case 3: tracked file, staged edit (git add but not committed) — shows as M unstaged
+# Case 3: tracked file, staged edit (git add but not committed)  --  shows as M unstaged
 # Note: staging state is lost (see snapshot_init_git comment). Content is correct.
 test_init_git_case3_staged_edit() {
   local PROJECT="$FIXTURE_DIR/case3_project"
@@ -220,15 +220,15 @@ test_init_git_case3_staged_edit() {
     fail "case 3 (staged edit): edited content missing from sandbox working tree"
   fi
 
-  # Staging state is lost — shows as unstaged M, not staged M
+  # Staging state is lost  --  shows as unstaged M, not staged M
   if echo "$STATUS" | grep -q 'committed\.txt'; then
-    pass "case 3 (staged edit): file shows as modified (staging state lost — expected)"
+    pass "case 3 (staged edit): file shows as modified (staging state lost  --  expected)"
   else
     fail "case 3 (staged edit): expected committed.txt to appear in git status"
   fi
 }
 
-# Case 4: tracked file deleted without staging — shows as D (unstaged)
+# Case 4: tracked file deleted without staging  --  shows as D (unstaged)
 test_init_git_case4_unstaged_deletion() {
   local PROJECT="$FIXTURE_DIR/case4_project"
   local SNAPSHOT="$FIXTURE_DIR/case4_snapshot"
@@ -267,7 +267,7 @@ test_init_git_case4_unstaged_deletion() {
   fi
 }
 
-# Case 5: tracked file staged for deletion (git rm) — shows as D unstaged
+# Case 5: tracked file staged for deletion (git rm)  --  shows as D unstaged
 # Note: staging state is lost. Content is correctly absent from working tree.
 test_init_git_case5_staged_deletion() {
   local PROJECT="$FIXTURE_DIR/case5_project"
@@ -300,7 +300,7 @@ test_init_git_case5_staged_deletion() {
   fi
 }
 
-# Case 6: untracked file, not gitignored — shows as ??
+# Case 6: untracked file, not gitignored  --  shows as ??
 test_init_git_case6_untracked() {
   local PROJECT="$FIXTURE_DIR/case6_project"
   local SNAPSHOT="$FIXTURE_DIR/case6_snapshot"
@@ -332,7 +332,7 @@ test_init_git_case6_untracked() {
   fi
 }
 
-# Case 7: untracked file, gitignored — not visible in sandbox
+# Case 7: untracked file, gitignored  --  not visible in sandbox
 test_init_git_case7_gitignored() {
   local PROJECT="$FIXTURE_DIR/case7_project"
   local SNAPSHOT="$FIXTURE_DIR/case7_snapshot"
@@ -373,7 +373,7 @@ test_init_git_case7_gitignored() {
   fi
 }
 
-# Case 8: new file staged with git add (not committed) — shows as ?? (untracked)
+# Case 8: new file staged with git add (not committed)  --  shows as ?? (untracked)
 # Note: staging state is lost. Content is present on disk.
 test_init_git_case8_staged_new_file() {
   local PROJECT="$FIXTURE_DIR/case8_project"
@@ -399,9 +399,9 @@ test_init_git_case8_staged_new_file() {
     fail "case 8 (staged new file): file missing from sandbox working tree"
   fi
 
-  # Shows as untracked (staging state lost — expected)
+  # Shows as untracked (staging state lost  --  expected)
   if echo "$STATUS" | grep -q '^?? new-staged\.txt'; then
-    pass "case 8 (staged new file): shows as ?? untracked (staging state lost — expected)"
+    pass "case 8 (staged new file): shows as ?? untracked (staging state lost  --  expected)"
   else
     fail "case 8 (staged new file): expected '?? new-staged.txt', got: '$STATUS'"
   fi
@@ -436,7 +436,7 @@ test_init_git_one_commit() {
   fi
 }
 
-# baseline.tar absent — should fail clearly
+# baseline.tar absent  --  should fail clearly
 test_init_git_missing_baseline_tar() {
   local SNAPSHOT="$FIXTURE_DIR/missing_tar_snapshot"
   local SANDBOX="$FIXTURE_DIR/missing_tar_sandbox"
@@ -451,7 +451,7 @@ test_init_git_missing_baseline_tar() {
   fi
 }
 
-# sandbox isolation — changes in sandbox do not affect snapshot
+# sandbox isolation  --  changes in sandbox do not affect snapshot
 test_sandbox_isolation() {
   local PROJECT="$FIXTURE_DIR/isolation_project"
   local SNAPSHOT="$FIXTURE_DIR/isolation_snapshot"
@@ -472,7 +472,7 @@ test_sandbox_isolation() {
   fi
 }
 
-# SESSION_STATE file creation — verify .git/SESSION_STATE is written correctly
+# SESSION_STATE file creation  --  verify .git/SESSION_STATE is written correctly
 # and .git/INIT_SHA is NOT written
 test_init_git_creates_session_state() {
   local PROJECT="$FIXTURE_DIR/session_state_project"

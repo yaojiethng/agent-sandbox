@@ -1,4 +1,4 @@
-# Skill — Bash Audit
+# Skill  --  Bash Audit
 
 Audit bash code against the rules in
 [`bash-coding-conventions.md`](../../../../docs/development/bash-coding-conventions.md).

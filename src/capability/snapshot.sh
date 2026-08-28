@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # libs/snapshot.sh
-# Snapshot pipeline functions — sourced by start_agent.sh (host side)
+# Snapshot pipeline functions  --  sourced by start_agent.sh (host side)
 # and sandbox-entrypoint.sh (capability layer side).
 #
 # Host-side functions:
-#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [primary — rsync-based]
+#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [primary  --  rsync-based]
 #   snapshot_archive_head     SOURCE_DIR  DEST_DIR   [produces baseline.tar for container]
-#   snapshot_enumerate_files  SOURCE_DIR             [deprecated — index-driven]
-#   snapshot_copy_files       SOURCE_DIR  DEST_DIR   [deprecated — index-driven]
+#   snapshot_enumerate_files  SOURCE_DIR             [deprecated  --  index-driven]
+#   snapshot_copy_files       SOURCE_DIR  DEST_DIR   [deprecated  --  index-driven]
 #   snapshot_validate         SNAPSHOT_DIR
 #
 # Container-side functions:
@@ -17,7 +17,7 @@
 # snapshot_copy_worktree
 # -------------------------
 # Copies the working tree from SOURCE_DIR into DEST_DIR using rsync.
-# Enumerates from the filesystem directly — not from the git index.
+# Enumerates from the filesystem directly  --  not from the git index.
 # Handles unstaged deletions, moves, and new files correctly by construction.
 #
 # Exclude sources applied (in addition to per-directory .gitignore files):
@@ -98,12 +98,12 @@ snapshot_copy_worktree() {
 
   # --- Warning pass: detect files excluded by global/exclude rules only ---
   if [[ -n "$EXCLUDE_TMPFILE" ]]; then
-    # Dry-run A: local .gitignore rules only — what rsync would copy without global rules
+    # Dry-run A: local .gitignore rules only  --  what rsync would copy without global rules
     local LIST_A
     LIST_A=$("${BASE_ARGS[@]}" --dry-run --list-only "$SOURCE_DIR/" /dev/null 2>/dev/null \
       | awk '{print $NF}' | sort)
 
-    # Dry-run B: all rules — what rsync will actually copy
+    # Dry-run B: all rules  --  what rsync will actually copy
     local LIST_B
     LIST_B=$("${FULL_ARGS[@]}" --dry-run --list-only "$SOURCE_DIR/" /dev/null 2>/dev/null \
       | awk '{print $NF}' | sort)
@@ -146,7 +146,7 @@ snapshot_archive_head() {
   local DEST_DIR="$2"
 
   if ! git -C "$SOURCE_DIR" rev-parse HEAD &>/dev/null; then
-    echo "Error: SOURCE_DIR has no commits — git archive requires at least one commit." >&2
+    echo "Error: SOURCE_DIR has no commits  --  git archive requires at least one commit." >&2
     echo "  Run: git -C '$SOURCE_DIR' commit --allow-empty -m 'initial'" >&2
     return 1
   fi
@@ -195,16 +195,16 @@ snapshot_check_case_mismatch() {
     local tree_basename
     tree_basename=$(basename "$tree_path")
 
-    # Same name → no mismatch
+    # Same name -> no mismatch
     [[ "$fs_entry" == "$tree_basename" ]] && continue
 
-    # Different case → check if blob matches
+    # Different case -> check if blob matches
     local tree_blob fs_blob
     tree_blob=$(git -C "$SOURCE_DIR" ls-tree HEAD -- "$tree_path" | awk '{print $3}') 2>/dev/null
     fs_blob=$(git -C "$SOURCE_DIR" hash-object "$SOURCE_DIR/$dir/$fs_entry") 2>/dev/null
 
     if [[ -n "$tree_blob" && "$tree_blob" == "$fs_blob" ]]; then
-      MISMATCHES+=("$tree_path → $dir/$fs_entry (same blob $tree_blob)")
+      MISMATCHES+=("$tree_path -> $dir/$fs_entry (same blob $tree_blob)")
     fi
   done < <(git -C "$SOURCE_DIR" ls-tree -r HEAD --name-only 2>/dev/null)
 
@@ -260,12 +260,12 @@ snapshot_validate() {
 # -------------------------
 # Initialises a git repository in SANDBOX_DIR with the correct two-layer state:
 #
-#   Layer 1 — baseline commit: unpacked from SNAPSHOT_DIR/baseline.tar, which
+#   Layer 1  --  baseline commit: unpacked from SNAPSHOT_DIR/baseline.tar, which
 #   contains exactly HEAD from PROJECT_DIR (produced by snapshot_archive_head
-#   on the host). The baseline commit represents the committed state only —
+#   on the host). The baseline commit represents the committed state only  -- 
 #   no working tree changes, no untracked files.
 #
-#   Layer 2 — working tree overlay: SNAPSHOT_DIR (the rsync copy of the
+#   Layer 2  --  working tree overlay: SNAPSHOT_DIR (the rsync copy of the
 #   operator's working tree) is overlaid onto SANDBOX_DIR with --delete.
 #   The git index is NOT updated after this step.
 #
@@ -274,14 +274,14 @@ snapshot_validate() {
 # matches what the operator sees in PROJECT_DIR.
 #
 # Working tree states handled correctly:
-#   Tracked, no changes          → clean
-#   Tracked, unstaged edits      → M file (unstaged)
-#   Tracked, staged edits        → M file (staged, shown as unstaged — see note)
-#   Tracked, deleted (no git rm) → D file (unstaged)
-#   Tracked, staged deletion     → D file (staged, shown as unstaged — see note)
-#   Untracked, not gitignored    → ?? file
-#   Untracked, gitignored        → not visible
-#   New file, staged (git add)   → ?? file (shown as untracked — see note)
+#   Tracked, no changes          -> clean
+#   Tracked, unstaged edits      -> M file (unstaged)
+#   Tracked, staged edits        -> M file (staged, shown as unstaged  --  see note)
+#   Tracked, deleted (no git rm) -> D file (unstaged)
+#   Tracked, staged deletion     -> D file (staged, shown as unstaged  --  see note)
+#   Untracked, not gitignored    -> ?? file
+#   Untracked, gitignored        -> not visible
+#   New file, staged (git add)   -> ?? file (shown as untracked  --  see note)
 #
 # Note on staged changes: the baseline commit is always HEAD. Staged changes
 # in PROJECT_DIR (git add but not committed) are not part of HEAD, so the
@@ -316,10 +316,10 @@ snapshot_init_git() {
   git -C "$SANDBOX_DIR" config user.name "agent-sandbox"
   git -C "$SANDBOX_DIR" config core.fileMode false
 
-  # Unpack baseline.tar — contains exactly the committed state at HEAD.
+  # Unpack baseline.tar  --  contains exactly the committed state at HEAD.
   # This is the only content that belongs in the baseline commit.
   # Extract baseline.tar directly into the sandbox directory.
-  # baseline.tar is produced by `git archive HEAD` — it contains working tree
+  # baseline.tar is produced by `git archive HEAD`  --  it contains working tree
   # files only (no .git/). Safe to extract on top of the git init skeleton.
   # Previously this used an intermediate mktemp directory + cp -a, which
   # failed when TMPDIR resolved to /opt/provider-config/ inside the

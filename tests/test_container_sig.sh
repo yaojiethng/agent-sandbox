@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # tests/test_container_sig.sh
-# Unit tests for src/libs/container_sig.sh — deterministic source-tree hashing,
+# Unit tests for src/libs/container_sig.sh  --  deterministic source-tree hashing,
 # current-sig resolution, and image staleness classification.
 #
 # Covers:
-#   container_sig        — determinism, order-independence, sensitivity to
+#   container_sig         --  determinism, order-independence, sensitivity to
 #                          content changes, fail-closed missing-path guard,
 #                          empty-set and empty-args edge cases
-#   current_sig          — unknown-type rejection, agent-without-provider
+#   current_sig           --  unknown-type rejection, agent-without-provider
 #                          rejection, sandbox/agent derivation, live recompute
-#   _sandbox_sig_sources — static path list contract
-#   _agent_sig_sources   — conditional provider config/preflight inclusion
-#   image_is_stale       — fresh/stale/unknown classification (docker stubbed)
+#   _sandbox_sig_sources  --  static path list contract
+#   _agent_sig_sources    --  conditional provider config/preflight inclusion
+#   image_is_stale        --  fresh/stale/unknown classification (docker stubbed)
 
 set -uo pipefail
 
@@ -21,7 +21,7 @@ test_setup
 STUB_DIR="$TEST_DIR/../test/stubs"
 source "$REPO_ROOT/src/libs/container_sig.sh"
 
-# make_sig_repo <dir> — build a minimal fake repo root containing every path
+# make_sig_repo <dir>  --  build a minimal fake repo root containing every path
 # _sandbox_sig_sources/_agent_sig_sources reference, each with one tracked file.
 make_sig_repo() {
   local ROOT="$1"
@@ -145,7 +145,7 @@ test_container_sig_empty_set_returns_pinned_digest() {
 }
 
 test_container_sig_empty_sources_fails_closed() {
-  # An empty sources array must error out, not fall back to bare `find` —
+  # An empty sources array must error out, not fall back to bare `find`  -- 
   # which would silently hash whatever cwd the caller happens to be in.
   local OUT RC=0
   OUT=$(container_sig "${FIXTURE_DIR}/emptyargs_root" </dev/null 2>&1); RC=$?
@@ -274,7 +274,7 @@ test_current_sig_recomputes_on_live_tree() {
 test_current_sig_distinct_providers_distinct_keys() {
   local ROOT="$FIXTURE_DIR/twoproviders"
   make_sig_repo "$ROOT"
-  # opencode has no extra config; pi gets one — sigs must differ.
+  # opencode has no extra config; pi gets one  --  sigs must differ.
   mkdir -p "$ROOT/src/reasoning/providers/pi/config"
   echo cfg > "$ROOT/src/reasoning/providers/pi/config/extra.conf"
 
@@ -293,7 +293,7 @@ test_current_sig_distinct_providers_distinct_keys() {
 # image_is_stale  (docker via test/stubs/docker)
 # =============================================================================
 
-# run_with_docker_stub <fn> — execute $fn with test/stubs shadowing docker.
+# run_with_docker_stub <fn>  --  execute $fn with test/stubs shadowing docker.
 run_with_docker_stub() {
   (
     PATH="$STUB_DIR:$PATH"

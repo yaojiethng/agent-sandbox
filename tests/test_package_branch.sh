@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for libs/package_branch.sh — dispatcher produces unified output format
+# Tests for libs/package_branch.sh  --  dispatcher produces unified output format
 #
 # Expected output layout (under OUTPUT_DIR/):
 #   patches/0001-<sha>.diff
@@ -347,7 +347,7 @@ test_dispatcher_no_init_sha_file() {
 }
 
 # =============================================================================
-# _package_preflight_check — warning-branch coverage
+# _package_preflight_check  --  warning-branch coverage
 # =============================================================================
 
 test_preflight_bypass_returns_before_any_git() {
@@ -399,7 +399,7 @@ test_preflight_flags_cancelled_out_modification() {
   # Reachable path into the 'identical content' advisory: a committed change
   # whose working tree was reverted back to baseline content (uncommitted).
   # The file appears in the INIT..HEAD diff, yet `git diff --quiet $INIT -- f`
-  # (INIT tree vs WORKING TREE — note: the code comment claims HEAD, it is
+  # (INIT tree vs WORKING TREE  --  note: the code comment claims HEAD, it is
   # actually the worktree) finds them identical -> flagged.
   local P="$FIXTURE_DIR/pf_cancel"
   make_committed_repo "$P"

@@ -3,18 +3,18 @@
 # Diagnostic checks run inside the sandbox (capability layer) container during a dry-run.
 # Bind-mounted at /dry_run_capability.sh via the dry-run compose overlay.
 #
-# These are investigation-level checks — deeper than the pre-flight checks
+# These are investigation-level checks  --  deeper than the pre-flight checks
 # in sandbox-entrypoint.sh. Pre-flight covers critical invariants for every
 # start; this covers round-trip validation, file existence in the image,
 # and cross-container communication.
 #
 # Exit codes:
-#   0 — all CRITICAL checks passed (warnings may exist)
-#   1 — one or more CRITICAL checks failed
+#   0  --  all CRITICAL checks passed (warnings may exist)
+#   1  --  one or more CRITICAL checks failed
 #
 # Check severity:
-#   CRITICAL — infrastructure is broken; the run would fail or produce wrong results
-#   WARN     — something is missing or unexpected; worth reviewing before production use
+#   CRITICAL  --  infrastructure is broken; the run would fail or produce wrong results
+#   WARN      --  something is missing or unexpected; worth reviewing before production use
 
 # Intentionally no set -e: all checks must run even when some fail.
 # Intentionally no set -u: env vars are checked explicitly with guards.
@@ -26,10 +26,10 @@ source /opt/sandbox/lib/diff_export.sh
 source /opt/sandbox/lib/routing.sh
 
 # Validate all expected symbols resolved from sourced libraries.
-# An absent symbol means the image is stale — fail fast rather than
+# An absent symbol means the image is stale  --  fail fast rather than
 # scattering ad-hoc 'type' checks at each call site.
 for _cmd in wait_git_lockfile resolve_latest_dir; do
-  type "$_cmd" &>/dev/null || { echo "CRITICAL: $_cmd not found after sourcing libraries — image may be stale" >&2; exit 1; }
+  type "$_cmd" &>/dev/null || { echo "CRITICAL: $_cmd not found after sourcing libraries  --  image may be stale" >&2; exit 1; }
 done
 
 # Paths are passed as absolute env vars from the compose template.
@@ -174,7 +174,7 @@ if mkdir -p "$CHANGES_DIR" 2>/dev/null && echo "CAPABILITY_LAYER_OK" > "$_cap_ma
   _readback=$(cat "$_cap_marker" 2>/dev/null) || _readback=""
   if [[ "$_readback" == "CAPABILITY_LAYER_OK" ]]; then
     _pass "capability layer marker: wrote and read back at $CHANGES_DIR"
-    # Leave marker for reasoning layer — cleaned up by host-side phase
+    # Leave marker for reasoning layer  --  cleaned up by host-side phase
   else
     _fail "capability layer marker: file empty or unreadable"
     rm -f "$_cap_marker"

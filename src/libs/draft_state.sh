@@ -2,18 +2,18 @@
 # src/libs/draft_state.sh
 #
 # Draft-state helpers: read, write, validate, and guard draft branch state.
-# Sourced by draft.sh, confirm.sh, and reject.sh — not executed standalone.
+# Sourced by draft.sh, confirm.sh, and reject.sh  --  not executed standalone.
 #
 # Provides:
-#   draft_parse_folder_name       — parse SESSION_TS and branch from folder name
-#   draft_guard_no_collision      — abort if draft branch already exists
-#   draft_write_state             — produce .draft-state content string
-#   draft_read_state_from_branch  — read .draft-state from branch tip as shell vars
-#   draft_validate_branch         — validate current branch is a draft; print state vars
-#   draft_resolve_commit_message  — resolve commit message from diff or .msg file
+#   draft_parse_folder_name        --  parse SESSION_TS and branch from folder name
+#   draft_guard_no_collision       --  abort if draft branch already exists
+#   draft_write_state              --  produce .draft-state content string
+#   draft_read_state_from_branch   --  read .draft-state from branch tip as shell vars
+#   draft_validate_branch          --  validate current branch is a draft; print state vars
+#   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
 
 # =============================================================================
-# draft_parse_folder_name — parse session identity from folder name
+# draft_parse_folder_name  --  parse session identity from folder name
 # =============================================================================
 
 # Parse folder name format: <SESSION_TS>-<SANITIZED_HOST_BRANCH>[-<SESSION_ID>]
@@ -34,7 +34,7 @@ draft_parse_folder_name() {
 }
 
 # =============================================================================
-# draft_guard_no_collision — abort if draft branch already exists
+# draft_guard_no_collision  --  abort if draft branch already exists
 # =============================================================================
 
 # Abort if a draft branch with the exact name already exists.
@@ -49,7 +49,7 @@ draft_guard_no_collision() {
 }
 
 # =============================================================================
-# draft_write_state — produce .draft-state content string
+# draft_write_state  --  produce .draft-state content string
 # =============================================================================
 
 # Produce .draft-state content string; caller writes to file or commits.
@@ -78,7 +78,7 @@ EOF
 }
 
 # =============================================================================
-# draft_read_state_from_branch — read .draft-state from branch tip
+# draft_read_state_from_branch  --  read .draft-state from branch tip
 # =============================================================================
 
 # Read .draft-state from the tip of the given branch.
@@ -107,7 +107,7 @@ draft_read_state_from_branch() {
 }
 
 # =============================================================================
-# draft_validate_branch — validate current branch is a proper draft branch
+# draft_validate_branch  --  validate current branch is a proper draft branch
 # =============================================================================
 
 # Validate current branch is a proper draft branch.
@@ -151,7 +151,7 @@ draft_validate_branch() {
     return 1
   fi
 
-  # Find .draft-state commit by message — it may not be the first commit after
+  # Find .draft-state commit by message  --  it may not be the first commit after
   # from_hash if the user ran git rebase -i (which is the recommended workflow
   # for shaping commits before confirm).
   local DRAFT_STATE_COMMIT
@@ -169,7 +169,7 @@ draft_validate_branch() {
 }
 
 # =============================================================================
-# draft_resolve_commit_message — resolve commit message for a diff file
+# draft_resolve_commit_message  --  resolve commit message for a diff file
 # =============================================================================
 
 # draft_resolve_commit_message DIFF_FILE
@@ -181,7 +181,7 @@ draft_validate_branch() {
 #   3. Fallback: "Apply <basename>"
 #
 # Output:
-#   stdout — the resolved commit message
+#   stdout  --  the resolved commit message
 #
 # Returns:
 #   0 always

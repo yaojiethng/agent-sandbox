@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # scripts/build.sh
-# Build orchestration — builds Docker images for agent and sandbox layers.
+# Build orchestration  --  builds Docker images for agent and sandbox layers.
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   build/image.sh      — image naming functions
-#   libs/container_sig.sh — container-signature computation + staleness predicate
+#   build/image.sh       --  image naming functions
+#   libs/container_sig.sh  --  container-signature computation + staleness predicate
 #
 # Provides:
 #   build_image    - run docker build using repo root as context
-#   build_agent    - three-tier build (shared → provider-base → provider-image)
+#   build_agent    - three-tier build (shared -> provider-base -> provider-image)
 #   build_sandbox  - build the capability layer image for a given project
 #   preflight      - verify both images exist; build if missing
 
@@ -23,7 +23,7 @@ source "$REPO_ROOT/src/libs/container_sig.sh"
 # Container-sig source lists
 # These define which source files map to /opt/sandbox/ and /opt/workflow/
 # in each image type. Both build_sandbox/build_agent and _check_container_sig
-# use these to compute the container-sig hash — single source of truth.
+# use these to compute the container-sig hash  --  single source of truth.
 # (Defined in src/libs/container_sig.sh.)
 # -------------------------
 
@@ -67,9 +67,9 @@ build_image() {
 
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
-#   1. agent-node-base (shared — node.dockerfile)
-#   2. <provider>-base (provider-specific — providers/<n>/base.dockerfile)
-#   3. <provider>-agent-<project> (final — providers/<n>/provider.dockerfile)
+#   1. agent-node-base (shared  --  node.dockerfile)
+#   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
+#   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
 #
 # Tier 1 cached across all providers on this machine.
 # Tier 2 cached per-provider.
@@ -139,16 +139,16 @@ build_agent() {
     fi
   }
 
-  # Tier 1: shared node base — no container-sig (no sandbox/workflow content)
+  # Tier 1: shared node base  --  no container-sig (no sandbox/workflow content)
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base — no container-sig (no sandbox/workflow content)
+  # Tier 2: provider-specific base  --  no container-sig (no sandbox/workflow content)
   build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image — with container-sig
+  # Tier 3: always build provider image  --  with container-sig
   local agent_sources
   mapfile -t agent_sources < <(_agent_sig_sources "$repo_root" "$provider")
   local provider_sig
@@ -201,7 +201,7 @@ preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
-  local build_missing="${4:-true}"  # resume passes false — a resume must not rebuild
+  local build_missing="${4:-true}"  # resume passes false  --  a resume must not rebuild
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -272,17 +272,17 @@ _check_container_sig() {
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox build
+# main  --  entry point when exec'd by agent-sandbox build
 # =============================================================================
 
 # Parses operator-facing flags and calls build_sandbox/build_agent as needed.
 # Expected flags: --name=<n> --project=<p> --sandbox=<s> [--targets=<t,...>] [--rebuild]
 #
 # --targets defaults to "all" if omitted. Use comma-separated values:
-#   all               — sandbox + all providers
-#   sandbox           — sandbox only
-#   pi,hermes         — named providers only
-#   pi,sandbox        — named provider + sandbox
+#   all                --  sandbox + all providers
+#   sandbox            --  sandbox only
+#   pi,hermes          --  named providers only
+#   pi,sandbox         --  named provider + sandbox
 
 usage() {
   cat <<EOF

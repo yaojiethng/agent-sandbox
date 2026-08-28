@@ -2,7 +2,7 @@
 # scripts/workflows/apply.sh
 #
 # Diff application workflow: apply a diff file to the project working tree.
-# Sourced by agent-sandbox.sh — not executed standalone.
+# Sourced by agent-sandbox.sh  --  not executed standalone.
 #
 # Depends on: AGENT_SANDBOX_REPO, src/libs/diff.sh, git, standard shell utilities.
 
@@ -18,23 +18,23 @@ source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
 # =============================================================================
-# apply_run — apply a diff file
+# apply_run  --  apply a diff file
 # =============================================================================
 
 # apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE
 #
-# Applies a diff file to the project working tree. Does not create commits —
+# Applies a diff file to the project working tree. Does not create commits  -- 
 # leaves changes unstaged for operator review.
 #
 # Args:
-#   PROJECT_DIR   — absolute path to the target git repository
-#   DIFF_FILE     — absolute path to a diff file (uncommitted.diff or similar)
-#   APPLY_BRANCH  — optional branch to checkout/create before applying
-#   FORCE         — if true, apply with --reject; .rej files for conflicts
+#   PROJECT_DIR    --  absolute path to the target git repository
+#   DIFF_FILE      --  absolute path to a diff file (uncommitted.diff or similar)
+#   APPLY_BRANCH   --  optional branch to checkout/create before applying
+#   FORCE          --  if true, apply with --reject; .rej files for conflicts
 #                   to handle minor hunk-context drift (line reorders,
 #                   whitespace shifts that don't affect the content delta)
 #
-# No internal path resolution — the caller (router in agent-sandbox.sh or
+# No internal path resolution  --  the caller (router in agent-sandbox.sh or
 # explicit --diff=<path>) supplies the file path directly.
 apply_run() {
   local PROJECT_DIR="$1"
@@ -97,7 +97,7 @@ apply_run() {
 }
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -120,7 +120,7 @@ EOF
 }
 
 # =============================================================================
-# apply_preview — print a git-oneline-style summary of an external diff file
+# apply_preview  --  print a git-oneline-style summary of an external diff file
 # =============================================================================
 
 # apply_preview DIFF_FILE
@@ -149,7 +149,7 @@ apply_preview() {
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox apply
+# main  --  entry point when exec'd by agent-sandbox apply
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.

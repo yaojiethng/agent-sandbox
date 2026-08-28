@@ -1,4 +1,4 @@
-# Skill — Bugfix Protocol
+# Skill  --  Bugfix Protocol
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Ensure the failure is not a known or transient infrastructure issue (Docker daem
 
 ### 1. Replicate
 
-Run the failing command in the same context that produced the error. Capture the full output — do not filter or summarise it. Record:
+Run the failing command in the same context that produced the error. Capture the full output  --  do not filter or summarise it. Record:
 
 - The exact command that was run
 - The full stdout/stderr output, preserving line numbers and error location markers
@@ -38,9 +38,9 @@ For each distinct error message in the output:
 
 | Cascade pattern | Example |
 |---|---|
-| Variable unset | `local` at top level causes assignment to fail → downstream uses empty string → "No such file or directory" |
-| Missing dependency | `diff_export` called but `diff.sh` not sourced → command not found |
-| Wrong-container assumption | Agent-only mount checked in sandbox → always fails |
+| Variable unset | `local` at top level causes assignment to fail -> downstream uses empty string -> "No such file or directory" |
+| Missing dependency | `diff_export` called but `diff.sh` not sourced -> command not found |
+| Wrong-container assumption | Agent-only mount checked in sandbox -> always fails |
 
 ### 3. Diagnose
 
@@ -61,8 +61,8 @@ For each unique root cause, write a diagnostic check that tests the precondition
 Apply targeted edits to the minimum set of files that address the root causes:
 
 1. Fix one root cause per edit where possible.
-2. Do not fix cascading symptoms — fix the root; the cascade resolves.
-3. Do not refactor — address only what is broken. Flag adjacent improvement opportunities as notes.
+2. Do not fix cascading symptoms  --  fix the root; the cascade resolves.
+3. Do not refactor  --  address only what is broken. Flag adjacent improvement opportunities as notes.
 4. Verify each fix:
    - `bash -n <file>` passes syntax check
    - Grep for the bug pattern to confirm no remaining instances
@@ -75,7 +75,7 @@ Document the bug and fix in two places:
 **A. Handover `[CORRECTION]` block** (per `docs/operations/handover_policy.md`):
 - What was wrong, root cause for each distinct bug, what was changed, which files were modified
 
-**B. Diagnostic script** — serves as the permanent record of preconditions and the regression guard.
+**B. Diagnostic script**  --  serves as the permanent record of preconditions and the regression guard.
 
 ### 6. Close
 
@@ -91,7 +91,7 @@ Document the bug and fix in two places:
 
 `local` is valid only inside bash functions. In an executed script, `local` at the top level produces `local: can only be used in a function`. The variable may or may not be assigned depending on bash version.
 
-**Detection:** `grep -nE '^\s*local\s+' <script>` — manually verify each match is inside a function body.
+**Detection:** `grep -nE '^\s*local\s+' <script>`  --  manually verify each match is inside a function body.
 
 **Fix:** Remove the `local` keyword. Variables in bash are created by their first assignment.
 

@@ -1,16 +1,16 @@
-# Skill — Recovery Protocol
+# Skill  --  Recovery Protocol
 
 ## Purpose
 
-Ad-hoc workflow for recovering committed artifacts that violate policy or convention. Not a policy — use when needed, not on every iteration.
+Ad-hoc workflow for recovering committed artifacts that violate policy or convention. Not a policy  --  use when needed, not on every iteration.
 
 Covers two scenarios: recovering lost work after a container/filesystem reset, and verifying that committed artifacts are correctly shaped after a recovery operation.
 
 ## Before Acting
 
 Confirm which scenario applies:
-- **Recovery process** — container or filesystem state was reset, losing committed work
-- **Recovery verification audit** — recovery is complete and needs verification
+- **Recovery process**  --  container or filesystem state was reset, losing committed work
+- **Recovery verification audit**  --  recovery is complete and needs verification
 
 ---
 
@@ -36,8 +36,8 @@ Identify which iterations' outputs are missing. The handovers tell you what was 
 
 **2. Choose reconstruction method**
 
-- **Chat history replay** — replay edits iteration by iteration. Labor-intensive but reliable.
-- **JSONL session log replay** — if a session JSONL file survived the reset, it may contain tool calls and outputs. Faster but schema is not standardised.
+- **Chat history replay**  --  replay edits iteration by iteration. Labor-intensive but reliable.
+- **JSONL session log replay**  --  if a session JSONL file survived the reset, it may contain tool calls and outputs. Faster but schema is not standardised.
 
 **3. Replay in order**
 
@@ -78,7 +78,7 @@ for f in devlog/handovers/<new-date>-*.md; do
 done
 ```
 
-A rebase is needed after renaming to squash rename commits — the verification audit section handles that.
+A rebase is needed after renaming to squash rename commits  --  the verification audit section handles that.
 
 **7. Package for review**
 
@@ -161,7 +161,7 @@ Confirm the commit sequence makes sense and no fixup or repair commits remain.
 
 ### Exit Conditions
 
-All checks pass. The history is clean — no working documents, no wrong prefix, no missing handovers, no fixup commits.
+All checks pass. The history is clean  --  no working documents, no wrong prefix, no missing handovers, no fixup commits.
 
 ---
 

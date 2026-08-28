@@ -1,17 +1,17 @@
-# Skill — Refactor: Move or Rename a Single File
+# Skill  --  Refactor: Move or Rename a Single File
 
 **Atomic unit of file refactoring.** Repeating this process for every file in a directory constitutes a folder refactor. Repeating for every directory in a tree constitutes a structural cleanup.
 
 ## When to Use
 
-- Renaming a file (e.g. `foo-bar.sh` → `foo_bar.sh`)
-- Moving a file to a new directory (e.g. `libs/foo.sh` → `src/libs/foo.sh`)
-- Splitting a file into multiple files (e.g. `big.sh` → `part_a.sh` + `part_b.sh`)
+- Renaming a file (e.g. `foo-bar.sh` -> `foo_bar.sh`)
+- Moving a file to a new directory (e.g. `libs/foo.sh` -> `src/libs/foo.sh`)
+- Splitting a file into multiple files (e.g. `big.sh` -> `part_a.sh` + `part_b.sh`)
 - Merging files into one
 
 ---
 
-## Preflight — Freeze the Convention
+## Preflight  --  Freeze the Convention
 
 Before touching any file, verify the naming convention against every filename in scope:
 
@@ -27,7 +27,7 @@ Decision on naming convention (dashes vs underscores, directories, extensions) m
 
 ---
 
-## Step 1 — Catalogue Every Reference
+## Step 1  --  Catalogue Every Reference
 
 Before the move or rename, find every reference to the file across the entire tree:
 
@@ -39,14 +39,14 @@ Categorise each hit:
 
 | Category | Must change? | Examples |
 |---|---|---|
-| **Source path** | ✅ Must change | `source "$DIR/target_file.sh"` |
-| **Exec path** | ✅ Must change | `bash "$DIR/target_file.sh"` |
-| **COPY source** | ✅ Must change | `COPY target_file.sh /opt/...` |
-| **COPY target** | ✅ May change | `COPY src /opt/lib/target_file.sh` (keep target stable if backward compat matters) |
-| **Test fixture** | ✅ Must change | Mock repo that creates files at old path |
-| **Build context** | ✅ Must change | `_build_context_copy "$repo_root/libs/target_file.sh"` |
-| **Documentation** | ⚠️ Should change | Docs referencing the old path |
-| **Comments** | 🟡 Optional | `# see libs/target_file.sh` |
+| **Source path** | Must change | `source "$DIR/target_file.sh"` |
+| **Exec path** | Must change | `bash "$DIR/target_file.sh"` |
+| **COPY source** | Must change | `COPY target_file.sh /opt/...` |
+| **COPY target** | May change | `COPY src /opt/lib/target_file.sh` (keep target stable if backward compat matters) |
+| **Test fixture** | Must change | Mock repo that creates files at old path |
+| **Build context** | Must change | `_build_context_copy "$repo_root/libs/target_file.sh"` |
+| **Documentation** | Should change | Docs referencing the old path |
+| **Comments** | Optional | `# see libs/target_file.sh` |
 
 Produce a **propagation table**:
 
@@ -59,7 +59,7 @@ Produce a **propagation table**:
 
 ---
 
-## Step 2 — Create the New File
+## Step 2  --  Create the New File
 
 ```bash
 # For a simple rename/move:
@@ -80,7 +80,7 @@ grep -n 'source' new/path/target.sh
 
 ---
 
-## Step 3 — Update All References
+## Step 3  --  Update All References
 
 Process every hit from Step 1's propagation table. Use bulk sed for simple path substitutions:
 
@@ -97,17 +97,17 @@ grep -rn 'old/path/target\.sh' . --include="*.sh" --include="*.yml" --include="*
 
 ---
 
-## Step 4 — Run Tests
+## Step 4  --  Run Tests
 
 ```bash
 make test
 ```
 
-All tests must pass. Both the old and new files exist — old paths still resolve, so tests should not break at this stage.
+All tests must pass. Both the old and new files exist  --  old paths still resolve, so tests should not break at this stage.
 
 ---
 
-## Step 5 — Remove the Old File
+## Step 5  --  Remove the Old File
 
 ```bash
 git rm old/path/target.sh
@@ -123,11 +123,11 @@ If tests fail, the old file had remaining references. Restore the old file (`git
 
 ---
 
-## Step 6 — Commit
+## Step 6  --  Commit
 
 ```bash
 git add -A
-git commit -m "refactor: move/rename target_file.sh → new/path/target_file.sh"
+git commit -m "refactor: move/rename target_file.sh -> new/path/target_file.sh"
 ```
 
 ---
@@ -136,7 +136,7 @@ git commit -m "refactor: move/rename target_file.sh → new/path/target_file.sh"
 
 To move/rename an entire directory, apply the single-file workflow to every file in the directory:
 
-1. Preflight — freeze naming convention for all files in scope
+1. Preflight  --  freeze naming convention for all files in scope
 2. For each file in the directory:
    - Catalogue references (across the whole tree, not just within the directory)
    - Create new file at target location

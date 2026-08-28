@@ -1,14 +1,14 @@
-# Skill — Handover Audit
+# Skill  --  Handover Audit
 
 ## Purpose
 
-Formalised handover audit workflow — operator-invoked reviews of closed handovers to catch deferred items dropped across iterations, incomplete close sequences, non-standard formatting, dangling references, and unresolved findings before they compound.
+Formalised handover audit workflow  --  operator-invoked reviews of closed handovers to catch deferred items dropped across iterations, incomplete close sequences, non-standard formatting, dangling references, and unresolved findings before they compound.
 
 An audit is not an iteration type. It is invoked by the operator as needed.
 
 ## Before Acting
 
-Read `docs/operations/handover_policy.md` and `docs/operations/documentation_policy.md` — the audit applies rules defined in both. The audit does not restate them.
+Read `docs/operations/handover_policy.md` and `docs/operations/documentation_policy.md`  --  the audit applies rules defined in both. The audit does not restate them.
 
 ---
 
@@ -26,13 +26,13 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 
 A full handover audit covers:
 
-1. **Status completeness** — every handover in scope must have `**Status:**` set to `Active` or `Closed`.
-2. **Structural completeness** — every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Findings, Completed, Deferred items, What's Next), with null markers where empty.
-3. **Deferred item chain integrity** — each deferred item with a next-iteration destination must have been resolved or re-deferred in the target iteration.
-4. **Carry-forward escalation** — a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
-5. **Findings triage** — all entries must be triaged at iteration close.
-6. **Dangling references** — files, functions, or paths referenced in Completed or Hot files sections that no longer exist.
-7. **Standardised status values** — `Active` or `Closed` only.
+1. **Status completeness**  --  every handover in scope must have `**Status:**` set to `Active` or `Closed`.
+2. **Structural completeness**  --  every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Findings, Completed, Deferred items, What's Next), with null markers where empty.
+3. **Deferred item chain integrity**  --  each deferred item with a next-iteration destination must have been resolved or re-deferred in the target iteration.
+4. **Carry-forward escalation**  --  a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
+5. **Findings triage**  --  all entries must be triaged at iteration close.
+6. **Dangling references**  --  files, functions, or paths referenced in Completed or Hot files sections that no longer exist.
+7. **Standardised status values**  --  `Active` or `Closed` only.
 
 ---
 
@@ -56,13 +56,13 @@ Verify all required sections are present and headers match canonical casing.
 
 Anomalies fall into two categories:
 
-- **Can be 1:1 replaced** — headers with a direct canonical equivalent differing only in casing. Replace directly and record in a `[CORRECTION]` block.
-- **Cannot be 1:1 replaced** — headers with custom content and no canonical equivalent. Add an `[AMENDMENT]` block and leave content unchanged.
+- **Can be 1:1 replaced**  --  headers with a direct canonical equivalent differing only in casing. Replace directly and record in a `[CORRECTION]` block.
+- **Cannot be 1:1 replaced**  --  headers with custom content and no canonical equivalent. Add an `[AMENDMENT]` block and leave content unchanged.
 
 ### 3. Deferred chain audit
 
 For each non-null deferred item, trace forward:
-1. Read the destination iteration's `## Carried forward` — was the item picked up?
+1. Read the destination iteration's `## Carried forward`  --  was the item picked up?
 2. If yes, was it resolved (Completed table) or re-deferred (Deferred items)?
 3. If it disappeared without resolution, flag as **dropped**.
 4. If it survived 2+ hops, flag for **carry-forward escalation**.
@@ -70,8 +70,8 @@ For each non-null deferred item, trace forward:
 ### 4. Status audit
 
 Check each handover's `**Status:**`:
-- `Active` — only for the most recent handover
-- `Closed` — all others
+- `Active`  --  only for the most recent handover
+- `Closed`  --  all others
 - Any other value is a correction
 
 ### 5. Dangling reference check
@@ -87,9 +87,9 @@ For each function or variable mentioned:
 ### 6. Corrections and amendments
 
 Apply corrections per `handover_policy.md`:
-- `[CORRECTION — YYYY-MM-DD]` — factual errors: edit inline, append correction block
-- `[AMENDMENT — YYYY-MM-DD]` — non-standard formatting or policy violations that cannot be cleanly corrected
-- `[REMOVED in MX.X]` — abandoned or superseded items
+- `[CORRECTION  --  YYYY-MM-DD]`  --  factual errors: edit inline, append correction block
+- `[AMENDMENT  --  YYYY-MM-DD]`  --  non-standard formatting or policy violations that cannot be cleanly corrected
+- `[REMOVED in MX.X]`  --  abandoned or superseded items
 
 ### 7. Report
 

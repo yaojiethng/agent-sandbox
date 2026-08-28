@@ -2,7 +2,7 @@
 # scripts/workflows/draft.sh
 #
 # Draft branch workflow: create draft branch, apply patches.
-# Sourced by agent-sandbox.sh — not executed standalone.
+# Sourced by agent-sandbox.sh  --  not executed standalone.
 #
 # Depends on: libs/session_state.sh, git, standard shell utilities.
 
@@ -19,7 +19,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
 # =============================================================================
-# draft_collect_patches — collect and filter numbered diff files
+# draft_collect_patches  --  collect and filter numbered diff files
 # =============================================================================
 
 # draft_collect_patches PATCHES_DIR [DIFFS_RANGE]
@@ -78,7 +78,7 @@ draft_collect_patches() {
 }
 
 # =============================================================================
-# draft_create_and_init_branch — guards, branch creation, .draft-state
+# draft_create_and_init_branch  --  guards, branch creation, .draft-state
 # =============================================================================
 
 # draft_create_and_init_branch PROJECT_DIR WORKING_BRANCH BASE_COMMIT \
@@ -136,7 +136,7 @@ draft_create_and_init_branch() {
 }
 
 # =============================================================================
-# draft_apply_patches — apply and commit diffs sequentially
+# draft_apply_patches  --  apply and commit diffs sequentially
 # =============================================================================
 
 # draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE]
@@ -164,13 +164,13 @@ draft_apply_patches() {
 }
 
 # =============================================================================
-# draft_apply_uncommitted — apply uncommitted.diff if present
+# draft_apply_uncommitted  --  apply uncommitted.diff if present
 # =============================================================================
 
 # draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE]
 #
 # Applies uncommitted.diff from SOURCE_DIR if it exists and is non-empty.
-# Does NOT commit — the diff is applied to the working tree only, leaving
+# Does NOT commit  --  the diff is applied to the working tree only, leaving
 # the operator to review and commit manually.
 draft_apply_uncommitted() {
   local PROJECT_DIR="$1"
@@ -199,7 +199,7 @@ draft_apply_uncommitted() {
 }
 
 # =============================================================================
-# _ingest_export_metadata — parse and validate .export-status
+# _ingest_export_metadata  --  parse and validate .export-status
 # =============================================================================
 
 # _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR \
@@ -215,7 +215,7 @@ draft_apply_uncommitted() {
 # a missing or incomplete .export-status is an error.
 #
 # INIT_SHA records only the patch-generation point. Per design it is
-# "information, not the fork point" — it feeds the divergence warning
+# "information, not the fork point"  --  it feeds the divergence warning
 # below and its absence is never fatal. Returns 1 with an error message
 # on failure.
 _ingest_export_metadata() {
@@ -279,7 +279,7 @@ _ingest_export_metadata() {
 }
 
 # =============================================================================
-# draft_run — create draft branch (no apply)
+# draft_run  --  create draft branch (no apply)
 # =============================================================================
 
 # draft_run PROJECT_DIR SOURCE_DIR BUNDLE_NAME BRANCH_FROM_ARG
@@ -287,7 +287,7 @@ _ingest_export_metadata() {
 #
 # Creates a draft branch, writes .draft-state, and prints branch info.
 # Accepts DIFF_COUNT (pre-collected by main()) for the .draft-state record.
-# Does NOT apply patches — the caller (main()) handles the apply loop.
+# Does NOT apply patches  --  the caller (main()) handles the apply loop.
 # Prints branch info to stdout for the caller's summary.
 draft_run() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
@@ -331,7 +331,7 @@ draft_run() {
 
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -358,7 +358,7 @@ EOF
 }
 
 # =============================================================================
-# _draft_rollback — failure rollback for _run_draft_workflow
+# _draft_rollback  --  failure rollback for _run_draft_workflow
 # =============================================================================
 
 # _draft_rollback PROJECT_DIR SOURCE_BRANCH
@@ -388,17 +388,17 @@ _draft_rollback() {
 }
 
 # =============================================================================
-# _run_draft_workflow — common orchestration after source resolution
+# _run_draft_workflow  --  common orchestration after source resolution
 # =============================================================================
 
 # _run_draft_workflow PROJECT_DIR SOURCE_DIR BUNDLE_NAME
 #                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE
 #                      [PATCH_LIST]
 #
-# Orchestrates: collect patches → count → create branch → apply loop →
-# apply uncommitted → summary. Called by main() after source resolution.
+# Orchestrates: collect patches -> count -> create branch -> apply loop ->
+# apply uncommitted -> summary. Called by main() after source resolution.
 # If PATCH_LIST (newline-separated, one file per line) is provided, uses it
-# instead of re-collecting — avoids double enumeration when the caller
+# instead of re-collecting  --  avoids double enumeration when the caller
 # (interactive path) has already collected the list for display.
 _run_draft_workflow() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
@@ -430,9 +430,9 @@ _run_draft_workflow() {
 
   # Create savepoint at the branch point BEFORE .draft-state is committed.
   # On failure, reset to this to avoid leaving the draft branch partially applied.
-  # Local tag — never pushed by default git push.
+  # Local tag  --  never pushed by default git push.
   # Tag the RESOLVED base (_validated_base defaults to HEAD when --branch-from
-  # is omitted) — the raw BRANCH_FROM may be empty, which git would reject.
+  # is omitted)  --  the raw BRANCH_FROM may be empty, which git would reject.
   git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
   git -C "$PROJECT_DIR" tag draft-savepoint "$_validated_base"
 
@@ -462,7 +462,7 @@ _run_draft_workflow() {
     return 1
   }
 
-  # Success — clean up savepoint
+  # Success  --  clean up savepoint
   git -C "$PROJECT_DIR" tag -d draft-savepoint
 
   # Summary
@@ -480,7 +480,7 @@ _run_draft_workflow() {
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox draft
+# main  --  entry point when exec'd by agent-sandbox draft
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls

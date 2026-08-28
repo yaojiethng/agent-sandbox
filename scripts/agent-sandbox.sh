@@ -2,7 +2,7 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Host-side CLI tool for managing agent-sandbox sessions and exports.
-# All subcommands run on the host — never inside a container.
+# All subcommands run on the host  --  never inside a container.
 # Inside the container, invoke lib scripts directly (see prompt templates).
 #
 # Usage:
@@ -32,13 +32,13 @@ AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
-# No top-level sources — each dispatch case handles its own dependencies.
+# No top-level sources  --  each dispatch case handles its own dependencies.
 # This file is a pure dispatch table: validate required flags, exec the target.
 
 # =============================================================================
 # CLI entry point
 # =============================================================================
-# When sourced (for tests), only functions are defined — dispatch is not run.
+# When sourced (for tests), only functions are defined  --  dispatch is not run.
 # When executed directly, main() parses flags and dispatches to subcommands.
 
 main() {
@@ -92,14 +92,14 @@ main() {
     fi
   }
 
-  # Shared subcommand list — single source of truth for the valid set.
+  # Shared subcommand list  --  single source of truth for the valid set.
   print_subcommand_list() {
     echo "Valid subcommands: onboard, build, start, serve, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
   }
 
   # Route '<sub> --help', 'help <sub>', and 'help --help' to the child's own
   # help (or, for help itself, to the subcommand list). Exec's so the child
-  # prints its own usage — the dispatcher only locates it.
+  # prints its own usage  --  the dispatcher only locates it.
   route_help() {
     local sub="$1"
     case "$sub" in
@@ -132,7 +132,7 @@ main() {
   parse_flags "$@"
 
   # --help/-h on any subcommand delegates to the child's own help BEFORE the
-  # per-case required-arg checks below — mirroring each leaf script's own
+  # per-case required-arg checks below  --  mirroring each leaf script's own
   # convention (parse_help_flag runs before arg validation). This makes
   # `agent-sandbox <sub> --help` work uniformly for every subcommand, and
   # `agent-sandbox help --help` show help's own page (the subcommand list).

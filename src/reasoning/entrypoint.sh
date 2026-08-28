@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # libs/provider-entrypoint.sh
 # Harness-owned wrapper entrypoint for all reasoning layer provider containers.
-# Copied into the image via the build context — a change to this file triggers
+# Copied into the image via the build context  --  a change to this file triggers
 # a Docker layer cache miss on the COPY step in provider.dockerfile.
 #
 # Responsibilities:
 #   1. Provision AGENT_HOME from image template (copy-in config files not
-#      provided by Docker bind mounts — prompts/, sessions/, skills/).
+#      provided by Docker bind mounts  --  prompts/, sessions/, skills/).
 #   2. Run generic pre-flight checks (env vars, container libs, AGENT_HOME).
 #   3. Source provider-specific pre-flight script if present
 #      (/opt/sandbox/bin/provider-preflight.sh).
@@ -19,13 +19,13 @@
 #
 # Config files (settings.json, auth.json, models.json, AGENTS.md) are
 # copy-in from the baked template (/opt/workflow/agent/config/) at startup.
-# Subdirectories prompts/, sessions/, skills/ are Docker bind-mounted —
+# Subdirectories prompts/, sessions/, skills/ are Docker bind-mounted  -- 
 # they shadow the template copies at runtime. See devlog/roadmap.md
 # M2.4 for the design rationale.
 #
 # Required environment variables (set via ENV in provider.dockerfile):
-#   AGENT_HOME          — provider config dir inside the container
-#   PROVIDER_NAME       — provider identifier
+#   AGENT_HOME           --  provider config dir inside the container
+#   PROVIDER_NAME        --  provider identifier
 #
 # No filesystem paths are hardcoded in this script.
 #
@@ -61,7 +61,7 @@
 #
 # This only affects the "docker stop mid-session" path. For all normal exit
 # paths (user quits TUI, agent exits cleanly), session state is preserved
-# because the sessions/ subdirectory is bind-mounted directly — no copy-out
+# because the sessions/ subdirectory is bind-mounted directly  --  no copy-out
 # needed. Config files (settings.json, auth.json) are regenerated from the
 # template on next startup (ephemeral by design, avoids utime/EPERM).
 # If cleanup on docker stop is required, implement it at the harness level:
@@ -89,14 +89,14 @@ _require_var PROVIDER_NAME
 # Provision AGENT_HOME from image template
 # ---------------------------------------------------------------------------
 # Provisions AGENT_HOME by copying files from the image template.
-# Docker bind-mounted subdirs overlay the copied content — the copy-in
+# Docker bind-mounted subdirs overlay the copied content  --  the copy-in
 # seeds them on first run; subsequent runs use persisted host content.
 _provision_agent_home() {
   local template="${1:?provision_agent_home requires template_dir}"
   local target="${2:?provision_agent_home requires target_dir}"
 
   if [[ ! -d "$template" ]]; then
-    echo "FATAL: Config template $template not found — image may be stale" >&2
+    echo "FATAL: Config template $template not found  --  image may be stale" >&2
     exit 1
   fi
 
@@ -124,8 +124,8 @@ unset PROVISION_TEMPLATE
 # /opt/sandbox/lib/ is baked into the image at build time. If files are
 # missing, the image is stale and must be rebuilt with `make build`.
 #
-# session_state.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
-# The remaining files are WARN — fine to start but certain diagnostics or
+# session_state.sh is CRITICAL  --  sourced unconditionally by dry_run_reasoning.sh.
+# The remaining files are WARN  --  fine to start but certain diagnostics or
 # session operations will fail at runtime.
 LIB_DIR="/opt/sandbox/lib"
 for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
@@ -135,10 +135,10 @@ for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
   severity="${entry##*:}"
   if [[ ! -f "$LIB_DIR/$lib" ]]; then
     if [[ "$severity" == "CRITICAL" ]]; then
-      echo "FATAL: $LIB_DIR/$lib is missing — image is stale, rebuild with 'make build'" >&2
+      echo "FATAL: $LIB_DIR/$lib is missing  --  image is stale, rebuild with 'make build'" >&2
       exit 1
     else
-      echo "WARN: $LIB_DIR/$lib is missing — image may be stale" >&2
+      echo "WARN: $LIB_DIR/$lib is missing  --  image may be stale" >&2
     fi
   fi
 done
@@ -152,10 +152,10 @@ unset LIB_DIR
 # went wrong during provisioning and the image is unusable.
 #
 # In test environments (no /opt/workflow/agent/config), the provision step
-# is skipped by the guard above, so we don't FATAL — the test framework
+# is skipped by the guard above, so we don't FATAL  --  the test framework
 # handles setup separately.
 if [[ -d "/opt/workflow/agent/config" && ! -d "$AGENT_HOME" ]]; then
-  echo "FATAL: $AGENT_HOME missing — provisioning failed" >&2
+  echo "FATAL: $AGENT_HOME missing  --  provisioning failed" >&2
   exit 1
 fi
 if [[ -d "$AGENT_HOME" && ! -w "$AGENT_HOME" ]]; then
@@ -189,13 +189,13 @@ unset _provider_preflight
 # If it's missing or not executable, the image is misconfigured.
 
 if [[ $# -eq 0 ]]; then
-  echo "FATAL: No agent command specified — image misconfigured" >&2
+  echo "FATAL: No agent command specified  --  image misconfigured" >&2
   exit 1
 fi
 
 _agent_cmd="$1"
 if ! command -v "$_agent_cmd" >/dev/null 2>&1; then
-  echo "FATAL: Agent command not found: $_agent_cmd — image may be stale" >&2
+  echo "FATAL: Agent command not found: $_agent_cmd  --  image may be stale" >&2
   exit 1
 fi
 unset _agent_cmd

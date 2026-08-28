@@ -5,7 +5,7 @@
 # detection, git apply, --no-renames flag, package_branch integration,
 # and diff_export default behavior.
 #
-# Promoted from tests/knowledge/knowledge_diff_rename.sh — the seams it
+# Promoted from tests/knowledge/knowledge_diff_rename.sh  --  the seams it
 # probes are deterministic (git only), so per testing_policy.md it belongs
 # in the discovered suite, not in knowledge/.
 
@@ -99,7 +99,7 @@ _assert_diff_lacks() {
 }
 
 # -------------------------
-# Case 1: Pure rename — apply cleanly
+# Case 1: Pure rename  --  apply cleanly
 # -------------------------
 
 test_pure_rename_applies_cleanly() {
@@ -123,7 +123,7 @@ test_pure_rename_applies_cleanly() {
 }
 
 # -------------------------
-# Case 2: Rename + small edit — apply with content change
+# Case 2: Rename + small edit  --  apply with content change
 # -------------------------
 
 test_rename_with_small_edit_applies_cleanly() {
@@ -181,7 +181,7 @@ EOF
 }
 
 # -------------------------
-# Case 3: Rename + big edit — no rename detection, delete+create
+# Case 3: Rename + big edit  --  no rename detection, delete+create
 # -------------------------
 
 test_rename_with_big_edit_no_rename_detection() {
@@ -265,7 +265,7 @@ test_no_renames_survives_destination_conflict() {
   _commit_file "$TGT" "source.txt" "important data"
   _commit_file "$TGT" "dest.txt" "preexisting file"
 
-  # Rename diff should FAIL — destination already exists
+  # Rename diff should FAIL  --  destination already exists
   if ! _apply_diff "$TGT" "$DIFF_RN"; then
     pass "rename diff fails when destination exists (expected)"
   else

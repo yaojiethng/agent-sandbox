@@ -30,7 +30,7 @@ run_test() {
 }
 
 # ---------------------------------------------------------------------------
-# test_setup — call at file scope after source lines to get standard vars
+# test_setup  --  call at file scope after source lines to get standard vars
 # and automatic temp-dir cleanup.
 #
 # Sets: TEST_DIR, REPO_ROOT, FIXTURE_DIR (mktemp -d)
@@ -57,7 +57,7 @@ test_done() {
   echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
   if [[ ${#FAILURES[@]} -gt 0 ]]; then
     echo "Failed:"
-    # FAIL: prefix — scripts/run_tests.sh counts failures by grepping this
+    # FAIL: prefix  --  scripts/run_tests.sh counts failures by grepping this
     # exact marker from captured output.
     for f in "${FAILURES[@]}"; do echo "  FAIL: $f"; done
   fi
@@ -69,14 +69,14 @@ test_done() {
 }
 
 # ---------------------------------------------------------------------------
-# Assertion helpers — the standard way to assert inside a test function.
+# Assertion helpers  --  the standard way to assert inside a test function.
 # Each calls pass/fail itself, so a test body can be one to three lines and
 # can never be assertion-less.
 #
-#   assert_eq ACTUAL EXPECTED [LABEL]      — string equality
-#   assert_ne ACTUAL UNEXPECTED [LABEL]    — string inequality
-#   assert_rc EXPECTED_RC ACTUAL_RC [LABEL] — exit-code comparison (integers)
-#   assert_contains HAYSTACK NEEDLE [LABEL] — substring match (literal)
+#   assert_eq ACTUAL EXPECTED [LABEL]       --  string equality
+#   assert_ne ACTUAL UNEXPECTED [LABEL]     --  string inequality
+#   assert_rc EXPECTED_RC ACTUAL_RC [LABEL]  --  exit-code comparison (integers)
+#   assert_contains HAYSTACK NEEDLE [LABEL]  --  substring match (literal)
 # ---------------------------------------------------------------------------
 assert_eq() {
   local ACTUAL="$1" EXPECTED="$2" LABEL="${3:-values equal}"

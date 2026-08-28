@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_run_agent.sh — Tests for scripts/run_agent.sh path resolution.
+# tests/test_run_agent.sh  --  Tests for scripts/run_agent.sh path resolution.
 #
 # These tests assert that the compose and provider file paths constructed
 # by run_agent.sh resolve correctly for each registered provider.
@@ -96,9 +96,9 @@ echo ""
 echo "-- Provider file existence (deterministic internal-consistency check) --"
 
 # Each provider dir may hold three optional files per run_agent.sh's contract:
-#   setup.sh                  — sourced if present
-#   docker-compose.<name>.yml — provider overlay, merged if present
-#   docker-compose.serve.yml  — required only in serve mode
+#   setup.sh                   --  sourced if present
+#   docker-compose.<name>.yml  --  provider overlay, merged if present
+#   docker-compose.serve.yml   --  required only in serve mode
 # These are optional by design, so presence is not asserted. Instead assert
 # internal consistency deterministically (no skips): every present file must be
 # non-empty and correctly named per the harness contract.

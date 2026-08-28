@@ -1,6 +1,6 @@
 # Handover Audit Skill
 
-**Status:** Draft — not yet formalised. Captures procedural content-quality rules that migrated out of `handover_policy.md` during the document split (session 20260522-03).
+**Status:** Draft  --  not yet formalised. Captures procedural content-quality rules that migrated out of `handover_policy.md` during the document split (session 20260522-03).
 
 ## Purpose
 
@@ -20,7 +20,7 @@ The agent must have run a grep or read the relevant file during the iteration to
 
 **Rule:** If a spec requires a structured output (coverage map, propagation table, diff summary), the format must be defined in the spec before implementation begins. An open-ended analysis requirement without a specified output format will produce inconsistent results across iterations.
 
-**Audit check:** grep the spec for "propagation", "coverage", "diff" — for each hit, verify a format template is present in the same spec section.
+**Audit check:** grep the spec for "propagation", "coverage", "diff"  --  for each hit, verify a format template is present in the same spec section.
 
 ### Validation tool coverage
 
@@ -32,7 +32,7 @@ The agent must have run a grep or read the relevant file during the iteration to
 
 - **When:** At Gate 2 (before implementation) for spec-to-source integrity and structured output format. At Step 7 (pre-close) for validation tool coverage.
 - **Who:** Agent self-check. Not operator-invoked.
-- **Severity:** Warning — flags do not block gates but must be triaged before iteration close.
+- **Severity:** Warning  --  flags do not block gates but must be triaged before iteration close.
 
 ---
 

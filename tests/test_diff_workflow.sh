@@ -3,7 +3,7 @@
 # Tests for libs/diff_workflow.sh
 #
 # Covers:
-#   apply_run — applies a diff file, optional branch checkout, force mode
+#   apply_run  --  applies a diff file, optional branch checkout, force mode
 #
 # apply_run now takes a file path directly (no internal resolution).
 set -uo pipefail
@@ -14,7 +14,7 @@ source "$REPO_ROOT/scripts/workflows/apply.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 # =============================================================================
-# APPLY tests — 4-arg contract
+# APPLY tests  --  4-arg contract
 # =============================================================================
 test_apply_applies_diff() {
   local P="$FIXTURE_DIR/apply_diff_p"
@@ -55,11 +55,11 @@ test_apply_applies_diff_with_branch() {
 test_apply_force_mode() {
   local P="$FIXTURE_DIR/apply_force_p"
   make_committed_repo "$P"
-  # Create a diff that will conflict — modify the existing committed file
+  # Create a diff that will conflict  --  modify the existing committed file
   local COMMITTED_FILE
   COMMITTED_FILE=$(ls "$P" | head -1)
   if [[ -z "$COMMITTED_FILE" ]]; then
-    # No files committed yet — create one
+    # No files committed yet  --  create one
     echo "original" > "$P/base.txt"
     git -C "$P" add base.txt
     git -C "$P" commit -m "base" --quiet
@@ -273,10 +273,10 @@ test_apply_and_commit_force_mode() {
 # =============================================================================
 # Run
 # =============================================================================
-# _apply_patch_file — recount retry / failure-hint branches
+# _apply_patch_file  --  recount retry / failure-hint branches
 # =============================================================================
 
-# make_recount_diff DIR FILE — a diff with an inserted '+' line whose hunk
+# make_recount_diff DIR FILE  --  a diff with an inserted '+' line whose hunk
 # header was NOT adjusted (the classic hand-edited-patch case). Plain
 # `git apply` rejects it as corrupt; `--recount` deduces real counts and
 # succeeds. This is the exact scenario the retry branch exists for.
@@ -316,7 +316,7 @@ test_apply_patch_file_recount_retry_succeeds() {
 }
 
 test_apply_patch_file_unfixable_diff_fails_with_hints() {
-  # Diff references a file that does not exist in the repo — recount cannot
+  # Diff references a file that does not exist in the repo  --  recount cannot
   # save it. Must fail rc=1 with the FORCE hint block.
   local P="$FIXTURE_DIR/apf_hints_p"
   make_committed_repo "$P"
@@ -369,7 +369,7 @@ run_test test_apply_patch_file_missing_diff
 run_test test_apply_and_commit_applies_and_commits
 run_test test_apply_and_commit_missing_args
 # =============================================================================
-# PREVIEW tests — apply_preview summary contract
+# PREVIEW tests  --  apply_preview summary contract
 # =============================================================================
 # Multi-file diff: one line per file in diff order + Total line.
 test_apply_preview_lists_files_and_total() {

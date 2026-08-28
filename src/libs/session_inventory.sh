@@ -4,7 +4,7 @@
 # Shared registry-record helpers for the `.compose/<session-id>.yml` session
 # inventory. Consumed by both `resume_agent.sh` (list / interactive picker /
 # identity recovery) and `prune.sh` (Rule 1 stale-record selection). Keeps the
-# record helpers in one place — the registry is the single source of truth for
+# record helpers in one place  --  the registry is the single source of truth for
 # session identity and staleness.
 #
 # Pure helper library: defines functions only, sets no caller-owned globals.
@@ -14,13 +14,13 @@
 # versa.
 #
 # Functions:
-#   record_image FILE SERVICE   — image value for a named service
-#   record_provider FILE        — provider name from the agent service image
-#   record_label FILE LABEL     — value of an agent-sandbox.<label> record label
-#   record_image_stale FILE R   — session-record image staleness (agent+sandbox)
-#   project_current_sha      — current HEAD SHA of the caller's project
-#   enumerate_records           — per-record `sid|provider|ts|branch` enumeration
-#   session_stale FILE [SHA]    — registry-truth sandbox staleness
+#   record_image FILE SERVICE    --  image value for a named service
+#   record_provider FILE         --  provider name from the agent service image
+#   record_label FILE LABEL      --  value of an agent-sandbox.<label> record label
+#   record_image_stale FILE R    --  session-record image staleness (agent+sandbox)
+#   project_current_sha       --  current HEAD SHA of the caller's project
+#   enumerate_records            --  per-record `sid|provider|ts|branch` enumeration
+#   session_stale FILE [SHA]     --  registry-truth sandbox staleness
 #                               (fresh|stale|unknown)
 #
 # Staleness semantics (see docs/concepts/terminology.md `## staleness`,
@@ -30,7 +30,7 @@
 # Image-staleness criterion + recompute (image_is_stale / current_sig).
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/container_sig.sh"
 
-# record_image FILE SERVICE — print the `image:` value for a named service in
+# record_image FILE SERVICE  --  print the `image:` value for a named service in
 # a `.compose/<session-id>.yml` registry record, or nothing if the service (or
 # its image) is absent. Service-scoped (awk tracks the service block), so a
 # comment or stray `image:` elsewhere cannot shadow the real value.
@@ -47,7 +47,7 @@ record_image() {
   ' "$file"
 }
 
-# record_provider FILE — recover the provider from the agent service image
+# record_provider FILE  --  recover the provider from the agent service image
 # (`<provider>-agent-<lower-project>`, the canonical agent_image_name shape).
 # Prints the provider name, or nothing if it cannot be recovered.
 record_provider() {
@@ -59,7 +59,7 @@ record_provider() {
   echo "${agent_img%%-agent-*}"
 }
 
-# record_label FILE LABEL — recover `agent-sandbox.<label>` from a registry
+# record_label FILE LABEL  --  recover `agent-sandbox.<label>` from a registry
 # record. Prints the label value, or nothing if absent. Pipefail-safe: a
 # no-match grep must not abort a caller under `set -o pipefail`.
 record_label() {
@@ -73,7 +73,7 @@ record_label() {
 # (agent / sandbox) is image-stale, "fresh" when both are fresh, "unknown"
 # when not determinable. Both images are read from the record's own service
 # image lines (the rendered compose record carries `sandbox:` and `agent:`
-# images — src/build/docker-compose.yml), so no naming reconstruction is
+# images  --  src/build/docker-compose.yml), so no naming reconstruction is
 # needed. Only the provider prefix of the agent image is derived, to resolve
 # the provider-specific current sig.
 record_image_stale() {
@@ -93,7 +93,7 @@ record_image_stale() {
   else echo "unknown"; fi
 }
 
-# project_current_sha — print the current HEAD SHA of the caller's project
+# project_current_sha  --  print the current HEAD SHA of the caller's project
 # (PROJECT_DIR), or empty when unset or not a git repo. The single shared
 # derivation of the current project HEAD for staleness.
 project_current_sha() {
@@ -102,7 +102,7 @@ project_current_sha() {
   git -C "$dir" rev-parse HEAD 2>/dev/null || true
 }
 
-# enumerate_records — print one `sid|provider|ts|branch` line per registry
+# enumerate_records  --  print one `sid|provider|ts|branch` line per registry
 # record (glob `.compose/*.yml`; skips unreadable / unrecoverable-provider
 # records), optionally narrowed by PROVIDER_FILTER (caller scope). The shared
 # session-inventory core: prune Rule 1 and resume --list/--interactive layer
@@ -125,7 +125,7 @@ enumerate_records() {
   done
 }
 
-# session_stale FILE [CURRENT_SHA] — print the registry-truth sandbox
+# session_stale FILE [CURRENT_SHA]  --  print the registry-truth sandbox
 # staleness of a session record: "fresh" if its host-head-sha matches the
 # current project HEAD, "stale" if it differs, "unknown" if the record has no
 # host-head-sha or the current HEAD cannot be determined. CURRENT_SHA may be

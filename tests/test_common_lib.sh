@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # tests/test_common_lib.sh
-# Unit tests for libs/common.sh — shared flag parsing and validation.
+# Unit tests for libs/common.sh  --  shared flag parsing and validation.
 #
 # Covers:
-#   parse_help_flag    — detects --help and -h; passes through other args
-#   parse_base_flags   — extracts --name and --sandbox from arg list
-#   check_base_flags   — validates required flags, rejects empty/slash paths
+#   parse_help_flag     --  detects --help and -h; passes through other args
+#   parse_base_flags    --  extracts --name and --sandbox from arg list
+#   check_base_flags    --  validates required flags, rejects empty/slash paths
 
 set -uo pipefail
 
@@ -19,7 +19,7 @@ source "$REPO_ROOT/src/libs/common.sh"
 
 test_help_flag_detected() {
   local RC=0
-  # parse_help_flag calls usage() and exit — mock those to avoid aborting
+  # parse_help_flag calls usage() and exit  --  mock those to avoid aborting
   usage() { echo "usage called"; }
   OUTPUT=$(parse_help_flag --help 2>&1) && RC=$? || RC=$?
   if echo "$OUTPUT" | grep -q "usage called"; then
@@ -41,7 +41,7 @@ test_help_flag_short() {
 }
 
 test_help_flag_not_triggered() {
-  # No --help or -h in args — should be a no-op
+  # No --help or -h in args  --  should be a no-op
   usage() { echo "usage called"; }
   OUTPUT=$(parse_help_flag --name=test --sandbox=/tmp/s 2>&1)
   if [[ -z "$OUTPUT" ]]; then

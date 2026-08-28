@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/resume_agent.sh — Resume entrypoint: continues a previously-started
+# scripts/resume_agent.sh  --  Resume entrypoint: continues a previously-started
 # agent session.
 #
 # Usage:
@@ -21,7 +21,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
 
 # Max inventory entries shown per page by --list and --interactive. Canonical
-# value lives in src/libs/common.sh (INTERACTIVE_MAX_ENTRIES) — shared with
+# value lives in src/libs/common.sh (INTERACTIVE_MAX_ENTRIES)  --  shared with
 # the draft picker so both consumers agree.
 RESUME_LIST_PAGE_SIZE="$INTERACTIVE_MAX_ENTRIES"
 
@@ -36,9 +36,9 @@ Resume a previously-started agent session. To begin a NEW session, use
 `make start` / `agent-sandbox start` instead.
 
 Preferred invocation through the sandbox Makefile:
-  make resume SESSION_ID=<id>     — resume a specific session (MOST COMMON)
-  make resume LIST=1              — list resumable sessions
-  make resume INTERACTIVE=1       — interactive picker + confirm
+  make resume SESSION_ID=<id>      --  resume a specific session (MOST COMMON)
+  make resume LIST=1               --  list resumable sessions
+  make resume INTERACTIVE=1        --  interactive picker + confirm
 
 or directly:
   agent-sandbox resume --list
@@ -94,7 +94,7 @@ source "$REPO_ROOT/src/libs/session_inventory.sh"
 # the form `SESSION_ID|provider|session-ts|branch|sandbox-stale|image-stale`,
 # optionally filtered by PROVIDER_FILTER. Uses the shared `enumerate_records`
 # core from session_inventory.sh and layers the two staleness columns on top.
-# `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7 — see session_stale).
+# `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7  --  see session_stale).
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
@@ -116,7 +116,7 @@ build_inventory() {
   return 0
 }
 
-# _no_sessions — emit the empty-inventory guidance and exit 1. Shared by the
+# _no_sessions  --  emit the empty-inventory guidance and exit 1. Shared by the
 # --list and --interactive branches (same message in both).
 _no_sessions() {
   if [[ -n "$PROVIDER_FILTER" ]]; then
@@ -129,12 +129,12 @@ _no_sessions() {
 }
 
 # -------------------------
-# Dispatch — command shape (ID 07)
+# Dispatch  --  command shape (ID 07)
 # -------------------------
-# 1) --list → list .compose records (enriched, optional provider filter).
-# 2) --interactive → picker over the inventory, confirm, then resume.
-# 3) --session-id=<id> → resume path.
-# 4) bare (no target flags) → help hinting --list / --interactive.
+# 1) --list -> list .compose records (enriched, optional provider filter).
+# 2) --interactive -> picker over the inventory, confirm, then resume.
+# 3) --session-id=<id> -> resume path.
+# 4) bare (no target flags) -> help hinting --list / --interactive.
 if [[ "$RESUME_LIST" == true ]]; then
   build_inventory
   [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
@@ -145,7 +145,7 @@ if [[ "$RESUME_LIST" == true ]]; then
     printf '  %-8s  %-10s  %-17s  %-22s  %-7s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale" "$image_stale"
   done
   if [[ "${#RESUME_INVENTORY[@]}" -gt "$RESUME_LIST_PAGE_SIZE" ]]; then
-    echo "  (...$(( ${#RESUME_INVENTORY[@]} - RESUME_LIST_PAGE_SIZE )) more session(s) — use --interactive or --provider=<n> to narrow)" >&2
+    echo "  (...$(( ${#RESUME_INVENTORY[@]} - RESUME_LIST_PAGE_SIZE )) more session(s)  --  use --interactive or --provider=<n> to narrow)" >&2
   fi
   exit 0
 fi
@@ -156,9 +156,9 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
 
   # Build the picker entries (value|display), then pick + confirm. Only the
   # stale states are marked ([STALE] / [IMG-STALE]); fresh/unknown carry no
-  # marker (honest — unknown is not "ok"). Paged at RESUME_LIST_PAGE_SIZE.
+  # marker (honest  --  unknown is not "ok"). Paged at RESUME_LIST_PAGE_SIZE.
   # Explicit --interactive always shows the picker + confirm, even for a sole
-  # record (decision I-1) — the deliberately slow mode.
+  # record (decision I-1)  --  the deliberately slow mode.
   PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
   for _line in "${RESUME_INVENTORY[@]}"; do
     IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
@@ -221,7 +221,7 @@ if [[ ! -f "$RECORD_FILE" ]]; then
   exit 1
 fi
 
-# Agent image line → provider; session labels → SESSION_TS / HOST_HEAD_SHA.
+# Agent image line -> provider; session labels -> SESSION_TS / HOST_HEAD_SHA.
 local_provider="$(record_provider "$RECORD_FILE")"
 if [[ -z "$local_provider" ]]; then
   echo "Error: could not recover provider from session record $RECORD_FILE" >&2
@@ -236,7 +236,7 @@ session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
 
 mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 
-# Session labels → SESSION_TS / HOST_HEAD_SHA.
+# Session labels -> SESSION_TS / HOST_HEAD_SHA.
 SESSION_TS="$(record_label "$RECORD_FILE" session-ts)"
 export SESSION_TS
 HOST_HEAD_SHA="$(record_label "$RECORD_FILE" host-head-sha)"
@@ -248,7 +248,7 @@ session_env_names "$PROJECT_NAME" "$local_provider" "$SANDBOX_DIR" "$SESSION_ID_
 echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $SANDBOX_TYPE)"
 
 # Resume never rebuilds missing images (preflight with build_missing=false) and
-# never resets the volume — it continues the existing session.
+# never resets the volume  --  it continues the existing session.
 source "$REPO_ROOT/scripts/build.sh"
 preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "false"
 

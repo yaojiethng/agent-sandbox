@@ -29,8 +29,8 @@ done
 echo ""
 echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
 # The agent image bakes library scripts at /opt/sandbox/lib/.
-# session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
-# The remaining files are WARN — used later in the session or conditionally.
+# session.sh is CRITICAL  --  sourced unconditionally by dry_run_reasoning.sh.
+# The remaining files are WARN  --  used later in the session or conditionally.
 for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
              "diff.sh:WARN" "diff_export.sh:WARN"; do
   lib="${entry%%:*}"
@@ -44,7 +44,7 @@ for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
     fi
   else
     if [[ "$severity" == "CRITICAL" ]]; then
-      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+      fail "$libpath does not exist  --  IMAGE STALE [CRITICAL]"
     else
       fail "$libpath does not exist [WARN]"
     fi
@@ -92,7 +92,7 @@ if [[ -f "$SCRIPT" ]]; then
     fail "$BAD_LOCALS top-level local usage(s) found in $SCRIPT"
   fi
 else
-  fail "$SCRIPT not found — cannot check local keyword hygiene"
+  fail "$SCRIPT not found  --  cannot check local keyword hygiene"
 fi
 
 echo ""
@@ -184,9 +184,9 @@ else
   # The marker may not exist if Phase 1 hasn't run yet.
   # Check if CHANGES_DIR at least exists and is writable.
   if [[ -d "$CHANGES_DIR" ]]; then
-    pass "CHANGES_DIR exists — marker absent (expected if Phase 1 hasn't run)"
+    pass "CHANGES_DIR exists  --  marker absent (expected if Phase 1 hasn't run)"
   else
-    fail "CHANGES_DIR does NOT exist — volumes-from may be broken"
+    fail "CHANGES_DIR does NOT exist  --  volumes-from may be broken"
   fi
 fi
 
@@ -212,10 +212,10 @@ echo "=== Summary ==="
 echo "Passed: $PASS, Failed: $FAIL"
 echo ""
 echo "If any checks fail:"
-echo "  1. Library sourcing → check /opt/sandbox/lib/ contents"
-echo "  2. Top-level local  → edit dry_run_reasoning.sh; remove 'local' from top-level vars"
-echo "  3. Mount failures   → check docker-compose.dry-run.yml volume definitions"
-echo "  4. SESSION_STATE    → check sandbox init wrote init_sha and session_ts"
-echo "  5. Round-trip fail  → check CHANGES_DIR path matches volumes-from target"
+echo "  1. Library sourcing -> check /opt/sandbox/lib/ contents"
+echo "  2. Top-level local  -> edit dry_run_reasoning.sh; remove 'local' from top-level vars"
+echo "  3. Mount failures   -> check docker-compose.dry-run.yml volume definitions"
+echo "  4. SESSION_STATE    -> check sandbox init wrote init_sha and session_ts"
+echo "  5. Round-trip fail  -> check CHANGES_DIR path matches volumes-from target"
 
 [[ "$FAIL" -eq 0 ]]

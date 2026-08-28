@@ -1,4 +1,4 @@
-# Makefile — agent-sandbox
+# Makefile  --  agent-sandbox
 # This Makefile covers repo-level operations: installing the agent-sandbox CLI,
 # onboarding the dogfood sandbox, and running the test suite.
 #
@@ -107,16 +107,16 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Test:"
-	@echo "  test                       — run the full test suite"
+	@echo "  test                        --  run the full test suite"
 	@echo ""
 	@echo "Onboard / refresh:"
-	@echo "  onboard SANDBOX_DIR=<path>        — onboard the specified sandbox directory"
-	@echo "  refresh SANDBOX_DIR=<path>        — update stale template files in the specified sandbox directory"
+	@echo "  onboard SANDBOX_DIR=<path>         --  onboard the specified sandbox directory"
+	@echo "  refresh SANDBOX_DIR=<path>         --  update stale template files in the specified sandbox directory"
 	@echo ""
 	@echo "Install:"
-	@echo "  install                    — install agent-sandbox CLI"
-	@echo "  install INSTALL_DIR=<path> — install to specified directory"
-	@echo "  uninstall                  — remove agent-sandbox CLI"
+	@echo "  install                     --  install agent-sandbox CLI"
+	@echo "  install INSTALL_DIR=<path>  --  install to specified directory"
+	@echo "  uninstall                   --  remove agent-sandbox CLI"
 	@echo ""
 	@echo "Install directory resolution (in order):"
 	@echo "  1. INSTALL_DIR=<path> argument"

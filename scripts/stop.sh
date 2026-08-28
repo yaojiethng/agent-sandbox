@@ -2,7 +2,7 @@
 # scripts/stop.sh
 #
 # Stops containers for a given sandbox.
-# Identifies containers by label-based filtering — does not invoke
+# Identifies containers by label-based filtering  --  does not invoke
 # docker compose and does not require resolved compose environment variables.
 #
 # Usage:
@@ -92,7 +92,7 @@ if [[ ${#CONTAINER_IDS[@]} -eq 0 ]]; then
   echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
 else
   echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
-  # Containers are disposable — durable state lives in the named volume +
+  # Containers are disposable  --  durable state lives in the named volume +
   # bind mounts (Container State Contract). Remove them so the network can
   # be freed and no stopped containers accumulate.
   docker stop "${CONTAINER_IDS[@]}"
@@ -104,7 +104,7 @@ else
 fi
 
 # -------------------------
-# Remove the session network (by label — no project-name parsing)
+# Remove the session network (by label  --  no project-name parsing)
 # -------------------------
 
 # The compose-created default network carries the session labels, so it is
@@ -123,7 +123,7 @@ if [[ ${#NETWORK_IDS[@]} -gt 0 ]]; then
 fi
 
 # -------------------------
-# Prune (if requested — delegates to prune.sh)
+# Prune (if requested  --  delegates to prune.sh)
 # -------------------------
 
 if [[ "$PRUNE" == true ]]; then

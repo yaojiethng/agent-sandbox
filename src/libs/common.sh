@@ -8,13 +8,13 @@
 # paths self-referentially from BASH_SOURCE[0] and define their own usage().
 #
 # Sets in caller's scope:
-#   PROJECT_NAME — parsed from --name flag
-#   SANDBOX_DIR  — parsed from --sandbox flag
+#   PROJECT_NAME  --  parsed from --name flag
+#   SANDBOX_DIR   --  parsed from --sandbox flag
 #
 # Provides:
-#   parse_base_flags()   — parse --name and --sandbox from "$@"
-#   check_base_flags()   — validate PROJECT_NAME and SANDBOX_DIR are set
-#   parse_help_flag()    — check for --help/-h, print usage and exit
+#   parse_base_flags()    --  parse --name and --sandbox from "$@"
+#   check_base_flags()    --  validate PROJECT_NAME and SANDBOX_DIR are set
+#   parse_help_flag()     --  check for --help/-h, print usage and exit
 #
 # Scripts should define their own usage() before sourcing this file.
 

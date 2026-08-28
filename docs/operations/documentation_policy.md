@@ -121,7 +121,9 @@ In workflow table Action cells: one imperative sentence stating what happens, fo
 
 ### Character set
 
-Documents use plain ASCII punctuation. Do not use non-ASCII punctuation (for example the section sign (`§`) or `¶`) or control/formatting symbols (for example indentation/space glyphs or chapter symbols). Write a dash as a hyphen with surrounding spaces (` - `), or as a double hyphen (`--`) in prose. In headings, use the space-separated form. To reference a document or section, write its name or link with an anchor instead.
+Documents use plain ASCII punctuation. Do not use non-ASCII punctuation (for example the section sign (`§`) or `¶`) or control/formatting symbols (for example indentation/space glyphs or chapter symbols). Write a dash as a hyphen with surrounding spaces (` - `), or as a double hyphen (`--`) in prose. In headings, use the space-separated form. To reference a document or section, write its name or link with an anchor instead. For status markers, write `[x]` / `[ ]` (in tables) or `- [x]` / `- [ ]` (bullet lists); do not use checkmark or cross emoji.
+
+**Allowed exception -- box-drawing characters.** Box-drawing characters (`│ ├ └ ─` and related) may be used inside ASCII-art structure and sequence diagrams (for example directory trees), where they carry the diagram's geometry. They are not allowed as comment banners, table rules, or decoration; convert those to ASCII hyphens.
 
 ---
 

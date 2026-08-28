@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# libs/session_env.sh — shared host-side session environment bootstrap.
+# libs/session_env.sh  --  shared host-side session environment bootstrap.
 #
 # Sourced by the host-side session entrypoints (start_agent.sh, resume_agent.sh).
 # Given a session's core inputs, derives and exports the full set of paths,
@@ -9,10 +9,10 @@
 #
 # Provides:
 #   session_env_common_init <sandbox_dir> <project_name> <project_dir>
-#     Phase 1 — no SESSION_ID needed. Loads the sandbox .env, validates the
+#     Phase 1  --  no SESSION_ID needed. Loads the sandbox .env, validates the
 #     git repo, derives harness paths via dirs_resolve, exports host uid/gid.
 #   session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
-#     Phase 2 — needs SESSION_ID. Derives image/container names, the sanitised
+#     Phase 2  --  needs SESSION_ID. Derives image/container names, the sanitised
 #     host branch, and delivery vars.
 #
 # Sourced by the host-side session entrypoints (start_agent.sh, resume_agent.sh).
@@ -87,7 +87,7 @@ session_env_names() {
   export PROVIDER_NAME="$provider_name"
   export SESSION_ID="$session_id"
 
-  # Host branch (sanitised; detached HEAD → short SHA)
+  # Host branch (sanitised; detached HEAD -> short SHA)
   local branch
   branch="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
   if [[ "$branch" == "HEAD" || -z "$branch" ]]; then

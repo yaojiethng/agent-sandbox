@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # -------------------------
-# Host-side start_agent.sh tests — checkpoint tags, session identity,
+# Host-side start_agent.sh tests  --  checkpoint tags, session identity,
 # WORKTREE_ID derivation, REPO_COMMIT capture, and compose template structure.
 #
 # Covers:
-#   checkpoint tag creation          — agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
-#   checkpoint tag pruning           — keep 5 most recent per worktree
-#   SANITIZED_HOST_BRANCH derivation — branch name sanitised for directory labels
-#   WORKTREE_ID derivation           — from PROJECT_DIR path
-#   REPO_COMMIT capture              — full HEAD SHA
+#   checkpoint tag creation           --  agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
+#   checkpoint tag pruning            --  keep 5 most recent per worktree
+#   SANITIZED_HOST_BRANCH derivation  --  branch name sanitised for directory labels
+#   WORKTREE_ID derivation            --  from PROJECT_DIR path
+#   REPO_COMMIT capture               --  full HEAD SHA
 #
 # Note: checkpoint-latest.ref writing tested indirectly via tag creation.
-# Direct ref file tests removed — Change 5 replaces with container label lookup.
+# Direct ref file tests removed  --  Change 5 replaces with container label lookup.
 #
-# All fixtures created under a temp dir — no repos created inside the harness repo.
+# All fixtures created under a temp dir  --  no repos created inside the harness repo.
 
 set -uo pipefail
 
@@ -469,8 +469,8 @@ test_wizard_help_describes_interactive() {
 }
 
 # --interactive with no --provider: provider picker shown, build policy picker,
-# then confirm. Abort on 'n' → non-zero and no session record created (the
-# clean-abort gate — no partial start).
+# then confirm. Abort on 'n' -> non-zero and no session record created (the
+# clean-abort gate  --  no partial start).
 test_wizard_picker_abort() {
   local dir="$FIXTURE_DIR/wizard_pick_abort"
   mkdir -p "$dir/project" "$dir/sandbox"
@@ -482,13 +482,13 @@ test_wizard_picker_abort() {
      && echo "$out" | grep -q "Select a provider" \
      && echo "$out" | grep -iq "aborted" \
      && ! ls "$dir/sandbox/.compose"/*.yml >/dev/null 2>&1; then
-    pass "start --interactive: picker + confirm, abort on 'n' → non-zero, no session record"
+    pass "start --interactive: picker + confirm, abort on 'n' -> non-zero, no session record"
   else
     fail "start --interactive: expected picker+abort+no record, got rc=$rc: $out"
   fi
 }
 
-# --interactive with --provider supplied: no provider re-prompt (D1 — supplied
+# --interactive with --provider supplied: no provider re-prompt (D1  --  supplied
 # args override the wizard's suggestions); the confirm shows the supplied
 # provider; abort on 'n'.
 test_wizard_provider_supplied_no_reprompt() {
@@ -509,7 +509,7 @@ test_wizard_provider_supplied_no_reprompt() {
 }
 
 # --interactive accept path: the wizard's selections flow through to a real
-# session under the docker stub — run completes, the .compose record is
+# session under the docker stub  --  run completes, the .compose record is
 # written, and compose up is issued. Proves the wizard integrates with the
 # existing non-interactive start pipeline.
 test_wizard_accept_runs_to_completion() {
@@ -579,10 +579,10 @@ run_test test_repo_commit_is_full_sha
 #   Builds a minimal start fixture under DIR (sandbox tree + .env + committed
 #   project repo), runs `start_agent.sh ARGS...` with docker stubs shadowing
 #   PATH, and captures results in globals:
-#     START_RC      — exit code
-#     START_OUT     — combined stdout+stderr
-#     START_TRACE   — path to the docker trace log
-#     START_COMPOSE — path to the persisted compose file (empty if none)
+#     START_RC       --  exit code
+#     START_OUT      --  combined stdout+stderr
+#     START_TRACE    --  path to the docker trace log
+#     START_COMPOSE  --  path to the persisted compose file (empty if none)
 run_start_session() {
   local dir="$1"; shift
   mkdir -p "$dir/sandbox/.workspace/session-diffs" \

@@ -3,11 +3,11 @@
 # Host-side snapshot pipeline tests.
 #
 # Covers:
-#   snapshot_copy_worktree   — primary rsync-based copy
-#   snapshot_archive_head    — produces baseline.tar from HEAD
-#   snapshot_validate        — structural integrity check (including baseline.tar)
+#   snapshot_copy_worktree    --  primary rsync-based copy
+#   snapshot_archive_head     --  produces baseline.tar from HEAD
+#   snapshot_validate         --  structural integrity check (including baseline.tar)
 #
-# All fixtures created under a temp dir — no repos created inside the harness repo.
+# All fixtures created under a temp dir  --  no repos created inside the harness repo.
 
 set -uo pipefail
 
@@ -101,7 +101,7 @@ test_worktree_handles_unstaged_deletion() {
 
   if snapshot_copy_worktree "$SRC" "$DST" 2>/dev/null; then
     if [[ ! -f "$DST/deleted.txt" ]]; then
-      pass "worktree: unstaged deletion handled — file absent from destination"
+      pass "worktree: unstaged deletion handled  --  file absent from destination"
     else
       fail "worktree: deleted file should not appear in destination"
     fi
@@ -122,7 +122,7 @@ test_worktree_handles_unstaged_move() {
 
   if snapshot_copy_worktree "$SRC" "$DST" 2>/dev/null; then
     if [[ ! -f "$DST/old-name.txt" && -f "$DST/new-name.txt" ]]; then
-      pass "worktree: unstaged move handled — old absent, new present in destination"
+      pass "worktree: unstaged move handled  --  old absent, new present in destination"
     else
       fail "worktree: after move, expected old absent and new present"
     fi
@@ -261,7 +261,7 @@ test_archive_head_tar_excludes_unstaged_edits() {
   if ! grep -q "unstaged edit" "$UNPACK/tracked.txt"; then
     pass "archive_head: unstaged edits excluded from tar (committed version present)"
   else
-    fail "archive_head: tar contains unstaged edits — should contain HEAD version only"
+    fail "archive_head: tar contains unstaged edits  --  should contain HEAD version only"
   fi
 }
 

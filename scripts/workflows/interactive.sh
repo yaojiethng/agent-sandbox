@@ -6,7 +6,7 @@
 # value (channel name, session name, or diff type) is printed to stdout.
 #
 # Dependencies:
-#   libs/routing.sh — for dirs_resolve (path derivation)
+#   libs/routing.sh  --  for dirs_resolve (path derivation)
 #
 # Usage:
 #   source /path/to/interactive_session_select.sh
@@ -14,11 +14,11 @@
 #   BUNDLE=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL") || exit 1
 #
 # Functions:
-#   interactive_confirm_or_abort   — print items + y/N prompt
-#   interactive_select_channel     — pick a channel (draft or apply)
-#   interactive_select_bundle     — pick a bundle entry within a channel
+#   interactive_confirm_or_abort    --  print items + y/N prompt
+#   interactive_select_channel      --  pick a channel (draft or apply)
+#   interactive_select_bundle      --  pick a bundle entry within a channel
 
-# No set -euo pipefail here — this file is always sourced, never executed directly.
+# No set -euo pipefail here  --  this file is always sourced, never executed directly.
 # Safety settings are inherited from the parent script.
 
 # Self-locate the repo root (mirrors draft.sh/apply.sh) so routing.sh can be
@@ -43,7 +43,7 @@ _resolve_channel_dir() {
 }
 
 # =============================================================================
-# interactive_pick — generic numbered picker
+# interactive_pick  --  generic numbered picker
 # =============================================================================
 
 # interactive_pick LABEL ENTRIES_VAR [DEFAULT] [PAGE_SIZE] [AUTO_SELECT]
@@ -52,18 +52,18 @@ _resolve_channel_dir() {
 # All display output goes to stderr. The selected entry value goes to stdout.
 #
 # Args:
-#   LABEL        — header text (printed to stderr)
-#   ENTRIES_VAR  — name of an array variable where each element is
+#   LABEL         --  header text (printed to stderr)
+#   ENTRIES_VAR   --  name of an array variable where each element is
 #                  "value|display-line". The picker splits on the first |:
 #                  value = text before | (printed to stdout on selection)
 #                  display-line = text after | (shown to stderr, or the
 #                  whole element if no | is present)
-#   DEFAULT      — optional default value; empty Enter selects it
-#   PAGE_SIZE    — max entries per page (default: 0 = no pagination)
+#   DEFAULT       --  optional default value; empty Enter selects it
+#   PAGE_SIZE     --  max entries per page (default: 0 = no pagination)
 #
 # Output:
-#   stdout — selected value
-#   stderr — display table, prompt, errors
+#   stdout  --  selected value
+#   stderr  --  display table, prompt, errors
 #
 # Returns:
 #   0 on selection, 1 on abort (q/Q or EOF)
@@ -127,7 +127,7 @@ interactive_pick() {
 
     # Header
     if [[ "$TOTAL_PAGES" -gt 1 ]]; then
-      echo "$LABEL — page $((PAGE_OFFSET + 1)) of $TOTAL_PAGES:" >&2
+      echo "$LABEL  --  page $((PAGE_OFFSET + 1)) of $TOTAL_PAGES:" >&2
     else
       echo "$LABEL" >&2
     fi
@@ -259,12 +259,12 @@ interactive_confirm_or_abort() {
 # picker. Each channel shows entry count and newest session timestamp.
 #
 # Args:
-#   SUBCOMMAND      — "apply" or "draft" (determines which channels are shown)
-#   SANDBOX_DIR     — path to sandbox directory (for dirs_resolve)
-#   DEFAULT_CHANNEL — optional; highlighted as default, empty enter selects it
+#   SUBCOMMAND       --  "apply" or "draft" (determines which channels are shown)
+#   SANDBOX_DIR      --  path to sandbox directory (for dirs_resolve)
+#   DEFAULT_CHANNEL  --  optional; highlighted as default, empty enter selects it
 #
 # Output:
-#   stdout — selected channel name (e.g. "session", "autosave", "bundles", "diffs")
+#   stdout  --  selected channel name (e.g. "session", "autosave", "bundles", "diffs")
 #
 # Returns:
 #   0 on selection, 1 on abort (q/Q or EOF)
@@ -322,12 +322,12 @@ interactive_select_channel() {
 # a numbered list with availability indicators (patches, uncommitted.diff).
 #
 # Args:
-#   SANDBOX_DIR      — path to sandbox directory (for dirs_resolve)
-#   CHANNEL          — channel name (diffs, session, autosave, bundles)
-#   DEFAULT_BUNDLE   — optional bundle name to highlight as default
+#   SANDBOX_DIR       --  path to sandbox directory (for dirs_resolve)
+#   CHANNEL           --  channel name (diffs, session, autosave, bundles)
+#   DEFAULT_BUNDLE    --  optional bundle name to highlight as default
 #
 # Output:
-#   stdout — selected bundle basename (e.g. "20260504-120000-feature-X")
+#   stdout  --  selected bundle basename (e.g. "20260504-120000-feature-X")
 #
 # Returns:
 #   0 on selection, 1 on abort or no bundles
@@ -358,22 +358,22 @@ interactive_select_bundle() {
     return 1
   fi
 
-  # Build display entries: "name|name  patches: ✓  uncommitted: ✓"
+  # Build display entries: "name|name  patches: [x]  uncommitted: [x]"
   local -a ENTRIES=()
   local bname
   for bname in "${BUNDLE_DIRS[@]}"; do
     local ENTRY_DIR="${BASE_DIR}/${bname}"
 
-    # Show the patch count rather than a binary presence indicator — the
+    # Show the patch count rather than a binary presence indicator  --  the
     # number of .diff files is far more informative for judging a bundle.
     local PATCH_COUNT=0
     if [[ -d "$ENTRY_DIR/patches" ]]; then
       PATCH_COUNT=$(find "$ENTRY_DIR/patches" -maxdepth 1 -name '*.diff' 2>/dev/null | wc -l | tr -d ' ')
       PATCH_COUNT=$((10#$PATCH_COUNT))
     fi
-    local HAS_UNCOMMITTED="✗"
+    local HAS_UNCOMMITTED="[ ]"
     if [[ -f "$ENTRY_DIR/uncommitted.diff" && -s "$ENTRY_DIR/uncommitted.diff" ]]; then
-      HAS_UNCOMMITTED="✓"
+      HAS_UNCOMMITTED="[x]"
     fi
 
     # Truncate long names

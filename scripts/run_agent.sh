@@ -7,10 +7,10 @@
 #   ./run_agent.sh <mode> --name=<project_name> --sandbox=<path> --env=<path> --provider=<n>
 #
 # Modes:
-#   standard   — agent TUI attached to terminal
-#   serve      — provider serve mode, companion services started
-#   dry-run    — liveness check only, no agent interaction
-#   headless   — reserved, not yet implemented
+#   standard    --  agent TUI attached to terminal
+#   serve       --  provider serve mode, companion services started
+#   dry-run     --  liveness check only, no agent interaction
+#   headless    --  reserved, not yet implemented
 #
 # Provider config lifecycle (all modes except dry-run):
 #   copy-in:  provider-entrypoint.sh copies $SANDBOX_DIR/.<provider>/ (mounted
@@ -18,7 +18,7 @@
 #   copy-out: provider-entrypoint.sh EXIT trap copies AGENT_HOME back to
 #             /opt/provider-config/ on container exit. Since /opt/provider-config/
 #             is bind-mounted from $SANDBOX_DIR/.<provider>/, state is persisted
-#             to the host automatically — no move step required here.
+#             to the host automatically  --  no move step required here.
 #
 # Host identity for UID mapping
 # Compose file assembly follows deterministic conventions:
@@ -36,8 +36,8 @@
 #   the failure to the provider setup hook.
 #
 # Separation:
-#   scripts/  — control flow; entry points and session orchestration
-#   libs/     — reusable utility functions; no control flow
+#   scripts/   --  control flow; entry points and session orchestration
+#   libs/      --  reusable utility functions; no control flow
 
 set -euo pipefail
 
@@ -95,7 +95,7 @@ fi
 # -------------------------
 SERVE_PORT_DEFAULT=46553
 if [[ -z "${SERVE_PORT:-}" ]]; then
-  echo "Warning: SERVE_PORT is not set in .env — falling back to default ($SERVE_PORT_DEFAULT)"
+  echo "Warning: SERVE_PORT is not set in .env  --  falling back to default ($SERVE_PORT_DEFAULT)"
   SERVE_PORT="$SERVE_PORT_DEFAULT"
 fi
 
@@ -136,8 +136,8 @@ HOST_GID="$(id -g)"
 # The compose file set is selected at generation time per delivery type
 # (SANDBOX_TYPE=copy|mount, default copy): base template + delivery overlay +
 # provider overlay (if present) + mode overlay (dry-run/serve). The delivery
-# overlay carries the per-delivery wiring: copy → named volume + SNAPSHOT_DIR
-# mount; mount → worktree bind mount (docker-compose.copy.yml /.mount.yml).
+# overlay carries the per-delivery wiring: copy -> named volume + SNAPSHOT_DIR
+# mount; mount -> worktree bind mount (docker-compose.copy.yml /.mount.yml).
 COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
 COPY_OVERLAY="$REPO_ROOT/src/build/docker-compose.copy.yml"
 MOUNT_OVERLAY="$REPO_ROOT/src/build/docker-compose.mount.yml"
@@ -151,7 +151,7 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   exit 1
 fi
 
-# Delivery type — SANDBOX_TYPE=copy|mount, default copy. Copy is the only
+# Delivery type  --  SANDBOX_TYPE=copy|mount, default copy. Copy is the only
 # implemented delivery today; mount is wired for the compose file set and
 # gains full behavior in M2.6.6 delivery enablement.
 DELIVERY_TYPE="${SANDBOX_TYPE:-copy}"
@@ -163,14 +163,14 @@ case "$DELIVERY_TYPE" in
     ;;
 esac
 
-# Mount delivery worktree — single shared host worktree per sandbox. Default
+# Mount delivery worktree  --  single shared host worktree per sandbox. Default
 # ${SANDBOX_DIR}/.worktree; overridable via WORKTREE_DIR (custom mount point,
 # injected into compose at generation). Only the mount overlay reads it.
 export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
 
 COMPOSE_FILES=("$COMPOSE_TEMPLATE")
 
-# Delivery overlay — selected by DELIVERY_TYPE.
+# Delivery overlay  --  selected by DELIVERY_TYPE.
 if [[ "$DELIVERY_TYPE" == "copy" ]]; then
   if [[ ! -f "$COPY_OVERLAY" ]]; then
     echo "Error: copy delivery overlay not found: $COPY_OVERLAY" >&2
@@ -185,7 +185,7 @@ else
   COMPOSE_FILES+=("$MOUNT_OVERLAY")
 fi
 
-# Provider overlay is optional — merged if present.
+# Provider overlay is optional  --  merged if present.
 if [[ -f "$PROVIDER_OVERLAY" ]]; then
   COMPOSE_FILES+=("$PROVIDER_OVERLAY")
 fi
@@ -217,7 +217,7 @@ esac
 # Persist the merged compose file at a stable path in the sandbox so the
 # session's compose configuration survives for inspection and compose-aware
 # tooling after the run (docker compose -f .compose/<session-id>.yml ...). Named
-# by SESSION_ID — resume reuses the same SESSION_ID and overwrites; each unique
+# by SESSION_ID  --  resume reuses the same SESSION_ID and overwrites; each unique
 # session leaves one record. SESSION_ID is always exported by start_agent.sh;
 # fall back to the sandbox-dir hash (as compose_args does) for direct
 # invocation. Containers mount only SANDBOX_DIR subdirectories, so this file
@@ -230,8 +230,8 @@ else
   COMPOSE_OUT="$COMPOSE_DIR/$(echo "$SANDBOX_DIR" | sha256sum | cut -c1-6).yml"
 fi
 
-# Teardown runs on every exit after TEARDOWN_NEEDED is set — agent
-# completion, agent failure, compose up failure, sandbox-wait failure — so
+# Teardown runs on every exit after TEARDOWN_NEEDED is set  --  agent
+# completion, agent failure, compose up failure, sandbox-wait failure  --  so
 # containers and network never leak. The pre-run cleanup (stop-previous-
 # project), dry-run, headless, and flag-error exits all happen before
 # TEARDOWN_NEEDED is set and are therefore not re-torn-down. The persisted
@@ -281,7 +281,7 @@ esac
 # -------------------------
 if [[ "$RESET_VOLUME" == "true" ]]; then
   # start_agent.sh already removed old volumes for this sandbox dir.
-  # Skip compose teardown — the new compose project (by SESSION_ID) doesn't
+  # Skip compose teardown  --  the new compose project (by SESSION_ID) doesn't
   # exist yet, and the old project used a different SESSION_ID.
   :
 else
@@ -291,7 +291,7 @@ fi
 # The mode branch only runs the session; the EXIT trap (_session_cleanup)
 # ends it. Both modes block until the agent session is over (serve: docker
 # wait returns on make stop; standard: compose run returns when the agent
-# exits) — see the docker-wait comment below for why this ordering matters.
+# exits)  --  see the docker-wait comment below for why this ordering matters.
 agent_rc=0
 TEARDOWN_NEEDED=1
 if [[ "$MODE" == "serve" ]]; then
@@ -303,8 +303,8 @@ if [[ "$MODE" == "serve" ]]; then
   # Wait for the agent container to exit (triggered by make stop / docker stop).
   # Keeps run_agent.sh alive so teardown runs after the provider-entrypoint
   # EXIT trap has fired and copy-out to /opt/provider-config/ is complete.
-  # The container's exit code on make stop is SIGTERM/SIGKILL (137/143) — not
-  # a session result — so it is swallowed here and serve exits 0 (teardown is
+  # The container's exit code on make stop is SIGTERM/SIGKILL (137/143)  --  not
+  # a session result  --  so it is swallowed here and serve exits 0 (teardown is
   # handled by run_agent.sh's own EXIT trap, _session_cleanup).
   docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
 

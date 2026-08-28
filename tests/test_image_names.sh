@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_image_names.sh — Unit tests for src/build/image.sh naming.
+# tests/test_image_names.sh  --  Unit tests for src/build/image.sh naming.
 #
 # These four functions are the docker tag contract. Prune, resume, build and
 # compose re-derive image names independently, so any drift here breaks
@@ -21,14 +21,14 @@ test_agent_base_image_name_lowercases_provider() {
   if [[ "$out" == "pi-base" ]]; then
     pass "agent_base_image_name lowercases provider"
   else
-    fail "agent_base_image_name Pi → '$out', want 'pi-base'"
+    fail "agent_base_image_name Pi -> '$out', want 'pi-base'"
   fi
 }
 
 # agent_image_name lowercases the PROJECT position only. The provider is used
 # verbatim: providers come from directory names under src/reasoning/providers/
 # and are lowercase by construction. An uppercase provider would leak into a
-# docker tag (invalid) — pinned here so a future change to that behavior is a
+# docker tag (invalid)  --  pinned here so a future change to that behavior is a
 # deliberate decision, not an accident.
 test_agent_image_name_lowercases_project_only() {
   local out
@@ -36,7 +36,7 @@ test_agent_image_name_lowercases_project_only() {
   if [[ "$out" == "pi-agent-myproject" ]]; then
     pass "agent_image_name lowercases project, keeps provider verbatim"
   else
-    fail "agent_image_name pi MyProject → '$out', want 'pi-agent-myproject'"
+    fail "agent_image_name pi MyProject -> '$out', want 'pi-agent-myproject'"
   fi
 }
 
@@ -46,7 +46,7 @@ test_sandbox_image_name_lowercases_project() {
   if [[ "$out" == "sandbox-test-prj" ]]; then
     pass "sandbox_image_name lowercases project"
   else
-    fail "sandbox_image_name TeSt-Prj → '$out', want 'sandbox-test-prj'"
+    fail "sandbox_image_name TeSt-Prj -> '$out', want 'sandbox-test-prj'"
   fi
 }
 
@@ -58,7 +58,7 @@ test_shared_base_image_name_is_constant() {
   if [[ "$out" == "agent-node-base" ]]; then
     pass "shared_base_image_name returns canonical constant"
   else
-    fail "shared_base_image_name → '$out', want 'agent-node-base'"
+    fail "shared_base_image_name -> '$out', want 'agent-node-base'"
   fi
 }
 

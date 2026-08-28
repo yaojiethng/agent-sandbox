@@ -10,19 +10,19 @@
 #   write_all_changes_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_changed_files      SANDBOX_DIR  SINCE_SHA  OUTPUT_DIR
 #
-# All three functions are pure primitives — no dispatch logic, no session
+# All three functions are pure primitives  --  no dispatch logic, no session
 # resolution. Path construction is the caller's responsibility.
 #
 # Directory layout under OUTPUT_DIR/ (caller constructs the path):
 #
-#   .export-status           — consolidated metadata (STATUS, TIMESTAMP, INIT_SHA)
-#   uncommitted.diff         — uncommitted changes vs HEAD
-#   all-changes.diff         — net delta INIT_SHA..HEAD
+#   .export-status            --  consolidated metadata (STATUS, TIMESTAMP, INIT_SHA)
+#   uncommitted.diff          --  uncommitted changes vs HEAD
+#   all-changes.diff          --  net delta INIT_SHA..HEAD
 #   patches/
-#     0001-<sha>.diff        — per-commit diffs from package_branch dispatcher
+#     0001-<sha>.diff         --  per-commit diffs from package_branch dispatcher
 #   changed-files/
 #     MANIFEST.txt
-#     <path>/<file>          — working tree copies of all changed files
+#     <path>/<file>           --  working tree copies of all changed files
 
 # -------------------------
 # Source session_state.sh for session_state_read; source routing.sh for path helpers
@@ -94,18 +94,18 @@ strip_index_lines() {
 # Core git apply logic shared by apply_run (apply-only) and
 # apply_and_commit (apply + commit). Strips index lines, handles three
 # modes:
-#   normal     — git apply --ignore-whitespace; on failure retries with
+#   normal      --  git apply --ignore-whitespace; on failure retries with
 #                --recount for relaxed hunk-context matching (permissive
 #                by default).
-#   force      — git apply --reject; creates .rej files for conflicts,
+#   force       --  git apply --reject; creates .rej files for conflicts,
 #                never returns 1 (warnings printed to stderr)
 #
 # Usage:
 #   _apply_patch_file PROJECT_DIR DIFF_FILE FORCE
 #
 # Returns:
-#   0 — patch applied successfully (or force mode, conflicts tolerated)
-#   1 — patch failed to apply (recount retry also failed)
+#   0  --  patch applied successfully (or force mode, conflicts tolerated)
+#   1  --  patch failed to apply (recount retry also failed)
 # -------------------------
 _apply_patch_file() {
   local PROJECT_DIR="$1"
@@ -161,7 +161,7 @@ diff_is_empty() {
 # Usage:
 #   apply_and_commit PROJECT_DIR DIFF_FILE COMMIT_MSG AUTHOR [FORCE]
 #
-# Does NOT leave changes unstaged — after success, everything is committed.
+# Does NOT leave changes unstaged  --  after success, everything is committed.
 # Returns 1 if apply fails (and FORCE is not set).
 # -------------------------
 apply_and_commit() {
@@ -237,9 +237,9 @@ write_uncommitted_diff() {
 # included alongside committed changes.
 #
 # Args:
-#   SANDBOX_DIR  — path to the git repository
-#   OUTPUT_FILE  — path to write the diff to
-#   SINCE_SHA    — optional explicit baseline SHA; if omitted, reads init_sha
+#   SANDBOX_DIR   --  path to the git repository
+#   OUTPUT_FILE   --  path to write the diff to
+#   SINCE_SHA     --  optional explicit baseline SHA; if omitted, reads init_sha
 #                  from SESSION_STATE
 # -------------------------
 write_all_changes_diff() {
@@ -300,7 +300,7 @@ write_changed_files() {
   local COPY_COUNT=0
   while IFS= read -r F; do
     [[ -z "$F" ]] && continue
-    # Skip deleted files — they no longer exist in the working tree
+    # Skip deleted files  --  they no longer exist in the working tree
     [[ -f "$SANDBOX_DIR/$F" ]] || continue
     mkdir -p "$CHANGED_FILES_DIR/$(dirname "$F")"
     cp "$SANDBOX_DIR/$F" "$CHANGED_FILES_DIR/$F"
