@@ -115,7 +115,7 @@ Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session re
 
 ### `make apply DIFF=<path> [BRANCH=<branch>] [FORCE=1]`
 
-Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review.
+Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review. An empty diff file (no `diff --git` headers) is skipped with a warning; nothing is applied and the command succeeds.
 
 `DIFF=<path>` (flag `--diff=<path>`) is **required** and must be the full path to an exact diff file. `apply` performs no channel, bundle, or auto-resolution — it applies the specified file directly.
 
@@ -127,7 +127,7 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 
 ### `make draft [BUNDLE=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
 
-Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present.
+Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
 By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only — absolute paths rejected).

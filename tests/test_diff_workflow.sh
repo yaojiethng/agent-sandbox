@@ -114,16 +114,19 @@ test_apply_diff_file_preserved() {
     fail "apply_run should not delete the diff file"
   fi
 }
-# Empty diffs carry no valid patches: git rejects them, so apply_run must
-# fail cleanly (non-zero) and leave the target repository untouched.
+# Empty diffs carry no valid patches: per the decided empty-diff behavior,
+# apply_run skips them with a warning (rc=0) and leaves the target
+# repository untouched.
 test_apply_empty_diff_rejected_without_touching_repo() {
   local P="$FIXTURE_DIR/apply_empty_p"
   make_committed_repo "$P"
   local BEFORE
   BEFORE=$(git -C "$P" rev-parse HEAD)
   : > "$FIXTURE_DIR/empty.diff"
-  if apply_run "$P" "$FIXTURE_DIR/empty.diff" "" "false" 2>/dev/null; then
-    fail "apply_run should reject an empty diff (git: no valid patches in input)"
+  local ERR RC=0
+  ERR=$(apply_run "$P" "$FIXTURE_DIR/empty.diff" "" "false" </dev/null 2>&1 >/dev/null) || RC=$?
+  if [[ $RC -ne 0 || "$ERR" != *"is empty; nothing to apply"* ]]; then
+    fail "apply_run should skip an empty diff with a warning (rc=0), got rc=$RC err='$ERR'"
     return
   fi
   local AFTER

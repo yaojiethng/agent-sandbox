@@ -179,12 +179,17 @@ draft_apply_uncommitted() {
   local FORCE="${4:-false}"
 
   local UNCOMMITTED_DIFF="$SOURCE_DIR/uncommitted.diff"
-  if [[ ! -f "$UNCOMMITTED_DIFF" || ! -s "$UNCOMMITTED_DIFF" ]]; then
+  [[ -f "$UNCOMMITTED_DIFF" ]] || return 0
+
+  # Exists but carries no changes: skip with a warning instead of letting
+  # git apply reject it.
+  if diff_is_empty "$UNCOMMITTED_DIFF"; then
+    echo "Warning: uncommitted.diff is present but contains no changes; skipping." >&2
     return 0
   fi
 
   echo ""
-  echo "Applying uncommitted.diff (working tree only — not committed)..."
+  echo "Applying uncommitted.diff (working tree only -- not committed)..."
   _apply_patch_file "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "$FORCE" || {
     echo "Error: failed to apply uncommitted.diff" >&2
     echo "  File: $UNCOMMITTED_DIFF" >&2

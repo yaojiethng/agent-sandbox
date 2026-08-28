@@ -72,7 +72,13 @@ apply_run() {
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
   fi
 
-  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
+  # Empty diff: skip the patch step; the count below reports 0 and the
+  # normal tail output follows.
+  if diff_is_empty "$DIFF_FILE"; then
+    echo "Warning: $(basename "$DIFF_FILE") is empty; nothing to apply." >&2
+  else
+    _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
+  fi
 
   # Count changed files from the diff. grep -c self-reports zero on stdout
   # while exiting 1; `|| echo 0` here would double-emit ("0\n0").

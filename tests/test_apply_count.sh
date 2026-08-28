@@ -4,10 +4,9 @@
 # an applicable diff reports its header count exactly once
 # ("Files changed: N", single line).
 #
-# Note: the zero-count branch is unreachable through public interfaces --
-# `git apply` rejects a header-less/empty diff before the count runs
-# ("No valid patches in input"). See roadmap "Empty uncommitted.diff"
-# decision; if that decision makes empty diffs succeed, extend coverage here.
+# Also pins the decided empty-diff behavior (roadmap "Empty
+# uncommitted.diff"): empty uncommitted.diff skips with a warning, empty
+# bundle members land as message-bearing empty commits with a warning.
 
 set -uo pipefail
 
@@ -16,6 +15,7 @@ test_setup
 
 export AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/apply.sh"
+source "$REPO_ROOT/scripts/workflows/draft.sh"
 
 # _make_repo <dir> -- minimal git repo with one commit (validate_project_dir
 # requires at least one commit).
@@ -97,11 +97,85 @@ EOF
   fi
 }
 
+test_apply_run_empty_diff_skips_with_warning() {
+  local repo="$FIXTURE_DIR/repo_empty_apply"
+  _make_repo "$repo"
+  local base_commit
+  base_commit=$(git -C "$repo" rev-parse HEAD)
+
+  local diff_file="$FIXTURE_DIR/empty.diff"
+  : > "$diff_file"
+
+  local ERR RC=0
+  ERR=$(apply_run "$repo" "$diff_file" "" false </dev/null 2>&1 >/dev/null) || RC=$?
+
+  if [[ $RC -eq 0 \
+     && "$ERR" == *"is empty; nothing to apply"* \
+     && $(git -C "$repo" rev-parse HEAD) == "$base_commit" ]]; then
+    pass "empty diff: apply_run skips with warning, tree and HEAD unchanged"
+  else
+    fail "expected rc=0 + skip warning + unchanged HEAD, got rc=$RC err='$ERR'"
+  fi
+}
+
+test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit() {
+  local repo="$FIXTURE_DIR/repo_empty_member"
+  _make_repo "$repo"
+  local base_commit
+  base_commit=$(git -C "$repo" rev-parse HEAD)
+
+  local diff_file="$FIXTURE_DIR/empty_member.diff"
+  : > "$diff_file"
+
+  local ERR RC=0
+  ERR=$(apply_and_commit "$repo" "$diff_file" "feat: message survives" "T <t@t.local>" false </dev/null 2>&1 >/dev/null) || RC=$?
+
+  local new_msg new_author is_empty=no
+  new_msg=$(git -C "$repo" log -1 --format=%s)
+  new_author=$(git -C "$repo" log -1 --format='%an <%ae>')
+  # Empty commit: tree identical to its sole parent.
+  [[ $(git -C "$repo" rev-parse 'HEAD^{tree}') == $(git -C "$repo" rev-parse 'HEAD~1^{tree}') ]] && is_empty=yes
+
+  if [[ $RC -eq 0 \
+     && "$ERR" == *"creating an empty commit for its message"* \
+     && "$new_msg" == "feat: message survives" \
+     && "$new_author" == "T <t@t.local>" \
+     && "$is_empty" == yes ]]; then
+    pass "empty member: message-bearing empty commit created with author preserved"
+  else
+    fail "expected empty commit w/ message+author, got rc=$RC msg='$new_msg' author='$new_author' empty=$is_empty err='$ERR'"
+  fi
+}
+
+test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
+  local repo="$FIXTURE_DIR/repo_empty_uncommitted"
+  _make_repo "$repo"
+  local src_dir="$FIXTURE_DIR/src_empty_uc"
+  mkdir -p "$src_dir"
+  : > "$src_dir/uncommitted.diff"
+  local base_commit
+  base_commit=$(git -C "$repo" rev-parse HEAD)
+
+  local OUT RC=0
+  OUT=$(draft_apply_uncommitted "$repo" "$src_dir" "t <t@t.local>" false </dev/null 2>&1) || RC=$?
+
+  if [[ $RC -eq 0 \
+     && "$OUT" == *"contains no changes; skipping"* \
+     && $(git -C "$repo" rev-parse HEAD) == "$base_commit" ]]; then
+    pass "empty uncommitted.diff: skipped with warning, rc=0"
+  else
+    fail "expected rc=0 + skip warning, got rc=$RC out='$OUT'"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
 
 run_test test_apply_run_single_file_diff_reports_one
 run_test test_apply_run_multi_file_diff_reports_exact_count
+run_test test_apply_run_empty_diff_skips_with_warning
+run_test test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit
+run_test test_draft_apply_uncommitted_empty_diff_skips_with_warning
 
 test_done test_apply_count.sh

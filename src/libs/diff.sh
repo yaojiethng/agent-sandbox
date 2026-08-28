@@ -139,6 +139,20 @@ _apply_patch_file() {
 }
 
 # -------------------------
+# diff_is_empty
+#
+# True when DIFF_FILE exists and carries no `diff --git` headers, i.e.
+# represents zero changes. Shared by all apply paths to honor the decided
+# empty-diff behavior: skip uncommitted.diff with a warning; land bundle
+# members as message-bearing empty commits with a warning.
+# -------------------------
+diff_is_empty() {
+  local DIFF_FILE="$1"
+  [[ -f "$DIFF_FILE" ]] || return 1
+  ! grep -q "^diff --git" "$DIFF_FILE"
+}
+
+# -------------------------
 # apply_and_commit
 #
 # Applies a diff file via _apply_patch_file, then stages all changes and
@@ -165,6 +179,16 @@ apply_and_commit() {
   if [[ ! -f "$DIFF_FILE" ]]; then
     echo "Error: diff file not found: $DIFF_FILE" >&2
     return 1
+  fi
+
+  # Empty member diff: no patch to apply, but the associated commit message
+  # must still survive in history. Land an empty commit. No `git add -A` --
+  # an empty member means no intended change, so unrelated working-tree
+  # noise must not be swept into it.
+  if diff_is_empty "$DIFF_FILE"; then
+    echo "Warning: $(basename "$DIFF_FILE") is empty; creating an empty commit for its message." >&2
+    git -C "$PROJECT_DIR" commit --allow-empty -m "$COMMIT_MSG" --author="$AUTHOR"
+    return 0
   fi
 
   _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
