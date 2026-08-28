@@ -14,7 +14,7 @@
 # Run:   bash tests/test_provider_entrypoint.sh
 # Exit:  0 = all passed, non-zero = failure count
 
-set -euo pipefail
+set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup

@@ -10,7 +10,7 @@
 # Run:
 #   bash tests/test_diff_rename.sh
 
-set -euo pipefail
+set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup

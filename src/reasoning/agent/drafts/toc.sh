@@ -3,6 +3,8 @@
 # usage: toc <file.md>
 # output: indent-by-level header map suitable for view_range targeting
 
+set -euo pipefail
+
 if [[ -z "$1" ]]; then
   echo "usage: toc <file.md>" >&2
   exit 1

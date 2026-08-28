@@ -212,6 +212,31 @@ command's failure. Scope to the individual command with a subshell:
 docker compose up -d 2>&1 | (grep -v '^Container ' || true)
 ```
 
+### 1.17 Shell option flags by file class
+
+Every shell file declares its failure regime according to its class. The
+class is determined by how the file is consumed, not by where it lives.
+
+| Class | Rule | Why |
+|---|---|---|
+| Orchestrator entry points (exec'd, no source-consumers) | `set -euo pipefail` at top | fail-fast beats continuing with partial state |
+| Dual-use (exec'd in production, sourced by tests) | flags inside `main()` or the §1.11 guard only | a top-level `set` mutates the sourcing consumer's shell |
+| Pure libraries (sourced only) | never set options | inherit the consumer's regime; per-function correctness via §3.1 and the §4 idioms |
+| Observe-and-report (test files, harness runners, diagnostic sweeps) | no `-e` — must run all checks and count failures; `set -uo pipefail` preferred | first-failure abort defeats reporting (`run_test`'s NO-ASSERTION detection relies on observing failures) |
+
+In the last row, weaker than `-uo pipefail` is permitted only with an inline
+rationale comment (e.g. the dry-run diagnostics: "Intentionally no set -u:
+env vars are checked explicitly with guards").
+
+Notes:
+
+- Direct execution of subcommand scripts is the §1.13 dispatch architecture,
+  not an accident to be designed away.
+- `-u` in library code would fire on consumer-controlled environments;
+  libraries validate their inputs explicitly instead.
+- A class change (e.g. a lib growing an entry point) means re-declaring flags
+  for the new class as part of that change.
+
 ---
 
 ## 2. Dependency Management

@@ -10,7 +10,7 @@
 #
 # Exit code: 0 if all tests pass, 1 if any fail.
 
-set -euo pipefail
+set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
