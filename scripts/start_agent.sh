@@ -276,8 +276,8 @@ _new_session_identity() {
   # Called for both default new-session and --refresh paths.
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-  export SANDBOX_ID; SANDBOX_ID=$(echo "${SANDBOX_DIR}:${HOST_HEAD_SHA}" | sha256sum | cut -c1-8)
-  export SESSION_ID; SESSION_ID=$(echo "${SESSION_TS}:${SANDBOX_ID}" | sha256sum | cut -c1-6)
+  export SANDBOX_ID; SANDBOX_ID=$(sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
+  export SESSION_ID; SESSION_ID=$(session_id_derive "$SESSION_TS" "$SANDBOX_ID")
 }
 
 if [[ "${REFRESH:-false}" == "true" ]]; then

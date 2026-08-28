@@ -4,8 +4,8 @@
 # Sourced by sandbox-entrypoint.sh (capability layer) and package_branch.sh.
 #
 # Functions:
-#   _apply_patch_file        PROJECT_DIR  DIFF_FILE  FORCE  STRICT
-#   apply_and_commit         PROJECT_DIR  DIFF_FILE  COMMIT_MSG  AUTHOR  [FORCE]  [STRICT]
+#   _apply_patch_file        PROJECT_DIR  DIFF_FILE  FORCE
+#   apply_and_commit         PROJECT_DIR  DIFF_FILE  COMMIT_MSG  AUTHOR  [FORCE]
 #   write_uncommitted_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_all_changes_diff   SANDBOX_DIR  OUTPUT_FILE
 #   write_changed_files      SANDBOX_DIR  SINCE_SHA  OUTPUT_DIR
@@ -43,6 +43,47 @@ source "$_self_dir/routing.sh"
 # Usage:  git diff ... | strip_index_lines > file.diff
 #         git apply --ignore-whitespace < <(strip_index_lines < file.diff)
 # -------------------------
+# _diff_stage_untracked SANDBOX_DIR
+#   Stages untracked files intent-to-add (`git add -N`) so they appear in
+#   diffs, without adding their content to the index. Populates the global
+#   array _DIFF_STAGED_UNTRACKED for _diff_restore_untracked.
+_diff_stage_untracked() {
+  local dir="$1"
+  _DIFF_STAGED_UNTRACKED=()
+  local untracked f
+  untracked=$(git -C "$dir" ls-files --others --exclude-standard 2>/dev/null || true)
+  [[ -n "$untracked" ]] || return 0
+  while IFS= read -r f; do
+    git -C "$dir" add -N -- "$f" 2>/dev/null && _DIFF_STAGED_UNTRACKED+=("$f")
+  done <<< "$untracked"
+}
+
+# _diff_restore_untracked SANDBOX_DIR
+#   Restores the index state changed by _diff_stage_untracked.
+_diff_restore_untracked() {
+  local dir="$1"
+  if [[ ${#_DIFF_STAGED_UNTRACKED[@]} -gt 0 ]]; then
+    git -C "$dir" restore --staged -- "${_DIFF_STAGED_UNTRACKED[@]}" 2>/dev/null || true
+  fi
+}
+
+# _write_git_diff SANDBOX_DIR BASE OUTPUT_FILE
+#   Writes `git diff BASE` to OUTPUT_FILE with index lines stripped and a
+#   guaranteed trailing newline. Writes an empty file when there are no
+#   changes vs BASE. Single source of truth for the verbatim-diff contract
+#   shared by write_uncommitted_diff and write_all_changes_diff.
+_write_git_diff() {
+  local dir="$1" base="$2" out="$3"
+  if git -C "$dir" diff --quiet "$base" 2>/dev/null; then
+    > "$out"
+  else
+    git -C "$dir" diff "$base" \
+      | strip_index_lines \
+      | sed -e '$a\\' \
+      > "$out"
+  fi
+}
+
 strip_index_lines() {
   awk '/^index / { saved=$0; getline nl; if (nl ~ /^GIT binary patch/) print saved; print nl; next } 1'
 }
@@ -55,22 +96,21 @@ strip_index_lines() {
 # modes:
 #   normal     — git apply --ignore-whitespace; on failure retries with
 #                --recount for relaxed hunk-context matching (permissive
-#                by default). Use STRICT=true for no-recount behavior.
+#                by default).
 #   force      — git apply --reject; creates .rej files for conflicts,
 #                never returns 1 (warnings printed to stderr)
 #
 # Usage:
-#   _apply_patch_file PROJECT_DIR DIFF_FILE FORCE STRICT
+#   _apply_patch_file PROJECT_DIR DIFF_FILE FORCE
 #
 # Returns:
 #   0 — patch applied successfully (or force mode, conflicts tolerated)
-#   1 — patch failed to apply (strict mode, or recount also failed)
+#   1 — patch failed to apply (recount retry also failed)
 # -------------------------
 _apply_patch_file() {
   local PROJECT_DIR="$1"
   local DIFF_FILE="$2"
   local FORCE="${3:-false}"
-  local STRICT="${4:-false}"
 
   if [[ "$FORCE" == true ]]; then
     git -C "$PROJECT_DIR" apply --reject < <(strip_index_lines < "$DIFF_FILE") || \
@@ -80,9 +120,8 @@ _apply_patch_file() {
 
   # Normal mode: try --ignore-whitespace first; on failure, retry with
   # --recount for relaxed hunk-context matching (permissive by default).
-  # STRICT=true skips the retry.
   if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
-    if [[ "$STRICT" != true ]] && git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
+    if git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
       echo "Normal apply failed; retrying with --recount (relaxed context matching)..." >&2
       git -C "$PROJECT_DIR" apply --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE")
     else
@@ -92,9 +131,6 @@ _apply_patch_file() {
       echo "" >&2
       echo "Hints:" >&2
       echo "  Use FORCE=true to apply with --reject (.rej files for conflicts)." >&2
-      if [[ "$STRICT" == true ]]; then
-        echo "  Remove STRICT=true to retry with --recount (relaxed context matching)." >&2
-      fi
       return 1
     fi
   fi
@@ -109,7 +145,7 @@ _apply_patch_file() {
 # commits. Used by draft_apply_patches for per-patch commit workflow.
 #
 # Usage:
-#   apply_and_commit PROJECT_DIR DIFF_FILE COMMIT_MSG AUTHOR [FORCE] [STRICT]
+#   apply_and_commit PROJECT_DIR DIFF_FILE COMMIT_MSG AUTHOR [FORCE]
 #
 # Does NOT leave changes unstaged — after success, everything is committed.
 # Returns 1 if apply fails (and FORCE is not set).
@@ -120,7 +156,6 @@ apply_and_commit() {
   local COMMIT_MSG="$3"
   local AUTHOR="$4"
   local FORCE="${5:-false}"
-  local STRICT_ARG="${6:-false}"
 
   if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" || -z "$COMMIT_MSG" || -z "$AUTHOR" ]]; then
     echo "apply_and_commit: PROJECT_DIR, DIFF_FILE, COMMIT_MSG, and AUTHOR are required" >&2
@@ -132,7 +167,7 @@ apply_and_commit() {
     return 1
   fi
 
-  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$STRICT_ARG" || return 1
+  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
 
   git -C "$PROJECT_DIR" add -A
   git -C "$PROJECT_DIR" commit -m "$COMMIT_MSG" --author="$AUTHOR"
@@ -161,28 +196,9 @@ write_uncommitted_diff() {
 
   # Stage untracked files so they appear in diff HEAD (git add -N = add to index
   # without content, so diff shows them). Restore staged state after.
-  local UNTRACKED_STAGED=()
-  local UNTRACKED
-  UNTRACKED=$(git -C "$SANDBOX_DIR" ls-files --others --exclude-standard 2>/dev/null || true)
-  if [[ -n "$UNTRACKED" ]]; then
-    while IFS= read -r F; do
-      git -C "$SANDBOX_DIR" add -N -- "$F" 2>/dev/null && UNTRACKED_STAGED+=("$F")
-    done <<< "$UNTRACKED"
-  fi
-
-  if git -C "$SANDBOX_DIR" diff --quiet HEAD 2>/dev/null; then
-    > "$OUTPUT_FILE"
-  else
-    git -C "$SANDBOX_DIR" diff HEAD \
-      | strip_index_lines \
-      | sed -e '$a\\' \
-      > "$OUTPUT_FILE"
-  fi
-
-  # Restore staged state for untracked files
-  if [[ ${#UNTRACKED_STAGED[@]} -gt 0 ]]; then
-    git -C "$SANDBOX_DIR" restore --staged -- "${UNTRACKED_STAGED[@]}" 2>/dev/null || true
-  fi
+  _diff_stage_untracked "$SANDBOX_DIR"
+  _write_git_diff "$SANDBOX_DIR" HEAD "$OUTPUT_FILE"
+  _diff_restore_untracked "$SANDBOX_DIR"
 }
 
 # -------------------------
@@ -223,28 +239,9 @@ write_all_changes_diff() {
   local INIT_SHA="$SINCE_SHA"
 
   # Stage untracked files so they appear in the diff
-  local UNTRACKED_STAGED=()
-  local UNTRACKED
-  UNTRACKED=$(git -C "$SANDBOX_DIR" ls-files --others --exclude-standard 2>/dev/null || true)
-  if [[ -n "$UNTRACKED" ]]; then
-    while IFS= read -r F; do
-      git -C "$SANDBOX_DIR" add -N -- "$F" 2>/dev/null && UNTRACKED_STAGED+=("$F")
-    done <<< "$UNTRACKED"
-  fi
-
-  if git -C "$SANDBOX_DIR" diff --quiet "$INIT_SHA" 2>/dev/null; then
-    > "$OUTPUT_FILE"
-  else
-    git -C "$SANDBOX_DIR" diff "$INIT_SHA" \
-      | strip_index_lines \
-      | sed -e '$a\\' \
-      > "$OUTPUT_FILE"
-  fi
-
-  # Restore staged state for untracked files
-  if [[ ${#UNTRACKED_STAGED[@]} -gt 0 ]]; then
-    git -C "$SANDBOX_DIR" restore --staged -- "${UNTRACKED_STAGED[@]}" 2>/dev/null || true
-  fi
+  _diff_stage_untracked "$SANDBOX_DIR"
+  _write_git_diff "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_FILE"
+  _diff_restore_untracked "$SANDBOX_DIR"
 }
 
 # -------------------------

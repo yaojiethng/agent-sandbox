@@ -111,3 +111,16 @@ session_env_names() {
   export SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
   export WORKTREE_DIR="${WORKTREE_DIR:-$sandbox_dir/.worktree}"
 }
+# sandbox_id_derive SANDBOX_DIR HOST_HEAD_SHA
+#   Derives the 8-char hex session-identity hash shared by start and resume.
+#   Single canonical home for the formula (previously duplicated inline in
+#   start_agent.sh and resume_agent.sh).
+sandbox_id_derive() {
+  echo "${1}:${2}" | sha256sum | cut -c1-8
+}
+
+# session_id_derive SESSION_TS SANDBOX_ID
+#   Derives the 6-char hex per-session id from the timestamp and sandbox id.
+session_id_derive() {
+  echo "${1}:${2}" | sha256sum | cut -c1-6
+}
