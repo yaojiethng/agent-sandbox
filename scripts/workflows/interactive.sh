@@ -60,7 +60,6 @@ _resolve_channel_dir() {
 #                  whole element if no | is present)
 #   DEFAULT      — optional default value; empty Enter selects it
 #   PAGE_SIZE    — max entries per page (default: 0 = no pagination)
-#   AUTO_SELECT  — if "true" and only one entry, skip prompt (default: false)
 #
 # Output:
 #   stdout — selected value
@@ -73,17 +72,9 @@ interactive_pick() {
   local ENTRIES_VAR="$2"
   local DEFAULT="${3:-}"
   local PAGE_SIZE="${4:-0}"
-  local AUTO_SELECT="${5:-false}"
 
   local -n _PICK_ENTRIES="$ENTRIES_VAR"
   local TOTAL="${#_PICK_ENTRIES[@]}"
-
-  # Auto-select when only one entry
-  if [[ "$AUTO_SELECT" == "true" && "$TOTAL" -eq 1 ]]; then
-    local single="${_PICK_ENTRIES[0]}"
-    echo "${single%%|*}"
-    return 0
-  fi
 
   if [[ "$TOTAL" -eq 0 ]]; then
     echo "No items available." >&2

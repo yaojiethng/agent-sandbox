@@ -139,24 +139,22 @@ draft_create_and_init_branch() {
 # draft_apply_patches — apply and commit diffs sequentially
 # =============================================================================
 
-# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE] [STRICT]
+# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE]
 #
 # Reads diff file paths from stdin (one per line), applies each via
 # apply_and_commit with the resolved commit message.
-# FORCE=true applies with --reject; STRICT=true disables --recount retry.
 # Returns 1 if any patch fails to apply (unless FORCE=true).
 draft_apply_patches() {
   local PROJECT_DIR="$1"
   local AUTHOR="$2"
   local FORCE="${3:-false}"
-  local STRICT="${4:-false}"
 
   while IFS= read -r diff_file; do
     [[ -z "$diff_file" ]] && continue
     local COMMIT_MSG
     COMMIT_MSG=$(draft_resolve_commit_message "$diff_file")
     echo "  Applying: $(basename "$diff_file")"
-    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" "$STRICT" || {
+    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" || {
       echo "Error: failed to apply $(basename "$diff_file")" >&2
       echo "  Patch file: $diff_file" >&2
       git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
@@ -169,7 +167,7 @@ draft_apply_patches() {
 # draft_apply_uncommitted — apply uncommitted.diff if present
 # =============================================================================
 
-# draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE] [STRICT]
+# draft_apply_uncommitted PROJECT_DIR SOURCE_DIR AUTHOR [FORCE]
 #
 # Applies uncommitted.diff from SOURCE_DIR if it exists and is non-empty.
 # Does NOT commit — the diff is applied to the working tree only, leaving
@@ -179,7 +177,6 @@ draft_apply_uncommitted() {
   local SOURCE_DIR="$2"
   local AUTHOR="$3"
   local FORCE="${4:-false}"
-  local STRICT="${5:-false}"
 
   local UNCOMMITTED_DIFF="$SOURCE_DIR/uncommitted.diff"
   if [[ ! -f "$UNCOMMITTED_DIFF" || ! -s "$UNCOMMITTED_DIFF" ]]; then
@@ -188,7 +185,7 @@ draft_apply_uncommitted() {
 
   echo ""
   echo "Applying uncommitted.diff (working tree only — not committed)..."
-  _apply_patch_file "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "$FORCE" "$STRICT" || {
+  _apply_patch_file "$PROJECT_DIR" "$UNCOMMITTED_DIFF" "$FORCE" || {
     echo "Error: failed to apply uncommitted.diff" >&2
     echo "  File: $UNCOMMITTED_DIFF" >&2
     return 1
@@ -390,7 +387,7 @@ _draft_rollback() {
 # =============================================================================
 
 # _run_draft_workflow PROJECT_DIR SOURCE_DIR BUNDLE_NAME
-#                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE STRICT
+#                      BRANCH_FROM DIFFS BRANCH_SUMMARY FORCE
 #                      [PATCH_LIST]
 #
 # Orchestrates: collect patches → count → create branch → apply loop →
@@ -401,7 +398,7 @@ _draft_rollback() {
 _run_draft_workflow() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
-  local FORCE="$7" STRICT="$8"
+  local FORCE="$7"
   local PATCH_LIST="${9:-}"
 
   local PATCHES_DIR="$SOURCE_DIR/patches"
@@ -449,13 +446,13 @@ _run_draft_workflow() {
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   # Apply patches
-  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
+  printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" || {
     _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
     return 1
   }
 
   # Apply uncommitted.diff
-  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" "$STRICT" || {
+  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" || {
     _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
     return 1
   }
@@ -501,7 +498,6 @@ main() {
   local DIFFS=""
   local BRANCH_SUMMARY=""
   local FORCE=false
-  local STRICT=false
   local INTERACTIVE=false
 
   for ARG in "$@"; do
@@ -568,7 +564,7 @@ main() {
       interactive_confirm_or_abort "" "${PATCH_ITEMS[@]}" || exit 1
       echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
       _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
-        "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT" "$PATCH_LIST"
+        "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PATCH_LIST"
       exit $?
     fi
 
@@ -584,7 +580,7 @@ main() {
     SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
     echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
     _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
-      "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
+      "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
     exit $?
   fi
 
@@ -596,7 +592,7 @@ main() {
   SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
   BUNDLE_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
   _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
-    "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$STRICT"
+    "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
 }
 
 # Guard: only run main() when executed directly, not when sourced

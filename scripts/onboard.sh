@@ -226,13 +226,11 @@ _validate_refresh() {
     usage
     exit 1
   fi
-  for T in "Makefile.template"; do
-    if [[ ! -f "$TEMPLATES/$T" ]]; then
-      echo "Error: required template not found: $TEMPLATES/$T" >&2
-      echo "  The agent-sandbox repo may be incomplete or out of date." >&2
-      exit 1
-    fi
-  done
+  if [[ ! -f "$TEMPLATES/Makefile.template" ]]; then
+    echo "Error: required template not found: $TEMPLATES/Makefile.template" >&2
+    echo "  The agent-sandbox repo may be incomplete or out of date." >&2
+    exit 1
+  fi
 }
 _run_refresh() {
   _validate_refresh
@@ -390,13 +388,11 @@ _validate_onboard() {
     echo "Error: project directory does not exist: $PROJECT_DIR" >&2
     exit 1
   fi
-  for T in "Makefile.template"; do
-    if [[ ! -f "$TEMPLATES/$T" ]]; then
-      echo "Error: required template not found: $TEMPLATES/$T" >&2
-      echo "  The agent-sandbox repo may be incomplete or out of date." >&2
-      exit 1
-    fi
-  done
+  if [[ ! -f "$TEMPLATES/Makefile.template" ]]; then
+    echo "Error: required template not found: $TEMPLATES/Makefile.template" >&2
+    echo "  The agent-sandbox repo may be incomplete or out of date." >&2
+    exit 1
+  fi
   for F in "docker-compose.yml" "Makefile" ".env"; do
     if [[ -e "$SANDBOX_DIR/$F" ]]; then
       echo "Error: SANDBOX_DIR already contains '$F': $SANDBOX_DIR" >&2
@@ -437,8 +433,6 @@ _run_onboard() {
   # Provider provisioning (single loop: .env stubs + config seeding + hooks)
   # -----------------------------------------------------------------------
   _provision_providers
-
-  # -----------------------------------------------------------------------
 
   # -----------------------------------------------------------------------
   # Summary

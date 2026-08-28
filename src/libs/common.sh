@@ -49,7 +49,8 @@ check_base_flags() {
     usage >&2
     return 1
   fi
-  if [[ -z "$SANDBOX_DIR" || "$SANDBOX_DIR" == "/" ]]; then
+  # SANDBOX_DIR is already guaranteed non-empty above; only reject root.
+  if [[ "$SANDBOX_DIR" == "/" ]]; then
     echo "Error: invalid SANDBOX_DIR: $SANDBOX_DIR" >&2
     return 1
   fi

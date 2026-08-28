@@ -253,7 +253,6 @@ compose_dry_run() {
     echo "HOST-VERIFY SKIP: no sandbox dir provided" >&2
   else
     local host_changes="$_sandbox_dir/.workspace/session-diffs"
-    local host_input="$_sandbox_dir/.workspace/input"
     local host_output="$_sandbox_dir/.workspace/output"
     local host_verify_fails=0
 

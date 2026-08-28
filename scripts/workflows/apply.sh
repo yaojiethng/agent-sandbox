@@ -21,7 +21,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 # apply_run — apply a diff file
 # =============================================================================
 
-# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE STRICT
+# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE
 #
 # Applies a diff file to the project working tree. Does not create commits —
 # leaves changes unstaged for operator review.
@@ -31,7 +31,6 @@ source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 #   DIFF_FILE     — absolute path to a diff file (uncommitted.diff or similar)
 #   APPLY_BRANCH  — optional branch to checkout/create before applying
 #   FORCE         — if true, apply with --reject; .rej files for conflicts
-#   STRICT        — if true, disable --recount retry on apply failure
 #                   to handle minor hunk-context drift (line reorders,
 #                   whitespace shifts that don't affect the content delta)
 #
@@ -42,7 +41,6 @@ apply_run() {
   local DIFF_FILE="$2"
   local APPLY_BRANCH="${3:-}"
   local FORCE="${4:-false}"
-  local STRICT="${5:-false}"
 
   if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" ]]; then
     echo "apply_run: PROJECT_DIR and DIFF_FILE are required" >&2
@@ -74,7 +72,7 @@ apply_run() {
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
   fi
 
-  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" "$STRICT" || return 1
+  _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
 
   # Count changed files from the diff
   local FILES_CHANGED
@@ -160,7 +158,6 @@ main() {
   local DIFF_FILE=""
   local APPLY_BRANCH=""
   local FORCE=false
-  local STRICT=false
   local INTERACTIVE=false
 
   for ARG in "$@"; do
@@ -198,11 +195,11 @@ main() {
     apply_preview "$DIFF_FILE" >&2
     interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
     echo "Running: make apply DIFF=${DIFF_FILE}"
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
     exit $?
   fi
 
-  apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$STRICT"
+  apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
 }
 
 # Guard: only run main() when executed directly, not when sourced
