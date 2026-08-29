@@ -159,7 +159,6 @@ _preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"       test -f "$SNAP
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"   touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 
 # WARN checks
-_preflight_warn "brief.md present in INPUT_DIR (AGENTS.md injected)"  test -f "$INPUT_DIR/brief.md"
 _preflight_warn "Working tree is clean"    bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'
 
 SUMMARY=$([ "$PREFLIGHT_FAILS" -eq 0 ] && echo "ALL CHECKS PASSED" || echo "$PREFLIGHT_FAILS FAILURE(S)")

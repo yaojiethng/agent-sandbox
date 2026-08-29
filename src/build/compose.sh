@@ -31,6 +31,8 @@
 #
 #   compose_sandbox_wait  Polls until sandbox container reports healthy.
 
+source "$(dirname "${BASH_SOURCE[0]}")/../libs/dry_run_record.sh"
+
 # -------------------------
 # compose_generate
 #
@@ -193,13 +195,16 @@ compose_args() {
 #   2. Reasoning layer   --  dry_run_reasoning.sh inside agent container
 #   3. Host-side         --  verify artifacts on host filesystem
 #
-# Each phase aborts on CRITICAL failure. Final cleanup via down (down -v
-# only when remove_volumes is true).
+# Composes dry-run: starts the bearer containers (full init via the normal
+# entrypoint on `up -d`), has each container run its own self-checks, then
+# consumes the per-container diagnostics records to assert the correct
+# container was started. Record verification replaces interactive exec-RC /
+# stdout judgement (see dry_run_record.sh).
 #
 # Args:
 #   $1  dry_run_script   --  absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
 #   $2  dry_run_capability_script   --  path to dry_run_capability.sh (optional, skip phase 1 if empty)
-#   $3  sandbox_dir      --  host-side SANDBOX_DIR (for Phase 3 host verification)
+#   $3  sandbox_dir      --  host-side SANDBOX_DIR (locates the output-mount records)
 #   $4  remove_volumes   --  "true" to remove named volumes on teardown (default: false)
 # -------------------------
 compose_dry_run() {
@@ -213,90 +218,75 @@ compose_dry_run() {
   _compose_down="session_teardown"
   [[ "$_remove_volumes" == "true" ]] && _compose_down="session_destroy"
 
+  # Expected container identities (image names) for the correct-container check.
+  # Injected into each bearer probe via DRY_RUN_IDENTITY; the probe echoes it
+  # into its diagnostics record so orchestration can verify the correct container
+  # was started (a full image-signature verification is a documented follow-up).
+  local _identity_sandbox="${SANDBOX_IMAGE_NAME:-unknown}"
+  local _identity_agent="${AGENT_IMAGE_NAME:-unknown}"
+
+  local _cap_record="$_sandbox_dir/.workspace/output/dryrun.capability.record"
+  local _rea_record="$_sandbox_dir/.workspace/output/dryrun.reasoning.record"
+
   echo "Starting containers..."
   DRY_RUN_SCRIPT="$dry_run_script" \
     DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
     docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1 | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
 
-  # Phase 1: capability layer checks
+  rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
+
+  # Phase 1: capability layer checks. The bearer writes its diagnostics record;
+  # orchestration does not judge the phase by exit code alone -- the record is
+  # the source of truth (Phase 3).
   if [[ -n "$dry_run_capability_script" ]]; then
     echo ""
     echo "=== Phase 1: capability layer ==="
-    if DRY_RUN_SCRIPT="$dry_run_script" \
-         DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-         docker compose "${COMPOSE_ARGS[@]}" exec sandbox bash /dry_run_capability.sh; then
-      echo "Phase 1 PASSED."
-    else
-      echo "Phase 1 FAILED  --  aborting." >&2
-      $_compose_down
-      return 1
-    fi
+    DRY_RUN_SCRIPT="$dry_run_script" \
+      DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+      DRY_RUN_IDENTITY="$_identity_sandbox" \
+      docker compose "${COMPOSE_ARGS[@]}" exec sandbox bash /dry_run_capability.sh \
+      || echo "  (phase 1 bearer exit non-zero; result judged from record)" >&2
   fi
 
-  # Phase 2: reasoning layer checks
+  # Phase 2: reasoning layer checks (same record-driven model).
   echo ""
   echo "=== Phase 2: reasoning layer ==="
-  if DRY_RUN_SCRIPT="$dry_run_script" \
-       DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-       docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run_reasoning.sh; then
-    echo "Phase 2 PASSED."
-  else
-    echo "Phase 2 FAILED  --  aborting." >&2
-    $_compose_down
-    return 1
-  fi
+  DRY_RUN_SCRIPT="$dry_run_script" \
+    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+    DRY_RUN_IDENTITY="$_identity_agent" \
+    docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run_reasoning.sh \
+    || echo "  (phase 2 bearer exit non-zero; result judged from record)" >&2
 
-  # Phase 3: host-side verification
+  # Phase 3: orchestration correct-container verification from the records.
+  # The bearer wrote one diagnostics record per container; orchestration reads
+  # them (not stdout) and asserts the correct container was started (identity
+  # echo-back == expected) and readiness per layer.
   echo ""
-  echo "=== Phase 3: host-side verification ==="
+  echo "=== Phase 3: record verification (correct container) ==="
 
+  local _verify_fails=0
   if [[ -z "$_sandbox_dir" ]]; then
-    echo "HOST-VERIFY SKIP: no sandbox dir provided" >&2
+    echo "RECORD-VERIFY SKIP: no sandbox dir provided" >&2
+    _verify_fails=1
   else
-    local host_changes="$_sandbox_dir/.workspace/session-diffs"
-    local host_output="$_sandbox_dir/.workspace/output"
-    local host_verify_fails=0
+    _verify_record() {
+      dry_run_record_verify "$1" "$2" "$3" || _verify_fails=$(( _verify_fails + 1 ))
+    }
 
-    _host_pass() { echo "  HOST-VERIFY PASS: $1"; }
-    _host_fail() { echo "  HOST-VERIFY FAIL: $1" >&2; host_verify_fails=$(( host_verify_fails + 1 )); }
-    _host_warn() { echo "  HOST-VERIFY WARN: $1" >&2; }
+    _verify_record "sandbox(capability)" "$_identity_sandbox" "$_cap_record"
+    _verify_record "agent(reasoning)"   "$_identity_agent"   "$_rea_record"
 
-    # Check capability layer marker survived to host
-    local _cap_marker="$host_changes/.dryrun_capability_marker"
-    if [[ -f "$_cap_marker" ]]; then
-      local _content; _content=$(cat "$_cap_marker" 2>/dev/null)
-      if [[ "$_content" == "CAPABILITY_LAYER_OK" ]]; then
-        _host_pass "capability marker visible on host at $host_changes"
-        rm -f "$_cap_marker"
-      else
-        _host_fail "capability marker has unexpected content: $_content"
-      fi
+    # Correct-container image-signature (staleness) hard gate (option c): assert
+    # the running image matches the recomputed source signature via dry_run_image_verify.
+    dry_run_image_verify "$_identity_sandbox" "sandbox" "$REPO_ROOT" "${PROVIDER_NAME:-}" \
+      || _verify_fails=$(( _verify_fails + 1 ))
+    dry_run_image_verify "$_identity_agent" "agent" "$REPO_ROOT" "${PROVIDER_NAME:-}" \
+      || _verify_fails=$(( _verify_fails + 1 ))
+
+    if [[ "$_verify_fails" -eq 0 ]]; then
+      echo "Phase 3 PASSED (correct container linked and ready)."
     else
-      _host_fail "capability marker not found on host at $host_changes"
-    fi
-
-    # Check liveness file survived from reasoning layer
-    local _liveness="$host_output/liveness.txt"
-    if [[ -f "$_liveness" ]]; then
-      local _lcontent; _lcontent=$(cat "$_liveness" 2>/dev/null)
-      if [[ "$_lcontent" == "PASS" ]]; then
-        _host_pass "liveness.txt visible on host at $host_output"
-        rm -f "$_liveness"
-      else
-        _host_fail "liveness.txt has unexpected content: $_lcontent"
-      fi
-    else
-      _host_fail "liveness.txt not found on host at $host_output"
-    fi
-
-    # Clean up any remaining temp files
-    rm -f "$host_changes/.dryrun_seam_test" 2>/dev/null || true
-    rm -f "$host_changes/.dryrun_capability_marker" 2>/dev/null || true
-
-    if [[ "$host_verify_fails" -eq 0 ]]; then
-      echo "Phase 3 PASSED."
-    else
-      echo "Phase 3 FAILED  --  $host_verify_fails check(s) failed." >&2
+      echo "Phase 3 FAILED  --  $_verify_fails record check(s) failed." >&2
     fi
   fi
 
@@ -305,8 +295,14 @@ compose_dry_run() {
   echo "Cleaning up containers..."
   $_compose_down
 
+  if [[ "$_verify_fails" -eq 0 ]]; then
+    echo ""
+    echo "=== dry-run: ALL PHASES PASSED ==="
+    return 0
+  fi
   echo ""
-  echo "=== dry-run: ALL PHASES PASSED ==="
+  echo "=== dry-run: FAILED  --  $_verify_fails check(s) failed ===" >&2
+  return 1
 }
 
 # -------------------------
