@@ -256,7 +256,6 @@ SESSION_TS="$(record_label "$RECORD_FILE" session-ts)"
 export SESSION_TS
 HOST_HEAD_SHA="$(record_label "$RECORD_FILE" host-head-sha)"
 export HOST_HEAD_SHA
-export SANDBOX_ID; SANDBOX_ID=$(sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
 
 session_env_names "$PROJECT_NAME" "$local_provider" "$SANDBOX_DIR" "$SESSION_ID_ARG"
 

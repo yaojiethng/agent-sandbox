@@ -14,31 +14,21 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 
 ## Derived Identifiers
 
-### SANDBOX_ID — Sandbox Instance Identity
-
-```
-SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]
-```
-
-An 8-character hex hash that identifies a specific sandbox instance at a specific host commit. Appended to Docker image names to prevent image collision when multiple sandboxes of the same project exist at different host commits.
-
-**Properties:**
-- Two sandboxes at different directories but the same `HOST_HEAD_SHA` produce different `SANDBOX_ID`s.
-- Same directory, different `HOST_HEAD_SHA` produces a different `SANDBOX_ID` — a new sandbox state.
-- 32 bits of entropy (8 hex chars), sufficient for sandbox-instance disambiguation. Collision risk is 32:1 preimage-to-tag ratio before expected collision.
-
 ### SESSION_ID — Session Run Identity
 
 ```
-SESSION_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]
+SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
-A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability.
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash — see `docs/adr/20260831-adr-settled-single_canonical_session_identity.md`.
+
+`canon(SANDBOX_DIR)` is the sandbox directory resolved to its canonical absolute form (`readlink -f`/`realpath` after leading-`~` expansion), so every path spelling of one folder (absolute, `~`, relative, symlink, trailing-slash, `./`) converges to one `SESSION_ID`. An unresolvable `SANDBOX_DIR` is a hard error (start/resume fail loudly).
 
 **Properties:**
 - Unique per session even with the same sandbox instance and branch (timestamp component).
-- Deterministic: same inputs produce same `SESSION_ID`.
-- 24 bits of entropy (6 hex chars), sufficient for session disambiguation within a sandbox instance.
+- Deterministic: same canonical inputs produce same `SESSION_ID`.
+- Sensitive to all three identity factors: canonical sandbox dir, host HEAD, and session timestamp.
+- 24 bits of entropy (6 hex chars), sufficient for session disambiguation.
 
 ## Container and Image Naming
 
@@ -157,8 +147,7 @@ session_id=<6-char session run ID>
 |---|---|---|
 | `PROJECT_NAME` | User input | Image names, container names, Docker labels, compose project name |
 | `PROJECT_DIR` | User input | git operations, `HOST_HEAD_SHA` derivation, Docker labels |
-| `SANDBOX_DIR` | Operator-supplied | `SANDBOX_ID` derivation, Docker labels, workspace path derivation |
-| `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SANDBOX_ID` derivation, SESSION_STATE, Docker labels |
+| `SANDBOX_DIR` | Operator-supplied | `SESSION_ID` derivation (canonicalized), Docker labels, workspace path derivation |
+| `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SESSION_ID` derivation, SESSION_STATE, Docker labels |
 | `SESSION_TS` | `date -u` | `SESSION_ID` derivation, Docker labels |
-| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | `SESSION_ID` derivation |
-| `SESSION_ID` | `SESSION_TS:SANDBOX_ID` hash | Container names, artefact paths, Docker labels |
+| `SESSION_ID` | `canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS` hash | Container names, artefact paths, Docker labels |

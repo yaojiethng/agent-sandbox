@@ -117,7 +117,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `dry_run.sh` | 🟡 Warm | M1.5 | Container diagnostic checks for dry-run mode. Uses env vars for dir names. |
 | `agent-sandbox.sh` | 🟡 Warm | M2.3 | CLI dispatch wrapper. Installed to host via `make install`. Sources `draft_workflow.sh` and `diff_workflow.sh`; calls `*_run` functions directly. |
 | `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
-| `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA. |
+| `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SESSION_TS, HOST_HEAD_SHA, SESSION_ID (single canonical hash). |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
 
 ### Lib (`libs/`)

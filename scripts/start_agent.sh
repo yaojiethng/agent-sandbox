@@ -183,8 +183,7 @@ _new_session_identity() {
   # Called for both default new-session and --refresh paths.
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-  export SANDBOX_ID; SANDBOX_ID=$(sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
-  export SESSION_ID; SESSION_ID=$(session_id_derive "$SESSION_TS" "$SANDBOX_ID")
+  export SESSION_ID; SESSION_ID=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "$SESSION_TS")
 }
 
 # -------------------------
@@ -310,7 +309,6 @@ main() {
   
   echo "Host branch: $SANITIZED_HOST_BRANCH"
   echo "Host HEAD SHA: $HOST_HEAD_SHA"
-  echo "Sandbox ID: $SANDBOX_ID"
   echo "Session ID: $SESSION_ID"
   echo "Sandbox container name: $SANDBOX_CONTAINER_NAME"
   echo "Agent container name: $AGENT_CONTAINER_NAME"

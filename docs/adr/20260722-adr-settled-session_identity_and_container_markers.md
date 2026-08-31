@@ -2,6 +2,8 @@
 
 **Status:** settled
 
+> **Superseded by:** [20260831-adr-settled-single_canonical_session_identity.md](20260831-adr-settled-single_canonical_session_identity.md) (derivation formula only — the two-stage `SANDBOX_ID`/`RUN_ID` hash is replaced by a single canonical hash; the marker schema and lifecycle-filtering decisions remain in force).
+
 ## Summary
 
 Container identity is hash-based, not timestamp-based. Every container carries a fixed set of Docker labels that encode provenance, lifecycle scope, and run identity. These labels are the single mechanism for all lifecycle operations — stop, prune, and inspect — eliminating reliance on name parsing or external state files.

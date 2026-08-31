@@ -28,7 +28,6 @@ setup_start_fixture() {
 
   export SESSION_TS="20260730-000000"
   export HOST_HEAD_SHA="abc123def456"
-  export SANDBOX_ID="testid01"
   export SESSION_ID="test01"
   export SANITIZED_HOST_BRANCH="master"
 

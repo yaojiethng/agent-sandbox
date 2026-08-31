@@ -167,8 +167,8 @@ local REFRESH_FLAG=""
 exec "$SCRIPT_DIR/run.sh" --name="$PROJECT" $REFRESH_FLAG
 ```
 
-Exceptions: `.env` config vars and identity values (`SESSION_TS`, `SANDBOX_ID`,
-`HOST_HEAD_SHA`) are safe to export.
+Exceptions: `.env` config vars and identity values (`SESSION_TS`,
+`HOST_HEAD_SHA`, `SESSION_ID`) are safe to export.
 
 ### 1.13 `exec` over sourcing for subcommand dispatch
 

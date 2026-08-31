@@ -309,59 +309,58 @@ test_sanitized_host_branch_detached_head() {
 }
 
 # -------------------------
-# SANDBOX_ID derivation tests
+# SESSION_ID derivation tests
 # -------------------------
+# The derivation formula lives in session_env.sh (single canonical home). These
+# tests exercise it via the shared session_env.sh used by start_agent.sh.
 
-# Helper: same formula as start_agent.sh
-g_sandbox_id_derive() {
-  local sandbox_dir="$1" host_head_sha="$2"
-  echo "${sandbox_dir}:${host_head_sha}" | sha256sum | cut -c1-8
-}
+source "$REPO_ROOT/src/libs/session_env.sh"
 
-test_sandbox_id_derived_from_dir_and_sha() {
-  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_repo"
+test_session_id_derived_from_sandbox_head_and_ts() {
+  local PROJECT_DIR="$FIXTURE_DIR/session_id_repo"
   make_committed_repo "$PROJECT_DIR"
   local SANDBOX_DIR="$PROJECT_DIR-sandbox"
   local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  local TS="20260831-120000"
 
-  local SANDBOX_ID
-  SANDBOX_ID=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
+  local SID
+  SID=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "$TS")
 
-  # Verify it's 8 characters
-  if [[ ${#SANDBOX_ID} -eq 8 ]]; then
-    pass "SANDBOX_ID is 8 characters"
+  # Verify it's 6 characters
+  if [[ ${#SID} -eq 6 ]]; then
+    pass "SESSION_ID is 6 characters"
   else
-    fail "SANDBOX_ID wrong length: ${#SANDBOX_ID}"
+    fail "SESSION_ID wrong length: ${#SID}"
   fi
 
   # Verify it's hex
-  if [[ "$SANDBOX_ID" =~ ^[a-f0-9]{8}$ ]]; then
-    pass "SANDBOX_ID is valid hex"
+  if [[ "$SID" =~ ^[a-f0-9]{6}$ ]]; then
+    pass "SESSION_ID is valid hex"
   else
-    fail "SANDBOX_ID not valid hex: $SANDBOX_ID"
+    fail "SESSION_ID not valid hex: $SID"
   fi
 }
 
-test_sandbox_id_stable_across_runs() {
-  local PROJECT_DIR="$FIXTURE_DIR/sandbox_id_stable_repo"
+test_session_id_stable_across_runs() {
+  local PROJECT_DIR="$FIXTURE_DIR/session_id_stable_repo"
   make_committed_repo "$PROJECT_DIR"
   local SANDBOX_DIR="$PROJECT_DIR-sandbox"
   local HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
 
   local SID1 SID2
-  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
-  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA")
+  SID1=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "20260831-120000")
+  SID2=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "20260831-120000")
 
   if [[ "$SID1" == "$SID2" ]]; then
-    pass "SANDBOX_ID is stable across multiple derivations"
+    pass "SESSION_ID is stable across multiple derivations"
   else
-    fail "SANDBOX_ID not stable: $SID1 vs $SID2"
+    fail "SESSION_ID not stable: $SID1 vs $SID2"
   fi
 }
 
-test_sandbox_id_different_for_different_dirs() {
-  local PROJECT_DIR1="$FIXTURE_DIR/sandbox_id_diff1"
-  local PROJECT_DIR2="$FIXTURE_DIR/sandbox_id_diff2"
+test_session_id_different_for_different_dirs() {
+  local PROJECT_DIR1="$FIXTURE_DIR/session_id_diff1"
+  local PROJECT_DIR2="$FIXTURE_DIR/session_id_diff2"
   mkdir -p "$PROJECT_DIR1" "$PROJECT_DIR2"
 
   local SANDBOX_DIR1="$PROJECT_DIR1-sandbox"
@@ -369,13 +368,13 @@ test_sandbox_id_different_for_different_dirs() {
   local SHA="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 
   local SID1 SID2
-  SID1=$(g_sandbox_id_derive "$SANDBOX_DIR1" "$SHA")
-  SID2=$(g_sandbox_id_derive "$SANDBOX_DIR2" "$SHA")
+  SID1=$(session_id_derive "$SANDBOX_DIR1" "$SHA" "20260831-120000")
+  SID2=$(session_id_derive "$SANDBOX_DIR2" "$SHA" "20260831-120000")
 
   if [[ "$SID1" != "$SID2" ]]; then
-    pass "SANDBOX_ID differs for different SANDBOX_DIR paths"
+    pass "SESSION_ID differs for different SANDBOX_DIR paths"
   else
-    fail "SANDBOX_ID should differ for different SANDBOX_DIR paths"
+    fail "SESSION_ID should differ for different SANDBOX_DIR paths"
   fi
 }
 
@@ -558,9 +557,9 @@ run_test test_sanitized_host_branch_sanitizes_feature_branch
 run_test test_sanitized_host_branch_sanitizes_nested_branch
 run_test test_sanitized_host_branch_exported
 run_test test_sanitized_host_branch_detached_head
-run_test test_sandbox_id_derived_from_dir_and_sha
-run_test test_sandbox_id_stable_across_runs
-run_test test_sandbox_id_different_for_different_dirs
+run_test test_session_id_derived_from_sandbox_head_and_ts
+run_test test_session_id_stable_across_runs
+run_test test_session_id_different_for_different_dirs
 run_test test_repo_commit_captured
 run_test test_repo_commit_is_full_sha
 

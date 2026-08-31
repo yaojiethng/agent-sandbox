@@ -111,16 +111,30 @@ session_env_names() {
   export SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
   export WORKTREE_DIR="${WORKTREE_DIR:-$sandbox_dir/.worktree}"
 }
-# sandbox_id_derive SANDBOX_DIR HOST_HEAD_SHA
-#   Derives the 8-char hex session-identity hash shared by start and resume.
-#   Single canonical home for the formula (previously duplicated inline in
-#   start_agent.sh and resume_agent.sh).
-sandbox_id_derive() {
-  echo "${1}:${2}" | sha256sum | cut -c1-8
+
+# canonical_sandbox_dir SANDBOX_DIR
+#   Resolves SANDBOX_DIR to its canonical absolute form so any path spelling
+#   (absolute, ~-form, relative, symlink, trailing-slash, ./) of the same folder
+#   converges to one identity. Fails loudly when the path cannot be resolved.
+sandbox_dir_canon() {
+  local dir="$1"
+  [[ -n "$dir" ]] || { echo "sandbox_dir_canon: SANDBOX_DIR is empty" >&2; return 1; }
+  local expanded
+  expanded="${dir/#\~/\$HOME}"   # expand a leading ~ before realpath
+  local canon
+  if ! canon="$(readlink -f "$expanded" 2>/dev/null)"; then
+    echo "Error: cannot canonicalize SANDBOX_DIR: $dir" >&2
+    return 1
+  fi
+  echo "$canon"
 }
 
-# session_id_derive SESSION_TS SANDBOX_ID
-#   Derives the 6-char hex per-session id from the timestamp and sandbox id.
+# session_id_derive SANDBOX_DIR HOST_HEAD_SHA SESSION_TS
+#   Derives the 6-char hex per-session id from the canonical sandbox dir, the
+#   host branch-point, and the session timestamp, in one hash (single canonical
+#   home for the formula shared by start and resume).
 session_id_derive() {
-  echo "${1}:${2}" | sha256sum | cut -c1-6
+  local dir canon
+  dir="$1"; if ! canon="$(sandbox_dir_canon "$dir")"; then return 1; fi
+  echo "${canon}:${2}:${3}" | sha256sum | cut -c1-6
 }

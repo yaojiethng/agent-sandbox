@@ -47,7 +47,6 @@ build_resume_fixture() {
 
   export SESSION_TS="20260821-120000"
   export HOST_HEAD_SHA="deadbeef"
-  export SANDBOX_ID="testid"
   export SESSION_ID="abc123"
   export SANITIZED_HOST_BRANCH="main"
 
