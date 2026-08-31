@@ -2,8 +2,8 @@
 # tests/test_checkpoint.sh
 # SESSION_ID identity-derivation contract tests.
 #
-# The derivation formula lives in src/libs/session_env.sh (session_id_derive,
-# sandbox_dir_canon) as the single canonical home. start_agent.sh and
+# The derivation formula lives in src/libs/session_env.sh (session_id_derive)
+# using sandbox_dir_canon from src/libs/common.sh. start_agent.sh and
 # resume_agent.sh both use these helpers. These tests execute the PRODUCTION
 # functions directly  --  no copies, no drift guards needed.
 #
@@ -15,6 +15,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
+source "$REPO_ROOT/src/libs/common.sh"   # sandbox_dir_canon (canonical home)
 source "$REPO_ROOT/src/libs/session_env.sh"
 
 test_session_id_returns_6_chars() {
@@ -92,7 +93,7 @@ test_sandbox_id_functions_removed() {
     fail "sandbox_id_derive still present"
   fi
   if declare -f sandbox_dir_canon >/dev/null 2>&1; then
-    pass "sandbox_dir_canon present"
+    pass "sandbox_dir_canon present (from common.sh)"
   else
     fail "sandbox_dir_canon missing"
   fi

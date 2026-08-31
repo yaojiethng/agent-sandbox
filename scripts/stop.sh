@@ -61,6 +61,12 @@ done
 
 check_base_flags
 
+# Canonicalize the sandbox dir once so the label filters agree with the
+# canonical `agent-sandbox.sandbox-dir` label baked at create time, regardless
+# of path spelling. Fails loudly when unresolvable.
+if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
+SANDBOX_DIR="$canon_dir"
+
 # -------------------------
 # Build label filters
 # -------------------------

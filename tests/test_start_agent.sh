@@ -20,6 +20,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$TEST_DIR/libs/git_fixtures.sh"
+source "$REPO_ROOT/src/libs/common.sh"   # sandbox_dir_canon (shared by session_env)
 
 # -------------------------
 # Checkpoint tag creation tests

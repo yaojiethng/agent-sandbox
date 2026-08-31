@@ -112,27 +112,14 @@ session_env_names() {
   export WORKTREE_DIR="${WORKTREE_DIR:-$sandbox_dir/.worktree}"
 }
 
-# canonical_sandbox_dir SANDBOX_DIR
-#   Resolves SANDBOX_DIR to its canonical absolute form so any path spelling
-#   (absolute, ~-form, relative, symlink, trailing-slash, ./) of the same folder
-#   converges to one identity. Fails loudly when the path cannot be resolved.
-sandbox_dir_canon() {
-  local dir="$1"
-  [[ -n "$dir" ]] || { echo "sandbox_dir_canon: SANDBOX_DIR is empty" >&2; return 1; }
-  local expanded
-  expanded="${dir/#\~/\$HOME}"   # expand a leading ~ before realpath
-  local canon
-  if ! canon="$(readlink -f "$expanded" 2>/dev/null)"; then
-    echo "Error: cannot canonicalize SANDBOX_DIR: $dir" >&2
-    return 1
-  fi
-  echo "$canon"
-}
-
 # session_id_derive SANDBOX_DIR HOST_HEAD_SHA SESSION_TS
 #   Derives the 6-char hex per-session id from the canonical sandbox dir, the
 #   host branch-point, and the session timestamp, in one hash (single canonical
 #   home for the formula shared by start and resume).
+#
+#   `sandbox_dir_canon` (which resolves SANDBOX_DIR to its canonical absolute
+#   form) is provided by src/libs/common.sh, sourced by every host entrypoint
+#   before this file.
 session_id_derive() {
   local dir canon
   dir="$1"; if ! canon="$(sandbox_dir_canon "$dir")"; then return 1; fi

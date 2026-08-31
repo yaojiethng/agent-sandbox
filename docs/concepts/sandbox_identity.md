@@ -61,22 +61,24 @@ These labels serve two purposes:
 
 ### Label Lifecycle by Artifact Type
 
-Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle — ephemeral artifacts (containers) carry all labels; persistent artifacts (volumes) carry only the stable subset because their labels are set at creation and never updated.
+Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle. Containers carry all labels; volumes carry the stable subset plus `session-id`/`session-ts` because in this harness the copy-model named volume is **per-session** (`<SESSION_ID>-sandbox-data`, one volume per session, created at that session's start) — so its session-scoped labels are accurate for its entire lifetime, not stale-on-resume.
 
 | Label | Stability | On containers | On volumes | On images | Reason |
 |---|---|---|---|---|---|
 | `project-name` | Stable | ✅ | ✅ | ❌ | Never changes for a project; images are tagged by name, not labeled |
-| `sandbox-dir` | Stable | ✅ | ✅ | ❌ | Never changes for a sandbox instance; runtime-only label |
-| `host-head-sha` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to repo state; runtime-only |
-| `host-branch` | Stable | ✅ | ✅ | ❌ | Set at volume creation; backlink to branch; runtime-only |
-| `session-ts` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
-| `session-id` | Ephemeral | ✅ | ❌ | ❌ | Changes every session; volume/images labels would be stale on resume |
+| `sandbox-dir` | Stable | ✅ | ✅ | ❌ | Never changes for a sandbox instance; canonical form; runtime-only label |
+| `host-head-sha` | Stable | ✅ | ✅ | ❌ | Set at creation; backlink to repo state; runtime-only |
+| `host-branch` | Stable | ✅ | ✅ | ❌ | Set at creation; backlink to branch; runtime-only |
+| `session-ts` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session timestamp; the copy volume is per-session so it is accurate |
+| `session-id` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session id; the copy volume is per-session so it is accurate |
 | `project-dir` | Stable | ✅ | ❌ | ❌ | Host path; not relevant for volume or image lifecycle |
 | `container-sig` | Stable | ❌ | ❌ | ✅ | SHA-256 of source files baked at build time; never changes for a given image |
 
-Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. Volumes persist across sessions; carrying ephemeral labels like `session-id` would create dangling references pointing to a session that may no longer exist. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
+Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. The copy-model named volume is per-session, so carrying `session-id`/`session-ts` is accurate rather than a dangling reference. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
 
-**Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (volume omitting session-scoped labels, images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
+**Canonical `sandbox-dir` label value.** The `agent-sandbox.sandbox-dir` label is written in its **canonical absolute form** (`readlink -f`, `src/libs/common.sh#sandbox_dir_canon`); `start_agent.sh`/`resume_agent.sh` canonicalize `SANDBOX_DIR` once before compose generation, and stop/prune canonicalize the same way before building label filters. Every path spelling of a folder therefore converges to one label value and one filter value, so label-based discovery (stop, prune Rule 2, the diagnostic) matches regardless of how the operator spells `--sandbox`.
+
+**Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
 ## Container-sig (Image Staleness Detection)
 

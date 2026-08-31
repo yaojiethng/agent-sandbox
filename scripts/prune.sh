@@ -253,6 +253,13 @@ main() {
     esac
   done
   check_base_flags
+
+  # Canonicalize the sandbox dir once so Rule 2's label filters match the
+  # canonical `agent-sandbox.sandbox-dir` label baked at create time, regardless
+  # of path spelling. Fails loudly when unresolvable.
+  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
+  SANDBOX_DIR="$canon_dir"
+
   if [[ -z "$PROJECT_DIR" ]]; then
     echo "Error: --project is required (need the current HEAD for staleness)." >&2
     usage >&2

@@ -24,6 +24,28 @@
 # here. Overridable via environment.
 : "${INTERACTIVE_MAX_ENTRIES:=10}"
 
+# canonical_sandbox_dir SANDBOX_DIR
+#   Resolves SANDBOX_DIR to its canonical absolute form so any path spelling
+#   (absolute, ~-form, relative, symlink, trailing-slash, ./) of the same folder
+#   converges. The canonical value is what is baked into the
+#   `agent-sandbox.sandbox-dir` label at create time and what all discovery
+#   filters (stop, prune, diagnostic) match, so label<spelling> and
+#   filter<spelling> always agree. Fails loudly when the path cannot be parsed
+#   or resolved. Single canonical home -- sourced by all four host entrypoints
+#   (start_agent, resume_agent, stop, prune) via common.sh.
+sandbox_dir_canon() {
+  local dir="$1"
+  [[ -n "$dir" ]] || { echo "sandbox_dir_canon: SANDBOX_DIR is empty" >&2; return 1; }
+  local expanded
+  expanded="${dir/#\~/\$HOME}"   # expand a leading ~ before realpath
+  local canon
+  if ! canon="$(readlink -f "$expanded" 2>/dev/null)"; then
+    echo "Error: cannot canonicalize SANDBOX_DIR: $dir" >&2
+    return 1
+  fi
+  echo "$canon"
+}
+
 parse_help_flag() {
   for _arg in "$@"; do
     case "$_arg" in

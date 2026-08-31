@@ -264,6 +264,13 @@ main() {
   validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
   validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 
+  # Canonicalize the sandbox dir once so identity, compose labels, and any
+  # downstream filter agree regardless of path spelling. Fails loudly when
+  # unresolvable (the dir must exist for start to proceed).
+  local canon_dir
+  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
+  SANDBOX_DIR="$canon_dir"
+
   if [[ "${INTERACTIVE:-false}" == "true" ]]; then
     _start_wizard
   fi

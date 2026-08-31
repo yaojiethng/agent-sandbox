@@ -232,6 +232,37 @@ test_rule2_removes_network_and_volume_orphans() {
   fi
 }
 
+# Rule 2 discovery must canonicalize SANDBOX_DIR before building its label
+# filter, so it matches the canonical `agent-sandbox.sandbox-dir` label baked at
+# create time regardless of the `--sandbox` spelling. Here we invoke with a
+# non-canonical trailing-slash spelling and assert the `ps -aq` filter carries
+# the canonical (readlink-resolved) path.
+test_rule2_canonicalizes_sandbox_dir_spelling() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_canon"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  export DOCKER_STUB_SESSION_ID_LABEL="orphan_sess"
+
+  local canon_expected
+  canon_expected="$(readlink -f "$SANDBOX_DIR")"
+  local spelled
+  spelled="$SANDBOX_DIR/."   # non-canonical: redundant `/.` suffix
+
+  ( 
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/prune.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+      --sandbox="$spelled" >/dev/null 2>&1
+  )
+
+  if grep -q "sandbox-dir=$canon_expected" "$DOCKER_TRACE_LOG"; then
+    pass "Rule 2 canonicalizes --sandbox spelling before label filter"
+  else
+    fail "Rule 2 did not canonicalize --sandbox (filter carried a non-canonical spelling)"
+  fi
+}
+
 test_complete_pass_end_to_end() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_e2e"
   mkdir -p "$FIXTURE_DIR"
@@ -368,6 +399,7 @@ run_test test_interactive_prints_command
 run_test test_complete_pass_removes_stale_session_resources
 run_test test_complete_pass_end_to_end
 run_test test_rule2_removes_network_and_volume_orphans
+run_test test_rule2_canonicalizes_sandbox_dir_spelling
 run_test test_stale_image_kind_removes_image_stale_record
 run_test test_stale_image_kind_keeps_fresh_record
 run_test test_stale_all_selects_either_criterion

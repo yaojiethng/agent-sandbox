@@ -5,9 +5,9 @@
 #       --sandbox="$HOME/sandbox/agent-sandbox" \
 #       [--name=agent-sandbox]
 #
-# NOTE: pass an EXPANDED path (use "$HOME/..." or a real path). An unexpanded
-# `~/...` is treated literally and breaks every label filter + the registry
-# lookup (that is the #1 reported cause of a falsely-"clean" output).
+# NOTE: a leading `~` is expanded and the path canonicalized (readlink -f)
+# here, so any spelling of the folder converges to the canonical label form.
+# Passing an unexpanded `~/...` no longer breaks the filters.
 #
 # Report-only. Lists the docker resources labeled with this sandbox's
 # `agent-sandbox.sandbox-dir` and whether each has a .compose session record.
@@ -42,9 +42,16 @@ for ARG in "$@"; do
   esac
 done
 
-# Expand a leading ~ (can't rely on the caller having expanded it).
+# Expand a leading ~ (can't rely on the caller having expanded it), then
+# canonicalize to its absolute form so the label filters match the canonical
+# `agent-sandbox.sandbox-dir` label baked at create time, mirroring prune's own
+# Rule 2 discovery (sandbox_dir_canon in src/libs/common.sh).
 if [[ "$SANDBOX_DIR" == \~/* ]]; then
   SANDBOX_DIR="${HOME}${SANDBOX_DIR#\~}"
+fi
+if ! SANDBOX_DIR="$(readlink -f "$SANDBOX_DIR" 2>/dev/null)"; then
+  echo "Error: cannot canonicalize SANDBOX_DIR: $SANDBOX_DIR" >&2
+  exit 1
 fi
 
 if [[ -z "$SANDBOX_DIR" ]]; then

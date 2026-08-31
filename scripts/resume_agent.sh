@@ -79,6 +79,16 @@ for ARG in "$@"; do
   esac
 done
 
+# Canonicalize the sandbox dir once so inventory/record lookup, identity, and
+# any downstream label filter agree regardless of path spelling. Fails loudly
+# when a non-empty value is unresolvable. Empty (bare/list/interactive resume
+# argument parsing) is left for the downstream required-flag validation to
+# report.
+if [[ -n "$SANDBOX_DIR" ]]; then
+  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
+  SANDBOX_DIR="$canon_dir"
+fi
+
 # -------------------------
 # Inventory helpers (shared)
 # -------------------------
