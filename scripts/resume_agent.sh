@@ -141,7 +141,7 @@ _no_sessions() {
 if [[ "$RESUME_LIST" == true ]]; then
   build_inventory
   [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
-  printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "SESSION_ID" "PROVIDER (SIG)" "STARTED" "BRANCH" "LAST_USED"
+  printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "SESSION_ID" "PROVIDER (IMAGE-SIG)" "STARTED" "BRANCH" "LAST_USED"
   _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=; image_sig=
   _prov=; _br=
   for _line in "${RESUME_INVENTORY[@]:0:$RESUME_LIST_PAGE_SIZE}"; do

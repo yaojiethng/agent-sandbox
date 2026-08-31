@@ -5,7 +5,7 @@ category maps to its canonical document.
 
 | Category | Document | Scope |
 |---|---|---|
-| Interface (CLI, TUI, API) | [`interface-conventions.md`](interface-conventions.md) | CLI flags, output discipline, TUI surface, API contracts pointer |
+| Interface (CLI, TUI, API) | [`interface-conventions.md`](interface-conventions.md) | CLI flags, output discipline, TUI surface, API contracts pointer, contextual-knowledge-light naming |
 | Bash coding | [`bash-coding-conventions.md`](bash-coding-conventions.md) | Language rules, traps as positive rules, dependency management |
 | Testing | [`testing-conventions.md`](testing-conventions.md) | Fixture patterns, anti-patterns, templates, checklists, debug steps |
 

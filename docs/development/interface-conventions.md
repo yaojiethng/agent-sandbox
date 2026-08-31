@@ -213,6 +213,18 @@ Stick with the simple comparison.
 
 ---
 
+## 11. Contextual-Knowledge-Light Naming and Value Disambiguation
+
+Name items for what they hold so a reader can act from the value alone.
+
+- Prefer short, self-describing textual names over opaque or numeric tokens.
+- When different columns can carry the same keyword, disambiguate them — by a descriptive header, or a warning tag beside the value it describes. A tag is one mechanism, not the only one.
+- Keep internal variable names descriptive and aligned with the value they carry, for the maintainer.
+
+Test: can a reader act correctly from the value alone?
+
+---
+
 ## TUI Conventions
 
 To be defined. TUI extensions (e.g. interactive pickers, progress displays)
