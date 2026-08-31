@@ -332,7 +332,15 @@ main() {
       git -C "$WORKTREE_DIR" init --quiet
       git -C "$WORKTREE_DIR" config user.email "agent@sandbox"
       git -C "$WORKTREE_DIR" config user.name "agent-sandbox"
-      git -C "$WORKTREE_DIR" config core.fileMode false
+      # Track exec bits where the filesystem preserves them (see snapshot.sh /
+      # filesystem_tracks_exec_bits). On a Windows/macOS host this resolves to
+      # false (exec bits unreliable); see the KNOWN ISSUE (windows-style
+      # filesystems) note there for the recovery path if modes come up missing.
+      if filesystem_tracks_exec_bits; then
+        git -C "$WORKTREE_DIR" config core.fileMode true
+      else
+        git -C "$WORKTREE_DIR" config core.fileMode false
+      fi
       git -C "$WORKTREE_DIR" add -A
       git -C "$WORKTREE_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet
       echo "Mount worktree baseline ready."

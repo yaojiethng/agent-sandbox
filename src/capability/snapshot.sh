@@ -14,6 +14,25 @@
 #   snapshot_init_git         SANDBOX_DIR   SNAPSHOT_DIR
 
 # -------------------------
+# filesystem_tracks_exec_bits
+# -------------------------
+# Returns 0 if the current filesystem reliably persists the executable bit
+# (native Linux/macOS), 1 if not (Windows/macOS Docker Desktop, some 9p and
+# network mounts). Used to decide core.fileMode so exec bits are tracked where
+# they are real (Linux container) and ignored where they are unreliable.
+filesystem_tracks_exec_bits() {
+  local probe_dir probe mode
+  probe_dir="$(mktemp -d 2>/dev/null)" || return 1
+  probe="$probe_dir/.mode-probe"
+  : > "$probe"
+  chmod 700 "$probe" 2>/dev/null
+  mode="$(stat -c %a "$probe" 2>/dev/null || stat -f %Lp "$probe" 2>/dev/null || echo "")"
+  rm -rf "$probe_dir"
+  # Octal owner perms, e.g. 700; bit 0 of the first digit is owner-exec.
+  [[ -n "$mode" && $(( 0${mode:0:1} & 1 )) -eq 1 ]]
+}
+
+# -------------------------
 # snapshot_copy_worktree
 # -------------------------
 # Copies the working tree from SOURCE_DIR into DEST_DIR using rsync.
@@ -317,7 +336,26 @@ snapshot_init_git() {
 
   git -C "$SANDBOX_DIR" config user.email "agent@sandbox"
   git -C "$SANDBOX_DIR" config user.name "agent-sandbox"
-  git -C "$SANDBOX_DIR" config core.fileMode false
+  # Track exec bits only where the filesystem preserves them. In the Linux
+  # container they are real, so an agent-made `chmod +x` is captured in the
+  # exported diff ("changes start with correct bits"); on filesystems that do
+  # not reliably persist exec bits, tracking would only produce spurious
+  # mode-only churn, so it is disabled. See filesystem_tracks_exec_bits.
+  #
+  # KNOWN ISSUE (windows-style filesystems): on filesystems that cannot reliably
+  # persist exec bits (Windows/macOS Docker Desktop, some 9p/network mounts),
+  # core.fileMode is false here and a fresh checkout will NOT carry +x on
+  # executables. If you return here because exec bits are missing after a
+  # checkout: the fs does not store them -- do not force fileMode=true; instead
+  # re-assert the one-time modes with `chmod +x` + `git update-index
+  # --chmod=+x` on the shebang scripts and test/stubs/docker (the "track harness
+  # script exec bits" chore), and prefer `chmod +x` at point of use (Dockerfiles)
+  # over relying on tracked/checkout modes.
+  if filesystem_tracks_exec_bits; then
+    git -C "$SANDBOX_DIR" config core.fileMode true
+  else
+    git -C "$SANDBOX_DIR" config core.fileMode false
+  fi
 
   # Unpack baseline.tar  --  contains exactly the committed state at HEAD.
   # This is the only content that belongs in the baseline commit.
