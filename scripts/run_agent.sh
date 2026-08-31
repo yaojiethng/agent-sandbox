@@ -251,6 +251,7 @@ _session_cleanup() {
   # before it has started.
   if [[ -n "${SESSION_ID:-}" ]]; then
     session_log_set "$SESSION_ID" last_stopped "$(date -u +%Y%m%d-%H%M%S)"
+    echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"
   fi
 }
 trap _session_cleanup EXIT

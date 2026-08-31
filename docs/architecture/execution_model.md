@@ -245,7 +245,10 @@ mode propagates a non-zero agent exit code to the caller. Teardown is
 guaranteed on every exit path after the session starts — agent completion,
 agent failure, `compose up` failure, or sandbox health-wait failure — via
 run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session
-network never leak. Serve mode always exits 0 — its session ends via
+network never leak. The teardown prints the resume command (`make resume
+SESSION_ID=<id>`) for the session just shut down, so a closing `make start`
+surfaces the exact command to continue it later. Serve mode always exits 0 —
+its session ends via
 `make stop` → `docker stop`, and the container's exit code on that path
 (SIGTERM/SIGKILL, 137/143) is an artifact of the stop mechanism, not a
 session result.

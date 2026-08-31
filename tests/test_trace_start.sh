@@ -97,6 +97,31 @@ trace_count() {
 # Tests
 # ---------------------------------------------------------------------------
 
+test_start_standard_shutdown_resume_hint() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_shutdown_hint"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  # Post-session teardown (the end-of-session shutdown output produced by
+  # `make start`) must surface a fully formed resume command for the session
+  # that was just shut down -- the same wording `make stop` uses.
+  local output
+  output=$( (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME"
+  ) 2>&1 )
+
+  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
+    pass "start (standard): shutdown output carries make resume SESSION_ID=<id>"
+  else
+    fail "start (standard): resume hint missing in shutdown output"
+  fi
+}
+
 test_start_standard_no_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_std"
   mkdir -p "$FIXTURE_DIR"
@@ -442,6 +467,7 @@ test_invalid_sandbox_type_rejected() {
 # Run
 # ---------------------------------------------------------------------------
 
+run_test test_start_standard_shutdown_resume_hint
 run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
