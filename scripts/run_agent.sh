@@ -50,6 +50,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
+source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 # -------------------------
 # Args
@@ -244,6 +245,13 @@ _session_cleanup() {
   [[ "${TEARDOWN_NEEDED:-}" == "1" ]] || return 0
   echo "+ tearing down..."
   session_teardown
+  # Record the stop in the per-session activity log (time since last stop is
+  # shown by `make resume --list`). Only the post-session teardown (TEARDOWN_NEEDED)
+  # writes it -- NOT the pre-run cleanup -- so a session isn't marked stopped
+  # before it has started.
+  if [[ -n "${SESSION_ID:-}" ]]; then
+    session_log_set "$SESSION_ID" last_stopped "$(date -u +%Y%m%d-%H%M%S)"
+  fi
 }
 trap _session_cleanup EXIT
 
@@ -297,6 +305,13 @@ fi
 # exits)  --  see the docker-wait comment below for why this ordering matters.
 agent_rc=0
 TEARDOWN_NEEDED=1
+# Session is now actively running: record last_started and clear last_stopped so
+# `make resume --list` shows the session as in-use (LAST_USED = ---) rather than
+# its last stop. Skipped for dry-run, which exits before this point.
+if [[ -n "${SESSION_ID:-}" ]]; then
+  session_log_set "$SESSION_ID" last_started "$(date -u +%Y%m%d-%H%M%S)"
+  session_log_set "$SESSION_ID" last_stopped ""
+fi
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
   docker compose "${COMPOSE_ARGS[@]}" up -d

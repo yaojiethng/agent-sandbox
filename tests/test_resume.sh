@@ -66,10 +66,11 @@ test_list_renders_enriched() {
   sandbox="$(build_fixture "list")"
   local out
   out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/list/project" --sandbox="$sandbox" --list)"
-  if echo "$out" | grep -q "abc123.*pi.*20260821-120000.*main"; then
-    pass "resume --list: renders enriched record display"
+  if echo "$out" | grep -q "SESSION_ID.*PROVIDER.*STARTED.*BRANCH.*LAST_USED" \
+     && echo "$out" | grep -q "abc123.*pi.*main"; then
+    pass "resume --list: renders enriched record display (headers + row)"
   else
-    fail "resume --list: expected enriched abc123 row, got: $out"
+    fail "resume --list: expected headers + abc123 row, got: $out"
   fi
 }
 
@@ -188,13 +189,12 @@ EOF
   fi
 }
 
-# --list renders a sandbox-staleness column (registry-truth, D7): a record whose
-# host-head-sha matches the current project HEAD is 'fresh', a differing one is
-# 'stale' (restores the criterion lost in the command-split; finding 20260821-05).
+# --list renders a sandbox-staleness WARNING label (registry-truth, D7): a
+# record whose host-head-sha matches the current HEAD shows no marker; a
+# differing one is flagged [SANDBOX_STALE].
 test_list_shows_sandbox_staleness() {
   local dir="$FIXTURE_DIR/staleness"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
-  # A git project so current HEAD is determinable.
   git -C "$dir/project" init -q >/dev/null 2>&1
   git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
   local head_sha
@@ -223,10 +223,11 @@ services:
 EOF
   local out
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -q "aaa.*main.*fresh" && echo "$out" | grep -q "bbb.*main.*stale"; then
-    pass "resume --list: sandbox-staleness column marks matching= fresh, differing= stale"
+  if echo "$out" | grep -qE "bbb.*main.*SANDBOX_STALE" \
+     && ! echo "$out" | grep -qE "aaa.*main.*SANDBOX_STALE"; then
+    pass "resume --list: SANDBOX_STALE label only on a differing host-head-sha record"
   else
-    fail "resume --list: expected fresh+stale staleness column, got: $out"
+    fail "resume --list: expected SANDBOX_STALE only on bbb, got: $out"
   fi
 }
 
@@ -251,9 +252,8 @@ services:
 EOF
 }
 
-# --list renders an image-staleness column: a record whose referenced image
-# carries a container-sig differing from the recomputed source sig is image-
-# stale, independent of the sandbox (registry-truth) staleness.
+# --list flags an IMAGE_STALE warning where a record's referenced image carries
+# a container-sig differing from the recomputed source sig.
 test_list_shows_image_staleness() {
   local dir="$FIXTURE_DIR/img_stale"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -264,15 +264,15 @@ test_list_shows_image_staleness() {
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+unknown[[:space:]]+stale"; then
-    pass "resume --list: image-stale column marks differing container-sig record"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi.*IMAGE_STALE"; then
+    pass "resume --list: IMAGE_STALE label on differing container-sig record"
   else
-    fail "resume --list: expected image-stale column, got: $out"
+    fail "resume --list: expected IMAGE_STALE label, got: $out"
   fi
 }
 
-# Fresh images (baked sig == recomputed sig for BOTH agent and sandbox) are
-# image-fresh and are NOT marked stale.
+# Fresh images (baked sig == recomputed sig for BOTH agent and sandbox) carry
+# NO staleness marker.
 test_list_shows_image_fresh_when_sigs_match() {
   local dir="$FIXTURE_DIR/img_fresh"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -283,15 +283,15 @@ test_list_shows_image_fresh_when_sigs_match() {
         DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+unknown[[:space:]]+fresh"; then
-    pass "resume --list: matching container-sig marks image-fresh"
+  if ! echo "$out" | grep -qE "aaa[[:space:]]+pi.*main.*STALE"; then
+    pass "resume --list: matching container-sig -> no staleness marker"
   else
-    fail "resume --list: expected image-fresh column, got: $out"
+    fail "resume --list: expected no STALE marker, got: $out"
   fi
 }
 
-# The two staleness dimensions are independent: a record sandbox-fresh (its
-# host-head-sha == current project HEAD) but image-stale shows BOTH columns.
+# The two staleness dimensions are independent: a record sandbox-fresh (host-head
+# == current HEAD) but image-stale flags IMAGE_STALE only (no SANDBOX_STALE).
 test_list_columns_are_independent() {
   local dir="$FIXTURE_DIR/img_indep"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -316,10 +316,11 @@ EOF
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+.*[[:space:]]+fresh[[:space:]]+stale"; then
-    pass "resume --list: sandbox-fresh + image-stale both reported (independent columns)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi.*IMAGE_STALE" \
+     && ! echo "$out" | grep -qE "aaa[[:space:]]+pi.*main.*SANDBOX_STALE"; then
+    pass "resume --list: sandbox-fresh no marker + image-stale marker (independent)"
   else
-    fail "resume --list: expected fresh+stale independent columns, got: $out"
+    fail "resume --list: expected IMAGE_STALE only, got: $out"
   fi
 }
 
@@ -336,10 +337,10 @@ test_interactive_marks_image_stale() {
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?
-  if [[ $rc -ne 0 ]] && echo "$out" | grep -q "IMG-STALE"; then
-    pass "resume --interactive: picker marks image-stale session [IMG-STALE]"
+  if [[ $rc -ne 0 ]] && echo "$out" | grep -q "IMAGE_STALE"; then
+    pass "resume --interactive: picker marks image-stale session [IMAGE_STALE]"
   else
-    fail "resume --interactive: expected [IMG-STALE] marker, got rc=$rc: $out"
+    fail "resume --interactive: expected [IMAGE_STALE] marker, got rc=$rc: $out"
   fi
 }
 

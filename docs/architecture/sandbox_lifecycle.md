@@ -101,18 +101,23 @@ Host-side identity is recorded in the per-run compose registry (`.compose/<sessi
 the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker
 volume labels. `make resume SESSION_ID=<id>` selects exactly one session and
 resumes silently. `make resume LIST=1` lists registry sessions in an enriched
-table (`SESSION_ID | provider | session-ts | branch | sandbox-staleness |
-image-staleness`) filtered by an optional `PROVIDER=<n>`, capped at 10 rows
-per page (same cap as the draft picker; remainder reported in a footer); the
-`sandbox-staleness` column is registry-truth (D7) — `fresh` when the session's
-`host-head-sha` matches the current project HEAD, `stale` when it differs (the
-criterion lost in the command-split; restored `20260821-07`), `unknown` when
-undeterminable. The `image-staleness` column is image-truth — `stale` when a
-referenced image's baked `container-sig` label differs from a recomputation
-of the current source (`20260821-09`/`20260821-10`).
+table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`) filtered by an
+optional `PROVIDER=<n>`, capped at 10 rows per page (same cap as the draft
+picker; remainder reported in a footer). `STARTED` and `LAST_USED` are relative
+times ("2 hours ago"; `LAST_USED` = time since the session was last stopped,
+read from its `.compose/<session-id>.log` per-session activity log; `---` when
+the session is running or never stopped). The table sorts newest-first by the
+raw `session-ts`. Staleness is reported exception-only as warning labels
+rather than always-present columns: `[SANDBOX_STALE]` when the record's
+`host-head-sha` differs from the current project HEAD (registry-truth, D7 --
+the criterion lost in the command-split; restored `20260821-07`), and
+`[IMAGE_STALE]` when a referenced image's baked `container-sig` label differs
+from a recomputation of the current source (image-truth,
+`20260821-09`/`20260821-10`); no label when fresh, and unknown/unresolvable
+states carry no marker.
 `make resume INTERACTIVE=1` presents a picker over the
 inventory and confirms before resuming (also `PROVIDER=<n>`-filterable); the
-picker marks `[STALE]`/`[IMG-STALE]` sessions and paginates at 10 rows. The
+picker marks `[SANDBOX_STALE]`/`[IMAGE_STALE]` sessions and paginates at 10 rows. The
 legacy volume-label resume machinery was removed from `start` (see
 `20260821-04`).
 

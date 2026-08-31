@@ -98,13 +98,15 @@ source "$REPO_ROOT/src/libs/session_inventory.sh"
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
-  local current_sha stale image_stale line sid provider ts branch
+  local current_sha stale image_stale last_used short_sha line sid provider ts branch
   current_sha="$(project_current_sha)"
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     image_stale="$(record_image_stale "$SANDBOX_DIR/.compose/$sid.yml" "$REPO_ROOT")"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale" )
+    last_used="$(session_log_read "$sid" last_stopped)"
+    short_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)" && short_sha="${short_sha:0:7}"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale|$last_used|$short_sha" )
   done < <(enumerate_records)
   # Newest first by session-ts.
   local sorted
@@ -138,11 +140,20 @@ _no_sessions() {
 if [[ "$RESUME_LIST" == true ]]; then
   build_inventory
   [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
-  echo "Resumable sessions (make resume SESSION_ID=<id>):  [sandbox stale/fresh/unknown] [image stale/fresh/unknown]"
-  _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
+  printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "SESSION_ID" "PROVIDER" "STARTED" "BRANCH" "LAST_USED"
+  _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=
+  _prov=; _br=
   for _line in "${RESUME_INVENTORY[@]:0:$RESUME_LIST_PAGE_SIZE}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
-    printf '  %-8s  %-10s  %-17s  %-22s  %-7s  %s\n' "$sid" "$provider" "$ts" "$branch" "$stale" "$image_stale"
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
+    # Co-locate each staleness warning with the column it describes: the image
+    # warning sits beside PROVIDER; the workspace/sandbox warning beside BRANCH.
+    # (An image identifier refinement is deferred -- see Findings.)
+    _prov="$provider"
+    [[ "$image_stale" == "stale" ]] && _prov+=" [IMAGE_STALE]"
+    _br="$branch"
+    [[ -n "$short_sha" ]] && _br+=" ($short_sha)"
+    [[ "$stale" == "stale" ]] && _br+=" [SANDBOX_STALE]"
+    printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "$sid" "$_prov" "$(relative_time "$ts")" "$_br" "$(relative_time "$last_used")"
   done
   if [[ "${#RESUME_INVENTORY[@]}" -gt "$RESUME_LIST_PAGE_SIZE" ]]; then
     echo "  (...$(( ${#RESUME_INVENTORY[@]} - RESUME_LIST_PAGE_SIZE )) more session(s)  --  use --interactive or --provider=<n> to narrow)" >&2
@@ -155,16 +166,19 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
 
   # Build the picker entries (value|display), then pick + confirm. Only the
-  # stale states are marked ([STALE] / [IMG-STALE]); fresh/unknown carry no
+  # stale states co-located with the column they describe ([SANDBOX_STALE] by
+  # branch, [IMAGE_STALE] by provider); fresh/unknown carry no marker
   # marker (honest  --  unknown is not "ok"). Paged at RESUME_LIST_PAGE_SIZE.
   # Explicit --interactive always shows the picker + confirm, even for a sole
   # record (decision I-1)  --  the deliberately slow mode.
-  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=
+  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
-    _std=""; [[ "$stale" == "stale" ]]       && _std="[STALE]"
-    _img=""; [[ "$image_stale" == "stale" ]] && _img="[IMG-STALE]"
-    PICKER+=( "$sid|$sid  $provider  $ts  $branch  $_std $_img" )
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
+    _std=""; [[ "$stale" == "stale" ]]       && _std=" [SANDBOX_STALE]"
+    _img=""; [[ "$image_stale" == "stale" ]] && _img=" [IMAGE_STALE]"
+    _prov="$provider"
+    _br="$branch"; [[ -n "$short_sha" ]] && _br+=" ($short_sha)"
+    PICKER+=( "$sid|$sid  $_prov$_img  $(relative_time "$ts")  $_br$_std  $(relative_time "$last_used")" )
   done
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
   chosen="$(interactive_pick "Resume which session?" PICKER "" "$RESUME_LIST_PAGE_SIZE")" || exit 1
@@ -174,7 +188,7 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # re-parsing it from disk.
   disp_provider=""; disp_ts=""; disp_branch=""
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
     if [[ "$sid" == "$chosen" ]]; then
       disp_provider="$provider"; disp_ts="$ts"; disp_branch="$branch"; break
     fi

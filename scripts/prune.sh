@@ -123,7 +123,7 @@ rule1_selected_records() {
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
     # delivery overlay). Disclosure in the plan only  --  it gates neither rule.
     delivery="$(env_field "$file" SANDBOX_TYPE)"
-    printf '%s|%s|%s|%s|%s\n' "$sid" "$provider" "$ts" "${branch:-}" "$delivery"
+    printf '%s|%s|%s|%s|%s\n' "$sid" "$provider" "$(relative_time "$ts")" "${branch:-}" "$delivery"
   done < <(enumerate_records)
 }
 

@@ -164,4 +164,24 @@ test_resume_mount_keeps_worktree() {
 }
 run_test test_resume_mount_keeps_worktree
 
+# Resume (via run_agent) writes the unified per-session activity log: on start
+# it records last_started (and clears last_stopped); on teardown it records
+# last_stopped -- feeding the --list LAST_USED column.
+test_resume_writes_session_log() {
+  local FIX="$FIXTURE_DIR/resume-log"
+  build_resume_fixture "$FIX" copy
+
+  invoke_resume
+
+  local log="$SANDBOX_DIR/.compose/abc123.log"
+  if [[ -f "$log" ]] \
+     && grep -qE '^last_started=[0-9]{8}-[0-9]{6}$' "$log" \
+     && grep -qE '^last_stopped=[0-9]{8}-[0-9]{6}$' "$log"; then
+    pass "resume writes last_started + last_stopped to .compose/<sid>.log"
+  else
+    fail "resume session log missing/incorrect: $(tr '\n' ' ' < "$log" 2>/dev/null)"
+  fi
+}
+run_test test_resume_writes_session_log
+
 test_done "test_trace_resume"

@@ -80,6 +80,8 @@ Resume reuses the same SESSION_ID and overwrites its own file; each unique sessi
 leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the
 file is never visible in the agent workspace. `.compose/` is gitignored.
 
+**Per-session activity log:** alongside the compose record, each session keeps a `.compose/<session-id>.log` -- a minimal `KEY=VALUE` lifecycle log (entries `last_started=` / `last_stopped=`, UTC `YYYYMMDD-HHMMSS`). `run_agent.sh` writes `last_started=` on session start/resume (and clears `last_stopped` so a running session is not shown as stopped) and `last_stopped=` on post-session teardown. `make resume --list` derives its `LAST_USED` column from `last_stopped`. The `KEY=VALUE` shape is intentionally extensible (e.g. future preflight/dry-run outcome lines) without structural change. Both `.yml` and `.log` live under `.compose/` and are gitignored.
+
 **Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base
 template with any applicable overlays using `docker compose config
 --no-interpolate`, bakes image names and host paths into the result, and

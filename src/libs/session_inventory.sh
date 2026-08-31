@@ -144,3 +144,72 @@ session_stale() {
     echo "unknown"
   fi
 }
+# =============================================================================
+# Per-session activity log  --  `.compose/<session-id>.log`
+#
+# A unified per-session log of lifecycle timestamps / events, KEY=VALUE per
+# line (mirrors the dry-run diagnostics `.record` shape so the two interoperate).
+# Lives alongside the `.compose/<session-id>.yml` registry record.
+#
+# Entries (minimal set, extensible):
+#   last_started=YYYYMMDD-HHMMSS   --  most recent session start/resume (UTC)
+#   last_stopped=YYYYMMDD-HHMMSS   --  most recent session stop (UTC)
+#   (future: preflight/dry-run outcome lines)
+# =============================================================================
+
+# session_log_path SESSION_ID  --  absolute path of the session activity log.
+session_log_path() {
+  echo "${SANDBOX_DIR:-}/.compose/${1}.log"
+}
+
+# session_log_read SESSION_ID KEY  --  print the value of KEY (last set wins);
+# empty if the log is absent or the key is not present.
+session_log_read() {
+  local sid="$1" key="$2" f
+  f="$(session_log_path "$1")"
+  [[ -f "$f" ]] || { echo ""; return 0; }
+  grep -m1 -E "^${key}=" "$f" | sed -E "s/^${key}=//" || true
+}
+
+# session_log_set SESSION_ID KEY VALUE  --  upsert a KEY=VALUE line (idempotent).
+session_log_set() {
+  local sid="$1" key="$2" value="$3" f
+  f="$(session_log_path "$sid")"
+  mkdir -p "$(dirname "$f")"
+  touch "$f"
+  if grep -q "^${key}=" "$f"; then
+    sed -i "s#^${key}=.*#${key}=${value}#" "$f"
+  else
+    echo "${key}=${value}" >> "$f"
+  fi
+}
+
+# =============================================================================
+# Relative (human) elapsed time
+# =============================================================================
+
+# ts_to_epoch TS  --  `YYYYMMDD-HHMMSS` (UTC) -> epoch seconds; empty if unparseable.
+ts_to_epoch() {
+  local ts="$1" d
+  [[ "$ts" =~ ^[0-9]{8}-[0-9]{6}$ ]] || { echo ""; return 0; }
+  d="${ts:0:4}-${ts:4:2}-${ts:6:2} ${ts:9:2}:${ts:11:2}:${ts:13:2}"
+  date -u -d "$d" +%s 2>/dev/null
+}
+
+# relative_time TS  --  human "N seconds/minutes/hours/days ago"; "---" if absent.
+relative_time() {
+  local ts="$1" ep now diff val
+  ep="$(ts_to_epoch "$ts")"
+  [[ -n "$ep" ]] || { echo "---"; return 0; }
+  now="$(date -u +%s)"
+  diff=$(( now - ep )); [[ $diff -lt 0 ]] && diff=0
+  if   (( diff < 60 )); then
+    echo "just now"
+  elif (( diff < 3600 )); then
+    val=$(( diff / 60 )); printf '%d minute%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
+  elif (( diff < 86400 )); then
+    val=$(( diff / 3600 )); printf '%d hour%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
+  else
+    val=$(( diff / 86400 )); printf '%d day%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
+  fi
+}
