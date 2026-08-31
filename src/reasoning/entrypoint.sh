@@ -185,10 +185,12 @@ fi
 unset _provider_preflight
 
 # ---------------------------------------------------------------------------
-# Preflight: validate agent command
+# Preflight: validate the first command argument
 # ---------------------------------------------------------------------------
-# The first argument to the entrypoint is the provider's agent binary.
-# If it's missing or not executable, the image is misconfigured.
+# The first argument is the first token of the container `command:` (or the
+# image CMD default): the provider's agent binary in standard/serve mode, or
+# `bash` when a dry-run probe script is the command. If it is missing or not
+# executable the image is misconfigured.
 
 if [[ $# -eq 0 ]]; then
   echo "FATAL: No agent command specified  --  image misconfigured" >&2
@@ -206,9 +208,10 @@ unset _agent_cmd
 # Run
 # ---------------------------------------------------------------------------
 
-# Run the agent as a synchronous foreground child.
-# stdin, stdout, and stderr are inherited from the shell (PTY in Docker).
-# The agent is in the shell's process group = terminal foreground group.
+# Run the command as a synchronous foreground child. stdin, stdout, and stderr
+# are inherited from the shell; the process is in the shell's process group
+# (terminal foreground group). The command (agent binary or dry-run probe)
+# therefore replaces the wrapper as the container's main process.
 set +e
 "$@"
 EXIT_CODE=$?

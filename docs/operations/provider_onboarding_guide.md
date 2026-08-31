@@ -113,8 +113,12 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
 # provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
-# EXIT trap, then execs the agent command.
-ENTRYPOINT ["provider-entrypoint.sh", "<agent-command>"]
+# EXIT trap, then execs the command selected by `command:`/CMD. The ENTRYPOINT
+# is the harness wrapper ONLY -- the agent binary is NOT baked into it. The
+# default agent binary is the image CMD; serve/dry-run overlays override CMD
+# via compose `command:` (see Standard Invocation Interface below).
+CMD ["<agent-command>"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]
 ```
 
 The `ARG BASE_IMAGE` declaration allows `scripts/build.sh`'s `build_agent` function to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
@@ -127,6 +131,20 @@ The operator input files are available at `/home/agentuser/workspace/input/` via
 
 ---
 
+## Standard invocation interface (all providers)
+
+The agent container's start-up is standardized at the Docker `entrypoint:` / `command:` level so that every provider and every command type (standard, serve, dry-run) adapts to one baseline:
+
+- **`ENTRYPOINT`** is the harness wrapper **only**: `["/opt/sandbox/bin/provider-entrypoint.sh"]`. It never bakes the agent binary. Identical across all providers.
+- **`CMD` / `command:`** is the single extension point that selects what runs:
+  - standard: the agent binary (image `CMD`, e.g. `["pi"]`);
+  - serve: the binary + serve args (serve overlay `command: ["<agent>", "<args...>"]`);
+  - dry-run: the probe as a script (dry-run overlay `command: ["bash", "/dry_run_reasoning.sh"]`).
+
+The wrapper runs its preflight then execs the command verbatim (`"$@"`). Because the binary is not baked into `ENTRYPOINT`, `command:` REPLACES the invocation rather than being fed to the agent binary as input (a baked-binary entrypoint caused a dry-run probe command to be passed to the agent as a chat message).
+
+**Conformance (Step 10):** the provider image MUST set `ENTRYPOINT` to the wrapper only and provide its agent binary as `CMD`; the serve overlay MUST prefix the binary in `command:`.
+
 ## Step 4 — Write `docker-compose.serve.yml`
 
 The serve overlay is a static Compose file that extends the base configuration for serve mode. It is referenced directly by `scripts/run_agent.sh` using a deterministic path into the repo — it is never copied to `SANDBOX_DIR`.
@@ -136,7 +154,7 @@ It must declare the agent `command:` for serve mode. It may also define port bin
 ```yaml
 services:
   agent:
-    command: ["<agent-serve-command>"]
+    command: ["<agent-command>", "<serve-args...>"]
 ```
 
 If the provider does not support serve mode, create the file anyway with a comment and ensure the agent behaviour on `make serve` is documented.

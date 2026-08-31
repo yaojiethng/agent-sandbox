@@ -191,12 +191,14 @@ compose_args() {
 # file args needed here.
 #
 # Phases:
-#   1. Capability layer  --  dry_run_capability.sh inside sandbox container
-#   2. Reasoning layer   --  dry_run_reasoning.sh inside agent container
-#   3. Host-side         --  verify artifacts on host filesystem
+#   1. Capability layer  --  dry_run_capability.sh inside sandbox container (start-up command)
+#   2. Reasoning layer   --  dry_run_reasoning.sh inside agent container (start-up command)
+#   3. Host-side         --  verify records on host filesystem
 #
 # Composes dry-run: starts the bearer containers (full init via the normal
-# entrypoint on `up -d`), has each container run its own self-checks, then
+# entrypoint on `up -d`), each container runs its own self-checks at start-up
+# (a `command:` override in the dry-run overlay; the sandbox runs its probe as
+# a prelude then stays alive, the agent runs its probe then exits), then
 # consumes the per-container diagnostics records to assert the correct
 # container was started. Record verification replaces interactive exec-RC /
 # stdout judgement (see dry_run_record.sh).
@@ -219,43 +221,46 @@ compose_dry_run() {
   [[ "$_remove_volumes" == "true" ]] && _compose_down="session_destroy"
 
   # Expected container identities (image names) for the correct-container check.
-  # Injected into each bearer probe via DRY_RUN_IDENTITY; the probe echoes it
-  # into its diagnostics record so orchestration can verify the correct container
-  # was started (a full image-signature verification is a documented follow-up).
+  # Baked into each bearer's environment via DRY_RUN_IDENTITY (set in the dry-run
+  # compose overlay); each probe echoes it into its diagnostics record so
+  # orchestration can verify the correct container was started.
   local _identity_sandbox="${SANDBOX_IMAGE_NAME:-unknown}"
   local _identity_agent="${AGENT_IMAGE_NAME:-unknown}"
 
   local _cap_record="$_sandbox_dir/.workspace/output/dryrun.capability.record"
   local _rea_record="$_sandbox_dir/.workspace/output/dryrun.reasoning.record"
 
-  echo "Starting containers..."
+  # Start the bearer containers. Full init runs via the normal entrypoint on
+  # `up -d`; the dry-run overlay sets a `command:` override (the sandbox runs
+  # its probe as a prelude then stays alive; the agent runs its probe and
+  # exits) so each bearer's self-checks run at container start-up -- no exec.
+  rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
+  echo "Starting containers (bearer probes run at start-up)..."
   DRY_RUN_SCRIPT="$dry_run_script" \
     DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
     docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1 | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
 
-  rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
-
-  # Phase 1: capability layer checks. The bearer writes its diagnostics record;
-  # orchestration does not judge the phase by exit code alone -- the record is
-  # the source of truth (Phase 3).
-  if [[ -n "$dry_run_capability_script" ]]; then
-    echo ""
-    echo "=== Phase 1: capability layer ==="
-    DRY_RUN_SCRIPT="$dry_run_script" \
-      DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-      DRY_RUN_IDENTITY="$_identity_sandbox" \
-      docker compose "${COMPOSE_ARGS[@]}" exec sandbox bash /dry_run_capability.sh \
-      || echo "  (phase 1 bearer exit non-zero; result judged from record)" >&2
+  # Wait for both bearer containers to finish their start-up probes and write
+  # their diagnostics records. The capability record is only expected when a
+  # capability probe was supplied; the reasoning record is always expected.
+  echo "Waiting for per-container diagnostics records..."
+  local _deadline=$(( $(date +%s) + ${DRY_RUN_RECORD_TIMEOUT:-180} ))
+  local _need_cap=1
+  [[ -z "$dry_run_capability_script" ]] && _need_cap=0
+  while (( $(date +%s) < _deadline )); do
+    local _cap_ok=1 _rea_ok=1
+    [[ -f "$_cap_record" ]] && _cap_ok=0
+    [[ "$_need_cap" -eq 0 ]] && _cap_ok=0
+    [[ -f "$_rea_record" ]] && _rea_ok=0
+    (( _cap_ok == 0 && _rea_ok == 0 )) && break
+    sleep 2
+  done
+  if (( _need_cap == 1 )) && [[ ! -f "$_cap_record" ]]; then
+    echo "RECORD-VERIFY FAIL: timed out waiting for capability record" >&2
   fi
-
-  # Phase 2: reasoning layer checks (same record-driven model).
-  echo ""
-  echo "=== Phase 2: reasoning layer ==="
-  DRY_RUN_SCRIPT="$dry_run_script" \
-    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-    DRY_RUN_IDENTITY="$_identity_agent" \
-    docker compose "${COMPOSE_ARGS[@]}" exec agent bash /dry_run_reasoning.sh \
-    || echo "  (phase 2 bearer exit non-zero; result judged from record)" >&2
+  if [[ ! -f "$_rea_record" ]]; then
+    echo "RECORD-VERIFY FAIL: timed out waiting for reasoning record" >&2
+  fi
 
   # Phase 3: orchestration correct-container verification from the records.
   # The bearer wrote one diagnostics record per container; orchestration reads

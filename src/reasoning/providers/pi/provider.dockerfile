@@ -66,4 +66,5 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 # EXIT trap, then execs the agent command.
 ENV PATH=/opt/sandbox/bin:$PATH
 RUN pi install npm:pi-opencode-provider
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "pi"]
+CMD ["pi"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]

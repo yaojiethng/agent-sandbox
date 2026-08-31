@@ -69,6 +69,13 @@ services:
       - type: bind
         source: ${CHANGES_DIR}
         target: /home/agentuser/workspace/session-diffs
+      - type: bind
+        source: ${INPUT_DIR}
+        target: /home/agentuser/workspace/input
+        read_only: true
+      - type: bind
+        source: ${OUTPUT_DIR}
+        target: /home/agentuser/workspace/output
     environment:
       - CHANGES_DIR=/home/agentuser/workspace/session-diffs
       - INPUT_DIR=/home/agentuser/workspace/input

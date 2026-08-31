@@ -9,7 +9,7 @@
 
 services:
   agent:
-    command: ["serve", "--hostname", "0.0.0.0", "--port", "${SERVE_PORT:-46553}"]
+    command: ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "${SERVE_PORT:-46553}"]
     ports:
       - "127.0.0.1:${SERVE_PORT:-46553}:${SERVE_PORT:-46553}"
     environment:

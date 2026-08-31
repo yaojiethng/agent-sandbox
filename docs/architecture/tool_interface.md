@@ -62,7 +62,7 @@ Resumes a previously-started session. The session inventory is the `.compose/<se
 
 ### `make dry-run PROVIDER=<provider>`
 
-Starts both bearer containers (sandbox/capability + agent/reasoning); each runs its own full readiness self-checks (L1 Image .. L6 Runtime), writes a per-container diagnostics record to the output mount, and orchestration validates the correct container was started from those records, then tears down. No agent is started; no user input is accepted. Produces no diff output.
+Starts both bearer containers (sandbox/capability + agent/reasoning); each runs its own full readiness self-checks (docker_image .. agent_runtime), writes a per-container diagnostics record to the output mount, and orchestration validates the correct container was started from those records, then tears down. No agent is started; no user input is accepted. Produces no diff output.
 
 `PROVIDER` is required. Use after a build or onboard to verify the harness is functional.
 
@@ -292,7 +292,7 @@ See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboar
 A successful `make dry-run` proves:
 
 - Both container images build and start without error
-- Each bearer container (sandbox/capability + agent/reasoning) runs its own full readiness self-check across six layers (L1 Image .. L6 Runtime) and records the result to the output mount
+- Each bearer container (sandbox/capability + agent/reasoning) runs its own full readiness self-check across six layers (docker_image, workspace_mounts, session_state, session_data, container_network, agent_runtime) and records the result to the output mount
 - The capability layer initialises `sandbox/` (git baseline + SESSION_STATE `init_sha` is a valid commit)
 - Cross-component link-up is correct: the reasoning layer reads the capability layer's state and markers via the shared volume
 - The diff pipeline runs

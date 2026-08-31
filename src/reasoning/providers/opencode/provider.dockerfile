@@ -78,6 +78,8 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 # then execs opencode. Subcommand and args passed via compose:
 #   standard: no override  --  runs as `opencode` with no args
 #   serve:    docker-compose.serve.yml sets command: ["serve", ...]
-#   dry-run:  docker compose exec agent bash /dry_run.sh (bypasses entrypoint)
+#   dry-run:  compose `command:` overrides CMD (-- e.g. ["bash", "/dry_run.sh"]) to run the probe
+#             as a script; the wrapper preflight still runs, pi is never launched
 ENV PATH=/opt/sandbox/bin:$PATH
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "opencode"]
+CMD ["opencode"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]

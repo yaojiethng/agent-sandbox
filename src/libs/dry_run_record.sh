@@ -9,7 +9,7 @@
 #
 # Record format (key=value lines, one per line):
 #   container=<identity echo-back injected via DRY_RUN_IDENTITY>
-#   layer.L1..L6=<PASS|FAIL>
+#   layer.<name>=<PASS|FAIL>       (names: docker_image workspace_mounts session_state session_data container_network agent_runtime)
 #   status=<PASS|FAIL>
 #
 # Functions:
@@ -50,7 +50,7 @@ dry_run_record_verify() {
   fi
 
   while IFS= read -r line; do
-    [[ "$line" == layer.L* ]] || continue
+    [[ "$line" == layer.* ]] || continue
     layer="${line%%=*}"; st="${line#*=}"
     if [[ "$st" != "FAIL" ]]; then
       echo "  RECORD-VERIFY PASS: $name $layer = $st"

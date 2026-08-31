@@ -2,16 +2,26 @@
 # Dry-run overlay for agent-sandbox.
 # Merged at generation time by compose_generate  --  not operator-visible.
 #
-# Adds dry-run scripts to both the sandbox (capability) and agent (reasoning)
-# services. Each runs inside its respective container during the three-phase
-# dry-run sequence (capability -> reasoning -> host).
+# Runs each bearer's self-check at container START-UP via a `command:` override
+# (same shape as the provider serve overlays) instead of orchestration exec'ing
+# the probe after `up -d`.
+#
+#   sandbox (capability): command runs its probe as a start-up PRELUDE (after
+#     full init + preflight, then stays alive) because the reasoning layer
+#     mounts sandbox/ via --volumes-from and needs this container healthy.
+#   agent  (reasoning):  command runs its probe and exits (one-shot).
 #
 # {{DRY_RUN_CAPABILITY_SCRIPT}} and {{DRY_RUN_SCRIPT}} are resolved by
 # start_agent.sh before compose_generate is called and baked into the
-# generated compose file  --  not runtime variables.
+# generated compose file  --  not runtime variables. DRY_RUN_IDENTITY is baked
+# from the derived image names so each probe can echo its own container
+# identity into its diagnostics record.
 
 services:
   sandbox:
+    command: ["bash", "/dry_run_capability.sh"]
+    environment:
+      - DRY_RUN_IDENTITY={{SANDBOX_IMAGE_NAME}}
     volumes:
       - type: bind
         source: {{DRY_RUN_CAPABILITY_SCRIPT}}
@@ -19,6 +29,9 @@ services:
         read_only: true
 
   agent:
+    command: ["bash", "/dry_run_reasoning.sh"]
+    environment:
+      - DRY_RUN_IDENTITY={{AGENT_IMAGE_NAME}}
     volumes:
       - type: bind
         source: {{DRY_RUN_SCRIPT}}

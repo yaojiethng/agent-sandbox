@@ -20,14 +20,14 @@ source "$REPO_ROOT/src/libs/dry_run_record.sh"
 write_record() {
   local record="$1"; shift
   : > "$record"
-  printf 'container=%s\n'   "$1" >> "$record"
-  printf 'layer.L1=%s\n'    "$2" >> "$record"
-  printf 'layer.L2=%s\n'    "$3" >> "$record"
-  printf 'layer.L3=%s\n'    "$4" >> "$record"
-  printf 'layer.L4=%s\n'    "$5" >> "$record"
-  printf 'layer.L5=%s\n'    "$6" >> "$record"
-  printf 'layer.L6=%s\n'    "$7" >> "$record"
-  printf 'status=%s\n'      "$8" >> "$record"
+  printf 'container=%s\n'            "$1" >> "$record"
+  printf 'layer.docker_image=%s\n'   "$2" >> "$record"
+  printf 'layer.workspace_mounts=%s\n' "$3" >> "$record"
+  printf 'layer.session_state=%s\n'  "$4" >> "$record"
+  printf 'layer.session_data=%s\n'   "$5" >> "$record"
+  printf 'layer.container_network=%s\n' "$6" >> "$record"
+  printf 'layer.agent_runtime=%s\n'  "$7" >> "$record"
+  printf 'status=%s\n'               "$8" >> "$record"
 }
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ test_record_value_key() {
   write_record "$record" "img:tag" PASS PASS PASS PASS PASS PASS PASS
   assert_eq "$(dry_run_record_value "$record" "container")" "img:tag" "container value read"
   assert_eq "$(dry_run_record_value "$record" "status")" "PASS" "status value read"
-  assert_eq "$(dry_run_record_value "$record" "layer.L3")" "PASS" "layer value read"
+  assert_eq "$(dry_run_record_value "$record" "layer.session_state")" "PASS" "layer value read"
   assert_eq "$(dry_run_record_value "$record" "missing")" "" "absent key returns empty"
 }
 
@@ -52,7 +52,7 @@ test_verify_passes_on_healthy_record() {
   assert_rc 0 "$rc" "healthy record passes"
   assert_contains "$output" "identity matched" "identity matched reported"
   assert_contains "$output" "overall status PASS" "status PASS reported"
-  assert_contains "$output" "layer.L4 = PASS" "per-layer PASS reported"
+  assert_contains "$output" "layer.session_data = PASS" "per-layer PASS reported"
 }
 
 test_verify_fails_on_identity_mismatch() {
@@ -67,13 +67,13 @@ test_verify_fails_on_identity_mismatch() {
 
 test_verify_fails_on_layer_fail() {
   local record="$FIXTURE_DIR/r4.record"
-  # L5 fails -> overall status FAIL
+  # workspace mounts off -- L5 fails -> overall status FAIL
   write_record "$record" "img:tag" PASS PASS PASS PASS FAIL PASS FAIL
   local rc output
   output=$(dry_run_record_verify "sandbox(capability)" "img:tag" "$record" 2>&1)
   rc=$?
   assert_ne "$rc" "0" "FAIL layer returns non-zero"
-  assert_contains "$output" "layer.L5 = FAIL" "failed layer reported"
+  assert_contains "$output" "layer.container_network = FAIL" "failed layer reported"
   assert_contains "$output" "overall status 'FAIL'" "status FAIL reported"
 }
 

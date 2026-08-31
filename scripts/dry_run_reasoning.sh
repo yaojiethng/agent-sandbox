@@ -7,8 +7,10 @@
 # the readiness model (design devlog/discussions/20260828-design-settled-dry_run_phase_split.md),
 # then write a per-container diagnostics record to the output mount for
 # orchestration to validate (correct-container check). Checks are listed in
-# L1..L6 layer order. The reasoning container reads the capability layer's state
-# via the shared volume (volumes-from) and verifies cross-container link-up.
+# readiness-layer order: docker_image -> workspace_mounts -> session_state ->
+# session_data -> container_network -> agent_runtime. The reasoning container
+# reads the capability layer's state via the shared volume (volumes-from) and
+# verifies cross-container link-up (container_network).
 #
 # Exit codes:
 #   0 - all CRITICAL checks passed (warnings may exist)
@@ -73,11 +75,23 @@ _is_readonly() {
   _is_writable "$1" && return 1 || return 0
 }
 
-_stdin_not_devnull() {
-  local stdin_ino null_ino
-  stdin_ino=$(stat -L /proc/$$/fd/0 2>/dev/null | awk '/Inode/{print $2}') || return 0
-  null_ino=$(stat /dev/null 2>/dev/null | awk '/Inode/{print $2}') || return 0
-  [[ "$stdin_ino" != "$null_ino" ]]
+# True iff this process is running as the bash interpreter on the probe script
+# (not as a bare argument handed to the provider agent). Guards the invocation
+# interface: `command:` must run `bash <script>`, never feed the script to the
+# agent binary as input.
+_running_as_bash_script() {
+  [[ -n "${BASH_VERSION:-}" && "${0##*/}" == "dry_run_reasoning.sh" ]]
+}
+
+# Map a provider id to its agent binary name for the readiness check. Empty if
+# unknown (the container may set AGENT_CMD to disambiguate).
+_agent_binary_for_provider() {
+  case "${1:-}" in
+    pi)       echo "pi" ;;
+    hermes)   echo "hermes" ;;
+    opencode) echo "opencode" ;;
+    *)        echo "" ;;
+  esac
 }
 
 # Write the per-container diagnostics record. Orchestration consumes this
@@ -88,7 +102,7 @@ _write_record() {
   [[ "$CRITICAL_FAILS" -eq 0 ]] || overall="FAIL"
   {
     printf 'container=%s\n' "${DRY_RUN_IDENTITY:-unknown}"
-    for layer in L1 L2 L3 L4 L5 L6; do
+    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime; do
       local st="PASS"
       [[ "${LAYER_CRIT[$layer]:-0}" -eq 0 ]] || st="FAIL"
       printf 'layer.%s=%s\n' "$layer" "$st"
@@ -100,12 +114,12 @@ _write_record() {
 }
 
 # ---------------------------------------------------------------------------
-# L1 - Image / L2 - Link-up
+# docker_image / workspace_mounts - link-up
 # ---------------------------------------------------------------------------
 # Baked-image presence is CP-owned (dedup). Here the reasoning container asserts
 # its compose-injected environment and workspace mounts are wired.
 
-section "L2 link-up (environment + workspace)"
+section "workspace_mounts link-up (environment + workspace)"
 critical "AGENT_HOME is set"          bash -c '[[ -n "${AGENT_HOME:-}" ]]'
 critical "PROVIDER_NAME is set"       bash -c '[[ -n "${PROVIDER_NAME:-}" ]]'
 critical "INPUT_DIR exists (input mount)"        test -d "$INPUT_DIR"
@@ -114,10 +128,10 @@ critical "OUTPUT_DIR exists (output mount)"      test -d "$OUTPUT_DIR"
 critical "OUTPUT_DIR is writable"                _is_writable "$OUTPUT_DIR"
 
 # ---------------------------------------------------------------------------
-# L3 - State (via shared .git, written by capability layer)
+# session_state - state (via shared .git, written by capability layer)
 # ---------------------------------------------------------------------------
 
-section "L3 state (via shared .git)"
+section "session_state identity (via shared .git)"
 critical "sandbox/.git/SESSION_STATE exists"     test -f "$SANDBOX_DIR/.git/SESSION_STATE"
 
 check_init_sha_readable() {
@@ -135,10 +149,10 @@ check_session_ts() {
 warn_check "SESSION_STATE.session_ts readable" check_session_ts
 
 # ---------------------------------------------------------------------------
-# L5 - Cross-component
+# container_network - cross-component
 # ---------------------------------------------------------------------------
 
-section "L5 cross-component"
+section "container_network cross-component"
 critical "SANDBOX_DIR exists (volumes-from)"     test -d "$SANDBOX_DIR"
 
 # Capability-layer marker written in Phase 1 (dry_run_capability.sh) must be
@@ -155,7 +169,7 @@ else
   _warn "capability layer marker: not found (Phase 1 may not have run)"
 fi
 
-section "L5 session-diffs round-trip"
+section "container_network session-diffs round-trip"
 check_changes_dir_matches_mount_target() {
   local expected="/home/agentuser/workspace/session-diffs"
   [[ "$CHANGES_DIR" == "$expected" ]]
@@ -176,18 +190,33 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# L6 - Runtime / terminal
+# agent_runtime - process
 # ---------------------------------------------------------------------------
 
-section "L6 runtime"
+section "agent_runtime process"
 warn_check "running as non-root" bash -c '[[ "$(id -u)" -ne 0 ]]'
 
-section "L6 stdin / TTY readiness"
-critical "stdin is not /dev/null" _stdin_not_devnull
-warn_check "stdin is a character device (TTY expected for make start; pipe acceptable for make dry-run)" \
-  bash -c 'target=$(readlink /proc/$$/fd/0 2>/dev/null); [[ "$target" == /dev/pts/* ]] || test -c /proc/$$/fd/0 2>/dev/null'
+section "agent_runtime probe invocation"
+critical "probe runs as a bash script, not as agent input" _running_as_bash_script
+warn_check "probe interpreter is bash (STDIN not fed to the agent)" bash -c '[[ -n "${BASH_VERSION:-}" ]]'
 
-section "L6 liveness"
+section "agent_runtime agent readiness"
+# The agent is NOT launched during dry-run (launching would start a real
+# session / consume the probe args as agent input). Readiness-to-take-input is
+# asserted by: provider preflight env (workspace_mounts/AGENT_HOME), agent
+# binary present + executable, and a writable output channel (liveness).
+_agent_command="${AGENT_CMD:-$(_agent_binary_for_provider "$PROVIDER_NAME")}"
+if [[ -n "$_agent_command" ]] && command -v "$_agent_command" >/dev/null 2>&1; then
+  _pass "agent binary present and executable ($_agent_command)"
+else
+  if [[ -z "$_agent_command" ]]; then
+    _warn "agent binary unknown for provider '$PROVIDER_NAME' (set AGENT_CMD)"
+  else
+    _fail "agent binary not executable: $_agent_command"
+  fi
+fi
+
+section "agent_runtime liveness"
 printf "\n=== liveness write ===\n"
 if echo "PASS" > "$OUTPUT_DIR/liveness.txt" 2>/dev/null; then
   _pass "liveness.txt written to workspace/output"

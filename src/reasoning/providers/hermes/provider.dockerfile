@@ -74,4 +74,5 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
 ENV PATH=/opt/sandbox/bin:$PATH
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "hermes"]
+CMD ["hermes"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]

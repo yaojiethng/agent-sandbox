@@ -7,11 +7,13 @@
 # the readiness model (design devlog/discussions/20260828-design-settled-dry_run_phase_split.md),
 # then write a per-container diagnostics record to the output mount for
 # orchestration to validate (correct-container check). Checks are listed in
-# L1..L6 layer order. Checks that the container preflight guarantees on every
-# start (baked-lib presence, mount presence, SESSION_STATE presence) are NOT
-# re-asserted here -- this probe owns the readiness DEPTH (L3 validity, L4 data
-# plane, L5 cross-component) plus the L2 ro/rw semantics preflight deliberately
-# leaves out.
+# readiness-layer order: docker_image -> workspace_mounts -> session_state ->
+# session_data -> container_network -> agent_runtime. Checks the container
+# preflight guarantees on every start (baked-lib presence, mount presence,
+# SESSION_STATE presence) are NOT re-asserted here -- this probe owns the
+# readiness DEPTH (session_state validity, session_data data plane,
+# container_network cross-component) plus the workspace_mounts ro/rw semantics the
+# container preflight deliberately leaves out.
 #
 # Exit codes:
 #   0  --  all CRITICAL checks passed (warnings may exist)
@@ -78,7 +80,8 @@ _is_writable() {
 # Write the per-container diagnostics record. Orchestration consumes this
 # (not stdout) for the correct-container check.
 #   container = identity echo-back (expected value injected via compose env)
-#   layer.L<N> = PASS|FAIL (FAIL if any critical in that layer)
+#   layer.<name> = PASS|FAIL (FAIL if any critical in that layer; names: docker_image
+#   workspace_mounts session_state session_data container_network agent_runtime)
 #   status     = overall PASS|FAIL
 _write_record() {
   local record="${OUTPUT_DIR}/dryrun.capability.record"
@@ -86,7 +89,7 @@ _write_record() {
   [[ "$CRITICAL_FAILS" -eq 0 ]] || overall="FAIL"
   {
     printf 'container=%s\n' "${DRY_RUN_IDENTITY:-unknown}"
-    for layer in L1 L2 L3 L4 L5 L6; do
+    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime; do
       local st="PASS"
       [[ "${LAYER_CRIT[$layer]:-0}" -eq 0 ]] || st="FAIL"
       printf 'layer.%s=%s\n' "$layer" "$st"
@@ -98,25 +101,25 @@ _write_record() {
 }
 
 # ---------------------------------------------------------------------------
-# L1 - Image
+# docker_image - image
 # ---------------------------------------------------------------------------
 # Deliberately omitted: baked-library/image-file presence is guaranteed by the
 # container preflight on every start (dedup). L1 readiness here is implicit in
 # this probe successfully sourcing the container libs above.
 
 # ---------------------------------------------------------------------------
-# L2 - Link-up (workspace channels, ro/rw semantics)
+# workspace_mounts - link-up (workspace channels, ro/rw semantics)
 # ---------------------------------------------------------------------------
 
-section "L2 link-up"
+section "workspace_mounts link-up"
 warn_check "INPUT_DIR readable"  test -d "$INPUT_DIR"
 warn_check "OUTPUT_DIR writable" _is_writable "$OUTPUT_DIR"
 
 # ---------------------------------------------------------------------------
-# L3 - State/identity (validity depth; presence is CP-owned)
+# session_state - state/identity (validity depth; presence is CP-owned)
 # ---------------------------------------------------------------------------
 
-section "L3 state"
+section "session_state identity"
 check_init_sha_valid() {
   local sha
   sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
@@ -126,10 +129,10 @@ check_init_sha_valid() {
 critical "SESSION_STATE.init_sha is a valid commit" check_init_sha_valid
 
 # ---------------------------------------------------------------------------
-# L4 - Data plane
+# session_data - data plane
 # ---------------------------------------------------------------------------
 
-section "L4 data plane"
+section "session_data data plane"
 # Verify the diff pipeline can be invoked without error.
 # Uses a temp directory so no artifacts pollute the session.
 _diff_test_dir=$(mktemp -d) || {
@@ -153,7 +156,7 @@ warn_check "diff_export: .export-status reports SUCCESS" \
   bash -c 'test -f "$1" && grep -q "^STATUS=SUCCESS$" "$1"' _ "$_diff_test_dir/.export-status"
 rm -rf "$_diff_test_dir"
 
-section "L4 autosave"
+section "session_data autosave"
 warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
 warn_check "export_path: resolves with available env vars" \
   bash -c 'p=$(export_path "$1" session "${2:-}" 2>/dev/null); [[ -n "$p" ]]' \
@@ -162,10 +165,10 @@ warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
   wait_git_lockfile "$SANDBOX_DIR"
 
 # ---------------------------------------------------------------------------
-# L5 - Cross-component (capability half of the marker round-trip)
+# container_network - cross-component (capability half of the marker round-trip)
 # ---------------------------------------------------------------------------
 
-section "L5 cross-component"
+section "container_network cross-component"
 # Write a capability-layer marker to CHANGES_DIR. The reasoning layer
 # (dry_run_reasoning.sh) reads this to verify cross-container communication.
 _cap_marker="$CHANGES_DIR/.dryrun_capability_marker"
@@ -182,7 +185,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# L6 - Runtime
+# agent_runtime - process (terminal/liveness live on the reasoning side)
 # ---------------------------------------------------------------------------
 # Capability-side runtime concerns (TTY/stdin, liveness write) live on the
 # reasoning container; nothing capability-specific to assert here.

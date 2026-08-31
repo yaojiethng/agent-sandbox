@@ -77,7 +77,7 @@ test_dry_run_has_compose_up() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_up"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
 
   if trace_has "compose up"; then
     pass "dry-run: 'compose up -d' issued"
@@ -86,16 +86,16 @@ test_dry_run_has_compose_up() {
   fi
 }
 
-test_dry_run_has_compose_exec() {
-  local FIXTURE_DIR="$FIXTURE_DIR/dry_exec"
+test_dry_run_no_compose_exec() {
+  local FIXTURE_DIR="$FIXTURE_DIR/dry_noexec"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
 
   if trace_has "compose exec"; then
-    pass "dry-run: 'compose exec' issued"
+    fail "dry-run: 'compose exec' should NOT be issued (probes run at start-up)"
   else
-    fail "dry-run: 'compose exec' not found in trace"
+    pass "dry-run: no 'compose exec' (probes run at start-up)"
   fi
 }
 
@@ -103,7 +103,7 @@ test_dry_run_no_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_nov"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
 
   local count
   count=$(trace_count "compose down -v")
@@ -118,7 +118,7 @@ test_dry_run_refresh_has_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_ref"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  invoke_dry_run --reset-volume
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --reset-volume
 
   local count
   count=$(trace_count "compose down -v")
@@ -134,7 +134,7 @@ test_dry_run_refresh_has_down_v() {
 # ---------------------------------------------------------------------------
 
 run_test test_dry_run_has_compose_up
-run_test test_dry_run_has_compose_exec
+run_test test_dry_run_no_compose_exec
 run_test test_dry_run_no_v
 run_test test_dry_run_refresh_has_down_v
 

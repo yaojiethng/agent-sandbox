@@ -315,6 +315,25 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
 fi
 
 # -------------------------
+# Optional start-up command (prelude)
+# -------------------------
+# If a start-up command was supplied (compose `command:` override, e.g. the
+# dry-run capability probe), run it now -- after init, preflight and autosave
+# are set up -- then continue to stay alive. Running it and then staying up is
+# required because the reasoning layer mounts sandbox/ via --volumes-from and
+# depends on this container being healthy; a run-and-exit would tear the
+# cross-component link before the reasoning layer finishes.
+#
+# The command's exit code is not acted on here: the harness owns handling of
+# the result (e.g. dry-run reads the diagnostics record, not the exit code).
+# The sandbox image sets no CMD, so `$#` is non-zero only when a command is
+# explicitly provided -- normal start/serve pass no command.
+if (( $# > 0 )); then
+  echo "entrypoint: running start-up command: $*" >&2
+  "$@"
+fi
+
+# -------------------------
 # Stay alive while reasoning layer runs
 # -------------------------
 # The reasoning layer container mounts sandbox/ from this container via

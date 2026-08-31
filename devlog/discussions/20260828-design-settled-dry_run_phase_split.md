@@ -32,26 +32,26 @@ Dry-run is composed of two actors with a strict responsibility split:
 
 Both the container checks and the orchestration checks are part of the full dry-run procedure.
 
-### Readiness layers (L1..L6)
+### Readiness layers
 
-Readiness is judged against six ordered layers, delivery- and lifecycle-agnostic:
+Readiness is judged against six ordered layers, delivery- and lifecycle-agnostic, each named with a short textual label (STE100-style -- precise, no numeric indirection):
 
 | Layer | Assertion (this layer = ready) |
 |---|---|
-| L1 Image | image correctly constructed: baked libs/entrypoint/docs present, entrypoint is the entrypoint |
-| L2 Link-up | compose-time wiring correct: delivery mounts (copy: volume + snapshot ro; mount: worktree bind) and workspace channels (INPUT ro / OUTPUT rw / CHANGES rw) at the right targets |
-| L3 State/identity | entrypoint-derived state present + valid: SESSION_STATE keys, git baseline, init_sha valid, version-in-container == expected |
-| L4 Data plane | functional capability runs: diff_export, export_path, package_branch, autosave, git lockfile |
-| L5 Cross-component | containers see each other: volumes-from, marker round-trip capability->reasoning, shared-workspace readback |
-| L6 Runtime/terminal | process env: entrypoint up + stay-alive, TTY/stdin, ro/rw semantics, liveness |
+| docker_image | image correctly constructed: baked libs/entrypoint/docs present, entrypoint is the entrypoint |
+| workspace_mounts | compose-time wiring correct: delivery mounts (copy: volume + snapshot ro; mount: worktree bind) and workspace channels (INPUT ro / OUTPUT rw / CHANGES rw) at the right targets |
+| session_state | entrypoint-derived state present + valid: SESSION_STATE keys, git baseline, init_sha valid, version-in-container == expected |
+| session_data | functional capability runs: diff_export, export_path, package_branch, autosave, git lockfile |
+| container_network | containers see each other: volumes-from, marker round-trip capability->reasoning, shared-workspace readback |
+| agent_runtime | process runtime: entrypoint up + stay-alive, agent binary ready to take input, ro/rw semantics, liveness |
 
 ### Responsibility split (who asserts each layer)
 
 | Owner | Scope | Layers owned |
 |---|---|---|
-| Container preflight (CP, entrypoint, every `up -d`) | minimal invariants for ANY start | L1 baked-libs; L2 mount presence; L3 state presence; working-tree-clean / AGENTS.md (standard-start concerns) |
-| Bearer dry-run (ED, the two containers in dry-run) | the readiness DEPTH for a verified start | L3 validity (init_sha valid commit); L4 data plane (diff_export runs); L5 cross-component; L6 runtime/terminal; L2 rw/ro semantics ED-only |
-| Orchestration (dry-run.sh) | correct-container verification via records | L2 wiring (from records); L3 version-in-container == expected; L5 write-back; record completeness |
+| Container preflight (CP, entrypoint, every `up -d`) | minimal invariants for ANY start | docker_image baked-libs; workspace_mounts mount presence; session_state presence; working-tree-clean / AGENTS.md (standard-start concerns) |
+| Bearer dry-run (ED, the two containers in dry-run) | the readiness DEPTH for a verified start | session_state validity (init_sha valid commit); session_data (diff_export runs); container_network cross-component; agent_runtime process; workspace_mounts ro/rw semantics ED-only |
+| Orchestration (dry-run.sh) | correct-container verification via records | workspace_mounts wiring (from records); session_state version-in-container == expected; container_network write-back; record completeness |
 
 The trim's subject is duplicated assertion between CP and ED, and orchestration-convenience warnings leaking into the bearer. Each readiness assertion is owned exactly once.
 
@@ -60,7 +60,7 @@ The trim's subject is duplicated assertion between CP and ED, and orchestration-
 Each bearer container writes one diagnostics record (capability record + reasoning record) to a host-visible path during startup. Orchestration merges and validates them:
 
 - container identity / version (image signature) used for the correct-container check;
-- completeness marker per layer (L1..L6) with pass/fail;
+- completeness marker per layer with pass/fail;
 - a terminal status the orchestration can wait on (container exit encodes done).
 
 ### Execution mechanism (trade-off)
@@ -70,12 +70,12 @@ The checks could run either as interactive `docker compose exec ... bash /dry_ru
 - **Determinism.** exec is *pull*: it depends on the container being up/healthy when exec fires, returns live stdout, and the orchestration parses stdout to judge success - the flakiest capture available (the existing overwrappers `|| true` + `grep -vE` already encode that fragility). Record-writing start-up is *push*: the container does its checks, writes a structured record, and encodes completion in its exit; orchestration does `docker wait` + reads a file. Exit codes and a written record are deterministic artifacts; there is no exec channel and no stdout parsing.
 - **Selection point.** The execution point is selected in the dry-run compose overlay (`command:`/`entrypoint:` override), not the Dockerfile, so the canonical image entrypoint is untouched and standard mode is unaffected. The number-gating requirement (keep full repo init) means the dry-run execution point must reuse the normal init sequence via the existing lib functions (DRY) rather than copy orchestration - specialize, don't consolidate.
 
-One hard constraint shapes the mechanism: the cross-component phase (L5) needs the sandbox up while the agent reads its marker (volumes-from), so the sandbox runs its checks, writes its record, and *stays alive* through the agent's phase; the agent runs, writes, and exits.
+One hard constraint shapes the mechanism: the cross-component phase (container_network) needs the sandbox up while the agent reads its marker (volumes-from), so the sandbox runs its checks, writes its record, and *stays alive* through the agent's phase; the agent runs, writes, and exits.
 
 ### Scope of the trim
 
 - Full repo init RETAINED (dry-run bearer asserts against a fully-initialised repo). The snapshot cost-trim (dropping the full rsync) is explicitly off the table this iteration.
-- Trim = deduplicate CP/ED owners per layer, drop the stale `brief.md` assertion, reorder each probe L1->L6, move orchestration-convenience warnings (image staleness) out of the bearer.
+- Trim = deduplicate CP/ED owners per layer, drop the stale `brief.md` assertion, order each probe image -> workspace -> state -> data -> network -> runtime, move orchestration-convenience warnings (image staleness) out of the bearer.
 - The per-check dedup matrix (which check moves/drops/reorders) is this iteration's working state in handover `20260828-01`.
 
 ## Consequences
