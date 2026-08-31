@@ -244,6 +244,7 @@ x-session-labels:
   agent-sandbox.host-head-sha: deadbeef
   agent-sandbox.host-branch: main
   agent-sandbox.session-ts: 20260821-120000
+  agent-sandbox.image-sig: 1234abcd5678
 services:
   sandbox:
     image: $sandbox_img
@@ -321,6 +322,50 @@ EOF
     pass "resume --list: sandbox-fresh no marker + image-stale marker (independent)"
   else
     fail "resume --list: expected IMAGE_STALE only, got: $out"
+  fi
+}
+
+# The PROVIDER cell surfaces the recorded image-content signature (7-char
+# short) next to the provider, drawn from the record's `image-sig` field (no
+# docker needed at --list time).
+test_list_shows_image_sig_short() {
+  local dir="$FIXTURE_DIR/img_sig"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi \(1234abc\)"; then
+    pass "resume --list: provider cell shows pi (<short image-sig>)"
+  else
+    fail "resume --list: expected pi (1234abc), got: $out"
+  fi
+}
+
+# A record with no image-sig field (legacy/before-this-field) renders `pi`
+# with no parenthetical -- graceful, no `pi (` shell-noise.
+test_list_no_sig_when_field_empty() {
+  local dir="$FIXTURE_DIR/img_nosig"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  cat > "$dir/sandbox/.compose/aaa.yml" <<'EOF'
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+" \
+     && ! echo "$out" | grep -qE "aaa[[:space:]]+pi \("; then
+    pass "resume --list: no image-sig in record -> pi with no parenthetical"
+  else
+    fail "resume --list: expected bare pi, got: $out"
   fi
 }
 

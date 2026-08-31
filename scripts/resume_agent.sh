@@ -98,7 +98,7 @@ source "$REPO_ROOT/src/libs/session_inventory.sh"
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
-  local current_sha stale image_stale last_used short_sha line sid provider ts branch
+  local current_sha stale image_stale last_used short_sha image_sig line sid provider ts branch
   current_sha="$(project_current_sha)"
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
@@ -106,7 +106,8 @@ build_inventory() {
     image_stale="$(record_image_stale "$SANDBOX_DIR/.compose/$sid.yml" "$REPO_ROOT")"
     last_used="$(session_log_read "$sid" last_stopped)"
     short_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)" && short_sha="${short_sha:0:7}"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale|$last_used|$short_sha" )
+    image_sig="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" image-sig)" && image_sig="${image_sig:0:7}"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale|$last_used|$short_sha|$image_sig" )
   done < <(enumerate_records)
   # Newest first by session-ts.
   local sorted
@@ -140,15 +141,15 @@ _no_sessions() {
 if [[ "$RESUME_LIST" == true ]]; then
   build_inventory
   [[ "${#RESUME_INVENTORY[@]}" -gt 0 ]] || _no_sessions
-  printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "SESSION_ID" "PROVIDER" "STARTED" "BRANCH" "LAST_USED"
-  _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=
+  printf '  %-8s  %-24s  %-14s  %-24s  %s\n' "SESSION_ID" "PROVIDER (SIG)" "STARTED" "BRANCH" "LAST_USED"
+  _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=; image_sig=
   _prov=; _br=
   for _line in "${RESUME_INVENTORY[@]:0:$RESUME_LIST_PAGE_SIZE}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
-    # Co-locate each staleness warning with the column it describes: the image
-    # warning sits beside PROVIDER; the workspace/sandbox warning beside BRANCH.
-    # (An image identifier refinement is deferred -- see Findings.)
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha image_sig <<< "$_line"
+    # PROVIDER cell: `pi (<image-sig:0:7>)` + co-located image warning; BRANCH
+    # cell: `<branch> (<short sha>)` + co-located workspace/sandbox warning.
     _prov="$provider"
+    [[ -n "$image_sig" ]] && _prov+=" ($image_sig)"
     [[ "$image_stale" == "stale" ]] && _prov+=" [IMAGE_STALE]"
     _br="$branch"
     [[ -n "$short_sha" ]] && _br+=" ($short_sha)"
@@ -171,12 +172,12 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # marker (honest  --  unknown is not "ok"). Paged at RESUME_LIST_PAGE_SIZE.
   # Explicit --interactive always shows the picker + confirm, even for a sole
   # record (decision I-1)  --  the deliberately slow mode.
-  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=
+  PICKER=(); _line=; sid=; provider=; ts=; branch=; stale=; image_stale=; last_used=; short_sha=; image_sig=
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha image_sig <<< "$_line"
     _std=""; [[ "$stale" == "stale" ]]       && _std=" [SANDBOX_STALE]"
     _img=""; [[ "$image_stale" == "stale" ]] && _img=" [IMAGE_STALE]"
-    _prov="$provider"
+    _prov="$provider"; [[ -n "$image_sig" ]] && _prov+=" ($image_sig)"
     _br="$branch"; [[ -n "$short_sha" ]] && _br+=" ($short_sha)"
     PICKER+=( "$sid|$sid  $_prov$_img  $(relative_time "$ts")  $_br$_std  $(relative_time "$last_used")" )
   done
@@ -188,7 +189,7 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # re-parsing it from disk.
   disp_provider=""; disp_ts=""; disp_branch=""
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha image_sig <<< "$_line"
     if [[ "$sid" == "$chosen" ]]; then
       disp_provider="$provider"; disp_ts="$ts"; disp_branch="$branch"; break
     fi

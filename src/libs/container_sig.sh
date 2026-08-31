@@ -124,6 +124,18 @@ current_sig() {
 }
 
 # image_is_stale <image_name> <type: sandbox|agent> <repo_root> [provider]
+# image_baked_sig IMAGE  --  print the baked `agent-sandbox.container-sig` label
+# of an image (read via docker inspect); empty when the image is missing or
+# carries no label. Used by image_is_stale and by record generation to persist
+# the image-content signature into the session record (docker required only at
+# build/start time -- `make resume --list` reads the recorded value).
+image_baked_sig() {
+  local image_name="${1:?image_baked_sig requires image name}"
+  docker image inspect \
+    --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' \
+    "$image_name" 2>/dev/null
+}
+
 # Prints the image-staleness of an existing image: "stale" when its baked
 # `agent-sandbox.container-sig` label differs from a recomputation of the
 # current source, "fresh" when they match, "unknown" when the image is missing,
@@ -136,9 +148,7 @@ image_is_stale() {
   local provider="${4:-}"
 
   local baked_sig current_s
-  baked_sig="$(docker image inspect \
-    --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' \
-    "$image_name" 2>/dev/null || true)"
+  baked_sig="$(image_baked_sig "$image_name")"
   [[ -n "$baked_sig" ]] || { echo "unknown"; return 0; }
 
   current_s="$(current_sig "$type" "$repo_root" "$provider")" || { echo "unknown"; return 0; }

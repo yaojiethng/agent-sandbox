@@ -103,7 +103,11 @@ volume labels. `make resume SESSION_ID=<id>` selects exactly one session and
 resumes silently. `make resume LIST=1` lists registry sessions in an enriched
 table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`) filtered by an
 optional `PROVIDER=<n>`, capped at 10 rows per page (same cap as the draft
-picker; remainder reported in a footer). `STARTED` and `LAST_USED` are relative
+picker; remainder reported in a footer). The `PROVIDER` cell shows the provider
+plus the loaded agent image's recorded content signature as a short
+parenthetical, e.g. `pi (14f9c3a)`, from the record's `agent-sandbox.image-sig`
+label (baked at start/resume by `compose_generate` via docker inspect;
+no docker needed at list time; absent/empty → the bare `pi`). `STARTED` and `LAST_USED` are relative
 times ("2 hours ago"; `LAST_USED` = time since the session was last stopped,
 read from its `.compose/<session-id>.log` per-session activity log; `---` when
 the session is running or never stopped). The table sorts newest-first by the

@@ -86,9 +86,20 @@ compose_generate() {
   fi
 
   # Derive image names  --  baked into generated file.
-  local sandbox_image agent_image
+  local sandbox_image agent_image image_sig
   sandbox_image="$(sandbox_image_name "$project_name")"
   agent_image="$(agent_image_name "$provider_name" "$project_name")"
+
+  # Image-content signature of the agent image actually loaded (its baked
+  # `agent-sandbox.container-sig` label). Read here -- start/resume already
+  # require docker (preflight inspects the images) -- and persisted into the
+  # record so `make resume --list` can show it docker-free. Empty (graceful)
+  # when the image is missing or carries no label.
+  if command -v docker >/dev/null 2>&1; then
+    image_sig="$(image_baked_sig "$agent_image")"
+  else
+    image_sig=""
+  fi
 
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
   # then run docker compose config --no-interpolate to merge them.
@@ -116,6 +127,7 @@ compose_generate() {
       -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
       -e "s|{{SESSION_ID}}|${SESSION_ID:-}|g" \
       -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
+      -e "s|{{IMAGE_SIG}}|${image_sig:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
