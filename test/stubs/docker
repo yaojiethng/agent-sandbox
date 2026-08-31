@@ -119,6 +119,11 @@ if [[ "$CMD" == "docker" ]]; then
       ;;
     stop|rm)
       log "$sub $*"
+      # DOCKER_STUB_RM_FAIL simulates the "already in progress" removal race.
+      if [[ "$sub" == "rm" && -n "${DOCKER_STUB_RM_FAIL:-}" ]]; then
+        echo "error: removal of container ... already in progress" >&2
+        exit 1
+      fi
       ;;
     ps)
       log "ps $*"

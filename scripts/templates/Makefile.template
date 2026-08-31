@@ -207,6 +207,7 @@ dry-run:
 stop:
 	agent-sandbox stop \
 	  --name=$(PROJECT_NAME) \
+	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
 	  $(SESSION_ID_FLAG) \
 	  $(PRUNE_FLAG)

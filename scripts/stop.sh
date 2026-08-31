@@ -96,7 +96,11 @@ else
   # bind mounts (Container State Contract). Remove them so the network can
   # be freed and no stopped containers accumulate.
   docker stop "${CONTAINER_IDS[@]}"
-  docker rm "${CONTAINER_IDS[@]}"
+  # Removal races run_agent.sh's EXIT-trap `compose down`, which may already
+  # be removing these containers, so `docker rm` can report "already in
+  # progress". The containers are disposable, so tolerate removal failure and
+  # reconcile on the next stop. `docker stop` above stays fail-closed.
+  docker rm "${CONTAINER_IDS[@]}" || true
   echo "Containers stopped and removed."
   if [[ -n "$SESSION_ID" ]]; then
     echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"

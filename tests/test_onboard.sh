@@ -300,9 +300,26 @@ template_version_probe_real() {
   ' _ "$REPO_ROOT/scripts/onboard.sh" "$REPO_ROOT/scripts/templates/Makefile.template"
 }
 
+# The shipped `stop:` target must forward --project so `make stop PRUNE=1`
+# (which requires --project for registry staleness) does not error. Other
+# commands in the template already pass it; this locks the stop target in.
+test_stop_target_forwards_project_dir() {
+  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
+  local stop_block
+  stop_block=$(sed -n '/^stop:/,/PRUNE_FLAG)/p' "$tpl")
+
+  if [[ "$stop_block" == *"--project=\$(PROJECT_DIR)"* \
+        && "$stop_block" == *"--sandbox=\$(SANDBOX_DIR)"* ]]; then
+    pass "make stop forwards --project and --sandbox"
+  else
+    fail "make stop target missing --project/--sandbox:\n$stop_block"
+  fi
+}
+
 run_test test_refresh_aborts_without_minimal_args
 run_test test_template_version_reads_marker_line
 run_test test_template_version_absent_marker_is_empty_and_clean
 run_test test_template_version_real_makefile_template_parses
+run_test test_stop_target_forwards_project_dir
 
 test_done "scripts/onboard.sh"

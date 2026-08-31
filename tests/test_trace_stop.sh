@@ -23,7 +23,7 @@ setup_stop_fixture() {
   # Tests run in the same shell (run_test), so stub-ID vars must not leak
   # between tests.
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_FAIL_PS
-  unset DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
+  unset DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES DOCKER_STUB_RM_FAIL
   unset DOCKER_STUB_IMAGE_SIG_LABEL DOCKER_STUB_IMAGE_SIG_LABELS
 }
 
@@ -167,6 +167,32 @@ test_stop_docker_failure_aborts() {
   fi
 }
 
+# The `docker rm` "already in progress" race (run_agent EXIT-trap compose
+# down removing the same containers) must be tolerated -- stop completes with
+# rc 0 rather than aborting. `docker stop` stays fail-closed (tested above).
+test_stop_removal_race_is_tolerated() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_race"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="abc123def456"
+  export DOCKER_STUB_RM_FAIL=1
+
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/stop.sh" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --project="$PROJECT_DIR"
+  ) > /dev/null 2>&1
+  local rc=$?
+
+  if [[ "$rc" -eq 0 ]]; then
+    pass "stop: docker rm 'already in progress' race is tolerated (rc 0)"
+  else
+    fail "stop: expected stop to complete (rc 0) despite docker rm failure, got $rc"
+  fi
+}
+
 test_stop_prune_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_nc"
   mkdir -p "$FIXTURE_DIR"
@@ -289,6 +315,7 @@ run_test test_stop_no_containers_does_not_teardown
 run_test test_stop_removes_containers
 run_test test_stop_removes_networks
 run_test test_stop_docker_failure_aborts
+run_test test_stop_removal_race_is_tolerated
 run_test test_stop_prune_no_compose
 run_test test_stop_prune_has_registrybased_prune
 run_test test_prune_standalone_nothing_to_prune
