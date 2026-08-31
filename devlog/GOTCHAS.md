@@ -127,3 +127,19 @@ or completes work from an Open or same-session Closed handover -- if so, extend 
 handover and let the delivery commit absorb it (squash per git policy). Minimum unit of
 work for a new handover: implementation, investigation, or a substantive decision. Pure
 record-keeping rides along with the next real unit of work.
+
+### [G] 2026-08-31 - Roadmap open-item status can go stale against closed handovers
+
+state: open
+scoped: devlog/roadmap.md (M2.6 and later  --  any active milestone task list)
+legacy: none
+mitigation: several roadmap items were still `- [ ]` though the handover that resolved
+them was already Closed (dry-run probe-check harness `20260828-03`, make resume volume
+reuse / Bug D `20260828-04`, and the campaign-findings basket all-`[x]` sub-items). All
+were cleared to `- [x]` with final-state summaries in `20260831-09` post-close corrections.
+Rule: a roadmap task must be marked `- [x]` in the same iteration its resolving handover
+closes -- the handover's Closed state is the trigger, not a later cleanup pass. At iteration
+close, cross-check every `- [ ]` entry against its referenced/latest handover's Status; if
+the handover is Closed (and its ACs met), flip the roadmap item and note it as a post-close
+correction. Do not trust the checkbox to have been maintained; verify it against the
+handover record.

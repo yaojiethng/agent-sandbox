@@ -2,6 +2,8 @@
 
 **Status:** Investigation in progress
 
+**[SUPERSEDED in 20260831 — image & harness version identity:](./20260831-story-active-image_and_harness_version_identity.md) the host-packaging/install-versioning thread is reframed as the host-surface branch of the same root problem (no serializable version on image / worktree / host surfaces). The reconciliation story supersedes this doc's standalone framing; the design appears in `20260831-design-active-image_and_harness_version_identity.md`.**
+
 ---
 
 ## Context

@@ -2,6 +2,8 @@
 
 **Status:** Complete. Outcome: deferred -- see `roadmap_future.md` Harness Packaging and Versioning.
 
+**[SUPERSEDED in 20260831 - image & harness version identity:](./20260831-story-active-image_and_harness_version_identity.md) the harness-sig requirement is subsumed as the host-surface branch of the version-identity reconciliation; supersedes this doc's standalone harness-sig framing.**
+
 **Related:**
 - [`devlog/roadmap.md`](../../devlog/roadmap.md) -- M2.7 (container-sig settled, harness-sig deferred)
 - [`devlog/discussions/design_session_identity_hash_based.md`](../discussions/design_session_identity_hash_based.md) -- container-sig design
