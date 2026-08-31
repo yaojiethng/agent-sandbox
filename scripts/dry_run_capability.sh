@@ -23,21 +23,22 @@
 # Intentionally no set -u: env vars are checked explicitly with guards.
 set -o pipefail
 
-ROOT="/home/agentuser"
-source /opt/sandbox/lib/session_state.sh
-source /opt/sandbox/lib/diff_export.sh
-source /opt/sandbox/lib/routing.sh
+LIBS_DIR="${LIBS_DIR:-/opt/sandbox/lib}"
+ROOT="${ROOT:-/home/agentuser}"
+source "$LIBS_DIR/session_state.sh"
+source "$LIBS_DIR/diff_export.sh"
+source "$LIBS_DIR/routing.sh"
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
-SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
+SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
 SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
 CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 
 if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
-  source /opt/sandbox/lib/dirs.sh
+  source "$LIBS_DIR/dirs.sh"
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi
 
@@ -120,13 +121,7 @@ warn_check "OUTPUT_DIR writable" _is_writable "$OUTPUT_DIR"
 # ---------------------------------------------------------------------------
 
 section "session_state identity"
-check_init_sha_valid() {
-  local sha
-  sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
-  [[ -z "$sha" ]] && return 1
-  git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$sha" >/dev/null 2>&1
-}
-critical "SESSION_STATE.init_sha is a valid commit" check_init_sha_valid
+critical "SESSION_STATE.init_sha is a valid commit" init_sha_is_valid "$SANDBOX_DIR"
 
 # ---------------------------------------------------------------------------
 # session_data - data plane

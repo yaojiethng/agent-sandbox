@@ -44,16 +44,11 @@ echo ""
 echo "=== 3. SESSION_STATE ==="
 if [[ -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
   pass "SESSION_STATE file exists"
-  source /opt/sandbox/lib/session.sh 2>/dev/null
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -n "$INIT_SHA" ]]; then
-    if git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$INIT_SHA" >/dev/null 2>&1; then
-      pass "init_sha=$INIT_SHA is a valid commit"
-    else
-      fail "init_sha=$INIT_SHA is NOT a valid commit in the sandbox repo"
-    fi
+  source /opt/sandbox/lib/session_state.sh 2>/dev/null
+  if init_sha_is_valid "$SANDBOX_DIR"; then
+    pass "init_sha is a valid commit in the sandbox repo"
   else
-    fail "init_sha is missing from SESSION_STATE"
+    fail "init_sha is NOT a valid commit in the sandbox repo (missing, bogus, or not a commit object)"
   fi
   SESSION_TS_CHECK=$(session_state_read "$SANDBOX_DIR" "session_ts")
   [[ -n "$SESSION_TS_CHECK" ]] && pass "session_ts=$SESSION_TS_CHECK" || fail "session_ts missing"

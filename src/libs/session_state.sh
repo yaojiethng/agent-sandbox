@@ -46,3 +46,18 @@ session_state_write() {
 
   echo "${KEY}=${VALUE}" >> "$STATE_FILE"
 }
+
+# init_sha_is_valid SANDBOX_DIR
+#   Returns 0 iff SESSION_STATE's init_sha is present AND a real COMMIT object
+#   in the sandbox repo. Returns 1 if the key is absent/empty or the value is
+#   not a commit (bogus hex, or a ref to a non-commit object).
+#   Uses `git cat-file -e ...^{commit}`, which verifies object existence and
+#   type -- `rev-parse --verify` alone would accept any well-formed full-length
+#   hex id without checking the object database.
+init_sha_is_valid() {
+  local SANDBOX_DIR="$1"
+  local sha
+  sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
+  [[ -z "$sha" ]] && return 1
+  git -C "$SANDBOX_DIR" cat-file -e "$sha^{commit}" >/dev/null 2>&1
+}
