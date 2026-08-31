@@ -46,7 +46,10 @@ run_single() {
   local TMPFILE
   TMPFILE=$(mktemp)
 
-  bash "$FILE" > "$TMPFILE" 2>&1
+  # stdin from /dev/null: the runner iterates test files via a `<<<` here-string
+  # (shared temp-file FD); a test subprocess that reads stdin would advance that
+  # FD offset and cause `read` in the discovery loop to skip trailing files.
+  bash "$FILE" > "$TMPFILE" 2>&1 < /dev/null
   local RC=$?
 
   local FILE_PASS FILE_FAIL FILE_SKIP
