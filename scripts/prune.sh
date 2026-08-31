@@ -343,6 +343,8 @@ main() {
   
   # Rule 2  --  remove orphaned resources. Fresh scan against the updated registry
   # (the deleted records are gone, so their sessions are now orphaned here).
+  # Rule 2 removes only orphans (session record gone) -- not `docker system prune`,
+  # which would delete kept sessions' unreferenced volumes and break resume.
   TREATED_REMOVED_SIDS=()
   mapfile -t ORPHANS < <(rule2_orphan_resources)
   if [[ "${#ORPHANS[@]}" -gt 0 ]]; then
@@ -351,16 +353,13 @@ main() {
       IFS='|' read -r kind id _ <<< "$line"
       case "$kind" in
         container)
-          echo "  removing orphaned container: $id"
           docker stop "$id" 2>/dev/null || true
           docker rm "$id" 2>/dev/null || true
           ;;
         network)
-          echo "  removing orphaned network: $id"
           docker network rm "$id" 2>/dev/null || true
           ;;
         volume)
-          echo "  removing orphaned volume: $id"
           docker volume rm "$id" 2>/dev/null || true
           ;;
       esac
