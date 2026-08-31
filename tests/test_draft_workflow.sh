@@ -888,6 +888,177 @@ test_confirm_conflict_recovery() {
 }
 
 # =============================================================================
+# Savepoint-rollback regression tests
+#
+# The savepoint is a local variable, not a fixed-name git tag. The prior tag-
+# based design could (a) hard-abort with git "fatal: ambiguous argument" when
+# there was no .draft-state commit (so no tag was created) and (b) reset the
+# draft branch to the wrong, stale target when a tag left by an interrupted
+# prior run existed. These drive a real rebase conflict under both conditions.
+# =============================================================================
+
+# _make_no_state_commit_conflict_draft DIR [STALE]
+#   Build a draft branch whose .draft-state is a FILE on the branch but has NO
+#   ".draft-state" commit (DRAFT_STATE_COMMIT stays empty -- the state reached
+#   when rebase -i shaping drops that commit), plus a main advance that
+#   conflicts on file.txt. Leaves the repo on draft/foo. With STALE=yes, plants
+#   a stale confirm-savepoint tag at the baseline commit.
+_make_no_state_commit_conflict_draft() {
+  local P="$1"
+  local STALE="${2:-no}"
+  make_committed_repo "$P"
+
+  local BASE_SHA
+  BASE_SHA=$(get_init_sha "$P")
+
+  git -C "$P" checkout -qb draft/foo
+  {
+    printf 'source_branch: main\n'
+    printf 'from_hash: %s\n' "$BASE_SHA"
+    printf 'author: test@fixture\n'
+    printf 'session_ts: 20260420-120000\n'
+    printf 'host_branch: main\n'
+    printf 'diff_count: 1\n'
+    printf 'exported-at: 20260420-120001\n'
+    printf 'drafted-at: 20260420-120001\n'
+  } > "$P/.draft-state"
+  echo "draft edit" > "$P/file.txt"
+  echo "draft content" > "$P/work.txt"
+  git -C "$P" add .draft-state file.txt work.txt
+  git -C "$P" commit -m "work 1" --quiet
+
+  git -C "$P" checkout main --quiet
+  echo "main edit" > "$P/file.txt"
+  git -C "$P" add file.txt
+  git -C "$P" commit -m "main advance" --quiet
+  git -C "$P" checkout draft/foo --quiet
+
+  if [[ "$STALE" == yes ]]; then
+    git -C "$P" tag confirm-savepoint "$BASE_SHA"
+  fi
+}
+
+# A rebase conflict with no .draft-state commit (no savepoint tag created) must
+# fail cleanly and restore the draft -- it must NOT abort raw with git's
+# "fatal: ambiguous argument 'confirm-savepoint'" (set -e on a missing tag).
+test_confirm_conflict_no_savepoint_tag_aborts_cleanly() {
+  local P="$FIXTURE_DIR/confirm_nosave_p"
+  local S="$FIXTURE_DIR/confirm_nosave_s"
+  _make_no_state_commit_conflict_draft "$P" no
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  RC="${RC:-0}"
+
+  local STILL_NO_TAG
+  STILL_NO_TAG=$(git -C "$P" tag -l confirm-savepoint)
+
+  if [[ "$RC" -ne 0 \
+        && "$OUT" != *"fatal: ambiguous argument"* \
+        && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
+        && -z "$STILL_NO_TAG" ]]; then
+    pass "confirm conflict with no savepoint tag fails cleanly and restores draft"
+  else
+    fail "rc=$RC out=$OUT tip-preserved=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no)"
+  fi
+}
+
+# A stale confirm-savepoint tag from an interrupted prior run must be IGNORED:
+# the draft branch keeps its work (not rewound to the stale commit) and the tag
+# is left untouched (confirm no longer owns any tag lifecycle).
+test_confirm_conflict_stale_savepoint_preserves_draft() {
+  local P="$FIXTURE_DIR/confirm_stale_p"
+  local S="$FIXTURE_DIR/confirm_stale_s"
+  _make_no_state_commit_conflict_draft "$P" yes
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  RC="${RC:-0}"
+
+  local TAG_AFTER WORK_OK
+  TAG_AFTER=$(git -C "$P" tag -l confirm-savepoint)
+  WORK_OK=no
+  git -C "$P" cat-file -e draft/foo:work.txt 2>/dev/null && WORK_OK=yes
+
+  if [[ "$RC" -ne 0 \
+        && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
+        && "$WORK_OK" == yes \
+        && -n "$TAG_AFTER" ]]; then
+    pass "confirm ignores a stale savepoint tag (draft preserved, tag untouched)"
+  else
+    fail "rc=$RC tip-preserved=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no) work=$WORK_OK tag-kept=$([[ -n "$TAG_AFTER" ]] && echo yes || echo no)"
+  fi
+}
+
+# _make_state_commit_draft_with_dirty_tree DIR
+#   Build a draft branch WITH a real ".draft-state" commit (so DRAFT_STATE_COMMIT
+#   is set and the drop-step runs), then dirty the working tree so the drop-step
+#   `rebase --onto` fails -- exercising the drop-step rollback path, which the
+#   step-2 conflict tests do not reach.
+_make_state_commit_draft_with_dirty_tree() {
+  local P="$1"
+  make_committed_repo "$P"
+
+  local BASE_SHA
+  BASE_SHA=$(get_init_sha "$P")
+
+  git -C "$P" checkout -qb draft/foo
+  {
+    printf 'source_branch: main\n'
+    printf 'from_hash: %s\n' "$BASE_SHA"
+    printf 'author: test@fixture\n'
+    printf 'session_ts: 20260420-120000\n'
+    printf 'host_branch: main\n'
+    printf 'diff_count: 1\n'
+    printf 'exported-at: 20260420-120001\n'
+    printf 'drafted-at: 20260420-120001\n'
+  } > "$P/.draft-state"
+  git -C "$P" add .draft-state
+  git -C "$P" commit -m ".draft-state" --quiet
+  echo "draft content" > "$P/file.txt"
+  git -C "$P" add file.txt
+  git -C "$P" commit -m "work" --quiet
+
+  # Uncommitted change forces `rebase --onto` to refuse, deterministically
+  # triggering the drop-step failure rollback.
+  echo "uncommitted edit" > "$P/file.txt"
+}
+
+# The drop-step (`rebase --onto`) failure rollback must restore the draft branch
+# to the same-process SAVEPOINT_COMMIT and fail cleanly -- no git "fatal", and
+# the branch must not be left mid-rebase or at a stale commit.
+test_confirm_drop_step_failure_restores_savepoint() {
+  local P="$FIXTURE_DIR/confirm_dropstepp_p"
+  local S="$FIXTURE_DIR/confirm_dropstepp_s"
+  _make_state_commit_draft_with_dirty_tree "$P"
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  RC="${RC:-0}"
+
+  local REPO_CLEAN
+  REPO_CLEAN="$(git -C "$P" status --porcelain | wc -l | tr -d ' ')"
+
+  if [[ "$RC" -ne 0 \
+        && "$OUT" != *"fatal:"* \
+        && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
+        && "$OUT" == *"failed to drop .draft-state commit"* \
+        && "$REPO_CLEAN" == 0 ]]; then
+    pass "confirm drop-step failure restores savepoint and fails cleanly"
+  else
+    fail "rc=$RC out=$OUT tip-restored=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no) tree-clean=$REPO_CLEAN"
+  fi
+
+  git -C "$P" rebase --abort 2>/dev/null || true
+}
+
+# =============================================================================
 # REJECT tests
 # =============================================================================
 
@@ -984,6 +1155,9 @@ run_test test_confirm_target_branch
 run_test test_confirm_rejects_non_draft_branch
 run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
+run_test test_confirm_conflict_no_savepoint_tag_aborts_cleanly
+run_test test_confirm_conflict_stale_savepoint_preserves_draft
+run_test test_confirm_drop_step_failure_restores_savepoint
 
 run_test test_reject_returns_to_source
 run_test test_reject_deletes_draft_branch
