@@ -5,7 +5,7 @@ A persistent record of the coding agent"s experience: friction points, poor stac
 **Writer:** agent.
 **Reviewer:** operator.
 
-This file is tied into the session"s Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
+This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
 
@@ -146,7 +146,7 @@ scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-02`): `new-session.md` no longer reads as blanket authorization  --  the "implementation does not begin until both gates are confirmed" line was deleted (redundant with the procedural stops), the gate sections state what they confirm in declarative headers, and the gates" permission language now matches the canonical model (gates are released; content  --  scope, acceptance criteria  --  is confirmed). Per operator decision, the per-section policy gate is NOT restated in the directive: AGENTS.md owns it and is always loaded. Monitor for resurfacing of run-ahead on policy changes. When confirmed durable, delete and record in changelog/roadmap.
 
-### [A] 2026-08-09  --  Mid-session findings recording discipline (churn and under-recording)
+### [A] 2026-08-09  --  Findings recording discipline (churn and under-recording)
 
 state: open
 scoped: none
@@ -154,7 +154,7 @@ legacy: none
 mitigation: two failure modes from the same session. Over-recording: recording every
 observation as a permanent distinct finding row invites duplicates and table corruption
 (finding text leaked into the AC table; overwritten CORRECTION blocks)  --  frame
-Mid-session findings as candidate records consolidated at the review/publish step; edit
+Findings rows as candidate records consolidated at the review/publish step; edit
 task notes in place rather than appending duplicate steering records. Under-recording:
 session 08 produced friction (dash-sweep tooling, un-applied rule, gate-velocity) but
 recorded none of it; the gap surfaced via operator review, not self-capture. The

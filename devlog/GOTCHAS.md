@@ -5,7 +5,7 @@ A persistent record of recurring agent mistakes and code smells witnessed by the
 **Writer:** operator.
 **Reader:** agent (session-open primer) and operator (pre-close review gate).
 
-This file is tied into the session"s Mid-session findings for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
+This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
 
