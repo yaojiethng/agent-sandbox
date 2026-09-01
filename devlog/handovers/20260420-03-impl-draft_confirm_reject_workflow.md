@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-20
+**Date:** 2026-04-20
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Complete
 
 ## Objective

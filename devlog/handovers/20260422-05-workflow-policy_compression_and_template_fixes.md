@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-22
+**Date:** 2026-04-22
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Workflow
+**Type:** Workflow
 **Status:** Closed
 
 ## Objective
@@ -76,7 +76,7 @@ Not yet defined. Workflow session — no operator-runnable AC apply.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — continue Unit sequence.
+**Type:** Implementation — continue Unit sequence.
 
 Read `docs/development/roadmap.md` M2.3 pending section for current unit and dependency order. Upload the files required for the next unit before beginning.
 

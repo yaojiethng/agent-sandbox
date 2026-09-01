@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox (reopened)
-**Session type:** Design — `make start` command shape and session lifecycle UX
+**Type:** Design — `make start` command shape and session lifecycle UX
 
 ## Status at entry
 

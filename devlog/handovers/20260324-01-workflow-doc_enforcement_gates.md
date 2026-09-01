@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-24
+**Date:** 2026-03-24
 **Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Identify and close the doc-update enforcement gap in the minor loop: architecture and concepts documents were intended to land before implementation but lacked gates preventing deferral.

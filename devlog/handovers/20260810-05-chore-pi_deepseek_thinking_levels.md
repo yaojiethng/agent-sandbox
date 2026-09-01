@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** (none — cross-cutting pi provider config correction; not tied to M2.6)
-**Session type:** Housekeeping (commit type: chore)
+**Type:** Housekeeping (commit type: chore)
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-25
+**Date:** 2026-05-25
 **Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Housekeeping
+**Type:** Housekeeping
 **Status:** Active
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** (none — cross-cutting CLI/UX bug fix; not tied to M2.6)
-**Session type:** Implementation (commit type: fix)
+**Type:** Implementation (commit type: fix)
 **Status:** Closed
 
 ## Objective

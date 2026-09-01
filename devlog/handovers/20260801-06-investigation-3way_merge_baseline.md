@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox (reopened)
-**Session type:** Investigation — 3-way merge for draft patch application
+**Type:** Investigation — 3-way merge for draft patch application
 **Status:** Active
 
 ## Objective

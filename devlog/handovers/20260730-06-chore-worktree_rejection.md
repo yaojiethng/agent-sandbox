@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Persistence
-**Session type:** Housekeeping — Worktree rejection and simplified mount model
+**Type:** Housekeeping — Worktree rejection and simplified mount model
 **Status:** Closed
 
 ## Objective
@@ -76,6 +76,6 @@ None.
 
 ## Next session
 
-**Session type:** Implementation — security.md rewrite
+**Type:** Implementation — security.md rewrite
 
 Rewrite `docs/architecture/security.md` to reflect the simplified two-path model (M2.6.5 Copy, M2.6.6 Mount). Remove worktree row from Mount modes table. Update stale backlinks. Document the new principle: harness provides container boundary; user provides `.git`; harness does not mediate git operations.

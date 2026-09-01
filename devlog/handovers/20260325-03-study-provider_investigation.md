@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-25
+**Date:** 2026-03-25
 **Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Investigation
+**Type:** Investigation
 
 ## Objective
 Close all four provider investigations: Claude Code, Pi, Hermes, and update the parent story.

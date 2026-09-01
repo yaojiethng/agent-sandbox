@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-03
+**Date:** 2026-05-03
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -67,7 +67,7 @@ None.
 
 **A.1 — Data model: unified output format, dispatcher, `diff_on_exit` repair**
 
-**Session type:** Implementation
+**Type:** Implementation
 
 **Objective:** Restructure all diff packaging around a single unified output format. Rewrite `package_branch.sh` as a dispatcher. Rewrite `diff_on_exit` and `diff_on_autosave` as thin wrappers. No sweep commit, no `BASELINE_SHA` parameter.
 

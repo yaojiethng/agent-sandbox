@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-20
+**Date:** 2026-04-20
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Chore (documentation cleanup)
+**Type:** Chore (documentation cleanup)
 **Status:** Complete
 
 ## Objective

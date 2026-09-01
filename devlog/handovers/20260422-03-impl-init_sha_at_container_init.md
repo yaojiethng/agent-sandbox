@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-22
+**Date:** 2026-04-22
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -59,7 +59,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation.
+**Type:** Implementation.
 **Trigger B:** Not pending — mid-milestone.
 
 Next task is Unit B (Remove checkpoint tags). Read the roadmap M2.3 pending section for the full unit list and dependency order. Implement Unit B only.

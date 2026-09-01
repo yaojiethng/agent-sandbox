@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-23
+**Date:** 2026-05-23
 **Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Implementation (refactoring)
+**Type:** Implementation (refactoring)
 **Status:** Closed
 
 ## Objective

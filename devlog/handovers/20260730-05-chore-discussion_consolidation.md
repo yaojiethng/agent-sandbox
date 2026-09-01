@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Persistence
-**Session type:** Housekeeping — Discussion document consolidation
+**Type:** Housekeeping — Discussion document consolidation
 **Status:** Closed
 
 ## Objective

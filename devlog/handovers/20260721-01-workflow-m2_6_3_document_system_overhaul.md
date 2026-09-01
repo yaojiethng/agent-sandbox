@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-21
+**Date:** 2026-07-21
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Workflow — Document system overhaul
+**Type:** Workflow — Document system overhaul
 **Status:** Closed
 
 ## Objective

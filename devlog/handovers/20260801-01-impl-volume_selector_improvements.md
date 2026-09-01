@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Implementation — Volume selector ordering, stale prune, default new-session behaviour
+**Type:** Implementation — Volume selector ordering, stale prune, default new-session behaviour
 **Status:** Closed
 
 ## Design

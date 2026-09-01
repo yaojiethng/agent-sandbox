@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-21
+**Date:** 2026-07-21
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Workflow — policy disambiguation, design policy extraction, mount wiring investigation
+**Type:** Workflow — policy disambiguation, design policy extraction, mount wiring investigation
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Design
+**Type:** Design
 
 ## Objective
 Update all architecture, conceptual, and operator documentation to reflect the M2.1 two-container design confirmed in the prior session.

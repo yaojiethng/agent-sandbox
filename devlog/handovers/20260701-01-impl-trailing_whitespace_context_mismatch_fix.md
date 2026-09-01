@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-01
+**Date:** 2026-07-01
 **Milestone:** M2.6 — Mount Model Redesign
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective

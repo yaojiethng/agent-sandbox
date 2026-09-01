@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** M2.6 — Session Persistence (carried finding)
-**Session type:** Implementation (commit type: feat)
+**Type:** Implementation (commit type: feat)
 **Status:** Closed
 
 ## Objective

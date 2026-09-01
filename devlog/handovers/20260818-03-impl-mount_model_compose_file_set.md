@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-19
+**Date:** 2026-08-19
 **Milestone:** M2.6.6 — Mount Model: Host-backed Sandbox
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective

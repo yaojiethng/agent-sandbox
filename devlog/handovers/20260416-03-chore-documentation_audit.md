@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-16
+**Date:** 2026-04-16
 **Milestone:** — (chore session, standalone)
-**Session type:** Housekeeping
+**Type:** Housekeeping
 **Status:** Closed
 
 ## Objective

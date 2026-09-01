@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-26
+**Date:** 2026-03-26
 **Milestone:** M2.2 — Reasoning Layer Modularisation (chore, not implementation)
-**Session type:** Housekeeping
+**Type:** Housekeeping
 
 ## Objective
 

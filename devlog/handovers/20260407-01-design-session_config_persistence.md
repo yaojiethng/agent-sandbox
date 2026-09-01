@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-07
+**Date:** 2026-04-07
 **Milestone:** M2.4 — Session and Config Persistence
-**Session type:** Design + Implementation (partial)
+**Type:** Design + Implementation (partial)
 
 ## Objective
 

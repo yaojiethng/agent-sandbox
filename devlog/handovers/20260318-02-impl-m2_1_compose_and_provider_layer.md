@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Implement orchestration & lifecycle task group: clean up reasoning layer container (remove sandbox code, rename `.agent-input/` → `workspace/input/`, introduce `workspace/output/`), produce dogfood `docker-compose.yml`, update `start_agent.sh` to two-container lifecycle via compose.

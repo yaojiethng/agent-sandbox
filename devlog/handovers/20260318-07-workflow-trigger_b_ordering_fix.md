@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Identify and fix the ordering and linkage gap in the Trigger B workflow across `roadmap_policy.md`, `iteration_policy.md`, and `handover_policy.md`.

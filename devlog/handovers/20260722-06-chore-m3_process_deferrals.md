@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-22
+**Date:** 2026-07-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Housekeeping — Defer AC-machinery discussion to M3, add M3 process items
+**Type:** Housekeeping — Defer AC-machinery discussion to M3, add M3 process items
 **Status:** Closed
 
 ## Objective

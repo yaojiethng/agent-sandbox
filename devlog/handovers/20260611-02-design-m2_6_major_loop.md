@@ -1,7 +1,7 @@
 # Agent Handover
 
-**Session date:** 2026-06-11
-**Session type:** Design — Major Loop Planning
+**Date:** 2026-06-11
+**Type:** Design — Major Loop Planning
 **Status:** Closed
 
 ## Objective

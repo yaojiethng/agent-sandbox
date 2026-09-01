@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Implement the two-container model: capability layer Dockerfile/entrypoint, reasoning layer adaptation, Docker Compose orchestration, path alignment, two-image staleness, dry-run update.

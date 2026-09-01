@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-12
+**Date:** 2026-08-12
 **Milestone:** M2.6 — Session Persistence (general CLI/infra track)
-**Session type:** Fix
+**Type:** Fix
 **Status:** Closed
 
 ## Objective

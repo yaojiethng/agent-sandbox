@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-18
+**Date:** 2026-08-18
 **Milestone:** M2.6 — Session Persistence
-**Session type:** Audit (state review + readiness assessment)
+**Type:** Audit (state review + readiness assessment)
 **Status:** Closed
 
 ## Objective

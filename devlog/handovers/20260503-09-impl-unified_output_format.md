@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-03
+**Date:** 2026-05-03
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -90,7 +90,7 @@ None.
 
 **A.2 — CLI contract: `--channel` flag and routing** (or **A.4 — `changed-files/` extraction** — these can run in parallel after A.1)
 
-**Session type:** Implementation
+**Type:** Implementation
 
 **Objective:** Add `--channel` flag, router functions, new `apply_run`/`draft_run` signatures, Makefile flag mappings.
 

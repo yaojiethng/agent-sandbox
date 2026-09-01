@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** M2.6 — Session Persistence (general CLI refactor track; deferred from handover `20260810-04`)
-**Session type:** Implementation (commit type: refactor)
+**Type:** Implementation (commit type: refactor)
 **Status:** Closed
 
 ## Objective

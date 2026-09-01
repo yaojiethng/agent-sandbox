@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Design
+**Type:** Design
 **Status:** Closed
 
 ## Objective
@@ -92,7 +92,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — Unit F0 (path and timestamp audit).
+**Type:** Implementation — Unit F0 (path and timestamp audit).
 **Interface note:** 128k context, no reasoning. Read this section fully before touching any file.
 
 ---

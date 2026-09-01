@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Design
+**Type:** Design
 
 ## Objective
 Scope the M2.1 implementation: resolve all open design questions for the two-container model, define the task list, and confirm acceptance criteria.

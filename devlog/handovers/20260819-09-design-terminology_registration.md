@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-19
+**Date:** 2026-08-19
 **Milestone:** M2.6.6 — specialized terminology (agent run/session + agent iteration)
-**Session type:** Design (terminology registration — implemented, ready for close review)
+**Type:** Design (terminology registration — implemented, ready for close review)
 **Status:** Closed
 
 ## Objective

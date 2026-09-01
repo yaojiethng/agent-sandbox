@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Persistence
-**Session type:** Implementation — Security model rewrite for simplified two-path model
+**Type:** Implementation — Security model rewrite for simplified two-path model
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** Workflow Policy Restructuring — pre-M2.1 documentation
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Complete deferred documentation fixes from the prior session, then run a coherence audit across all new policy files to verify cross-references, step numbering, and link correctness.
@@ -77,7 +77,7 @@ None.
 
 ## Next session
 
-**Session type:** Planning
+**Type:** Planning
 **Milestone:** M2.1 — General Capability Layer Prototype
 
 **Scope:** Begin the M2.1 minor loop. The roadmap entry in `roadmap.md` has an objective and task list. Assess whether the scoping criteria in `milestone_policy.md` are met (objective, resolved design decisions with rationale, specific task list, named dependencies). If met, proceed to Step 2 (Design). If not, resolve open questions first.

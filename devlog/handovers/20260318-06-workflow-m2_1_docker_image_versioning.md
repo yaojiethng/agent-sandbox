@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Refresh `tool_interface.md`, `execution_model.md`, and `quickstart.md` against implemented M2.1 state; implement `build_context` (mktemp model) and template versioning; close M2.1 with end-to-end validation and Trigger B.

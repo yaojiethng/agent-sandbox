@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** Workflow Policy Refinement — pre-M2.1
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Audit and fix the workflow lapse where claude.ai chat produces outputs derived from repository files not uploaded to the conversation.
@@ -45,6 +45,6 @@ None.
 ## Next session
 
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 Resume M2.1 implementation from `roadmap.md`. All workflow policy work is complete.

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Implementation — Volume teardown fix and compose lifecycle modularization
+**Type:** Implementation — Volume teardown fix and compose lifecycle modularization
 **Status:** Closed
 
 ## Objective
@@ -77,7 +77,7 @@ None.
 
 ## Next session
 
-**Session type:** Implementation — Docker command-trace test harness
+**Type:** Implementation — Docker command-trace test harness
 
 Stub `docker` and `docker compose` to record commands. Write end-to-end tests invoking `agent-sandbox` subcommands and assert recorded commands match expectations. Verifies Units 1-3 from this session.
 

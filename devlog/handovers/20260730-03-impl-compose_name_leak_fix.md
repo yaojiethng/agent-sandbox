@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Implementation — Compose project name leak causing volume non-persistence
+**Type:** Implementation — Compose project name leak causing volume non-persistence
 **Status:** Closed
 
 ## Objective

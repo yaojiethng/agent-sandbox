@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -91,7 +91,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — Unit F1 (`.draft-state` + finish `make draft`).
+**Type:** Implementation — Unit F1 (`.draft-state` + finish `make draft`).
 **Interface note:** See design doc at `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md`.
 
 ### Orientation

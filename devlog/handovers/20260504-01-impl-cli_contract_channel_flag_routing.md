@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-04
+**Date:** 2026-05-04
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -154,7 +154,7 @@ None.
 
 **A.3 — Documentation alignment.**
 
-**Session type:** Implementation (or Housekeeping).
+**Type:** Implementation (or Housekeeping).
 
 **Trigger B pending:** Not yet. A.2, A.3, and A.5 must all complete before Trigger B can fire.
 

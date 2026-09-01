@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-22
+**Date:** 2026-04-22
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Workflow
+**Type:** Workflow
 **Status:** Closed
 
 ## Objective
@@ -61,7 +61,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation.
+**Type:** Implementation.
 **Trigger B:** Not pending — mid-milestone, implementation not yet begun.
 
 First task is Unit A (`INIT_SHA` at container init). Read the roadmap M2.3 pending section for the full A–G unit list and dependency order. Implement Unit A only.

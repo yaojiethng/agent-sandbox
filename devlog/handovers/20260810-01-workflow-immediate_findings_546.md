@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-09
+**Date:** 2026-08-09
 **Milestone:** M2.6.6 — Mount Model: Host-backed Sandbox
-**Session type:** Workflow (findings 5 + 6; finding 4 deferred)
+**Type:** Workflow (findings 5 + 6; finding 4 deferred)
 **Status:** Closed
 
 ## Objective

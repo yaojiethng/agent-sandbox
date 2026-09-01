@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-22
+**Date:** 2026-07-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Housekeeping — Roadmap deferred-item placement corrections
+**Type:** Housekeeping — Roadmap deferred-item placement corrections
 **Status:** Closed
 
 ## Objective

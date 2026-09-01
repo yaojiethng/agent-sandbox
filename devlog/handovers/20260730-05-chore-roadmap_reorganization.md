@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6 — Session Persistence
-**Session type:** Housekeeping — Roadmap reorganization, heading fix, Q&A ban, Known Limitations removal
+**Type:** Housekeeping — Roadmap reorganization, heading fix, Q&A ban, Known Limitations removal
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-06-22
+**Date:** 2026-06-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Study — repo preconditions audit
+**Type:** Study — repo preconditions audit
 **Status:** Closed
 
 ## Objective

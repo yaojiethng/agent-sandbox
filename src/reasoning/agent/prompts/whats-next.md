@@ -65,7 +65,7 @@ Understand what changed recently and what areas were being worked on.
 ## Step 4  --  Check for findings in the last handover
 
 ```bash
-grep -A30 -E "Mid-session findings|Findings" devlog/handovers/$(ls devlog/handovers/ | sort -r | head -1)
+grep -A30 -E "Findings" devlog/handovers/$(ls devlog/handovers/ | sort -r | head -1)
 ```
 
 Findings that were triaged but not resolved are the highest

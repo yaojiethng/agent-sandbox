@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-22
+**Date:** 2026-07-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Workflow — Volume persistence bugfix and REFRESH env var leak fix
+**Type:** Workflow — Volume persistence bugfix and REFRESH env var leak fix
 **Status:** Closed
 
 ## Objective

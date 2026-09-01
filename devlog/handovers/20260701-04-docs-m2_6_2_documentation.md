@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-01
+**Date:** 2026-07-01
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Docs — Phase 1.5 documentation
+**Type:** Docs — Phase 1.5 documentation
 **Status:** Closed
 
 ## Objective

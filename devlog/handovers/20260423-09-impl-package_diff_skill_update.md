@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -92,7 +92,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.5 — Vault Capability Layer Prototype.
-**Session type:** Investigation or Design — M2.5 has open evaluation work (MCP server candidate selection) before implementation begins.
+**Type:** Investigation or Design — M2.5 has open evaluation work (MCP server candidate selection) before implementation begins.
 **Trigger B:** Run for M2.3 — completed. M2.5 promoted to active in `roadmap.md`.
 
 ### Orientation

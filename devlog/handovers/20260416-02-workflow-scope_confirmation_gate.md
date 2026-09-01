@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-16
+**Date:** 2026-04-16
 **Milestone:** — (workflow session, standalone)
-**Session type:** Workflow
+**Type:** Workflow
 **Status:** Completed
 
 ## Objective

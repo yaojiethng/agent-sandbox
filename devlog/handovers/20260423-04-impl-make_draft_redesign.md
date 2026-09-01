@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -72,7 +72,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — Unit F (`make confirm` simplification + `make sync` removal).
+**Type:** Implementation — Unit F (`make confirm` simplification + `make sync` removal).
 
 Read `docs/devlog/roadmap.md` M2.3 pending section for Unit F tasks.
 

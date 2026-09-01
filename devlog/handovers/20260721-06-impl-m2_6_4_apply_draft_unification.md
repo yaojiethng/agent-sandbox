@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-21
+**Date:** 2026-07-21
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Implementation — Refactor draft apply logic to share core with apply
+**Type:** Implementation — Refactor draft apply logic to share core with apply
 **Status:** Closed
 
 ## Objective

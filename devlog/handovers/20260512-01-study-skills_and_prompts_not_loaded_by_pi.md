@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-12
+**Date:** 2026-05-12
 **Milestone:** M2.5 — Vault Capability Layer Prototype
-**Session type:** Study
+**Type:** Study
 **Status:** Closed
 
 ## Objective

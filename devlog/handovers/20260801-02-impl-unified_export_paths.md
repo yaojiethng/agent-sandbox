@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Implementation — Unified export path convention and single autosave
+**Type:** Implementation — Unified export path convention and single autosave
 **Status:** Closed
 
 ## Pre-close verification

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** Workflow Policy Refinement — pre-M2.1
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Restore `iteration_policy.md` as a true index document: move all inline rule content to the child documents that own each domain, replace the minor loop step prose with a navigable table (entry | action + link | exit), and add a two-loop overview tree. No rules are removed — only relocated.
@@ -70,6 +70,6 @@ None.
 ## Next session
 
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 All workflow policy work is complete. Resume M2.1 implementation directly from `roadmap.md`.

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Design
+**Type:** Design
 **Status:** Closed
 
 ## Objective
@@ -74,7 +74,7 @@ None.
 ## Next session
 
 **Sub-milestone:** M2.7 — Session Identity and Harness Versioning.
-**Session type:** Implementation — Phase 1 (run_id derivation and container naming).
+**Type:** Implementation — Phase 1 (run_id derivation and container naming).
 
 Read `devlog/roadmap.md` M2.7 section for task list. Start with Phase 1 tasks in `devlog/discussions/design_session_identity_hash_based.md`.
 

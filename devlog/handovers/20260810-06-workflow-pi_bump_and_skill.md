@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** (none — M7 Dependency Security parked; cross-cutting provider maintenance + skill codification)
-**Session type:** Workflow (single `workflow:` commit)
+**Type:** Workflow (single `workflow:` commit)
 **Status:** Closed
 
 ## Objective

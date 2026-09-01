@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6.2 — Volume and Container Persistence
-**Session type:** Implementation — Container persistence and pre-start cleanup refactoring
+**Type:** Implementation — Container persistence and pre-start cleanup refactoring
 **Status:** Closed
 
 ## Objective

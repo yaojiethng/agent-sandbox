@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-25
+**Date:** 2026-03-25
 **Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Complete the two refactoring tasks carried from the previous session, and standardise image name derivation across the harness.

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-01
+**Date:** 2026-05-01
 **Milestone:** Container tooling path relocation (prerequisite for M2.x)
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective

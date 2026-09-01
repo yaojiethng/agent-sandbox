@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-19
+**Date:** 2026-08-19
 **Milestone:** M2.6.6 — terminology (session→iteration)
-**Session type:** Planning (reordered 2A/2B — plan released and executed)
+**Type:** Planning (reordered 2A/2B — plan released and executed)
 **Status:** Closed
 
 ## Objective

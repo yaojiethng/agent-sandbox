@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** Workflow Policy Restructuring — pre-M2.1 documentation
-**Session type:** Documentation
+**Type:** Documentation
 
 ## Objective
 Audit and reconstruct the development workflow policy documents to reflect the two-loop model (major/minor), retire stale documents, consolidate index maintenance, and ensure all policy cross-references are explicit and correctly linked.
@@ -105,7 +105,7 @@ The `YYYYMMDD_agent_handover.md` convention exists in the File Naming section bu
 
 ## Next session
 
-**Session type:** Documentation / Audit
+**Type:** Documentation / Audit
 **Milestone:** Workflow policy restructuring — audit and correction pass (pre-M2.1)
 
 This is a documentation audit session, not an implementation session. M2.1 implementation begins in a separate session window after this audit is complete.

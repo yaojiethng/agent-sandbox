@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-27
+**Date:** 2026-04-27
 **Milestone:** M2 — Reasoning/Capability Layer Separation (cross-cutting workflow)
-**Session type:** Workflow
+**Type:** Workflow
 **Status:** Closed
 
 ## Objective

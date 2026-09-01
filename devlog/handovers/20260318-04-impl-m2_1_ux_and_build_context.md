@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Complete M2.1 implementation: UX layer (`libs/_templates/docker-compose.yml.template`, `scripts/agent-sandbox.sh` rewrite, project-side Makefile template), onboarding (`workflow/general/scripts/onboard.sh`, `.env` ownership transfer), build & context model (`libs/build_context.sh`, `context/` directories, Dockerfile layer reorder), and `libs/image.sh` + `tests/test_image.sh` deletion. End-to-end validation is the exit gate.
@@ -90,7 +90,7 @@ Carried from M2.1 roadmap — sub-milestone gate:
 ## Next session
 **M2.1 — General Capability Layer Prototype** (documentation, then build & context + cleanup + end-to-end validation).
 
-**Session type:** Spec/Implementation — docs first, then implementation, then validation.
+**Type:** Spec/Implementation — docs first, then implementation, then validation.
 
 **Scope and order:**
 1. **Documentation** (before any implementation):

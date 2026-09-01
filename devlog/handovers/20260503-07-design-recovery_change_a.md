@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-03
+**Date:** 2026-05-03
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Design (bootstrap)
+**Type:** Design (bootstrap)
 **Status:** Closed
 
 ## Objective
@@ -147,7 +147,7 @@ The handover `20260429-08-design-b_interactive.md` was found in the input direct
 
 **A.0 — Sourceability refactor for `agent-sandbox.sh`**
 
-**Session type:** Implementation
+**Type:** Implementation
 
 **Objective:** Add a `main` guard to `scripts/agent-sandbox.sh` so the file can be sourced without executing dispatch logic.
 

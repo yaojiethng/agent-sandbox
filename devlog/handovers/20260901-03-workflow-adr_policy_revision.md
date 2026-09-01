@@ -3,7 +3,7 @@
 **Milestone:** M2.6 - Session Persistence
 **Type:** workflow
 **Status:** Closed
-**Session date:** 2026-09-01
+**Date:** 2026-09-01
 
 ## Objective
 

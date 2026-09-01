@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
+**Date:** 2026-04-23
 **Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -102,7 +102,7 @@ Unit F2 from the M2.3 task list. Specifically:
 ## Next session
 
 **Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — Unit G (`.skills/package-diff.md` update).
+**Type:** Implementation — Unit G (`.skills/package-diff.md` update).
 
 ### Orientation
 

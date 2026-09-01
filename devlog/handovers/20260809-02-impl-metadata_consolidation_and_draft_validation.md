@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-09
+**Date:** 2026-08-09
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Implementation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective

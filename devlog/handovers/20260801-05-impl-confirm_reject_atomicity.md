@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Implementation — Confirm savepoint and atomic reject
+**Type:** Implementation — Confirm savepoint and atomic reject
 **Status:** Closed
 
 **Note:** This commit closes M2.6.5 (Copy Model: Volume-backed Sandbox). Will reopen if issues surface during live use. Preliminary testing OK.

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-01
+**Date:** 2026-08-01
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Design — Unify make draft and make apply
+**Type:** Design — Unify make draft and make apply
 **Status:** Active
 
 ## Objective

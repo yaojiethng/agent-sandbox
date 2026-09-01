@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-22
+**Date:** 2026-07-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Chore — Fix stale `docs/discussions/` and `docs/devlog/` path references after directory restructuring
+**Type:** Chore — Fix stale `docs/discussions/` and `docs/devlog/` path references after directory restructuring
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Design, document, and implement M2.2 shared logic extraction. All implementation tasks complete except operator validation of `make dry-run`.

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-16
+**Date:** 2026-03-16
 **Milestone:** Workflow Policy Restructuring — pre-M2.1 documentation
-**Session type:** Workflow
+**Type:** Workflow
 
 ## Objective
 Complete deferred documentation fixes from the prior session, run a coherence audit across all new policy files, then restructure the handover/roadmap relationship to eliminate milestone-state duplication across session handovers.
@@ -82,7 +82,7 @@ None.
 ## Next session
 
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Workflow
+**Type:** Workflow
 
 Before resuming M2.1 implementation, the next session should verify all policy and roadmap changes from this session are coherent end-to-end. Specific items:
 - Verify `iteration_policy.md` step sequence reads cleanly after the merge/renumber

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-27
+**Date:** 2026-04-27
 **Milestone:** — (ad-hoc design session, no active roadmap milestone)
-**Session type:** Design
+**Type:** Design
 **Status:** Closed
 
 ## Objective

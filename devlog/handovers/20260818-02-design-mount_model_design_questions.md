@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-18
+**Date:** 2026-08-18
 **Milestone:** M2.6.6 — Mount Model: Host-backed Sandbox
-**Session type:** Design (resolve open design questions via grill-me)
+**Type:** Design (resolve open design questions via grill-me)
 **Status:** Closed
 
 ## Objective

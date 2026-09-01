@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-30
+**Date:** 2026-07-30
 **Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Session type:** Implementation — Multi-volume concurrency
+**Type:** Implementation — Multi-volume concurrency
 **Status:** Closed
 
 ## Objective

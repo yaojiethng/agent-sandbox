@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-18
+**Date:** 2026-03-18
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Continue M2.1 implementation: harden container files produced in prior session, resolve ownership and mount shape issues discovered during validation, update docs and roadmap to reflect design decisions made.

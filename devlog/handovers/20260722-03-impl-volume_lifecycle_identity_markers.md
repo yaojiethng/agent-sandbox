@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-07-22
+**Date:** 2026-07-22
 **Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Session type:** Implementation — Volume lifecycle, identity markers, and prune scoping
+**Type:** Implementation — Volume lifecycle, identity markers, and prune scoping
 **Status:** Closed
 
 ## Objective

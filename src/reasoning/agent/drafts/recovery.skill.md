@@ -129,7 +129,7 @@ Each commit should create exactly one handover file with correct name and `add` 
 
 ```bash
 for f in devlog/handovers/YYYYMMDD-*.md; do
-  grep -E "\*\*Session date:|\*\*Date:" "$f"
+  grep -E "^\*\*Date:" "$f"
 done
 ```
 

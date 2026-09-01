@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-08-10
+**Date:** 2026-08-10
 **Milestone:** M2.6 — Session Persistence (general CLI/infra track)
-**Session type:** Implementation (commit type: fix)
+**Type:** Implementation (commit type: fix)
 **Status:** Closed
 
 ## Objective

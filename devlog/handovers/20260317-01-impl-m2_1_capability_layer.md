@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-17
+**Date:** 2026-03-17
 **Milestone:** M2.1 — General Capability Layer Prototype
-**Session type:** Implementation
+**Type:** Implementation
 
 ## Objective
 Implement capability layer container files, update reasoning layer container files, document exit flow, and produce a standalone functional test script.
