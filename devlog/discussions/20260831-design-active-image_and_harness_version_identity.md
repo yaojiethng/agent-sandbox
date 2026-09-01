@@ -1,13 +1,16 @@
 # Design — Image and Harness Version Identity
 
-**Status:** active (decision exploration not yet settled)
+**Status:** settled
 
-This document is a **stub** created to record the design space opened by the
-story [`20260831-story-active-image_and_harness_version_identity.md`](20260831-story-active-image_and_harness_version_identity.md).
-It is populated with the constraints already fixed by the story and the candidate
-options known from the codebase. **The Decision and full Consequence analysis are
-explicitly out of scope for the session that created this stub** — the design is
-to be reasoned through and settled in the next session, then recorded as an ADR.
+Mechanism decision recorded in ADR
+[`20260901-adr-settled-version_identity_mechanism.md`](../../docs/adr/20260901-adr-settled-version_identity_mechanism.md).
+The story [`20260831-story-active-image_and_harness_version_identity.md`](20260831-story-active-image_and_harness_version_identity.md)
+fixes the requirements; this design fixed the *how*. Decision and Consequences are settled below; implementation is a follow-up iteration.
+
+This document was created as a **stub** recording the design space opened by the
+story. It is populated with the constraints already fixed by the story and the candidate
+options known from the codebase. **The Decision and full Consequence analysis were
+settled in the session that refined this stub (20260901-02).**
 
 ---
 
@@ -81,14 +84,37 @@ story's Constraints, including whether staleness survives as a distinct signal.
 
 ## Decision
 
-*(Pending — out of scope for this session. The next session selects among the
-options above or a refinement, records rationale, and writes the ADR.)*
+**(Settled 20260901-02; ADR `20260901-adr-settled-version_identity_mechanism.md`.)**
+
+A **composition (Option D)** is adopted, per surface:
+
+- **Image surface = docker digest** (`<repo>@sha256:`), recorded per image in the
+  record as `agent-sandbox.agent-image-digest` + `agent-sandbox.sandbox-image-digest`.
+  Forward-only, no back-compat; digest-less image = hard error.
+- **Worktree surface = plain `$REPO_ROOT` git HEAD SHA**, carried conceptually
+  into the deferred interface-contract thread — **no record field**.
+- **Host surface = symlink install** (self-locating dispatcher); no separate
+  version by construction; semver deferred to the full-packaging milestone.
+- **Staleness retired**: no list-time image-staleness. Dry-run always builds/runs
+  current source; its gate is a **digest roundtrip** + structural phase-3 record
+  verification. `--fast`/headless deferred to the dry-run refactor.
+- **`container-sig` reframed** as the interim leaky exact-match implementation of
+  the deferred interface-contract check (not retired); scoped for deletion once a
+  redesigned interface-contract lands.
 
 ## Consequences
 
-*(Pending — to be completed with the Decision. Anticipated dimensions: record
-schema change (which fields carry the version(s)); resume image-resolution;
-image retention/GC and prune scope; retirement or downgrade of the `[IMAGE_STALE]`
-marker and `record_image_stale` (and its O(n×2) docker cost); whether `container-sig`
-keeps any role; terminology/name cleanup (`image-sig` vs `container-sig` vs
-`digest`).)*
+**(Completed 20260901-02 with the Decision; see ADR.)**
+
+- **Record schema**: adds the two `*-image-digest` labels; retires `image-sig`
+  from new records; no `harness-head-sha` field. Older (two-sig) records do not
+  decode (forward-only).
+- **Resume**: exact-resume via recorded digest; digest-less record = refuse loudly.
+- **List-time cost**: `record_image_stale`'s 2×N docker scans removed; `resume LIST`
+  faster.
+- **Image retention/GC**: out of the immediate scope; digest keeps content
+  addressable until GC.
+- **`container-sig` role**: interim contract-interface check (preflight `_check_container_sig`
+  persists in that role); retired from image-version and dry-run-gate duty.
+- **Terminology/name cleanup**: `image-sig` -> image-digest labels; `container-sig`
+  label kept as interim contract marker; naming conventions per the ADR.

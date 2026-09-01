@@ -2,6 +2,8 @@
 
 **Status:** settled
 
+> **Superseded by:** [20260901-adr-settled-version_identity_mechanism.md](20260901-adr-settled-version_identity_mechanism.md) (partial — the image-identity marking claim "images carry no version" is replaced by digest-as-image-version, and the marker/label schema is extended with the two image-digest labels). The session-identity derivation and lifecycle-filtering decisions remain in force.
+
 > **Superseded by:** [20260831-adr-settled-single_canonical_session_identity.md](20260831-adr-settled-single_canonical_session_identity.md) (derivation formula only — the two-stage `SANDBOX_ID`/`RUN_ID` hash is replaced by a single canonical hash; the marker schema and lifecycle-filtering decisions remain in force).
 
 ## Summary
