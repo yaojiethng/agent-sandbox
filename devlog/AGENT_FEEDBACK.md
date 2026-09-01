@@ -178,11 +178,12 @@ reworked: 2026-09-01  --  the `### Line wrapping` wording was rewritten to state
 
 ### [A] 2026-08-09  --  Non-ASCII punctuation under a plain-ASCII doc policy
 
-state: probation
+state: open
 scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` `### Character set` generalized to cover non-ASCII + control/formatting symbols + audit-check entry. Functional `` scrubbed from frequently-read live docs; only deliberate literals remain (documentation_policy rule, AGENT_FEEDBACK finding record). Closed handovers retain `` (read-only, out of scope). Monitor for resurfacing (new ``/non-ASCII in live docs). When confirmed durable, delete and record in changelog/roadmap.
 resurfaced: session `20260821-02`  --  introduced `Q7`/`N2`/`Numbering` in the start/resume design handover"s cross-references. Cause: imitating `` from a closed-handover reference without checking the target doc or the policy. Not durable yet  --  keep monitoring; scrub on sight in live docs.
+resurfaced: session `20260901-12`  --  four section-sign references (`§`) written into an active handover while citing the roadmap-update timing rule. Cause: imported referencing habit from outside the repo, not from any repo document (the policy itself names `§` as banned). Scrubbed on sight. Probation lifted back to open; not durable yet.
 
 ### [A] 2026-08-09  --  Tracked-backlog proliferation at close
 
