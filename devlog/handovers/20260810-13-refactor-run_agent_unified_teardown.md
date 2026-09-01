@@ -77,7 +77,7 @@ separate concern and stays as-is.
 | 6 | run_agent's exit code is consumed nowhere (all-`exec` chain, no chaining) and documented nowhere — the semantics have drifted. | standardized + documented this session (decisions 4/5) |
 | 7 | `compose_sandbox_wait` failure exits 1 before teardown — sandbox-not-healthy path skips the unified dispatch (pre-existing; container may be left running on timeout). | flagged; carried forward |
 | 8 | **Naming collision:** the `session_teardown`/`session_destroy` rename trades the docker-verb mismatch (`compose_stop` ran `down`) for a better-but-collided name: "session" is reserved in the ops domain (commit + handover, per handover_policy) yet the harness already uses it for the agent run (`RESUME_SESSION`, `SESSION_TS`, `agent-sandbox.session-ts` volume labels, `session-diffs`, execution_model.md "Session Lifecycle" + "session teardown"). The rename was kept (operator decision) — the two domains are separated by context — but the collision is logged as a future naming decision. **This replaces the original carried docker-verb semantics decision** (finding 3 from `20260810-10`): the old bad name is gone, so the "align with docker verbs or rename" question is moot; what remains is the session-naming collision. | flagged; replaces carried docker-verb finding |
-| 9 | **Stub lost its executable bit mid-session** — repo has `core.filemode=false`, so git never tracked `test/stubs/docker`'s mode (index 100644; working tree 755 via snapshot pipeline). A `git stash`/`git checkout` cycle normalized the working-tree file to the index mode → all 16 stub-invoking tests failed with "Permission denied". Fixed: `chmod +x` + `git update-index --chmod=+x` (index now 100755). The `git checkout tests/test_trace_start.sh` (to remove a debug patch) also reverted that file's session edits — the git-restore trap from session 12 struck again, despite the AGENT_FEEDBACK entry. | fixed; re-applied test edits; recorded in AGENT_FEEDBACK |
+| 9 | **Stub lost its executable bit mid-session** — the mode divergence (index 100644; working tree 755 via snapshot pipeline) surfaced only in-container because the container git runs `core.fileMode=true` while the host repo ran `core.fileMode=false` [see correction below] — a host/container asymmetry, not a repo defect. A `git stash`/`git checkout` cycle normalized the working-tree file to the index mode → all 16 stub-invoking tests failed with "Permission denied". Fixed: `chmod +x` + `git update-index --chmod=+x` (index now 100755). The `git checkout tests/test_trace_start.sh` (to remove a debug patch) also reverted that file's session edits — the git-restore trap from session 12 struck again, despite the AGENT_FEEDBACK entry. | fixed; re-applied test edits; recorded in AGENT_FEEDBACK |
 
 ## Decisions
 | # | Decision | Rationale |
@@ -97,7 +97,7 @@ separate concern and stays as-is.
 | 4 | `docs/architecture/security.md` — stale `compose stop (not down)` claim fixed | Doc drift from the network fix |
 | 5 | `tests/test_trace_start.sh` — serve teardown positive assert, trace-last-is-down lock (parameterized), rc-propagation lock, **3 failure-simulation tests** (up-fail serve/standard, sandbox-unhealthy); rename comments; `unset` stub vars in fixture | 15 tests; each verified to fail on its regression (NEG: trap disabled → 6 failures) |
 | 6 | `test/stubs/docker` — `DOCKER_STUB_RUN_RC`, `DOCKER_STUB_UP_RC`, `DOCKER_STUB_SANDBOX_HEALTH`; merged up/run case | Env-gated; zero impact on existing tests |
-| 7 | Stub executable-bit recovery — `chmod +x` + `git update-index --chmod=+x` (index 100644→100755) | Lost during a stash/checkout cycle (`core.filemode=false`); 16 tests were failing with "Permission denied"; recorded in AGENT_FEEDBACK |
+| 7 | Stub executable-bit recovery — `chmod +x` + `git update-index --chmod=+x` (index 100644→100755) | Lost during a stash/checkout cycle [see correction below]; 16 tests were failing with "Permission denied"; recorded in AGENT_FEEDBACK |
 | 8 | Verification | 468 tests, 462 passed, 0 failed, 6 skipped; shellcheck: no new findings vs HEAD (SC2317 directive used) |
 
 ## Not in scope
@@ -123,3 +123,17 @@ M2.6 mount work (paths A/B).
 - [x] Roadmap checkboxes updated
 - [ ] Operator released pre-close gate
 - [ ] Status → Closed; committed
+
+---
+
+[CORRECTION -- 2026-09-01]: the mode divergence in finding 9 and completed
+item 7 was originally attributed to the repo running `core.filemode=false`.
+The diagnosis is corrected per handover `20260901-01-fix-file_mode_anomaly.md`:
+the divergence (index 100644; working tree 755) surfaced only in the container
+because the container git runs `core.fileMode=true` (set from
+`filesystem_tracks_exec_bits`) while the host repo ran `core.fileMode=false`
+— a host/container `core.fileMode` mismatch, not a repo-level defect. Resolved
+on the host by bringing `core.fileMode` to parity (`true`) and normalising
+host tree exec bits. The underlying lesson — a `git stash`/`git checkout`
+cycle normalises working-tree modes and can revert uncommitted edits; re-assert
+a lost exec bit with `chmod +x` + `git update-index --chmod=+x` — is unchanged.
