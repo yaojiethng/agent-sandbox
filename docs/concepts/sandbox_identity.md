@@ -139,11 +139,11 @@ session_id=<6-char session run ID>
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Session diff export | `session-diffs/session/<SESSION_ID>-<BRANCH>/` | Written on container exit |
-| Autosave diffs | `session-diffs/autosave/<SESSION_ID>-<BRANCH>/` | Written on autosave ticks |
-| Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<SESSION_ID>/` | On explicit branch packaging |
+| Session diff export | `session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/` | Written on container exit |
+| Autosave diffs | `session-diffs/autosave/<SESSION_ID>/` | Single directory, overwritten on autosave ticks (no timestamp component) |
+| Package-branch output | `output/bundles/<EXPORT_TIME>-[<LABEL>-]<SESSION_ID>/` | On explicit branch packaging; optional human-readable label |
 
-`SESSION_ID` replaces `SESSION_TS` in artefact directory names. The branch name component (when present) provides human-readable context; `SESSION_ID` provides unique addressing.
+Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides unique addressing; a fresh export-time timestamp (`EXPORT_TIME`) orders exports. `SESSION_TS` is not part of artefact directory names — it is carried in Docker labels for human readability.
 
 ## Where Primitives Are Consumed
 

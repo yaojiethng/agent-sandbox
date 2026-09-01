@@ -33,7 +33,7 @@ discover_tests() {
     fi
   done
   if [[ ${#FILES[@]} -eq 0 ]]; then
-    echo "Warning: no test files found matching $PATTERN" >&2
+    echo "Warning: no test files found in $TEST_DIR" >&2
     return 1
   fi
   printf '%s\n' "${FILES[@]}" | sort

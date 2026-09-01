@@ -154,6 +154,17 @@ run_runner "$FIXTURE_DIR/marker_rc0_dir"
 assert_ne "0" "$RC" "runner: FAIL marker with rc 0 fails the run"
 assert_contains "$OUT" "1 failed" "runner: FAIL marker counted despite rc 0"
 
+# ---------------------------------------------------------------
+# Case 10: empty discovery  --  the runner warns and exits non-zero
+# without crashing on its own unset variables (regression guard for
+# the $PATTERN unbound-variable bug in the warning path)
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/empty_dir"
+run_runner "$FIXTURE_DIR/empty_dir"
+assert_ne "0" "$RC" "runner: empty discovery exits non-zero"
+assert_contains "$OUT" "Warning: no test files found" "runner: empty discovery warns"
+assert_not_contains "$OUT" "unbound variable" "runner: warning path does not crash under set -u"
+
 # =============================================================================
 # Run  --  note: this file drives the runner via run_runner(), so its own
 # assertions live at file scope, not in run_test functions. Each block above

@@ -113,3 +113,13 @@ assert_contains() {
     fail "$LABEL ('$NEEDLE' not found in output)"
   fi
 }
+
+# assert_not_contains HAYSTACK NEEDLE [LABEL] -- inverted substring match
+assert_not_contains() {
+  local HAYSTACK="$1" NEEDLE="$2" LABEL="${3:-not-contains '$2'}"
+  if [[ "$HAYSTACK" != *"$NEEDLE"* ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL ('$NEEDLE' unexpectedly found in output)"
+  fi
+}

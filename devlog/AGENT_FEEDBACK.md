@@ -104,7 +104,7 @@ Scope: language design limitation. The subshell-scoped `|| true` pattern (from s
 
 ### [A] 2026-08-09  --  No test fixture lifecycle  --  manual `rm -rf` everywhere
 
-state: open
+state: probation
 scoped: none
 legacy: none
 mitigation: use `$FIXTURE_DIR` subdirectories instead of `mktemp -d`. For supplemental dirs, add `trap "rm -rf "$_tmpdir"" RETURN`.
@@ -112,6 +112,8 @@ mitigation: use `$FIXTURE_DIR` subdirectories instead of `mktemp -d`. For supple
 Bash test files have no `setup`/`teardown` framework. Every test manually creates temp dirs with `mktemp -d` and cleans up with `rm -rf`. Tests that fail midway leak temp directories.
 
 Scope: could standardize a `test_teardown` helper. Not urgent  --  leaked temp dirs in CI are ephemeral. Cross-reference: no skill trap covers this.
+
+reconciled: 2026-09-01  --  the framework this entry asks for now exists: `test_setup` in `tests/libs/test_common.sh` provides `$FIXTURE_DIR` (`mktemp -d`) with an automatic `rm -rf` cleanup trap, and suites use it. Marked probation per the reconcile-before-acting rule (tree has outgrown the entry); drop if it does not resurface.
 
 ### [A] 2026-08-09  --  Undefined-variable errors under `set -u` are opaque
 
@@ -371,7 +373,7 @@ assuming the implementation is wrong; a stale install is the first suspect.
 
 ### [A] 2026-08-21  --  Exec-style scripts without dual-use guards block unit seams
 
-state: open
+state: probation
 scoped: none
 legacy: none
 mitigation: bounded sed-extraction of the function body into a subshell
@@ -387,6 +389,14 @@ which breaks silently if the function is renamed or reformatted (the probes
 fail loudly by design, but the seam itself is fragile). Guards on those three
 entry points would let tests source and call directly, deleting the
 extraction layer entirely.
+
+reconciled: 2026-09-01  --  all three named scripts now carry the guard
+(`scripts/start_agent.sh` wraps `main "$@"` — flag parsing lives inside
+`main()` — likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.2.
+Marked probation per the reconcile-before-acting rule (tree has outgrown the
+entry); drop if it does not resurface. Follow-up candidate, not this fix:
+delete the now-redundant sed-extraction probes and source the scripts
+directly in those tests.
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
 
