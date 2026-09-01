@@ -136,6 +136,8 @@ For housekeeping iterations, the scope proposal may simply be the target file li
 
 **Rule:** No output before scope is confirmed.
 
+**Rule:** Purpose reconciliation. Before presenting the scope proposal  --  and again when presenting acceptance criteria (Step 5)  --  check the expressed purpose of the iteration against the current tree: a purpose may already be silently resolved by landed work (fixes, tests, skills, docs) that no record claims. If so, surface it in the proposal; the scope becomes recording or retiring the existing resolution, not re-implementing it, and the acceptance criteria are phrased against the tree as it is.
+
 **Rule:** When a session contains multiple iterations, write the detailed per-step spec only for the active iteration. The handover may list all iterations for orientation. Do not write iteration N+1's spec or its dependencies until iteration N's output is confirmed.
 
 ### Gate 1

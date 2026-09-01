@@ -5,6 +5,8 @@ A persistent record of the coding agent"s experience: friction points, poor stac
 **Writer:** agent.
 **Reviewer:** operator.
 
+Entries are point-in-time records. Reconcile an entry against the current tree before acting on it. If the tree has outgrown an entry, mark it probation; if the entry is superseded  --  its lesson already carried by another entry or record  --  it jumps to probation as well. Either way, follow the normal procedure: wait to see whether it resurfaces; drop it if it does not.
+
 This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
@@ -22,13 +24,15 @@ Each entry follows this structural template.
 ```markdown
 ## [<A|G>] <date>  --  <short title>
 
-state: open                        // open | mitigated | probation
+state: open                        // open | probation | mitigated
+                                   // probation = durable fix applied, or the tree has
+                                   // outgrown the entry; kept for monitoring, dropped on no resurfacing
 scoped: <milestone or none>        // durable-fix destination when assigned
 legacy: <prior fix, if any>        // set only on resurfacing
 mitigation: <interim workaround, or none>
 ```
 
-An entry is deleted when resolved. A resolved durable fix is recorded in the changelog and the roadmap, not in this file. This file holds only the active backlog.
+An entry is dropped when monitoring confirms the fix durable  --  a probation entry is kept for monitoring and dropped when it does not resurface. A durable fix is also recorded in the changelog and the roadmap. This file holds only the active backlog.
 
 Attribution is operator-owned. The agent proposes a class and the operator confirms it. The agent does not self-classify its own boo-boos as not-its-fault.
 
