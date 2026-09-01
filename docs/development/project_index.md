@@ -105,6 +105,8 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `policy_declarative_framing.md` | 🟢 Cold | M2.6 | Policies state rules declaratively; rationale lives in ADRs. |
 | `diff_packaging.md` | 🟢 Cold | M2.6 | Single export mechanism (`package-branch`); four guarded workflow commands; savepoint rollback. |
 | `drift_state_coherence.md` | 🟢 Cold | M2.6 | Coherence by minimisation, not detection; container-sig as interim contract check. |
+| `agent_sandbox_two_container_separation.md` | 🟢 Cold | M2.6 | Reasoning/capability two-container separation; fused single-container harness rejected. |
+| `container_host_correspondence_mechanism.md` | 🟢 Cold | M2.6 | Diff-file correspondence; git never crosses the sandbox/host boundary. |
 
 ### Operations (`docs/operations/`)
 

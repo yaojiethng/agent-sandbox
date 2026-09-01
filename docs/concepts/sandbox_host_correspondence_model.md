@@ -24,6 +24,10 @@ This separation means the harness does not depend on git history, commit SHAs, o
 stores being shared or compatible across the boundary. Any tool that produces or consumes
 unified diffs participates in the model.
 
+Further reading: the rationale for this mechanism — git-mediated correspondence as the rejected
+alternative, and its relation to the worktree rejection — is recorded in
+[container_host_correspondence_mechanism.md](../adr/container_host_correspondence_mechanism.md).
+
 ---
 
 ## Primitives

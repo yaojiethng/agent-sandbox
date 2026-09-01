@@ -30,9 +30,9 @@ The capability layer container is always present. What varies is whether an MCP 
 
 ## Why the Layers Are Separate
 
-The capability layer must always be isolated per project — it holds the working content and defines what the agent can reach. The reasoning layer needs isolation from the host but not necessarily per-project isolation; its concern is model behaviour and conversation state, not filesystem access.
+Further reading: the rationale for the separation — the fused single-container model as the rejected alternative, and the MCP-server investigation that surfaced it — is recorded in [agent_sandbox_two_container_separation.md](../adr/agent_sandbox_two_container_separation.md).
 
-The MCP protocol is the interface when a capability layer MCP server is present. Any MCP-compatible reasoning layer is a conforming client without custom integration work. When no MCP server is present, the interface is the volume mount alone. Either way, the reasoning layer is swappable without changing the capability layer configuration.
+The capability layer must always be isolated per project; the reasoning layer needs isolation from the host but not per-project isolation. The MCP protocol is the interface when a capability layer MCP server is present. Any MCP-compatible reasoning layer is a conforming client without custom integration work. When no MCP server is present, the interface is the volume mount alone. Either way, the reasoning layer is swappable without changing the capability layer configuration.
 
 ---
 
