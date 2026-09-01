@@ -10,6 +10,13 @@
 #   3. A file that exits non-zero without markers (crash / silent zombie)
 #                                         -> flagged as failed
 #   4. A file emitting a SKIP: marker     -> treated as failure (policy)
+#   5. Aggregate line reflects per-file counts
+#   6. run_test without assertions fails; test_done emits the exact
+#      "  FAIL:" marker the runner greps
+#   7. The zombie patterns: `cmd && pass` (fails at end-of-file under
+#      set -e semantics) and an undefined function (exit 127)
+#   8. Multiple FAIL markers are counted exactly
+#   9. A FAIL marker with RC 0 still counts as failure (markers trump exit code)
 #
 # Uses RUN_TESTS_DIR to point the runner at synthetic files.
 
@@ -89,6 +96,63 @@ echo "  PASS: b1"'
 run_runner "$FIXTURE_DIR/mixed_dir"
 assert_contains "$OUT" "3 tests across 2 files, 3 passed, 0 failed, 0 skipped" \
   "runner: aggregate line sums across files"
+
+# ---------------------------------------------------------------
+# Case 6: run_test without assertions fails; test_done emits the exact
+# "  FAIL:" marker the runner greps. Locks both halves of the
+# 20260821 mitigation for the silent-zombie class.
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/noassert_dir"
+write_test "$FIXTURE_DIR/noassert_dir/test_noassert.sh" "#!/usr/bin/env bash
+source '$REPO_ROOT/tests/libs/test_common.sh'
+t_noop() { :; }
+run_test t_noop
+test_done"
+run_runner "$FIXTURE_DIR/noassert_dir"
+assert_ne "0" "$RC" "runner: assertion-less run_test fails the file"
+assert_contains "$OUT" "1 failed" "runner: NO-ASSERTION failure counted via test_done marker"
+
+# ---------------------------------------------------------------
+# Case 7: the recorded zombie patterns.
+# (a) `cmd && pass`: cmd fails, the && list is the last command, so the
+#     file exits with its failure status and no PASS is emitted  --
+#     a silent green that proves nothing unless the runner catches it.
+# (b) undefined function: exit 127 with no markers.
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/zombie_dir"
+write_test "$FIXTURE_DIR/zombie_dir/test_zombie_and_pass.sh" '#!/usr/bin/env bash
+false && echo "  PASS: never reaches here"'
+write_test "$FIXTURE_DIR/zombie_dir/test_zombie_undef_fn.sh" '#!/usr/bin/env bash
+nonexistent_helper_fn'
+run_runner "$FIXTURE_DIR/zombie_dir"
+assert_ne "0" "$RC" "runner: zombie patterns (cmd&&pass, exit 127) exit non-zero"
+assert_contains "$OUT" "FAIL test_zombie_and_pass.sh" "runner: cmd&&pass zombie reported by name"
+assert_contains "$OUT" "FAIL test_zombie_undef_fn.sh" "runner: undefined-function zombie reported by name"
+
+# ---------------------------------------------------------------
+# Case 8: multiple FAIL markers are counted exactly
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/multifail_dir"
+write_test "$FIXTURE_DIR/multifail_dir/test_multi.sh" '#!/usr/bin/env bash
+echo "  FAIL: first broken"
+echo "  FAIL: second broken"'
+run_runner "$FIXTURE_DIR/multifail_dir"
+assert_ne "0" "$RC" "runner: multi-fail file exits non-zero"
+assert_contains "$OUT" "2 tests across 1 files, 0 passed, 2 failed, 0 skipped" \
+  "runner: each FAIL marker counted"
+
+# ---------------------------------------------------------------
+# Case 9: a FAIL marker with RC 0 still counts as failure
+# (markers trump exit code  --  the counting contract the suite's
+# green/red signal rests on)
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/marker_rc0_dir"
+write_test "$FIXTURE_DIR/marker_rc0_dir/test_marker_rc0.sh" '#!/usr/bin/env bash
+echo "  FAIL: marker says broken"
+exit 0'
+run_runner "$FIXTURE_DIR/marker_rc0_dir"
+assert_ne "0" "$RC" "runner: FAIL marker with rc 0 fails the run"
+assert_contains "$OUT" "1 failed" "runner: FAIL marker counted despite rc 0"
 
 # =============================================================================
 # Run  --  note: this file drives the runner via run_runner(), so its own

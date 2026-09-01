@@ -384,23 +384,6 @@ fail loudly by design, but the seam itself is fragile). Guards on those three
 entry points would let tests source and call directly, deleting the
 extraction layer entirely.
 
-### [A] 2026-08-21  --  Marker-based pass/fail counting made silent tests invisible
-
-state: mitigated
-scoped: none
-legacy: none
-mitigation: landed this session  --  `run_test` fails assertion-less tests;
-`test_done` emits the exact `  FAIL:` marker the runner greps.
-
-Root cause was structural: the runner counts failures by grepping captured
-output for `^  FAIL:` and `run_test` used `$1 || true`. Anything that did not
-happen to print the marker  --  an undefined function (exit 127), a crashed
-fixture, a test whose only branch was `cmd && pass`  --  passed invisibly. One
-such zombie had survived multiple review passes. Residual risk: counting is
-still string-marker-based; a second output-format drift reintroduces the
-class. A runner self-test (feed it a synthetic PASS/FAIL stream, assert
-counts) would lock the contract.
-
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
 
 state: mitigated
