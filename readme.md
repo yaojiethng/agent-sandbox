@@ -2,11 +2,9 @@
 
 # Autonomous Coding Agent Sandbox
 
-This repository provides a containerized sandbox and orchestration harness
-for running autonomous coding agents safely.
+This repository provides a containerized sandbox and orchestration harness for running autonomous coding agents safely.
 
-The system isolates agents inside containers, stages their changes as diffs,
-and requires human review before repository modification.
+The system isolates agents inside containers, stages their changes as diffs, and requires human review before repository modification.
 
 ### System Invariants
 

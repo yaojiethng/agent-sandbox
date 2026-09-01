@@ -72,20 +72,12 @@ Container paths are fixed by the harness and not configurable via `.env`. The fu
 
 ## Compose Generation
 
-`scripts/run_agent.sh` generates the compose configuration on each run and
-writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<session-id>.yml`. The
-file persists after the session ends — it is the session's compose record and
-an inspection handle (e.g. `docker compose -f .compose/<session-id>.yml config`).
-Resume reuses the same SESSION_ID and overwrites its own file; each unique session
-leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the
-file is never visible in the agent workspace. `.compose/` is gitignored.
+`scripts/run_agent.sh` generates the compose configuration on each run and writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<session-id>.yml`. The file persists after the session ends — it is the session's compose record and an inspection handle (e.g. `docker compose -f .compose/<session-id>.yml config`).
+Resume reuses the same SESSION_ID and overwrites its own file; each unique session leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the file is never visible in the agent workspace. `.compose/` is gitignored.
 
 **Per-session activity log:** alongside the compose record, each session keeps a `.compose/<session-id>.log` -- a minimal `KEY=VALUE` lifecycle log (entries `last_started=` / `last_stopped=`, UTC `YYYYMMDD-HHMMSS`). `run_agent.sh` writes `last_started=` on session start/resume (and clears `last_stopped` so a running session is not shown as stopped) and `last_stopped=` on post-session teardown. `make resume --list` derives its `LAST_USED` column from `last_stopped`. The `KEY=VALUE` shape is intentionally extensible (e.g. future preflight/dry-run outcome lines) without structural change. Both `.yml` and `.log` live under `.compose/` and are gitignored. The compose record also carries the session's image-content identity: `compose_generate` bakes the loaded agent image's `agent-sandbox.container-sig` label into the record's `agent-sandbox.image-sig` field (via docker inspect at start/resume) so `make resume --list` can show `pi (<short-sig>)` without a docker dependency.
 
-**Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base
-template with any applicable overlays using `docker compose config
---no-interpolate`, bakes image names and host paths into the result, and
-preserves operator secrets as `${VAR}` for runtime resolution.
+**Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base template with any applicable overlays using `docker compose config --no-interpolate`, bakes image names and host paths into the result, and preserves operator secrets as `${VAR}` for runtime resolution.
 
 **Baked vs `${VAR}` split:** Image names, container names, service dependencies, volume definitions, and internal mount paths are baked at generation time — they are stable per project and do not vary between runs. Machine-specific values — host paths, ports, credentials — are preserved as `${VARIABLE}` and resolved from `.env` at runtime by Docker Compose.
 
@@ -101,48 +93,27 @@ preserves operator secrets as `${VAR}` for runtime resolution.
 | `serve` | Base template + delivery overlay + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
 | `dry-run` | Base template + delivery overlay + provider overlay (if present) + `src/build/docker-compose.dry-run.yml` |
 
-**Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE`
-(`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The
-delivery overlay carries the per-delivery worktree wiring, so the base
-template stays shared:
+**Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE` (`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared:
 
 - `src/build/docker-compose.copy.yml` — the per-run named sandbox volume and
 the snapshot RO mount + env (`SNAPSHOT_DIR`). Copy mode only.
 - `src/build/docker-compose.mount.yml` — the worktree bind mount at
-`/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable
-via `WORKTREE_DIR`). Mount mode only.
+`/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
 The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<session-id>.yml`).
 
-**Delivery-aware container init:** the capability-layer entrypoint branches on
-`SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
+**Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
 
 - **Copy:** the existing snapshot pipeline — `snapshot_validate` (gate 2),
-  `snapshot_init_git` (baseline commit from `baseline.tar`), and the preflight
-  check on `SNAPSHOT_DIR/baseline.tar`.
+  `snapshot_init_git` (baseline commit from `baseline.tar`), and the preflight check on `SNAPSHOT_DIR/baseline.tar`.
 - **Mount:** no snapshot. The entrypoint validates `.git` is present in the
-  bind-mounted worktree, writes the `SESSION_STATE` init marker into the
-  worktree `.git` if absent (this is the start-validation init marker; `init_sha`
-  is the worktree baseline root commit), and skips the snapshot gate/init and the
-  `baseline.tar` preflight.
+  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit), and skips the snapshot gate/init and the `baseline.tar` preflight.
 
-`SESSION_STATE` is retained in both deliveries as container-side co-located
-provenance: copy writes it in `snapshot_init_git`; mount writes it into the
-worktree `.git`, where it doubles as the init marker (see
-[`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6
-Start-contract decision).
+`SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy writes it in `snapshot_init_git`; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
 
-**Mount worktree materialization:** on a fresh mount run, `start_agent.sh`
-materializes the host worktree (`${WORKTREE_DIR}`, default
-`${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive
-`snapshot_copy_worktree` minus `baseline.tar` — the rsync copy of the project
-working tree, then a git baseline commit so `.git` exists. The container then
-writes the `SESSION_STATE` init marker. On subsequent runs the worktree already
-has `.git` and is reused directly.
+**Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive `snapshot_copy_worktree` minus `baseline.tar` — the rsync copy of the project working tree, then a git baseline commit so `.git` exists. The container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly.
 
-**File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale
-per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the
-roadmap — see the M2.6 deferred-items list.
+**File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the roadmap — see the M2.6 deferred-items list.
 
 ---
 
@@ -172,32 +143,19 @@ Provider config cannot be bind-mounted directly as `AGENT_HOME` because agents m
 
 ### Why `--volumes-from` rather than a named volume for the agent's `sandbox/` view
 
-The reasoning layer (agent) shares the capability layer's `sandbox/` mount via
-`--volumes-from` (see the compose `agent` service). This ties the agent's view
-of `sandbox/` to the capability layer container's lifecycle, so the agent can
-only access it while the capability container exists.
+The reasoning layer (agent) shares the capability layer's `sandbox/` mount via `--volumes-from` (see the compose `agent` service). This ties the agent's view of `sandbox/` to the capability layer container's lifecycle, so the agent can only access it while the capability container exists.
 
-**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only
-exposes directories via `--volumes-from` if they are declared as volumes in the
-Dockerfile (`VOLUME /home/agentuser/sandbox`).
+**`VOLUME` declaration is required for `--volumes-from` to work.** Docker only exposes directories via `--volumes-from` if they are declared as volumes in the Dockerfile (`VOLUME /home/agentuser/sandbox`).
 
-**The sandbox workdir itself is a named volume.** The compose file mounts a
-SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) at `/home/agentuser/sandbox`
-on the sandbox service. This named volume persists across `docker compose down`
-(which keeps named volumes) so the session state survives stop/start — see
-[Container State Contract](#container-state-contract) and Session Lifecycle.
+**The sandbox workdir itself is a named volume.** The compose file mounts a SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) at `/home/agentuser/sandbox` on the sandbox service. This named volume persists across `docker compose down` (which keeps named volumes) so the session state survives stop/start — see [Container State Contract](#container-state-contract) and Session Lifecycle.
 
 ---
 
 ## Container State Contract
 
-This is the as-expected record of what lives where across a session, so future
-changes (for example allowing the agent to do environment setup) preserve the
-contract knowingly.
+This is the as-expected record of what lives where across a session, so future changes (for example allowing the agent to do environment setup) preserve the contract knowingly.
 
-**The container is disposable.** Removing or rebuilding a session's containers
-loses nothing user-authored. Durable state lives in the named volume and bind
-mounts; the container writable layer holds only regenerable content.
+**The container is disposable.** Removing or rebuilding a session's containers loses nothing user-authored. Durable state lives in the named volume and bind mounts; the container writable layer holds only regenerable content.
 
 | What | Where it lives | Survives `docker compose down`? |
 |---|---|---|
@@ -208,18 +166,13 @@ mounts; the container writable layer holds only regenerable content.
 | Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, copy-in from baked image at startup | ❌ regenerated on start |
 | Caches `~/.npm`, `~/.cache` | container writable layer | ❌ disposable |
 
-Consequence: `make stop` and session teardown remove the containers (and the
-per-session network) and keep the named volume. Resume comes from the volume,
-not from stopped containers. If a future feature lets the agent do persistent
-environment setup, that state must be persisted to the named volume (or a bind
-mount), not left in the container writable layer, to keep the contract intact.
+Consequence: `make stop` and session teardown remove the containers (and the per-session network) and keep the named volume. Resume comes from the volume, not from stopped containers. If a future feature lets the agent do persistent environment setup, that state must be persisted to the named volume (or a bind mount), not left in the container writable layer, to keep the contract intact.
 
 ---
 
 ## Docker verb semantics note
 
-Docker's lifecycle verbs have specific meanings that our command shape only
-partially matches:
+Docker's lifecycle verbs have specific meanings that our command shape only partially matches:
 
 | Docker verb | Docker meaning | Our use |
 |---|---|---|
@@ -228,30 +181,13 @@ partially matches:
 | `docker compose down` | end the session; remove containers + network; keep named volumes | our teardown (`session_teardown` → `down`) |
 | `docker compose down -v` | also remove named volumes | our full reset (`session_destroy`) |
 
-Our `start` = full setup and `stop` = session teardown do not match docker's
-`start`/`stop` pause-resume semantics. This is a known divergence; a future
-decision should choose whether to inherit docker's language (and therefore
-semantics) or rename to avoid ambiguity. The harness functions are named
-`session_teardown`/`session_destroy` (intent-based) to avoid implying the
-docker `stop` verb.
+Our `start` = full setup and `stop` = session teardown do not match docker's `start`/`stop` pause-resume semantics. This is a known divergence; a future decision should choose whether to inherit docker's language (and therefore semantics) or rename to avoid ambiguity. The harness functions are named `session_teardown`/`session_destroy` (intent-based) to avoid implying the docker `stop` verb.
 
 ---
 
 ## Session exit semantics
 
-`scripts/run_agent.sh` exits 0 on a clean session end in both modes:
-standard (agent completes) and serve (operator runs `make stop`). Standard
-mode propagates a non-zero agent exit code to the caller. Teardown is
-guaranteed on every exit path after the session starts — agent completion,
-agent failure, `compose up` failure, or sandbox health-wait failure — via
-run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session
-network never leak. The teardown prints the resume command (`make resume
-SESSION_ID=<id>`) for the session just shut down, so a closing `make start`
-surfaces the exact command to continue it later. Serve mode always exits 0 —
-its session ends via
-`make stop` → `docker stop`, and the container's exit code on that path
-(SIGTERM/SIGKILL, 137/143) is an artifact of the stop mechanism, not a
-session result.
+`scripts/run_agent.sh` exits 0 on a clean session end in both modes: standard (agent completes) and serve (operator runs `make stop`). Standard mode propagates a non-zero agent exit code to the caller. Teardown is guaranteed on every exit path after the session starts — agent completion, agent failure, `compose up` failure, or sandbox health-wait failure — via run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session network never leak. The teardown prints the resume command (`make resume SESSION_ID=<id>`) for the session just shut down, so a closing `make start` surfaces the exact command to continue it later. Serve mode always exits 0 — its session ends via `make stop` → `docker stop`, and the container's exit code on that path (SIGTERM/SIGKILL, 137/143) is an artifact of the stop mechanism, not a session result.
 
 ---
 

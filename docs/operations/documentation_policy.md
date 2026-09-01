@@ -147,7 +147,7 @@ A number is valid only in the conversation or document where it appears. Use a n
 
 ### Line wrapping
 
-Write prose as single-flowing paragraphs. A hard line break falls on a sentence or paragraph boundary, never mid-thought. Apply to all prose, including guidance blocks, `AGENTS.md`, and provider-layer files. Break code comments at `~80` columns.
+Prose is one paragraph per physical line, however long the line. Never insert a line break inside a paragraph — not at sentence boundaries, not at a column limit; editors and viewers soft-wrap. Hard breaks separate blocks only: between paragraphs, headings, and list items. Applies to all prose, including guidance blocks, `AGENTS.md`, and provider-layer files. Code comments wrap at `~80` columns. Fenced code blocks and table rows are exempt.
 
 ---
 

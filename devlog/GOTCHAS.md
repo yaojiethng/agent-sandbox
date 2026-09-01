@@ -135,19 +135,12 @@ handover record.
 
 ### [G] 2026-09-01 - Editing or composing a doc whose own policy text forbids the pattern: verify the recipient file's rules first
 
-state: open
+state: probation
 scoped: M2.6
 legacy: none
-mitigation: when composing or editing a document, open the recipient file
-and check its own formatting rules before writing prose. I manually column
-wrapped two policy documents at ~80 characters; the very file being edited
-(documentation_policy.md `### Line wrapping`) forbids exactly that -- prose is
-written as single-flowing paragraphs, one paragraph per line, no manual wrap.
-The compliance failure was visible from the file itself, so it should not have
-required operator steering to catch.
+mitigation: when composing or editing a document, open the recipient file and check its own formatting rules before writing prose. I manually column wrapped two policy documents at ~80 characters; the very file being edited (documentation_policy.md `### Line wrapping`) forbids exactly that -- prose is written as single-flowing paragraphs, one paragraph per line, no manual wrap. The compliance failure was visible from the file itself, so it should not have required operator steering to catch. reworked 2026-09-01: the section now states the rule positively (never manually word wrap prose; no line break mid-paragraph, not at sentence boundaries, not at a column limit) -- the old wording's "falls on a sentence or paragraph boundary" licensed the exact misreading recorded here; governed docs swept and unwrapped (content-identical, line structure only); sweep tooling promoted as `scripts/manual/unwrap_prose.sh`. Escalated to probation (durable fix applied); drop if it does not resurface.
 
-Cross-reference: consolidated agent-side record is AGENT_FEEDBACK (hard-wrapped
-instruction blocks entry, 2026-08-09; resurfaced 2026-09-01, probation lifted to open).
+Cross-reference: consolidated agent-side record is AGENT_FEEDBACK (hard-wrapped instruction blocks entry, 2026-08-09; resurfaced 2026-09-01, probation lifted to open).
 
 ### [G] 2026-09-01 - Broad sweep launched before realigning a redesign task onto its true purpose
 

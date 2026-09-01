@@ -1,13 +1,8 @@
 # Sandbox and Host Correspondence Model
 
-The sandbox and host repository are never the same git repository — they have divergent
-histories, different baselines, and no shared object store. Yet they must stay in
-correspondence: the sandbox must know what the host looks like, the host must be able to
-receive what the sandbox produced, and across multiple sessions these two states must
-remain coherent.
+The sandbox and host repository are never the same git repository — they have divergent histories, different baselines, and no shared object store. Yet they must stay in correspondence: the sandbox must know what the host looks like, the host must be able to receive what the sandbox produced, and across multiple sessions these two states must remain coherent.
 
-This document describes the model that keeps them in correspondence across three distinct
-cases: live sandbox, stopped sandbox, and newly started sandbox.
+This document describes the model that keeps them in correspondence across three distinct cases: live sandbox, stopped sandbox, and newly started sandbox.
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 — Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
 Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
@@ -16,17 +11,11 @@ Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/de
 
 ## Core Principle
 
-Git is a tool used independently inside each repo. It is not the correspondence mechanism
-between sandbox and host. The correspondence mechanism is the diff file — a git-agnostic
-unified diff that applies cleanly when the target files are in the expected state.
+Git is a tool used independently inside each repo. It is not the correspondence mechanism between sandbox and host. The correspondence mechanism is the diff file — a git-agnostic unified diff that applies cleanly when the target files are in the expected state.
 
-This separation means the harness does not depend on git history, commit SHAs, or object
-stores being shared or compatible across the boundary. Any tool that produces or consumes
-unified diffs participates in the model.
+This separation means the harness does not depend on git history, commit SHAs, or object stores being shared or compatible across the boundary. Any tool that produces or consumes unified diffs participates in the model.
 
-Further reading: the rationale for this mechanism — git-mediated correspondence as the rejected
-alternative, and its relation to the worktree rejection — is recorded in
-[container_host_correspondence_mechanism.md](../adr/container_host_correspondence_mechanism.md).
+Further reading: the rationale for this mechanism — git-mediated correspondence as the rejected alternative, and its relation to the worktree rejection — is recorded in [container_host_correspondence_mechanism.md](../adr/container_host_correspondence_mechanism.md).
 
 ---
 
@@ -59,8 +48,7 @@ alternative, and its relation to the worktree rejection — is recorded in
 
 ## Correspondence Cycle
 
-The full lifecycle — init, running, stopped, restart — as a single sequence. Loop
-checkpoints mark where the cycle repeats.
+The full lifecycle — init, running, stopped, restart — as a single sequence. Loop checkpoints mark where the cycle repeats.
 
 ```
 [Host]                               [Sandbox]
@@ -104,17 +92,11 @@ HEAD = B
 
 **INIT — establishing correspondence**
 
-Before the container starts, the harness snapshots the host: `git archive HEAD` produces a
-tar of the committed state; rsync copies the operator's working tree alongside it. Inside
-the container, `snapshot_init_git` unpacks the tar, commits as the baseline, writes
-`init_sha` (via SESSION_STATE), then overlays the rsync copy so the working tree matches the operator's
-on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is
-the fixed reference for all diff packaging in this container lifetime.
+Before the container starts, the harness snapshots the host: `git archive HEAD` produces a tar of the committed state; rsync copies the operator's working tree alongside it. Inside the container, `snapshot_init_git` unpacks the tar, commits as the baseline, writes `init_sha` (via SESSION_STATE), then overlays the rsync copy so the working tree matches the operator's on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
 
 **RUNNING — bidirectional flow**
 
-Changes can flow in either direction at any time while the sandbox is live. All transfers
-use the same diff format and the same `make apply` command regardless of direction.
+Changes can flow in either direction at any time while the sandbox is live. All transfers use the same diff format and the same `make apply` command regardless of direction.
 
 - **Sandbox → host (mid-session checkpoint):** The autosave loop exports `uncommitted.diff`, `patches/`, and `changed-files/` under `autosave/<SESSION_ID>/`. Overwritten each tick. Operator runs `make apply DIFF=<full path to exact diff file>` on the host, reviews, commits manually.
 - **Host → sandbox (amendment):** Operator packages a host change with `make package-branch` (host-side, writes to `INPUT_DIR`). Agent reviews and commits. The next `package-branch` includes this commit in the series.
@@ -122,27 +104,13 @@ use the same diff format and the same `make apply` command regardless of directi
 
 **STOPPED — applying persisted artefacts**
 
-The operator works entirely from the persisted session artefacts. No container interaction
-is possible or required. `make draft` creates a `draft/<branch>` branch from `FROM`
-(default: `HEAD`; supply an explicit hash if the host has advanced) and applies the
-numbered diffs in order. `DIFFS=start..end` selects a sub-range — the operator's mechanism
-for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and
-merge, `make confirm` cleans up the draft branch.
+The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` creates a `draft/<branch>` branch from `FROM` (default: `HEAD`; supply an explicit hash if the host has advanced) and applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range — the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch.
 
-On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator
-runs `make reject`, amends the failing diff in the source export folder, and re-runs
-`make draft`. The diff series is the source of truth; the draft branch is always derived
-from it.
+On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
 **RESTART — resetting correspondence**
 
-On the next container start, the harness snapshots the current host HEAD — incorporating
-all sessions confirmed since the last container — and establishes a new `init_sha` from
-that snapshot. What carries over: session artefacts in `session-diffs/` persist in
-`SANDBOX_DIR` and remain available to the operator; provider config files are copied into
-the new container at startup. What resets: `init_sha` is recomputed from scratch; agent
-session context (conversation history, in-progress work) is lost unless the provider
-supports session resume (M2.6 scope).
+On the next container start, the harness snapshots the current host HEAD — incorporating all sessions confirmed since the last container — and establishes a new `init_sha` from that snapshot. What carries over: session artefacts in `session-diffs/` persist in `SANDBOX_DIR` and remain available to the operator; provider config files are copied into the new container at startup. What resets: `init_sha` is recomputed from scratch; agent session context (conversation history, in-progress work) is lost unless the provider supports session resume (M2.6 scope).
 
 ---
 
@@ -150,15 +118,13 @@ supports session resume (M2.6 scope).
 
 One format. Two directions. Same tools.
 
-Produced by `git diff` with `index <sha>..<sha>` lines stripped. Applied by `git apply`
-with the same stripping:
+Produced by `git diff` with `index <sha>..<sha>` lines stripped. Applied by `git apply` with the same stripping:
 
 ```bash
 grep -v '^index ' "$DIFF" | git -C "$TARGET_DIR" apply
 ```
 
-No `git am`, no `format-patch`, no git metadata headers. Works identically in both
-directions and on both host and container.
+No `git am`, no `format-patch`, no git metadata headers. Works identically in both directions and on both host and container.
 
 ---
 
@@ -179,8 +145,7 @@ directions and on both host and container.
 
 ## Correspondence Across Parallel Sessions
 
-Two sessions against different worktrees maintain independent correspondence with their
-respective host worktrees. Every token that could collide is scoped per worktree:
+Two sessions against different worktrees maintain independent correspondence with their respective host worktrees. Every token that could collide is scoped per worktree:
 
 | Token | Scoped by | Collision possible? |
 |---|---|---|
@@ -189,28 +154,15 @@ respective host worktrees. Every token that could collide is scoped per worktree
 | Container labels | `project-dir` label scopes lookup | No — label lookup is project-scoped |
 | `draft-state` | `SANDBOX_DIR` | No — separate file per worktree |
 
-Each worktree session runs its correspondence cycle independently. Merging worktree output
-to the main repo branch is standard git — the harness does not orchestrate cross-worktree
-merges.
+Each worktree session runs its correspondence cycle independently. Merging worktree output to the main repo branch is standard git — the harness does not orchestrate cross-worktree merges.
 
 ---
 
 ## Model Gaps
 
-**Mixing `make apply` and `make draft` within a single session:** Resolved. Under the
-current model the two paths are structurally separate: `make apply` applies an exact
-diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in
-the working tree; `make draft` resolves from the `session` channel
-(`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies
-committed diffs to a branch. The artefact locations do not overlap and there is no
-shared application mechanism. No undefined behaviour remains.
+**Mixing `make apply` and `make draft` within a single session:** Resolved. Under the current model the two paths are structurally separate: `make apply` applies an exact diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in the working tree; `make draft` resolves from the `session` channel (`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies committed diffs to a branch. The artefact locations do not overlap and there is no shared application mechanism. No undefined behaviour remains.
 
-**Mixed session types across sessions:** Closed as explicitly out of scope. A project
-using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions
-(`package-branch` / `make draft`) against the same repo involves intentionally different
-workflows targeting different artefact channels. The harness makes no claim to coordinate
-across session types, and doing so is not intended behaviour. If cross-session-type
-coordination becomes a real use case, it warrants a story at that time.
+**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions (`package-branch` / `make draft`) against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
 
 ---
 

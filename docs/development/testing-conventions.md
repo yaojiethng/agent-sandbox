@@ -1,7 +1,6 @@
 # Testing Conventions
 
-Patterns, anti-patterns, templates, and checklists for writing tests in this
-project. For policy and rules, see [`testing_policy.md`](testing_policy.md).
+Patterns, anti-patterns, templates, and checklists for writing tests in this project. For policy and rules, see [`testing_policy.md`](testing_policy.md).
 
 ---
 
@@ -31,8 +30,7 @@ test_draft_applies_patches() {
 
 ### Pattern 2: Unique Paths Per Helper Call
 
-When a helper creates subdirectories, use paths unique to the caller's
-SANDBOX_DIR, not shared paths:
+When a helper creates subdirectories, use paths unique to the caller's SANDBOX_DIR, not shared paths:
 
 ```bash
 # Right: sandbox path is unique per SANDBOX_DIR
@@ -53,9 +51,7 @@ make_session() {
 
 ### Pattern 3: Cleanup in Reverse Order
 
-When tests create nested state, clean up in reverse order of creation. The
-`FIXTURE_DIR` trap handles top-level cleanup; helpers clean only what they
-own.
+When tests create nested state, clean up in reverse order of creation. The `FIXTURE_DIR` trap handles top-level cleanup; helpers clean only what they own.
 
 ---
 
@@ -136,8 +132,7 @@ make_project() {
 
 ### Anti-Pattern 4: Cross-Test-File Sourcing
 
-**Symptom:** Sourcing a test file to reuse its helpers executes its tests as
-a side effect and may corrupt state.
+**Symptom:** Sourcing a test file to reuse its helpers executes its tests as a side effect and may corrupt state.
 
 ```bash
 # Wrong
@@ -148,10 +143,7 @@ source "$REPO_ROOT/test_draft_workflow.sh"
 
 ### Anti-Pattern 5: Testing Absence of a Wrong Thing
 
-**Symptom:** Test checks for absence of a specific string variant when a
-positive assertion already covers the invariant. Fragile — there are infinite
-variants of "wrong." If the docstring says "required," it cannot also claim a
-default; testing "required" is sufficient.
+**Symptom:** Test checks for absence of a specific string variant when a positive assertion already covers the invariant. Fragile — there are infinite variants of "wrong." If the docstring says "required," it cannot also claim a default; testing "required" is sufficient.
 
 ```bash
 # Wrong — fragile, infinite wrong variants
@@ -307,8 +299,7 @@ while IFS= read -r line; do
 done <<< "$stdout"
 ```
 
-This pattern covers `exec` calls, subprocess scripts, and sourced function
-calls in one harness.
+This pattern covers `exec` calls, subprocess scripts, and sourced function calls in one harness.
 
 ---
 

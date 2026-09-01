@@ -23,6 +23,8 @@ Key behavioral rules:
 
 Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
 
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](docs/operations/documentation_policy.md) `### Line wrapping`.
+
 When writing code, always take into account the following:
 
 1. Does this need to exist?   -> no: skip it (YAGNI)

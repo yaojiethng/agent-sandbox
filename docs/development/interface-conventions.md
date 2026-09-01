@@ -1,7 +1,6 @@
 # Interface Conventions
 
-Conventions for all user- and agent-facing interfaces: CLI, TUI, and API
-contracts.
+Conventions for all user- and agent-facing interfaces: CLI, TUI, and API contracts.
 
 ---
 
@@ -71,31 +70,21 @@ Every CLI tool must implement `--help` and display:
 
 ### Dispatcher-level help contract (the CLI subcommand dispatcher)
 
-The `agent-sandbox` dispatcher and the leaf commands it routes to make one
-uniform help promise across every subcommand. A subcommand script keeps its own
-`usage()`, and a change to a `--help` surface applies once to all subcommands
-that share it.
+The `agent-sandbox` dispatcher and the leaf commands it routes to make one uniform help promise across every subcommand. A subcommand script keeps its own `usage()`, and a change to a `--help` surface applies once to all subcommands that share it.
 
 - **`--help` and `-h` delegate before any required-arg validation.** For any
-  subcommand, `agent-sandbox <sub> --help` (and `-h`) routes to that
-  subcommand's own help and exits without requiring the subcommand's flags.
+  subcommand, `agent-sandbox <sub> --help` (and `-h`) routes to that subcommand's own help and exits without requiring the subcommand's flags.
   The dispatcher validates required args only for actual runs, never for help.
 - **The child owns the help content.** The dispatcher routes to the child
-  script's help via `exec`; it does not duplicate the help text. This matches
-  the exec-over-sourcing dispatch convention (below).
+  script's help via `exec`; it does not duplicate the help text. This matches the exec-over-sourcing dispatch convention (below).
 - **`help <sub>` and `<sub> --help` are equivalent.** Both resolve to the same
   child help output.
 - **`help` is itself a subcommand.** `agent-sandbox help`, `help --help`, and
-  `help -h` all show the subcommand list. `route_help` handles `help` by
-  printing that list and `exit 0`; it never re-dispatches, so there is no
-  recursion.
+  `help -h` all show the subcommand list. `route_help` handles `help` by printing that list and `exit 0`; it never re-dispatches, so there is no recursion.
 - **The subcommand list is a single source of truth.** The dispatcher prints
   the valid-subcommands set from one shared helper, not from inline copies.
 - **A leaf script handles its own `--help` before its own arg validation.**
-  Each subcommand script calls `parse_help_flag "$@"` (or equivalent) before
-  checking its required flags, so a direct `scripts/<sub>.sh --help` also
-  prints help and exits 0. `usage` is a pure reporter: it prints and returns;
-  the caller decides the exit code (`exit 0` for help, `exit 1` for an error).
+  Each subcommand script calls `parse_help_flag "$@"` (or equivalent) before checking its required flags, so a direct `scripts/<sub>.sh --help` also prints help and exits 0. `usage` is a pure reporter: it prints and returns; the caller decides the exit code (`exit 0` for help, `exit 1` for an error).
 
 ## 5. Exit Codes
 
@@ -227,14 +216,11 @@ Test: can a reader act correctly from the value alone?
 
 ## TUI Conventions
 
-To be defined. TUI extensions (e.g. interactive pickers, progress displays)
-share the stdout/stderr discipline and exit-code conventions defined in the
-CLI section above.
+To be defined. TUI extensions (e.g. interactive pickers, progress displays) share the stdout/stderr discipline and exit-code conventions defined in the CLI section above.
 
 ---
 
 ## API Contracts
 
 API contracts are defined in [`docs/architecture/execution_model.md`](../architecture/execution_model.md).
-Interface-level guarantees (container lifecycle, mount shape, compose
-contracts, provider interface) are architecture invariants, not CLI surface.
+Interface-level guarantees (container lifecycle, mount shape, compose contracts, provider interface) are architecture invariants, not CLI surface.

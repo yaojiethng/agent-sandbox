@@ -36,9 +36,7 @@
 
 ## Phase A — Fresh build (required for the image-signature gate)
 
-The option-(c) gate fails if the running image carries **no** `container-sig`
-label (a pre-two-sig build) or a **stale** signature. Build fresh so the label
-matches the current source.
+The option-(c) gate fails if the running image carries **no** `container-sig` label (a pre-two-sig build) or a **stale** signature. Build fresh so the label matches the current source.
 
 ```bash
 cd /path/to/agent-sandbox   # repo that provides `make build`/`make dry-run`
@@ -66,8 +64,7 @@ make dry-run PROVIDER=pi \
   --sandbox=/tmp/drytest/sandbox
 ```
 
-(`--name/--project/--sandbox` come from your sandbox Makefile/env normally; the
-above is the direct equivalent.)
+(`--name/--project/--sandbox` come from your sandbox Makefile/env normally; the above is the direct equivalent.)
 
 ### Expected stdout sequence
 
@@ -83,8 +80,7 @@ Cleaning up containers...
              (exit code 0)
 ```
 
-There is **no** `=== Phase 1: capability layer ===` / `=== Phase 2: reasoning
-layer ===` block and **no** `compose exec` in the flow.
+There is **no** `=== Phase 1: capability layer ===` / `=== Phase 2: reasoning layer ===` block and **no** `compose exec` in the flow.
 
 ### What to capture and feed back
 
@@ -107,22 +103,17 @@ layer ===` block and **no** `compose exec` in the flow.
    status=PASS
    status=PASS
    ```
-   (The `container=` line MUST match the image name for that layer: sandbox
-   record = `{{SANDBOX_IMAGE_NAME}}`, agent record = `{{AGENT_IMAGE_NAME}}`.)
+   (The `container=` line MUST match the image name for that layer: sandbox record = `{{SANDBOX_IMAGE_NAME}}`, agent record = `{{AGENT_IMAGE_NAME}}`.)
 
 ---
 
 ## Phase C — Prove start-up execution (the point of this change)
 
-The probes must ALREADY have run by the time `up -d` returns — orchestration
-never exec's them.
+The probes must ALREADY have run by the time `up -d` returns — orchestration never exec's them.
 
-**1. No `compose exec` in the entirety of a dry-run.** Re-run dry-run with
-`--trace` (or `DOCKER_TRACE_LOG=/tmp/drytrace bash my dry-run`) and confirm there
-is **no** line containing `compose exec`; there **is** a single `compose up`.
+**1. No `compose exec` in the entirety of a dry-run.** Re-run dry-run with `--trace` (or `DOCKER_TRACE_LOG=/tmp/drytrace bash my dry-run`) and confirm there is **no** line containing `compose exec`; there **is** a single `compose up`.
 
-**2. Container start-up logs show the probe.** The sandbox entrypoint should
-emit, before the stay-alive comment block:
+**2. Container start-up logs show the probe.** The sandbox entrypoint should emit, before the stay-alive comment block:
 ```
 entrypoint: running start-up command: bash /dry_run_capability.sh
 ```
@@ -131,12 +122,9 @@ Grab it during the run (container is up while the agent probe runs):
 # in another terminal, DURING the dry-run:
 docker logs sandbox-drytest-<session> 2>&1 | grep 'running start-up command'
 ```
-The agent container similarly runs its probe at start-up (its provider
-entrypoint fulfills the `command:` with `bash /dry_run_reasoning.sh`).
+The agent container similarly runs its probe at start-up (its provider entrypoint fulfills the `command:` with `bash /dry_run_reasoning.sh`).
 
-**3. The sandbox STAYS UP (prelude semantic).** Because the reasoning layer
-mounts sandbox/ via `--volumes-from` and needs it healthy for the container_network (cross-component) checks,
-the sandbox must NOT exit after its probe. During the wait window, confirm:
+**3. The sandbox STAYS UP (prelude semantic).** Because the reasoning layer mounts sandbox/ via `--volumes-from` and needs it healthy for the container_network (cross-component) checks, the sandbox must NOT exit after its probe. During the wait window, confirm:
 ```bash
 # in another terminal, DURING the wait:
 docker ps --format '{{.Names}}\t{{.Status}}' | grep drytest
@@ -150,8 +138,7 @@ docker ps --format '{{.Names}}\t{{.Status}}' | grep drytest
 Proves the option-(c) gate hard-fails on a stale image.
 
 1. After a clean Phase B **PASS**, modify any **source** file the signature
-   covers (e.g. touch `scripts/dry_run_capability.sh` or add a blank line to a
-   `src/` file) **without rebuilding**.
+   covers (e.g. touch `scripts/dry_run_capability.sh` or add a blank line to a `src/` file) **without rebuilding**.
 2. Re-run the same `make dry-run`.
 3. **Expected:** Phase 3 FAILS — `dry_run_image_verify` reports the running
    image's `container-sig` diverges from the recomputed source signature:
@@ -160,8 +147,7 @@ Proves the option-(c) gate hard-fails on a stale image.
    Phase 3 FAILED  --  N record check(s) failed.
    === dry-run: FAILED ===
    ```
-   and the command exits non-zero. (This is the hard gate that replaces the old
-   staleness warning; it forces a rebuild.)
+   and the command exits non-zero. (This is the hard gate that replaces the old staleness warning; it forces a rebuild.)
 4. `docker compose down` still runs (teardown is unaffected by verify failure).
 
 ---
@@ -186,7 +172,4 @@ Confirm `down -v` is used iff `--reset-volume`/persist flags request it:
 | E2E-5 | Stale image → hard FAIL | `Phase 3 FAILED` + non-zero exit |
 | E2E-6 | Teardown correct | `down` (or `down -v` only with reset flag) |
 
-**Feed back:** (1) full dry-run stdout/stderr, (2) both record file contents,
-(3) the `docker logs` lines showing `running start-up command`, (4) `docker ps`
-during the wait, (5) output of the Phase D negative test, and (6) any deviation
-from the expected sequences above.
+**Feed back:** (1) full dry-run stdout/stderr, (2) both record file contents, (3) the `docker logs` lines showing `running start-up command`, (4) `docker ps` during the wait, (5) output of the Phase D negative test, and (6) any deviation from the expected sequences above.

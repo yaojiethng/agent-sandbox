@@ -169,11 +169,12 @@ when a session turns edit-heavy.
 
 ### [A] 2026-08-09  --  Hard-wrapped instruction blocks and inconsistent prose wrapping
 
-state: open
+state: probation
 scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` gained `### Line wrapping` (single-flowing prose; hard breaks on sentence/paragraph boundaries; ~80 cols for code comments) + audit-check entry. Wrap remediation applied across the frequently-read set (AGENTS.md x2, skills, policy files, cli-conventions, adr_policy, handover_policy). Monitor for resurfacing; the M3 doc-bloat/audit sweeps the non-frequently-read remainder. When confirmed durable, delete and record in changelog/roadmap.
 resurfaced: session `20260901-03`  --  first confirmed resurfacing, so probation is lifted back to open. Two policy documents were manually column-wrapped at ~80 characters, misreading "single-flowing paragraphs" as a license to wrap at sentence boundaries; the rule is positive (one paragraph per line, no column breaks). Lesson added: when composing or editing, match the recipient file's own line form. Operator-side record: GOTCHAS `2026-09-01` (editing a doc whose own policy text forbids the pattern).
+reworked: 2026-09-01  --  the `### Line wrapping` wording was rewritten to state the rule positively (never manually word wrap prose; no line break mid-paragraph, not at sentence boundaries, not at a column limit), removing the sentence-boundary license that caused the resurfacing; the pi-layer AGENTS.md Write Discipline section carries the same rule in brief; the governed doc set was swept and unwrapped (content-identical, line structure only). Second fix applied  --  escalated to probation; drop if it does not resurface. Sweep tooling promoted at rework time: `scripts/manual/unwrap_prose.sh` (--check detector mode; unwrap with built-in structure-preserving verification, restores on failure) is the current sweep solution -- run it over the governed set if this resurfaces while on probation.
 
 ### [A] 2026-08-09  --  Non-ASCII punctuation under a plain-ASCII doc policy
 

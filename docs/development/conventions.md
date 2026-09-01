@@ -1,7 +1,6 @@
 # Conventions
 
-Index of coding and interface conventions for the agent-sandbox project. Each
-category maps to its canonical document.
+Index of coding and interface conventions for the agent-sandbox project. Each category maps to its canonical document.
 
 | Category | Document | Scope |
 |---|---|---|
@@ -9,8 +8,7 @@ category maps to its canonical document.
 | Bash coding | [`bash-coding-conventions.md`](bash-coding-conventions.md) | Language rules, traps as positive rules, dependency management |
 | Testing | [`testing-conventions.md`](testing-conventions.md) | Fixture patterns, anti-patterns, templates, checklists, debug steps |
 
-Policy documents govern process, not code shape. Conventions govern code shape
-within their category.
+Policy documents govern process, not code shape. Conventions govern code shape within their category.
 
 | Category | Policy document |
 |---|---|
