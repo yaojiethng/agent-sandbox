@@ -455,3 +455,23 @@ a nonexistent libs/dirs.sh path"  --  rotted until noticed by accident. Cheapest
 fix: a non-gating `make test-knowledge-smoke` running each script under
 `bash -n` (syntax only) plus shellcheck, catching structural rot without
 asserting on their nondeterministic behavior.
+
+### [A] 2026-09-01  --  Manual column-wrapping of prose violates the single-flowing-paragraph rule
+
+state: open
+scoped: none
+legacy: "hard-wrapped instruction blocks and inconsistent prose wrapping" (`2026-08-09`, probation -- resurfacing confirmed)
+mitigation: when composing or editing a document, match the recipient
+file's own line form. The convention in this repo (documentation_policy.md
+`### Line wrapping`) is **single-flowing paragraphs**: each paragraph sits on
+one line, `write` produces long lines, and no manual column wrap is applied.
+
+This is a resurfacing of the `2026-08-09` probation entry. That durable fix
+changed `documentation_policy.md`'s `### Line wrapping` to ``single-flowing
+prose; hard breaks on sentence/paragraph boundaries``. I still manually wrapped
+two policy documents at ~80 characters, misreading ``single-flowing
+paragraphs`` as ``wrap at sentence boundaries`` and applying column wrapping
+-- the exact pattern the rule forbids. The rule is positive (one paragraph per
+line, no column breaks), not a license to wrap at sentence ends. Flag: the
+`2026-08-09` entry's ``probation`` status should be reviewed -- this is its
+first confirmed resurfacing.

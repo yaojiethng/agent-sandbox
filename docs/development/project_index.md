@@ -105,7 +105,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `story_policy.md` | 🟡 Warm | M2 | Story lifecycle: creation, graduation, closure. |
 | `study_policy.md` | 🟡 Warm | M2 | Study lifecycle: structure, states, recommendation, closure (née `investigation_policy.md`). |
 | `discussion_policy.md` | 🟡 Warm | M2 | Discussion doc naming, type hub, lifecycle. |
-| `adr_policy.md` | 🟡 Warm | M2 | ADR lifecycle: creation, content, supersede protocol. |
+| `adr_policy.md` | 🟡 Warm | M2 | ADR rationale record: purpose, unit of record, liveness/evolution, statuses, archive, naming, content. |
 | `roadmap_policy.md` | 🟢 Cold | M2 | Roadmap maintenance rules. Iteration-boundary update model. |
 | `documentation_policy.md` | 🟢 Cold | M2 | Documentation structure rules. Only changes if the doc model changes. |
 | `task_policy.md` — retired | — | M2 | Replaced by `iteration_policy.md`. Deleted. |

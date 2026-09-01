@@ -143,3 +143,29 @@ close, cross-check every `- [ ]` entry against its referenced/latest handover's 
 the handover is Closed (and its ACs met), flip the roadmap item and note it as a post-close
 correction. Do not trust the checkbox to have been maintained; verify it against the
 handover record.
+
+### [G] 2026-09-01 - Editing or composing a doc whose own policy text forbids the pattern: verify the recipient file's rules first
+
+state: open
+scoped: M2.6
+legacy: none
+mitigation: when composing or editing a document, open the recipient file
+and check its own formatting rules before writing prose. I manually column
+wrapped two policy documents at ~80 characters; the very file being edited
+(documentation_policy.md `### Line wrapping`) forbids exactly that -- prose is
+written as single-flowing paragraphs, one paragraph per line, no manual wrap.
+The compliance failure was visible from the file itself, so it should not have
+required operator steering to catch.
+
+### [G] 2026-09-01 - Broad sweep launched before realigning a redesign task onto its true purpose
+
+state: open
+scoped: M2.6
+legacy: none
+mitigation: when a task is a redesign, confirm the objective and the unit of
+work with the operator before starting exploration. I opened this iteration
+fixated on the narrow ``partial-supersede status freshness`` framing and ran a
+broad roadmap/deferred/gotchas/agent-feedback sweep; the operator steered that
+the real objective was a redesign of what an ADR is (a living, component-scoped
+rationale record), which subsumed the status problem as a symptom. A redesign
+task should first establish purpose, then scope the exploration to it.

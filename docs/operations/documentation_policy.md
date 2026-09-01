@@ -13,10 +13,10 @@ Each document belongs to **exactly one** of the following categories:
 | Folder | Purpose |
 |---|---|
 | `architecture/` | Implementation design and decisions |
-| `concepts/` | Conceptual model and principles |
+| `concepts/` | The conceptual models the system runs on: abstract state transitions, multi-component interactions, principles of interaction. The *what* at the conceptual level. |
 | `operations/` | How to run the system |
 | `development/` | Contributor workflow, policy, and active planning |
-| `discussions/` | Investigation and story documents -- reasoning records, not current system description |
+| `adr/` | The rationale (the *why*) behind standing principles, interface shapes, and contracts. Superseded or awaiting-review ADRs live in `adr/archive/`. |
 
 Architecture documents must not describe things a frozen layer does not yet do. The layer model and freeze definitions are in [`system_overview.md`](../architecture/system_overview.md#architecture-layer-model); current freeze status per file is tracked in [`project_index.md`](../development/project_index.md).
 
@@ -51,6 +51,10 @@ Every pull request must answer: **"Does this change system behaviour?"**
 - **No** -- no documentation changes required.
 
 This question must appear in the pull request template as a required checkbox.
+
+### Record invariant shifts as they happen
+
+Record a change to an invariant, interface, or contract at the point it is made, not only in a close-time cleanup. Deferring an invariant check to iteration close lets a stale document stand during the work it governs.
 
 ### Code example propagation check
 
@@ -161,32 +165,23 @@ Four documents govern agent behaviour. Each answers a distinct question and must
 
 ### Concepts docs
 
-A concepts doc gives architecture docs a stable reference target for conceptual grounding -- when a feature has non-obvious invariants, introduces a new primitive, or interacts with enough other components that the architecture doc alone is insufficient.
+A concepts doc states a conceptual model the system runs on: abstract state transitions, multi-component interactions, or principles of interaction that no single component owns. It carries the *what* at the conceptual level. It is not orientation to a component.
 
-Concepts docs live in `docs/concepts/`. Created on demand, not on schedule -- the trigger is repeated clarifying questions about the same area, or a feature that agents will need to reason about frequently when designing future changes.
+A concept doc links to the ADR that explains why its model was chosen. The ADR workflow and production guidance live in [`adr_policy.md`](adr_policy.md).
 
-**When to recommend one (Step 3 assessment):** present a recommendation when any of the following apply:
+Suggest creating an ADR when:
+
 
 - The feature introduces a new primitive or model that other components will need to reason about
 - The area has non-obvious invariants that cannot be stated concisely in the architecture doc
 - A design doc exists for the area and is too long or branched to serve as a stable reference link
 
-If none apply, recommend skipping and state why. If no design doc exists, note that -- distillation requires source material.
+Distill a design doc into an ADR by the following process:
 
-**How to produce one (distillation pass):** produce by distillation from the design doc, not from scratch:
-
-1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in" language.
+ 1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in" language.
 2. Remove command shapes and implementation detail that belong in the architecture doc.
 3. Keep: primitives, invariants, design rationale, and collision or interaction tables.
 4. During active development, links to design and discussion documents are expected.
-
-**Post-close bookkeeping cleanup:** at sub-milestone close, if a concepts doc was produced:
-
-1. Firm up any invariants that shifted during implementation.
-2. Replace links to design and discussion documents with links to the architecture docs that now exist.
-3. Update any status note to name the condition that triggered cleanup, not the workflow mechanism name.
-
-This is a link-and-invariant pass, not a rewrite. When in doubt whether a concepts doc is warranted, recommend skipping.
 
 ---
 
@@ -210,6 +205,7 @@ Rules:
 - `**Status:**` must be the first line after the title on all `story_` and `investigation_` documents. No preamble before it.
 - Superseded and resolved documents must have a blockquote redirect immediately after the status line, naming the target document explicitly.
 - Architecture, concepts, and policy documents do not carry a status line -- they are governed by the freeze table in `project_index.md`.
+- ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md), not here.
 - Top-level sections use `##`. Subsections use `###`. Use `####` only inside long task lists where grouping is genuinely needed -- not for general document structure.
 
 ---
