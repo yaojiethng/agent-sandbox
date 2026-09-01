@@ -85,8 +85,8 @@ Temperature reflects the stability of what a document describes — not how care
 
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
-| `agent_workflow.md` | 🟢 Cold | M2.1 | Rescoped as conceptual entry point and policy map. Defines the three-layer workflow expression model (policy documents, skill files, prompt templates) and maps canonical ownership across all policy documents. |
-| `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
+| `agent_workflow.md` | 🟢 Cold | M2.6 | Rescoped as conceptual entry point and policy map. Defines the three-layer workflow expression model (policy documents, skill files, prompt templates) and maps canonical ownership across all policy documents. |
+| `autonomous_task.md` | 🟢 Cold | M2.6 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
 | `two_layer_model.md` | 🟢 Cold | M2.6 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
 | `sandbox_identity.md` | 🟡 Warm | M2.6 | Identity model: primitives, SESSION_ID derivation, naming, label schema, container-sig, registry, SESSION_STATE. |

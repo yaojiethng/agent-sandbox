@@ -137,7 +137,7 @@ New and changed prose meets ASD-STE100. The operative test for each word, phrase
 
 State encoding rules (for example dash forms and punctuation characters) as instructions, not prohibitions. A prohibition forces laborious rephrasing; an instruction gives the allowed form directly. For example, state "write a dash as a space-separated hyphen" rather than "do not use an em-dash".
 
-**Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
+**Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
 
 ### Numbering and cross-references
 

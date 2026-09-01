@@ -69,7 +69,7 @@ not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero
 return triggers script exit identically. Bare `exit` in a sourced function
 is a latent bug if the function is ever called from a different context
 (e.g. test harness, sub-shell, interactive use). Entrypoint scripts
-(`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md) rule 3.1.
+(`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1.
 
 ### [G] 2026-08-18 - Table-row append edits must keep the anchor row in newText
 

@@ -30,4 +30,4 @@ The format and content of `TASK.md` are defined in M3.
 |---|---|
 | [`iteration_policy.md`](../operations/iteration_policy.md) | Interactive workflow — how TASK.md is produced |
 | [`execution_model.md`](../architecture/execution_model.md) | Operator input channel — how TASK.md reaches the container |
-| [`roadmap.md`](../development/roadmap.md) | M3 milestone — autonomous task execution scope |
+| [`roadmap.md`](../../devlog/roadmap.md) | M3 milestone — autonomous task execution scope |

@@ -112,6 +112,6 @@ Use the cheapest tier that catches the failure class. Code-based for regressions
 
 ## Related
 
-- [`20260522-story-active-prompt_eval_infrastructure.md`](../discussions/20260522-story-active-prompt_eval_infrastructure.md)  --  Investigation findings, open questions, case study analysis
+- [`20260522-story-active-prompt_eval_infrastructure.md`](../../devlog/discussions/20260522-story-active-prompt_eval_infrastructure.md)  --  Investigation findings, open questions, case study analysis
 - [`/tmp/eval-new-session.sh`](/tmp/eval-new-session.sh)  --  Concrete eval script for new-session prompts
 - `docs/operations/handover_policy.md#related-skills`  --  Skill->policy dependency mapping

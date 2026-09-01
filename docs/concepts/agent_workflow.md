@@ -150,4 +150,4 @@ When a rule appears to exist in two documents in this map, apply the canonical o
 | External contract: commands, naming, guarantees | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) |
 | Iteration workflow (authoritative) | [`../operations/iteration_policy.md`](../operations/iteration_policy.md) |
 | Provider AGENTS.md contract and reference template | [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) |
-| Onboarding and running guide | [`../operations/quickstart.md`](../operations/quickstart.md) |
+| Onboarding and running guide | [`../operations/quickstart.md`](../development/quickstart.md) |

@@ -36,4 +36,4 @@ The agent must have run a grep or read the relevant file during the iteration to
 
 ---
 
-**Depends on:** [`handover_policy.md`](../../docs/operations/handover_policy.md), [`iteration_policy.md`](../../docs/operations/iteration_policy.md)
+**Depends on:** [`handover_policy.md`](../../../../docs/operations/handover_policy.md), [`iteration_policy.md`](../../../../docs/operations/iteration_policy.md)

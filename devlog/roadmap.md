@@ -7,7 +7,7 @@ active-milestone-status: in-progress
 
 This roadmap defines milestones, incremental goals, and tasks for the agent-sandbox project. It is designed to allow stepwise development and learning, with progress tracking for agents or humans.
 
-Maintenance rules - task granularity, cleanup on completion, section removal - are defined in [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md).
+Maintenance rules - task granularity, cleanup on completion, section removal - are defined in [`docs/operations/roadmap_policy.md`](../docs/operations/roadmap_policy.md).
 
 ---
 
@@ -55,7 +55,7 @@ Open stories under active investigation. Closed stories are removed from this li
 
 **Objective:** Separate the harness into a reasoning layer (agent container) and a capability layer (sandbox container, working content, optional MCP server). This is the foundational architectural change that enables vault workflows, webapp workflows, provider swapping, and autonomous task execution. All M1.x architecture documents are hot during this milestone and updated sub-milestone by sub-milestone.
 
-Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
+Conceptual model: [`docs/concepts/two_layer_model.md`](../docs/concepts/two_layer_model.md)
 Design rationale: [`investigation_mcp_server.md`](./discussions/investigation_mcp_server.md) - Conclusion
 
 #### M2.4 - Session and Config Persistence
@@ -147,7 +147,7 @@ workaround and the `SCRIPT_DIR` shared-lib side effect. Split into three session
   (docker-stub forces never-healthy, asserts `compose down` runs).
   Surfaced session `20260810-13`; resolved by the `20260810-14` teardown refactor,
   confirmed `20260812-12`.
-- [x] **Terminology sweep - deconflict the term "session"; register `session` + `iteration` as reserved technical terms** - mapping REVERSED from the design walk (operator, session `20260819-09`). Two reserved technical terms in the register ([`docs/concepts/terminology.md`](../concepts/terminology.md)): [`session`](../concepts/terminology.md#session) = one container lifecycle (start -> teardown; identified by `SESSION_ID`); [`iteration`](../concepts/terminology.md#iteration) = one work cycle producing a handover + commit. **Replaced terms:** `run`/`RUN_ID` -> `session`/`SESSION_ID` (container lifecycle, phase 4); `new-session` skill -> `new-iteration`; `unit` dropped; bundle CLI/flags/vars (`SESSION_*` -> `BUNDLE_*`, phase 5A/5B). All consumers swept (policy docs, prompts, skills, concepts, `project_index`, Makefile, tests). Historical handovers not retro-renamed (Bucket C3); dual-grep bridge logged as GOTCHAS `[G] 2026-08-19`. Sessions `20260819-09` through `20260819-15`. Suite 476/0/0 (phase 4), 462/0/0 (phase 5).
+- [x] **Terminology sweep - deconflict the term "session"; register `session` + `iteration` as reserved technical terms** - mapping REVERSED from the design walk (operator, session `20260819-09`). Two reserved technical terms in the register ([`docs/concepts/terminology.md`](../docs/concepts/terminology.md)): [`session`](../docs/concepts/terminology.md#session) = one container lifecycle (start -> teardown; identified by `SESSION_ID`); [`iteration`](../docs/concepts/terminology.md#iteration) = one work cycle producing a handover + commit. **Replaced terms:** `run`/`RUN_ID` -> `session`/`SESSION_ID` (container lifecycle, phase 4); `new-session` skill -> `new-iteration`; `unit` dropped; bundle CLI/flags/vars (`SESSION_*` -> `BUNDLE_*`, phase 5A/5B). All consumers swept (policy docs, prompts, skills, concepts, `project_index`, Makefile, tests). Historical handovers not retro-renamed (Bucket C3); dual-grep bridge logged as GOTCHAS `[G] 2026-08-19`. Sessions `20260819-09` through `20260819-15`. Suite 476/0/0 (phase 4), 462/0/0 (phase 5).
 - [x] **`start`/`resume` redesign (two-command split)** - **Design SETTLED** (walk `20260818-02` + F2 `20260821-02`, D1-D11): `make start` unconditionally starts a NEW session (interactive form = provider/config wizard, done `20260821-06`); `make resume` inventories the `.compose/<session-id>.yml` registry and resumes (`--session-id=<id>` silent; `PROVIDER=` narrows; `--interactive` picker+confirm; bare -> help). Supersedes the earlier merged-wizard sketch and the `--run` flag. The serve/dry-run interface is a separate deferred entry below.
 - [x] **Start/serve/dry-run interface + dry-run readiness/execution refactor** - serve became an on/off toggle on `start` (standalone verb removed, `20260823-16`); dry-run reshaped into a readiness/ownership refactor (`20260828-01`): bearer containers each run readiness self-checks and write per-container diagnostics records; a hard image-signature (staleness) gate validates the correct container; standard invocation interface (providers' ENTRYPOINT = harness wrapper, agent binary via `CMD`, `command:` = the single extension point across standard/serve/dry-run). Verified e2e: `make dry-run PROVIDER=pi REBUILD=1` -> ALL PHASES PASSED; negative staleness test confirmed. Design: [`20260828-design-settled-dry_run_phase_split.md`](./discussions/20260828-design-settled-dry_run_phase_split.md). Handovers `20260828-01`, `20260828-02`.
 - [x] **Dry-run probe-check unit-test harness** - **done `20260828-03`.** Probes parameterized (`LIBS_DIR`/`ROOT`/`SANDBOX_DIR`, `EXPECTED_MOUNT_TARGET` defaults preserving container behavior); `test/stubs/libs/` provide minimal `session_state_read`/`diff_export`/`dirs_resolve`/`routing` stubs injected via `BASH_ENV`; `tests/test_dry_run_probe.sh` runs each readiness layer in isolation (47 tests, incl. a FAIL per red branch). Also hardened + consolidated `init_sha` validity: shared `init_sha_is_valid` (`git cat-file -e` object check) wired into the probe gate + all three knowledge diagnostics (fixing their stale `session.sh` sourcing).
@@ -282,4 +282,4 @@ Items indefinitely deferred or explicitly excluded from M2 scope.
 ## Notes
 
 - Future milestone detail: [`roadmap_future.md`](roadmap_future.md).
-- Security guarantees and current threat model are defined in [`docs/architecture/security.md`](../architecture/security.md).
+- Security guarantees and current threat model are defined in [`docs/architecture/security.md`](../docs/architecture/security.md).

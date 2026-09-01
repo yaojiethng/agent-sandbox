@@ -313,5 +313,5 @@ Operators onboarding new projects after the provider is added will receive the p
 | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Provider interface contract and execution mode definitions |
 | [`../architecture/execution_model.md`](../architecture/execution_model.md) | How `start_agent.sh` calls `run_agent.sh`; compose generation internals |
 | [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md) | Two-layer agent context model |
-| [`../../providers/AGENTS.template.md`](../../providers/AGENTS.template.md) | Reference template for provider-layer AGENTS.md |
-| [`../../libs/compose.sh`](../../libs/compose.sh) | Helper functions available to `setup.sh` and provider scripts |
+| [`../../providers/AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) | Reference template for provider-layer AGENTS.md |
+| [`../../libs/compose.sh`](../../src/build/compose.sh) | Helper functions available to `setup.sh` and provider scripts |

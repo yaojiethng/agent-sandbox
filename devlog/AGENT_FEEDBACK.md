@@ -36,7 +36,7 @@ Attribution is operator-owned. The agent proposes a class and the operator confi
 
 ## Bash
 
-Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md).
+Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md).
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 

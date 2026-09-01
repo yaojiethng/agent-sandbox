@@ -105,4 +105,4 @@ The optional `<scope>` suffix is used for specialization when a principle has sp
 
 Keep each dated entry in the structure template's field order: Decision, Rationale, Rejected alternatives, Edge cases / drivers.
 
-Link reserved terms to [terminology.md](../../concepts/terminology.md) on first use. Do not redefine a reserved term in the ADR.
+Link reserved terms to [terminology.md](../concepts/terminology.md) on first use. Do not redefine a reserved term in the ADR.
