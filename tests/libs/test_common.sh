@@ -77,6 +77,7 @@ test_done() {
 #   assert_ne ACTUAL UNEXPECTED [LABEL]     --  string inequality
 #   assert_rc EXPECTED_RC ACTUAL_RC [LABEL]  --  exit-code comparison (integers)
 #   assert_contains HAYSTACK NEEDLE [LABEL]  --  substring match (literal)
+#   assert_not_contains HAYSTACK NEEDLE [LABEL]  --  inverted substring match
 # ---------------------------------------------------------------------------
 assert_eq() {
   local ACTUAL="$1" EXPECTED="$2" LABEL="${3:-values equal}"

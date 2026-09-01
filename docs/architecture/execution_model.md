@@ -21,14 +21,14 @@ SANDBOX_DIR/
     ├── output/                ← agent progress and serialised data (RW, no binaries)
     └── session-diffs/         ← diff pipeline output
         ├── session/            ← exit artefacts
-        │   └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
+        │   └── <EXPORT_TIME>-<SESSION_ID>/  ← session-scoped directory
         │       ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA
         │       ├── uncommitted.diff
         │       ├── all-changes.diff
         │       ├── patches/         ← per-commit .diff files
         │       └── changed-files/   ← working tree copies
         └── autosave/           ← checkpoint artefacts
-            └── <SESSION_TS>-<BRANCH>/  ← session-scoped directory
+            └── <SESSION_ID>/  ← single checkpoint directory, overwritten per tick
                 ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA
                 ├── uncommitted.diff
                 ├── patches/
