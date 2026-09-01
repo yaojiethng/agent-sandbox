@@ -82,7 +82,7 @@ local FOO; FOO=$(failing_cmd)
 
 Scope: shellcheck warns on this (`SC2155`). Cross-reference: Trap 15 covers the top-level `local` scope only. The function-scope exit-code-swallowing pattern is distinct and unaddressed.
 
-### [A] 2026-08-09  --  `|| true` required for failure-tolerant checks under `set -e`
+### [A] 2026-08-09  --  Expected-failure commands under `set -e` need `|| true` (grep -c, ls, diff --quiet)
 
 state: open
 scoped: none
@@ -94,7 +94,7 @@ local COUNT
 COUNT=$(grep -c "pattern" file 2>/dev/null) || true
 ```
 
-Any command expected to sometimes fail (`ls missing*`, `grep -c` on absent patterns, `diff --quiet` on dirty trees) must be suffixed with `|| true`. The pattern is pervasive but easy to forget on new checks.
+Any command expected to sometimes fail (`ls missing*`, `grep -c` on absent patterns, `diff --quiet` on dirty trees) must be suffixed with `|| true`. The pattern is pervasive but easy to forget on new checks. `grep -c` is the sharpest instance: it returns exit 1 on zero matches, which is often the expected result, so under `set -e` it aborts the script exactly when the check is working. Could adopt a `_count_matches()` wrapper pairing both patterns.
 
 Scope: language design limitation. The subshell-scoped `|| true` pattern (from session `20260805-01`) is the best available mitigation. Cross-reference: Trap 16 covers pipeline-level swallowing only; individual-command patterns are not addressed.
 
@@ -120,21 +120,6 @@ mitigation: always declare `local` before use. Shellcheck catches this (`SC2154`
 
 Scope: bash limitation. `set -u` has no built-in context reporting. Cross-reference: not applicable for trapping (bash limitation).
 
-### [A] 2026-08-09  --  `grep -c` returns exit 1 on zero matches
-
-state: open
-scoped: none
-legacy: none
-mitigation: `grep -c "pattern" file || true` always; or capture the exit code manually:
-
-```bash
-grep -c "pattern" file 2>/dev/null; local _rc=$?
-```
-
-Under `set -e`, `grep -c` abort the script when zero matches is the expected result.
-
-Scope: language design. Could adopt a `_count_matches()` wrapper. Cross-reference: no skill trap covers this; Trap 9 is unrelated. Could pair with complaint #4 as a general expected-failure-commands trap.
-
 ### [A] 2026-08-09  --  Circular sourcing between `diff_export.sh` and `package_branch.sh`
 
 state: open
@@ -148,20 +133,7 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 
 ---
 
-## Skill cross-reference  --  bash complaints to traps
-
-| # | Entry | Trap coverage | Assessment |
-|---|---|---|---|
-| 1 | Empty string bypasses `${VAR:-default}` | None | No mitigation exists. Should be added as a new trap. |
-| 2 | `git rev-parse --verify 0000...` succeeds | None | Upstream git behavior  --  not fixable. Defensive coding only. No trap to add. |
-| 3 | `local FOO=$(cmd)` swallows exit codes | Trap 15 (top-level `local`) | Function-scope pattern distinct and unaddressed. New trap, or merge into Trap 15. |
-| 4 | `|| true` required on individual commands | Trap 16 (pipeline `|| true`) | Individual-command patterns unaddressed. Broaden Trap 16, or add a companion trap. |
-| 5 | No test fixture lifecycle | None | Could add a `test_teardown` trap pattern. |
-| 6 | `set -u` errors are opaque | None | Bash limitation. No trap to add. |
-| 7 | `grep -c` returns exit 1 on zero matches | None (Trap 9 unrelated) | Could pair with #4 as a general expected-failure-commands trap. |
-| 8 | Circular sourcing between libs | None | Add an architecture trap: shared functions live in leaf libraries. |
-
-**Summary:** 8 bash entries, 5 with no skill coverage, 1 partially covered (#4 by Trap 16), 2 not applicable for trapping. Six new traps or trap expansions are warranted. Deferred to a future skill-maintenance session.
+Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): consolidation into the bash-scripting-traps skill is deferred to a future skill-maintenance session; per-entry coverage is noted in each entry's Cross-reference line.
 
 ---
 
@@ -174,19 +146,28 @@ scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-02`): `new-session.md` no longer reads as blanket authorization  --  the "implementation does not begin until both gates are confirmed" line was deleted (redundant with the procedural stops), the gate sections state what they confirm in declarative headers, and the gates" permission language now matches the canonical model (gates are released; content  --  scope, acceptance criteria  --  is confirmed). Per operator decision, the per-section policy gate is NOT restated in the directive: AGENTS.md owns it and is always loaded. Monitor for resurfacing of run-ahead on policy changes. When confirmed durable, delete and record in changelog/roadmap.
 
-### [A] 2026-08-09  --  Mid-session findings duplicate-entry and rewrite churn
+### [A] 2026-08-09  --  Mid-session findings recording discipline (churn and under-recording)
 
 state: open
 scoped: none
 legacy: none
-mitigation: recording every observation as a permanent distinct finding row invites duplicates and table corruption (finding text leaked into the AC table; overwritten CORRECTION blocks). Frame Mid-session findings as candidate records consolidated at the review/publish step. Edit task notes in place rather than appending duplicate steering records.
+mitigation: two failure modes from the same session. Over-recording: recording every
+observation as a permanent distinct finding row invites duplicates and table corruption
+(finding text leaked into the AC table; overwritten CORRECTION blocks)  --  frame
+Mid-session findings as candidate records consolidated at the review/publish step; edit
+task notes in place rather than appending duplicate steering records. Under-recording:
+session 08 produced friction (dash-sweep tooling, un-applied rule, gate-velocity) but
+recorded none of it; the gap surfaced via operator review, not self-capture. The
+AGENTS.md pointer states what to record but not the reflex to stop and write findings
+when a session turns edit-heavy.
 
 ### [A] 2026-08-09  --  Hard-wrapped instruction blocks and inconsistent prose wrapping
 
-state: probation
+state: open
 scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` gained `### Line wrapping` (single-flowing prose; hard breaks on sentence/paragraph boundaries; ~80 cols for code comments) + audit-check entry. Wrap remediation applied across the frequently-read set (AGENTS.md x2, skills, policy files, cli-conventions, adr_policy, handover_policy). Monitor for resurfacing; the M3 doc-bloat/audit sweeps the non-frequently-read remainder. When confirmed durable, delete and record in changelog/roadmap.
+resurfaced: session `20260901-03`  --  first confirmed resurfacing, so probation is lifted back to open. Two policy documents were manually column-wrapped at ~80 characters, misreading "single-flowing paragraphs" as a license to wrap at sentence boundaries; the rule is positive (one paragraph per line, no column breaks). Lesson added: when composing or editing, match the recipient file's own line form. Operator-side record: GOTCHAS `2026-09-01` (editing a doc whose own policy text forbids the pattern).
 
 ### [A] 2026-08-09  --  Non-ASCII punctuation under a plain-ASCII doc policy
 
@@ -217,13 +198,9 @@ scoped: none
 legacy: none
 mitigation: session 08 proposed, refined, then swept an em-dash rule, but the rule text itself was never applied; the un-applied edit surfaced only at AC-verification grep. When an edit is intended to change a rule, grep the canonical line after writing to confirm the intended text landed.
 additional-resurfacing: session `20260821-02`  --  multi-edit rewrites of a single handover Decisions block repeatedly clobbered unrelated decision entries (D2, D5, D8 individually dropped across successive `edit` calls) because successive edits to the same block were matched against the pre-edit original and overlapped. Lesson: when editing a numbered block repeatedly, prefer one rewrite of the whole block (or verify decision integrity with a grep of all headers after each batch), not piecewise edits that can drop siblings.
+additional-resurfacing: session `20260818`  --  asserted "N2a recorded" in chat but the row was never written (table-append slip); the omission was discovered only at the table-integrity check before the close pass. When announcing a write-back, verify the row exists (row-key grep) in the same turn; an un-landed assertion is invisible to the next agent until the close pass.
 
-### [A] 2026-08-09 - Mid-session findings under-recorded during an edit-heavy session
-
-state: open
-scoped: none
-legacy: none
-mitigation: session 08 produced friction (dash-sweep tooling, un-applied rule, gate-velocity) but recorded none of it; the gap surfaced via operator review, not self-capture. The AGENTS.md pointer states what to record but not the reflex to stop and write findings when a session turns edit-heavy.
+Cross-reference: the operator-side family record is GOTCHAS `2026-08-18` (table-row append edits must keep the anchor row)  --  same family, distinct failure mode (overwrite-instead-of-append).
 
 ## Agent experience  --  session 20260810-07
 
@@ -252,7 +229,7 @@ mitigation: the first `edit` call on `common.sh` omitted the required `path` fie
 
 ## Agent experience  --  session 20260810-12
 
-### [A] 2026-08-10  --  `git restore` during negative-test verification wiped uncommitted session work
+### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work
 
 state: open
 scoped: none
@@ -260,9 +237,25 @@ legacy: none
 mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
 mutation check itself passed: the test failed as expected; only the revert was wrong).
-Revert scratch mutations from a temp copy (`cp file /tmp/file.bak` before mutating,
-`cp /tmp/file.bak file` after), never from git, while the session has uncommitted changes
-in that file. The `git restore`/`git checkout` revert is only safe on committed-clean files.
+The generalized form surfaced the same session: a `git stash` + `git checkout
+tests/test_trace_start.sh` (a) normalized the stub"s working-tree exec mode to the index
+mode  --  16 tests failed with "Permission denied"  --  and (b) reverted the test file"s
+uncommitted session edits. Root cause of the mode churn was a host/container
+`core.fileMode` mismatch (host `false` vs container `true`), not a repo defect; resolved
+on the host by bringing `core.fileMode` to parity and normalising host tree exec bits.
+Lesson: ANY git operation that touches the index/working tree (stash, checkout, restore,
+switch) can revert uncommitted edits and normalize untracked-in-git modes. For
+negative-test mutation reverts and debug-patch removal, use temp copies (`cp file
+/tmp/x.bak` before mutating, `cp /tmp/x.bak file` after), never git, while the session
+has uncommitted changes in that file. To re-assert a lost executable bit regardless of
+`core.fileMode`: `chmod +x file` + `git update-index --chmod=+x`.
+
+---
+[Post-edit annotation -- 2026-09-01]: corrected misdiagnosis. The container mode
+churn was due to a host-side `core.fileMode` mismatch (host `false` vs
+container `true`), not a repo defect. Exec-bit issue resolved on the host by
+bringing `core.fileMode` to parity (`true`) and normalising host tree exec
+bits.
 
 ### [A] 2026-08-10  --  Subagent review remedies need empirical verification, not blind acceptance
 
@@ -304,35 +297,6 @@ mutation that reached for python3 failed with "command not found" and fell
 back to sed/awk. Use bash-native tools (sed, awk, perl if present) for
 text-mutation tasks in this container; do not reach for python3 without
 checking first.
-
-### [A] 2026-08-10  --  `git checkout` normalized stub mode AND reverted uncommitted test edits (stash/checkout cycle)
-
-state: open
-scoped: none
-legacy: session 20260810-12 entry (git restore wipes uncommitted work)
-mitigation: the mode divergence (index 100644, working tree 755 in the
-container via the snapshot rsync overlay) was surfaced only in the container
-because the container's git runs `core.fileMode=true` (set from
-`filesystem_tracks_exec_bits`) while the host repo ran `core.fileMode=false`
--- a host/container `core.fileMode` mismatch, not a repo defect. The container
-reported the churn the host masked. A `git stash` (for a HEAD-vs-current
-shellcheck comparison) + `git checkout tests/test_trace_start.sh` (to remove a
-debug patch) did two things: (a) normalized the stub"s working-tree mode to the
-index mode  --  16 tests failed with "Permission denied"  --  and (b) reverted the
-test file"s uncommitted session edits. The session-12 lesson (never `git
-restore` while uncommitted work exists) is broader than one command: ANY git
-operation that touches the index/working tree (stash, checkout, restore,
-switch) can revert uncommitted edits and normalize untracked-in-git modes.
-For negative-test mutation reverts and debug-patch removal, use temp copies
-(`cp file /tmp/x.bak`) only. To re-assert a lost executable bit regardless of
-`core.fileMode`: `chmod +x file` + `git update-index --chmod=+x`.
-
----
-[Post-edit annotation -- 2026-09-01]: corrected misdiagnosis. The container mode
-churn was due to a host-side `core.fileMode` mismatch (host `false` vs
-container `true`), not a repo defect. Exec-bit issue resolved on the host by
-bringing `core.fileMode` to parity (`true`) and normalising host tree exec
-bits.
 
 ### [A] 2026-08-18  --  Multi-question turns and implicit acceptance during a grill-me design walk
 
@@ -455,23 +419,3 @@ a nonexistent libs/dirs.sh path"  --  rotted until noticed by accident. Cheapest
 fix: a non-gating `make test-knowledge-smoke` running each script under
 `bash -n` (syntax only) plus shellcheck, catching structural rot without
 asserting on their nondeterministic behavior.
-
-### [A] 2026-09-01  --  Manual column-wrapping of prose violates the single-flowing-paragraph rule
-
-state: open
-scoped: none
-legacy: "hard-wrapped instruction blocks and inconsistent prose wrapping" (`2026-08-09`, probation -- resurfacing confirmed)
-mitigation: when composing or editing a document, match the recipient
-file's own line form. The convention in this repo (documentation_policy.md
-`### Line wrapping`) is **single-flowing paragraphs**: each paragraph sits on
-one line, `write` produces long lines, and no manual column wrap is applied.
-
-This is a resurfacing of the `2026-08-09` probation entry. That durable fix
-changed `documentation_policy.md`'s `### Line wrapping` to ``single-flowing
-prose; hard breaks on sentence/paragraph boundaries``. I still manually wrapped
-two policy documents at ~80 characters, misreading ``single-flowing
-paragraphs`` as ``wrap at sentence boundaries`` and applying column wrapping
--- the exact pattern the rule forbids. The rule is positive (one paragraph per
-line, no column breaks), not a license to wrap at sentence ends. Flag: the
-`2026-08-09` entry's ``probation`` status should be reviewed -- this is its
-first confirmed resurfacing.

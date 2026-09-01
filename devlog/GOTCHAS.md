@@ -82,7 +82,9 @@ only the new row, dropping the anchor). For any append, oldText must be the anch
 AND newText must be that same anchor row followed by the new row(s). After a multi-row
 table edit, re-grep the table"s row keys and confirm every prior row still exists before
 continuing. Same family as the "did the write land?" reflex but distinct: that catches
-un-applied edits, this catches overwrite-instead-of-append.
+un-applied edits, this catches overwrite-instead-of-append. Cross-reference: the
+agent-side family record is AGENT_FEEDBACK ("did the write land?" reflex entry,
+2026-08-09, with resurfacing instances).
 
 ### [G] 2026-08-19  --  Handover field-schema migration: dual-grep bridge (session-term neutralisation)
 
@@ -156,6 +158,9 @@ wrapped two policy documents at ~80 characters; the very file being edited
 written as single-flowing paragraphs, one paragraph per line, no manual wrap.
 The compliance failure was visible from the file itself, so it should not have
 required operator steering to catch.
+
+Cross-reference: consolidated agent-side record is AGENT_FEEDBACK (hard-wrapped
+instruction blocks entry, 2026-08-09; resurfaced 2026-09-01, probation lifted to open).
 
 ### [G] 2026-09-01 - Broad sweep launched before realigning a redesign task onto its true purpose
 
