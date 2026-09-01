@@ -19,7 +19,7 @@ inconsistent or absent labels and label-only discovery never sees them.
   folder converges to one id. So the `agent-sandbox.sandbox-dir` +
   `.session-id` label pair is now a reliable, spelling-independent filter key.
 - Design doc `20260831-design-active-session_identity_prefactor.md`, ADR
-  `20260831-adr-settled-single_canonical_session_identity.md`.
+  `session_identifier.md`.
 
 ## Constraints (from 20260831-05/06, operator-confirmed)
 - **No docker name-pattern matching** (ambiguous across sandboxes, not durable

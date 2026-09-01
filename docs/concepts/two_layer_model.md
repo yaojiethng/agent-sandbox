@@ -1,12 +1,6 @@
 # Two-Layer Architecture — Reasoning and Capability Layers
 
-**Status:** Adopted. Implemented in M2.
-
----
-
-> **Context:** This document records the conceptual model and the decision. Implementation details are distributed across [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md), and [`execution_model.md `](../architecture/execution_model.md ). The reasoning behind this decision is in [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) — Conclusion section.
-
----
+> **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) and [`execution_model.md`](../architecture/execution_model.md). The reasoning behind this decision is in [`investigation_mcp_server.md`](../../devlog/discussions/investigation_mcp_server.md) — Conclusion section.
 
 ## The Model
 
@@ -54,9 +48,8 @@ The following documents implement this conceptual model:
 
 | Document | Responsibility |
 |---|---|
-| [`execution_model.md`](../architecture/execution_model.md) | Directory layout, invocation model, index to mechanism documents |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
-| [`execution_model.md `](../architecture/execution_model.md ) | Compose generation, mount shape rationale, container lifecycle, entrypoint sequences |
+| [`execution_model.md`](../architecture/execution_model.md) | Directory layout, invocation model, compose generation, container lifecycle, entrypoint sequences |
 | [`tool_interface.md`](../architecture/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
 | [`security.md`](../architecture/security.md) | Trust boundaries and security invariants |
 

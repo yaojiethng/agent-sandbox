@@ -78,7 +78,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `sandbox_lifecycle.md` | 🟡 Warm | M2.3 | Capability layer's lifecycle: snapshot pipeline (fork), agent work, git baseline, diff pipeline (join), input channels, apply workflow. |
 | `provider_lifecycle.md ` | 🟡 Warm | M2.3 | Reasoning layer's lifecycle: config seed (copy-in), agent work, config persist (copy-out). |
 | `tool_interface.md` | 🟡 Warm | M2.3 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
-| `security.md` | 🟡 Warm | M2.1 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
+| `security.md` | 🟡 Warm | M2.6 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
 | `threat_model_stride.md` | 🟢 Cold | M1 | Implementation-agnostic STRIDE analysis. Revisit at major threat surface changes. |
 
 ### Concepts (`docs/concepts/`)
@@ -88,8 +88,23 @@ Temperature reflects the stability of what a document describes — not how care
 | `agent_workflow.md` | 🟢 Cold | M2.1 | Rescoped as conceptual entry point and policy map. Defines the three-layer workflow expression model (policy documents, skill files, prompt templates) and maps canonical ownership across all policy documents. |
 | `autonomous_task.md` | 🟢 Cold | M2 | Stub: boundary between interactive and autonomous workflow. Replaces `task_lifecycle.md`. Do not edit until M3. |
 | `task_lifecycle.md` — retired | — | M2 | Renamed to `autonomous_task.md` and replaced with stub. Deleted. |
-| `two_layer_model.md` | 🟢 Cold | M2.2 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
-| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.7 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
+| `two_layer_model.md` | 🟢 Cold | M2.6 | Canonical two-layer architecture definition. Implemented in M2. Do not edit; reference only. |
+| `sandbox_identity.md` | 🟡 Warm | M2.6 | Identity model: primitives, SESSION_ID derivation, naming, label schema, container-sig, registry, SESSION_STATE. |
+| `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.6 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
+| `terminology.md` | 🟡 Warm | M2.6 | Reserved technical terms (session, iteration, staleness) with identity, scope, relationships. |
+
+### ADR (`docs/adr/`)
+
+One living file per standing principle; dated entries, current-on-top (see `adr_policy.md`). `adr/archive/` holds superseded or awaiting-review ADRs and is not registered individually.
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `session_identifier.md` | 🟢 Cold | M2.6 | Single canonical hash session identifier; historical two-stage entry keeps marker-schema decisions in force. |
+| `harness_versioning.md` | 🟢 Cold | M2.6 | Per-surface version semantics: image digest, worktree HEAD, symlink host install. Impl pending (roadmap). |
+| `sandbox_delivery_model.md` | 🟢 Cold | M2.6 | Two-axis delivery model; harness never mediates git; worktree backing rejected. |
+| `policy_declarative_framing.md` | 🟢 Cold | M2.6 | Policies state rules declaratively; rationale lives in ADRs. |
+| `diff_packaging.md` | 🟢 Cold | M2.6 | Single export mechanism (`package-branch`); four guarded workflow commands; savepoint rollback. |
+| `drift_state_coherence.md` | 🟢 Cold | M2.6 | Coherence by minimisation, not detection; container-sig as interim contract check. |
 
 ### Operations (`docs/operations/`)
 

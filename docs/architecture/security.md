@@ -43,7 +43,7 @@ The sandbox adds no security beyond what the host provides — it only restricts
 | **Mount** (not yet implemented, M2.6.6) | Bind-mounted live from host | User-provided — whatever `.git` the user places in the mounted directory (fresh baseline, clone, snapshot). Harness does not mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
 | *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | — see [Non-goals](#non-goals) |
 
-Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope — see [ADR — Worktree Backing Rejected](../../docs/adr/20260730-adr-settled-worktree_rejection.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
+Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope — see [ADR — Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
 
 **Invariants (all modes):**
 

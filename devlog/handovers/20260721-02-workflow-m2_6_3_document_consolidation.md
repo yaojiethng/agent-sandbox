@@ -34,7 +34,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 | `devlog/discussions/20260416-study-superseded-git_worktrees.md` | Mount-model doc superseded by ADR |
 | `devlog/discussions/20260611-story-superseded-agent_git_surface.md` | Mount-model doc superseded by ADR |
 | `devlog/discussions/20260417-story-superseded-parallel_sessions_worktree.md` | Mount-model doc superseded by ADR |
-| `docs/adr/20260721-adr-settled-worktree_mount_model.md` | Target ADR to create |
+| `docs/adr/sandbox_delivery_model.md` | Target ADR to create |
 | `docs/operations/documentation_policy.md` | May need updates for policy disambiguation |
 | `docs/operations/iteration_policy.md` | May need updates for policy disambiguation |
 | `docs/operations/story_policy.md` | May need updates for policy disambiguation |
@@ -49,7 +49,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 | # | Criterion | Verifiable by |
 |---|---|---|
 | 1 | All spec files either deleted (content in handovers) or renamed to design format | `ls devlog/discussions/spec_*` returns empty |
-| 2 | `docs/adr/20260721-adr-settled-worktree_mount_model.md` exists with summary, context, options, decision, consequences, supersedes | file read |
+| 2 | `docs/adr/sandbox_delivery_model.md` exists with summary, context, options, decision, consequences, supersedes | file read |
 | 3 | Old mount-model discussion docs have supersede headers pointing to the new ADR | grep in each doc |
 | 4 | Policy disambiguation is scoped or resolved | chat resolution |
 
@@ -57,7 +57,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 | File | Change |
 |---|---|
-| `docs/adr/20260721-adr-settled-worktree_mount_model.md` | New — worktree mount model ADR, three-tier decision, supersedes mount-model discussion docs |
+| `docs/adr/sandbox_delivery_model.md` | New — worktree mount model ADR, three-tier decision, supersedes mount-model discussion docs |
 | `devlog/discussions/20260416-study-superseded-git_worktrees.md` | Renamed from `investigation_git_worktrees.md`; added supersede header |
 | `devlog/discussions/20260417-story-superseded-parallel_sessions_worktree.md` | Renamed from `story_parallel_sessions_worktree.md`; added supersede header |
 | `devlog/discussions/20260611-story-superseded-agent_git_surface.md` | Renamed from `story_agent_git_surface.md`; added supersede header |

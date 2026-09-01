@@ -37,7 +37,7 @@ The compose template defines exactly one named volume (`sandbox-data`) per proje
 - `scripts/stop.sh` — Update `--prune` description to match actual prune scope
 - `AGENTS.md` — Add final acceptance gate (Gate 3) from iteration_policy.md
 - `devlog/discussions/design_session_identity_hash_based.md` — Rename to modern naming format, mark superseded
-- `docs/adr/20260722-adr-settled-session_identity_and_container_markers.md` — New ADR distilling session identity decisions
+- `docs/adr/session_identifier.md` — New ADR distilling session identity decisions
 - `devlog/discussions/story_session_identity_and_harness_versioning.md` — Update superseded link to point to ADR
 
 ## Acceptance criteria
@@ -49,5 +49,5 @@ The compose template defines exactly one named volume (`sandbox-data`) per proje
 | 3 | `stop.sh` `--prune` description matches prune scope | Manual review |
 | 4 | `AGENTS.md` has Gate 3 rule | `grep -c` passes |
 | 5 | Discussion file renamed and superseded | File exists at new path, status is Superseded |
-| 6 | ADR created with session identity decisions | File exists at `docs/adr/20260722-adr-settled-session_identity_and_container_markers.md` |
+| 6 | ADR created with session identity decisions | File exists at `docs/adr/session_identifier.md` |
 | 7 | Tests pass | 418 passed, 0 failed, 6 skipped |

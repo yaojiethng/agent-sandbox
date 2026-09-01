@@ -38,7 +38,7 @@ Three units:
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| 1 | ADR written encoding declarative policy framing principles | `ls docs/adr/20260721-adr-settled-policy_declarative_framing.md` | ✅ Agent |
+| 1 | ADR written encoding declarative policy framing principles | `ls docs/adr/policy_declarative_framing.md` | ✅ Agent |
 | 2 | `iteration_policy.md` major loop intro links to `milestone_policy.md` for readiness criteria | `grep -c milestone_policy.md docs/operations/iteration_policy.md` | ✅ Agent |
 | 3 | `milestone_policy.md` Stories/Investigations/Roadmap Entry sections pruned to links | `grep -c "story_policy.md\|study_policy.md" docs/operations/milestone_policy.md` | ✅ Agent |
 | 4 | `documentation_policy.md` corrections table is link-only, no amendment block format | `grep -c "Amendment block" docs/operations/documentation_policy.md` == 0 | ✅ Agent |
@@ -74,7 +74,7 @@ Three units:
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Policy files state rules declaratively, not as design records | One rule one owner; rationale in ADR, not policies | `docs/adr/20260721-adr-settled-policy_declarative_framing.md` |
+| Policy files state rules declaratively, not as design records | One rule one owner; rationale in ADR, not policies | `docs/adr/policy_declarative_framing.md` |
 | Major loop purpose/readiness lives in `milestone_policy.md`, procedure in `iteration_policy.md` | Split clean — criteria vs workflow steps | applied in `milestone_policy.md`, `iteration_policy.md` |
 | Correction form owned by type-specific policy, not `documentation_policy.md` | One rule one owner | applied in `documentation_policy.md`, `roadmap_policy.md` |
 | Audit/bugfix/recovery procedures moved from policies to skill drafts | They self-identified as "not a policy"; pure execution guidance | `audit.skill.md`, `bugfix.skill.md`, `recovery.skill.md` |
@@ -88,7 +88,7 @@ None.
 
 | File | Change |
 |---|---|
-| `docs/adr/20260721-adr-settled-policy_declarative_framing.md` | **New** — ADR encoding declarative policy framing principles |
+| `docs/adr/policy_declarative_framing.md` | **New** — ADR encoding declarative policy framing principles |
 | `docs/operations/iteration_policy.md` | Added major loop purpose one-liner linking to `milestone_policy.md`; compaction/carry-forward bullets replaced with links to `roadmap_policy.md`; references table updated for `audit.skill.md` |
 | `docs/operations/milestone_policy.md` | Pruned Stories, Investigations, Roadmap Entry sections to links |
 | `docs/operations/documentation_policy.md` | Corrections table shrunk to link-only; amendment block format section removed |

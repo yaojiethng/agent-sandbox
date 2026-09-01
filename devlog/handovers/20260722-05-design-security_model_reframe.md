@@ -13,7 +13,7 @@ Replace the three-tier mount model terminology (Tier 1/2/3) with a two-axis secu
 
 Confirmed by operator with two amendments: (1) durability axis carries its own security content — live-mount exposure; (2) drop the "offered configurations" numbered list — express the model as configuration options with per-option exposure.
 
-1. **ADR** — records the reframe decision; supersedes the three-tier structure of `docs/adr/20260721-adr-settled-worktree_mount_model.md` (the worktree decision itself stands).
+1. **ADR** — records the reframe decision; supersedes the three-tier structure of `docs/adr/sandbox_delivery_model.md` (the worktree decision itself stands).
 2. **`docs/architecture/security.md` restructure** — universal invariants stated once; configuration options with per-option exposure; invariant profiles per backing (fresh-baseline, worktree) with template *mounts added → exposure introduced → compensating controls → residual risk*; raw project dir documented as non-goal. Proposed section by section per governance-doc rules.
 3. **Propagation pass** — ~50 tier references across `docs/concepts/sandbox_identity.md`, `devlog/roadmap.md`, `scripts/build.sh`, and the two core docs.
 4. **Roadmap** — M2.6.4 task list rewritten in the new vocabulary, ready for the follow-on design session.
@@ -76,7 +76,7 @@ All files completed. Files that entered scope mid-session (the two design docs, 
 |---|---|
 | `devlog/discussions/20260722-design-active-mount_model.md` | New canonical mount-model design doc (active) — axes, modes with support statuses, consolidation note, settlement path |
 | `devlog/discussions/20260722-design-active-worktree_mount_mechanism.md` | New design proposal (active) — gitdir pointer rewrite, refs/agent namespace, preflight/teardown permissions, residual risks, audit gate |
-| `docs/adr/20260721-adr-settled-worktree_mount_model.md` | Deleted (`git rm`) — consolidated into the mount-model design doc |
+| `docs/adr/sandbox_delivery_model.md` | Deleted (`git rm`) — consolidated into the mount-model design doc |
 | `docs/adr/20260722-adr-settled-mount_model_axes.md` | Deleted (uncommitted) — consolidated into the mount-model design doc |
 | `docs/architecture/security.md` | Section 1 restructured: Trust Boundaries intro + Principle + Mount modes table + invariants/assumptions; three tier subsections removed |
 | `devlog/discussions/20260722-study-settled-mount_wiring_survey.md` | Required-reading link retargeted from deleted ADR to the mount-model design doc; status line corrected to `settled` (filename already said so) |

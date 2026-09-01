@@ -123,7 +123,7 @@ See [Design — Mount Model](../../devlog/discussions/20260730-design-settled-mo
 
 | Document | Purpose |
 |---|---|
-| [`docs/adr/20260730-adr-settled-worktree_rejection.md`](../../docs/adr/20260730-adr-settled-worktree_rejection.md) | ADR: formal rejection of worktree backing |
+| [`docs/adr/sandbox_delivery_model.md`](../../docs/adr/sandbox_delivery_model.md) | ADR: formal rejection of worktree backing |
 | [`devlog/discussions/20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) | Mount model design — simplified .git mount |
 | [`devlog/discussions/20260730-design-settled-copy_model.md`](20260730-design-settled-copy_model.md) | Copy model design |
 | [`devlog/roadmap.md`](../roadmap.md) | M2.6.6 Not in scope |

@@ -4,7 +4,7 @@
 **Type:** design
 **Date:** 20260831
 **Predecessor (lineage):** supersedes the hash-based identity decision recorded
-in `docs/adr/20260722-adr-settled-session_identity_and_container_markers.md`
+in `docs/adr/session_identifier.md`
 as a *re-examination of the intermediate*, not a rejection of the model.
 **Related discussion:** `devlog/discussions/20260423-design-active-session_identity_hash_based.md`.
 

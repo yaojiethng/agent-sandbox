@@ -51,7 +51,7 @@ All design questions needed before implementation can start:
 | [`scripts/agent-sandbox.sh`](../../scripts/agent-sandbox.sh) | CLI entrypoint — how PROJECT_DIR is accepted |
 | [`docs/architecture/security.md`](../../docs/architecture/security.md) | Security invariant updates per tier 3 (worktree mount) |
 | [`docs/architecture/system_overview.md`](../../docs/architecture/system_overview.md) | Architecture layer model — potential updates for mount model |
-| [`docs/adr/20260721-adr-settled-worktree_mount_model.md`](../../docs/adr/20260721-adr-settled-worktree_mount_model.md) | Existing worktree ADR — supersedes or amends as needed |
+| [`docs/adr/sandbox_delivery_model.md`](../../docs/adr/sandbox_delivery_model.md) | Existing worktree ADR — supersedes or amends as needed |
 | `devlog/roadmap.md` | Update M2.6.4 task list with implementation units |
 
 ## Decisions made this session

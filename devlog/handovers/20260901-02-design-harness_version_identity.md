@@ -54,7 +54,7 @@ ADR-status discipline is being confirmed via the design grill.)
 |---|---|---|
 | AC1 | Design settled per surface, Decision + Consequences filled in the stub, evaluated against all 8 Constraints | **done (agent)** — ADR constraint evaluation added |
 | AC2 | Freshness signal retirement resolved (drop list-time staleness; freshness not a list-time property) + source-fingerprint deferral | **done (agent)** |
-| AC3 | ADR written recording the mechanism decision, incl. contract-compatibility as a deferred capability | **done (agent)** — `docs/adr/20260901-adr-settled-version_identity_mechanism.md` |
+| AC3 | ADR written recording the mechanism decision, incl. contract-compatibility as a deferred capability | **done (agent)** — `docs/adr/harness_versioning.md` |
 | AC4 | Design stub Status -> settled; roadmap entry reconciled | **done (agent)** — stub settled; roadmap pending close |
 
 ## Completed
@@ -62,7 +62,7 @@ ADR-status discipline is being confirmed via the design grill.)
 - Read the two superseded docs in scope (`story_harness_packaging_and_install_versioning.md`, `investigation_harness_sig_requirements.md`).
 - Grounded the design space in live code (`container_sig.sh`, `session_inventory.sh`, `compose.sh`, `Makefile install:`, `docker-compose.yml` labels).
 - Settled the mechanism via the grill (Q1-Q9); recorded decisions, findings, ACs in the handover.
-- Wrote ADR `docs/adr/20260901-adr-settled-version_identity_mechanism.md` (Status: settled = decision recorded; task stays open until impl).
+- Wrote ADR `docs/adr/harness_versioning.md` (Status: settled = decision recorded; task stays open until impl).
 - Finalized the design stub `20260831-design-active-image_and_harness_version_identity.md` to Status: settled with Decision + Consequences.
 - Applied the partial-supersede protocol edit to `20260722-session_identity_and_container_markers.md` (image-marking claim superseded).
 - Reconciled roadmap: updated the version-identity entry (DESIGN SETTLED, impl NEXT) + added three promoted tasks (interface-contract compat, dry-run overhaul, ADR-policy revision).

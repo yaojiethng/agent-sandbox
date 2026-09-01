@@ -1,6 +1,6 @@
 # Design — Hash-Based Session Identity
 
-**Status:** Superseded — see [`docs/adr/20260722-adr-settled-session_identity_and_container_markers.md`](../../docs/adr/20260722-adr-settled-session_identity_and_container_markers.md)
+**Status:** Superseded — see [`docs/adr/session_identifier.md`](../../docs/adr/session_identifier.md)
 
 **Supersedes:** [`story_session_identity_and_harness_versioning.md`](../devlog/discussions/story_session_identity_and_harness_versioning.md)
 

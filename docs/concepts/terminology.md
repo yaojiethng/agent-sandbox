@@ -78,5 +78,6 @@ A session's or image's divergence from the current project or build content, in 
 
 - Distinct from the image/container `container-sig` *marker* (see `sandbox_identity.md`); staleness is the comparison, not the marker.
 - `session_stale` (`resume_agent.sh`/shared lib) computes sandbox staleness.
+- Image staleness detection is a superseded principle: the settled direction retires list-time staleness in favour of recorded version identity — see [drift_state_coherence.md](../adr/drift_state_coherence.md) and [harness_versioning.md](../adr/harness_versioning.md). Until that implementation lands, the behaviour above is current.
 
 **Last updated:** 2026-08-21

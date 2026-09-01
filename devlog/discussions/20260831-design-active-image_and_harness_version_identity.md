@@ -3,7 +3,7 @@
 **Status:** settled
 
 Mechanism decision recorded in ADR
-[`20260901-adr-settled-version_identity_mechanism.md`](../../docs/adr/20260901-adr-settled-version_identity_mechanism.md).
+[`harness_versioning.md`](../../docs/adr/harness_versioning.md).
 The story [`20260831-story-active-image_and_harness_version_identity.md`](20260831-story-active-image_and_harness_version_identity.md)
 fixes the requirements; this design fixed the *how*. Decision and Consequences are settled below; implementation is a follow-up iteration.
 
@@ -84,7 +84,7 @@ story's Constraints, including whether staleness survives as a distinct signal.
 
 ## Decision
 
-**(Settled 20260901-02; ADR `20260901-adr-settled-version_identity_mechanism.md`.)**
+**(Settled 20260901-02; ADR `harness_versioning.md`.)**
 
 A **composition (Option D)** is adopted, per surface:
 

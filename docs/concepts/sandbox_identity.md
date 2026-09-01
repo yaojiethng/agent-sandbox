@@ -20,7 +20,7 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
-A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash — see `docs/adr/20260831-adr-settled-single_canonical_session_identity.md`.
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash — see [session_identifier.md](../adr/session_identifier.md).
 
 `canon(SANDBOX_DIR)` is the sandbox directory resolved to its canonical absolute form (`readlink -f`/`realpath` after leading-`~` expansion), so every path spelling of one folder (absolute, `~`, relative, symlink, trailing-slash, `./`) converges to one `SESSION_ID`. An unresolvable `SANDBOX_DIR` is a hard error (start/resume fail loudly).
 
@@ -81,6 +81,8 @@ Containers are ephemeral — they live for one session and die. All labels are a
 **Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
 ## Container-sig (Image Staleness Detection)
+
+Further reading: the build-time signature model is a superseded principle — the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). Until the version-identity implementation lands, the behaviour described here is current.
 
 Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
 

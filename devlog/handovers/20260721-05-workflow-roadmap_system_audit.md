@@ -34,7 +34,7 @@ Audit and reset the roadmap to a working baseline. Replace the ad-hoc phase syst
 | `docs/operations/documentation_policy.md` | Trigger B cleanup→post-close bookkeeping cleanup |
 | `docs/concepts/agent_workflow.md` | Trigger A/B→post-close bookkeeping |
 | `docs/architecture/sandbox_lifecycle.md` | Phase 1.5→M2.6.2 |
-| `docs/adr/20260721-adr-settled-worktree_mount_model.md` | Phase 1.5→M2.6.2 |
+| `docs/adr/sandbox_delivery_model.md` | Phase 1.5→M2.6.2 |
 | `AGENTS.md` | Propagation discipline scope-expansion trigger added |
 | `src/reasoning/agent/prompts/whats-next.md` | Replaced head -80 with frontmatter-aware active milestone grep |
 | `src/reasoning/agent/prompts/new-session.md` | Trigger B→post-close bookkeeping |
