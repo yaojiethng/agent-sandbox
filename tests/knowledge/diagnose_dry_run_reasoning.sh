@@ -21,7 +21,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 ROOT="/home/agentuser"
 
 echo "=== 1. Environment ==="
-for var in AGENT_HOME PROVIDER_NAME PROVIDER_CONFIG_DIR SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME; do
+for var in AGENT_HOME PROVIDER_NAME PROVIDER_CONFIG_DIR SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -57,13 +57,11 @@ echo ""
 echo "=== 3. Path resolution ==="
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
-[[ -n "$SNAPSHOT_DIR" ]]  && pass "SNAPSHOT_DIR resolved"  || fail "SNAPSHOT_DIR is empty"
 [[ -n "$CHANGES_DIR" ]]   && pass "CHANGES_DIR resolved"   || fail "CHANGES_DIR is empty"
 [[ -n "$INPUT_DIR" ]]     && pass "INPUT_DIR resolved"     || fail "INPUT_DIR is empty"
 [[ -n "$OUTPUT_DIR" ]]    && pass "OUTPUT_DIR resolved"    || fail "OUTPUT_DIR is empty"
@@ -103,7 +101,7 @@ echo "=== 5. Mount expectations ==="
 #   - INPUT_DIR    (read-only, brief mount)
 #   - OUTPUT_DIR   (writable, output mount)
 #   - SANDBOX_DIR  (via --volumes-from, shared filesystem with sandbox)
-# It also has access to SNAPSHOT_DIR and CHANGES_DIR via volumes-from.
+# It also has access to CHANGES_DIR via volumes-from.
 
 # Agent-specific mounts
 if [[ -d "$INPUT_DIR" ]]; then

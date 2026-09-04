@@ -12,10 +12,7 @@
 # Usage:
 #   source /opt/sandbox/lib/dirs.sh
 #   dirs_resolve "$BASE_DIR"
-#   # Then use $SNAPSHOT_DIR, $CHANGES_DIR, $INPUT_DIR, $OUTPUT_DIR
-
-# Snapshot input: bind-mounted read-only into the capability layer container.
-SNAPSHOT_DIR_NAME="${SNAPSHOT_DIR_NAME:-.snapshot}"
+#   # Then use $CHANGES_DIR, $INPUT_DIR, $OUTPUT_DIR
 
 # Working content directory: owned by the capability layer container.
 # Exposed to the reasoning layer via --volumes-from, not a named volume.
@@ -43,7 +40,7 @@ OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-output}"
 # -------------------------
 # dirs_resolve  --  derive all harness paths from a base directory.
 #
-# Sets SNAPSHOT_DIR, CHANGES_DIR, INPUT_DIR, OUTPUT_DIR in the caller's scope
+# Sets CHANGES_DIR, INPUT_DIR, OUTPUT_DIR in the caller's scope
 # and exports them for downstream consumers (compose, routing).
 #
 # Does NOT set SANDBOX_DIR  --  callers supply it explicitly (as CLI arg, ROOT
@@ -57,24 +54,21 @@ OUTPUT_DIR_NAME="${OUTPUT_DIR_NAME:-output}"
 #                   Container: /home/agentuser
 #
 # Derivation:
-#   SNAPSHOT_DIR  = BASE_DIR / SNAPSHOT_DIR_NAME
 #   CHANGES_DIR   = BASE_DIR / WORKSPACE_DIR_NAME / CHANGES_DIR_NAME
 #   INPUT_DIR     = BASE_DIR / WORKSPACE_DIR_NAME / INPUT_DIR_NAME
 #   OUTPUT_DIR    = BASE_DIR / WORKSPACE_DIR_NAME / OUTPUT_DIR_NAME
 #
 # Environment overrides (all optional, set before calling):
-#   SNAPSHOT_DIR_NAME, WORKSPACE_DIR_NAME, CHANGES_DIR_NAME,
+#   WORKSPACE_DIR_NAME, CHANGES_DIR_NAME,
 #   INPUT_DIR_NAME, OUTPUT_DIR_NAME
 #
 # Examples:
 #   # Host convention (default WORKSPACE_DIR_NAME=.workspace):
 #   dirs_resolve "$SANDBOX_DIR"
-#   # -> SNAPSHOT_DIR = /mnt/project/.sandbox/.snapshot
 #   # -> CHANGES_DIR  = /mnt/project/.sandbox/.workspace/session-diffs
 #
 #   # Container convention:
 #   WORKSPACE_DIR_NAME=workspace dirs_resolve "/home/agentuser"
-#   # -> SNAPSHOT_DIR = /home/agentuser/.snapshot
 #   # -> CHANGES_DIR  = /home/agentuser/workspace/session-diffs
 #   # -> INPUT_DIR    = /home/agentuser/workspace/input
 #   # -> OUTPUT_DIR   = /home/agentuser/workspace/output
@@ -92,7 +86,6 @@ dirs_resolve() {
 
   local WS="${WORKSPACE_DIR_NAME:-.workspace}"
 
-  export SNAPSHOT_DIR="${BASE_DIR}/${SNAPSHOT_DIR_NAME:-.snapshot}"
   export CHANGES_DIR="${BASE_DIR}/${WS}/${CHANGES_DIR_NAME:-session-diffs}"
   export INPUT_DIR="${BASE_DIR}/${WS}/${INPUT_DIR_NAME:-input}"
   export OUTPUT_DIR="${BASE_DIR}/${WS}/${OUTPUT_DIR_NAME:-output}"

@@ -92,7 +92,7 @@ HEAD = B
 
 **INIT — establishing correspondence**
 
-Before the container starts, the harness snapshots the host: `git archive HEAD` produces a tar of the committed state; rsync copies the operator's working tree alongside it. Inside the container, `snapshot_init_git` unpacks the tar, commits as the baseline, writes `init_sha` (via SESSION_STATE), then overlays the rsync copy so the working tree matches the operator's on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
+Before the container starts, the harness seeds the sandbox volume: a git-enumerated tar of the operator's working tree plus `git archive HEAD` (the baseline tar) is extracted into the volume via `docker cp`. Inside the container, `snapshot_init_git` unpacks the baseline tar, commits as the baseline, writes `init_sha` (via SESSION_STATE), then overlays the seeded working tree so it matches the operator's on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
 
 **RUNNING — bidirectional flow**
 

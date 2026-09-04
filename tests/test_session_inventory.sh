@@ -17,7 +17,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 # make_record FILE AGENT_IMG SANDBOX_IMG [extra label lines...]

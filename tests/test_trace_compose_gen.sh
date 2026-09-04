@@ -11,7 +11,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -22,7 +22,6 @@ setup_fixture() {
   export PROJECT_NAME="test-project"
   export PROVIDER_NAME="pi"
   export SANDBOX_DIR="$FIXTURE_DIR/sandbox"
-  export SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
   export WORKTREE_DIR="$SANDBOX_DIR/.worktree"
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
@@ -39,7 +38,7 @@ setup_fixture() {
   export AGENT_CONTAINER_NAME="pi-test-project-${SESSION_ID}"
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
 
-  mkdir -p "$SANDBOX_DIR" "$SNAPSHOT_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR" "$SANDBOX_DIR/.pi"
+  mkdir -p "$SANDBOX_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR" "$SANDBOX_DIR/.pi"
 
   :> "$DOCKER_TRACE_LOG"
 }
@@ -152,8 +151,7 @@ test_stub_docker_config_preserves_structure() {
 # ---------------------------------------------------------------------------
 
 # The base template must not carry copy-only wiring: the named sandbox volume
-# and SNAPSHOT_DIR references live in the copy overlay so bind-mount compose
-# never inherits them.
+# lives in the copy overlay so bind-mount compose never inherits it.
 test_base_template_has_no_copy_only_wiring() {
   local base="$REPO_ROOT/src/build/docker-compose.yml"
   local copy_only=0
@@ -168,18 +166,18 @@ test_base_template_has_no_copy_only_wiring() {
   fi
 }
 
-# The copy overlay carries the named volume, the snapshot mount, and the
-# snapshot env.
-test_copy_overlay_carries_snapshot_and_volume() {
+# The copy overlay carries the named volume and copy delivery type, and no
+# snapshot mount (content is host-side seeded via docker cp).
+test_copy_overlay_carries_volume_no_snapshot_mount() {
   local overlay="$REPO_ROOT/src/build/docker-compose.copy.yml"
 
   if grep -q 'sandbox-data' "$overlay" \
-      && grep -q '/home/agentuser/.snapshot' "$overlay" \
-      && grep -q 'SNAPSHOT_DIR=/home/agentuser/.snapshot' "$overlay" \
-      && grep -q 'SANDBOX_TYPE=copy' "$overlay"; then
-    pass "copy overlay carries named volume + snapshot mount + snapshot env + SANDBOX_TYPE=copy"
+      && grep -q 'SANDBOX_TYPE=copy' "$overlay" \
+      && ! grep -q 'SNAPSHOT_DIR' "$overlay" \
+      && ! grep -q '/home/agentuser/.snapshot' "$overlay"; then
+    pass "copy overlay carries named volume + SANDBOX_TYPE=copy, no snapshot mount"
   else
-    fail "copy overlay missing volume/snapshot wiring or SANDBOX_TYPE=copy"
+    fail "copy overlay missing volume wiring, carries stale snapshot mount, or missing SANDBOX_TYPE=copy"
   fi
 }
 
@@ -258,7 +256,7 @@ run_test test_no_name_lines_in_output
 run_test test_output_is_valid_yaml
 run_test test_stub_docker_config_preserves_structure
 run_test test_base_template_has_no_copy_only_wiring
-run_test test_copy_overlay_carries_snapshot_and_volume
+run_test test_copy_overlay_carries_volume_no_snapshot_mount
 run_test test_mount_overlay_carries_worktree_not_copy_wiring
 run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_sig

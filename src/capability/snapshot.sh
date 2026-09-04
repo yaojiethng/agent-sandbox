@@ -4,14 +4,12 @@
 # and sandbox-entrypoint.sh (capability layer side).
 #
 # Host-side functions:
-#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [primary  --  rsync-based]
+#   snapshot_seed_tar         SOURCE_DIR  OUT_TAR   [primary -- git-enumerated seed tar]
+#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [rsync-based; mount delivery]
 #   snapshot_archive_head     SOURCE_DIR  DEST_DIR   [produces baseline.tar for container]
-#   snapshot_enumerate_files  SOURCE_DIR             [deprecated  --  index-driven]
-#   snapshot_copy_files       SOURCE_DIR  DEST_DIR   [deprecated  --  index-driven]
-#   snapshot_validate         SNAPSHOT_DIR
 #
 # Container-side functions:
-#   snapshot_init_git         SANDBOX_DIR   SNAPSHOT_DIR
+#   snapshot_init_git         SANDBOX_DIR   SEED_DIR   [SEED_DIR carries baseline.tar + worktree/]
 
 # -------------------------
 # filesystem_tracks_exec_bits
@@ -252,29 +250,97 @@ snapshot_check_case_mismatch() {
 }
 
 # -------------------------
-# snapshot_validate
+# snapshot_seed_tar
 # -------------------------
-# Structural integrity check for a snapshot directory.
-# Used as gate 1 (host, after copy) and gate 2 (capability layer, after mount).
-# Exits non-zero with a message on any failure.
-snapshot_validate() {
-  local SNAPSHOT_DIR="$1"
+# Builds the copy-delivery seed tar from SOURCE_DIR (the operator's project):
+#
+#   worktree/      the operator's working tree as git enumerates it: tracked
+#                  files still on disk (from the index) plus untracked
+#                  non-ignored files (`git ls-files --others
+#                  --exclude-standard`). Deleted-from-worktree tracked files
+#                  are absent by construction. All ignore sources (local
+#                  .gitignore, global core.excludesFile, .git/info/exclude)
+#                  are honored by git's own rules -- including negation
+#                  patterns, which rsync-based exclusion mishandled.
+#                  Members are packed under a worktree/ prefix.
+#   baseline.tar   exactly HEAD (`git archive`), consumed by snapshot_init_git
+#                  to build the baseline commit (index = HEAD).
+#
+# The tar is extracted directly into the sandbox volume root. Its members
+# are git-ignored by snapshot_init_git for the duration of init and removed
+# after the overlay, so only project content remains.
+#
+# GNU tar's --transform rewrites symlink targets as well as member names;
+# since the worktree/ member prefix requires a transform, the pack uses the
+# unique sentinel prefix .agent-sandbox-seed/ and snapshot_init_git repairs
+# symlink targets by stripping that prefix after the overlay (a project
+# path can never collide with the sentinel).
+#
+# Edge cases: symlinks, exec bits, and binary content are carried by tar.
+# Empty directories are not carried (git cannot represent them; accepted
+# behavior change vs the rsync pipeline). Submodules are rejected. Known
+# rsync-era limitation resolved: negation patterns in global/exclude files.
+#
+# Known limitation (inherited from the rsync pipeline): staged-but-uncommitted
+# index state is not carried -- the sandbox index always reflects HEAD.
+#
+# Prints progress to stderr. Exits non-zero on any failure.
+snapshot_seed_tar() {
+  local SOURCE_DIR="$1"
+  local OUT_TAR="$2"
 
-  if [[ ! -d "$SNAPSHOT_DIR" ]]; then
-    echo "Error: snapshot directory does not exist: $SNAPSHOT_DIR" >&2
+  if [[ -z "$SOURCE_DIR" || -z "$OUT_TAR" ]]; then
+    echo "Error: snapshot_seed_tar requires SOURCE_DIR and OUT_TAR" >&2; return 1
+  fi
+
+  # Submodules are not supported by the seed pipeline (same as the rsync path).
+  if git -C "$SOURCE_DIR" ls-files --stage | grep -q '^160000'; then
+    echo "Error: submodules detected in $SOURCE_DIR." >&2
+    echo "  Submodules are not supported by the snapshot pipeline." >&2
+    echo "  Deinitialise submodules before running the harness:" >&2
+    echo "    git -C '$SOURCE_DIR' submodule deinit --all" >&2
     return 1
   fi
 
-  if [[ -z "$(ls -A "$SNAPSHOT_DIR")" ]]; then
-    echo "Error: snapshot directory is empty: $SNAPSHOT_DIR" >&2
+  if ! git -C "$SOURCE_DIR" rev-parse HEAD &>/dev/null; then
+    echo "Error: SOURCE_DIR has no commits  --  the seed tar requires HEAD." >&2
+    echo "  Run: git -C '$SOURCE_DIR' commit --allow-empty -m 'initial'" >&2
     return 1
   fi
 
-  if [[ ! -f "$SNAPSHOT_DIR/baseline.tar" ]]; then
-    echo "Error: baseline.tar missing from snapshot: $SNAPSHOT_DIR" >&2
-    echo "  snapshot_archive_head must run before snapshot_validate." >&2
+  snapshot_check_case_mismatch "$SOURCE_DIR"
+
+  # Component 1: baseline.tar (committed state at HEAD).
+  local tmpdir
+  tmpdir=$(mktemp -d) || { echo "Error: mktemp failed" >&2; return 1; }
+  if ! git -C "$SOURCE_DIR" archive HEAD > "$tmpdir/baseline.tar" 2>/dev/null; then
+    echo "Error: git archive failed in $SOURCE_DIR" >&2
+    rm -rf "$tmpdir"
     return 1
   fi
+
+  # Component 2: worktree/ -- git-enumerated file list packed under the
+  # .agent-sandbox-seed/ sentinel prefix (see the function header for why a
+  # transform is required and how symlink targets are repaired).
+  local list_z="$tmpdir/seed-list.z"
+  (
+    { git -C "$SOURCE_DIR" ls-files --cached -z; git -C "$SOURCE_DIR" ls-files --others --exclude-standard -z; } \
+      | while IFS= read -r -d '' f; do [[ -e "$SOURCE_DIR/$f" || -L "$SOURCE_DIR/$f" ]] && printf '%s\0' "$f"; done
+  ) | sort -z > "$list_z"
+
+  if ! tar -C "$SOURCE_DIR" --null -T "$list_z" --transform "s|^|.agent-sandbox-seed/worktree/|" -cf "$OUT_TAR"; then
+    echo "Error: seed tar (worktree) failed for $SOURCE_DIR" >&2
+    rm -rf "$tmpdir"
+    return 1
+  fi
+  if ! tar -rf "$OUT_TAR" --transform "s|^|.agent-sandbox-seed/|" -C "$tmpdir" baseline.tar; then
+    echo "Error: seed tar (baseline append) failed for $SOURCE_DIR" >&2
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  rm -rf "$tmpdir"
+  echo "[snapshot] seed tar ready: $(tar -tf "$OUT_TAR" | wc -l) member(s)" >&2
 }
 
 # -------------------------
@@ -282,14 +348,22 @@ snapshot_validate() {
 # -------------------------
 # Initialises a git repository in SANDBOX_DIR with the correct two-layer state:
 #
-#   Layer 1  --  baseline commit: unpacked from SNAPSHOT_DIR/baseline.tar, which
-#   contains exactly HEAD from PROJECT_DIR (produced by snapshot_archive_head
-#   on the host). The baseline commit represents the committed state only  -- 
+#   Layer 1  --  baseline commit: unpacked from SEED_DIR/baseline.tar, which
+#   contains exactly HEAD from PROJECT_DIR (produced by snapshot_seed_tar on
+#   the host). The baseline commit represents the committed state only  -- 
 #   no working tree changes, no untracked files.
 #
-#   Layer 2  --  working tree overlay: SNAPSHOT_DIR (the rsync copy of the
-#   operator's working tree) is overlaid onto SANDBOX_DIR with --delete.
-#   The git index is NOT updated after this step.
+#   Layer 2  --  working tree overlay: SEED_DIR/worktree/ (the git-enumerated
+#   copy of the operator's working tree) is overlaid onto SANDBOX_DIR with
+#   --delete. The git index is NOT updated after this step.
+#
+# SEED_DIR is the directory the seed tar was extracted into. For copy
+# delivery the seed tar lands at $SANDBOX_DIR/.seed inside the sandbox
+# volume (the tar carries the .agent-sandbox-seed/ prefix), so the caller
+# passes SEED_DIR = $SANDBOX_DIR/.agent-sandbox-seed. The seed members are
+# registered in .git/info/exclude before the baseline staging so they never
+# enter the index, and are removed after the overlay (the exclude line with
+# them).
 #
 # Result: the sandbox git index reflects HEAD; the sandbox working tree
 # reflects the operator's current on-disk state. git status in the sandbox
@@ -316,17 +390,17 @@ snapshot_validate() {
 # Exits non-zero if any step fails.
 snapshot_init_git() {
   local SANDBOX_DIR="$1"
-  local SNAPSHOT_DIR="$2"
+  local SEED_DIR="$2"
 
   if [[ -z "$SANDBOX_DIR" ]]; then
     echo "Error: SANDBOX_DIR is required" >&2; return 1
   fi
-  if [[ -z "$SNAPSHOT_DIR" ]]; then
-    echo "Error: SNAPSHOT_DIR is required" >&2; return 1
+  if [[ -z "$SEED_DIR" ]]; then
+    echo "Error: SEED_DIR is required" >&2; return 1
   fi
-  if [[ ! -f "$SNAPSHOT_DIR/baseline.tar" ]]; then
-    echo "Error: baseline.tar not found in SNAPSHOT_DIR: $SNAPSHOT_DIR" >&2
-    echo "  snapshot_archive_head must run on the host before the container starts." >&2
+  if [[ ! -f "$SEED_DIR/baseline.tar" ]]; then
+    echo "Error: seed content missing in $SEED_DIR: baseline.tar not found" >&2
+    echo "  The sandbox volume must be seeded (snapshot_seed_tar + docker cp) before init." >&2
     return 1
   fi
 
@@ -365,8 +439,13 @@ snapshot_init_git() {
   # Previously this used an intermediate mktemp directory + cp -a, which
   # failed when TMPDIR resolved to /opt/provider-config/ inside the
   # container, because cp -a preserved read-only git object permissions.
-  tar -x -C "$SANDBOX_DIR" < "$SNAPSHOT_DIR/baseline.tar" \
+  tar -x -C "$SANDBOX_DIR" < "$SEED_DIR/baseline.tar" \
     || { echo "Error: failed to unpack baseline.tar into sandbox" >&2; return 1; }
+
+  # The seed members live inside the sandbox volume during init; keep them
+  # out of the index. The exclude line is removed after the overlay so the
+  # session's git status is not filtered by init-time artifacts.
+  printf '/.agent-sandbox-seed\n' >> "$SANDBOX_DIR/.git/info/exclude"
 
   git -C "$SANDBOX_DIR" add -A \
     || { echo "Error: git add failed in $SANDBOX_DIR" >&2; return 1; }
@@ -390,19 +469,35 @@ snapshot_init_git() {
   session_state_write "$SANDBOX_DIR" "session_id" "${SESSION_ID:-}"
 
   # --- Step 2: overlay the working tree without touching the index ---
-  # rsync copies the operator's working tree state (from SNAPSHOT_DIR, produced
-  # by snapshot_copy_worktree on the host) over the sandbox. --delete ensures
-  # files absent from the working tree (unstaged deletions) are also absent
-  # from the sandbox working tree.
+  # SEED_DIR/worktree/ is the git-enumerated copy of the operator's working
+  # tree (from the seed tar). --delete ensures files absent from the working
+  # tree (unstaged deletions) are also absent from the sandbox working tree.
+  # The seed members themselves are excluded from the overlay and removed
+  # afterwards so only project content remains in the sandbox.
   #
   # The git index is not updated after this step. The index reflects HEAD
   # (the baseline commit). The working tree reflects the operator's on-disk
   # state. git status correctly shows the diff between the two.
+  mkdir -p "$SEED_DIR/worktree"
   rsync -a --delete \
     --exclude='.git' \
-    --exclude='baseline.tar' \
-    "$SNAPSHOT_DIR/" "$SANDBOX_DIR/" \
+    --exclude='/.agent-sandbox-seed' \
+    "$SEED_DIR/worktree/" "$SANDBOX_DIR/" \
     || { echo "Error: rsync overlay failed" >&2; return 1; }
+
+  # Repair symlink targets: the pack-time --transform rewrote every symlink
+  # target with the .agent-sandbox-seed/worktree/ prefix; strip it back.
+  # The sentinel cannot collide with project content.
+  while IFS= read -r -d '' link; do
+    local tgt
+    tgt=$(readlink "$link")
+    if [[ "$tgt" == ".agent-sandbox-seed/worktree/"* ]]; then
+      ln -sfn "${tgt#.agent-sandbox-seed/worktree/}" "$link"
+    fi
+  done < <(find "$SANDBOX_DIR" -path "$SANDBOX_DIR/.git" -prune -o -path "$SANDBOX_DIR/.agent-sandbox-seed" -prune -o -type l -print0)
+
+  rm -rf "$SEED_DIR"
+  sed -i '/^\/.agent-sandbox-seed$/d' "$SANDBOX_DIR/.git/info/exclude"
 
   snapshot_check_case_mismatch "$SANDBOX_DIR"
 

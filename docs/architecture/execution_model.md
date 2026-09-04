@@ -15,7 +15,6 @@ SANDBOX_DIR/
 ├── Makefile
 ├── .env
 ├── .<provider>/               ← provider config (seeded at onboard; persists across sessions)
-├── .snapshot/                 ← project snapshot (built at run time by harness)
 └── .workspace/                ← harness I/O channels
     ├── input/                 ← operator-placed task briefs and addenda (RO to agent)
     ├── output/                ← agent progress and serialised data (RW, no binaries)
@@ -35,9 +34,8 @@ SANDBOX_DIR/
                 └── changed-files/
 
 Capability layer container (CWD: /home/agentuser/)
-├── .snapshot/                 ← RO bind mount: project snapshot from host
 ├── workspace/session-diffs/   ← RW bind mount: diff output
-└── sandbox/                   ← RW Docker volume: working content (owned by this container)
+└── sandbox/                   ← RW Docker volume: working content (owned by this container; seeded host-side at start)
 
 Reasoning layer container (CWD: /home/agentuser/)
 ├── workspace/input/           ← RO bind mount: task briefs, operator addenda
@@ -95,8 +93,8 @@ Resume reuses the same SESSION_ID and overwrites its own file; each unique sessi
 
 **Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE` (`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared:
 
-- `src/build/docker-compose.copy.yml` — the per-run named sandbox volume and
-the snapshot RO mount + env (`SNAPSHOT_DIR`). Copy mode only.
+- `src/build/docker-compose.copy.yml` — the per-run named sandbox volume.
+Content is host-side seeded (seed tar via `docker cp`); no snapshot mount. Copy mode only.
 - `src/build/docker-compose.mount.yml` — the worktree bind mount at
 `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
@@ -104,10 +102,10 @@ The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — me
 
 **Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
 
-- **Copy:** the existing snapshot pipeline — `snapshot_validate` (gate 2),
-  `snapshot_init_git` (baseline commit from `baseline.tar`), and the preflight check on `SNAPSHOT_DIR/baseline.tar`.
-- **Mount:** no snapshot. The entrypoint validates `.git` is present in the
-  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit), and skips the snapshot gate/init and the `baseline.tar` preflight.
+- **Copy:** the seeded volume — `snapshot_init_git` (baseline commit from
+  the seed's `baseline.tar`, working-tree overlay from the seed's `worktree/`).
+- **Mount:** no seed. The entrypoint validates `.git` is present in the
+  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit), and skips the seed init.
 
 `SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy writes it in `snapshot_init_git`; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
 
@@ -129,9 +127,9 @@ Each `.workspace/` subdirectory has a different trust level and a different cont
 - `output/` — agent-written (reasoning layer, read-write)
 - `session-diffs/` — harness-written (capability layer, read-write — diff pipeline)
 
-### Why `.snapshot/` is read-only and capability-layer-only
+### Why the sandbox volume is capability-layer-only
 
-The snapshot is an input prepared before the run. Mounting it read-only prevents either container from modifying the baseline. Only the capability layer needs it — it copies the snapshot into `sandbox/` at startup and does not reference it again.
+The volume is the agent's working content, seeded once before the sandbox container starts. Nothing else references it; the host receives changes exclusively through the diff pipeline.
 
 ### Why `output/` prohibits binaries
 
@@ -162,7 +160,7 @@ This is the as-expected record of what lives where across a session, so future c
 | Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{SESSION_ID}}-sandbox-data` | ✅ yes (named volume persists) |
 | Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | ✅ yes (host) |
 | Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | ✅ yes (host) |
-| Snapshot baseline `.snapshot/` | bind-mounted read-only | ✅ yes (host, read-only) |
+| Seed content (per-run staging tar) | per-run mktemp, deleted after seeding | n/a (one-shot transfer) |
 | Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, copy-in from baked image at startup | ❌ regenerated on start |
 | Caches `~/.npm`, `~/.cache` | container writable layer | ❌ disposable |
 

@@ -39,11 +39,11 @@ Current layer freeze status is tracked in [`docs/development/project_index.md`](
 
 ## Major Components
 
-**Two-layer container runtime** — each session runs two containers: a capability layer (sandbox, snapshot pipeline, diff pipeline) and a reasoning layer (agent runtime, provider-specific). Both are ephemeral and discarded after each run. The capability layer starts first and owns the sandbox volume; the reasoning layer attaches to it via `--volumes-from`.
+**Two-layer container runtime** — each session runs two containers: a capability layer (sandbox, seed pipeline, diff pipeline) and a reasoning layer (agent runtime, provider-specific). Both are ephemeral and discarded after each run. The capability layer starts first and owns the sandbox volume; the reasoning layer attaches to it via `--volumes-from`.
 
-**`.snapshot/`** — a host-side directory rebuilt before each run by `start_agent.sh`. Contains a `baseline.tar` (from `git archive HEAD`) and an rsync copy of the operator's working tree. Mounted read-only into the capability layer. Never mounted into the reasoning layer.
+**Host-side volume seed** — before the sandbox container starts, `run_agent.sh` builds a seed tar from the project (git-enumerated working tree plus a `baseline.tar` of HEAD) and extracts it into the sandbox volume via `docker cp`. No staging directory and no snapshot mount persist beyond the seed step. Details: [copy_delivery.md](../concepts/copy_delivery.md).
 
-**Sandbox** — a Docker anonymous volume owned by the capability layer. Initialised at container start from `.snapshot/`: baseline commit first (from `baseline.tar`), then working tree overlaid via rsync. The agent works exclusively in `sandbox/`. Destroyed on session teardown.
+**Sandbox** — a named Docker volume owned by the capability layer. Initialised at container start from the seeded content: baseline commit first (from `baseline.tar`), then working tree overlaid via the seed's `worktree/`. The agent works exclusively in `sandbox/`. Survives stop/resume; removed by prune.
 
 **`.workspace/`** — a host-side directory providing the I/O channels between containers and host. Subdirectories have distinct owners and trust levels: `input/` (operator-written, reasoning layer read-only), `output/` (agent-written, reasoning layer read-write), `session-diffs/` (harness-written, capability layer read-write — diff pipeline output).
 
@@ -57,7 +57,7 @@ Current layer freeze status is tracked in [`docs/development/project_index.md`](
 
 | Topic | Document |
 |---|---|
-| Container lifecycle, snapshot pipeline, mount shape | [execution_model.md](execution_model.md) |
+| Container lifecycle, seed pipeline, mount shape | [execution_model.md](execution_model.md) |
 | Workflow expression model and policy map | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
 | Security guarantees and trust boundaries | [security.md](security.md) |
 | STRIDE threat analysis | [threat_model_stride.md](threat_model_stride.md) |

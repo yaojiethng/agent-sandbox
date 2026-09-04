@@ -5,7 +5,7 @@
 # Covers:
 #   snapshot_copy_worktree    --  primary rsync-based copy
 #   snapshot_archive_head     --  produces baseline.tar from HEAD
-#   snapshot_validate         --  structural integrity check (including baseline.tar)
+#   (snapshot_validate removed with the RO-mount pipeline)
 #
 # All fixtures created under a temp dir  --  no repos created inside the harness repo.
 
@@ -292,55 +292,6 @@ test_archive_head_creates_dest_if_absent() {
 }
 
 # -------------------------
-# snapshot_validate tests
-# -------------------------
-
-test_validate_passes() {
-  local DIR="$FIXTURE_DIR/validate_pass"
-  mkdir -p "$DIR"
-  echo "content" > "$DIR/file.txt"
-  touch "$DIR/baseline.tar"
-
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    pass "validate passes on non-empty snapshot with baseline.tar"
-  else
-    fail "validate failed on valid snapshot"
-  fi
-}
-
-test_validate_missing_dir() {
-  if snapshot_validate "$FIXTURE_DIR/nonexistent" 2>/dev/null; then
-    fail "validate should fail on missing directory"
-  else
-    pass "validate correctly fails on missing directory"
-  fi
-}
-
-test_validate_empty_dir() {
-  local DIR="$FIXTURE_DIR/empty_dir"
-  mkdir -p "$DIR"
-
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    fail "validate should fail on empty directory"
-  else
-    pass "validate correctly fails on empty directory"
-  fi
-}
-
-test_validate_missing_baseline_tar() {
-  local DIR="$FIXTURE_DIR/validate_no_tar"
-  mkdir -p "$DIR"
-  echo "content" > "$DIR/file.txt"
-  # baseline.tar intentionally absent
-
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    fail "validate should fail when baseline.tar is absent"
-  else
-    pass "validate correctly fails when baseline.tar is absent"
-  fi
-}
-
-# -------------------------
 # Run all tests
 # -------------------------
 
@@ -364,10 +315,6 @@ run_test       test_archive_head_tar_excludes_unstaged_edits
 run_test             test_archive_head_fails_with_no_commits
 run_test     test_archive_head_creates_dest_if_absent
 
-# snapshot_validate
-run_test                  test_validate_passes
-run_test             test_validate_missing_dir
-run_test               test_validate_empty_dir
-run_test    test_validate_missing_baseline_tar
+
 
 test_done

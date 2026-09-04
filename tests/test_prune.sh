@@ -13,7 +13,7 @@ source "$TEST_DIR/libs/test_common.sh"
 source "$TEST_DIR/libs/sig_helpers.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 setup_prune_fixture() {
   local FIXTURE_DIR="$1"

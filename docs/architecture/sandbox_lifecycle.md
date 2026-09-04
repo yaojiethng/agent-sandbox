@@ -20,29 +20,22 @@ A capability layer session has three phases:
 
 ---
 
-## Phase 1 — Fork (Snapshot Pipeline)
+## Phase 1 — Fork (Volume Seed Pipeline)
 
-The snapshot pipeline replicates the host repository state into the capability layer sandbox. It runs in two stages separated by the container boundary.
+The seed pipeline replicates the host repository state into the capability layer sandbox volume. It runs in two stages separated by the container boundary.
 
-### Stage 1 — Host side (`scripts/start_agent.sh`)
+### Stage 1 — Host side (`scripts/run_agent.sh` seed_sandbox_volume)
 
-**`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
+**`snapshot_seed_tar`** (`src/capability/snapshot.sh`) builds the seed tar from `PROJECT_DIR`:
 
-Files excluded by global gitignore or `.git/info/exclude` (but not local `.gitignore`) emit a warning to `stderr` to alert the operator of potential missing dependencies.
+- `worktree/` — the operator's working tree as git enumerates it: tracked files still on disk plus untracked non-ignored files. All ignore sources (local `.gitignore`, global `core.excludesFile`, `.git/info/exclude`) are honored by git's own rules, including negation patterns (the rsync-based pipeline mishandled those — rsync treats `!pattern` as clear-the-exclude-list and leaked previously excluded files).
+- `baseline.tar` — exactly HEAD (`git archive`), used by the container to construct the baseline commit.
 
-**`snapshot_archive_head`** produces a tar archive of the committed state at HEAD:
+Members are packed under the unique sentinel prefix `.agent-sandbox-seed/` (tar's `--transform` rewrites symlink targets as well as member names, so init repairs symlink targets by stripping the sentinel prefix).
 
-```bash
-git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"
-```
-
-This runs on the host where `PROJECT_DIR` is available. The tar contains exactly the files as they exist in the HEAD commit — no working tree changes, no untracked files. It is written into `.snapshot/` alongside the rsync copy and is used by the container to construct the baseline commit.
-
-**`snapshot_validate` (gate 1)** runs after both copy and archive, before the containers start. Checks that `.snapshot/` is non-empty, structurally sound, and contains `baseline.tar`. Non-zero exit aborts the run before Docker is invoked.
+The seed step runs only on a fresh start (`--reset-volume`, copy delivery): `docker compose create sandbox` creates the volume and container without starting, then `docker cp` extracts the seed tar into the volume through the container's mount path. Resume never seeds.
 
 ### Stage 2 — Capability layer side (capability layer entrypoint)
-
-**`snapshot_validate` (gate 2)** runs first, against the mounted `.snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
 
 **`snapshot_init_git`** initialises the sandbox git repository in two steps:
 
@@ -55,7 +48,7 @@ session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
 
 `init_sha` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime. `session_ts` records the session start timestamp.
 
-2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
+2. **Working tree overlay** — rsync copies the seeded `worktree/` tree over `sandbox/` with `--delete`, without touching the git index; the seed members are removed afterwards. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
 
 The two-step design ensures all four working tree states are handled correctly:
 
@@ -69,7 +62,7 @@ The two-step design ensures all four working tree states are handled correctly:
 
 ### Harness directory lifecycle
 
-`.snapshot/` is overwritten on each **first** start — rebuilt from `PROJECT_DIR` before the containers start. On a resumed session, the snapshot pipeline is skipped entirely. `.snapshot/` retains its previous content but is not accessed after initial git init. It is not archived or cleaned up between runs.
+No persistent staging directory exists: the seed tar is built to a per-run mktemp inside `run_agent.sh` and deleted after the `docker cp`. The seed members inside the volume are removed by `snapshot_init_git` after the overlay. On a resumed session, the seed pipeline is skipped entirely.
 
 ### Resume path (M2.6.2 volume-based persistence)
 
@@ -78,11 +71,11 @@ The two-step design ensures all four working tree states are handled correctly:
 ```
 volume exists + REFRESH not set?
   ├── No  → normal init
-  │         Host: compute fresh identity, run copy pipeline
-  │         Container: .git absent → snapshot_validate + snapshot_init_git
+  │         Host: compute fresh identity, run seed pipeline
+  │         Container: .git absent → snapshot_init_git from the seeded members
   └── Yes → resume
-            Host: read identity from the volume's Docker labels, skip copy pipeline
-            Container: .git present → skip snapshot_validate + snapshot_init_git
+            Host: read identity from the compose registry, skip seed pipeline
+            Container: .git present → skip snapshot_init_git
 ```
 
 Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
@@ -91,8 +84,8 @@ Host-side identity is recorded in the per-run compose registry (`.compose/<sessi
 
 ```
 --refresh/--rebuild passed?
-  ├── Yes → new session (rebuild images + fresh volume + full snapshot)
-  └── No  → new session (fresh volume + full snapshot)
+  ├── Yes → new session (rebuild images + fresh volume + full seed)
+  └── No  → new session (fresh volume + full seed)
             start carries no resume path (F2 design D10); to resume a
             previous session, use the split-out `make resume` command.
 ```

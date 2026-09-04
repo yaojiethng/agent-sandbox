@@ -3,8 +3,7 @@
 # Snapshot unpacking, git baseline, diff pipeline, autosave.
 #
 # Sequence:
-#   1. snapshot_validate (gate 2)        --  confirm .snapshot/ is intact
-#   2. snapshot_init_git                 --  git init + baseline commit; records baseline SHA
+#   1. snapshot_init_git                 --  git init + baseline commit; records baseline SHA
 #   3. register EXIT trap -> _session_export  --  fires on any exit; waits for git lockfile,
 #                                         runs session export, falls back to autosave on failure
 #   4. register TERM trap -> exit 0       --  docker stop sends SIGTERM to PID 1; clean exit
@@ -18,7 +17,6 @@
 #
 # Environment variables (all have defaults defined in libs/dirs.sh,
 # override via docker run -e or compose .env):
-#   SNAPSHOT_DIR_NAME       --  name of the snapshot mount directory  (default: .snapshot)
 #   SANDBOX_DIR_NAME        --  name of the sandbox directory         (default: sandbox)
 #   CHANGES_DIR_NAME        --  session-diffs leaf under workspace    (default: session-diffs)
 #   WORKSPACE_DIR_NAME      --  workspace subdirectory name           (default: .workspace)
@@ -37,13 +35,12 @@ ROOT="/home/agentuser"
 # Workspace paths are passed as absolute env vars from the compose template
 # (x-workspace anchor). Fallback to dirs_resolve only if unset (testing).
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
-SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
 CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
 
-if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
   source /opt/sandbox/lib/dirs.sh
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
@@ -110,15 +107,13 @@ if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   session_state_write "$SANDBOX_DIR" "input_dir"   "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"  "$OUTPUT_DIR"
 elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
-  # Fresh-init path: no git state, so initialise the sandbox from the snapshot.
-  # Gate 2  --  confirm mounted snapshot is intact before unpacking.
-  snapshot_validate "$SNAPSHOT_DIR"
-
-  # The snapshot is already validated above and baseline.tar is read directly
-  # from the snapshot mount by snapshot_init_git  --  no copy needed.
+  # Fresh-init path: no git state, so initialise the sandbox from the seed.
+  # The seed tar was extracted into the volume by the host-side seed step
+  # (run_agent.sh seed_sandbox_volume); its members sit under the
+  # .agent-sandbox-seed/ sentinel.
 
   # Initialise git baseline. Failure here means the container cannot start.
-  snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" > /dev/null || {
+  snapshot_init_git "$SANDBOX_DIR" "$SANDBOX_DIR/.agent-sandbox-seed" > /dev/null || {
     echo "Error: sandbox git initialisation failed  --  container cannot start." >&2
     echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
     exit 1
@@ -127,7 +122,6 @@ elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
   # SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
   # Write workspace paths so downstream consumers can read them deterministically.
   session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
-  session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
   session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
 
@@ -154,7 +148,6 @@ else
     fi
   fi
   session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
-  session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
   session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
 fi
@@ -199,9 +192,6 @@ _preflight_crit "SESSION_STATE has session_ts" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
 
 # Mount checks
-if [[ "$SANDBOX_TYPE" == "copy" ]]; then
-  _preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"     test -f "$SNAPSHOT_DIR/baseline.tar"
-fi
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 # viable for provider-entrypoint only
 # _preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"

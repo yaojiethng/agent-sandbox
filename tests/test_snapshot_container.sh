@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # tests/test_snapshot_container.sh
-# Container-side snapshot pipeline tests: snapshot_validate, snapshot_init_git.
+# Snapshot pipeline tests: snapshot_seed_tar (host-side) and snapshot_init_git
+# (container-side).
 #
 # snapshot_init_git tests cover the full eight-case working tree state matrix.
-# Each case builds a fixture that includes both a baseline.tar (via git archive HEAD)
-# and an rsync working tree copy, then asserts git status --porcelain output.
+# Each case builds a project fixture, produces the seed tar (git-enumerated
+# working tree + HEAD baseline), extracts it into a fresh sandbox directory as
+# the host-side seed step does, runs snapshot_init_git, and asserts
+# git status --porcelain output.
 #
 # All fixtures created under /tmp  --  no git repos created inside the harness repo.
 # Can be run directly on the host or inside the container.
@@ -19,24 +22,12 @@ source "$REPO_ROOT/src/capability/snapshot.sh"
 # -------------------------
 # Fixture builders
 # -------------------------
-make_snapshot() {
-  local DIR="$1"
-  mkdir -p "$DIR"
-  echo "content" > "$DIR/file.txt"
-  mkdir -p "$DIR/src"
-  echo "source" > "$DIR/src/main.txt"
-}
-
-# Build a complete snapshot fixture for snapshot_init_git:
-# - PROJECT_DIR with a committed baseline
-# - SNAPSHOT_DIR containing both baseline.tar and the rsync working tree copy
-#
-# Usage: make_init_fixture PROJECT_DIR SNAPSHOT_DIR
-# After this returns, caller can modify the working tree in PROJECT_DIR
-# and re-run the rsync step to simulate different operator states.
-make_init_fixture() {
+# Build a project fixture with a committed baseline.
+# Usage: make_project PROJECT_DIR
+# After this returns, the caller modifies the working tree to simulate the
+# operator state under test, then calls seed_and_init.
+make_project() {
   local PROJECT_DIR="$1"
-  local SNAPSHOT_DIR="$2"
 
   mkdir -p "$PROJECT_DIR"
   git -C "$PROJECT_DIR" init --quiet
@@ -49,99 +40,189 @@ make_init_fixture() {
   echo "source" > "$PROJECT_DIR/src/module.txt"
   git -C "$PROJECT_DIR" add .
   git -C "$PROJECT_DIR" commit -m "initial" --quiet
-
-  # Produce baseline.tar from HEAD
-  snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
-
-  # Produce rsync working tree copy (current state = clean at this point)
-  snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
 }
 
-# Re-sync the working tree into an existing SNAPSHOT_DIR after the caller
-# has made working tree changes to PROJECT_DIR.
-# Uses --delete so that files removed from the working tree are also removed
-# from SNAPSHOT_DIR  --  this is required for deletion cases (4 and 5) to work
-# correctly. snapshot_copy_worktree does not use --delete (it is a one-way
-# copy, not a mirror), so we call rsync directly here.
-resync_snapshot() {
+# Host-side seed + container-side init, exactly as the production pipeline
+# wires them (run_agent.sh seed_sandbox_volume -> entrypoint fresh-init):
+#   1. snapshot_seed_tar packs the project into a seed tar
+#   2. the tar is extracted into the (empty) sandbox directory
+#   3. snapshot_init_git initialises git from the extracted seed members
+# Usage: seed_and_init PROJECT_DIR SANDBOX_DIR  ->  prints baseline SHA
+seed_and_init() {
   local PROJECT_DIR="$1"
-  local SNAPSHOT_DIR="$2"
-  rsync -a --delete     --filter=':- .gitignore'     --exclude='.git'     --exclude='baseline.tar'     "$PROJECT_DIR/" "$SNAPSHOT_DIR/"
+  local SANDBOX_DIR="$2"
+
+  local seed_tar
+  seed_tar="$FIXTURE_DIR/$(basename "$SANDBOX_DIR").seed.tar"
+  snapshot_seed_tar "$PROJECT_DIR" "$seed_tar" > /dev/null 2>&1
+
+  mkdir -p "$SANDBOX_DIR"
+  tar -xf "$seed_tar" -C "$SANDBOX_DIR"
+  rm -f "$seed_tar"
+
+  snapshot_init_git "$SANDBOX_DIR" "$SANDBOX_DIR/.agent-sandbox-seed"
 }
 
 # -------------------------
-# snapshot_validate tests
+# snapshot_seed_tar tests
 # -------------------------
 
-test_validate_passes() {
-  local DIR="$FIXTURE_DIR/validate_pass"
-  make_snapshot "$DIR"
-  touch "$DIR/baseline.tar"
+test_seed_tar_roundtrip_lossless() {
+  local PROJECT="$FIXTURE_DIR/roundtrip_project"
+  make_project "$PROJECT"
 
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    pass "validate passes on valid snapshot with baseline.tar"
+  # Working-tree variety: modification, deletion, untracked, exec bit, symlink
+  echo "modified" >> "$PROJECT/committed.txt"
+  rm "$PROJECT/src/module.txt"
+  echo "new" > "$PROJECT/untracked.txt"
+  chmod +x "$PROJECT/committed.txt"
+  ln -sf committed.txt "$PROJECT/link"
+
+  local TARBALL="$FIXTURE_DIR/roundtrip.tar"
+  snapshot_seed_tar "$PROJECT" "$TARBALL" > /dev/null 2>&1
+
+  local EXTRACT="$FIXTURE_DIR/roundtrip_extract"
+  mkdir -p "$EXTRACT"
+  tar -xf "$TARBALL" -C "$EXTRACT"
+
+  local mismatches=0
+  # File list, content hashes, modes, symlink targets vs the project working tree
+  while IFS= read -r f; do
+    [[ "$f" == ".git" || "$f" == ".git"/* ]] && continue
+    local rel="${f#./}"
+    [[ -e "$PROJECT/$rel" || -L "$PROJECT/$rel" ]] || continue
+    if [[ -L "$PROJECT/$rel" ]]; then
+      # Symlink targets are not compared here -- the pack-time transform
+      # prefixes them with the sentinel and snapshot_init_git repairs them
+      # (covered by test_init_git_symlink_target_repaired below).
+      continue
+    else
+      [[ "$(sha256sum < "$PROJECT/$rel")" == "$(sha256sum < "$EXTRACT/.agent-sandbox-seed/worktree/$rel")" ]] \
+        || { mismatches=$((mismatches+1)); continue; }
+      [[ "$(stat -c %a "$PROJECT/$rel")" == "$(stat -c %a "$EXTRACT/.agent-sandbox-seed/worktree/$rel")" ]] \
+        || mismatches=$((mismatches+1))
+    fi
+  done < <(cd "$PROJECT" && find . -mindepth 1 ! -path './.git*' -type f -o -mindepth 1 ! -path './.git*' -type l)
+
+  # Deleted tracked file must be absent from the seed
+  [[ -e "$EXTRACT/.agent-sandbox-seed/worktree/src/module.txt" ]] && mismatches=$((mismatches+1))
+  # baseline.tar member must exist
+  [[ -f "$EXTRACT/.agent-sandbox-seed/baseline.tar" ]] || mismatches=$((mismatches+1))
+
+  if [[ "$mismatches" -eq 0 ]]; then
+    pass "seed_tar: round-trip preserves list, hashes, modes, symlink targets"
   else
-    fail "validate failed on valid snapshot"
+    fail "seed_tar: round-trip has $mismatches mismatch(es)"
   fi
 }
 
-test_validate_missing() {
-  if snapshot_validate "$FIXTURE_DIR/nonexistent" 2>/dev/null; then
-    fail "validate should fail on missing directory"
+test_seed_tar_gitignored_excluded() {
+  local PROJECT="$FIXTURE_DIR/ignored_project"
+  mkdir -p "$PROJECT"
+  git -C "$PROJECT" init --quiet
+  git -C "$PROJECT" config user.email "test@sandbox"
+  git -C "$PROJECT" config user.name "test"
+  echo "content" > "$PROJECT/committed.txt"
+  printf 'secret.env\n' > "$PROJECT/.gitignore"
+  git -C "$PROJECT" add .
+  git -C "$PROJECT" commit -m "initial" --quiet
+  echo "secret data" > "$PROJECT/secret.env"
+
+  local TARBALL="$FIXTURE_DIR/ignored.tar"
+  snapshot_seed_tar "$PROJECT" "$TARBALL" > /dev/null 2>&1
+
+  local EXTRACT="$FIXTURE_DIR/ignored_extract"
+  mkdir -p "$EXTRACT"
+  tar -xf "$TARBALL" -C "$EXTRACT"
+
+  if [[ ! -e "$EXTRACT/.agent-sandbox-seed/worktree/secret.env" ]]; then
+    pass "seed_tar: gitignored file excluded"
   else
-    pass "validate correctly fails on missing directory"
+    fail "seed_tar: gitignored file leaked into seed tar"
   fi
 }
 
-test_validate_empty() {
-  local DIR="$FIXTURE_DIR/empty"
-  mkdir -p "$DIR"
+test_seed_tar_negation_patterns() {
+  local PROJECT="$FIXTURE_DIR/negation_project"
+  mkdir -p "$PROJECT"
+  git -C "$PROJECT" init --quiet
+  git -C "$PROJECT" config user.email "test@sandbox"
+  git -C "$PROJECT" config user.name "test"
+  echo "content" > "$PROJECT/committed.txt"
+  git -C "$PROJECT" add .
+  git -C "$PROJECT" commit -m "initial" --quiet
+  # Global excludesFile with a negation: *.debug ignored, keep.debug re-included.
+  # The rsync pipeline leaked drop.debug here (rsync treats ! as clear-list).
+  local GLOBAL_EXCLUDES="$FIXTURE_DIR/global-excludes"
+  printf '*.debug\n!keep.debug\n' > "$GLOBAL_EXCLUDES"
+  git -C "$PROJECT" config core.excludesFile "$GLOBAL_EXCLUDES"
+  echo "keep" > "$PROJECT/keep.debug"
+  echo "drop" > "$PROJECT/drop.debug"
 
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    fail "validate should fail on empty directory"
+  local TARBALL="$FIXTURE_DIR/negation.tar"
+  snapshot_seed_tar "$PROJECT" "$TARBALL" > /dev/null 2>&1
+
+  local EXTRACT="$FIXTURE_DIR/negation_extract"
+  mkdir -p "$EXTRACT"
+  tar -xf "$TARBALL" -C "$EXTRACT"
+
+  if [[ -f "$EXTRACT/.agent-sandbox-seed/worktree/keep.debug" && ! -e "$EXTRACT/.agent-sandbox-seed/worktree/drop.debug" ]]; then
+    pass "seed_tar: negation pattern honored (keep.debug kept, drop.debug dropped)"
   else
-    pass "validate correctly fails on empty directory"
+    fail "seed_tar: negation pattern mishandled (keep.debug/drop.debug)"
   fi
 }
 
-test_validate_missing_baseline_tar() {
-  local DIR="$FIXTURE_DIR/validate_no_tar"
-  make_snapshot "$DIR"
-  # baseline.tar intentionally absent
+test_seed_tar_rejects_submodules() {
+  local PROJECT="$FIXTURE_DIR/submodule_project"
+  make_project "$PROJECT"
+  # Fake a submodule entry in the index (gitlink) without a real submodule clone:
+  # create a nested repo and add it as a gitlink.
+  local SUB="$FIXTURE_DIR/submodule_inner"
+  git init -q "$SUB"
+  git -C "$SUB" config user.email "test@sandbox"
+  git -C "$SUB" config user.name "test"
+  git -C "$SUB" commit --allow-empty -m "inner" --quiet
+  git -C "$PROJECT" update-index --add --cacheinfo 160000,"$(git -C "$SUB" rev-parse HEAD)",sub
 
-  if snapshot_validate "$DIR" 2>/dev/null; then
-    fail "validate should fail when baseline.tar is absent"
+  if snapshot_seed_tar "$PROJECT" "$FIXTURE_DIR/sub.tar" > /dev/null 2>&1; then
+    fail "seed_tar: submodule should be rejected"
   else
-    pass "validate correctly fails when baseline.tar is absent"
+    pass "seed_tar: submodule rejected with error"
   fi
 }
 
-# This function was removed  --  it was superfluous:
-# snapshot_init_git reads baseline.tar directly from the snapshot mount.
+test_seed_tar_rejects_no_commits() {
+  local PROJECT="$FIXTURE_DIR/nocommit_project"
+  mkdir -p "$PROJECT"
+  git -C "$PROJECT" init --quiet
+
+  if snapshot_seed_tar "$PROJECT" "$FIXTURE_DIR/nocommit.tar" > /dev/null 2>&1; then
+    fail "seed_tar: repo without commits should be rejected"
+  else
+    pass "seed_tar: repo without commits rejected with error"
+  fi
+}
 
 # -------------------------
 # snapshot_init_git  --  working tree state matrix
 #
 # Each test:
 #   1. Builds a project repo with committed content
-#   2. Produces baseline.tar + rsync copy into a snapshot dir
-#   3. Optionally modifies the working tree
-#   4. Re-syncs the snapshot (rsync copy only  --  baseline.tar is unchanged)
-#   5. Calls snapshot_init_git SANDBOX SNAPSHOT
-#   6. Asserts git status --porcelain output in sandbox
+#   2. Optionally modifies the working tree
+#   3. Seeds the sandbox (seed tar -> extract -> snapshot_init_git)
+#   4. Asserts git status --porcelain output in sandbox
 # -------------------------
 
 # Case 1: tracked file, no changes  --  clean
 test_init_git_case1_clean() {
   local PROJECT="$FIXTURE_DIR/case1_project"
-  local SNAPSHOT="$FIXTURE_DIR/case1_snapshot"
   local SANDBOX="$FIXTURE_DIR/case1_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   local SHA
-  SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
+  SHA=$(seed_and_init "$PROJECT" "$SANDBOX")
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
@@ -162,17 +243,14 @@ test_init_git_case1_clean() {
 # Case 2: tracked file with unstaged edits  --  shows as M (unstaged)
 test_init_git_case2_unstaged_edit() {
   local PROJECT="$FIXTURE_DIR/case2_project"
-  local SNAPSHOT="$FIXTURE_DIR/case2_snapshot"
   local SANDBOX="$FIXTURE_DIR/case2_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   # Make unstaged edit after baseline is committed
   echo "unstaged edit" >> "$PROJECT/committed.txt"
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
@@ -198,22 +276,19 @@ test_init_git_case2_unstaged_edit() {
 # Note: staging state is lost (see snapshot_init_git comment). Content is correct.
 test_init_git_case3_staged_edit() {
   local PROJECT="$FIXTURE_DIR/case3_project"
-  local SNAPSHOT="$FIXTURE_DIR/case3_snapshot"
   local SANDBOX="$FIXTURE_DIR/case3_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   echo "staged edit" >> "$PROJECT/committed.txt"
   git -C "$PROJECT" add committed.txt  # staged but not committed
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
 
-  # Content is present (rsync copied the staged version) but shown as unstaged
+  # Content is present (seed carries the staged version) but shown as unstaged
   if grep -q "staged edit" "$SANDBOX/committed.txt"; then
     pass "case 3 (staged edit): edited content present in sandbox working tree"
   else
@@ -231,16 +306,13 @@ test_init_git_case3_staged_edit() {
 # Case 4: tracked file deleted without staging  --  shows as D (unstaged)
 test_init_git_case4_unstaged_deletion() {
   local PROJECT="$FIXTURE_DIR/case4_project"
-  local SNAPSHOT="$FIXTURE_DIR/case4_snapshot"
   local SANDBOX="$FIXTURE_DIR/case4_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   rm "$PROJECT/committed.txt"  # unstaged deletion
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
@@ -271,21 +343,18 @@ test_init_git_case4_unstaged_deletion() {
 # Note: staging state is lost. Content is correctly absent from working tree.
 test_init_git_case5_staged_deletion() {
   local PROJECT="$FIXTURE_DIR/case5_project"
-  local SNAPSHOT="$FIXTURE_DIR/case5_snapshot"
   local SANDBOX="$FIXTURE_DIR/case5_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   git -C "$PROJECT" rm committed.txt --quiet  # staged deletion
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
 
-  # File absent from working tree (rsync --delete removed it)
+  # File absent from working tree (seed carries the deletion)
   if [[ ! -f "$SANDBOX/committed.txt" ]]; then
     pass "case 5 (staged deletion): file absent from sandbox working tree"
   else
@@ -303,16 +372,13 @@ test_init_git_case5_staged_deletion() {
 # Case 6: untracked file, not gitignored  --  shows as ??
 test_init_git_case6_untracked() {
   local PROJECT="$FIXTURE_DIR/case6_project"
-  local SNAPSHOT="$FIXTURE_DIR/case6_snapshot"
   local SANDBOX="$FIXTURE_DIR/case6_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   echo "new untracked" > "$PROJECT/hello-world.txt"
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
@@ -335,27 +401,15 @@ test_init_git_case6_untracked() {
 # Case 7: untracked file, gitignored  --  not visible in sandbox
 test_init_git_case7_gitignored() {
   local PROJECT="$FIXTURE_DIR/case7_project"
-  local SNAPSHOT="$FIXTURE_DIR/case7_snapshot"
   local SANDBOX="$FIXTURE_DIR/case7_sandbox"
-  mkdir -p "$SANDBOX"
 
-  # Need .gitignore committed before make_init_fixture
-  mkdir -p "$PROJECT"
-  git -C "$PROJECT" init --quiet
-  git -C "$PROJECT" config user.email "test@sandbox"
-  git -C "$PROJECT" config user.name "test"
-  echo "committed content" > "$PROJECT/committed.txt"
-  echo "secret.env" > "$PROJECT/.gitignore"
-  git -C "$PROJECT" add .
-  git -C "$PROJECT" commit -m "initial" --quiet
-
-  snapshot_archive_head "$PROJECT" "$SNAPSHOT"
-  snapshot_copy_worktree "$PROJECT" "$SNAPSHOT"
-
+  make_project "$PROJECT"
+  printf 'secret.env\n' > "$PROJECT/.gitignore"
+  git -C "$PROJECT" add .gitignore
+  git -C "$PROJECT" commit -m "gitignore" --quiet
   echo "secret data" > "$PROJECT/secret.env"
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
@@ -377,22 +431,19 @@ test_init_git_case7_gitignored() {
 # Note: staging state is lost. Content is present on disk.
 test_init_git_case8_staged_new_file() {
   local PROJECT="$FIXTURE_DIR/case8_project"
-  local SNAPSHOT="$FIXTURE_DIR/case8_snapshot"
   local SANDBOX="$FIXTURE_DIR/case8_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   echo "new staged file" > "$PROJECT/new-staged.txt"
   git -C "$PROJECT" add new-staged.txt  # staged but not committed
-  resync_snapshot "$PROJECT" "$SNAPSHOT"
 
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   local STATUS
   STATUS=$(git -C "$SANDBOX" status --porcelain)
 
-  # Content is present on disk (rsync copied it)
+  # Content is present on disk (seed carried it)
   if [[ -f "$SANDBOX/new-staged.txt" ]]; then
     pass "case 8 (staged new file): file present in sandbox working tree"
   else
@@ -407,17 +458,15 @@ test_init_git_case8_staged_new_file() {
   fi
 }
 
-# Structural: exactly one baseline commit, SHA matches, init is idempotent-safe
+# Structural: exactly one baseline commit, SHA matches
 test_init_git_one_commit() {
   local PROJECT="$FIXTURE_DIR/onecommit_project"
-  local SNAPSHOT="$FIXTURE_DIR/onecommit_snapshot"
   local SANDBOX="$FIXTURE_DIR/onecommit_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   local SHA
-  SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
+  SHA=$(seed_and_init "$PROJECT" "$SANDBOX")
 
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$SANDBOX" rev-list --count HEAD)
@@ -436,39 +485,34 @@ test_init_git_one_commit() {
   fi
 }
 
-# baseline.tar absent  --  should fail clearly
-test_init_git_missing_baseline_tar() {
-  local SNAPSHOT="$FIXTURE_DIR/missing_tar_snapshot"
-  local SANDBOX="$FIXTURE_DIR/missing_tar_sandbox"
-  mkdir -p "$SNAPSHOT" "$SANDBOX"
-  echo "content" > "$SNAPSHOT/file.txt"
-  # baseline.tar intentionally absent
+# seed content absent  --  should fail clearly
+test_init_git_missing_seed() {
+  local SANDBOX="$FIXTURE_DIR/missing_seed_sandbox"
+  mkdir -p "$SANDBOX"
 
-  if snapshot_init_git "$SANDBOX" "$SNAPSHOT" 2>/dev/null; then
-    fail "init_git: should fail when baseline.tar is absent"
+  if snapshot_init_git "$SANDBOX" "$SANDBOX/.agent-sandbox-seed" 2>/dev/null; then
+    fail "init_git: should fail when seed content is absent"
   else
-    pass "init_git: correctly fails when baseline.tar is absent"
+    pass "init_git: correctly fails when seed content is absent"
   fi
 }
 
-# sandbox isolation  --  changes in sandbox do not affect snapshot
+# sandbox isolation  --  changes in sandbox do not affect the project
 test_sandbox_isolation() {
   local PROJECT="$FIXTURE_DIR/isolation_project"
-  local SNAPSHOT="$FIXTURE_DIR/isolation_snapshot"
   local SANDBOX="$FIXTURE_DIR/isolation_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
-  snapshot_init_git "$SANDBOX" "$SNAPSHOT" > /dev/null
+  make_project "$PROJECT"
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
 
   echo "agent change" > "$SANDBOX/committed.txt"
 
-  local SNAPSHOT_CONTENT
-  SNAPSHOT_CONTENT=$(cat "$SNAPSHOT/committed.txt")
-  if [[ "$SNAPSHOT_CONTENT" == "committed content" ]]; then
-    pass "sandbox changes do not affect snapshot"
+  local PROJECT_CONTENT
+  PROJECT_CONTENT=$(cat "$PROJECT/committed.txt")
+  if [[ "$PROJECT_CONTENT" == "committed content" ]]; then
+    pass "sandbox changes do not affect the project"
   else
-    fail "snapshot was modified by sandbox write"
+    fail "project was modified by sandbox write"
   fi
 }
 
@@ -476,16 +520,14 @@ test_sandbox_isolation() {
 # and .git/INIT_SHA is NOT written
 test_init_git_creates_session_state() {
   local PROJECT="$FIXTURE_DIR/session_state_project"
-  local SNAPSHOT="$FIXTURE_DIR/session_state_snapshot"
   local SANDBOX="$FIXTURE_DIR/session_state_sandbox"
-  mkdir -p "$SANDBOX"
 
-  make_init_fixture "$PROJECT" "$SNAPSHOT"
+  make_project "$PROJECT"
 
   # Set SESSION_TS so snapshot_init_git writes it to SESSION_STATE
   local SESSION_TS="20260501-120000"
   local SHA
-  SHA=$(snapshot_init_git "$SANDBOX" "$SNAPSHOT")
+  SHA=$(seed_and_init "$PROJECT" "$SANDBOX")
 
   # Check INIT_SHA file does NOT exist
   if [[ -f "$SANDBOX/.git/INIT_SHA" ]]; then
@@ -530,14 +572,55 @@ test_init_git_creates_session_state() {
   fi
 }
 
+# Seed cleanup: sentinel directory and exclude line removed after init
+test_init_git_seed_cleanup() {
+  local PROJECT="$FIXTURE_DIR/cleanup_project"
+  local SANDBOX="$FIXTURE_DIR/cleanup_sandbox"
+
+  make_project "$PROJECT"
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
+
+  if [[ -d "$SANDBOX/.agent-sandbox-seed" ]]; then
+    fail "init_git: seed sentinel directory not removed"
+  else
+    pass "init_git: seed sentinel directory removed"
+  fi
+
+  if grep -q "agent-sandbox-seed" "$SANDBOX/.git/info/exclude" 2>/dev/null; then
+    fail "init_git: seed exclude line not removed from info/exclude"
+  else
+    pass "init_git: seed exclude line removed from info/exclude"
+  fi
+}
+
+# Symlink targets: the pack-time transform prefixes them with the sentinel;
+# init must repair them to the original (relative) targets.
+test_init_git_symlink_target_repaired() {
+  local PROJECT="$FIXTURE_DIR/symlink_project"
+  local SANDBOX="$FIXTURE_DIR/symlink_sandbox"
+
+  make_project "$PROJECT"
+  ln -sf committed.txt "$PROJECT/link"
+  ln -sf ../src/module.txt "$PROJECT/src/up-link"
+
+  seed_and_init "$PROJECT" "$SANDBOX" > /dev/null
+
+  if [[ "$(readlink "$SANDBOX/link")" == "committed.txt" && "$(readlink "$SANDBOX/src/up-link")" == "../src/module.txt" ]]; then
+    pass "init_git: symlink targets repaired after seed overlay"
+  else
+    fail "init_git: symlink targets not repaired (link=$(readlink "$SANDBOX/link" 2>/dev/null), up-link=$(readlink "$SANDBOX/src/up-link" 2>/dev/null))"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
 
-run_test                   test_validate_passes
-run_test              test_validate_missing
-run_test                test_validate_empty
-run_test     test_validate_missing_baseline_tar
+run_test                test_seed_tar_roundtrip_lossless
+run_test                test_seed_tar_gitignored_excluded
+run_test                test_seed_tar_negation_patterns
+run_test                test_seed_tar_rejects_submodules
+run_test                test_seed_tar_rejects_no_commits
 run_test                    test_init_git_case1_clean
 run_test            test_init_git_case2_unstaged_edit
 run_test              test_init_git_case3_staged_edit
@@ -547,8 +630,10 @@ run_test           test_init_git_case6_untracked
 run_test          test_init_git_case7_gitignored
 run_test          test_init_git_case8_staged_new_file
 run_test             test_init_git_one_commit
-run_test            test_init_git_missing_baseline_tar
+run_test            test_init_git_missing_seed
 run_test                         test_sandbox_isolation
 run_test           test_init_git_creates_session_state
+run_test               test_init_git_seed_cleanup
+run_test         test_init_git_symlink_target_repaired
 
 test_done

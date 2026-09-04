@@ -78,7 +78,6 @@ _healthy_cap_env() {
   } > "$fix/sandbox/.git/SESSION_STATE"
   mkdir -p "$fix/workspace/input" "$fix/workspace/output" "$fix/workspace/session-diffs/autosave"
   export LIBS_DIR="$STUB_LIBS" ROOT="$fix" \
-    SNAPSHOT_DIR="$fix/.snapshot" \
     INPUT_DIR="$fix/workspace/input" \
     OUTPUT_DIR="$fix/workspace/output" \
     CHANGES_DIR="$fix/workspace/session-diffs" \

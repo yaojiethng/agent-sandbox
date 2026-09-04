@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 setup_start_fixture() {
   local FIXTURE_DIR="$1"
@@ -18,7 +18,6 @@ setup_start_fixture() {
   export PROJECT_NAME="test-project"
   export PROVIDER_NAME="pi"
   export SANDBOX_DIR="$FIXTURE_DIR/sandbox"
-  export SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
@@ -36,7 +35,7 @@ setup_start_fixture() {
   export SANDBOX_CONTAINER_NAME="sandbox-test-project-${SESSION_ID}"
   export AGENT_CONTAINER_NAME="pi-test-project-${SESSION_ID}"
 
-  mkdir -p "$SANDBOX_DIR" "$SNAPSHOT_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+  mkdir -p "$SANDBOX_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
   mkdir -p "$SANDBOX_DIR/.pi"
 
   cat > "$SANDBOX_DIR/.env" << EOF

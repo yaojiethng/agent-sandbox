@@ -1,4 +1,4 @@
- #!/usr/bin/env bash                                                                
+#!/usr/bin/env bash                                                                
 #                                                                                  
 # fix_exec_bits.sh -- align tracked-file exec bits with the git index
 # (run on the HOST, repo root).                                                                    

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test/stubs/libs/diff_export.sh
+# tests/stubs/libs/diff_export.sh
 # Controllable fake for src/libs/diff_export.sh.
 # Success iff SANDBOX_DIR is a git repo: writes a .diff artefact + a
 # SUCCESS .export-status (mirrors the real pipeline's observable output, so the

@@ -18,7 +18,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 source "$REPO_ROOT/src/libs/container_sig.sh"
 
 # make_sig_repo <dir>  --  build a minimal fake repo root containing every path
@@ -290,10 +290,10 @@ test_current_sig_distinct_providers_distinct_keys() {
 }
 
 # =============================================================================
-# image_is_stale  (docker via test/stubs/docker)
+# image_is_stale  (docker via tests/stubs/docker)
 # =============================================================================
 
-# run_with_docker_stub <fn>  --  execute $fn with test/stubs shadowing docker.
+# run_with_docker_stub <fn>  --  execute $fn with tests/stubs shadowing docker.
 run_with_docker_stub() {
   (
     PATH="$STUB_DIR:$PATH"

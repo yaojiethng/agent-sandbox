@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test/stubs/libs/session_state.sh
+# tests/stubs/libs/session_state.sh
 # Minimal controllable fake for src/libs/session_state.sh.
 # Reads keys from <SANDBOX_DIR>/.git/SESSION_STATE exactly like the real lib, so
 # tests drive outcomes purely by what they write into the SESSION_STATE file.

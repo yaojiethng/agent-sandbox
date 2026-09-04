@@ -18,7 +18,7 @@ ROOT="/home/agentuser"
 SANDBOX_DIR="$ROOT/sandbox"
 
 echo "=== 1. Environment ==="
-for var in SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME AUTOSAVE_INTERVAL SESSION_TS; do
+for var in SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME AUTOSAVE_INTERVAL SESSION_TS; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -27,18 +27,15 @@ echo ""
 echo "=== 2. Path resolution ==="
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$SANDBOX_DIR"
 
 # Check directories
-[[ -d "$SNAPSHOT_DIR" ]] && pass "SNAPSHOT_DIR exists ($SNAPSHOT_DIR)" || fail "SNAPSHOT_DIR missing"
 [[ -d "$CHANGES_DIR" ]] && pass "CHANGES_DIR exists ($CHANGES_DIR)" || fail "CHANGES_DIR missing"
 [[ -d "$INPUT_DIR" ]]   && pass "INPUT_DIR exists ($INPUT_DIR)"     || pass "INPUT_DIR absent (expected: capability layer lacks this mount)"
 [[ -d "$OUTPUT_DIR" ]]  && pass "OUTPUT_DIR exists ($OUTPUT_DIR)"   || pass "OUTPUT_DIR absent (expected: capability layer lacks this mount)"
-[[ -f "$SNAPSHOT_DIR/baseline.tar" ]] && pass "baseline.tar present" || fail "baseline.tar missing"
 
 echo ""
 echo "=== 3. SESSION_STATE ==="
@@ -150,7 +147,6 @@ _preflight_crit "SESSION_STATE has session_ts" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
 
 # Mount checks (capability layer mounts only)
-_preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"       test -f "$SNAPSHOT_DIR/baseline.tar"
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"   touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 
 # WARN checks

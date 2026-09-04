@@ -98,7 +98,7 @@ test_verify_passes_record_within_container() {
 
 # --- image-signature (option c) gate ---------------------------------------
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 source "$REPO_ROOT/src/libs/container_sig.sh"
 
 # Minimal fake repo root containing every path the sig sources reference.

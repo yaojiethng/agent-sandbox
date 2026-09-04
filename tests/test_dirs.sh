@@ -30,13 +30,13 @@ test_requires_base_dir() {
 test_host_default_paths() {
   local OUT
   OUT=$(
-    unset SNAPSHOT_DIR_NAME WORKSPACE_DIR_NAME CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
+    unset WORKSPACE_DIR_NAME CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
     dirs_resolve "/srv/sandbox"
-    echo "$SNAPSHOT_DIR|$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
+    echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
   )
-  local exp="/srv/sandbox/.snapshot|/srv/sandbox/.workspace/session-diffs|/srv/sandbox/.workspace/input|/srv/sandbox/.workspace/output"
+  local exp="/srv/sandbox/.workspace/session-diffs|/srv/sandbox/.workspace/input|/srv/sandbox/.workspace/output"
   if [[ "$OUT" == "$exp" ]]; then
-    pass "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace, SNAPSHOT under base"
+    pass "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace"
   else
     fail "host default mismatch: got $OUT, want $exp"
   fi
@@ -47,9 +47,9 @@ test_container_override() {
   OUT=$(
     WORKSPACE_DIR_NAME=workspace
     dirs_resolve "/home/agentuser"
-    echo "$SNAPSHOT_DIR|$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
+    echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
   )
-  local exp="/home/agentuser/.snapshot|/home/agentuser/workspace/session-diffs|/home/agentuser/workspace/input|/home/agentuser/workspace/output"
+  local exp="/home/agentuser/workspace/session-diffs|/home/agentuser/workspace/input|/home/agentuser/workspace/output"
   if [[ "$OUT" == "$exp" ]]; then
     pass "container override: WORKSPACE_DIR_NAME=workspace yields correct paths"
   else
@@ -90,26 +90,15 @@ test_custom_leaf_overrides() {
   fi
 }
 
-test_snapshot_dir_name_override() {
-  local OUT
-  OUT=$(
-    SNAPSHOT_DIR_NAME="snap"
-    dirs_resolve "/base"
-    echo "$SNAPSHOT_DIR"
-  )
-  if [[ "$OUT" == "/base/snap" ]]; then
-    pass "SNAPSHOT_DIR_NAME env override respected"
-  else
-    fail "snapshot override mismatch: got $OUT"
-  fi
-}
+# -------------------------
+# Run all tests
+# -------------------------
 
 run_test test_requires_base_dir
 run_test test_host_default_paths
 run_test test_container_override
 run_test test_changes_dir_name_is_leaf
 run_test test_custom_leaf_overrides
-run_test test_snapshot_dir_name_override
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"

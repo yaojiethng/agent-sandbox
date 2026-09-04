@@ -20,39 +20,30 @@ After fresh-start seeding, `git status` inside the sandbox must show what the op
 
 ---
 
-## Current pipeline (RO mount, current until seeding lands)
+## Current pipeline — host-side volume seed
 
-Fresh start (`start_agent.sh`) builds a staging directory and the container consumes it:
+Fresh start (`run_agent.sh` `seed_sandbox_volume`, copy delivery only):
 
 | Step | Where | Mechanism |
 |---|---|---|
-| Working-tree copy | host | rsync (`snapshot_copy_worktree`) into `$SANDBOX_DIR/.snapshot/` |
-| Baseline archive | host | `git archive HEAD` → `.snapshot/baseline.tar` |
-| Validation gate 1 | host | `snapshot_validate` — aborts before Docker on a bad snapshot |
-| RO mount | compose | `.snapshot/` bind-mounted read-only into the capability layer only |
-| Validation gate 2 | container | `snapshot_validate` against the mounted directory |
-| Sandbox init | container | `snapshot_init_git` — extract `baseline.tar` into the volume (index = HEAD), then rsync the staged tree over it (`--delete`; working tree = disk) |
-| Resume | — | pipeline skipped entirely; `.snapshot/` is stale but never accessed |
+| Seed tar build | host | `snapshot_seed_tar` — git-enumerated working tree under the sentinel prefix + `baseline.tar` (`git archive HEAD`), to a per-run mktemp |
+| Volume creation | host | `docker compose create sandbox` — creates volume + container without starting |
+| Content transfer | host | `docker cp` extracts the seed tar into the volume through the container's mount path |
+| Sandbox init | container | `snapshot_init_git` — extract `baseline.tar` into the sandbox (index = HEAD), commit, then rsync the seed's `worktree/` over it (`--delete`; working tree = disk); seed members and staging removed |
+| Resume | — | pipeline skipped entirely; the volume's git state is authoritative |
 
-Staging is rebuilt from scratch on every fresh start (`rm -rf` first), so nothing from a prior session propagates. On filesystems that do not track exec bits, `core.fileMode=false` is set and modes recover through the diff pipeline.
+Staging exists only during the seed step. There is no snapshot mount, no `.snapshot/` directory, and no entrypoint gate — a failed seed aborts the start before any container runs. On filesystems that do not track exec bits, `core.fileMode=false` is set and modes recover through the diff pipeline.
 
-## Settled direction — host-side volume seed (not yet implemented)
+## Settled direction — implemented (record)
 
-The RO mount is transitional. The settled mechanism (design walk `20260818-02`; its dependency, the compose file-set mechanism, has since landed) seeds the volume host-side before `compose up`:
+The RO-mount pipeline this replaced had two defects now resolved by construction:
 
-1. Build a single tar of the working state host-side.
-2. Seed the volume with a one-shot container (`docker create` + `docker cp`, or `docker run --rm` with both mounts) reusing the sandbox image.
-3. Bring the session up with **no snapshot mount**: fresh and resume compose files become identical, staging exists only during the seed step, and gate 2 disappears.
+- **Negation patterns** — rsync treats `!pattern` in an exclude file as *clear the exclude list*: a global `!keep.debug` line silently leaked every previously excluded file (including gitignored content) into the sandbox. The git-enumerated tar honors negation correctly. Discovered in handover `20260901-13`; a live leak in the previous pipeline.
+- **Empty directories** existed only in the rsync copy; git cannot represent them and the tar does not carry them. Invisible to `git status`; accepted behavior change.
 
-The serialization is **git-enumerated tar** (discovery-validated, see below): enumerate the file set with git itself (`git ls-files --cached` for tracked files still on disk, plus `git ls-files --others --exclude-standard` for untracked non-ignored files), then pack that exact list (`tar --null -T`). Deleted tracked files are absent by construction, and all three ignore sources are honored by git's own rules — no tar-side exclusion logic. The index/worktree split (index = HEAD, worktree = disk) is reconstructed in-container from the seeded tree plus the baseline state.
+The serialization is **git-enumerated tar**: enumerate the file set with git itself (`git ls-files --cached` for tracked files still on disk, plus `git ls-files --others --exclude-standard` for untracked non-ignored files), then pack that exact list (`tar --null -T`). Deleted tracked files are absent by construction, and all three ignore sources are honored by git's own rules — no tar-side exclusion logic. The index/worktree split (index = HEAD, worktree = disk) is reconstructed in-container by `snapshot_init_git` from the seeded members.
 
-Discovery results (sessions scripts: `scripts/manual/discovery_tar_filelist_parity.sh`, `scripts/manual/discovery_tar_roundtrip.sh`):
-
-- **Round-trip is lossless** — file list, content hashes, modes, and symlink targets survive build-and-extract exactly.
-- **Parity with the current pipeline holds on the full fixture matrix** (tracked/untracked/deleted/renamed/nested gitignore/global excludes/info-exclude/symlinks/exec bits/binary/spaces/unicode/negation patterns), with two recorded divergences:
-  - **Negation patterns — the current pipeline is worse, not better.** rsync treats `!pattern` in an exclude file as *clear the exclude list*: a global `!keep.debug` line silently leaks every previously excluded file (`drop.debug`, and the globally-ignored `globalonly.txt`) into the sandbox. The git-enumerated tar honors negation correctly. This is a latent exclusion leak (invariant violation) in the current pipeline that seeding removes.
-  - **Empty directories** exist only in the rsync copy; git cannot represent them and the tar does not carry them. Invisible to `git status`; recorded as an accepted behavior change.
-- Open implementation decision (for the seeding iteration): the index/worktree split mechanism in-container, and the seed transport variant (`docker cp` vs `docker run --rm`).
+Discovery record: `tests/knowledge/discovery_tar_*.sh` (handover `20260901-13`).
 
 ---
 

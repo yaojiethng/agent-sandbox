@@ -41,7 +41,6 @@ source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 echo "CHANGES_DIR=$CHANGES_DIR"
 echo "SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
-echo "SNAPSHOT_DIR=$SNAPSHOT_DIR"
 
 # Check the directories actually exist
 [[ -d "$CHANGES_DIR" ]] && pass "CHANGES_DIR exists ($CHANGES_DIR)" || fail "CHANGES_DIR missing"

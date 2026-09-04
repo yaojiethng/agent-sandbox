@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/check_lint.sh
-# ShellCheck gate over all tracked shell scripts (src/, scripts/, tests/,
-# test/). BLOCKING since handover 20260823-15: exits nonzero on any warning.
+# ShellCheck gate over all tracked shell scripts (src/, scripts/, tests/).
+# BLOCKING since handover 20260823-15: exits nonzero on any warning.
 #
 # History: baseline at introduction (20260823-07) was 31 warnings, held
 # non-gating until cleared. Suppression policy: targeted `# shellcheck
@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FILES=()
 while IFS= read -r F; do
   FILES+=("$F")
-done < <(find "$REPO_ROOT/src" "$REPO_ROOT/scripts" "$REPO_ROOT/tests" "$REPO_ROOT/test" \
+done < <(find "$REPO_ROOT/src" "$REPO_ROOT/scripts" "$REPO_ROOT/tests" \
            -name '*.sh' -not -path '*/node_modules/*' | sort)
 
 WARNINGS=$(shellcheck -S warning "${FILES[@]}" 2>/dev/null | grep -c '\^--' || true)

@@ -9,7 +9,7 @@ set -uo pipefail
 
 # Ensure env overrides don't leak from outside the test suite
 unset WORKSPACE_DIR_NAME
-unset SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME
+unset SANDBOX_DIR_NAME
 unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"

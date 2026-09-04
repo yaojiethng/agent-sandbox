@@ -18,7 +18,7 @@
 #   --provider=<n>          provider name (required)
 #
 # Responsibility: host-side pre-flight only  --  path validation, .env loading,
-# git validation, workspace setup, snapshot pipeline.
+# git validation, workspace setup, delivery preparation.
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 #
 # This script is designed to be executed, not sourced. It exports variables
@@ -321,7 +321,7 @@ main() {
   echo "Agent container name: $AGENT_CONTAINER_NAME"
   
   # -------------------------
-  # Workspace directory setup and snapshot pipeline
+  # Workspace directory setup and delivery preparation
   # -------------------------
   if [[ "$SANDBOX_TYPE" == "mount" ]]; then
     # Mount delivery: materialize the host worktree (bind-mounted into the
@@ -353,22 +353,12 @@ main() {
       echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
     fi
   else
-    # Clean the snapshot directory before building a fresh snapshot.
-    # Without this, files from a previous run that are no longer in PROJECT_DIR
-    # (deleted, moved, or newly gitignored) would persist in the snapshot and
-    # propagate into the sandbox.
-    rm -rf "$SNAPSHOT_DIR"
-    mkdir -p "$SNAPSHOT_DIR"
+    # Copy delivery: no host-side staging. The seed tar is built inside
+    # run_agent.sh (after the image build, before the sandbox container
+    # starts) and transferred straight into the sandbox volume via docker cp.
+    # See snapshot_seed_tar (src/capability/snapshot.sh) and the seed step in
+    # run_agent.sh.
     mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
-  
-    source "$REPO_ROOT/src/capability/snapshot.sh"
-  
-    echo "Building snapshot..."
-    snapshot_copy_worktree "$PROJECT_DIR" "$SNAPSHOT_DIR"
-    snapshot_archive_head "$PROJECT_DIR" "$SNAPSHOT_DIR"
-  
-    snapshot_validate "$SNAPSHOT_DIR"
-    echo "Snapshot ready."
   fi
   
   # -------------------------

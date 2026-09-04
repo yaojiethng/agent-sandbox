@@ -261,7 +261,7 @@ test_list_shows_image_staleness() {
   write_minimal_record "$dir" "aaa" "pi-agent-test-project"
 
   local out
-  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
@@ -280,7 +280,7 @@ test_list_shows_image_fresh_when_sigs_match() {
   write_minimal_record "$dir" "aaa" "pi-agent-test-project"
 
   local out
-  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
         DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
@@ -313,7 +313,7 @@ services:
 EOF
 
   local out
-  out="$(PATH="$REPO_ROOT/test/stubs:$PATH" \
+  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
@@ -378,7 +378,7 @@ test_interactive_marks_image_stale() {
   write_minimal_record "$dir" "bbb" "hermes-agent-test-project"
 
   local out
-  out="$(printf '1\nn\n' | PATH="$REPO_ROOT/test/stubs:$PATH" \
+  out="$(printf '1\nn\n' | PATH="$REPO_ROOT/tests/stubs:$PATH" \
         DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         DOCKER_TRACE_LOG="$dir/docker-trace.log" \
         bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?

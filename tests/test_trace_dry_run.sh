@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 setup_dry_run_fixture() {
   local FIXTURE_DIR="$1"
@@ -18,7 +18,6 @@ setup_dry_run_fixture() {
   export PROJECT_NAME="test-project"
   export PROVIDER_NAME="pi"
   export SANDBOX_DIR="$FIXTURE_DIR/sandbox"
-  export SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
@@ -33,8 +32,20 @@ setup_dry_run_fixture() {
   export SANDBOX_CONTAINER_NAME="sandbox-test-project-${SESSION_ID}"
   export AGENT_CONTAINER_NAME="pi-test-project-${SESSION_ID}"
 
-  mkdir -p "$SANDBOX_DIR" "$SNAPSHOT_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
+  mkdir -p "$SANDBOX_DIR" "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
   mkdir -p "$SANDBOX_DIR/.pi"
+
+  # Seedable project fixture: the dry-run path seeds the sandbox volume from
+  # PROJECT_DIR (git-enumerated tar), so the trace fixture needs a real git
+  # repo with at least one commit.
+  mkdir -p "$FIXTURE_DIR/project"
+  git -C "$FIXTURE_DIR/project" init --quiet
+  git -C "$FIXTURE_DIR/project" config user.email "trace@sandbox"
+  git -C "$FIXTURE_DIR/project" config user.name "trace"
+  echo "trace fixture" > "$FIXTURE_DIR/project/file.txt"
+  git -C "$FIXTURE_DIR/project" add -A
+  git -C "$FIXTURE_DIR/project" commit --quiet -m "trace fixture"
+  export PROJECT_DIR="$FIXTURE_DIR/project"
 
   cat > "$SANDBOX_DIR/.env" << EOF
 SANDBOX_DIR=$SANDBOX_DIR

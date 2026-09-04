@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test/stubs/libs/routing.sh
+# tests/stubs/libs/routing.sh
 # Minimal fake for src/libs/routing.sh -- only the subset consumed by the
 # dry-run probes is provided (export_path). Mirrors the real contract: requires
 # PARENT_DIR, SUBDIR and SESSION_ID; prints a non-empty path on success.

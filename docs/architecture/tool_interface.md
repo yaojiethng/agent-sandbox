@@ -10,7 +10,7 @@ Internal implementation is in [`execution_model.md`](execution_model.md).
 
 | Image | Name pattern | Purpose |
 |---|---|---|
-| Capability layer | `sandbox-<project>` | Sandbox, snapshot pipeline, diff pipeline |
+| Capability layer | `sandbox-<project>` | Sandbox, seed pipeline, diff pipeline |
 | Reasoning layer base | `<provider>-base` | Stable install layers; not project-specific |
 | Reasoning layer | `<provider>-agent-<project>` | Agent runtime (provider-specific) |
 
@@ -33,7 +33,7 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 ### `make start PROVIDER=<provider> [SERVE=1] [REFRESH=1] [REBUILD=1] [INTERACTIVE=1]`
 
-Stops any running session for this project, builds missing images if needed, snapshots the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
+Stops any running session for this project, builds missing images if needed, seeds the sandbox volume from the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
 
 **Default behaviour:** always starts a new session with fresh identity. To resume a previous session, use `make resume` (see below) — `start` carries no resume path.
 
@@ -188,7 +188,6 @@ Host-side export. Packages committed branch history as numbered diffs + `uncommi
 
 | Host path | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
-| `$SNAPSHOT_DIR` | `/home/agentuser/.snapshot/` | — | RO | Harness — rebuilt before each run |
 | `$CHANGES_DIR` | `/home/agentuser/workspace/session-diffs/` | — | RW | Harness — diff pipeline output |
 | `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
 | `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
@@ -241,7 +240,6 @@ These paths are derived from `SANDBOX_DIR` at run time by `dirs_resolve` in `lib
 
 | Variable | Derivation |
 |---|---|
-| `SNAPSHOT_DIR` | `$SANDBOX_DIR/.snapshot` |
 | `CHANGES_DIR` | `$SANDBOX_DIR/.workspace/session-diffs` |
 | `INPUT_DIR` | `$SANDBOX_DIR/.workspace/input` |
 | `OUTPUT_DIR` | `$SANDBOX_DIR/.workspace/output` |
@@ -259,7 +257,7 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 **Volume ownership:** `sandbox/` is a Docker anonymous volume owned by the capability layer. The reasoning layer accesses it via `--volumes-from`. Created fresh at session start; destroyed on teardown. Inaccessible if the capability layer is not running.
 
 **Sandbox initialisation:** Before reporting healthy, the capability layer will have:
-1. Copied `.snapshot/` into `sandbox/`
+1. Extracted the host-side seed (working tree + HEAD baseline) into `sandbox/`
 2. Initialised a git repository in `sandbox/`
 3. Committed a baseline SHA — the diff pipeline computes artefacts against this on exit
 

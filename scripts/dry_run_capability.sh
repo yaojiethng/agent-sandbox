@@ -32,12 +32,11 @@ source "$LIBS_DIR/routing.sh"
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
 SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
-SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
 CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 
-if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   source "$LIBS_DIR/dirs.sh"
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi

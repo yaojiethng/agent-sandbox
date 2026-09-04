@@ -15,7 +15,7 @@ source "$REPO_ROOT/scripts/build.sh"
 # record_image / record_provider live in session_inventory.sh (pure lib).
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 setup_build_fixture() {
   local FIXTURE_DIR="$1"

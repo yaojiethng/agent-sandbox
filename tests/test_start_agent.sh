@@ -526,7 +526,7 @@ EOF
   local out rc trace
   trace="$dir/trace.log"
   out="$(cd "$dir" && printf '1\n2\ny\n' | \
-    PATH="$REPO_ROOT/test/stubs:$PATH" \
+    PATH="$REPO_ROOT/tests/stubs:$PATH" \
     DOCKER_TRACE_LOG="$trace" \
     bash "$REPO_ROOT/scripts/start_agent.sh" standard \
       --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" \
@@ -596,7 +596,7 @@ EOF
   START_TRACE="$dir/docker-trace.log"
   : > "$START_TRACE"
   START_OUT="$(cd "$dir" && \
-    PATH="$REPO_ROOT/test/stubs:$PATH" \
+    PATH="$REPO_ROOT/tests/stubs:$PATH" \
     DOCKER_TRACE_LOG="$START_TRACE" \
     bash "$REPO_ROOT/scripts/start_agent.sh" "$@" 2>&1)"
   START_RC=$?

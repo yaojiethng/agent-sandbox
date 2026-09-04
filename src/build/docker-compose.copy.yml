@@ -1,18 +1,18 @@
 # docker-compose.copy.yml  --  COPY delivery overlay (default).
 # Merged by src/build/compose.sh (compose_generate) when SANDBOX_TYPE=copy.
-# Carries the copy-in wiring that bind-mount compose must never inherit:
+# Carries the copy-delivery wiring that bind-mount compose must never inherit:
 #   - the SESSION_ID-scoped named sandbox volume (per-run state persistence,
 #     volume labels for lifecycle tooling)
-#   - the ${SNAPSHOT_DIR} read-only mount + env (project snapshot, copied in
-#     at session start)
+#
+# Content transfer is host-side seeding: run_agent.sh (seed_sandbox_volume)
+# extracts the seed tar into the volume via docker cp before the sandbox
+# container starts. There is no snapshot mount and no snapshot env var.
 #
 # Volume name incorporates SESSION_ID so each session gets its own volume.
 # Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
 # destroyed by `docker compose down -v` or pruned via `make prune --volumes`.
 # Labels enable lifecycle tooling (prune, inspect, volume discovery) without
 # project-name prefix parsing.
-#
-# Path mapping: ${SNAPSHOT_DIR} (host) -> /home/agentuser/.snapshot (container)
 
 volumes:
   {{SESSION_ID}}-sandbox-data:
@@ -30,10 +30,5 @@ services:
       - type: volume
         source: {{SESSION_ID}}-sandbox-data
         target: /home/agentuser/sandbox
-      - type: bind
-        source: ${SNAPSHOT_DIR}
-        target: /home/agentuser/.snapshot
-        read_only: true
     environment:
-      - SNAPSHOT_DIR=/home/agentuser/.snapshot
       - SANDBOX_TYPE=copy

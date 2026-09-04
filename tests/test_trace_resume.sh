@@ -26,7 +26,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../test/stubs"
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
 # Build a resumable fixture: sandbox/.env + a `.compose/<sid>.yml` registry
 # record + a git-backed project dir. $1=fixture root, $2=sandbox_type.
@@ -38,7 +38,6 @@ build_resume_fixture() {
   export PROJECT_DIR="$project_dir"
   export PROVIDER_NAME="pi"
   export SANDBOX_DIR="$FIX/sandbox"
-  export SNAPSHOT_DIR="$SANDBOX_DIR/.snapshot"
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
@@ -62,7 +61,6 @@ build_resume_fixture() {
 
   mkdir -p "$SANDBOX_DIR/.compose" "$SANDBOX_DIR/.workspace/session-diffs" \
            "$SANDBOX_DIR/.workspace/input" "$SANDBOX_DIR/.workspace/output" \
-           "$SNAPSHOT_DIR"
 
   cat > "$SANDBOX_DIR/.env" <<EOF
 SANDBOX_DIR=$SANDBOX_DIR

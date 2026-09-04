@@ -75,7 +75,7 @@ Temperature reflects the stability of what a document describes — not how care
 |---|---|---|---|
 | `system_overview.md` | 🟡 Warm | M1 | Update when major architectural components change. |
 | `execution_model.md` | 🟡 Warm | M2.3 | Index document: directory layout, invocation model. Compose generation, mount shape rationale, container lifecycle. Delegates layer implementation to sandbox_lifecycle.md and provider_lifecycle.md . |
-| `sandbox_lifecycle.md` | 🟡 Warm | M2.3 | Capability layer's lifecycle: snapshot pipeline (fork), agent work, git baseline, diff pipeline (join), input channels, apply workflow. |
+| `sandbox_lifecycle.md` | 🟡 Warm | M2.6 | Capability layer's lifecycle: volume seed pipeline (fork), agent work, git baseline, diff pipeline (join), input channels, apply workflow. |
 | `provider_lifecycle.md ` | 🟡 Warm | M2.3 | Reasoning layer's lifecycle: config seed (copy-in), agent work, config persist (copy-out). |
 | `tool_interface.md` | 🟡 Warm | M2.3 | External contract: command shapes, naming, mount shape guarantees, execution modes, onboarding contract, `.env` variables, provider interface definition. |
 | `security.md` | 🟡 Warm | M2.6 | Design constraint and trust boundary spec. Updated for two-container trust boundaries. |
@@ -92,7 +92,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `sandbox_identity.md` | 🟡 Warm | M2.6 | Identity model: primitives, SESSION_ID derivation, naming, label schema, container-sig, registry, SESSION_STATE. |
 | `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.6 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
 | `terminology.md` | 🟡 Warm | M2.6 | Reserved technical terms (session, iteration, staleness) with identity, scope, relationships. |
-| `copy_delivery.md` | 🟡 Warm | M2.6 | Copy delivery model: volume-backed sandbox, snapshot pipeline (current, RO mount) and settled host-side seed + git-enumerated tar direction; session lifecycle table. Links sandbox_delivery_model ADR. |
+| `copy_delivery.md` | 🟡 Warm | M2.6 | Copy delivery model: volume-backed sandbox; host-side seed + git-enumerated tar pipeline (implemented `20260901-14`); session lifecycle table. Links sandbox_delivery_model ADR. |
 | `mount_delivery.md` | 🟢 Cold | M2.6 | Mount delivery stub: wired-not-runnable status, backing axis, settled decisions summary. Detailed write-up deferred until runnable. |
 
 ### ADR (`docs/adr/`)
@@ -168,8 +168,8 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
 | `test_session-state.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
-| `test_snapshot_container.sh` | 🟡 Warm | M2.3 | Container-side snapshot pipeline tests. Covers snapshot_init_git working tree state matrix. |
-| `test_snapshot_host.sh` | 🟢 Cold | M2.3 | Host-side snapshot tests: archive head, copy worktree, validate. |
+| `test_snapshot_container.sh` | 🟡 Warm | M2.6 | Seed pipeline tests: seed tar round-trip/exclusions/negation; snapshot_init_git working tree state matrix; seed cleanup + symlink repair. |
+| `test_snapshot_host.sh` | 🟡 Warm | M2.6 | Host-side snapshot tests: seed tar (round-trip, exclusions, negation, submodule/no-commit rejection), archive head, copy worktree (mount delivery). |
 | `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |
 
 ### Prompts (`agent/prompts/`)

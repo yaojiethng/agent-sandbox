@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test/stubs/libs/bash_env.sh
+# tests/stubs/libs/bash_env.sh
 # Loaded by every non-interactive bash in the probe harness via BASH_ENV.
 # Bash -c sub-shells spawned by the probes (e.g. the export_path warn_check)
 # do not inherit function definitions from the probe's top-level source, so

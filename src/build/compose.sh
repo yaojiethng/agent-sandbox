@@ -52,7 +52,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/dry_run_record.sh"
 #   {{DRY_RUN_CAPABILITY_SCRIPT}} -> absolute path to dry_run_capability.sh (dry-run mode only)
 #   {{DRY_RUN_SCRIPT}}             -> absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
 #   ${SANDBOX_DIR}          -> host sandbox path (from .env, exported by start_agent.sh)
-#   ${SNAPSHOT_DIR}         -> host snapshot path (copy delivery only)
 #   ${WORKTREE_DIR}         -> host worktree path (mount delivery only; default
 #                             ${SANDBOX_DIR}/.worktree, set by run_agent.sh)
 #   ${CHANGES_DIR}          -> host changes path (from .env, exported by start_agent.sh)
@@ -132,7 +131,6 @@ compose_generate() {
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
-      -e "s|\${SNAPSHOT_DIR}|${SNAPSHOT_DIR:-}|g" \
       -e "s|\${WORKTREE_DIR}|${WORKTREE_DIR:-}|g" \
       -e "s|\${CHANGES_DIR}|${CHANGES_DIR:-}|g" \
       -e "s|\${INPUT_DIR}|${INPUT_DIR:-}|g" \

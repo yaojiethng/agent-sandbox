@@ -140,8 +140,9 @@ HOST_GID="$(id -g)"
 # The compose file set is selected at generation time per delivery type
 # (SANDBOX_TYPE=copy|mount, default copy): base template + delivery overlay +
 # provider overlay (if present) + mode overlay (dry-run/serve). The delivery
-# overlay carries the per-delivery wiring: copy -> named volume + SNAPSHOT_DIR
-# mount; mount -> worktree bind mount (docker-compose.copy.yml /.mount.yml).
+# overlay carries the per-delivery wiring: copy -> named volume (content is
+# host-side seeded, no snapshot mount); mount -> worktree bind mount
+# (docker-compose.copy.yml /.mount.yml).
 COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
 COPY_OVERLAY="$REPO_ROOT/src/build/docker-compose.copy.yml"
 MOUNT_OVERLAY="$REPO_ROOT/src/build/docker-compose.mount.yml"
@@ -262,6 +263,65 @@ compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILE
 # Compose args
 # -------------------------
 compose_args "$PROJECT_NAME" "$SANDBOX_DIR" "$COMPOSE_OUT" "${SESSION_ID:-}"
+
+# -------------------------
+# Volume seed (copy delivery, fresh start)
+# -------------------------
+# start_agent.sh always runs with --reset-volume (fresh session); resume never
+# does. So RESET_VOLUME=true marks exactly the fresh-init case: the sandbox
+# volume does not exist yet and must be seeded before the sandbox container
+# starts. The seed tar carries the operator's working tree (git-enumerated)
+# plus the HEAD baseline; the container-side init (snapshot_init_git) turns it
+# into the index=HEAD / worktree=disk state.
+seed_sandbox_volume() {
+  if [[ -z "${PROJECT_DIR:-}" ]]; then
+    echo "Error: PROJECT_DIR is not set  --  cannot build the seed tar" >&2
+    return 1
+  fi
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+  local seed_tar
+  seed_tar=$(mktemp /tmp/agent-sandbox-seed.XXXXXX.tar) || { echo "Error: mktemp failed" >&2; return 1; }
+  if ! snapshot_seed_tar "$PROJECT_DIR" "$seed_tar"; then
+    rm -f "$seed_tar"
+    return 1
+  fi
+  # Create the sandbox container (and its volume) without starting it, then
+  # extract the seed tar into the volume through the container's mount path.
+  # docker cp writes through the volume mount, so the data lands in the
+  # volume; the entrypoint's fresh-init path consumes it from there.
+  if ! docker compose "${COMPOSE_ARGS[@]}" create sandbox >/dev/null 2>&1; then
+    echo "Error: docker compose create sandbox failed  --  cannot seed the volume" >&2
+    rm -f "$seed_tar"
+    return 1
+  fi
+  local cid
+  # The sandbox container name is deterministic (baked via container_name: in
+  # the compose template and exported as SANDBOX_CONTAINER_NAME). `docker
+  # compose ps -q` cannot be used here: it does not list containers in the
+  # created-but-never-started state.
+  cid="${SANDBOX_CONTAINER_NAME:-}"
+  if [[ -z "$cid" ]]; then
+    cid=$(docker compose "${COMPOSE_ARGS[@]}" ps -aq sandbox 2>/dev/null)
+  fi
+  if [[ -z "$cid" ]] || ! docker inspect "$cid" >/dev/null 2>&1; then
+    echo "Error: sandbox container not found after create  --  cannot seed the volume" >&2
+    echo "  Expected container: ${SANDBOX_CONTAINER_NAME:-<unset SANDBOX_CONTAINER_NAME>}" >&2
+    rm -f "$seed_tar"
+    return 1
+  fi
+  if ! docker cp - "$cid:/home/agentuser/sandbox" < "$seed_tar"; then
+    echo "Error: docker cp seed failed  --  cannot seed the volume" >&2
+    rm -f "$seed_tar"
+    return 1
+  fi
+  rm -f "$seed_tar"
+  echo "Sandbox volume seeded."
+}
+
+if [[ "$RESET_VOLUME" == "true" && "$DELIVERY_TYPE" == "copy" ]]; then
+  echo "+ seeding sandbox volume..."
+  seed_sandbox_volume || exit 1
+fi
 
 # -------------------------
 # Mode dispatch

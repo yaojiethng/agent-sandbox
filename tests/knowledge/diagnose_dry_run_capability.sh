@@ -21,7 +21,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 ROOT="/home/agentuser"
 
 echo "=== 1. Environment ==="
-for var in SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME; do
+for var in SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -58,14 +58,12 @@ echo "=== 3. Path resolution ==="
 # Re-source dirs.sh after the loop above consumed it, then resolve paths.
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
 # Verify derived paths are non-empty
-[[ -n "$SNAPSHOT_DIR" ]]  && pass "SNAPSHOT_DIR resolved"  || fail "SNAPSHOT_DIR is empty"
 [[ -n "$CHANGES_DIR" ]]   && pass "CHANGES_DIR resolved"   || fail "CHANGES_DIR is empty"
 [[ -n "$INPUT_DIR" ]]     && pass "INPUT_DIR resolved"     || fail "INPUT_DIR is empty"
 [[ -n "$OUTPUT_DIR" ]]    && pass "OUTPUT_DIR resolved"    || fail "OUTPUT_DIR is empty"
@@ -122,24 +120,11 @@ echo "  (check framework helpers defined in script  --  verified above by functi
 echo ""
 echo "=== 5. Mount expectations ==="
 # The capability layer (sandbox) mounts:
-#   - SNAPSHOT_DIR  (read-only, snapshot)
 #   - CHANGES_DIR   (writable, session-diffs)
 # It does NOT mount:
 #   - INPUT_DIR     (agent-only)
 #   - OUTPUT_DIR    (agent-only)
 # Check that the EXPECTED mounts are present and the UNEXPECTED ones are absent.
-
-# Expected mounts
-if [[ -d "$SNAPSHOT_DIR" ]]; then
-  pass "SNAPSHOT_DIR exists ($SNAPSHOT_DIR)"
-  if [[ -f "$SNAPSHOT_DIR/baseline.tar" ]]; then
-    pass "  baseline.tar present"
-  else
-    fail "  baseline.tar MISSING"
-  fi
-else
-  fail "SNAPSHOT_DIR missing (snapshot mount not attached)"
-fi
 
 if [[ -d "$CHANGES_DIR" ]]; then
   pass "CHANGES_DIR exists ($CHANGES_DIR)"
