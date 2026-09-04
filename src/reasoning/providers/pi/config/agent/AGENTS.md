@@ -50,6 +50,22 @@ Tools you have access to:
 - `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files
 - Standard development tools (git, bash, common CLI utilities)
 
+## Technical Writing Rules
+
+Apply these to all prose you write: documentation, comments, chat deliverables, handovers. Full policy: `docs/operations/documentation_policy.md` in the target repo when present.
+
+- Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
+- Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
+- Short sentences. Aim under 20 words; one idea per sentence.
+- One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
+- Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
+- No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
+- Place the defined noun phrase before the imperative command: the reader must know exactly what object is being discussed before being told what to do with it. If the sentence uses a term the reader has not met, define it first, in its own clause, then apply it. Avoid thin subjects that rely on a trailing dash clause for definition; the main clause must not depend on its afterthought.
+- One paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit. Hard breaks separate blocks only.
+- Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.
+- Link sparingly. Link what the reader might need next; keep context-only names as plain text. Do not over-link transient documents (handovers, discussion docs, session exports).
+- Records state, not session history. A durable record does not narrate the session that produced it: no session ids, no commit hashes, no "as discussed" pointers.
+
 ## Fresh Subagent Invocation
 
 When a fresh perspective is needed for code review (e.g. thermo-nuclear review of changes made in the current iteration), invoke a fresh subagent using:

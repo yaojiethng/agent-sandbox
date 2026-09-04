@@ -51,6 +51,11 @@ An ADR is the current record of one principle. When the principle changes, edit 
 
 **Current:** YYYY-MM-DD
 
+## Requirements
+
+| # | Requirement | Meaning |
+|---|---|---|
+
 ## YYYY-MM-DD -- <decision name>
 
 **Decision:** <chosen option>
@@ -68,6 +73,12 @@ An ADR is the current record of one principle. When the principle changes, edit 
 ```
 
 The newest entry is at the top. The entry marked `Current:` is the live decision. Entries below it are historical.
+
+**Requirements preamble.** A principle that has accumulated invariants across entries opens with a Requirements section between the `Current:` line and the first entry: a table of standing requirements (numbered), each with a one-line meaning. Solutions in the entries are judged against these requirements by name. The preamble is optional -- a young ADR with a single entry may omit it.
+
+**Promotion cycle.** A rejected alternative states its failure locus: intent (the idea cannot satisfy the requirements), execution (the idea is sound, the implementation failed), or neither (rejected as insufficient, e.g. superseded by a strictly better option). A rejection that surfaces a new standing requirement or edge case promotes it into the Requirements table, marked with the entry that promoted it. The next solution is judged against the expanded set.
+
+**Sub-headers.** An entry field may use `###` sub-headers when the field is long -- for example one Rationale subsection per requirement, or one sub-section per rejected alternative. The mandated field names stay; sub-headers nest inside them.
 
 ### Editing procedure
 
