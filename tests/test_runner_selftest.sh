@@ -165,6 +165,29 @@ assert_ne "0" "$RC" "runner: empty discovery exits non-zero"
 assert_contains "$OUT" "Warning: no test files found" "runner: empty discovery warns"
 assert_not_contains "$OUT" "unbound variable" "runner: warning path does not crash under set -u"
 
+# ---------------------------------------------------------------
+# Case 11: a broken prerequisite (missing/non-executable docker stub)
+# is reported once, by name, before any test runs  --  not as N
+# unrelated test failures (testing_policy.md prerequisite rule).
+# ---------------------------------------------------------------
+run_runner_prereq() {
+  OUT=$(PREREQ_STUB="$1" RUN_TESTS_DIR="$FIXTURE_DIR/empty_dir" bash "$RUNNER" 2>&1)
+  RC=$?
+}
+
+run_runner_prereq "/nonexistent/docker-stub"
+assert_ne "0" "$RC" "runner: broken prerequisite exits non-zero"
+assert_contains "$OUT" "prerequisite missing or not executable" "runner: prerequisite error names the cause"
+assert_not_contains "$OUT" "no test files found" "runner: prerequisite check fires before discovery"
+
+# A present, executable stub passes the prerequisite gate and proceeds to
+# normal discovery (this directory has no tests -> the discovery warning).
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/good_stub"
+chmod +x "$FIXTURE_DIR/good_stub"
+run_runner_prereq "$FIXTURE_DIR/good_stub"
+assert_contains "$OUT" "Warning: no test files found" "runner: satisfied prerequisite proceeds to discovery"
+assert_not_contains "$OUT" "prerequisite missing" "runner: satisfied prerequisite emits no error"
+
 # =============================================================================
 # Run  --  note: this file drives the runner via run_runner(), so its own
 # assertions live at file scope, not in run_test functions. Each block above

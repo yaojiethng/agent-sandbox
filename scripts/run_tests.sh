@@ -9,6 +9,9 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 # (tests/test_runner_selftest.sh feeds it synthetic files).
 TEST_DIR="${RUN_TESTS_DIR:-$TEST_DIR}"
 
+# Prerequisites live in the real tests dir (not the RUN_TESTS_DIR override).
+REAL_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
+
 VERBOSE="${VERBOSE:-0}"
 
 while [[ $# -gt 0 ]]; do
@@ -24,6 +27,21 @@ TOTAL_FAIL=0
 TOTAL_SKIP=0
 ANY_FAILED=0
 FILE_COUNT=0
+
+# check_prerequisites
+#   Verifies the suite's prerequisites before any test runs. A broken docker
+#   stub would otherwise fail dozens of tests with unrelated 126/127 errors;
+#   report it once, by name (testing_policy.md prerequisite rule).
+#   PREREQ_STUB overrides the path for the runner self-test.
+check_prerequisites() {
+  local stub="${PREREQ_STUB:-$REAL_TESTS_DIR/stubs/docker}"
+  if [[ ! -x "$stub" ]]; then
+    echo "ERROR: prerequisite missing or not executable: $stub" >&2
+    echo "       The docker stub must be present and executable." >&2
+    echo "       Restore it with: chmod +x $stub" >&2
+    return 1
+  fi
+}
 
 discover_tests() {
   local FILES=()
@@ -98,6 +116,8 @@ run_single() {
 }
 
 main() {
+  check_prerequisites || exit 1
+
   local TEST_FILES
   TEST_FILES=$(discover_tests) || exit 1
 

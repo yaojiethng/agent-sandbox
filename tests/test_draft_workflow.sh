@@ -712,20 +712,22 @@ test_draft_applies_uncommitted_diff() {
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
-  # Should have patches + uncommitted commits
+  # Patches are committed; uncommitted.diff is applied to the working tree
+  # only (draft_apply_uncommitted does not commit  --  see draft.sh contract).
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$P" log main..HEAD --reverse --format='%s' | grep -v '^\.draft-state$' | wc -l | tr -d ' ')
-  if [[ "$COMMIT_COUNT" -eq 3 ]]; then
-    pass "draft_run applies patches then uncommitted.diff (3 commits: 2 patches + 1 uncommitted)"
+  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
+    pass "draft_run commits the 2 patches (uncommitted.diff is not committed)"
   else
-    fail "draft_run should create 3 commits, got $COMMIT_COUNT"
+    fail "draft_run should create 2 patch commits, got $COMMIT_COUNT"
   fi
 
-  # Verify uncommitted.txt was created
-  if [[ -f "$P/uncommitted.txt" ]]; then
-    pass "draft_run applies uncommitted.diff content (uncommitted.txt created)"
+  # Verify uncommitted.txt was created in the working tree and is not part of
+  # HEAD (uncommitted.diff is applied, not committed).
+  if [[ -f "$P/uncommitted.txt" ]] && ! git -C "$P" cat-file -e HEAD:uncommitted.txt 2>/dev/null; then
+    pass "draft_run applies uncommitted.diff to the working tree (uncommitted.txt present, not committed)"
   else
-    fail "draft_run should create uncommitted.txt from uncommitted.diff"
+    fail "draft_run should apply uncommitted.diff to the working tree only"
   fi
 }
 
@@ -1122,6 +1124,7 @@ test_reject_rejects_non_draft() {
 # =============================================================================
 run_test test_draft_creates_branch
 run_test test_draft_applies_diffs
+run_test test_draft_applies_uncommitted_diff
 
 run_test test_branch_from_skips_missing_export_status
 run_test test_no_branch_from_errors_without_export_status

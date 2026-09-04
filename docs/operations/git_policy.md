@@ -34,7 +34,7 @@ These types are adopted now. Each maps to one or more iteration types from `hand
 | `docs` | Documentation-only changes | `design` |
 | `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting | `chore` |
 | `workflow` | Policy changes, CI/CD rules, governance — skill files under `src/reasoning/agent/` count as governance | `workflow` |
-| `test` | Adding or updating tests only | `impl` |
+| `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) | `impl` |
 | `build` | Changes to Dockerfile, build scripts, image pipeline | `impl` |
 
 ### Choosing between types

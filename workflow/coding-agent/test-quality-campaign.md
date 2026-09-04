@@ -13,7 +13,7 @@ Where this prompt and a policy rule disagree, the policy wins.
 
 Autonomous, long-running, and token-aggressive. Ignore the usual per-iteration permission gates for the duration. Prefer depth: read the file instead of guessing from a grep.
 
-Scope: tests only. Rewrite, delete, and add tests. Never change production source to make a test pass. If a test change exposes a real production defect, do not fix it here. Record it in `FLAKY_AND_BAD_TESTS.md` and flag it.
+Scope: tests and the test runner (`scripts/run_tests.sh`). Change the runner only where a success criterion requires it. Never change product source under `src/`. If a test change exposes a product defect, do not fix it here -- record it in `FLAKY_AND_BAD_TESTS.md` and flag it.
 
 The operator invoking this campaign is the opt-in moment. Writing and changing tests is authorised for the duration. Outside the campaign, tests are opt-in and product-first.
 

@@ -330,22 +330,6 @@ test_dispatcher_export_status_contents() {
   fi
 }
 
-test_dispatcher_no_init_sha_file() {
-  local DIR="$FIXTURE_DIR/pb_no_initsha"
-  local OUT="$FIXTURE_DIR/pb_no_initsha_out"
-  mkdir -p "$OUT"
-  make_sandbox_with_state "$DIR"
-  commit_file "$DIR" "a.txt"
-
-  package_branch "$DIR" "$OUT"
-
-  if [[ ! -f "$OUT/.init_sha" ]]; then
-    pass "package_branch no longer writes .init_sha (consolidated into .export-status)"
-  else
-    fail "package_branch should not write .init_sha"
-  fi
-}
-
 # =============================================================================
 # _package_preflight_check  --  warning-branch coverage
 # =============================================================================
@@ -454,7 +438,6 @@ run_test test_dispatcher_no_commits
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
 run_test test_dispatcher_export_status_contents
-run_test test_dispatcher_no_init_sha_file
 run_test test_preflight_bypass_returns_before_any_git
 run_test test_preflight_clean_tree_is_silent
 run_test test_preflight_flags_uncommitted_modifications

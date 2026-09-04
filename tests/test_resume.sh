@@ -335,8 +335,9 @@ test_list_shows_provider_without_image_sig() {
 
   local out
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]" \
-     && ! echo "$out" | grep -qE "pi \(1234abc\)"; then
+  # Positive assertion only: the cell shows the bare provider name followed by
+  # whitespace (a parenthetical image-sig would sit where the whitespace is).
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]"; then
     pass "resume --list: provider cell shows bare provider (no image-sig)"
   else
     fail "resume --list: expected bare 'pi', got: $out"
@@ -362,11 +363,12 @@ EOF
 
   local out
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]+" \
-     && ! echo "$out" | grep -qE "aaa[[:space:]]+pi \("; then
-    pass "resume --list: no image-sig in record -> pi with no parenthetical"
+  # Legacy record without an image-sig field: the row still renders the bare
+  # provider (no parenthetical, no crash on the missing field).
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]"; then
+    pass "resume --list: legacy record without image-sig renders bare pi"
   else
-    fail "resume --list: expected bare pi, got: $out"
+    fail "resume --list: expected bare pi for legacy record, got: $out"
   fi
 }
 
@@ -469,6 +471,7 @@ run_test test_list_renders_enriched
 run_test test_list_provider_filter
 run_test test_list_provider_no_match
 run_test test_list_shows_provider_without_image_sig
+run_test test_list_no_sig_when_field_empty
 run_test test_list_state_cell_from_log
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help

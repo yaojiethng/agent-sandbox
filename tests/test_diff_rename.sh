@@ -21,9 +21,6 @@ source "$REPO_ROOT/src/libs/package_branch.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
 _commit_file() {
   local REPO="$1" FILE="$2" CONTENT="$3"
   mkdir -p "$(dirname "$REPO/$FILE")"
