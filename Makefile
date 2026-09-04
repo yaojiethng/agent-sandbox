@@ -87,7 +87,7 @@ test:
 # scripts/check_lint.sh header); smoke + liveness remain advisory.
 # -------------------------
 
-.PHONY: lint test-smoke lib-liveness
+.PHONY: lint test-smoke lib-liveness test-liveness
 lint:
 	bash scripts/check_lint.sh
 
@@ -96,6 +96,9 @@ test-smoke:
 
 lib-liveness:
 	bash scripts/check_lib_liveness.sh
+
+test-liveness:
+	bash scripts/check_test_liveness.sh
 
 # -------------------------
 # Help

@@ -342,6 +342,21 @@ test_image_digest_empty_for_missing_image() {
 # Run all
 # =============================================================================
 
+run_test test_container_sig_deterministic
+run_test test_container_sig_is_sha256_hex
+run_test test_container_sig_order_independent
+run_test test_container_sig_sensitive_to_content
+run_test test_container_sig_missing_path_fails_closed
+run_test test_container_sig_empty_sources_fails_closed
+run_test test_container_sig_empty_set_returns_pinned_digest
+run_test test_sandbox_sig_sources_static_paths
+run_test test_agent_sig_sources_conditional_config
+run_test test_agent_sig_sources_conditional_preflight
+run_test test_current_sig_recomputes_on_live_tree
+run_test test_current_sig_distinct_providers_distinct_keys
+run_test test_current_sig_agent_requires_provider
+run_test test_current_sig_unknown_type_rejected
+run_test test_current_sig_sandbox_matches_manual_hash
 run_test test_image_digest_returns_stub_digest
 run_test test_image_digest_per_image_map
 run_test test_image_digest_empty_for_missing_image

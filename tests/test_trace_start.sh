@@ -262,7 +262,7 @@ test_serve_post_agent_uses_down() {
   fi
 }
 
-test_teardown_is_last_compose() {
+assert_teardown_is_last_compose() {
   local mode="$1"
   local FIXTURE_DIR="$FIXTURE_DIR/${mode}_last"
   mkdir -p "$FIXTURE_DIR"
@@ -282,11 +282,11 @@ test_teardown_is_last_compose() {
 }
 
 test_standard_teardown_is_last_compose() {
-  test_teardown_is_last_compose standard
+  assert_teardown_is_last_compose standard
 }
 
 test_serve_teardown_is_last_compose() {
-  test_teardown_is_last_compose serve
+  assert_teardown_is_last_compose serve
 }
 
 test_standard_agent_failure_still_tears_down_and_propagates_rc() {

@@ -123,6 +123,7 @@ run_with_docker_stub() {
     "$@"
   )
 }
+run_test test_record_value_key
 run_test test_verify_passes_on_healthy_record
 run_test test_verify_fails_on_identity_mismatch
 run_test test_verify_fails_on_layer_fail

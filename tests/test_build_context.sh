@@ -103,7 +103,7 @@ test_no_flat_temp_dir_paths() {
 # Main
 # ---------------------------------------------------------------------------
 
-test_all_copy_sources_exist
-test_no_flat_temp_dir_paths
+run_test test_all_copy_sources_exist
+run_test test_no_flat_temp_dir_paths
 
 test_done

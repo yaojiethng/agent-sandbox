@@ -118,6 +118,18 @@ run_single() {
 main() {
   check_prerequisites || exit 1
 
+  # Registration liveness gate (mandatory, runs before any test): a test
+  # function without a run_test registration never executes, so the suite can
+  # report green while silently excluding coverage -- the gate makes that
+  # loud instead. Skipped under the runner self-test's RUN_TESTS_DIR override
+  # (synthetic fixture dir; the real suite's liveness is not the subject).
+  if [[ -z "${RUN_TESTS_DIR:-}" ]]; then
+    if ! bash "$REAL_TESTS_DIR/../scripts/check_test_liveness.sh"; then
+      echo "ERROR: test liveness gate failed -- fix the findings above before running the suite." >&2
+      exit 1
+    fi
+  fi
+
   local TEST_FILES
   TEST_FILES=$(discover_tests) || exit 1
 

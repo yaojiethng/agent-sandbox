@@ -228,6 +228,14 @@ This runs all test files in sequence and prints a consolidated pass/fail summary
 
 **Rule:** A change to any lib or script is not complete until `make test` passes clean. Running a subset of test files is not sufficient.
 
+### Registration liveness
+
+A `test_*()` function that is defined but never registered via `run_test` never executes — it rots silently, and the suite still reports green. A `run_test` target without a definition fails at runtime with an unrelated error.
+
+**Rule:** every `test_*()` function in `tests/test_*.sh` carries exactly one `run_test` registration in the same file, and every `run_test` target resolves to a defined function. Parameterized helpers invoked by registered wrappers are named outside the `test_` namespace.
+
+**Check:** `make test-liveness` (or `bash scripts/check_test_liveness.sh`) verifies both directions statically, plus prerequisite liveness for the docker stub and stub libs. Run it alongside `make test` when touching test files; it is advisory like the other static checks, but a finding is a defect to fix in the same change.
+
 ---
 
 ## Keeping Tests Current

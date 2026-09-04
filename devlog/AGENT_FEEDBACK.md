@@ -421,10 +421,10 @@ asserting on their nondeterministic behavior.
 
 ### [A] 2026-09-02  --  Non-conforming test prefix introduced (`discovery_` vs `knowledge_`)
 
-state: open
+state: mitigated
 scoped: M2.6
 legacy: none
-mitigation: none
+mitigation: 2026-09-04 -- both `discovery_tar_*` probes were deleted with the legacy seed pipeline they probed (handover `20260904-06`), resolving the prefix defect by removal. The entry's deeper failure mode -- a `run_test` registration lost to rename-without-grep, silent because unregistered tests never run -- is now caught mechanically by `scripts/check_test_liveness.sh` (`make test-liveness`), which verified both directions on its first run.
 
 The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`, a prefix the testing policy does not list. Their content (external-tool behaviour) is the knowledge category, so the defect is the name, not the placement. Cleanup: rename to `knowledge_tar_*.sh`. Cross-reference: the same change introduced the rename-without-grep pattern -- a `run_test` registration was renamed by `sed` and briefly went missing before the suite caught it.
 
