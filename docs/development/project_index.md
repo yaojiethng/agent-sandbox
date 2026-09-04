@@ -92,6 +92,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `sandbox_identity.md` | 🟡 Warm | M2.6 | Identity model: primitives, SESSION_ID derivation, naming, label schema, container-sig, registry, SESSION_STATE. |
 | `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.6 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
 | `terminology.md` | 🟡 Warm | M2.6 | Reserved technical terms (session, iteration, staleness) with identity, scope, relationships. |
+| `copy_delivery.md` | 🟡 Warm | M2.6 | Copy delivery model: volume-backed sandbox, snapshot pipeline (current, RO mount) and settled host-side seed + git-enumerated tar direction; session lifecycle table. Links sandbox_delivery_model ADR. |
+| `mount_delivery.md` | 🟢 Cold | M2.6 | Mount delivery stub: wired-not-runnable status, backing axis, settled decisions summary. Detailed write-up deferred until runnable. |
 
 ### ADR (`docs/adr/`)
 

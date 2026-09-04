@@ -33,7 +33,7 @@ The system includes the following explicit trust boundaries, which hold in every
 
 ### Principle
 
-The sandbox adds no security beyond what the host provides — it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design — Mount Model](../../devlog/discussions/20260730-design-settled-mount_model.md).
+The sandbox adds no security beyond what the host provides — it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design — Mount Model](../../devlog/discussions/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../concepts/copy_delivery.md), [mount_delivery.md](../concepts/mount_delivery.md).
 
 ### Mount modes
 
