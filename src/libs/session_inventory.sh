@@ -213,3 +213,25 @@ relative_time() {
     val=$(( diff / 86400 )); printf '%d day%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
   fi
 }
+
+# relative_time_compact TS  --  compact form for dense tables: "55m ago",
+# "7h ago", "1D ago", "1M ago"; "just now" under a minute; "---" if absent.
+# Months approximate at 30 days. Verbose counterpart: relative_time.
+relative_time_compact() {
+  local ts="$1" ep now diff val
+  ep="$(ts_to_epoch "$ts")"
+  [[ -n "$ep" ]] || { echo "---"; return 0; }
+  now="$(date -u +%s)"
+  diff=$(( now - ep )); [[ $diff -lt 0 ]] && diff=0
+  if   (( diff < 60 )); then
+    echo "just now"
+  elif (( diff < 3600 )); then
+    printf '%dm ago' $(( diff / 60 ))
+  elif (( diff < 86400 )); then
+    printf '%dh ago' $(( diff / 3600 ))
+  elif (( diff < 2592000 )); then
+    printf '%dD ago' $(( diff / 86400 ))
+  else
+    printf '%dM ago' $(( diff / 2592000 ))
+  fi
+}

@@ -61,6 +61,8 @@ _resolve_channel_dir() {
 #                  whole element if no | is present)
 #   DEFAULT       --  optional default value; empty Enter selects it
 #   PAGE_SIZE     --  max entries per page (default: 0 = no pagination)
+#   HEADER        --  optional column-header line, printed under the title on
+#                  every page (dense tables; e.g. the resume inventory)
 #
 # Output:
 #   stdout  --  selected value
@@ -73,6 +75,7 @@ interactive_pick() {
   local ENTRIES_VAR="$2"
   local DEFAULT="${3:-}"
   local PAGE_SIZE="${4:-0}"
+  local HEADER="${5:-}"
 
   local -n _PICK_ENTRIES="$ENTRIES_VAR"
   local TOTAL="${#_PICK_ENTRIES[@]}"
@@ -132,6 +135,7 @@ interactive_pick() {
     else
       echo "$LABEL" >&2
     fi
+    [[ -n "$HEADER" ]] && echo "$HEADER" >&2
 
     # Option 0 (injected default)
     if [[ "$INJECT_ZERO" == true ]]; then
@@ -408,7 +412,7 @@ interactive_select_bundle() {
     if [[ "$CHANNEL" == "autosave" ]]; then
       local saved_ep
       saved_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)
-      LAST_SAVED="  last saved: $(relative_time "$(date -u -d "@${saved_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)"
+      LAST_SAVED="  last saved: $(relative_time_compact "$(date -u -d "@${saved_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)"
     fi
 
     ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}${LAST_SAVED}")

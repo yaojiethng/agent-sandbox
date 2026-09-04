@@ -77,4 +77,20 @@ test_relative_time_units() {
 }
 run_test test_relative_time_units
 
+test_relative_time_compact_units() {
+  local now two_min two_hour two_day
+  now=$(date -u +%Y%m%d-%H%M%S)
+  two_min="$(date -u -d '-125 seconds' +%Y%m%d-%H%M%S)"
+  two_hour="$(date -u -d '-2 hours' +%Y%m%d-%H%M%S)"
+  two_day="$(date -u -d '-2 days' +%Y%m%d-%H%M%S)"
+
+  assert_eq "$(relative_time_compact "")" "---" "empty ts -> ---"
+  assert_eq "$(relative_time_compact "garbage")" "---" "malformed ts -> ---"
+  assert_eq "$(relative_time_compact "$now")" "just now" "current ts -> just now"
+  assert_eq "$(relative_time_compact "$two_min")" "2m ago" "2 minutes -> '2m ago'"
+  assert_eq "$(relative_time_compact "$two_hour")" "2h ago" "2 hours -> '2h ago'"
+  assert_eq "$(relative_time_compact "$two_day")" "2D ago" "2 days -> '2D ago'"
+}
+run_test test_relative_time_compact_units
+
 test_done "test_session_log"

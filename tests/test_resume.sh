@@ -66,7 +66,7 @@ test_list_renders_enriched() {
   sandbox="$(build_fixture "list")"
   local out
   out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/list/project" --sandbox="$sandbox" --list)"
-  if echo "$out" | grep -q "SESSION_ID.*PROVIDER.*STARTED.*BRANCH.*LAST_USED" \
+  if echo "$out" | grep -q "SESSION.*PROVIDER.*BRANCH.*WORK.*STATE" \
      && echo "$out" | grep -q "abc123.*pi.*main"; then
     pass "resume --list: renders enriched record display (headers + row)"
   else
@@ -325,20 +325,21 @@ EOF
   fi
 }
 
-# The PROVIDER cell surfaces the recorded image-content signature (7-char
-# short) next to the provider, drawn from the record's `image-sig` field (no
-# docker needed at --list time).
-test_list_shows_image_sig_short() {
+# The PROVIDER cell shows the bare provider name. The image-content signature
+# value was dropped from rows (operator-directed, 20260901-17) -- the
+# actionable signal is the [IMAGE_STALE] marker, not the hash.
+test_list_shows_provider_without_image_sig() {
   local dir="$FIXTURE_DIR/img_sig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
   write_minimal_record "$dir" "aaa" "pi-agent-test-project"
 
   local out
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi \(1234abc\)"; then
-    pass "resume --list: provider cell shows pi (<short image-sig>)"
+  if echo "$out" | grep -qE "aaa[[:space:]]+pi[[:space:]]" \
+     && ! echo "$out" | grep -qE "pi \(1234abc\)"; then
+    pass "resume --list: provider cell shows bare provider (no image-sig)"
   else
-    fail "resume --list: expected pi (1234abc), got: $out"
+    fail "resume --list: expected bare 'pi', got: $out"
   fi
 }
 
@@ -433,9 +434,42 @@ test_interactive_paginates_at_page_size() {
 # Run
 # ---------------------------------------------------------------------------
 
+# STATE cell is the LAST lifecycle event (start/stop) from the session log,
+# verb overridden by live docker state; stopped sessions show when they were
+# last active (operator-directed consolidation of STARTED/STATE/LAST_USED).
+test_list_state_cell_from_log() {
+  local dir="$FIXTURE_DIR/state_cell"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+  local recent past
+  recent=$(date -u -d '-10 minutes' +%Y%m%d-%H%M%S)
+  past=$(date -u -d '-2 days' +%Y%m%d-%H%M%S)
+  # stop is the last event -> cell shows the stop
+  printf 'last_started=%s\nlast_stopped=%s\n' "$past" "$recent" > "$dir/sandbox/.compose/aaa.log"
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "stopped 10m ago"; then
+    pass "resume --list: STATE cell shows the last log event (stopped 10m ago)"
+  else
+    fail "resume --list: expected 'stopped 10m ago', got: $out"
+  fi
+
+  # start after stop -> last event is the start
+  printf 'last_started=%s\nlast_stopped=%s\n' "$recent" "$past" > "$dir/sandbox/.compose/aaa.log"
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
+  if echo "$out" | grep -qE "started 10m ago"; then
+    pass "resume --list: STATE cell flips to the start event when it is last"
+  else
+    fail "resume --list: expected 'started 10m ago', got: $out"
+  fi
+}
+
 run_test test_list_renders_enriched
 run_test test_list_provider_filter
 run_test test_list_provider_no_match
+run_test test_list_shows_provider_without_image_sig
+run_test test_list_state_cell_from_log
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help
 run_test test_interactive_confirm_abort
