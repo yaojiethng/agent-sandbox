@@ -34,7 +34,7 @@ The seeder is the sandbox image. It reads the project read-only, writes the volu
 
 | Input | Output | Guarantee |
 |---|---|---|
-| Project worktree at `/src`, session volume at `/dest` | Volume holding `.git` and the working tree | `git status` identical to the project including staging state, gitignored content absent, no harness state in the worktree |
+| Project worktree at `/src`, session volume at the sandbox mount point | Volume holding `.git` and the working tree | `git status` identical to the project including staging state, gitignored content absent, no harness state in the worktree |
 
 Internally the seeder copies the repository natively, including its index, and streams the git-enumerated file set; it verifies the copy by comparing `git status` between the project and the volume, and a divergence aborts the start. The exact commands and their per-requirement mapping are in the ADR's seed-transport entry. The seeder runs offline and before any session container starts: a failed seed aborts the start with a host-side error, and no session container is created.
 

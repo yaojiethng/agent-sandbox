@@ -4,9 +4,10 @@
 #   - the SESSION_ID-scoped named sandbox volume (per-run state persistence,
 #     volume labels for lifecycle tooling)
 #
-# Content transfer is host-side seeding: run_agent.sh (seed_sandbox_volume)
-# extracts the seed tar into the volume via docker cp before the sandbox
-# container starts. There is no snapshot mount and no snapshot env var.
+# Content transfer: run_agent.sh seeds the volume before the sandbox container
+# starts. Transport selected by SEED_TRANSPORT: "helper" (default) runs the
+# one-shot seeder service below (ADR 2026-09-04 entry); "legacy" keeps the
+# docker cp pipeline (seed_sandbox_volume) until its removal.
 #
 # Volume name incorporates SESSION_ID so each session gets its own volume.
 # Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
@@ -32,3 +33,39 @@ services:
         target: /home/agentuser/sandbox
     environment:
       - SANDBOX_TYPE=copy
+
+  # Helper-container seeder (helper seed transport, ADR 2026-09-04 entry).
+  # One-shot: run_agent.sh runs `docker compose run --rm seeder` before the
+  # sandbox container is created; the seeder's exit code is the seed's
+  # readiness signal. The script is bind-mounted from the harness repo so the
+  # seeder always executes current source, independent of image freshness.
+  # User matches the sandbox service (UID parity: no root-owned volume content).
+  seeder:
+    image: {{SANDBOX_IMAGE_NAME}}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: ["bash", "/opt/harness-bin/seed_volume.sh"]
+    volumes:
+      - type: bind
+        source: {{PROJECT_DIR}}
+        target: /src
+        read_only: true
+      - type: bind
+        source: {{REPO_ROOT}}/src/capability
+        target: /opt/harness-bin
+        read_only: true
+      - type: bind
+        source: {{REPO_ROOT}}/src/libs
+        target: /opt/harness-libs
+        read_only: true
+      - type: volume
+        source: {{SESSION_ID}}-sandbox-data
+        # Same target as the sandbox service: first-mount ownership
+        # initialization of the empty volume comes from the image's directory
+        # at this path (agentuser-owned). Any other target leaves the volume
+        # root root-owned and the unprivileged seeder cannot write.
+        target: /home/agentuser/sandbox
+    environment:
+      - SESSION_TS=${SESSION_TS:-}
+      - SESSION_ID=${SESSION_ID:-}
+      - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
+    restart: "no"

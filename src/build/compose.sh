@@ -42,6 +42,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/dry_run_record.sh"
 # Substitutions applied here (baked into generated file):
 #   {{PROJECT_NAME}}        -> project name
 #   {{PROJECT_DIR}}         -> absolute path to project directory
+#   {{REPO_ROOT}}           -> absolute path to the harness repo (bind-mounts
+#                              the seeder script + session_state lib at current source)
 #   {{SANDBOX_IMAGE_NAME}}  -> derived image name
 #   {{AGENT_IMAGE_NAME}}    -> derived image name
 #   {{PROVIDER_NAME}}       -> provider name
@@ -118,6 +120,7 @@ compose_generate() {
     sed \
       -e "s|{{PROJECT_NAME}}|${project_name}|g" \
       -e "s|{{PROJECT_DIR}}|${PROJECT_DIR:-}|g" \
+      -e "s|{{REPO_ROOT}}|${REPO_ROOT:-}|g" \
       -e "s|{{SANDBOX_IMAGE_NAME}}|${sandbox_image}|g" \
       -e "s|{{AGENT_IMAGE_NAME}}|${agent_image}|g" \
       -e "s|{{PROVIDER_NAME}}|${provider_name}|g" \

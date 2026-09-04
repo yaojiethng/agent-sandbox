@@ -18,7 +18,7 @@ The delivery model fills an empty Docker volume with the operator's working stat
 
 ## 2026-09-04 -- Seed transport: helper-container copy
 
-**Decision:** The seed runs as a one-shot helper container (the sandbox image, which already contains git) with the project mounted read-only at `/src` and the sandbox volume at `/dest`. The copy executes in-container:
+**Decision:** The seed runs as a one-shot helper container (the sandbox image, which already contains git) with the project mounted read-only at `/src` and the sandbox volume mounted at the sandbox service's own target path. The volume target must match the sandbox service's: a fresh empty named volume is initialized -- content and ownership -- from the image's directory at the mount point, which makes the volume root writable by the unprivileged seeder; any other target leaves it root-owned. The copy executes in-container:
 
 ```
 cp -a /src/.git /dest/.git

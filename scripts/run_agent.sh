@@ -333,9 +333,49 @@ seed_sandbox_volume() {
   echo "Sandbox volume seeded (baseline.tar verified in volume)."
 }
 
+# Transport switch (handover 20260904-04): "helper" (default) seeds via the
+# one-shot seeder service (ADR 2026-09-04 entry); "legacy" keeps the docker cp
+# pipeline for comparison until its removal (scheduled with handover 20260904-03,
+# step 3 of the operator plan).
+SEED_TRANSPORT="${SEED_TRANSPORT:-helper}"
+
+seed_sandbox_volume_helper() {
+  if [[ -z "${PROJECT_DIR:-}" ]]; then
+    echo "Error: PROJECT_DIR is not set  --  cannot seed the volume" >&2
+    return 1
+  fi
+  # The seeder's exit code is the only readiness signal (ADR completion-signal
+  # block): event-driven wait via `compose run`, bounded by a hard timeout. On
+  # failure the session volume is discarded  --  a half-seeded volume must
+  # never boot. The sandbox container is created by the normal start flow
+  # afterward; the healthcheck then passes immediately (the seeder wrote .git).
+  local seed_timeout="${SEED_TIMEOUT:-300}"
+  local rc=0
+  # -T + closed stdin: compose run allocates a TTY and attaches stdin by
+  # default; from the non-interactive start pipeline that attach never closes
+  # and compose hangs after the container exits (observed live, handover
+  # 20260904-05). Non-interactive run lets the exit code propagate.
+  timeout "$seed_timeout" docker compose "${COMPOSE_ARGS[@]}" run --rm -T seeder < /dev/null || rc=$?
+  if (( rc != 0 )); then
+    if (( rc == 124 )); then
+      echo "Error: seeder timed out after ${seed_timeout}s  --  aborting start" >&2
+    else
+      echo "Error: seeder failed (exit $rc)  --  aborting start" >&2
+    fi
+    echo "  Seeder output above names the failure. Discarding the session volume." >&2
+    docker compose "${COMPOSE_ARGS[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+    return 1
+  fi
+  echo "Sandbox volume seeded and verified (git status parity)."
+}
+
 if [[ "$RESET_VOLUME" == "true" && "$DELIVERY_TYPE" == "copy" ]]; then
-  echo "+ seeding sandbox volume..."
-  seed_sandbox_volume || exit 1
+  if [[ "$SEED_TRANSPORT" == "legacy" ]]; then
+    echo "+ seeding sandbox volume (legacy docker cp transport)..."
+    seed_sandbox_volume || exit 1
+  else
+    seed_sandbox_volume_helper || exit 1
+  fi
 fi
 
 # -------------------------
