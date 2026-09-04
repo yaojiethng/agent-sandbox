@@ -441,6 +441,33 @@ test_draft_failure_returns_to_source_branch() {
   fi
 }
 
+# Regression: the rollback must also delete the exact draft branch the failed
+# run created. Formerly the branch survived, and the next `make draft` failed
+# the collision guard (draft_guard_no_collision) until the operator deleted it
+# by hand.
+test_draft_failure_deletes_draft_branch() {
+  local P="$FIXTURE_DIR/draft_rollback_del_p"
+  local S="$FIXTURE_DIR/draft_rollback_del_s"
+  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
+  make_committed_repo "$P"
+  mkdir -p "$S/.workspace"
+  make_session_fixture "$EXPORT" 1
+
+  echo "conflict" > "$P/file-1.txt"
+  git -C "$P" add file-1.txt
+  git -C "$P" commit -m "conflict file" --quiet
+
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1 || true
+
+  local LEFT
+  LEFT=$(git -C "$P" branch --list 'draft/*')
+  if [[ -z "$LEFT" ]]; then
+    pass "failed draft deletes the draft branch it created"
+  else
+    fail "draft branch survived rollback: $LEFT"
+  fi
+}
+
 test_draft_strips_index_lines() {
   local P="$FIXTURE_DIR/draft_strip_p"
   local S="$FIXTURE_DIR/draft_strip_s"
@@ -1142,6 +1169,7 @@ run_test test_draft_branch_from
 run_test test_draft_diffs_range
 run_test test_draft_no_diffs_error
 run_test test_draft_failure_returns_to_source_branch
+run_test test_draft_failure_deletes_draft_branch
 run_test test_draft_strips_index_lines
 run_test test_draft_resets_author_to_operator
 run_test test_draft_commit_messages

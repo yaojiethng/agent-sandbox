@@ -289,7 +289,9 @@ _ingest_export_metadata() {
 # Creates a draft branch, writes .draft-state, and prints branch info.
 # Accepts DIFF_COUNT (pre-collected by main()) for the .draft-state record.
 # Does NOT apply patches  --  the caller (main()) handles the apply loop.
-# Prints branch info to stdout for the caller's summary.
+# Prints branch info to stdout for the caller's summary. Sets DRAFT_WORKING_BRANCH
+# in the caller's scope (no local  --  intentional) so the caller can roll back
+# the exact branch this call created.
 draft_run() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM_ARG="$4" BRANCH_SUMMARY="$5" DIFF_COUNT="$6"
@@ -319,6 +321,7 @@ draft_run() {
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
   local IDENTITY="${SESSION_ID:-$SESSION_TS}"
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
+  DRAFT_WORKING_BRANCH="$WORKING_BRANCH"
 
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
     "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
@@ -366,14 +369,15 @@ EOF
 #
 # Resets to the draft-savepoint (the fork point before .draft-state was
 # committed), returns the operator to the branch that was current before
-# draft_run checked out the draft branch, and deletes the savepoint tag.
-# Guards against restoring to a branch that no longer exists (fall back to
-# the savepoint commit) so the operator is never left on the empty draft/*
-# branch. The branch-creation guard in draft_create_and_init_branch already
-# refuses to draft from a draft/* branch, so a clean rollback must not leave
-# the operator there either.
+# draft_run checked out the draft branch, and deletes the savepoint tag and
+# the exact draft branch draft_run created ($3). Guards against restoring to
+# a branch that no longer exists (fall back to the savepoint commit) so the
+# operator is never left on the empty draft/* branch. The branch-creation
+# guard in draft_create_and_init_branch already refuses to draft from a
+# draft/* branch, so a clean rollback must not leave the operator there
+# either.
 _draft_rollback() {
-  local PROJECT_DIR="$1" SOURCE_BRANCH="$2"
+  local PROJECT_DIR="$1" SOURCE_BRANCH="$2" DRAFT_BRANCH="${3:-}"
 
   echo "Rolling back to savepoint..."
   git -C "$PROJECT_DIR" reset --hard draft-savepoint
@@ -383,6 +387,14 @@ _draft_rollback() {
   else
     echo "Warning: source branch '$SOURCE_BRANCH' no longer exists; leaving at savepoint commit (detached)." >&2
     git -C "$PROJECT_DIR" checkout -q --detach draft-savepoint
+  fi
+
+  # Delete the exact draft branch this run created, so a later draft does not
+  # collide on branch creation. Guarded: only an existing draft/* branch.
+  if [[ -n "$DRAFT_BRANCH" && "$DRAFT_BRANCH" == draft/* ]] \
+    && git -C "$PROJECT_DIR" rev-parse --verify --quiet "refs/heads/$DRAFT_BRANCH" >/dev/null; then
+    git -C "$PROJECT_DIR" branch -q -D "$DRAFT_BRANCH"
+    echo "Deleted partial draft branch '$DRAFT_BRANCH'."
   fi
 
   git -C "$PROJECT_DIR" tag -d draft-savepoint
@@ -447,19 +459,22 @@ _run_draft_workflow() {
   local AUTHOR
   AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
 
-  # Create branch (branch-creation only)
+  # Create branch (branch-creation only). draft_run sets DRAFT_WORKING_BRANCH
+  # in this scope -- the exact branch it created, so a failed apply can be
+  # rolled back to the source branch with the partial draft branch removed.
+  DRAFT_WORKING_BRANCH=""
   draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
 
   # Apply patches
   printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" || {
-    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
+    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH" "$DRAFT_WORKING_BRANCH"
     return 1
   }
 
   # Apply uncommitted.diff
   draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" "$FORCE" || {
-    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"
+    _draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH" "$DRAFT_WORKING_BRANCH"
     return 1
   }
 
