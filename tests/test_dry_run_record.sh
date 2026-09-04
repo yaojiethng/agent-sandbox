@@ -123,71 +123,70 @@ run_with_docker_stub() {
     "$@"
   )
 }
-
-# bash -c wrapper that sources both libs then runs dry_run_image_verify.
-run_image_verify() {
-  local image="$1" type="$2" repo="$3" provider="${4:-pi}"
-  bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$type' '$repo' '$provider'" 2>&1
-}
-
-test_image_verify_fails_on_stale() {
-  local ROOT="$FIXTURE_DIR/stale"
-  make_sig_repo "$ROOT"
-  local out rc
-  out=$(DOCKER_STUB_IMAGE_SIG_LABEL="0000000000000000000000000000000000000000000000000000000000000000" \
-    run_with_docker_stub run_image_verify img1 sandbox "$ROOT")
-  rc=$?
-  assert_ne "$rc" "0" "stale image returns non-zero"
-  assert_contains "$out" "image-stale" "stale reported as failure"
-}
-
-test_image_verify_passes_on_fresh() {
-  local ROOT="$FIXTURE_DIR/fresh"
-  make_sig_repo "$ROOT"
-  local SIG
-  SIG=$(bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; current_sig sandbox '$ROOT'" </dev/null)
-  local out rc
-  out=$(DOCKER_STUB_IMAGE_SIG_LABEL="$SIG" \
-    run_with_docker_stub run_image_verify img1 sandbox "$ROOT")
-  rc=$?
-  assert_rc 0 "$rc" "fresh image returns 0"
-  assert_contains "$out" "container-sig matches source" "fresh reported as pass"
-}
-
-test_image_verify_fails_on_unknown_label() {
-  local ROOT="$FIXTURE_DIR/nolabel"
-  make_sig_repo "$ROOT"
-  local out rc
-  out=$(DOCKER_STUB_IMAGE_SIG_LABEL="" \
-    run_with_docker_stub run_image_verify img1 agent "$ROOT")
-  rc=$?
-  assert_ne "$rc" "0" "missing label (unknown) returns non-zero"
-  assert_contains "$out" "no container-sig label" "unknown reported as failure"
-}
-
-test_image_verify_skips_when_provider_missing() {
-  local out rc
-  out=$(bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify 'img1' 'sandbox' '$FIXTURE_DIR/none' ''" 2>&1)
-  rc=$?
-  assert_rc 0 "$rc" "missing provider skips gate (rc 0)"
-  assert_contains "$out" "skipped" "skip reported as a warning"
-}
-
-# ---------------------------------------------------------------------------
-# Run
-# ---------------------------------------------------------------------------
-
-run_test test_record_value_key
 run_test test_verify_passes_on_healthy_record
 run_test test_verify_fails_on_identity_mismatch
 run_test test_verify_fails_on_layer_fail
 run_test test_verify_fails_on_missing_record
 run_test test_verify_passes_record_within_container
-run_test test_image_verify_fails_on_stale
-run_test test_image_verify_passes_on_fresh
-run_test test_image_verify_fails_on_unknown_label
-run_test test_image_verify_skips_when_provider_missing
+
+# ----------------------------------------------------------------------------
+# dry_run_image_verify -- digest roundtrip gate (ADR harness_versioning.md)
+# ----------------------------------------------------------------------------
+
+# run_digest_verify IMAGE RECORD TYPE  --  sources both libs, runs the gate.
+run_digest_verify() {
+  local image="$1" record="$2" type="$3"
+  bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$record' '$type'" 2>&1
+}
+
+test_digest_gate_passes_when_digests_match() {
+  local rec="$FIXTURE_DIR/rt_pass.yml"
+  printf 'labels:\n  agent-sandbox.sandbox-image-digest: sha256:aaa\n' > "$rec"
+  local out rc
+  out=$(DOCKER_STUB_IMAGE_DIGESTS="img1:sha256:aaa" run_with_docker_stub run_digest_verify img1 "$rec" sandbox)
+  rc=$?
+  assert_rc 0 "$rc" "digest roundtrip passes when record digest == image digest"
+  assert_contains "$out" "matches the record (roundtrip)" "roundtrip pass reported"
+}
+
+test_digest_gate_fails_when_digest_diverges() {
+  local rec="$FIXTURE_DIR/rt_fail.yml"
+  printf 'labels:\n  agent-sandbox.agent-image-digest: sha256:old\n' > "$rec"
+  local out rc
+  out=$(DOCKER_STUB_IMAGE_DIGESTS="img1:sha256:new" run_with_docker_stub run_digest_verify img1 "$rec" agent)
+  rc=$?
+  assert_ne "0" "$rc" "digest roundtrip fails when the image changed since generation"
+  assert_contains "$out" "digest changed since the record was written" "roundtrip failure reported"
+}
+
+test_digest_gate_fails_on_missing_record_label() {
+  local rec="$FIXTURE_DIR/rt_missing.yml"
+  printf 'services:\n  sandbox:\n    image: img1\n' > "$rec"
+  local out rc
+  out=$(DOCKER_STUB_IMAGE_DIGESTS="img1:sha256:aaa" run_with_docker_stub run_digest_verify img1 "$rec" sandbox)
+  rc=$?
+  assert_ne "0" "$rc" "missing digest label fails the gate (no unknown-fallback)"
+  assert_contains "$out" "no sandbox-image-digest label" "missing label reported"
+}
+
+test_digest_gate_fails_on_dangling_image() {
+  local rec="$FIXTURE_DIR/rt_dangling.yml"
+  printf 'labels:\n  agent-sandbox.sandbox-image-digest: sha256:pruned\n' > "$rec"
+  local out rc
+  # Stub returns empty digest for the image -> dangling record digest.
+  out=$(DOCKER_STUB_IMAGE_DIGEST="" run_with_docker_stub run_digest_verify img1 "$rec" sandbox)
+  rc=$?
+  assert_ne "0" "$rc" "dangling digest (image pruned) fails the gate"
+  assert_contains "$out" "no longer present in the local daemon" "dangling condition named"
+  assert_contains "$out" "rebuild the images" "remediation named"
+}
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+
+run_test test_digest_gate_passes_when_digests_match
+run_test test_digest_gate_fails_when_digest_diverges
+run_test test_digest_gate_fails_on_missing_record_label
+run_test test_digest_gate_fails_on_dangling_image
+

@@ -46,6 +46,19 @@ _sig_for() {
   echo "${DOCKER_STUB_IMAGE_SIG_LABEL:-}"
 }
 
+# _digest_for IMAGE — resolve the image ID digest reported for an image
+# (image version identity, ADR harness_versioning.md).
+# DOCKER_STUB_IMAGE_DIGESTS is a space-separated `image:digest` map (per-image);
+# DOCKER_STUB_IMAGE_DIGEST is a single fallback for all images
+# (default sha256:stub so record stamping succeeds).
+_digest_for() {
+  local img="$1" pair
+  for pair in ${DOCKER_STUB_IMAGE_DIGESTS:-}; do
+    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_IMAGE_DIGEST-sha256:stub}"
+}
+
 # --- docker compose ---
 if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
   shift
@@ -210,6 +223,8 @@ STUBEOF
         # per-image map or single fallback (empty = no label / missing image).
         if [[ "$*" == *"container-sig"* ]]; then
           _sig_for "${@: -1}"
+        elif [[ "$*" == *".Id}"* ]]; then
+          _digest_for "${@: -1}"
         else
           echo '[{"Id":"stub"}]'
         fi

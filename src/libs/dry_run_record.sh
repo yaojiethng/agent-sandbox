@@ -66,29 +66,33 @@ dry_run_record_verify() {
   return 1
 }
 
-# Correct-container image-signature (staleness) hard gate (option c): assert the
-# running image's baked container-sig matches the recomputed source signature, so
-# a stale image fails the dry-run rather than merely warning. Delegates the
-# classification to image_is_stale (src/libs/container_sig.sh).
-#   $1 image_name  $2 type (sandbox|agent)  $3 repo_root  $4 provider
-# Returns 0 with a PASS line on fresh; 1 with a FAIL line on stale/unknown;
-# 0 with a WARN line when the gate cannot run (missing inputs / image_is_stale).
+# Digest roundtrip hard gate (ADR harness_versioning.md): the digest stamped
+# into the record at generation time (post-build) must equal the digest of the
+# image that will run. A rebuild between generation and run changes the image
+# ID and fails the gate, so a dry-run can never execute on anything but the
+# exact images this invocation built.
+#   $1 image_name  $2 record_file  $3 type (sandbox|agent)
 dry_run_image_verify() {
-  local image_name="$1" type="$2" repo_root="${3:-}" provider="${4:-}"
-  local st
-  if [[ -z "$repo_root" || -z "$provider" ]]; then
-    echo "  RECORD-VERIFY WARN: image-signature gate skipped (repo_root/provider not set)" >&2
+  local image_name="$1" record="$2" type="$3"
+  local stamped current
+  # record_label equivalent, inlined -- dry_run_record.sh has no dependency on
+  # session_inventory.sh.
+  stamped="$(grep -m1 -E '[[:space:]]*agent-sandbox.'"$type"'-image-digest:' "$record" \
+    | sed -E 's/.*'"$type"'-image-digest:[[:space:]]*//' || true)"
+  if [[ -z "$stamped" ]]; then
+    echo "  RECORD-VERIFY FAIL: image $image_name record carries no $type-image-digest label; cannot run the roundtrip gate" >&2
+    return 1
+  fi
+  current="$(image_digest "$image_name")"
+  if [[ -z "$current" ]]; then
+    echo "  RECORD-VERIFY FAIL: image $image_name is no longer present in the local daemon (pruned?) -- the record names content that does not exist locally." >&2
+    echo "  Remediation: rebuild the images (make build) and re-run; the record's digest cannot resolve to a missing image." >&2
+    return 1
+  fi
+  if [[ "$stamped" == "$current" ]]; then
+    echo "  RECORD-VERIFY PASS: image $image_name digest matches the record (roundtrip)"
     return 0
   fi
-  if ! type image_is_stale >/dev/null 2>&1; then
-    echo "  RECORD-VERIFY WARN: image-signature gate skipped (image_is_stale unavailable)" >&2
-    return 0
-  fi
-  st="$(image_is_stale "$image_name" "$type" "$repo_root" "$provider")"
-  case "$st" in
-    fresh)   echo "  RECORD-VERIFY PASS: image $image_name container-sig matches source"; return 0 ;;
-    stale)   echo "  RECORD-VERIFY FAIL: image $image_name is image-stale (container-sig != source); rebuild required" >&2; return 1 ;;
-    unknown) echo "  RECORD-VERIFY FAIL: image $image_name has no container-sig label (pre-two-sig build); cannot confirm correct image" >&2; return 1 ;;
-    *)       echo "  RECORD-VERIFY WARN: image $image_name signature gate unexpected result '$st'" >&2; return 0 ;;
-  esac
+  echo "  RECORD-VERIFY FAIL: image $image_name digest changed since the record was written (rebuild during the run?); roundtrip gate failed" >&2
+  return 1
 }

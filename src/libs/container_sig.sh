@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # libs/container_sig.sh
 #
-# Shared container-signature computation and staleness predicate for the
-# `agent-sandbox.container-sig` label. Consumed by both `scripts/build.sh`
-# (build-time injection + preflight warning) and `scripts/prune.sh`
-# (image-staleness selection, `STALE=image`), so the image-staleness criterion
-# lives in exactly one place.
+# Container-signature computation for the `agent-sandbox.container-sig` label
+# (the interim interface-contract check, ADR harness_versioning.md). Consumed
+# by `scripts/build.sh` (build-time injection + preflight contract check).
+# The image-version duty of this label was retired with the staleness signal:
+# image identity is the image ID digest (image_digest below), recorded per
+# session by compose_generate.
 #
 # Functions:
 #   _sandbox_sig_sources      --  source paths for the sandbox image (/opt/sandbox)
 #   _agent_sig_sources        --  source paths for an agent image (/opt/workflow + provider)
 #   container_sig             --  deterministic SHA-256 of the source-file set
 #   current_sig               --  current sig for a layer type
-#   image_is_stale            --  baked container-sig vs recomputed -> fresh|stale|unknown
-#
-# (record_image_stale  --  the record-level aggregation  --  lives in
+#   image_digest              --  image ID digest (content identity of the built image)
+## (record_image_stale  --  the record-level aggregation  --  lives in
 # src/libs/session_inventory.sh, which sources this lib.)
 #
 # Terminology: image staleness (see docs/concepts/terminology.md `## staleness`)
@@ -123,35 +123,26 @@ current_sig() {
   echo "$sig"
 }
 
-# image_is_stale <image_name> <type: sandbox|agent> <repo_root> [provider]
-# image_baked_sig IMAGE  --  print the baked `agent-sandbox.container-sig` label
-# of an image (read via docker inspect); empty when the image is missing or
-# carries no label. Used by image_is_stale and by record generation to persist
-# the image-content signature into the session record (docker required only at
-# build/start time -- `make resume --list` reads the recorded value).
+
+# image_digest IMAGE_NAME
+# Content identity of a built image: the image ID digest (`sha256:...`), which
+# content-addresses the image config and, through it, every layer. Used as the
+# per-session recorded image version (ADR harness_versioning.md). Empty when
+# docker is unavailable or the image does not exist -- compose_generate treats
+# that as a hard error.
+image_digest() {
+  local image_name="${1:?image_digest requires an image name}"
+  docker image inspect --format '{{.Id}}' "$image_name" 2>/dev/null
+}
+
+# image_baked_sig IMAGE_NAME
+# Reads the image's baked `agent-sandbox.container-sig` label. Consumed by the
+# interim interface-contract check (build.sh _check_container_sig): the label
+# is compared against a recomputation of the current source subset, so a
+# container built from a different contract revision is flagged before use.
 image_baked_sig() {
-  local image_name="${1:?image_baked_sig requires image name}"
+  local image_name="${1:?image_baked_sig requires an image name}"
   docker image inspect \
     --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' \
     "$image_name" 2>/dev/null
-}
-
-# Prints the image-staleness of an existing image: "stale" when its baked
-# `agent-sandbox.container-sig` label differs from a recomputation of the
-# current source, "fresh" when they match, "unknown" when the image is missing,
-# has no container-sig label, or its sources cannot be recomputed. Always
-# returns 0 (best-effort; no caller is aborted by a missing image).
-image_is_stale() {
-  local image_name="${1:?image_is_stale requires image name}"
-  local type="${2:?image_is_stale requires image type (sandbox|agent)}"
-  local repo_root="${3:?image_is_stale requires repo_root}"
-  local provider="${4:-}"
-
-  local baked_sig current_s
-  baked_sig="$(image_baked_sig "$image_name")"
-  [[ -n "$baked_sig" ]] || { echo "unknown"; return 0; }
-
-  current_s="$(current_sig "$type" "$repo_root" "$provider")" || { echo "unknown"; return 0; }
-
-  if [[ "$baked_sig" == "$current_s" ]]; then echo "fresh"; else echo "stale"; fi
 }

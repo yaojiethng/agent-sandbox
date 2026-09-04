@@ -73,7 +73,9 @@ for ARG in "$@"; do
     --name=*)           PROJECT_NAME="${ARG#--name=}" ;;
     --project=*)        PROJECT_DIR="${ARG#--project=}" ;;
     --sandbox=*)        SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --env=*)            ENV_REL="${ARG#--env=}" ;;
+    # Accepted for CLI parity; ignored -- resume reads ENV_FILE from the
+    # session record, not from the flag.
+    --env=*)            : ;;
     -h|--help)          usage; exit 0 ;;
     *)                  echo "Unknown flag: $ARG" >&2; usage >&2; exit 1 ;;
   esac
@@ -95,29 +97,27 @@ fi
 # Recover a field from a .compose/<session-id>.yml registry record. Provider is
 # read from the agent service image (`image: <provider>-agent-<lower-project>`);
 # session metadata from the agent-sandbox labels; staleness from the record's
-# host-head-sha vs the current project HEAD (sandbox) and its images vs the
-# recomputed source sig (image). Shared with prune.sh. This lib also brings in
-# the image-staleness criterion (it sources src/libs/container_sig.sh).
+# host-head-sha vs the current project HEAD (worktree identity -- the exact
+# comparison, ADR harness_versioning.md). Image staleness is retired: the
+# recorded image digests are identity, not freshness.
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 # Enumerate the session inventory into RESUME_INVENTORY: one line per record of
-# the form `SESSION_ID|provider|session-ts|branch|sandbox-stale|image-stale`,
-# optionally filtered by PROVIDER_FILTER. Uses the shared `enumerate_records`
-# core from session_inventory.sh and layers the two staleness columns on top.
-# `stale` is "fresh"/"stale"/"unknown" (registry-truth, D7  --  see session_stale).
+# the form `SESSION_ID|provider|session-ts|branch|sandbox-stale`, optionally
+# filtered by PROVIDER_FILTER. Uses the shared `enumerate_records` core from
+# session_inventory.sh. `stale` is "fresh"/"stale"/"unknown" (registry-truth,
+# D7  --  see session_stale). Zero docker calls: every field is on-disk.
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
-  local current_sha stale image_stale last_used short_sha image_sig line sid provider ts branch
+  local current_sha stale last_used short_sha line sid provider ts branch
   current_sha="$(project_current_sha)"
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
-    image_stale="$(record_image_stale "$SANDBOX_DIR/.compose/$sid.yml" "$REPO_ROOT")"
     last_used="$(session_log_read "$sid" last_stopped)"
     short_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)" && short_sha="${short_sha:0:7}"
-    image_sig="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" image-sig)" && image_sig="${image_sig:0:7}"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$image_stale|$last_used|$short_sha|$image_sig" )
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$short_sha" )
   done < <(enumerate_records)
   # Newest first by session-ts.
   local sorted
@@ -163,7 +163,7 @@ _no_sessions() {
 #   BRANCH -- truncated to 16 chars (+ ...) so long branch names cannot blow
 #             the row width; the full name is on the record.
 # Image-sig value is dropped from rows (diagnostic clutter); the actionable
-# staleness markers [SANDBOX_STALE] / [IMAGE_STALE] are kept (exact words --
+# staleness marker [SANDBOX_STALE] is kept (exact words --
 # pinned by tests).
 _RESUME_BRANCH_MAX=16
 declare -A _WORK_MAP=()   # sid -> "<N>c[+u]" (filled by _resume_work_map)
@@ -260,7 +260,7 @@ _resume_render_rows() {
   _RESUME_HEADER=$(printf '  %-8s  %-9s  %-19s  %-7s  %-12s' \
     "SESSION" "PROVIDER" "BRANCH" "WORK" "STATE")
 
-  local _line sid provider ts branch stale image_stale last_used short_sha image_sig
+  local _line sid provider ts branch stale last_used short_sha
   local _br work state
   if [[ "$MODE" == "list" ]]; then echo "$_RESUME_HEADER"; fi
 
@@ -275,10 +275,9 @@ _resume_render_rows() {
     _LINES=( "${RESUME_INVENTORY[@]}" )
   fi
   for _line in "${_LINES[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha image_sig <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale last_used short_sha <<< "$_line"
     _br=$(_resume_truncate_branch "$branch")
     [[ "$stale" == "stale" ]] && _br+=" [SANDBOX_STALE]"
-    [[ "$image_stale" == "stale" ]] && _br+=" [IMAGE_STALE]"
     work="${_WORK_MAP[$sid]:---}"
     state=$(_resume_state_cell "$sid" "$ts")
     local row
@@ -326,7 +325,7 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # re-parsing it from disk.
   disp_provider=""; disp_ts=""; disp_branch=""
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale image_stale last_used short_sha image_sig <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale last_used short_sha <<< "$_line"
     if [[ "$sid" == "$chosen" ]]; then
       disp_provider="$provider"; disp_ts="$ts"; disp_branch="$branch"; break
     fi

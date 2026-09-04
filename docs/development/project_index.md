@@ -159,6 +159,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | Document | Temp | Last touched in | Notes |
 |---|---|---|---|
 | `test_capability_layer.sh` | — | M2.7 | Deleted. Static-file-existence checks subsumed by `scripts/dry_run_capability.sh`. See `devlog/roadmap.md` M2.7 Track B. |
+| `test_snapshot_container.sh` | — | M2.6 | Deleted with the legacy seed transport (handover `20260904-06`). Seed-guarantee coverage lives in `test_seed_volume.sh`. |
 | `test_checkpoint.sh` | 🟡 Warm | M2.3 | Tests `worktree_id_derive` only. Prior checkpoint functions removed. |
 | `test_diff.sh` | 🟢 Cold | M2.3 | (Deleted — replaced by test_diff_helpers.sh + test_diff_dispatch.sh in A.1) |
 | `test_diff_workflow.sh` | 🟢 Cold | M2.3 | Apply workflow tests: `diff_workflow_apply` path resolution and patch application. |

@@ -87,19 +87,25 @@ compose_generate() {
   fi
 
   # Derive image names  --  baked into generated file.
-  local sandbox_image agent_image image_sig
+  local sandbox_image agent_image
   sandbox_image="$(sandbox_image_name "$project_name")"
   agent_image="$(agent_image_name "$provider_name" "$project_name")"
 
-  # Image-content signature of the agent image actually loaded (its baked
-  # `agent-sandbox.container-sig` label). Read here -- start/resume already
-  # require docker (preflight inspects the images) -- and persisted into the
-  # record so `make resume --list` can show it docker-free. Empty (graceful)
-  # when the image is missing or carries no label.
-  if command -v docker >/dev/null 2>&1; then
-    image_sig="$(image_baked_sig "$agent_image")"
-  else
-    image_sig=""
+  # Image content identity (image ID digest -- content-addresses config +
+  # layers; the only docker-native digest available for locally built,
+  # never-pushed images). Read post-build, so the recorded digest is exact
+  # for this session. A missing digest is a hard error (ADR
+  # harness_versioning.md: no unknown-fallback).
+  local agent_image_digest sandbox_image_digest
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "compose_generate: docker is required to stamp image digests into the record" >&2
+    return 1
+  fi
+  agent_image_digest="$(image_digest "$agent_image")"
+  sandbox_image_digest="$(image_digest "$sandbox_image")"
+  if [[ -z "$agent_image_digest" || -z "$sandbox_image_digest" ]]; then
+    echo "compose_generate: image digest unavailable (agent: ${agent_image_digest:-missing}, sandbox: ${sandbox_image_digest:-missing}) -- build the images first" >&2
+    return 1
   fi
 
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
@@ -129,7 +135,8 @@ compose_generate() {
       -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
       -e "s|{{SESSION_ID}}|${SESSION_ID:-}|g" \
       -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
-      -e "s|{{IMAGE_SIG}}|${image_sig:-}|g" \
+      -e "s|{{AGENT_IMAGE_DIGEST}}|${agent_image_digest:-}|g" \
+      -e "s|{{SANDBOX_IMAGE_DIGEST}}|${sandbox_image_digest:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
@@ -294,11 +301,12 @@ compose_dry_run() {
     _verify_record "sandbox(capability)" "$_identity_sandbox" "$_cap_record"
     _verify_record "agent(reasoning)"   "$_identity_agent"   "$_rea_record"
 
-    # Correct-container image-signature (staleness) hard gate (option c): assert
-    # the running image matches the recomputed source signature via dry_run_image_verify.
-    dry_run_image_verify "$_identity_sandbox" "sandbox" "$REPO_ROOT" "${PROVIDER_NAME:-}" \
+    # Digest roundtrip hard gate (ADR harness_versioning.md): the image that
+    # will run must be the exact image whose digest was stamped into the
+    # record at generation time.
+    dry_run_image_verify "$_identity_sandbox" "$_cap_record" "sandbox" \
       || _verify_fails=$(( _verify_fails + 1 ))
-    dry_run_image_verify "$_identity_agent" "agent" "$REPO_ROOT" "${PROVIDER_NAME:-}" \
+    dry_run_image_verify "$_identity_agent" "$_rea_record" "agent" \
       || _verify_fails=$(( _verify_fails + 1 ))
 
     if [[ "$_verify_fails" -eq 0 ]]; then

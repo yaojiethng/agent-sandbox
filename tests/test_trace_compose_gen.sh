@@ -224,27 +224,29 @@ test_mount_output_has_no_snapshot_dir() {
   fi
 }
 
-# compose_generate bakes the loaded agent image's container-sig into the
-# record's `agent-sandbox.image-sig` label (read via docker inspect at
-# start/resume), which `make resume --list` later shows docker-free.
-test_record_bakes_image_sig() {
+# compose_generate stamps the built images' ID digests into the record's
+# `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`
+# labels (read via docker inspect post-build), which the dry-run roundtrip
+# gate and resume identity checks consume docker-free.
+test_record_bakes_image_digests() {
   local FIXTURE_DIR="$FIXTURE_DIR/imagesig"
   mkdir -p "$FIXTURE_DIR"
   setup_fixture "$FIXTURE_DIR"
 
   local out="$FIXTURE_DIR/compose-output.yml"
-  DOCKER_STUB_IMAGE_SIG_LABEL="baked-sig-label" \
+  DOCKER_STUB_IMAGE_DIGESTS="pi-agent-test-project:sha256:agentdigest sandbox-test-project:sha256:sandboxdigest" \
     run_compose_generate "$out"
 
   if [[ ! -f "$out" ]]; then
-    fail "compose_generate (image-sig) did not produce output file"
+    fail "compose_generate (digests) did not produce output file"
     return
   fi
-  if grep -q 'agent-sandbox.image-sig: baked-sig-label' "$out"; then
-    pass "compose_generate bakes the agent image container-sig into the record"
+  if grep -q 'agent-sandbox.agent-image-digest: sha256:agentdigest' "$out" \
+     && grep -q 'agent-sandbox.sandbox-image-digest: sha256:sandboxdigest' "$out"; then
+    pass "compose_generate stamps both image digest labels into the record"
   else
-    fail "compose_generate did not bake agent-sandbox.image-sig, got:"
-    grep 'image-sig' "$out" >&2 || true
+    fail "compose_generate did not stamp image digest labels, got:"
+    grep 'image-digest' "$out" >&2 || true
   fi
 }
 
@@ -259,7 +261,7 @@ run_test test_base_template_has_no_copy_only_wiring
 run_test test_copy_overlay_carries_volume_no_snapshot_mount
 run_test test_mount_overlay_carries_worktree_not_copy_wiring
 run_test test_mount_output_has_no_snapshot_dir
-run_test test_record_bakes_image_sig
+run_test test_record_bakes_image_digests
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

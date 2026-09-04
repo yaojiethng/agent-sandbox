@@ -271,43 +271,23 @@ test_prune_rule2_removes_orphan_container() {
   fi
 }
 
-test_prune_stale_image_selects_image_stale_record() {
-  local FIXTURE_DIR="$FIXTURE_DIR/pr_img_stale"
-  mkdir -p "$FIXTURE_DIR"
-  setup_stop_fixture "$FIXTURE_DIR"
-  make_committed_repo "$PROJECT_DIR"
-  write_record "$SANDBOX_DIR" "imgstale" "aaaa1111aaaa"
-  # Baked container-sig differs from the recomputed source sig -> image-stale.
-  export DOCKER_STUB_IMAGE_SIG_LABEL="definitely-stale-sig"
-
-  invoke_prune "$FIXTURE_DIR" --stale=image > /dev/null 2>&1
-
-  if [[ ! -f "$SANDBOX_DIR/.compose/imgstale.yml" ]]; then
-    pass "prune --stale=image: selects and removes an image-stale record"
-  else
-    fail "prune --stale=image: expected image-stale record removed"
-  fi
-}
-
 test_prune_dry_run_removes_nothing() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_dryrun"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   make_committed_repo "$PROJECT_DIR"
-  write_record "$SANDBOX_DIR" "stale1" "aaaa1111aaaa"
+  write_record "$SANDBOX_DIR" "staledry" "aaaa1111aaaa"  # stale (differs)
 
-  local OUT
-  OUT="$(invoke_prune "$FIXTURE_DIR" --dry-run)"
+  local out
+  out="$(invoke_prune "$FIXTURE_DIR" --dry-run 2>&1)"
 
-  if echo "$OUT" | grep -q "rule 1" -i && [[ -f "$SANDBOX_DIR/.compose/stale1.yml" ]]; then
-    pass "prune --dry-run: shows plan but leaves record in place"
+  if [[ -f "$SANDBOX_DIR/.compose/staledry.yml" ]] && echo "$out" | grep -q "staledry"; then
+    pass "prune --dry-run: reports the stale record, removes nothing"
   else
-    fail "prune --dry-run: expected plan shown and no record removed"
+    fail "prune --dry-run: expected report-only behavior (record: $([[ -f $SANDBOX_DIR/.compose/staledry.yml ]] && echo kept || echo REMOVED))"
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Run
 # ---------------------------------------------------------------------------
 
 run_test test_stop_no_compose
@@ -321,7 +301,6 @@ run_test test_stop_prune_has_registrybased_prune
 run_test test_prune_standalone_nothing_to_prune
 run_test test_prune_rule1_removes_stale_records
 run_test test_prune_rule2_removes_orphan_container
-run_test test_prune_stale_image_selects_image_stale_record
 run_test test_prune_dry_run_removes_nothing
 
 echo ""

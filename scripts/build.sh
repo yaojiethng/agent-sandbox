@@ -238,10 +238,11 @@ preflight() {
 }
 
 # _check_container_sig <image_name> <type: sandbox|agent> <...>
-# Warns when an existing image is image-stale (baked `container-sig` label != a
-# recomputation of current source). Delegates the staleness decision to the
-# shared predicate `image_is_stale` (src/libs/container_sig.sh) so build and
-# prune agree on the exact criterion.
+# Interim interface-contract check (ADR harness_versioning.md): warns when the
+# image's baked `container-sig` label differs from a recomputation of the
+# current source subset -- i.e. the container was built from a different
+# contract revision than the working tree. Scoped for deletion once the
+# redesigned interface-contract check lands.
 # Type-specific args:
 #   sandbox: <repo_root>
 #   agent:   <provider> <repo_root>
@@ -258,17 +259,19 @@ _check_container_sig() {
     repo_root="${1:?}"
   fi
 
-  local st
-  st="$(image_is_stale "$image_name" "$type" "$repo_root" "$provider")"
-  case "$st" in
-    stale)
-      echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
-      echo "  Rebuild with --rebuild to update." >&2
-      ;;
-    unknown)
-      echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
-      ;;
-  esac
+  local baked current
+  baked="$(image_baked_sig "$image_name")"
+  if [[ -z "$baked" ]]; then
+    echo "WARNING: $image_name has no container-sig label (built before the two-sig model)." >&2
+    return 0
+  fi
+  if ! current="$(current_sig "$type" "$repo_root" "$provider")"; then
+    return 0
+  fi
+  if [[ "$baked" != "$current" ]]; then
+    echo "WARNING: $image_name container-sig differs from current source (contract drift)." >&2
+    echo "  Rebuild with --rebuild to align the container with the current contract." >&2
+  fi
 }
 
 # =============================================================================

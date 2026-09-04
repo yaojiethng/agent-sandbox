@@ -27,7 +27,12 @@
 
 set -euo pipefail
 
-AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
+# Self-locating dispatcher (ADR harness_versioning.md, host surface): the
+# installed CLI is a symlink into the repo, so resolving $0 yields the repo
+# itself -- the installed tool IS the working tree's copy and no independent
+# host version exists by construction. Rollback is `git checkout <sha>`.
+_SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+AGENT_SANDBOX_REPO="$(cd "$(dirname "$_SELF")/.." && pwd)"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 

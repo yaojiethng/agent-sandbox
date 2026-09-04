@@ -29,10 +29,8 @@ install:
 	  _INSTALL_DIR="/usr/local/bin"; \
 	fi; \
 	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
-	sed 's|@@AGENT_SANDBOX_REPO@@|$(CURDIR)|g' scripts/agent-sandbox.sh \
-	  > "$$_INSTALL_DIR/agent-sandbox"; \
-	chmod +x "$$_INSTALL_DIR/agent-sandbox"; \
-	echo "Installed agent-sandbox to $$_INSTALL_DIR/agent-sandbox"
+	ln -sfn "$(CURDIR)/scripts/agent-sandbox.sh" "$$_INSTALL_DIR/agent-sandbox"; \
+	echo "Installed agent-sandbox to $$_INSTALL_DIR/agent-sandbox (symlink -> $(CURDIR)/scripts/agent-sandbox.sh)"
 
 .PHONY: uninstall
 uninstall:

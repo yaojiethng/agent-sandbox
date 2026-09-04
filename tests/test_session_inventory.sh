@@ -7,7 +7,7 @@
 #   record_image         --  service-block extraction, boundary handling
 #   record_provider      --  canonical <provider>-agent-<project> recovery
 #   record_label         --  label extraction incl. pipefail-safety on no-match
-#   record_image_stale   --  stale/fresh/unknown aggregation (docker stubbed)
+#   (record_image_stale retired with the staleness signal -- ADR harness_versioning.md)
 #   project_current_sha  --  empty/non-git/git branches
 #   enumerate_records    --  registry enumeration, provider filter, skip rules
 #   session_stale        --  registry-truth staleness vs explicit/derived SHA
@@ -17,7 +17,6 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
-STUB_DIR="$TEST_DIR/../tests/stubs"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 # make_record FILE AGENT_IMG SANDBOX_IMG [extra label lines...]
@@ -125,86 +124,6 @@ test_record_label_pipefail_safe_on_no_match() {
 }
 
 # =============================================================================
-# record_image_stale (docker via stubs)
-# =============================================================================
-
-# fresh_sigs REPO_ROOT PROVIDER  --  print "<agentsig> <sandboxsig>" computed in
-# fresh shells (process isolation; each call sources the lib cleanly).
-fresh_sigs() {
-  local root="$1" provider="$2"
-  local a s
-  a=$(bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; current_sig agent '$root' '$provider'" </dev/null)
-  s=$(bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; current_sig sandbox '$root'" </dev/null)
-  echo "$a $s"
-}
-
-test_record_image_stale_fresh_when_both_match() {
-  local ROOT="$FIXTURE_DIR/sigrepo_fresh"
-  mkdir -p "$ROOT/src/libs" "$ROOT/src/capability" "$ROOT/docs/architecture" \
-           "$ROOT/docs/concepts" "$ROOT/src/reasoning/agent/skills" \
-           "$ROOT/src/reasoning/agent/prompts"
-  touch "$ROOT/src/reasoning/entrypoint.sh" "$ROOT/src/capability/entrypoint.sh" \
-        "$ROOT/src/capability/snapshot.sh"
-  echo x > "$ROOT/src/libs/a"
-
-  read -r A_SIG S_SIG <<< "$(fresh_sigs "$ROOT" pi)"
-
-  local f="$FIXTURE_DIR/stale_fresh.yml"
-  make_record "$f" "pi-agent-proj" "proj-sandbox"
-
-  local OUT
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABELS="pi-agent-proj:$A_SIG proj-sandbox:$S_SIG" \
-    DOCKER_TRACE_LOG="$FIXTURE_DIR/d.log" PATH="$STUB_DIR:$PATH" \
-    bash -c "source '$REPO_ROOT/src/libs/session_inventory.sh'; record_image_stale '$f' '$ROOT'")
-
-  if [[ "$OUT" == "fresh" ]]; then
-    pass "record_image_stale: both images current -> fresh"
-  else
-    fail "expected fresh, got '$OUT' (A=$A_SIG S=$S_SIG)"
-  fi
-}
-
-test_record_image_stale_stale_when_either_diverges() {
-  local ROOT="$FIXTURE_DIR/sigrepo_stale"
-  mkdir -p "$ROOT/src/libs" "$ROOT/src/capability" "$ROOT/docs/architecture" \
-           "$ROOT/docs/concepts" "$ROOT/src/reasoning/agent/skills" \
-           "$ROOT/src/reasoning/agent/prompts"
-  touch "$ROOT/src/reasoning/entrypoint.sh" "$ROOT/src/capability/entrypoint.sh" \
-        "$ROOT/src/capability/snapshot.sh"
-  echo x > "$ROOT/src/libs/a"
-
-  read -r A_SIG S_SIG <<< "$(fresh_sigs "$ROOT" pi)"
-  local f="$FIXTURE_DIR/stale_one.yml"
-  make_record "$f" "pi-agent-proj" "proj-sandbox"
-
-  # Only the SANDBOX image diverges; aggregate must still say stale.
-  local OUT
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABELS="pi-agent-proj:$A_SIG proj-sandbox:0000" \
-    DOCKER_TRACE_LOG="$FIXTURE_DIR/d.log" PATH="$STUB_DIR:$PATH" \
-    bash -c "source '$REPO_ROOT/src/libs/session_inventory.sh'; record_image_stale '$f' '$ROOT'")
-
-  if [[ "$OUT" == "stale" ]]; then
-    pass "record_image_stale: one divergent layer -> stale"
-  else
-    fail "expected stale, got '$OUT'"
-  fi
-}
-
-test_record_image_stale_unknown_when_images_missing() {
-  local f="$FIXTURE_DIR/stale_unk.yml"
-  printf 'services:\n  agent:\n    image: only-agent\n' > "$f"
-
-  local OUT
-  OUT=$(DOCKER_TRACE_LOG="$FIXTURE_DIR/d.log" PATH="$STUB_DIR:$PATH" \
-    bash -c "source '$REPO_ROOT/src/libs/session_inventory.sh'; record_image_stale '$f' '/tmp'")
-  local RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "unknown" ]]; then
-    pass "record_image_stale: incomplete record -> unknown, never aborts"
-  else
-    fail "expected unknown/rc0, got '$OUT' rc=$RC"
-  fi
-}
 
 # =============================================================================
 # project_current_sha / session_stale
@@ -329,9 +248,6 @@ run_test test_record_image_stops_at_next_service
 run_test test_record_image_missing_service_empty_rc0
 run_test test_record_provider_recovers_prefix_and_rejects_noncanonical
 run_test test_record_label_pipefail_safe_on_no_match
-run_test test_record_image_stale_fresh_when_both_match
-run_test test_record_image_stale_stale_when_either_diverges
-run_test test_record_image_stale_unknown_when_images_missing
 run_test test_project_current_sha_branches
 run_test test_session_stale_classification
 run_test test_session_stale_derives_sha_from_project_dir

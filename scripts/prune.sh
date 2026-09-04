@@ -16,7 +16,7 @@
 #
 # Usage:
 #   prune.sh --name=<project> --project=<path> --sandbox=<path> \
-#       [--stale=<sandbox|image|all>] [--provider=<n>] [--age-days=<n>] \
+#       [--stale=sandbox] [--provider=<n>] [--age-days=<n>] \
 #       [--interactive] [--dry-run]
 #
 # Two rules (design `20260818-02`, mount-model record #7), always run as a
@@ -36,12 +36,11 @@
 # Rule-1-selected session's record as already removed to predict Rule 2's
 # result. That prediction is render-only; the real action always re-scans.
 #
-# Rule 1 selection (registry-truth, D7 / `session_stale` + image staleness):
-#   A record is selected, per the requested staleness kind, when it is
-#   sandbox-stale (host-head-sha != current project HEAD) and/or image-stale
-#   (referenced image's container-sig != current source) and older than
-#   AGE_DAYS. `STALE=sandbox|image|all` select the sandbox / image / either
-#   staleness dimension (STALE=all or unset = the "remove all stale" filter).
+# Rule 1 selection (registry-truth, D7 / `session_stale`):
+#   A record is selected when it is sandbox-stale (host-head-sha != current
+#   project HEAD) and older than AGE_DAYS. `STALE=sandbox` selects the
+#   worktree-identity dimension. Image staleness is retired (ADR
+#   harness_versioning.md) -- recorded digests are identity, not freshness.
 #
 # Rule 2 scope: delivery-scoped in effect  --  copy sessions register a volume,
 # mount sessions do not, so removing labeled resources yields copy -> volume +
@@ -50,7 +49,7 @@
 set -euo pipefail
 
 PRUNE_AGE_DAYS=3
-STALE_KIND="${STALE_KIND:-}"      # sandbox|image|all (empty = all implemented)
+STALE_KIND="${STALE_KIND:-}"      # sandbox (empty = sandbox)
 AGE_DAYS="${AGE_DAYS:-$PRUNE_AGE_DAYS}"
 PROVIDER_FILTER=""
 INTERACTIVE_FLAG=false
@@ -66,8 +65,10 @@ for this project+sandbox. Always a complete pass (Rule 1 records + Rule 2
 resources). Simulation is --dry-run; confirmation is --interactive.
 
 Options:
-  --stale=<kind>   Staleness kind to target: sandbox (repo out of date),
-                   image (image out of date), or all (default; either).
+  --stale=sandbox   Target sandbox-stale records only (host-head-sha !=
+                   current project HEAD). Image staleness is retired
+                   (ADR harness_versioning.md) -- this flag value is the only
+                   remaining kind.
   --provider=<n>   Narrow stale-record selection to this provider.
   --age-days=<n>   Stale-record age cutoff (default ${PRUNE_AGE_DAYS} days).
   --interactive    Show the prune plan + equivalent command, then confirm.
@@ -84,9 +85,9 @@ EOF
 # -------------------------
 # Prints `session-id|provider|ts|branch|delivery` for each selected stale
 # record. Best-effort; never fails the prune on a malformed record.
-# Selection is driven by the staleness kind (STALE=sandbox|image|all): a
+# Selection is driven by the staleness kind (STALE=sandbox): a
 # record is selected when it is stale by the enabled criterion (sandbox =
-# host-head-sha mismatch; image = referenced image container-sig mismatch),
+# host-head-sha mismatch),
 # and older than AGE_DAYS, narrowed by PROVIDER.
 rule1_selected_records() {
   [[ -d "$SANDBOX_DIR/.compose" ]] || return 0
@@ -100,18 +101,11 @@ rule1_selected_records() {
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
     local file="$SANDBOX_DIR/.compose/$sid.yml"
-    # Staleness selection by kind. Each criterion is evaluated only when its
-    # kind is enabled (sandbox-only / image-only / either for STALE=all).
+    # Staleness selection by kind (sandbox is the only remaining dimension;
+    # empty STALE_KIND behaves as sandbox).
     case "$STALE_KIND" in
-      sandbox)
+      ""|sandbox)
         [[ "$(session_stale "$file" "$current_sha")" == "stale" ]] || continue
-        ;;
-      image)
-        [[ "$(record_image_stale "$file" "$REPO_ROOT")" == "stale" ]] || continue
-        ;;
-      ""|all)
-        [[ "$(session_stale "$file" "$current_sha")" == "stale" \
-           || "$(record_image_stale "$file" "$REPO_ROOT")" == "stale" ]] || continue
         ;;
     esac
     # Age narrowing (applies to every selected record regardless of kind).
@@ -268,9 +262,9 @@ main() {
 
   # Staleness-kind validation.
   case "$STALE_KIND" in
-    ""|sandbox|image|all) ;;
+    ""|sandbox) ;;
     *)
-      echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox, image, or all)." >&2
+      echo "Error: unknown --stale kind '$STALE_KIND' (expected sandbox)." >&2
       usage >&2
       exit 1
       ;;

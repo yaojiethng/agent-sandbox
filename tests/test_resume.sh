@@ -253,81 +253,9 @@ services:
 EOF
 }
 
-# --list flags an IMAGE_STALE warning where a record's referenced image carries
-# a container-sig differing from the recomputed source sig.
-test_list_shows_image_staleness() {
-  local dir="$FIXTURE_DIR/img_stale"
-  mkdir -p "$dir/sandbox/.compose" "$dir/project"
-  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
-
-  local out
-  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
-        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
-        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
-        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi.*IMAGE_STALE"; then
-    pass "resume --list: IMAGE_STALE label on differing container-sig record"
-  else
-    fail "resume --list: expected IMAGE_STALE label, got: $out"
-  fi
-}
-
-# Fresh images (baked sig == recomputed sig for BOTH agent and sandbox) carry
-# NO staleness marker.
-test_list_shows_image_fresh_when_sigs_match() {
-  local dir="$FIXTURE_DIR/img_fresh"
-  mkdir -p "$dir/sandbox/.compose" "$dir/project"
-  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
-
-  local out
-  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
-        DOCKER_STUB_IMAGE_SIG_LABELS="$(fresh_sig_map)" \
-        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
-        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if ! echo "$out" | grep -qE "aaa[[:space:]]+pi.*main.*STALE"; then
-    pass "resume --list: matching container-sig -> no staleness marker"
-  else
-    fail "resume --list: expected no STALE marker, got: $out"
-  fi
-}
-
-# The two staleness dimensions are independent: a record sandbox-fresh (host-head
-# == current HEAD) but image-stale flags IMAGE_STALE only (no SANDBOX_STALE).
-test_list_columns_are_independent() {
-  local dir="$FIXTURE_DIR/img_indep"
-  mkdir -p "$dir/sandbox/.compose" "$dir/project"
-  git -C "$dir/project" init -q >/dev/null 2>&1
-  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
-  local head_sha
-  head_sha="$(git -C "$dir/project" rev-parse HEAD)"
-  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
-x-session-labels:
-  agent-sandbox.host-head-sha: $head_sha
-  agent-sandbox.host-branch: main
-  agent-sandbox.session-ts: 20260821-120000
-services:
-  sandbox:
-    image: sandbox-test-project
-  agent:
-    image: pi-agent-test-project
-EOF
-
-  local out
-  out="$(PATH="$REPO_ROOT/tests/stubs:$PATH" \
-        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
-        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
-        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"
-  if echo "$out" | grep -qE "aaa[[:space:]]+pi.*IMAGE_STALE" \
-     && ! echo "$out" | grep -qE "aaa[[:space:]]+pi.*main.*SANDBOX_STALE"; then
-    pass "resume --list: sandbox-fresh no marker + image-stale marker (independent)"
-  else
-    fail "resume --list: expected IMAGE_STALE only, got: $out"
-  fi
-}
-
 # The PROVIDER cell shows the bare provider name. The image-content signature
-# value was dropped from rows (operator-directed, 20260901-17) -- the
-# actionable signal is the [IMAGE_STALE] marker, not the hash.
+# value was dropped from rows (operator-directed, 20260901-17) -- image
+# identity now travels in the record's digest labels, shown nowhere in rows.
 test_list_shows_provider_without_image_sig() {
   local dir="$FIXTURE_DIR/img_sig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -372,27 +300,6 @@ EOF
   fi
 }
 
-# --interactive marks image-stale sessions in the picker (same backing
-# inventory as --list).
-test_interactive_marks_image_stale() {
-  local dir="$FIXTURE_DIR/img_marker"
-  mkdir -p "$dir/sandbox/.compose" "$dir/project"
-  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
-  write_minimal_record "$dir" "bbb" "hermes-agent-test-project"
-
-  local out
-  out="$(printf '1\nn\n' | PATH="$REPO_ROOT/tests/stubs:$PATH" \
-        DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
-        DOCKER_TRACE_LOG="$dir/docker-trace.log" \
-        bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"; rc=$?
-  if [[ $rc -ne 0 ]] && echo "$out" | grep -q "IMAGE_STALE"; then
-    pass "resume --interactive: picker marks image-stale session [IMAGE_STALE]"
-  else
-    fail "resume --interactive: expected [IMAGE_STALE] marker, got rc=$rc: $out"
-  fi
-}
-
-# --list caps the displayed rows at the shared page size (10, same as draft's
 # picker) and reports the remainder honestly.
 test_list_caps_at_page_size() {
   local dir="$FIXTURE_DIR/list_cap"
@@ -480,10 +387,6 @@ run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
 run_test test_list_shows_sandbox_staleness
-run_test test_list_shows_image_staleness
-run_test test_list_shows_image_fresh_when_sigs_match
-run_test test_list_columns_are_independent
-run_test test_interactive_marks_image_stale
 run_test test_list_caps_at_page_size
 run_test test_interactive_paginates_at_page_size
 

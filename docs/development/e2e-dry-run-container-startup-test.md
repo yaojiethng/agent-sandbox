@@ -8,7 +8,7 @@
 > at container **start-up** (via a compose `command:` override) instead of the
 > harness exec'ing the probes, and that `make dry-run` still validates the
 > correct container from the per-container diagnostics records + the
-> image-signature gate.
+> image-digest roundtrip gate.
 
 ## What changed vs the previous behaviour
 
@@ -17,7 +17,7 @@
 | Capability probe run: | `docker compose exec sandbox bash /dry_run_capability.sh` (harness-pulled) | sandbox `command:` override — runs as a **prelude** (after init + preflight, then stays alive) |
 | Reasoning probe run: | `docker compose exec agent bash /dry_run_reasoning.sh` | agent `command:` override — runs at start-up, then exits (one-shot) |
 | `DRY_RUN_IDENTITY` source: | injected into `exec` env | baked into the compose overlay `environment:` (`{{SANDBOX_IMAGE_NAME}}` / `{{AGENT_IMAGE_NAME}}`) |
-| Orchestration assertion: | read feature records + image-sig gate | **unchanged** (records + image-sig gate are the source of truth) |
+| Orchestration assertion: | read feature records + digest roundtrip gate | **unchanged in role** (records + digest roundtrip gate are the source of truth) |
 | Harness composes: | `up` → `exec` cap → `exec` rea → verify → down | `up` (both probes self-run) → wait for records → verify → down |
 
 ## Preconditions
@@ -34,7 +34,7 @@
 
 ---
 
-## Phase A — Fresh build (required for the image-signature gate)
+## Phase A — Fresh build (required for the image-digest roundtrip gate)
 
 The option-(c) gate fails if the running image carries **no** `container-sig` label (a pre-two-sig build) or a **stale** signature. Build fresh so the label matches the current source.
 

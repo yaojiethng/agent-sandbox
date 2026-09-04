@@ -227,20 +227,20 @@ test_container_sig_missing_path_fails_with_diagnostic() {
   fi
 }
 
-# The preflight warning  --  start's staleness surface (start_agent.sh -> preflight
-# -> _check_container_sig)  --  delegates the decision to the shared image_is_stale
-# predicate: a baked container-sig differing from the recomputed source sig
-# warns, a matching one stays silent. Locks the one-criterion-two-consumers
-# contract (20260821-09/10).
+# The preflight warning -- start's contract-drift surface (build.sh ->
+# _check_container_sig) -- compares the baked container-sig label against a
+# recomputation of the current source subset: a differing sig warns (the
+# container was built from a different contract revision), a matching one
+# stays silent. Interim role per ADR harness_versioning.md.
 test_check_container_sig_warns_via_shared_predicate() {
 
   local out
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
-  if [[ "$out" == *"container-sig mismatch (image is stale)"* ]]; then
-    pass "preflight: differing baked sig warns via shared image_is_stale"
+  if [[ "$out" == *"container-sig differs from current source (contract drift)"* ]]; then
+    pass "preflight: differing baked sig warns as contract drift"
   else
-    fail "preflight: expected stale warning via shared predicate, got: $out"
+    fail "preflight: expected contract-drift warning, got: $out"
   fi
 
   # Fresh: both images carry their own recomputed sig -> no warning.

@@ -80,9 +80,9 @@ Containers are ephemeral — they live for one session and die. All labels are a
 
 **Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
-## Container-sig (Image Staleness Detection)
+## Container-sig (Interim Interface-Contract Check)
 
-Further reading: the build-time signature model is a superseded principle — the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). Until the version-identity implementation lands, the behaviour described here is current.
+Further reading: the build-time signature model is a superseded principle — the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). With the version-identity implementation landed, image version is the image ID digest (recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); container-sig's remaining role is the interim interface-contract check below, scoped for deletion once a redesigned interface-contract check lands.
 
 Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
 
@@ -107,7 +107,7 @@ For an agent image, the hash covers:
 
 ### Preflight check
 
-The `preflight()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch. The check is non-blocking (warning only) — stale images are not an error to avoid blocking development workflows.
+The `_check_container_sig()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch (contract drift: the container was built from a different contract revision than the working tree). The check is non-blocking (warning only) — drift is not an error, to avoid blocking development workflows.
 
 ### Scope
 

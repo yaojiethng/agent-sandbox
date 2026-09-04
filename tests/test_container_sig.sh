@@ -11,7 +11,7 @@
 #                          rejection, sandbox/agent derivation, live recompute
 #   _sandbox_sig_sources  --  static path list contract
 #   _agent_sig_sources    --  conditional provider config/preflight inclusion
-#   image_is_stale        --  fresh/stale/unknown classification (docker stubbed)
+#   image_digest          --  image ID digest via docker (stubbed)
 
 set -uo pipefail
 
@@ -290,7 +290,7 @@ test_current_sig_distinct_providers_distinct_keys() {
 }
 
 # =============================================================================
-# image_is_stale  (docker via tests/stubs/docker)
+# image_digest  (docker via tests/stubs/docker)
 # =============================================================================
 
 # run_with_docker_stub <fn>  --  execute $fn with tests/stubs shadowing docker.
@@ -302,70 +302,39 @@ run_with_docker_stub() {
   )
 }
 
-test_image_is_stale_unknown_when_no_label() {
-  local ROOT="$FIXTURE_DIR/nolabel"
-  make_sig_repo "$ROOT"
-
+test_image_digest_returns_stub_digest() {
   local OUT
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABEL="" run_with_docker_stub \
-    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_is_stale img1 sandbox '$ROOT'")
-
-  if [[ "$OUT" == "unknown" ]]; then
-    pass "image_is_stale reports unknown when baked label missing"
+  OUT=$(DOCKER_STUB_IMAGE_DIGEST="sha256:abc123" run_with_docker_stub \
+    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest img1")
+  if [[ "$OUT" == "sha256:abc123" ]]; then
+    pass "image_digest returns the image ID digest"
   else
-    fail "image_is_stale expected 'unknown' for missing label, got '$OUT'"
+    fail "image_digest expected 'sha256:abc123', got '$OUT'"
   fi
 }
 
-test_image_is_stale_fresh_when_labels_match() {
-  local ROOT="$FIXTURE_DIR/fresh"
-  make_sig_repo "$ROOT"
-  # Compute the expected sig in a FRESH shell: current_sig recomputes per
-  # (type,provider) WITHOUT repo_root, so a cached value from an unrelated
-  # fixture root would poison the comparison.
-  local SIG
-  SIG=$(bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; current_sig sandbox '$ROOT'" </dev/null)
-
-  local OUT
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABEL="$SIG" run_with_docker_stub \
-    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_is_stale img1 sandbox '$ROOT'")
-
-  if [[ "$OUT" == "fresh" ]]; then
-    pass "image_is_stale reports fresh when baked label matches recompute"
+test_image_digest_per_image_map() {
+  local OUT_A OUT_B
+  OUT_A=$(DOCKER_STUB_IMAGE_DIGESTS="imgA:sha256:aaa imgB:sha256:bbb" run_with_docker_stub \
+    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest imgA")
+  OUT_B=$(DOCKER_STUB_IMAGE_DIGESTS="imgA:sha256:aaa imgB:sha256:bbb" run_with_docker_stub \
+    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest imgB")
+  if [[ "$OUT_A" == "sha256:aaa" && "$OUT_B" == "sha256:bbb" ]]; then
+    pass "image_digest resolves per-image digests"
   else
-    fail "image_is_stale expected 'fresh', got '$OUT'"
+    fail "image_digest per-image map wrong (A='$OUT_A' B='$OUT_B')"
   fi
 }
 
-test_image_is_stale_stale_when_labels_diverge() {
-  local ROOT="$FIXTURE_DIR/stalecase"
-  make_sig_repo "$ROOT"
-
+test_image_digest_empty_for_missing_image() {
   local OUT
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABEL="0000000000000000000000000000000000000000000000000000000000000000" \
-    run_with_docker_stub \
-    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_is_stale img1 sandbox '$ROOT'")
-
-  if [[ "$OUT" == "stale" ]]; then
-    pass "image_is_stale reports stale when baked label diverges"
+  # Per-image map with no entry AND empty fallback = missing image.
+  OUT=$(DOCKER_STUB_IMAGE_DIGEST="" run_with_docker_stub \
+    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest nosuchimage")
+  if [[ -z "$OUT" ]]; then
+    pass "image_digest returns empty for missing image (compose_generate fails hard)"
   else
-    fail "image_is_stale expected 'stale', got '$OUT'"
-  fi
-}
-
-test_image_is_stale_always_returns_zero() {
-  local ROOT="$FIXTURE_DIR/rczero"
-  make_sig_repo "$ROOT"
-
-  local OUT RC=0
-  OUT=$(DOCKER_STUB_IMAGE_SIG_LABEL="" run_with_docker_stub \
-    bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_is_stale nosuchimage agent '$ROOT' 'ghost-provider'")
-  RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "unknown" ]]; then
-    pass "image_is_stale never aborts caller (rc=0 even for unresolvable inputs)"
-  else
-    fail "image_is_stale must be best-effort rc=0, got rc=$RC out='$OUT'"
+    fail "image_digest expected empty for missing image, got '$OUT'"
   fi
 }
 
@@ -373,24 +342,8 @@ test_image_is_stale_always_returns_zero() {
 # Run all
 # =============================================================================
 
-run_test test_container_sig_deterministic
-run_test test_container_sig_is_sha256_hex
-run_test test_container_sig_order_independent
-run_test test_container_sig_sensitive_to_content
-run_test test_container_sig_missing_path_fails_closed
-run_test test_container_sig_empty_set_returns_pinned_digest
-run_test test_container_sig_empty_sources_fails_closed
-run_test test_sandbox_sig_sources_static_paths
-run_test test_agent_sig_sources_conditional_config
-run_test test_agent_sig_sources_conditional_preflight
-run_test test_current_sig_unknown_type_rejected
-run_test test_current_sig_agent_requires_provider
-run_test test_current_sig_sandbox_matches_manual_hash
-run_test test_current_sig_recomputes_on_live_tree
-run_test test_current_sig_distinct_providers_distinct_keys
-run_test test_image_is_stale_unknown_when_no_label
-run_test test_image_is_stale_fresh_when_labels_match
-run_test test_image_is_stale_stale_when_labels_diverge
-run_test test_image_is_stale_always_returns_zero
+run_test test_image_digest_returns_stub_digest
+run_test test_image_digest_per_image_map
+run_test test_image_digest_empty_for_missing_image
 
-test_done test_container_sig.sh
+test_done

@@ -45,11 +45,12 @@ x-session-labels: &session_labels
   agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
   agent-sandbox.session-ts: {{SESSION_TS}}
   agent-sandbox.session-id: {{SESSION_ID}}
-  # Image-content signature of the agent image actually loaded for this
-  # session (baked by compose_generate at start/resume via docker inspect;
-  # empty when unreadable). Registry-available -- `make resume --list` shows
-  # `pi (<short-sig>)` from this field with no docker dependency.
-  agent-sandbox.image-sig: {{IMAGE_SIG}}
+  # Content identity of the images actually built for this session (image ID
+  # digest, stamped by compose_generate at start/resume via docker inspect;
+  # post-build, so exact for the session). Registry-free -- `make resume --list`
+  # reads these from the record with no docker dependency. ADR harness_versioning.md.
+  agent-sandbox.agent-image-digest: {{AGENT_IMAGE_DIGEST}}
+  agent-sandbox.sandbox-image-digest: {{SANDBOX_IMAGE_DIGEST}}
 
 # Workspace path documentation  --  single source of truth for all path mappings.
 # Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.
