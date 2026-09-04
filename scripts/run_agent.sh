@@ -314,8 +314,23 @@ seed_sandbox_volume() {
     rm -f "$seed_tar"
     return 1
   fi
-  rm -f "$seed_tar"
-  echo "Sandbox volume seeded."
+  # Post-transfer verification: docker cp from stdin always reports
+  # "Successfully copied 0B" (the byte counter covers the local-file copy
+  # path, not stdin extraction), so success output proves nothing. Read the
+  # sentinel baseline back out of the volume -- docker cp works on stopped
+  # containers and writes through the volume mount -- and fail the start if
+  # the seed did not land. A bad seed would otherwise surface only as a
+  # container that never initializes.
+  local verify_tar="$seed_tar.verify"
+  if ! docker cp "$cid:/home/agentuser/sandbox/.agent-sandbox-seed/baseline.tar" "$verify_tar" \
+    || [[ ! -s "$verify_tar" ]]; then
+    echo "Error: seed verification failed  --  baseline.tar not found in the sandbox volume after docker cp" >&2
+    echo "  The volume may not have received the seed. Check: docker inspect $cid" >&2
+    rm -f "$seed_tar" "$verify_tar"
+    return 1
+  fi
+  rm -f "$seed_tar" "$verify_tar"
+  echo "Sandbox volume seeded (baseline.tar verified in volume)."
 }
 
 if [[ "$RESET_VOLUME" == "true" && "$DELIVERY_TYPE" == "copy" ]]; then

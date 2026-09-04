@@ -89,11 +89,14 @@ _write_record() {
   [[ "$CRITICAL_FAILS" -eq 0 ]] || overall="FAIL"
   {
     printf 'container=%s\n' "${DRY_RUN_IDENTITY:-unknown}"
-    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime; do
+    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime sandbox_init; do
       local st="PASS"
       [[ "${LAYER_CRIT[$layer]:-0}" -eq 0 ]] || st="FAIL"
       printf 'layer.%s=%s\n' "$layer" "$st"
     done
+    printf 'sandbox_init.path=%s\n' "${SANDBOX_INIT_PATH:-}"
+    printf 'sandbox_init.files=%s\n' "${SANDBOX_INIT_FILES:-}"
+    printf 'sandbox_init.bytes=%s\n' "${SANDBOX_INIT_BYTES:-}"
     printf 'status=%s\n' "$overall"
   } > "$record" 2>/dev/null || {
     printf "  WARN  could not write diagnostics record to %s\n" "$record" >&2
@@ -183,6 +186,27 @@ fi
 # ---------------------------------------------------------------------------
 # Capability-side runtime concerns (TTY/stdin, liveness write) live on the
 # reasoning container; nothing capability-specific to assert here.
+
+# ---------------------------------------------------------------------------
+# sandbox_init - initialized project metrics (seed pipeline result)
+# ---------------------------------------------------------------------------
+# Reports what the seed + init actually produced: where the project landed,
+# how many files, and the total content size. Read-only metrics -- a missing
+# sandbox is a critical failure surfaced by the session_state checks above,
+# so this section never fails on its own.
+section "sandbox_init diagnostics"
+SANDBOX_INIT_PATH=""
+SANDBOX_INIT_FILES=0
+SANDBOX_INIT_BYTES=0
+if [[ -d "$SANDBOX_DIR/.git" ]]; then
+  SANDBOX_INIT_PATH="$SANDBOX_DIR"
+  SANDBOX_INIT_FILES=$(find "$SANDBOX_DIR" -path "$SANDBOX_DIR/.git" -prune -o -type f -print 2>/dev/null | wc -l)
+  SANDBOX_INIT_BYTES=$(du -sb --exclude=".git" "$SANDBOX_DIR" 2>/dev/null | cut -f1)
+  [[ "$SANDBOX_INIT_BYTES" =~ ^[0-9]+$ ]] || SANDBOX_INIT_BYTES=0
+  _pass "project initialized at $SANDBOX_INIT_PATH ($SANDBOX_INIT_FILES files, $SANDBOX_INIT_BYTES bytes)"
+else
+  _fail "sandbox not initialized: no .git at $SANDBOX_DIR"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary + diagnostics record

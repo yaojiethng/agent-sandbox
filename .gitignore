@@ -66,3 +66,4 @@ Thumbs.db
 *.url
 
 baseline.tar
+.agent-sandbox-seed/

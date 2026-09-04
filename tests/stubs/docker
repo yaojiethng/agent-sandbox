@@ -125,6 +125,19 @@ if [[ "$CMD" == "docker" ]]; then
         exit 1
       fi
       ;;
+    cp)
+      log "cp $*"
+      # Two forms are used by the seed pipeline:
+      #   docker cp - <container>:<path> < seed.tar   (stdin extract)
+      #   docker cp <container>:<path> <dest>         (read-back verification)
+      # The stub has no container filesystem; for the read-back form it writes
+      # a non-empty placeholder to the destination so the seed verification
+      # observes a landed seed.
+      if [[ "${1:-}" != "-" ]]; then
+        _cp_dest="${*: -1}"
+        printf 'stub-baseline' > "$_cp_dest"
+      fi
+      ;;
     ps)
       log "ps $*"
       # Tests stub container IDs via DOCKER_STUB_PS_IDS (whitespace-separated)
