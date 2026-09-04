@@ -158,6 +158,26 @@ resolve_latest_dir() {
   echo "$_latest"
 }
 
+# resolve_latest_dir_by_mtime BASE_DIR
+# ---------------------------------------------------------------------------
+# Newest SUBDIRECTORY of BASE_DIR by mtime (directory modification time), or
+# rc!=0 when the base is missing or has no subdirectories.
+#
+# Used for the autosave channel: autosave dirs are named by SESSION_ID with no
+# timestamp, so name order cannot express recency -- but the directory is
+# rm -rf'd and rewritten on every save cycle, making its mtime exactly "last
+# saved". Timestamped channels (session, bundles) must NOT use this: their
+# name-embedded EXPORT_TIME is the authoritative recency signal (see the
+# resolve_latest_dir pinned test in tests/test_routing.sh).
+resolve_latest_dir_by_mtime() {
+  local _base="$1"
+  if [[ ! -d "$_base" ]]; then return 1; fi
+  local _latest
+  _latest=$(find "$_base" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -n 1 | cut -d' ' -f2-)
+  if [[ -z "$_latest" ]]; then return 1; fi
+  echo "$_latest"
+}
+
 # =============================================================================
 # Draft source resolution
 # =============================================================================
@@ -198,11 +218,20 @@ resolve_source_for_draft() {
     RESOLVED_DIR="${BASE_DIR}/${BUNDLE_ARG}"
     BUNDLE_NAME="$BUNDLE_ARG"
   else
-    # Auto-resolve: newest directory under BASE_DIR
-    RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
-      echo "Error: no bundle directories found under $BASE_DIR" >&2
-      return 1
-    }
+    # Auto-resolve: newest directory under BASE_DIR. For autosave the dir
+    # names carry no timestamp (bare SESSION_ID), so recency comes from the
+    # directory mtime; timestamped channels keep the name-based resolution.
+    if [[ "$CHANNEL" == "autosave" ]]; then
+      RESOLVED_DIR=$(resolve_latest_dir_by_mtime "$BASE_DIR") || {
+        echo "Error: no bundle directories found under $BASE_DIR" >&2
+        return 1
+      }
+    else
+      RESOLVED_DIR=$(resolve_latest_dir "$BASE_DIR") || {
+        echo "Error: no bundle directories found under $BASE_DIR" >&2
+        return 1
+      }
+    fi
     BUNDLE_NAME=$(basename "$RESOLVED_DIR")
   fi
 

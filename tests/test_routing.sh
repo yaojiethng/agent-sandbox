@@ -124,6 +124,50 @@ test_resolve_draft_explicit_channel_autosave() {
   fi
 }
 
+# Autosave auto-resolution must follow the directory MTIME (last saved), not
+# the name: autosave dirs are named by SESSION_ID, so name order is meaningless.
+test_resolve_draft_autosave_newest_by_mtime() {
+  local SD="$FIXTURE_DIR/sandbox_mtime"
+  local BASE="$SD/.workspace/session-diffs/autosave"
+  mkdir -p "$BASE/aaaa"/patches "$BASE/zzzz"/patches
+  touch "$BASE/aaaa/patches/0001-a.diff" "$BASE/zzzz/patches/0001-z.diff"
+  # zzzz is the lexicographically-largest name but was saved LONGER ago;
+  # aaaa was saved most recently. mtime must win over name order.
+  touch -d "2020-01-01" "$BASE/zzzz"
+  touch -d "2030-01-01" "$BASE/aaaa"
+
+  local RESULT
+  RESULT=$(resolve_source_for_draft "$SD" "autosave" "") || { fail "resolve_source_for_draft autosave (mtime) failed"; return; }
+  local BUNDLE_NAME
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  if [[ "$BUNDLE_NAME" == "aaaa" ]]; then
+    pass "resolve_source_for_draft: autosave auto-resolve picks newest mtime, not largest name"
+  else
+    fail "resolve_source_for_draft autosave (mtime): expected aaaa, got $BUNDLE_NAME"
+  fi
+}
+
+# The same mtime semantics for the raw helper (entrypoint autosave fallback).
+test_resolve_latest_dir_by_mtime() {
+  local B="$FIXTURE_DIR/mtime_base"
+  mkdir -p "$B/aaa" "$B/mmm" "$B/zzz"
+  touch -d "2020-01-01" "$B/aaa"
+  touch -d "2030-01-01" "$B/mmm"
+  touch -d "2025-01-01" "$B/zzz"
+  local OUT
+  OUT=$(resolve_latest_dir_by_mtime "$B")
+  if [[ "$OUT" == "$B/mmm" ]]; then
+    pass "resolve_latest_dir_by_mtime: newest mtime wins regardless of name"
+  else
+    fail "resolve_latest_dir_by_mtime: expected $B/mmm, got '$OUT'"
+  fi
+  if resolve_latest_dir_by_mtime "$FIXTURE_DIR/no-such-base" 2>/dev/null; then
+    fail "resolve_latest_dir_by_mtime should fail on missing base dir"
+  else
+    pass "resolve_latest_dir_by_mtime: missing base -> rc!=0"
+  fi
+}
+
 test_resolve_draft_named_session() {
   local SD="$FIXTURE_DIR/sandbox3"
   mkdir -p "$SD/.workspace/session-diffs/session/my-session/patches"
@@ -371,11 +415,13 @@ run_test test_channel_base_dir_unknown_rejected
 run_test test_latest_dir_missing_base_fails
 run_test test_latest_dir_empty_base_fails
 run_test test_latest_dir_picks_lexicographically_last
+run_test test_resolve_latest_dir_by_mtime
 run_test test_resolve_paths_state_overrides_win
 run_test test_resolve_paths_falls_back_to_dirs_resolve
 run_test test_export_path_missing_session_id
 run_test test_resolve_draft_default_channel
 run_test test_resolve_draft_explicit_channel_autosave
+run_test test_resolve_draft_autosave_newest_by_mtime
 run_test test_resolve_draft_named_session
 run_test test_resolve_draft_absolute_path_rejected
 run_test test_resolve_draft_missing_session

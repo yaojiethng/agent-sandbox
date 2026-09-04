@@ -29,6 +29,7 @@
 # (INTERACTIVE_MAX_ENTRIES).
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/session_inventory.sh"   # relative_time (autosave last-saved column)
 
 # =============================================================================
 # Internal helpers
@@ -299,7 +300,16 @@ interactive_select_channel() {
       DIR_LIST=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
       if [[ -n "$DIR_LIST" ]]; then
         COUNT=$(echo "$DIR_LIST" | wc -l)
-        NEWEST=$(echo "$DIR_LIST" | head -1 | xargs basename 2>/dev/null || true)
+        if [[ "$ch" == "autosave" ]]; then
+          # Autosave dirs are named by SESSION_ID (no timestamp), so the name
+          # order is meaningless. Report the most-recently-SAVED dir (mtime)
+          # as a relative time instead of a bare hash.
+          local newest_ep
+          newest_ep=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@\n' 2>/dev/null | sort -rn | head -1 | cut -d. -f1)
+          NEWEST=$(relative_time "$(date -u -d "@${newest_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)
+        else
+          NEWEST=$(echo "$DIR_LIST" | head -1 | xargs basename 2>/dev/null || true)
+        fi
       fi
     fi
 
@@ -346,12 +356,23 @@ interactive_select_bundle() {
     return 1
   fi
 
-  # Collect entries, sorted newest-first
+  # Collect entries, sorted newest-first. For the autosave channel the dir
+  # names are bare SESSION_IDs (no timestamp), so name order is meaningless --
+  # order by the directory mtime (last saved) instead. Timestamped channels
+  # (session, bundles) keep the name sort: the embedded EXPORT_TIME is the
+  # authoritative recency signal there.
   local -a BUNDLE_DIRS=()
-  while IFS= read -r dir; do
-    [[ -z "$dir" ]] && continue
-    BUNDLE_DIRS+=("$(basename "$dir")")
-  done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
+  if [[ "$CHANNEL" == "autosave" ]]; then
+    while IFS= read -r dir; do
+      [[ -z "$dir" ]] && continue
+      BUNDLE_DIRS+=("$(basename "$dir")")
+    done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+  else
+    while IFS= read -r dir; do
+      [[ -z "$dir" ]] && continue
+      BUNDLE_DIRS+=("$(basename "$dir")")
+    done < <(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
+  fi
 
   if [[ "${#BUNDLE_DIRS[@]}" -eq 0 ]]; then
     echo "No bundles available in channel '$CHANNEL'." >&2
@@ -382,7 +403,15 @@ interactive_select_bundle() {
       DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
     fi
 
-    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}")
+    # Autosave: show when the checkpoint was last written (dir mtime).
+    local LAST_SAVED=""
+    if [[ "$CHANNEL" == "autosave" ]]; then
+      local saved_ep
+      saved_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)
+      LAST_SAVED="  last saved: $(relative_time "$(date -u -d "@${saved_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)"
+    fi
+
+    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}${LAST_SAVED}")
   done
 
   interactive_pick "Available bundles (${CHANNEL}):" ENTRIES "$DEFAULT_BUNDLE" "$INTERACTIVE_MAX_ENTRIES"

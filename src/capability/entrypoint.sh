@@ -239,11 +239,13 @@ _session_export() {
 
   echo "session-export: FAILED  --  final export incomplete" >&2
 
-  # Fallback: find the most recent autosave directory
+  # Fallback: find the most recently SAVED autosave directory. Autosave dir
+  # names are bare SESSION_IDs (no timestamp), so recency comes from the
+  # directory mtime (rewritten on every save cycle).
   local _autosave_base
   _autosave_base=$(resolve_channel_base_dir "autosave") || true
   local _latest_autosave
-  _latest_autosave=$(resolve_latest_dir "${_autosave_base:-}" 2>/dev/null) || true
+  _latest_autosave=$(resolve_latest_dir_by_mtime "${_autosave_base:-}" 2>/dev/null) || true
 
   if [[ -n "$_latest_autosave" ]]; then
     echo "session-export: falling back to autosave: $_latest_autosave" >&2
