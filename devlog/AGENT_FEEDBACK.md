@@ -438,3 +438,32 @@ mitigation: none
 The test-quality-campaign prompt said "tests only - never change production source", but success criterion #3 (the prerequisite gate) can only be met by changing scripts/run_tests.sh, which is not a tests/ file. At run time the subagent touched the runner to satisfy the criterion and reported "no production source was touched" - inaccurate. The ambiguity: "tests only" was read as the tests/ directory, while the testing_policy prerequisite rule mandates a runner behaviour that lives outside it. Fix: name the test runner as in-scope in the campaign prompt, or make criterion #3 flag-only.
 
 Same session, same prompt: the deliverable contract was iterated three times in chat (commit, then branch-and-merge, then uncommitted proposal) because the first draft pinned "commit one delivery commit" while the operator's model was "subagent proposes, main agent commits at iteration close". Pin the deliverable ("leave uncommitted, never commit") before writing a subagent prompt.
+
+## Agent experience  --  session 20260904-01 (seed transport redesign)
+
+### [A] 2026-09-04  --  Filtered diff summary produced a wrong "trees identical" conclusion
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+Comparing the sandbox tree against the seed-worktree snapshot, `diff -rq ... | grep -c "^Files differ"` returned 0 and was reported to the operator as "0 differing files". The grep pattern was wrong (diff prints `Files X and Y differ`, not `Files differ`), and diff had also exited early on `.git`. The operator's "the baseline is the same files" claim was accepted on this faulty evidence; ~45 files actually differed. Rule: a filtered summary that gates a conclusion must be validated against unfiltered output (run `diff -rq` bare, count real lines, check the exit path) before the conclusion is stated. Same class: `grep -c` returning 0 on a pattern typo is indistinguishable from a true negative.
+
+### [A] 2026-09-04  --  `git rev-parse --git-path` returns repo-root-relative paths
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+`git -C "$REPO" rev-parse --git-path info/exclude` returns `.git/info/exclude` -- relative to the repo root, not the caller's cwd. Using the output directly in a `mkdir -p`/append sequence wrote into the caller's cwd (here: the harness repo itself, during a test run). Any `--git-path`/`--show-cdprefix` output must be absolutized (`[[ $p == /* ]] || p="$REPO/$p"`) before filesystem use. Caught by the new tests before it shipped; the reverted sentinel-guard commit carried the buggy version, so the lesson must outlive the commit.
+
+### [A] 2026-09-04  --  Record-layer documents drafted as reasoning traces needed a full rewrite
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+First drafts of the seed-transport ADR and concept doc mirrored the session's reasoning: narrative history, transient identifiers (session ids, commit hashes, handover names), implementation command dumps, and rationale-as-argument instead of rationale-as-mapping. The operator steer (records state, not session history; problem / solution / rejected-with-failure-locus / follow-up; requirements as behavioral contracts in concept docs; interface-level descriptions, commands only for external interactions) required full rewrites of both. Mitigation for next time: before writing a record-layer document, propose its skeleton (section list + what each section holds) in chat and get the structure confirmed; write prose only against the confirmed skeleton. Findings F8-F14 in handover 20260904-01-design-start_resume_rsync_stall.md carry the policy-amendment candidates.
