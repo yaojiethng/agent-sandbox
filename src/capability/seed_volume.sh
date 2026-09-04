@@ -4,7 +4,7 @@
 # Helper-container seed transport. Runs INSIDE the one-shot seeder service
 # (sandbox image) with the operator project mounted read-only at /src and the
 # session volume mounted at the sandbox service's own target path (see DEST
-# below). Wire-up: run_agent.sh (SEED_TRANSPORT=helper, the default) ->
+# below). Wire-up: run_agent.sh ->
 # docker compose run --rm seeder.
 #
 # Contract (ADR docs/adr/sandbox_delivery_model.md, 2026-09-04 entry):
@@ -97,6 +97,14 @@ main() {
     die "$SRC tracks .agent-sandbox-seed/ -- harness staging state from a previous harness version. Remove it from the index on the host, commit the removal, then retry."
   fi
 
+  # Case-collision preflight (non-blocking warnings; retained from the legacy
+  # pipeline). snapshot.sh lives next to this script in the bind mount.
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  # shellcheck disable=SC1090,SC1091  # mount-point path by design
+  source "$script_dir/snapshot.sh"
+  snapshot_check_case_mismatch "$SRC"
+
   # Layer 1: the repository crosses natively. The seeder runs as the host uid
   # (compose user), so volume ownership matches the sandbox service.
   cp -a "$SRC/.git" "$DEST/.git" || die "copying $SRC/.git into the volume failed"
@@ -113,8 +121,8 @@ main() {
   fi
   rm -f "$list"
 
-  # SESSION_STATE: the seeder writes what snapshot_init_git wrote on the
-  # legacy path. init_sha is the HEAD the volume was seeded from.
+  # SESSION_STATE: identity + the init reference for the diff pipeline.
+  # init_sha is the HEAD the volume was seeded from.
   # shellcheck disable=SC1091  # path is a mount point, resolved at runtime
   source "$LIB_DIR/session_state.sh"
   session_state_write "$DEST" "init_sha"      "$(git -C "$SRC" rev-parse HEAD)"

@@ -22,47 +22,37 @@ A capability layer session has three phases:
 
 ## Phase 1 — Fork (Volume Seed Pipeline)
 
-The seed pipeline replicates the host repository state into the capability layer sandbox volume. It runs in two stages separated by the container boundary.
+The seed pipeline replicates the host repository state into the capability layer sandbox volume. The seed is the helper-container transport: a one-shot seeder service (the sandbox image) fills the volume before the sandbox container exists. Design and requirement mapping: [`docs/adr/sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md), 2026-09-04 entry.
 
-### Stage 1 — Host side (`scripts/run_agent.sh` seed_sandbox_volume)
+### Host side (`scripts/run_agent.sh` seed_sandbox_volume)
 
-**`snapshot_seed_tar`** (`src/capability/snapshot.sh`) builds the seed tar from `PROJECT_DIR`:
+On a fresh start (`--reset-volume`, copy delivery), `run_agent.sh` runs the `seeder` compose service once (`docker compose run --rm -T seeder`). The seeder mounts the project read-only at `/src` and the session volume at the sandbox service's own target path (first-mount ownership initialization: the volume root inherits the image directory's `agentuser` ownership). The seeder's exit code is the only readiness signal: the invocation is timeout-bounded (`SEED_TIMEOUT`, default 300s), and a nonzero exit or timeout aborts the start and discards the session volume. Resume never seeds.
 
-- `worktree/` — the operator's working tree as git enumerates it: tracked files still on disk plus untracked non-ignored files. All ignore sources (local `.gitignore`, global `core.excludesFile`, `.git/info/exclude`) are honored by git's own rules, including negation patterns (the rsync-based pipeline mishandled those — rsync treats `!pattern` as clear-the-exclude-list and leaked previously excluded files).
-- `baseline.tar` — exactly HEAD (`git archive`), used by the container to construct the baseline commit.
+Inside the seeder (`src/capability/seed_volume.sh`):
 
-Members are packed under the unique sentinel prefix `.agent-sandbox-seed/` (tar's `--transform` rewrites symlink targets as well as member names, so init repairs symlink targets by stripping the sentinel prefix).
+1. **Guards (fail closed, readable errors):** repository tracks the `.agent-sandbox-seed/` sentinel (harness staging captured by a host commit), linked worktree (`.git` is a gitfile), no commits (unborn HEAD), submodules (the gitlink would cross without its content).
+2. **Repository copy** — `cp -a /src/.git /dest/.git`: the repository crosses natively, index included; no reset runs, so the volume's `git status` is porcelain-identical to the operator's repo (staging state preserved).
+3. **Working tree copy** — git enumerates the working tree (tracked files still on disk plus untracked non-ignored files, all ignore sources honored, negation patterns included); an existence filter drops tracked paths absent from the disk, so unstaged deletions are visible in the volume; tar streams the enumerated set pipe-to-pipe. The stream never touches an intermediate location, and no harness state is written into the operator's worktree (R7).
+4. **SESSION_STATE** — the seeder writes `init_sha` (HEAD at seed time; the fixed lower boundary for `package-branch`), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory.
+5. **Self-verification** — `git status --porcelain` is compared between `/src` and `/dest`; any divergence aborts the seed.
 
-The seed step runs only on a fresh start (`--reset-volume`, copy delivery): `docker compose create sandbox` creates the volume and container without starting, then `docker cp` extracts the seed tar into the volume through the container's mount path. Resume never seeds.
-
-### Stage 2 — Capability layer side (capability layer entrypoint)
-
-**`snapshot_init_git`** initialises the sandbox git repository in two steps:
-
-1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, both the root commit SHA and session timestamp are written to `sandbox/.git/SESSION_STATE` as key-value pairs:
-
-```bash
-session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
-session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
-```
-
-`init_sha` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime. `session_ts` records the session start timestamp.
-
-2. **Working tree overlay** — rsync copies the seeded `worktree/` tree over `sandbox/` with `--delete`, without touching the git index; the seed members are removed afterwards. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
-
-The two-step design ensures all four working tree states are handled correctly:
+The seed guarantees the full working tree state matrix in the volume:
 
 | Operator state | git status in sandbox |
 |---|---|
 | Untracked file | `??` untracked |
-| Tracked file with unstaged edits | `M` unstaged modification |
-| Tracked file deleted without staging | `D` unstaged deletion |
-| No changes | Clean |
+| Tracked file with unstaged edits | ` M` unstaged modification |
+| Tracked file with staged edits | `M ` staged (staging state preserved) |
+| Tracked file deleted without staging | ` D` unstaged deletion |
 | Gitignored file | Not visible |
+
+### Capability layer side (entrypoint)
+
+The entrypoint validates the volume: git state and `SESSION_STATE` must exist (the seeder wrote them); an unseeded volume aborts the container start with a readable error. Workspace paths (`changes_dir`, `input_dir`, `output_dir`) are written to `SESSION_STATE` deterministically on every start.
 
 ### Harness directory lifecycle
 
-No persistent staging directory exists: the seed tar is built to a per-run mktemp inside `run_agent.sh` and deleted after the `docker cp`. The seed members inside the volume are removed by `snapshot_init_git` after the overlay. On a resumed session, the seed pipeline is skipped entirely.
+No staging exists anywhere: the seeder streams content directly into the volume and nothing is ever extracted into the operator's worktree. On a resumed session, the seed step is skipped entirely.
 
 ### Resume path (M2.6.2 volume-based persistence)
 
@@ -71,11 +61,11 @@ No persistent staging directory exists: the seed tar is built to a per-run mktem
 ```
 volume exists + REFRESH not set?
   ├── No  → normal init
-  │         Host: compute fresh identity, run seed pipeline
-  │         Container: .git absent → snapshot_init_git from the seeded members
+  │         Host: compute fresh identity, run the seeder
+  │         Container: .git present → validate + write workspace paths
   └── Yes → resume
-            Host: read identity from the compose registry, skip seed pipeline
-            Container: .git present → skip snapshot_init_git
+            Host: read identity from the compose registry, skip seeding
+            Container: .git present → validate + write workspace paths
 ```
 
 Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.

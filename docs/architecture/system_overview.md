@@ -41,9 +41,9 @@ Current layer freeze status is tracked in [`docs/development/project_index.md`](
 
 **Two-layer container runtime** — each session runs two containers: a capability layer (sandbox, seed pipeline, diff pipeline) and a reasoning layer (agent runtime, provider-specific). Both are ephemeral and discarded after each run. The capability layer starts first and owns the sandbox volume; the reasoning layer attaches to it via `--volumes-from`.
 
-**Host-side volume seed** — before the sandbox container starts, `run_agent.sh` builds a seed tar from the project (git-enumerated working tree plus a `baseline.tar` of HEAD) and extracts it into the sandbox volume via `docker cp`. No staging directory and no snapshot mount persist beyond the seed step. Details: [copy_delivery.md](../concepts/copy_delivery.md).
+**Host-side volume seed** — before the sandbox container starts, a one-shot seeder service (the sandbox image) fills the sandbox volume: repository with index, git-enumerated working tree, and `SESSION_STATE`; the seeder self-verifies and its exit code gates the start. No staging directory and no snapshot mount exist at any point. Details: [copy_delivery.md](../concepts/copy_delivery.md).
 
-**Sandbox** — a named Docker volume owned by the capability layer. Initialised at container start from the seeded content: baseline commit first (from `baseline.tar`), then working tree overlaid via the seed's `worktree/`. The agent works exclusively in `sandbox/`. Survives stop/resume; removed by prune.
+**Sandbox** — a named Docker volume owned by the capability layer. Seeded before first use by the helper-container transport. The agent works exclusively in `sandbox/`. Survives stop/resume; removed by prune.
 
 **`.workspace/`** — a host-side directory providing the I/O channels between containers and host. Subdirectories have distinct owners and trust levels: `input/` (operator-written, reasoning layer read-only), `output/` (agent-written, reasoning layer read-write), `session-diffs/` (harness-written, capability layer read-write — diff pipeline output).
 

@@ -353,11 +353,9 @@ main() {
       echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
     fi
   else
-    # Copy delivery: no host-side staging. The seed tar is built inside
-    # run_agent.sh (after the image build, before the sandbox container
-    # starts) and transferred straight into the sandbox volume via docker cp.
-    # See snapshot_seed_tar (src/capability/snapshot.sh) and the seed step in
-    # run_agent.sh.
+    # Copy delivery: no host-side staging. The one-shot seeder service fills
+    # the session volume before the sandbox container starts (helper
+    # transport; see seed_volume.sh and the seed step in run_agent.sh).
     mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
   fi
   

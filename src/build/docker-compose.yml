@@ -91,6 +91,7 @@ services:
       - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
       - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
       - SESSION_ID=${SESSION_ID:-}
+      - RESET_VOLUME=${RESET_VOLUME:-}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s

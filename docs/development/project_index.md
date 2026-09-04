@@ -168,8 +168,8 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `test_package_branch.sh` | 🟢 Cold | M2.3 | Tests `package_branch` committed-diff packaging with `SESSION_STATE` fixtures. |
 | `test_provider_entrypoint.sh` | 🟡 Warm | M2.3 | Tests provider entrypoint env-var validation and stdin handling. |
 | `test_session-state.sh` | 🟢 Cold | M2.3 | Tests `validate_project_dir` and `resolve_session_dir`. |
-| `test_snapshot_container.sh` | 🟡 Warm | M2.6 | Seed pipeline tests: seed tar round-trip/exclusions/negation; snapshot_init_git working tree state matrix; seed cleanup + symlink repair. |
-| `test_snapshot_host.sh` | 🟡 Warm | M2.6 | Host-side snapshot tests: seed tar (round-trip, exclusions, negation, submodule/no-commit rejection), archive head, copy worktree (mount delivery). |
+| `test_seed_volume.sh` | 🟡 Warm | M2.6 | Helper-container seeder tests: guards (sentinel/worktree/unborn/submodule), existence filter, porcelain parity incl. staging preservation, self-check divergence, SESSION_STATE. |
+| `test_snapshot_host.sh` | 🟡 Warm | M2.6 | Mount-delivery snapshot tests: copy worktree (tracked/untracked/deletions/moves/ignores, negation + global-exclude leak cases, submodule rejection). |
 | `test_start_agent.sh` | 🟡 Warm | M2.3 | Tests `start_agent.sh` env-var resolution, `WORKTREE_ID` derivation, compose generation. |
 
 ### Prompts (`agent/prompts/`)

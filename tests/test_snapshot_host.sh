@@ -3,9 +3,10 @@
 # Host-side snapshot pipeline tests.
 #
 # Covers:
-#   snapshot_copy_worktree    --  primary rsync-based copy
-#   snapshot_archive_head     --  produces baseline.tar from HEAD
-#   (snapshot_validate removed with the RO-mount pipeline)
+#   snapshot_copy_worktree    --  mount-delivery worktree materialization (git-enumerated)
+#   (snapshot_validate removed with the RO-mount pipeline; snapshot_archive_head
+#    removed with the legacy seed transport — its guarantee lives in
+#    test_seed_volume.sh now)
 #
 # All fixtures created under a temp dir  --  no repos created inside the harness repo.
 
@@ -178,6 +179,69 @@ test_worktree_preserves_directory_structure() {
   fi
 }
 
+test_worktree_honors_negation_patterns_local() {
+  local SRC="$FIXTURE_DIR/wt_negation_local_src"
+  local DST="$FIXTURE_DIR/wt_negation_local_dst"
+  make_repo "$SRC"
+
+  printf 'tracked\n' > "$SRC/tracked.txt"
+  printf '*.log\n!keep.log\n' > "$SRC/.gitignore"
+  echo "dropped" > "$SRC/drop.log"
+  echo "kept" > "$SRC/keep.log"
+  git -C "$SRC" add tracked.txt .gitignore
+  git -C "$SRC" commit -m "initial" --quiet
+
+  snapshot_copy_worktree "$SRC" "$DST"
+
+  if [[ -f "$DST/keep.log" && ! -f "$DST/drop.log" ]]; then
+    pass "worktree: local negation pattern honored (keep.log kept, drop.log dropped)"
+  else
+    fail "worktree: local negation pattern mishandled (keep.log: $([[ -f $DST/keep.log ]] && echo present || echo absent), drop.log: $([[ -f $DST/drop.log ]] && echo present || echo absent))"
+  fi
+}
+
+# Negation patterns in GLOBAL excludes and .git/info/exclude: the previous
+# rsync exclude-list approach silently ignored them and leaked the excluded
+# content (the R1 leak, ADR sandbox_delivery_model.md mount-path entry).
+test_worktree_honors_negation_patterns_global_excludes() {
+  local SRC="$FIXTURE_DIR/wt_negation_global_src"
+  local DST="$FIXTURE_DIR/wt_negation_global_dst"
+  make_repo "$SRC"
+
+  echo "tracked" > "$SRC/tracked.txt"
+  echo "globally dropped" > "$SRC/globalonly.txt"
+  echo "repo-excluded" > "$SRC/repoonly.txt"
+  printf 'globalonly.txt\n!rescued.txt\n' > "$SRC/.gitignore.global"
+  printf 'repoonly.txt\n' > "$SRC/.git/info/exclude"
+  echo "rescued" > "$SRC/rescued.txt"
+  git -C "$SRC" add tracked.txt
+  git -C "$SRC" commit -m "initial" --quiet
+
+  # Point core.excludesFile at the fixture global ignore
+  local old_global
+  old_global=$(git -C "$SRC" config --global core.excludesFile || true)
+  git -C "$SRC" config --global core.excludesFile "$SRC/.gitignore.global"
+
+  snapshot_copy_worktree "$SRC" "$DST"
+  local rc=$?
+
+  # Restore the operator's global excludesFile before asserting
+  if [[ -n "$old_global" ]]; then
+    git -C "$SRC" config --global core.excludesFile "$old_global"
+  else
+    git -C "$SRC" config --global --unset core.excludesFile
+  fi
+
+  if [[ $rc -ne 0 ]]; then
+    fail "worktree: global-exclude negation test errored (copy failed)"
+  elif [[ ! -f "$DST/globalonly.txt" && ! -f "$DST/repoonly.txt" && -f "$DST/rescued.txt" ]]; then
+    pass "worktree: global/info excludes and negations honored (leak fixed)"
+  else
+    fail "worktree: global/info exclude leak (globalonly: $([[ -f $DST/globalonly.txt ]] && echo LEAKED || echo ok), repoonly: $([[ -f $DST/repoonly.txt ]] && echo LEAKED || echo ok), rescued: $([[ -f $DST/rescued.txt ]] && echo present || echo absent))"
+  fi
+}
+
+
 test_worktree_submodule_detected() {
   local SRC="$FIXTURE_DIR/wt_submod_src"
   local DST="$FIXTURE_DIR/wt_submod_dst"
@@ -193,103 +257,6 @@ test_worktree_submodule_detected() {
   fi
 }
 
-# -------------------------
-# snapshot_archive_head tests
-# -------------------------
-
-test_archive_head_produces_tar() {
-  local SRC="$FIXTURE_DIR/arch_src"
-  local DST="$FIXTURE_DIR/arch_dst"
-  make_committed_repo "$SRC"
-
-  snapshot_archive_head "$SRC" "$DST"
-
-  if [[ -f "$DST/baseline.tar" ]]; then
-    pass "archive_head: baseline.tar produced"
-  else
-    fail "archive_head: baseline.tar not found"
-  fi
-}
-
-test_archive_head_tar_contains_committed_files() {
-  local SRC="$FIXTURE_DIR/arch_content_src"
-  local DST="$FIXTURE_DIR/arch_content_dst"
-  make_committed_repo "$SRC"
-
-  snapshot_archive_head "$SRC" "$DST"
-
-  local CONTENTS
-  CONTENTS=$(tar -tf "$DST/baseline.tar")
-  if echo "$CONTENTS" | grep -q "file.txt"; then
-    pass "archive_head: committed file present in tar"
-  else
-    fail "archive_head: committed file missing from tar"
-  fi
-}
-
-test_archive_head_tar_excludes_untracked_files() {
-  local SRC="$FIXTURE_DIR/arch_untracked_src"
-  local DST="$FIXTURE_DIR/arch_untracked_dst"
-  make_committed_repo "$SRC"
-
-  echo "not committed" > "$SRC/untracked.txt"
-
-  snapshot_archive_head "$SRC" "$DST"
-
-  local CONTENTS
-  CONTENTS=$(tar -tf "$DST/baseline.tar")
-  if ! echo "$CONTENTS" | grep -q "untracked.txt"; then
-    pass "archive_head: untracked file excluded from tar"
-  else
-    fail "archive_head: untracked file should not appear in tar"
-  fi
-}
-
-test_archive_head_tar_excludes_unstaged_edits() {
-  local SRC="$FIXTURE_DIR/arch_edited_src"
-  local DST="$FIXTURE_DIR/arch_edited_dst"
-  make_committed_repo "$SRC"
-
-  echo "unstaged edit" >> "$SRC/tracked.txt"
-
-  snapshot_archive_head "$SRC" "$DST"
-
-  local UNPACK="$FIXTURE_DIR/arch_edited_unpack"
-  mkdir -p "$UNPACK"
-  tar -x -C "$UNPACK" < "$DST/baseline.tar"
-
-  if ! grep -q "unstaged edit" "$UNPACK/tracked.txt"; then
-    pass "archive_head: unstaged edits excluded from tar (committed version present)"
-  else
-    fail "archive_head: tar contains unstaged edits  --  should contain HEAD version only"
-  fi
-}
-
-test_archive_head_fails_with_no_commits() {
-  local SRC="$FIXTURE_DIR/arch_nocommit_src"
-  local DST="$FIXTURE_DIR/arch_nocommit_dst"
-  make_repo "$SRC"  # no commit
-
-  if snapshot_archive_head "$SRC" "$DST" 2>/dev/null; then
-    fail "archive_head: should fail when repo has no commits"
-  else
-    pass "archive_head: correctly fails when repo has no commits"
-  fi
-}
-
-test_archive_head_creates_dest_if_absent() {
-  local SRC="$FIXTURE_DIR/arch_mkdir_src"
-  local DST="$FIXTURE_DIR/arch_mkdir_dst_new/nested"
-  make_committed_repo "$SRC"
-
-  snapshot_archive_head "$SRC" "$DST"
-
-  if [[ -f "$DST/baseline.tar" ]]; then
-    pass "archive_head: destination directory created when absent"
-  else
-    fail "archive_head: destination directory should be created automatically"
-  fi
-}
 
 # -------------------------
 # Run all tests
@@ -306,14 +273,9 @@ run_test           test_worktree_excludes_git_directory
 run_test     test_worktree_creates_destination_if_absent
 run_test     test_worktree_preserves_directory_structure
 run_test               test_worktree_submodule_detected
+run_test       test_worktree_honors_negation_patterns_local
+run_test test_worktree_honors_negation_patterns_global_excludes
 
-# snapshot_archive_head
-run_test             test_archive_head_produces_tar
-run_test      test_archive_head_tar_contains_committed_files
-run_test      test_archive_head_tar_excludes_untracked_files
-run_test       test_archive_head_tar_excludes_unstaged_edits
-run_test             test_archive_head_fails_with_no_commits
-run_test     test_archive_head_creates_dest_if_absent
 
 
 

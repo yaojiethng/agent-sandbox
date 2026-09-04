@@ -55,11 +55,9 @@ The full lifecycle — init, running, stopped, restart — as a single sequence.
 HEAD = A                             (not yet started)
   │                                    │
   │        [INIT]                      │
-  ├─ git archive HEAD ─────────────────►│
-  │  rsync working tree                ├─ unpack baseline.tar → baseline commit
-  │                                    ├─ init_sha written to SESSION_STATE (root commit SHA)
-  │                                    ├─ rsync overlay (working tree state)
-  │                                    │  init_sha = A
+  ├─ seeder: cp .git ─────────────────►│
+  │  stream git-enumerated worktree    ├─ .git + working tree + SESSION_STATE
+  │  (git status parity verified)      │  init_sha = A
   │                                    │
   │        [RUNNING — loop start]      │
   │                                    ├─ agent works, commits accumulate
@@ -92,7 +90,7 @@ HEAD = B
 
 **INIT — establishing correspondence**
 
-Before the container starts, the harness seeds the sandbox volume: a git-enumerated tar of the operator's working tree plus `git archive HEAD` (the baseline tar) is extracted into the volume via `docker cp`. Inside the container, `snapshot_init_git` unpacks the baseline tar, commits as the baseline, writes `init_sha` (via SESSION_STATE), then overlays the seeded working tree so it matches the operator's on-disk state. At this point sandbox file content exactly matches the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
+Before the container starts, the harness seeds the sandbox volume with the helper-container transport: a one-shot seeder copies the repository natively (`.git` including the index), streams the git-enumerated working tree into the volume, and writes `init_sha` (the repository HEAD at seed time) plus the session identity into SESSION_STATE. The seeder verifies the result by comparing `git status` between the project and the volume before it exits. At this point sandbox file content and staging state exactly match the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
 
 **RUNNING — bidirectional flow**
 

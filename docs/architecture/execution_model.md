@@ -94,7 +94,8 @@ Resume reuses the same SESSION_ID and overwrites its own file; each unique sessi
 **Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE` (`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared:
 
 - `src/build/docker-compose.copy.yml` — the per-run named sandbox volume.
-Content is host-side seeded (seed tar via `docker cp`); no snapshot mount. Copy mode only.
+Content is seeded by the one-shot seeder service (helper-container
+transport); no snapshot mount. Copy mode only.
 - `src/build/docker-compose.mount.yml` — the worktree bind mount at
 `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
@@ -102,14 +103,15 @@ The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — me
 
 **Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
 
-- **Copy:** the seeded volume — `snapshot_init_git` (baseline commit from
-  the seed's `baseline.tar`, working-tree overlay from the seed's `worktree/`).
+- **Copy:** the seeded volume — the one-shot seeder service (helper-container
+  transport) fills the volume before this container starts: repository with
+  index, working tree, `SESSION_STATE`. The entrypoint validates the git state.
 - **Mount:** no seed. The entrypoint validates `.git` is present in the
   bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit), and skips the seed init.
 
-`SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy writes it in `snapshot_init_git`; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
+`SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy has the seeder write it into the volume's `.git` before the container exists; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
 
-**Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive `snapshot_copy_worktree` minus `baseline.tar` — the rsync copy of the project working tree, then a git baseline commit so `.git` exists. The container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly.
+**Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive `snapshot_copy_worktree` — git-enumerated copy of the project working tree, then a git baseline commit so `.git` exists. The container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly.
 
 **File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the roadmap — see the M2.6 deferred-items list.
 

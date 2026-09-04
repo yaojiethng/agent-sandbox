@@ -3,7 +3,7 @@
 # Snapshot unpacking, git baseline, diff pipeline, autosave.
 #
 # Sequence:
-#   1. snapshot_init_git                 --  git init + baseline commit; records baseline SHA
+#   1. seeded volume validation          --  git state must exist (seeder wrote it); records baseline SHA
 #   3. register EXIT trap -> _session_export  --  fires on any exit; waits for git lockfile,
 #                                         runs session export, falls back to autosave on failure
 #   4. register TERM trap -> exit 0       --  docker stop sends SIGTERM to PID 1; clean exit
@@ -107,31 +107,22 @@ if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   session_state_write "$SANDBOX_DIR" "input_dir"   "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"  "$OUTPUT_DIR"
 elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
-  # Fresh-init path: no git state, so initialise the sandbox from the seed.
-  # The seed tar was extracted into the volume by the host-side seed step
-  # (run_agent.sh seed_sandbox_volume); its members sit under the
-  # .agent-sandbox-seed/ sentinel.
-
-  # Initialise git baseline. Failure here means the container cannot start.
-  snapshot_init_git "$SANDBOX_DIR" "$SANDBOX_DIR/.agent-sandbox-seed" > /dev/null || {
-    echo "Error: sandbox git initialisation failed  --  container cannot start." >&2
-    echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
-    exit 1
-  }
-
-  # SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
-  # Write workspace paths so downstream consumers can read them deterministically.
-  session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
-  session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
-  session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
-
-  echo "Sandbox ready. Baseline recorded in SESSION_STATE."
+  # Copy delivery with an unseeded volume: the seeder either did not run or
+  # failed and its volume was discarded. The container cannot start.
+  echo "Error: sandbox volume has no git state  --  the seeder did not run or failed." >&2
+  echo "  Re-run the start; check the seeder output above the container log." >&2
+  exit 1
 else
-  # Resume path: volume has existing git state from a previous session.
-  # Skip snapshot_init_git and SESSION_STATE init  --  state is intact.
-  # Workspace paths are still written in case this is a post-migration
-  # resume where SESSION_STATE exists but path fields are from an old layout.
-  echo "Resuming existing volume  --  git state found at $SANDBOX_DIR/.git"
+  # Initialized path: the volume carries git state -- seeded fresh (the
+  # seeder wrote .git + SESSION_STATE before this container started) or
+  # resumed. Workspace paths are still written in case this is a
+  # post-migration resume where SESSION_STATE exists but path fields are
+  # from an old layout.
+  if [[ "$RESET_VOLUME" == "true" ]]; then
+    echo "Sandbox volume seeded and verified."
+  else
+    echo "Resuming existing volume  --  git state found at $SANDBOX_DIR/.git"
+  fi
   if [[ ! -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
     echo "WARN: SESSION_STATE missing from existing volume  --  some features may not work" >&2
   else
@@ -185,7 +176,7 @@ _preflight_warn() {
 
 echo "--- pre-flight checks ---"
 
-# SESSION_STATE written by snapshot_init_git
+# SESSION_STATE written by the seeder (init_sha, session_ts, session_id, host_head_sha)
 _preflight_crit "SESSION_STATE has init_sha" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *init_sha=* ]]'
 _preflight_crit "SESSION_STATE has session_ts" \

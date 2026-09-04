@@ -179,7 +179,7 @@ echo ""
 echo "If any checks fail:"
 echo "  1. set -e safety failure -> _preflight_crit uses _err=\$(cmd) instead of if _err=\$(cmd); then"
 echo "  2. stderr capture failure -> the 2>&1 >/dev/null redirection may be misordered"
-echo "  3. SESSION_STATE failure  -> snapshot_init_git did not write it, or .git is missing"
+echo "  3. SESSION_STATE failure  -> the seeder did not write it, or .git is missing"
 echo "  4. Mount failures         -> check compose volume definitions for the sandbox service"
 
 [[ "$FAIL" -eq 0 ]]
