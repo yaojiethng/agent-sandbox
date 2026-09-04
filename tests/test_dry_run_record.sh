@@ -134,7 +134,7 @@ run_test test_verify_passes_record_within_container
 # dry_run_image_verify -- digest roundtrip gate (ADR harness_versioning.md)
 # ----------------------------------------------------------------------------
 
-# run_digest_verify IMAGE RECORD TYPE  --  sources both libs, runs the gate.
+# run_digest_verify IMAGE COMPOSE_FILE TYPE  --  sources both libs, runs the gate.
 run_digest_verify() {
   local image="$1" record="$2" type="$3"
   bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$record' '$type'" 2>&1
@@ -146,7 +146,7 @@ test_digest_gate_passes_when_digests_match() {
   local out rc
   out=$(DOCKER_STUB_IMAGE_DIGESTS="img1:sha256:aaa" run_with_docker_stub run_digest_verify img1 "$rec" sandbox)
   rc=$?
-  assert_rc 0 "$rc" "digest roundtrip passes when record digest == image digest"
+  assert_rc 0 "$rc" "digest roundtrip passes when compose-label digest == image digest"
   assert_contains "$out" "matches the record (roundtrip)" "roundtrip pass reported"
 }
 

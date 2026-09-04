@@ -162,6 +162,22 @@ compose_generate() {
 }
 
 # -------------------------
+# compose_file_from_args
+#
+# Prints the generated compose file path from the caller's COMPOSE_ARGS (the
+# value of the last -f flag set by compose_args). Empty when COMPOSE_ARGS is
+# unset or carries no -f.
+compose_file_from_args() {
+  local i n=0
+  [[ -n "${COMPOSE_ARGS+x}" ]] && n=${#COMPOSE_ARGS[@]}
+  for (( i=n-1; i>=0; i-- )); do
+    if [[ "${COMPOSE_ARGS[$i]}" == "-f" ]]; then
+      [[ $(( i + 1 )) -lt ${#COMPOSE_ARGS[@]} ]] && { echo "${COMPOSE_ARGS[$(( i + 1 ))]}"; return 0; }
+    fi
+  done
+  return 0
+}
+
 # compose_args
 #
 # Sets COMPOSE_ARGS in the caller's scope from a pre-generated compose file.
@@ -302,11 +318,14 @@ compose_dry_run() {
     _verify_record "agent(reasoning)"   "$_identity_agent"   "$_rea_record"
 
     # Digest roundtrip hard gate (ADR harness_versioning.md): the image that
-    # will run must be the exact image whose digest was stamped into the
-    # record at generation time.
-    dry_run_image_verify "$_identity_sandbox" "$_cap_record" "sandbox" \
+    # will run must be the exact image whose digest compose_generate stamped
+    # into the generated compose file. Same label source as make start -- the
+    # probes' records stay readiness-only (identity + layer status).
+    local _compose_file
+    _compose_file="$(compose_file_from_args)"
+    dry_run_image_verify "$_identity_sandbox" "$_compose_file" "sandbox" \
       || _verify_fails=$(( _verify_fails + 1 ))
-    dry_run_image_verify "$_identity_agent" "$_rea_record" "agent" \
+    dry_run_image_verify "$_identity_agent" "$_compose_file" "agent" \
       || _verify_fails=$(( _verify_fails + 1 ))
 
     if [[ "$_verify_fails" -eq 0 ]]; then

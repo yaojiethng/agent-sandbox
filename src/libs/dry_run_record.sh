@@ -67,20 +67,21 @@ dry_run_record_verify() {
 }
 
 # Digest roundtrip hard gate (ADR harness_versioning.md): the digest stamped
-# into the record at generation time (post-build) must equal the digest of the
-# image that will run. A rebuild between generation and run changes the image
-# ID and fails the gate, so a dry-run can never execute on anything but the
-# exact images this invocation built.
-#   $1 image_name  $2 record_file  $3 type (sandbox|agent)
+# into the generated compose file at generation time (post-build) must equal
+# the digest of the image that will run. A rebuild between generation and run
+# changes the image ID and fails the gate, so a dry-run can never execute on
+# anything but the exact images this invocation built. Same label source as
+# make start / resume --list (compose labels via record_label).
+#   $1 image_name  $2 compose_file  $3 type (sandbox|agent)
 dry_run_image_verify() {
-  local image_name="$1" record="$2" type="$3"
+  local image_name="$1" compose_file="$2" type="$3"
   local stamped current
   # record_label equivalent, inlined -- dry_run_record.sh has no dependency on
   # session_inventory.sh.
-  stamped="$(grep -m1 -E '[[:space:]]*agent-sandbox.'"$type"'-image-digest:' "$record" \
+  stamped="$(grep -m1 -E '[[:space:]]*agent-sandbox.'"$type"'-image-digest:' "$compose_file" \
     | sed -E 's/.*'"$type"'-image-digest:[[:space:]]*//' || true)"
   if [[ -z "$stamped" ]]; then
-    echo "  RECORD-VERIFY FAIL: image $image_name record carries no $type-image-digest label; cannot run the roundtrip gate" >&2
+    echo "  RECORD-VERIFY FAIL: compose file $compose_file carries no $type-image-digest label; cannot run the roundtrip gate" >&2
     return 1
   fi
   current="$(image_digest "$image_name")"

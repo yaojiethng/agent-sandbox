@@ -250,6 +250,35 @@ test_record_bakes_image_digests() {
   fi
 }
 
+# compose_file_from_args recovers the generated compose file path from
+# COMPOSE_ARGS (last -f value), so compose_dry_run can pass the generation-time
+# stamp source to the roundtrip gate.
+test_compose_file_from_args_extracts_f_value() {
+  (
+    source "$REPO_ROOT/src/build/compose.sh"
+    COMPOSE_ARGS=(--project-name p --project-directory /tmp -f /gen/session.yml)
+    [[ "$(compose_file_from_args)" == "/gen/session.yml" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_file_from_args extracts the -f value"
+  else
+    fail "compose_file_from_args did not extract the -f value"
+  fi
+}
+
+test_compose_file_from_args_empty_without_f() {
+  (
+    source "$REPO_ROOT/src/build/compose.sh"
+    COMPOSE_ARGS=(--project-name p)
+    [[ -z "$(compose_file_from_args)" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_file_from_args returns empty without -f"
+  else
+    fail "compose_file_from_args non-empty without -f"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -262,6 +291,8 @@ run_test test_copy_overlay_carries_volume_no_snapshot_mount
 run_test test_mount_overlay_carries_worktree_not_copy_wiring
 run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_digests
+run_test test_compose_file_from_args_extracts_f_value
+run_test test_compose_file_from_args_empty_without_f
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
