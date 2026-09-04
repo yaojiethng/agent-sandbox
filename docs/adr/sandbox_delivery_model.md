@@ -9,7 +9,7 @@ The delivery model fills an empty Docker volume with the operator's working stat
 | # | Requirement | Meaning |
 |---|---|---|
 | R1 | Boundary integrity | Gitignored files never cross into the sandbox. This is a security requirement, not a convenience. |
-| R2 | Git status parity | After a fresh seed, `git status` in the sandbox matches the operator's repo: index at HEAD, working tree at disk state, deletions visible. |
+| R2 | Git status parity | After a fresh seed, `git status` in the sandbox is porcelain-identical to the operator's repo: staging state preserved, working tree at disk state, deletions visible. |
 | R3 | No harness git mediation | The harness owns the container boundary; the user owns the git topology. The harness never mediates git between containers. |
 | R4 | Session isolation | Each session gets its own volume. Parallel sessions never share working content. |
 | R5 | Diff-based return | The volume is the only working content store. Changes return to the host through the diff pipeline, which is git-agnostic. |
@@ -18,26 +18,29 @@ The delivery model fills an empty Docker volume with the operator's working stat
 
 ## 2026-09-04 -- Seed transport: helper-container copy
 
-**Decision:** The seed runs as a one-shot helper container (the sandbox image, which already contains git) with the project mounted read-only at `/src` and the sandbox volume at `/dest`. The copy executes in-container in three commands:
+**Decision:** The seed runs as a one-shot helper container (the sandbox image, which already contains git) with the project mounted read-only at `/src` and the sandbox volume at `/dest`. The copy executes in-container:
 
 ```
 cp -a /src/.git /dest/.git
 
 git -C /src ls-files -z --cached --others --exclude-standard \
+  | while IFS= read -r -d '' f; do [[ -e "$f" || -L "$f" ]] && printf '%s\0' "$f"; done \
   | tar -C /src --null -T - -cf - | tar -C /dest -xf -
-
-git -C /dest reset --quiet
 ```
 
+The repository crosses natively, including the index: no reset runs, so `git status` in the volume is porcelain-identical to the operator's repo (R2). The existence filter in the enumeration drops tracked paths absent from the disk (unstaged deletions); it cannot drop ignored content, because every filtered path was tracked. The seeder then verifies the copy fail-closed by comparing `git status --porcelain=v1 -uall` between `/src` and `/dest`; any divergence aborts the seed. The seeder writes `SESSION_STATE` (`init_sha` = HEAD at seed time, `session_ts`) into the volume's git directory.
+
 There is no host-built payload, no `docker cp`, no staging directory, and no container-side reconstruction sequence. The project tree never hosts harness state (R7).
+
+**Completion signal.** The seeder container's exit code is the only readiness signal. The host waits on it event-driven with a hard timeout; on timeout or nonzero exit, the start aborts with the seeder logs and the session volume is discarded. Container create or start failures surface immediately as host-side errors -- they never reach the wait.
 
 ### Rationale
 
 Requirement by requirement:
 
-**R1 -- boundary integrity.** Command 2 lets git decide what crosses: `ls-files --cached --others --exclude-standard` resolves every ignore source, so gitignored content is never read, not copied-and-purged. Tar preserves symlinks and exec bits; content is streamed pipe-to-pipe and never lands in an intermediate location.
+**R1 -- boundary integrity.** The enumeration lets git decide what crosses: `ls-files --cached --others --exclude-standard` resolves every ignore source, so gitignored content is never read, not copied-and-purged. Tar preserves symlinks and exec bits; content is streamed pipe-to-pipe and never lands in an intermediate location. The existence filter only drops index-listed paths absent from the disk; tracked paths cannot carry ignored content.
 
-**R2 -- git status parity.** Command 1 brings the repository natively, so no `baseline.tar` unpack or mixed-init sequence is needed. Command 2 copies exactly the tracked and untracked-non-ignored files on disk; deleted-from-disk files are absent because the volume starts empty. Command 3 is a mixed reset: the index moves to HEAD and the working tree stays as copied. The result is the parity state.
+**R2 -- git status parity.** The repository crosses natively with its index, so no `baseline.tar` unpack or mixed-init sequence is needed. The enumeration copies exactly the tracked and untracked-non-ignored files on disk; unstaged deletions are absent from the volume but present in the index, so status shows them. No reset runs, so staging state is preserved and `git status` is porcelain-identical. The self-check enforces the guarantee at seed time instead of trusting the sequence.
 
 **R3 -- no harness git mediation.** The seeder runs plain `cp`, `git`, and `tar` against mounted filesystems. It mediates no git operation between host and container; the diff pipeline remains the only return path (R5).
 
@@ -59,7 +62,7 @@ Promoted edge case: partial satisfaction of R1 is still a violation -- content e
 
 #### Clone into the volume, then patch
 
-`git clone /src /dest` followed by `git diff | git apply`. Failure in intent: untracked files never cross, so R2 is unreachable. No execution can repair this.
+`git clone /src /dest` followed by a porcelain-driven diff copy. The original rejection ("untracked files never cross") was wrong: a porcelain-driven copy crosses untracked files. The failure is in checkout semantics: clone materializes the baseline worktree through git's checkout path, so `core.autocrlf` rewrites line endings and smudge filters fire -- LFS smudge needs the network (R6), and content diverges silently either way. Clone also plants an `origin` remote pointing at `/src` and drops stashes and reflogs. The porcelain idea survives where it is strong: as the seed's fail-closed verification, not as the transport.
 
 #### Second mountpoint of the same volume for the tar pipeline
 
@@ -76,8 +79,20 @@ Failure in intent, not execution: staging a disposable payload inside a git work
 ### Edge cases / drivers
 
 - **Polluted legacy repos.** A repo that already tracks `.agent-sandbox-seed/` must fail the seed with a readable host-side error naming the remediation. Tripwire not yet implemented -- scheduled with the implementation iteration.
+- **Linked worktrees.** If `/src/.git` is a gitfile pointing at a host-side git directory, the copy produces a broken repository. The seeder detects this before copying and fails with a readable error.
+- **Unborn HEAD.** A repository with no commits has no HEAD to verify against. The seeder fails with a readable error naming the limitation.
+- **Empty worktrees.** Tar refuses an empty archive. The seeder skips the tar step when the enumeration is empty.
+- **Submodules.** The gitlink crosses but module content does not. The seeder fails closed with a readable remediation message, matching the existing `snapshot_copy_worktree` precedent.
+- **Stale index stat cache.** The copied index carries host inode and device ids; git reconciles them by content on the first status call. Correctness is unaffected.
+- **Absolute `core.hooksPath`.** A local config pointing outside the project breaks hooks in the volume. Declared limitation; the harness runs no hooks itself.
 - **Case-sensitivity.** The existing case-mismatch check runs before the seed and is retained unchanged.
 - **Offline and restricted hosts.** The seeder must not pull images or install packages at seed time; the sandbox image is the dependency floor (R6).
+
+## 2026-09-04 -- Mount-path worktree copy: git enumeration replaces rsync exclude lists
+
+**Decision:** `snapshot_copy_worktree` (mount-delivery worktree materialization) replaces its hand-built rsync exclude lists with git enumeration -- `git ls-files -z --cached --others --exclude-standard`, existence-filtered, fed to `rsync --from0 --files-from` with `--delete`.
+
+**Rationale:** R1. The exclude-list approach silently ignores negation patterns (`!pattern`) in global gitignore and `.git/info/exclude` -- rsync treats a negation as clear-the-exclude-list -- so gitignored files leak into the worktree copy. The repo's knowledge test reproduces the leak: the negation and global-exclude cases report divergence for the current pipeline. Git's own ignore resolution decides what crosses, as in the volume-path seed. The same enumeration primitive serves both delivery paths. Implementation is scheduled with the seed-transport implementation iteration.
 
 ## 2026-09-03 -- Seed content source: git-enumerated tar; sentinel never tracked (superseded)
 

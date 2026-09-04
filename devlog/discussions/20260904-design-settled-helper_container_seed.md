@@ -74,3 +74,53 @@ Adopt Option E. The project tree never hosts harness state; the repo root never 
 - **Enables:** deletion of the transform/repair/verify machinery; a host-side seed failure surface (seeder container exits non-zero with a readable error) instead of a container-side stall; onboarding of arbitrary projects without depending on their gitignore hygiene.
 - **Forecloses:** nothing in the delivery model — mount delivery, resume, and the diff pipeline are untouched. The `docker cp` seed path is retired and must not be re-introduced without revisiting this doc.
 - **Implementation debt to schedule:** compose seeder service definition, `run_agent.sh` seed-path retirement, `snapshot.sh` cleanup (`snapshot_seed_tar`, `snapshot_init_git` staging logic), entrypoint simplification, trace-test rewrites asserting on the old sentinel paths.
+
+## Test Surface Audit (2026-09-04 correctness iteration)
+
+Purpose: state how much of the existing test surface can be trusted going into the implementation. Classification per test: the behavioral guarantee it encodes survives the redesign (reuse), survives with a changed expected outcome (rewrite), or describes retired machinery (retire/redesign). Amended spec: ADR 2026-09-04 entry, porcelain parity + existence filter + self-check.
+
+### tests/test_snapshot_container.sh (direct seed surface)
+
+| Test | What it actually asserts | Verdict |
+|---|---|---|
+| `test_seed_tar_gitignored_excluded` | R1: gitignored content absent from the transport | Reuse in substance, retarget: assert against the seeder's enumeration / volume contents, not the host-built tar |
+| `test_seed_tar_negation_patterns` | R1: negation-pattern ignores honored | Reuse in substance, retarget (same as above) |
+| `test_seed_tar_rejects_submodules` | Fail-closed on submodules with readable error | Reuse; error site moves to the seeder |
+| `test_seed_tar_rejects_no_commits` | Fail-closed on no-commit repos | Reuse; same guarantee (unborn-HEAD edge case) |
+| `test_init_git_case1_clean` | Parity matrix: clean repo | Reuse |
+| `test_init_git_case2_unstaged_edit` | Parity matrix: unstaged edit shows ` M` | Reuse |
+| `test_init_git_case4_unstaged_deletion` | Parity matrix: deletion shows ` D` | Reuse |
+| `test_init_git_case6_untracked` | Parity matrix: untracked shows `??` | Reuse |
+| `test_init_git_case7_gitignored` | Parity matrix: ignored invisible | Reuse |
+| `test_init_git_case3_staged_edit` | Asserts "staging state is lost -- expected" | Rewrite: porcelain keeps `M ` staged |
+| `test_init_git_case5_staged_deletion` | Same content-level contract | Rewrite: staged deletion stays staged |
+| `test_init_git_case8_staged_new_file` | Asserts staged-new shows `??` (untracked) | Rewrite: staged-new stays `A ` staged |
+| `test_seed_tar_roundtrip_lossless` | Content hashes + modes survive the transport; deleted tracked absent; baseline.tar member present | Rewrite: fidelity assertions transfer to the seeder round-trip; sentinel prefix and baseline.tar member assertions die. Current version skips symlink targets -- the new round-trip must compare them (tar carries symlinks natively) |
+| `test_init_git_one_commit` | A new baseline commit object is created | Rewrite: HEAD must equal the host HEAD; no new commit; `init_sha` = HEAD sha |
+| `test_init_git_creates_session_state` | SESSION_STATE written with init_sha + session_ts | Reuse in substance, retarget: seeder writes it; init_sha value changes |
+| `test_sandbox_isolation` | R4: per-session volumes | Reuse unchanged |
+| `test_init_git_missing_seed` | Missing seed fails closed at container init | Redesign: guarantee moves to the host readiness boundary (seeder exit code); becomes a seeder-failure test |
+| `test_init_git_seed_cleanup` | Seed members removed after init | Retire: no member extraction exists. Replaced by a new negative guarantee: post-seed worktree contains no harness state (R7, asserted) |
+| `test_init_git_symlink_target_repaired` | Sentinel-prefix symlink repair | Retire: repair exists only for the transform; replaced by symlink-target equality in the round-trip |
+
+### tests/test_snapshot_host.sh (mount-path primitive + baseline archive)
+
+| Test | What it actually asserts | Verdict |
+|---|---|---|
+| `test_worktree_*` (9 tests) | Mount-path `snapshot_copy_worktree`: tracked copies, ignores, untracked, unstaged deletions/moves, no `.git`, destination creation, structure, submodule rejection | Reuse -- the primitive stays. Extend with negation and global-exclude rows when the `--files-from` fix (ADR mount-path entry) lands; those cases are currently unasserted (the known issue) |
+| `test_archive_head_*` (6 tests) | `git archive HEAD` builds the baseline.tar; no-commit failure | Retire with the machinery; the no-commit guarantee folds into the seeder's unborn-HEAD fail-closed |
+
+### Knowledge / discovery probes
+
+| Probe | What it actually asserts | Verdict |
+|---|---|---|
+| `discovery_tar_filelist_parity.sh` | Old rsync pipeline vs git-enumerated tar on the edge-case matrix | Keep as characterization until implementation; empirically validated the existence filter (deleted-file parity) and the rsync negation/global-exclude leak. Retire pipeline A after the switch |
+| `discovery_tar_roundtrip.sh` | Candidate mechanism fidelity: list, hashes, modes, symlink targets | Promote: becomes the basis of the seeder round-trip test |
+
+### Trace / orchestration tests
+
+`test_trace_start.sh`, `test_trace_resume.sh`, `test_trace_stop.sh`, `test_trace_dry_run.sh` assert compose orchestration shape and carry no seed behavioral assertions (no docker cp, sentinel, or baseline references). The compose wiring change (seeder service, wait mechanism) breaks them mechanically; updates are shape-follows-implementation, not guarantee redesign. `test_trace_compose_gen.sh` likely asserts service definitions -- same treatment. Trust level: none needed for the seed contract, low rework cost.
+
+### Bottom line
+
+Trustable as-is into implementation: the R1 rejection pair, R4 isolation, and 5 of 8 parity-matrix rows -- the behavioral core of the current surface. Rewrite-required: every assertion tied to the sentinel prefix, the baseline commit object, or the content-level (staging-lost) contract -- about a third of the direct surface. Retire: all baseline-archive and reconstruction-machinery tests. Two guarantees are missing from the current surface entirely and should be added: post-seed worktree contains no harness state (R7, negative assertion), and staging-state preservation across the seed (the porcelain rows).

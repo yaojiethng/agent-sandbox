@@ -5,7 +5,7 @@ Copy delivery is the default sandbox delivery: the agent's working content lives
 ## Model
 
 - The sandbox is one Docker volume per session, identified by the session id. It survives stop and start; teardown never destroys it.
-- At fresh start, a seeder fills the volume with the operator's state: git index at HEAD, working tree at disk state.
+- At fresh start, a seeder fills the volume with the operator's state: repository with its index, working tree at disk state.
 - The agent works exclusively inside the volume. Host changes during the session are invisible -- copy delivery freezes the agent's view at session start.
 - Changes return to the host through the diff pipeline, which is git-agnostic and needs no shared history -- see [`sandbox_host_correspondence_model.md`](sandbox_host_correspondence_model.md).
 - Resume skips seeding entirely: the volume's git state is authoritative. Fresh start and resume differ only in the fill step.
@@ -15,7 +15,7 @@ Copy delivery is the default sandbox delivery: the agent's working content lives
 Copy delivery is a behavioral contract between the harness and the operator. Everything below is observable from outside the harness; the internal design that delivers it is recorded in [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md).
 
 - **Your ignored files stay on your machine.** What enters the sandbox is decided by git's own ignore resolution. Gitignored content is never copied into the sandbox, and never copied-and-cleaned-up-afterwards -- there is no point in the pipeline where it exists on the sandbox side.
-- **The sandbox starts as your repo.** After a fresh start, `git status` inside the sandbox shows exactly what you see in your project: committed state as the index, your on-disk edits as the working tree, your untracked non-ignored files present, your deletions visible.
+- **The sandbox starts as your repo.** After a fresh start, `git status` inside the sandbox is exactly what you see in your project, including which changes you had staged: your on-disk edits in the working tree, your staged changes still staged, your untracked non-ignored files present, your deletions visible.
 - **The harness never touches your git history.** The harness copies your repository and returns changes as diffs you review. It does not commit, merge, rewrite, or mediate any git operation between you and your repository.
 - **Sessions are isolated.** Each session works in its own volume. Two sessions of the same project never see each other's content.
 - **Your repo is the only source of truth.** The volume is the agent's workspace only. Changes come back exclusively as diffs; nothing writes to your project directory during a session.
@@ -34,9 +34,9 @@ The seeder is the sandbox image. It reads the project read-only, writes the volu
 
 | Input | Output | Guarantee |
 |---|---|---|
-| Project worktree at `/src`, session volume at `/dest` | Volume holding `.git` and the working tree | Index at HEAD, working tree at disk state, gitignored content absent, no harness state in the worktree |
+| Project worktree at `/src`, session volume at `/dest` | Volume holding `.git` and the working tree | `git status` identical to the project including staging state, gitignored content absent, no harness state in the worktree |
 
-Internally the seeder copies the repository natively, streams the git-enumerated file set, and resets the index to HEAD. The exact commands and their per-requirement mapping are in the ADR's seed-transport entry. The seeder runs offline and before any session container starts: a failed seed aborts the start with a host-side error, and no session container is created.
+Internally the seeder copies the repository natively, including its index, and streams the git-enumerated file set; it verifies the copy by comparing `git status` between the project and the volume, and a divergence aborts the start. The exact commands and their per-requirement mapping are in the ADR's seed-transport entry. The seeder runs offline and before any session container starts: a failed seed aborts the start with a host-side error, and no session container is created.
 
 ## Session lifecycle
 
