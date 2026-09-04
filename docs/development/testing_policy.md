@@ -155,7 +155,7 @@ The `tests/knowledge/` directory contains three file categories with distinct pu
 
 ### 1. Knowledge tests (`knowledge_*.sh`)
 
-Document behavioural assumptions about **unmodifiable** seams (git, docker, rsync, pi, external libs) that inform the harness design. These are one-off executable documents produced during investigation sessions.
+Document behavioural assumptions about **unmodifiable** seams (git, docker, rsync, pi, external libs) that inform the harness design. These are one-off executable documents produced during investigation sessions. A one-off feasibility probe from an investigation is a knowledge test and uses the `knowledge_` prefix.
 
 **Purpose:** Record what was learned about an external tool's behaviour, assert key assumptions still hold, and provide a reference for future developers.
 
@@ -163,7 +163,7 @@ Document behavioural assumptions about **unmodifiable** seams (git, docker, rsyn
 
 ### 2. Diagnostic scripts (`diagnose_*.sh`)
 
-Debug helpers that verify the internal invariants of a specific production script or subsystem, referenced when dry-run or pre-flight checks fail to isolate the root cause. They run inside a container for troubleshooting — **not** as regression unit tests.
+Debug helpers that verify the internal invariants of a specific production script or subsystem, referenced when dry-run or pre-flight checks fail to isolate the root cause. They run inside a container for troubleshooting — **not** as regression unit tests. A `diagnose_` script tests current behaviour to find the exact behavioural violation behind an error, especially when the unit tests pass.
 
 **Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does dry-run Phase 2 fail?"). Each section checks one link in the chain — environment, library sourcing, path resolution, script hygiene, etc. Because they are diagnostic (not deterministic pass/fail, may need operator interpretation, or run only in a container), they are **not** in the `make test` suite.
 
@@ -192,6 +192,8 @@ End-to-end or environment-gated tests that cannot run deterministically in the `
 `make test` (the `tests/test_*.sh` suite) **must report `failed 0, skipped 0`**. Any test that cannot run deterministically (missing utility, container/daemon absent, optional file absent that yields a `skip`) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`. The runner (`scripts/run_tests.sh`) enforces this by treating `skip` as a failure.
 
 A `skip()` in a `tests/test_*.sh` file is a **defect** under this policy — it means the seam was moved out of the unit suite rather than made deterministic.
+
+A prerequisite is something the suite needs before a test runs: an executable stub, or a docker shim that must be present. A prerequisite failure is not a test failure. The runner checks the prerequisites before it runs the tests. It reports a missing prerequisite by name. A broken environment then reports one prerequisite error, not many unrelated test failures. This rule records a real failure: a stub lost its exec bit and failed 67 tests with exit 126 before the cause was found.
 
 ### Shared Fixtures in Knowledge/Integration/Diagnostic Tests
 
@@ -239,6 +241,8 @@ grep -rl "script_or_lib_name" tests/
 ```
 
 Read each file returned and assess whether any test case is invalidated or no longer sufficient given the change. If a test needs updating, update it in the same change - do not defer test updates to a follow-up.
+
+A handover or finding must not claim a code path that no test exercises. A behaviour branch claimed in a handover or finding is covered by a test, or the handover states why it is untested.
 
 This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour - but if in doubt, grep and check.
 

@@ -418,3 +418,12 @@ a nonexistent libs/dirs.sh path"  --  rotted until noticed by accident. Cheapest
 fix: a non-gating `make test-knowledge-smoke` running each script under
 `bash -n` (syntax only) plus shellcheck, catching structural rot without
 asserting on their nondeterministic behavior.
+
+### [A] 2026-09-02  --  Non-conforming test prefix introduced (`discovery_` vs `knowledge_`)
+
+state: open
+scoped: M2.6
+legacy: none
+mitigation: none
+
+The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`, a prefix the testing policy does not list. Their content (external-tool behaviour) is the knowledge category, so the defect is the name, not the placement. Cleanup: rename to `knowledge_tar_*.sh`. Cross-reference: the same change introduced the rename-without-grep pattern -- a `run_test` registration was renamed by `sed` and briefly went missing before the suite caught it.

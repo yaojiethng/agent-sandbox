@@ -163,6 +163,16 @@ fi
 
 ---
 
+### Anti-Pattern 6: Change-Mirror Test
+
+**Symptom:** A test added in the same change asserts the absence of the exact string the change removed, or states the exact output of a formatter the change introduced. The test fails only if the change is reverted. It mirrors the edit. It does not check the product.
+
+**Example:** The resume-display rework removed the image-signature suffix from the provider cell. A test in the same change asserted that `pi (1234abc)` no longer appears. The row-render test already proved that the provider cell shows the provider.
+
+**Rule:** Assert the meaning, not the string. Prefer "the provider cell shows the provider" over "the cell does not contain the old suffix". Freeze a user-visible format only after the operator accepts it, and record why the format is a contract.
+
+---
+
 ## Test Structure Template
 
 ```bash
@@ -320,6 +330,8 @@ Before committing a new test:
 - [ ] `make test` passes clean after the new test is added
 - [ ] **`make test` invariant held**: the unit suite reports `failed 0, skipped 0`; no `skip()` in a `tests/test_*.sh` file
 - [ ] Test failure message clearly describes what went wrong
+- [ ] An assertion that pins a behaviour a future reader would be tempted to change names the record (ADR, design record, or handover decision) that explains why the behaviour is correct
+- [ ] Every `test_*()` in the file is registered via `run_test`, and every `run_test` target resolves
 
 ## Checklist for Lib and Script Changes
 
@@ -328,3 +340,4 @@ Before marking a lib or script change complete:
 - [ ] `grep -rl "<changed file>" tests/` run; all returned files reviewed for staleness
 - [ ] Any stale test cases updated in the same change
 - [ ] `make test` passes clean
+- [ ] An output-contract change produced a propagation checklist per AGENTS.md, covering tests, docs, and downstream consumers
