@@ -30,10 +30,13 @@ make_sig_repo() {
            "$ROOT/docs/architecture" \
            "$ROOT/docs/concepts" \
            "$ROOT/src/reasoning/agent/skills" \
-           "$ROOT/src/reasoning/agent/prompts"
-  # src/reasoning/entrypoint.sh is referenced as a FILE by _agent_sig_sources;
-  # without it agent-layer sig derivation fails closed.
+           "$ROOT/src/reasoning/agent/prompts" \
+           "$ROOT/workflow/coding-agent"
+  # src/reasoning/entrypoint.sh and workflow/coding-agent/gm.md are referenced
+  # as FILES by _agent_sig_sources; without them agent-layer sig derivation
+  # fails closed.
   touch "$ROOT/src/reasoning/entrypoint.sh"
+  echo gm > "$ROOT/workflow/coding-agent/gm.md"
   echo one > "$ROOT/src/libs/a.sh"
   echo two > "$ROOT/src/capability/entrypoint.sh"
   echo three > "$ROOT/src/capability/snapshot.sh"

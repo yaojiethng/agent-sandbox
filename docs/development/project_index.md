@@ -179,6 +179,14 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 |---|---|---|---|
 | `package-branch.md` | 🟡 Warm | M2.3 | Agent-facing skill for `/package-branch`. Documents committed branch history packaging. |
 
+### Coding-Agent Workflow (`workflow/coding-agent/`)
+
+| Document | Temp | Last touched in | Notes |
+|---|---|---|---|
+| `gm.md` | 🔥 Hot | M2.6 | Check-in prompt template (`/gm`). Repo-side home here; deployed into `/opt/workflow/agent/prompts/` via the provider dockerfiles. |
+| `audits/surface-area-report.md` | 🔥 Hot | M2.6 | Categorization of the former drafts+prompts surface: use case, current status, M3 consolidation targets. Input for the M3 reorganization. |
+| `audits/*.skill.md` | 🟡 Warm | M2.6 | Seven audit-family skills relocated from `agent/drafts/`: architecture-doc-reviewer, audit, bash-audit, dhh-code-audit, handover-audit, kelsey-code-reviewer, roadmap-audit. Repo-side only, not deployed. |
+
 ### Providers (`providers/`)
 
 | Document | Temp | Last touched in | Notes |

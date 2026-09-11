@@ -14,6 +14,7 @@ COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provide
 COPY src/reasoning/providers/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
 COPY src/reasoning/agent/skills/                        /opt/workflow/agent/skills/
 COPY src/reasoning/agent/prompts/                       /opt/workflow/agent/prompts/
+COPY workflow/coding-agent/gm.md                        /opt/workflow/agent/prompts/
 COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
 COPY docs/architecture/                                 /opt/sandbox/docs/architecture/
 COPY docs/concepts/                                     /opt/sandbox/docs/concepts/

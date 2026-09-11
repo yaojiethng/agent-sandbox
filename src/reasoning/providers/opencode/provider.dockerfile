@@ -26,6 +26,7 @@ COPY src/reasoning/entrypoint.sh                /opt/sandbox/bin/provider-entryp
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 COPY src/reasoning/agent/skills/                 /opt/workflow/agent/skills/
 COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
+COPY workflow/coding-agent/gm.md                 /opt/workflow/agent/prompts/
 COPY docs/architecture/                          /opt/sandbox/docs/architecture/
 COPY docs/concepts/                              /opt/sandbox/docs/concepts/
 

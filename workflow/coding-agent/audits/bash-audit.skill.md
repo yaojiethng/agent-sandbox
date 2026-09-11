@@ -1,7 +1,7 @@
 # Skill  --  Bash Audit
 
 Audit bash code against the rules in
-[`bash-coding-conventions.md`](../../../../docs/development/bash-coding-conventions.md).
+[`bash-coding-conventions.md`](../../../docs/development/bash-coding-conventions.md).
 One-line findings, ranked by impact. Read-only, one-shot.
 
 ## Tags

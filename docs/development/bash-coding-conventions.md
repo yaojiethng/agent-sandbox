@@ -1,6 +1,6 @@
 # Bash Coding Conventions
 
-Rules for writing bash scripts in this project. Supersedes the former `bash-scripting-traps.skill.md` and `bash-dependency-audit.skill.md`. For automated audit, see `src/reasoning/agent/drafts/bash-audit.skill.md`.
+Rules for writing bash scripts in this project. Supersedes the former `bash-scripting-traps.skill.md` and `bash-dependency-audit.skill.md`. For automated audit, see `workflow/coding-agent/audits/bash-audit.skill.md`.
 
 **Authoritative style guide:** [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) (google/shellguide). Where this document and the Google guide conflict, this document wins on project-specific conventions (e.g. `set -euo pipefail`, library `return`/`exit` discipline, the `|| true` / `|| rc=$?` failure-tolerant idioms in rule 4); the Google guide is authoritative for general bash style (naming, quoting, `local`/`readonly`, function and command-substitution form, flags, output to stderr). The Google guide is silent on the `set -e`/`pipefail` failure-tolerant-check idioms we rely on  --  those are governed here.
 
@@ -311,6 +311,6 @@ Do NOT write `|| echo 0`: since grep already printed `0`, the substitution captu
 | `interface-conventions.md` | CLI/TUI/API rules (this doc covers bash, not interface) |
 | `testing-conventions.md` | Test patterns and anti-patterns |
 | `testing_policy.md` | Testing policy and rules |
-| `src/reasoning/agent/drafts/bash-audit.skill.md` | Automated audit skill |
+| `workflow/coding-agent/audits/bash-audit.skill.md` | Automated audit skill |
 | `devlog/GOTCHAS.md` [H] | Original `exit` vs `return` finding |
 | `devlog/AGENT_FEEDBACK.md` Bash section | Historical bash friction records |

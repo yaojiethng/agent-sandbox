@@ -182,8 +182,8 @@ test_container_sig_sources_list() {
   fi
 
   mapfile -t agent < <(_agent_sig_sources "$REPO_ROOT" "pi")
-  local agent_expected="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts src/reasoning/providers/pi/config src/reasoning/providers/pi/preflight.sh"
-  if [[ "${#agent[@]}" -ne 8 || "${agent[*]}" != "$agent_expected" ]]; then
+  local agent_expected="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts workflow/coding-agent/gm.md src/reasoning/providers/pi/config src/reasoning/providers/pi/preflight.sh"
+  if [[ "${#agent[@]}" -ne 9 || "${agent[*]}" != "$agent_expected" ]]; then
     fail "container_sig: agent[pi] source list differs; got ${#agent[@]} elts '${agent[*]}'"
     return
   fi

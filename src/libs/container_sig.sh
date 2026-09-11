@@ -45,7 +45,8 @@ _agent_sig_sources() {
     "docs/architecture" \
     "docs/concepts" \
     "src/reasoning/agent/skills" \
-    "src/reasoning/agent/prompts"
+    "src/reasoning/agent/prompts" \
+    "workflow/coding-agent/gm.md"
   if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
     printf '%s\n' "src/reasoning/providers/$provider/config"
   fi

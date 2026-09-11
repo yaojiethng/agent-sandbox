@@ -13,6 +13,6 @@ Policy documents govern process, not code shape. Conventions govern code shape w
 | Category | Policy document |
 |---|---|
 | Testing policy | [`testing_policy.md`](testing_policy.md) |
-| Skills (agent-facing) | `src/reasoning/agent/drafts/*.skill.md` |
+| Skills (agent-facing) | `src/reasoning/agent/drafts/*.skill.md` (procedures), `workflow/coding-agent/audits/*.skill.md` (audit family) |
 | Gotchas (operator-recorded) | [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md) |
 | Agent feedback | [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) |
