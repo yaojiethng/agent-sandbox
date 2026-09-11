@@ -46,7 +46,7 @@ Re-audit of the committed design surfaced one spec bug and several unrecorded co
 | # | Finding | Status |
 |---|---|---|
 | F1 | ADR command 2 hard-fails on deleted tracked files (`ls-files --cached` reads the index; tar errors on the missing path). R2's deletions-visible case is unreachable as written. Resolved: existence filter adopted from the knowledge probe, already validated (deleted-file case reports parity). | Resolved |
-| F2 | Mount-delivery path (`snapshot_copy_worktree`) silently ignores negation patterns in global excludes and `.git/info/exclude` — live R1 leak; the Known Issue note understates it as "residual limitation". | Open (fix scheduled; ADR entry recorded) |
+| F2 | Mount-delivery path (`snapshot_copy_worktree`) silently ignores negation patterns in global excludes and `.git/info/exclude` — live R1 leak; the Known Issue note understates it as "residual limitation". | Resolved (fix landed with the seed-transport redesign, handovers `20260904-04`..`20260904-06`; see correction below) |
 | F3 | Seeder/agent UID parity is load-bearing (volume ownership; dubious-ownership refusals) and unrecorded. | Resolved (recorded in ADR) |
 | F4 | Seed-completion signal moves to seeder exit code; without an explicit boundary, a half-seeded volume boots silently. | Resolved (recorded in ADR) |
 | F5 | Consumer sweep for the porcelain decision: the only `diff --cached` consumer is inside `snapshot_init_git`, which the redesign retires. No index-assuming consumer blocks the reset removal. | Resolved |
@@ -74,3 +74,7 @@ Re-audit of the committed design surfaced one spec bug and several unrecorded co
 | AC5 | Roadmap seed task reflects readiness wiring and mount-path fix | done |
 | AC6 | Lint and test suite green | pending release run |
 | AC7 | Test surface audit recorded in the design doc with per-test verdicts and the trust summary | done |
+
+---
+
+[CORRECTION -- 2026-09-11]: F2 status read "Open (fix scheduled; ADR entry recorded)". The negation-leak fix in `snapshot_copy_worktree` landed with the seed-transport redesign (handovers `20260904-04`..`20260904-06`; ADR 2026-09-04). The F2 status row is corrected to Resolved with the landing reference. The stale-status finding is routed to the active handover `20260911-01-workflow-gm_checkin_prompt_template.md`.

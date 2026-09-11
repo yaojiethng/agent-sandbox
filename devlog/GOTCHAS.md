@@ -154,3 +154,17 @@ broad roadmap/deferred/gotchas/agent-feedback sweep; the operator steered that
 the real objective was a redesign of what an ADR is (a living, component-scoped
 rationale record), which subsumed the status problem as a symptom. A redesign
 task should first establish purpose, then scope the exploration to it.
+
+### [G] 2026-09-11 - A feedback entry's follow-up note is not a task assignment
+
+state: open
+scoped: none
+legacy: none
+mitigation: AGENT_FEEDBACK entries can carry "follow-up candidate" notes that
+diverge from the roadmap (the dual-use-guards entry described sed-extraction
+probes as current work after the conventions sweep had deleted them). The
+roadmap is the sole task list; a feedback follow-up note is an observation,
+not a task assignment. When a feedback entry and a roadmap item disagree,
+the roadmap item is the canonical record, and the feedback entry points at
+it. Check the tree before writing record text that names files or functions
+as current.
