@@ -196,22 +196,40 @@ test_provider_overlay_absent_is_optional() {
   fi
 }
 
-# SERVE_PORT unset: run_agent.sh falls back to the default port with a
-# warning (documented in handover 20260325-01 -- "warning added for unset
-# case"); the session must still proceed.
-test_serve_port_unset_falls_back_with_warning() {
-  local FIX="$FIXTURE_DIR/serve_port_unset"
+# SERVE_PORT unset: run_agent.sh still resolves the fallback default (46553,
+# matching the provider serve overlays) so the session proceeds. The warning is
+# serve-mode-only: in non-serve modes the port is irrelevant and would be
+# noise. Warning originally added for the unset case (handover 20260325-01);
+# mode gate pinned by handover 20260912-11.
+test_serve_port_unset_standard_is_quiet() {
+  local FIX="$FIXTURE_DIR/serve_port_unset_std"
   make_run_agent_fixture "$FIX" pi
   unset SERVE_PORT
 
   local out="$FIX/out.txt" rc=0
   invoke_run_agent "$out" || rc=$?
 
-  if [[ $rc -eq 0 ]] && grep -q "SERVE_PORT is not set" "$out" \
-     && grep -q "$REPO_ROOT/src/build/compose.sh SERVE_PORT_DEFAULT\|falling back to default (46553)" "$out"; then
-    pass "SERVE_PORT unset: warning emitted, session proceeds on the default port"
+  if [[ $rc -eq 0 ]] && ! grep -q "SERVE_PORT is not set" "$out"; then
+    pass "SERVE_PORT unset, standard mode: no warning, session proceeds on the default"
   else
-    fail "SERVE_PORT unset: expected warning + rc 0, got rc=$rc out='$(cat "$out")'"
+    fail "SERVE_PORT unset, standard mode: expected rc 0 without warning, got rc=$rc out='$(cat "$out")'"
+  fi
+  export SERVE_PORT="46553"
+}
+
+test_serve_port_unset_serve_warns() {
+  local FIX="$FIXTURE_DIR/serve_port_unset_serve"
+  make_run_agent_fixture "$FIX" pi
+  unset SERVE_PORT
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" serve || rc=$?
+
+  if [[ $rc -eq 0 ]] && grep -q "SERVE_PORT is not set" "$out" \
+     && grep -q "falling back to default (46553)" "$out"; then
+    pass "SERVE_PORT unset, serve mode: warning emitted, session proceeds on the default port"
+  else
+    fail "SERVE_PORT unset, serve mode: expected warning + rc 0, got rc=$rc out='$(cat "$out")'"
   fi
   export SERVE_PORT="46553"
 }
@@ -223,7 +241,8 @@ test_serve_port_unset_falls_back_with_warning() {
 run_test test_setup_hook_absent_is_noop
 run_test test_setup_hook_present_runs_and_proceeds
 run_test test_setup_hook_failure_aborts_with_attribution
-run_test test_serve_port_unset_falls_back_with_warning
+run_test test_serve_port_unset_standard_is_quiet
+run_test test_serve_port_unset_serve_warns
 run_test test_provider_overlay_reaches_compose_file_set
 run_test test_provider_overlay_absent_is_optional
 

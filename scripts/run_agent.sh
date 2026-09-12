@@ -117,10 +117,16 @@ fi
 # -------------------------
 # SERVE_PORT resolution
 # -------------------------
+# Consumed by the serve-mode echo below; compose
+# interpolation reads the process env directly and the provider serve overlays
+# carry the same fallback. The warning is serve-mode-only: in standard/dry-run
+# the port is irrelevant and the warning would be noise.
 SERVE_PORT_DEFAULT=46553
 if [[ -z "${SERVE_PORT:-}" ]]; then
-  echo "Warning: SERVE_PORT is not set in .env  --  falling back to default ($SERVE_PORT_DEFAULT)"
   SERVE_PORT="$SERVE_PORT_DEFAULT"
+  if [[ "$MODE" == "serve" ]]; then
+    echo "Warning: SERVE_PORT is not set in .env  --  falling back to default ($SERVE_PORT_DEFAULT)"
+  fi
 fi
 
 # -------------------------

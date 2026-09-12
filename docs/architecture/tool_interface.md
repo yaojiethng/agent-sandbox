@@ -223,7 +223,7 @@ delivery-overlay note in
 |---|---|---|
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
-| `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
+| `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
 `SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/providers/<n>/.env.example` at onboard time.
