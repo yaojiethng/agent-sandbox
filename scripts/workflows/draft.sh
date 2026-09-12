@@ -489,8 +489,8 @@ _run_draft_workflow() {
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
   echo ""
   echo "Shape your commits, then confirm:"
-  echo "  git rebase -i $(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '<source>')"
-  echo "  make confirm [TARGET=<target>]"
+  echo "  git rebase -i ${SOURCE_BRANCH}"
+  echo "  make confirm TARGET=${SOURCE_BRANCH}"
   echo ""
   echo "To discard: make reject"
 }
