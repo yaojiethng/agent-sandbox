@@ -22,9 +22,11 @@
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a
 #                         single pre-generated compose file and project name.
 #
-#   compose_dry_run       Full dry-run sequence against COMPOSE_ARGS:
-#                         up, exec, down. Overlay already merged  --  no extra
-#                         file args needed.
+#   compose_dry_run       Full dry-run sequence against COMPOSE_ARGS, in two
+#                         passes: up + verify (fresh), down (volume kept), up
+#                         + verify (resume), down -v. No exec: probes run at
+#                         start-up. Overlay already merged  --  no extra file
+#                         args needed.
 #
 #   session_teardown     docker compose down (ends session; preserves named volumes)
 #   session_destroy      docker compose down -v (ends session; removes named volumes)
@@ -222,17 +224,20 @@ compose_args() {
 # -------------------------
 # compose_dry_run
 #
-# Runs the three-phase dry-run sequence against COMPOSE_ARGS and exits.
-# The dry-run overlay is already merged into the compose file  --  no extra
-# file args needed here.
+# Runs the dry-run sequence against COMPOSE_ARGS. Returns 0/1; run_agent.sh
+# owns the exit and the EXIT trap. The dry-run overlay is already merged into
+# the compose file  --  no extra file args needed here.
 #
-# Phases:
-#   1. Capability layer  --  dry_run_capability.sh inside sandbox container (start-up command)
-#   2. Reasoning layer   --  dry_run_reasoning.sh inside agent container (start-up command)
-#   3. Host-side         --  verify records on host filesystem
+# Phases (two passes -- the dry-run is also the resume testbed):
+#   Pass 1 (fresh): capability + reasoning probes run at container start-up,
+#     host-side record verification. The volume was just seeded.
+#   Stop: compose down, volume kept -- the same sequence as `make stop`.
+#   Pass 2 (resume): up again on the kept volume, no re-seed -- the same
+#     sequence as `make resume`; the probes re-run against the already-
+#     initialized session state.
+#   Teardown: compose down -v -- the session volume is destroyed at the end.
 #
-# Composes dry-run: starts the bearer containers (full init via the normal
-# entrypoint on `up -d`), each container runs its own self-checks at start-up
+# Composes dry-run: each container runs its own self-checks at start-up
 # (a `command:` override in the dry-run overlay; the sandbox runs its probe as
 # a prelude then stays alive, the agent runs its probe then exits), then
 # consumes the per-container diagnostics records to assert the correct
@@ -241,20 +246,13 @@ compose_args() {
 #
 # Args:
 #   $1  dry_run_script   --  absolute path to dry_run_reasoning.sh (reasoning layer script) on the host
-#   $2  dry_run_capability_script   --  path to dry_run_capability.sh (optional, skip phase 1 if empty)
+#   $2  dry_run_capability_script   --  path to dry_run_capability.sh (optional, skip the capability probe if empty)
 #   $3  sandbox_dir      --  host-side SANDBOX_DIR (locates the output-mount records)
-#   $4  remove_volumes   --  "true" to remove named volumes on teardown (default: false)
 # -------------------------
 compose_dry_run() {
   local dry_run_script="$1"
   local dry_run_capability_script="${2:-}"
   local _sandbox_dir="${3:-}"
-  local _remove_volumes="${4:-false}"
-
-  # Select the compose teardown function based on remove_volumes flag
-  local _compose_down
-  _compose_down="session_teardown"
-  [[ "$_remove_volumes" == "true" ]] && _compose_down="session_destroy"
 
   # Expected container identities (image names) for the correct-container check.
   # Baked into each bearer's environment via DRY_RUN_IDENTITY (set in the dry-run
@@ -266,88 +264,119 @@ compose_dry_run() {
   local _cap_record="$_sandbox_dir/.workspace/output/dryrun.capability.record"
   local _rea_record="$_sandbox_dir/.workspace/output/dryrun.reasoning.record"
 
-  # Start the bearer containers. Full init runs via the normal entrypoint on
+  # One dry-run pass: start the bearer containers, wait for their start-up
+  # probes to write the diagnostics records, then verify the records and the
+  # image-identity roundtrip. Full init runs via the normal entrypoint on
   # `up -d`; the dry-run overlay sets a `command:` override (the sandbox runs
   # its probe as a prelude then stays alive; the agent runs its probe and
   # exits) so each bearer's self-checks run at container start-up -- no exec.
-  rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
-  echo "Starting containers (bearer probes run at start-up)..."
-  DRY_RUN_SCRIPT="$dry_run_script" \
-    DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-    docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1 | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
+  #   $1 pass label (fresh|resume)  --  used in diagnostics output only
+  _dry_run_pass() {
+    local pass_label="$1"
+    rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
+    echo "[$pass_label] Starting containers (bearer probes run at start-up)..."
+    # up failure must fail the pass loudly, not surface later as a record
+    # timeout: capture the exit code (the pipe to grep would otherwise eat it),
+    # then filter the noise from the output.
+    local _up_rc=0 _up_out
+    _up_out=$(DRY_RUN_SCRIPT="$dry_run_script" \
+      DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
+      docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1) || _up_rc=$?
+    printf '%s\n' "$_up_out" | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
+    if (( _up_rc != 0 )); then
+      echo "RECORD-VERIFY FAIL: compose up failed (exit $_up_rc) -- cannot run the dry-run $pass_label pass" >&2
+      return 1
+    fi
 
-  # Wait for both bearer containers to finish their start-up probes and write
-  # their diagnostics records. The capability record is only expected when a
-  # capability probe was supplied; the reasoning record is always expected.
-  echo "Waiting for per-container diagnostics records..."
-  local _deadline=$(( $(date +%s) + ${DRY_RUN_RECORD_TIMEOUT:-180} ))
-  local _need_cap=1
-  [[ -z "$dry_run_capability_script" ]] && _need_cap=0
-  while (( $(date +%s) < _deadline )); do
-    local _cap_ok=1 _rea_ok=1
-    [[ -f "$_cap_record" ]] && _cap_ok=0
-    [[ "$_need_cap" -eq 0 ]] && _cap_ok=0
-    [[ -f "$_rea_record" ]] && _rea_ok=0
-    (( _cap_ok == 0 && _rea_ok == 0 )) && break
-    sleep 2
-  done
-  if (( _need_cap == 1 )) && [[ ! -f "$_cap_record" ]]; then
-    echo "RECORD-VERIFY FAIL: timed out waiting for capability record" >&2
-  fi
-  if [[ ! -f "$_rea_record" ]]; then
-    echo "RECORD-VERIFY FAIL: timed out waiting for reasoning record" >&2
-  fi
+    # Wait for both bearer containers to finish their start-up probes and
+    # write their diagnostics records. The capability record is only expected
+    # when a capability probe was supplied; the reasoning record is always
+    # expected.
+    echo "[$pass_label] Waiting for per-container diagnostics records..."
+    local _deadline=$(( $(date +%s) + ${DRY_RUN_RECORD_TIMEOUT:-180} ))
+    local _need_cap=1
+    [[ -z "$dry_run_capability_script" ]] && _need_cap=0
+    while (( $(date +%s) < _deadline )); do
+      local _cap_ok=1 _rea_ok=1
+      [[ -f "$_cap_record" ]] && _cap_ok=0
+      [[ "$_need_cap" -eq 0 ]] && _cap_ok=0
+      [[ -f "$_rea_record" ]] && _rea_ok=0
+      (( _cap_ok == 0 && _rea_ok == 0 )) && break
+      sleep 2
+    done
+    if (( _need_cap == 1 )) && [[ ! -f "$_cap_record" ]]; then
+      echo "RECORD-VERIFY FAIL: timed out waiting for capability record ($pass_label pass)" >&2
+    fi
+    if [[ ! -f "$_rea_record" ]]; then
+      echo "RECORD-VERIFY FAIL: timed out waiting for reasoning record ($pass_label pass)" >&2
+    fi
 
-  # Phase 3: orchestration correct-container verification from the records.
-  # The bearer wrote one diagnostics record per container; orchestration reads
-  # them (not stdout) and asserts the correct container was started (identity
-  # echo-back == expected) and readiness per layer.
-  echo ""
-  echo "=== Phase 3: record verification (correct container) ==="
+    # Orchestration correct-container verification from the records: the
+    # bearer wrote one diagnostics record per container; orchestration reads
+    # them (not stdout) and asserts the correct container was started
+    # (identity echo-back == expected) and readiness per layer.
+    echo ""
+    echo "=== record verification ($pass_label pass) ==="
+    local _verify_fails=0
+    if [[ -z "$_sandbox_dir" ]]; then
+      echo "RECORD-VERIFY SKIP: no sandbox dir provided" >&2
+      _verify_fails=1
+    else
+      dry_run_record_verify "sandbox(capability)" "$_identity_sandbox" "$_cap_record" || _verify_fails=$(( _verify_fails + 1 ))
+      dry_run_record_verify "agent(reasoning)"   "$_identity_agent"   "$_rea_record" || _verify_fails=$(( _verify_fails + 1 ))
 
-  local _verify_fails=0
-  if [[ -z "$_sandbox_dir" ]]; then
-    echo "RECORD-VERIFY SKIP: no sandbox dir provided" >&2
-    _verify_fails=1
-  else
-    _verify_record() {
-      dry_run_record_verify "$1" "$2" "$3" || _verify_fails=$(( _verify_fails + 1 ))
-    }
-
-    _verify_record "sandbox(capability)" "$_identity_sandbox" "$_cap_record"
-    _verify_record "agent(reasoning)"   "$_identity_agent"   "$_rea_record"
-
-    # Digest roundtrip hard gate (ADR harness_versioning.md): the image that
-    # will run must be the exact image whose digest compose_generate stamped
-    # into the generated compose file. Same label source as make start -- the
-    # probes' records stay readiness-only (identity + layer status).
-    local _compose_file
-    _compose_file="$(compose_file_from_args)"
-    dry_run_image_verify "$_identity_sandbox" "$_compose_file" "sandbox" \
-      || _verify_fails=$(( _verify_fails + 1 ))
-    dry_run_image_verify "$_identity_agent" "$_compose_file" "agent" \
-      || _verify_fails=$(( _verify_fails + 1 ))
+      # Digest roundtrip hard gate (ADR harness_versioning.md): the image that
+      # will run must be the exact image whose digest compose_generate stamped
+      # into the generated compose file. Same label source as make start -- the
+      # probes' records stay readiness-only (identity + layer status).
+      local _compose_file
+      _compose_file="$(compose_file_from_args)"
+      dry_run_image_verify "$_identity_sandbox" "$_compose_file" "sandbox" \
+        || _verify_fails=$(( _verify_fails + 1 ))
+      dry_run_image_verify "$_identity_agent" "$_compose_file" "agent" \
+        || _verify_fails=$(( _verify_fails + 1 ))
+    fi
 
     if [[ "$_verify_fails" -eq 0 ]]; then
-      echo "Phase 3 PASSED (correct container linked and ready)."
-    else
-      echo "Phase 3 FAILED  --  $_verify_fails record check(s) failed." >&2
+      echo "record verification PASSED ($pass_label pass: correct container linked and ready)."
+      return 0
     fi
-  fi
+    echo "record verification FAILED  --  $_verify_fails record check(s) failed ($pass_label pass)." >&2
+    return 1
+  }
 
-  # Cleanup containers
+  # Pass 1 (fresh): volume was just seeded by run_agent.sh; the probes assert
+  # the freshly-initialized session. A failure destroys the volume -- nothing
+  # is kept from a failed dry-run (same convention as pass 2 and the final
+  # teardown; the EXIT trap re-run is harmless: already down).
   echo ""
-  echo "Cleaning up containers..."
-  $_compose_down
+  echo "=== Pass 1: fresh start ==="
+  _dry_run_pass fresh || { session_destroy; return 1; }
 
-  if [[ "$_verify_fails" -eq 0 ]]; then
-    echo ""
-    echo "=== dry-run: ALL PHASES PASSED ==="
-    return 0
-  fi
+  # Stop without teardown -- exactly `make stop`: containers and network go,
+  # the named volume (the session's state) is kept.
   echo ""
-  echo "=== dry-run: FAILED  --  $_verify_fails check(s) failed ===" >&2
-  return 1
+  echo "=== Stopping (compose down; volume kept) -- simulating make stop ==="
+  session_teardown
+
+  # Pass 2 (resume): up again on the kept volume, no re-seed -- the same
+  # sequence as make resume. The probes re-run against the already-
+  # initialized session state, so this pass exercises the resume path.
+  # A resume-pass failure still tears the volume down (nothing is kept from
+  # a failed dry-run), then the failure propagates.
+  echo ""
+  echo "=== Pass 2: resume ==="
+  _dry_run_pass resume || { session_destroy; return 1; }
+
+  # Teardown at the end of the dry-run: remove containers, network, and the
+  # session volume (the resume exercise is complete; nothing is kept).
+  echo ""
+  echo "=== Teardown (compose down -v; volume destroyed) ==="
+  session_destroy
+
+  echo ""
+  echo "=== dry-run: ALL PHASES PASSED (fresh + resume) ==="
+  return 0
 }
 
 # -------------------------

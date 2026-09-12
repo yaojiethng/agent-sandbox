@@ -137,6 +137,92 @@ test_rendered_compose_labels_carry_concrete_session_identity() {
   fi
 }
 
+# Dry-run is the operator's e2e of current source, so with no flags it always
+# rebuilds before running (cache-preserving refresh build, no --no-cache).
+test_dry_run_default_builds_current_source() {
+  local dir="$FIXTURE_DIR/dryrun_default_builds"
+  run_start_session "$dir" dry-run \
+    --name=dtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "default dry-run failed rc=$START_RC: $START_OUT"; return
+  fi
+  if grep -q "\] build " "$START_TRACE" && ! grep -q "\] build .*--no-cache" "$START_TRACE"; then
+    pass "default dry-run rebuilds current source (cache-preserving)"
+  else
+    fail "default dry-run build trace wrong: $(cat "$START_TRACE")"
+  fi
+}
+
+# --fast is the looser invocation: skip the build, run whatever images exist.
+test_dry_run_fast_skips_build() {
+  local dir="$FIXTURE_DIR/dryrun_fast_skip"
+  run_start_session "$dir" dry-run --fast \
+    --name=dtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "--fast dry-run failed rc=$START_RC: $START_OUT"; return
+  fi
+  if grep -q "\] build " "$START_TRACE"; then
+    fail "--fast dry-run issued a build; trace: $(cat "$START_TRACE")"
+  else
+    pass "--fast dry-run skips the image build"
+  fi
+}
+
+# --refresh is redundant with dry-run's always-rebuild default and rejected;
+# --rebuild (the --no-cache stronger form) and --fast (skip build) stay valid.
+test_dry_run_rejects_refresh_flag() {
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --refresh \
+        --name=x --project="$FIXTURE_DIR" 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--refresh is not valid for dry-run"* ]]; then
+    pass "--refresh rejected for dry-run (always-rebuild is the default)"
+  else
+    fail "--refresh not rejected for dry-run: rc=$rc out=$out"
+  fi
+}
+
+# --fast is dry-run only: standard start must reject it, not silently ignore it.
+test_standard_start_rejects_fast_flag() {
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard --fast \
+        --name=x --project="$FIXTURE_DIR" 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--fast is only valid for dry-run"* ]]; then
+    pass "--fast rejected for standard start (no silent no-op flags)"
+  else
+    fail "--fast not rejected for standard start: rc=$rc out=$out"
+  fi
+}
+
+# --fast and --rebuild are opposite policies and cannot combine.
+test_dry_run_fast_rejects_rebuild_combination() {
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --fast --rebuild \
+        --name=x --project="$FIXTURE_DIR" 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--fast cannot be combined with --rebuild"* ]]; then
+    pass "--fast + --rebuild rejected as opposite policies"
+  else
+    fail "--fast + --rebuild not rejected: rc=$rc out=$out"
+  fi
+}
+
+# Dry-run labeling: the session id is prefixed with dryrun-, and the prefix
+# flows into the container names and the registry record filename.
+test_dry_run_session_identity_is_dryrun_prefixed() {
+  local dir="$FIXTURE_DIR/dryrun_prefix"
+  run_start_session "$dir" dry-run \
+    --name=dtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 || -z "$START_COMPOSE" ]]; then
+    fail "dry-run start failed rc=$START_RC: $START_OUT"; return
+  fi
+  if [[ "$(basename "$START_COMPOSE")" == dryrun-*.yml ]] \
+     && grep -q "container_name: sandbox-dtest-dryrun-" "$START_COMPOSE" \
+     && grep -q "container_name: pi-dtest-dryrun-" "$START_COMPOSE"; then
+    pass "dry-run registry record and container names carry the dryrun- prefix"
+  else
+    fail "dryrun- prefix missing: record=$(basename "$START_COMPOSE")"
+  fi
+}
+
 # Removed flags stay removed: --rebuild-base must be rejected as unknown,
 # not silently accepted or half-recognized.
 test_removed_rebuild_base_flag_is_rejected() {
@@ -312,6 +398,12 @@ EOF
 run_test test_default_policy_starts_without_building
 run_test test_rebuild_flag_builds_agent_with_no_cache
 run_test test_refresh_flag_builds_without_no_cache
+run_test test_dry_run_default_builds_current_source
+run_test test_dry_run_fast_skips_build
+run_test test_dry_run_rejects_refresh_flag
+run_test test_dry_run_fast_rejects_rebuild_combination
+run_test test_standard_start_rejects_fast_flag
+run_test test_dry_run_session_identity_is_dryrun_prefixed
 run_test test_rendered_compose_fully_substituted_and_names_both_containers
 run_test test_rendered_compose_labels_carry_concrete_session_identity
 run_test test_removed_rebuild_base_flag_is_rejected

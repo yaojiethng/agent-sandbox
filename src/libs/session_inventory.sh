@@ -7,6 +7,22 @@
 # record helpers in one place  --  the registry is the single source of truth for
 # session identity and staleness.
 #
+# Dry-run session-id labeling -- single canonical definition. A dry-run's id
+# is prefixed `dryrun-`, which flows into every derived name (compose project,
+# containers, network, volume, registry record). The prefix is diagnostic
+# labeling, not routing: unique per-run ids prevent collisions; the prefix
+# attributes residue after abnormal exits and keeps the workspace tidy.
+# Producers: start_agent.sh (_new_session_identity). Consumers: run_agent.sh
+# (activity-log guard + trap teardown) and resume_agent.sh (listing filter --
+# dry-run records are not resumable). Prune consumes them UNFILTERED: Rule 1
+# must stay able to prune stale dry-run records, and Rule 2 then sweeps their
+# resources as orphans once the record is gone.
+DRYRUN_SID_PREFIX="dryrun-"
+
+session_is_dry_run() {
+  [[ "${1#"$DRYRUN_SID_PREFIX"}" != "$1" ]]
+}
+#
 # record_image FILE SERVICE  --  print the `image:` value for a named service in
 # a `.compose/<session-id>.yml` registry record, or nothing if the service (or
 # its image) is absent. Service-scoped (awk tracks the service block), so a
@@ -58,7 +74,8 @@ project_current_sha() {
 # record (glob `.compose/*.yml`; skips unreadable / unrecoverable-provider
 # records), optionally narrowed by PROVIDER_FILTER (caller scope). The shared
 # session-inventory core: prune Rule 1 and resume --list/--interactive layer
-# their own per-record work (staleness, age, delivery, image) on top.
+# their own per-record work (staleness, age, delivery, image) on top. Shared
+# means UNFILTERED for dry-run records -- prune Rule 1 must reach them.
 enumerate_records() {
   local compose_dir="${SANDBOX_DIR:-}/.compose"
   [[ -n "$SANDBOX_DIR" && -d "$compose_dir" ]] || return 0

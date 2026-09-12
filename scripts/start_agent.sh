@@ -6,7 +6,9 @@
 # Modes:
 #   standard    --  normal execution, network access allowed (--serve toggles
 #                   provider serve mode, port exposed at SERVE_PORT)
-#   dry-run     --  liveness check only, no agent started
+#   dry-run     --  e2e check: always rebuilds current source, exercises the
+#                   container pipeline (fresh + resume passes), verifies, tears
+#                   down; --fast skips the rebuild
 #
 # Required flags:
 #   --name=<project_name>   display name; used for log output
@@ -58,7 +60,10 @@ or, from a sandbox Makefile:
 
 Mode (required):
   standard    --  normal execution, network access allowed
-  dry-run     --  liveness check only, no agent started
+  dry-run     --  e2e check: always rebuilds current source, exercises the
+                  full container pipeline (fresh pass + resume pass), verifies
+                  records + image identity, then tears down. --fast skips the
+                  rebuild.
 
 Flags (all required except --sandbox/--env):
   --name=<n>       display name; used for image names and log output (required)
@@ -68,8 +73,10 @@ Flags (all required except --sandbox/--env):
   --provider=<n>   provider name (required  --  no default; e.g. pi, hermes, opencode)
 
 Optional flags:
-  --refresh   rebuild sandbox and provider images, then start a new session
-  --rebuild   force a full rebuild including base images, then start a new session
+  --refresh   rebuild sandbox and provider images, then start a new session (standard start only)
+  --rebuild   force a full rebuild with --no-cache, then start a new session (also valid for dry-run)
+  --fast      dry-run only: skip the image build and run existing images
+              (dry-run without --fast always rebuilds current source first)
   --interactive  interactive config wizard: pick provider + build policy, confirm, then start
 
 Note: start always begins a NEW session. To resume a previous session, use
@@ -184,6 +191,15 @@ _new_session_identity() {
   export SESSION_TS; SESSION_TS=$(date -u +%Y%m%d-%H%M%S)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SESSION_ID; SESSION_ID=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "$SESSION_TS")
+  # Dry-run labeling (not routing): the DRYRUN_SID_PREFIX flows into every
+  # derived name -- compose project, containers, network, volume, registry
+  # record -- so dry-run machinery self-identifies. Aids diagnosis when a run
+  # leaves residue and keeps the workspace tidy; collision prevention comes
+  # from the unique per-run id, not the prefix. The prefix and its predicate
+  # are canonically defined in session_inventory.sh.
+  if [[ "$MODE" == "dry-run" ]]; then
+    export SESSION_ID="${DRYRUN_SID_PREFIX}${SESSION_ID}"
+  fi
 }
 
 # -------------------------
@@ -215,6 +231,7 @@ main() {
   PROVIDER_NAME=""
   REFRESH=false
   REBUILD=false
+  FAST=false
   INTERACTIVE=false
   SERVE=false
 
@@ -229,6 +246,7 @@ main() {
       --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
       --refresh)    REFRESH=true ;;
       --rebuild)    REBUILD=true ;;
+      --fast)       FAST=true ;;
       --interactive) INTERACTIVE=true ;;
       --serve)      SERVE=true ;;
       *)
@@ -245,6 +263,33 @@ main() {
       exit 1
     fi
     MODE="serve"
+  fi
+
+  # Dry-run build policy: dry-run is the operator's e2e of CURRENT source, so
+  # the default is always-rebuild (a dry-run never silently reuses stale
+  # images); the build uses cache layers where they exist. --rebuild is the
+  # stronger form: rebuild passing --no-cache. --refresh is redundant with the
+  # default and rejected; --fast is the looser invocation that skips the build
+  # and is dry-run only (mirror of the --refresh rejection: a silently
+  # no-op flag is how contracts rot).
+  if [[ "$FAST" == true && "$MODE" != "dry-run" ]]; then
+    echo "Error: --fast is only valid for dry-run." >&2
+    exit 1
+  fi
+  if [[ "$MODE" == "dry-run" ]]; then
+    if [[ "$REFRESH" == true ]]; then
+      echo "Error: --refresh is not valid for dry-run (dry-run always rebuilds; drop the flag)." >&2
+      exit 1
+    fi
+    if [[ "$FAST" == true ]]; then
+      if [[ "$REBUILD" == true ]]; then
+        echo "Error: --fast cannot be combined with --rebuild (one builds everything, the other builds nothing)." >&2
+        exit 1
+      fi
+      echo "Fast dry-run: skipping image build (running existing images)"
+    else
+      REFRESH=true
+    fi
   fi
 
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
@@ -295,6 +340,8 @@ main() {
   # Shared host-side prelude  --  phase 1 (env, git validation, derived paths, uid/gid)
   # -------------------------
   source "$REPO_ROOT/src/libs/session_env.sh"
+  # DRYRUN_SID_PREFIX + session_is_dry_run (canonical dry-run id labeling).
+  source "$REPO_ROOT/src/libs/session_inventory.sh"
   session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
   
   if [[ "${REFRESH:-false}" == "true" ]]; then
@@ -383,9 +430,15 @@ main() {
   fi
   
   # -------------------------
-  # Preflight
+  # Preflight. --fast must not silently build: with build_missing=false
+  # preflight fails with the remediation error (build first) instead of
+  # silently building behind the "skip build" flag.
   # -------------------------
-  preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+  if [[ "$FAST" == true ]]; then
+    preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" false
+  else
+    preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT"
+  fi
   
   # -------------------------
   # Dispatch to run_agent.sh

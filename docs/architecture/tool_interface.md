@@ -62,9 +62,11 @@ Resumes a previously-started session. The session inventory is the `.compose/<se
 
 ### `make dry-run PROVIDER=<provider>`
 
-Starts both bearer containers (sandbox/capability + agent/reasoning); each runs its own full readiness self-checks (docker_image .. agent_runtime), writes a per-container diagnostics record to the output mount, and orchestration validates the correct container was started from those records, then tears down. No agent is started; no user input is accepted. Produces no diff output.
+Always rebuilds both images from current source first (cache layers used where they exist), then runs TWO passes against one seeded volume: pass 1 (fresh) starts the bearers, verifies their diagnostics records and the image-identity roundtrip, then stops with the volume kept (the same sequence as `make stop`); pass 2 (resume) starts the bearers again on the kept volume without re-seeding (the same sequence as `make resume`) and verifies again. A final teardown destroys containers, network, and volume. No agent is started; no user input is accepted. Produces no diff output.
 
-`PROVIDER` is required. Use after a build or onboard to verify the harness is functional.
+`PROVIDER` is required. `FAST=1` skips the rebuild and runs existing images (looser check). The run never silently reuses stale images: without `FAST=1`, a dry-run is an e2e of current source. Because pass 2 re-runs the readiness probes against already-initialized session state, a passing dry-run also proves the resume path.
+
+Dry-run machinery self-identifies: its session id is prefixed `dryrun-`, which flows into the compose project, container, network, and volume names and the registry record filename. Use the prefix to attribute leftover resources after an abnormal exit; orphaned dry-run resources are swept by `make prune` (registry-truth Rule 2).
 
 The check set and the bearer/orchestration responsibility split are defined in [`devlog/discussions/20260828-design-settled-dry_run_phase_split.md`](../../devlog/discussions/20260828-design-settled-dry_run_phase_split.md).
 
@@ -164,7 +166,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 |---|---|---|
 | `standard` | `make start PROVIDER=<n>` | Normal execution; agent TUI attaches to terminal |
 | `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
-| `dry-run` | `make dry-run PROVIDER=<n>` | Liveness check only; no agent interaction |
+| `dry-run` | `make dry-run PROVIDER=<n>` | e2e check: rebuild current source, exercise the container pipeline, verify, tear down |
 
 **Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/providers/<n>/docker-compose.serve.yml` in the repo — never copied to `SANDBOX_DIR`.
 
@@ -280,12 +282,14 @@ See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboar
 
 A successful `make dry-run` proves:
 
-- Both container images build and start without error
+- Both container images build from current source without error (the build is part of every dry-run; `FAST=1` opts out)
 - Each bearer container (sandbox/capability + agent/reasoning) runs its own full readiness self-check across six layers (docker_image, workspace_mounts, session_state, session_data, container_network, agent_runtime) and records the result to the output mount
 - The capability layer initialises `sandbox/` (git baseline + SESSION_STATE `init_sha` is a valid commit)
 - Cross-component link-up is correct: the reasoning layer reads the capability layer's state and markers via the shared volume
 - The diff pipeline runs
-- Orchestration validates the per-container diagnostics records — correct container started (identity echo-back matches expected; every layer `PASS`)
+- Orchestration validates the per-container diagnostics records — correct container started (identity echo-back matches expected; every layer `PASS`), in both passes
+- The images that ran are the exact images just built: the digest roundtrip gate compares the build-time stamped digest against the running image (ADR `harness_versioning.md`)
+- The resume path works: pass 2 re-runs the readiness probes on the kept volume with no re-seed, mirroring `make stop` + `make resume`
 
 A dry-run does not prove agent correctness — it proves the harness containers start to a ready state with correct link-up.
 

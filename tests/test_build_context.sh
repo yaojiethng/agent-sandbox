@@ -69,41 +69,16 @@ test_all_copy_sources_exist() {
   fi
 }
 
-test_no_flat_temp_dir_paths() {
-  local failures=0
-  local dockerfile
-
-  for dockerfile in $(_dockerfiles); do
-    local rel_path="${dockerfile#$REPO_ROOT/}"
-
-    while IFS= read -r line; do
-      local source
-      source="$(echo "$line" | awk '{print $2}')"
-
-      # Flat temp-dir paths were bare filenames (e.g. COPY entrypoint.sh)
-      if [[ "$source" != *"/"* && "$source" != *":"* && "$source" != "--"* && "$source" != "agent/"* && "$source" != "docs/"* ]]; then
-        echo "  FAIL: $rel_path: possible flat temp-dir COPY path: $line"
-        failures=$((failures + 1))
-      fi
-    done < <(grep "^COPY " "$dockerfile" | grep -v "/" || true)
-  done
-
-  # The flat-path check only catches COPY lines without any slash.
-  # All our repo-relative paths start with src/ or docs/ which contain slashes,
-  # so a bare "COPY entrypoint.sh" would be caught. COPY --from=builder and
-  # agent/* paths are excluded.
-  if [[ "$failures" -eq 0 ]]; then
-    pass "No flat temp-dir COPY paths found in any Dockerfile"
-  else
-    fail "$failures flat path(s) found"
-  fi
-}
+# test_no_flat_temp_dir_paths was deleted (test-quality campaign): its filter
+# chain was dead logic -- it pre-filtered COPY lines to those without a slash
+# and then excluded agent//docs/ prefixes, which a slash-free path can never
+# match -- and it duplicated the existence guarantee of
+# test_all_copy_sources_exist above.
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 run_test test_all_copy_sources_exist
-run_test test_no_flat_temp_dir_paths
 
 test_done

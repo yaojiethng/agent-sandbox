@@ -9,7 +9,7 @@
 # Modes:
 #   standard    --  agent TUI attached to terminal
 #   serve       --  provider serve mode, companion services started
-#   dry-run     --  liveness check only, no agent interaction
+#   dry-run     --  e2e check: rebuild current source, fresh + resume passes, verify, teardown
 #   headless    --  reserved, not yet implemented
 #
 # Provider config lifecycle (all modes except dry-run):
@@ -237,21 +237,29 @@ else
 fi
 
 # Teardown runs on every exit after TEARDOWN_NEEDED is set  --  agent
-# completion, agent failure, compose up failure, sandbox-wait failure  --  so
-# containers and network never leak. The pre-run cleanup (stop-previous-
-# project), dry-run, headless, and flag-error exits all happen before
+# completion, agent failure, compose up failure, sandbox-wait failure, the
+# armed dry-run branch  --  so containers and network never leak. The pre-run
+# cleanup (stop-previous-project), headless, and flag-error exits happen before
 # TEARDOWN_NEEDED is set and are therefore not re-torn-down. The persisted
 # compose file is intentionally kept (session record), not removed here.
 # shellcheck disable=SC2317  # invoked via trap, not called directly
 _session_cleanup() {
   [[ "${TEARDOWN_NEEDED:-}" == "1" ]] || return 0
   echo "+ tearing down..."
-  session_teardown
+  # Dry-run sessions (session_is_dry_run) destroy the volume too: nothing is
+  # kept from a dry-run, on any path -- compose_dry_run's inline destroys and
+  # this trap must agree. `down -v` after an inline destroy is idempotent.
+  if [[ -n "${SESSION_ID:-}" ]] && session_is_dry_run "${SESSION_ID}"; then
+    session_destroy
+  else
+    session_teardown
+  fi
   # Record the stop in the per-session activity log (time since last stop is
   # shown by `make resume --list`). Only the post-session teardown (TEARDOWN_NEEDED)
   # writes it -- NOT the pre-run cleanup -- so a session isn't marked stopped
-  # before it has started.
-  if [[ -n "${SESSION_ID:-}" ]]; then
+  # before it has started. Dry-run ids are dry-run machinery, not sessions:
+  # they get no activity log and no resume hint.
+  if [[ -n "${SESSION_ID:-}" ]] && ! session_is_dry_run "${SESSION_ID}"; then
     session_log_set "$SESSION_ID" last_stopped "$(date -u +%Y%m%d-%H%M%S)"
     echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"
   fi
@@ -314,7 +322,15 @@ fi
 case "$MODE" in
   dry-run)
     echo "Running dry-run..."
-    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR" "$RESET_VOLUME"
+    # Arm the EXIT trap so an abnormal exit (signal, early failure) still tears
+    # the dry-run project down. compose_dry_run destroys containers, network,
+    # and volume (session_destroy) on every path through it -- failure paths
+    # included -- so when it returns normally the flag is already cleared and
+    # the trap is a no-op; on its failure return, set -e exits before the flag
+    # is cleared and the trap re-runs teardown (harmless: already down).
+    TEARDOWN_NEEDED=1
+    compose_dry_run "$DRY_RUN_SCRIPT" "$DRY_RUN_CAPABILITY_SCRIPT" "$SANDBOX_DIR"
+    TEARDOWN_NEEDED=0
     exit 0
     ;;
 

@@ -9,7 +9,7 @@
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--targets=<targets>] --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox start    [--serve] --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
+#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--fast] [flags]
 #   agent-sandbox stop     --name=<n> --sandbox=<path> [--project=<path>]
 #   agent-sandbox prune    --name=<n> --project=<path> --sandbox=<path> [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]

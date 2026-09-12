@@ -88,6 +88,17 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
       ;;
     up|down|exec|stop|run)
       log "compose $compose_sub $compose_rest"
+      # Simulate the dry-run bearer probes: in real runs each probe writes its
+      # diagnostics record at container start-up (command: override). Gated on
+      # DRY_RUN_SCRIPT (exported only by the dry-run path) so standard-mode
+      # stubs stay record-free.
+      if [[ "$compose_sub" == "up" && -n "${DRY_RUN_SCRIPT:-}" && -n "${OUTPUT_DIR:-}" ]]; then
+        mkdir -p "$OUTPUT_DIR"
+        printf 'container=%s\nstatus=PASS\n' "${SANDBOX_IMAGE_NAME:-unknown}" \
+          > "$OUTPUT_DIR/dryrun.capability.record"
+        printf 'container=%s\nstatus=PASS\n' "${AGENT_IMAGE_NAME:-unknown}" \
+          > "$OUTPUT_DIR/dryrun.reasoning.record"
+      fi
       # Failure simulation (env-gated, empty = success):
       #   DOCKER_STUB_UP_RC   — exit code for compose up to return
       #   DOCKER_STUB_RUN_RC  — exit code for compose run to return

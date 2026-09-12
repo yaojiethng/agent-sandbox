@@ -213,14 +213,22 @@ test_enumerate_records_filters_and_skips() {
   ALL=$(SANDBOX_DIR="$SBX" enumerate_records)
   PI_ONLY=$(SANDBOX_DIR="$SBX" PROVIDER_FILTER=pi enumerate_records)
 
+  # Dry-run records are part of the shared inventory core (prune Rule 1 must
+  # reach them); the resume listing is what filters them out.
+  make_record "$SBX/.compose/dryrun-abc123.yml" "pi-agent-proj" "proj-sbx" \
+    "session-ts: 20260822-110000" "host-branch: main"
+  local WITH_DRYRUN
+  WITH_DRYRUN=$(SANDBOX_DIR="$SBX" enumerate_records)
+
   if [[ "$ALL" == *"sess-a|pi|20260820-100000|main"* \
      && "$ALL" == *"sess-b|opencode|20260821-090000|dev"* \
      && "$ALL" != *sess-c* \
-     && "$PI_ONLY" == "sess-a|pi|20260820-100000|main" ]]
+     && "$PI_ONLY" == "sess-a|pi|20260820-100000|main" \
+     && "$WITH_DRYRUN" == *"dryrun-abc123|pi|20260822-110000|main"* ]]
   then
-    pass "enumerate_records: emits sid|provider|ts|branch, skips bad records, honors filter"
+    pass "enumerate_records: emits sid|provider|ts|branch (incl. dry-run records for prune), skips bad records, honors filter"
   else
-    fail "enumeration broken: ALL=[$ALL] PI=[$PI_ONLY]"
+    fail "enumeration broken: ALL=[$ALL] PI=[$PI_ONLY] DRYRUN=[$WITH_DRYRUN]"
   fi
 }
 

@@ -99,22 +99,6 @@ test_verify_passes_record_within_container() {
 # --- image-signature (option c) gate ---------------------------------------
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
-source "$REPO_ROOT/src/libs/container_sig.sh"
-
-# Minimal fake repo root containing every path the sig sources reference.
-make_sig_repo() {
-  local ROOT="$1"
-  mkdir -p "$ROOT/src/libs" \
-           "$ROOT/src/capability" \
-           "$ROOT/docs/architecture" \
-           "$ROOT/docs/concepts" \
-           "$ROOT/src/reasoning/agent/skills" \
-           "$ROOT/src/reasoning/agent/prompts"
-  touch "$ROOT/src/reasoning/entrypoint.sh"
-  echo one > "$ROOT/src/libs/a.sh"
-  echo two > "$ROOT/src/capability/entrypoint.sh"
-  echo three > "$ROOT/src/capability/snapshot.sh"
-}
 
 run_with_docker_stub() {
   (
@@ -123,12 +107,6 @@ run_with_docker_stub() {
     "$@"
   )
 }
-run_test test_record_value_key
-run_test test_verify_passes_on_healthy_record
-run_test test_verify_fails_on_identity_mismatch
-run_test test_verify_fails_on_layer_fail
-run_test test_verify_fails_on_missing_record
-run_test test_verify_passes_record_within_container
 
 # ----------------------------------------------------------------------------
 # dry_run_image_verify -- digest roundtrip gate (ADR harness_versioning.md)
@@ -182,12 +160,20 @@ test_digest_gate_fails_on_dangling_image() {
   assert_contains "$out" "rebuild the images" "remediation named"
 }
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+# ---------------------------------------------------------------------------
+# Run  --  single registration block + one test_done (the file previously
+# emitted a mid-file summary and exited before the digest tests ran).
+# ---------------------------------------------------------------------------
 
+run_test test_record_value_key
+run_test test_verify_passes_on_healthy_record
+run_test test_verify_fails_on_identity_mismatch
+run_test test_verify_fails_on_layer_fail
+run_test test_verify_fails_on_missing_record
+run_test test_verify_passes_record_within_container
 run_test test_digest_gate_passes_when_digests_match
 run_test test_digest_gate_fails_when_digest_diverges
 run_test test_digest_gate_fails_on_missing_record_label
 run_test test_digest_gate_fails_on_dangling_image
 
+test_done "test_dry_run_record"

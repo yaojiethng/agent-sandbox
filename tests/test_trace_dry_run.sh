@@ -109,33 +109,64 @@ test_dry_run_no_compose_exec() {
   fi
 }
 
-test_dry_run_no_v() {
-  local FIXTURE_DIR="$FIXTURE_DIR/dry_nov"
+# The dry-run always ends with a full teardown (down -v): the resume exercise
+# completes and nothing is kept. The pass-1 stop (down, volume kept) is what
+# makes the second pass a resume.
+test_dry_run_always_tears_down_with_volumes() {
+  local FIXTURE_DIR="$FIXTURE_DIR/dry_teardown"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
   DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
 
-  local count
-  count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 0 ]]; then
-    pass "dry-run: zero 'compose down -v' (no --reset-volume)"
+  if [[ $(trace_count "compose down -v") -eq 1 ]] \
+     && [[ $(grep -cE "compose down *$" "$DOCKER_TRACE_LOG") -eq 1 ]]; then
+    pass "dry-run: one stop (down, volume kept) + one final teardown (down -v)"
   else
-    fail "dry-run: expected 0 'compose down -v', got $count"
+    fail "dry-run teardown sequence wrong: down_count=$(trace_count 'compose down') down_v_count=$(trace_count 'compose down -v')"
   fi
 }
 
-test_dry_run_refresh_has_down_v() {
-  local FIXTURE_DIR="$FIXTURE_DIR/dry_ref"
+# The resume testbed: the dry-run runs TWO passes -- up, verify, down (volume
+# kept), up again (resume), verify, down -v. Both passes reuse one compose
+# project (same session id), so the second up targets the kept volume.
+test_dry_run_exercises_resume_pass() {
+  local FIXTURE_DIR="$FIXTURE_DIR/dry_resume_pass"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --reset-volume
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
 
-  local count
-  count=$(trace_count "compose down -v")
-  if [[ "$count" -ge 1 ]]; then
-    pass "dry-run --refresh: 'compose down -v' issued ($count time(s))"
+  local ups downs
+  ups=$(trace_count "compose up")
+  downs=$(trace_count "compose down")
+  if [[ "$ups" -eq 2 && "$downs" -eq 2 ]] \
+     && grep -q "compose down -v" "$DOCKER_TRACE_LOG"; then
+    pass "dry-run: two passes (fresh + resume) with a kept-volume stop between"
   else
-    fail "dry-run --refresh: expected 'compose down -v', got $count"
+    fail "dry-run pass sequence wrong: ups=$ups downs=$downs"
+  fi
+}
+
+# A failed `compose up` must still tear the dry-run project down (destroying
+# the seeded volume -- nothing is kept from a failed dry-run) and exit nonzero.
+# The test distinguishes down from down -v: a bare down would leave the volume.
+test_dry_run_up_failure_tears_down_and_fails() {
+  local FIXTURE_DIR="$FIXTURE_DIR/dry_upfail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_dry_run_fixture "$FIXTURE_DIR"
+  local RC=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    DRY_RUN_RECORD_TIMEOUT=2 DOCKER_STUB_UP_RC=7 \
+      bash "$REPO_ROOT/scripts/run_agent.sh" "dry-run" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME"
+  ) >/dev/null 2>&1 || RC=$?
+  if [[ "$RC" -ne 0 ]] && [[ $(trace_count "compose down -v") -ge 1 ]]; then
+    pass "dry-run up-failure: volume-destroying teardown issued and exit code nonzero"
+  else
+    fail "dry-run up-failure: rc=$RC down_v_count=$(trace_count 'compose down -v')"
   fi
 }
 
@@ -145,8 +176,9 @@ test_dry_run_refresh_has_down_v() {
 
 run_test test_dry_run_has_compose_up
 run_test test_dry_run_no_compose_exec
-run_test test_dry_run_no_v
-run_test test_dry_run_refresh_has_down_v
+run_test test_dry_run_always_tears_down_with_volumes
+run_test test_dry_run_exercises_resume_pass
+run_test test_dry_run_up_failure_tears_down_and_fails
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -105,8 +105,11 @@ source "$REPO_ROOT/src/libs/session_inventory.sh"
 # Enumerate the session inventory into RESUME_INVENTORY: one line per record of
 # the form `SESSION_ID|provider|session-ts|branch|sandbox-stale`, optionally
 # filtered by PROVIDER_FILTER. Uses the shared `enumerate_records` core from
-# session_inventory.sh. `stale` is "fresh"/"stale"/"unknown" (registry-truth,
-# D7  --  see session_stale). Zero docker calls: every field is on-disk.
+# session_inventory.sh. Dry-run records are skipped (session_is_dry_run): their
+# volume is destroyed at dry-run teardown, so they are not resumable -- but
+# they stay visible to prune, which is what reclaims stale ones. `stale` is
+# "fresh"/"stale"/"unknown" (registry-truth, D7  --  see session_stale). Zero
+# docker calls: every field is on-disk.
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
@@ -114,6 +117,7 @@ build_inventory() {
   current_sha="$(project_current_sha)"
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
+    session_is_dry_run "$sid" && continue
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     last_used="$(session_log_read "$sid" last_stopped)"
     short_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)" && short_sha="${short_sha:0:7}"
