@@ -6,6 +6,8 @@
 #   1. Verify Pi-specific AGENTS.md location ($AGENT_HOME/agent/AGENTS.md)
 #   2. Merge harness-owned settings.json keys (skills, prompts, packages) so
 #      they survive pi's runtime writes
+#   3. Reset models-store.json freshness so pi revalidates the catalog at
+#      first refresh instead of serving a build-time-frozen overlay
 #
 # This script is sourced from /opt/sandbox/bin/provider-preflight.sh by the
 # shared entrypoint. If this file is absent, the hook is a no-op.
@@ -81,9 +83,46 @@ _ensure_harness_keys() {
 }
 
 # ---------------------------------------------------------------------------
+# Models-store freshness reset
+# ---------------------------------------------------------------------------
+# models-store.json is baked into the image by the build-time
+# `RUN pi install` step (which refreshes model catalogs as agentuser).
+# Pi skips the network for a store entry while `now - checkedAt < 4h`
+# (REMOTE_CATALOG_REFRESH_INTERVAL_MS in pi's remote-catalog-provider.js),
+# so an old image serves a stale catalog even after the /model refresh.
+# Setting checkedAt to 0 on every entry forces a conditional revalidation
+# (etag) at the first refresh while keeping the baked catalog as the
+# offline fallback. etag and lastModified are kept so a 304 cannot leave
+# the overlay empty.
+
+_reset_models_store_freshness() {
+  local store="$AGENT_HOME/agent/models-store.json"
+  [[ -f "$store" ]] || return 0
+  node -e "
+    const fs = require('fs');
+    const p = process.argv[1];
+    let d;
+    try { d = JSON.parse(fs.readFileSync(p, 'utf8')); } catch(e) {
+      console.error('WARN: models-store.json is not valid JSON -- freshness not reset');
+      process.exit(0);
+    }
+    let n = 0;
+    for (const k of Object.keys(d)) {
+      if (d[k] && typeof d[k] === 'object' && d[k].checkedAt !== undefined) {
+        d[k].checkedAt = 0;
+        n++;
+      }
+    }
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + '\\n');
+    console.log('models-store.json: reset checkedAt on ' + n + ' provider entries');
+  " "$store"
+}
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 _preflight_check_bind_mounts
 _preflight_check_agents_md
 _ensure_harness_keys
+_reset_models_store_freshness
