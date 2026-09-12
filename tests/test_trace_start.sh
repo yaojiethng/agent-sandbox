@@ -110,7 +110,8 @@ test_start_standard_shutdown_resume_hint() {
       --name="$PROJECT_NAME" \
       --sandbox="$SANDBOX_DIR" \
       --env="$SANDBOX_DIR/.env" \
-      --provider="$PROVIDER_NAME"
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy
   ) 2>&1 )
 
   if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
@@ -124,7 +125,7 @@ test_start_standard_no_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_std"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   local count
   count=$(trace_count "compose down -v")
@@ -139,7 +140,7 @@ test_start_standard_has_compose_up() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_up"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   if trace_grep "compose up -d sandbox" > /dev/null; then
     pass "start (standard): 'compose up -d sandbox' issued"
@@ -152,7 +153,7 @@ test_start_standard_has_compose_run_agent() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_run"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   if trace_grep "compose run" > /dev/null; then
     pass "start (standard): 'compose run ... agent' issued"
@@ -165,7 +166,7 @@ test_start_standard_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   # Session teardown is `compose down` (not `down -v`): named volumes must
   # survive. The post-agent dispatch itself is locked by
@@ -185,7 +186,7 @@ test_start_refresh_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard" --reset-volume
+  invoke_run_agent "standard" --reset-volume --delivery=copy
 
   local count
   count=$(trace_count "compose down -v")
@@ -200,7 +201,7 @@ test_start_refresh_volume_rm() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_rm"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard" --reset-volume
+  invoke_run_agent "standard" --reset-volume --delivery=copy
 
   local count
   count=$(trace_count "volume rm")
@@ -212,7 +213,7 @@ test_start_refresh_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_post"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard" --reset-volume
+  invoke_run_agent "standard" --reset-volume --delivery=copy
 
   local down_count down_v_count
   down_count=$(trace_count "compose down")
@@ -231,7 +232,7 @@ test_start_rebuild_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_reb"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "standard" --reset-volume
+  invoke_run_agent "standard" --reset-volume --delivery=copy
 
   local count
   count=$(trace_count "compose down -v")
@@ -267,7 +268,7 @@ assert_teardown_is_last_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/${mode}_last"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "$mode"
+  invoke_run_agent "$mode" --delivery=copy
 
   # The unified teardown dispatch is the single final compose operation:
   # nothing runs after `compose down`. (Pre-run session_teardown is the
@@ -299,7 +300,7 @@ test_standard_agent_failure_still_tears_down_and_propagates_rc() {
   # (issue-1 fix: no container/network leak) and (b) exit with the agent's rc
   # (defined exit semantics for standard mode).
   local rc
-  rc=$(invoke_run_agent_rc "standard")
+  rc=$(invoke_run_agent_rc "standard" --delivery=copy)
 
   local down_count last
   down_count=$(trace_count "compose down")
@@ -322,7 +323,7 @@ test_serve_up_failure_still_tears_down() {
   # compose up fails -> set -e abort before the mode branch completes; the
   # EXIT trap must still tear down (issue-1 class: no leak on up failure).
   local rc
-  rc=$(invoke_run_agent_rc "serve")
+  rc=$(invoke_run_agent_rc "serve" --delivery=copy)
 
   local last
   last=$(trace_grep "compose " | tail -1)
@@ -342,7 +343,7 @@ test_standard_up_failure_still_tears_down() {
   # Pipefail propagates the up failure; set -e aborts; the EXIT trap must
   # still tear down.
   local rc
-  rc=$(invoke_run_agent_rc "standard")
+  rc=$(invoke_run_agent_rc "standard" --delivery=copy)
 
   local last
   last=$(trace_grep "compose " | tail -1)
@@ -363,7 +364,7 @@ test_standard_sandbox_unhealthy_still_tears_down() {
   # compose_sandbox_wait exits 1 (never healthy) before the agent runs; the
   # EXIT trap must still tear down the sandbox container + network.
   local rc
-  rc=$(invoke_run_agent_rc "standard")
+  rc=$(invoke_run_agent_rc "standard" --delivery=copy)
 
   local last
   last=$(trace_grep "compose " | tail -1)
@@ -380,7 +381,7 @@ test_compose_file_persisted() {
   setup_start_fixture "$FIXTURE_DIR"
 
   local compose_file="$SANDBOX_DIR/.compose/test01.yml"
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   # The merged compose file must survive the session (teardown already ran)
   # at a stable identity-derived path, and compose invocations during the
@@ -403,17 +404,35 @@ test_compose_file_persisted() {
 }
 
 # ---------------------------------------------------------------------------
-# Delivery overlay selection (SANDBOX_TYPE=copy|mount)
+# Delivery overlay selection (--delivery=copy|mount, passed explicitly)
 # ---------------------------------------------------------------------------
 
-# Default (SANDBOX_TYPE unset) is copy: the copy overlay is merged, the mount
-# overlay is not.
+# No --delivery: run_agent refuses -- the caller must state the delivery; the
+# copy default is computed once at ingestion (start_agent).
+test_missing_delivery_rejected() {
+  local FIXTURE_DIR="$FIXTURE_DIR/no_delivery"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  local rc
+  rc=$(invoke_run_agent_rc "standard")
+  if [[ "$rc" -ne 0 ]]; then
+    pass "missing --delivery rejected (rc=$rc)"
+  else
+    fail "missing --delivery accepted (rc=0)"
+  fi
+}
+
+# Explicit --delivery=copy: the copy overlay is merged, the mount overlay is
+# not. (run_agent itself never defaults --delivery; the copy default lives in
+# start_agent's ingestion and is exercised by every start-level test that
+# omits the flag.)
 test_copy_delivery_default_merges_copy_overlay() {
   local FIXTURE_DIR="$FIXTURE_DIR/copy_delivery"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
   unset SANDBOX_TYPE
-  invoke_run_agent "standard"
+  invoke_run_agent "standard" --delivery=copy
 
   local copy_count mount_count
   copy_count=$(trace_count "docker-compose.copy.yml")
@@ -425,13 +444,13 @@ test_copy_delivery_default_merges_copy_overlay() {
   fi
 }
 
-# SANDBOX_TYPE=mount: the mount overlay is merged, the copy overlay is not.
+# --delivery=mount: the mount overlay is merged, the copy overlay is not.
 test_mount_delivery_merges_mount_overlay() {
   local FIXTURE_DIR="$FIXTURE_DIR/mount_delivery"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  export SANDBOX_TYPE="mount"
-  invoke_run_agent "standard"
+  unset SANDBOX_TYPE
+  invoke_run_agent "standard" --delivery=mount
 
   local copy_count mount_count
   copy_count=$(trace_count "docker-compose.copy.yml")
@@ -444,19 +463,19 @@ test_mount_delivery_merges_mount_overlay() {
   unset SANDBOX_TYPE
 }
 
-# Unknown SANDBOX_TYPE values are rejected before any compose invocation.
+# Unknown --delivery values are rejected before any compose invocation.
 test_invalid_sandbox_type_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/bad_delivery"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  export SANDBOX_TYPE="bogus"
+  unset SANDBOX_TYPE
 
   local rc
-  rc=$(invoke_run_agent_rc "standard")
+  rc=$(invoke_run_agent_rc "standard" --delivery=bogus)
   if [[ "$rc" -ne 0 ]]; then
-    pass "invalid SANDBOX_TYPE=bogus rejected (rc=$rc)"
+    pass "invalid --delivery=bogus rejected (rc=$rc)"
   else
-    fail "invalid SANDBOX_TYPE=bogus accepted (rc=0)"
+    fail "invalid --delivery=bogus accepted (rc=0)"
   fi
   unset SANDBOX_TYPE
 }
@@ -482,6 +501,7 @@ run_test test_serve_up_failure_still_tears_down
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
 run_test test_compose_file_persisted
+run_test test_missing_delivery_rejected
 run_test test_copy_delivery_default_merges_copy_overlay
 run_test test_mount_delivery_merges_mount_overlay
 run_test test_invalid_sandbox_type_rejected

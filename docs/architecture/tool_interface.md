@@ -210,8 +210,9 @@ templates — never written to `SANDBOX_DIR`. The merged result of
 `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and
 persists after the session (see [`execution_model.md` — Compose
 Generation](execution_model.md#compose-generation)). The delivery overlays
-(`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by
-`SANDBOX_TYPE` at generation time — see the delivery-overlay note in
+(`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the
+caller's `--delivery` (`copy|mount`) at generation time — see the
+delivery-overlay note in
 [`execution_model.md`](execution_model.md#compose-generation).
 
 ---

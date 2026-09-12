@@ -80,7 +80,8 @@ invoke_run_agent() {
       --name="$PROJECT_NAME" \
       --sandbox="$SANDBOX_DIR" \
       --env="$SANDBOX_DIR/.env" \
-      --provider="$PROVIDER_NAME" < /dev/null
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy < /dev/null
   ) > "$out_file" 2>&1
 }
 

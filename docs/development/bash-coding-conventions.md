@@ -152,7 +152,30 @@ exec "$SCRIPT_DIR/run.sh" --name="$PROJECT" $REFRESH_FLAG
 
 Exceptions: `.env` config vars and identity values (`SESSION_TS`, `HOST_HEAD_SHA`, `SESSION_ID`) are safe to export.
 
-### 1.13 `exec` over sourcing for subcommand dispatch
+### 1.13 Mode/config selection: parse the default once at ingestion, pass it as an argument
+
+A mode or model selection (e.g. delivery type) is a command input, not environment state. The entry script parses it (or its default) exactly once and every downstream consumer receives it as an explicit argument. Downstream scripts never read it from the environment, never re-apply `${VAR:-default}`, and never export it. For resumable operations, the consumer recovers the value from the persisted record and rejects the record when the field is absent -- a silently-propagated default would let one mode impersonate another (the mount-resume-as-copy failure, handover `20260912-10`).
+
+```bash
+# Entry script (start_agent.sh): parse once, default at ingestion
+DELIVERY="copy"
+for ARG in "$@"; do
+  case "$ARG" in
+    --delivery=*) DELIVERY="${ARG#--delivery=}" ;;
+  esac
+done
+exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" --delivery="$DELIVERY"
+
+# Downstream (run_agent.sh): required argument, no default, no env read
+if [[ -z "$DELIVERY" ]]; then
+  echo "Error: --delivery is required (copy|mount); the caller must state it" >&2
+  exit 1
+fi
+```
+
+Container-boundary values (compose `environment:` literals) are persisted config, not bash state -- they are unaffected.
+
+### 1.14 `exec` over sourcing for subcommand dispatch
 
 Each subcommand gets a clean process boundary. Dispatch branches should be `exec` or short validation -> `exec`. Branches over 5 lines belong in the subcommand script.
 

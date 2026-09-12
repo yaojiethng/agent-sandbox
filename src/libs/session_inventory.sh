@@ -61,6 +61,15 @@ record_label() {
     | sed -E 's/.*'"$label"':[[:space:]]*//' || true
 }
 
+# env_field FILE VAR  --  read a `VAR=value` from any service `environment:`
+# block in a registry record (e.g. `SANDBOX_TYPE=mount`). Shared by prune
+# (plan disclosure) and resume (delivery recovery).
+env_field() {
+  local file="$1" var="$2"
+  grep -E "[[:space:]]*-[[:space:]]*${var}=[^[:space:]]+" "$file" \
+    | sed -E "s/.*[[:space:]]-*[[:space:]]*${var}=([^[:space:]]+).*/\1/" | head -1 || true
+}
+
 # project_current_sha  --  print the current HEAD SHA of the caller's project
 # (PROJECT_DIR), or empty when unset or not a git repo. The single shared
 # derivation of the current project HEAD for staleness.

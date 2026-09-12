@@ -57,7 +57,10 @@ Provider-specific `.env` stubs are appended automatically from each `providers/<
 Open `SANDBOX_DIR/.env` and set:
 
 - `SERVE_PORT` — host port for serve mode
+- `WORKTREE_DIR` — `SANDBOX_TYPE=mount` starts only: host path of the shared worktree, bind-mounted at `/home/agentuser/sandbox` in the container (default `<sandbox>/.worktree`)
 - Any provider-specific variables flagged in the file comments (e.g. `OPENCODE_SERVER_PASSWORD`)
+
+The delivery model is not an `.env` variable: pass `SANDBOX_TYPE=copy|mount` on the command (`make start SANDBOX_TYPE=mount`), which the Makefile forwards as `--delivery`. `make resume` never takes it — the delivery is recovered from the session record.
 
 Machine-specific variables are never committed. Confirm `.env` is covered by `.gitignore` in `PROJECT_DIR`.
 

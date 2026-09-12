@@ -378,6 +378,22 @@ fi
 
 # Agent image line -> provider; session labels -> SESSION_TS / HOST_HEAD_SHA.
 local_provider="$(record_provider "$RECORD_FILE")"
+
+# Delivery is recovered from the record, never inherited from the environment
+# (a silently-propagated default would let a mount session resume as copy).
+# Ambient SANDBOX_TYPE is flagged if present so stale operator habits surface.
+local_delivery="$(env_field "$RECORD_FILE" SANDBOX_TYPE)"
+case "$local_delivery" in
+  copy|mount) ;;
+  *)
+    echo "Error: session record $RECORD_FILE carries no delivery (SANDBOX_TYPE env literal)." >&2
+    echo "  Records written before the delivery contract cannot be resumed safely; re-start instead." >&2
+    exit 1
+    ;;
+esac
+if [[ -n "${SANDBOX_TYPE:-}" ]]; then
+  echo "Warning: ambient SANDBOX_TYPE=$SANDBOX_TYPE ignored  --  delivery recovered from the record: $local_delivery" >&2
+fi
 if [[ -z "$local_provider" ]]; then
   echo "Error: could not recover provider from session record $RECORD_FILE" >&2
   exit 1
@@ -399,7 +415,7 @@ export HOST_HEAD_SHA
 
 session_env_names "$PROJECT_NAME" "$local_provider" "$SANDBOX_DIR" "$SESSION_ID_ARG"
 
-echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $SANDBOX_TYPE)"
+echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $local_delivery)"
 
 # Resume never rebuilds missing images (preflight with build_missing=false) and
 # never resets the volume  --  it continues the existing session.
@@ -410,4 +426,5 @@ exec "$REPO_ROOT/scripts/run_agent.sh" standard \
   --name="$PROJECT_NAME" \
   --sandbox="$SANDBOX_DIR" \
   --env="$ENV_FILE" \
-  --provider="$PROVIDER_NAME"
+  --provider="$PROVIDER_NAME" \
+  --delivery="$local_delivery"

@@ -1,5 +1,5 @@
 # Makefile  --  <project-name>
-# agent-sandbox template version: 3
+# agent-sandbox template version: 4
 # Runs agent-sandbox against this project.
 # Requires agent-sandbox CLI installed on the host:
 #   make install  (from the agent-sandbox repo)
@@ -116,6 +116,7 @@ PRUNE_FLAG        = $(if $(PRUNE),--prune,)
 STALE_FLAG        = $(if $(STALE),--stale=$(STALE),)
 AGE_DAYS_FLAG     = $(if $(AGE_DAYS),--age-days=$(AGE_DAYS),)
 DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
+DELIVERY_FLAG     = $(if $(SANDBOX_TYPE),--delivery=$(SANDBOX_TYPE),)
 
 .PHONY: build start dry-run stop apply draft confirm reject refresh help
 
@@ -155,6 +156,8 @@ help:
 	@echo "  SESSION_ID=<id>   --  resume a specific session (make resume)"
 	@echo "  LIST=1            --  list resumable session ids (make resume)"
 	@echo "  STALE=sandbox     --  prune sessions whose host-head-sha != current HEAD (prune only)"
+	@echo "  SANDBOX_TYPE=<t>  --  delivery: copy|mount (default copy; passed as --delivery; resume reads it from the session record)"
+	@echo "  WORKTREE_DIR=<p>  --  mount only: host worktree path (default <sandbox>/.worktree)"
 	@echo "  AGE_DAYS=<n>      --  prune stale-record age cutoff, default 3 (prune only)"
 	@echo "  DRY_RUN=1         --  print the prune plan without acting (prune only)"
 	@echo "  FORCE=1           --  apply with --reject (draft/apply)"
@@ -186,6 +189,7 @@ start:
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
 	  $(INTERACTIVE_FLAG) \
+	  $(DELIVERY_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -195,6 +199,7 @@ dry-run:
 	agent-sandbox dry-run \
 	  $(PROVIDER_FLAG) \
 	  $(if $(FAST),--fast,) \
+	  $(DELIVERY_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

@@ -1,7 +1,7 @@
 # docker-compose.yml.template
 # Harness base compose template  --  shared by both deliveries. Merged by
 # src/build/compose.sh (compose_generate) on every run together with the
-# delivery overlay selected by SANDBOX_TYPE (copy|mount, default copy), the
+# delivery overlay selected by the caller's --delivery (copy|mount), the
 # provider overlay (if present), and the mode overlay (dry-run/serve); the
 # merged result is written to SANDBOX_DIR/.compose/<session-id>.yml and persists
 # after the session (see docs/architecture/execution_model.md).

@@ -1,5 +1,6 @@
 # docker-compose.copy.yml  --  COPY delivery overlay (default).
-# Merged by src/build/compose.sh (compose_generate) when SANDBOX_TYPE=copy.
+# Delivery overlay for --delivery=copy. Assembled into the compose file set by
+# run_agent.sh (compose_generate merges the assembled set).
 # Carries the copy-delivery wiring that bind-mount compose must never inherit:
 #   - the SESSION_ID-scoped named sandbox volume (per-run state persistence,
 #     volume labels for lifecycle tooling)

@@ -39,10 +39,13 @@ CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
+# Container lib dir. Overridable for tests (SANDBOX_LIB_DIR seam); the default
+# is the baked image path. Assigned once here, used everywhere below.
+: "${SANDBOX_LIB_DIR:=/opt/sandbox/lib}"
 
 if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
-  source /opt/sandbox/lib/dirs.sh
+  source "$SANDBOX_LIB_DIR/dirs.sh"
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi
 
@@ -61,27 +64,25 @@ mkdir -p "$CHANGES_DIR"
 # Files required for startup are CRITICAL  --  container aborts if absent.
 # Files needed later are WARN  --  container continues but certain operations
 # (diff pipeline, routing) will fail at runtime.
-LIB_DIR="/opt/sandbox/lib"
 for entry in "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
              "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
-  if [[ ! -f "$LIB_DIR/$lib" ]]; then
+  if [[ ! -f "$SANDBOX_LIB_DIR/$lib" ]]; then
     if [[ "$severity" == "CRITICAL" ]]; then
-      echo "FATAL: $LIB_DIR/$lib is missing  --  image is stale, rebuild with 'make build'" >&2
+      echo "FATAL: $SANDBOX_LIB_DIR/$lib is missing  --  image is stale, rebuild with 'make build'" >&2
       exit 1
     else
-      echo "WARN: $LIB_DIR/$lib is missing  --  image may be stale" >&2
+      echo "WARN: $SANDBOX_LIB_DIR/$lib is missing  --  image may be stale" >&2
     fi
   fi
 done
-unset LIB_DIR
 
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source /opt/sandbox/lib/session_state.sh
-source /opt/sandbox/lib/snapshot.sh
+source "$SANDBOX_LIB_DIR/session_state.sh"
+source "$SANDBOX_LIB_DIR/snapshot.sh"
 
 if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   # Mount delivery (bind-mount worktree): the host has already materialized the
@@ -201,8 +202,8 @@ fi
 # -------------------------
 # Diff pipeline
 # -------------------------
-source /opt/sandbox/lib/diff_export.sh
-source /opt/sandbox/lib/routing.sh
+source "$SANDBOX_LIB_DIR/diff_export.sh"
+source "$SANDBOX_LIB_DIR/routing.sh"
 
 # _session_export SANDBOX_DIR CHANGES_DIR SESSION_ID
 # Runs the final session export on container exit.

@@ -107,8 +107,9 @@ session_env_names() {
   export SANDBOX_CONTAINER_NAME="sandbox-${project_name}-${session_id}"
   export AGENT_CONTAINER_NAME="${provider_name}-${project_name}-${session_id}"
 
-  # Delivery + host identity
-  export SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
+  # Host identity. Delivery is NOT set here: it is a command input owned by
+  # the invoking script (start_agent parses it; resume recovers it from the
+  # session record) and is passed downstream as an explicit argument.
   export WORKTREE_DIR="${WORKTREE_DIR:-$sandbox_dir/.worktree}"
 }
 

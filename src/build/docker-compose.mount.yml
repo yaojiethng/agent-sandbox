@@ -1,5 +1,6 @@
 # docker-compose.mount.yml  --  MOUNT (bind-mount) delivery overlay.
-# Merged by src/build/compose.sh (compose_generate) when SANDBOX_TYPE=mount.
+# Delivery overlay for --delivery=mount. Assembled into the compose file set by
+# run_agent.sh (compose_generate merges the assembled set).
 # The agent works directly on the host worktree, bind-mounted at
 # /home/agentuser/sandbox. No snapshot, no named sandbox volume  --  the worktree
 # is the durable place (see docs/architecture/execution_model.md  --  Container

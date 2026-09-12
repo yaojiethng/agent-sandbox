@@ -4,7 +4,7 @@
 # Called by scripts/start_agent.sh after pre-flight and snapshot pipeline.
 #
 # Usage:
-#   ./run_agent.sh <mode> --name=<project_name> --sandbox=<path> --env=<path> --provider=<n>
+#   ./run_agent.sh <mode> --name=<project_name> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount
 #
 # Modes:
 #   standard    --  agent TUI attached to terminal
@@ -24,7 +24,7 @@
 # Compose file assembly follows deterministic conventions:
 #   base:             src/build/docker-compose.yml
 #   delivery overlay: src/build/docker-compose.copy.yml | src/build/docker-compose.mount.yml
-#                     (selected by SANDBOX_TYPE, default copy)
+#                     (passed explicitly as --delivery by every caller)
 #   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
 #     dry-run:        src/build/docker-compose.dry-run.yml
@@ -59,7 +59,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --env=<path> --provider=<n>"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount"
   exit 1
 fi
 
@@ -72,6 +72,7 @@ ENV_FILE=""
 PROVIDER_NAME=""
 RESET_VOLUME=false
 export RESET_VOLUME
+DELIVERY=""
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -80,6 +81,16 @@ for ARG in "$@"; do
     --env=*)      ENV_FILE="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     --reset-volume) RESET_VOLUME=true ;;
+    --delivery=*)
+      DELIVERY="${ARG#--delivery=}"
+      case "$DELIVERY" in
+        copy|mount) ;;
+        *)
+          echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
+          exit 1
+          ;;
+      esac
+      ;;
     *)
       echo "Unknown flag: $ARG"
       exit 1
@@ -89,6 +100,17 @@ done
 
 if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" || -z "$ENV_FILE" || -z "$PROVIDER_NAME" ]]; then
   echo "Error: --name, --sandbox, --env, and --provider are required"
+  exit 1
+fi
+
+# Delivery type  --  passed explicitly as --delivery by the caller (start_agent
+# computes the default at ingestion; resume_agent recovers it from the session
+# record). run_agent never reads it from the environment and never defaults it:
+# a silently-propagated default would let a mount session resume as copy.
+# Checked with the other required flags so a forgotten --delivery fails before
+# any side effect (provider setup hook, directories).
+if [[ -z "$DELIVERY" ]]; then
+  echo "Error: --delivery is required (copy|mount); the caller must state it, not inherit it" >&2
   exit 1
 fi
 
@@ -139,7 +161,7 @@ HOST_GID="$(id -g)"
 # Compose file assembly
 # -------------------------
 # The compose file set is selected at generation time per delivery type
-# (SANDBOX_TYPE=copy|mount, default copy): base template + delivery overlay +
+# (passed explicitly as --delivery by every caller): base template + delivery overlay +
 # provider overlay (if present) + mode overlay (dry-run/serve). The delivery
 # overlay carries the per-delivery wiring: copy -> named volume (content is
 # host-side seeded, no snapshot mount); mount -> worktree bind mount
@@ -157,18 +179,6 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   exit 1
 fi
 
-# Delivery type  --  SANDBOX_TYPE=copy|mount, default copy. Copy is the only
-# implemented delivery today; mount is wired for the compose file set and
-# gains full behavior in M2.6.6 delivery enablement.
-DELIVERY_TYPE="${SANDBOX_TYPE:-copy}"
-case "$DELIVERY_TYPE" in
-  copy|mount) ;;
-  *)
-    echo "Error: invalid SANDBOX_TYPE: $DELIVERY_TYPE (expected 'copy' or 'mount')" >&2
-    exit 1
-    ;;
-esac
-
 # Mount delivery worktree  --  single shared host worktree per sandbox. Default
 # ${SANDBOX_DIR}/.worktree; overridable via WORKTREE_DIR (custom mount point,
 # injected into compose at generation). Only the mount overlay reads it.
@@ -176,8 +186,8 @@ export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
 
 COMPOSE_FILES=("$COMPOSE_TEMPLATE")
 
-# Delivery overlay  --  selected by DELIVERY_TYPE.
-if [[ "$DELIVERY_TYPE" == "copy" ]]; then
+# Delivery overlay  --  selected by DELIVERY.
+if [[ "$DELIVERY" == "copy" ]]; then
   if [[ ! -f "$COPY_OVERLAY" ]]; then
     echo "Error: copy delivery overlay not found: $COPY_OVERLAY" >&2
     exit 1
@@ -311,7 +321,7 @@ seed_sandbox_volume() {
   echo "Sandbox volume seeded and verified (git status parity)."
 }
 
-if [[ "$RESET_VOLUME" == "true" && "$DELIVERY_TYPE" == "copy" ]]; then
+if [[ "$RESET_VOLUME" == "true" && "$DELIVERY" == "copy" ]]; then
   echo "+ seeding sandbox volume..."
   seed_sandbox_volume || exit 1
 fi

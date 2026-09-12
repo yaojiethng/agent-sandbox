@@ -394,6 +394,69 @@ EOF
   fi
 }
 
+# Mount delivery (--delivery=mount): start materializes the host worktree
+# at WORKTREE_DIR (default $SANDBOX_DIR/.worktree) -- git repo + baseline
+# commit + copied tracked content; a second start attaches without
+# re-materializing.
+test_mount_start_materializes_worktree() {
+  local dir="$FIXTURE_DIR/mount_first_start"
+  run_start_session "$dir" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "mount start: rc=$START_RC: $START_OUT"; return
+  fi
+  pass "mount start: start completes under docker stub"
+
+  local wt="$dir/sandbox/.worktree"
+  if [[ -d "$wt/.git" ]]; then
+    pass "mount start: worktree materialized at default WORKTREE_DIR"
+  else
+    fail "mount start: no worktree at $wt"; return
+  fi
+
+  if git -C "$wt" rev-list --max-parents=0 HEAD >/dev/null 2>&1; then
+    pass "mount start: baseline commit present in worktree"
+  else
+    fail "mount start: no baseline commit in worktree"
+  fi
+
+  if [[ "$(cat "$wt/file.txt")" == "baseline" ]]; then
+    pass "mount start: tracked project content copied into worktree"
+  else
+    fail "mount start: project content missing from worktree"
+  fi
+
+  if grep -q "Mount delivery: materializing worktree" <<<"$START_OUT"; then
+    pass "mount start: materialization message printed"
+  else
+    fail "mount start: materialization message missing"
+  fi
+}
+
+test_mount_second_start_attaches() {
+  local dir="$FIXTURE_DIR/mount_attach_start"
+  run_start_session "$dir" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  [[ "$START_RC" -eq 0 ]] || { fail "mount attach (first): rc=$START_RC"; return; }
+
+  # Second start: worktree exists -- attach path must not re-materialize.
+  run_start_session "$dir" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "mount attach: rc=$START_RC: $START_OUT"; return
+  fi
+  if grep -q "worktree already materialized" <<<"$START_OUT"; then
+    pass "mount attach: second start reuses the worktree"
+  else
+    fail "mount attach: re-materialization message absent (got: $START_OUT)"
+  fi
+  if grep -q "materializing worktree" <<<"$START_OUT"; then
+    fail "mount attach: second start re-materialized"
+  else
+    pass "mount attach: no re-materialization on second start"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -419,5 +482,7 @@ run_test test_wizard_help_describes_interactive
 run_test test_wizard_picker_abort
 run_test test_wizard_provider_supplied_no_reprompt
 run_test test_wizard_accept_runs_to_completion
+run_test test_mount_start_materializes_worktree
+run_test test_mount_second_start_attaches
 
 test_done

@@ -15,8 +15,8 @@
 #
 #                         The input file set is assembled by the caller
 #                         (run_agent.sh): base template + delivery overlay
-#                         (docker-compose.copy.yml / .mount.yml, selected by
-#                         SANDBOX_TYPE) + provider overlay (if present) + mode
+#                         (docker-compose.copy.yml / .mount.yml, per the
+#                         caller's --delivery) + provider overlay (if present) + mode
 #                         overlay (dry-run/serve).
 #
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a

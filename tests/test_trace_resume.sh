@@ -45,7 +45,9 @@ build_resume_fixture() {
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
-  export SANDBOX_TYPE="$sandbox_type"
+  # Ambient delivery is deliberately NOT exported: resume must recover it from
+  # the record (the mount fixture record carries SANDBOX_TYPE=mount).
+  unset SANDBOX_TYPE
   export HOST_UID="1000" HOST_GID="1000"
 
   export SESSION_TS="20260821-120000"
@@ -71,7 +73,7 @@ SANDBOX_DIR=$SANDBOX_DIR
 PROJECT_DIR=$project_dir
 EOF
 
-  cat > "$SANDBOX_DIR/.compose/abc123.yml" <<'EOF'
+  cat > "$SANDBOX_DIR/.compose/abc123.yml" <<EOF
 x-session-labels:
   agent-sandbox.host-head-sha: deadbeef
   agent-sandbox.host-branch: main
@@ -80,6 +82,8 @@ x-session-labels:
 services:
   sandbox:
     image: agent-sandbox-abc123
+    environment:
+      - SANDBOX_TYPE=$sandbox_type
   agent:
     image: pi-agent-test-project
 EOF
@@ -127,6 +131,76 @@ test_resume_copy_keeps_named_volume() {
   if [[ "$(trace_count "compose up -d sandbox")" -gt 0 ]]; then pass "resume (copy): sandbox re-attached (compose up -d sandbox)"; else fail "resume (copy): sandbox not re-attached"; fi
 }
 run_test test_resume_copy_keeps_named_volume
+
+# Resume of a mount-delivery session (R3, mount variant): no volume-destroying
+# teardown, no volume removal (a mount session has no named volume), and the
+# mount overlay is merged at compose time (trace-observed; the stub's
+# `compose config` returns the first input unchanged, so composed-file content
+# cannot distinguish delivery).
+test_resume_mount_keeps_worktree_no_volume_ops() {
+  local FIX="$FIXTURE_DIR/resume-mount"
+  build_resume_fixture "$FIX" mount
+
+  # Worktree must exist before resume: the mount compose binds it.
+  mkdir -p "$FIX/sandbox/.worktree/.git"
+  git -C "$FIX/sandbox/.worktree" init -q 2>/dev/null || true
+
+  invoke_resume
+  assert_rc 0 "$?" "resume (mount) exit code"
+
+  local down_v volume_rm
+  down_v=$(trace_count "compose down -v")
+  volume_rm=$(trace_count "volume rm")
+  if [[ "$down_v" -eq 0 ]]; then pass "resume (mount): zero 'compose down -v'"; else fail "resume (mount): 'compose down -v' issued"; fi
+  if [[ "$volume_rm" -eq 0 ]]; then pass "resume (mount): zero 'docker volume rm'"; else fail "resume (mount): 'docker volume rm' issued"; fi
+
+  if [[ "$(trace_count "compose up -d sandbox")" -gt 0 ]]; then pass "resume (mount): sandbox re-attached"; else fail "resume (mount): no 'compose up -d sandbox' in trace"; fi
+
+  if grep -q "docker-compose.mount.yml" "$DOCKER_TRACE_LOG"; then
+    pass "resume (mount): mount overlay merged at compose time"
+  else
+    fail "resume (mount): mount overlay not in compose invocation"
+  fi
+}
+run_test test_resume_mount_keeps_worktree_no_volume_ops
+
+# Delivery is recovered from the record with NO ambient SANDBOX_TYPE (the
+# regression for the live-run failure: resume defaulted to copy and the mount
+# session died against an unseeded volume).
+test_resume_recovers_delivery_from_record_no_ambient() {
+  local FIX="$FIXTURE_DIR/resume-mount-record"
+  build_resume_fixture "$FIX" mount
+
+  invoke_resume
+  assert_rc 0 "$?" "resume (mount record, no ambient) exit code"
+
+  if grep -q "docker-compose.mount.yml" "$DOCKER_TRACE_LOG"; then
+    pass "resume (mount record, no ambient): mount overlay merged"
+  else
+    fail "resume (mount record, no ambient): mount overlay not merged"
+  fi
+}
+run_test test_resume_recovers_delivery_from_record_no_ambient
+
+# A record without the delivery literal is rejected (no silent default).
+test_resume_rejects_record_without_delivery() {
+  local FIX="$FIXTURE_DIR/resume-no-delivery"
+  build_resume_fixture "$FIX" copy
+  # Strip the environment block from the record.
+  sed -i '/environment:/,+1d' "$SANDBOX_DIR/.compose/abc123.yml"
+
+  local out rc=0
+  out=$( PATH="$STUB_DIR:$PATH" bash "$REPO_ROOT/scripts/resume_agent.sh" \
+    --session-id=abc123 --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" --env=.env </dev/null 2>&1 ) || rc=$?
+
+  if [[ "$rc" -ne 0 ]] && [[ "$out" == *"carries no delivery"* ]]; then
+    pass "resume (record without delivery): rejected rc=$rc"
+  else
+    fail "resume (record without delivery): rc=$rc out=$out"
+  fi
+}
+run_test test_resume_rejects_record_without_delivery
 
 # Resume reuses the RECORD's SESSION_ID (asserted via the regenerated compose
 # session-id label), which pins the compose namespace + volume name (R4).

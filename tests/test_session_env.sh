@@ -200,25 +200,30 @@ test_names_deterministic_container_and_image_names() {
   fi
 }
 
-test_names_delivery_var_defaults_and_overrides() {
+test_names_worktree_var_defaults_and_overrides() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
   unset SANDBOX_TYPE WORKTREE_DIR
 
   session_env_names myproj pi "$FIXTURE_DIR/sbx_def" s1 >/dev/null 2>&1
-  local DEF_TYPE="${SANDBOX_TYPE:-}" DEF_WT="${WORKTREE_DIR:-}"
+  local DEF_WT="${WORKTREE_DIR:-}"
 
   unset SANDBOX_TYPE WORKTREE_DIR
-  SANDBOX_TYPE=hardlink WORKTREE_DIR=/custom/wt \
+  WORKTREE_DIR=/custom/wt \
     session_env_names myproj pi "$FIXTURE_DIR/sbx_def" s2 >/dev/null 2>&1
 
-  if [[ "$DEF_TYPE" == "copy" && "$DEF_WT" == "$FIXTURE_DIR/sbx_def/.worktree" \
-     && "${SANDBOX_TYPE:-}" == "hardlink" && "${WORKTREE_DIR:-}" == "/custom/wt" ]]
+  # Delivery (SANDBOX_TYPE) is NOT session_env_names' business: it is a
+  # command input owned by start_agent (parsed) / resume_agent (record).
+  # The lib must leave it untouched.
+  if [[ "$DEF_WT" == "$FIXTURE_DIR/sbx_def/.worktree" \
+     && "${WORKTREE_DIR:-}" == "/custom/wt" \
+     && -z "${SANDBOX_TYPE:-}" ]]
   then
-    pass "delivery vars default (copy, <sandbox>/.worktree) but respect preset overrides"
+    pass "worktree var defaults (<sandbox>/.worktree), respects overrides, delivery untouched"
   else
-    fail "delivery defaults/overrides broken: DEF=$DEF_TYPE/$DEF_WT OVR=${SANDBOX_TYPE:-}/${WORKTREE_DIR:-}"
+    fail "worktree defaults/overrides broken: DEF=$DEF_WT OVR=${WORKTREE_DIR:-} TYPE=${SANDBOX_TYPE:-}"
   fi
+  unset SANDBOX_TYPE WORKTREE_DIR
 }
 
 # =============================================================================
@@ -235,6 +240,6 @@ run_test test_common_init_exports_identity_and_paths
 run_test test_names_sanitises_host_branch
 run_test test_names_detached_head_falls_back_to_short_sha
 run_test test_names_deterministic_container_and_image_names
-run_test test_names_delivery_var_defaults_and_overrides
+run_test test_names_worktree_var_defaults_and_overrides
 
 test_done test_session_env.sh

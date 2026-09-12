@@ -91,7 +91,7 @@ Resume reuses the same SESSION_ID and overwrites its own file; each unique sessi
 | `serve` | Base template + delivery overlay + provider overlay (if present) + `providers/<n>/docker-compose.serve.yml` |
 | `dry-run` | Base template + delivery overlay + provider overlay (if present) + `src/build/docker-compose.dry-run.yml` |
 
-**Delivery overlays:** the delivery type is selected by `SANDBOX_TYPE` (`copy|mount`, default `copy`) at generation time in `run_agent.sh`. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared:
+**Delivery overlays:** the delivery type is passed to `run_agent.sh` as `--delivery` (`copy|mount`); `start_agent.sh` parses it at ingestion (default `copy`), `resume_agent.sh` recovers it from the session record, and `run_agent.sh` itself never defaults it. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared. Delivery is a command input, not environment state -- never an ambient variable. Dry-run on `--delivery=mount` stacks the mount overlay too: the probes run against the real worktree read-only, writing only to the workspace channels and the entrypoint-owned `.git/SESSION_STATE` marker -- tracked repo content is never modified.
 
 - `src/build/docker-compose.copy.yml` — the per-run named sandbox volume.
 Content is seeded by the one-shot seeder service (helper-container

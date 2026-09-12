@@ -87,7 +87,7 @@ test_dry_run_has_compose_up() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_up"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
 
   if trace_has "compose up"; then
     pass "dry-run: 'compose up -d' issued"
@@ -100,7 +100,7 @@ test_dry_run_no_compose_exec() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_noexec"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
 
   if trace_has "compose exec"; then
     fail "dry-run: 'compose exec' should NOT be issued (probes run at start-up)"
@@ -116,7 +116,7 @@ test_dry_run_always_tears_down_with_volumes() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_teardown"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
 
   if [[ $(trace_count "compose down -v") -eq 1 ]] \
      && [[ $(grep -cE "compose down *$" "$DOCKER_TRACE_LOG") -eq 1 ]]; then
@@ -133,7 +133,7 @@ test_dry_run_exercises_resume_pass() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_resume_pass"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
 
   local ups downs
   ups=$(trace_count "compose up")
@@ -161,12 +161,48 @@ test_dry_run_up_failure_tears_down_and_fails() {
       --name="$PROJECT_NAME" \
       --sandbox="$SANDBOX_DIR" \
       --env="$SANDBOX_DIR/.env" \
-      --provider="$PROVIDER_NAME"
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy
   ) >/dev/null 2>&1 || RC=$?
   if [[ "$RC" -ne 0 ]] && [[ $(trace_count "compose down -v") -ge 1 ]]; then
     pass "dry-run up-failure: volume-destroying teardown issued and exit code nonzero"
   else
     fail "dry-run up-failure: rc=$RC down_v_count=$(trace_count 'compose down -v')"
+  fi
+}
+
+# Mount delivery dry-run: the mount overlay is stacked in dry-run mode too
+# (delivery-agnostic readiness), binding the worktree. The probe write surface
+# stays confined to workspace channels (CHANGES_DIR/OUTPUT_DIR) and .git
+# metadata -- never tracked repo content (hygiene gate, handover 20260912-10).
+test_dry_run_mount_overlay_stacked_and_probe_hygiene() {
+  local FIXTURE_DIR="$FIXTURE_DIR/dry_mount"
+  mkdir -p "$FIXTURE_DIR"
+  setup_dry_run_fixture "$FIXTURE_DIR"
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=mount
+
+  if trace_has "docker-compose.mount.yml"; then
+    pass "dry-run (mount): mount overlay stacked into compose invocation"
+  else
+    fail "dry-run (mount): mount overlay not in compose invocation"
+  fi
+
+  # Probe hygiene: no probe writes into the delivery target (SANDBOX_DIR).
+  # Allowed write roots are CHANGES_DIR, OUTPUT_DIR, INPUT_DIR (channel
+  # contract) and mktemp dirs. The one in-mount write, .git/SESSION_STATE,
+  # belongs to the entrypoint, not the probes. Match write-shaped constructs
+  # (redirection, touch/mkdir/tee/cp/mv/rm) referencing $SANDBOX_DIR; reads
+  # (find/du/test/cat/session_state_read) are fine.
+  local offenders
+  offenders=$(grep -nE 'SANDBOX_DIR' \
+    "$REPO_ROOT/scripts/dry_run_capability.sh" "$REPO_ROOT/scripts/dry_run_reasoning.sh" \
+    | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' \
+    | grep -E '(>>?[^|]*\$SANDBOX_DIR|\b(touch|mkdir|tee|cp|mv|rm)\b.*\$SANDBOX_DIR)' \
+    | grep -vE 'SESSION_STATE' || true)
+  if [[ -z "$offenders" ]]; then
+    pass "dry-run probes: no writes into the delivery target"
+  else
+    fail "dry-run (mount): probe writes targeting SANDBOX_DIR: $offenders"
   fi
 }
 
@@ -179,6 +215,7 @@ run_test test_dry_run_no_compose_exec
 run_test test_dry_run_always_tears_down_with_volumes
 run_test test_dry_run_exercises_resume_pass
 run_test test_dry_run_up_failure_tears_down_and_fails
+run_test test_dry_run_mount_overlay_stacked_and_probe_hygiene
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

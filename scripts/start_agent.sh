@@ -75,6 +75,7 @@ Flags (all required except --sandbox/--env):
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session (standard start only)
   --rebuild   force a full rebuild with --no-cache, then start a new session (also valid for dry-run)
+  --delivery=<d>  delivery model: copy|mount (default copy; mount binds the host worktree)
   --fast      dry-run only: skip the image build and run existing images
               (dry-run without --fast always rebuilds current source first)
   --interactive  interactive config wizard: pick provider + build policy, confirm, then start
@@ -234,6 +235,12 @@ main() {
   FAST=false
   INTERACTIVE=false
   SERVE=false
+  # Delivery is a command input, not environment state: the default is parsed
+  # once here, at ingestion. It is never exported and never read from the
+  # environment; downstream consumers receive it as an explicit --delivery
+  # argument. Resume never uses this default -- it recovers delivery from the
+  # persisted record.
+  DELIVERY="copy"
 
   local ARG
   for ARG in "$@"; do
@@ -249,6 +256,16 @@ main() {
       --fast)       FAST=true ;;
       --interactive) INTERACTIVE=true ;;
       --serve)      SERVE=true ;;
+      --delivery=*)
+        DELIVERY="${ARG#--delivery=}"
+        case "$DELIVERY" in
+          copy|mount) ;;
+          *)
+            echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
+            exit 1
+            ;;
+        esac
+        ;;
       *)
         echo "Unknown flag: $ARG"
         exit 1
@@ -370,7 +387,7 @@ main() {
   # -------------------------
   # Workspace directory setup and delivery preparation
   # -------------------------
-  if [[ "$SANDBOX_TYPE" == "mount" ]]; then
+  if [[ "$DELIVERY" == "mount" ]]; then
     # Mount delivery: materialize the host worktree (bind-mounted into the
     # container). Use the shared snapshot primitive minus baseline.tar  --  rsync
     # the working tree, then git-init + baseline commit so .git exists. The
@@ -454,6 +471,7 @@ main() {
     --sandbox="$SANDBOX_DIR" \
     --env="$ENV_FILE" \
     --provider="$PROVIDER_NAME" \
+    --delivery="$DELIVERY" \
     $RESET_VOLUME_FLAG
 
 }

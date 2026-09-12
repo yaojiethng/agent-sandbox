@@ -347,10 +347,11 @@ run_test test_missing_project_rejected
 # ---------------------------------------------------------------------------
 # env_field unit tests
 #
-# env_field  --  refresh-record parser in prune.sh. The script is now dual-use
-# (rule 1.11 guard), so it sources cleanly and the function is callable directly.
+# env_field  --  shared record-env parser in src/libs/session_inventory.sh
+# (used by prune.sh for plan disclosure and resume_agent.sh for delivery
+# recovery). Sourced from the lib directly.
 # ---------------------------------------------------------------------------
-source "$REPO_ROOT/scripts/prune.sh"
+source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 test_env_field_reads_value_from_environment_block() {
   local f="$FIXTURE_DIR/envfield_record"

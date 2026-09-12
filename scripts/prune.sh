@@ -121,13 +121,8 @@ rule1_selected_records() {
   done < <(enumerate_records)
 }
 
-# env_field FILE VAR  --  read a `VAR=value` from any service `environment:`
-# block in a registry record (e.g. `SANDBOX_TYPE=mount`).
-env_field() {
-  local file="$1" var="$2"
-  grep -E "[[:space:]]*-[[:space:]]*${var}=[^[:space:]]+" "$file" \
-    | sed -E "s/.*[[:space:]]-*[[:space:]]*${var}=([^[:space:]]+).*/\1/" | head -1 || true
-}
+# env_field FILE VAR is provided by src/libs/session_inventory.sh (shared
+# record parsing); prune.sh sources that lib below.
 
 # -------------------------
 # Rule 2: orphaned resources
