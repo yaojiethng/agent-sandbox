@@ -178,7 +178,7 @@ Findings is the shared agent-managed recording surface for the agent-feedback an
 Step 7 is a mandatory gate before iteration end. Present a pre-close summary and wait for an explicit operator release before advancing to Steps 8–9. The summary has these sections:
 
 1. **Acceptance criteria** — table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the Gate 2 format — this table answers "did it pass?", not "who can verify?".
-2. **Roadmap write-back** — per task touched this iteration, the exact row change. Follow the procedure and requirements in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched). When no task was touched, state `none worked this iteration` — never leave the row implicit.
+2. **Roadmap write-back** — per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Follow the procedure and requirements in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched). When no task was touched, state `none worked this iteration` — never leave the row implicit.
 3. **Propagation replay** — for any iteration that touched multiple files under a shared rule or naming convention, a row-by-row comparison of every file that was planned to receive the change against the Completed table:
 
 | File | Change planned | Status |

@@ -337,10 +337,15 @@ overwrite-instead-of-append, this catches assert-without-write.
 
 ### [A] 2026-08-18  --  Repo-presence assertions are trivial restatements; guard the injection point in production instead
 
-state: open
-scoped: none
-legacy: none
-mitigation: the agent added bare file-existence assertions to
+state: closed
+closed: 2026-09-12 -- the test-quality campaign (handover 20260912-05,
+folded in commit 561dba7) found one surviving instance of this pattern
+(the file-existence loop over provider files in test_run_agent.sh) and
+rewrote the suite behaviourally; the entry's own mitigation (production
+injection-point guards + trace tests over the file set) is the standing
+rule
+
+What happened: the agent added bare file-existence assertions to
 `test_run_agent.sh` (compose template + overlay existence at hardcoded repo
 paths). Operator corrected: presence of a committed repo file is trivially
 true  --  the meaningful guard is each injection point checking the file it
