@@ -142,6 +142,7 @@ Open:
 
 - [x] **Mount model design settled** - two-axis model; design questions Q2/Q4/Q7 and N1-N5 resolved (walk `20260818-02`; record `devlog/discussions/20260730-design-settled-mount_model.md`); `security.md` rewritten for the two-path model.
 - [x] **Mount delivery enablement (wiring)** - capability entrypoint is delivery-aware (mount validates `.git` + init marker, skips snapshot gate/init, writes `SESSION_STATE` into the worktree `.git`); `start_agent.sh` materializes the worktree via the shared snapshot primitive minus `baseline.tar`; `SANDBOX_TYPE` per-overlay literals.
+- [x] **Seed object-store prune (study `20260911-study-seed_object_store_cleanliness.md`)** - **done `20260911-11`.** The seeder probes the volume object store with `git fsck --unreachable`; when dirty it expires reflogs and runs `gc --prune=now`, then asserts fsck-empty (fail closed). Removes host archaeology (stash objects, reflog-anchored session junk) from the sandbox baseline; parity unaffected; ~0.6 s on this repo, conditional on dirt. Clone/bundle transports remain rejected (index references staged blobs absent from any HEAD-bounded transport). History truncation deferred as a separate decision. ADR 2026-09-11 entry updated; handover `20260911-11`.
 - [ ] **Mount delivery runnability** - close the no-mount/`baseline.tar`-transfer gap so the wired mount path runs end-to-end (runnability verification outstanding, handover `20260828-01`).
 
 ###### Not in scope - Worktree backing (Rejected)

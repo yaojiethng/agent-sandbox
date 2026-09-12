@@ -1,6 +1,6 @@
 # Study -- Seed Cleanliness: Pruning the Copied Object Store
 
-**Status:** active
+**Status:** settled -- recommendation adopted and implemented (handover `20260911-11`; ADR sandbox_delivery_model.md, 2026-09-11 unreachable-object prune entry)
 **Type:** study
 **Parent:** `20260911-study-stash_copy_prevention.md` (settled); operator question: does leaving stash objects (and other unreachable data) in the volume violate the cleanliness goal, and do clone/bundle offer a better transport?
 
@@ -49,4 +49,4 @@ A shallow boundary at the seed HEAD (`echo $INIT_SHA > .git/shallow` before the 
 
 ## Resolution
 
-Open -- recommendation stated; awaiting the operator's adopt decision.
+Adopted (implemented): Option B -- the seeder probes with `fsck --unreachable` and, when the store is dirty, expires reflogs and runs `gc --prune=now`, then asserts fsck-empty. Implementation: handover `20260911-11`; ADR 2026-09-11 entry updated (residual paragraph superseded). History truncation deferred as its own decision.

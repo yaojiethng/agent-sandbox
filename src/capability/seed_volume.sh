@@ -116,6 +116,26 @@ main() {
   # the volume copy only -- the host stack is untouched.
   git -C "$DEST" stash clear || die "clearing the host stash stack in the volume failed"
 
+  # Object-store prune (study 20260911-study-seed_object_store_cleanliness.md,
+  # ADR 2026-09-11 entry): the native .git copy carries unreachable host data
+  # (stash objects, reflog-anchored history). The sandbox baseline is the
+  # seeded HEAD -- no archaeology crosses. The prune runs only when the probe
+  # finds something, so a clean host repo pays only the fsck probe.
+  local unreachable
+  unreachable="$(git -C "$DEST" fsck --unreachable 2>/dev/null)" \
+    || die "probing the volume object store failed"
+  if [[ -n "$unreachable" ]]; then
+    git -C "$DEST" reflog expire --expire=now --all \
+      || die "expiring the volume reflogs failed"
+    git -C "$DEST" gc --prune=now --quiet \
+      || die "pruning the volume object store failed"
+  fi
+  unreachable="$(git -C "$DEST" fsck --unreachable 2>/dev/null)" \
+    || die "verifying the volume object store failed"
+  if [[ -n "$unreachable" ]]; then
+    die "the volume still carries unreachable objects after the prune"
+  fi
+
   # Layer 2: worktree content. Empty enumeration -> skip tar (tar refuses an
   # empty archive; the volume needs nothing beyond .git in that case).
   local list count

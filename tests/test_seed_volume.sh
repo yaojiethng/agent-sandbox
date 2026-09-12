@@ -287,6 +287,44 @@ test_seeder_clears_host_stash() {
   fi
 }
 
+# Object-store prune: stash objects, a dangling blob, and reflog-anchored
+# history must not survive into the volume (study
+# 20260911-study-seed_object_store_cleanliness.md); the host repo is untouched.
+test_seeder_prunes_unreachable_objects() {
+  local proj="$FIXTURE_DIR/dirty_objects_project"
+  local dest="$FIXTURE_DIR/dirty_objects_dest"
+  make_committed_repo "$proj"
+  echo "wip" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip"
+  local dangling_sha
+  dangling_sha=$(printf 'secret dangling content' | git -C "$proj" hash-object -w --stdin)
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest"; then
+    fail "seeder: dirty-objects project seeds successfully"
+    return 0
+  fi
+  pass "seeder: dirty-objects project seeds successfully"
+
+  if [[ -z "$(git -C "$dest" fsck --unreachable 2>/dev/null)" ]]; then
+    pass "prune: seeded volume carries no unreachable objects"
+  else
+    fail "prune: volume should have no unreachable objects, got: $(git -C "$dest" fsck --unreachable 2>/dev/null | tr '\n' '; ')"
+  fi
+
+  if git -C "$dest" cat-file -e "$dangling_sha" 2>/dev/null; then
+    fail "prune: dangling host blob should be absent from the volume"
+  else
+    pass "prune: dangling host blob absent from the volume"
+  fi
+
+  if git -C "$proj" cat-file -e "$dangling_sha" 2>/dev/null \
+    && [[ "$(git -C "$proj" stash list | wc -l)" -eq 1 ]]; then
+    pass "prune: host repo untouched by the seeder"
+  else
+    fail "prune: host repo should still hold the dangling blob and 1 stash"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -299,5 +337,6 @@ run_test test_seeder_parity_preserves_everything
 run_test test_seeder_parity_fail_detected
 run_test test_seeder_empty_enumeration
 run_test test_seeder_clears_host_stash
+run_test test_seeder_prunes_unreachable_objects
 
 test_done
