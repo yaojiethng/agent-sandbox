@@ -9,7 +9,7 @@ Spawn a fresh subagent to run the campaign and produce a proposal, then work tha
 Ensure your working tree is clean, then spawn a fresh subagent with the campaign prompt:
 
 ```bash
-pi -p "$(cat workflow/coding-agent/test-quality-campaign.md)"
+pi -p "$(cat workflow/coding-agent/audits/test-quality-campaign.md)"
 ```
 
 The subagent runs the whole campaign on its own: it audits, fixes tests, leaves the changes uncommitted, and writes its report to the output mount. It does not commit. It shares this workspace, so its uncommitted changes and output-mount writes are visible to you.

@@ -4,7 +4,7 @@ Documentation describes the **current system reality**. It must stay concise, re
 
 Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../concepts/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
-The policy has five parts: where documents live (Folder Structure), hard gates (Enforcement Rules), how to write prose (Writing Rules), the document types (Document Types), and how records are produced and maintained (Record Lifecycle). Diagnostic checklists for compliance live in [`workflow/coding-agent/documentation-pass.md`](../../workflow/coding-agent/documentation-pass.md).
+The policy has five parts: where documents live (Folder Structure), hard gates (Enforcement Rules), how to write prose (Writing Rules), the document types (Document Types), and how records are produced and maintained (Record Lifecycle). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
 
 ---
 
