@@ -141,9 +141,12 @@ main() {
   # container exists.
   verify_parity "$SRC" "$DEST" || die "the volume was not seeded correctly; the host will discard it"
 
-  # Tripwire: the stash clear must hold. A non-empty stack here means the clear
-  # silently failed (or git gained a new stash source) -- fail closed.
-  if [[ -n "$(git -C "$DEST" stash list 2>/dev/null)" ]]; then
+  # Tripwire: the stash clear must hold. Read failures die (they must not
+  # read as an empty stack); a surviving entry fails the seed.
+  local stash_list
+  stash_list="$(git -C "$DEST" stash list 2>/dev/null)" \
+    || die "reading the volume stash stack failed"
+  if [[ -n "$stash_list" ]]; then
     die "the volume still carries stash entries after the stash clear"
   fi
 

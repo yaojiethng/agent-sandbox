@@ -32,6 +32,8 @@ The delivery model fills an empty Docker volume with the operator's working stat
 
 **Stash disposition:** surgical, not structural. The seeder runs `git stash clear` on the volume copy after the `.git` copy -- the host stack is untouched, no contract changes, no filtering machinery is added. Tracked as a roadmap implementation item. (The rejected clone alternative already recorded "drops stashes and reflogs" as a defect of reconstruction; the defect of exact copying is smaller and is removed post-copy.)
 
+**Residual (recorded, accepted):** `git stash clear` removes the refs, not the objects. Stash commit objects remain in the volume's object store as unreachable data until a gc prunes them. They are invisible to `git status`, `git log`, and `stash list`, and unreachable by the agent through any normal git command; the diff pipeline cannot select them. Their presence is the same exposure class as the repository history that crosses by design (the native `.git` copy), so no additional pruning runs at seed time -- the cost on large repos and the added machinery outweigh removing data that no sanctioned path can reach. Recovering them requires deliberate forensic effort (`git fsck --unreachable`) inside the capability layer.
+
 **History-trim disposition:** rejected absent a new driver. The only driver that would justify a snapshot-depth seed is seed time/size on large repositories, and the mount model (M2.6.6) is the designed answer for repos where copying is the problem -- no copy at all. Revisit only if seed cost becomes a measured problem on real repos.
 
 ## 2026-09-04 -- Seed transport: helper-container copy
