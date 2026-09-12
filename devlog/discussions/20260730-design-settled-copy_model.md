@@ -1,6 +1,6 @@
 # Design — Copy Model (Volume-backed Sandbox)
 
-**Status:** active
+**Status:** settled -- the copy model is implemented and the M2.6.5 sub-milestone is complete; the volume snapshot pipeline replaces the retired baseline transport.
 
 **Direction + Parent:** M2.6.5 — Copy Model: Volume-backed Sandbox. Defines the volume-based persistence and concurrency model that is the current default and the actively-implemented path. Companion to [`20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) (M2.6.6 — Mount Model).
 

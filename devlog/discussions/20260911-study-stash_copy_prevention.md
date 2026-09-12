@@ -1,6 +1,6 @@
 # Study -- Stash Copy Mechanism and Prevention
 
-**Status:** active
+**Status:** settled -- decision recorded in [`../../docs/adr/sandbox_delivery_model.md`](../../docs/adr/sandbox_delivery_model.md) (2026-09-11 entry: full `.git` copy stands; stash cleared post-copy via the roadmap impl item)
 **Type:** study
 **Parent:** M2.6 session-persistence cross-cutting concerns; raised by the operator after the 2026-09-11 check-in (21 accumulated stashes in the sandbox tree, most stale).
 
@@ -70,4 +70,4 @@ Open question for the design handover that implements this: whether the seed sel
 
 ## Resolution
 
-Open -- recommendation stated; awaiting an implementation handover to adopt.
+Adopted (decision recorded) -- the 2026-09-11 ADR entry adopts Option A (post-copy `git stash clear`) and rejects history-trimming absent a measured seed-cost driver. Implementation remains open as the roadmap item "Seeder stash-clear".

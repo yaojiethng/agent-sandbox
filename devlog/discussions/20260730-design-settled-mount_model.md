@@ -1,6 +1,6 @@
 # Design — Mount Model (Host-backed Sandbox)
 
-**Status:** active
+**Status:** settled -- the mount model design is settled and its delivery is wired (M2.6.6); runnability verification is the remaining roadmap item.
 
 **Direction + Parent:** M2.6.6 — Mount Model: Host-backed Sandbox. Defines the mount-based delivery model where the agent works on a bind-mounted directory backed by the host filesystem, replacing the anonymous-volume copy pipeline.
 

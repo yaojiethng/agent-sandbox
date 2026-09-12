@@ -1,6 +1,6 @@
 # Sandbox Delivery Model
 
-**Current:** 2026-09-04
+**Current:** 2026-09-11
 
 ## Requirements
 
@@ -15,6 +15,24 @@ The delivery model fills an empty Docker volume with the operator's working stat
 | R5 | Diff-based return | The volume is the only working content store. Changes return to the host through the diff pipeline, which is git-agnostic. |
 | R6 | Offline seed | The seed step needs no network access. |
 | R7 | No staging in the worktree | Harness transfer state never resides inside the operator's git worktree. A disposable payload in a git worktree is trackable by construction, and tracking failures follow. Promoted by the 2026-09-03 incident. |
+
+## 2026-09-11 -- Seed repository copy: full `.git` is deliberate (stash and history-trim analysis)
+
+**Trigger:** the operator observed 21 stale stashes on a sandbox branch and asked whether the seed could avoid copying the entire `.git` -- stashes in particular, and host history generally. Study: [`20260911-study-stash_copy_prevention.md`](../../devlog/discussions/20260911-study-stash_copy_prevention.md).
+
+**Mechanism.** `cp -a /src/.git` crosses the host stash stack (`refs/stash`, `logs/refs/stash`) into every fresh session volume. The status-parity self-verification cannot see it: stashes are not working-tree state. An in-session `git stash pop` imports host WIP into the session working tree, which then flows back through the diff pipeline as if the agent produced it -- an unintended-content channel into the review gate.
+
+**Functionally, history is not required.** Copy-mode consumers never walk below `init_sha` (HEAD at seed time): `package_branch` iterates `init_sha..HEAD`, the diff pipeline reads `init_sha` from `SESSION_STATE`. A "HEAD + trees + index" subset would satisfy every current consumer.
+
+**Decision: the native full copy stands.** The exactness contract (R2) is what forbids a subset:
+
+1. Staging state must cross. Any subset transport must reconstruct the index -- a restage sequence -- and status parity proves far less when the index is replayed than when it is copied.
+2. History lives interleaved inside `objects/` with the objects the snapshot needs. Selecting "one snapshot's objects" requires repack/bundle machinery run against the operator's repo at every start -- new transform code of the class the 2026-09-04 redesign exists to retire.
+3. `cp -a` carries no filtering logic, hence no filter bugs. Its costs (stash, reflog, full history) are bounded, session-scoped, and pruned with the volume; the volume never leaves the capability layer.
+
+**Stash disposition:** surgical, not structural. The seeder runs `git stash clear` on the volume copy after the `.git` copy -- the host stack is untouched, no contract changes, no filtering machinery is added. Tracked as a roadmap implementation item. (The rejected clone alternative already recorded "drops stashes and reflogs" as a defect of reconstruction; the defect of exact copying is smaller and is removed post-copy.)
+
+**History-trim disposition:** rejected absent a new driver. The only driver that would justify a snapshot-depth seed is seed time/size on large repositories, and the mount model (M2.6.6) is the designed answer for repos where copying is the problem -- no copy at all. Revisit only if seed cost becomes a measured problem on real repos.
 
 ## 2026-09-04 -- Seed transport: helper-container copy
 
