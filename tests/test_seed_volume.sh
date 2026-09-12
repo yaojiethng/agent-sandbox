@@ -254,6 +254,39 @@ test_seeder_empty_enumeration() {
   fi
 }
 
+# Stash clear: host stash entries must not cross into the volume (ADR
+# sandbox_delivery_model.md, 2026-09-11 entry), and the host stack must be
+# untouched by the seeder.
+test_seeder_clears_host_stash() {
+  local proj="$FIXTURE_DIR/stashed_project"
+  local dest="$FIXTURE_DIR/stashed_dest"
+  make_committed_repo "$proj"
+  echo "wip one" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip one"
+  echo "wip two" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip two"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest"; then
+    fail "seeder: stashed project seeds successfully"
+    return 0
+  fi
+  pass "seeder: stashed project seeds successfully"
+
+  if [[ -z "$(git -C "$dest" stash list)" ]]; then
+    pass "stash: seeded volume carries no stash entries"
+  else
+    fail "stash: volume stash stack should be empty, got: $(git -C "$dest" stash list | tr '\n' '; ')"
+  fi
+
+  local host_count
+  host_count=$(git -C "$proj" stash list | wc -l)
+  if [[ "$host_count" -eq 2 ]]; then
+    pass "stash: host stash stack untouched by the seeder"
+  else
+    fail "stash: host stash stack should hold 2 entries, got $host_count"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -265,5 +298,6 @@ run_test test_seeder_rejects_tracked_sentinel
 run_test test_seeder_parity_preserves_everything
 run_test test_seeder_parity_fail_detected
 run_test test_seeder_empty_enumeration
+run_test test_seeder_clears_host_stash
 
 test_done

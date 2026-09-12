@@ -109,6 +109,13 @@ main() {
   # (compose user), so volume ownership matches the sandbox service.
   cp -a "$SRC/.git" "$DEST/.git" || die "copying $SRC/.git into the volume failed"
 
+  # Stash clear (ADR sandbox_delivery_model.md, 2026-09-11 entry): the native
+  # .git copy carries the host stash stack (refs/stash, logs/refs/stash). The
+  # sandbox baseline is the seeded HEAD, not host session state; an in-session
+  # stash pop would import host WIP into the diff pipeline. The clear runs on
+  # the volume copy only -- the host stack is untouched.
+  git -C "$DEST" stash clear || die "clearing the host stash stack in the volume failed"
+
   # Layer 2: worktree content. Empty enumeration -> skip tar (tar refuses an
   # empty archive; the volume needs nothing beyond .git in that case).
   local list count
@@ -133,6 +140,12 @@ main() {
   # Layer 3: self-verification. Any divergence aborts before a session
   # container exists.
   verify_parity "$SRC" "$DEST" || die "the volume was not seeded correctly; the host will discard it"
+
+  # Tripwire: the stash clear must hold. A non-empty stack here means the clear
+  # silently failed (or git gained a new stash source) -- fail closed.
+  if [[ -n "$(git -C "$DEST" stash list 2>/dev/null)" ]]; then
+    die "the volume still carries stash entries after the stash clear"
+  fi
 
   echo "Seed complete: $(git -C "$DEST" ls-files | wc -l) tracked files in volume, git status parity verified."
 }
