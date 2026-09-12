@@ -189,6 +189,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `audits/*.skill.md` | 🟡 Warm | M2.6 | Seven audit-family skills relocated from `agent/drafts/`: architecture-doc-reviewer, audit, bash-audit, dhh-code-audit, handover-audit, kelsey-code-reviewer, roadmap-audit. Repo-side only, not deployed. |
 | `audits/test-quality-campaign.md` | 🟡 Warm | M2.6 | Reflection-gated test audit and fix campaign, run by a fresh subagent. |
 | `audits/documentation-pass.md` | 🟡 Warm | M2.6 | Diagnostic checklists for documentation-policy compliance (stub). |
+| `audits/documentation-audit-comparison.md` | 🟡 Warm | M2.6 | Effectiveness comparison of the documentation-audit files against the autonomous staleness sweep; input for compiling the single documentation-audit prompt (M3). |
 
 ### Providers (`providers/`)
 

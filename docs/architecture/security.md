@@ -39,8 +39,8 @@ The sandbox adds no security beyond what the host provides — it only restricts
 
 | Mode | Project content | `.git` | Consequence |
 |---|---|---|---|
-| **Copy** (current default, M2.6.5) | Seeded into the named volume at session start (one-shot tar transfer); frozen view | Reinitialized — fresh `git init`, no link to host repo | None — baseline posture |
-| **Mount** (not yet implemented, M2.6.6) | Bind-mounted live from host | User-provided — whatever `.git` the user places in the mounted directory (fresh baseline, clone, snapshot). Harness does not mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
+| **Copy** (current default, M2.6.5) | Seeded into the named volume at session start (one-shot helper-container seed); frozen view | Host `.git` copied in full by the seeder (native copy, history included); no live link to the host repo | Baseline posture plus host git history inside the volume — history content is not gitignore-filtered |
+| **Mount** (wired, not runnable, M2.6.6) | Bind-mounted live from host | User-provided — whatever `.git` the user places in the mounted directory (fresh baseline, clone, snapshot). Harness does not mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
 | *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | — see [Non-goals](#non-goals) |
 
 Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope — see [ADR — Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
@@ -62,17 +62,17 @@ Worktree backing (agent commits landing in the host object store via `git worktr
 The following invariants hold in every configuration. Per-mode mount shapes are defined in [Mount modes](#mount-modes).
 
 1. `PROJECT_ROOT`'s working tree must not be mounted into any container.
-2. The container must not access host filesystem paths outside `.workspace/`.
+2. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories and the `.<provider>/` provider-config mount. No other host path is reachable.
 3. The container must not have access to the Docker socket.
 4. Repository mutation must occur only on the host after human review.
-5. Agent-produced changes must be staged as `staged.diff` before application.
+5. Agent-produced changes must be exported as diff artefacts (`uncommitted.diff`, `all-changes.diff`, `patches/`) before application.
 6. Gitignored files (including secrets) must never enter the agent's working tree.
 
 Validation procedures for these invariants are defined in operational documentation.
 
-**Mount delivery (not yet implemented)** revises invariant 2 and adds invariant 7:
+**Mount delivery (wired, not runnable)** revises invariant 2 and adds invariant 7:
 
-> 2. The container must not access host filesystem paths outside `.workspace/`.
+> 2. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories, the `.<provider>/` provider-config mount, and the mounted worktree.
 >
 > 7. The seeded sandbox volume must not be mounted into the reasoning layer. Only the capability layer accesses the sandbox content directly.
 
@@ -81,7 +81,7 @@ Validation procedures for these invariants are defined in operational documentat
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Session state persists across restarts via a named Docker volume (`{{SESSION_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` → `compose down`, keeps named volumes). With mount delivery (not yet implemented), the agent's working tree in the mounted host directory additionally survives container restarts.
+- Session state persists across restarts via a named Docker volume (`{{SESSION_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` → `compose down`, keeps named volumes). With mount delivery (wired, not runnable), the agent's working tree in the mounted host directory additionally survives container restarts.
 - `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. With mount delivery, the worktree additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 

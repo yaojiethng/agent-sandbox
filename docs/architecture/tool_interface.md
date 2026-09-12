@@ -92,13 +92,13 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ---
 
-### `make prune [STALE=<sandbox|image|all>] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
+### `make prune [STALE=sandbox] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
 
 Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** — Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
 
-**Rule 1 — stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The default (`STALE=all`) selects records stale by **either** dimension: sandbox (its recorded `host-head-sha` differs from the current project HEAD — registry-truth, see `docs/concepts/terminology.md` `## staleness`) or image (a referenced image's baked `container-sig` differs from the recomputed source sig). `STALE=sandbox` / `STALE=image` select that dimension only. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
+**Rule 1 — stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/concepts/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) — recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
 
-- `STALE=<kind>` — staleness kind to target: `sandbox` (repo out of date — the session's `host-head-sha` ≠ current HEAD), `image` (image out of date — a referenced image's baked `agent-sandbox.container-sig` ≠ recomputed source sig, so even resume carries an incomplete feature set), or `all`/unset (either criterion — the "remove all stale" filter).
+- `STALE=sandbox` — the only accepted kind (repo out of date — the session's `host-head-sha` ≠ current HEAD); unset behaves the same. Any other value errors.
 - `PROVIDER=<n>` — narrow Rule 1's selection to records of that provider (same filter as `make resume`).
 
 **Rule 2 — orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy → volume + containers; mount → registry resources only. Worktrees are **never** touched.
@@ -122,7 +122,7 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 
 ### `make draft [BUNDLE=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
 
-Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
+Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
 By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only — absolute paths rejected).
@@ -152,17 +152,9 @@ Discards the current `draft/` branch, returns to the source branch. Artefacts un
 
 ### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 
-Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`.
+Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-[-<LABEL>-]<SESSION_ID>/`.
 
 `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
-
----
-
-### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
-
-Host-side export. Packages committed branch history as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/`. Delegates to `agent-sandbox package-branch`, which reads `.env` and writes to `INPUT_DIR/bundles/<ts>-<summary>/`.
-
-`BASELINE=<sha>` overrides the baseline SHA (default: reads from SESSION_STATE — only available during a live session).
 
 ---
 
@@ -173,9 +165,8 @@ Host-side export. Packages committed branch history as numbered diffs + `uncommi
 | `standard` | `make start PROVIDER=<n>` | Normal execution; agent TUI attaches to terminal |
 | `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
 | `dry-run` | `make dry-run PROVIDER=<n>` | Liveness check only; no agent interaction |
-| `headless` | — | Reserved; not yet implemented |
 
-**Serve mode is provider-specific.** The serve overlay lives in `providers/<n>/docker-compose.serve.yml` in the repo — never copied to `SANDBOX_DIR`.
+**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/providers/<n>/docker-compose.serve.yml` in the repo — never copied to `SANDBOX_DIR`.
 
 | Provider | Serve behaviour |
 |---|---|
@@ -188,13 +179,13 @@ Host-side export. Packages committed branch history as numbered diffs + `uncommi
 
 | Host path | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
-| `$CHANGES_DIR` | `/home/agentuser/workspace/session-diffs/` | — | RW | Harness — diff pipeline output |
+| `$CHANGES_DIR` (derived: `$SANDBOX_DIR/.workspace/session-diffs`) | `/home/agentuser/workspace/session-diffs/` | — | RW | Harness — diff pipeline output |
 | `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
 | `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
 | `$SANDBOX_DIR/.<provider>/` | — | `/opt/provider-config/` | RW | Harness — provider config; seed and persist via entrypoint |
-| Docker anonymous volume | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker — owned by capability layer; shared via `--volumes-from` |
+| SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker — owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
 
-`PROJECT_DIR` is never mounted. `sandbox/` is created by Docker at session start and destroyed on teardown (`down -v`). The reasoning layer can only access it while the capability layer is running.
+`PROJECT_DIR` is never mounted. `sandbox/` is a named volume filled by the seeder at session start; it survives `docker compose down` (named volumes are kept) so session state supports resume, and is removed by `down -v` or prune Rule 2. The reasoning layer can only access it while the capability layer is running.
 
 ---
 
@@ -209,7 +200,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `Makefile` | Copied from template by onboard | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands |
 | `.env` | Written by onboard | Machine-specific runtime variables; never committed |
 | `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
-| `.<provider>/` | Copied from `providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
+| `.<provider>/` | Copied from `src/reasoning/providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
 `docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`,
 `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned
@@ -232,7 +223,7 @@ Generation](execution_model.md#compose-generation)). The delivery overlays
 | `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
-`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `providers/<n>/.env.example` at onboard time.
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/providers/<n>/.env.example` at onboard time.
 
 ### Runtime-derived paths (not stored in `.env`)
 
@@ -254,18 +245,18 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 
 **Readiness signal:** When the capability layer reports healthy, `sandbox/` is fully initialised. The reasoning layer may treat a healthy status as the unconditional signal to proceed.
 
-**Volume ownership:** `sandbox/` is a Docker anonymous volume owned by the capability layer. The reasoning layer accesses it via `--volumes-from`. Created fresh at session start; destroyed on teardown. Inaccessible if the capability layer is not running.
+**Volume ownership:** `sandbox/` is a SESSION_ID-scoped named Docker volume owned by the capability layer. The reasoning layer accesses it via `--volumes-from`. The volume persists across `docker compose down` (resume re-attaches it); teardown removes it only via `down -v` or prune. Inaccessible if the capability layer is not running.
 
 **Sandbox initialisation:** Before reporting healthy, the capability layer will have:
-1. Extracted the host-side seed (working tree + HEAD baseline) into `sandbox/`
-2. Initialised a git repository in `sandbox/`
-3. Committed a baseline SHA — the diff pipeline computes artefacts against this on exit
+1. Had its volume seeded by the one-shot seeder service — repository (`.git` copied natively) plus the git-enumerated working tree
+2. Received `SESSION_STATE` from the seeder, carrying `init_sha` (HEAD at seed time — the fixed lower boundary for `package-branch`)
+3. Validated the volume itself: git state and `SESSION_STATE` must exist, or the container start aborts with a readable error
 
 ---
 
 ## Provider Interface
 
-A conforming provider supplies the following under `providers/<n>/` in the repo:
+A conforming provider supplies the following under `src/reasoning/providers/<n>/` in the repo:
 
 | File | Required | Purpose |
 |---|---|---|

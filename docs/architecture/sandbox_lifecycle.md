@@ -6,7 +6,7 @@ The reasoning layer lifecycle — provider config copy-in, input channels, copy-
 
 The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
 
-All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff_export.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
+Snapshot functions live in `src/capability/snapshot.sh`; diff functions in `src/libs/diff_export.sh`. `start_agent.sh` sources the snapshot primitive for mount worktree materialization; the capability entrypoint sources both libraries from the baked `/opt/sandbox/lib/` path.
 
 ---
 
@@ -84,7 +84,7 @@ Host-side identity is recorded in the per-run compose registry (`.compose/<sessi
 `make resume INTERACTIVE=1` presents a picker over the inventory and confirms before resuming (also `PROVIDER=<n>`-filterable); the picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. The legacy volume-label resume machinery was removed from `start` (see `20260821-04`).
 
 **Session prune (`make prune`):** the registry-based prune (Rules 1+2, `20260821-08`) replaces the legacy volume-label `--stale` + `docker system prune` path. It is always a complete pass: **Rule 1** removes stale `.compose/<session-id>.yml` records (selected by registry-truth sandbox staleness or image-staleness per the `STALE` kind — default `all` picks a record stale by either dimension — plus optional `PROVIDER` / `AGE_DAYS` filters); **Rule 2** removes now-orphaned resources (containers, networks, volumes labeled `sandbox-dir` whose `session-id` has no record), delivery-scoped (copy → volume + containers; mount → registry resources only; worktrees never touched). `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
-`STALE=sandbox|image|all` select the sandbox-stale / image-stale / either criterion; image staleness compares the referenced image's baked `container-sig` label against a recomputation of the current source (`20260821-09`).
+`STALE=sandbox` selects the sandbox-stale criterion; image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness, and no image recomputation runs (`20260911-05`).
 
 ---
 
@@ -141,7 +141,7 @@ Only one autosave directory exists per session — the old one is `rm -rf`'d bef
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<EXPORT_TIME>-<slug>-<sha6>` branch. `BUNDLE` is name-only (rejected if absolute).
+**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute).
 
 **`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 

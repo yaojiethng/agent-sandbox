@@ -60,7 +60,7 @@ Host path variables are defined in [`tool_interface.md` — `.env` Runtime Varia
 
 ## Invocation Model
 
-`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, checkpoint tag creation, snapshot pipeline (rsync), and brief resolution. On completion it dispatches to `scripts/run_agent.sh` via `exec`.
+`scripts/start_agent.sh` is invoked by the project-side Makefile via the `agent-sandbox` CLI. It handles host-side pre-flight only: path validation, `.env` loading, git validation, workspace directory setup, and worktree materialization for mount delivery (via the shared snapshot primitive). On completion it dispatches to `scripts/run_agent.sh` via `exec`.
 
 `scripts/run_agent.sh` owns the provider lifecycle: sourcing the provider setup hook, assembling and generating the compose file, managing the container lifecycle (start, agent attach, teardown).
 

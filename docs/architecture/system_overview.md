@@ -13,7 +13,7 @@ These guarantees hold across all agent runs. Defined authoritatively in [`securi
 - Agents execute inside isolated containers
 - The host repository is never modified by an agent directly
 - All agent output is staged as a diff and requires human approval before being applied
-- Agent nesting depth is limited to two layers (parent + child)
+- Agent nesting depth is limited to two layers (parent + child) — stated here as an architectural guarantee; no operational enforcement exists yet
 
 ---
 
@@ -47,7 +47,7 @@ Current layer freeze status is tracked in [`docs/development/project_index.md`](
 
 **`.workspace/`** — a host-side directory providing the I/O channels between containers and host. Subdirectories have distinct owners and trust levels: `input/` (operator-written, reasoning layer read-only), `output/` (agent-written, reasoning layer read-write), `session-diffs/` (harness-written, capability layer read-write — diff pipeline output).
 
-**Diff and apply** — on capability layer exit, the diff pipeline produces per-commit `.diff` files, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` into a session-scoped directory under `session-diffs/{session,autosave}/`. The operator runs `make draft` to apply patches to a working branch, or `make apply` to apply `uncommitted.diff` directly (unstaged). Host-side `make package-branch` provides equivalent export capability outside the container.
+**Diff and apply** — on capability layer exit, the diff pipeline produces per-commit `.diff` files, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` into a session-scoped directory under `session-diffs/{session,autosave}/`. The operator runs `make draft` to apply patches to a working branch, or `make apply DIFF=<path>` to apply a diff file directly (unstaged). Host-side `make package-branch` provides equivalent export capability outside the container.
 
 **Per-project config** — each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context — session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `providers/<n>/config/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model).
 
