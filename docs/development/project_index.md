@@ -185,6 +185,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 |---|---|---|---|
 | `prompts/gm.md` | 🔥 Hot | M2.6 | Check-in prompt template (`/gm`). Deployed into `/opt/workflow/agent/prompts/` via the folder COPY of `workflow/coding-agent/prompts/`. |
 | `prompts/test-quality-campaign-run.md` | 🟡 Warm | M2.6 | Invocation template for the test-quality campaign (spawns a fresh subagent). |
+| `prompts/review-pass-run.md` | 🟡 Warm | M2.6 | Orchestration template for an autonomous review pass: fresh subagent reviewers against a WIP-committed diff, fix rounds to VERDICT: APPROVE, proposal accept + fold, squash into the delivery commit. |
 | `audits/surface-area-report.md` | 🔥 Hot | M2.6 | Categorization of the former drafts+prompts surface: use case, current status, M3 consolidation targets; entry point map. Input for the M3 reorganization. |
 | `audits/*.skill.md` | 🟡 Warm | M2.6 | Seven audit-family skills relocated from `agent/drafts/`: architecture-doc-reviewer, audit, bash-audit, dhh-code-audit, handover-audit, kelsey-code-reviewer, roadmap-audit. Repo-side only, not deployed. |
 | `audits/test-quality-campaign.md` | 🟡 Warm | M2.6 | Reflection-gated test audit and fix campaign, run by a fresh subagent. |
