@@ -285,19 +285,12 @@ test_template_version_real_makefile_template_parses() {
   # The actual shipped template must carry a parseable numeric version  -- 
   # refresh gating silently degrades to "unknown" otherwise.
   local out
-  out=$(template_version_probe_real)
+  out=$(template_version "$REPO_ROOT/scripts/templates/Makefile.template")
   if [[ "$out" =~ ^[0-9]+$ ]]; then
     pass "shipped Makefile.template carries numeric template version ($out)"
   else
     fail "Makefile.template version unparsable: '$out'"
   fi
-}
-
-template_version_probe_real() {
-  bash -c '
-    eval "$(sed -n "/^template_version()/,/^}/p" "$1")"
-    template_version "$2"
-  ' _ "$REPO_ROOT/scripts/onboard.sh" "$REPO_ROOT/scripts/templates/Makefile.template"
 }
 
 # The shipped `stop:` target must forward --project so `make stop PRUNE=1`

@@ -381,8 +381,9 @@ legacy: none
 mitigation: bounded sed-extraction of the function body into a subshell
 (historical probes: `_env_field_probe`, `_template_version_probe`,
 `_wsl_path_probe` -- all three deleted with the conventions compliance
-sweep `20260823-08`; one later seam remains, `template_version_probe_real`
-in `tests/test_onboard.sh`, tracked by its roadmap item).
+sweep `20260823-08`; the last seam, `template_version_probe_real`
+in `tests/test_onboard.sh`, was deleted `20260911-04` (handover
+`20260911-04`); no extraction seams remain).
 
 `scripts/prune.sh`, `scripts/onboard.sh` and the flag-parsing section of
 `scripts/start_agent.sh` execute unconditionally when sourced  --  no
@@ -398,10 +399,9 @@ reconciled: 2026-09-01  --  all three named scripts now carry the guard
 (`scripts/start_agent.sh` wraps `main "$@"` — flag parsing lives inside
 `main()` — likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.2.
 Marked probation per the reconcile-before-acting rule (tree has outgrown the
-entry); drop if it does not resurface. Follow-up candidate, not this fix: the remaining sed-extraction seam
-(`template_version_probe_real`, `tests/test_onboard.sh`) is tracked by the
-roadmap item "Delete the remaining sed-extraction probe" -- the roadmap item
-is the canonical record for this follow-up.
+entry); drop if it does not resurface. Follow-up completed: the remaining sed-extraction seam
+(`template_version_probe_real`, `tests/test_onboard.sh`) was deleted with handover `20260911-04`,
+closing the roadmap item "Delete the remaining sed-extraction probe".
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
 
