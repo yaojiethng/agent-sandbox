@@ -44,6 +44,24 @@ Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
+## Edit tool
+
+Collation entry for pitfalls of the `edit` tool (exact-match text replacement). Goal: once sufficient entries accumulate, distill them into AGENTS.md steering guidelines for edit-tool usage (drafted by the agent, proposed to the operator per the governance one-section rule). Append new pitfalls as sub-bullets; keep each one line.
+
+### [G] 2026-09-12  --  Edit-tool pitfalls (collation, seeded)
+
+state: open
+scoped: none
+legacy: none
+mitigation: collation pending -- this entry exists to accumulate instances; the distillation into steering guidelines is the durable fix.
+
+Seed instances (all observed 2026-09-12):
+
+- Multi-edit atomicity: one failed `edits[]` entry rolls back the ENTIRE call -- sibling edits that matched fine are silently lost. Detected only by a later grep (the mandatory-structure paragraph for the Test Structure Template was lost this way and re-applied at the next edit).
+- `oldText` matching is exact: invisible whitespace or trailing characters break the match with a raw "could not find" error; fall back to `sed -n Np` inspection or `bash` insertion when the anchor is a single line.
+- Overlapping or nested `edits[]` entries are rejected; nearby changes must be merged into a single edit.
+- `oldText` must be unique in the file; a too-short anchor that appears more than once fails.
+
 ### [A] 2026-08-09  --  Empty string bypasses `${VAR:-default}`
 
 state: open

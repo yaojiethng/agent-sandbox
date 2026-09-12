@@ -124,3 +124,35 @@ assert_not_contains() {
     fail "$LABEL ('$NEEDLE' unexpectedly found in output)"
   fi
 }
+
+# assert_subshell_rc EXPECTED_RC COMMAND [LABEL]
+#   Runs COMMAND in a subshell, compares its exit status to EXPECTED_RC.
+#   For functions whose rc is the contract (CLI semantics, exit-on-error).
+#   COMMAND is a string evaluated inside the subshell; env assignments
+#   belong inside it. Output is discarded -- assert on the rc, not on
+#   what the function printed.
+assert_subshell_rc() {
+  local EXPECTED="$1" CMD="$2" LABEL="${3:-subshell rc $EXPECTED}" RC
+  ( eval "$CMD" ) >/dev/null 2>&1
+  RC=$?
+  if [[ "$RC" == "$EXPECTED" ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL (got rc $RC)"
+  fi
+}
+
+# source_function_from FILE NAME
+#   Extracts NAME() from FILE at run time and evals it into the current
+#   shell. Fails with a named error when the pattern does not match --
+#   the Anti-Pattern 7 prerequisite gate, built in
+#   (testing-conventions.md, Anti-Pattern 7: Test-the-Copy).
+source_function_from() {
+  local FILE="$1" NAME="$2" SRC
+  SRC="$(sed -n "/^${NAME}()/,/^}/p" "$FILE")"
+  if [[ -z "$SRC" ]]; then
+    echo "FATAL: prerequisite missing: ${NAME}() not extractable from $FILE" >&2
+    return 1
+  fi
+  eval "$SRC"
+}

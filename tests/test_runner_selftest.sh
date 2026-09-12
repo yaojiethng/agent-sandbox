@@ -188,6 +188,24 @@ run_runner_prereq "$FIXTURE_DIR/good_stub"
 assert_contains "$OUT" "Warning: no test files found" "runner: satisfied prerequisite proceeds to discovery"
 assert_not_contains "$OUT" "prerequisite missing" "runner: satisfied prerequisite emits no error"
 
+# ---------------------------------------------------------------
+# Case 12: run_test registered after test_done is dead code --
+# test_done exits the process, so the runner scans the file
+# statically and flags the file (testing-conventions.md, Test
+# Structure Template).
+# ---------------------------------------------------------------
+mkdir -p "$FIXTURE_DIR/deadreg_dir"
+write_test "$FIXTURE_DIR/deadreg_dir/test_dead_reg.sh" "#!/usr/bin/env bash
+source '$REPO_ROOT/tests/libs/test_common.sh'
+t_ok() { assert_eq a a; }
+run_test t_ok
+test_done
+run_test t_dead"
+run_runner "$FIXTURE_DIR/deadreg_dir"
+assert_ne "0" "$RC" "runner: dead registration after test_done fails the file"
+assert_contains "$OUT" "run_test registered after test_done" "runner: dead registration reported"
+assert_contains "$OUT" "test_dead_reg.sh" "runner: dead registration reported by file name"
+
 # =============================================================================
 # Run  --  note: this file drives the runner via run_runner(), so its own
 # assertions live at file scope, not in run_test functions. Each block above

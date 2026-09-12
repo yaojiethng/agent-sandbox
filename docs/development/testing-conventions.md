@@ -169,11 +169,23 @@ fi
 
 **Example:** The resume-display rework removed the image-signature suffix from the provider cell. A test in the same change asserted that `pi (1234abc)` no longer appears. The row-render test already proved that the provider cell shows the provider.
 
-**Rule:** Assert the meaning, not the string. Prefer "the provider cell shows the provider" over "the cell does not contain the old suffix". Freeze a user-visible format only after the operator accepts it, and record why the format is a contract.
+**Rule:** Assert the meaning, not the string. Prefer "the provider cell shows the provider" over "the cell does not contain the old suffix". Freeze a user-visible format only after the operator accepts it, and record why the format is a contract. When a test pins an exact string or byte class, the test (or its header comment) must cite the record that decides the pin (roadmap item, ADR, or design discussion). An uncited pin is change-mirror risk: no reader can tell contract from convenience.
+
+### Anti-Pattern 7: Test-the-Copy
+
+**Symptom:** A test file contains a verbatim copy of a production function (inlined in the test file) and tests that copy. The tests stay green while production changes; the copy silently diverges.
+
+**Example:** `tests/test_provider_entrypoint.sh` once inlined a copy of `_provision_agent_home()` from `src/reasoning/entrypoint.sh`. The copy drifted from production; the suite passed.
+
+**Rule:** Never inline production source into a test. Either extract the function from the live source at run time (`sed -n '/^fn()/,/^}/p'`) or drive the real entry point end-to-end. When extracting, the test must state the extraction pattern in a prerequisite gate that fails with one named error when the pattern no longer matches (function renamed, moved, or restructured) -- see `test_provider_entrypoint.sh` for the pattern. A source-grep test that never executes the target is the same anti-pattern in weaker form: the meaningful guard is behavioral coverage of the injection point, not text matching.
 
 ---
 
 ## Test Structure Template
+
+**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report.
+
+Document untested branches in the function-header comment at the point of the code: every documented branch of a sourced lib function has either a test or a gap note naming why it is untested (expressibility limits, low risk). There is no central known-gaps file -- the comment travels with the code it describes.
 
 ```bash
 #!/usr/bin/env bash
@@ -224,10 +236,10 @@ test_example_feature() {
 
 run_test test_example_feature
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done
 ```
+
+(`test_done` prints the report and exits non-zero on failure. Do not inline a `Results:` echo or a manual `[[ "$FAIL" -eq 0 ]]` -- the template's former inline tail predates `test_done` and is retired.)
 
 ---
 

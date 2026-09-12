@@ -157,6 +157,60 @@ test_interactive_max_entries_default() {
   fi
 }
 
+# -- assert_subshell_rc --
+
+_exit_zero() { exit 0; }
+_exit_three() { exit 3; }
+
+test_subshell_rc_matches_expected() {
+  assert_subshell_rc 0 _exit_zero "assert_subshell_rc passes on matching rc"
+}
+
+test_subshell_rc_mismatch_fails() {
+  # The probe's fail() emits a FAIL marker; run the probe in a subshell and
+  # capture its output so the marker never reaches the runner's grep.
+  local OUT
+  OUT=$(bash -c "
+    source '$REPO_ROOT/tests/libs/test_common.sh'
+    _exit_three() { exit 3; }
+    assert_subshell_rc 0 _exit_three probe
+    echo \"count=\$FAIL\"
+  ")
+  if [[ "$OUT" == *"count=1"* && "$OUT" == *"FAIL: probe (got rc 3)"* ]]; then
+    pass "assert_subshell_rc fails on rc mismatch (marker + counter)"
+  else
+    fail "assert_subshell_rc did not fail on rc mismatch"
+  fi
+}
+
+# -- source_function_from --
+
+test_source_function_from_extracts_and_defines() {
+  local FIXTURE="$FIXTURE_DIR/extract_src.sh"
+  printf 'unrelated() { :; }\nextracted_fn() { EXTRACTED_MARK=works; }\ntrailing() { :; }\n' > "$FIXTURE"
+  source_function_from "$FIXTURE" extracted_fn
+  extracted_fn
+  if [[ "${EXTRACTED_MARK:-}" == "works" ]]; then
+    pass "source_function_from defines an invocable function"
+  else
+    fail "source_function_from did not define an invocable function"
+  fi
+}
+
+test_source_function_from_fails_when_pattern_missing() {
+  local FIXTURE="$FIXTURE_DIR/extract_missing.sh"
+  printf 'other() { :; }\n' > "$FIXTURE"
+  if source_function_from "$FIXTURE" absent_fn 2>/dev/null; then
+    fail "source_function_from should fail when the function is not extractable"
+  else
+    pass "source_function_from fails with named error when pattern missing"
+  fi
+}
+
 run_test test_interactive_max_entries_default
+run_test test_subshell_rc_matches_expected
+run_test test_subshell_rc_mismatch_fails
+run_test test_source_function_from_extracts_and_defines
+run_test test_source_function_from_fails_when_pattern_missing
 
 test_done
