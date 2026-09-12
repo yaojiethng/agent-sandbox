@@ -17,7 +17,7 @@ Read this document at the start of any iteration. Read the relevant child docume
 | **Minor** | 1. Open handover | [Step 1 Details](#step-1-open-handover) |
 | | 2. Confirm scope | [Step 2 Details](#step-2-confirm-scope) |
 | | **Gate 1** | wait for operator release before any output |
-| | 3. Design | [`roadmap_policy.md`](roadmap_policy.md#rules) |
+| | 3. Design | [`roadmap_policy.md`](roadmap_policy.md#structure-and-filing-rules) |
 | | 4. Information gathering pass | [`documentation_policy.md`](documentation_policy.md) |
 | | 5. Acceptance criteria | [Step 5 Details](#step-5-acceptance-criteria) |
 | | **Gate 2** | wait for operator release before implementation |
@@ -90,7 +90,7 @@ The information gathering pass (step 4) reads in order: design decisions, concep
 | **1 — Open handover** | always | Iteration begins | Run recovery checks (verify roadmap against prior handover; if post-close bookkeeping is pending, run it after creating handover but before scope). Create handover: new file with date and sequential index, read prior handover for Carried forward, reset Completed table, populate Hot files and Type, write canonical markers for nullable sections. Per [Step 1 Details](#step-1-open-handover). | Handover draft complete. |
 | **2 — Confirm scope** | always | Handover draft complete | Present scope proposal including iteration type and justification. Cover: what is in scope and why, what is deferred and why, any unresolved questions. If context insufficient, ask one question at a time. For multi-iteration sessions, spec only the active iteration. Wait for explicit release before any output. Per [Step 2 Details](#step-2-confirm-scope). | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
 | **Gate 1** | always | Scope confirmed | No output until operator releases. Agent must present type with justification in the scope proposal — operator confirms the type alongside scope. | Explicit release received. Type confirmed. |
-| **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Open a design doc in `devlog/discussions/` per [`discussion_policy.md`](discussion_policy.md#designs). Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#rules). If the design settles with an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
+| **3 — Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale — task list alone does not satisfy skip. | Open a design doc in `devlog/discussions/` per [`discussion_policy.md`](discussion_policy.md#designs). Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#structure-and-filing-rules). If the design settles with an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
 | **4 — Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
 | **5 — Acceptance criteria** | confirmed | Information gathering pass complete | Define criteria in a four-column table: `| # | Criterion | Verifiable by | Verified by |`. Pre-verify every verifiable criterion — for commands the agent can run, show output and mark `Agent ✅` (pass) or `Agent ❌` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`. Every iteration touching architecture must include: *"Architecture documents in scope describe the system as built."* Replace `Not yet defined.` before exiting. Per [Step 5 Details](#step-5-acceptance-criteria). | Operator confirmed acceptance criteria. |
 | **Gate 2** | always | Acceptance criteria confirmed | Before releasing: present the acceptance criteria table to the operator — every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug — resolve it now, not at pre-close. No implementation until operator releases. | Operator confirmed criteria are satisfiable. Explicit release received. |
@@ -175,15 +175,11 @@ Findings is the shared agent-managed recording surface for the agent-feedback an
 
 ### Step 7 — Pre-close verification
 
-Step 7 is a mandatory gate before iteration end. Present a pre-close summary and wait for an explicit operator release before advancing to Steps 8–9.
+Step 7 is a mandatory gate before iteration end. Present a pre-close summary and wait for an explicit operator release before advancing to Steps 8–9. The summary has these sections:
 
-- **Present AC status in a four-column table:** `| # | Criterion | Verifiable by | Status |`. Mark each criterion as accepted or pushed to next iteration. Run verifiable checks and show output. **Do not reuse the Gate 2 format — this table answers "did it pass?", not "who can verify?"**
-- **Roadmap write-back — completed work:** for each fully-completed roadmap task group worked this iteration, present the outcome summary that would replace its checklist. If no roadmap task group was worked, state `none worked this iteration` explicitly — never leave the row implicit.
-- **Roadmap write-back — generated tasks:** list every task this iteration generated (follow-up candidates, flagged fixes, deferred work). Each is either proposed as a named roadmap entry (applied at Steps 8–9 per the roadmap-policy timing rule) or explicitly declared as carried in an existing record, with the reason. If none, state `no additional tasks`.
-
-The operator reviews both write-back rows alongside the AC status at Gate 3; accepted entries are applied at Steps 8–9.
-
-**Propagation replay:** for any iteration that touched multiple files under a shared rule or naming convention, the pre-close summary must include a row-by-row comparison of every file that was planned to receive the change against the Completed table:
+1. **Acceptance criteria** — table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the Gate 2 format — this table answers "did it pass?", not "who can verify?".
+2. **Roadmap write-back** — per task touched this iteration, the exact row change. Follow the procedure and requirements in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched). When no task was touched, state `none worked this iteration` — never leave the row implicit.
+3. **Propagation replay** — for any iteration that touched multiple files under a shared rule or naming convention, a row-by-row comparison of every file that was planned to receive the change against the Completed table:
 
 | File | Change planned | Status |
 |---|---|---|

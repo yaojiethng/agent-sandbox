@@ -119,19 +119,10 @@ record-keeping rides along with the next real unit of work.
 
 ### [G] 2026-08-31 - Roadmap open-item status can go stale against closed handovers
 
-state: open
-scoped: devlog/roadmap.md (M2.6 and later  --  any active milestone task list)
+state: probation
+scoped: devlog/roadmap.md (any active milestone task list)
 legacy: none
-mitigation: several roadmap items were still `- [ ]` though the handover that resolved
-them was already Closed (dry-run probe-check harness `20260828-03`, make resume volume
-reuse / Bug D `20260828-04`, and the campaign-findings basket all-`[x]` sub-items). All
-were cleared to `- [x]` with final-state summaries in `20260831-09` post-close corrections.
-Rule: a roadmap task must be marked `- [x]` in the same iteration its resolving handover
-closes -- the handover's Closed state is the trigger, not a later cleanup pass. At iteration
-close, cross-check every `- [ ]` entry against its referenced/latest handover's Status; if
-the handover is Closed (and its ACs met), flip the roadmap item and note it as a post-close
-correction. Do not trust the checkbox to have been maintained; verify it against the
-handover record.
+mitigation: several `- [ ]` items stayed open after their resolving handover closed (`20260828-03`, `20260828-04`, campaign findings; cleared in `20260831-09` post-close corrections; the class recurred through 2026-09). Rule, canonical in `roadmap_policy.md#when-the-roadmap-is-touched`: mark `- [x]` in the same iteration its resolving handover closes; never leave the claim implicit. Durable fix `20260912-04`: iteration_policy Step 7 defines a pre-close summary with a Roadmap write-back section (exact row change per task touched; `none worked this iteration` when none); the operator release approves it and Steps 8-9 apply it. Escalate to open if a close again ships without the write-back section.
 
 ### [G] 2026-09-01 - Editing or composing a doc whose own policy text forbids the pattern: verify the recipient file's rules first
 

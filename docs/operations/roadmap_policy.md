@@ -2,24 +2,34 @@
 
 Policy rules for `devlog/roadmap.md`, `devlog/roadmap_future.md`, and `devlog/changelog.md`.
 
+**Role of this file.** This file owns all roadmap update procedure and record shape. It answers, in order: when the roadmap is touched (invocation moments), how updates are executed (bookkeeping, promotion), what the record must look like (structure and filing rules), and how records retire (changelog, corrections). Other documents link here; they do not restate these rules.
+
 ---
 
-## Fractal Milestone Numbering
+## When the Roadmap Is Touched
 
-Milestones use a fractal numbering system that nests arbitrarily:
+The roadmap is not updated continuously during an iteration. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
 
-```
-M{n}          — top-level milestone (e.g. M2)
-M{n}.{m}      — sub-milestone (e.g. M2.6)
-M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
-...           — extends infinitely
-```
+**Roadmap-update timing rule:** a roadmap task is marked `- [x]` in the same iteration its resolving handover closes — the handover's Closed state is the trigger, not a later cleanup pass. If the operator rejects a completion claim at the pre-close gate, revert the marker to `- [ ]` and record the discrepancy as a resolved mid-iteration finding. When an iteration generates a task (an explicit named roadmap entry), add it to the roadmap at iteration end. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
 
-**Rules:**
-- Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited in milestone numbering. If a milestone has phases, they are numbered as discrete sub-milestones with distinct integers (M2.6.1, M2.6.2, ...).
-- The summary table in `roadmap.md` uses indentation to show parent-child nesting. The table displays each sub-milestone indented under its parent.
-- Completed nesting levels are shown as `[Complete — see changelog](changelog.md#...)` with a link to the relevant changelog section anchor.
-- Changelog links point to the individual milestone or sub-milestone section in `changelog.md`, not to the file root.
+### Iteration start (Step 1)
+
+1. Read `roadmap.md`
+2. Read the task list as this iteration's pending work; do not copy it into the handover
+
+### Step 7 — Pre-close verification
+
+Per [`iteration_policy.md` Step 7](iteration_policy.md#step-7--pre-close-verification), the agent presents a pre-close summary whose Roadmap write-back section states, per task touched, the exact row change — including compaction proposals for fully-completed task groups (outcome summaries that would replace their checklists if the operator accepts at Gate 3).
+
+The operator reviews the compaction proposal alongside AC verification at Gate 3. Accepted compaction text is applied mechanically at Steps 8–9.
+
+### Iteration end (Steps 8–9)
+
+Apply the approved write-back: compaction summaries replace completed groups' checklists; generated tasks land as named entries. The mechanical rules are under [Post-close Bookkeeping](#post-close-bookkeeping); the compaction format under [Compaction cascading](#compaction-cascading).
+
+Produce all roadmap edits as targeted changes, not full-file rewrites.
+
+---
 
 ## Post-close Bookkeeping
 
@@ -57,7 +67,13 @@ After compaction, update the Milestone Summary table:
 
 If a deferred item will not be picked up in the next iteration, add it as a named task entry to the roadmap. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`. Nest new tasks under the current sub-milestone's task list unless directed otherwise.
 
-## Milestone promotion check
+---
+
+## Milestone Promotion
+
+Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focused on the active milestone. `roadmap_future.md` is a planning document, not a historical record — sections may be rewritten freely as understanding evolves. The changelog is the permanent record.
+
+### Promotion check
 
 At minor loop Step 2 (scope confirmation), before presenting the scope proposal:
 
@@ -68,52 +84,38 @@ At minor loop Step 2 (scope confirmation), before presenting the scope proposal:
 
 This check is self-healing — it catches both stale summaries and the first iteration targeting a new milestone.
 
-## When the Roadmap Is Touched
+### Promotion transport
 
-The roadmap is not updated continuously during an iteration. It is touched at defined moments in the minor loop and at major loop close. Do not update it outside these moments.
+When top-level milestone close runs (bookkeeping compaction reaches the root), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
 
-**Roadmap-update timing rule:** when an iteration generates a task (an explicit named roadmap entry), update the roadmap at end of iteration. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
+1. Move the milestone section from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones`
+2. Update the Milestone Summary table row in `roadmap.md`: add anchor link, set status to `In progress`
+3. Remove the section from `roadmap_future.md`
 
-### During the iteration
-
-1. Mark a task `- [x]` when its implementation satisfies the acceptance criteria — the agent's completion check
-2. The marker signals "ready for operator verification at Step 7"
-3. If the operator disagrees at Step 7, revert to `- [ ]`
-4. Record the discrepancy as a resolved mid-iteration finding, reformulate the scope, and rewrite the incomplete task
-
-### Iteration start (Step 1)
-
-1. Read `roadmap.md`
-2. Read the task list as this iteration's pending work; do not copy it into the handover
-
-### Step 7 — Pre-close verification
-
-Per [`handover_policy.md`](handover_policy.md#at-pre-close-verification-step-7), the agent presents a pre-close summary including:
-
-- AC status per criterion
-- **Proposed compaction entries** — for each fully-completed task group, the outcome summary that would replace its checklist if the operator accepts at Gate 3
-
-The operator reviews the compaction proposal alongside AC verification at Gate 3. Accepted compaction text is applied mechanically at Steps 8–9.
-
-### Iteration end (Steps 8–9)
-
-Completed task groups are compacted to a `- [x]` outcome summary (1–3 sentences). The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9. Implementation detail, file lists, and task breakdowns are removed — the handover retains them. Design document links and "Not in scope" / deferred tags survive.
-
-Produce all roadmap edits as targeted changes, not full-file rewrites.
+**Which milestone to promote:** the next incomplete milestone in the Milestone Summary table order. If the next milestone has sub-milestones (e.g. M2.1, M2.2), promote the parent section and all sub-milestone sections together as a single block.
 
 ---
 
-## Rules
+## Structure and Filing Rules
 
-**Milestone numbering** — use the [Fractal Milestone Numbering](#fractal-milestone-numbering) scheme. Non-integer or ad-hoc phase labels are prohibited.
+### Fractal Milestone Numbering
 
-**Completed milestones** — extract to `changelog.md` using the format below, then remove the milestone entry from the roadmap entirely. Update the Milestone Summary table row to link to the specific milestone section in the changelog (e.g. `[Complete — see changelog](changelog.md#m21--general-capability-layer-prototype)`).
+Milestones use a fractal numbering system that nests arbitrarily:
 
-**Completed task groups** — compacted to a `- [x]` markdown task list entry with a 1–3 sentence outcome summary describing what was built. Task breakdowns, file lists, implementation notes, and "Depends on" / "Prerequisite for" lines referencing now-completed items are removed — the handover retains the detail. Design document links and "Not in scope" / deferred tags survive. The operator reviews proposed compaction text at Gate 3; accepted text is applied mechanically at Steps 8–9.
+```
+M{n}          — top-level milestone (e.g. M2)
+M{n}.{m}      — sub-milestone (e.g. M2.6)
+M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
+...           — extends infinitely
+```
 
-**Decisions** — design decisions made during an iteration are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; iteration handovers log which decisions were made per iteration.
+**Rules:**
+- Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited in milestone numbering. If a milestone has phases, they are numbered as discrete sub-milestones with distinct integers (M2.6.1, M2.6.2, ...).
+- The summary table in `roadmap.md` uses indentation to show parent-child nesting. The table displays each sub-milestone indented under its parent.
+- Completed nesting levels are shown as `[Complete — see changelog](changelog.md#...)` with a link to the relevant changelog section anchor.
+- Changelog links point to the individual milestone or sub-milestone section in `changelog.md`, not to the file root.
 
-**Open questions** — open design questions live in the design document, not the roadmap. The roadmap carries a single task entry referencing the design document (e.g. "Resolve open design questions — see [design doc]"). When questions are resolved, the decision is recorded in the design document (not as Q&A — as a named decision with rationale). The roadmap task is checked off. Design documents must not contain Q&A-style sections ("Q: ... A: ..." or numbered question/answer pairs).
+### Record shape
 
 **Active sub-milestone task list** — the active sub-milestone carries a full task checklist grouped by functional area. This is the canonical task list; the handover references it, does not copy it.
 
@@ -123,28 +125,19 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 **Task granularity** — identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 
-**Not in scope** — each milestone carries a `#### Not in scope` sub-section nested under its milestone header, listing items indefinitely deferred or explicitly excluded from that milestone's scope, in point form. One sentence per item with a link to the relevant discussion or architecture document if context is needed. This replaces the former `## Known Limitations` global section — limitations are scoped to the milestone that produced them, not accumulated in a catch-all. At milestone close, deferred items carry forward to `roadmap_future.md` or to the next active milestone's Not in scope section.
+**Summary table format** — the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors or changelog.md section anchors), never to file roots.
 
 **Persistent sections** — Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 
-**Summary table format** — the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors or changelog.md section anchors), never to file roots.
-
 **Empty sections** — remove immediately.
 
----
+### Filing rules
 
-## Milestone Promotion
+**Decisions** — design decisions made during an iteration are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; iteration handovers log which decisions were made per iteration.
 
-Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focused on the active milestone. When top-level milestone close runs (bookkeeping compaction reaches the root), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
+**Open questions** — open design questions live in the design document, not the roadmap. The roadmap carries a single task entry referencing the design document (e.g. "Resolve open design questions — see [design doc]"). When questions are resolved, the decision is recorded in the design document (not as Q&A — as a named decision with rationale). The roadmap task is checked off. Design documents must not contain Q&A-style sections ("Q: ... A: ..." or numbered question/answer pairs).
 
-**Promotion steps:**
-1. Move the milestone section from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones`
-2. Update the Milestone Summary table row in `roadmap.md`: add anchor link, set status to `In progress`
-3. Remove the section from `roadmap_future.md`
-
-**Which milestone to promote:** the next incomplete milestone in the Milestone Summary table order. If the next milestone has sub-milestones (e.g. M2.1, M2.2), promote the parent section and all sub-milestone sections together as a single block.
-
-`roadmap_future.md` is a planning document, not a historical record — sections may be rewritten freely as understanding evolves. The changelog is the permanent record.
+**Not in scope** — each milestone carries a `#### Not in scope` sub-section nested under its milestone header, listing items indefinitely deferred or explicitly excluded from that milestone's scope, in point form. One sentence per item with a link to the relevant discussion or architecture document if context is needed. This replaces the former `## Known Limitations` global section — limitations are scoped to the milestone that produced them, not accumulated in a catch-all. At milestone close, deferred items carry forward to `roadmap_future.md` or to the next active milestone's Not in scope section.
 
 ---
 

@@ -34,18 +34,6 @@ You operate in three modes, often in combination:
 
 These principles are stable. The operating workflow and policy documents are their realisations -- they will evolve; the principles do not.
 
-**Handover first.** The first output of every iteration is a **new** handover document. No file, code, or structural change is produced before it exists. If the iteration opens with a task prompt, create the handover before acting on the prompt. The most recent handover in `devlog/handovers/` belongs to the previous iteration -- if its Status is `Closed`, it is a read-only record. Do not modify it, except to apply a documented correction per `documentation_policy.md`. Create a new file for all other iteration work. Use a proper descriptive filename for the handover, and update it if scope changes.
-
-**Keep the handover current.** Update the handover's Completed table, Decisions table, Findings, and Deferred items as work progresses -- not just at iteration end. A task that is completed on disk but not recorded in the handover is invisible to the next agent. The `iteration_policy.md` write-back moments (on task completion, on discovery, on steering received) are mandatory, not advisory.
-
-**Commit when the handover closes.** Every iteration produces exactly one commit at close with the handover as part of that commit. The commit message matches the iteration type per `docs/operations/git_policy.md`. Intermediate WIP during the iteration is free-form -- only the delivery commit at iteration end is subject to format enforcement. The agent runs `git add -A && git commit` after the operator releases Gate 3 and before marking the handover Closed. A handover marked `Closed` with uncommitted changes is not closed.
-
-**Confirm scope before producing output.** After the handover is created, state what you propose to do this iteration -- what is in scope, what is being deferred, and any questions that must be resolved before starting. Do not produce any file, code, or structural output until the operator has confirmed the scope. If context is insufficient to propose a scope, ask one question at a time until it can be stated. The full gate is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
-
-**Confirm acceptance before closing.** Before closing the iteration, present the status of every acceptance criterion in a visible table -- each criterion shown, each status populated. Run all verifiable checks and show output. Do not close until the operator has reviewed and explicitly released. The full gate (pre-close verification) is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md).
-
-**Plan before executing.** Propose a plan and wait for confirmation before producing any file, code, or structural change.
-
 **State assumptions explicitly.** State them before proceeding, not after.
 
 **Diagnose before fixing.** Explain the root cause and confirm your understanding before proposing a fix.
@@ -110,8 +98,6 @@ Two persistent records live in `devlog/`:
 
 These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 
-**Roadmap as sole task list.** The roadmap is the sole task list. When an iteration generates a task, update the roadmap at iteration end. Do not leave a task in the handover alone. Authoritative rule: [`roadmap_policy.md`](docs/operations/roadmap_policy.md#when-the-roadmap-is-touched).
-
 ---
 
 ## Read Discipline
@@ -159,6 +145,10 @@ If a required document is absent and carries no `[REMOVED]` marker on its refere
 If a document's referencing link is marked `[REMOVED]`, the absence is expected -- no error.
 
 ---
+
+## Iteration Lifecycle
+
+The minor loop -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the handover format and lifecycle in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md). Its gates require explicit operator release: scope confirmation before any file output, and pre-close release before the close commit. The pre-close summary includes the Roadmap write-back row defined at [Step 7](docs/operations/iteration_policy.md#step-7--pre-close-verification). The roadmap is the sole task list; its update procedure lives in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md). Commit and delivery rules are in [`docs/operations/git_policy.md`](docs/operations/git_policy.md).
 
 ## Iteration Start
 

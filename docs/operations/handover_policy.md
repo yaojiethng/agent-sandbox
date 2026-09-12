@@ -156,7 +156,7 @@ None.
 **Conclusions from this iteration:** decisions made, approaches confirmed, dead ends ruled out. Not a full log -- only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
 
-What's Next is context-only. It does not carry a task list. The roadmap is the sole task list. Deferred items escalate into named roadmap entries at iteration end. When an iteration generates tasks, update the roadmap at iteration end.
+What's Next is context-only. It does not carry a task list. The roadmap is the sole task list; its update procedure lives in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched).
 
 ---
 
