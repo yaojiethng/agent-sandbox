@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_session_inventory.sh
 # Unit tests for src/libs/session_inventory.sh  --  registry-record parsing and
+# Pins cite: docs/architecture/tool_interface.md l.55 (list columns, staleness label),
+#             naming table (l.15).
+
 # staleness classification.
 #
 # Covers:

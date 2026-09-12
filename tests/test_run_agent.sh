@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_run_agent.sh  --  Behavioural tests for scripts/run_agent.sh
 # provider hook + provider overlay selection.
+# Pins cite: docs/architecture/tool_interface.md l.41, l.225 (SERVE_PORT contract);
+#             code-owner: scripts/run_agent.sh SERVE_PORT_DEFAULT.
+
 #
 # Replaces the former source-grep suite (extract_path_expr string checks +
 # provider-file existence loop). That suite asserted the exact source text a

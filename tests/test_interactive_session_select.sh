@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_interactive_session_select.sh
 # Tests for libs/interactive_session_select.sh
+# Pins cite: docs/architecture/tool_interface.md l.132-135 (channel table);
+#             devlog/discussions/design_apply_draft_workflow.md (channel directories).
+
 #
 # Covers:
 #   interactive_confirm_or_abort    --  y/N prompt, return codes

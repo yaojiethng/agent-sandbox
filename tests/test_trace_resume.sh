@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # tests/test_trace_resume.sh
 # Trace tests for the resume path (Bug D): `make resume` must ATTACH the
+# Pins cite: docs/concepts/sandbox_identity.md (labels);
+#             docs/architecture/tool_interface.md (naming table);
+#             R1-R4 list below (resume semantics).
+
 # existing session's namespace/volume, never recreate/destroy it. Guards the
 # readyliness-watching regression where a resume could reset the baseline.
 #

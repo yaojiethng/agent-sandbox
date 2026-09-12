@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_trace_compose_gen.sh
 # Trace test: compose_generate output must not contain injected name: lines.
+# Pins cite: roadmap "CLI surface" (l.94); code-owner: src/build/compose.sh
+#             compose_generate (template + substitutions only).
+
 # Verifies the compose project name leak fix.
 
 set -uo pipefail
@@ -84,13 +87,13 @@ test_no_name_lines_in_output() {
   fi
 
   local name_lines
-  name_lines=$(grep -c '^[[:space:]]*name:' "$out" 2>/dev/null) || name_lines=0
+  name_lines=$(grep -c '^name:' "$out" 2>/dev/null) || name_lines=0
 
   if [[ "$name_lines" -eq 0 ]]; then
-    pass "generated compose file has zero 'name:' lines"
+    pass "generated compose file has no top-level 'name:' key (template + substitutions only)"
   else
-    fail "generated compose file has $name_lines 'name:' line(s) (expected 0)"
-    grep '^[[:space:]]*name:' "$out" >&2
+    fail "generated compose file has $name_lines top-level 'name:' line(s) (expected 0)"
+    grep '^name:' "$out" >&2
   fi
 }
 

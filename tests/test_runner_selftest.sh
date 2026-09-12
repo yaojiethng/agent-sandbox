@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_runner_selftest.sh
 #
+# Pins cite: code-owner -- tests/libs/test_common.sh fail()/run_test marker contract;
+#             scripts/run_tests.sh (runner grep).
+
 # Self-test of scripts/run_tests.sh  --  the runner is load-bearing
 # infrastructure (every other suite's green/red signal passes through it),
 # so its counting contract is locked here:

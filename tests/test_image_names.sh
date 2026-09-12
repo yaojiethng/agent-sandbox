@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_image_names.sh  --  Unit tests for src/build/image.sh naming.
 #
+# Pins cite: docs/architecture/tool_interface.md naming table (l.15, l.28).
+
 # These four functions are the docker tag contract. Prune, resume, build and
 # compose re-derive image names independently, so any drift here breaks
 # cross-layer resource addressing silently.

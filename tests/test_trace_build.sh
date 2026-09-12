@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_trace_build.sh
 # Trace tests for agent-sandbox build subcommand.
+# Pins cite: docs/architecture/tool_interface.md naming table (l.15, l.28).
+
 
 set -uo pipefail
 

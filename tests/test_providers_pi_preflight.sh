@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_providers_pi_preflight.sh
 # Unit tests for src/reasoning/providers/pi/preflight.sh
+# Pins cite: devlog/discussions/design_provider_config_ownership_and_loading.md (warning surface).
+
 #
 # Tests:
 #   - _ensure_harness_keys injects skills/prompts/packages keys

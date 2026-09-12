@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_prune.sh
 # Unit/behaviour tests for the registry-based prune (scripts/prune.sh):
+# Pins cite: roadmap "Label-filtered volume prune" (l.140);
+#             code-owner: scripts/prune.sh (echo text).
+
 # Rule 1 record selection (staleness, provider, age filters), dry-run, the
 # interactive confirm wrapper, and the STALE=image not-yet-implemented guard.
 

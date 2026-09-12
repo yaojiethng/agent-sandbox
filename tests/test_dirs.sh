@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # tests/test_dirs.sh  --  Unit tests for src/libs/dirs.sh path derivation.
 #
+# Pins cite: docs/concepts/sandbox_identity.md l.142 (session-diffs layout);
+#             devlog/discussions/design_workspace_path_resolution.md.
+
 # dirs_resolve is a maintained internal seam with a stable API (env-overridable
 # defaults + BASE_DIR argument). These unit tests assert the contract directly
 # and run under `make test` (previously only covered by a broken manual

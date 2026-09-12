@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_draft_workflow.sh
 # Tests for libs/draft_workflow.sh
+# Pins cite: devlog/discussions/design_apply_draft_workflow.md (commit-subject format).
+
 #
 # Covers:
 #   draft_run    --  creates branch, applies patches, .draft-state, guards

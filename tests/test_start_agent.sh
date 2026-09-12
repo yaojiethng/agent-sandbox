@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # -------------------------
 # Host-side start_agent.sh behavioral tests  --  start policy flags
+# Pins cite: docs/concepts/sandbox_identity.md (labels, naming);
+#             docs/architecture/tool_interface.md (naming table).
+
 # (default/--rebuild/--refresh), rendered-compose contract (full substitution,
 # container naming, session labels), removed-flag rejection, help/usage surface,
 # WSL path validation, and the interactive config wizard.

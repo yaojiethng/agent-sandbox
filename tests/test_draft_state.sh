@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_draft_state.sh
 # Unit tests for libs/draft_state.sh  --  folder name parsing, state I/O, branch validation.
+# Pins cite: devlog/discussions/design_apply_draft_workflow.md (state schema, guard surface).
+
 #
 # Covers:
 #   draft_parse_folder_name         --  3 parsing sub-cases (no session-id, with session-id, edge)
