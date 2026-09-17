@@ -46,11 +46,11 @@ not seen.
 
 ## Inventory
 
-One row per open work item:
+One row per open work item. The sample row below is illustrative, not a live item -- the values are examples of each column's shape, sourced from the open items the survey found:
 
 | Item | Type | Size | Progress | Impact | Verification |
 |---|---|---|---|---|---|
-| Delete the remaining sed probe in `test_onboard.sh` (roadmap M2.6 open item) | chore | small | urgent housekeeping | recurring pain point | offline `make test` |
+| <work item> -- <roadmap entry, handover, or feedback entry that names it> | chore | small | deferred, no pickup date | cosmetic | offline `make test` |
 
 Field meanings:
 

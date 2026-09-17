@@ -37,9 +37,9 @@ After every iteration end (Steps 8–9), run bookkeeping on every node in the fr
 
 ### Compaction cascading
 
-For each node whose direct children were all completed in this iteration:
+For each node whose direct children are all complete:
 
-1. **Compact the node** — replace each child's checklist with a `- [x]` outcome summary (1–3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them).
+1. **Compact the node** — replace each child's checklist with a `- [x]` outcome summary (1–3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them). Flip the node's heading status to `Complete` when one is shown.
 2. **Check the node's own parent** — if all siblings of this node are also compacted, compact the parent node (its sibling list becomes a single `- [x]` entry).
 3. **Repeat upward** until reaching a node whose siblings are not all complete, or the top-level milestone is reached.
 4. If compaction reaches the top-level milestone (all direct sub-milestones complete), run **Top-level milestone close** (see below).

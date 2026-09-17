@@ -121,6 +121,11 @@ fi
 # interpolation reads the process env directly and the provider serve overlays
 # carry the same fallback. The warning is serve-mode-only: in standard/dry-run
 # the port is irrelevant and the warning would be noise.
+#
+# SERVE_PORT works on any host port in the allowable range; the value 46553
+# was picked arbitrarily at first implementation so the default is stable
+# across providers. It carries no contract meaning -- override it via
+# SERVE_PORT in .env; never pin an invariant to its exact value.
 SERVE_PORT_DEFAULT=46553
 if [[ -z "${SERVE_PORT:-}" ]]; then
   SERVE_PORT="$SERVE_PORT_DEFAULT"
@@ -185,10 +190,9 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   exit 1
 fi
 
-# Mount delivery worktree  --  single shared host worktree per sandbox. Default
-# ${SANDBOX_DIR}/.worktree; overridable via WORKTREE_DIR (custom mount point,
-# injected into compose at generation). Only the mount overlay reads it.
-export WORKTREE_DIR="${WORKTREE_DIR:-$SANDBOX_DIR/.worktree}"
+# Mount delivery worktree  --  single shared host worktree per sandbox.
+# session_env_common_init (the caller) already set and exported WORKTREE_DIR
+# before exec'ing this script; only the mount overlay reads it.
 
 COMPOSE_FILES=("$COMPOSE_TEMPLATE")
 

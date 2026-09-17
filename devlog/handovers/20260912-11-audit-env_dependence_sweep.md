@@ -65,11 +65,10 @@ Housekeeping directed by the operator:
 
 - The defect class the audit hunted (ambient env deciding mode/config downstream, per bash-conventions 1.13) is absent from all six surfaces. Iteration `20260912-10` had already removed the one real instance (`SANDBOX_TYPE`).
 - Classifications: RESET_VOLUME command input (compose-literal transport); WORKTREE_DIR persisted config (`.env` / make var / default, three documented sources); INTERACTIVE_MAX_ENTRIES safe default (internal paging tunable); SERVE_PORT persisted config; AGENT_CMD container-boundary override hook with provider-table-derived default; AUTOSAVE_INTERVAL persisted config.
-- Minor (deferred): the `<sandbox>/.worktree` default string is duplicated (session_env l.113, run_agent l.185); the 46553 cross-file equality (run_agent default == provider serve overlay fallbacks) is documented but pinned by only one side of the pair.
+- Minor (deferred): the `<sandbox>/.worktree` default string is duplicated (session_env l.113, run_agent l.185); the 46553 cross-file equality (run_agent default == provider serve overlay fallbacks) is documented but pinned by only one side of the pair. Corrected: the 46553 value is arbitrary (SERVE_PORT works on any host port in the allowable range; the default was picked at first implementation for cross-provider stability). No invariant pins its value; the grep-pin idea is withdrawn and must not be raised again. See the comment at `SERVE_PORT_DEFAULT` in run_agent.sh. The worktree-default duplication is resolved separately (operator `20260912-12`).
 - Pre-existing convention validated: `env_field`-style record parsing and the `.env` wholesale loader (session_env) keep ambient reads confined to documented config channels.
 
 ## Deferred items
 
-- One-line grep test pinning that every `docker-compose.serve.yml` fallback equals `SERVE_PORT_DEFAULT` (reviewer item 4; closes the documented-but-half-pinned invariant).
-- Consolidate the duplicated `WORKTREE_DIR` default string into one definition (cosmetic; two sites, same value).
+- Consolidate the duplicated `WORKTREE_DIR` default string into one definition (cosmetic; two sites, same value). Resolved `20260912-12`: consolidated -- the session_env default is the single owner; run_agent's redundant re-assignment removed.
 - SERVE_PORT resolution consolidation with the serve-branch: rejected this round (reviewer structural assessment); revisit only if the serve path grows more SERVE_PORT consumers.
