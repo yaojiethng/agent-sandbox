@@ -395,9 +395,9 @@ EOF
 }
 
 # Mount delivery (--delivery=mount): start materializes the host worktree
-# at WORKTREE_DIR (default $SANDBOX_DIR/.worktree) -- git repo + baseline
-# commit + copied tracked content; a second start attaches without
-# re-materializing.
+# at WORKTREE_DIR (default $SANDBOX_DIR/.worktree) -- full history by default
+# (copied .git, HEAD = project HEAD, recorded agent-sandbox.flatten=false) +
+# copied tracked content; a second start attaches without re-materializing.
 test_mount_start_materializes_worktree() {
   local dir="$FIXTURE_DIR/mount_first_start"
   run_start_session "$dir" standard --delivery=mount \
@@ -414,10 +414,21 @@ test_mount_start_materializes_worktree() {
     fail "mount start: no worktree at $wt"; return
   fi
 
-  if git -C "$wt" rev-list --max-parents=0 HEAD >/dev/null 2>&1; then
-    pass "mount start: baseline commit present in worktree"
+  # Full mode: the worktree carries the project history, so its HEAD equals
+  # the project HEAD and the delivery-history mode is recorded as full.
+  local wt_head proj_head recorded
+  wt_head="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
+  proj_head="$(git -C "$dir/project" rev-parse HEAD)"
+  if [[ "$wt_head" == "$proj_head" ]]; then
+    pass "mount start: full-history worktree HEAD equals project HEAD"
   else
-    fail "mount start: no baseline commit in worktree"
+    fail "mount start: worktree HEAD ($wt_head) != project HEAD ($proj_head)"
+  fi
+  recorded="$(git -C "$wt" config agent-sandbox.flatten 2>/dev/null)"
+  if [[ "$recorded" == "false" ]]; then
+    pass "mount start: worktree records agent-sandbox.flatten=false (full)"
+  else
+    fail "mount start: recorded flatten mode wrong (got '$recorded')"
   fi
 
   if [[ "$(cat "$wt/file.txt")" == "baseline" ]]; then
@@ -457,6 +468,96 @@ test_mount_second_start_attaches() {
   fi
 }
 
+# The attach (reuse) path refuses a delivery-history-mode mismatch: a worktree
+# created full must not be served to a flatten request (and vice versa). The
+# refusal is the fail-closed claim at start_agent.sh -- it must have coverage.
+test_mount_reuse_refuses_mode_mismatch() {
+  local dir="$FIXTURE_DIR/mount_mismatch"
+  run_start_session "$dir" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  [[ "$START_RC" -eq 0 ]] || { fail "mount mismatch (first): rc=$START_RC"; return; }
+
+  # Second start requests flatten against a full worktree.
+  run_start_session "$dir" standard --delivery=mount --flatten \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]] && grep -q "keeps its first delivery-history mode" <<<"$START_OUT"; then
+    pass "mount mismatch: full worktree refuses a flatten request"
+  else
+    fail "mount mismatch: expected refusal rc!=0 with mode message, rc=$START_RC out=$(head -1 <<<"$START_OUT")"
+  fi
+}
+
+# A legacy worktree (materialized before the flatten contract) has no
+# agent-sandbox.flatten key; its mode is unknown, so reuse must refuse rather
+# than mislabel it (it is a flatten-style baseline).
+test_mount_reuse_refuses_unknown_legacy_worktree() {
+  local dir="$FIXTURE_DIR/mount_legacy"
+  mkdir -p "$dir/sandbox/.workspace/session-diffs" "$dir/sandbox/.workspace/input" \
+           "$dir/sandbox/.workspace/output"
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  make_committed_repo "$dir/project"
+  # Simulate a pre-change worktree: git repo without the flatten key.
+  git clone -q "$dir/project" "$dir/sandbox/.worktree"
+
+  START_OUT="$(cd "$dir" && PATH="$REPO_ROOT/tests/stubs:$PATH" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)"
+  START_RC=$?
+
+  if [[ "$START_RC" -ne 0 ]] && grep -q "no recorded history mode" <<<"$START_OUT"; then
+    pass "mount legacy: worktree without flatten key refused"
+  else
+    fail "mount legacy: expected refusal rc!=0, rc=$START_RC out=$(head -1 <<<"$START_OUT")"
+  fi
+}
+
+# Unborn-HEAD host repo: refused for both modes. The session-env gate
+# rejects an empty repository before delivery dispatch (this test exercises
+# that gate in the stub flow); the materialization guard is defense-in-depth
+# for direct invocation, firing for both full and flatten.
+test_mount_full_refuses_unborn_head() {
+  local dir="$FIXTURE_DIR/mount_unborn"
+  mkdir -p "$dir/project" "$dir/sandbox/.workspace/session-diffs" \
+           "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
+  git -C "$dir/project" init -q
+  git -C "$dir/project" config user.email "t@t" && git -C "$dir/project" config user.name "t"
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  START_OUT="$(cd "$dir" && PATH="$REPO_ROOT/tests/stubs:$PATH" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)"
+  START_RC=$?
+  if [[ "$START_RC" -ne 0 ]] && grep -q "has no commits" <<<"$START_OUT"; then
+    pass "mount full: unborn-HEAD project refused"
+  else
+    fail "mount full: expected refusal rc!=0 naming no commits, rc=$START_RC"
+  fi
+}
+
+# Flatten mount: fresh single baseline (no host history), key recorded true.
+test_mount_flatten_single_baseline() {
+  local dir="$FIXTURE_DIR/mount_flatten"
+  run_start_session "$dir" standard --delivery=mount --flatten \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi
+  if [[ "$START_RC" -ne 0 ]]; then
+    fail "mount flatten: rc=$START_RC: $START_OUT"; return
+  fi
+  local wt="$dir/sandbox/.worktree"
+  local count recorded
+  count="$(git -C "$wt" rev-list --count HEAD 2>/dev/null || echo 0)"
+  recorded="$(git -C "$wt" config agent-sandbox.flatten 2>/dev/null)"
+  if [[ "$count" -eq 1 ]] && [[ "$recorded" == "true" ]]; then
+    pass "mount flatten: single baseline commit, key recorded true"
+  else
+    fail "mount flatten: count=$count recorded='$recorded'"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -484,5 +585,9 @@ run_test test_wizard_provider_supplied_no_reprompt
 run_test test_wizard_accept_runs_to_completion
 run_test test_mount_start_materializes_worktree
 run_test test_mount_second_start_attaches
+run_test test_mount_reuse_refuses_mode_mismatch
+run_test test_mount_reuse_refuses_unknown_legacy_worktree
+run_test test_mount_full_refuses_unborn_head
+run_test test_mount_flatten_single_baseline
 
 test_done

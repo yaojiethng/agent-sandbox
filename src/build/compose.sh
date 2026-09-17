@@ -140,6 +140,7 @@ compose_generate() {
       -e "s|{{AGENT_IMAGE_DIGEST}}|${agent_image_digest:-}|g" \
       -e "s|{{SANDBOX_IMAGE_DIGEST}}|${sandbox_image_digest:-}|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
+      -e "s|{{FLATTEN}}|${FLATTEN:-false}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
       -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \

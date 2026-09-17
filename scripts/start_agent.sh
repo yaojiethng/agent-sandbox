@@ -76,6 +76,7 @@ Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session (standard start only)
   --rebuild   force a full rebuild with --no-cache, then start a new session (also valid for dry-run)
   --delivery=<d>  delivery model: copy|mount (default copy; mount binds the host worktree)
+  --flatten   flattened history: fresh git-init baseline, no host history (default: full history)
   --fast      dry-run only: skip the image build and run existing images
               (dry-run without --fast always rebuilds current source first)
   --interactive  interactive config wizard: pick provider + build policy, confirm, then start
@@ -241,6 +242,11 @@ main() {
   # argument. Resume never uses this default -- it recovers delivery from the
   # persisted record.
   DELIVERY="copy"
+  # FLATTEN is a command input, not environment state: parsed once here, at
+  # ingestion, and passed down as an explicit --flatten argument (parallel to
+  # DELIVERY). Never read from ambient env downstream. Resume recovers it from
+  # the persisted record.
+  FLATTEN=false
 
   local ARG
   for ARG in "$@"; do
@@ -256,6 +262,7 @@ main() {
       --fast)       FAST=true ;;
       --interactive) INTERACTIVE=true ;;
       --serve)      SERVE=true ;;
+      --flatten)    FLATTEN=true ;;
       --delivery=*)
         DELIVERY="${ARG#--delivery=}"
         case "$DELIVERY" in
@@ -389,31 +396,50 @@ main() {
   # -------------------------
   if [[ "$DELIVERY" == "mount" ]]; then
     # Mount delivery: materialize the host worktree (bind-mounted into the
-    # container). Use the shared snapshot primitive minus baseline.tar  --  rsync
-    # the working tree, then git-init + baseline commit so .git exists. The
-    # container writes the SESSION_STATE init marker into the worktree .git.
+    # container) via the shared delivery dispatcher (snapshot_deliver; full
+    # copies .git, flatten inits a baseline). The container writes the
+    # SESSION_STATE init marker into the worktree .git.
     mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
     source "$REPO_ROOT/src/capability/snapshot.sh"
   
     if [[ ! -d "$WORKTREE_DIR/.git" ]]; then
-      echo "Mount delivery: materializing worktree at $WORKTREE_DIR"
-      snapshot_copy_worktree "$PROJECT_DIR" "$WORKTREE_DIR"
-      git -C "$WORKTREE_DIR" init --quiet
-      git -C "$WORKTREE_DIR" config user.email "agent@sandbox"
-      git -C "$WORKTREE_DIR" config user.name "agent-sandbox"
-      # Track exec bits where the filesystem preserves them (see snapshot.sh /
-      # filesystem_tracks_exec_bits). On a Windows/macOS host this resolves to
-      # false (exec bits unreliable); see the KNOWN ISSUE (windows-style
-      # filesystems) note there for the recovery path if modes come up missing.
-      if filesystem_tracks_exec_bits; then
-        git -C "$WORKTREE_DIR" config core.fileMode true
-      else
-        git -C "$WORKTREE_DIR" config core.fileMode false
+      # Unborn HEAD: fails here with a readable message for direct
+      # invocation; the harness session-env gate already rejected an empty
+      # repository before delivery dispatch. The seed path fires the same
+      # guard (matching invariant, both deliveries).
+      if ! git -C "$PROJECT_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
+        echo "Error: repository at $PROJECT_DIR has no commits. Make an initial commit before starting a session." >&2
+        exit 1
       fi
-      git -C "$WORKTREE_DIR" add -A
-      git -C "$WORKTREE_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet
+      echo "Mount delivery: materializing worktree at $WORKTREE_DIR"
+      # Shared delivery dispatcher: full (default) copies .git for full history;
+      # flatten syncs the worktree then inits a fresh baseline. Record the
+      # delivery-history mode in the worktree config so reuse can detect a
+      # later mismatch (persist, re-consume -- never infer).
+      snapshot_deliver "$PROJECT_DIR" "$WORKTREE_DIR" "$FLATTEN" \
+        || { echo "Error: mount worktree materialization failed ($WORKTREE_DIR)" >&2; exit 1; }
+      git -C "$WORKTREE_DIR" config agent-sandbox.flatten "$FLATTEN" \
+        || { echo "Error: recording mount worktree history mode failed" >&2; exit 1; }
       echo "Mount worktree baseline ready."
     else
+      # Reuse semantics: a materialized worktree keeps its delivery-history
+      # mode. Read the recorded mode; refuse a mismatch rather than silently
+      # serve a full worktree to a flatten request (or vice versa). A worktree
+      # without the key predates the flatten contract (it is a flatten-style
+      # baseline) -- its mode is unknown, so refuse rather than mislabel it as
+      # full.
+      local recorded_flatten
+      recorded_flatten="$(git -C "$WORKTREE_DIR" config agent-sandbox.flatten 2>/dev/null || echo "")"
+      if [[ -z "$recorded_flatten" ]]; then
+        echo "Error: mount worktree at $WORKTREE_DIR has no recorded history mode (pre-dates the flatten contract)." >&2
+        echo "  Recreate it: remove $WORKTREE_DIR and start again." >&2
+        exit 1
+      fi
+      if [[ "$recorded_flatten" != "$FLATTEN" ]]; then
+        echo "Error: mount worktree at $WORKTREE_DIR is $([[ $recorded_flatten == true ]] && echo flattened || echo full) but this start requested $([[ $FLATTEN == true ]] && echo flatten || echo full)." >&2
+        echo "  A worktree keeps its first delivery-history mode. Use a different --sandbox or remove $WORKTREE_DIR." >&2
+        exit 1
+      fi
       echo "Mount delivery: worktree already materialized at $WORKTREE_DIR"
     fi
   else
@@ -466,12 +492,16 @@ main() {
   # reset: run_agent.sh destroys the existing volume before starting fresh containers.
   RESET_VOLUME_FLAG="--reset-volume"
   
+  local flatten_arg=()
+  [[ "$FLATTEN" == true ]] && flatten_arg=(--flatten)
+
   exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" \
     --name="$PROJECT_NAME" \
     --sandbox="$SANDBOX_DIR" \
     --env="$ENV_FILE" \
     --provider="$PROVIDER_NAME" \
     --delivery="$DELIVERY" \
+    "${flatten_arg[@]}" \
     $RESET_VOLUME_FLAG
 
 }

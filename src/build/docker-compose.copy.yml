@@ -6,9 +6,8 @@
 #     volume labels for lifecycle tooling)
 #
 # Content transfer: run_agent.sh seeds the volume before the sandbox container
-# starts. Transport selected by SEED_TRANSPORT: "helper" (default) runs the
-# one-shot seeder service below (ADR 2026-09-04 entry); "legacy" keeps the
-# docker cp pipeline (seed_sandbox_volume) until its removal.
+# starts. The one-shot seeder service below (ADR 2026-09-04 entry) is the sole
+# transport; its exit code is the seed's readiness signal.
 #
 # Volume name incorporates SESSION_ID so each session gets its own volume.
 # Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
@@ -34,6 +33,7 @@ services:
         target: /home/agentuser/sandbox
     environment:
       - SANDBOX_TYPE=copy
+      - FLATTEN={{FLATTEN}}
 
   # Helper-container seeder (helper seed transport, ADR 2026-09-04 entry).
   # One-shot: run_agent.sh runs `docker compose run --rm seeder` before the
@@ -69,4 +69,5 @@ services:
       - SESSION_TS=${SESSION_TS:-}
       - SESSION_ID=${SESSION_ID:-}
       - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
+      - SEED_FLATTEN={{FLATTEN}}
     restart: "no"

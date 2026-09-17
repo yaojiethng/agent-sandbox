@@ -7,20 +7,27 @@
 # below). Wire-up: run_agent.sh ->
 # docker compose run --rm seeder.
 #
-# Contract (ADR docs/adr/sandbox_delivery_model.md, 2026-09-04 entry):
+# Contract: the shared delivery dispatcher (ADR sandbox_delivery_model.md,
+# 2026-09-12 entry) transports both seed modes; the full-mode parity contract
+# derives from the 2026-09-04 entry:
 #   - git decides what crosses: tracked + untracked-non-ignored, resolved by
 #     git's own ignore sources (negation patterns included)
-#   - the repository crosses natively (cp -a .git); no reset runs, so git
-#     status in the volume is porcelain-identical to the project, staging
-#     state included
+#   - full seed: the repository crosses natively (cp -a .git); no reset runs,
+#     so git status in the volume is porcelain-identical to the project,
+#     staging state included
+#   - flatten seed: no history crosses; the worktree is git-init'd as a fresh
+#     baseline commit (no host history, no staging state)
 #   - tracked paths deleted from disk are absent from the volume by
 #     construction (existence filter), so deletions show in status
-#   - the seed self-verifies: git status --porcelain must match /src vs /dest
+#   - the seed self-verifies: full -> git status --porcelain must match
+#     /src vs /dest; flatten -> the baseline must hold every enumerated path
 #   - every failure exits nonzero with a readable message; the host aborts
 #     the start and discards the volume
 #
-# Edge cases (ADR edge-case table): linked worktrees, unborn HEAD, empty
-# worktrees, submodules, tracked sentinel -- each fails closed below.
+# Edge cases (ADR edge-case table): linked worktrees, submodules, tracked
+# sentinel, unborn HEAD (both modes -- the session-env gate requires commits
+# for every session) fail closed below; empty worktrees no-op (an empty
+# enumeration is a no-op for rsync, and the parity/baseline check still runs).
 set -euo pipefail
 
 SRC="${SEED_SRC:-/src}"
@@ -32,27 +39,20 @@ SRC="${SEED_SRC:-/src}"
 DEST="${SEED_DEST:-/home/agentuser/sandbox}"
 # session_state.sh comes from the harness libs bind mount (compose sets both).
 LIB_DIR="${SEED_LIB_DIR:-/opt/harness-libs}"
+# FLATTEN is set by the seeder service environment from the session record.
+# false/empty = full (native .git copy); true = flattened (git-init baseline).
+FLATTEN="${SEED_FLATTEN:-false}"
 
 die() { echo "Error: seed_volume: $*" >&2; exit 1; }
-
-# enumerate <src>
-# Git-enumerated, existence-filtered NUL-delimited file list of the working
-# tree. The filter drops tracked paths absent from the disk (unstaged
-# deletions); it cannot drop ignored content, because every filtered path was
-# tracked. An `if` (not `&&`) keeps the loop's exit status 0 under pipefail
-# when the last path is filtered out.
-enumerate() {
-  local src="$1"
-  git -C "$src" ls-files -z --cached --others --exclude-standard \
-    | while IFS= read -r -d '' f; do
-        if [[ -e "$src/$f" || -L "$src/$f" ]]; then printf '%s\0' "$f"; fi
-      done
-}
 
 # verify_parity <src> <dest>
 # Fail-closed seed verification: git status --porcelain must be identical.
 # Compares sorted NUL streams with cmp (bash variables cannot hold NUL bytes,
 # so the comparison must stay in files).
+#
+# Full seed only. A flattened seed inits a fresh baseline, so its worktree is
+# clean by construction and status parity against the host has no meaning; it
+# verifies the baseline instead (see verify_baseline).
 verify_parity() {
   local src="$1" dest="$2"
   local s1 s2
@@ -71,6 +71,50 @@ verify_parity() {
   rm -f "$s1" "$s2"
 }
 
+# verify_baseline <src> <dest>
+# Fail-closed flatten seed verification: the baseline commit must exist, the
+# worktree must be clean, and the committed file set must equal the source
+# enumeration. A flattened seed inits a fresh repo, so every enumerated path
+# is committed in one baseline; status parity against the host has no meaning
+# (no staging state crosses), but coverage is measured directly: exactly the
+# enumerated set, nothing extra, nothing dropped.
+verify_baseline() {
+  local src="$1" dest="$2"
+  if ! git -C "$dest" rev-parse HEAD >/dev/null 2>&1; then
+    echo "Error: flatten seed produced no baseline commit in $dest" >&2
+    return 1
+  fi
+  if [[ -n "$(git -C "$dest" status --porcelain)" ]]; then
+    echo "Error: flatten seed verification failed -- the volume worktree is not clean." >&2
+    return 1
+  fi
+  local s1 s2
+  s1="$(mktemp /tmp/seed-baseline-src.XXXXXX)"
+  s2="$(mktemp /tmp/seed-baseline-dest.XXXXXX)"
+  snapshot_enumerate_worktree "$src" | sort -z > "$s1"
+  git -C "$dest" ls-files -z | sort -z > "$s2"
+  if ! cmp -s "$s1" "$s2"; then
+    echo "Error: flatten seed verification failed -- the volume file set diverges from the source enumeration." >&2
+    diff <(tr '\0' '\n' < "$s1" | sed '/^$/d') \
+         <(tr '\0' '\n' < "$s2" | sed '/^$/d') \
+         | head -20 >&2 || true
+    rm -f "$s1" "$s2"
+    return 1
+  fi
+  rm -f "$s1" "$s2"
+}
+
+# session_state_write_set DEST INIT_SHA
+# Writes the SESSION_STATE identity block (init_sha + session identity).
+# Shared by the full and flatten seed tails; the only difference is the
+# init_sha source.
+session_state_write_set() {
+  local dest="$1" init_sha="$2"
+  session_state_write "$dest" "init_sha"      "$init_sha"
+  session_state_write "$dest" "session_ts"    "${SESSION_TS:-}"
+  session_state_write "$dest" "session_id"    "${SESSION_ID:-}"
+  session_state_write "$dest" "host_head_sha" "${HOST_HEAD_SHA:-}"
+}
 main() {
   [[ -d "$SRC/.git" ]] || die "no git repository at $SRC -- is the project mounted?"
 
@@ -80,7 +124,10 @@ main() {
     die "$SRC is a linked git worktree (its .git is a file). Seed the main working tree instead."
   fi
 
-  # Unborn HEAD: no commits to carry or verify against (ADR edge case).
+  # Unborn HEAD: no commits to carry or verify against (ADR edge case). The
+  # harness session-env gate already requires commits for every session before
+  # delivery dispatch; this guard is the delivery-layer statement of the same
+  # invariant for direct invocation of the seeder.
   if ! git -C "$SRC" rev-parse HEAD >/dev/null 2>&1; then
     die "repository at $SRC has no commits. Make an initial commit before starting a session."
   fi
@@ -105,9 +152,31 @@ main() {
   source "$script_dir/snapshot.sh"
   snapshot_check_case_mismatch "$SRC"
 
-  # Layer 1: the repository crosses natively. The seeder runs as the host uid
-  # (compose user), so volume ownership matches the sandbox service.
-  cp -a "$SRC/.git" "$DEST/.git" || die "copying $SRC/.git into the volume failed"
+  # Shared delivery dispatcher routes both modes through one primitive set:
+  # full (default) copies .git natively then syncs the worktree; flatten syncs
+  # the worktree then inits a fresh baseline. The mode-specific tails below
+  # handle the cleanup responsibilities that genuinely diverge.
+  snapshot_deliver "$SRC" "$DEST" "$FLATTEN" || die "seed delivery failed"
+
+  # shellcheck disable=SC1091  # path is a mount point, resolved at runtime
+  source "$LIB_DIR/session_state.sh"
+
+  if [[ "$FLATTEN" == "true" ]]; then
+    # SESSION_STATE: identity + the init reference for the diff pipeline.
+    # init_sha is the baseline root commit -- the flat snapshot the session
+    # started from.
+    local init_sha
+    init_sha="$(git -C "$DEST" rev-list --max-parents=0 HEAD)" \
+      || die "reading the flatten baseline root commit failed"
+    session_state_write_set "$DEST" "$init_sha"
+
+    # Self-verification: the baseline must hold every enumerated path and
+    # nothing extra, and the worktree must be clean.
+    verify_baseline "$SRC" "$DEST" || die "the volume was not seeded correctly; the host will discard it"
+
+    echo "Seed complete: flatten baseline in volume, $(git -C "$DEST" ls-files | wc -l) tracked files."
+    return 0
+  fi
 
   # Stash clear (ADR sandbox_delivery_model.md, 2026-09-11 entry): the native
   # .git copy carries the host stash stack (refs/stash, logs/refs/stash). The
@@ -136,26 +205,9 @@ main() {
     die "the volume still carries unreachable objects after the prune"
   fi
 
-  # Layer 2: worktree content. Empty enumeration -> skip tar (tar refuses an
-  # empty archive; the volume needs nothing beyond .git in that case).
-  local list count
-  list="$(mktemp /tmp/seed-list.XXXXXX)"
-  enumerate "$SRC" > "$list" || die "enumerating $SRC failed"
-  count="$(tr -cd '\0' < "$list" | wc -c)"
-  if (( count > 0 )); then
-    tar -C "$SRC" --null -T "$list" -cf - | tar -C "$DEST" -xf - \
-      || die "copying the working tree into the volume failed (tar pipeline)"
-  fi
-  rm -f "$list"
-
   # SESSION_STATE: identity + the init reference for the diff pipeline.
   # init_sha is the HEAD the volume was seeded from.
-  # shellcheck disable=SC1091  # path is a mount point, resolved at runtime
-  source "$LIB_DIR/session_state.sh"
-  session_state_write "$DEST" "init_sha"      "$(git -C "$SRC" rev-parse HEAD)"
-  session_state_write "$DEST" "session_ts"    "${SESSION_TS:-}"
-  session_state_write "$DEST" "session_id"    "${SESSION_ID:-}"
-  session_state_write "$DEST" "host_head_sha" "${HOST_HEAD_SHA:-}"
+  session_state_write_set "$DEST" "$(git -C "$SRC" rev-parse HEAD)"
 
   # Layer 3: self-verification. Any divergence aborts before a session
   # container exists.

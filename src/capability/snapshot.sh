@@ -4,8 +4,12 @@
 # sandbox-entrypoint.sh (capability layer side), and seed_volume.sh (seeder).
 #
 # Functions:
-#   snapshot_copy_worktree    SOURCE_DIR  DEST_DIR   [mount-delivery worktree materialization]
-#   snapshot_check_case_mismatch SOURCE_DIR        [case-collision preflight; also used by seed_volume.sh]
+#   snapshot_enumerate_worktree   SOURCE_DIR          [shared git enumeration, NUL-pipe]
+#   snapshot_copy_worktree        SOURCE_DIR  DEST_DIR   [sync worktree content]
+#   snapshot_copy_git             SOURCE_DIR  DEST_DIR   [copy .git: full history + index]
+#   snapshot_baseline_init        DEST_DIR    [flatten tail: fresh init + baseline commit]
+#   snapshot_deliver              SOURCE_DIR  DEST_DIR  FLATTEN  [shared delivery dispatcher]
+#   snapshot_check_case_mismatch  SOURCE_DIR        [case-collision preflight; also used by seed_volume.sh]
 #
 # The copy-delivery seed is the helper-container transport in
 # src/capability/seed_volume.sh (ADR docs/adr/sandbox_delivery_model.md,
@@ -32,19 +36,73 @@ filesystem_tracks_exec_bits() {
 }
 
 # -------------------------
-# snapshot_copy_worktree
+# snapshot_enumerate_worktree SOURCE_DIR
 # -------------------------
-# Mount-delivery worktree materialization: copies the working tree from
-# SOURCE_DIR into DEST_DIR as git enumerates it -- tracked files still on
-# disk plus untracked non-ignored files, resolved by git's own ignore
-# sources (local .gitignore, global core.excludesFile, .git/info/exclude,
-# negation patterns included). The existence filter drops tracked paths
-# absent from the disk (unstaged deletions), so the copy matches the
-# operator's on-disk state by construction.
+# Shared git enumeration of the working tree: printed as a NUL-delimited list
+# on stdout. Resolved by git's own ignore sources (local .gitignore, global
+# core.excludesFile, .git/info/exclude, negation patterns included): tracked
+# files still on disk plus untracked non-ignored files. The existence filter
+# drops tracked paths absent from the disk (unstaged deletions), so the list
+# matches the operator's on-disk state by construction.
 #
-# rsync receives the enumerated list via --from0 --files-from. There is no
-# --delete pass: materialization targets a fresh destination on a fresh mount
-# (an existing worktree with .git is reused directly, never re-copied).
+# Single owner of the enumeration -- every delivery path (copy seed rsync,
+# mount worktree sync) consumes this one primitive. An `if` (not `&&`) keeps the
+# loop's exit status 0 under pipefail when the last path is filtered out.
+snapshot_enumerate_worktree() {
+  local SOURCE_DIR="$1"
+  git -C "$SOURCE_DIR" ls-files -z --cached --others --exclude-standard \
+    | while IFS= read -r -d '' f; do
+        if [[ -e "$SOURCE_DIR/$f" || -L "$SOURCE_DIR/$f" ]]; then printf '%s\0' "$f"; fi
+      done
+}
+
+# -------------------------
+# snapshot_copy_git SOURCE_DIR DEST_DIR
+# -------------------------
+# Full-history copy step: copy the .git directory natively (history, index,
+# and staging state intact). No filtering logic, hence no filter bugs; this is
+# the exact copy that satisfies the status-parity contract. DEST_DIR must
+# exist; snapshot_deliver's full arm runs mkdir -p before calling this.
+snapshot_copy_git() {
+  local SOURCE_DIR="$1"
+  local DEST_DIR="$2"
+  cp -a "$SOURCE_DIR/.git" "$DEST_DIR/.git" \
+    || { echo "Error: copying $SOURCE_DIR/.git into $DEST_DIR failed" >&2; return 1; }
+}
+
+# -------------------------
+# snapshot_baseline_init DEST_DIR
+# -------------------------
+# Flatten tail: create a fresh repository in DEST_DIR (which already holds the
+# synced worktree) and commit it as a single baseline. No host history, no
+# staging state  --  the file set at materialization time becomes the repo.
+# Track exec bits where the filesystem preserves them (see
+# filesystem_tracks_exec_bits). On a Windows/macOS host this resolves to false
+# (exec bits unreliable); see the KNOWN ISSUE (windows-style filesystems) note
+# for the recovery path if modes come up missing.
+snapshot_baseline_init() {
+  local DEST_DIR="$1"
+  git -C "$DEST_DIR" init --quiet \
+    || { echo "Error: git init in $DEST_DIR failed" >&2; return 1; }
+  git -C "$DEST_DIR" config user.email "agent@sandbox"
+  git -C "$DEST_DIR" config user.name "agent-sandbox"
+  if filesystem_tracks_exec_bits; then
+    git -C "$DEST_DIR" config core.fileMode true
+  else
+    git -C "$DEST_DIR" config core.fileMode false
+  fi
+  git -C "$DEST_DIR" add -A
+  git -C "$DEST_DIR" commit --allow-empty -m "agent-sandbox: baseline" --quiet \
+    || { echo "Error: baseline commit in $DEST_DIR failed" >&2; return 1; }
+}
+
+# -------------------------
+# snapshot_copy_worktree SOURCE_DIR DEST_DIR
+# -------------------------
+# Sync the working tree from SOURCE_DIR into DEST_DIR as git enumerates it
+# (snapshot_enumerate_worktree). rsync receives the enumerated list via
+# --from0 --files-from. There is no --delete pass: delivery targets a fresh
+# destination (a reused mount worktree is never re-synced).
 #
 # Replaces the previous hand-built rsync exclude lists, which silently
 # ignored negation patterns in global excludes (R1 leak; ADR
@@ -64,12 +122,32 @@ snapshot_copy_worktree() {
 
   # --- Enumerate and copy ---
   mkdir -p "$DEST_DIR"
-  git -C "$SOURCE_DIR" ls-files -z --cached --others --exclude-standard \
-    | while IFS= read -r -d '' f; do
-        if [[ -e "$SOURCE_DIR/$f" || -L "$SOURCE_DIR/$f" ]]; then printf '%s\0' "$f"; fi
-      done \
+  snapshot_enumerate_worktree "$SOURCE_DIR" \
     | rsync -a --from0 --files-from=- "$SOURCE_DIR/" "$DEST_DIR/" \
     || { echo "Error: worktree copy failed ($SOURCE_DIR -> $DEST_DIR)" >&2; return 1; }
+}
+
+# -------------------------
+# snapshot_deliver SOURCE_DIR DEST_DIR FLATTEN
+# -------------------------
+# Shared delivery dispatcher serving both delivery modes with one primitives
+# set. FLATTEN is a boolean string ("true" = flattened history, "false"/empty = full).
+# Full (default): copy .git (native history + index) then sync the worktree.
+# Flatten: sync the worktree then git-init a fresh baseline (no history).
+# Returns 1 on failure; callers add their own verification and SESSION_STATE.
+snapshot_deliver() {
+  local SOURCE_DIR="$1"
+  local DEST_DIR="$2"
+  local FLATTEN="${3:-false}"
+
+  if [[ "$FLATTEN" == "true" ]]; then
+    snapshot_copy_worktree "$SOURCE_DIR" "$DEST_DIR" || return 1
+    snapshot_baseline_init "$DEST_DIR" || return 1
+  else
+    mkdir -p "$DEST_DIR"
+    snapshot_copy_git "$SOURCE_DIR" "$DEST_DIR" || return 1
+    snapshot_copy_worktree "$SOURCE_DIR" "$DEST_DIR" || return 1
+  fi
 }
 
 # -------------------------

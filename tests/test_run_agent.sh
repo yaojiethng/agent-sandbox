@@ -69,11 +69,12 @@ EOF
   :> "$DOCKER_TRACE_LOG"
 }
 
-# invoke_run_agent OUT_FILE MODE
+# invoke_run_agent OUT_FILE MODE [FLATTEN]
 #   Runs run_agent.sh (standard mode) with the docker stub shadowing PATH.
 #   Captures stdout+stderr into OUT_FILE; the function's rc is returned.
+#   Optional FLATTEN="--flatten" appends the flag.
 invoke_run_agent() {
-  local out_file="$1" mode="${2:-standard}"
+  local out_file="$1" mode="${2:-standard}" flatten="${3:-}"
   (
     export PATH="$STUB_DIR:$PATH"
     bash "$REPO_ROOT/scripts/run_agent.sh" "$mode" \
@@ -81,7 +82,8 @@ invoke_run_agent() {
       --sandbox="$SANDBOX_DIR" \
       --env="$SANDBOX_DIR/.env" \
       --provider="$PROVIDER_NAME" \
-      --delivery=copy < /dev/null
+      --delivery=copy \
+      $flatten < /dev/null
   ) > "$out_file" 2>&1
 }
 
@@ -153,10 +155,25 @@ test_setup_hook_failure_aborts_with_attribution() {
   fi
 }
 
+# --flatten is accepted and the session proceeds to compose (default is full;
+# the flag is the flatten opt-out, so its acceptance is the contract).
+test_flatten_flag_accepted() {
+  local FIX="$FIXTURE_DIR/flatten"
+  make_run_agent_fixture "$FIX" pi
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" standard --flatten || rc=$?
+
+  if [[ $rc -eq 0 ]] && [[ "$(trace_count 'compose config')" -gt 0 ]]; then
+    pass "flatten flag: --flatten accepted, session proceeds to compose"
+  else
+    fail "flatten flag: expected rc 0 + compose config, got rc=$rc out='$(cat "$out")'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Provider overlay selection
 # ---------------------------------------------------------------------------
-
 # The provider overlay (src/reasoning/providers/pi/docker-compose.pi.yml) must
 # be part of the compose file set: the docker-stub trace logs every -f argument
 # of `docker compose config`, and compose_generate preserves input basenames in
@@ -241,6 +258,7 @@ test_serve_port_unset_serve_warns() {
 run_test test_setup_hook_absent_is_noop
 run_test test_setup_hook_present_runs_and_proceeds
 run_test test_setup_hook_failure_aborts_with_attribution
+run_test test_flatten_flag_accepted
 run_test test_serve_port_unset_standard_is_quiet
 run_test test_serve_port_unset_serve_warns
 run_test test_provider_overlay_reaches_compose_file_set

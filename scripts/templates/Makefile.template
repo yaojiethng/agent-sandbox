@@ -117,6 +117,7 @@ STALE_FLAG        = $(if $(STALE),--stale=$(STALE),)
 AGE_DAYS_FLAG     = $(if $(AGE_DAYS),--age-days=$(AGE_DAYS),)
 DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
 DELIVERY_FLAG     = $(if $(SANDBOX_TYPE),--delivery=$(SANDBOX_TYPE),)
+FLATTEN_FLAG      = $(if $(filter 1 true TRUE,$(FLATTEN)),--flatten,)
 
 .PHONY: build start dry-run stop apply draft confirm reject refresh help
 
@@ -157,6 +158,7 @@ help:
 	@echo "  LIST=1            --  list resumable session ids (make resume)"
 	@echo "  STALE=sandbox     --  prune sessions whose host-head-sha != current HEAD (prune only)"
 	@echo "  SANDBOX_TYPE=<t>  --  delivery: copy|mount (default copy; passed as --delivery; resume reads it from the session record)"
+	@echo "  FLATTEN=1        --  flattened history: fresh git-init baseline, no host history (default: full history; passed as --flatten; resume reads it from the session record)"
 	@echo "  WORKTREE_DIR=<p>  --  mount only: host worktree path (default <sandbox>/.worktree)"
 	@echo "  AGE_DAYS=<n>      --  prune stale-record age cutoff, default 3 (prune only)"
 	@echo "  DRY_RUN=1         --  print the prune plan without acting (prune only)"
@@ -190,6 +192,7 @@ start:
 	  $(REBUILD_FLAG) \
 	  $(INTERACTIVE_FLAG) \
 	  $(DELIVERY_FLAG) \
+	  $(FLATTEN_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \
@@ -200,6 +203,7 @@ dry-run:
 	  $(PROVIDER_FLAG) \
 	  $(if $(FAST),--fast,) \
 	  $(DELIVERY_FLAG) \
+	  $(FLATTEN_FLAG) \
 	  --name=$(PROJECT_NAME) \
 	  --project=$(PROJECT_DIR) \
 	  --sandbox=$(SANDBOX_DIR) \

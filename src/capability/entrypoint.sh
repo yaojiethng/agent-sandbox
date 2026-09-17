@@ -39,6 +39,9 @@ CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
+# FLATTEN: false/empty = full history (native .git copy); true = flattened
+# (git-init baseline). Set by the sandbox service env from the session record.
+FLATTEN="${FLATTEN:-false}"
 # Container lib dir. Overridable for tests (SANDBOX_LIB_DIR seam); the default
 # is the baked image path. Assigned once here, used everywhere below.
 : "${SANDBOX_LIB_DIR:=/opt/sandbox/lib}"
@@ -86,7 +89,8 @@ source "$SANDBOX_LIB_DIR/snapshot.sh"
 
 if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   # Mount delivery (bind-mount worktree): the host has already materialized the
-  # worktree into ${SANDBOX_DIR} (via snapshot_copy_worktree minus baseline.tar).
+  # worktree into ${SANDBOX_DIR} via the shared delivery dispatcher
+  # (snapshot_deliver; full copies .git, flatten inits a baseline).
   # No snapshot mount. Validate .git is present; write the SESSION_STATE init
   # marker into the worktree .git (metadata) if absent; then write workspace paths.
   echo "Mount delivery: validating worktree at $SANDBOX_DIR"
@@ -96,9 +100,21 @@ if [[ "$SANDBOX_TYPE" == "mount" ]]; then
     exit 1
   fi
   if [[ ! -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
-    # First mount run: write the init marker. init_sha = the baseline root commit.
+    # First mount run: write the init marker. init_sha is the session start
+    # state -- the baseline root commit for a flattened worktree, or the host
+    # HEAD at materialization for a full-history worktree.
     echo "Mount delivery: writing SESSION_STATE init marker" >&2
-    _init_sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD 2>/dev/null || true)
+    _init_sha=""
+    if [[ "$FLATTEN" == "true" ]]; then
+      _init_sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD || true)
+    else
+      _init_sha=$(git -C "$SANDBOX_DIR" rev-parse HEAD || true)
+    fi
+    if [[ -z "$_init_sha" ]]; then
+      echo "Error: mount worktree has no resolvable HEAD -- materialization produced an empty repository." >&2
+      echo "  Recreate the worktree: remove $SANDBOX_DIR and start again." >&2
+      exit 1
+    fi
     session_state_write "$SANDBOX_DIR" "init_sha" "$_init_sha"
     session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
     session_state_write "$SANDBOX_DIR" "session_id" "${SESSION_ID:-}"

@@ -107,11 +107,11 @@ The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional — me
   transport) fills the volume before this container starts: repository with
   index, working tree, `SESSION_STATE`. The entrypoint validates the git state.
 - **Mount:** no seed. The entrypoint validates `.git` is present in the
-  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit), and skips the seed init.
+  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit for a flattened worktree, or the host HEAD at materialization for a full-history worktree), and skips the seed init.
 
 `SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy has the seeder write it into the volume's `.git` before the container exists; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
 
-**Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot primitive `snapshot_copy_worktree` — git-enumerated copy of the project working tree, then a git baseline commit so `.git` exists. The container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly.
+**Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot delivery dispatcher `snapshot_deliver` — full history by default (`cp -a .git` plus a git-enumerated worktree copy), or `--flatten` for a fresh baseline without host history. The worktree records its delivery-history mode in `.git/config` (`agent-sandbox.flatten`) so a later mode mismatch is refused, and the container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly.
 
 **File accumulation:** compose files accumulate one per unique SESSION_ID (KB-scale per session). Pruning of stale `.compose/*.yml` is deferred and tracked in the roadmap — see the M2.6 deferred-items list.
 
@@ -162,7 +162,7 @@ This is the as-expected record of what lives where across a session, so future c
 | Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{SESSION_ID}}-sandbox-data` | ✅ yes (named volume persists) |
 | Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | ✅ yes (host) |
 | Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | ✅ yes (host) |
-| Seed content (per-run staging tar) | per-run mktemp, deleted after seeding | n/a (one-shot transfer) |
+| Seed content (shared dispatcher delivery) | streamed via rsync into the volume with `cp -a .git` (full) or a fresh baseline (flatten) | n/a (one-shot transfer) |
 | Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, copy-in from baked image at startup | ❌ regenerated on start |
 | Caches `~/.npm`, `~/.cache` | container writable layer | ❌ disposable |
 

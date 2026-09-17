@@ -7,7 +7,7 @@
 #   - existence filter: unstaged deletions absent from the volume
 #   - porcelain parity: staging state preserved; self-check detects induced divergence
 #   - SESSION_STATE written by the seeder (init_sha = HEAD, session_id, session_ts)
-#   - empty enumeration (everything tracked deleted, no untracked) skips the tar step
+#   - empty enumeration (everything tracked deleted, no untracked) seeds (rsync no-ops)
 #
 # The script is exercised both as a subprocess (full flow) and via sourced
 # functions (verify_parity unit case). No docker involved: /src and /dest are
@@ -22,11 +22,14 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 SEED_SCRIPT="$REPO_ROOT/src/capability/seed_volume.sh"
 LIBS_DIR="$REPO_ROOT/src/libs"
 
-# run_seeder SRC DEST [extra env via caller]
-# Runs the seeder as a subprocess against fixture dirs.
+# run_seeder SRC DEST [FLATTEN]
+# Runs the seeder as a subprocess against fixture dirs. Optional FLATTEN is
+# "true" to run the flattened-history branch.
 run_seeder() {
   local src="$1" dest="$2"
+  local flatten="${3:-false}"
   SEED_SRC="$src" SEED_DEST="$dest" SEED_LIB_DIR="$LIBS_DIR" \
+  SEED_FLATTEN="$flatten" \
   SESSION_ID="testses" SESSION_TS="20260904-000000" HOST_HEAD_SHA="$(git -C "$src" rev-parse HEAD)" \
     bash "$SEED_SCRIPT" > /dev/null 2>&1
 }
@@ -139,6 +142,65 @@ test_seeder_rejects_tracked_sentinel() {
 # Happy path: porcelain parity
 # -------------------------
 
+# Flattened seed: no host history or staging state crosses; the volume is a
+# fresh single baseline commit.
+test_seeder_flat_single_baseline() {
+  local proj="$FIXTURE_DIR/flat_project"
+  local dest="$FIXTURE_DIR/flat_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten seeder: rich project flattens successfully"; return 0
+  fi
+  pass "flatten seeder: rich project flattens successfully"
+
+  # Exactly one commit (the fresh baseline), no host history.
+  local count
+  count=$(git -C "$dest" rev-list --count HEAD 2>/dev/null || echo 0)
+  [[ "$count" -eq 1 ]] \
+    && pass "flatten seeder: exactly one baseline commit" \
+    || fail "flatten seeder: expected 1 commit, got $count"
+
+  # Worktree is clean by construction.
+  [[ -z "$(git -C "$dest" status --porcelain)" ]] \
+    && pass "flatten seeder: worktree clean" \
+    || fail "flatten seeder: worktree not clean"
+
+  # init_sha points at the baseline root commit.
+  local init_sha root_sha
+  init_sha=$(sed -n 's/^init_sha=//p' "$dest/.git/SESSION_STATE")
+  root_sha=$(git -C "$dest" rev-list --max-parents=0 HEAD)
+  [[ "$init_sha" == "$root_sha" ]] \
+    && pass "flatten seeder: init_sha is the baseline root commit" \
+    || fail "flatten seeder: init_sha ($init_sha) != baseline root ($root_sha)"
+}
+
+# The flatten verification must detect a dropped file: the committed set must
+# equal the source enumeration (B1 -- coverage verification, not just a clean
+# worktree). Drive verify_baseline directly (sourced) against a seeded dest
+# whose source has since lost a file: the set comparison must fail.
+test_seeder_flat_verification_detects_dropped_file() {
+  local proj="$FIXTURE_DIR/flat_drop_project"
+  local dest="$FIXTURE_DIR/flat_drop_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten drop: rich project flattens successfully"; return 0
+  fi
+  pass "flatten drop: rich project flattens successfully"
+
+  # Source loses a tracked file AFTER the seed (the race a mid-run sync defect
+  # would produce); the committed set in the dest no longer matches.
+  rm "$proj/committed.txt"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+  SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"
+  if verify_baseline "$proj" "$dest" 2>/dev/null; then
+    fail "flatten drop: verify_baseline passed despite source/volume divergence"
+  else
+    pass "flatten drop: verify_baseline fails when the source enumeration diverges"
+  fi
+}
+
 test_seeder_parity_preserves_everything() {
   local proj="$FIXTURE_DIR/rich_project"
   local dest="$FIXTURE_DIR/rich_dest"
@@ -244,7 +306,7 @@ test_seeder_empty_enumeration() {
   if run_seeder "$proj" "$dest"; then
     pass "seeder: empty enumeration (deleted-only worktree) seeds"
   else
-    fail "seeder: empty enumeration should skip the tar step and succeed"
+    fail "seeder: empty enumeration should seed successfully (rsync no-ops)"
     return 0
   fi
   if git -C "$dest" status --porcelain | grep -q '^ D file\.txt$'; then
@@ -338,5 +400,7 @@ run_test test_seeder_parity_fail_detected
 run_test test_seeder_empty_enumeration
 run_test test_seeder_clears_host_stash
 run_test test_seeder_prunes_unreachable_objects
+run_test test_seeder_flat_single_baseline
+run_test test_seeder_flat_verification_detects_dropped_file
 
 test_done

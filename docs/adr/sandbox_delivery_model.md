@@ -1,6 +1,22 @@
 # Sandbox Delivery Model
 
-**Current:** 2026-09-11
+**Current:** 2026-09-12
+
+## 2026-09-12 -- Shared delivery dispatcher: full history by default, `--flatten` opt-out
+
+**Decision.** Both delivery modes deliver full history by default: the shared `snapshot_deliver` dispatcher copies `.git` natively (full) and syncs the enumerated worktree, or syncs the worktree and inits a fresh baseline (`--flatten`). The dispatcher is the single owner of the delivery step for copy and mount; `snapshot_enumerate_worktree` is the single owner of the worktree enumeration.
+
+**Mechanism.** `snapshot_deliver SOURCE DEST FLATTEN` (in `src/capability/snapshot.sh`) routes both modes through one primitives set (`snapshot_copy_git`, `snapshot_copy_worktree`, `snapshot_baseline_init`). The seed and the mount materialization both call it. The seed's worktree transport is now the shared enumeration fed to `rsync --from0 --files-from` (replacing the 2026-09-04 tar pipeline for the worktree layer; the `cp -a .git` layer is unchanged and still satisfies R2 for full). An empty enumeration is a no-op for rsync; the 2026-09-04 "skip the tar step" edge case no longer exists.
+
+**Flatten semantics.** `--flatten` is an opt-out, not a default: both modes default to full. It follows the DELIVERY discipline -- ingested once at the start boundary, passed as an explicit argument to `run_agent`, persisted in the session record (a `FLATTEN` literal stamped into the sandbox service env), recovered on resume, never read from ambient env. The mount worktree records its delivery-history mode in `.git/config` (`agent-sandbox.flatten`); reuse refuses a mismatch and refuses a worktree with no recorded mode (pre-dates the contract).
+
+**Unborn HEAD.** The harness requires host commits for every session: the session-env gate (`session_env_common_init`) rejects an empty repository before delivery dispatch, and both the seed and the mount materialization fire the same guard at the delivery layer. No delivery tolerates an empty repository.
+
+**Verification.** Full seeds keep the 2026-09-04 status-parity self-check. Flatten seeds verify the committed file set equals the source enumeration and the worktree is clean (`verify_baseline`) -- coverage, not just a clean tree.
+
+**Judgment strip.** Earlier text framed mount as the answer for large repos that cannot afford copying. With full-by-default, that framing is gone: full copy on a large repo is slow by construction, noted as a caveat, not a rule about what large repos can or cannot do.
+
+**Rejected alternative.** Routing the seed's full path through a second bespoke transport (tar) was rejected: the shared dispatcher already serves both modes, and two sinks for one enumerated list is the duplication this entry removes.
 
 ## Requirements
 
@@ -32,11 +48,11 @@ The delivery model fills an empty Docker volume with the operator's working stat
 
 **Stash disposition:** surgical, not structural. The seeder runs `git stash clear` on the volume copy after the `.git` copy -- the host stack is untouched, no contract changes, no filtering machinery is added. Tracked as a roadmap implementation item. (The rejected clone alternative already recorded "drops stashes and reflogs" as a defect of reconstruction; the defect of exact copying is smaller and is removed post-copy.)
 
-**Residual (superseded 2026-09-11, same day -- see below):** `git stash clear` removes the refs, not the objects. Stash commit objects remain in the volume's object store as unreachable data until a gc prunes them. They are invisible to `git status`, `git log`, and `stash list`, and unreachable by the agent through any normal git command; the diff pipeline cannot select them. Their presence is the same exposure class as the repository history that crosses by design (the native `.git` copy), so no additional pruning runs at seed time -- the cost on large repos and the added machinery outweigh removing data that no sanctioned path can reach. Recovering them requires deliberate forensic effort (`git fsck --unreachable`) inside the capability layer.
+**Residual (superseded 2026-09-11, same day -- see below):** `git stash clear` removes the refs, not the objects. Stash commit objects remain in the volume's object store as unreachable data until a gc prunes them. They are invisible to `git status`, `git log`, and `stash list`, and unreachable by the agent through any normal git command; the diff pipeline cannot select them. Their presence is the same exposure class as the repository history that crosses by design (the native `.git` copy), so no additional pruning runs at seed time -- the added machinery outweighs removing data that no sanctioned path can reach. Recovering them requires deliberate forensic effort (`git fsck --unreachable`) inside the capability layer.
 
 **Unreachable-object prune (adopted 2026-09-11, same day):** the residual was judged a cleanliness violation -- reflogs and unreachable objects (stash commits, session junk) are host archaeology a snooping agent can recover via `fsck --unreachable`, and they dominate the gitdir's size. After the stash clear, the seeder probes the volume object store with `git fsck --unreachable`; when anything is found, it runs `git reflog expire --expire=now --all` and `git gc --prune=now --quiet`, then asserts the store is fsck-empty (fail closed, same pattern as the stash tripwire). The prune touches no refs, no index, and no worktree, so the status-parity contract is unaffected; on a clean host repo the seed pays only the fsck probe. Clone and bundle transports remain rejected: staged blobs exist in no commit, so any HEAD-bounded transport lacks the objects the index references and re-introduces index reconstruction. History truncation (shallow boundary at the seed HEAD, deletion of non-HEAD refs) is a separate decision: it changes what the agent can see, not only what is reachable. Study: `devlog/discussions/20260911-study-seed_object_store_cleanliness.md`.
 
-**History-trim disposition:** rejected absent a new driver. The only driver that would justify a snapshot-depth seed is seed time/size on large repositories, and the mount model (M2.6.6) is the designed answer for repos where copying is the problem -- no copy at all. Revisit only if seed cost becomes a measured problem on real repos.
+**History-trim disposition:** rejected absent a new driver. The only driver that would justify a snapshot-depth seed is seed time/size on large repositories, and the `--flatten` flag is the designed lever for that case -- a flattened delivery skips the native history copy while the flatten seed still builds a workable git repo. Full copy on a large repo is slow by construction; that is a caveat, not a rule about what large repos can or cannot do. Revisit only if seed cost becomes a measured problem on real repos.
 
 ## 2026-09-04 -- Seed transport: helper-container copy
 
@@ -103,7 +119,7 @@ Failure in intent, not execution: staging a disposable payload inside a git work
 - **Polluted legacy repos.** A repo that already tracks `.agent-sandbox-seed/` must fail the seed with a readable host-side error naming the remediation. Tripwire not yet implemented -- scheduled with the implementation iteration.
 - **Linked worktrees.** If `/src/.git` is a gitfile pointing at a host-side git directory, the copy produces a broken repository. The seeder detects this before copying and fails with a readable error.
 - **Unborn HEAD.** A repository with no commits has no HEAD to verify against. The seeder fails with a readable error naming the limitation.
-- **Empty worktrees.** Tar refuses an empty archive. The seeder skips the tar step when the enumeration is empty.
+- **Empty worktrees.** (Superseded by 2026-09-12: the shared enumeration feeds `rsync`, which no-ops on an empty list.) Tar refuses an empty archive, so the 2026-09-04 seeder skipped the tar step when the enumeration was empty.
 - **Submodules.** The gitlink crosses but module content does not. The seeder fails closed with a readable remediation message, matching the existing `snapshot_copy_worktree` precedent.
 - **Stale index stat cache.** The copied index carries host inode and device ids; git reconciles them by content on the first status call. Correctness is unaffected.
 - **Absolute `core.hooksPath`.** A local config pointing outside the project breaks hooks in the volume. Declared limitation; the harness runs no hooks itself.

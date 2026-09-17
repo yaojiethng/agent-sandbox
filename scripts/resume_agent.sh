@@ -399,6 +399,19 @@ if [[ -z "$local_provider" ]]; then
   exit 1
 fi
 
+# Flatten is recovered from the record, never inherited from the environment
+# (same rule as delivery: persist and re-consume). Records written before the
+# flatten contract have no FLATTEN literal -- default to full (false).
+local_flatten="$(env_field "$RECORD_FILE" FLATTEN)"
+case "$local_flatten" in
+  true|false|"") ;;
+  *)
+    echo "Error: session record $RECORD_FILE carries an invalid FLATTEN literal: $local_flatten" >&2
+    exit 1
+    ;;
+esac
+local_flatten="${local_flatten:-false}"
+
 # -------------------------
 # Shared host-side prelude (phase 1 + 2)
 # -------------------------
@@ -415,16 +428,20 @@ export HOST_HEAD_SHA
 
 session_env_names "$PROJECT_NAME" "$local_provider" "$SANDBOX_DIR" "$SESSION_ID_ARG"
 
-echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $local_delivery)"
+echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $local_delivery, flatten: $local_flatten)"
 
 # Resume never rebuilds missing images (preflight with build_missing=false) and
 # never resets the volume  --  it continues the existing session.
 source "$REPO_ROOT/scripts/build.sh"
 preflight "$PROVIDER_NAME" "$PROJECT_NAME" "$REPO_ROOT" "false"
 
+flatten_arg=()
+[[ "$local_flatten" == "true" ]] && flatten_arg=(--flatten)
+
 exec "$REPO_ROOT/scripts/run_agent.sh" standard \
   --name="$PROJECT_NAME" \
   --sandbox="$SANDBOX_DIR" \
   --env="$ENV_FILE" \
   --provider="$PROVIDER_NAME" \
-  --delivery="$local_delivery"
+  --delivery="$local_delivery" \
+  "${flatten_arg[@]}"

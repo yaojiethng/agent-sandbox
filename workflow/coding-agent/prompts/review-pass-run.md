@@ -18,6 +18,8 @@ The main agent orchestrates; subagents review. Subagents are fresh contexts (`pi
 pi -p "$(cat <review-prompt-or-skill-file>)"
 ```
 
+**Timeout and resume.** Run each review with a generous timeout; the default is 20 minutes (`timeout 1200 pi -p ...`). A longer review or campaign may need more; do not start with less than the default. If a run times out, do not repeat the work: pi auto-saves the interrupted session. Resume it with `pi --session <saved-session-path-or-id>` (browse with `pi -r`) and collect its verdict. A fresh run is only needed when the resumed session cannot continue.
+
 Every review prompt carries, explicitly:
 
 - **Scope**: the exact diff range and the list of touched files. State that uncommitted working-tree files (e.g. a campaign proposal sitting in the tree) are out of scope and must not be modified.

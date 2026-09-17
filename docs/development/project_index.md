@@ -92,8 +92,8 @@ Temperature reflects the stability of what a document describes — not how care
 | `sandbox_identity.md` | 🟡 Warm | M2.6 | Identity model: primitives, SESSION_ID derivation, naming, label schema, container-sig, registry, SESSION_STATE. |
 | `sandbox_host_correspondence_model.md` | 🟡 Warm | M2.6 | Correspondence model: how sandbox and host stay in sync across the diff pipeline. Container identity primitives (SANDBOX_ID, SESSION_ID, HOST_HEAD_SHA). |
 | `terminology.md` | 🟡 Warm | M2.6 | Reserved technical terms (session, iteration, staleness) with identity, scope, relationships. |
-| `copy_delivery.md` | 🟡 Warm | M2.6 | Copy delivery model: volume-backed sandbox; host-side seed + git-enumerated tar pipeline (implemented `20260901-14`); session lifecycle table. Links sandbox_delivery_model ADR. |
-| `mount_delivery.md` | 🟢 Cold | M2.6 | Mount delivery stub: wired-not-runnable status, backing axis, settled decisions summary. Detailed write-up deferred until runnable. |
+| `copy_delivery.md` | 🟡 Warm | M2.6 | Copy delivery model: volume-backed sandbox; host-side seed + native `.git` copy with git-enumerated worktree sync (seed transport updated `20260912-14`); session lifecycle table. Links sandbox_delivery_model ADR. |
+| `mount_delivery.md` | 🟡 Warm | M2.6 | Mount delivery: host-backed sandbox, full history by default with `--flatten` opt-out; settled decisions summary. Runnable `20260912-10`; detailed model written up with the flatten feature (`20260912-14`). |
 
 ### ADR (`docs/adr/`)
 

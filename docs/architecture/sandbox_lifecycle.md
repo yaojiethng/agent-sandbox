@@ -2,7 +2,7 @@
 
 This document describes the capability layer session arc: how project content enters the sandbox, how the agent works, and how changes are returned to the host.
 
-The reasoning layer lifecycle — provider config copy-in, input channels, copy-out — is in [`provider_lifecycle.md`](provider_lifecycle.md). How the two layers are wired together — mount shape, compose generation, start/stop sequencing — is in [`execution_model.md`](execution_model.md). The conceptual delivery models this lifecycle implements: [`copy_delivery.md`](../concepts/copy_delivery.md) (current) and [`mount_delivery.md`](../concepts/mount_delivery.md) (wired, not runnable).
+The reasoning layer lifecycle — provider config copy-in, input channels, copy-out — is in [`provider_lifecycle.md`](provider_lifecycle.md). How the two layers are wired together — mount shape, compose generation, start/stop sequencing — is in [`execution_model.md`](execution_model.md). The conceptual delivery models this lifecycle implements: [`copy_delivery.md`](../concepts/copy_delivery.md) (current) and [`mount_delivery.md`](../concepts/mount_delivery.md) (runnable `20260912-10`).
 
 The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
 
@@ -30,11 +30,11 @@ On a fresh start (`--reset-volume`, copy delivery), `run_agent.sh` runs the `see
 
 Inside the seeder (`src/capability/seed_volume.sh`):
 
-1. **Guards (fail closed, readable errors):** repository tracks the `.agent-sandbox-seed/` sentinel (harness staging captured by a host commit), linked worktree (`.git` is a gitfile), no commits (unborn HEAD), submodules (the gitlink would cross without its content).
-2. **Repository copy** — `cp -a /src/.git /dest/.git`: the repository crosses natively, index included; no reset runs, so the volume's `git status` is porcelain-identical to the operator's repo (staging state preserved).
-3. **Working tree copy** — git enumerates the working tree (tracked files still on disk plus untracked non-ignored files, all ignore sources honored, negation patterns included); an existence filter drops tracked paths absent from the disk, so unstaged deletions are visible in the volume; tar streams the enumerated set pipe-to-pipe. The stream never touches an intermediate location, and no harness state is written into the operator's worktree (R7).
-4. **SESSION_STATE** — the seeder writes `init_sha` (HEAD at seed time; the fixed lower boundary for `package-branch`), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory.
-5. **Self-verification** — `git status --porcelain` is compared between `/src` and `/dest`; any divergence aborts the seed.
+1. **Guards (fail closed, readable errors):** repository tracks the `.agent-sandbox-seed/` sentinel (harness staging captured by a host commit), linked worktree (`.git` is a gitfile), no commits (unborn HEAD — the session-env gate requires commits for every session before delivery dispatch), submodules (the gitlink would cross without its content).
+2. **Shared delivery dispatch** — `snapshot_deliver` routes both modes through one primitives set: full (default) copies `.git` natively then syncs the worktree; flatten syncs the worktree then inits a fresh baseline.
+3. **Working tree copy** — the shared enumeration (`snapshot_enumerate_worktree`) lists the working tree (tracked files still on disk plus untracked non-ignored files, all ignore sources honored, negation patterns included); an existence filter drops tracked paths absent from the disk, so unstaged deletions are visible in the volume. `rsync --from0 --files-from` streams the enumerated set into the volume; an empty enumeration is a no-op. The stream never touches an intermediate location, and no harness state is written into the operator's worktree (R7).
+4. **SESSION_STATE** — the seeder writes `init_sha` (HEAD at seed time for full; the baseline root commit for flatten; the fixed lower boundary for `package-branch`), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory.
+5. **Self-verification** — full: `git status --porcelain` is compared between `/src` and `/dest`, any divergence aborts the seed. Flatten: the committed file set must equal the source enumeration and the worktree must be clean.
 
 The seed guarantees the full working tree state matrix in the volume:
 

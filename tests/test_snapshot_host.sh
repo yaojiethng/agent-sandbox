@@ -259,6 +259,75 @@ test_worktree_submodule_detected() {
 
 
 # -------------------------
+# snapshot_deliver tests (delivery dispatcher: full vs flatten)
+# -------------------------
+
+# A full delivery copies .git, so the destination carries the host history and
+# the seeded HEAD becomes the destination HEAD.
+test_deliver_full_carries_history() {
+  local SRC="$FIXTURE_DIR/dl_full_src"
+  local DST="$FIXTURE_DIR/dl_full_dst"
+  make_committed_repo "$SRC"
+  local src_head
+  src_head="$(git -C "$SRC" rev-parse HEAD)"
+
+  snapshot_deliver "$SRC" "$DST" "false"
+
+  if [[ ! -d "$DST/.git" ]]; then
+    fail "deliver full: .git not copied to destination"; return
+  fi
+  local dst_head dst_count
+  dst_head="$(git -C "$DST" rev-parse HEAD)"
+  dst_count="$(git -C "$DST" rev-list --count HEAD)"
+  if [[ "$dst_head" == "$src_head" && "$dst_count" -ge 1 ]]; then
+    pass "deliver full: history + HEAD carried to destination"
+  else
+    fail "deliver full: HEAD mismatch (src=$src_head dst=$dst_head)"
+  fi
+}
+
+# A flatten delivery must not cross .git; it inits a fresh single baseline.
+test_deliver_flatten_single_baseline() {
+  local SRC="$FIXTURE_DIR/dl_flat_src"
+  local DST="$FIXTURE_DIR/dl_flat_dst"
+  make_committed_repo "$SRC"
+
+  snapshot_deliver "$SRC" "$DST" "true"
+
+  if [[ -d "$DST/.git" ]] && [[ -f "$DST/file.txt" ]]; then
+    local count
+    count="$(git -C "$DST" rev-list --count HEAD)"
+    if [[ "$count" -eq 1 ]]; then
+      pass "deliver flatten: single baseline commit, file present"
+    else
+      fail "deliver flatten: expected 1 commit, got $count"
+    fi
+  else
+    fail "deliver flatten: .git or file.txt missing in destination"
+  fi
+}
+
+# Both modes must exclude gitignored content (R1 boundary integrity).
+test_deliver_flatten_excludes_gitignored() {
+  local SRC="$FIXTURE_DIR/dl_flat_ignore_src"
+  local DST="$FIXTURE_DIR/dl_flat_ignore_dst"
+  make_committed_repo "$SRC"
+  echo "secret" > "$SRC/secret.env"
+  echo "secret.env" > "$SRC/.gitignore"
+  git -C "$SRC" add .gitignore
+  git -C "$SRC" commit -m "ignore" --quiet
+
+  snapshot_deliver "$SRC" "$DST" "true"
+
+  if [[ ! -f "$DST/secret.env" ]]; then
+    pass "deliver flatten: gitignored file excluded"
+  else
+    fail "deliver flatten: gitignored file leaked into destination"
+  fi
+}
+
+
+# -------------------------
 # Run all tests
 # -------------------------
 
@@ -275,6 +344,11 @@ run_test     test_worktree_preserves_directory_structure
 run_test               test_worktree_submodule_detected
 run_test       test_worktree_honors_negation_patterns_local
 run_test test_worktree_honors_negation_patterns_global_excludes
+
+# snapshot_deliver (delivery dispatcher)
+run_test                test_deliver_full_carries_history
+run_test         test_deliver_flatten_single_baseline
+run_test      test_deliver_flatten_excludes_gitignored
 
 
 

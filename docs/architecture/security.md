@@ -40,7 +40,7 @@ The sandbox adds no security beyond what the host provides — it only restricts
 | Mode | Project content | `.git` | Consequence |
 |---|---|---|---|
 | **Copy** (current default, M2.6.5) | Seeded into the named volume at session start (one-shot helper-container seed); frozen view | Host `.git` copied in full by the seeder (native copy, history included); no live link to the host repo | Baseline posture plus host git history inside the volume — history content is not gitignore-filtered |
-| **Mount** (wired, not runnable, M2.6.6) | Bind-mounted live from host | User-provided — whatever `.git` the user places in the mounted directory (fresh baseline, clone, snapshot). Harness does not mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
+| **Mount** (M2.6.6, runnable) | Bind-mounted live from host | Materialized by the harness from the project on first run: full history by default (native `.git` copy), or `--flatten` for a fresh baseline. Recorded in worktree config (`agent-sandbox.flatten`). Harness does not otherwise mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
 | *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | — see [Non-goals](#non-goals) |
 
 Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope — see [ADR — Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
@@ -70,7 +70,7 @@ The following invariants hold in every configuration. Per-mode mount shapes are 
 
 Validation procedures for these invariants are defined in operational documentation.
 
-**Mount delivery (wired, not runnable)** revises invariant 2 and adds invariant 7:
+**Mount delivery** revises invariant 2 and adds invariant 7:
 
 > 2. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories, the `.<provider>/` provider-config mount, and the mounted worktree.
 >
@@ -81,7 +81,7 @@ Validation procedures for these invariants are defined in operational documentat
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Session state persists across restarts via a named Docker volume (`{{SESSION_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` → `compose down`, keeps named volumes). With mount delivery (wired, not runnable), the agent's working tree in the mounted host directory additionally survives container restarts.
+- Session state persists across restarts via a named Docker volume (`{{SESSION_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` → `compose down`, keeps named volumes). With mount delivery, the agent's working tree in the mounted host directory additionally survives container restarts.
 - `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. With mount delivery, the worktree additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 

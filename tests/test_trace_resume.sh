@@ -33,9 +33,10 @@ test_setup
 STUB_DIR="$TEST_DIR/../tests/stubs"
 
 # Build a resumable fixture: sandbox/.env + a `.compose/<sid>.yml` registry
-# record + a git-backed project dir. $1=fixture root, $2=sandbox_type.
+# record + a git-backed project dir. $1=fixture root, $2=sandbox_type,
+# $3=flatten (optional; "true" writes a FLATTEN literal into the record).
 build_resume_fixture() {
-  local FIX="$1" sandbox_type="$2"
+  local FIX="$1" sandbox_type="$2" flatten="${3:-false}"
   local project_dir="$FIX/project"
 
   export PROJECT_NAME="test-project"
@@ -84,6 +85,11 @@ services:
     image: agent-sandbox-abc123
     environment:
       - SANDBOX_TYPE=$sandbox_type
+      - FLATTEN=$flatten
+  seeder:
+    image: agent-sandbox-abc123
+    environment:
+      - SEED_FLATTEN=$flatten
   agent:
     image: pi-agent-test-project
 EOF
@@ -218,6 +224,40 @@ test_resume_reuses_record_session_id() {
   fi
 }
 run_test test_resume_reuses_record_session_id
+
+# FLATTEN is recovered from the record (never ambient). An invalid FLATTEN
+# literal is rejected fail-closed (same rule as delivery).
+test_resume_rejects_invalid_flatten() {
+  local FIX="$FIXTURE_DIR/resume-bad-flatten"
+  build_resume_fixture "$FIX" mount maybe
+
+  local out rc=0
+  out=$( PATH="$STUB_DIR:$PATH" bash "$REPO_ROOT/scripts/resume_agent.sh" \
+    --session-id=abc123 --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" --env=.env </dev/null 2>&1 ) || rc=$?
+
+  if [[ "$rc" -ne 0 ]] && [[ "$out" == *"invalid FLATTEN"* ]]; then
+    pass "resume (invalid FLATTEN): rejected rc=$rc"
+  else
+    fail "resume (invalid FLATTEN): rc=$rc out=$out"
+  fi
+}
+run_test test_resume_rejects_invalid_flatten
+
+# A flatten record resumes without error -- the recovery path accepts the
+# literal and forwards the flag (full run_agent forwarding is covered by the
+# run_agent flag test; here we assert the recovery does not reject a valid
+# flatten session).
+test_resume_accepts_flatten_record() {
+  local FIX="$FIXTURE_DIR/resume-ok-flatten"
+  build_resume_fixture "$FIX" mount true
+
+  invoke_resume
+  assert_rc 0 "$?" "resume (valid flatten record) exit code"
+
+  pass "resume (flatten): valid FLATTEN literal accepted (bc baseline)"
+}
+run_test test_resume_accepts_flatten_record
 
 # Mount (worktree) delivery: resume must not destroy anything either -- the
 # worktree is a host bind mount preserved by construction; assert no destroy ops.

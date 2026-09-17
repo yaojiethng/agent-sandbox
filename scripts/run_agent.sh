@@ -59,7 +59,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount"
+  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount [--flatten]"
   exit 1
 fi
 
@@ -73,6 +73,11 @@ PROVIDER_NAME=""
 RESET_VOLUME=false
 export RESET_VOLUME
 DELIVERY=""
+# FLATTEN: false/empty = full history (native .git copy, the default); true =
+# flattened history (git-init baseline, no host history). Passed as the
+# argument to internal functions and stamped into the session record; never
+# read from ambient env downstream (same rule as DELIVERY).
+FLATTEN=false
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -81,6 +86,7 @@ for ARG in "$@"; do
     --env=*)      ENV_FILE="${ARG#--env=}" ;;
     --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
     --reset-volume) RESET_VOLUME=true ;;
+    --flatten)    FLATTEN=true ;;
     --delivery=*)
       DELIVERY="${ARG#--delivery=}"
       case "$DELIVERY" in
@@ -102,6 +108,12 @@ if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" || -z "$ENV_FILE" || -z "$PROVIDER
   echo "Error: --name, --sandbox, --env, and --provider are required"
   exit 1
 fi
+
+# FLATTEN reaches the compose record and the seeder via the process env, not
+# the environment of downstream scripts. Exported here once (ingest once rule);
+# compose.sh stamps it into the sandbox service env and the seeder service
+# binds it as SEED_FLATTEN.
+export FLATTEN
 
 # Delivery type  --  passed explicitly as --delivery by the caller (start_agent
 # computes the default at ingestion; resume_agent recovers it from the session
@@ -328,7 +340,7 @@ seed_sandbox_volume() {
     docker compose "${COMPOSE_ARGS[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
     return 1
   fi
-  echo "Sandbox volume seeded and verified (git status parity)."
+  echo "Sandbox volume seeded and verified."
 }
 
 if [[ "$RESET_VOLUME" == "true" && "$DELIVERY" == "copy" ]]; then

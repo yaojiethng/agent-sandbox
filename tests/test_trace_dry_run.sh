@@ -36,7 +36,7 @@ setup_dry_run_fixture() {
   mkdir -p "$SANDBOX_DIR/.pi"
 
   # Seedable project fixture: the dry-run path seeds the sandbox volume from
-  # PROJECT_DIR (git-enumerated tar), so the trace fixture needs a real git
+  # PROJECT_DIR (git-enumerated seed), so the trace fixture needs a real git
   # repo with at least one commit.
   mkdir -p "$FIXTURE_DIR/project"
   git -C "$FIXTURE_DIR/project" init --quiet

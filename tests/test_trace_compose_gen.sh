@@ -170,17 +170,18 @@ test_base_template_has_no_copy_only_wiring() {
 }
 
 # The copy overlay carries the named volume and copy delivery type, and no
-# snapshot mount (content is host-side seeded via docker cp).
+# snapshot mount (content is host-side seeded by the helper-container seeder).
 test_copy_overlay_carries_volume_no_snapshot_mount() {
   local overlay="$REPO_ROOT/src/build/docker-compose.copy.yml"
 
   if grep -q 'sandbox-data' "$overlay" \
       && grep -q 'SANDBOX_TYPE=copy' "$overlay" \
+      && grep -q '{{FLATTEN}}' "$overlay" \
       && ! grep -q 'SNAPSHOT_DIR' "$overlay" \
       && ! grep -q '/home/agentuser/.snapshot' "$overlay"; then
-    pass "copy overlay carries named volume + SANDBOX_TYPE=copy, no snapshot mount"
+    pass "copy overlay carries named volume + SANDBOX_TYPE=copy + FLATTEN, no snapshot mount"
   else
-    fail "copy overlay missing volume wiring, carries stale snapshot mount, or missing SANDBOX_TYPE=copy"
+    fail "copy overlay missing volume wiring, carries stale snapshot mount, or missing SANDBOX_TYPE=copy/FLATTEN"
   fi
 }
 
@@ -194,11 +195,56 @@ test_mount_overlay_carries_worktree_not_copy_wiring() {
   grep -q 'SNAPSHOT_DIR' "$overlay" && copy_only=1
   grep -q 'sandbox-data' "$overlay" && copy_only=1
   grep -q 'SANDBOX_TYPE=mount' "$overlay" || copy_only=1
+  grep -q '{{FLATTEN}}' "$overlay" || copy_only=1
 
   if [[ "$copy_only" -eq 0 ]]; then
-    pass "mount overlay carries worktree mount + SANDBOX_TYPE=mount only"
+    pass "mount overlay carries worktree mount + SANDBOX_TYPE=mount + FLATTEN only"
   else
-    fail "mount overlay missing worktree mount/SANDBOX_TYPE=mount or carries copy wiring"
+    fail "mount overlay missing worktree mount/SANDBOX_TYPE=mount/FLATTEN or carries copy wiring"
+  fi
+}
+
+# The stub's compose config cats only the first staged input, so delivery
+# overlay content never reaches the merged output under the stub. To assert
+# the FLATTEN stamping contract (the literal resume consumes), feed a mini
+# overlay as the FIRST input: compose_generate's sed substitutes {{FLATTEN}}
+# into every staged file, and the stub then cats the substituted first file.
+test_compose_generate_stamps_flatten_literal() {
+  local FIXTURE_DIR="$FIXTURE_DIR/flattenstamp"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+
+  cat > "$FIXTURE_DIR/mini.yml" <<'EOF'
+services:
+  sandbox:
+    image: mini
+    environment:
+      - SANDBOX_TYPE=copy
+      - FLATTEN={{FLATTEN}}
+EOF
+
+  local out_true="$FIXTURE_DIR/out-true.yml"
+  local out_false="$FIXTURE_DIR/out-false.yml"
+  (
+    source "$REPO_ROOT/src/build/image.sh"
+    source "$REPO_ROOT/scripts/build.sh"
+    source "$REPO_ROOT/src/build/compose.sh"
+    export PATH="$STUB_DIR:$PATH"
+    export FLATTEN=true
+    compose_generate "$out_true" "$PROJECT_NAME" "$PROVIDER_NAME" "$FIXTURE_DIR/mini.yml"
+    export FLATTEN=false
+    compose_generate "$out_false" "$PROJECT_NAME" "$PROVIDER_NAME" "$FIXTURE_DIR/mini.yml"
+  ) > /dev/null 2>&1 || true
+
+  if [[ -f "$out_true" ]] && grep -q 'FLATTEN=true' "$out_true" && ! grep -q '{{FLATTEN}}' "$out_true"; then
+    pass "flatten stamp: FLATTEN=true stamped into generated compose, no placeholder left"
+  else
+    fail "flatten stamp (true): FLATTEN=true missing or placeholder left (file=$out_true)"
+  fi
+  if [[ -f "$out_false" ]] && grep -q 'FLATTEN=false' "$out_false"; then
+    pass "flatten stamp: FLATTEN=false stamped for full default"
+  else
+    fail "flatten stamp (false): FLATTEN=false missing (file=$out_false)"
   fi
 }
 
@@ -292,6 +338,7 @@ run_test test_stub_docker_config_preserves_structure
 run_test test_base_template_has_no_copy_only_wiring
 run_test test_copy_overlay_carries_volume_no_snapshot_mount
 run_test test_mount_overlay_carries_worktree_not_copy_wiring
+run_test test_compose_generate_stamps_flatten_literal
 run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_digests
 run_test test_compose_file_from_args_extracts_f_value
