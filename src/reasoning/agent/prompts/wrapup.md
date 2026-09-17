@@ -1,5 +1,5 @@
 ---
-description: Close an iteration. Runs Steps 7b, 8, and 9 of the minor loop (iteration_policy.md)  --  verifies acceptance criteria, runs propagation replay if applicable, reconciles scope, marks the roadmap, runs post-close bookkeeping, closes the handover, and seeds the next iteration. Use when implementation is complete and you are ready to close.
+description: Close an iteration. Runs Steps 7b, 8, and 9 of the minor loop (iteration_policy.md)  --  verifies acceptance criteria, runs propagation replay if applicable, reconciles scope, marks the roadmap, runs roadmap maintenance, closes the handover, and seeds the next iteration. Use when implementation is complete and you are ready to close.
 ---
 
 Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.md).
@@ -14,7 +14,7 @@ Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.
 
 **Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed table. Verify every in-scope architecture and concepts document describes the system as built  --  divergences must be resolved or recorded as deferred items with a reason.
 
-**Post-close bookkeeping (Step 8):** Run post-close bookkeeping per `roadmap_policy.md`  --  compaction cascading, summary table update, and top-level milestone close if applicable.
+**Roadmap maintenance (Step 8):** Run roadmap maintenance per `roadmap_policy.md`  --  compaction cascading, summary table update, and top-level milestone close if applicable.
 
 **Close the handover (Step 8):** Mark each AC as accepted or pushed to next iteration. Complete the Completed and Deferred items sections. Update Hot files. Set Status to `Closed`.
 

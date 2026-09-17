@@ -2,7 +2,7 @@
 
 Policy rules for `devlog/roadmap.md`, `devlog/roadmap_future.md`, and `devlog/changelog.md`.
 
-**Role of this file.** This file owns all roadmap update procedure and record shape. It answers, in order: when the roadmap is touched (invocation moments), how updates are executed (bookkeeping, promotion), what the record must look like (structure and filing rules), and how records retire (changelog, corrections). Other documents link here; they do not restate these rules.
+**Role of this file.** This file owns all roadmap update procedure and record shape. It answers, in order: when the roadmap is touched (invocation moments), how updates are executed (roadmap maintenance, promotion), what the record must look like (structure and filing rules), and how records retire (changelog, corrections). Other documents link here; they do not restate these rules.
 
 ---
 
@@ -25,15 +25,15 @@ The operator reviews the compaction proposal alongside AC verification at Gate 3
 
 ### Iteration end (Steps 8–9)
 
-Apply the approved write-back: compaction summaries replace completed groups' checklists; generated tasks land as named entries. The mechanical rules are under [Post-close Bookkeeping](#post-close-bookkeeping); the compaction format under [Compaction cascading](#compaction-cascading).
+Apply the approved write-back: compaction summaries replace completed groups' checklists; generated tasks land as named entries. The mechanical rules are under [Roadmap maintenance](#roadmap-maintenance); the compaction format under [Compaction cascading](#compaction-cascading).
 
 Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 ---
 
-## Post-close Bookkeeping
+## Roadmap maintenance
 
-After every iteration end (Steps 8–9), run bookkeeping on every node in the fractal tree whose children were modified files. Bookkeeping is not an event or gate — it is a mechanical normalization step that always runs.
+After every iteration end (Steps 8–9), run roadmap maintenance on every node in the fractal tree whose children were modified files. Roadmap maintenance is not an event or gate — it is a mechanical normalization step that always runs.
 
 ### Compaction cascading
 
@@ -46,14 +46,14 @@ For each node whose direct children are all complete:
 
 ### Top-level milestone close
 
-When post-close bookkeeping determines that all direct children of a top-level milestone are complete:
+When roadmap maintenance determines that all direct children of a top-level milestone are complete:
 
 1. **Write the changelog entry** — produce the entry for the completed milestone using [Changelog Format](#changelog-format). Output as a fenced block so the operator can append it verbatim to `changelog.md`.
 2. **Remove the milestone section** — delete the completed milestone's detail section from `roadmap.md` Upcoming Milestones. The detailed task breakdown is now in the changelog.
 3. **Update the Summary table** — change the milestone row to `[Complete — see changelog](changelog.md#m{n}--{title})` linking to the specific milestone section anchor.
 4. **Promote the next milestone** — move the next incomplete milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion)).
 
-This is part of bookkeeping — no separate trigger, no event gate. It runs automatically when the condition is met.
+This is part of roadmap maintenance — no separate trigger, no event gate. It runs automatically when the condition is met.
 
 ### Summary table update
 
@@ -86,7 +86,7 @@ This check is self-healing — it catches both stale summaries and the first ite
 
 ### Promotion transport
 
-When top-level milestone close runs (bookkeeping compaction reaches the root), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
+When top-level milestone close runs (roadmap maintenance compaction reaches the root), the next milestone is promoted from `roadmap_future.md` into `roadmap.md`.
 
 1. Move the milestone section from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones`
 2. Update the Milestone Summary table row in `roadmap.md`: add anchor link, set status to `In progress`

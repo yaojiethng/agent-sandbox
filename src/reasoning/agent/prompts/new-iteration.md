@@ -1,5 +1,5 @@
 ---
-description: Open a new iteration. Finds the latest handover, runs recovery checks, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every iteration. Accepts an optional argument describing the type and focus  --  this takes priority over the What's Next section of the prior handover.
+description: Open a new iteration. Finds the latest handover, runs the roadmap maintenance check, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every iteration. Accepts an optional argument describing the type and focus  --  this takes priority over the What's Next section of the prior handover.
 argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus description>"
 ---
 
@@ -18,11 +18,11 @@ No other files are needed at this stage.
 
 ---
 
-## Recovery checks
+## Roadmap maintenance check
 
 Run before creating the handover.
 
-**Post-close bookkeeping check:** Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active without post-close bookkeeping having been applied, the prior iteration's close sequence did not complete. Run post-close bookkeeping after creating this handover but before presenting the scope proposal (Step 2). Record the bookkeeping execution in this handover's Completed table. Present the post-bookkeeping roadmap state as part of the scope proposal.
+Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run roadmap maintenance after creating this handover but before presenting the scope proposal (Step 2). Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
 
 ---
 

@@ -64,7 +64,7 @@ Each iteration type (Eg. workflow vs implementation) must declare its scope inde
 
 A handover has three states:
 
-**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1-open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", the previous iteration may have ended prematurely and require recovery.
+**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1-open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
 
 **Active** -- updated throughout the iteration as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
@@ -148,7 +148,7 @@ None.
 
 ## What's Next
 <Sub-milestone ID and name for the next iteration.>
-<Whether post-close bookkeeping has been run or is pending -- omit if mid-milestone and no sub-milestone just completed.>
+<Whether roadmap maintenance has been run or is pending -- omit if mid-milestone and no sub-milestone just completed.>
 <Blocking design questions the next agent must resolve before advancing.>
 <Known watch-out items (capped at three).>
 <Grep or file reads to run at iteration start, if known.>
@@ -218,7 +218,7 @@ Skills and prompt templates that encode this policy. When this document is revis
 
 | Skill / Prompt | Purpose |
 |---|---|
-| [`agent/prompts/new-iteration.md`](../../src/reasoning/agent/prompts/new-iteration.md) | Iteration start -- handover creation, recovery checks, scope/AC gates |
+| [`agent/prompts/new-iteration.md`](../../src/reasoning/agent/prompts/new-iteration.md) | Iteration start -- handover creation, roadmap maintenance check, scope/AC gates |
 | [`audits/roadmap-audit.skill.md`](../../workflow/coding-agent/audits/roadmap-audit.skill.md) | Roadmap format compliance, compaction audits |
 | [`audits/handover-audit.skill.md`](../../workflow/coding-agent/audits/handover-audit.skill.md) | Handover format compliance -- validates content rules defined here |
 
@@ -226,7 +226,7 @@ Policy documents that this document depends on:
 
 | Policy | Relationship |
 |---|---|
-| [`roadmap_policy.md`](roadmap_policy.md) | Post-close bookkeeping, compaction rules |
+| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap maintenance, compaction rules |
 | [`iteration_policy.md`](iteration_policy.md) | Operational workflow -- governs when handover fields are populated |
 | [`documentation_policy.md`](documentation_policy.md) | Post-close document corrections |
 
@@ -248,4 +248,4 @@ Policy documents that this document depends on:
 | Document | Purpose |
 |---|---|
 | [`iteration_policy.md`](iteration_policy.md) | Operational workflow -- when handover is created, updated, and closed |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules -- task checkbox discipline and post-close bookkeeping |
+| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules -- task checkbox discipline and roadmap maintenance |

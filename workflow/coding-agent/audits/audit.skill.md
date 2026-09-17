@@ -18,7 +18,7 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 |---|---|---|
 | **Periodic** | Last N handovers (2 weeks or 20 iterations, whichever comes first) | Run when deferred items have survived multiple hops or operator suspects items have been dropped |
 | **Event-driven** | Handover chain containing a specific deferred item | Run when a deferred item has survived 2+ hops without resolution |
-| **Recovery** | Prior iteration's handover | Already covered by Step 1 recovery check per `handover_policy.md` |
+| **Roadmap maintenance** | Prior iteration's handover | Already covered by the Step 1 roadmap maintenance check per `handover_policy.md` |
 
 ---
 
