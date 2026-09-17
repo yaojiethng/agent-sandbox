@@ -435,6 +435,16 @@ main() {
         echo "  Recreate it: remove $WORKTREE_DIR and start again." >&2
         exit 1
       fi
+      # The recorded mode is a boolean literal (true|false). Refuse any other
+      # value in the clear: do not attempt to interpret an unknown value.
+      case "$recorded_flatten" in
+        true|false) ;;
+        *)
+          echo "Error: mount worktree at $WORKTREE_DIR records an invalid history mode: $recorded_flatten (expected true or false)." >&2
+          echo "  Recreate it: remove $WORKTREE_DIR and start again." >&2
+          exit 1
+          ;;
+      esac
       if [[ "$recorded_flatten" != "$FLATTEN" ]]; then
         echo "Error: mount worktree at $WORKTREE_DIR is $([[ $recorded_flatten == true ]] && echo flattened || echo full) but this start requested $([[ $FLATTEN == true ]] && echo flatten || echo full)." >&2
         echo "  A worktree keeps its first delivery-history mode. Use a different --sandbox or remove $WORKTREE_DIR." >&2

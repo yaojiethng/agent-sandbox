@@ -170,6 +170,33 @@ test_resume_mount_keeps_worktree_no_volume_ops() {
 }
 run_test test_resume_mount_keeps_worktree_no_volume_ops
 
+# Resume cross-checks the record's FLATTEN against the worktree's recorded
+# mode. A mismatch (operator-level interference) warns and resume continues
+# with the record value -- it never fails and never re-materializes.
+test_resume_mount_warns_on_flatten_mismatch() {
+  local FIX="$FIXTURE_DIR/resume-mount-mismatch"
+  build_resume_fixture "$FIX" mount
+
+  # Worktree recorded as flattened, session record says full (false).
+  mkdir -p "$FIX/sandbox/.worktree/.git"
+  git -C "$FIX/sandbox/.worktree" init -q 2>/dev/null || true
+  git -C "$FIX/sandbox/.worktree" config agent-sandbox.flatten true
+
+  RESUME_OUT="$(PATH="$STUB_DIR:$PATH" \
+    bash "$REPO_ROOT/scripts/resume_agent.sh" \
+    --session-id=abc123 --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+    --sandbox="$SANDBOX_DIR" --env=.env 2>&1 </dev/null)"
+  local rc=$?
+  assert_rc 0 "$rc" "resume (mount, flatten mismatch) exit code"
+
+  if grep -q "records history mode 'true' but the session record says 'false'" <<<"$RESUME_OUT"; then
+    pass "resume (mount): flatten mismatch warns and continues"
+  else
+    fail "resume (mount): expected mismatch warning, out=$(head -2 <<<"$RESUME_OUT" | tail -1)"
+  fi
+}
+run_test test_resume_mount_warns_on_flatten_mismatch
+
 # Delivery is recovered from the record with NO ambient SANDBOX_TYPE (the
 # regression for the live-run failure: resume defaulted to copy and the mount
 # session died against an unseeded volume).

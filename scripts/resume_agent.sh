@@ -430,6 +430,17 @@ session_env_names "$PROJECT_NAME" "$local_provider" "$SANDBOX_DIR" "$SESSION_ID_
 
 echo "Resuming session $SESSION_ID (provider: $PROVIDER_NAME, delivery: $local_delivery, flatten: $local_flatten)"
 
+# Mount delivery: cross-check the record's FLATTEN against the worktree's
+# recorded mode. A mismatch means operator-level interference (the worktree
+# recreated under a different mode). Warn; resume continues with the record's
+# value and the recorded mode stays authoritative for the next start.
+if [[ "$local_delivery" == "mount" && -f "$WORKTREE_DIR/.git/config" ]]; then
+  wt_flatten="$(git -C "$WORKTREE_DIR" config agent-sandbox.flatten 2>/dev/null || echo "")"
+  if [[ -n "$wt_flatten" && "$wt_flatten" != "$local_flatten" ]]; then
+    echo "Warning: worktree at $WORKTREE_DIR records history mode '$wt_flatten' but the session record says '$local_flatten'. Resume continues with the record value." >&2
+  fi
+fi
+
 # Resume never rebuilds missing images (preflight with build_missing=false) and
 # never resets the volume  --  it continues the existing session.
 source "$REPO_ROOT/scripts/build.sh"

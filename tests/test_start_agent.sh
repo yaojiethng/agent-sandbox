@@ -514,6 +514,33 @@ EOF
   fi
 }
 
+# A corrupt recorded mode (not true/false) is refused in the clear -- the
+# harness does not attempt to interpret an unknown value as full or flatten.
+test_mount_reuse_refuses_corrupt_recorded_mode() {
+  local dir="$FIXTURE_DIR/mount_corrupt_mode"
+  mkdir -p "$dir/sandbox/.workspace/session-diffs" "$dir/sandbox/.workspace/input" \
+           "$dir/sandbox/.workspace/output"
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  make_committed_repo "$dir/project"
+  # Simulate a tampered worktree: valid repo, corrupt history-mode key.
+  git clone -q "$dir/project" "$dir/sandbox/.worktree"
+  git -C "$dir/sandbox/.worktree" config agent-sandbox.flatten "maybe"
+
+  START_OUT="$(cd "$dir" && PATH="$REPO_ROOT/tests/stubs:$PATH" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard --delivery=mount \
+    --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)"
+  START_RC=$?
+
+  if [[ "$START_RC" -ne 0 ]] && grep -q "invalid history mode: maybe" <<<"$START_OUT"; then
+    pass "mount corrupt mode: invalid recorded mode refused in the clear"
+  else
+    fail "mount corrupt mode: expected refusal rc!=0 naming the invalid mode, rc=$START_RC out=$(head -1 <<<"$START_OUT")"
+  fi
+}
+
 # Unborn-HEAD host repo: refused for both modes. The session-env gate
 # rejects an empty repository before delivery dispatch (this test exercises
 # that gate in the stub flow); the materialization guard is defense-in-depth
@@ -587,6 +614,7 @@ run_test test_mount_start_materializes_worktree
 run_test test_mount_second_start_attaches
 run_test test_mount_reuse_refuses_mode_mismatch
 run_test test_mount_reuse_refuses_unknown_legacy_worktree
+run_test test_mount_reuse_refuses_corrupt_recorded_mode
 run_test test_mount_full_refuses_unborn_head
 run_test test_mount_flatten_single_baseline
 

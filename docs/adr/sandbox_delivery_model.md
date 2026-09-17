@@ -16,7 +16,7 @@
 
 ### Edge cases / drivers
 
-- **Worktree mode mismatch.** A materialized mount worktree keeps its first delivery-history mode (recorded in `.git/config` as `agent-sandbox.flatten`). A later start requesting the other mode is refused with a readable error; the worktree must be recreated under a different mode.
+- **Worktree mode mismatch.** A materialized mount worktree keeps its first delivery-history mode (recorded in `.git/config` as `agent-sandbox.flatten`). A later start requesting the other mode is refused with a readable error; the worktree must be recreated under a different mode. A corrupt recorded value (not `true` or `false`) is refused in the clear rather than interpreted. Resume cross-checks the record's `FLATTEN` against the worktree's recorded mode and warns on a mismatch, continuing with the record value (resume never re-materializes).
 - **Legacy worktree.** A worktree materialized before the flatten contract has no recorded mode (it is a flatten-style baseline). Reuse refuses it rather than mislabel it as full; the operator recreates it.
 - **Empty enumeration.** An empty worktree enumeration is a no-op for rsync; the 2026-09-04 "skip the tar step" edge case no longer exists.
 - **Unborn HEAD.** Refused for every session: the session-env gate requires host commits before delivery dispatch, and both delivery layers fire the same guard. No delivery tolerates an empty repository.
