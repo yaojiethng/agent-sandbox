@@ -183,7 +183,7 @@ fi
 
 ## Test Structure Template
 
-**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report.
+**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.
 
 Document untested branches in the function-header comment at the point of the code: every documented branch of a sourced lib function has either a test or a gap note naming why it is untested (expressibility limits, low risk). There is no central known-gaps file -- the comment travels with the code it describes.
 

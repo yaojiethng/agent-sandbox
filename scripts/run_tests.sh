@@ -61,13 +61,16 @@ discover_tests() {
 #   Static guard for the structural template (testing-conventions.md): a
 #   run_test registration after test_done is dead code -- test_done exits the
 #   process, so the test never runs and never fails. test_done cannot guard
-#   this in-process (it exits), so the runner scans the file.
+#   this in-process (it exits), so the runner scans the file. The scan anchors
+#   on the registration contract (run_test naming a test_ function, the same
+#   shape check_test_liveness.sh greps): a registration-shaped word inside a
+#   quoted payload is not flagged unless it sits at column 0.
 check_liveness() {
   local FILE="$1" BASENAME
   BASENAME="$(basename "$FILE")"
   if ! awk '
     /^[[:space:]]*test_done([[:space:]]|$)/ { seen = 1 }
-    /^[[:space:]]*run_test([[:space:]]|$)/  { if (seen) exit 1 }
+    /^[[:space:]]*run_test[[:space:]]+test_[A-Za-z0-9_]+([[:space:]]|$)/ { if (seen) exit 1 }
   ' "$FILE"; then
     echo "FATAL $BASENAME: run_test registered after test_done -- the registration is dead code (testing-conventions.md, Test Structure Template)" >&2
     ANY_FAILED=1

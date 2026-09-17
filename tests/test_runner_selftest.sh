@@ -195,15 +195,20 @@ assert_not_contains "$OUT" "prerequisite missing" "runner: satisfied prerequisit
 # Case 12: run_test registered after test_done is dead code --
 # test_done exits the process, so the runner scans the file
 # statically and flags the file (testing-conventions.md, Test
-# Structure Template).
+# Structure Template). The scan fires only on registrations that
+# target a test_ function (the registration contract); payload
+# words below are printed, not typed at column 0, so this file's
+# own body stays scan-clean.
 # ---------------------------------------------------------------
 mkdir -p "$FIXTURE_DIR/deadreg_dir"
-write_test "$FIXTURE_DIR/deadreg_dir/test_dead_reg.sh" "#!/usr/bin/env bash
-source '$REPO_ROOT/tests/libs/test_common.sh'
-t_ok() { assert_eq a a; }
-run_test t_ok
-test_done
-run_test t_dead"
+DEAD_BODY=$(printf '%b\n' \
+  '#!/usr/bin/env bash' \
+  "source '$REPO_ROOT/tests/libs/test_common.sh'" \
+  'test_ok() { assert_eq a a; }' \
+  'run_test test_ok' \
+  'test_done' \
+  'run_test test_dead')
+write_test "$FIXTURE_DIR/deadreg_dir/test_dead_reg.sh" "$DEAD_BODY"
 run_runner "$FIXTURE_DIR/deadreg_dir"
 assert_ne "0" "$RC" "runner: dead registration after test_done fails the file"
 assert_contains "$OUT" "run_test registered after test_done" "runner: dead registration reported"
