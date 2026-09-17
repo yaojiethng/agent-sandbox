@@ -12,11 +12,21 @@
 
 **Unborn HEAD.** The harness requires host commits for every session: the session-env gate (`session_env_common_init`) rejects an empty repository before delivery dispatch, and both the seed and the mount materialization fire the same guard at the delivery layer. No delivery tolerates an empty repository.
 
-**Verification.** Full seeds keep the 2026-09-04 status-parity self-check. Flatten seeds verify the committed file set equals the source enumeration and the worktree is clean (`verify_baseline`) -- coverage, not just a clean tree.
+**Verification.** Full seeds keep the 2026-09-04 status-parity self-check. Flatten seeds verify the committed file set equals the source enumeration and the worktree is clean (`verify_baseline`) -- coverage, not just a clean tree (R8).
+
+### Edge cases / drivers
+
+- **Worktree mode mismatch.** A materialized mount worktree keeps its first delivery-history mode (recorded in `.git/config` as `agent-sandbox.flatten`). A later start requesting the other mode is refused with a readable error; the worktree must be recreated under a different mode.
+- **Legacy worktree.** A worktree materialized before the flatten contract has no recorded mode (it is a flatten-style baseline). Reuse refuses it rather than mislabel it as full; the operator recreates it.
+- **Empty enumeration.** An empty worktree enumeration is a no-op for rsync; the 2026-09-04 "skip the tar step" edge case no longer exists.
+- **Unborn HEAD.** Refused for every session: the session-env gate requires host commits before delivery dispatch, and both delivery layers fire the same guard. No delivery tolerates an empty repository.
 
 **Judgment strip.** Earlier text framed mount as the answer for large repos that cannot afford copying. With full-by-default, that framing is gone: full copy on a large repo is slow by construction, noted as a caveat, not a rule about what large repos can or cannot do.
 
-**Rejected alternative.** Routing the seed's full path through a second bespoke transport (tar) was rejected: the shared dispatcher already serves both modes, and two sinks for one enumerated list is the duplication this entry removes.
+**Rejected alternatives.**
+
+- **Seed's full path through a second bespoke transport (tar).** Rejected: the shared dispatcher already serves both modes, and two sinks for one enumerated list is the duplication this entry removes.
+- **Flatten tolerates an unborn-HEAD repository.** Proposed during review and initially implemented as a mode-scoped guard, then withdrawn: the harness session-env gate already requires host commits for every session before delivery dispatch, so a flatten tolerance path is unreachable through any supported flow. Universal refusal is the single coherent rule; a delivery-layer guard remains as defense-in-depth for direct invocation.
 
 ## Requirements
 
@@ -31,6 +41,7 @@ The delivery model fills an empty Docker volume with the operator's working stat
 | R5 | Diff-based return | The volume is the only working content store. Changes return to the host through the diff pipeline, which is git-agnostic. |
 | R6 | Offline seed | The seed step needs no network access. |
 | R7 | No staging in the worktree | Harness transfer state never resides inside the operator's git worktree. A disposable payload in a git worktree is trackable by construction, and tracking failures follow. Promoted by the 2026-09-03 incident. |
+| R8 | Flatten baseline coverage | A flattened seed verifies the committed file set equals the source enumeration and the worktree is clean; coverage, not just a clean tree (2026-09-12). |
 
 ## 2026-09-11 -- Seed repository copy: full `.git` is deliberate (stash and history-trim analysis)
 
@@ -128,7 +139,7 @@ Failure in intent, not execution: staging a disposable payload inside a git work
 
 ## 2026-09-04 -- Mount-path worktree copy: git enumeration replaces rsync exclude lists
 
-**Decision:** `snapshot_copy_worktree` (mount-delivery worktree materialization) replaces its hand-built rsync exclude lists with git enumeration -- `git ls-files -z --cached --others --exclude-standard`, existence-filtered, fed to `rsync --from0 --files-from` with `--delete`.
+**Decision:** `snapshot_copy_worktree` (mount-delivery worktree materialization) replaces its hand-built rsync exclude lists with git enumeration -- `git ls-files -z --cached --others --exclude-standard`, existence-filtered, fed to `rsync --from0 --files-from`. We edited the original claim (which said `with --delete`) to drop the `--delete` flag: the mount worktree copy has no `--delete` pass, because delivery targets a fresh destination (or reuses an existing worktree without re-syncing) and deletion semantics come from the enumeration, not the sync.
 
 **Rationale:** R1. The exclude-list approach silently ignores negation patterns (`!pattern`) in global gitignore and `.git/info/exclude` -- rsync treats a negation as clear-the-exclude-list -- so gitignored files leak into the worktree copy. The repo's knowledge test reproduces the leak: the negation and global-exclude cases report divergence for the current pipeline. Git's own ignore resolution decides what crosses, as in the volume-path seed. The same enumeration primitive serves both delivery paths. Implementation is scheduled with the seed-transport implementation iteration.
 

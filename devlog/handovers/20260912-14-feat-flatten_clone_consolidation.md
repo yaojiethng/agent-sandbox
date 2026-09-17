@@ -98,7 +98,7 @@ Non-blocking observations folded during the pass: run_agent seed message generic
 | `src/build/docker-compose.mount.yml` | `FLATTEN` env on sandbox |
 | `src/capability/entrypoint.sh` | mount init_sha branches on FLATTEN (full = host HEAD; flatten = baseline root); fail-closed on empty init_sha; dispatcher comment |
 | `docs/architecture/sandbox_lifecycle.md`, `execution_model.md`, `security.md`, `docs/concepts/mount_delivery.md`, `docs/development/project_index.md` | judgment strip; dispatcher mechanism; runnable status; "wired, not runnable" pins retired; transport-neutral wording |
-| `docs/adr/sandbox_delivery_model.md` | 2026-09-12 entry (dispatcher, flatten, universal unborn-HEAD); judgment stripped; tar edge marked superseded |
+| `docs/adr/sandbox_delivery_model.md` | 2026-09-12 entry (dispatcher, flatten, universal unborn-HEAD); judgment stripped; tar edge marked superseded; post-close amendment: R8 added, entry gained edge-cases + two rejected alternatives, 2026-09-04 `--delete` claim corrected with supersede note |
 | `devlog/roadmap.md` | M2.6.6 path description neutralized; thread notes the mechanism landed |
 | `workflow/coding-agent/prompts/review-pass-run.md` | 20-minute default timeout + resume-interrupted-command note |
 | tests | 13 new registrations: deliver full/flatten primitives (3), flatten seeder baseline + dropped-file detection (2), resume invalid/valid FLATTEN (2), overlay FLATTEN stamp (1), start_agent flatten/materialization/mismatch/legacy/unborn (4), run_agent flag acceptance (1) |
