@@ -190,6 +190,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `prompts/bootstrap.md` | 🟡 Warm | M2.6 | First-run prompt template: investigates the project state, then creates the missing content-layer records (root `AGENTS.md`, roadmap, policy copies). Deployed via the same folder COPY. |
 | `prompts/test-quality-campaign-run.md` | 🟡 Warm | M2.6 | Invocation template for the test-quality campaign (spawns a fresh subagent). |
 | `prompts/review-pass-run.md` | 🟡 Warm | M2.6 | Orchestration template for an autonomous review pass: fresh subagent reviewers against a WIP-committed diff, fix rounds to VERDICT: APPROVE, proposal accept + fold, squash into the delivery commit. |
+| `prompts/rebase.md` | 🟡 Warm | M2.6 | Branch-port template: replays a stale branch's iterations onto the target, one commit per iteration, intent over diffs, no port artifacts. Deployed via the same folder COPY. |
 | `audits/surface-area-report.md` | 🔥 Hot | M2.6 | Categorization of the former drafts+prompts surface: use case, current status, M3 consolidation targets; entry point map. Input for the M3 reorganization. |
 | `audits/*.skill.md` | 🟡 Warm | M2.6 | Seven audit-family skills relocated from `agent/drafts/`: architecture-doc-reviewer, audit, bash-audit, dhh-code-audit, handover-audit, kelsey-code-reviewer, roadmap-audit. Repo-side only, not deployed. |
 | `audits/test-quality-campaign.md` | 🟡 Warm | M2.6 | Reflection-gated test audit and fix campaign, run by a fresh subagent. |
