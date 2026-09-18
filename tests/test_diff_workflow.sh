@@ -46,11 +46,7 @@ test_apply_applies_diff_with_branch() {
   apply_run "$P" "$FIXTURE_DIR/branch.diff" "feature-branch" "false"
   local BRANCH
   BRANCH=$(git -C "$P" rev-parse --abbrev-ref HEAD)
-  if [[ "$BRANCH" == "feature-branch" ]]; then
-    pass "apply_run creates and checks out new branch"
-  else
-    fail "apply_run should check out feature-branch, got $BRANCH"
-  fi
+  assert_eq "$BRANCH" "feature-branch" "apply_run creates and checks out new branch"
 }
 test_apply_force_mode() {
   local P="$FIXTURE_DIR/apply_force_p"
@@ -264,11 +260,7 @@ test_apply_and_commit_force_mode() {
   apply_and_commit "$P" "$FIXTURE_DIR/aac_force.diff" "Force commit" "$AUTHOR" true false
   local MSG
   MSG=$(git -C "$P" log -1 --pretty=%s 2>/dev/null || echo "no-commit")
-  if [[ "$MSG" == "Force commit" ]]; then
-    pass "apply_and_commit force mode commits even on conflicts"
-  else
-    fail "apply_and_commit force mode should commit, got message: $MSG"
-  fi
+  assert_eq "$MSG" "Force commit" "apply_and_commit force mode commits even on conflicts"
 }
 # =============================================================================
 # Run
@@ -427,3 +419,4 @@ run_test test_apply_preview_lists_files_and_total
 run_test test_apply_preview_empty_diff_reports_no_changes
 run_test test_apply_preview_counts_binary_diffs
 test_done
+

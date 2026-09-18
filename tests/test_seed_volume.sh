@@ -342,11 +342,7 @@ test_seeder_clears_host_stash() {
 
   local host_count
   host_count=$(git -C "$proj" stash list | wc -l)
-  if [[ "$host_count" -eq 2 ]]; then
-    pass "stash: host stash stack untouched by the seeder"
-  else
-    fail "stash: host stash stack should hold 2 entries, got $host_count"
-  fi
+  assert_eq_num "$host_count" "2" "stash: host stash stack untouched by the seeder"
 }
 
 # Object-store prune: stash objects, a dangling blob, and reflog-anchored
@@ -404,3 +400,4 @@ run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
 
 test_done
+

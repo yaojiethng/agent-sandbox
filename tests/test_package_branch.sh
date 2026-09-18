@@ -267,11 +267,7 @@ test_dispatcher_no_commits() {
 
   local PATCH_COUNT
   PATCH_COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
-  if [[ "$PATCH_COUNT" -eq 0 ]]; then
-    pass "package_branch produces no diffs when no commits"
-  else
-    fail "package_branch should produce 0 diffs when no commits, got $PATCH_COUNT"
-  fi
+  assert_eq_num "$PATCH_COUNT" "0" "package_branch produces no diffs when no commits"
 }
 
 test_dispatcher_missing_args() {
@@ -445,3 +441,4 @@ run_test test_preflight_flags_cancelled_out_modification
 run_test test_preflight_skips_deleted_files_without_warning
 
 test_done
+

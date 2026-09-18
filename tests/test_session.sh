@@ -82,11 +82,7 @@ test_session_state_read_existing_key() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ "$RESULT" == "abc123" ]]; then
-    pass "session_state_read returns value for existing key"
-  else
-    fail "session_state_read: expected abc123, got $RESULT"
-  fi
+  assert_eq "$RESULT" "abc123" "session_state_read returns value for existing key"
 }
 
 test_session_state_read_missing_file() {
@@ -95,11 +91,7 @@ test_session_state_read_missing_file() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read returns empty for missing file"
-  else
-    fail "session_state_read should return empty for missing file, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read returns empty for missing file"
 }
 
 test_session_state_read_missing_key() {
@@ -109,11 +101,7 @@ test_session_state_read_missing_key() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read returns empty for missing key"
-  else
-    fail "session_state_read should return empty for missing key, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read returns empty for missing key"
 }
 
 test_session_state_read_malformed() {
@@ -123,11 +111,7 @@ test_session_state_read_malformed() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read handles malformed file gracefully"
-  else
-    fail "session_state_read should return empty for malformed file, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read handles malformed file gracefully"
 }
 
 # =============================================================================
@@ -144,3 +128,4 @@ run_test test_session_state_read_missing_key
 run_test test_session_state_read_malformed
 
 test_done
+

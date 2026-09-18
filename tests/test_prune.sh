@@ -358,11 +358,7 @@ test_env_field_reads_value_from_environment_block() {
   printf '  environment:\n    - SANDBOX_TYPE=mount\n    - PROVIDER=pi\n' > "$f"
   local out
   out=$(env_field "$f" "SANDBOX_TYPE")
-  if [[ "$out" == "mount" ]]; then
-    pass "env_field reads value from environment block"
-  else
-    fail "env_field SANDBOX_TYPE -> '$out', want 'mount'"
-  fi
+  assert_eq "$out" "mount" "env_field reads value from environment block"
 }
 
 test_env_field_no_substring_matches() {
@@ -370,11 +366,7 @@ test_env_field_no_substring_matches() {
   printf '    - NODE_PATH=/x\n    - PATH=/bin\n' > "$f"
   local out
   out=$(env_field "$f" "PATH")
-  if [[ "$out" == "/bin" ]]; then
-    pass "env_field does not substring-match NODE_PATH when asked for PATH"
-  else
-    fail "env_field PATH -> '$out', want '/bin' (got NODE_PATH value?)"
-  fi
+  assert_eq "$out" "/bin" "env_field does not substring-match NODE_PATH when asked for PATH"
 }
 
 test_env_field_first_match_wins() {
@@ -382,11 +374,7 @@ test_env_field_first_match_wins() {
   printf '    - A=1\n    - A=2\n' > "$f"
   local out
   out=$(env_field "$f" "A")
-  if [[ "$out" == "1" ]]; then
-    pass "env_field returns first match only"
-  else
-    fail "env_field A -> '$out', want '1'"
-  fi
+  assert_eq "$out" "1" "env_field returns first match only"
 }
 
 test_env_field_missing_key_is_empty_and_clean() {

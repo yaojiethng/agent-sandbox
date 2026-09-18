@@ -125,11 +125,7 @@ test_patch_shell_appends_once() {
 
   local lines
   lines="$(grep -c "export PATH=" "$FIXTURE_DIR/home/.zshrc")"
-  if [[ "$lines" == "1" ]]; then
-    pass "--patch-shell appends the PATH export exactly once"
-  else
-    fail "patch_shell_rc broken: count=$lines rc=$RC out='$OUT'"
-  fi
+  assert_eq "$lines" "1" "--patch-shell appends the PATH export exactly once"
 }
 
 run_test test_bootstrap_aborts_on_non_macos

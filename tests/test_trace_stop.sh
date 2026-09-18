@@ -81,10 +81,6 @@ invoke_prune() {
   )
 }
 
-trace_has() {
-  grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
-}
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -186,11 +182,7 @@ test_stop_removal_race_is_tolerated() {
   ) > /dev/null 2>&1
   local rc=$?
 
-  if [[ "$rc" -eq 0 ]]; then
-    pass "stop: docker rm 'already in progress' race is tolerated (rc 0)"
-  else
-    fail "stop: expected stop to complete (rc 0) despite docker rm failure, got $rc"
-  fi
+  assert_eq_num "$rc" "0" "stop: docker rm 'already in progress' race is tolerated (rc 0)"
 }
 
 test_stop_prune_no_compose() {
@@ -309,16 +301,8 @@ test_stop_shutdown_hints() {
       --session-id=test01
   ) 2>&1 || true )
 
-  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
-    pass "stop: shutdown output carries make resume SESSION_ID=<id>"
-  else
-    fail "stop: resume hint missing in shutdown output"
-  fi
-  if [[ "$output" == *"Draft this session's changes: make draft BUNDLE=20260730-120000-test01"* ]]; then
-    pass "stop: shutdown output names the exact session export for make draft"
-  else
-    fail "stop: draft hint missing or wrong bundle in shutdown output"
-  fi
+  assert_contains "$output" "Resume this session later: make resume SESSION_ID=test01" "stop: shutdown output carries make resume SESSION_ID=<id>"
+  assert_contains "$output" "Draft this session's changes: make draft BUNDLE=20260730-120000-test01" "stop: shutdown output names the exact session export for make draft"
 }
 
 test_stop_draft_hint_suppressed_without_export() {
@@ -337,11 +321,7 @@ test_stop_draft_hint_suppressed_without_export() {
       --session-id=test01
   ) 2>&1 || true )
 
-  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
-    pass "stop: resume hint still printed without session export"
-  else
-    fail "stop: resume hint missing in shutdown output"
-  fi
+  assert_contains "$output" "Resume this session later: make resume SESSION_ID=test01" "stop: resume hint still printed without session export"
   if [[ "$output" != *"make draft BUNDLE="* ]]; then
     pass "stop: draft hint suppressed without session export"
   else
@@ -369,3 +349,4 @@ run_test test_stop_draft_hint_suppressed_without_export
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+

@@ -409,11 +409,7 @@ test_changed_files_deduplicates() {
 
   local COUNT
   COUNT=$(grep -c "file.txt" "$OUT/changed-files/MANIFEST.txt" 2>/dev/null || echo 0)
-  if [[ "$COUNT" -eq 1 ]]; then
-    pass "write_changed_files deduplicates file appearing in both diff and untracked"
-  else
-    fail "write_changed_files should deduplicate, file.txt appears $COUNT times"
-  fi
+  assert_eq_num "$COUNT" "1" "write_changed_files deduplicates file appearing in both diff and untracked"
 }
 
 test_changed_files_missing_args() {
@@ -493,11 +489,7 @@ acmezW@9+OnG'
   local COUNT
   COUNT=$(echo "$OUTPUT" | grep -c '^index ' || echo 0)
 
-  if [[ "$COUNT" -eq 1 ]]; then
-    pass "strip_index_lines: exactly 1 index line remains in mixed diff (binary only)"
-  else
-    fail "strip_index_lines: expected 1 index line in mixed diff, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "1" "strip_index_lines: exactly 1 index line remains in mixed diff (binary only)"
 
   if echo "$OUTPUT" | grep -q '^--- a/file.txt'; then
     pass "strip_index_lines preserves text diff headers"
@@ -552,3 +544,4 @@ run_test test_strip_index_handles_mixed_diff
 run_test test_strip_index_passthrough_no_index
 
 test_done
+

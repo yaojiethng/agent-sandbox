@@ -31,11 +31,7 @@ test_session_id_returns_6_chars() {
 test_session_id_is_hex() {
   local out
   out=$(session_id_derive "/tmp/sandbox" "deadbeef1234" "20260831-120000")
-  if [[ "$out" =~ ^[a-f0-9]{6}$ ]]; then
-    pass "SESSION_ID: valid lowercase hex"
-  else
-    fail "SESSION_ID not hex: $out"
-  fi
+  assert_matches "$out" '^[a-f0-9]{6}$' "SESSION_ID: valid lowercase hex"
 }
 
 test_session_id_stable_across_calls() {
@@ -104,11 +100,7 @@ test_no_inline_identity_pipelines_remain() {
   local N
   N=$(grep -c 'SESSION_ID=.*sha256sum' "$REPO_ROOT/scripts/start_agent.sh" \
             "$REPO_ROOT/scripts/resume_agent.sh" | awk -F: '{s+=$2} END {print s}')
-  if [[ "$N" -eq 0 ]]; then
-    pass "no inline sha256sum identity pipelines remain in start/resume scripts"
-  else
-    fail "inline SESSION_ID derivation reappeared ($N occurrences)  --  use session_id_derive"
-  fi
+  assert_eq_num "$N" "0" "no inline sha256sum identity pipelines remain in start/resume scripts"
 }
 
 # =============================================================================
@@ -124,3 +116,4 @@ run_test test_sandbox_id_functions_removed
 run_test test_no_inline_identity_pipelines_remain
 
 test_done test_checkpoint.sh
+

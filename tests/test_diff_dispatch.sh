@@ -255,11 +255,7 @@ test_session_path_multiple_sessions_accumulate() {
 
   local COUNT
   COUNT=$(find "$CHANGES_DIR/session" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
-  if [[ "$COUNT" -eq 2 ]]; then
-    pass "multiple session exports accumulate under session/"
-  else
-    fail "expected 2 session dirs under session/, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "2" "multiple session exports accumulate under session/"
 
   # Check directory naming uses EXPORT_TIME-SESSION_ID pattern (glob, not
   # ls | grep -- names are data)
@@ -316,3 +312,4 @@ run_test test_session_path_multiple_sessions_accumulate
 run_test test_session_path_export_time_written
 
 test_done
+

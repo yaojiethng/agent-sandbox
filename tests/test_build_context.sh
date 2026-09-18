@@ -62,11 +62,7 @@ test_all_copy_sources_exist() {
     done < <(_copy_sources "$dockerfile")
   done
 
-  if [[ "$failures" -eq 0 ]]; then
-    pass "All COPY sources exist at their repo-relative paths"
-  else
-    fail "$failures COPY source(s) missing"
-  fi
+  assert_eq_num "$failures" "0" "All COPY sources exist at their repo-relative paths"
 }
 
 # test_no_flat_temp_dir_paths was deleted (test-quality campaign): its filter
@@ -82,3 +78,4 @@ test_all_copy_sources_exist() {
 run_test test_all_copy_sources_exist
 
 test_done
+

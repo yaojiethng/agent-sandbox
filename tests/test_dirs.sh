@@ -38,11 +38,7 @@ test_host_default_paths() {
     echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
   )
   local exp="/srv/sandbox/.workspace/session-diffs|/srv/sandbox/.workspace/input|/srv/sandbox/.workspace/output"
-  if [[ "$OUT" == "$exp" ]]; then
-    pass "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace"
-  else
-    fail "host default mismatch: got $OUT, want $exp"
-  fi
+  assert_eq "$OUT" "$exp" "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace"
 }
 
 test_container_override() {
@@ -53,11 +49,7 @@ test_container_override() {
     echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
   )
   local exp="/home/agentuser/workspace/session-diffs|/home/agentuser/workspace/input|/home/agentuser/workspace/output"
-  if [[ "$OUT" == "$exp" ]]; then
-    pass "container override: WORKSPACE_DIR_NAME=workspace yields correct paths"
-  else
-    fail "container override mismatch: got $OUT, want $exp"
-  fi
+  assert_eq "$OUT" "$exp" "container override: WORKSPACE_DIR_NAME=workspace yields correct paths"
 }
 
 test_changes_dir_name_is_leaf() {
@@ -70,11 +62,7 @@ test_changes_dir_name_is_leaf() {
     dirs_resolve "/home/agentuser"
     echo "$CHANGES_DIR"
   )
-  if [[ "$OUT" == "/home/agentuser/workspace/workspace/session-diffs" ]]; then
-    pass "leaf-enforcement: slash-bearing CHANGES_DIR_NAME is caught as doubled path"
-  else
-    fail "leaf-enforcement mismatch: got $OUT"
-  fi
+  assert_eq "$OUT" "/home/agentuser/workspace/workspace/session-diffs" "leaf-enforcement: slash-bearing CHANGES_DIR_NAME is caught as doubled path"
 }
 
 test_custom_leaf_overrides() {
@@ -86,11 +74,7 @@ test_custom_leaf_overrides() {
     dirs_resolve "/base"
     echo "$CHANGES_DIR|$INPUT_DIR|$OUTPUT_DIR"
   )
-  if [[ "$OUT" == "/base/.workspace/diffs|/base/.workspace/in|/base/.workspace/out" ]]; then
-    pass "custom leaf names override defaults"
-  else
-    fail "custom leaf mismatch: got $OUT"
-  fi
+  assert_eq "$OUT" "/base/.workspace/diffs|/base/.workspace/in|/base/.workspace/out" "custom leaf names override defaults"
 }
 
 # -------------------------
@@ -106,3 +90,4 @@ run_test test_custom_leaf_overrides
 echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
 [[ "$FAIL" -eq 0 ]]
+

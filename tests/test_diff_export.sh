@@ -57,11 +57,7 @@ test_export_status_includes_init_sha() {
   _content=$(cat "$_tmpdir/.export-status")
   rm -rf "$_tmpdir"
 
-  if [[ "$_content" == *"INIT_SHA=abc123def456"* ]]; then
-    pass "_write_export_status includes INIT_SHA when provided"
-  else
-    fail "_write_export_status: expected INIT_SHA, got: $_content"
-  fi
+  assert_contains "$_content" "INIT_SHA=abc123def456" "_write_export_status includes INIT_SHA when provided"
 }
 
 test_export_status_omits_init_sha_when_empty() {
@@ -130,11 +126,7 @@ test_export_error_log_creates_file() {
   _files=$(ls "$_tmpdir" 2>/dev/null) || true
   rm -rf "$_tmpdir"
 
-  if [[ "$_files" == *"20260622-120000-EXPORT-ERROR.log"* ]]; then
-    pass "_write_export_error_log creates correctly named file"
-  else
-    fail "_write_export_error_log: expected 20260622-120000-EXPORT-ERROR.log, got: $_files"
-  fi
+  assert_contains "$_files" "20260622-120000-EXPORT-ERROR.log" "_write_export_error_log creates correctly named file"
 }
 
 test_export_error_log_includes_session_id() {
@@ -147,11 +139,7 @@ test_export_error_log_includes_session_id() {
   _files=$(ls "$_tmpdir" 2>/dev/null) || true
   rm -rf "$_tmpdir"
 
-  if [[ "$_files" == *"20260622-120000-abc123-EXPORT-ERROR.log"* ]]; then
-    pass "_write_export_error_log embeds SESSION_ID in filename"
-  else
-    fail "_write_export_error_log: expected SESSION_ID in filename, got: $_files"
-  fi
+  assert_contains "$_files" "20260622-120000-abc123-EXPORT-ERROR.log" "_write_export_error_log embeds SESSION_ID in filename"
 }
 
 test_export_error_log_contains_error_details() {
@@ -239,11 +227,7 @@ test_wait_git_lockfile_timeout_message() {
 
   rm -rf "$_tmpdir"
 
-  if [[ "$_output" == *"lockfile persisted"* ]]; then
-    pass "wait_git_lockfile warns on timeout"
-  else
-    fail "wait_git_lockfile: expected warning on timeout, got: $_output"
-  fi
+  assert_contains "$_output" "lockfile persisted" "wait_git_lockfile warns on timeout"
 }
 
 # ---------------------------------------------------------------------------
@@ -280,11 +264,7 @@ test_diff_export_failure_writes_export_status() {
   _content=$(cat "$_outdir/.export-status")
   rm -rf "$_tmpdir"
 
-  if [[ "$_content" == *"STATUS=FAIL"* ]]; then
-    pass "diff_export failure writes FAIL export status"
-  else
-    fail "diff_export failure: expected FAIL status, got: $_content"
-  fi
+  assert_contains "$_content" "STATUS=FAIL" "diff_export failure writes FAIL export status"
 }
 
 test_diff_export_failure_writes_error_log() {
@@ -303,11 +283,7 @@ test_diff_export_failure_writes_error_log() {
   _files=$(ls "$_outdir" 2>/dev/null) || true
   rm -rf "$_tmpdir"
 
-  if [[ "$_files" == *"EXPORT-ERROR.log"* ]]; then
-    pass "diff_export failure writes error log"
-  else
-    fail "diff_export failure: expected error log, got: $_files"
-  fi
+  assert_contains "$_files" "EXPORT-ERROR.log" "diff_export failure writes error log"
 }
 
 # ---------------------------------------------------------------------------
@@ -328,3 +304,4 @@ run_test test_diff_export_failure_writes_export_status
 run_test test_diff_export_failure_writes_error_log
 
 test_done
+

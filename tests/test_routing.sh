@@ -27,51 +27,31 @@ source "$REPO_ROOT/src/libs/routing.sh"
 test_export_path_session() {
   local RESULT
   RESULT=$(export_path "/changes" "session" "a1b2c3")
-  if [[ "$RESULT" =~ ^/changes/session/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
-    pass "export_path constructs session path with EXPORT_TIME-SESSION_ID"
-  else
-    fail "export_path session: expected /changes/session/<ts>-a1b2c3, got $RESULT"
-  fi
+  assert_matches "$RESULT" '^/changes/session/[0-9]{8}-[0-9]{6}-a1b2c3$' "export_path constructs session path with EXPORT_TIME-SESSION_ID"
 }
 
 test_export_path_autosave() {
   local RESULT
   RESULT=$(export_path "/changes" "autosave" "a1b2c3")
-  if [[ "$RESULT" == "/changes/autosave/a1b2c3" ]]; then
-    pass "export_path constructs autosave path without EXPORT_TIME (single, overwritten)"
-  else
-    fail "export_path autosave: expected /changes/autosave/a1b2c3, got $RESULT"
-  fi
+  assert_eq "$RESULT" "/changes/autosave/a1b2c3" "export_path constructs autosave path without EXPORT_TIME (single, overwritten)"
 }
 
 test_export_path_bundles_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3" "my-feature")
-  if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-my-feature-a1b2c3$ ]]; then
-    pass "export_path bundles: EXPORT_TIME-LABEL-SESSION_ID"
-  else
-    fail "export_path bundles with label: expected /output/bundles/<ts>-my-feature-a1b2c3, got $RESULT"
-  fi
+  assert_matches "$RESULT" '^/output/bundles/[0-9]{8}-[0-9]{6}-my-feature-a1b2c3$' "export_path bundles: EXPORT_TIME-LABEL-SESSION_ID"
 }
 
 test_export_path_bundles_no_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3")
-  if [[ "$RESULT" =~ ^/output/bundles/[0-9]{8}-[0-9]{6}-a1b2c3$ ]]; then
-    pass "export_path bundles: EXPORT_TIME-SESSION_ID (no label)"
-  else
-    fail "export_path bundles no label: expected /output/bundles/<ts>-a1b2c3, got $RESULT"
-  fi
+  assert_matches "$RESULT" '^/output/bundles/[0-9]{8}-[0-9]{6}-a1b2c3$' "export_path bundles: EXPORT_TIME-SESSION_ID (no label)"
 }
 
 test_export_path_diffs_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "diffs" "a1b2c3" "snapshot")
-  if [[ "$RESULT" =~ ^/output/diffs/[0-9]{8}-[0-9]{6}-snapshot-a1b2c3$ ]]; then
-    pass "export_path diffs: EXPORT_TIME-LABEL-SESSION_ID"
-  else
-    fail "export_path diffs with label: expected /output/diffs/<ts>-snapshot-a1b2c3, got $RESULT"
-  fi
+  assert_matches "$RESULT" '^/output/diffs/[0-9]{8}-[0-9]{6}-snapshot-a1b2c3$' "export_path diffs: EXPORT_TIME-LABEL-SESSION_ID"
 }
 
 test_export_path_missing_args() {
@@ -121,11 +101,7 @@ test_resolve_draft_explicit_channel_autosave() {
   RESULT=$(resolve_source_for_draft "$SD" "autosave" "") || { fail "resolve_source_for_draft autosave failed"; return; }
   local BUNDLE_NAME
   BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$BUNDLE_NAME" == "20260408-120000-main" ]]; then
-    pass "resolve_source_for_draft: autosave channel resolves correctly"
-  else
-    fail "resolve_source_for_draft autosave: expected 20260408-120000-main, got $BUNDLE_NAME"
-  fi
+  assert_eq "$BUNDLE_NAME" "20260408-120000-main" "resolve_source_for_draft: autosave channel resolves correctly"
 }
 
 # Autosave auto-resolution must follow the directory MTIME (last saved), not
@@ -144,11 +120,7 @@ test_resolve_draft_autosave_newest_by_mtime() {
   RESULT=$(resolve_source_for_draft "$SD" "autosave" "") || { fail "resolve_source_for_draft autosave (mtime) failed"; return; }
   local BUNDLE_NAME
   BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$BUNDLE_NAME" == "aaaa" ]]; then
-    pass "resolve_source_for_draft: autosave auto-resolve picks newest mtime, not largest name"
-  else
-    fail "resolve_source_for_draft autosave (mtime): expected aaaa, got $BUNDLE_NAME"
-  fi
+  assert_eq "$BUNDLE_NAME" "aaaa" "resolve_source_for_draft: autosave auto-resolve picks newest mtime, not largest name"
 }
 
 # The same mtime semantics for the raw helper (entrypoint autosave fallback).
@@ -160,11 +132,7 @@ test_resolve_latest_dir_by_mtime() {
   touch -d "2025-01-01" "$B/zzz"
   local OUT
   OUT=$(resolve_latest_dir_by_mtime "$B")
-  if [[ "$OUT" == "$B/mmm" ]]; then
-    pass "resolve_latest_dir_by_mtime: newest mtime wins regardless of name"
-  else
-    fail "resolve_latest_dir_by_mtime: expected $B/mmm, got '$OUT'"
-  fi
+  assert_eq "$OUT" "$B/mmm" "resolve_latest_dir_by_mtime: newest mtime wins regardless of name"
   if resolve_latest_dir_by_mtime "$FIXTURE_DIR/no-such-base" 2>/dev/null; then
     fail "resolve_latest_dir_by_mtime should fail on missing base dir"
   else
@@ -182,11 +150,7 @@ test_resolve_draft_named_session() {
   local SOURCE_DIR BUNDLE_NAME
   SOURCE_DIR=$(echo "$RESULT" | cut -f1)
   BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$BUNDLE_NAME" == "my-session" ]]; then
-    pass "resolve_source_for_draft: named session resolves correctly"
-  else
-    fail "resolve_source_for_draft named: expected my-session, got $BUNDLE_NAME"
-  fi
+  assert_eq "$BUNDLE_NAME" "my-session" "resolve_source_for_draft: named session resolves correctly"
 }
 
 test_resolve_draft_absolute_path_rejected() {
@@ -220,11 +184,7 @@ test_resolve_draft_bundles_channel() {
   RESULT=$(resolve_source_for_draft "$SD" "bundles" "") || { fail "resolve_source_for_draft bundles failed"; return; }
   local BUNDLE_NAME
   BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
-  if [[ "$BUNDLE_NAME" == "20260408-120000-my-bundle" ]]; then
-    pass "resolve_source_for_draft: bundles channel resolves correctly"
-  else
-    fail "resolve_source_for_draft bundles: expected 20260408-120000-my-bundle, got $BUNDLE_NAME"
-  fi
+  assert_eq "$BUNDLE_NAME" "20260408-120000-my-bundle" "resolve_source_for_draft: bundles channel resolves correctly"
 }
 
 test_resolve_draft_invalid_channel() {
@@ -248,11 +208,7 @@ test_resolve_channel_base_dir_session() {
   dirs_resolve "$SD"
   local RESULT
   RESULT=$(resolve_channel_base_dir "session") || { fail "resolve_channel_base_dir session failed"; return; }
-  if [[ "$RESULT" == "${CHANGES_DIR}/session" ]]; then
-    pass "resolve_channel_base_dir: session -> CHANGES_DIR/session"
-  else
-    fail "resolve_channel_base_dir session: expected ${CHANGES_DIR}/session, got $RESULT"
-  fi
+  assert_eq "$RESULT" "${CHANGES_DIR}/session" "resolve_channel_base_dir: session -> CHANGES_DIR/session"
 }
 
 test_resolve_channel_base_dir_autosave() {
@@ -261,11 +217,7 @@ test_resolve_channel_base_dir_autosave() {
   dirs_resolve "$SD"
   local RESULT
   RESULT=$(resolve_channel_base_dir "autosave") || { fail "resolve_channel_base_dir autosave failed"; return; }
-  if [[ "$RESULT" == "${CHANGES_DIR}/autosave" ]]; then
-    pass "resolve_channel_base_dir: autosave -> CHANGES_DIR/autosave"
-  else
-    fail "resolve_channel_base_dir autosave: expected ${CHANGES_DIR}/autosave, got $RESULT"
-  fi
+  assert_eq "$RESULT" "${CHANGES_DIR}/autosave" "resolve_channel_base_dir: autosave -> CHANGES_DIR/autosave"
 }
 
 
@@ -276,11 +228,7 @@ test_resolve_channel_base_dir_bundles() {
   dirs_resolve "$SD"
   local RESULT
   RESULT=$(resolve_channel_base_dir "bundles") || { fail "resolve_channel_base_dir bundles failed"; return; }
-  if [[ "$RESULT" == "${OUTPUT_DIR}/bundles" ]]; then
-    pass "resolve_channel_base_dir: bundles -> OUTPUT_DIR/bundles"
-  else
-    fail "resolve_channel_base_dir bundles: expected ${OUTPUT_DIR}/bundles, got $RESULT"
-  fi
+  assert_eq "$RESULT" "${OUTPUT_DIR}/bundles" "resolve_channel_base_dir: bundles -> OUTPUT_DIR/bundles"
 }
 
 test_resolve_channel_base_dir_invalid() {
@@ -306,11 +254,7 @@ test_channel_base_dir_all_channels() {
     CHANGES_DIR=/c OUTPUT_DIR=/o
     echo "$(resolve_channel_base_dir session)|$(resolve_channel_base_dir autosave)|$(resolve_channel_base_dir bundles)"
   ' "$REPO_ROOT")
-  if [[ "$OUT" == "/c/session|/c/autosave|/o/bundles" ]]; then
-    pass "resolve_channel_base_dir: session/autosave under CHANGES_DIR, bundles under OUTPUT_DIR"
-  else
-    fail "channel mapping wrong: $OUT"
-  fi
+  assert_eq "$OUT" "/c/session|/c/autosave|/o/bundles" "resolve_channel_base_dir: session/autosave under CHANGES_DIR, bundles under OUTPUT_DIR"
 }
 
 test_channel_base_dir_unknown_rejected() {
@@ -353,11 +297,7 @@ test_latest_dir_picks_lexicographically_last() {
   touch -d "2030-01-01" "$B/mmm"
   local OUT
   OUT=$(resolve_latest_dir "$B")
-  if [[ "$OUT" == "$B/zzz" ]]; then
-    pass "resolve_latest_dir: lexicographically-last wins regardless of mtime (pinned)"
-  else
-    fail "expected $B/zzz, got '$OUT'"
-  fi
+  assert_eq "$OUT" "$B/zzz" "resolve_latest_dir: lexicographically-last wins regardless of mtime (pinned)"
 }
 
 # =============================================================================
@@ -470,11 +410,7 @@ test_resolve_latest_dir_picks_lexicographic_max_ignoring_files() {
   touch "$B/stray-file.txt"
   local out
   out=$(resolve_latest_dir "$B")
-  if [[ "$out" == "$B/20260601-010000" ]]; then
-    pass "resolve_latest_dir picks lexicographic max dir, ignores files"
-  else
-    fail "resolve_latest_dir -> '$out', want '$B/20260601-010000'"
-  fi
+  assert_eq "$out" "$B/20260601-010000" "resolve_latest_dir picks lexicographic max dir, ignores files"
 }
 
 run_test test_resolve_channel_base_dir_invalid
@@ -483,3 +419,4 @@ run_test test_resolve_latest_dir_empty_base_fails
 run_test test_resolve_latest_dir_picks_lexicographic_max_ignoring_files
 
 test_done
+

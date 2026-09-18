@@ -20,11 +20,7 @@ source "$REPO_ROOT/src/build/image.sh"
 test_agent_base_image_name_lowercases_provider() {
   local out
   out=$(agent_base_image_name "Pi")
-  if [[ "$out" == "pi-base" ]]; then
-    pass "agent_base_image_name lowercases provider"
-  else
-    fail "agent_base_image_name Pi -> '$out', want 'pi-base'"
-  fi
+  assert_eq "$out" "pi-base" "agent_base_image_name lowercases provider"
 }
 
 # agent_image_name lowercases the PROJECT position only. The provider is used
@@ -35,21 +31,13 @@ test_agent_base_image_name_lowercases_provider() {
 test_agent_image_name_lowercases_project_only() {
   local out
   out=$(agent_image_name "pi" "MyProject")
-  if [[ "$out" == "pi-agent-myproject" ]]; then
-    pass "agent_image_name lowercases project, keeps provider verbatim"
-  else
-    fail "agent_image_name pi MyProject -> '$out', want 'pi-agent-myproject'"
-  fi
+  assert_eq "$out" "pi-agent-myproject" "agent_image_name lowercases project, keeps provider verbatim"
 }
 
 test_sandbox_image_name_lowercases_project() {
   local out
   out=$(sandbox_image_name "TeSt-Prj")
-  if [[ "$out" == "sandbox-test-prj" ]]; then
-    pass "sandbox_image_name lowercases project"
-  else
-    fail "sandbox_image_name TeSt-Prj -> '$out', want 'sandbox-test-prj'"
-  fi
+  assert_eq "$out" "sandbox-test-prj" "sandbox_image_name lowercases project"
 }
 
 # shared_base_image_name is a single canonical constant; all providers inherit
@@ -57,11 +45,7 @@ test_sandbox_image_name_lowercases_project() {
 test_shared_base_image_name_is_constant() {
   local out
   out=$(shared_base_image_name)
-  if [[ "$out" == "agent-node-base" ]]; then
-    pass "shared_base_image_name returns canonical constant"
-  else
-    fail "shared_base_image_name -> '$out', want 'agent-node-base'"
-  fi
+  assert_eq "$out" "agent-node-base" "shared_base_image_name returns canonical constant"
 }
 
 # Missing arguments are hard errors (:? expansions), never empty-tag builds.
@@ -87,3 +71,4 @@ run_test test_shared_base_image_name_is_constant
 run_test test_missing_args_are_hard_errors
 
 test_done
+

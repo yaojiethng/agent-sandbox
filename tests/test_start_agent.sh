@@ -419,17 +419,9 @@ test_mount_start_materializes_worktree() {
   local wt_head proj_head recorded
   wt_head="$(git -C "$wt" rev-parse HEAD 2>/dev/null)"
   proj_head="$(git -C "$dir/project" rev-parse HEAD)"
-  if [[ "$wt_head" == "$proj_head" ]]; then
-    pass "mount start: full-history worktree HEAD equals project HEAD"
-  else
-    fail "mount start: worktree HEAD ($wt_head) != project HEAD ($proj_head)"
-  fi
+  assert_eq "$wt_head" "$proj_head" "mount start: full-history worktree HEAD equals project HEAD"
   recorded="$(git -C "$wt" config agent-sandbox.flatten 2>/dev/null)"
-  if [[ "$recorded" == "false" ]]; then
-    pass "mount start: worktree records agent-sandbox.flatten=false (full)"
-  else
-    fail "mount start: recorded flatten mode wrong (got '$recorded')"
-  fi
+  assert_eq "$recorded" "false" "mount start: worktree records agent-sandbox.flatten=false (full)"
 
   if [[ "$(cat "$wt/file.txt")" == "baseline" ]]; then
     pass "mount start: tracked project content copied into worktree"
@@ -619,3 +611,4 @@ run_test test_mount_full_refuses_unborn_head
 run_test test_mount_flatten_single_baseline
 
 test_done
+

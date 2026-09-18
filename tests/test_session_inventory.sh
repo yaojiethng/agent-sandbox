@@ -119,11 +119,7 @@ test_record_label_pipefail_safe_on_no_match() {
 
   local TS
   TS=$(set -o pipefail; record_label "$f" session-ts)
-  if [[ "$TS" == "20260821-100000" ]]; then
-    pass "record_label: extracts present label value"
-  else
-    fail "label extraction wrong: '$TS'"
-  fi
+  assert_eq "$TS" "20260821-100000" "record_label: extracts present label value"
 }
 
 # =============================================================================
@@ -190,11 +186,7 @@ test_session_stale_derives_sha_from_project_dir() {
 
   local OUT
   OUT=$(PROJECT_DIR="$PROJ" session_stale "$f")
-  if [[ "$OUT" == "fresh" ]]; then
-    pass "session_stale: derives current SHA from PROJECT_DIR when not passed"
-  else
-    fail "derived-SHA path broken: '$OUT'"
-  fi
+  assert_eq "$OUT" "fresh" "session_stale: derives current SHA from PROJECT_DIR when not passed"
 }
 
 # =============================================================================
@@ -266,3 +258,4 @@ run_test test_enumerate_records_filters_and_skips
 run_test test_enumerate_records_no_dir_or_empty_is_silent_rc0
 
 test_done test_session_inventory.sh
+

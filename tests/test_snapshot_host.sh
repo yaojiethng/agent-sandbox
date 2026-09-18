@@ -153,11 +153,7 @@ test_worktree_creates_destination_if_absent() {
 
   snapshot_copy_worktree "$SRC" "$DST"
 
-  if [[ -d "$DST" ]]; then
-    pass "worktree: destination directory created when absent"
-  else
-    fail "worktree: destination directory should be created automatically"
-  fi
+  assert_dir_exists "$DST" "worktree: destination directory created when absent"
 }
 
 test_worktree_preserves_directory_structure() {
@@ -354,3 +350,4 @@ run_test      test_deliver_flatten_excludes_gitignored
 
 
 test_done
+

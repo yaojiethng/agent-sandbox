@@ -73,11 +73,7 @@ test_confirm_or_abort_prints_items_to_stderr() {
 test_confirm_or_abort_stdout_empty() {
   local STDOUT
   STDOUT=$(echo "y" | interactive_confirm_or_abort "Apply:" "item" 2>/dev/null)
-  if [[ -z "$STDOUT" ]]; then
-    pass "interactive_confirm_or_abort prints nothing to stdout"
-  else
-    fail "interactive_confirm_or_abort should print nothing to stdout, got: '$STDOUT'"
-  fi
+  assert_empty "$STDOUT" "interactive_confirm_or_abort prints nothing to stdout"
 }
 
 test_confirm_or_abort_no_label() {
@@ -87,11 +83,7 @@ test_confirm_or_abort_no_label() {
   # Should not start with empty label line  --  first line should be the item
   local FIRST_LINE
   FIRST_LINE=$(echo "$STDERR" | head -1)
-  if [[ "$FIRST_LINE" == "  item" ]]; then
-    pass "interactive_confirm_or_abort with empty label skips header"
-  else
-    fail "interactive_confirm_or_abort with empty label should skip header, first line: '$FIRST_LINE'"
-  fi
+  assert_eq "$FIRST_LINE" "  item" "interactive_confirm_or_abort with empty label skips header"
 }
 
 # =============================================================================
@@ -108,11 +100,7 @@ test_select_channel_draft_lists_channels() {
 
   local CHANNEL
   CHANNEL=$(echo "1" | interactive_select_channel "draft" "$SANDBOX" 2>/dev/null)
-  if [[ "$CHANNEL" == "session" ]]; then
-    pass "interactive_select_channel draft picks first channel (session)"
-  else
-    fail "interactive_select_channel draft should return 'session', got: '$CHANNEL'"
-  fi
+  assert_eq "$CHANNEL" "session" "interactive_select_channel draft picks first channel (session)"
 }
 
 test_select_channel_default_highlighted() {
@@ -124,11 +112,7 @@ test_select_channel_default_highlighted() {
   # Empty input with DEFAULT_CHANNEL=autosave
   local CHANNEL
   CHANNEL=$(echo "" | interactive_select_channel "draft" "$SANDBOX" "autosave" 2>/dev/null)
-  if [[ "$CHANNEL" == "autosave" ]]; then
-    pass "interactive_select_channel returns default on empty input"
-  else
-    fail "interactive_select_channel should return 'autosave' on empty input, got: '$CHANNEL'"
-  fi
+  assert_eq "$CHANNEL" "autosave" "interactive_select_channel returns default on empty input"
 }
 
 test_select_channel_q_aborts() {
@@ -154,11 +138,7 @@ test_select_channel_zero_entries_shows_count() {
   # Channel 3 (bundles) has 0 entries  --  should show 0 entries but still be selectable
   local CHANNEL
   CHANNEL=$(echo "3" | interactive_select_channel "draft" "$SANDBOX" 2>/dev/null)
-  if [[ "$CHANNEL" == "bundles" ]]; then
-    pass "interactive_select_channel allows selecting channel with 0 entries"
-  else
-    fail "interactive_select_channel should return 'bundles' on 3, got: '$CHANNEL'"
-  fi
+  assert_eq "$CHANNEL" "bundles" "interactive_select_channel allows selecting channel with 0 entries"
 }
 
 test_select_channel_repeats_on_invalid() {
@@ -169,11 +149,7 @@ test_select_channel_repeats_on_invalid() {
   # Invalid "99" then valid "1"
   local CHANNEL
   CHANNEL=$(printf "99\n1\n" | interactive_select_channel "draft" "$SANDBOX" 2>/dev/null)
-  if [[ "$CHANNEL" == "session" ]]; then
-    pass "interactive_select_channel re-prompts on invalid selection"
-  else
-    fail "interactive_select_channel should recover from invalid input, got: '$CHANNEL'"
-  fi
+  assert_eq "$CHANNEL" "session" "interactive_select_channel re-prompts on invalid selection"
 }
 
 # =============================================================================
@@ -190,11 +166,7 @@ test_select_session_picks_by_number() {
 
   local BUNDLE
   BUNDLE=$(echo "2" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_bundle picks second session by number"
-  else
-    fail "interactive_select_bundle should return '20260503-090000-beta', got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle picks second session by number"
 }
 
 test_select_session_default_highlighted() {
@@ -207,11 +179,7 @@ test_select_session_default_highlighted() {
 
   local BUNDLE
   BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_bundle returns default on empty input"
-  else
-    fail "interactive_select_bundle should return default '20260503-090000-beta', got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle returns default on empty input"
 }
 
 test_select_session_availability_indicators() {
@@ -228,11 +196,7 @@ test_select_session_availability_indicators() {
 
   local BUNDLE
   BUNDLE=$(echo "1" | interactive_select_bundle "$SANDBOX" "session" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260504-120000-full" ]]; then
-    pass "interactive_select_bundle shows availability indicators (first entry)"
-  else
-    fail "interactive_select_bundle should return first entry, got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260504-120000-full" "interactive_select_bundle shows availability indicators (first entry)"
 }
 
 test_select_session_patch_count_shown() {
@@ -341,11 +305,7 @@ test_select_session_inject_option_zero() {
   # DEFAULT_BUNDLE not in list  --  inject as option 0
   local BUNDLE
   BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260501-000000-remote" ]]; then
-    pass "interactive_select_bundle injects option 0 for outside-default, Enter selects it"
-  else
-    fail "interactive_select_bundle should return '20260501-000000-remote' via option 0, got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260501-000000-remote" "interactive_select_bundle injects option 0 for outside-default, Enter selects it"
 }
 
 test_select_session_option_zero_by_number() {
@@ -359,11 +319,7 @@ test_select_session_option_zero_by_number() {
   # Select option 0 by typing "0"
   local BUNDLE
   BUNDLE=$(echo "0" | interactive_select_bundle "$SANDBOX" "session" "20260501-000000-remote" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260501-000000-remote" ]]; then
-    pass "interactive_select_bundle option 0 selectable by typing '0'"
-  else
-    fail "interactive_select_bundle should return '20260501-000000-remote' on '0', got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260501-000000-remote" "interactive_select_bundle option 0 selectable by typing '0'"
 }
 
 test_select_session_no_option_zero_when_in_displayed() {
@@ -377,11 +333,7 @@ test_select_session_no_option_zero_when_in_displayed() {
   # DEFAULT_BUNDLE IS in list  --  no option 0, Enter selects normally
   local BUNDLE
   BUNDLE=$(echo "" | interactive_select_bundle "$SANDBOX" "session" "20260503-090000-beta" 2>/dev/null)
-  if [[ "$BUNDLE" == "20260503-090000-beta" ]]; then
-    pass "interactive_select_bundle does not inject option 0 when default is in displayed list"
-  else
-    fail "interactive_select_bundle should return '20260503-090000-beta' normally, got: '$BUNDLE'"
-  fi
+  assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle does not inject option 0 when default is in displayed list"
 }
 
 test_select_session_option_zero_stderr_shows_entry() {
@@ -579,3 +531,4 @@ run_test test_select_session_pagination_option_zero_persists
 run_test test_select_session_pagination_no_n_at_last_page
 
 test_done
+

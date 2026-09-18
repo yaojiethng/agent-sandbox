@@ -142,11 +142,7 @@ test_stub_docker_config_preserves_structure() {
   local name_lines
   name_lines=$(echo "$out" | grep -c '^[[:space:]]*name:') || name_lines=0
 
-  if [[ "$name_lines" -eq 0 ]]; then
-    pass "stub compose config output has no 'name:' lines"
-  else
-    fail "stub compose config output has $name_lines 'name:' line(s)"
-  fi
+  assert_eq_num "$name_lines" "0" "stub compose config output has no 'name:' lines"
 }
 
 # ---------------------------------------------------------------------------
@@ -162,11 +158,7 @@ test_base_template_has_no_copy_only_wiring() {
   grep -q 'sandbox-data' "$base" && copy_only=1
   grep -q '/home/agentuser/.snapshot' "$base" && copy_only=1
 
-  if [[ "$copy_only" -eq 0 ]]; then
-    pass "base template free of copy-only wiring (SNAPSHOT_DIR, named sandbox volume)"
-  else
-    fail "base template still carries copy-only wiring"
-  fi
+  assert_eq_num "$copy_only" "0" "base template free of copy-only wiring (SNAPSHOT_DIR, named sandbox volume)"
 }
 
 # The copy overlay carries the named volume and copy delivery type, and no
@@ -197,11 +189,7 @@ test_mount_overlay_carries_worktree_not_copy_wiring() {
   grep -q 'SANDBOX_TYPE=mount' "$overlay" || copy_only=1
   grep -q '{{FLATTEN}}' "$overlay" || copy_only=1
 
-  if [[ "$copy_only" -eq 0 ]]; then
-    pass "mount overlay carries worktree mount + SANDBOX_TYPE=mount + FLATTEN only"
-  else
-    fail "mount overlay missing worktree mount/SANDBOX_TYPE=mount/FLATTEN or carries copy wiring"
-  fi
+  assert_eq_num "$copy_only" "0" "mount overlay carries worktree mount + SANDBOX_TYPE=mount + FLATTEN only"
 }
 
 # The stub's compose config cats only the first staged input, so delivery
@@ -266,11 +254,7 @@ test_mount_output_has_no_snapshot_dir() {
   grep -q 'SNAPSHOT_DIR' "$out" && copy_only=1
   grep -q 'sandbox-data' "$out" && copy_only=1
 
-  if [[ "$copy_only" -eq 0 ]]; then
-    pass "mount-mode merged output free of copy-only wiring"
-  else
-    fail "mount-mode merged output contains copy-only wiring"
-  fi
+  assert_eq_num "$copy_only" "0" "mount-mode merged output free of copy-only wiring"
 }
 
 # compose_generate stamps the built images' ID digests into the record's
@@ -347,3 +331,4 @@ run_test test_compose_file_from_args_empty_without_f
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+

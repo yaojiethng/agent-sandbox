@@ -69,11 +69,7 @@ test_container_sig_is_sha256_hex() {
   local S
   S=$(container_sig "$ROOT" "src/libs"</dev/null)
 
-  if [[ "$S" =~ ^[a-f0-9]{64}$ ]]; then
-    pass "container_sig emits 64-char lowercase hex"
-  else
-    fail "container_sig output not sha256 hex: '$S'"
-  fi
+  assert_matches "$S" '^[a-f0-9]{64}$' "container_sig emits 64-char lowercase hex"
 }
 
 test_container_sig_order_independent() {
@@ -84,11 +80,7 @@ test_container_sig_order_independent() {
   S1=$(container_sig "$ROOT" "src/libs" "docs/concepts"</dev/null)
   S2=$(container_sig "$ROOT" "docs/concepts" "src/libs"</dev/null)
 
-  if [[ "$S1" == "$S2" ]]; then
-    pass "container_sig independent of source-path argument order"
-  else
-    fail "container_sig changed when argument order changed: '$S1' vs '$S2'"
-  fi
+  assert_eq "$S1" "$S2" "container_sig independent of source-path argument order"
 }
 
 test_container_sig_sensitive_to_content() {
@@ -308,11 +300,7 @@ test_image_digest_returns_stub_digest() {
   local OUT
   OUT=$(DOCKER_STUB_IMAGE_DIGEST="sha256:abc123" run_with_docker_stub \
     bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest img1")
-  if [[ "$OUT" == "sha256:abc123" ]]; then
-    pass "image_digest returns the image ID digest"
-  else
-    fail "image_digest expected 'sha256:abc123', got '$OUT'"
-  fi
+  assert_eq "$OUT" "sha256:abc123" "image_digest returns the image ID digest"
 }
 
 test_image_digest_per_image_map() {
@@ -333,11 +321,7 @@ test_image_digest_empty_for_missing_image() {
   # Per-image map with no entry AND empty fallback = missing image.
   OUT=$(DOCKER_STUB_IMAGE_DIGEST="" run_with_docker_stub \
     bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; image_digest nosuchimage")
-  if [[ -z "$OUT" ]]; then
-    pass "image_digest returns empty for missing image (compose_generate fails hard)"
-  else
-    fail "image_digest expected empty for missing image, got '$OUT'"
-  fi
+  assert_empty "$OUT" "image_digest returns empty for missing image (compose_generate fails hard)"
 }
 
 # =============================================================================
@@ -364,3 +348,4 @@ run_test test_image_digest_per_image_map
 run_test test_image_digest_empty_for_missing_image
 
 test_done
+

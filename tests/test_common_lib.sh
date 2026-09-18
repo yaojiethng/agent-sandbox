@@ -44,11 +44,7 @@ test_help_flag_not_triggered() {
   # No --help or -h in args  --  should be a no-op
   usage() { echo "usage called"; }
   OUTPUT=$(parse_help_flag --name=test --sandbox=/tmp/s 2>&1)
-  if [[ -z "$OUTPUT" ]]; then
-    pass "parse_help_flag produces no output when no help flag present"
-  else
-    fail "parse_help_flag should be silent without help flags, got: $OUTPUT"
-  fi
+  assert_empty "$OUTPUT" "parse_help_flag produces no output when no help flag present"
 }
 
 # ---------------------------------------------------------------------------
@@ -59,42 +55,18 @@ test_parse_base_flags_sets_vars() {
   PROJECT_NAME="" PROJECT_DIR="" SANDBOX_DIR=""
   parse_base_flags --name=my-project --project=/tmp/myproj --sandbox=/tmp/mysandbox --unknown-flag
 
-  if [[ "$PROJECT_NAME" == "my-project" ]]; then
-    pass "parse_base_flags sets PROJECT_NAME from --name="
-  else
-    fail "parse_base_flags: expected PROJECT_NAME=my-project, got $PROJECT_NAME"
-  fi
-  if [[ "$PROJECT_DIR" == "/tmp/myproj" ]]; then
-    pass "parse_base_flags sets PROJECT_DIR from --project="
-  else
-    fail "parse_base_flags: expected PROJECT_DIR=/tmp/myproj, got $PROJECT_DIR"
-  fi
-  if [[ "$SANDBOX_DIR" == "/tmp/mysandbox" ]]; then
-    pass "parse_base_flags sets SANDBOX_DIR from --sandbox="
-  else
-    fail "parse_base_flags: expected SANDBOX_DIR=/tmp/mysandbox, got $SANDBOX_DIR"
-  fi
+  assert_eq "$PROJECT_NAME" "my-project" "parse_base_flags sets PROJECT_NAME from --name="
+  assert_eq "$PROJECT_DIR" "/tmp/myproj" "parse_base_flags sets PROJECT_DIR from --project="
+  assert_eq "$SANDBOX_DIR" "/tmp/mysandbox" "parse_base_flags sets SANDBOX_DIR from --sandbox="
 }
 
 test_parse_base_flags_defaults_empty() {
   PROJECT_NAME="x" PROJECT_DIR="y" SANDBOX_DIR="z"
   parse_base_flags --other-flag
 
-  if [[ -z "$PROJECT_NAME" ]]; then
-    pass "parse_base_flags leaves PROJECT_NAME empty when --name= absent"
-  else
-    fail "parse_base_flags should leave PROJECT_NAME empty, got $PROJECT_NAME"
-  fi
-  if [[ -z "$PROJECT_DIR" ]]; then
-    pass "parse_base_flags leaves PROJECT_DIR empty when --project= absent"
-  else
-    fail "parse_base_flags should leave PROJECT_DIR empty, got $PROJECT_DIR"
-  fi
-  if [[ -z "$SANDBOX_DIR" ]]; then
-    pass "parse_base_flags leaves SANDBOX_DIR empty when --sandbox= absent"
-  else
-    fail "parse_base_flags should leave SANDBOX_DIR empty, got $SANDBOX_DIR"
-  fi
+  assert_empty "$PROJECT_NAME" "parse_base_flags leaves PROJECT_NAME empty when --name= absent"
+  assert_empty "$PROJECT_DIR" "parse_base_flags leaves PROJECT_DIR empty when --project= absent"
+  assert_empty "$SANDBOX_DIR" "parse_base_flags leaves SANDBOX_DIR empty when --sandbox= absent"
 }
 
 # ---------------------------------------------------------------------------
@@ -224,3 +196,4 @@ run_test test_source_function_from_extracts_and_defines
 run_test test_source_function_from_fails_when_pattern_missing
 
 test_done
+

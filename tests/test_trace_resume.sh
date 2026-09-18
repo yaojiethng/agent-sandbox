@@ -111,9 +111,6 @@ invoke_resume() {
   ) > /dev/null 2>&1
 }
 
-trace_count() { grep -c "$1" "$DOCKER_TRACE_LOG" 2>/dev/null || true; }
-trace_grep() { grep "$1" "$DOCKER_TRACE_LOG" 2>/dev/null || true; }
-
 # Resume of a copy-delivery session preserves the named volume across all
 # execution paths (R1, R2, R3) and reuses the record SESSION_ID (R4).
 test_resume_copy_keeps_named_volume() {

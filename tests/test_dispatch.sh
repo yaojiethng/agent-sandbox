@@ -395,59 +395,23 @@ test_help_no_args() {
   local output
   output=$(main help 2>&1) || true
 
-  if [[ "$output" == *"Valid subcommands"* ]]; then
-    pass "help (no args): prints subcommand list"
-  else
-    fail "help (no args): expected subcommand list, got: $output"
-  fi
+  assert_contains "$output" "Valid subcommands" "help (no args): prints subcommand list"
 }
 
-test_help_apply() {
-  setup
-  dispatch_and_capture help apply
+# help for a leaf subcommand execs the leaf with --help. One data-driven
+# test keeps the three per-leaf cases in a table instead of three copies.
+test_help_leaf_subcommands() {
+  local leaf
+  for leaf in apply draft build; do
+    setup
+    dispatch_and_capture help "$leaf"
 
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"apply.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
+    if captured_has "exec" "${leaf}.sh" "--help"; then
+      pass "help $leaf: execs ${leaf}.sh --help"
+    else
+      fail "help $leaf: expected exec ${leaf}.sh --help, got: ${CAPTURED[*]}"
+    fi
   done
-
-  if [[ "$found" == true ]]; then
-    pass "help apply: execs apply.sh --help"
-  else
-    fail "help apply: expected exec apply.sh --help, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_help_draft() {
-  setup
-  dispatch_and_capture help draft
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"draft.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "help draft: execs draft.sh --help"
-  else
-    fail "help draft: expected exec draft.sh --help, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_help_build() {
-  setup
-  dispatch_and_capture help build
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"build.sh"* ]] && [[ "$c" == *"--help"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "help build: execs build.sh --help"
-  else
-    fail "help build: expected exec build.sh --help, got: ${CAPTURED[*]}"
-  fi
 }
 
 test_help_unknown() {
@@ -455,11 +419,7 @@ test_help_unknown() {
   local output
   output=$(main help nonexistent 2>&1) || true
 
-  if [[ "$output" == *"Unknown subcommand"* ]]; then
-    pass "help nonexistent: prints error"
-  else
-    fail "help nonexistent: expected error, got: $output"
-  fi
+  assert_contains "$output" "Unknown subcommand" "help nonexistent: prints error"
 }
 
 # --help/-h on any subcommand routes to the child's own help via route_help,
@@ -543,257 +503,46 @@ test_help_flag_shows_list() {
   local output
   output=$(main help --help 2>&1) || true
 
-  if [[ "$output" == *"Valid subcommands"* ]]; then
-    pass "help --help: shows the subcommand list (help's own page)"
-  else
-    fail "help --help: expected subcommand list, got: $output"
-  fi
+  assert_contains "$output" "Valid subcommands" "help --help: shows the subcommand list (help's own page)"
 }
 
 # =============================================================================
 # Tests  --  apply subcommand (exec's workflows/apply.sh)
 # =============================================================================
 
-test_apply_with_diff() {
-  setup
-  dispatch_and_capture apply --project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff
+# A subcommand dispatches to its leaf script with the flags passed through.
+# One data-driven test replaces the per-flag copies: <sub>|<args>|<expected
+# capture substring>|<label>.
+test_workflow_subcommand_dispatch() {
+  local row sub args expect label
+  local rows=(
+    'apply|--project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff|workflows/apply.sh|apply --diff=<path>'
+    'apply|--project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff --branch=feature-x|--branch=feature-x|apply --diff --branch'
+    'apply|--project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff --force|--force|apply --diff --force'
+    'draft|--project=/tmp/p --sandbox=/tmp/s|workflows/draft.sh|draft'
+    'draft|--project=/tmp/p --sandbox=/tmp/s --bundle=my-session|--bundle|draft --bundle'
+    'draft|--project=/tmp/p --sandbox=/tmp/s --force|--force|draft --force'
+    'draft|--project=/tmp/p --sandbox=/tmp/s --permissive|--permissive|draft --permissive'
+    'confirm|--project=/tmp/p --sandbox=/tmp/s|workflows/confirm.sh|confirm'
+    'confirm|--project=/tmp/p --sandbox=/tmp/s --target=main|--target|confirm --target'
+    'reject|--project=/tmp/p --sandbox=/tmp/s|workflows/reject.sh|reject'
+    'stop|--name=test --project=/tmp/p --sandbox=/tmp/s|--project=/tmp/p|stop: execs stop.sh with name, sandbox, and project'
+    'onboard|--name=test --project=/tmp/p --sandbox=/tmp/s|onboard.sh|onboard'
+    'prune|--name=test --project=/tmp/p --sandbox=/tmp/s --stale=sandbox|--stale=sandbox|prune: execs prune.sh with name, project, sandbox, and passthrough flags'
+    'package-branch|--sandbox=/tmp/s|package_branch.sh|package-branch: execs package_branch.sh with --sandbox forwarded'
+  )
+  for row in "${rows[@]}"; do
+    IFS='|' read -r sub args expect label <<< "$row"
+    setup
+    # shellcheck disable=SC2086  # args is a deliberately pre-split flag string
+    dispatch_and_capture "$sub" $args
 
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--diff"* ]] && found=true
+    if captured_has "exec" "$expect"; then
+      pass "$label: execs $expect"
+    else
+      fail "$label: expected $expect, got: ${CAPTURED[*]}"
+    fi
   done
-
-  if [[ "$found" == true ]]; then
-    pass "apply --diff=<path>: execs apply.sh with --diff flag"
-  else
-    fail "apply --diff=<path>: expected exec apply.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_apply_with_branch() {
-  setup
-  dispatch_and_capture apply --project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff --branch=feature-x
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--branch=feature-x"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "apply --diff --branch: passes --branch flag through"
-  else
-    fail "apply --diff --branch: expected --branch in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_apply_with_force() {
-  setup
-  dispatch_and_capture apply --project=/tmp/p --sandbox=/tmp/s --diff=/tmp/mydiff.diff --force
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/apply.sh"* ]] && [[ "$c" == *"--force"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "apply --diff --force: passes --force flag through"
-  else
-    fail "apply --diff --force: expected --force in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-# =============================================================================
-# Tests  --  draft subcommand (exec's workflows/draft.sh)
-# =============================================================================
-
-test_draft_noninteractive() {
-  setup
-  # Non-interactive draft resolves via router  --  will fail without session dirs.
-  # We just verify it execs draft.sh rather than exploding.
-  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "draft: execs draft.sh"
-  else
-    fail "draft: expected exec draft.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_draft_with_bundle() {
-  setup
-  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --bundle=my-session
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--bundle"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "draft --bundle: passes --bundle flag through"
-  else
-    fail "draft --bundle: expected --bundle in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_draft_with_force() {
-  setup
-  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --force
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--force"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "draft --force: passes --force flag through"
-  else
-    fail "draft --force: expected --force in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_draft_with_permissive() {
-  setup
-  dispatch_and_capture draft --project=/tmp/p --sandbox=/tmp/s --permissive
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/draft.sh"* ]] && [[ "$c" == *"--permissive"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "draft --permissive: passes --permissive flag through"
-  else
-    fail "draft --permissive: expected --permissive in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-# =============================================================================
-# Tests  --  confirm / reject (exec's workflows/confirm.sh, workflows/reject.sh)
-# =============================================================================
-
-test_confirm_default() {
-  setup
-  dispatch_and_capture confirm --project=/tmp/p --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/confirm.sh"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "confirm: execs confirm.sh"
-  else
-    fail "confirm: expected exec confirm.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_confirm_with_target() {
-  setup
-  dispatch_and_capture confirm --project=/tmp/p --sandbox=/tmp/s --target=main
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/confirm.sh"* ]] && [[ "$c" == *"--target"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "confirm --target: passes --target flag through"
-  else
-    fail "confirm --target: expected --target in exec, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_reject_default() {
-  setup
-  dispatch_and_capture reject --project=/tmp/p --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"workflows/reject.sh"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "reject: execs reject.sh"
-  else
-    fail "reject: expected exec reject.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-# =============================================================================
-# Tests  --  stop / onboard / package-* (exec'd scripts)
-# =============================================================================
-
-test_stop() {
-  setup
-  dispatch_and_capture stop --name=test --project=/tmp/p --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"stop.sh"* ]] && [[ "$c" == *"--name=test"* ]] \
-      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && [[ "$c" == *"--project=/tmp/p"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "stop: execs stop.sh with name, sandbox, and project"
-  else
-    fail "stop: expected exec stop.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_onboard() {
-  setup
-  dispatch_and_capture onboard --name=test --project=/tmp/p --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"onboard.sh"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "onboard: execs onboard.sh"
-  else
-    fail "onboard: expected exec onboard.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_prune_dispatch() {
-  setup
-  dispatch_and_capture prune --name=test --project=/tmp/p --sandbox=/tmp/s --stale=sandbox
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"prune.sh"* ]] && [[ "$c" == *"--name=test"* ]] \
-      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && [[ "$c" == *"--project=/tmp/p"* ]] \
-      && [[ "$c" == *"--stale=sandbox"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "prune: execs prune.sh with name, project, sandbox, and passthrough flags"
-  else
-    fail "prune: expected exec prune.sh, got: ${CAPTURED[*]}"
-  fi
-}
-
-test_package_branch() {
-  setup
-  dispatch_and_capture package-branch --sandbox=/tmp/s
-
-  local found=false
-  for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"package_branch.sh"* ]] \
-      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && found=true
-  done
-
-  if [[ "$found" == true ]]; then
-    pass "package-branch: execs package_branch.sh with --sandbox forwarded"
-  else
-    fail "package-branch: expected exec package_branch.sh with --sandbox, got: ${CAPTURED[*]}"
-  fi
 }
 
 # =============================================================================
@@ -817,11 +566,7 @@ test_missing_subcommand() {
   local output
   output=$(main 2>&1) || true
 
-  if [[ "$output" == *"Usage: agent-sandbox"* ]]; then
-    pass "missing subcommand: prints usage"
-  else
-    fail "missing subcommand: expected usage, got: $output"
-  fi
+  assert_contains "$output" "Usage: agent-sandbox" "missing subcommand: prints usage"
 }
 
 test_build_missing_args() {
@@ -863,24 +608,9 @@ run_test test_dry_run_mode
 run_test test_start_with_passthrough
 run_test test_start_rebuild_passthrough
 run_test test_start_refresh_passthrough
-run_test test_apply_with_diff
-run_test test_apply_with_branch
-run_test test_apply_with_force
-run_test test_draft_noninteractive
-run_test test_draft_with_bundle
-run_test test_draft_with_force
-run_test test_draft_with_permissive
-run_test test_confirm_default
-run_test test_confirm_with_target
-run_test test_reject_default
-run_test test_stop
-run_test test_prune_dispatch
-run_test test_onboard
-run_test test_package_branch
+run_test test_workflow_subcommand_dispatch
 run_test test_help_no_args
-run_test test_help_apply
-run_test test_help_draft
-run_test test_help_build
+run_test test_help_leaf_subcommands
 run_test test_help_unknown
 run_test test_help_flag_routes_run_modes_to_start_agent
 run_test test_help_start_subcommand
@@ -896,3 +626,4 @@ rm -rf "$MOCK_SCRIPTS_DIR"
 echo ""
 echo "${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
 [[ "$FAIL" -eq 0 ]]
+

@@ -83,14 +83,6 @@ invoke_run_agent_rc() {
   echo $?
 }
 
-trace_grep() {
-  grep "$1" "$DOCKER_TRACE_LOG" 2>/dev/null || true
-}
-
-trace_count() {
-  trace_grep "$1" | wc -l
-}
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -114,11 +106,7 @@ test_start_standard_shutdown_resume_hint() {
       --delivery=copy
   ) 2>&1 )
 
-  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
-    pass "start (standard): shutdown output carries make resume SESSION_ID=<id>"
-  else
-    fail "start (standard): resume hint missing in shutdown output"
-  fi
+  assert_contains "$output" "Resume this session later: make resume SESSION_ID=test01" "start (standard): shutdown output carries make resume SESSION_ID=<id>"
 
   # No session export dir exists in this fixture: the draft hint must be
   # suppressed (suppress-on-absent), not left pointing at a stale bundle.
@@ -150,11 +138,7 @@ test_start_standard_shutdown_draft_hint() {
       --delivery=copy
   ) 2>&1 )
 
-  if [[ "$output" == *"Draft this session's changes: make draft BUNDLE=20260730-120000-test01"* ]]; then
-    pass "start (standard): shutdown output names the exact session export for make draft"
-  else
-    fail "start (standard): draft hint missing or wrong bundle in shutdown output"
-  fi
+  assert_contains "$output" "Draft this session's changes: make draft BUNDLE=20260730-120000-test01" "start (standard): shutdown output names the exact session export for make draft"
 }
 
 test_start_standard_shutdown_draft_hint_suppressed_for_empty_export() {
@@ -192,11 +176,7 @@ test_start_standard_no_v() {
 
   local count
   count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 0 ]]; then
-    pass "start (standard): zero 'compose down -v' invocations"
-  else
-    fail "start (standard): expected 0 'compose down -v', got $count"
-  fi
+  assert_eq_num "$count" "0" "start (standard): zero 'compose down -v' invocations"
 }
 
 test_start_standard_has_compose_up() {
@@ -238,11 +218,7 @@ test_start_standard_post_agent_uses_down() {
   # down would also satisfy a bare down_count>=1.
   local down_v_count
   down_v_count=$(trace_count "compose down -v")
-  if [[ "$down_v_count" -eq 0 ]]; then
-    pass "start (standard): zero 'compose down -v' (session_teardown keeps named volumes)"
-  else
-    fail "start (standard): expected 0 'compose down -v', got $down_v_count"
-  fi
+  assert_eq_num "$down_v_count" "0" "start (standard): zero 'compose down -v' (session_teardown keeps named volumes)"
 }
 
 test_start_refresh_has_no_down_v() {
@@ -253,11 +229,7 @@ test_start_refresh_has_no_down_v() {
 
   local count
   count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 0 ]]; then
-    pass "start --refresh: zero 'compose down -v' (volume removal via docker volume rm)"
-  else
-    fail "start --refresh: expected 0 'compose down -v', got $count"
-  fi
+  assert_eq_num "$count" "0" "start --refresh: zero 'compose down -v' (volume removal via docker volume rm)"
 }
 
 test_start_refresh_volume_rm() {
@@ -284,11 +256,7 @@ test_start_refresh_post_agent_uses_down() {
 
   # REFRESH: no session_destroy (volumes removed directly by start_agent.sh)
   # post-agent: session_teardown only
-  if [[ "$down_v_count" -eq 0 ]]; then
-    pass "start --refresh: zero compose down -v, post-agent down only (down=$down_count)"
-  else
-    fail "start --refresh: expected down_v=0, got down_v=$down_v_count down=$down_count"
-  fi
+  assert_eq_num "$down_v_count" "0" "start --refresh: zero compose down -v, post-agent down only (down=$down_count)"
 }
 
 test_start_rebuild_has_no_down_v() {
@@ -299,11 +267,7 @@ test_start_rebuild_has_no_down_v() {
 
   local count
   count=$(trace_count "compose down -v")
-  if [[ "$count" -eq 0 ]]; then
-    pass "start --rebuild: zero 'compose down -v' (--reset-volume forwarded, volume rm used)"
-  else
-    fail "start --rebuild: expected 0 'compose down -v', got $count"
-  fi
+  assert_eq_num "$count" "0" "start --rebuild: zero 'compose down -v' (--reset-volume forwarded, volume rm used)"
 }
 
 test_serve_post_agent_uses_down() {
@@ -319,11 +283,7 @@ test_serve_post_agent_uses_down() {
   # teardown down that would satisfy a bare down_count>=1.
   local down_v_count
   down_v_count=$(trace_count "compose down -v")
-  if [[ "$down_v_count" -eq 0 ]]; then
-    pass "serve: zero 'compose down -v' (session_teardown keeps named volumes)"
-  else
-    fail "serve: expected 0 'compose down -v', got $down_v_count"
-  fi
+  assert_eq_num "$down_v_count" "0" "serve: zero 'compose down -v' (session_teardown keeps named volumes)"
 }
 
 assert_teardown_is_last_compose() {
@@ -338,11 +298,7 @@ assert_teardown_is_last_compose() {
   # resume-path cleanup before `up`; the last down is the post-agent one.)
   local last
   last=$(trace_grep "compose " | tail -1)
-  if [[ "$last" == *"compose down"* ]]; then
-    pass "$mode: last compose op is down (teardown is final dispatch)"
-  else
-    fail "$mode: expected last compose op to be down, got: $last"
-  fi
+  assert_contains "$last" "compose down" "$mode: last compose op is down (teardown is final dispatch)"
 }
 
 test_standard_teardown_is_last_compose() {
@@ -390,11 +346,7 @@ test_serve_up_failure_still_tears_down() {
 
   local last
   last=$(trace_grep "compose " | tail -1)
-  if [[ "$last" == *"compose down"* ]]; then
-    pass "serve: up failure still tears down (last=$last)"
-  else
-    fail "serve: expected teardown after up failure, got last=$last"
-  fi
+  assert_contains "$last" "compose down" "serve: up failure still tears down (last=$last)"
 }
 
 test_standard_up_failure_still_tears_down() {
@@ -410,11 +362,7 @@ test_standard_up_failure_still_tears_down() {
 
   local last
   last=$(trace_grep "compose " | tail -1)
-  if [[ "$last" == *"compose down"* ]]; then
-    pass "standard: up failure still tears down (last=$last)"
-  else
-    fail "standard: expected teardown after up failure, got last=$last"
-  fi
+  assert_contains "$last" "compose down" "standard: up failure still tears down (last=$last)"
 }
 
 test_standard_sandbox_unhealthy_still_tears_down() {
@@ -431,11 +379,7 @@ test_standard_sandbox_unhealthy_still_tears_down() {
 
   local last
   last=$(trace_grep "compose " | tail -1)
-  if [[ "$last" == *"compose down"* ]]; then
-    pass "standard: sandbox unhealthy still tears down (last=$last)"
-  else
-    fail "standard: expected teardown after sandbox-wait failure, got last=$last"
-  fi
+  assert_contains "$last" "compose down" "standard: sandbox unhealthy still tears down (last=$last)"
 }
 
 test_compose_file_persisted() {
@@ -574,3 +518,4 @@ run_test test_invalid_sandbox_type_rejected
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+

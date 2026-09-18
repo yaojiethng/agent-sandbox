@@ -106,11 +106,7 @@ test_merge_deduplicates_paths() {
   local settings="$ah/agent/settings.json"
   local count
   count=$(grep -c '/opt/workflow/agent/skills' "$settings" || true)
-  if [[ "$count" -eq 1 ]]; then
-    pass "merge deduplicates existing paths"
-  else
-    fail "merge duplicated path (count=$count)"
-  fi
+  assert_eq_num "$count" "1" "merge deduplicates existing paths"
 
   rm -rf "$tmpdir"
 }
@@ -376,3 +372,4 @@ run_test test_freshness_reset_noop_when_store_missing
 run_test test_freshness_reset_warns_on_invalid_json
 
 test_done
+

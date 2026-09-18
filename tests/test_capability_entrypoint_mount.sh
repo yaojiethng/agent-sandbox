@@ -96,11 +96,7 @@ test_mount_fail_closed_no_git() {
   else
     fail "mount without .git: entrypoint exited 0, expected failure"
   fi
-  if [[ "$EP_OUT" == *"no .git"* ]]; then
-    pass "mount without .git: remediation message names the missing .git"
-  else
-    fail "mount without .git: remediation message missing (got: $EP_OUT)"
-  fi
+  assert_contains "$EP_OUT" "no .git" "mount without .git: remediation message names the missing .git"
 }
 
 test_mount_first_run_writes_init_marker() {
@@ -111,11 +107,7 @@ test_mount_first_run_writes_init_marker() {
   fi
   pass "first mount run: entrypoint completes and exports (rc=0)"
 
-  if [[ -f "$EP_STATE" ]]; then
-    pass "first mount run: SESSION_STATE written into worktree .git"
-  else
-    fail "first mount run: SESSION_STATE missing at $EP_STATE"; return
-  fi
+  assert_file_exists "$EP_STATE" "first mount run: SESSION_STATE written into worktree .git"
 
   local init_sha session_ts session_id host_sha
   init_sha=$(grep '^init_sha=' "$EP_STATE" | cut -d= -f2-)
@@ -180,3 +172,5 @@ run_test test_mount_first_run_writes_init_marker
 run_test test_mount_attach_preserves_existing_state
 
 test_done
+
+

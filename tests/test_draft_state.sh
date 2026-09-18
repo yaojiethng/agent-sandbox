@@ -27,46 +27,22 @@ test_parse_folder_name_basic() {
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch"
 
-  if [[ "$SESSION_TS" == "20260420-120000" ]]; then
-    pass "draft_parse_folder_name extracts SESSION_TS"
-  else
-    fail "draft_parse_folder_name: expected SESSION_TS=20260420-120000, got $SESSION_TS"
-  fi
+  assert_eq "$SESSION_TS" "20260420-120000" "draft_parse_folder_name extracts SESSION_TS"
 
-  if [[ "$SANITIZED_HOST_BRANCH" == "feature-branch" ]]; then
-    pass "draft_parse_folder_name extracts SANITIZED_HOST_BRANCH"
-  else
-    fail "draft_parse_folder_name: expected SANITIZED_HOST_BRANCH=feature-branch, got $SANITIZED_HOST_BRANCH"
-  fi
+  assert_eq "$SANITIZED_HOST_BRANCH" "feature-branch" "draft_parse_folder_name extracts SANITIZED_HOST_BRANCH"
 
-  if [[ -z "$SESSION_ID" ]]; then
-    pass "draft_parse_folder_name leaves SESSION_ID empty when no session-id present"
-  else
-    fail "draft_parse_folder_name: expected SESSION_ID empty, got $SESSION_ID"
-  fi
+  assert_empty "$SESSION_ID" "draft_parse_folder_name leaves SESSION_ID empty when no session-id present"
 }
 
 test_parse_folder_name_with_session_id() {
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch-a1b2c3"
 
-  if [[ "$SESSION_TS" == "20260420-120000" ]]; then
-    pass "draft_parse_folder_name extracts SESSION_TS with session-id present"
-  else
-    fail "draft_parse_folder_name: expected SESSION_TS=20260420-120000, got $SESSION_TS"
-  fi
+  assert_eq "$SESSION_TS" "20260420-120000" "draft_parse_folder_name extracts SESSION_TS with session-id present"
 
-  if [[ "$SANITIZED_HOST_BRANCH" == "feature-branch" ]]; then
-    pass "draft_parse_folder_name strips session-id from SANITIZED_HOST_BRANCH"
-  else
-    fail "draft_parse_folder_name: expected SANITIZED_HOST_BRANCH=feature-branch, got $SANITIZED_HOST_BRANCH"
-  fi
+  assert_eq "$SANITIZED_HOST_BRANCH" "feature-branch" "draft_parse_folder_name strips session-id from SANITIZED_HOST_BRANCH"
 
-  if [[ "$SESSION_ID" == "a1b2c3" ]]; then
-    pass "draft_parse_folder_name extracts SESSION_ID from trailing hex"
-  else
-    fail "draft_parse_folder_name: expected SESSION_ID=a1b2c3, got $SESSION_ID"
-  fi
+  assert_eq "$SESSION_ID" "a1b2c3" "draft_parse_folder_name extracts SESSION_ID from trailing hex"
 }
 
 test_parse_folder_name_edge_cases() {
@@ -74,29 +50,17 @@ test_parse_folder_name_edge_cases() {
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature_M2_3-agent"
 
-  if [[ "$SANITIZED_HOST_BRANCH" == "feature_M2_3-agent" ]]; then
-    pass "draft_parse_folder_name handles underscores in branch name"
-  else
-    fail "draft_parse_folder_name: expected feature_M2_3-agent, got $SANITIZED_HOST_BRANCH"
-  fi
+  assert_eq "$SANITIZED_HOST_BRANCH" "feature_M2_3-agent" "draft_parse_folder_name handles underscores in branch name"
 
   # Trailing chars that look like hex but aren't 6 chars
   SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-branch-abc12"  # 5 chars
-  if [[ "$SESSION_ID" == "" ]]; then
-    pass "draft_parse_folder_name does not treat 5-char hex suffix as SESSION_ID"
-  else
-    fail "draft_parse_folder_name: expected SESSION_ID empty for 5-char suffix, got $SESSION_ID"
-  fi
+  assert_eq "$SESSION_ID" "" "draft_parse_folder_name does not treat 5-char hex suffix as SESSION_ID"
 
   # Trailing non-hex
   SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-branch-xyz789"
-  if [[ "$SESSION_ID" == "" ]]; then
-    pass "draft_parse_folder_name does not treat non-hex suffix as SESSION_ID"
-  else
-    fail "draft_parse_folder_name: expected SESSION_ID empty for non-hex suffix, got $SESSION_ID"
-  fi
+  assert_eq "$SESSION_ID" "" "draft_parse_folder_name does not treat non-hex suffix as SESSION_ID"
 }
 
 # =============================================================================
@@ -393,3 +357,4 @@ run_test test_validate_missing_from_hash
 run_test test_validate_dropped_state_commit_warns_and_continues
 
 test_done
+

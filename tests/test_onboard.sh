@@ -316,11 +316,7 @@ test_template_version_reads_marker_line() {
   printf '# agent-sandbox template version: 3\nother: line\n' > "$f"
   local out
   out=$(template_version "$f")
-  if [[ "$out" == "3" ]]; then
-    pass "template_version extracts number from marker line"
-  else
-    fail "template_version -> '$out', want '3'"
-  fi
+  assert_eq "$out" "3" "template_version extracts number from marker line"
 }
 
 test_template_version_absent_marker_is_empty_and_clean() {
@@ -340,11 +336,7 @@ test_template_version_real_makefile_template_parses() {
   # refresh gating silently degrades to "unknown" otherwise.
   local out
   out=$(template_version "$REPO_ROOT/scripts/templates/Makefile.template")
-  if [[ "$out" =~ ^[0-9]+$ ]]; then
-    pass "shipped Makefile.template carries numeric template version ($out)"
-  else
-    fail "Makefile.template version unparsable: '$out'"
-  fi
+  assert_matches "$out" '^[0-9]+$' "shipped Makefile.template carries numeric template version ($out)"
 }
 
 # The thin CLI (S3): run targets pass `--env=$(ENV_FILE)` (the .env path next
@@ -389,3 +381,4 @@ run_test test_run_targets_are_thin
 run_test test_start_target_is_thin
 
 test_done "scripts/onboard.sh"
+

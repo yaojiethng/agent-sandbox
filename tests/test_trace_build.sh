@@ -69,10 +69,6 @@ invoke_build_err() {
   ) 2>&1
 }
 
-trace_has() {
-  grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
-}
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -204,11 +200,7 @@ test_container_sig_hashes_real_sources() {
     fail "container_sig: sandbox sources hashing failed with rc=$?"
     return
   }
-  if [[ "$sig" =~ ^[0-9a-f]{64}$ ]]; then
-    pass "container_sig: real-sources end-to-end hash is a 64-hex string (${sig:0:12})..."
-  else
-    fail "container_sig: expected 64-hex hash, got '$sig'"
-  fi
+  assert_matches "$sig" '^[0-9a-f]{64}$' "container_sig: real-sources end-to-end hash is a 64-hex string (${sig:0:12})..."
 }
 
 # A missing source path must fail loudly (diagnostic + non-zero), not silently
@@ -239,11 +231,7 @@ test_check_container_sig_warns_via_shared_predicate() {
   local out
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
         _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
-  if [[ "$out" == *"container-sig differs from current source (contract drift)"* ]]; then
-    pass "preflight: differing baked sig warns as contract drift"
-  else
-    fail "preflight: expected contract-drift warning, got: $out"
-  fi
+  assert_contains "$out" "container-sig differs from current source (contract drift)" "preflight: differing baked sig warns as contract drift"
 
   # Fresh: both images carry their own recomputed sig -> no warning.
   local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "pi")
@@ -253,11 +241,7 @@ test_check_container_sig_warns_via_shared_predicate() {
   out="$(PATH="$STUB_DIR:$PATH" \
         DOCKER_STUB_IMAGE_SIG_LABELS="pi-agent-test-project:$agent_sig sandbox-test-project:$sandbox_sig" \
         _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
-  if [[ -z "$out" ]]; then
-    pass "preflight: matching recomputed sig stays silent"
-  else
-    fail "preflight: expected no warning for fresh image, got: $out"
-  fi
+  assert_empty "$out" "preflight: matching recomputed sig stays silent"
 }
 
 # record_image / record_provider are service-scoped and anchored: a comment
@@ -329,3 +313,5 @@ run_test test_build_default_targets_all
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+
+

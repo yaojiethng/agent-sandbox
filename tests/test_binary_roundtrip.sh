@@ -146,11 +146,7 @@ test_selective_strip_keeps_single_binary_index() {
 
   local INDEX_COUNT
   INDEX_COUNT=$(grep -c "^index " "$FIXTURE_DIR/selective.diff" || true)
-  if [[ "$INDEX_COUNT" -eq 1 ]]; then
-    pass "selective strip: exactly 1 index line remains (binary file)"
-  else
-    fail "selective strip: expected 1 index line, got $INDEX_COUNT"
-  fi
+  assert_eq_num "$INDEX_COUNT" "1" "selective strip: exactly 1 index line remains (binary file)"
 
   _init_repo_with_binary "$FIXTURE_DIR/s3_apply"
   if git -C "$FIXTURE_DIR/s3_apply" apply "$FIXTURE_DIR/selective.diff" 2>/dev/null; then
@@ -337,3 +333,4 @@ run_test test_grep_v_index_destroys_binary_patches
 run_test test_sequential_mixed_patches_apply
 
 test_done
+

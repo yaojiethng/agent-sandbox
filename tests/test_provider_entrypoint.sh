@@ -38,11 +38,7 @@ test_missing_agent_home() {
     fail "missing AGENT_HOME env var"
     return
   }
-  if [[ "$out" == *"AGENT_HOME is not set"* ]]; then
-    pass "missing AGENT_HOME env var"
-  else
-    fail "missing AGENT_HOME env var"
-  fi
+  assert_contains "$out" "AGENT_HOME is not set" "missing AGENT_HOME env var"
 }
 
 test_missing_provider_name() {
@@ -262,3 +258,4 @@ run_test test_provision_fails_on_missing_template
 run_test test_provision_no_double_nesting
 
 test_done
+
