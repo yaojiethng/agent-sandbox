@@ -12,7 +12,7 @@ Running Steps 7b, 8, and 9 of the [minor loop](docs/operations/iteration_policy.
 
 **Scope reconciliation (Step 8):** Compare the confirmed scope from iteration open against the Completed table. Every item that was in scope but is not completed must appear in Deferred items with what it is, why it did not complete, and where it goes next.
 
-**Roadmap and index update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Update `project_index.md` for every file in the Completed table. Verify every in-scope architecture and concepts document describes the system as built  --  divergences must be resolved or recorded as deferred items with a reason.
+**Roadmap update (Step 8):** Mark completed tasks `[x]` in `roadmap.md`. Verify every in-scope architecture and concepts document describes the system as built  --  divergences must be resolved or recorded as deferred items with a reason.
 
 **Roadmap maintenance (Step 8):** Run roadmap maintenance per `roadmap_policy.md`  --  compaction cascading, summary table update, and top-level milestone close if applicable.
 

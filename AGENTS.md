@@ -176,7 +176,7 @@ Read these in addition to the above when opening a major loop planning iteration
 
 | Document | Read before |
 |---|---|
-| [`docs/development/project_index.md`](docs/development/project_index.md) | Re-scoping or architecture layer boundary checks |
+| [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) | Architecture layer boundary or freeze status checks |
 | [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
 | [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Any roadmap update |
 | [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |

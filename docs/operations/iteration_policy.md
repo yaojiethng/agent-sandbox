@@ -258,9 +258,9 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 
 ---
 
-## Index Maintenance
+## File Tracking
 
-`project_index.md` is the document registry. The active handover's Hot files section is the iteration-scoped list. Update rules, trigger moments, and temperature definitions are in [`project_index.md` — Maintenance Rules](../development/project_index.md#maintenance-rules).
+There is no document registry. The docs tree itself is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](handover_policy.md).
 
 ---
 

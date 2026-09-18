@@ -117,8 +117,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (Steps 8–9 review/publish); records: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md), [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md) | Entry classification (A/B/C), routing at close, record format and lifecycle (declared in the record files) | Rule authoring, iteration-step sequencing |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
 | Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
-| Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing, file registry |
-| File registry and index maintenance | [`project_index.md`](../development/project_index.md) | File registry, temperature, maintenance trigger rules | Documentation rules, workflow sequencing |
+| Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing |
 | Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../architecture/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
 | External contract | [`tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
@@ -130,7 +129,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **roadmap_policy.md and iteration_policy.md** share the iteration boundary. Roadmap maintenance and compaction rules are defined in roadmap_policy; iteration_policy's step table references them by link. An agent updating the roadmap reads roadmap_policy; an agent opening an iteration reads iteration_policy, which directs it to roadmap_policy at the moments roadmap updates are required.
 
-**documentation_policy.md and project_index.md** share index maintenance. documentation_policy owns the rules for how documents should be written and structured. project_index.md owns the registry of what documents exist and the rules for keeping it current. Neither owns the other's content. Layer freeze status is owned by system_overview.md, not by either index file.
+**documentation_policy.md** owns the rules for how documents should be written and structured. It does not maintain a file registry; the docs tree itself is the authoritative list of what exists. Layer freeze status is owned by system_overview.md.
 
 **security.md and execution_model.md** are adjacent but non-overlapping. security.md defines what must be true — the invariants and trust boundaries. execution_model.md defines how the system achieves those properties — the mechanisms. A change to execution_model.md must be validated against security.md's invariants; a change to security.md's invariants may require changes to execution_model.md.
 

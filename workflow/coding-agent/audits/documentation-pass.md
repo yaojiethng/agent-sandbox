@@ -13,8 +13,6 @@ The checklists are diagnostic -- they identify what has gone wrong, not what to 
 **Signs of duplication to check:**
 - The same constraint stated in both a workflow table cell and a child policy section
 - Exit conditions in iteration_policy that restate rules already in handover_policy
-- Index maintenance rules appearing outside project_index.md
-- Temperature definitions appearing outside project_index.md
 
 **Signs of misplaced content to check:**
 - Future language (`will`, `plan`, `eventually`) in any `architecture/` document

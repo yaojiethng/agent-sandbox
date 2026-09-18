@@ -60,8 +60,8 @@ A document that cannot answer all three cleanly has a scope problem. Name it exp
 Cross-reference document claims against:
 
 - The milestone history in `changelog.md`  --  has a milestone completed that should have updated this document?
-- The layer freeze status in `project_index.md`  --  is this document marked as frozen but contains content that post-dates its freeze milestone?
-- The active handover (`YYYYMMDD-NN-*.md`)  --  is this document listed in the Hot files section but shows no signs of recent update? Is the `Last touched in` value in `project_index.md` consistent with the content?
+- The layer freeze status in `system_overview.md`  --  is this document marked as frozen but contains content that post-dates its freeze milestone?
+- The active handover (`YYYYMMDD-NN-*.md`)  --  is this document listed in the Hot files section but shows no signs of recent update?
 - Internal consistency  --  do the mount paths, directory names, script names, and component relationships described match what other documents describe for the same milestone?
 
 Staleness is not a minor issue. A stale architecture document is an actively misleading one. Flag it as a critical finding.
