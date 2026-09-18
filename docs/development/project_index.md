@@ -110,6 +110,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `drift_state_coherence.md` | 🟢 Cold | M2.6 | Coherence by minimisation, not detection; container-sig as interim contract check. |
 | `agent_sandbox_two_container_separation.md` | 🟢 Cold | M2.6 | Reasoning/capability two-container separation; fused single-container harness rejected. |
 | `container_host_correspondence_mechanism.md` | 🟢 Cold | M2.6 | Diff-file correspondence; git never crosses the sandbox/host boundary. |
+| `command_flag_parsing.md` | 🟡 Warm | 2026-09-18 | Per-command flag ingestion through one shared declarative parser; exact per-script surface preserved; dispatcher PASSTHROUGH is the deliberate exception. |
 
 ### Operations (`docs/operations/`)
 
