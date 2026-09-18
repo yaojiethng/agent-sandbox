@@ -36,6 +36,7 @@ EOF
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
+source "$REPO_ROOT/src/libs/session_hints.sh"
 
 SESSION_ID=""
 PRUNE=false
@@ -108,7 +109,7 @@ else
   docker rm "${CONTAINER_IDS[@]}" || true
   echo "Containers stopped and removed."
   if [[ -n "$SESSION_ID" ]]; then
-    echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"
+    session_end_hints "$SANDBOX_DIR" "$SESSION_ID"
   fi
 fi
 

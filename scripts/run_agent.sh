@@ -51,6 +51,7 @@ source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
+source "$REPO_ROOT/src/libs/session_hints.sh"
 
 # -------------------------
 # Args
@@ -293,7 +294,7 @@ _session_cleanup() {
   # they get no activity log and no resume hint.
   if [[ -n "${SESSION_ID:-}" ]] && ! session_is_dry_run "${SESSION_ID}"; then
     session_log_set "$SESSION_ID" last_stopped "$(date -u +%Y%m%d-%H%M%S)"
-    echo "Resume this session later: make resume SESSION_ID=$SESSION_ID"
+    session_end_hints "$SANDBOX_DIR" "$SESSION_ID"
   fi
 }
 trap _session_cleanup EXIT

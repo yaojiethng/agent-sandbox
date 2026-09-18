@@ -288,6 +288,67 @@ test_prune_dry_run_removes_nothing() {
   fi
 }
 
+# The `make stop` surface prints the same hint pair as `make start` end:
+# resume + draft, with the draft hint naming the exact session export.
+# The hint fires only when --session-id is given (unchanged rule).
+test_stop_shutdown_hints() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_hints"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="abc123def456"
+  mkdir -p "$SANDBOX_DIR/.workspace/session-diffs/session/20260730-120000-test01/patches"
+  : > "$SANDBOX_DIR/.workspace/session-diffs/session/20260730-120000-test01/patches/0001-test.patch"
+
+  local output
+  output=$( (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/stop.sh" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --project="$PROJECT_DIR" \
+      --session-id=test01
+  ) 2>&1 || true )
+
+  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
+    pass "stop: shutdown output carries make resume SESSION_ID=<id>"
+  else
+    fail "stop: resume hint missing in shutdown output"
+  fi
+  if [[ "$output" == *"Draft this session's changes: make draft BUNDLE=20260730-120000-test01"* ]]; then
+    pass "stop: shutdown output names the exact session export for make draft"
+  else
+    fail "stop: draft hint missing or wrong bundle in shutdown output"
+  fi
+}
+
+test_stop_draft_hint_suppressed_without_export() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_draft_none"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="abc123def456"
+
+  local output
+  output=$( (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/stop.sh" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --project="$PROJECT_DIR" \
+      --session-id=test01
+  ) 2>&1 || true )
+
+  if [[ "$output" == *"Resume this session later: make resume SESSION_ID=test01"* ]]; then
+    pass "stop: resume hint still printed without session export"
+  else
+    fail "stop: resume hint missing in shutdown output"
+  fi
+  if [[ "$output" != *"make draft BUNDLE="* ]]; then
+    pass "stop: draft hint suppressed without session export"
+  else
+    fail "stop: draft hint printed without session export"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 
 run_test test_stop_no_compose
@@ -302,6 +363,8 @@ run_test test_prune_standalone_nothing_to_prune
 run_test test_prune_rule1_removes_stale_records
 run_test test_prune_rule2_removes_orphan_container
 run_test test_prune_dry_run_removes_nothing
+run_test test_stop_shutdown_hints
+run_test test_stop_draft_hint_suppressed_without_export
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -119,6 +119,69 @@ test_start_standard_shutdown_resume_hint() {
   else
     fail "start (standard): resume hint missing in shutdown output"
   fi
+
+  # No session export dir exists in this fixture: the draft hint must be
+  # suppressed (suppress-on-absent), not left pointing at a stale bundle.
+  if [[ "$output" != *"make draft BUNDLE="* ]]; then
+    pass "start (standard): no draft hint when no session export exists"
+  else
+    fail "start (standard): draft hint printed without a session export"
+  fi
+}
+
+test_start_standard_shutdown_draft_hint() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_draft_hint"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  # A session export dir in the expected shape (EXPORT_TIME-SESSION_ID) with
+  # draftable content: the shutdown output must name it exactly.
+  mkdir -p "$CHANGES_DIR/session/20260730-120000-test01/patches"
+  : > "$CHANGES_DIR/session/20260730-120000-test01/patches/0001-test.patch"
+
+  local output
+  output=$( (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy
+  ) 2>&1 )
+
+  if [[ "$output" == *"Draft this session's changes: make draft BUNDLE=20260730-120000-test01"* ]]; then
+    pass "start (standard): shutdown output names the exact session export for make draft"
+  else
+    fail "start (standard): draft hint missing or wrong bundle in shutdown output"
+  fi
+}
+
+test_start_standard_shutdown_draft_hint_suppressed_for_empty_export() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_draft_empty"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  # An export dir with no draftable content (failed export, no autosave
+  # fallback) must not produce a draft hint.
+  mkdir -p "$CHANGES_DIR/session/20260730-120000-test01"
+
+  local output
+  output=$( (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy
+  ) 2>&1 )
+
+  if [[ "$output" != *"make draft BUNDLE="* ]]; then
+    pass "start (standard): draft hint suppressed for empty session export"
+  else
+    fail "start (standard): draft hint printed for empty session export"
+  fi
 }
 
 test_start_standard_no_v() {
@@ -485,6 +548,8 @@ test_invalid_sandbox_type_rejected() {
 # ---------------------------------------------------------------------------
 
 run_test test_start_standard_shutdown_resume_hint
+run_test test_start_standard_shutdown_draft_hint
+run_test test_start_standard_shutdown_draft_hint_suppressed_for_empty_export
 run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
