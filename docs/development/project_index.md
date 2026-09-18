@@ -139,6 +139,8 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 | `onboard.sh` | 🟡 Warm | M2.3 | Onboards new projects; `--refresh` flag updates stale template files without full re-onboard. |
 | `start_agent.sh` | 🟡 Warm | M2.7 | Starts agent session. Derives SESSION_TS, HOST_HEAD_SHA, SESSION_ID (single canonical hash). |
 | `checkpoint.sh` | 🟡 Warm | M2.3 | Checkpoint library. Retains only worktree_id_derive after Unit B. |
+| `install.sh` | 🔴 Hot | M2.6 | Host-requirement gate + CLI symlink install (`make install`). Fails closed with brew hints on macOS. |
+| `macos_bootstrap.sh` | 🔴 Hot | M2.6 | Installs the macOS host requirements (brew bash + GNU toolchain). Idempotent, fail-closed on missing Homebrew. |
 
 ### Lib (`libs/`)
 

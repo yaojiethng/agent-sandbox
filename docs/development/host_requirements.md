@@ -22,6 +22,15 @@ This document records the host tools and versions agent-sandbox requires, per pl
 
 ## macOS Setup
 
+Run the bootstrap from the repo to install the requirements automatically:
+
+```bash
+bash scripts/macos_bootstrap.sh              # install packages, print PATH guidance
+bash scripts/macos_bootstrap.sh --patch-shell   # also append the PATH export to ~/.zshrc
+```
+
+The bootstrap is idempotent and fails closed when Homebrew is missing. It only installs the packages; it does not install Homebrew itself. The manual steps below are what the bootstrap performs, for reference.
+
 macOS does not ship any of the missing tools. Install them with Homebrew:
 
 ```bash
