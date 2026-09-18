@@ -69,16 +69,6 @@ invoke_dry_run() {
   ) > /dev/null 2>&1 || true
 }
 
-trace_has() {
-  grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
-}
-
-trace_count() {
-  local c
-  c=$(grep -c "$1" "$DOCKER_TRACE_LOG" 2>/dev/null) || c=0
-  echo "$c"
-}
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -199,11 +189,7 @@ test_dry_run_mount_overlay_stacked_and_probe_hygiene() {
     | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' \
     | grep -E '(>>?[^|]*\$SANDBOX_DIR|\b(touch|mkdir|tee|cp|mv|rm)\b.*\$SANDBOX_DIR)' \
     | grep -vE 'SESSION_STATE' || true)
-  if [[ -z "$offenders" ]]; then
-    pass "dry-run probes: no writes into the delivery target"
-  else
-    fail "dry-run (mount): probe writes targeting SANDBOX_DIR: $offenders"
-  fi
+  assert_empty "$offenders" "dry-run probes: no writes into the delivery target"
 }
 
 # ---------------------------------------------------------------------------
@@ -220,3 +206,4 @@ run_test test_dry_run_mount_overlay_stacked_and_probe_hygiene
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+

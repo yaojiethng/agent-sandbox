@@ -23,6 +23,7 @@ set -o pipefail
 LIBS_DIR="${LIBS_DIR:-/opt/sandbox/lib}"
 ROOT="${ROOT:-/home/agentuser}"
 source "$LIBS_DIR/session_state.sh"
+source "$LIBS_DIR/dry_run_harness.sh"
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
@@ -37,40 +38,8 @@ if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Check framework (layer-aware)
-# ---------------------------------------------------------------------------
-
-CRITICAL_FAILS=0
-WARN_FAILS=0
-declare -A LAYER_CRIT=()
-declare -A LAYER_WARN=()
-CURRENT_LAYER=""
-
-_pass() { printf "  PASS  %s\n" "$1"; }
-_fail() { printf "  FAIL  %s\n" "$1${2:+  ($2)}"; CRITICAL_FAILS=$(( CRITICAL_FAILS + 1 )); LAYER_CRIT[$CURRENT_LAYER]=$(( ${LAYER_CRIT[$CURRENT_LAYER]:-0} + 1 )); }
-_warn() { printf "  WARN  %s\n" "$1${2:+  ($2)}"; WARN_FAILS=$(( WARN_FAILS + 1 )); LAYER_WARN[$CURRENT_LAYER]=$(( ${LAYER_WARN[$CURRENT_LAYER]:-0} + 1 )); }
-
-critical() {
-  local name="$1"; shift
-  if "$@" 2>/dev/null; then _pass "$name"; else _fail "$name"; fi
-}
-
-warn_check() {
-  local name="$1"; shift
-  if "$@" 2>/dev/null; then _pass "$name"; else _warn "$name"; fi
-}
-
-section() { printf "\n=== %s ===\n" "$1"; CURRENT_LAYER="${1%% *}"; }
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-_is_writable() {
-  local testfile="$1/.dryrun_write_test"
-  if touch "$testfile" 2>/dev/null; then rm -f "$testfile" 2>/dev/null; return 0; fi
-  return 1
-}
 
 _is_readonly() {
   _is_writable "$1" && return 1 || return 0
@@ -97,22 +66,7 @@ _agent_binary_for_provider() {
 
 # Write the per-container diagnostics record. Orchestration consumes this
 # (not stdout) for the correct-container check.
-_write_record() {
-  local record="${OUTPUT_DIR}/dryrun.reasoning.record"
-  local overall="PASS"
-  [[ "$CRITICAL_FAILS" -eq 0 ]] || overall="FAIL"
-  {
-    printf 'container=%s\n' "${DRY_RUN_IDENTITY:-unknown}"
-    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime; do
-      local st="PASS"
-      [[ "${LAYER_CRIT[$layer]:-0}" -eq 0 ]] || st="FAIL"
-      printf 'layer.%s=%s\n' "$layer" "$st"
-    done
-    printf 'status=%s\n' "$overall"
-  } > "$record" 2>/dev/null || {
-    printf "  WARN  could not write diagnostics record to %s\n" "$record" >&2
-  }
-}
+
 
 # ---------------------------------------------------------------------------
 # docker_image / workspace_mounts - link-up
@@ -229,18 +183,8 @@ fi
 # Summary + diagnostics record
 # ---------------------------------------------------------------------------
 
-printf "\n=== summary ===\n"
-printf "critical failures: %d\n" "$CRITICAL_FAILS"
-printf "warnings:          %d\n" "$WARN_FAILS"
-
-if [[ $CRITICAL_FAILS -eq 0 && $WARN_FAILS -eq 0 ]]; then
-  echo "All checks passed. Reasoning layer is healthy."
-elif [[ $CRITICAL_FAILS -eq 0 ]]; then
-  echo "Reasoning layer healthy. Review warnings before production use."
-else
-  echo "Reasoning layer is NOT healthy. Fix critical failures before running agents."
-fi
-
-_write_record
+dry_run_write_record "${OUTPUT_DIR}/dryrun.reasoning.record" \
+  "docker_image workspace_mounts session_state session_data container_network agent_runtime"
+dry_run_summary
 
 [[ $CRITICAL_FAILS -eq 0 ]]

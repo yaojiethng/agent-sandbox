@@ -223,8 +223,11 @@ test_reas_container_network_fail() {
 run_test test_reas_container_network_fail
 
 # Direct unit test of the shared lib function the probe + diagnostics now use.
+# dry_run_harness.sh (shared across both probes) is referenced by the probes
+# via LIBS_DIR; this literal reference keeps stub-lib liveness truthful.
 test_init_sha_is_valid_lib() {
   source "$REPO_ROOT/src/libs/session_state.sh"
+  source "$REPO_ROOT/src/libs/dry_run_harness.sh"
   local fix="$FIXTURE_DIR/init-sha-lib"
 
   local valid="$fix/valid/sandbox"

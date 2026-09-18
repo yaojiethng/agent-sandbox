@@ -28,6 +28,7 @@ ROOT="${ROOT:-/home/agentuser}"
 source "$LIBS_DIR/session_state.sh"
 source "$LIBS_DIR/diff_export.sh"
 source "$LIBS_DIR/routing.sh"
+source "$LIBS_DIR/dry_run_harness.sh"
 
 # Paths are passed as absolute env vars from the compose template.
 # Fallback to dirs.sh only if unset (testing without compose).
@@ -40,68 +41,6 @@ if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   source "$LIBS_DIR/dirs.sh"
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi
-
-# ---------------------------------------------------------------------------
-# Check framework (layer-aware)
-# ---------------------------------------------------------------------------
-
-CRITICAL_FAILS=0
-WARN_FAILS=0
-declare -A LAYER_CRIT=()   # layer -> count of critical fails in this layer
-declare -A LAYER_WARN=()   # layer -> count of warns in this layer
-CURRENT_LAYER=""
-
-_pass() { printf "  PASS  %s\n" "$1"; }
-_fail() { printf "  FAIL  %s\n" "$1${2:+  ($2)}"; CRITICAL_FAILS=$(( CRITICAL_FAILS + 1 )); LAYER_CRIT[$CURRENT_LAYER]=$(( ${LAYER_CRIT[$CURRENT_LAYER]:-0} + 1 )); }
-_warn() { printf "  WARN  %s\n" "$1${2:+  ($2)}"; WARN_FAILS=$(( WARN_FAILS + 1 )); LAYER_WARN[$CURRENT_LAYER]=$(( ${LAYER_WARN[$CURRENT_LAYER]:-0} + 1 )); }
-
-critical() {
-  local name="$1"; shift
-  if "$@" 2>/dev/null; then _pass "$name"; else _fail "$name"; fi
-}
-
-warn_check() {
-  local name="$1"; shift
-  if "$@" 2>/dev/null; then _pass "$name"; else _warn "$name"; fi
-}
-
-section() { printf "\n=== %s ===\n" "$1"; CURRENT_LAYER="${1%% *}"; }
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-_is_writable() {
-  local testfile="$1/.dryrun_write_test"
-  if touch "$testfile" 2>/dev/null; then rm -f "$testfile" 2>/dev/null; return 0; fi
-  return 1
-}
-
-# Write the per-container diagnostics record. Orchestration consumes this
-# (not stdout) for the correct-container check.
-#   container = identity echo-back (expected value injected via compose env)
-#   layer.<name> = PASS|FAIL (FAIL if any critical in that layer; names: docker_image
-#   workspace_mounts session_state session_data container_network agent_runtime)
-#   status     = overall PASS|FAIL
-_write_record() {
-  local record="${OUTPUT_DIR}/dryrun.capability.record"
-  local overall="PASS"
-  [[ "$CRITICAL_FAILS" -eq 0 ]] || overall="FAIL"
-  {
-    printf 'container=%s\n' "${DRY_RUN_IDENTITY:-unknown}"
-    for layer in docker_image workspace_mounts session_state session_data container_network agent_runtime sandbox_init; do
-      local st="PASS"
-      [[ "${LAYER_CRIT[$layer]:-0}" -eq 0 ]] || st="FAIL"
-      printf 'layer.%s=%s\n' "$layer" "$st"
-    done
-    printf 'sandbox_init.path=%s\n' "${SANDBOX_INIT_PATH:-}"
-    printf 'sandbox_init.files=%s\n' "${SANDBOX_INIT_FILES:-}"
-    printf 'sandbox_init.bytes=%s\n' "${SANDBOX_INIT_BYTES:-}"
-    printf 'status=%s\n' "$overall"
-  } > "$record" 2>/dev/null || {
-    printf "  WARN  could not write diagnostics record to %s\n" "$record" >&2
-  }
-}
 
 # ---------------------------------------------------------------------------
 # docker_image - image
@@ -212,18 +151,11 @@ fi
 # Summary + diagnostics record
 # ---------------------------------------------------------------------------
 
-printf "\n=== summary ===\n"
-printf "critical failures: %d\n" "$CRITICAL_FAILS"
-printf "warnings:          %d\n" "$WARN_FAILS"
-
-if [[ $CRITICAL_FAILS -eq 0 && $WARN_FAILS -eq 0 ]]; then
-  echo "All checks passed. Capability layer is healthy."
-elif [[ $CRITICAL_FAILS -eq 0 ]]; then
-  echo "Capability layer healthy. Review warnings before production use."
-else
-  echo "Capability layer is NOT healthy. Fix critical failures before running agents."
-fi
-
-_write_record
+dry_run_write_record "${OUTPUT_DIR}/dryrun.capability.record" \
+  "docker_image workspace_mounts session_state session_data container_network agent_runtime sandbox_init" \
+  "sandbox_init.path=${SANDBOX_INIT_PATH:-}" \
+  "sandbox_init.files=${SANDBOX_INIT_FILES:-}" \
+  "sandbox_init.bytes=${SANDBOX_INIT_BYTES:-}"
+dry_run_summary
 
 [[ $CRITICAL_FAILS -eq 0 ]]
