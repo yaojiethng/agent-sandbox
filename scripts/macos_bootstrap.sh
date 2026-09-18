@@ -21,6 +21,9 @@
 
 set -uo pipefail
 
+# Requirement source of truth: docs/development/host_requirements.md. The same
+# list is enforced for Linux by scripts/install.sh (check_* probes) -- a new
+# requirement must be added to all three.
 REQUIRED_PACKAGES=(bash coreutils gnu-sed findutils git)
 
 bootstrap_os() {

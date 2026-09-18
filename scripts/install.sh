@@ -28,6 +28,10 @@ install_os() {
 # Each check prints a hint on failure and returns non-zero. The checks only
 # use subprocesses that exist on both Linux and macOS (grep) or none at all;
 # each probe targets one GNU/BSD difference.
+#
+# Requirement source of truth: docs/development/host_requirements.md. The same
+# list is enforced for macOS by scripts/macos_bootstrap.sh (REQUIRED_PACKAGES +
+# verify_installed) -- a new requirement must be added to all three.
 
 check_bash_version() {
   if (( BASH_VERSINFO[0] < 4 )); then

@@ -88,32 +88,16 @@ SCRIPT
 }
 
 source_harness() {
-  local resolved
-  resolved=$(mktemp /tmp/test_dispatch_src_XXXXXX)
-  sed "s|@@AGENT_SANDBOX_REPO@@|$REPO_ROOT|g" "$REPO_ROOT/scripts/agent-sandbox.sh" > "$resolved"
+  # The dispatcher self-locates AGENT_SANDBOX_REPO only when it is unset; preset
+  # it here so its top-level `source $AGENT_SANDBOX_REPO/src/libs/...` resolves
+  # the real common.sh and env_resolve.sh. Source the real dispatcher directly
+  # (no temp render: there is no @@AGENT_SANDBOX_REPO@@ placeholder anymore).
+  AGENT_SANDBOX_REPO="$REPO_ROOT"
 
-  # Override exec to capture
+  # Override exec to capture: the dispatcher's exec'd leaves are mocked.
   exec() { mock_exec "$@"; }
 
-  # Override SCRIPTS to point at mock dir AFTER top-level sources are done
-  # We need the real build.sh sourced at top level for now.
-  # Actually  --  after refactor, agent-sandbox.sh only sources build.sh and routing.sh
-  # at top level. We want build.sh sourced for real (it defines build_sandbox etc.),
-  # but we DON'T want it to execute.
-  # We DO want the SCRIPTS dir to point at mocks for the exec calls.
-  # Solution: source the harness with real AGENT_SANDBOX_REPO, then swap SCRIPTS.
-
-  # Source the harness (no top-level sources after refactor  --  pure dispatch table)
-  # Temp-rendered harness copy; path is generated per run.
-  # shellcheck disable=SC1090
-  source "$resolved"
-  # The dispatcher self-locates AGENT_SANDBOX_REPO from its source path, which is
-  # a temp file here; repoint it at the real repo so resolve_identity can source
-  # the real env_resolve.sh when identity flags are absent. Consumed by the
-  # sourced dispatcher functions, not by this test file directly.
-  # shellcheck disable=SC2034
-  AGENT_SANDBOX_REPO="$REPO_ROOT"
-  rm -f "$resolved"
+  source "$REPO_ROOT/scripts/agent-sandbox.sh"
 }
 
 # =============================================================================
@@ -131,14 +115,6 @@ dispatch_and_capture() {
   done <<< "$stdout"
 }
 
-# make_envfile DIR  --  a .env naming all three identity keys into DIR, so
-# tests can inject a .env and let the dispatcher resolve identity from it via
-# --env, exactly as a real `make build` would.
-make_envfile() {
-  local dir="$1"
-  mkdir -p "$dir"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=/tmp/envproj\nSANDBOX_DIR=%s\n' "$dir" > "$dir/.env"
-}
 
 # =============================================================================
 # Tests  --  build subcommand (exec's build.sh with --targets)
@@ -852,14 +828,14 @@ test_build_missing_args() {
   setup
   local output
   # Resolve from an empty fixture dir so the CWD .env fallback cannot silently
-  # satisfy the identity (the unresolvable-error path must stay honest even if
-  # the suite ever runs from a directory that contains a .env).
+  # satisfy the identity (the hard-error path must stay honest even if the suite
+  # ever runs from a directory that contains a .env).
   output=$( ( cd "$FIXTURE_DIR" && main build ) 2>&1) || true
 
   # After the thin-CLI change: build no longer requires flags up front; the
-  # dispatcher resolves identity and errors with a hard requirement when
-  # unresolvable (no flag, no AGENT_SANDBOX_*, no .env via --env/CWD).
-  if [[ "$output" == *"unresolvable"* ]] || [[ "$output" == *"required"* ]]; then
+  # resolver emits a single hard-requirement error (no flag, no AGENT_SANDBOX_*,
+  # no .env via --env/CWD) with the onboard hint.
+  if [[ "$output" == *"is not set"* ]] || [[ "$output" == *"required"* ]]; then
     pass "build without identity: prints a hard identity-requirement error (thin CLI)"
   else
     fail "build without identity: expected a resolution/required error, got: $output"

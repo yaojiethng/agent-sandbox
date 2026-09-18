@@ -39,7 +39,7 @@ test_env_missing_file_fails_with_onboard_hint() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
 
   local OUT RC=0
-  OUT=$(session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null) || RC=$?
+  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *".env not found"* && "$OUT" == *"onboard"* ]]; then
     pass "missing .env fails with onboard guidance"
@@ -53,7 +53,7 @@ test_env_comments_and_blanks_skipped() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   printf '# a comment\n\n   \nFOO=bar\n\t# tab-comment\n' > "$SBX/.env"
 
-  session_env_common_init "$SBX" proj "$PROJ" >/dev/null 2>&1
+  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
 
   if [[ "${FOO:-}" == "bar" && -z "${a:-}" ]]; then
     pass ".env parser skips comments and blank lines"
@@ -68,7 +68,7 @@ test_env_key_whitespace_stripped_value_trimmed() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   printf 'MYKEY\t\r=  padded value  \r\n' > "$SBX/.env"
 
-  session_env_common_init "$SBX" proj "$PROJ" >/dev/null 2>&1
+  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
 
   if [[ "${MYKEY:-}" == "padded value" ]]; then
     pass ".env parser strips key whitespace/CRLF and trims value padding"
@@ -84,7 +84,7 @@ test_env_inline_comment_is_kept_as_value() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   printf 'K=val # not-a-comment\n' > "$SBX/.env"
 
-  session_env_common_init "$SBX" proj "$PROJ" >/dev/null 2>&1
+  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
 
   if [[ "${K:-}" == "val # not-a-comment" ]]; then
     pass ".env parser keeps inline text after value (no inline comments)  --  pinned"
@@ -105,7 +105,7 @@ test_env_whitespace_only_key_line_skipped() {
   printf 'FOO=bar\n = \n  =baz\n  \n\t\r\nMYKEY=ok\r\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s|%s|' "${FOO:-unset}" "${baz:-unset}" "${MYKEY:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "bar|unset|ok|" ]]; then
@@ -124,7 +124,7 @@ test_env_indented_comment_skipped() {
   printf '  # indented comment\nFOO=bar\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${FOO:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "bar|" ]]; then
@@ -142,7 +142,7 @@ test_env_invalid_identifier_key_skipped_with_warning() {
   printf '1BAD=odd\nGOOD=1\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${GOOD:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == *"invalid variable name"* && "$OUT" == *"1|" ]]; then
@@ -162,7 +162,7 @@ test_common_init_rejects_non_git_project() {
   printf 'A=1\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null) || RC=$?
+  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"not a git repository"* ]]; then
     pass "non-git PROJECT_DIR rejected with explicit error"
@@ -177,7 +177,7 @@ test_common_init_rejects_commitless_repo() {
   printf 'A=1\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null) || RC=$?
+  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"has no commits"* ]]; then
     pass "commit-less PROJECT_DIR rejected with init guidance"
@@ -191,7 +191,7 @@ test_common_init_exports_identity_and_paths() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   printf 'DELIVERABLE_MODE=all\n' > "$SBX/.env"
 
-  if session_env_common_init "$SBX" myproj "$PROJ" >/dev/null 2>&1; then
+  if session_env_common_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
     if [[ "$PROJECT_NAME" == "myproj" && "$PROJECT_DIR" == "$PROJ" \
        && "$ENV_FILE" == "$SBX/.env" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" \
        && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" ]]
@@ -210,11 +210,11 @@ test_env_project_name_explicit_arg_beats_env_and_envvar() {
   # PROJECT_NAME in .env and a conflicting AGENT_SANDBOX_PROJECT_NAME env var.
   local SBX="$FIXTURE_DIR/sbx_name_wins" PROJ="$FIXTURE_DIR/proj_name_wins"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_NAME=envname\n' > "$SBX/.env"
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
 
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
-        session_env_common_init "$SBX" explicitName "$PROJ" 2>&1 </dev/null \
+        session_env_common_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "explicitName|" ]]; then
@@ -230,10 +230,10 @@ test_env_project_dir_explicit_arg_beats_env() {
   local SBX="$FIXTURE_DIR/sbx_dir_wins" PROJ="$FIXTURE_DIR/proj_dir_wins"
   local ENVDIR="$FIXTURE_DIR/env_dir_loser"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_DIR=%s\n' "$ENVDIR" > "$SBX/.env"
+  make_envfile "$SBX" envname "$ENVDIR" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "$PROJ|" ]]; then
@@ -249,10 +249,10 @@ test_env_identity_explicit_args_beat_env() {
   local SBX="$FIXTURE_DIR/sbx_id_wins" PROJ="$FIXTURE_DIR/proj_id_wins"
   local ENVDIR="$FIXTURE_DIR/env_id_loser"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$ENVDIR" > "$SBX/.env"
+  make_envfile "$SBX" envname "$ENVDIR" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" explicitName "$PROJ" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "explicitName|$PROJ" ]]; then
@@ -266,10 +266,10 @@ test_env_resolves_identity_from_env_when_args_empty() {
   # SANDBOX given, no name/dir args: the resolver falls to .env for them.
   local SBX="$FIXTURE_DIR/sbx_env_fb" PROJ="$FIXTURE_DIR/proj_env_fb"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$PROJ" > "$SBX/.env"
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+  OUT=$(set -e; session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$PROJ" ]]; then
@@ -283,11 +283,11 @@ test_env_ag_sandbox_envvar_beats_env() {
   # No explicit name; AGENT_SANDBOX_PROJECT_NAME beats the .env value.
   local SBX="$FIXTURE_DIR/sbx_envvar" PROJ="$FIXTURE_DIR/proj_envvar"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$PROJ" > "$SBX/.env"
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
 
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
-        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envvar|" ]]; then
@@ -304,11 +304,12 @@ test_env_resolves_with_absolute_env_pointer() {
   local ENVDIR="$FIXTURE_DIR/env_abs_dir"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   mkdir -p "$ENVDIR"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$SBX" > "$ENVDIR/custom.env"
+  make_envfile "$ENVDIR" envname "$PROJ" "$SBX"
+  mv "$ENVDIR/.env" "$ENVDIR/custom.env"
 
   local OUT RC=0
   OUT=$(set -e; ENV_REL="$ENVDIR/custom.env" \
-        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$ENVDIR/custom.env" ]]; then
@@ -322,11 +323,12 @@ test_env_resolves_with_relative_env_pointer() {
   # A relative --env name is sandbox-relative for both resolution and load.
   local SBX="$FIXTURE_DIR/sbx_rel" PROJ="$FIXTURE_DIR/proj_rel"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$SBX" > "$SBX/custom.env"
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
+  mv "$SBX/.env" "$SBX/custom.env"
 
   local OUT RC=0
   OUT=$(set -e; ENV_REL=custom.env \
-        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$SBX/custom.env" ]]; then

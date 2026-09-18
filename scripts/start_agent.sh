@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> [--serve] --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<rel>] [--provider=<n>]
+#   ./start_agent.sh <mode> [--serve] --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<env>] [--provider=<n>]
 #
 # Modes:
 #   standard    --  normal execution, network access allowed (--serve toggles
@@ -16,7 +16,7 @@
 #
 # Optional flags:
 #   --sandbox=<path>        absolute WSL/Linux path to the sandbox directory
-#   --env=<rel>             path to .env file, relative to SANDBOX_DIR (default: .env)
+#   --env=<env>             .env file: an absolute path or a name relative to SANDBOX_DIR (default: .env)
 #   --provider=<n>          provider name (required)
 #
 # Responsibility: host-side pre-flight only  --  path validation, .env loading,
@@ -69,7 +69,7 @@ Flags (all required except --sandbox/--env):
   --name=<n>       display name; used for image names and log output (required)
   --project=<path> absolute WSL/Linux path to the project directory on the host (required)
   --sandbox=<path> absolute WSL/Linux path to the sandbox directory
-  --env=<rel>      path to .env file, relative to SANDBOX_DIR (default: .env)
+  --env=<rel>      .env file: an absolute path or a name relative to SANDBOX_DIR (default: .env)
   --provider=<n>   provider name (required  --  no default; e.g. pi, hermes, opencode)
 
 Optional flags:
@@ -366,7 +366,7 @@ main() {
   source "$REPO_ROOT/src/libs/session_env.sh"
   # DRYRUN_SID_PREFIX + session_is_dry_run (canonical dry-run id labeling).
   source "$REPO_ROOT/src/libs/session_inventory.sh"
-  session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
+  session_env_common_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
   
   if [[ "${REFRESH:-false}" == "true" ]]; then
     echo "Refresh requested  --  starting new session"

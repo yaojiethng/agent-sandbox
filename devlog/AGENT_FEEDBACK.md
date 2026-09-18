@@ -493,3 +493,31 @@ legacy: none
 mitigation: none
 
 First drafts of the seed-transport ADR and concept doc mirrored the session's reasoning: narrative history, transient identifiers (session ids, commit hashes, handover names), implementation command dumps, and rationale-as-argument instead of rationale-as-mapping. The operator steer (records state, not session history; problem / solution / rejected-with-failure-locus / follow-up; requirements as behavioral contracts in concept docs; interface-level descriptions, commands only for external interactions) required full rewrites of both. Mitigation for next time: before writing a record-layer document, propose its skeleton (section list + what each section holds) in chat and get the structure confirmed; write prose only against the confirmed skeleton. Findings F8-F14 in handover 20260904-01-design-start_resume_rsync_stall.md carry the policy-amendment candidates.
+## Agent experience  --  session 20260918-10 (thermo-nuclear review pass)
+
+### [A] 2026-09-18  --  Review-loop round-cap guidance fits correctness reviews, not model-consensus passes
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+The autonomous review-pass template frames the loop as rounds-with-round-cap ("~6 rounds") that converged by fixing mechanism bugs across 5 rounds in the correctness pass. The thermo-nuclear pass with two independent models behaved differently: both BLOCKed on the same blocker class in one round, each with a fully-specified remedy, so the loop converged immediately with no WIP rounds. Treat the round-cap and the "blocker -> fix -> re-review round" dance as the correctness-review shape; for a model-consensus code-quality pass, one round per model against a shared brief, then consolidate, is the norm. Improve the framing in review-pass-run.md around when each loop shape applies.
+
+### [A] 2026-09-18  --  Name the base commit (or the exact range) in a review directive
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+The review directive scoped the pass as "from 20260917-01 to your latest change", which required converting the handover date to its commit (`61ad078`) before the reviewer could diff. Name the base commit or the explicit `git diff <base>..<head>` range in the directive itself; the conversion step is free friction that a reader without the session context cannot resolve.
+
+### [A] 2026-09-18  --  "pi's AGENTS.md" is ambiguous between the runtime copy and the seeded source
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+"pi's AGENTS.md" can mean the runtime provider-layer file loaded at session start (`~/.pi/agent/AGENTS.md`) or the source file that is seeded into the sandbox (`src/reasoning/providers/pi/config/agent/AGENTS.md`). The edit was directed to "pi's agents.md" and only the seeded source path made the target unambiguous. When an edit target has a seeded/runtime copy pair, name the file by its full path in the directive, and state which copy is authoritative (here: the seeded source is the persistent one; the runtime copy is regenerated).

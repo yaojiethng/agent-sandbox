@@ -77,3 +77,13 @@ pi -p "Subagent instructions..."
 The `-p` flag spawns a new subagent with a clean context  --  it does not inherit the current session's conversation history, loaded files, or tool state. Use this when the current agent may have blind spots from extended work on the same code.
 
 The subagent runs in the same container/workspace as the primary agent, with the same tools  --  it **can** persist file edits and run git commits. It starts with a clean conversation context, so it cannot see this session's chat history, in-memory files, or tool state; pass everything it needs in the `-p` argument or on disk. Its output is returned inline. The results should be triaged by the primary agent.
+
+## Running Review Subagents
+
+State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Suggested pair under the opencode-go provider: `deepseek-v4-flash` at `xhigh` thinking and `glm-5.3-flash` at `high` thinking.
+
+Capture a subagent run to a log file, never through a pipe. A pipe loses the unflushed output when a run is interrupted; the log file and the session transcript survive. Run with a generous timeout (`timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh -p "$(cat brief)" > /tmp/review.log 2>&1`).
+
+Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
+
+Every run starts with benign model-resolution warnings (`Warning: No models match pattern ...`). They are noise, not a stall signal; do not abort on them.

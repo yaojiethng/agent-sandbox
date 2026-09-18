@@ -18,6 +18,14 @@ The main agent orchestrates; subagents review. Subagents are fresh contexts (`pi
 pi -p "$(cat <review-prompt-or-skill-file>)"
 ```
 
+**Suggested reviewers** (provider: opencode-go): `deepseek-v4-flash` at `xhigh` thinking and `glm-5.3-flash` at `high` thinking. Run one per concern, or both when consensus matters; two independent models converge fast on blocker consensus. State the model and thinking level inside the brief so the subagent calibrates depth and the report carries attribution.
+
+```bash
+timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh -p "$(cat <brief>)" > /tmp/review_run.log 2>&1
+```
+
+Capture to a log file, never through a pipe: a pipe loses the unflushed output on interruption; the log file and the session transcript survive.
+
 **Timeout and resume.** Run each review with a generous timeout; the default is 20 minutes (`timeout 1200 pi -p ...`). A longer review or campaign may need more; do not start with less than the default. If a run times out, do not repeat the work: pi auto-saves the interrupted session. Resume it with `pi --session <saved-session-path-or-id>` (browse with `pi -r`) and collect its verdict. A fresh run is only needed when the resumed session cannot continue.
 
 Every review prompt carries, explicitly:

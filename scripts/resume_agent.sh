@@ -419,7 +419,7 @@ local_flatten="${local_flatten:-false}"
 # Shared host-side prelude (phase 1 + 2)
 # -------------------------
 source "$REPO_ROOT/src/libs/session_env.sh"
-session_env_common_init "$SANDBOX_DIR" "$PROJECT_NAME" "$PROJECT_DIR"
+session_env_common_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
 
 mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 

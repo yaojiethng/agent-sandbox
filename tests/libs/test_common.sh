@@ -48,6 +48,17 @@ test_setup() {
   trap 'rm -rf "$FIXTURE_DIR"' EXIT
 }
 
+# make_envfile DIR [NAME] [PROJECT_DIR] [SANDBOX_DIR]
+#   Writes an identity .env into DIR naming PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR
+#   so a test can inject a .env and let the resolver/loader read it, exactly as a
+#   real sandbox's .env. One shared fixture helper for every env test.
+make_envfile() {
+  local dir="$1" name="${2:-envname}" proj="${3:-/tmp/envproj}" sbx="${4:-}"
+  mkdir -p "$dir"
+  sbx="${sbx:-$dir}"
+  printf 'PROJECT_NAME=%s\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$name" "$proj" "$sbx" > "$dir/.env"
+}
+
 test_done() {
   local NAME="${1:-}"
   if [[ -n "$NAME" ]]; then

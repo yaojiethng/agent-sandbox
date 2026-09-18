@@ -10,11 +10,12 @@
 #   4. no runtime default  --  a missing value at every level is a hard error
 #      pointing at `agent-sandbox onboard`.
 #
-# The .env is located in the provided sandbox dir (explicit or AGENT_SANDBOX_
-# value) when one is known, else in the directory the command is invoked from.
-# The TWO-level guard reads only the AGENT_SANDBOX_* keys as the env level so a
-# plain exported PROJECT_DIR/SANDBOX_DIR/PROJECT_NAME (leaked by a sourced
-# script) does not bypass .env precedence.
+# The .env is located by default_env_file: an absolute ENV_REF (--env) as-is, a
+# relative ENV_REF a name under the sandbox dir, and an empty ENV_REF
+# <sandbox>/.env, else the invocation CWD's .env. The TWO-level guard reads only
+# the AGENT_SANDBOX_* keys as the environment level so a plain exported
+# PROJECT_DIR/SANDBOX_DIR/PROJECT_NAME (leaked by a sourced script) does not
+# bypass .env precedence.
 
 _self_env_resolve_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$_self_env_resolve_dir/libs/env.sh"
@@ -28,10 +29,28 @@ _env_value() {
   ( unset "$key"; env_load "$file" >/dev/null 2>&1 || true; printf '%s' "${!key:-}" )
 }
 
-# _resolve_one EXPLICIT ENVVAR KEY ENV_FILE
+# default_env_file RAW_ENV_REF SANDBOX_DIR
+#   Prints the .env path for the raw --env value under the single .env-path
+#   contract: an absolute RAW_ENV_REF is used as-is; a relative RAW_ENV_REF is a
+#   name under SANDBOX_DIR; an empty RAW_ENV_REF falls back to <sandbox>/.env,
+#   else the invocation CWD's .env.
+default_env_file() {
+  local raw="${1:-}" sandbox_dir="$2"
+  if [[ -n "$raw" && "$raw" == /* ]]; then
+    printf '%s' "$raw"
+  elif [[ -n "$sandbox_dir" ]]; then
+    printf '%s' "$sandbox_dir/${raw:-.env}"
+  else
+    printf '%s' "${PWD}/${raw:-.env}"
+  fi
+}
+
+# env_resolve_one EXPLICIT ENVVAR KEY ENV_FILE
 #   Resolves one identifier by precedence: explicit, then the named env var,
 #   then the KEY value from ENV_FILE, else a hard error. Prints the value.
-_resolve_one() {
+#   This is the single resolution primitive; the identity triple is a sequence
+#   of the same rule.
+env_resolve_one() {
   local explicit="$1" envvar="$2" key="$3" env_file="$4" value
   if [[ -n "$explicit" ]]; then printf '%s' "$explicit"; return 0; fi
   if [[ -n "${!envvar:-}" ]]; then printf '%s' "${!envvar}"; return 0; fi
@@ -44,53 +63,58 @@ _resolve_one() {
   return 1
 }
 
-# default_env_file SANDBOX_DIR
-#   Prints the .env path: an absolute ENV_REL (--env) is used as-is, a relative
-#   ENV_REL is a name under SANDBOX_DIR, and an empty ENV_REL falls back to
-#   <sandbox>/.env, else the invocation CWD's .env. This is the single --env
-#   contract, shared with the run's env load.
-default_env_file() {
-  local sandbox_dir="$1"
-  if [[ -n "${ENV_REL:-}" && "$ENV_REL" == /* ]]; then
-    printf '%s' "$ENV_REL"
-  elif [[ -n "$sandbox_dir" ]]; then
-    printf '%s' "$sandbox_dir/${ENV_REL:-.env}"
-  else
-    printf '%s' "${PWD}/${ENV_REL:-.env}"
-  fi
-}
-
-# env_resolve_value EXPLICIT ENVVAR KEY ENV_PATH
-#   Resolves one identifier's value: explicit > ENVVAR > .env > error. ENV_PATH,
-#   when given, is the .env file to read; else the invocation CWD's .env is
-#   used. Prints the value; returns non-zero with an onboard hint on failure.
-env_resolve_value() {
-  local explicit="$1" envvar="$2" key="$3" env_path="${4:-}"
-  if [[ -z "$env_path" ]]; then
-    env_path="$(default_env_file "")"
-  fi
-  _resolve_one "$explicit" "$envvar" "$key" "$env_path"
-}
-
-# env_resolve_identity EXPLICIT_NAME EXPLICIT_DIR EXPLICIT_SANDBOX [ENV_FILE]
-#   Resolves the identity triple. An empty explicit value means "not given".
-#   When ENV_FILE is omitted it is derived from the sandbox dir known so far
-#   (explicit or AGENT_SANDBOX_SANDBOX_DIR), else from the CWD. Exports the
-#   resolved PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR into the caller's scope.
+# env_resolve_identity EXPLICIT_NAME EXPLICIT_DIR EXPLICIT_SANDBOX [ENV_REF [FIELDS...]]
+#   Resolves the requested identity fields (default: name dir sandbox). An
+#   empty explicit value means "not given". ENV_REF is the raw --env value
+#   (absolute, sandbox-relative, or empty) normalized via default_env_file.
+#   SANDBOX is anchored first (a relative ENV_REF needs a sandbox that may live
+#   in the .env). Exports PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR for the
+#   requested fields and the normalized ENV_FILE into the caller's scope.
 env_resolve_identity() {
-  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_file="${4:-}"
-  local known_sbx pn pd sd
-
-  if [[ -z "$env_file" ]]; then
-    known_sbx=""
-    [[ -n "$expl_sandbox" ]] && known_sbx="$expl_sandbox"
-    [[ -z "$known_sbx" && -n "${AGENT_SANDBOX_SANDBOX_DIR:-}" ]] && known_sbx="$AGENT_SANDBOX_SANDBOX_DIR"
-    env_file="$(default_env_file "$known_sbx")"
+  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref="${4:-}"
+  local fields=()
+  if [[ $# -gt 4 ]]; then
+    shift 4
+    fields=("$@")
   fi
+  if [[ ${#fields[@]} -eq 0 ]]; then fields=(name dir sandbox); fi
 
-  pn="$(_resolve_one "$expl_name"    AGENT_SANDBOX_PROJECT_NAME  PROJECT_NAME  "$env_file")" || return 1
-  pd="$(_resolve_one "$expl_dir"     AGENT_SANDBOX_PROJECT_DIR   PROJECT_DIR   "$env_file")" || return 1
-  sd="$(_resolve_one "$expl_sandbox" AGENT_SANDBOX_SANDBOX_DIR   SANDBOX_DIR   "$env_file")" || return 1
+  local need_name=false need_dir=false need_sandbox=false
+  local f
+  for f in "${fields[@]}"; do
+    case "$f" in
+      name)    need_name=true ;;
+      dir)     need_dir=true ;;
+      sandbox) need_sandbox=true ;;
+    esac
+  done
 
-  export PROJECT_NAME="$pn" PROJECT_DIR="$pd" SANDBOX_DIR="$sd"
+  local ep
+  if $need_sandbox && [[ -z "$expl_sandbox" ]]; then
+    # Chicken-and-egg: a relative ENV_REF needs a sandbox that may itself live
+    # in the .env, so bootstrap SANDBOX from the CWD fallback first.
+    ep="$(default_env_file "$env_ref" "")"
+    SANDBOX_DIR="$(env_resolve_one "" AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep")" || return 1
+  else
+    SANDBOX_DIR="$expl_sandbox"
+  fi
+  ep="$(default_env_file "$env_ref" "$SANDBOX_DIR")"
+  export ENV_FILE="$ep"
+
+  if $need_name; then
+    if [[ -n "$expl_name" ]]; then
+      export PROJECT_NAME="$expl_name"
+    else
+      PROJECT_NAME="$(env_resolve_one "" AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep")" || return 1
+    fi
+  fi
+  if $need_dir; then
+    if [[ -n "$expl_dir" ]]; then
+      export PROJECT_DIR="$expl_dir"
+    else
+      PROJECT_DIR="$(env_resolve_one "" AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep")" || return 1
+    fi
+  fi
+  export PROJECT_NAME PROJECT_DIR SANDBOX_DIR
+  return 0
 }

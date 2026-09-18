@@ -25,28 +25,22 @@ source "$_self_session_dir/libs/env.sh"
 source "$_self_session_dir/libs/env_resolve.sh"
 source "$_self_session_dir/libs/dirs.sh"
 
-# session_env_common_init <sandbox_dir> <project_name> <project_dir>
+# session_env_common_init <project_name> <project_dir> <sandbox_dir>
 #   Phase 1 (no SESSION_ID needed): resolves the identity triple
 #   (explicit > AGENT_SANDBOX_* > .env > error), loads .env, validates git,
 #   derives harness paths via dirs_resolve, exports host uid/gid. The explicit
 #   identity wins over a conflicting .env value (flag-wins). Args may be empty
 #   so the resolver falls back to the AGENT_SANDBOX_* env level then the .env.
 session_env_common_init() {
-  local arg_sandbox="$1" arg_name="$2" arg_dir="$3"
+  local arg_name="$1" arg_dir="$2" arg_sandbox="$3"
 
-  # env_resolve_identity exports the resolved PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR.
-  env_resolve_identity "$arg_name" "$arg_dir" "$arg_sandbox" || return 1
+  # env_resolve_identity resolves all three fields, exports PROJECT_NAME/
+  # PROJECT_DIR/SANDBOX_DIR and the normalized ENV_FILE (the single --env
+  # path contract, via default_env_file).
+  env_resolve_identity "$arg_name" "$arg_dir" "$arg_sandbox" "${ENV_REL:-}" || return 1
   local project_name="$PROJECT_NAME" project_dir="$PROJECT_DIR" sandbox_dir="$SANDBOX_DIR"
 
-  # .env loading. --env is absolute (a path) or relative (sandbox-relative):
-  # the Makefile passes --env=$(CURDIR)/.env (absolute); the retained leaf
-  # contract is a name relative to the sandbox dir. The dispatcher forwards the
-  # --env value to start/dry-run so a custom .env's runtime values reach the run.
-  if [[ "${ENV_REL:-}" == /* ]]; then
-    ENV_FILE="$ENV_REL"
-  else
-    ENV_FILE="$sandbox_dir/${ENV_REL:-.env}"
-  fi
+  # .env loading
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: .env not found: $ENV_FILE" >&2
     echo "  SANDBOX_DIR has not been onboarded. Run:" >&2
