@@ -174,6 +174,7 @@ Items indefinitely deferred or explicitly excluded from M2 scope.
 - **Submodules not supported.** `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Operators must deinitialise submodules before running the harness.
 - **Bad diff applied to host repo corrupts future snapshots.** `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`. The risk is after the operator applies a bad diff - the host repo is then in a bad state and future snapshots reflect it. See Recovery in `docs/development/quickstart.md` for how to reset.
 - **Multi-service project composition not supported.** Projects requiring additional services (databases, test containers) have no mechanism to inject them alongside the harness-managed sandbox and agent. See `execution_model.md` for the deferred discussion.
+- **Nushell rewrite (indefinitely deferred).** A rewrite of the host-side tooling in a cross-platform structured-data language (nushell) would remove the GNU/BSD host difference at the cost of rewriting ~100 scripts, 46 test files, and 817 tests mid-milestone. The bounded alternative is the `scripts/install.sh` requirement gate and portable call sites. Revisit only if the host-support burden grows beyond the gate's capacity. See `docs/development/host_requirements.md`.
 
 ---
 

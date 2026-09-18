@@ -21,29 +21,11 @@ INSTALL_DIR := ~/.local/bin
 
 .PHONY: install
 install:
-	@_INSTALL_DIR="$(INSTALL_DIR)"; \
-	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
-	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
-	fi; \
-	if [[ -z "$$_INSTALL_DIR" ]]; then \
-	  _INSTALL_DIR="/usr/local/bin"; \
-	fi; \
-	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
-	ln -sfn "$(CURDIR)/scripts/agent-sandbox.sh" "$$_INSTALL_DIR/agent-sandbox"; \
-	echo "Installed agent-sandbox to $$_INSTALL_DIR/agent-sandbox (symlink -> $(CURDIR)/scripts/agent-sandbox.sh)"
+	@bash scripts/install.sh
 
 .PHONY: uninstall
 uninstall:
-	@_INSTALL_DIR="$(INSTALL_DIR)"; \
-	if [[ -z "$$_INSTALL_DIR" && -f .env ]]; then \
-	  _INSTALL_DIR=$$(grep '^INSTALL_DIR=' .env | cut -d'=' -f2-); \
-	fi; \
-	if [[ -z "$$_INSTALL_DIR" ]]; then \
-	  _INSTALL_DIR="/usr/local/bin"; \
-	fi; \
-	_INSTALL_DIR="$${_INSTALL_DIR/#\~/$${HOME}}"; \
-	rm -f "$$_INSTALL_DIR/agent-sandbox"; \
-	echo "Removed $$_INSTALL_DIR/agent-sandbox"
+	@bash scripts/install.sh --uninstall
 
 # -------------------------
 # Onboard / refresh dogfood sandbox

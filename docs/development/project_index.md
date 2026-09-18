@@ -47,6 +47,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `bash-coding-conventions.md` | 🟡 Warm | M2.6 | Bash coding rules. Supersedes `bash-scripting-traps.skill.md` and `bash-dependency-audit.skill.md`. |
 | `testing-conventions.md` | 🟡 Warm | M2.6 | Fixture patterns, anti-patterns, templates, checklists. Extracted from `testing_policy.md`. |
 | `testing_policy.md` | 🟡 Warm | M2.6 | Testing policy and rules. Mechanical content moved to `testing-conventions.md`. |
+| `host_requirements.md` | 🔴 Hot | M2.6 | Host tools and versions required per platform; enforced by `scripts/install.sh`. |
 | `project_index.md` | 🟡 Warm | M2.6 | This file. Updated when files are added, removed, or freeze status changes. |
 | `roadmap.md` | 🔴 Hot | M2.6 | Active milestone tasks and milestone summary table. |
 | `roadmap_future.md` | 🟡 Warm | M2.6 | Future milestone detail sections. |

@@ -11,6 +11,8 @@ Getting agent-sandbox running on a new machine for the first time. Covers instal
 - Git installed
 - agent-sandbox repository cloned locally
 
+Full host-tool requirements and the macOS setup (bash 4.0+ and the GNU toolchain): `docs/development/host_requirements.md`. Enforced by `scripts/install.sh` at install time.
+
 ---
 
 ## 1. Install the CLI
