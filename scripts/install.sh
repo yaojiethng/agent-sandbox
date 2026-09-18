@@ -76,7 +76,7 @@ check_gnu_date() {
 check_gnu_sed() {
   if ! sed --version 2>/dev/null | grep -q 'GNU sed'; then
     echo "  - GNU sed missing" >&2
-    echo "    Used by scripts/onboard.sh and src/libs/session_inventory.sh (sed -i without backup arg)." >&2
+    echo "    Used by scripts/onboard.sh (sed -i without backup arg)." >&2
     echo "    macOS: brew install gnu-sed" >&2
     return 1
   fi

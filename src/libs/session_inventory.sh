@@ -156,7 +156,11 @@ session_log_set() {
   mkdir -p "$(dirname "$f")"
   touch "$f"
   if grep -q "^${key}=" "$f"; then
-    sed -i "s#^${key}=.*#${key}=${value}#" "$f"
+    # In-place `sed -i` is not portable: GNU and BSD sed parse its argument
+    # differently (macOS teardown bug - the GNU-only form misparses the file
+    # path as the script under BSD sed). Rewrite via a sibling temp file.
+    sed "s#^${key}=.*#${key}=${value}#" "$f" > "$f.tmp"
+    mv "$f.tmp" "$f"
   else
     echo "${key}=${value}" >> "$f"
   fi

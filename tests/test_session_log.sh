@@ -23,6 +23,25 @@ source "$LIB"
 # The session-log helpers base their path on SANDBOX_DIR; point at the fixture.
 export SANDBOX_DIR="$FIX"
 
+# No-in-place-sed shim. In-place `sed -i` differs between GNU and BSD sed:
+# GNU needs no suffix argument, BSD needs one, so no single -i form is
+# portable. The macOS teardown bug was session_log_set's GNU-only form
+# misparsing the file path as the script under BSD sed. The fix avoids `-i`
+# entirely (sibling temp file + mv); this shim fails any `-i` invocation so a
+# regression to in-place sed is caught. Other calls forward to real sed.
+REAL_SED="$(command -v sed)"
+mkdir -p "$FIXTURE_DIR/shim_noinplace"
+{ printf '#!/usr/bin/env bash\nREAL_SED=%q\n' "$REAL_SED"; cat <<'SHIM'
+set -u
+if [[ $# -gt 0 && "$1" == "-i" ]]; then
+  echo "sed: in-place -i form invoked (no-inplace guard)" >&2
+  exit 1
+fi
+exec "$REAL_SED" "$@"
+SHIM
+} > "$FIXTURE_DIR/shim_noinplace/sed"
+chmod +x "$FIXTURE_DIR/shim_noinplace/sed"
+
 test_session_log_set_read() {
   local sid="s1"
   session_log_set "$sid" last_stopped "20260828-120000"
@@ -50,6 +69,34 @@ test_session_log_path() {
   assert_eq "$(session_log_path "xyz")" "$FIX/.compose/xyz.log" "log path is SANDBOX_DIR/.compose/<id>.log"
 }
 run_test test_session_log_path
+
+test_session_log_set_avoids_inplace_sed() {
+  # session_log_set must not use in-place sed at all; the shim fails any `-i`
+  # invocation. Upsert works, and no in-place sed is exercised.
+  local sid="bsdsed"
+  (
+    export PATH="$FIXTURE_DIR/shim_noinplace:$PATH"
+    session_log_set "$sid" last_stopped "20260828-120000"
+    session_log_set "$sid" last_stopped "20260828-130000"
+  )
+  assert_eq "$(session_log_read "$sid" last_stopped)" "20260828-130000" "set+upsert with no in-place sed"
+  assert_eq "$(grep -c '^last_stopped=' "$FIX/.compose/$sid.log")" 1 "single line with no in-place sed"
+}
+run_test test_session_log_set_avoids_inplace_sed
+
+test_inplace_sed_shim_rejects_dash_i() {
+  # Guard on the shim itself: any `-i` invocation must fail, so a regression
+  # to in-place sed is caught instead of silently passing.
+  local f="$FIX/gnu-form.log"
+  echo "last_stopped=old" > "$f"
+  if ( export PATH="$FIXTURE_DIR/shim_noinplace:$PATH"
+       sed -i "s#^last_stopped=.*#last_stopped=new#" "$f" ) 2>/dev/null; then
+    fail "shim accepted a -i invocation"
+  else
+    pass "shim rejects -i invocations"
+  fi
+}
+run_test test_inplace_sed_shim_rejects_dash_i
 
 test_ts_to_epoch() {
   local ep
