@@ -44,13 +44,18 @@ session_env_common_init() {
     return 1
   fi
 
-  # Source only simple KEY=VALUE lines; skip comments and blanks.
+  # Source only simple KEY=VALUE lines; skip comments, blanks, and lines
+  # whose key is not a valid shell identifier.
   while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-    [[ "$KEY" =~ ^#.*$ || -z "$KEY" ]] && continue
     KEY="${KEY//[$'\r\n\t ']/}"
     VALUE="${VALUE//[$'\r\n']/}"
     VALUE="${VALUE#"${VALUE%%[! ]*}"}"
     VALUE="${VALUE%"${VALUE##*[! ]}"}"
+    [[ -z "$KEY" || "$KEY" =~ ^#.*$ ]] && continue
+    if [[ ! "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+      echo "Warning: skipping .env line with invalid variable name '$KEY' in $ENV_FILE" >&2
+      continue
+    fi
     export "$KEY=$VALUE"
   done < "$ENV_FILE"
 
