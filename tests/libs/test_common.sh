@@ -16,6 +16,29 @@ SKIPS=()
 pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
 fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); FAILURES+=("$1"); }
 skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); SKIPS+=("$1"); }
+
+# ---------------------------------------------------------------------------
+# Docker-trace assertions  --  the standard way to assert on the recorded
+# docker stub invocations. DOCKER_TRACE_LOG must be set by the fixture.
+#
+#   trace_grep PATTERN       --  lines matching PATTERN (or empty)
+#   trace_count [--] PATTERN --  count of matching lines (numeric, 0-safe)
+#   trace_has PATTERN        --  true when at least one line matches
+# ---------------------------------------------------------------------------
+trace_grep() {
+  grep "$1" "$DOCKER_TRACE_LOG" 2>/dev/null || true
+}
+
+trace_count() {
+  [[ "$1" == "--" ]] && shift
+  local c
+  c=$(grep -c "$1" "$DOCKER_TRACE_LOG" 2>/dev/null) || c=0
+  echo "$c"
+}
+
+trace_has() {
+  grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
+}
 # run_test NAME
 #   Invokes a test function. A test that returns without calling pass/fail/skip
 #   is counted as a failure: a silent test proves nothing.
@@ -126,6 +149,40 @@ assert_contains() {
   fi
 }
 
+# assert_matches ACTUAL PATTERN [LABEL]  --  extended-regex containment.
+assert_matches() {
+  local ACTUAL="$1" PATTERN="$2" LABEL="${3:-matches}"
+  if [[ "$ACTUAL" =~ $PATTERN ]]; then
+    pass "$LABEL"
+  else
+    fail "$LABEL ('$ACTUAL' does not match '$PATTERN')"
+  fi
+}
+
+# assert_empty STRING [LABEL] -- true when STRING has length zero.
+assert_empty() {
+  local ACTUAL="$1" LABEL="${2:-empty}"
+  if [[ -z "$ACTUAL" ]]; then pass "$LABEL"; else fail "$LABEL (expected empty, got '$ACTUAL')"; fi
+}
+
+# assert_not_empty STRING [LABEL] -- true when STRING is non-empty.
+assert_not_empty() {
+  local ACTUAL="$1" LABEL="${2:-not-empty}"
+  if [[ -n "$ACTUAL" ]]; then pass "$LABEL"; else fail "$LABEL (expected non-empty, got empty)"; fi
+}
+
+# assert_file_exists FILE [LABEL] -- true when FILE exists.
+assert_file_exists() {
+  local FILE="$1" LABEL="${2:-file exists}"
+  if [[ -f "$FILE" ]]; then pass "$LABEL"; else fail "$LABEL (missing file: $FILE)"; fi
+}
+
+# assert_dir_exists DIR [LABEL] -- true when DIR exists and is a directory.
+assert_dir_exists() {
+  local DIR="$1" LABEL="${2:-dir exists}"
+  if [[ -d "$DIR" ]]; then pass "$LABEL"; else fail "$LABEL (missing dir: $DIR)"; fi
+}
+
 # assert_not_contains HAYSTACK NEEDLE [LABEL] -- inverted substring match
 assert_not_contains() {
   local HAYSTACK="$1" NEEDLE="$2" LABEL="${3:-not-contains '$2'}"
@@ -133,6 +190,16 @@ assert_not_contains() {
     pass "$LABEL"
   else
     fail "$LABEL ('$NEEDLE' unexpectedly found in output)"
+  fi
+}
+
+# assert_eq_num ACTUAL EXPECTED [LABEL]  --  integer equality.
+assert_eq_num() {
+  local ACTUAL="$1" EXPECTED="$2" LABEL="${3:-integer equal}"
+  if [[ "$ACTUAL" -eq "$EXPECTED" ]]; then
+    pass "$LABEL (=$EXPECTED)"
+  else
+    fail "$LABEL (expected $EXPECTED, got $ACTUAL)"
   fi
 }
 
@@ -166,4 +233,28 @@ source_function_from() {
     return 1
   fi
   eval "$SRC"
+}
+
+# ---------------------------------------------------------------------------
+# Captured-argument assertions for the dispatch oracle suite. A capture line
+# is a single string (the `capture:` payload). CAPTURED must be set by the
+# fixture (dispatch_and_capture).
+#
+#   captured_has P1 [P2 ...]  --  true when some captured string contains ALL
+#   captured_lacks PATTERN    --  true when no captured string contains PATTERN
+# ---------------------------------------------------------------------------
+captured_has() {
+  local c pat
+  for c in "${CAPTURED[@]:-}"; do
+    local all=true
+    for pat in "$@"; do
+      [[ "$c" == *"$pat"* ]] || all=false
+    done
+    [[ "$all" == true ]] && return 0
+  done
+  return 1
+}
+
+captured_lacks() {
+  captured_has "$1" && return 1 || return 0
 }

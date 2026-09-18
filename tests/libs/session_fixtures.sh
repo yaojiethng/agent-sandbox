@@ -58,3 +58,19 @@ EOF
     echo "INIT_SHA=0000000000000000000000000000000000000000"
   } > "$DIR/.export-status"
 }
+
+# make_draft_fixture NAME PATCHES [BUNDLE_NAME]
+#   The standard draft-workflow test prologue: creates a committed repo,
+#   a sandbox dir, and a session export fixture with PATCHES numbered
+#   diffs. Sets P, S, and EXPORT in the caller's scope (deliberately not
+#   local -- tests consume them on the next lines).
+#   BUNDLE_NAME defaults to the canonical 20260420-120000-test-branch.
+make_draft_fixture() {
+  local NAME="$1" PATCHES="${2:-0}" BUNDLE="${3:-20260420-120000-test-branch}"
+  P="$FIXTURE_DIR/${NAME}_p"
+  S="$FIXTURE_DIR/${NAME}_s"
+  EXPORT="$S/.workspace/session-diffs/$BUNDLE"
+  make_committed_repo "$P"
+  mkdir -p "$S/.workspace"
+  make_session_fixture "$EXPORT" "$PATCHES"
+}

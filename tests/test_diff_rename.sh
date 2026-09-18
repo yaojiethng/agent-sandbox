@@ -21,28 +21,10 @@ source "$REPO_ROOT/src/libs/package_branch.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 
-_commit_file() {
-  local REPO="$1" FILE="$2" CONTENT="$3"
-  mkdir -p "$(dirname "$REPO/$FILE")"
-  echo "$CONTENT" > "$REPO/$FILE"
-  git -C "$REPO" add "$FILE" 2>/dev/null
-  git -C "$REPO" commit -m "add $FILE" --quiet
-}
-
 _commit_rename() {
   local REPO="$1" OLD="$2" NEW="$3"
   git -C "$REPO" mv "$OLD" "$NEW"
   git -C "$REPO" commit -m "rename $OLD -> $NEW" --quiet
-}
-
-_assert_diff_has() {
-  local DIFF_FILE="$1" PATTERN="$2"
-  grep -q "$PATTERN" "$DIFF_FILE"
-}
-
-_assert_diff_lacks() {
-  local DIFF_FILE="$1" PATTERN="$2"
-  ! grep -q "$PATTERN" "$DIFF_FILE"
 }
 
 test_package_branch_no_renames_true() {

@@ -14,6 +14,7 @@ set -uo pipefail
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
 test_setup
 
 # -------------------------
@@ -27,14 +28,6 @@ _make_repo() {
   git -C "$DIR" init --quiet --initial-branch=main
   git -C "$DIR" config user.email "test@fixture"
   git -C "$DIR" config user.name "Test Fixture"
-}
-
-_commit_file() {
-  local REPO="$1" FILE="$2" CONTENT="$3"
-  mkdir -p "$(dirname "$REPO/$FILE")"
-  echo "$CONTENT" > "$REPO/$FILE"
-  git -C "$REPO" add "$FILE" 2>/dev/null
-  git -C "$REPO" commit -m "add $FILE" --quiet
 }
 
 _commit_rename() {
@@ -83,18 +76,6 @@ _assert_file_has() {
 _assert_file_missing() {
   local REPO="$1" FILE="$2"
   [[ ! -f "$REPO/$FILE" ]]
-}
-
-# Check diff contains expected pattern
-_assert_diff_has() {
-  local DIFF_FILE="$1" PATTERN="$2"
-  grep -q "$PATTERN" "$DIFF_FILE"
-}
-
-# Check diff does NOT contain pattern
-_assert_diff_lacks() {
-  local DIFF_FILE="$1" PATTERN="$2"
-  ! grep -q "$PATTERN" "$DIFF_FILE"
 }
 
 # -------------------------

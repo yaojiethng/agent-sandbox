@@ -24,6 +24,11 @@ source "$REPO_ROOT/scripts/guards.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 
+# draft_branch DIR  --  the working draft branch in DIR, or empty.
+draft_branch() {
+  git -C "$1" branch --list 'draft/*' | tr -d ' *' | head -1
+}
+
 # =============================================================================
 # _test_draft_run  --  backward-compat wrapper for old draft_run callers
 #
@@ -140,17 +145,12 @@ make_real_session() {
 # =============================================================================
 
 test_draft_creates_branch() {
-  local P="$FIXTURE_DIR/draft_branch_p"
-  local S="$FIXTURE_DIR/draft_branch_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture draft_branch 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local BRANCH
-  BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  BRANCH=$(draft_branch "$P")
   if [[ "$BRANCH" == draft/20260420-120000-test-branch-* ]]; then
     pass "draft creates working branch with correct name format"
   else
@@ -159,37 +159,23 @@ test_draft_creates_branch() {
 }
 
 test_draft_applies_diffs() {
-  local P="$FIXTURE_DIR/draft_diffs_p"
-  local S="$FIXTURE_DIR/draft_diffs_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture draft_diffs 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   # initial + .draft-state + 2 diffs = 4
   local COUNT
   COUNT=$(git -C "$P" rev-list --count HEAD)
-  if [[ "$COUNT" -eq 4 ]]; then
-    pass "draft applies all diffs as commits"
-  else
-    fail "expected 4 commits, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "4" "draft applies all diffs as commits"
 }
 
 test_draft_branch_name_format() {
-  local P="$FIXTURE_DIR/draft_name_p"
-  local S="$FIXTURE_DIR/draft_name_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-feature-M2_3-agent"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_name 1 20260420-120000-feature-M2_3-agent
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local BRANCH
-  BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  BRANCH=$(draft_branch "$P")
   if [[ "$BRANCH" == draft/20260420-120000-feature-M2_3-agent-* ]]; then
     pass "draft branch name follows expected format"
   else
@@ -198,46 +184,28 @@ test_draft_branch_name_format() {
 }
 
 test_draft_branch_name_with_summary() {
-  local P="$FIXTURE_DIR/draft_summary_p"
-  local S="$FIXTURE_DIR/draft_summary_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_summary 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "my-feature" >/dev/null 2>&1
 
   local BRANCH
-  BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
-  if [[ "$BRANCH" == *"my-feature"* ]]; then
-    pass "draft branch name uses BRANCH_SUMMARY"
-  else
-    fail "branch name missing summary: got '$BRANCH'"
-  fi
+  BRANCH=$(draft_branch "$P")
+  assert_contains "$BRANCH" "my-feature" "draft branch name uses BRANCH_SUMMARY"
 }
 
 test_draft_creates_draft_state_commit() {
-  local P="$FIXTURE_DIR/draft_state_p"
-  local S="$FIXTURE_DIR/draft_state_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture draft_state 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
   local FIRST_NEW
   FIRST_NEW=$(git -C "$P" rev-list main.."$DRAFT_BRANCH" --reverse | head -1)
   local MSG
   MSG=$(git -C "$P" log -1 --format=%s "$FIRST_NEW")
 
-  if [[ "$MSG" == ".draft-state" ]]; then
-    pass ".draft-state is the first new commit"
-  else
-    fail ".draft-state not first commit: got '$MSG'"
-  fi
+  assert_eq "$MSG" ".draft-state" ".draft-state is the first new commit"
 
   local CONTENT
   CONTENT=$(git -C "$P" show "${FIRST_NEW}:.draft-state")
@@ -254,12 +222,7 @@ test_draft_creates_draft_state_commit() {
 }
 
 test_draft_state_has_correct_values() {
-  local P="$FIXTURE_DIR/draft_vals_p"
-  local S="$FIXTURE_DIR/draft_vals_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 3
+  make_draft_fixture draft_vals 3
   {
     echo "STATUS=SUCCESS"
     echo "TIMESTAMP=20260420-120000"
@@ -269,7 +232,7 @@ test_draft_state_has_correct_values() {
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
   local FIRST_NEW
   FIRST_NEW=$(git -C "$P" rev-list main.."$DRAFT_BRANCH" --reverse | head -1)
   local CONTENT
@@ -283,42 +246,24 @@ test_draft_state_has_correct_values() {
 }
 
 test_draft_rejects_same_name_collision() {
-  local P="$FIXTURE_DIR/draft_collision_p"
-  local S="$FIXTURE_DIR/draft_collision_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_collision 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
 
   local OUT
   OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
-  if [[ "$OUT" == *"draft branch already exists"* ]]; then
-    pass "draft rejects same-name collision"
-  else
-    fail "did not reject collision: $OUT"
-  fi
+  assert_contains "$OUT" "draft branch already exists" "draft rejects same-name collision"
 }
 
 test_draft_rejects_when_on_draft_branch() {
-  local P="$FIXTURE_DIR/draft_ondraft_p"
-  local S="$FIXTURE_DIR/draft_ondraft_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_ondraft 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
   local OUT
   OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || true
-  if [[ "$OUT" == *"already on a draft branch"* ]]; then
-    pass "draft rejects when already on a draft branch"
-  else
-    fail "did not reject on-draft: $OUT"
-  fi
+  assert_contains "$OUT" "already on a draft branch" "draft rejects when already on a draft branch"
 }
 
 test_draft_allows_parallel_drafts() {
@@ -337,20 +282,11 @@ test_draft_allows_parallel_drafts() {
 
   local COUNT
   COUNT=$(git -C "$P" branch --list 'draft/*' | wc -l)
-  if [[ "$COUNT" -eq 2 ]]; then
-    pass "draft allows parallel draft branches"
-  else
-    fail "expected 2 draft branches, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "2" "draft allows parallel draft branches"
 }
 
 test_draft_branch_from() {
-  local P="$FIXTURE_DIR/draft_from_p"
-  local S="$FIXTURE_DIR/draft_from_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture draft_from 2
 
   echo "extra" > "$P/extra.txt"
   git -C "$P" add extra.txt
@@ -363,31 +299,18 @@ test_draft_branch_from() {
   # initial + extra + .draft-state + 2 diffs = 5
   local COUNT
   COUNT=$(git -C "$P" rev-list --count HEAD)
-  if [[ "$COUNT" -eq 5 ]]; then
-    pass "draft BRANCH_FROM creates branch from specified commit"
-  else
-    fail "expected 5 commits, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "5" "draft BRANCH_FROM creates branch from specified commit"
 }
 
 test_draft_diffs_range() {
-  local P="$FIXTURE_DIR/draft_range_p"
-  local S="$FIXTURE_DIR/draft_range_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 4
+  make_draft_fixture draft_range 4
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "2..3" "" >/dev/null 2>&1
 
   # .draft-state + 2 diffs + initial = 4
   local COUNT
   COUNT=$(git -C "$P" rev-list --count HEAD)
-  if [[ "$COUNT" -eq 4 ]]; then
-    pass "draft DIFFS range applies only selected diffs"
-  else
-    fail "expected 4 commits, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "4" "draft DIFFS range applies only selected diffs"
 }
 
 test_draft_no_diffs_error() {
@@ -418,12 +341,7 @@ test_draft_no_diffs_error() {
 # rollback did `git reset --hard draft-savepoint` but never checked back out to
 # the source branch. See handover 20260812-06.
 test_draft_failure_returns_to_source_branch() {
-  local P="$FIXTURE_DIR/draft_rollback_p"
-  local S="$FIXTURE_DIR/draft_rollback_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_rollback 1
 
   # Force the new-file patch to fail: file-1.txt already exists in the baseline,
   # so git apply cannot create it. This drives _run_draft_workflow through its
@@ -436,11 +354,7 @@ test_draft_failure_returns_to_source_branch() {
 
   local CURR
   CURR=$(_current_branch "$P")
-  if [[ "$CURR" == "main" ]]; then
-    pass "failed draft returns operator to source branch"
-  else
-    fail "expected source branch 'main' after failed draft, got: $CURR"
-  fi
+  assert_eq "$CURR" "main" "failed draft returns operator to source branch"
 }
 
 # Regression: the rollback must also delete the exact draft branch the failed
@@ -448,12 +362,7 @@ test_draft_failure_returns_to_source_branch() {
 # the collision guard (draft_guard_no_collision) until the operator deleted it
 # by hand.
 test_draft_failure_deletes_draft_branch() {
-  local P="$FIXTURE_DIR/draft_rollback_del_p"
-  local S="$FIXTURE_DIR/draft_rollback_del_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture draft_rollback_del 1
 
   echo "conflict" > "$P/file-1.txt"
   git -C "$P" add file-1.txt
@@ -463,11 +372,7 @@ test_draft_failure_deletes_draft_branch() {
 
   local LEFT
   LEFT=$(git -C "$P" branch --list 'draft/*')
-  if [[ -z "$LEFT" ]]; then
-    pass "failed draft deletes the draft branch it created"
-  else
-    fail "draft branch survived rollback: $LEFT"
-  fi
+  assert_empty "$LEFT" "failed draft deletes the draft branch it created"
 }
 
 test_draft_strips_index_lines() {
@@ -514,11 +419,7 @@ test_draft_resets_author_to_operator() {
 
   local BAD
   BAD=$(git -C "$P" log main..HEAD --format='%ae' | grep -v "test@fixture" || true)
-  if [[ -z "$BAD" ]]; then
-    pass "draft resets all commit authors to operator identity"
-  else
-    fail "non-operator author found: $BAD"
-  fi
+  assert_empty "$BAD" "draft resets all commit authors to operator identity"
 }
 
 test_draft_commit_messages() {
@@ -532,11 +433,7 @@ test_draft_commit_messages() {
 
   local FIRST_MSG
   FIRST_MSG=$(git -C "$P" log main..HEAD --reverse --format='%s' | head -1)
-  if [[ "$FIRST_MSG" == ".draft-state" ]]; then
-    pass "first commit is .draft-state"
-  else
-    fail "first commit should be .draft-state, got: $FIRST_MSG"
-  fi
+  assert_eq "$FIRST_MSG" ".draft-state" "first commit is .draft-state"
 
   local SECOND_MSG
   SECOND_MSG=$(git -C "$P" log main..HEAD --reverse --format='%s' | sed -n '2p')
@@ -679,11 +576,7 @@ test_resolve_filename_subject_cleaned() {
 
   local MSG
   MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-fix_widget_parsing.diff")
-  if [[ "$MSG" == "fix widget parsing" ]]; then
-    pass "draft_resolve_commit_message extracts subject from filename, cleans underscores"
-  else
-    fail "expected 'fix widget parsing', got '$MSG'"
-  fi
+  assert_eq "$MSG" "fix widget parsing" "draft_resolve_commit_message extracts subject from filename, cleans underscores"
 }
 
 test_resolve_filename_subject_trim_underscores() {
@@ -694,11 +587,7 @@ test_resolve_filename_subject_trim_underscores() {
 
   local MSG
   MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-__hello___world__.diff")
-  if [[ "$MSG" == "hello world" ]]; then
-    pass "draft_resolve_commit_message trims and collapses underscores"
-  else
-    fail "expected 'hello world', got '$MSG'"
-  fi
+  assert_eq "$MSG" "hello world" "draft_resolve_commit_message trims and collapses underscores"
 }
 
 test_resolve_fallback_no_subject() {
@@ -708,11 +597,7 @@ test_resolve_fallback_no_subject() {
 
   local MSG
   MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234.diff")
-  if [[ "$MSG" == "Apply 0001-abc1234.diff" ]]; then
-    pass "draft_resolve_commit_message falls back to 'Apply <basename>'"
-  else
-    fail "expected 'Apply 0001-abc1234.diff', got '$MSG'"
-  fi
+  assert_eq "$MSG" "Apply 0001-abc1234.diff" "draft_resolve_commit_message falls back to 'Apply <basename>'"
 }
 
 test_resolve_msg_file_preferred_over_filename() {
@@ -724,11 +609,7 @@ test_resolve_msg_file_preferred_over_filename() {
 
   local MSG
   MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-some_subject.diff")
-  if [[ "$MSG" == "Message from .msg" ]]; then
-    pass "draft_resolve_commit_message prefers .msg over filename subject"
-  else
-    fail "expected 'Message from .msg', got '$MSG'"
-  fi
+  assert_eq "$MSG" "Message from .msg" "draft_resolve_commit_message prefers .msg over filename subject"
 }
 
 test_draft_applies_uncommitted_diff() {
@@ -745,11 +626,7 @@ test_draft_applies_uncommitted_diff() {
   # only (draft_apply_uncommitted does not commit  --  see draft.sh contract).
   local COMMIT_COUNT
   COMMIT_COUNT=$(git -C "$P" log main..HEAD --reverse --format='%s' | grep -v '^\.draft-state$' | wc -l | tr -d ' ')
-  if [[ "$COMMIT_COUNT" -eq 2 ]]; then
-    pass "draft_run commits the 2 patches (uncommitted.diff is not committed)"
-  else
-    fail "draft_run should create 2 patch commits, got $COMMIT_COUNT"
-  fi
+  assert_eq_num "$COMMIT_COUNT" "2" "draft_run commits the 2 patches (uncommitted.diff is not committed)"
 
   # Verify uncommitted.txt was created in the working tree and is not part of
   # HEAD (uncommitted.diff is applied, not committed).
@@ -765,16 +642,11 @@ test_draft_applies_uncommitted_diff() {
 # =============================================================================
 
 test_confirm_deletes_draft_branch() {
-  local P="$FIXTURE_DIR/confirm_del_p"
-  local S="$FIXTURE_DIR/confirm_del_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture confirm_del 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
 
   confirm_run "$P" "$S" "" >/dev/null 2>&1
 
@@ -786,12 +658,7 @@ test_confirm_deletes_draft_branch() {
 }
 
 test_confirm_merges_changes() {
-  local P="$FIXTURE_DIR/confirm_merge_p"
-  local S="$FIXTURE_DIR/confirm_merge_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture confirm_merge 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "" >/dev/null 2>&1
@@ -840,27 +707,18 @@ test_confirm_rejects_non_draft_branch() {
 
   local OUT
   OUT=$(confirm_run "$P" "$S" "" 2>&1) || true
-  if [[ "$OUT" == *"not on a draft branch"* ]]; then
-    pass "confirm rejects when not on a draft branch"
-  else
-    fail "did not reject non-draft: $OUT"
-  fi
+  assert_contains "$OUT" "not on a draft branch" "confirm rejects when not on a draft branch"
 }
 
 # .draft-state is located by commit message, not by being the branch tip  -- 
 # covers the post-rebase scenario: a draft branch that gained commits (or was
 # rebased) after the draft run still confirms cleanly.
 test_confirm_after_draft_branch_advances() {
-  local P="$FIXTURE_DIR/confirm_advance_p"
-  local S="$FIXTURE_DIR/confirm_advance_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_draft_fixture confirm_advance 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
 
   # Advance the draft branch past the .draft-state commit (as a rebase or
   # continued work would)  --  the state commit is no longer the branch tip.
@@ -887,16 +745,11 @@ test_confirm_after_draft_branch_advances() {
 
 # =============================================================================
 test_confirm_conflict_recovery() {
-  local P="$FIXTURE_DIR/confirm_conflict_p"
-  local S="$FIXTURE_DIR/confirm_conflict_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture confirm_conflict 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
 
   git -C "$P" checkout main --quiet
   echo "conflicting content" > "$P/file-1.txt"
@@ -911,11 +764,7 @@ test_confirm_conflict_recovery() {
   git -C "$P" checkout main --quiet 2>/dev/null || true
   git -C "$P" branch -D "$DRAFT_BRANCH" 2>/dev/null || true
 
-  if [[ "$OUT" == *"Conflict rebasing"* ]]; then
-    pass "confirm reports rebase conflict with recovery hints"
-  else
-    fail "did not report conflict: $OUT"
-  fi
+  assert_contains "$OUT" "Conflict rebasing" "confirm reports rebase conflict with recovery hints"
 }
 
 # =============================================================================
@@ -1094,36 +943,22 @@ test_confirm_drop_step_failure_restores_savepoint() {
 # =============================================================================
 
 test_reject_returns_to_source() {
-  local P="$FIXTURE_DIR/reject_src_p"
-  local S="$FIXTURE_DIR/reject_src_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture reject_src 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   reject_run "$P" "$S" >/dev/null 2>&1
 
   local CURR
   CURR=$(_current_branch "$P")
-  if [[ "$CURR" == "main" ]]; then
-    pass "reject returns to source branch"
-  else
-    fail "expected main, got: $CURR"
-  fi
+  assert_eq "$CURR" "main" "reject returns to source branch"
 }
 
 test_reject_deletes_draft_branch() {
-  local P="$FIXTURE_DIR/reject_del_p"
-  local S="$FIXTURE_DIR/reject_del_s"
-  local EXPORT="$S/.workspace/session-diffs/20260420-120000-test-branch"
-  make_committed_repo "$P"
-  mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_draft_fixture reject_del 1
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   local DRAFT_BRANCH
-  DRAFT_BRANCH=$(git -C "$P" branch --list 'draft/*' | tr -d ' *' | head -1)
+  DRAFT_BRANCH=$(draft_branch "$P")
 
   reject_run "$P" "$S" >/dev/null 2>&1
 
@@ -1141,11 +976,7 @@ test_reject_rejects_non_draft() {
 
   local OUT
   OUT=$(reject_run "$P" "$S" 2>&1) || true
-  if [[ "$OUT" == *"not on a draft branch"* ]]; then
-    pass "reject rejects when not on a draft branch"
-  else
-    fail "did not reject non-draft: $OUT"
-  fi
+  assert_contains "$OUT" "not on a draft branch" "reject rejects when not on a draft branch"
 }
 
 # =============================================================================
@@ -1197,3 +1028,5 @@ run_test test_reject_deletes_draft_branch
 run_test test_reject_rejects_non_draft
 
 test_done
+
+
