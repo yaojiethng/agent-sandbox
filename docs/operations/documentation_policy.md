@@ -20,7 +20,7 @@ Each document belongs to **exactly one** of the following categories:
 | `development/` | Contributor workflow, policy, and active planning |
 | `adr/` | The rationale (the *why*) behind standing principles, interface shapes, and contracts. Superseded or awaiting-review ADRs live in `adr/archive/`. |
 
-Architecture documents must not describe things a frozen layer does not yet do. The layer model and freeze definitions are in [`system_overview.md`](../architecture/system_overview.md#architecture-layer-model); freeze status per file is tracked in [`project_index.md`](../development/project_index.md).
+Architecture documents must not describe things a frozen layer does not yet do. The layer model, the per-layer freeze status, and the freeze rule live in [`system_overview.md`](../architecture/system_overview.md#architecture-layer-model); `documentation_policy.md` applies them to document drafting.
 
 ---
 
@@ -234,7 +234,7 @@ Rules:
 
 - `**Status:**` is the first line after the title on all `story_` and `investigation_` documents. No preamble before it.
 - Superseded and resolved documents carry a blockquote redirect immediately after the status line, naming the target document.
-- Architecture, concepts, and policy documents carry no status line -- the freeze table in `project_index.md` governs them.
+- Architecture, concepts, and policy documents carry no status line -- the layer-freeze table in `system_overview.md` governs them.
 - ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md), not here.
 - Top-level sections use `##`; subsections use `###`. Use `####` only inside long task lists where grouping is genuinely needed -- not for general document structure.
 

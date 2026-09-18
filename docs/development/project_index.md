@@ -1,24 +1,10 @@
 # Project Index
 
-Stable registry of all documentation and policy files in agent-sandbox. Records freeze status, architecture layer assignment, and last milestone to touch each file. Use this when re-scoping tasks or checking whether a proposed change crosses an architecture layer boundary.
+Registry of documentation and policy files in agent-sandbox: temperature and last-milestone-touched per file. The architecture layer model and its freeze status live in [`system_overview.md`](../architecture/system_overview.md); layer-freeze rules in [`documentation_policy.md`](../operations/documentation_policy.md).
 
 The iteration-scoped hot file list lives in the active handover document (most recent `YYYYMMDD-NN-*.md` in `devlog/handovers/`).
 
 Update rules, trigger moments, and temperature definitions are in [Maintenance Rules](#maintenance-rules) at the bottom of this file.
-
----
-
-## Architecture Layers
-
-Layer names and responsibilities are defined in `docs/architecture/system_overview.md`.
-
-| Layer | Name | Status |
-|---|---|---|
-| 0 | Infrastructure | Frozen at M1 |
-| 1 | Execution Mechanics | Frozen at M1.2; changes expected in M1.5 and M2 |
-| 2 | Orchestration | Not started |
-
-Security Model and Human Workflow are design constraints and system invariants — they do not map to implementation layers and are not freeze-tracked here.
 
 ---
 
@@ -48,7 +34,7 @@ Temperature reflects the stability of what a document describes — not how care
 | `testing-conventions.md` | 🟡 Warm | M2.6 | Fixture patterns, anti-patterns, templates, checklists. Extracted from `testing_policy.md`. |
 | `testing_policy.md` | 🟡 Warm | M2.6 | Testing policy and rules. Mechanical content moved to `testing-conventions.md`. |
 | `host_requirements.md` | 🔴 Hot | M2.6 | Host tools and versions required per platform; enforced by `scripts/install.sh`. |
-| `project_index.md` | 🟡 Warm | M2.6 | This file. Updated when files are added, removed, or freeze status changes. |
+| `project_index.md` | 🟡 Warm | M2.6 | This file. Updated when files are added or removed, or temperature changes. |
 | `roadmap.md` | 🔴 Hot | M2.6 | Active milestone tasks and milestone summary table. |
 | `roadmap_future.md` | 🟡 Warm | M2.6 | Future milestone detail sections. |
 | `changelog.md` | 🟡 Warm | M2.6 | Completed milestone records. Append-only. |
@@ -220,7 +206,7 @@ One living file per standing principle; dated entries, current-on-top (see `adr_
 
 Two documents serve as the project's file registry. Each has a defined owner and update cadence. Neither is updated outside these moments.
 
-**`project_index.md`** is the complete registry. It records every document with its temperature, architecture layer assignment, and the last milestone to touch it (`Last touched in` column).
+**`project_index.md`** is the document registry. It records each document's temperature and the last milestone to touch it.
 
 **The active handover** is the iteration-scoped hot file list. The Hot files section of the handover is the only place the current iteration's file scope is recorded.
 
@@ -228,7 +214,6 @@ Two documents serve as the project's file registry. Each has a defined owner and
 
 **At major loop close:**
 - Add any new documents created during planning (stories, investigations, stubs) with temperature and last-touched milestone
-- Update the Architecture Layers table if freeze status has changed
 - Update temperature for any documents whose stability has changed
 - Only touched files get their `Last touched in` row updated — unchanged files are not updated
 

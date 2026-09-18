@@ -260,7 +260,7 @@ After Gate 3 is released, these steps are mechanical — the operator has alread
 
 ## Index Maintenance
 
-`project_index.md` is the complete registry. The active handover's Hot files section is the iteration-scoped list. Update rules, trigger moments, and temperature definitions are in [`project_index.md` — Maintenance Rules](../development/project_index.md#maintenance-rules).
+`project_index.md` is the document registry. The active handover's Hot files section is the iteration-scoped list. Update rules, trigger moments, and temperature definitions are in [`project_index.md` — Maintenance Rules](../development/project_index.md#maintenance-rules).
 
 ---
 

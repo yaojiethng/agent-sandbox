@@ -21,11 +21,11 @@ These guarantees hold across all agent runs. Defined authoritatively in [`securi
 
 The implementation stack has three layers with a strict bottom-up stabilization rule: lower layers must stabilize before higher layers evolve, and refactors are always bottom-up.
 
-| Layer | Name | Responsibility |
-|---|---|---|
-| 0 | Infrastructure | Docker runtime, filesystem, container environment |
-| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
-| 2 | Orchestration | Coordination between multiple agents |
+| Layer | Name | Responsibility | Freeze status |
+|---|---|---|---|
+| 0 | Infrastructure | Docker runtime, filesystem, container environment | Frozen at M1 |
+| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs | Frozen at M1.2; changes expected in M1.5 and M2 |
+| 2 | Orchestration | Coordination between multiple agents | Not started |
 
 Two elements frame the stack without belonging to it:
 
@@ -33,7 +33,7 @@ Two elements frame the stack without belonging to it:
 
 **Human Workflow** — the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
 
-Current layer freeze status is tracked in [`docs/development/project_index.md`](../development/project_index.md).
+The freeze status is layer-scoped (a whole layer freezes, never an individual file). `documentation_policy.md` applies it: architecture documents must not describe what a frozen layer does not yet do.
 
 ---
 

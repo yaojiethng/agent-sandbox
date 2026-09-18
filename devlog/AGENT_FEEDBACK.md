@@ -546,3 +546,5 @@ Usefulness assessment:
 Safe-removal answer: NOT safe as-is -- the freeze role must be preserved. Safe rescope: keep the file but slim it to the Architecture Layers + freeze table (the load-bearing part), drop or shrink the per-directory document tables, and repoint the handover/iteration-policy registry references at the docs tree. Alternatively move the freeze table into `system_overview.md` and delete the file, updating the three consumers.
 
 Operator decision requested on which direction (slim-to-freeze-only, or absorb-into-system_overview + delete).
+
+resolved: 2026-09-18 -- operator chose persistence, not removal: the freeze table (Status column) moved into `system_overview.md` at module scope (one freeze value per layer, not per file), `project_index.md` slimmed to the pure document registry, and the two `documentation_policy.md` freeze references repointed at `system_overview.md`. This entry stays open as the monitoring record for the further-evaluation question: whether the freeze table AND its associated policies (documentation-policy layer-freeze rule, project_index maintenance triggers) should be dropped entirely at some later point.
