@@ -77,6 +77,7 @@ test_fresh_onboard_env_has_required_keys() {
 
   local ENV_FILE="$SANDBOX_DIR/.env"
 
+  grep -q "^PROJECT_NAME=testproj$" "$ENV_FILE" || { fail ".env missing PROJECT_NAME"; return; }
   grep -q "^PROJECT_DIR=" "$ENV_FILE" || { fail ".env missing PROJECT_DIR"; return; }
   grep -q "^SANDBOX_DIR=" "$ENV_FILE" || { fail ".env missing SANDBOX_DIR"; return; }
   grep -q "^MAKEFILE_VERSION=" "$ENV_FILE" || { fail ".env missing MAKEFILE_VERSION"; return; }
@@ -85,6 +86,55 @@ test_fresh_onboard_env_has_required_keys() {
   grep -q "^AUTOSAVE_INTERVAL=" "$ENV_FILE" || { fail ".env missing AUTOSAVE_INTERVAL"; return; }
 
   pass ".env contains all required keys"
+}
+
+# ---------------------------------------------------------------------------
+# Test: the generated Makefile reads the identity from .env, not a baked literal
+# ---------------------------------------------------------------------------
+test_fresh_onboard_makefile_reads_name_from_env() {
+  local PROJECT_DIR="$FIXTURE_DIR/name_env_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/name_env_sandbox"
+
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  local MKB="$SANDBOX_DIR/Makefile"
+
+  if grep -q '^PROJECT_NAME := <project-name>' "$MKB"; then
+    fail "Makefile still bakes the <project-name> literal"
+    return
+  fi
+  if grep -q "^PROJECT_NAME := testproj" "$MKB"; then
+    fail "Makefile bakes the concrete project name"
+    return
+  fi
+  if grep -q -- "--name=\$(PROJECT_NAME)" "$MKB"; then
+    pass "Makefile reads PROJECT_NAME from .env, does not bake a literal"
+  else
+    fail "Makefile does not forward --name=\$(PROJECT_NAME)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: refresh inserts PROJECT_NAME into a pre-P1 (no-name) .env
+# ---------------------------------------------------------------------------
+test_refresh_migrates_project_name_into_env() {
+  local PROJECT_DIR="$FIXTURE_DIR/migrate_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/migrate_sandbox"
+
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  # Simulate a sandbox onboarded before PROJECT_NAME was stored in .env.
+  sed -i '/^PROJECT_NAME=/d' "$SANDBOX_DIR/.env"
+
+  echo y | bash "$ONBOARD_SCRIPT" --refresh \
+    --name="testproj" \
+    --sandbox="$SANDBOX_DIR" 2>&1
+
+  if grep -q "^PROJECT_NAME=testproj$" "$SANDBOX_DIR/.env"; then
+    pass "Refresh inserts PROJECT_NAME into a pre-P1 .env"
+  else
+    fail "Refresh did not insert PROJECT_NAME into .env"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -247,6 +297,8 @@ test_refresh_aborts_without_minimal_args() {
 # ---------------------------------------------------------------------------
 run_test test_fresh_onboard_creates_structure
 run_test test_fresh_onboard_env_has_required_keys
+run_test test_fresh_onboard_makefile_reads_name_from_env
+run_test test_refresh_migrates_project_name_into_env
 run_test test_fresh_onboard_creates_provider_configs
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
@@ -295,19 +347,37 @@ test_template_version_real_makefile_template_parses() {
   fi
 }
 
-# The shipped `stop:` target must forward --project so `make stop PRUNE=1`
-# (which requires --project for registry staleness) does not error. Other
-# commands in the template already pass it; this locks the stop target in.
-test_stop_target_forwards_project_dir() {
+# The thin CLI (S3): run targets pass `--env=$(ENV_FILE)` (the .env path next
+# to the Makefile) and carry no identity flags. `make stop PRUNE=1` still gets
+# its project for the registry rule, but resolved by the dispatcher from .env.
+# The `refresh:` target is the exception: it passes identity flags to `onboard
+# --refresh`, which is exempt from resolution.
+test_run_targets_are_thin() {
   local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
   local stop_block
   stop_block=$(sed -n '/^stop:/,/PRUNE_FLAG)/p' "$tpl")
 
-  if [[ "$stop_block" == *"--project=\$(PROJECT_DIR)"* \
-        && "$stop_block" == *"--sandbox=\$(SANDBOX_DIR)"* ]]; then
-    pass "make stop forwards --project and --sandbox"
+  if [[ "$stop_block" == *"--env=\$(ENV_FILE)"* \
+        && "$stop_block" != *"--project=\$(PROJECT_DIR)"* \
+        && "$stop_block" != *"--sandbox=\$(SANDBOX_DIR)"* \
+        && "$stop_block" != *"--name=\$(PROJECT_NAME)"* ]]; then
+    pass "make stop carries --env and no identity flags (thin CLI)"
   else
-    fail "make stop target missing --project/--sandbox:\n$stop_block"
+    fail "make stop target not thin:\n$stop_block"
+  fi
+}
+
+test_start_target_is_thin() {
+  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
+  local start_block
+  start_block=$(sed -n '/^start:/,/ENV_FILE)$/p' "$tpl")
+
+  if [[ "$start_block" == *"--env=\$(ENV_FILE)"* \
+        && "$start_block" != *"--project="* \
+        && "$start_block" != *"--sandbox="* ]]; then
+    pass "make start carries --env and no identity flags (thin CLI)"
+  else
+    fail "make start target not thin:\n$start_block"
   fi
 }
 
@@ -315,6 +385,7 @@ run_test test_refresh_aborts_without_minimal_args
 run_test test_template_version_reads_marker_line
 run_test test_template_version_absent_marker_is_empty_and_clean
 run_test test_template_version_real_makefile_template_parses
-run_test test_stop_target_forwards_project_dir
+run_test test_run_targets_are_thin
+run_test test_start_target_is_thin
 
 test_done "scripts/onboard.sh"

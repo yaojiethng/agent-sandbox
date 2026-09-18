@@ -234,11 +234,7 @@ main() {
       --age-days=*)      AGE_DAYS="${ARG#--age-days=}" ;;
       --interactive)     INTERACTIVE_FLAG=true ;;
       --dry-run)         DRY_RUN_FLAG=true ;;
-    esac
-  done
-  for ARG in "$@"; do
-    case "$ARG" in
-      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
+      --name=*|--project=*|--sandbox=*) ;;
     esac
   done
   check_base_flags

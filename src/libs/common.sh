@@ -9,15 +9,20 @@
 #
 # Sets in caller's scope:
 #   PROJECT_NAME  --  parsed from --name flag
+#   PROJECT_DIR   --  parsed from --project flag
 #   SANDBOX_DIR   --  parsed from --sandbox flag
 #
 # Provides:
-#   parse_base_flags()    --  parse --name and --sandbox from "$@"
+#   parse_base_flags()    --  parse --name, --project, --sandbox from "$@"
 #   check_base_flags()    --  validate PROJECT_NAME and SANDBOX_DIR are set
 #   parse_help_flag()     --  check for --help/-h, print usage and exit
 #
 # Scripts should define their own usage() before sourcing this file.
 
+# PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR are parsed here for the sourcing scripts
+# (stop.sh, prune.sh, resume_agent.sh) that read them in their own scope; none
+# is consumed inside this library.
+# shellcheck disable=SC2034
 # Max entries per page for numbered pickers (draft bundle select, resume
 # session select) and for the resume --list cap. Single canonical value; both
 # scripts/workflows/interactive.sh and scripts/resume_agent.sh read it from
@@ -56,10 +61,12 @@ parse_help_flag() {
 
 parse_base_flags() {
   PROJECT_NAME=""
+  PROJECT_DIR=""
   SANDBOX_DIR=""
   for _arg in "$@"; do
     case "$_arg" in
       --name=*)    PROJECT_NAME="${_arg#--name=}" ;;
+      --project=*) PROJECT_DIR="${_arg#--project=}" ;;
       --sandbox=*) SANDBOX_DIR="${_arg#--sandbox=}" ;;
     esac
   done

@@ -1,11 +1,11 @@
-# Makefile  --  <project-name>
-# agent-sandbox template version: 4
+# Makefile  --  agent-sandbox project Makefile
+# agent-sandbox template version: 5
 # Runs agent-sandbox against this project.
 # Requires agent-sandbox CLI installed on the host:
 #   make install  (from the agent-sandbox repo)
 #
-# PROJECT_DIR and SANDBOX_DIR are read from .env in the same directory as
-# this Makefile. Both are written by: agent-sandbox onboard
+# PROJECT_NAME, PROJECT_DIR and SANDBOX_DIR are read from .env in the same
+# directory as this Makefile. All are written by: agent-sandbox onboard
 #
 # If .env is missing, run:
 #   agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
@@ -72,10 +72,17 @@
 -include .env
 export
 
-PROJECT_NAME := <project-name>
+PROJECT_NAME ?= $(error PROJECT_NAME not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>)
 PROJECT_DIR  ?= $(error PROJECT_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 SANDBOX_DIR  ?= $(error SANDBOX_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-ENV_FILE     := .env
+# The .env is written by onboard next to the Makefile. Under the make -C
+# contract (how the workflow is invoked: `make -C <sandbox> <target>`),
+# $(CURDIR) is the sandbox directory that holds the Makefile and the .env, so
+# ENV_FILE resolves to the per-sandbox .env. $(CURDIR) is portable to both GNU
+# and BSD make. Identity (name, project, sandbox) is no longer passed per
+# target: the CLI resolves it from this .env (--env), the AGENT_SANDBOX_* env
+# level, or the invocation CWD.
+ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
 REFRESH      ?=
 REBUILD      ?=
@@ -176,9 +183,7 @@ build:
 	agent-sandbox build \
 	  $(TARGET_FLAG) \
 	  $(REBUILD_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --env=$(ENV_FILE)
 
 # -------------------------
 # Run
@@ -193,9 +198,6 @@ start:
 	  $(INTERACTIVE_FLAG) \
 	  $(DELIVERY_FLAG) \
 	  $(FLATTEN_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
 	  --env=$(ENV_FILE)
 
 dry-run:
@@ -204,9 +206,6 @@ dry-run:
 	  $(if $(FAST),--fast,) \
 	  $(DELIVERY_FLAG) \
 	  $(FLATTEN_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
 	  --env=$(ENV_FILE)
 
 # -------------------------
@@ -215,9 +214,7 @@ dry-run:
 
 stop:
 	agent-sandbox stop \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(SESSION_ID_FLAG) \
 	  $(PRUNE_FLAG)
 
@@ -236,9 +233,7 @@ stop:
 
 resume:
 	agent-sandbox resume \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(RESUME_LIST_FLAG) \
 	  $(RESUME_INTERACTIVE_FLAG) \
 	  $(RESUME_PROVIDER_FLAG) \
@@ -260,9 +255,7 @@ resume:
 
 prune:
 	agent-sandbox prune \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(STALE_FLAG) \
 	  $(AGE_DAYS_FLAG) \
 	  $(PROVIDER_FLAG) \
@@ -306,8 +299,7 @@ DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
 draft:
 	agent-sandbox draft \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  --channel=$(DRAFT_CHANNEL) \
 	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
 	  $(if $(INTERACTIVE),--interactive,) \
@@ -319,19 +311,16 @@ draft:
 
 confirm:
 	agent-sandbox confirm \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),)
 
 reject:
 	agent-sandbox reject \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --env=$(ENV_FILE)
 
 apply:
 	agent-sandbox apply \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(INTERACTIVE),--interactive,) \
@@ -350,7 +339,7 @@ apply:
 
 package-branch:
 	agent-sandbox package-branch \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(if $(BUNDLE_SUMMARY),--bundle-summary=$(BUNDLE_SUMMARY),) \
 	  $(if $(BASELINE),--baseline=$(BASELINE),) \
 	  $(if $(NO_RENAMES),--no-renames,)

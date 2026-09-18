@@ -15,6 +15,10 @@
 # Host-side prelude (paths, image names, .env, branch, delivery, uid/gid) is
 # shared with start_agent.sh via src/libs/session_env.sh.
 
+# ENV_REL is parsed here and read by the sourced session_env_common_init to
+# set ENV_FILE (same consumer as start_agent.sh); shellcheck cannot follow the
+# sourced scope, so the variable appears unused in this file.
+# shellcheck disable=SC2034
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -60,9 +64,9 @@ RESUME_LIST=false
 SESSION_ID_ARG=""
 INTERACTIVE_FLAG=false
 PROVIDER_FILTER=""
-PROJECT_NAME=""
-PROJECT_DIR=""
-SANDBOX_DIR=""
+ENV_REL=""
+
+parse_base_flags "$@"
 
 for ARG in "$@"; do
   case "$ARG" in
@@ -70,12 +74,10 @@ for ARG in "$@"; do
     --session-id=*)     SESSION_ID_ARG="${ARG#--session-id=}" ;;
     --interactive)      INTERACTIVE_FLAG=true ;;
     --provider=*)       PROVIDER_FILTER="${ARG#--provider=}" ;;
-    --name=*)           PROJECT_NAME="${ARG#--name=}" ;;
-    --project=*)        PROJECT_DIR="${ARG#--project=}" ;;
-    --sandbox=*)        SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    # Accepted for CLI parity; ignored -- resume reads ENV_FILE from the
-    # session record, not from the flag.
-    --env=*)            : ;;
+    --name=*|--project=*|--sandbox=*) ;;
+    # --env is honored (absolute path or sandbox-relative name, mirroring
+    # start) so a custom .env named at start can be loaded at resume too.
+    --env=*)            ENV_REL="${ARG#--env=}" ;;
     -h|--help)          usage; exit 0 ;;
     *)                  echo "Unknown flag: $ARG" >&2; usage >&2; exit 1 ;;
   esac
@@ -354,8 +356,9 @@ if [[ -z "$SESSION_ID_ARG" ]]; then
   exit 1
 fi
 
-if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-  echo "Error: --name, --project, and --sandbox are required (via agent-sandbox resume or make resume)." >&2
+if [[ -z "$SANDBOX_DIR" ]]; then
+  echo "Error: --sandbox is required (via agent-sandbox resume or make resume)." >&2
+  echo "  --name and --project are resolved from .env in the sandbox dir when omitted." >&2
   usage >&2
   exit 1
 fi

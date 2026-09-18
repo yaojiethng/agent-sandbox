@@ -60,6 +60,8 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 `devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
 
+- [ ] **Subagent progress visibility (scoped for M3)** — provide internal visibility into a running subagent session (is it progressing, blocked, or stalled on network/provider) so the main agent can triage an interrupted `pi -p` review instead of losing the run. Surfaced from session `20260918`: a review round was lost to network loss with no way to see whether it had progressed before the flush; the midway session had to be recovered by reading the raw session transcript. No solution in mind yet — candidate directions include a subagent heartbeat/status channel, progress markers in the transcript, or a resume-on-interrupt with continuation; design is deferred to M3. Contrast the `team.ts`-style orchestration seams under M4 in the Multi-Agent Coordination section.
+
 ---
 
 ## Multi-Agent Coordination

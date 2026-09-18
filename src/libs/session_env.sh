@@ -9,34 +9,44 @@
 #
 # Provides:
 #   session_env_common_init <sandbox_dir> <project_name> <project_dir>
-#     Phase 1  --  no SESSION_ID needed. Loads the sandbox .env, validates the
-#     git repo, derives harness paths via dirs_resolve, exports host uid/gid.
+#     Phase 1  --  no SESSION_ID needed. Resolves the identity triple
+#     (explicit > AGENT_SANDBOX_* > .env > error), loads the sandbox .env,
+#     validates the git repo, derives harness paths via dirs_resolve, and
+#     exports host uid/gid. The resolved identity beats a conflicting .env
+#     (flag-wins precedence, S2 of the env-precedence feature).
 #   session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
 #     Phase 2  --  needs SESSION_ID. Derives image/container names, the sanitised
 #     host branch, and delivery vars.
-#
-# Sourced by the host-side session entrypoints (start_agent.sh, resume_agent.sh).
-# Both functions export into the caller's scope for run_agent.sh and compose.
 
 _self_session_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 source "$_self_session_dir/build/image.sh"
+source "$_self_session_dir/libs/env.sh"
+source "$_self_session_dir/libs/env_resolve.sh"
 source "$_self_session_dir/libs/dirs.sh"
 
 # session_env_common_init <sandbox_dir> <project_name> <project_dir>
-#   Phase 1 (no SESSION_ID needed): loads .env, validates git, derives harness
-#   paths via dirs_resolve, exports host uid/gid. Called by start_agent.sh before
-#   identity is computed and by resume_agent.sh after it recovers the record.
+#   Phase 1 (no SESSION_ID needed): resolves the identity triple
+#   (explicit > AGENT_SANDBOX_* > .env > error), loads .env, validates git,
+#   derives harness paths via dirs_resolve, exports host uid/gid. The explicit
+#   identity wins over a conflicting .env value (flag-wins). Args may be empty
+#   so the resolver falls back to the AGENT_SANDBOX_* env level then the .env.
 session_env_common_init() {
-  local sandbox_dir="${1:?session_env_common_init requires sandbox_dir}"
-  local project_name="${2:?session_env_common_init requires project_name}"
-  local project_dir="${3:?session_env_common_init requires project_dir}"
+  local arg_sandbox="$1" arg_name="$2" arg_dir="$3"
 
-  export PROJECT_NAME="$project_name"
-  export PROJECT_DIR="$project_dir"
+  # env_resolve_identity exports the resolved PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR.
+  env_resolve_identity "$arg_name" "$arg_dir" "$arg_sandbox" || return 1
+  local project_name="$PROJECT_NAME" project_dir="$PROJECT_DIR" sandbox_dir="$SANDBOX_DIR"
 
-  # .env loading
-  ENV_FILE="$sandbox_dir/${ENV_REL:-.env}"
+  # .env loading. --env is absolute (a path) or relative (sandbox-relative):
+  # the Makefile passes --env=$(CURDIR)/.env (absolute); the retained leaf
+  # contract is a name relative to the sandbox dir. The dispatcher forwards the
+  # --env value to start/dry-run so a custom .env's runtime values reach the run.
+  if [[ "${ENV_REL:-}" == /* ]]; then
+    ENV_FILE="$ENV_REL"
+  else
+    ENV_FILE="$sandbox_dir/${ENV_REL:-.env}"
+  fi
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: .env not found: $ENV_FILE" >&2
     echo "  SANDBOX_DIR has not been onboarded. Run:" >&2
@@ -44,22 +54,15 @@ session_env_common_init() {
     return 1
   fi
 
-  # Source only simple KEY=VALUE lines; skip comments, blanks, and lines
-  # whose key is not a valid shell identifier.
-  while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
-    KEY="${KEY//[$'\r\n\t ']/}"
-    VALUE="${VALUE//[$'\r\n']/}"
-    VALUE="${VALUE#"${VALUE%%[! ]*}"}"
-    VALUE="${VALUE%"${VALUE##*[! ]}"}"
-    [[ -z "$KEY" || "$KEY" =~ ^#.*$ ]] && continue
-    if [[ ! "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-      echo "Warning: skipping .env line with invalid variable name '$KEY' in $ENV_FILE" >&2
-      continue
-    fi
-    export "$KEY=$VALUE"
-  done < "$ENV_FILE"
+  env_load "$ENV_FILE"
 
-  # Git validation
+  # The resolved identity wins over .env (flag-wins precedence, S2): re-assert
+  # it so a conflicting .env value cannot shadow explicit input.
+  export PROJECT_NAME="$project_name"
+  export PROJECT_DIR="$project_dir"
+  export SANDBOX_DIR="$sandbox_dir"
+
+  # Git validation uses the resolved project dir.
   if [[ ! -d "$project_dir/.git" ]]; then
     echo "Error: PROJECT_DIR is not a git repository: $project_dir" >&2
     return 1

@@ -7,16 +7,27 @@
 #
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox build    [--targets=<targets>] --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox start    [--serve] --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--fast] [flags]
-#   agent-sandbox stop     --name=<n> --sandbox=<path> [--project=<path>]
-#   agent-sandbox prune    --name=<n> --project=<path> --sandbox=<path> [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
+#   agent-sandbox build    [--targets=<targets>] [identity] [--env=<path>]
+#   agent-sandbox start    [--serve] --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [flags]
+#   agent-sandbox dry-run  --provider=<n> [identity] [--env=<path>] [--fast] [flags]
+#   agent-sandbox resume   [identity] [--env=<path>] [--session-id=<id>] [--list] [--interactive]
+#   agent-sandbox stop     [identity] [--env=<path>] [--session-id=<id>] [--prune]
+#   agent-sandbox prune    [identity] [--env=<path>] [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
 #   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]
+#
+# --env=<path> is an absolute path or a name relative to the sandbox dir; it sets
+# the per-sandbox .env used for both identity resolution and the run's env load.
+#
+# identity = [--name=<n>] [--project=<path>] [--sandbox=<path>]. Every command
+# keeps a hard identity requirement, but it need not be passed per invocation:
+# each missing field resolves from the AGENT_SANDBOX_<KEY> env level, then the
+# per-sandbox .env located via --env (else <sandbox>/.env, else the invocation
+# CWD). onboard is the exception: it creates the .env and requires
+# --name/--project/--sandbox. The sandbox Makefile passes --env=$(ENV_FILE).
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --targets=all
@@ -60,6 +71,7 @@ main() {
   local PROJECT_NAME=""
   local PROJECT_DIR=""
   local SANDBOX_DIR=""
+  local ENV_PATH=""
   local -a PASSTHROUGH=()
 
   parse_flags() {
@@ -68,6 +80,7 @@ main() {
         --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
         --project=*) PROJECT_DIR="${ARG#--project=}" ;;
         --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
+        --env=*)     ENV_PATH="${ARG#--env=}" ;;
         *)           PASSTHROUGH+=("$ARG") ;;
       esac
     done
@@ -80,19 +93,55 @@ main() {
     fi
   }
 
-  require_project_sandbox() {
-    if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --project and --sandbox are required"
-      exit 1
-    fi
-  }
-
-  # Resume's inventory modes (--list / --interactive) need only --sandbox; the
-  # leaf (resume_agent.sh) enforces --name/--project on the actual resume path.
-  require_sandbox() {
-    if [[ -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --sandbox is required (resume --list/--interactive; resume requires --name/--project too)"
-      exit 1
+  # resolve_identity [name dir sandbox]  --  thin-interface seam.
+  #
+  # Fills missing identity fields instead of demanding flags per invocation:
+  # for each requested field, explicit flag > AGENT_SANDBOX_<KEY> env var > the
+  # per-sandbox .env (--env path, else <sandbox>/.env, else the invocation CWD).
+  # onboard is exempt (it creates the .env). Every command keeps its hard
+  # identity requirement: an unresolvable field is a loud error, not a default.
+  resolve_identity() {
+    local need_name=false need_dir=false need_sandbox=false _r
+    local missing=false
+    for _r in "$@"; do
+      case "$_r" in
+        name)    need_name=true ;;
+        dir)     need_dir=true ;;
+        sandbox) need_sandbox=true ;;
+      esac
+    done
+    if $need_name && [[ -z "$PROJECT_NAME" ]]; then missing=true; fi
+    if $need_dir && [[ -z "$PROJECT_DIR" ]]; then missing=true; fi
+    if $need_sandbox && [[ -z "$SANDBOX_DIR" ]]; then missing=true; fi
+    if $missing; then
+      # shellcheck disable=SC1090
+      source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
+      local ep="$ENV_PATH"
+      if $need_sandbox && [[ -z "$SANDBOX_DIR" ]]; then
+        # A relative --env has no sandbox anchor yet: read SANDBOX from the CWD
+        # .env fallback so the sandbox-relative contract can apply afterwards.
+        local sbx_file="$ep"
+        if [[ -n "$sbx_file" && "$sbx_file" != /* ]]; then
+          sbx_file="$(default_env_file "")"
+        fi
+        SANDBOX_DIR="$(env_resolve_value "" AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$sbx_file")" \
+          || { echo "Error: --sandbox not set and unresolvable (AGENT_SANDBOX_SANDBOX_DIR, or .env via --env/CWD). Run: agent-sandbox onboard --sandbox=<path>" >&2; exit 1; }
+      fi
+      # --env contract: absolute -> the path; relative -> a name relative to the
+      # sandbox dir; empty -> <sandbox>/.env. One meaning across resolver and leaf.
+      if [[ -z "$ep" ]]; then
+        ep="$(default_env_file "$SANDBOX_DIR")"
+      elif [[ "$ep" != /* ]]; then
+        ep="$SANDBOX_DIR/$ep"
+      fi
+      if $need_dir && [[ -z "$PROJECT_DIR" ]]; then
+        PROJECT_DIR="$(env_resolve_value "" AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep")" \
+          || { echo "Error: --project not set and unresolvable (AGENT_SANDBOX_PROJECT_DIR or .env). Run: agent-sandbox onboard --project=<path>" >&2; exit 1; }
+      fi
+      if $need_name && [[ -z "$PROJECT_NAME" ]]; then
+        PROJECT_NAME="$(env_resolve_value "" AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep")" \
+          || { echo "Error: --name not set and unresolvable (AGENT_SANDBOX_PROJECT_NAME or .env). Run: agent-sandbox onboard --name=<name>" >&2; exit 1; }
+      fi
     fi
   }
 
@@ -161,7 +210,7 @@ main() {
       ;;
 
     build)
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/build.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
@@ -170,44 +219,47 @@ main() {
       ;;
 
     start)
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/start_agent.sh" standard \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_PATH" \
         "${PASSTHROUGH[@]}"
       ;;
 
     dry-run)
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/start_agent.sh" dry-run \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_PATH" \
         "${PASSTHROUGH[@]}"
       ;;
 
     stop)
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --project="$PROJECT_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     resume)
-      require_sandbox
+      resolve_identity sandbox
       exec bash "$SCRIPTS/resume_agent.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_PATH" \
         "${PASSTHROUGH[@]}"
       ;;
 
     prune)
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     apply)
-      require_project_sandbox
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -215,7 +267,7 @@ main() {
       ;;
 
     draft)
-      require_project_sandbox
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -223,7 +275,7 @@ main() {
       ;;
 
     confirm)
-      require_project_sandbox
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -231,7 +283,7 @@ main() {
       ;;
 
     reject)
-      require_project_sandbox
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -239,11 +291,9 @@ main() {
       ;;
 
     package-branch)
-      if [[ -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --sandbox is required"
-        exit 1
-      fi
+      resolve_identity sandbox
       exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" \
+        --sandbox="$SANDBOX_DIR" \
         "${PASSTHROUGH[@]}"
       ;;
 

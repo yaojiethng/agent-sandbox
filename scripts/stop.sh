@@ -44,11 +44,10 @@ PROJECT_DIR=""
 parse_help_flag "$@"
 parse_base_flags "$@"
 
-# Parse stop-specific flags (after --name and --sandbox are consumed)
+# Parse stop-specific flags (identity already consumed by parse_base_flags)
 for ARG in "$@"; do
   case "$ARG" in
-    --name=*|--sandbox=*) ;;
-    --project=*)       PROJECT_DIR="${ARG#--project=}" ;;
+    --name=*|--project=*|--sandbox=*) ;;
     --session-id=*)  SESSION_ID="${ARG#--session-id=}" ;;
     --prune)     PRUNE=true ;;
     *)

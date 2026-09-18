@@ -6,9 +6,9 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 
 | Primitive | Derivation | Scope | Purpose |
 |---|---|---|---|
-| `PROJECT_NAME` | User-provided at `onboard` | Host | Human-readable project identifier. Used in container names, image names, labels. |
-| `PROJECT_DIR` | User-provided at `onboard` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
-| `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`) | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
+| `PROJECT_NAME` | User-provided at `onboard`; stored in the sandbox `.env` | Host | Human-readable project identifier. Used in container names, image names, labels. |
+| `PROJECT_DIR` | User-provided at `onboard`; stored in the sandbox `.env` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
+| `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`); stored in the sandbox `.env` | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
 | `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On copy-mode resume, read from the volume label; on mount-mode resume, from the registry record. |
 | `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` at first start | Session run | Human-readable session timestamp. On resume, read from the volume label / registry record to ensure consistency with the volume's SESSION_STATE. |
 
@@ -144,6 +144,10 @@ session_id=<6-char session run ID>
 | Package-branch output | `output/bundles/<EXPORT_TIME>-[<LABEL>-]<SESSION_ID>/` | On explicit branch packaging; optional human-readable label |
 
 Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides unique addressing; a fresh export-time timestamp (`EXPORT_TIME`) orders exports. `SESSION_TS` is not part of artefact directory names — it is carried in Docker labels for human readability.
+
+## Resolution Precedence
+
+The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: [env_resolution.md](../adr/env_resolution.md).
 
 ## Where Primitives Are Consumed
 

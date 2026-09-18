@@ -11,7 +11,8 @@
 #                             keys, space-trimmed values, whitespace-only-key and
 #                             invalid-identifier lines skipped), missing-.env
 #                             failure, non-git and commit-less project rejection,
-#                             HOST_UID/GID + ENV_FILE exports
+#                             HOST_UID/GID + ENV_FILE exports, and the
+#                             explicit-identity-beats-.env precedence pin (flag-wins)
 #   session_env_names        --  branch sanitisation, detached-HEAD fallback,
 #                             deterministic image/container naming, delivery
 #                             var defaults vs preserved overrides
@@ -204,6 +205,137 @@ test_common_init_exports_identity_and_paths() {
   fi
 }
 
+test_env_project_name_explicit_arg_beats_env_and_envvar() {
+  # PIN (S2 flip): the explicit name argument beats both a conflicting
+  # PROJECT_NAME in .env and a conflicting AGENT_SANDBOX_PROJECT_NAME env var.
+  local SBX="$FIXTURE_DIR/sbx_name_wins" PROJ="$FIXTURE_DIR/proj_name_wins"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_NAME=envname\n' > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
+        session_env_common_init "$SBX" explicitName "$PROJ" 2>&1 </dev/null \
+        && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "explicitName|" ]]; then
+    pass "explicit name argument beats .env and AGENT_SANDBOX_PROJECT_NAME (flag-wins)"
+  else
+    fail "expected explicit name to win, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_project_dir_explicit_arg_beats_env() {
+  # PIN (S2 flip): the explicit directory argument beats a conflicting
+  # PROJECT_DIR in .env, while git validation still reads the explicit repo arg.
+  local SBX="$FIXTURE_DIR/sbx_dir_wins" PROJ="$FIXTURE_DIR/proj_dir_wins"
+  local ENVDIR="$FIXTURE_DIR/env_dir_loser"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_DIR=%s\n' "$ENVDIR" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; session_env_common_init "$SBX" proj "$PROJ" 2>&1 </dev/null \
+        && printf '%s|' "${PROJECT_DIR:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "$PROJ|" ]]; then
+    pass "explicit directory argument beats a conflicting .env PROJECT_DIR (flag-wins)"
+  else
+    fail "expected explicit dir to win, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_identity_explicit_args_beat_env() {
+  # PIN (S2 flip): a .env declaring BOTH identity keys cannot shadow BOTH
+  # explicit arguments in one call.
+  local SBX="$FIXTURE_DIR/sbx_id_wins" PROJ="$FIXTURE_DIR/proj_id_wins"
+  local ENVDIR="$FIXTURE_DIR/env_id_loser"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$ENVDIR" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; session_env_common_init "$SBX" explicitName "$PROJ" 2>&1 </dev/null \
+        && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "explicitName|$PROJ" ]]; then
+    pass "explicit name+dir both beat a conflicting .env identity (flag-wins)"
+  else
+    fail "expected explicit identity to win, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_resolves_identity_from_env_when_args_empty() {
+  # SANDBOX given, no name/dir args: the resolver falls to .env for them.
+  local SBX="$FIXTURE_DIR/sbx_env_fb" PROJ="$FIXTURE_DIR/proj_env_fb"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$PROJ" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "envname|$PROJ" ]]; then
+    pass "empty name/dir args resolve from .env in the sandbox dir"
+  else
+    fail ".env fallback broken, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_ag_sandbox_envvar_beats_env() {
+  # No explicit name; AGENT_SANDBOX_PROJECT_NAME beats the .env value.
+  local SBX="$FIXTURE_DIR/sbx_envvar" PROJ="$FIXTURE_DIR/proj_envvar"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\n' "$PROJ" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
+        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "envvar|" ]]; then
+    pass "AGENT_SANDBOX_PROJECT_NAME beats .env when no explicit name"
+  else
+    fail "envvar level broken, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_resolves_with_absolute_env_pointer() {
+  # An absolute --env pointer (the Makefile's $(CURDIR)/.env) is honored for
+  # both identity resolution and the run's env load when name/dir are omitted.
+  local SBX="$FIXTURE_DIR/sbx_abs" PROJ="$FIXTURE_DIR/proj_abs"
+  local ENVDIR="$FIXTURE_DIR/env_abs_dir"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  mkdir -p "$ENVDIR"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$SBX" > "$ENVDIR/custom.env"
+
+  local OUT RC=0
+  OUT=$(set -e; ENV_REL="$ENVDIR/custom.env" \
+        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "envname|$ENVDIR/custom.env" ]]; then
+    pass "absolute --env pointer resolves identity and loads the named file"
+  else
+    fail "absolute --env broken, rc=$RC out='$OUT'"
+  fi
+}
+
+test_env_resolves_with_relative_env_pointer() {
+  # A relative --env name is sandbox-relative for both resolution and load.
+  local SBX="$FIXTURE_DIR/sbx_rel" PROJ="$FIXTURE_DIR/proj_rel"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$SBX" > "$SBX/custom.env"
+
+  local OUT RC=0
+  OUT=$(set -e; ENV_REL=custom.env \
+        session_env_common_init "$SBX" "" "" 2>&1 </dev/null \
+        && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "envname|$SBX/custom.env" ]]; then
+    pass "relative --env name resolves identity and loads <sandbox>/<name>"
+  else
+    fail "relative --env broken, rc=$RC out='$OUT'"
+  fi
+}
+
 # =============================================================================
 # session_env_names
 # =============================================================================
@@ -300,6 +432,13 @@ run_test test_env_invalid_identifier_key_skipped_with_warning
 run_test test_common_init_rejects_non_git_project
 run_test test_common_init_rejects_commitless_repo
 run_test test_common_init_exports_identity_and_paths
+run_test test_env_project_name_explicit_arg_beats_env_and_envvar
+run_test test_env_project_dir_explicit_arg_beats_env
+run_test test_env_identity_explicit_args_beat_env
+run_test test_env_resolves_identity_from_env_when_args_empty
+run_test test_env_ag_sandbox_envvar_beats_env
+run_test test_env_resolves_with_absolute_env_pointer
+run_test test_env_resolves_with_relative_env_pointer
 run_test test_names_sanitises_host_branch
 run_test test_names_detached_head_falls_back_to_short_sha
 run_test test_names_deterministic_container_and_image_names

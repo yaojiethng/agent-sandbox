@@ -56,13 +56,18 @@ test_help_flag_not_triggered() {
 # ---------------------------------------------------------------------------
 
 test_parse_base_flags_sets_vars() {
-  PROJECT_NAME="" SANDBOX_DIR=""
-  parse_base_flags --name=my-project --sandbox=/tmp/mysandbox --unknown-flag
+  PROJECT_NAME="" PROJECT_DIR="" SANDBOX_DIR=""
+  parse_base_flags --name=my-project --project=/tmp/myproj --sandbox=/tmp/mysandbox --unknown-flag
 
   if [[ "$PROJECT_NAME" == "my-project" ]]; then
     pass "parse_base_flags sets PROJECT_NAME from --name="
   else
     fail "parse_base_flags: expected PROJECT_NAME=my-project, got $PROJECT_NAME"
+  fi
+  if [[ "$PROJECT_DIR" == "/tmp/myproj" ]]; then
+    pass "parse_base_flags sets PROJECT_DIR from --project="
+  else
+    fail "parse_base_flags: expected PROJECT_DIR=/tmp/myproj, got $PROJECT_DIR"
   fi
   if [[ "$SANDBOX_DIR" == "/tmp/mysandbox" ]]; then
     pass "parse_base_flags sets SANDBOX_DIR from --sandbox="
@@ -72,13 +77,18 @@ test_parse_base_flags_sets_vars() {
 }
 
 test_parse_base_flags_defaults_empty() {
-  PROJECT_NAME="x" SANDBOX_DIR="y"
+  PROJECT_NAME="x" PROJECT_DIR="y" SANDBOX_DIR="z"
   parse_base_flags --other-flag
 
   if [[ -z "$PROJECT_NAME" ]]; then
     pass "parse_base_flags leaves PROJECT_NAME empty when --name= absent"
   else
     fail "parse_base_flags should leave PROJECT_NAME empty, got $PROJECT_NAME"
+  fi
+  if [[ -z "$PROJECT_DIR" ]]; then
+    pass "parse_base_flags leaves PROJECT_DIR empty when --project= absent"
+  else
+    fail "parse_base_flags should leave PROJECT_DIR empty, got $PROJECT_DIR"
   fi
   if [[ -z "$SANDBOX_DIR" ]]; then
     pass "parse_base_flags leaves SANDBOX_DIR empty when --sandbox= absent"

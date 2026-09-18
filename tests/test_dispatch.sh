@@ -107,6 +107,12 @@ source_harness() {
   # Temp-rendered harness copy; path is generated per run.
   # shellcheck disable=SC1090
   source "$resolved"
+  # The dispatcher self-locates AGENT_SANDBOX_REPO from its source path, which is
+  # a temp file here; repoint it at the real repo so resolve_identity can source
+  # the real env_resolve.sh when identity flags are absent. Consumed by the
+  # sourced dispatcher functions, not by this test file directly.
+  # shellcheck disable=SC2034
+  AGENT_SANDBOX_REPO="$REPO_ROOT"
   rm -f "$resolved"
 }
 
@@ -123,6 +129,15 @@ dispatch_and_capture() {
       CAPTURED+=("${line#capture: }")
     fi
   done <<< "$stdout"
+}
+
+# make_envfile DIR  --  a .env naming all three identity keys into DIR, so
+# tests can inject a .env and let the dispatcher resolve identity from it via
+# --env, exactly as a real `make build` would.
+make_envfile() {
+  local dir="$1"
+  mkdir -p "$dir"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=/tmp/envproj\nSANDBOX_DIR=%s\n' "$dir" > "$dir/.env"
 }
 
 # =============================================================================
@@ -142,6 +157,55 @@ test_build_default_all() {
     pass "build (default): execs build.sh"
   else
     fail "build (default): expected exec build.sh, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_build_resolves_identity_from_env_file() {
+  # Thin CLI: build with only --env (<sandbox>/.env path) and no identity flags
+  # must resolve name/project/sandbox from that .env and forward them.
+  setup
+  local ENVDIR="$FIXTURE_DIR/dispatch_env"
+  make_envfile "$ENVDIR"
+
+  dispatch_and_capture build --env="$ENVDIR/.env"
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"build.sh"* ]] \
+      && [[ "$c" == *"--name=envname"* ]] \
+      && [[ "$c" == *"--project=/tmp/envproj"* ]] \
+      && [[ "$c" == *"--sandbox=$ENVDIR"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "build resolves identity from --env (.env path) when no identity flags are given"
+  else
+    fail "build --env resolution not forwarded: ${CAPTURED[*]}"
+  fi
+}
+
+test_build_resolves_identity_from_relative_env() {
+  # Relative --env is a name relative to the sandbox dir (one contract across
+  # resolver and leaf). build with --sandbox given and --env=custom.env resolves
+  # name/dir from that relative file.
+  setup
+  local SBX="$FIXTURE_DIR/rel_env_sbx"
+  mkdir -p "$SBX"
+  printf 'PROJECT_NAME=relname\nPROJECT_DIR=/tmp/relproj\nSANDBOX_DIR=%s\n' "$SBX" > "$SBX/custom.env"
+
+  dispatch_and_capture build --sandbox="$SBX" --env=custom.env
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"build.sh"* ]] \
+      && [[ "$c" == *"--name=relname"* ]] \
+      && [[ "$c" == *"--project=/tmp/relproj"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "build resolves identity from a sandbox-relative --env name"
+  else
+    fail "build relative --env not resolved sandbox-relative: ${CAPTURED[*]}"
   fi
 }
 
@@ -194,6 +258,57 @@ test_start_default() {
     pass "start: calls start_agent.sh in standard mode"
   else
     fail "start: expected exec bash start_agent.sh standard, got: ${CAPTURED[*]}"
+  fi
+}
+
+test_start_forwards_env_to_leaf() {
+  # The dispatcher consumes --env to resolve identity but must ALSO forward it
+  # to start_agent.sh so a custom .env's runtime values reach the run (a
+  # silently-dropped flag would rot the contract).
+  setup
+  local ENVDIR="$FIXTURE_DIR/dispatch_env_leaf"
+  make_envfile "$ENVDIR"
+
+  dispatch_and_capture start --env="$ENVDIR/.env" --provider=hermes
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"start_agent.sh"* ]] \
+      && [[ "$c" == *"--name=envname"* ]] \
+      && [[ "$c" == *"--project=/tmp/envproj"* ]] \
+      && [[ "$c" == *"--sandbox=$ENVDIR"* ]] \
+      && [[ "$c" == *"--env=$ENVDIR/.env"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "start: resolves identity from --env and forwards --env to the leaf"
+  else
+    fail "start --env not resolved+forwarded: ${CAPTURED[*]}"
+  fi
+}
+
+test_resume_sandbox_and_env_forwarded() {
+  # resume with only --env (no --sandbox): the dispatcher resolves SANDBOX_DIR
+  # from the named .env and forwards both it and --env to the leaf, mirroring
+  # the start contract so a custom.env session can be resumed with the same
+  # pointer.
+  setup
+  local ENVDIR="$FIXTURE_DIR/dispatch_env_resume"
+  make_envfile "$ENVDIR"
+
+  dispatch_and_capture resume --env="$ENVDIR/.env" --list
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"resume_agent.sh"* ]] \
+      && [[ "$c" == *"--sandbox=$ENVDIR"* ]] \
+      && [[ "$c" == *"--env=$ENVDIR/.env"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "resume: resolves sandbox from --env and forwards --env to the leaf"
+  else
+    fail "resume --env not resolved+forwarded: ${CAPTURED[*]}"
   fi
 }
 
@@ -694,13 +809,14 @@ test_package_branch() {
 
   local found=false
   for c in "${CAPTURED[@]}"; do
-    [[ "$c" == "exec"*"package_branch.sh"* ]] && found=true
+    [[ "$c" == "exec"*"package_branch.sh"* ]] \
+      && [[ "$c" == *"--sandbox=/tmp/s"* ]] && found=true
   done
 
   if [[ "$found" == true ]]; then
-    pass "package-branch: execs package_branch.sh"
+    pass "package-branch: execs package_branch.sh with --sandbox forwarded"
   else
-    fail "package-branch: expected exec package_branch.sh, got: ${CAPTURED[*]}"
+    fail "package-branch: expected exec package_branch.sh with --sandbox, got: ${CAPTURED[*]}"
   fi
 }
 
@@ -735,13 +851,18 @@ test_missing_subcommand() {
 test_build_missing_args() {
   setup
   local output
-  output=$(main build 2>&1) || true
+  # Resolve from an empty fixture dir so the CWD .env fallback cannot silently
+  # satisfy the identity (the unresolvable-error path must stay honest even if
+  # the suite ever runs from a directory that contains a .env).
+  output=$( ( cd "$FIXTURE_DIR" && main build ) 2>&1) || true
 
-  # After refactor: build validates --name/--project/--sandbox before exec'ing
-  if [[ "$output" == *"required"* ]]; then
-    pass "build without required args: prints error (validation added in refactor)"
+  # After the thin-CLI change: build no longer requires flags up front; the
+  # dispatcher resolves identity and errors with a hard requirement when
+  # unresolvable (no flag, no AGENT_SANDBOX_*, no .env via --env/CWD).
+  if [[ "$output" == *"unresolvable"* ]] || [[ "$output" == *"required"* ]]; then
+    pass "build without identity: prints a hard identity-requirement error (thin CLI)"
   else
-    fail "build without required args: expected validation error, got: $output"
+    fail "build without identity: expected a resolution/required error, got: $output"
   fi
 }
 
@@ -753,9 +874,13 @@ source_harness
 setup_mocks
 
 run_test test_build_default_all
+run_test test_build_resolves_identity_from_env_file
+run_test test_build_resolves_identity_from_relative_env
 run_test test_build_with_targets
 run_test test_build_with_rebuild
 run_test test_start_default
+run_test test_start_forwards_env_to_leaf
+run_test test_resume_sandbox_and_env_forwarded
 run_test test_serve_mode
 run_test test_removed_serve_subcommand_is_unknown
 run_test test_dry_run_mode
