@@ -403,30 +403,19 @@ main() {
   # ---------------------------------------------------------------------------
   # Flag parsing
   # ---------------------------------------------------------------------------
-  PROJECT_NAME=""
-  PROJECT_DIR=""
-  SANDBOX_DIR=""
-  REFRESH=false
-  YES_FLAG=false
-
-  local ARG
-  for ARG in "$@"; do
-    case "$ARG" in
-      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --refresh)    REFRESH=true ;;
-      --yes)        YES_FLAG=true ;;
-      -h|--help)    usage; exit 0 ;;
-      *)
-        echo "Unknown flag: $ARG" >&2
-        usage
-        exit 1
-        ;;
-    esac
-  done
-
-  if $YES_FLAG; then
+  source "$REPO_ROOT/src/libs/cli.sh"
+  parse_args usage \
+    --name=PROJECT_NAME \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --refresh:REFRESH \
+    --yes:YES_FLAG \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
+  # --yes / non-tty means non-interactive (scripting/CI).
+  if [[ "$YES_FLAG" == true ]]; then
     _INTERACTIVE=false
   fi
 

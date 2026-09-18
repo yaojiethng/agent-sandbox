@@ -38,6 +38,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
 # common.sh does not touch script-dir variables  --  this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
+source "$REPO_ROOT/src/libs/cli.sh"
 
 # -------------------------
 # Args
@@ -236,6 +237,7 @@ main() {
   FAST=false
   INTERACTIVE=false
   SERVE=false
+  _CLI_UNKNOWN_WORD="Unknown flag"
   # Delivery is a command input, not environment state: the default is parsed
   # once here, at ingestion. It is never exported and never read from the
   # environment; downstream consumers receive it as an explicit --delivery
@@ -248,37 +250,31 @@ main() {
   # the persisted record.
   FLATTEN=false
 
-  local ARG
-  for ARG in "$@"; do
-    case "$ARG" in
-      --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*)  PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)  SANDBOX_DIR_OVERRIDE="${ARG#--sandbox=}" ;;
+  parse_args usage \
+    --name=PROJECT_NAME \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR_OVERRIDE \
+    --env=ENV_REL \
+    --provider=PROVIDER_NAME \
+    --refresh \
+    --rebuild \
+    --fast \
+    --interactive \
+    --serve \
+    --flatten \
+    --delivery=DELIVERY \
+    -- "$@"
+  local prc=$?
+  if [[ $prc -eq 2 ]]; then exit 0; fi
+  [[ $prc -eq 0 ]] || exit 1
 
-      --env=*)      ENV_REL="${ARG#--env=}" ;;
-      --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-      --refresh)    REFRESH=true ;;
-      --rebuild)    REBUILD=true ;;
-      --fast)       FAST=true ;;
-      --interactive) INTERACTIVE=true ;;
-      --serve)      SERVE=true ;;
-      --flatten)    FLATTEN=true ;;
-      --delivery=*)
-        DELIVERY="${ARG#--delivery=}"
-        case "$DELIVERY" in
-          copy|mount) ;;
-          *)
-            echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
-            exit 1
-            ;;
-        esac
-        ;;
-      *)
-        echo "Unknown flag: $ARG"
-        exit 1
-        ;;
-    esac
-  done
+  case "$DELIVERY" in
+    copy|mount) ;;
+    *)
+      echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
+      exit 1
+      ;;
+  esac
 
   # Serve is a toggle on start, not a positional mode.
   if [[ "$SERVE" == true ]]; then

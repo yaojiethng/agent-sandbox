@@ -40,6 +40,7 @@ source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
 source "$_self_dir/export_status.sh"
+source "$_self_dir/cli.sh"
 
 # =============================================================================
 # usage  --  print help text
@@ -316,19 +317,12 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   BUNDLE_SUMMARY_ARG=""
   NO_RENAMES_ARG=false
 
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-      --bundle-summary=*) BUNDLE_SUMMARY_ARG="${ARG#--bundle-summary=}" ;;
-      --to=*)              TO_ARG="${ARG#--to=}" ;;
-      --no-renames)        NO_RENAMES_ARG=true ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --bundle-summary=BUNDLE_SUMMARY_ARG \
+    --to=TO_ARG \
+    --no-renames:NO_RENAMES_ARG \
+    -- "$@"
+  [ $? -eq 2 ] && exit 0
 
   # --to is required
   if [[ -z "$TO_ARG" ]]; then

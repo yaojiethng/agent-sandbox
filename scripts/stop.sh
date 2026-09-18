@@ -37,27 +37,20 @@ EOF
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/session_hints.sh"
+source "$REPO_ROOT/src/libs/cli.sh"
 
 SESSION_ID=""
 PRUNE=false
 PROJECT_DIR=""
 
-parse_help_flag "$@"
-parse_base_flags "$@"
-
-# Parse stop-specific flags (identity already consumed by parse_base_flags)
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*|--project=*|--sandbox=*) ;;
-    --session-id=*)  SESSION_ID="${ARG#--session-id=}" ;;
-    --prune)     PRUNE=true ;;
-    *)
-      echo "Unknown argument: $ARG" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
-done
+parse_args usage \
+  --session-id=SESSION_ID \
+  --prune:PRUNE \
+  --name=PROJECT_NAME \
+  --project=PROJECT_DIR \
+  --sandbox=SANDBOX_DIR \
+  -- "$@"
+[ $? -eq 2 ] && exit 0
 
 check_base_flags
 

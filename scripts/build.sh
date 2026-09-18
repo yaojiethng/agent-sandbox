@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/container_sig.sh"
+source "$REPO_ROOT/src/libs/cli.sh"
 
 # -------------------------
 # Container-sig source lists
@@ -305,32 +306,18 @@ EOF
 }
 
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_NAME=""
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local BUILD_TARGETS=""
+  parse_args usage \
+    --name=PROJECT_NAME \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --targets=BUILD_TARGETS \
+    --rebuild \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
   local REBUILD_FLAG=""
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --targets=*) BUILD_TARGETS="${ARG#--targets=}" ;;
-      --rebuild)   REBUILD_FLAG="--no-cache" ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  [[ "$REBUILD" == true ]] && REBUILD_FLAG="--no-cache"
 
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

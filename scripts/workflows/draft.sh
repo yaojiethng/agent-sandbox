@@ -18,6 +18,7 @@ source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 
 # =============================================================================
 # draft_collect_patches  --  collect and filter numbered diff files
@@ -496,6 +497,21 @@ _run_draft_workflow() {
 }
 
 # =============================================================================
+# _resolve_draft_source  --  resolve a draft source into globals
+# =============================================================================
+
+# _resolve_draft_source SANDBOX_DIR CHANNEL BUNDLE
+#   Resolves the session export source for a draft and sets SOURCE_DIR and
+#   BUNDLE_NAME in the caller's scope (deliberately not local -- main()'s
+#   three paths consume them). Returns 1 when resolution fails.
+_resolve_draft_source() {
+  local result
+  result=$(resolve_source_for_draft "$1" "$2" "$3") || return 1
+  SOURCE_DIR=$(echo "$result" | cut -f1)
+  BUNDLE_NAME=$(echo "$result" | cut -f2)
+}
+
+# =============================================================================
 # main  --  entry point when exec'd by agent-sandbox draft
 # =============================================================================
 
@@ -505,41 +521,21 @@ _run_draft_workflow() {
 #   [--channel=<c>] [--branch-from=<n>] [--diffs=<r>]
 #   [--branch-summary=<s>] [--force] [--permissive] [--interactive]
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local BUNDLE_ARG=""
-  local CHANNEL_ARG=""
-  local BRANCH_FROM=""
-  local DIFFS=""
-  local BRANCH_SUMMARY=""
-  local FORCE=false
-  local INTERACTIVE=false
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --bundle=*)      BUNDLE_ARG="${ARG#--bundle=}" ;;
-      --channel=*)     CHANNEL_ARG="${ARG#--channel=}" ;;
-      --branch-from=*) BRANCH_FROM="${ARG#--branch-from=}" ;;
-      --diffs=*)       DIFFS="${ARG#--diffs=}" ;;
-      --branch-summary=*) BRANCH_SUMMARY="${ARG#--branch-summary=}" ;;
-      --force)         FORCE=true ;;
-      --permissive)    true ;;  # no-op: permissive is the default, kept for compatibility
-      --interactive)   INTERACTIVE=true ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --bundle=BUNDLE_ARG \
+    --channel=CHANNEL_ARG \
+    --branch-from=BRANCH_FROM \
+    --diffs=DIFFS \
+    --branch-summary=BRANCH_SUMMARY \
+    --force \
+    --permissive \
+    --interactive \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2
@@ -552,11 +548,7 @@ main() {
 
     if [[ -n "$CHANNEL_ARG" && -n "$BUNDLE_ARG" ]]; then
       # Both channel and bundle given: skip pickers, show patch list + confirm
-      local ROUTER_RESULT
-      ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_ARG") || exit 1
-      local SOURCE_DIR BUNDLE_NAME
-      SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-      BUNDLE_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+      _resolve_draft_source "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_ARG" || exit 1
 
       local PATCH_LIST
       PATCH_LIST=$(draft_collect_patches "$SOURCE_DIR/patches" "$DIFFS" || true)
@@ -592,13 +584,9 @@ main() {
     # Step 1: pick channel
     CHANNEL_ARG=$(interactive_select_channel "draft" "$SANDBOX_DIR" "${CHANNEL_ARG:-}") || exit 1
     # Step 2: pick bundle
-    local BUNDLE_NAME
     BUNDLE_NAME=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL_ARG" "${BUNDLE_ARG:-}") || exit 1
 
-    local ROUTER_RESULT
-    ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_NAME") || exit 1
-    local SOURCE_DIR
-    SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
+    _resolve_draft_source "$SANDBOX_DIR" "$CHANNEL_ARG" "$BUNDLE_NAME" || exit 1
     echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
     _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
       "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
@@ -607,11 +595,7 @@ main() {
 
   # Non-interactive path
   local CHANNEL="${CHANNEL_ARG:-session}"
-  local ROUTER_RESULT
-  ROUTER_RESULT=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE_ARG") || exit 1
-  local SOURCE_DIR BUNDLE_NAME
-  SOURCE_DIR=$(echo "$ROUTER_RESULT" | cut -f1)
-  BUNDLE_NAME=$(echo "$ROUTER_RESULT" | cut -f2)
+  _resolve_draft_source "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE_ARG" || exit 1
   _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
 }

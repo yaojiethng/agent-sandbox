@@ -52,6 +52,7 @@ source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 source "$REPO_ROOT/src/libs/session_hints.sh"
+source "$REPO_ROOT/src/libs/cli.sh"
 
 # -------------------------
 # Args
@@ -80,30 +81,24 @@ DELIVERY=""
 # read from ambient env downstream (same rule as DELIVERY).
 FLATTEN=false
 
-for ARG in "$@"; do
-  case "$ARG" in
-    --name=*)     PROJECT_NAME="${ARG#--name=}" ;;
-    --sandbox=*)  SANDBOX_DIR="${ARG#--sandbox=}" ;;
-    --env=*)      ENV_FILE="${ARG#--env=}" ;;
-    --provider=*) PROVIDER_NAME="${ARG#--provider=}" ;;
-    --reset-volume) RESET_VOLUME=true ;;
-    --flatten)    FLATTEN=true ;;
-    --delivery=*)
-      DELIVERY="${ARG#--delivery=}"
-      case "$DELIVERY" in
-        copy|mount) ;;
-        *)
-          echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
-          exit 1
-          ;;
-      esac
-      ;;
-    *)
-      echo "Unknown flag: $ARG"
-      exit 1
-      ;;
-  esac
-done
+_CLI_UNKNOWN_WORD="Unknown flag"
+parse_args usage \
+  --name=PROJECT_NAME \
+  --sandbox=SANDBOX_DIR \
+  --env=ENV_FILE \
+  --provider=PROVIDER_NAME \
+  --reset-volume:RESET_VOLUME \
+  --flatten:FLATTEN \
+  --delivery=DELIVERY \
+  -- "$@"
+[ $? -eq 2 ] && exit 0
+case "$DELIVERY" in
+  copy|mount|"") ;;
+  *)
+    echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
+    exit 1
+    ;;
+esac
 
 if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" || -z "$ENV_FILE" || -z "$PROVIDER_NAME" ]]; then
   echo "Error: --name, --sandbox, --env, and --provider are required"

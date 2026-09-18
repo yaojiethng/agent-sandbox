@@ -223,20 +223,20 @@ main() {
   source "$REPO_ROOT/src/libs/common.sh"
   # session_inventory.sh also sources container_sig.sh (image-staleness criterion).
   source "$REPO_ROOT/src/libs/session_inventory.sh"
+  source "$REPO_ROOT/src/libs/cli.sh"
+  _CLI_TOLERANT=1
 
-  parse_help_flag "$@"
-  parse_base_flags "$@"
-  local ARG
-  for ARG in "$@"; do
-    case "$ARG" in
-      --stale=*)         STALE_KIND="${ARG#--stale=}" ;;
-      --provider=*)      PROVIDER_FILTER="${ARG#--provider=}" ;;
-      --age-days=*)      AGE_DAYS="${ARG#--age-days=}" ;;
-      --interactive)     INTERACTIVE_FLAG=true ;;
-      --dry-run)         DRY_RUN_FLAG=true ;;
-      --name=*|--project=*|--sandbox=*) ;;
-    esac
-  done
+  parse_args usage \
+    --stale=STALE_KIND \
+    --provider=PROVIDER_FILTER \
+    --age-days=AGE_DAYS \
+    --interactive:INTERACTIVE_FLAG \
+    --dry-run:DRY_RUN_FLAG \
+    --name=PROJECT_NAME \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    -- "$@"
+  [ $? -eq 2 ] && exit 0
   check_base_flags
 
   # Canonicalize the sandbox dir once so Rule 2's label filters match the

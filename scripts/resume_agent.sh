@@ -66,22 +66,19 @@ INTERACTIVE_FLAG=false
 PROVIDER_FILTER=""
 ENV_REL=""
 
-parse_base_flags "$@"
-
-for ARG in "$@"; do
-  case "$ARG" in
-    --list)             RESUME_LIST=true ;;
-    --session-id=*)     SESSION_ID_ARG="${ARG#--session-id=}" ;;
-    --interactive)      INTERACTIVE_FLAG=true ;;
-    --provider=*)       PROVIDER_FILTER="${ARG#--provider=}" ;;
-    --name=*|--project=*|--sandbox=*) ;;
-    # --env is honored (absolute path or sandbox-relative name, mirroring
-    # start) so a custom .env named at start can be loaded at resume too.
-    --env=*)            ENV_REL="${ARG#--env=}" ;;
-    -h|--help)          usage; exit 0 ;;
-    *)                  echo "Unknown flag: $ARG" >&2; usage >&2; exit 1 ;;
-  esac
-done
+source "$REPO_ROOT/src/libs/cli.sh"
+_CLI_UNKNOWN_WORD="Unknown flag"
+parse_args usage \
+  --list:RESUME_LIST \
+  --session-id=SESSION_ID_ARG \
+  --interactive:INTERACTIVE_FLAG \
+  --provider=PROVIDER_FILTER \
+  --env=ENV_REL \
+  --name=PROJECT_NAME \
+  --project=PROJECT_DIR \
+  --sandbox=SANDBOX_DIR \
+  -- "$@"
+[ $? -eq 2 ] && exit 0
 
 # Canonicalize the sandbox dir once so inventory/record lookup, identity, and
 # any downstream label filter agree regardless of path spelling. Fails loudly

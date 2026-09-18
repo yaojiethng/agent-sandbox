@@ -15,6 +15,7 @@ _apply_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_apply_self/../.." && pwd)}"
 
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
@@ -156,35 +157,18 @@ apply_preview() {
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
 # Expected flags: --project=<dir> --sandbox=<dir> --diff=<path> [--branch=<n>] [--force] [--permissive] [--interactive]
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local DIFF_FILE=""
-  local APPLY_BRANCH=""
-  local FORCE=false
-  local INTERACTIVE=false
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --diff=*)        DIFF_FILE="${ARG#--diff=}" ;;
-      --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
-      --force)         FORCE=true ;;
-      --permissive)    true ;;  # no-op, kept for compatibility
-      --interactive)   INTERACTIVE=true ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --diff=DIFF_FILE \
+    --branch=APPLY_BRANCH \
+    --force \
+    --permissive \
+    --interactive \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

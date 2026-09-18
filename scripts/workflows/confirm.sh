@@ -12,6 +12,7 @@ _confirm_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_confirm_self/../.." && pwd)}"
 
 source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 
 # =============================================================================
@@ -114,28 +115,14 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>]
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local TARGET_BRANCH=""
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --target=*)  TARGET_BRANCH="${ARG#--target=}" ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --target=TARGET_BRANCH \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2
