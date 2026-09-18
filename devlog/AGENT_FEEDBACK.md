@@ -524,12 +524,12 @@ mitigation: none
 
 ## Agent experience  --  session 20260918-12 (history reorg + flag ingestion)
 
-### [A] 2026-09-18  --  project_index.md usefulness: registry vs freeze-tracker split under review
+### [A] 2026-09-18  --  project_index.md usefulness: resolved by removal, freeze table relocated
 
 state: open
-scoped: none
+scoped: M2.6
 legacy: none
-mitigation: none
+mitigation: 2026-09-18 -- the freeze table (Status column) moved into `system_overview.md` at module scope and `project_index.md` was deleted; the registry role was judged convenience not correctness (`git ls-files` plus `find` answer "what documents exist"). The entry stays open as the monitoring record for the further-evaluation question: whether the freeze table AND its associated policies should be dropped entirely.
 
 Question registered per operator request: is `docs/development/project_index.md` useful, in what situations, and can it be safely removed?
 
@@ -545,6 +545,5 @@ Usefulness assessment:
 
 Safe-removal answer: NOT safe as-is -- the freeze role must be preserved. Safe rescope: keep the file but slim it to the Architecture Layers + freeze table (the load-bearing part), drop or shrink the per-directory document tables, and repoint the handover/iteration-policy registry references at the docs tree. Alternatively move the freeze table into `system_overview.md` and delete the file, updating the three consumers.
 
-Operator decision requested on which direction (slim-to-freeze-only, or absorb-into-system_overview + delete).
+Operator decision (2026-09-18): took the second option -- freeze table into `system_overview.md`, `project_index.md` deleted. Recorded in `mitigation` above.
 
-resolved: 2026-09-18 -- operator chose removal with the freeze table preserved: the freeze status (Status column) moved into `system_overview.md` at module scope (one freeze value per layer, not per file), the two `documentation_policy.md` freeze references repointed at `system_overview.md`, and `project_index.md` was deleted. The registry role was judged convenience not correctness: `git ls-files` plus `find` answer "what documents exist", and the docs tree itself is the authoritative file list. This entry stays open as the monitoring record for the further-evaluation question: whether the freeze table AND its associated policies (documentation-policy layer-freeze rule, maintenance triggers that died with the registry) should be dropped entirely at some later point.
