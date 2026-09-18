@@ -159,3 +159,20 @@ not a task assignment. When a feedback entry and a roadmap item disagree,
 the roadmap item is the canonical record, and the feedback entry points at
 it. Check the tree before writing record text that names files or functions
 as current.
+
+### [G] 2026-09-18 - Mechanical-edit one-liners must carry a match-count guard and a timeout
+
+state: open
+scoped: none
+legacy: none
+mitigation: a perl one-liner intended to count matches in a test file was
+written with the `/g` modifier against a full-file slurp; it matched nothing,
+but the loop structure ran forever, emitting a line count that grew into the
+hundreds of millions before the run was aborted and the log killed. The
+operator's standing rule applies: run every script through `timeout`. The
+deeper fix: a mechanical transform that prints only a summary at the end is
+invisible while it spins. Always (1) bound the tool with `timeout`, (2) have
+the transform emit a match/replacement count to stderr BEFORE any output, and
+(3) diff against the input to verify the change before committing. A
+long-running transform with no stderr progress is the signal to inspect the
+loop, not to wait.

@@ -521,3 +521,28 @@ legacy: none
 mitigation: none
 
 "pi's AGENTS.md" can mean the runtime provider-layer file loaded at session start (`~/.pi/agent/AGENTS.md`) or the source file that is seeded into the sandbox (`src/reasoning/providers/pi/config/agent/AGENTS.md`). The edit was directed to "pi's agents.md" and only the seeded source path made the target unambiguous. When an edit target has a seeded/runtime copy pair, name the file by its full path in the directive, and state which copy is authoritative (here: the seeded source is the persistent one; the runtime copy is regenerated).
+
+## Agent experience  --  session 20260918-12 (history reorg + flag ingestion)
+
+### [A] 2026-09-18  --  project_index.md usefulness: registry vs freeze-tracker split under review
+
+state: open
+scoped: none
+legacy: none
+mitigation: none
+
+Question registered per operator request: is `docs/development/project_index.md` useful, in what situations, and can it be safely removed?
+
+What the file actually provides (two distinct roles, read from `project_index.md` itself and its consumers):
+
+1. **Document registry** -- every doc with temperature, architecture-layer assignment, last-touched milestone. Consumers: `agent_workflow.md` (registry/index maintenance), `iteration_policy.md` (hot-file list split between handover and index), handover sweep tooling.
+2. **Freeze tracker** -- the architecture-layer freeze table that `documentation_policy.md` (L23, L237) and `system_overview.md` (L36) reference as the authority for whether a frozen-layer change is allowed. This role gates Layer 0/1 edits.
+
+Usefulness assessment:
+
+- **Role 2 (freeze tracking) is load-bearing and irreplaceable by grep** -- it is the single source for "is this layer frozen and may I touch its docs". Removing the file without a replacement would strand `documentation_policy.md` and `system_overview.md` on a missing link.
+- **Role 1 (registry) is convenience, not correctness** -- `git ls-files` plus `find` answer "what documents exist" as well; the temperature column is maintained at major-loop close and drifts between closes. The registry tables duplicate what the tree already tells a reader.
+
+Safe-removal answer: NOT safe as-is -- the freeze role must be preserved. Safe rescope: keep the file but slim it to the Architecture Layers + freeze table (the load-bearing part), drop or shrink the per-directory document tables, and repoint the handover/iteration-policy registry references at the docs tree. Alternatively move the freeze table into `system_overview.md` and delete the file, updating the three consumers.
+
+Operator decision requested on which direction (slim-to-freeze-only, or absorb-into-system_overview + delete).
