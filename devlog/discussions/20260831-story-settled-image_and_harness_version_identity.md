@@ -1,9 +1,9 @@
 # Story — Image and Harness Version Identity
 
-**Status:** Resolved
+**Status:** Settled
 
 The mechanism decision (semantic-versioning vs content-hash vs docker-digest) is
-scoped to the design document [`20260831-design-active-image_and_harness_version_identity.md`](20260831-design-active-image_and_harness_version_identity.md)
+scoped to the design document [`20260831-design-settled-image_and_harness_version_identity.md`](20260831-design-settled-image_and_harness_version_identity.md)
 (created this session as a stub, to be refined and settled in the next session).
 This story constrains that design: it fixes the requirements the design must
 satisfy and the problem frame, and it retires the prior, inadequate solutions.
@@ -185,7 +185,7 @@ artefacts are retired as inadequate for that purpose.
 **Where the work goes:** A road map entry for "harness (image + worktree + host)
 version identity" is added under M2.6 this session. The mechanism decision is
 staged in the design document
-[`20260831-design-active-image_and_harness_version_identity.md`](20260831-design-active-image_and_harness_version_identity.md);
+[`20260831-design-settled-image_and_harness_version_identity.md`](20260831-design-settled-image_and_harness_version_identity.md);
 the design is to be settled in the next session, after which an ADR records the
 decision and this story is closed as resolved.
 

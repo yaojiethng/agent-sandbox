@@ -25,11 +25,11 @@ exact-resume, silently absorbs host checkout drift, and produced a ladder of
 partial remedies (`container-sig`, `harness-sig`, `image-sig`,
 `[IMAGE_STALE]`) that sign sparse file subsets and treat staleness as the defect
 rather than the gap under it. Grounded by the story
-[`20260831-story-active-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-story-active-image_and_harness_version_identity.md)
+[`20260831-story-settled-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-story-settled-image_and_harness_version_identity.md)
 (`Resolved`), which fixed the requirements and problem frame.
 
 The design space opened by the story was stubbed in
-[`20260831-design-active-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-design-active-image_and_harness_version_identity.md)
+[`20260831-design-settled-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-design-settled-image_and_harness_version_identity.md)
 and settled via the design grill this iteration.
 
 ## Options Considered

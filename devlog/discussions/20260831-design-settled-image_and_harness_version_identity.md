@@ -4,7 +4,7 @@
 
 Mechanism decision recorded in ADR
 [`harness_versioning.md`](../../docs/adr/harness_versioning.md).
-The story [`20260831-story-active-image_and_harness_version_identity.md`](20260831-story-active-image_and_harness_version_identity.md)
+The story [`20260831-story-settled-image_and_harness_version_identity.md`](20260831-story-settled-image_and_harness_version_identity.md)
 fixes the requirements; this design fixed the *how*. Decision and Consequences are settled below; implementation is a follow-up iteration.
 
 This document was created as a **stub** recording the design space opened by the
