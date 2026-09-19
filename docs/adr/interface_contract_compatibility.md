@@ -81,6 +81,17 @@ P2 flip authoritative (one reversible flag; entrypoint check added), P3 strip
 drift_state_coherence / harness_versioning updated to close the interim
 status).
 
+**Implementation note (2026-09-19, P0 landed, handover `20260919-04`):**
+`src/libs/interface_contract.sh` declares the version and provides the image /
+record readers; `scripts/build.sh` stamps `agent-sandbox.interface-contract-version`
+into tier-3 images at build (alongside container-sig) and warns via
+`_check_interface_contract` at the same preflight call sites; the session
+record gains the label set entry (`docker-compose.yml` x-session-labels,
+substituted by compose.sh) and the `SESSION_STATE` key `interface_contract_version`
+(written by session_state_write_set). `container-sig` untouched. The P2
+entrypoint container<->container check and the P3 strip remain; the P2
+warn/strict flip is a single flag.
+
 **Edge cases / drivers:** old images carry no version label — the check treats a
 missing label as "pre-dating the contract version" and warns (matching
 `container-sig`'s missing-label behavior); container<->container comparison

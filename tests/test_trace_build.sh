@@ -244,7 +244,23 @@ test_check_container_sig_warns_via_shared_predicate() {
   assert_empty "$out" "preflight: matching recomputed sig stays silent"
 }
 
-# record_image / record_provider are service-scoped and anchored: a comment
+# Interface-contract preflight check (build.sh -> _check_interface_contract,
+# ADR interface_contract_compatibility.md, P0): the image's baked
+# agent-sandbox.interface-contract-version label is compared against the
+# current host-side constant; a mismatch warns, an aligned label stays silent.
+test_check_interface_contract_warns_and_silent_via_stub() {
+
+  local out
+  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
+        _check_interface_contract "pi-agent-test-project" 2>&1)"
+  assert_contains "$out" "interface-contract version 9 differs from current source" \
+      "interface-contract: differing baked version warns"
+
+  local current; current="$(interface_contract_version)"
+  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
+        _check_interface_contract "pi-agent-test-project" 2>&1)"
+  assert_empty "$out" "interface-contract: matching baked version stays silent"
+}
 # or stray `image:` outside the service block (or another service) must not
 # shadow the service's own image, and the provider is recovered from the agent
 # image. Locks the one-parser contract (F2: no divergent -agent- grep).
@@ -302,6 +318,7 @@ run_test test_container_sig_sources_list
 run_test test_container_sig_hashes_real_sources
 run_test test_container_sig_missing_path_fails_with_diagnostic
 run_test test_check_container_sig_warns_via_shared_predicate
+run_test test_check_interface_contract_warns_and_silent_via_stub
 run_test test_record_image_service_scoped
 run_test test_current_sig_deterministic
 run_test test_build_inspects_images

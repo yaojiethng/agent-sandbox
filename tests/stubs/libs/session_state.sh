@@ -35,6 +35,7 @@ session_state_write_set() {
   session_state_write "$dir" "session_ts"    "${SESSION_TS:-}"
   session_state_write "$dir" "session_id"    "${SESSION_ID:-}"
   session_state_write "$dir" "host_head_sha" "${HOST_HEAD_SHA:-}"
+  session_state_write "$dir" "interface_contract_version" "${INTERFACE_CONTRACT_VERSION_TEST:-1}"
 }
 
 # Mirrors src/libs/session_state.sh (used by the capability probe gate and the

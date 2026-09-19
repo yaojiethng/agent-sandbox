@@ -281,6 +281,12 @@ test_record_bakes_image_digests() {
     fail "compose_generate did not stamp image digest labels, got:"
     grep 'image-digest' "$out" >&2 || true
   fi
+  if grep -q "agent-sandbox.interface-contract-version: $(interface_contract_version)" "$out"; then
+    pass "compose_generate stamps the interface-contract version into the record"
+  else
+    fail "compose_generate did not stamp the interface-contract version, got:"
+    grep 'interface-contract' "$out" >&2 || true
+  fi
 }
 
 # compose_file_from_args recovers the generated compose file path from

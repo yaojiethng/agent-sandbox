@@ -9,6 +9,9 @@
 #   session_state_write   --  write a key=value pair to SESSION_STATE
 #   session_state_write_set --  write the identity block (init_sha + identity)
 
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_self_dir/interface_contract.sh"
+
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
 #   The file format is one key=value pair per line.
@@ -59,6 +62,9 @@ session_state_write_set() {
   session_state_write "$SANDBOX_DIR" "session_ts"    "${SESSION_TS:-}"
   session_state_write "$SANDBOX_DIR" "session_id"    "${SESSION_ID:-}"
   session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
+  # Interface-contract version of the copy that wrote this record (ADR
+  # interface_contract_compatibility.md); host-readable without starting.
+  session_state_write "$SANDBOX_DIR" "interface_contract_version" "$(interface_contract_version)"
 }
 
 # init_sha_is_valid SANDBOX_DIR

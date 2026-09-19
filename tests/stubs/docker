@@ -46,6 +46,19 @@ _sig_for() {
   echo "${DOCKER_STUB_IMAGE_SIG_LABEL:-}"
 }
 
+# _contract_version_for IMAGE — resolve the interface-contract-version label
+# reported for an image. DOCKER_STUB_IMAGE_CONTRACT_VERSIONS is a
+# space-separated `image:version` map (per-image);
+# DOCKER_STUB_IMAGE_CONTRACT_VERSION is a single fallback for all images
+# (empty = no label / missing image).
+_contract_version_for() {
+  local img="$1" pair
+  for pair in ${DOCKER_STUB_IMAGE_CONTRACT_VERSIONS:-}; do
+    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_IMAGE_CONTRACT_VERSION:-}"
+}
+
 # _digest_for IMAGE — resolve the image ID digest reported for an image
 # (image version identity, ADR harness_versioning.md).
 # DOCKER_STUB_IMAGE_DIGESTS is a space-separated `image:digest` map (per-image);
@@ -221,6 +234,8 @@ STUBEOF
         # per-image map or single fallback (empty = no label / missing image).
         if [[ "$*" == *"container-sig"* ]]; then
           _sig_for "${@: -1}"
+        elif [[ "$*" == *"interface-contract-version"* ]]; then
+          _contract_version_for "${@: -1}"
         elif [[ "$*" == *".Id}"* ]]; then
           _digest_for "${@: -1}"
         else

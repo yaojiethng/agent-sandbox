@@ -51,6 +51,10 @@ x-session-labels: &session_labels
   # reads these from the record with no docker dependency. ADR harness_versioning.md.
   agent-sandbox.agent-image-digest: {{AGENT_IMAGE_DIGEST}}
   agent-sandbox.sandbox-image-digest: {{SANDBOX_IMAGE_DIGEST}}
+  # Interface-contract version of the co-resident copies (ADR
+  # interface_contract_compatibility.md): stamped from the host-side constant
+  # at session write; host-readable without starting a container.
+  agent-sandbox.interface-contract-version: {{INTERFACE_CONTRACT_VERSION}}
 
 # Workspace path documentation  --  single source of truth for all path mappings.
 # Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.

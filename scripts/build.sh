@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/container_sig.sh"
+source "$REPO_ROOT/src/libs/interface_contract.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 
 # -------------------------
@@ -34,7 +35,9 @@ source "$REPO_ROOT/src/libs/cli.sh"
 
 # build_image <image_name> <dockerfile> <repo_root> <container_sig> <no_cache> [docker build args...]
 # Builds using repo root as docker build context.
-# Injects the container-sig label for staleness detection.
+# Injects the container-sig label for staleness detection and the
+# interface-contract-version label for the contract check (ADR
+# interface_contract_compatibility.md).
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
@@ -47,6 +50,9 @@ build_image() {
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
   build_cmd+=(-t "$image_name" -f "$dockerfile")
   [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.container-sig=$sig")
+  # Tier-3 images (those carrying container-sig) also carry the contract
+  # version; tiers 1/2 are shared bases with no baked harness content.
+  [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$(interface_contract_version)")
   build_cmd+=("$@" "$repo_root")
 
   # Run docker build with its default progress mode (auto).  The exit status
@@ -236,6 +242,34 @@ preflight() {
   _check_container_sig "$sandbox_image" sandbox "$repo_root"
   # Check agent image
   _check_container_sig "$agent_image" agent "$provider" "$repo_root"
+
+  # --- Interface-contract version check (warning only, P0 parallel) ---
+  # ADR interface_contract_compatibility.md; warn-only alongside container-sig
+  # until the operator-released P2 flip makes it authoritative.
+  _check_interface_contract "$sandbox_image"
+  _check_interface_contract "$agent_image"
+}
+
+# _check_interface_contract <image_name>
+# Interface-contract check (ADR interface_contract_compatibility.md): warns
+# when the image's baked `agent-sandbox.interface-contract-version` label
+# differs from the current host-side constant -- the container was built from
+# a different contract revision than the working tree. P0 warning-only; the
+# design's rollover plan flips it authoritative at P2 (one reversible flag).
+_check_interface_contract() {
+  local image_name="${1:?}"
+
+  local baked current
+  baked="$(image_contract_version "$image_name")"
+  if [[ -z "$baked" ]]; then
+    echo "WARNING: $image_name has no interface-contract-version label (built before the interface-contract check)." >&2
+    return 0
+  fi
+  current="$(interface_contract_version)"
+  if [[ "$baked" != "$current" ]]; then
+    echo "WARNING: $image_name interface-contract version $baked differs from current source ($current)." >&2
+    echo "  Rebuild with --rebuild to align the container with the current contract." >&2
+  fi
 }
 
 # _check_container_sig <image_name> <type: sandbox|agent> <...>

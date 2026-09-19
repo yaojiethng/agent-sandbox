@@ -34,6 +34,7 @@
 #   compose_sandbox_wait  Polls until sandbox container reports healthy.
 
 source "$(dirname "${BASH_SOURCE[0]}")/../libs/dry_run_record.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 
 # -------------------------
 # compose_generate
@@ -139,6 +140,7 @@ compose_generate() {
       -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
       -e "s|{{AGENT_IMAGE_DIGEST}}|${agent_image_digest:-}|g" \
       -e "s|{{SANDBOX_IMAGE_DIGEST}}|${sandbox_image_digest:-}|g" \
+      -e "s|{{INTERFACE_CONTRACT_VERSION}}|$(interface_contract_version)|g" \
       -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
       -e "s|{{FLATTEN}}|${FLATTEN:-false}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
