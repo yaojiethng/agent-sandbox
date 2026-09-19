@@ -13,6 +13,15 @@
 #     --bundle=BUNDLE_ARG \
 #     --force \
 #     -- <args...>
+#   parse_args_collect SINK_VAR \
+#     --name=PROJECT_NAME \
+#     --env=ENV_REL \
+#     -- <args...>
+#
+# Both entry points are policy wrappers over the single implementation
+# `_cli_parse`. All parse state is local to the call: the spec registry is
+# a local associative array that dies with the function, so one parse can
+# never observe another parse's registry.
 #
 # Spec entries (order-insensitive, before the `--` separator):
 #   --flag=VAR      value flag: sets VAR to the flag's value
@@ -27,14 +36,29 @@
 # Boolean vars default to "false" in the caller's scope before parsing,
 # value vars to "".
 
-# parse_args USAGE_FN spec... -- args...
-declare -A _cli_specs=()
-parse_args() {
-  local usage_fn="$1"
-  shift
+# _cli_parse MODE USAGE_FN SINK_VAR spec... -- args...
+#   The single flag-ingestion implementation. Compiles the spec into a local
+#   registry, walks the args once, and classifies each arg: a matched spec
+#   assigns its target var; an unmatched arg is handled per MODE.
+#
+#   MODE:
+#     error     unmatched args print usage and return 1 (strict, default)
+#     drop      unmatched args are silently ignored (_CLI_TOLERANT=1 surface)
+#     collect   unmatched args append, in order, to the array named SINK_VAR;
+#               never errors. In collect mode --help/-h is not special: the
+#               caller owns help routing (the dispatcher scans its args).
+#
+#   --help/-h (MODE error|drop): prints usage via USAGE_FN and returns 2.
+#
+#   The only escaping state is intentional: matched value/boolean vars are
+#   written with declare -g so the caller reads them after the call.
+_cli_parse() {
+  local mode="$1" usage_fn="$2" sink_var="$3"
+  shift 3
+
   local -a SPECS=()
   local -a CALL_ARGS=()
-  local seen_sep=false
+  local seen_sep=false spec
   for spec in "$@"; do
     if [[ "$seen_sep" == false && "$spec" == "--" ]]; then
       seen_sep=true
@@ -47,16 +71,22 @@ parse_args() {
     fi
   done
 
-  # --help/-h anywhere wins (matches the pre-existing behavior of scanning
-  # the raw arg list before parsing).
-  local a
-  for a in "${CALL_ARGS[@]:-}"; do
-    [[ "$a" == "--help" || "$a" == "-h" ]] && { "$usage_fn"; return 2; }
-  done
+  # --help/-h anywhere wins (the pre-existing raw-scan behavior). Collect
+  # mode leaves help routing to the caller.
+  if [[ "$mode" != "collect" ]]; then
+    local a
+    for a in "${CALL_ARGS[@]-}"; do
+      [[ "$a" == "--help" || "$a" == "-h" ]] && { "$usage_fn"; return 2; }
+    done
+  fi
 
-  # Map each spec to a (flag, var, kind) triple.
-  local flag var kind
-  for spec in "${SPECS[@]:-}"; do
+  # Compile the spec into a per-call registry and default the target vars.
+  # Unset-only rule: a caller-predeclared default (e.g. DELIVERY="copy")
+  # survives a spec whose flag never fires.
+  local -A REG=()
+  local flag var kind a entry
+  for spec in "${SPECS[@]-}"; do
+    [[ -n "$spec" ]] || continue
     case "$spec" in
       --*=*)
         flag="${spec%%=*}"
@@ -80,10 +110,7 @@ parse_args() {
         kind="literal"
         ;;
     esac
-    _cli_specs["$flag"]="$kind|$var"
-    # Default the target var so callers can reference it under set -u even
-    # when the flag is absent. Only when unset: a caller-predeclared default
-    # (e.g. DELIVERY="copy") must survive a spec whose flag never fires.
+    REG["$flag"]="$kind|$var"
     case "$kind" in
       value)
         [[ -n "$(declare -p "$var" 2>/dev/null)" ]] || declare -g "$var="
@@ -94,18 +121,26 @@ parse_args() {
     esac
   done
 
-  for a in "${CALL_ARGS[@]:-}"; do
+  # collect mode appends through a local nameref to the caller's sink array.
+  if [[ "$mode" == "collect" ]]; then
+    local -n SINK="$sink_var"
+  fi
+
+  for a in "${CALL_ARGS[@]-}"; do
     [[ -n "$a" ]] || continue
-    local entry="${_cli_specs[${a%%=*}]:-}"
+    entry="${REG[${a%%=*}]:-}"
     if [[ -z "$entry" ]]; then
-      # Tolerant mode ignores unknown flags (the old prune loop accepted
-      # anything not matched); strict mode (default) errors with usage.
-      [[ "${_CLI_TOLERANT:-}" == "1" ]] && continue
-      # The unknown-word is overridable: leaf scripts that historically printed
-      # a different opening word ("Unknown flag") keep their exact output.
-      echo "${_CLI_UNKNOWN_WORD:-Unknown argument}: $a" >&2
-      "$usage_fn" >&2
-      return 1
+      case "$mode" in
+        error)
+          # The unknown-word is overridable: leaf scripts that historically
+          # printed a different opening word ("Unknown flag") keep it.
+          echo "${_CLI_UNKNOWN_WORD:-Unknown argument}: $a" >&2
+          "$usage_fn" >&2
+          return 1
+          ;;
+        drop) continue ;;
+        collect) SINK+=( "$a" ); continue ;;
+      esac
     fi
     kind="${entry%%|*}"
     var="${entry#*|}"
@@ -116,4 +151,23 @@ parse_args() {
     esac
   done
   return 0
+}
+
+# parse_args USAGE_FN spec... -- args...
+#   Strict or tolerant leaf parse (MODE error/drop per _CLI_TOLERANT).
+parse_args() {
+  local usage_fn="$1"
+  shift
+  local mode=error
+  [[ "${_CLI_TOLERANT:-}" == "1" ]] && mode=drop
+  _cli_parse "$mode" "$usage_fn" "" "$@"
+}
+
+# parse_args_collect SINK_VAR spec... -- args...
+#   Collect parse for forwarding entry points (the agent-sandbox dispatcher).
+#   SINK_VAR must exist at call time and may be empty.
+parse_args_collect() {
+  local sink_var="$1"
+  shift
+  _cli_parse collect "" "$sink_var" "$@"
 }

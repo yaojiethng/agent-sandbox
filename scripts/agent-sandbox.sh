@@ -52,6 +52,7 @@ SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 # dispatcher is a thin route table over them. Identity flags become optional via
 # resolve_identity, which delegates to the canonical resolver.
 source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
 
 # Dispatcher state, reset by main() on every invocation (tests call main twice).
@@ -64,20 +65,6 @@ PASSTHROUGH=()
 # =============================================================================
 # Helpers (file scope)
 # =============================================================================
-
-# parse_flags  --  identity flags through the canonical parse_base_flags; the
-# dispatcher's own --env and everything else pass through to the leaf.
-parse_flags() {
-  parse_base_flags "$@"
-  PASSTHROUGH=()
-  for ARG in "$@"; do
-    case "$ARG" in
-      --env=*)            ENV_REL="${ARG#--env=}" ;;
-      --name=*|--project=*|--sandbox=*) ;;
-      *)                  PASSTHROUGH+=("$ARG") ;;
-    esac
-  done
-}
 
 # require_base_args  --  onboard's hard requirement (it creates the .env, so it
 # cannot resolve identity from one).
@@ -153,7 +140,11 @@ main() {
   ENV_REL=""
   PASSTHROUGH=()
 
-  parse_flags "$@"
+  # Identity and --env parse through the canonical cli.sh spec; every other
+  # argument is collected in order and forwarded to the leaf unchanged.
+  parse_args_collect PASSTHROUGH --env=ENV_REL \
+      --name=PROJECT_NAME --project=PROJECT_DIR --sandbox=SANDBOX_DIR \
+      -- "$@"
 
   # --help/-h on any subcommand delegates to the child's own help BEFORE the
   # per-case required-arg checks below  --  mirroring each leaf script's own

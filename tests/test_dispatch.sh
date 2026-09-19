@@ -350,6 +350,26 @@ test_start_with_passthrough() {
   fi
 }
 
+test_start_passthrough_order_and_unknown_forms() {
+  setup
+  # Collect mode forwards every non-identity argument in order, including
+  # unknown value-form flags and positional tokens, never erroring.
+  dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s \
+      --provider=hermes --bogus=1 --flag two three
+
+  local found=false
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"start_agent.sh"* ]] \
+      && [[ "$c" == *"--bogus=1 --flag two three"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "start: unknown value-form flags and positionals forwarded in order"
+  else
+    fail "start: expected --bogus=1 --flag two three in start_agent.sh args, got: ${CAPTURED[*]}"
+  fi
+}
+
 # =============================================================================
 # Tests  --  --rebuild / --refresh passthrough (via start subcommand)
 # =============================================================================
@@ -606,6 +626,7 @@ run_test test_serve_mode
 run_test test_removed_serve_subcommand_is_unknown
 run_test test_dry_run_mode
 run_test test_start_with_passthrough
+run_test test_start_passthrough_order_and_unknown_forms
 run_test test_start_rebuild_passthrough
 run_test test_start_refresh_passthrough
 run_test test_workflow_subcommand_dispatch
