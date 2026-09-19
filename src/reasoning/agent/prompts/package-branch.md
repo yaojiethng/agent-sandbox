@@ -4,35 +4,33 @@ trigger: /package-branch
 ---
 > $@
 
-Package all commits since `init_sha` for export via the workspace output mount. Execute the following steps immediately. This task is independent of iteration open housekeeping  --  Do not read the handover or roadmap first. Run the script, write the guide, then resume normal iteration flow.
+Package all commits since `init_sha` for export via the workspace output mount. Execute the following steps immediately. This task is independent of iteration open housekeeping  --  do not read the handover or roadmap first. Run the script, write the guide, then resume normal iteration flow.
 
-## 1. Run the packaging script
+## 1. Choose the bundle summary and draft the guide content
 
-Inside the container, invoke the script with an explicit output base directory
-and a descriptive `--bundle-summary`:
+`--bundle-summary` is a short snake_case label that names the export. It must describe the change set this export contains. Derive it from the commit subjects since `init_sha`; never reuse a previous export's summary or a remembered value.
+
+A good summary names the dominant change in the package. Examples: `fix_autosave_path_regression`, `update_provider_entrypoint`. A bad summary is generic or empty. Examples: `changes`, `update_files`, `misc`, `package`, `snapshot`.
+
+State your proposed bundle summary before running the script. Along with the one-line summary, state the draft content for these guide sections: `What changed and why`, `API breaking changes`, `Changed files`, and `Verification`. Follow the content rules under step 3 for each section.
+
+## 2. Run the packaging script
+
+Inside the container, invoke the script with the summary you chose in step 1:
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --bundle-summary=add_format_patch_support
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --bundle-summary=<summary>
 ```
 
-`--bundle-summary` is required  --  the script aborts with a usage message if
-omitted. Provide a concise snake_case phrase describing the nature of the change.
-Good summaries: `add_format_patch_support`, `fix_autosave_path_regression`, `update_provider_entrypoint`.
-Bad summaries: `changes`, `update_files`, `misc`, `package`, `snapshot`.
-
-This auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE`
-and writes output to `<to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/`.
-If `SESSION_STATE` is missing, the script aborts with a clear error.
+The script auto-resolves `init_sha` and `session_ts` from `~/sandbox/.git/SESSION_STATE` and writes output to `<to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/`. If `SESSION_STATE` is missing, the script aborts with a clear error.
 
 **To diff against an explicit baseline:**
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --bundle-summary=<text>
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --bundle-summary=<summary>
 ```
 
-The script produces one numbered `.diff` file per commit since `init_sha`, with
-the commit subject embedded in the filename, plus a sibling `.msg` file with the
-full commit message:
+The script produces one numbered `.diff` file per commit since `init_sha`, with the commit subject embedded in the filename, plus a sibling `.msg` file with the full commit message:
 
 ```
 <to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/
@@ -48,91 +46,44 @@ full commit message:
     MANIFEST.txt
 ```
 
-The `.msg` files are consumed by `make draft` to recreate commits with their
-original messages. Each `.diff` is a unified diff with index lines stripped,
-suitable for sequential `git apply`. The numbered order reflects commit history
-from `init_sha` to `HEAD`.
+The `.msg` files are consumed by `make draft` to recreate commits with their original messages. Each `.diff` is a unified diff with index lines stripped, suitable for sequential `git apply`. The numbered order reflects commit history from `init_sha` to `HEAD`.
 
 On the host, invoke via:
+
 ```bash
 agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<text>]
 make package-branch [BUNDLE_SUMMARY=<text>]
 ```
 
-## 1.5 Echo completion message
+After the script finishes, echo its final lines to the conversation. The script outputs three lines on stderr  --  repeat them so the operator sees the bundle path and the `make draft` command immediately. The last line is always the actionable next step; echo it, then write the guide.
 
-After the script finishes, echo its final lines to the conversation. The script
-outputs three lines on stderr  --  repeat them verbatim so the operator sees the
-bundle path and the `make draft` command immediately:
+## 3. Write the migration guide
+
+Write `migration-guide.md` in the output directory. The script does not generate it. Assemble it from the content you drafted in step 1. Use this template:
 
 ```
-package_branch: artefacts written to:
-  /home/agentuser/workspace/output/bundles/20260523-112813-<summary>-20260523-042607
+# Migration Guide - <bundle-summary>
 
-To draft this bundle on host, run:
-  make draft FROM=bundles BUNDLE=20260523-112813-<summary>-20260523-042607 BRANCH_SUMMARY=<slug>
+Bundle: <bundle-id>
+<N> commits, <no|with> uncommitted changes.
+
+## What changed and why
+
+## API breaking changes
+
+## Changed files
+
+## Verification
+
+## How to apply
 ```
 
-The script's last line is always the actionable next step  --  echo it, then
-proceed to write the migration guide.
+Fill the placeholder bundle id and commit count from the packaging output. Reconcile the `Changed files` table against `changed-files/MANIFEST.txt` in the packaging output.
 
-## 2. Write `migration-guide.md`
+Each section holds the following content:
 
-Write `migration-guide.md` in the output directory.
-The script does not generate this  --  it requires reasoning about the changes.
-
-Required sections:
-
-**What changed and why**
-Root cause in 2-3 sentences.
-Not a list of files  --  explain the motivation and the problem being solved.
-
-**Changed files**
-Table: `| File | Nature of change |`.
-One row per file.
-Nature of change: added, modified, deleted, or renamed.
-For modifications add a brief phrase: "modified  --  added iteration-scoped artefact directory support".
-
-**Deleted code**
-Describe any functions, classes, or blocks removed and why.
-If nothing was deleted, write "None."
-
-**How to apply**
-
-The operator applies the numbered diffs to a draft branch for structured review:
-
-```bash
-make draft [BUNDLE=<path>] [BRANCH_SUMMARY=<slug>]
-```
-
-After review and commit shaping:
-
-```bash
-git rebase -i <source_branch>
-make confirm
-```
-
-To discard the draft:
-
-```bash
-make reject
-```
-
-For applying a single diff uncommitted (no branch created):
-
-```bash
-make apply DIFF=<path>
-```
-
-**API breaking changes**
-List any changes to function signatures, environment variables, file paths, or CLI flags that callers must update.
-If none, write "None."
-
-**Verification**
-The command the operator should run to confirm the change works.
-Be specific  --  name the test file or the make target.
-
-**Snapshot invariant**
-Include this section only if the change touches `libs/snapshot.sh`, `sandbox-entrypoint.sh`, or any script in the snapshot pipeline:
-> The snapshot invariant is unchanged  --  baseline commit correctly represents `HEAD`, working tree overlay applied via rsync with `--delete`.
-Omit entirely if the snapshot pipeline is not affected.
+- `What changed and why` -- describe the work done in this change set: the problem it solves and how it solves it. Explain motivation, not a list of files. Include any major deletions here.
+- `API breaking changes` -- list changes to function signatures, environment variables, file paths, or CLI flags that callers must update. If none, write "None."
+- `Changed files` -- table with columns File and Nature of change. Nature of change is one of added, modified, deleted, or renamed. No remarks column.
+- `Verification` -- state that the operator runs the unit test suite to confirm the change works. Add to this section only checks that only the operator can run on the host, such as `make dry-run`. Name the test file or the make target.
+- `How to apply` -- pure prose: how the operator applies the numbered diffs to a draft branch for structured review, how review completes (rebase and confirm) or the draft is discarded (reject), and how to apply a single diff without a branch. Name the commands inline.
