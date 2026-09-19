@@ -22,4 +22,4 @@
 - *Keep `package-diff` alongside `package-branch`* — overlapping output from
   the same primitives is duplication.
 
-**Edge cases / drivers:** Rebase conflict during `confirm` must leave the repo restorable (savepoint reset to pre-confirm state); checkout failure during `reject` must leave the draft intact (atomicity); patch application failure during `draft` must leave the repo in its pre-draft state. The host repo is never modified by the container directly — the command set is the host-side half of the [correspondence model](../concepts/sandbox_host_correspondence_model.md).
+**Edge cases / drivers:** Rebase conflict during `confirm` must leave the repo restorable (savepoint reset to pre-confirm state); checkout failure during `reject` must leave the draft intact (atomicity); patch application failure during `draft` must leave the repo in its pre-draft state. The host repo is never modified by the container directly — the command set is the host-side half of the [interface contract](../concepts/sandbox_host_interface.md).

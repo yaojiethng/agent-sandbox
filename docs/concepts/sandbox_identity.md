@@ -82,6 +82,8 @@ Containers are ephemeral — they live for one session and die. All labels are a
 
 ## Container-sig (Interim Interface-Contract Check)
 
+The interface contract and its version declaration live in [sandbox_host_interface.md](sandbox_host_interface.md). This section describes the interim check that predates it.
+
 Further reading: the build-time signature model is a superseded principle — the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). With the version-identity implementation landed, image version is the image ID digest (recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); container-sig's remaining role is the interim interface-contract check below, scoped for deletion once a redesigned interface-contract check lands.
 
 Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
@@ -107,7 +109,7 @@ For an agent image, the hash covers:
 
 ### Preflight check
 
-The `_check_container_sig()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch (contract drift: the container was built from a different contract revision than the working tree). The check is non-blocking (warning only) — drift is not an error, to avoid blocking development workflows.
+The `_check_container_sig()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch (contract drift: the container was built from a different contract revision than the working tree). The check is non-blocking (warning only) — drift is not an error, to avoid blocking development workflows. The parallel check `_check_interface_contract()` (ADR interface_contract_compatibility.md) warns on `agent-sandbox.interface-contract-version` label mismatch against the host constant; both run at the same preflight sites.
 
 ### Scope
 

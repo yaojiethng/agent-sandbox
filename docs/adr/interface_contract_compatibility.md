@@ -92,6 +92,16 @@ substituted by compose.sh) and the `SESSION_STATE` key `interface_contract_versi
 entrypoint container<->container check and the P3 strip remain; the P2
 warn/strict flip is a single flag.
 
+**Documentation note (2026-09-19, handover `20260919-05`):** the doc
+consolidation landed. The interface concept document is
+`docs/concepts/sandbox_host_interface.md` (renamed from
+`sandbox_host_correspondence_model.md`), carrying the contract surfaces, the
+per-copy expectations, the version declaration and comparison points, and the
+`MAKEFILE_VERSION` relationship (separate host-internal marker, not part of
+the interface contract). `sandbox_lifecycle.md` carries the contract-check
+position in the lifecycle sequence. This ADR stays open until the mechanism
+is authoritative (P2/P3).
+
 **Edge cases / drivers:** old images carry no version label — the check treats a
 missing label as "pre-dating the contract version" and warns (matching
 `container-sig`'s missing-label behavior); container<->container comparison

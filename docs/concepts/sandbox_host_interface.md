@@ -1,11 +1,59 @@
-# Sandbox and Host Correspondence Model
+# Sandbox and Host Interface
 
 The sandbox and host repository are never the same git repository — they have divergent histories, different baselines, and no shared object store. Yet they must stay in correspondence: the sandbox must know what the host looks like, the host must be able to receive what the sandbox produced, and across multiple sessions these two states must remain coherent.
 
-This document describes the model that keeps them in correspondence across three distinct cases: live sandbox, stopped sandbox, and newly started sandbox.
+This document is the interface contract between them. It names the contract surfaces, what the harness expects from each co-resident copy, and the version declaration and comparison points that keep the copies interoperable. It covers three distinct cases: live sandbox, stopped sandbox, and newly started sandbox.
+
+The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary — see [`tool_interface.md`](../architecture/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 — Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
 Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
+
+---
+
+## Contract surfaces
+
+The interface contract has four surfaces. Each is versioned by the same `INTERFACE_CONTRACT_VERSION` constant (see [Version declaration and comparison](#version-declaration-and-comparison)).
+
+| Surface | What it is | Co-resident copies |
+|---|---|---|
+| Wiring shape | Bind-mount folder shape, `SANDBOX_DIR` format, container entrypoints, volume layout | Host source (`scripts/`, `src/build/`), baked images, generated `.compose` file |
+| Command semantics | `package-branch`, `diff_export`, `make apply/draft/confirm/reject` shapes; entrypoint validation requirements | Host commands, baked `/opt/sandbox/lib/` in each image |
+| Record schema | `.compose/<session-id>.yml` label set + in-worktree `SESSION_STATE` key set | Generated record, host readers (resume/list), both containers' libs |
+| Docker labels | `agent-sandbox.*` label set consumed by orchestration and identity lookups | Built images, generated `.compose` file |
+
+## Expectations per co-resident copy
+
+| Copy | Expectation |
+|---|---|
+| Host source | Declares `INTERFACE_CONTRACT_VERSION` once; drives comparisons at preflight; writes the record stamps (`.compose` labels at compose generation, `SESSION_STATE` key at session write) |
+| Tier-3 images (sandbox + agent) | Carry the `agent-sandbox.interface-contract-version` label baked at build |
+| Record (`.compose` + `SESSION_STATE`) | Carries the version stamped at session write; host-readable without starting a container |
+| Both containers | At P2 (authoritative regime), the agent entrypoint compares container-baked constants (sandbox inits first) |
+
+## Version declaration and comparison
+
+`INTERFACE_CONTRACT_VERSION` is declared once in `src/libs/interface_contract.sh` (host side). Bump rule: increment it exactly when a cross-boundary contract change lands — wiring shape, mount/bind shape, `SANDBOX_DIR` format, onboard command shape, host/container command semantics, session-record schema, or the docker labels a container consumes. Doc edits, tests, and internal refactors never bump it. The record schema is itself versioned by the same constant on its next bump.
+
+Declaration points:
+
+1. **Build time** — tier-3 images receive `agent-sandbox.interface-contract-version` as a build label (`build_image` in `scripts/build.sh`), beside the existing `agent-sandbox.container-sig`.
+2. **Session write** — the generated `.compose/<session-id>.yml` records the constant in its session label set; `session_state_write_set` writes the `interface_contract_version` key into `SESSION_STATE`.
+
+Comparison points (P0, warn-only parallel with container-sig, at start and resume preflight):
+
+- Host constant vs sandbox-image label; host constant vs agent-image label. Drift warns and names the rebuild remedy; alignment stays silent. A missing label warns "built before the interface-contract check".
+
+Deferred comparison points (P2, authoritative regime, operator-released):
+
+- The record surfaces at preflight: host constant vs record stamps.
+- The agent entrypoint container↔container check (sandbox inits first) as the earliest-possible point with strong consequences.
+
+The warn→strict switch-over, the P0-P3 rollover gates, and the container-sig retirement are in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+
+### Relationship to MAKEFILE_VERSION
+
+The sandbox's `.env` carries a separate host-side marker, `MAKEFILE_VERSION`, stamped at onboard time from the `Makefile.template` version marker. It is a different use case, not part of the interface contract: it is host-internal (template in the repo vs the onboarded project copy), has no container party, and bumps on Makefile-template surface changes (frequent). `INTERFACE_CONTRACT_VERSION` is the cross-boundary contract and bumps only on contract changes (rare). Do not fold the two into one number. As of this writing `MAKEFILE_VERSION` has no consumer — it is a write-only marker; the stale-onboarded-file detection it was designed for is not wired. Its doc edits and interface surfaces live in [`project_onboarding_guide.md`](../operations/project_onboarding_guide.md).
 
 ---
 
@@ -31,7 +79,7 @@ Further reading: the rationale for this mechanism — git-mediated correspondenc
 | **`SESSION_ID`** | 6-char hex hash: `sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`. Identifies a single session run. `SANDBOX_DIR` is canonicalized so every path spelling of one folder converges to one id. Replaces `SESSION_TS` in container names and artefact paths. The former separate `SANDBOX_ID` intermediate was removed (see [session_identifier.md](../adr/session_identifier.md)). |
 | **`HOST_HEAD_SHA`** | Full SHA of host HEAD at session start. Replaces `REPO_COMMIT`. |
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/` — `session/` holds per-export directories named `<EXPORT_TIME>-<SESSION_ID>` (exit artefacts), `autosave/` holds the single `<SESSION_ID>/` checkpoint directory, overwritten on each autosave tick. |
-| **Container labels** | Docker labels set on the capability layer container at session start. Ground truth for session identity. Labels: `agent-sandbox.project-dir`, `agent-sandbox.session-name`. |
+| **Session label set** | Docker labels set on containers at session start, baked into the generated compose file (`x-session-labels` anchor). Labels: `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts`, `agent-sandbox.session-id`, `agent-sandbox.agent-image-digest`, `agent-sandbox.sandbox-image-digest`, `agent-sandbox.interface-contract-version`. |
 
 ---
 
@@ -149,7 +197,7 @@ Two sessions against different worktrees maintain independent correspondence wit
 |---|---|---|
 | Session artefact directory | Branch name | No — git enforces branch uniqueness across worktrees |
 | Container names | Session identity | No — per-session name |
-| Container labels | `project-dir` label scopes lookup | No — label lookup is project-scoped |
+| Container labels | `project-name` label scopes lookup | No — label lookup is project-scoped |
 | `draft-state` | `SANDBOX_DIR` | No — separate file per worktree |
 
 Each worktree session runs its correspondence cycle independently. Merging worktree output to the main repo branch is standard git — the harness does not orchestrate cross-worktree merges.
@@ -168,6 +216,12 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 
 | Document | Purpose |
 |---|---|
+| [`interface_contract_compatibility.md`](../adr/interface_contract_compatibility.md) | Interface-contract version mechanism, rollover gates |
+| [`container_host_correspondence_mechanism.md`](../adr/container_host_correspondence_mechanism.md) | Why the diff file, not git, is the mechanism |
+| [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md) | Delivery wiring (copy/mount) — the wiring surface |
+| [`harness_versioning.md`](../adr/harness_versioning.md) | Per-surface version semantics (digest, HEAD, symlink) |
+| [`drift_state_coherence.md`](../adr/drift_state_coherence.md) | Coherence by minimisation, not detection |
+| [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
 | [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | Full design record — export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |

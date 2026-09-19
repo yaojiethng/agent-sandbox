@@ -10,7 +10,7 @@
 
 **Rejected alternatives:** None new. The 2026-09-01 rejection of git-mediated correspondence stands, now with delivery-axis evidence: a flattened delivery has no shared ancestry with the host checkout (state-based patches cover it), and a full-history delivery shares ancestry only up to materialization (treating that as a port-back channel would reintroduce the rejected topology dependence).
 
-**Edge cases / drivers:** The roadmap's "git-based port-back becomes possible" framing (mount-worktree row) is retired by this verification; the row now records the mechanism as landed. Concept docs (`mount_delivery.md`, `sandbox_host_correspondence_model.md`) already stated port-back via the diff machinery and needed no change.
+**Edge cases / drivers:** The roadmap's "git-based port-back becomes possible" framing (mount-worktree row) is retired by this verification; the row now records the mechanism as landed. Concept docs (`mount_delivery.md`, `sandbox_host_interface.md`) already stated port-back via the diff machinery and needed no change.
 
 *Decision settled with the apply/draft workflow design (M2.3 era, [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md)); originally recorded 2026-09-01, extended by the 2026-09-19 verification entry.*
 
@@ -19,7 +19,7 @@
 **Decision:** The sandbox repository and the host repository are never the same git repository — divergent histories, different baselines, no shared object store. Git is a tool used independently inside each repo; it is not the correspondence mechanism between them. Correspondence flows through the git-agnostic unified diff file, which applies cleanly when the target files are in the expected state. The harness depends on no shared git history, commit SHAs, or object stores across the boundary. Identity factors (`HOST_HEAD_SHA`, `init_sha`) carry just enough state to scope and baseline the diff — not to link the repositories. Host-side workflow commands (`apply`/`draft`/`confirm`/`reject`) consume the diff artefacts; their design rationale is in [diff_packaging.md](diff_packaging.md).
 
 **Rationale:** Diff-file correspondence keeps the boundary tool-agnostic — any tool that produces or consumes unified diffs participates in the model — and keeps all host modification behind explicit operator review: the host repo is never modified by the container directly, and no unreviewed change becomes a commit. It also avoids the security and complexity cost of git mediation across the boundary, whose rejection as a delivery model is recorded in [sandbox_delivery_model.md](sandbox_delivery_model.md) — the same principle applied to git plumbing rather than worktree wiring. Model:
-[sandbox_host_correspondence_model.md](../concepts/sandbox_host_correspondence_model.md).
+[sandbox_host_interface.md](../concepts/sandbox_host_interface.md).
 
 **Rejected alternatives:**
 - *Git-mediated correspondence* (shared object store, worktree wiring,

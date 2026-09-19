@@ -70,6 +70,8 @@ volume exists + REFRESH not set?
 
 Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
 
+Before any container starts, preflight compares the baked images against current source: `_check_container_sig` recomputes the `container-sig` label; `_check_interface_contract` compares the baked `agent-sandbox.interface-contract-version` label against the host constant (warn-only, ADR interface_contract_compatibility.md / [../concepts/sandbox_host_interface.md](../concepts/sandbox_host_interface.md)). The record carries the version stamped at session write; see the interface concept doc for declaration and comparison points.
+
 **Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`. `make start INTERACTIVE=1` opens the config wizard (pick a provider + build policy, confirm, then start); provider and `.env` values otherwise come from the Makefile/`.env`.
 
 ```
@@ -167,7 +169,7 @@ No checkpoint git tags are used. No `git am`. No `docker exec`. All corresponden
 
 | Topic | Document |
 |---|---|
-| Correspondence model — three cases, bidirectional flow | [../concepts/sandbox_host_correspondence_model.md](../concepts/sandbox_host_correspondence_model.md) |
+| Correspondence — the harness/container interface contract, three cases, bidirectional flow, version declaration | [../concepts/sandbox_host_interface.md](../concepts/sandbox_host_interface.md) |
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
 | Mount shape guarantees | [tool_interface.md](tool_interface.md#mount-shape-guarantees) |

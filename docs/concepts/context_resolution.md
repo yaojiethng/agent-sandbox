@@ -187,5 +187,5 @@ containers ──→ libs/shared/ only   entrypoints only source shared libs
 ## References
 
 - [`execution_model.md`](../architecture/execution_model.md) — Directory layout and mount shape
-- [`sandbox_host_correspondence_model.md`](sandbox_host_correspondence_model.md) — Host-container operation correspondence
+- [`sandbox_host_interface.md`](sandbox_host_interface.md) — Host-container operation correspondence
 - [`two_layer_model.md`](two_layer_model.md) — Reasoning/capability layer separation

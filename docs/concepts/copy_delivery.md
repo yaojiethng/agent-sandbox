@@ -7,7 +7,7 @@ Copy delivery is the default sandbox delivery: the agent's working content lives
 - The sandbox is one Docker volume per session, identified by the session id. It survives stop and start; teardown never destroys it.
 - At fresh start, a seeder fills the volume with the operator's state: repository with its index, working tree at disk state.
 - The agent works exclusively inside the volume. Host changes during the session are invisible -- copy delivery freezes the agent's view at session start.
-- Changes return to the host through the diff pipeline, which is git-agnostic and needs no shared history -- see [`sandbox_host_correspondence_model.md`](sandbox_host_correspondence_model.md).
+- Changes return to the host through the diff pipeline, which is git-agnostic and needs no shared history -- see [`sandbox_host_interface.md`](sandbox_host_interface.md).
 - Resume skips seeding entirely: the volume's git state is authoritative. Fresh start and resume differ only in the fill step.
 
 ## What the user relies on
