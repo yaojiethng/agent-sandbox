@@ -24,7 +24,7 @@ test_apply_applies_diff() {
   git -C "$P" add new.txt
   git -C "$P" diff --cached > "$P/../test.diff" 2>/dev/null || \
     git -C "$P" diff --cached > "$FIXTURE_DIR/test.diff"
-  git -C "$P" checkout -- new.txt
+  git -C "$P" reset --quiet HEAD -- new.txt
   rm -f "$P/new.txt"
   apply_run "$P" "$FIXTURE_DIR/test.diff" "" "false"
   if [[ -f "$P/new.txt" ]]; then
@@ -39,7 +39,7 @@ test_apply_applies_diff_with_branch() {
   echo "new content" > "$P/new.txt"
   git -C "$P" add new.txt
   git -C "$P" diff --cached > "$FIXTURE_DIR/branch.diff" 2>/dev/null || true
-  git -C "$P" checkout -- new.txt
+  git -C "$P" reset --quiet HEAD -- new.txt
   rm -f "$P/new.txt"
   git -C "$P" checkout -b "test-branch" 2>/dev/null
   git -C "$P" checkout main 2>/dev/null || git -C "$P" checkout master 2>/dev/null || true
@@ -100,7 +100,7 @@ test_apply_diff_file_preserved() {
   echo "preserved content" > "$P/preserve.txt"
   git -C "$P" add preserve.txt
   git -C "$P" diff --cached > "$FIXTURE_DIR/preserve.diff" 2>/dev/null || true
-  git -C "$P" checkout -- preserve.txt
+  git -C "$P" reset --quiet HEAD -- preserve.txt
   rm -f "$P/preserve.txt"
   apply_run "$P" "$FIXTURE_DIR/preserve.diff" "" "false"
   # Verify the diff file still exists (it should not be deleted by apply_run)
@@ -141,7 +141,7 @@ test_apply_no_resolution_logic() {
   echo "direct content" > "$P/direct.txt"
   git -C "$P" add direct.txt
   git -C "$P" diff --cached > "$FIXTURE_DIR/direct.diff" 2>/dev/null || true
-  git -C "$P" checkout -- direct.txt
+  git -C "$P" reset --quiet HEAD -- direct.txt
   rm -f "$P/direct.txt"
   apply_run "$P" "$FIXTURE_DIR/direct.diff" "" "false"
   if [[ -f "$P/direct.txt" ]]; then
@@ -172,7 +172,7 @@ test_apply_patch_file_normal() {
   echo "new content" > "$P/new.txt"
   git -C "$P" add new.txt
   git -C "$P" diff --cached > "$FIXTURE_DIR/apf_normal.diff" 2>/dev/null || true
-  git -C "$P" checkout -- new.txt
+  git -C "$P" reset --quiet HEAD -- new.txt
   rm -f "$P/new.txt"
   _apply_patch_file "$P" "$FIXTURE_DIR/apf_normal.diff" false false
   if [[ -f "$P/new.txt" ]]; then
@@ -217,7 +217,7 @@ test_apply_and_commit_applies_and_commits() {
   echo "commit content" > "$P/commit.txt"
   git -C "$P" add commit.txt
   git -C "$P" diff --cached > "$FIXTURE_DIR/aac_commit.diff" 2>/dev/null || true
-  git -C "$P" checkout -- commit.txt
+  git -C "$P" reset --quiet HEAD -- commit.txt
   rm -f "$P/commit.txt"
   local AUTHOR
   AUTHOR="$(git -C "$P" config user.name) <$(git -C "$P" config user.email)>"

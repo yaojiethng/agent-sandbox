@@ -6,6 +6,7 @@
 # Provides:
 #   validate_project_dir     --  check PROJECT_DIR exists, is git repo, has commits
 #   draft_clear_stale_lock   --  remove stale .git/index.lock
+#   require_clean_working_tree -- fail when the working tree is dirty
 
 # validate_project_dir PROJECT_DIR
 #   Checks PROJECT_DIR exists, is a git repository, and has at least one commit.
@@ -25,6 +26,21 @@ validate_project_dir() {
 
   if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
     echo "Error: $PROJECT_DIR has no commits - cannot apply patch" >&2
+    return 1
+  fi
+}
+
+# require_clean_working_tree PROJECT_DIR [LABEL]
+# Fail when the working tree is not clean (uncommitted, staged, or untracked
+# changes present). LABEL names the caller for the error message. Returns 1
+# with a commit-or-stash hint on stderr when the tree is dirty.
+# Dirty is the empty remainder of `status --porcelain`.
+require_clean_working_tree() {
+  local dir="$1"
+  local label="${2:-operation}"
+  if [[ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ]]; then
+    echo "Error: $label requires a clean working tree but uncommitted changes are present." >&2
+    echo "  Commit or stash your changes, then retry." >&2
     return 1
   fi
 }

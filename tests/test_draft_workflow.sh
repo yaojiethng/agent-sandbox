@@ -700,6 +700,54 @@ test_confirm_target_branch() {
   fi
 }
 
+test_draft_fails_on_dirty_working_tree() {
+  make_draft_fixture draft_dirty 1
+
+  # Dirty the project tree with an unstaged change.
+  echo "wip" >> "$P/file.txt"
+
+  local OUT RC=0
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 \
+     && "$OUT" == *"requires a clean working tree"* \
+     && "$OUT" == *"Stash them"* ]]; then
+    pass "draft fails on a dirty working tree (never bypassed)"
+  else
+    fail "expected dirty-tree refusal with stash hint, got rc=$RC out='$OUT'"
+  fi
+}
+
+test_reject_discards_uncommitted_draft_residue() {
+  make_draft_fixture reject_residue 1
+
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+
+  # Simulate post-draft working-tree residue that genuinely blocks the source
+  # checkout: an unstaged edit to file-1.txt, which is tracked on the draft
+  # branch but absent on main, so git refuses to carry the change across.
+  echo "residue" >> "$P/file-1.txt"
+
+  local OUT RC=0
+  OUT=$(reject_run "$P" "$S" 2>&1) || RC=$?
+
+  local CURR
+  CURR=$(_current_branch "$P")
+  local DRAFT_GONE=no
+  _branch_exists "$P" "$DRAFT_BRANCH" || DRAFT_GONE=yes
+
+  if [[ $RC -eq 0 \
+     && "$CURR" == "main" \
+     && "$DRAFT_GONE" == yes \
+     && "$OUT" == *"discarding uncommitted draft changes"* ]]; then
+    pass "reject returns to source and discards draft residue"
+  else
+    fail "expected clean reject-discard, rc=$RC curr=$CURR draft-gone=$DRAFT_GONE out='$OUT'"
+  fi
+}
+
 test_confirm_rejects_non_draft_branch() {
   local P="$FIXTURE_DIR/confirm_nondraft_p"
   make_committed_repo "$P"
@@ -1001,6 +1049,7 @@ run_test test_draft_allows_parallel_drafts
 run_test test_draft_branch_from
 run_test test_draft_diffs_range
 run_test test_draft_no_diffs_error
+run_test test_draft_fails_on_dirty_working_tree
 run_test test_draft_failure_returns_to_source_branch
 run_test test_draft_failure_deletes_draft_branch
 run_test test_draft_strips_index_lines
@@ -1025,6 +1074,7 @@ run_test test_confirm_drop_step_failure_restores_savepoint
 
 run_test test_reject_returns_to_source
 run_test test_reject_deletes_draft_branch
+run_test test_reject_discards_uncommitted_draft_residue
 run_test test_reject_rejects_non_draft
 
 test_done

@@ -147,6 +147,64 @@ test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit() {
   fi
 }
 
+test_apply_run_clean_tree_guard_blocks_unstaged_changes() {
+  local repo="$FIXTURE_DIR/repo_clean_guard"
+  _make_repo "$repo"
+
+  local diff_file="$FIXTURE_DIR/one.diff"
+  cat > "$diff_file" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-base
++changed
+EOF
+
+  # Dirty the tree: an unstaged edit that conflicts with the diff target.
+  echo "working-tree-edit" >> "$repo/file.txt"
+
+  local ERR RC=0
+  ERR=$(apply_run "$repo" "$diff_file" "" false </dev/null 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 \
+     && "$ERR" == *"requires a clean working tree"* \
+     && "$ERR" == *"Commit or stash"* ]]; then
+    pass "apply blocks on a dirty tree without --force"
+  else
+    fail "expected clean-tree refusal, got rc=$RC err='$ERR'"
+  fi
+}
+
+test_apply_run_force_tolerates_dirty_tree_with_warning() {
+  local repo="$FIXTURE_DIR/repo_force_dirty"
+  _make_repo "$repo"
+
+  local diff_file="$FIXTURE_DIR/one.diff"
+  cat > "$diff_file" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-base
++changed
+EOF
+
+  # Dirty the tree with an unrelated unstaged change to a different file so the
+  # patch itself still applies cleanly.
+  echo "stray" > "$repo/stray.txt"
+  git -C "$repo" add stray.txt
+
+  local WARN RC=0
+  WARN=$(apply_run "$repo" "$diff_file" "" true </dev/null 2>&1 >/dev/null) || RC=$?
+
+  if [[ $RC -eq 0 && "$WARN" == *"tolerates a dirty working tree"* ]]; then
+    pass "apply --force tolerates dirty tree and warns"
+  else
+    fail "expected force tolerance + warning, got rc=$RC warn='$WARN'"
+  fi
+}
+
 test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
   local repo="$FIXTURE_DIR/repo_empty_uncommitted"
   _make_repo "$repo"
@@ -175,6 +233,8 @@ test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
 run_test test_apply_run_single_file_diff_reports_one
 run_test test_apply_run_multi_file_diff_reports_exact_count
 run_test test_apply_run_empty_diff_skips_with_warning
+run_test test_apply_run_clean_tree_guard_blocks_unstaged_changes
+run_test test_apply_run_force_tolerates_dirty_tree_with_warning
 run_test test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit
 run_test test_draft_apply_uncommitted_empty_diff_skips_with_warning
 

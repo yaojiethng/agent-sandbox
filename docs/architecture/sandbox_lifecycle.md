@@ -146,7 +146,7 @@ Only one autosave directory exists per session — the old one is `rm -rf`'d bef
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute).
+**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute). Draft runs only on a clean working tree: uncommitted or untracked changes abort it with a stash-or-commit hint. The guard is never bypassed, not even by `--force` — force tolerates apply conflicts only, never an unclean fork base.
 
 **`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
@@ -156,9 +156,9 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged.
 
-**`make reject`** — discards the draft branch. Artefacts unchanged.
+**`make reject`** — discards the draft branch, returning to the source branch. Draft residue (uncommitted changes left by `uncommitted.diff` on the working tree) is discarded automatically, since once the draft commits are dropped the final working-tree changes carry no information. Artefacts unchanged.
 
-**`make apply DIFF=<path>`** — applies an exact diff file via `git apply` with index lines stripped. `DIFF=<path>` is required; no channel, bundle, or auto-resolution is performed. No commits created.
+**`make apply DIFF=<path>`** — applies an exact diff file via `git apply` with index lines stripped. `DIFF=<path>` is required; no channel, bundle, or auto-resolution is performed. No commits created. Runs only on a clean working tree; uncommitted changes abort it. `--force` tolerates a dirty tree (treated as one form of apply conflict) and warns that some hunks may fail.
 
 **`make apply INTERACTIVE=1`** — interactive mode: prints a git-oneline-style preview of the changes (the files the diff touches and the total file count), then asks for confirmation with a single y/N prompt before applying.
 

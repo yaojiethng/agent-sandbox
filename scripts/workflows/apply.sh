@@ -57,6 +57,18 @@ apply_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
+  # Clean-tree guard: apply onto the working tree, which is only safe when
+  # it is clean. --force tolerates a dirty tree as one form of apply conflict;
+  # hunks may then fail, so warn loudly about collateral consequences.
+  if ! require_clean_working_tree "$PROJECT_DIR" "make apply"; then
+    if [[ "$FORCE" != true ]]; then
+      return 1
+    fi
+    echo "Warning: make apply --force tolerates a dirty working tree." >&2
+    echo "  Uncommitted changes were present; some hunks may fail to apply cleanly." >&2
+    echo "  Review .rej files and the full tree state before proceeding." >&2
+  fi
+
   # Optionally check out branch
   if [[ -n "$APPLY_BRANCH" ]]; then
     if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$APPLY_BRANCH"; then

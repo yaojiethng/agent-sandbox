@@ -19,6 +19,24 @@ The dirty-first precedence is the contract: any uncommitted change forces a save
 
 **Edge cases / drivers:** The autosave loop reads the baseline *before* its `rm -rf`, because the wipe destroys the very `.export-status` that holds the comparison point. A FAILed previous export is not a baseline — `_save_baseline` falls back to `init_sha` rather than trust an interrupted save. A busy agent with uncommitted edits always saves, so an export is never lost to the guard. The lifecycle and layout are documented in [sandbox_lifecycle.md](../architecture/sandbox_lifecycle.md).
 
+## 2026-09-19 -- Host workflows require a clean tree; reject discards residue
+
+**Decision:** The host-side review-loop commands that touch the project working tree guard on its cleanliness. `make draft` and `make apply` refuse to run when `git status --porcelain` is non-empty (uncommitted, staged, or untracked changes present), printing a stash-or-commit hint. `make draft` never bypasses the guard, not with `--force`; `make apply --force` tolerates a dirty tree as one form of apply conflict and warns that some hunks may fail. `make reject` returns to the source branch with `checkout -f` + `clean -fd` when an unguarded checkout is blocked, discarding draft residue from the working tree.
+
+The shared helper `require_clean_working_tree PROJECT_DIR [LABEL]` in `guards.sh` implements the check; it returns 1 with a hint when the tree is dirty.
+
+**Rationale:** Draft and apply operate on the operator's real project repo (`PROJECT_DIR`), not the sandbox. Running them from a dirty tree leaks the operator's working state: `git checkout -b` carries uncommitted/staged/untracked changes onto the draft branch, and `apply_and_commit`'s `git add -A` sweeps them into the draft commits. The leak then propagates to the unwind path — `make reject` could not check out the source branch over conflicting residue and aborted, leaving the draft behind; the failed-apply rollback's `reset --hard` would destroy the pre-existing working changes. A hard clean-tree guard at the fork point resolves all three at once: nothing is carried in, nothing is swept, and reject/rollback can safely discard because the only residue is draft-introduced. Once the draft commits are dropped, the final working-tree changes carry no information, so reject discarding them is lossless and returns the operator to a known-clean source state.
+
+Rejecting lacks an operator-visible surface for the discard decision: revert discards a review branch whose whole purpose is temporary, so there is no separate confirm prompt. `make apply --force` keeps its conflict-tolerance meaning; a dirty tree is the same class of problem as an apply conflict. Draft does not extend force to the guard: folding operator WIP into a review branch that `make confirm` would then merge into the source is never what the operator wants from `--force`.
+
+**Rejected alternatives:**
+- *Allow draft on a dirty tree* (prior behaviour) — carries WIP into the branch and sweeps it into commits; reject then cannot return cleanly and rollback can destroy the WIP. Rejected as the leak being fixed.
+- *Draft --force bypasses the clean guard* — force would silently fold operator WIP into the review branch, and `make confirm` would merge that WIP into the source. Rejected: --force means tolerating apply conflicts, not shipping local work.
+- *Reject leaves residue; ask the operator to resolve by hand* (prior behaviour) — could not check out and aborted, stranding the draft. Rejected as the state leak.
+- *Reject prompts before discarding* — adds a confirm surface to a command whose purpose is discard; the residue is information-free once the commits drop. Rejected as needless friction.
+
+**Edge cases / drivers:** The guard runs before any working-tree mutation, so a refused draft/apply leaves the tree untouched. `make apply --force` may produce `.rej` files from failing hunks; the warning points the operator at them. The lifecycle and command behaviours are documented in [sandbox_lifecycle.md](../architecture/sandbox_lifecycle.md).
+
 ## 2026-08-01 -- Single export mechanism, four guarded workflow commands
 
 **Decision:** All diff packaging — session export, autosave, agent-initiated, operator-initiated — uses one pipeline (`diff_export` → `package_branch`) exposed as `/package-branch` on the agent side and `package-branch` on the host. There is no `package-diff`; the `diffs` channel is removed from routing (`make apply` defaults to the `session` channel). The four host-side review-loop commands are kept with distinct, non-overlapping purposes:

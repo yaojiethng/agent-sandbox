@@ -301,6 +301,17 @@ draft_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
+  # Clean-tree guard: drafting from a dirty tree folds WIP into the review
+  # branch (checkout -b carries it; git add -A sweeps it into draft commits).
+  # Never bypassed by --force -- force only tolerates apply conflicts, never an
+  # unclean fork base. The hint tells the operator how to proceed.
+  if ! require_clean_working_tree "$PROJECT_DIR" "make draft" >/dev/null 2>&1; then
+    echo "Error: make draft requires a clean working tree." >&2
+    echo "  Uncommitted or untracked changes are present." >&2
+    echo "  Stash them (git stash) or commit them before drafting." >&2
+    return 1
+  fi
+
   [[ -d "$SOURCE_DIR" ]] || { echo "Error: source not found: $SOURCE_DIR" >&2; return 1; }
   local PATCHES_DIR="$SOURCE_DIR/patches"
   [[ -d "$PATCHES_DIR" ]] || [[ "$DIFF_COUNT" -eq 0 ]] || { echo "Error: no patches/ in $SOURCE_DIR" >&2; return 1; }

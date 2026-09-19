@@ -33,8 +33,13 @@ reject_run() {
 
   echo "Rejecting draft. Returning to $source_branch..."
   if ! git -C "$PROJECT_DIR" checkout "$source_branch" 2>/dev/null; then
-    echo "Error: could not checkout $source_branch. Resolve working tree conflicts and retry." >&2
-    return 1
+    # Draft residue (e.g. uncommitted.diff applied to the working tree) blocks
+    # the checkout. Reject discards the draft entirely, so discard the residue
+    # too -- the final working-tree changes carry no information once the draft
+    # commits are dropped.
+    echo "Warning: discarding uncommitted draft changes to return to $source_branch..." >&2
+    git -C "$PROJECT_DIR" checkout -f "$source_branch"
+    git -C "$PROJECT_DIR" clean -fd
   fi
 
   if git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH" 2>/dev/null; then
