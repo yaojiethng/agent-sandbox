@@ -1,4 +1,4 @@
-# Handover 20260904-03 — design seed transport correctness amendments
+# Handover 20260904-03 -- design seed transport correctness amendments
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** design
@@ -11,7 +11,7 @@ Harden the seed transport design (helper-container copy, ADR `sandbox_delivery_m
 
 ## Audit context (chat, this iteration)
 
-Re-audit of the committed design surfaced one spec bug and several unrecorded contracts. The mount-path rsync Known Issue was re-located in code: `snapshot_copy_worktree` (`src/capability/snapshot.sh`) silently ignores negation patterns in global gitignore and `.git/info/exclude` — a live R1 leak on the mount-delivery path, not just a historical note.
+Re-audit of the committed design surfaced one spec bug and several unrecorded contracts. The mount-path rsync Known Issue was re-located in code: `snapshot_copy_worktree` (`src/capability/snapshot.sh`) silently ignores negation patterns in global gitignore and `.git/info/exclude` -- a live R1 leak on the mount-delivery path, not just a historical note.
 
 ## Scope (operator-confirmed)
 
@@ -38,21 +38,21 @@ Re-audit of the committed design surfaced one spec bug and several unrecorded co
 
 ## Deferred
 
-- Implementation itself (seeder wiring, pipeline retirement, trace-test rewrites) — next iteration, against the amended spec.
-- Test matrix execution — defined as spec acceptance criteria here, written in the implementation iteration.
+- Implementation itself (seeder wiring, pipeline retirement, trace-test rewrites) -- next iteration, against the amended spec.
+- Test matrix execution -- defined as spec acceptance criteria here, written in the implementation iteration.
 
 ## Findings
 
 | # | Finding | Status |
 |---|---|---|
 | F1 | ADR command 2 hard-fails on deleted tracked files (`ls-files --cached` reads the index; tar errors on the missing path). R2's deletions-visible case is unreachable as written. Resolved: existence filter adopted from the knowledge probe, already validated (deleted-file case reports parity). | Resolved |
-| F2 | Mount-delivery path (`snapshot_copy_worktree`) silently ignores negation patterns in global excludes and `.git/info/exclude` — live R1 leak; the Known Issue note understates it as "residual limitation". | Resolved (fix landed with the seed-transport redesign, handovers `20260904-04`..`20260904-06`; see correction below) |
+| F2 | Mount-delivery path (`snapshot_copy_worktree`) silently ignores negation patterns in global excludes and `.git/info/exclude` -- live R1 leak; the Known Issue note understates it as "residual limitation". | Resolved (fix landed with the seed-transport redesign, handovers `20260904-04`..`20260904-06`; see correction below) |
 | F3 | Seeder/agent UID parity is load-bearing (volume ownership; dubious-ownership refusals) and unrecorded. | Resolved (recorded in ADR) |
 | F4 | Seed-completion signal moves to seeder exit code; without an explicit boundary, a half-seeded volume boots silently. | Resolved (recorded in ADR) |
 | F5 | Consumer sweep for the porcelain decision: the only `diff --cached` consumer is inside `snapshot_init_git`, which the redesign retires. No index-assuming consumer blocks the reset removal. | Resolved |
-| F6 | The knowledge probe empirically confirms the rsync Known Issue: the current pipeline leaks `drop.debug` (negation) and `globalonly.txt` (global exclude) — DIVERGENCE, reproducible. | Resolved (evidence for F2) |
-| F7 | A stale `.agent-sandbox-seed/` payload sits in this container's worktree — root-owned, extracted by `docker cp` at provision time, never cleaned up. Not a host-side fossil: the host worktree is clean. | Resolved (diagnosed) |
-| F8 | The old pipeline's member cleanup is fail-open by construction: `snapshot_init_git` runs `rm -rf "$SEED_DIR"` as `agentuser` against root-owned 755 directories from the `docker cp` extraction; the rm fails with no error guard, the next command succeeds, and the session starts green with the full payload left in the worktree. The architecture doc states the cleanup as fact. Live demonstration of the R7 failure locus; the redesign retires the cleanup step entirely. Litter masked by a committed `.gitignore` line — pollution reached tracked project content. | Open (retires with the pipeline; doc claim folded into the impl doc sweep) |
+| F6 | The knowledge probe empirically confirms the rsync Known Issue: the current pipeline leaks `drop.debug` (negation) and `globalonly.txt` (global exclude) -- DIVERGENCE, reproducible. | Resolved (evidence for F2) |
+| F7 | A stale `.agent-sandbox-seed/` payload sits in this container's worktree -- root-owned, extracted by `docker cp` at provision time, never cleaned up. Not a host-side fossil: the host worktree is clean. | Resolved (diagnosed) |
+| F8 | The old pipeline's member cleanup is fail-open by construction: `snapshot_init_git` runs `rm -rf "$SEED_DIR"` as `agentuser` against root-owned 755 directories from the `docker cp` extraction; the rm fails with no error guard, the next command succeeds, and the session starts green with the full payload left in the worktree. The architecture doc states the cleanup as fact. Live demonstration of the R7 failure locus; the redesign retires the cleanup step entirely. Litter masked by a committed `.gitignore` line -- pollution reached tracked project content. | Open (retires with the pipeline; doc claim folded into the impl doc sweep) |
 
 ## Decisions
 

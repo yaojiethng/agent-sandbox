@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-28
-**Milestone:** M2.3 — Workflow Audit and Policy Refactor
+**Milestone:** M2.3 -- Workflow Audit and Policy Refactor
 **Type:** Workflow
 **Status:** Closed
 
@@ -50,12 +50,12 @@ Not yet defined.
 | Step 4 action cell trimmed; grep rule moved to handover_policy | Table cells describe what a step does, not how; spec production rules belong at scope confirmation | iteration_policy.md, handover_policy.md |
 | Recovery check reframed: "does roadmap reflect prior handover's claimed state" | Broader than Trigger B check alone; catches any incomplete close sequence | handover_policy.md, new-session-v2.md |
 | Mid-session findings section added to handover format | Append-only buffer for discoveries that change the plan; survives compaction; triaged at close | handover_policy.md |
-| Three named write triggers: task completion, discovery, steering received | Scheduling issue — model does not know when to write; explicit triggers resolve ambiguity | handover_policy.md |
+| Three named write triggers: task completion, discovery, steering received | Scheduling issue -- model does not know when to write; explicit triggers resolve ambiguity | handover_policy.md |
 | Carry-forward escalation: one hop via Next session, roadmap after that | Findings deferred more than once fall through the handover chain; roadmap is the durable store | handover_policy.md, roadmap_policy.md |
 | Grep rule added to scope confirmation | Code blocks written from memory are primary source of spec bugs; file must be read before spec is written | handover_policy.md |
 | AC satisfiability check added to Gate 2 (minor loop) | A criterion that fails on correct implementation is a spec bug; catch at gate not at pre-close | iteration_policy.md |
 | Story opened for sequencing and knowledge persistence pain points | Immediate fixes address symptoms; structural question requires a planning session | story_sequencing_and_knowledge_persistence.md |
-| wrapup.md assessed — nothing to distil into policy | Prompt template faithfully mirrors handover_policy; no unique content | This handover |
+| wrapup.md assessed -- nothing to distil into policy | Prompt template faithfully mirrors handover_policy; no unique content | This handover |
 
 ## Completed this session
 
@@ -74,21 +74,24 @@ None.
 
 ## Next session
 
-**Milestone:** M2.3 — Workflow Audit and Policy Refactor
+**Milestone:** M2.3 -- Workflow Audit and Policy Refactor
 **Session outcome:** Workflow audit complete. All policy changes produced as artifacts. Pending operator review and application to repository.
 
-**Outstanding implementation thread:** M2.3 apply_workspace refactor (Changes 1–7) complete per `20260428-03-impl-apply_workspace_refactor.md`. Remaining M2.3 task groups in dependency order:
+**Outstanding implementation thread:** M2.3 apply_workspace refactor (Changes 1-7) complete per `20260428-03-impl-apply_workspace_refactor.md`. Remaining M2.3 task groups in dependency order:
+
 1. `SESSION_STATE` file / `$SESSION_TS` persistence bug
 2. `package-branch` skill amendments (depends on SESSION_STATE)
 3. Interactive confirmation flag
 4. Test suite repair (partially depends on SESSION_STATE)
 
-**Story opened this session:** `story_sequencing_and_knowledge_persistence.md` — requires a planning session before any implementation is scoped.
+**Story opened this session:** `story_sequencing_and_knowledge_persistence.md` -- requires a planning session before any implementation is scoped.
 
 **Watch-outs:**
-- New handover format includes `## Mid-session findings` — next implementation agent must populate or null-mark at session open
+
+- New handover format includes `## Mid-session findings` -- next implementation agent must populate or null-mark at session open
 
 ---
-[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". All policy changes produced as artifacts; operator review was pending, documented here for completeness. See 20260506-01-workflow-handover_audit_and_corrections.md.
-- Carry-forward escalation rule is new — first session to use it should verify the roadmap entry format for escalated findings is legible alongside planned task entries
-- Major loop now has three named gates and skip conditions — next planning session agent should read the full major loop table before proceeding
+[CORRECTION -- 2026-05-06]: Status corrected from "Active" to "Closed". All policy changes produced as artifacts; operator review was pending, documented here for completeness. See 20260506-01-workflow-handover_audit_and_corrections.md.
+
+- Carry-forward escalation rule is new -- first session to use it should verify the roadmap entry format for escalated findings is legible alongside planned task entries
+- Major loop now has three named gates and skip conditions -- next planning session agent should read the full major loop table before proceeding

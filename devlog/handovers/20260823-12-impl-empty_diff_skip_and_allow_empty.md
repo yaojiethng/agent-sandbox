@@ -28,6 +28,7 @@ Shared detection helper candidate: a tiny `diff_is_empty <file>` (zero `diff --g
 ## Test plan
 
 Extend [`tests/test_apply_count.sh`](../../tests/test_apply_count.sh) (or sibling):
+
 1. `apply_run` + empty diff -> rc=0, warning present, no "Files changed" garbage (supersedes the "-12 found the branch unreachable" caveat -- this iteration MAKES it reachable)
 2. `apply_and_commit` + empty diff -> rc=0, exactly one new empty commit whose message equals COMMIT_MSG, author preserved, warning present
 3. `draft_apply_uncommitted` + exists-but-empty -> warning, tree unchanged, rc=0
@@ -69,8 +70,6 @@ Extend [`tests/test_apply_count.sh`](../../tests/test_apply_count.sh) (or siblin
 | [`docs/architecture/tool_interface.md`](../../docs/architecture/tool_interface.md) | `make apply` and `make draft` sections now state the empty-diff semantics (operator-approved wording) -- the only two doc sites that specify apply behavior |
 
 Implementation delivered as a single squashed commit (the WIP registration content folded in per git policy).
-
-
 
 ## Deferred items
 

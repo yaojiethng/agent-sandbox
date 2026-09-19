@@ -28,17 +28,17 @@ None.
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| 1 | Q1/Q2 evidence reproducible: byte-identical export artefacts across full/flatten via production functions; identical round-trip | `bash /tmp/q2_matrix.sh` → PASS | accepted (Agent ✅ re-run at pre-close: PASS) |
-| 2 | No git transport (push/pull/fetch/merge/remote/clone/cherry-pick/am) invoked in `src/` or `scripts/` beyond one tag comment | grep | accepted (Agent ✅: only `draft.sh:447` comment) |
-| 3 | Host apply commands carry zero delivery/flatten awareness | grep `scripts/workflows/` | accepted (Agent ✅: zero hits) |
-| 4 | Q2 cell tests green: seed_volume 32, start_agent 34, run_agent 10, compose-gen 12, resume-trace 25 | run each | accepted (Agent ✅) |
-| 5 | Q3 audit recorded: bundle metrics + 2 DRY candidates in handover | read-back | accepted (Agent ✅) |
-| 6 | Roadmap row re-scoped; "git-based port-back becomes possible" language gone | grep roadmap | accepted (Agent ✅: 0 hits; row closed `- [x]`) |
-| 7 | ADR gains 2026-09-19 entry per adr_policy (mandated fields; `Current:` pointer) | read-back | accepted (Agent ✅ presence; Operator ✅ read-back) |
-| 8 | Architecture/concept docs in scope describe the system as built | Agent + Operator | accepted (Agent ✅: concepts already consistent; no change needed) |
+| 1 | Q1/Q2 evidence reproducible: byte-identical export artefacts across full/flatten via production functions; identical round-trip | `bash /tmp/q2_matrix.sh` -> PASS | accepted (Agent [x] re-run at pre-close: PASS) |
+| 2 | No git transport (push/pull/fetch/merge/remote/clone/cherry-pick/am) invoked in `src/` or `scripts/` beyond one tag comment | grep | accepted (Agent [x]: only `draft.sh:447` comment) |
+| 3 | Host apply commands carry zero delivery/flatten awareness | grep `scripts/workflows/` | accepted (Agent [x]: zero hits) |
+| 4 | Q2 cell tests green: seed_volume 32, start_agent 34, run_agent 10, compose-gen 12, resume-trace 25 | run each | accepted (Agent [x]) |
+| 5 | Q3 audit recorded: bundle metrics + 2 DRY candidates in handover | read-back | accepted (Agent [x]) |
+| 6 | Roadmap row re-scoped; "git-based port-back becomes possible" language gone | grep roadmap | accepted (Agent [x]: 0 hits; row closed `- [x]`) |
+| 7 | ADR gains 2026-09-19 entry per adr_policy (mandated fields; `Current:` pointer) | read-back | accepted (Agent [x] presence; Operator [x] read-back) |
+| 8 | Architecture/concept docs in scope describe the system as built | Agent + Operator | accepted (Agent [x]: concepts already consistent; no change needed) |
 | 9 | Live dry-run e2e across {copy, mount} x {flatten on, off} passes on docker host | `make dry-run` | pushed - operator-run (no docker in this environment) |
-| 10 | DRY1: `session_state_write_set` defined in `src/libs/session_state.sh`, absent from `seed_volume.sh`; entrypoint mount-init uses the setter; suite green | grep + suite | accepted (Agent ✅: 854/854) |
-| 11 | DRY2: `verify_parity` / `verify_baseline` share `_nul_streams_equal`; messages preserved; seed_volume 32/32 | grep + test | accepted (Agent ✅) |
+| 10 | DRY1: `session_state_write_set` defined in `src/libs/session_state.sh`, absent from `seed_volume.sh`; entrypoint mount-init uses the setter; suite green | grep + suite | accepted (Agent [x]: 854/854) |
+| 11 | DRY2: `verify_parity` / `verify_baseline` share `_nul_streams_equal`; messages preserved; seed_volume 32/32 | grep + test | accepted (Agent [x]) |
 
 ## Hot files
 

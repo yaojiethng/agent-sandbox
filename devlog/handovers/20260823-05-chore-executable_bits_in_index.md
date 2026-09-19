@@ -1,13 +1,13 @@
 # Agent Handover
 
 **Date:** 2026-08-23
-**Milestone:** M2.6 — Session Persistence
+**Milestone:** M2.6 -- Session Persistence
 **Type:** Housekeeping
 **Status:** Closed
 
 ## Objective
 
-Fix lost executable bits in the git index: every shebang-carrying script (101 `*.sh`, plus `test/stubs/docker`) is stored as `100644` although the working tree carries them executable. Direct-exec call sites (`start_agent.sh` → `run_agent.sh`; tests PATH-shadowing the docker stub; `exec bash` dispatch is unaffected but direct `./script` invocation is not) only work because disk modes diverge from the index — a fresh clone yields a broken tree.
+Fix lost executable bits in the git index: every shebang-carrying script (101 `*.sh`, plus `test/stubs/docker`) is stored as `100644` although the working tree carries them executable. Direct-exec call sites (`start_agent.sh` -> `run_agent.sh`; tests PATH-shadowing the docker stub; `exec bash` dispatch is unaffected but direct `./script` invocation is not) only work because disk modes diverge from the index -- a fresh clone yields a broken tree.
 
 ## Scope
 

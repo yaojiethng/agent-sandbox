@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-01
-**Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Type:** Docs — Phase 1.5 documentation
+**Milestone:** M2.6 -- Session Resume and Mount Model Redesign
+**Type:** Docs -- Phase 1.5 documentation
 **Status:** Closed
 
 ## Objective
@@ -17,8 +17,8 @@ Documentation updates as scoped in `20260701-02-design-m2_6_2_persistence_scopin
 
 - `docs/architecture/security.md`: Execution Model Assumptions updated for Tier 1 persistence.
 - `docs/development/quickstart.md`: Session persistence section with REFRESH usage and decision diagram.
-- `docs/operations/provider_onboarding_guide.md`: Named volume note in Step 10 — providers must not declare volume with same name, lifecycle managed by harness.
-- `docs/architecture/sandbox_lifecycle.md`: Resume path subsection — host-side detection, .run-identity read, copy pipeline skip, container-side detection, SESSION_STATE refresh.
+- `docs/operations/provider_onboarding_guide.md`: Named volume note in Step 10 -- providers must not declare volume with same name, lifecycle managed by harness.
+- `docs/architecture/sandbox_lifecycle.md`: Resume path subsection -- host-side detection, .run-identity read, copy pipeline skip, container-side detection, SESSION_STATE refresh.
 - `docs/concepts/sandbox_identity.md`: .run-identity file documented. SESSION_STATE schema extended with `run_id`. Env var lifecycle table (which values persist, which recompute).
 
 ## Key files modified this session
@@ -31,4 +31,4 @@ None for this scope.
 
 ## Next session
 
-M2.6 Phase 2 — Mount model pre-design investigations and full design session.
+M2.6 Phase 2 -- Mount model pre-design investigations and full design session.

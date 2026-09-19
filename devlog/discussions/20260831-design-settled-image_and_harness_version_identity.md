@@ -1,4 +1,4 @@
-# Design — Image and Harness Version Identity
+# Design -- Image and Harness Version Identity
 
 **Status:** settled
 
@@ -16,8 +16,8 @@ settled in the session that refined this stub (20260901-02).**
 
 ## Context
 
-The harness runs its own software as three independently-drifting copies —
-container image content, git worktree checkout, and host installed CLI — none of
+The harness runs its own software as three independently-drifting copies --
+container image content, git worktree checkout, and host installed CLI -- none of
 which carries a serializable, monotonically increasing version. The absence of a
 version identity prevents exact-resume, silently absorbs host checkout drift,
 and has produced a ladder of partial remedies (`container-sig`, `harness-sig`,
@@ -41,7 +41,7 @@ The story fixes the requirements; this design fixes the *how*.
 
 ## Options Considered
 
-### Option A — Docker digest as the image-surface version (`<repo>@sha256:`)
+### Option A -- Docker digest as the image-surface version (`<repo>@sha256:`)
 
 Per-image immutable content address over the whole built artifact (config +
 every layer). Closes the `container-sig` leak (base image, runtime, deps all
@@ -50,32 +50,34 @@ resume references the exact digest; docker keeps the content addressable until
 GC'd.
 
 - Trade-offs: docker-native (not resolvable from source alone); a digest is
-  not human-friendly; only addresses the *image* surface — the worktree and
+  not human-friendly; only addresses the *image* surface -- the worktree and
   host surfaces need their own mechanism.
 - How staleness might work: "newer image available" = the digest a fresh build
-  would produce differs from the recorded one — but that is only knowable at
+  would produce differs from the recorded one -- but that is only knowable at
   build time (you cannot diff a digest against source). This is the open
   question the next session must resolve (retain a source hash for the
   staleness signal, or drop staleness).
 
-### Option B — Content hash of the harness source subset (current `container-sig`)
+### Option B -- Content hash of the harness source subset (current `container-sig`)
 
 What exists today. Cheap, docker-free, project-agnostic.
-- Trade-offs: **inadequate per the story** — signs a fixed subset, misses
+
+- Trade-offs: **inadequate per the story** -- signs a fixed subset, misses
   base/runtime/dependency content, not a comparable version. Retained only as a
   candidate where the surface is genuinely source-only (host/checkout), not for
   the image surface.
 
-### Option C — Semantic versioning (hand-bumped `VERSION`)
+### Option C -- Semantic versioning (hand-bumped `VERSION`)
 
 The textbook "serializable increasing version".
-- Trade-offs: conscious bump discipline on every meaningful change — the exact
+
+- Trade-offs: conscious bump discipline on every meaningful change -- the exact
   ceremony the story says operators want to avoid; easy to forget (that is the
   origin of the staleness bugs). Likely rejected for the *user-facing* surface;
   possibly retained as a thin human-readable label on top of a derivable
   signature.
 
-### Option D — Composition (recommended to explore)
+### Option D -- Composition (recommended to explore)
 
 A content-addressed identity (digest for the image surface; a source hash for
 the worktree/host surfaces) plus, optionally, a derived human-readable short
@@ -92,7 +94,7 @@ A **composition (Option D)** is adopted, per surface:
   record as `agent-sandbox.agent-image-digest` + `agent-sandbox.sandbox-image-digest`.
   Forward-only, no back-compat; digest-less image = hard error.
 - **Worktree surface = plain `$REPO_ROOT` git HEAD SHA**, carried conceptually
-  into the deferred interface-contract thread — **no record field**.
+  into the deferred interface-contract thread -- **no record field**.
 - **Host surface = symlink install** (self-locating dispatcher); no separate
   version by construction; semver deferred to the full-packaging milestone.
 - **Staleness retired**: no list-time image-staleness. Dry-run always builds/runs
@@ -110,7 +112,7 @@ A **composition (Option D)** is adopted, per surface:
   from new records; no `harness-head-sha` field. Older (two-sig) records do not
   decode (forward-only).
 - **Resume**: exact-resume via recorded digest; digest-less record = refuse loudly.
-- **List-time cost**: `record_image_stale`'s 2×N docker scans removed; `resume LIST`
+- **List-time cost**: `record_image_stale`'s 2xN docker scans removed; `resume LIST`
   faster.
 - **Image retention/GC**: out of the immediate scope; digest keeps content
   addressable until GC.

@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-30
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Type:** Implementation — Volume prune
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
+**Type:** Implementation -- Volume prune
 **Status:** Closed
 
 ## Objective
@@ -17,7 +17,7 @@ Single file: `scripts/prune.sh`. One flag addition.
 
 - Added `--volumes` to `docker system prune` invocation
 - Updated header comment: removed "Volumes omitted intentionally"
-- Updated inline comment: documented natural coupling — Docker prevents volume removal while container references it
+- Updated inline comment: documented natural coupling -- Docker prevents volume removal while container references it
 - Roadmap task marked complete
 
 ## Acceptance criteria
@@ -38,4 +38,4 @@ Single file: `scripts/prune.sh`. One flag addition.
 
 ## Deferred items
 
-- Multi-volume concurrency (next in M2.6.5) — volume-per-session, locking, interactive selector
+- Multi-volume concurrency (next in M2.6.5) -- volume-per-session, locking, interactive selector

@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-16
-**Milestone:** — (workflow session, standalone)
+**Milestone:** -- (workflow session, standalone)
 **Type:** Workflow
 **Status:** Completed
 
@@ -11,7 +11,7 @@ Apply scope confirmation gate (Step 1b) to session workflow policy documents.
 
 ## Scope
 
-Standalone workflow audit — not part of M2.3. Changes are self-contained policy and agent brief updates. M2.3 implementation (Changes 1–3) resumes after this session.
+Standalone workflow audit -- not part of M2.3. Changes are self-contained policy and agent brief updates. M2.3 implementation (Changes 1-3) resumes after this session.
 
 ## Acceptance criteria
 
@@ -31,9 +31,9 @@ Not yet defined.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Scope confirmation gate applies to all session types including chore | Housekeeping sessions with a targeted file list satisfy the gate trivially — no exemption needed | `handover_policy.md` — At scope confirmation (Step 1b) |
-| Scope proposal is conversational, not templated | Interview path used when context is insufficient; proposal path when context is available | `handover_policy.md` — At scope confirmation (Step 1b) |
-| Pi gets a session start section, not the full interactive gate | Pi receives a task brief autonomously — no interactive session open flow | `agents_pi.md` — Session Start |
+| Scope confirmation gate applies to all session types including chore | Housekeeping sessions with a targeted file list satisfy the gate trivially -- no exemption needed | `handover_policy.md` -- At scope confirmation (Step 1b) |
+| Scope proposal is conversational, not templated | Interview path used when context is insufficient; proposal path when context is available | `handover_policy.md` -- At scope confirmation (Step 1b) |
+| Pi gets a session start section, not the full interactive gate | Pi receives a task brief autonomously -- no interactive session open flow | `agents_pi.md` -- Session Start |
 | Two touch points in `agent_context_brief.md` | Principle in collaboration protocol sets mindset early; inline note in reference table fires at the moment context is sufficient | `agent_context_brief.md` |
 | `package-diff` skill updated to use timestamped descriptive output directory | Stable filenames inside a `YYYYMMDDhhmmss-<label>/` directory; label inferred from diff content | `package-diff.md` |
 
@@ -45,7 +45,7 @@ Not yet defined.
 | `docs/operations/iteration_policy.md` | Added Step 1b to workflow tree and step table; Step 1 exit condition narrowed to "Handover draft complete" |
 | `agents.md` (Claude Chat) | Session start Step 3 updated for Step 1b; recovery path updated |
 | `agent_context_brief.md` | "Confirm scope before producing output" principle added; roadmap reference table row annotated |
-| `agents_pi.md` | New Session Start section added (steps 1–4) |
+| `agents_pi.md` | New Session Start section added (steps 1-4) |
 | `package-diff.md` | Timestamped descriptive output directory; inferred snake_case label; stable internal filenames |
 
 ## Deferred items

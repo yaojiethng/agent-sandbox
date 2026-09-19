@@ -1,4 +1,4 @@
-# ADR — Worktree Backing Rejected
+# ADR -- Worktree Backing Rejected
 
 **Status:** settled
 
@@ -6,7 +6,7 @@
 
 ## Decision
 
-Worktree backing — linking the agent's working tree to the host repository via `git worktree add`, with agent commits landing in the host object store — is rejected. The harness will not implement, mediate, or protect git operations between the agent container and the host repository.
+Worktree backing -- linking the agent's working tree to the host repository via `git worktree add`, with agent commits landing in the host object store -- is rejected. The harness will not implement, mediate, or protect git operations between the agent container and the host repository.
 
 ## Rationale
 

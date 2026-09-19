@@ -35,10 +35,10 @@ Implementation: `src/libs/cli.sh` (`_cli_parse`, `parse_args`, `parse_args_colle
 
 **Decision:** `src/libs/cli.sh` exposes `parse_args USAGE_FN spec... -- args...` as the single flag-ingestion path for every leaf command. A spec entry is one of four shapes:
 
-- `--flag=VAR` — value flag: sets `VAR` to the flag's value
-- `--flag` — boolean flag: sets `UPPER_SNAKE(flag)` to `true`
-- `--flag:VAR` — boolean flag writing to a named `VAR` (`--yes:YES_FLAG`)
-- `<literal>` — accepted and ignored (compat toggles such as `--permissive`)
+- `--flag=VAR` -- value flag: sets `VAR` to the flag's value
+- `--flag` -- boolean flag: sets `UPPER_SNAKE(flag)` to `true`
+- `--flag:VAR` -- boolean flag writing to a named `VAR` (`--yes:YES_FLAG`)
+- `<literal>` -- accepted and ignored (compat toggles such as `--permissive`)
 
 `parse_args` scans for `--help`/`-h` first (usage, exit 2), then matches each arg against the spec. Unknown args print usage and exit 1. Defaults: value vars and boolean vars default (to empty / `false`) only when unset, so a caller-predeclared default (`DELIVERY="copy"`) survives a spec whose flag never fires.
 
@@ -54,9 +54,10 @@ The `agent-sandbox.sh` dispatcher is the one deliberate exception: its loop buil
 **Rationale:** twelve `main()`/`usage()` pairs each hand-rolled a `for ARG` loop with the same skeleton (help scan, value/boolean case arms, unknown-arg error). The parse *shape* was duplicated even though the flag *names* were command-specific. One declarative parser removes the routing duplication while keeping the per-command surface literal in each script's spec line, which reads as a table of the command's real flags. `declare -g` var targets plus the unset-only default rule keep caller defaults (delivery default `copy`, prune's `AGE_DAYS` default) intact. The strict/tolerant and wording knobs exist because the historical output text is itself a pinned surface (tests match `Unknown flag: --rebuild-base` exactly).
 
 **Rejected alternatives:**
-- *Shared `parse_flags` helper with positional extraction* (a function per flag-class) — re-introduced per-script coordination and could not express explicit boolean var names or exact wording; the declarative spec covers it with less machinery.
-- *Move flag validation into the parser* (e.g. a `--delivery` value-allowlist parameter) — couples the parser to per-command domain rules; validation stays with the owning script, which already owns the error text (R4).
-- *Convert the dispatcher's PASSTHROUGH loop* — a collect-loop is semantic routing (build an arg array), not var ingestion; unifying it removes the dispatcher's one real job (R5). *(Superseded 2026-09-19 by the collect-mode entry above: `parse_args_collect` makes the conversion small and the front door is the last non-canonical entry point.)*
+
+- *Shared `parse_flags` helper with positional extraction* (a function per flag-class) -- re-introduced per-script coordination and could not express explicit boolean var names or exact wording; the declarative spec covers it with less machinery.
+- *Move flag validation into the parser* (e.g. a `--delivery` value-allowlist parameter) -- couples the parser to per-command domain rules; validation stays with the owning script, which already owns the error text (R4).
+- *Convert the dispatcher's PASSTHROUGH loop* -- a collect-loop is semantic routing (build an arg array), not var ingestion; unifying it removes the dispatcher's one real job (R5). *(Superseded 2026-09-19 by the collect-mode entry above: `parse_args_collect` makes the conversion small and the front door is the last non-canonical entry point.)*
 
 **Edge cases / drivers:** The suite pins exact surfaces: start's `Unknown flag: --rebuild-base` text, apply's required-`--diff` error, run_agent's and start's `invalid --delivery` rejection, prune's silent tolerance. The `local` shadowing trap (a `main()`-local var hides a `declare -g` write) forced the rule that parsed vars are declared at the owning scope, not `local` in `main`. Interactive scripts (start wizard, resume picker) share `usage()` and parse as normal commands; the wizard state is separate (draws on `interactive.sh`), so it rides on top of, never inside, the parser.
 

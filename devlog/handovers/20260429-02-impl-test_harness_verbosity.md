@@ -1,25 +1,27 @@
 # Agent Handover
 
 **Date:** 2026-04-29
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
+
 Add `-v`/`-vv` verbosity flags to the test harness, standardize all test files on a shared helper library, and implement three verbosity levels in the runner.
 
 ## Scope
 
-1. **Create `tests/libs/test_common.sh`** — shared library containing standardized `pass()`, `fail()`, `run_test()`, and `test_done()` helpers. All 13 test files source this instead of defining their own.
-2. **Update all 13 `tests/test_*.sh` files** — replace inline `pass()`/`fail()`/`run_test()` definitions with `source tests/libs/test_common.sh`; ensure consistent `Results: N passed, M failed` output with failure list.
-3. **Update `scripts/run_tests.sh`** — add `-v` (verbose, `VERBOSE=1`) and `-vv` (very verbose, `VERBOSE=2`) flags; `VERBOSE=0` is default. Implement three output modes:
+1. **Create `tests/libs/test_common.sh`** -- shared library containing standardized `pass()`, `fail()`, `run_test()`, and `test_done()` helpers. All 13 test files source this instead of defining their own.
+2. **Update all 13 `tests/test_*.sh` files** -- replace inline `pass()`/`fail()`/`run_test()` definitions with `source tests/libs/test_common.sh`; ensure consistent `Results: N passed, M failed` output with failure list.
+3. **Update `scripts/run_tests.sh`** -- add `-v` (verbose, `VERBOSE=1`) and `-vv` (very verbose, `VERBOSE=2`) flags; `VERBOSE=0` is default. Implement three output modes:
    - **VERBOSE=0**: Only aggregate totals (`X tests across Y files, __ passed, __ failed`) and failing test names per file
    - **VERBOSE=1**: Per-file pass/fail counts + failing test names + aggregate totals
    - **VERBOSE=2**: Full per-test PASS/FAIL output (current behaviour) + aggregate totals
-4. **Update `Makefile`** — pass `VERBOSE` environment variable through to `scripts/run_tests.sh`
+4. **Update `Makefile`** -- pass `VERBOSE` environment variable through to `scripts/run_tests.sh`
 
 **Explicitly deferred:**
-- Interactive confirmation flag (`--interactive` for `make apply` and `make draft`) — still pending in M2.3
+
+- Interactive confirmation flag (`--interactive` for `make apply` and `make draft`) -- still pending in M2.3
 
 ## Carried forward
 
@@ -31,14 +33,14 @@ Add `-v`/`-vv` verbosity flags to the test harness, standardize all test files o
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `bash scripts/run_tests.sh` exits 0; prints aggregate totals including skip count | ✅ Accepted |
-| 2 | `bash scripts/run_tests.sh -v` exits 0; per-file pass/fail/skip counts printed, failing test names listed, aggregate totals at end | ✅ Accepted |
-| 3 | `bash scripts/run_tests.sh -vv` exits 0; full per-test PASS/FAIL/SKIP output printed, aggregate totals at end | ✅ Accepted |
-| 4 | `VERBOSE=1 bash scripts/run_tests.sh` produces identical output to `-v`; `VERBOSE=2` produces identical output to `-vv` | ✅ Accepted |
-| 5 | `make test VERBOSE=1` passes through and produces the same output as `bash scripts/run_tests.sh -v` | ✅ Accepted (Makefile verified) |
-| 6 | `bash tests/test_capability_layer.sh` (without Docker) prints `Results: 0 passed, 0 failed, 1 skipped` and exits 0 | ✅ Accepted |
-| 7 | All 13 test files source `tests/libs/test_common.sh` and use the shared `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()` helpers | ✅ Accepted |
-| 8 | `bash scripts/run_tests.sh` still discovers and runs 13 test files | ✅ Accepted |
+| 1 | `bash scripts/run_tests.sh` exits 0; prints aggregate totals including skip count | [x] Accepted |
+| 2 | `bash scripts/run_tests.sh -v` exits 0; per-file pass/fail/skip counts printed, failing test names listed, aggregate totals at end | [x] Accepted |
+| 3 | `bash scripts/run_tests.sh -vv` exits 0; full per-test PASS/FAIL/SKIP output printed, aggregate totals at end | [x] Accepted |
+| 4 | `VERBOSE=1 bash scripts/run_tests.sh` produces identical output to `-v`; `VERBOSE=2` produces identical output to `-vv` | [x] Accepted |
+| 5 | `make test VERBOSE=1` passes through and produces the same output as `bash scripts/run_tests.sh -v` | [x] Accepted (Makefile verified) |
+| 6 | `bash tests/test_capability_layer.sh` (without Docker) prints `Results: 0 passed, 0 failed, 1 skipped` and exits 0 | [x] Accepted |
+| 7 | All 13 test files source `tests/libs/test_common.sh` and use the shared `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()` helpers | [x] Accepted |
+| 8 | `bash scripts/run_tests.sh` still discovers and runs 13 test files | [x] Accepted |
 
 ## Hot files
 
@@ -61,7 +63,7 @@ None.
 
 | File | Change |
 |---|---|
-| `tests/libs/test_common.sh` | New — shared test helper library with `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
+| `tests/libs/test_common.sh` | New -- shared test helper library with `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
 | `tests/test_checkpoint.sh` | Sources `test_common.sh`; `run_test` call sites updated to standard single-argument format |
 | `tests/test_session.sh` | Sources `test_common.sh`; inline helpers removed |
 | `tests/test_diff.sh` | Sources `test_common.sh`; inline helpers removed |

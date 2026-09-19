@@ -1,4 +1,4 @@
-# Handover 20260901-03 — workflow ADR policy revision
+# Handover 20260901-03 -- workflow ADR policy revision
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** workflow
@@ -7,19 +7,19 @@
 
 ## Objective
 
-Redesign the ADR system as a **living, component-mapped record of rationale** —
+Redesign the ADR system as a **living, component-mapped record of rationale** --
 not an immutable append-only ledger. Per operator steering (`20260901-03`):
 
 - **docs** catalogue an interface, convention, or architecture component, to
   quickly orient someone/some-agent to it.
 - **ADRs** record the *why*: design rationale, design philosophy, and rejected
-  designs with reasons — a durable record of edge cases / incomplete
+  designs with reasons -- a durable record of edge cases / incomplete
   requirements, and a retrievable justification for why a thing was done a
   certain way when iterating or extending it.
 - **handovers** remain the transaction log (agent does not expect them current).
 
 The prior `20260901-02` gap (partial-supersede status freshness on `20260722`)
-is a *symptom* of the immutable-ledger model and is subsumed by this redesign —
+is a *symptom* of the immutable-ledger model and is subsumed by this redesign --
 a living per-module ADR has no binary settled/superseded freeze problem to fix.
 Team's working direction (module-centric naming, single-file living journal,
 component/module parent-child hierarchy) is the target this revision realizes,
@@ -27,11 +27,11 @@ critically adapted to these requirements below.
 
 ## Refined framing (`20260901-03` steering)
 
-- **An ADR is a pattern-level commitment record** — deeper than a design. It
+- **An ADR is a pattern-level commitment record** -- deeper than a design. It
   records the moment + reasoning behind committing to a *standing principle*:
   a pattern, concept, interface shape, design philosophy, invariant, user-
   interaction contract, guiding principles. Local design choices ride under an
-  existing ADR (or prove it inadequate → force a redesign); they do not each
+  existing ADR (or prove it inadequate -> force a redesign); they do not each
   spawn a file.
 - **Liveness mechanism**: dated entries, current-on-top, append-and-demote,
   prior entry condensed (esp. if it was an application of a pattern), always
@@ -52,11 +52,11 @@ Three/ four distinct records with distinct purposes:
 - **handovers** = transaction log (not expected current; immutable).
 - **docs/** (interface, conventions, architecture) = *orientation* to a system
   component (the *what* at component level).
-- **docs/concepts/** = the *conceptual models* the system runs on — abstract
+- **docs/concepts/** = the *conceptual models* the system runs on -- abstract
   state transitions, multi-component interactions, principles of interaction
   that are NOT governed by a single system. NOT orientation. Carries the *what*
   at the conceptual level.
-- **ADRs** = the *why* — rationale for selection between possible models /
+- **ADRs** = the *why* -- rationale for selection between possible models /
   principles. Concepts link to ADRs as **"further reading"** (like a paper cites
   references). Conceptually concepts are the parents; ADRs are the explainers.
 
@@ -74,13 +74,13 @@ timestamped immutable snapshots.
 history preserved (the *why* durability) without a freeze/multiple-file web.
 - **Naming / hierarchy**: component-scoped file identity, parent-child linkage,
 and whether a bare status-in-filename survives.
-- **ADR ↔ doc boundary**: how a rationale record and its orientation doc relate
+- **ADR <-> doc boundary**: how a rationale record and its orientation doc relate
 and cross-link without duplication.
 - **Migration**: how the existing timestamped ADRs convert to the new form
 (on-demand vs batch; the version-identity ADR is fresh and could be a worked
 example).
 - The original partial-supersede *status* problem is deprioritized to a symptom
-under the redesign — not a standalone fix.
+under the redesign -- not a standalone fix.
 
 No implementation (policy-document revision only). Scope may contract or expand
 as the grill resolves each decision.
@@ -121,11 +121,11 @@ boundary, header reconciliation (documentation_policy) agree.
 | D2 | Steering `20260901-03`: ADR = live per-component *why*-record; docs = orientation; handover = transaction log; immutability overturned | confirmed |
 | D3 | Partial-supersede *status* freshness is a symptom of the immutable model; subsumed by the living-record redesign, not a standalone fix | confirmed |
 | D4 | Working direction: module-centric naming + single-file living journal + parent-child hierarchy (adapted critically, not adopted verbatim) | accepted pending refinement |
-| D5 | **Liveness shape**: dated entries, current-on-top, append-and-demote — with CONDENSED prior entries (esp. if prior was just an application of a pattern), plus an explicit "why the old pattern was rejected for the new" | confirmed (refines D6) |
-| D6 | **Trigger**: ADR = home of a distilled *standing principle*; discussion documents seed it; an ADR is spawned only when the design's scope is *deep enough* (a pattern-concept-interface-philosophy-invariant commitment). Local design choices ride under an existing ADR or prove it inadequate → force a redesign. Not all designs spawn ADRs | confirmed (refines AC1/AC3) |
+| D5 | **Liveness shape**: dated entries, current-on-top, append-and-demote -- with CONDENSED prior entries (esp. if prior was just an application of a pattern), plus an explicit "why the old pattern was rejected for the new" | confirmed (refines D6) |
+| D6 | **Trigger**: ADR = home of a distilled *standing principle*; discussion documents seed it; an ADR is spawned only when the design's scope is *deep enough* (a pattern-concept-interface-philosophy-invariant commitment). Local design choices ride under an existing ADR or prove it inadequate -> force a redesign. Not all designs spawn ADRs | confirmed (refines AC1/AC3) |
 | D7 | **Immutability relaxed**: heavily relax the "written when code lands" rule; ADRs are NOT immutable. Existing ADRs will be **recreated after this policy lands** (follow-up, not this iteration) | confirmed |
-| D8 | **Layer model corrected**: docs/concepts/ = conceptual *what* (abstract models, principles of interaction, not single-system) — NOT orientation; ADRs = *why* (rationale between models); concepts link ADRs as "further reading"; concepts are conceptual parents, ADRs are explainers | confirmed |
-| D9 | **Concept-doc sweep** desired: distill concept content that is really ADR rationale into ADRs + keep concepts current. (timing: this iteration vs recreation follow-up — pending) | pending timing |
+| D8 | **Layer model corrected**: docs/concepts/ = conceptual *what* (abstract models, principles of interaction, not single-system) -- NOT orientation; ADRs = *why* (rationale between models); concepts link ADRs as "further reading"; concepts are conceptual parents, ADRs are explainers | confirmed |
+| D9 | **Concept-doc sweep** desired: distill concept content that is really ADR rationale into ADRs + keep concepts current. (timing: this iteration vs recreation follow-up -- pending) | pending timing |
 | D10 | naming & hierarchy | pending |
 | D11 | evolve/append protocol & Statuses table | pending |
 | D12 | **Confirmed scope**: rework `adr_policy.md` (unit/liveness/trigger/naming/archive/boundary) + parallel purpose-sweep of `documentation_policy.md` (add `adr/` to Folder Structure, refine concepts row + Concepts-docs section, header-format reconciliation) + `project_index.md` row update + archive existing ADRs to `docs/adr/archive/` + roadmap follow-up entry (recreate + concept-sweep + re-point links). NO concepts/ADR recreation this iteration | confirmed |

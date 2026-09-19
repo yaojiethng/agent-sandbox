@@ -1,24 +1,24 @@
-# Investigation — Claude Desktop as Reasoning Layer Provider
+# Investigation -- Claude Desktop as Reasoning Layer Provider
 
 **Status:** Resolved. Recommendation: viable with manual session lifecycle. Prototype required before adoption.
 
-**Direction:** Direction 1 — Provider replacement (special case: may replace harness entirely)
+**Direction:** Direction 1 -- Provider replacement (special case: may replace harness entirely)
 **Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
 
 ---
 
 ## Required Reading
 
-- [`docs/architecture/execution_model.md`](../architecture/execution_model.md) — container lifecycle, mount shape, and entrypoint sequence.
-- [`docs/architecture/security.md`](../architecture/security.md) — trust boundaries and security invariants.
-- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) — the investigation questions this document must answer.
-- [investigation_mcp_server.md](investigation_mcp_server.md) — Claude Desktop's viability is partly dependent on the MCP server mount strategy; read this first.
+- [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence.
+- [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
+- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- the investigation questions this document must answer.
+- [investigation_mcp_server.md](investigation_mcp_server.md) -- Claude Desktop's viability is partly dependent on the MCP server mount strategy; read this first.
 
 ---
 
 ## Summary
 
-Claude Desktop is a special case within Direction 1. Unlike other provider candidates, it does not run inside a harness container — it is a desktop application that connects to a Dockerised MCP server. If selected, it replaces the agent harness as the reasoning layer rather than conforming to the `build.sh` / `run.sh` provider interface established in M2.2.
+Claude Desktop is a special case within Direction 1. Unlike other provider candidates, it does not run inside a harness container -- it is a desktop application that connects to a Dockerised MCP server. If selected, it replaces the agent harness as the reasoning layer rather than conforming to the `build.sh` / `run.sh` provider interface established in M2.2.
 
 The key trade-offs are:
 
@@ -77,13 +77,13 @@ The MCP filesystem server can be pointed at these same host-side paths directly:
 }
 ```
 
-Claude Desktop sees the snapshot (read-only) and the workspace (read-write) — the same file surface the capability layer presents. Writes go to `.workspace/`, the same output channel. The existing mount shape is preserved without structural modification.
+Claude Desktop sees the snapshot (read-only) and the workspace (read-write) -- the same file surface the capability layer presents. Writes go to `.workspace/`, the same output channel. The existing mount shape is preserved without structural modification.
 
 ---
 
 ### 3. Apply pipeline compatibility
 
-`apply_workspace.sh` operates on `SANDBOX_DIR/.workspace/session-diffs/staged.diff` on the host. It has no dependency on the capability layer container being involved in the session — it reads from the host path and applies the diff to the project repository. `make apply` works identically in the Claude Desktop path.
+`apply_workspace.sh` operates on `SANDBOX_DIR/.workspace/session-diffs/staged.diff` on the host. It has no dependency on the capability layer container being involved in the session -- it reads from the host path and applies the diff to the project repository. `make apply` works identically in the Claude Desktop path.
 
 `diff.sh` is tied to the sandbox container lifecycle: when the sandbox container exits or is stopped, the entrypoint hook fires and `diff.sh` generates `staged.diff`. This is confirmed behaviour and requires no change for the Claude Desktop path.
 
@@ -93,10 +93,10 @@ Claude Desktop sees the snapshot (read-only) and the workspace (read-write) — 
 
 The proposed operator model for Claude Desktop sessions:
 
-1. `make sandbox` — runs the snapshot pipeline and starts the sandbox container. Claude Desktop connects to the MCP filesystem server (managed separately via `claude_desktop_config.json`) which points at the same `SANDBOX_DIR` paths.
-2. Work in Claude Desktop — open a new conversation; the MCP server exposes the snapshot and workspace to the agent.
-3. End of session — close the conversation in Claude Desktop. Stop the sandbox container. The entrypoint hook fires `diff.sh`, producing `staged.diff`.
-4. `make apply` — review and apply `staged.diff` to the host repository. No changes to this step.
+1. `make sandbox` -- runs the snapshot pipeline and starts the sandbox container. Claude Desktop connects to the MCP filesystem server (managed separately via `claude_desktop_config.json`) which points at the same `SANDBOX_DIR` paths.
+2. Work in Claude Desktop -- open a new conversation; the MCP server exposes the snapshot and workspace to the agent.
+3. End of session -- close the conversation in Claude Desktop. Stop the sandbox container. The entrypoint hook fires `diff.sh`, producing `staged.diff`.
+4. `make apply` -- review and apply `staged.diff` to the host repository. No changes to this step.
 
 This model preserves all harness invariants: snapshot isolation, `PROJECT_DIR` separation, diff-and-review before commit. The operator takes on explicit session lifecycle management; the rest of the workflow is unchanged.
 
@@ -134,7 +134,7 @@ Practical security posture:
 
 - Mount only `SANDBOX_DIR/.agent-input/snapshot` (read-only) and `SANDBOX_DIR/.workspace` (read-write). `PROJECT_DIR` is not mounted.
 - The MCP server process runs with the host user's OS permissions within the mounted paths.
-- Claude Desktop sends conversation content — including file contents retrieved via MCP tools — to Anthropic's API as part of the inference request. Gitignored files are excluded from the snapshot by the harness pipeline, providing the same protection as in the standard harness model.
+- Claude Desktop sends conversation content -- including file contents retrieved via MCP tools -- to Anthropic's API as part of the inference request. Gitignored files are excluded from the snapshot by the harness pipeline, providing the same protection as in the standard harness model.
 
 ---
 
@@ -142,9 +142,9 @@ Practical security posture:
 
 | Invariant | Current harness | Claude Desktop path |
 |---|---|---|
-| Snapshot isolation (gitignored files excluded) | Enforced by `git ls-files` snapshot pipeline | Preserved — harness snapshot pipeline still runs; MCP server mounts the snapshot output |
-| Agent cannot reach `PROJECT_DIR` directly | Enforced by container mount rules | Preserved — `PROJECT_DIR` is not mounted into the MCP container |
-| Changes staged as diff before operator review | Enforced automatically by diff pipeline on container exit | Preserved — operator stops sandbox container; entrypoint hook runs `diff.sh`; `make apply` unchanged |
+| Snapshot isolation (gitignored files excluded) | Enforced by `git ls-files` snapshot pipeline | Preserved -- harness snapshot pipeline still runs; MCP server mounts the snapshot output |
+| Agent cannot reach `PROJECT_DIR` directly | Enforced by container mount rules | Preserved -- `PROJECT_DIR` is not mounted into the MCP container |
+| Changes staged as diff before operator review | Enforced automatically by diff pipeline on container exit | Preserved -- operator stops sandbox container; entrypoint hook runs `diff.sh`; `make apply` unchanged |
 | Reproducibility | Automated per run | Not automated; operator initiates each session cycle via `make sandbox` |
 | Session auditability | `staged.diff` per run, automatically attributed | Same mechanism; attribution depends on operator managing session boundaries explicitly |
 | Agent lifecycle enforcement (nesting depth, output validation) | Enforced by harness | Not applicable; no equivalent in Claude Desktop |
@@ -155,11 +155,11 @@ No harness invariants are structurally broken. The diff-and-review cycle and sna
 
 ## Open Questions (Deferred)
 
-1. **`diff.sh` invocation** — Confirmed. `diff.sh` is tied to the sandbox container: it fires via the entrypoint hook when the container exits or is stopped. No code change required.
+1. **`diff.sh` invocation** -- Confirmed. `diff.sh` is tied to the sandbox container: it fires via the entrypoint hook when the container exits or is stopped. No code change required.
 
-2. **MCP server container start trigger** — Deferred. The likely model is Claude Desktop owns the MCP filesystem container lifecycle (launched automatically via `claude_desktop_config.json`), while the operator owns the sandbox container lifecycle (`make sandbox`). The procedure for reconnecting the MCP server after the sandbox container is restarted — and whether this requires a new conversation, a connector toggle, or something else — requires further investigation before the operator procedure can be formalised.
+2. **MCP server container start trigger** -- Deferred. The likely model is Claude Desktop owns the MCP filesystem container lifecycle (launched automatically via `claude_desktop_config.json`), while the operator owns the sandbox container lifecycle (`make sandbox`). The procedure for reconnecting the MCP server after the sandbox container is restarted -- and whether this requires a new conversation, a connector toggle, or something else -- requires further investigation before the operator procedure can be formalised.
 
-3. **Operator procedure formalisation** — Deferred. The `make sandbox` / `make apply` model is sound in principle; the exact operator steps, edge cases (e.g. forgetting to stop the sandbox before applying), and any supporting wrapper scripts are to be defined during implementation planning.
+3. **Operator procedure formalisation** -- Deferred. The `make sandbox` / `make apply` model is sound in principle; the exact operator steps, edge cases (e.g. forgetting to stop the sandbox before applying), and any supporting wrapper scripts are to be defined during implementation planning.
 
 ---
 
@@ -175,7 +175,7 @@ No harness invariants are structurally broken. The diff-and-review cycle and sna
 
 **Recommendation: viable, pending prototype and operator procedure definition.**
 
-The core harness invariants — snapshot isolation, `PROJECT_DIR` separation, diff-and-review — are all preserved in the Claude Desktop path without changes to the apply pipeline or the diff mechanism. `make apply` works unchanged. The mount shape maps directly to existing host paths. The security posture is equivalent to the standard harness model provided the operator does not mount `PROJECT_DIR` into the MCP container.
+The core harness invariants -- snapshot isolation, `PROJECT_DIR` separation, diff-and-review -- are all preserved in the Claude Desktop path without changes to the apply pipeline or the diff mechanism. `make apply` works unchanged. The mount shape maps directly to existing host paths. The security posture is equivalent to the standard harness model provided the operator does not mount `PROJECT_DIR` into the MCP container.
 
 The remaining unknowns are procedural, not structural: how the operator reconnects the MCP server after a sandbox restart, and what wrapper scripts (if any) are needed to make the `make sandbox` cycle ergonomic. These are deferred to implementation planning.
 

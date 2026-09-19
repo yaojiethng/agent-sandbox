@@ -42,9 +42,11 @@ Read the prior handover's What's Next section before evaluating the directive.
 | Housekeeping | `chore` |
 
 If the directive slot is empty:
+
 - Follow handover policy. Derive type and objective from What's Next.
 
 If the directive slot is non-empty:
+
 - Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
 - **Step 1  --  Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this iteration diverges  --  go to Diverges below.
 - **Step 2  --  Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this iteration supersedes or adjusts prior work.
@@ -68,6 +70,7 @@ Create the handover per those rules. Set Status to `Active`.
 ## Gate 1  --  Confirm scope (Step 2)
 
 Derive scope from the argument, the prior handover, and the roadmap. Read any additional files needed to make the scope concrete  --  what files will change, what will not change, and why. Present:
+
 - What is in scope this iteration and why
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin

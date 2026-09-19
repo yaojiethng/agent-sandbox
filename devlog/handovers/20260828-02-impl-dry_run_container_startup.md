@@ -6,12 +6,15 @@
 **Status:** Closed
 
 ## Objective
+
 Implement the deferred dry-run execution-point change (bearer checks run at container start-up via a compose `command`/`entrypoint` override reusing the full-init sequence, instead of `docker compose exec`), and produce the exact end-to-end `make dry-run` testing procedure. The change is unverified (no docker in this env); the operator applies it on a docker machine and reports logs.
 
 ## Scope
-Roadmap follow-on: "Dry-run execution-point: probes at container start-up (follow-on)" — see roadmap bullet added at close of handover `20260828-01`.
+
+Roadmap follow-on: "Dry-run execution-point: probes at container start-up (follow-on)" -- see roadmap bullet added at close of handover `20260828-01`.
 
 In scope:
+
 - Container start-up execution point: compose `command`/`entrypoint` override in `docker-compose.dry-run.yml` so each bearer container runs its probe (after full init) instead of orchestration exec'ing it; reuse the normal init sequence (DRY), standard path untouched.
 - The exact, step-by-step end-to-end `make dry-run` testing procedure (as a document) for the operator to run and return logs.
 
@@ -21,7 +24,7 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 
 | Item | From handover |
 |---|---|
-| Dry-run execution-point (probes at container start-up, compose override) — deferred as unverifiable without docker; escalated to a roadmap follow-on bullet | `20260828-01-impl-dry_run_feature_scope_trim` |
+| Dry-run execution-point (probes at container start-up, compose override) -- deferred as unverifiable without docker; escalated to a roadmap follow-on bullet | `20260828-01-impl-dry_run_feature_scope_trim` |
 
 ## Acceptance criteria
 
@@ -35,6 +38,7 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 | AC6 | Exact end-to-end test procedure written | `docs/development/e2e-dry-run-container-startup-test.md` | met (agent; record format updated to textual layers) |
 
 ## Hot files
+
 | File | Why in scope |
 |---|---|
 | [`src/build/compose.sh`](../../src/build/compose.sh) | `compose_dry_run` drops exec phases; start-up probes + bounded record-poll + Phase-3 verify |
@@ -45,6 +49,7 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 | [`docs/development/e2e-dry-run-container-startup-test.md`](../../docs/development/e2e-dry-run-container-startup-test.md) | exact operator-run e2e procedure |
 
 ## Decisions
+
 | Decision | Rationale | Scope |
 |---|---|---|
 | Extensible sandbox `command:` prelude (Option B) chosen over a dry-run special-case | command-shape validation: agent is already `command:`-extensible (serve precedent); sandbox lacked the hook; a run-and-exit start-up would break `depends_on: health` + `volumes_from` + L5 cross-checks, so the hook is a prelude that runs after init and then stays alive | this iteration |
@@ -58,6 +63,7 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 | Bug E (stop template) handled like Bug D: recorded in Findings, escalated at iteration end (not fixed now; operator is already on it) | keep out of dry-run scope; avoid silently fixing an adjacent Makefile target | this iteration |
 
 ## Findings
+
 - **Bug A (blocking, in-scope) -- capability record never reaches the host.** `src/build/docker-compose.yml` mounts `${OUTPUT_DIR}` + `${INPUT_DIR}` on the **agent** service only; the **sandbox** service bind-mounts only `${CHANGES_DIR}` yet sets `OUTPUT_DIR=/home/agentuser/workspace/output` in env. So `dry_run_capability.sh` writes `dryrun.capability.record` to the sandbox container's LOCAL volume, invisible to host orchestration -> host Phase 3 sees "timed out waiting for capability record / record missing" every time. Latent since the record contract landed (`20260828-01`); the record-based Phase 3 (my change) now exposes it. Fix: bind-mount output (+ input, which the capability probe asserts readable) on the sandbox service.
 - **Bug B (in-scope) -- reasoning probe L6 stdin/TTY FAIL at start-up.** `dry_run_reasoning.sh` L6 runs `critical "stdin is not /dev/null" _stdin_not_devnull` + a `warn_check` stdin-is-a-TTY. These were authored for an exec/terminal context; at detached start-up (stdin=/dev/null, no TTY) they fail by design -> agent record `status=FAIL`, L6=FAIL -> Phase 3 fails. The start-up execution point is the new norm for dry-run, so the terminal/stdin checks should be context-aware (e.g. `DRY_RUN_STARTUP=1` from the overlay -> report stdin readiness as info, keep the headless liveness checks).
 - **Bug C (UX/behavior, needs operator decision) -- REBUILD ownership + rebuild-side-effect worry.** Running `make dry-run` without `REBUILD=1` on stale images emits the container-sig WARNING then Phase-3 hard-FAILs (`dry_run_image_verify` stale/unknown). Operator asks: (1) should the user be the one to remember rebuilding? (2) does dry-run trigger rebuilds that mutate the image `make start` later uses?
@@ -67,7 +73,9 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 - **Principle to harden -- contextual-knowledge-light naming (communications convention).** Numeric/opaque labels (`L1..L6`) force readers to dig docs for meaning. Prefer short, textual, STE100-style names (e.g. readiness layers now `docker_image / workspace_mounts / session_state / session_data / container_network / agent_runtime`). Escalate: fold this principle into the communications conventions (AGENTS.md / docs/development/conventions.md) at iteration end.
 - **Finding (operator, iteration close) -- SERVE mode integration is a standalone roadmap item, not a dry-run concern.** SERVE is not in regular use and may be out of date; the serve overlays (hermes/opencode) were rebased to the standard invocation interface this iteration but NOT docker-tested (operator: not convenient); pi lacks feature integration to support server mode. Elevate: named roadmap item for SERVE mode integration (uses + verify + pi server-mode support); do NOT fold into dry-run follow-ups.
 - **Verification status (operator e2e, `make dry-run PROVIDER=pi REBUILD=1`):** FULL PASS. Both per-container records written + phase-3 verified; every layer PASS on both containers (incl. `agent_runtime` -- confirming the bash-script invocation guard and dropped stdin/TTY checks); image signatures match source; `Phase 3 PASSED` / `ALL PHASES PASSED`. Bug A fix confirmed (capability record reaches host). `make start PROVIDER=pi` works. Negative staleness test confirmed: plain dry-run on an edited sig-source emits the container-sig stale WARNING + phase-3 FAIL/rebuild-required.
+
 ## Completed
+
 | File | Change |
 |---|---|
 | [`src/build/compose.sh`](../../src/build/compose.sh) | `compose_dry_run`: drop exec Phase-1/2; start-up probes via overlay; bounded/overridable record-poll (`DRY_RUN_RECORD_TIMEOUT`); Phase-3 verify unchanged |
@@ -84,12 +92,14 @@ Deferred / not in scope: everything else (pre-existing items unchanged).
 | This handover | scope, decisions, findings, ACs |
 
 ## Deferred items
+
 - **Bug D -- `make start PROVIDER=pi RESUME=1` resets baseline instead of reusing the session volume** (pre-existing, outside dry-run): escalate to a named roadmap item at iteration end.
 - **Bug E -- `make stop` missing `--project`/`--sandbox` in `scripts/templates/Makefile.template` + duplicate container-ID emission -> `docker rm ... already in progress`** (adjacent, pre-existing): escalate at iteration end.
 - **SERVE mode integration** -- elevated to its own roadmap bullet this iteration (see roadmap); serve untested post-interface-change.
 - **Principle -- contextual-knowledge-light naming** -- fold into communications conventions (AGENTS.md / docs/development/conventions.md) at iteration end.
 
 ## What's Next
+
 M2.6 - Session Persistence. Post-close bookkeeping: n/a (mid-milestone).
 Primary deliverable verified end-to-end by the operator: `make dry-run PROVIDER=pi REBUILD=1` -> ALL PHASES PASSED (both records, all layers PASS both containers, image-sig gates PASS); `make start PROVIDER=pi` works; negative staleness test confirmed. Execution-point + standard-invocation-interface + readiness-label rename + Bug A fix all landed. Next iterations: M2.6 general; **dry-run probe-check unit-test harness** (LIBS_DIR-parameterize the probes so the host suite tests each layer's checks in isolation) -- proposed as the next iteration scope; SERVE-mode integration (roadmap bullet); Bug D (RESUME) + Bug E (stop template) escalation.
 Watch-outs: dual-grep bridge; full-tree close-out greps.

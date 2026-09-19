@@ -16,7 +16,7 @@ Two works subsumed into one iteration after operator-directed renumbering (origi
 
 The Character set rule (`documentation_policy.md` -- "Do not use non-ASCII punctuation (for example the section sign)") was live but unenforced; ~200 section signs across 66 files predated enforcement. Operator directive: acceptable in chat, never in the repo.
 
-- Rule references (`§4.1` style) became `rule 4.1`; heading decorations stripped; em/en-dashes, ellipsis, curly quotes, `x`/`->`/`>=`/`!=`/`~` substitutions applied in live documents and session-authored files.
+- Rule references (`4.1` style) became `rule 4.1`; heading decorations stripped; em/en-dashes, ellipsis, curly quotes, `x`/`->`/`>=`/`!=`/`~` substitutions applied in live documents and session-authored files.
 - Kept: the two backtick mentions in `documentation_policy.md` that name the banned symbol.
 - **Deferred (operator: leave as-is):** corpus-wide conformance of historical records (every old handover carries an em-dash preamble).
 

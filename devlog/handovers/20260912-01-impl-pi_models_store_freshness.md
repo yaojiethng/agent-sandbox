@@ -6,18 +6,22 @@
 **Status:** Closed
 
 ## Objective
+
 Make the pi provider's model catalog store (`$AGENT_HOME/agent/models-store.json`) serve a fresh catalogue on every container start, instead of serving a build-time-frozen overlay for up to 4 hours after image build.
 
 ## Scope
+
 - `src/reasoning/providers/pi/preflight.sh`: reset `checkedAt` to 0 for every provider entry in `models-store.json` at container start (Option B -- keep the baked catalogue as offline fallback, force etag revalidation at first refresh).
 - pi-bump: pin `@earendil-works/pi-coding-agent` to the latest version (per `src/reasoning/agent/skills/pi-bump/SKILL.md`), pending operator confirmation of the target version.
 - Roadmap: record and close the item.
 
 ## Out of scope
+
 - Replacing `RUN pi install` in `provider.dockerfile` (the install step legitimately bakes an initial catalogue; Option B neutralises its staleness at runtime).
 - Option A (deleting `models-store.json` at startup) -- rejected, see Decisions.
 
 ## Findings (investigation this iteration)
+
 Pi caches model catalogs in three layers: a compiled-in static catalogue (pi-ai generated files), a persisted pi.dev overlay in `$AGENT_HOME/agent/models-store.json` (`{ models, checkedAt, lastModified, etag }` per provider, written by `dist/core/remote-catalog-provider.js`), and in-process `dynamicModels` published by `ModelRuntime.refresh()`. Key behaviors:
 
 - Startup refresh is network-off (`agent-session-services.js` calls `ModelRuntime.create` without `allowModelNetwork`), so pi serves the stored overlay as-is at start.
@@ -56,4 +60,5 @@ Pi caches model catalogs in three layers: a compiled-in static catalogue (pi-ai 
 | [`devlog/roadmap.md`](devlog/roadmap.md) | Freshness-reset item recorded and closed. |
 
 ## Deferred items
+
 (none)

@@ -2,23 +2,23 @@
 
 | Milestone | Status |
 |---|---|
-| KV1 — Investigation | Complete |
-| KV2 — Onboarding Guide | Complete |
-| KV3 — Implementation | Complete |
-| KV4 — Agent-Sandbox Workflow Onboarding | Complete |
-| KV5 — Knowledge Store Modification Workflow | Promoted to [M2.1](../../devlog/roadmap.md) |
+| KV1 -- Investigation | Complete |
+| KV2 -- Onboarding Guide | Complete |
+| KV3 -- Implementation | Complete |
+| KV4 -- Agent-Sandbox Workflow Onboarding | Complete |
+| KV5 -- Knowledge Store Modification Workflow | Promoted to [M2.1](../../devlog/roadmap.md) |
 
 ---
 
-## KV1 — Investigation
+## KV1 -- Investigation
 
 *The standard agent-sandbox diff model was confirmed to work for Obsidian vault use with minimal harness changes.*
 
-LFS was established as the correct mechanism for binary attachment tracking, with extension-based `.gitattributes` glob patterns handling vault file diversity without manual maintenance. The checkpoint system design — dated branches plus a `checkpoint/latest` force-tag — was confirmed as the rollback target. Obsidian Sync coexistence is resolved operationally via pause-apply-resume, requiring no harness changes. One harness patch was identified as required: `--binary -M` flags on the diff pipeline for correct binary output.
+LFS was established as the correct mechanism for binary attachment tracking, with extension-based `.gitattributes` glob patterns handling vault file diversity without manual maintenance. The checkpoint system design -- dated branches plus a `checkpoint/latest` force-tag -- was confirmed as the rollback target. Obsidian Sync coexistence is resolved operationally via pause-apply-resume, requiring no harness changes. One harness patch was identified as required: `--binary -M` flags on the diff pipeline for correct binary output.
 
 ---
 
-## KV2 — Onboarding Guide
+## KV2 -- Onboarding Guide
 
 *Operators and agents have a complete reference for preparing and running a vault with agent-sandbox.*
 
@@ -26,7 +26,7 @@ LFS was established as the correct mechanism for binary attachment tracking, wit
 
 ---
 
-## KV3 — Implementation
+## KV3 -- Implementation
 
 *Vault tooling is live and validated: git + LFS initialisation, checkpoint lifecycle, and LFS classification are all scriptable and tested.*
 
@@ -34,7 +34,7 @@ Tooling lives in `workflow/knowledge-vault/`. The vault tooling directory (`.vau
 
 ---
 
-## KV4 — Agent-Sandbox Workflow Onboarding
+## KV4 -- Agent-Sandbox Workflow Onboarding
 
 *A vault can be fully onboarded into agent-sandbox with a single CLI command and made ready for agent sessions with `make initialize`.*
 

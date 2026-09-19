@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-08-09
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
 **Type:** Implementation
 **Status:** Closed
 
@@ -23,7 +23,7 @@
 
 ### Draft validation hardening
 
-- `draft_run()`: fix empty `BRANCH_FROM_ARG` bypassing `${BRANCH_FROM_ARG:-HEAD}` — default to `HEAD` when empty
+- `draft_run()`: fix empty `BRANCH_FROM_ARG` bypassing `${BRANCH_FROM_ARG:-HEAD}` -- default to `HEAD` when empty
 - `draft_run()`: after reading `.export-status`, validate that required fields are present and non-empty before proceeding
 - `_run_draft_workflow()`: validate `BRANCH_FROM` resolves to a real commit before creating the savepoint tag
 
@@ -38,12 +38,12 @@
 | # | Criterion | Verifiable by |
 |---|---|---|
 | 1 | `.export-status` contains `STATUS`, `TIMESTAMP`, `EXIT_CODE`, `INIT_SHA` after export | `grep INIT_SHA bundles/*/.export-status` |
-| 2 | `EXPORT-TIME.txt` is no longer written | `ls bundles/*/EXPORT-TIME.txt` → not found |
-| 3 | `.init_sha` is no longer written | `ls bundles/*/.init_sha` → not found |
+| 2 | `EXPORT-TIME.txt` is no longer written | `ls bundles/*/EXPORT-TIME.txt` -> not found |
+| 3 | `.init_sha` is no longer written | `ls bundles/*/.init_sha` -> not found |
 | 4 | `draft.sh` reads metadata from `.export-status` | `grep '\.export-status' scripts/workflows/draft.sh` |
-| 5 | `draft.sh` with empty `BRANCH_FROM` uses HEAD | Manual or test: `draft_run ... "" ...` → `BASE_COMMIT=HEAD` |
-| 6 | `draft.sh` fails with clear error when `.export-status` is missing or incomplete | `draft_run` with no `.export-status` → error message, exit 1 |
-| 7 | `_run_draft_workflow` fails early if `BRANCH_FROM` doesn't resolve | `git tag draft-savepoint "$INVALID"` → caught before tag creation |
+| 5 | `draft.sh` with empty `BRANCH_FROM` uses HEAD | Manual or test: `draft_run ... "" ...` -> `BASE_COMMIT=HEAD` |
+| 6 | `draft.sh` fails with clear error when `.export-status` is missing or incomplete | `draft_run` with no `.export-status` -> error message, exit 1 |
+| 7 | `_run_draft_workflow` fails early if `BRANCH_FROM` doesn't resolve | `git tag draft-savepoint "$INVALID"` -> caught before tag creation |
 | 8 | All tests pass | `tests/test_package_branch.sh`, `tests/test_diff_export.sh`, `tests/test_diff_dispatch.sh`, `tests/test_draft_workflow.sh`, knowledge tests |
 | 9 | `bash -n` passes on all changed scripts | `bash -n` on each file |
 
@@ -67,16 +67,16 @@
 | # | Decision | Rationale |
 |---|---|---|
 | 1 | Extract `_write_export_status` to shared `export_status.sh` lib | Circular dependency avoided: both `diff_export.sh` and `package_branch.sh` need it, but `diff_export.sh` already sources `package_branch.sh`. Shared lib breaks the cycle. |
-| 2 | `draft_run` defaults `BASE_COMMIT` to `HEAD`, not `INIT_SHA` | `INIT_SHA` is the commit patches were generated against — it's information, not the fork point. The fork point should be `HEAD` by default, same as `git checkout -b`. Warn if they differ. |
-| 3 | Bundle `.export-status` uses `STATUS=SUCCESS` (not `PACKAGED`) | Simpler for the consumer — `draft.sh` only cares about `INIT_SHA` and `TIMESTAMP` fields being present, not the exact status value. |
-| 4 | `make_session_fixture` auto-writes dummy `.export-status` | Avoids updating every test individually — the helper is the canonical fixture creator. Dummy `INIT_SHA=0000...` is sufficient since tests that need real values use `make_session_with_baseline_state` instead. |
+| 2 | `draft_run` defaults `BASE_COMMIT` to `HEAD`, not `INIT_SHA` | `INIT_SHA` is the commit patches were generated against -- it's information, not the fork point. The fork point should be `HEAD` by default, same as `git checkout -b`. Warn if they differ. |
+| 3 | Bundle `.export-status` uses `STATUS=SUCCESS` (not `PACKAGED`) | Simpler for the consumer -- `draft.sh` only cares about `INIT_SHA` and `TIMESTAMP` fields being present, not the exact status value. |
+| 4 | `make_session_fixture` auto-writes dummy `.export-status` | Avoids updating every test individually -- the helper is the canonical fixture creator. Dummy `INIT_SHA=0000...` is sufficient since tests that need real values use `make_session_with_baseline_state` instead. |
 
 ## Mid-session findings
 
 | # | Finding | Type | Impact |
 |---|---|---|---|
 | 1 | Documentation and test changes tend to be neglected during feature work | process | Addressed by full propagation checklist and test pass verification before closing |
-| 2 | `AUTHOR` variable duplicated between `draft_run()` and `_run_draft_workflow()` — both compute it identically | code quality | Deferred to post-close refactoring pass |
+| 2 | `AUTHOR` variable duplicated between `draft_run()` and `_run_draft_workflow()` -- both compute it identically | code quality | Deferred to post-close refactoring pass |
 | 3 | Thermo-nuclear review findings applied: extracted `_ingest_export_metadata` helper from bloated `draft_run`; moved sources to top level in `diff_export.sh`; added multi-source safety comment to `export_status.sh`; fixed garbled sed comment | code quality | Done |
 
 ## Completed this session
@@ -85,7 +85,7 @@
 
 | File | Change |
 |---|---|
-| `src/libs/export_status.sh` | NEW — shared `_write_export_status` for atomic `.export-status` writes; sourced by both `diff_export.sh` and `package_branch.sh` |
+| `src/libs/export_status.sh` | NEW -- shared `_write_export_status` for atomic `.export-status` writes; sourced by both `diff_export.sh` and `package_branch.sh` |
 | `src/libs/diff_export.sh` | Read `init_sha` from `SESSION_STATE` at top of `diff_export()`; pass `INIT_SHA` to `_write_export_status` via 5th param; drop `EXPORT-TIME.txt` write; moved all sources to top level |
 | `src/libs/package_branch.sh` | Drop `.init_sha` write; source `export_status.sh`; write `.export-status` with `STATUS=SUCCESS`, `TIMESTAMP`, `INIT_SHA` |
 | `src/libs/diff.sh` | Update header comment from `EXPORT-TIME.txt` to `.export-status` |
@@ -106,7 +106,7 @@
 
 | File | Change |
 |---|---|
-| `docs/architecture/sandbox_lifecycle.md` | Updated session and autosave directory layouts — removed `EXPORT-TIME.txt` and `.init_sha`, moved metadata description into `.export-status` |
+| `docs/architecture/sandbox_lifecycle.md` | Updated session and autosave directory layouts -- removed `EXPORT-TIME.txt` and `.init_sha`, moved metadata description into `.export-status` |
 | `docs/concepts/sandbox_host_correspondence_model.md` | Updated `package-branch` output row; added new `.export-status` row describing consolidated metadata |
 | `docs/architecture/execution_model.md` | Replaced `EXPORT-TIME.txt` with `.export-status` in directory tree illustrations |
 
@@ -124,10 +124,10 @@
 
 | # | Item | Reason |
 |---|---|---|
-| 1 | Code consolidation refactoring pass — `AUTHOR` variable duplicated between `draft_run()` and `_run_draft_workflow()` | Re-examined: one-line expression, different call contexts, not worth a shared helper. Closed. |
+| 1 | Code consolidation refactoring pass -- `AUTHOR` variable duplicated between `draft_run()` and `_run_draft_workflow()` | Re-examined: one-line expression, different call contexts, not worth a shared helper. Closed. |
 
 ## Next session
 
-Sub-milestone: M2.6.6 — Mount Model: Host-backed Sandbox
+Sub-milestone: M2.6.6 -- Mount Model: Host-backed Sandbox
 
 Post-close bookkeeping: not applicable.

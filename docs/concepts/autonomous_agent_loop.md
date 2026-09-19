@@ -1,6 +1,7 @@
 This is a stub file. It is meant to detail the conceptual design for supporting multiple types of agents, and using an autonomous agent runtime, encapsulated within a single container, to complete a single task.
 
 # Agents
+
 An agent is an autonomous system capable of analyzing code, generating modifications, and executing tasks toward a defined goal.
 
 Agents in this system are responsible for performing coding-related work such as implementing features, fixing bugs, or improving documentation.

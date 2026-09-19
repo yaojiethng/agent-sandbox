@@ -129,6 +129,7 @@ Run `make build` before the first start. Images are not built automatically unle
 
 **`cp: cannot stat` during snapshot**
 Tracked files are missing from disk. Fix:
+
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
@@ -138,6 +139,7 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
 **Line ending issues in scripts or config files**
+
 ```sh
 sed -i 's/\r//' <file>
 ```

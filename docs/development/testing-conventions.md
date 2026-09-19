@@ -143,7 +143,7 @@ source "$REPO_ROOT/test_draft_workflow.sh"
 
 ### Anti-Pattern 5: Testing Absence of a Wrong Thing
 
-**Symptom:** Test checks for absence of a specific string variant when a positive assertion already covers the invariant. Fragile — there are infinite variants of "wrong." If the docstring says "required," it cannot also claim a default; testing "required" is sufficient.
+**Symptom:** Test checks for absence of a specific string variant when a positive assertion already covers the invariant. Fragile -- there are infinite variants of "wrong." If the docstring says "required," it cannot also claim a default; testing "required" is sufficient.
 
 ```bash
 # Wrong — fragile, infinite wrong variants
@@ -250,8 +250,9 @@ test_done
 **Likely cause:** State pollution from previous test.
 
 **Debug steps:**
+
 1. Run the full test suite and note which test fails
-2. Run only the failing test — it should pass
+2. Run only the failing test -- it should pass
 3. Run the test immediately before the failing test, then the failing test
 4. Check for: shared fixture paths, missing `rm -rf` in helpers, global state
    not cleaned up
@@ -261,6 +262,7 @@ test_done
 **Likely cause:** Test doesn't clean up its own state.
 
 **Debug steps:**
+
 1. Run the test twice in the same shell
 2. Check if the second run fails
 3. Look for: git tags not deleted, directories not removed, files appended
@@ -271,6 +273,7 @@ test_done
 **Likely cause:** Tests share state through a common path.
 
 **Debug steps:**
+
 1. Shuffle test order (manually reorder `run_test` calls)
 2. Note which orderings fail
 3. Check for: hardcoded paths, helpers that don't scope paths, global
@@ -329,12 +332,12 @@ This pattern covers `exec` calls, subprocess scripts, and sourced function calls
 
 Before committing a new test:
 
-- [ ] **Placement decided per `testing_policy.md` Test Placement rule**: our maintained seam with an API → `tests/test_*.sh` under `make test`; unmodifiable external seam / legacy mid-refactor → `tests/knowledge/knowledge_*.sh`; still-not-runnable end-to-end flow → `tests/integration/`
+- [ ] **Placement decided per `testing_policy.md` Test Placement rule**: our maintained seam with an API -> `tests/test_*.sh` under `make test`; unmodifiable external seam / legacy mid-refactor -> `tests/knowledge/knowledge_*.sh`; still-not-runnable end-to-end flow -> `tests/integration/`
 - [ ] Uses `mktemp -d` for fixture directory
 - [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
 - [ ] All helper functions clean their inputs before creating state
 - [ ] No hardcoded paths outside fixture directory
-- [ ] Sources shared fixtures from `tests/libs/` — no sourcing of other test files
+- [ ] Sources shared fixtures from `tests/libs/` -- no sourcing of other test files
 - [ ] Sources `test_common.sh` for `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()`
 - [ ] Test passes when run in isolation
 - [ ] Test passes when run after every other test in the file

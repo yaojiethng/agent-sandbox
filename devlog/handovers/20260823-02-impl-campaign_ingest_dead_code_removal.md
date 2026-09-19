@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-08-23
-**Milestone:** M2.6 — Session Persistence
+**Milestone:** M2.6 -- Session Persistence
 **Type:** Implementation
 **Status:** Closed
 
@@ -17,7 +17,7 @@ Production files only, from the saved session `20260821-184841-3c49e7` (output m
 
 | Item | From handover |
 |---|---|
-| Passes 2–3 ingestion series | `20260823-01` |
+| Passes 2-3 ingestion series | `20260823-01` |
 
 ## Acceptance criteria
 
@@ -31,7 +31,7 @@ Production files only, from the saved session `20260821-184841-3c49e7` (output m
 
 | File | Why in scope |
 |---|---|
-| [`src/libs/buildkit_progress.sh`](../../src/libs/buildkit_progress.sh) | Deleted — orphaned since the 20260821-01 revert |
+| [`src/libs/buildkit_progress.sh`](../../src/libs/buildkit_progress.sh) | Deleted -- orphaned since the 20260821-01 revert |
 | [`scripts/workflows/draft.sh`](../../scripts/workflows/draft.sh) | `STRICT` threading removed from 4 functions |
 | [`scripts/workflows/interactive.sh`](../../scripts/workflows/interactive.sh) | Dead `AUTO_SELECT` branch removed |
 

@@ -22,11 +22,11 @@ The model below is the durable reference for the set of checks that determine co
 
 Dry-run is composed of two actors with a strict responsibility split:
 
-- **Bearer — the dry-run containers** (capability/sandbox + reasoning/agent), each of which:
+- **Bearer -- the dry-run containers** (capability/sandbox + reasoning/agent), each of which:
   - runs its own full e2e self-check set (the readiness inventory below);
   - records one **diagnostics record** per container to a host-visible mount;
   - returns.
-- **Orchestration — the `dry-run.sh` procedure** (invoked via `make dry-run`), which:
+- **Orchestration -- the `dry-run.sh` procedure** (invoked via `make dry-run`), which:
   - handles build, startup, teardown, cleanup;
   - consumes the two records and asserts that the **correct container** was started (version/signature in-container == expected, identity, mount wiring, record completeness), referring to the recorded diagnostics/metrics.
 
@@ -81,6 +81,7 @@ One hard constraint shapes the mechanism: the cross-component phase (container_n
 ## Consequences
 
 **Changes:**
+
 - The dry-run probes become record-writing startup execution (selected via the dry-run compose overlay), replacing `docker compose exec` + scattered host-phase-3 checks.
 - Orchestration validates records + correct-container (version/sig in-container == expected) instead of pulling stdout.
 - Standard (non-dry-run) startup is unchanged; the container preflight stays the minimal-every-start owner.
@@ -90,5 +91,6 @@ One hard constraint shapes the mechanism: the cross-component phase (container_n
 **Enables:** a uniform readiness + responsibility model that other orchestration commands can adopt (same completeness standard), so future commands don't re-derive their own check inventories.
 
 **Forecloses / deferred:**
+
 - The snapshot cost-trim (full rsync removal) for dry-run.
 - Promotion to a formal ADR. **This is a documentation record, not an ADR**, deliberately: opening/closing an ADR now would churn until all orchestration commands meet the same completeness standard. Promote to `docs/architecture/` + ADR when the model stabilises across commands.

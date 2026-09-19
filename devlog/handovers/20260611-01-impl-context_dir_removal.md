@@ -1,26 +1,26 @@
 # Agent Handover
 
 **Date:** 2026-06-11
-**Milestone:** M2.7 — Session Identity and Harness Versioning
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement the build context simplification spec — replace temp-dir assembly (`build_context_*`, `build_image`) with repo-root Docker build context using subdirectory-level COPY instructions in all Dockerfiles.
+Implement the build context simplification spec -- replace temp-dir assembly (`build_context_*`, `build_image`) with repo-root Docker build context using subdirectory-level COPY instructions in all Dockerfiles.
 
 ## Scope (in execution order)
 
-1. **Add new logic** — Update `scripts/build.sh`: add a `repo_root` variable and direct `docker build` path in `build_agent()` and `build_sandbox()` *alongside* the existing temp-dir path (old path still active)
+1. **Add new logic** -- Update `scripts/build.sh`: add a `repo_root` variable and direct `docker build` path in `build_agent()` and `build_sandbox()` *alongside* the existing temp-dir path (old path still active)
 2. **Update all 4 Dockerfiles** with repo-relative COPY paths:
    - `src/capability/dockerfile` (sandbox)
    - `src/reasoning/providers/pi/provider.dockerfile`
    - `src/reasoning/providers/hermes/provider.dockerfile`
    - `src/reasoning/providers/opencode/provider.dockerfile`
-3. **Write COPY contract tests** — rewrite `tests/test_build_context.sh` (~496 lines → ~30 lines) asserting every COPY source exists at its repo-relative path
-4. **Route to new logic** — change `build_agent()` and `build_sandbox()` to use `$repo_root` as build context, remove temp-dir context calls
-5. **Delete old logic** — remove `src/build/context.sh`, remove `build_image()`, `cleanup_build_context()`, `_BUILD_CONTEXT_DIRS` from `scripts/build.sh`
-6. **Update docs** — fix `src/reasoning/entrypoint.sh` comment (line 168), fix `docs/architecture/execution_model.md` (line 207), mark roadmap complete
+3. **Write COPY contract tests** -- rewrite `tests/test_build_context.sh` (~496 lines -> ~30 lines) asserting every COPY source exists at its repo-relative path
+4. **Route to new logic** -- change `build_agent()` and `build_sandbox()` to use `$repo_root` as build context, remove temp-dir context calls
+5. **Delete old logic** -- remove `src/build/context.sh`, remove `build_image()`, `cleanup_build_context()`, `_BUILD_CONTEXT_DIRS` from `scripts/build.sh`
+6. **Update docs** -- fix `src/reasoning/entrypoint.sh` comment (line 168), fix `docs/architecture/execution_model.md` (line 207), mark roadmap complete
 
 ## Carried forward
 
@@ -72,14 +72,14 @@ Implement the build context simplification spec — replace temp-dir assembly (`
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| 1 | `src/build/context.sh` does not exist | `ls src/build/context.sh` returns non-zero | ✅ Accepted |
-| 2 | `scripts/build.sh` does not source `context.sh` | `grep -c "source.*context.sh"` = 0 | ✅ Accepted |
-| 3 | No `build_context_` refs in `scripts/build.sh` | `grep -c "build_context_"` = 0 | ✅ Accepted |
-| 4 | `build_image()` uses `$repo_root`, no old digest label | grep shows `$repo_root` param | ✅ Accepted |
-| 5 | No `agent-sandbox.digest` in scripts/ or src/ | `grep -rn` empty | ✅ Accepted |
-| 6 | All 4 Dockerfiles use repo-relative COPY paths | manual review | ✅ Accepted |
-| 7 | COPY contract tests pass | `bash test_build_context.sh` exits 0 | ✅ Accepted |
-| 8 | No stale `agent-sandbox.digest` in `execution_model.md` | `grep -c` = 0 | ✅ Accepted |
+| 1 | `src/build/context.sh` does not exist | `ls src/build/context.sh` returns non-zero | [x] Accepted |
+| 2 | `scripts/build.sh` does not source `context.sh` | `grep -c "source.*context.sh"` = 0 | [x] Accepted |
+| 3 | No `build_context_` refs in `scripts/build.sh` | `grep -c "build_context_"` = 0 | [x] Accepted |
+| 4 | `build_image()` uses `$repo_root`, no old digest label | grep shows `$repo_root` param | [x] Accepted |
+| 5 | No `agent-sandbox.digest` in scripts/ or src/ | `grep -rn` empty | [x] Accepted |
+| 6 | All 4 Dockerfiles use repo-relative COPY paths | manual review | [x] Accepted |
+| 7 | COPY contract tests pass | `bash test_build_context.sh` exits 0 | [x] Accepted |
+| 8 | No stale `agent-sandbox.digest` in `execution_model.md` | `grep -c` = 0 | [x] Accepted |
 
 ## Propagation checklist
 
@@ -130,4 +130,4 @@ Two-sig model: container-sig Docker label (hash of `/opt/sandbox/` + `/opt/workf
 - Context_dir removal completed: all temp-dir assembly removed, repo-root build context with subdirectory COPY is the sole mechanism.
 - Found and purged stale references to `build_context_*`, `context.sh`, and `containers.sh` across 6 docs, 2 scripts, 2 code files, and 1 test helper.
 - Two out-of-scope stale references fixed (`containers.sh` never existed in this repo state).
-- The two-sig model (container-sig label) is now unblocked — the repo-root Dockerfile context makes it straightforward to add `LABEL` instructions at Dockerfile level.
+- The two-sig model (container-sig label) is now unblocked -- the repo-root Dockerfile context makes it straightforward to add `LABEL` instructions at Dockerfile level.

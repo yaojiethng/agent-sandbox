@@ -82,6 +82,7 @@ Audit findings in a table:
 | 2 | M2.7 summary line | Floating prose summary "Prior completed items (8-12)" | C1 | Medium |
 
 Severity levels:
+
 - **High** -- policy violation that blocks a clean compaction or would cause the next agent to misinterpret roadmap state
 - **Medium** -- format deviation that does not affect correctness but violates the standard
 - **Low** -- cosmetic issue or legacy artifact

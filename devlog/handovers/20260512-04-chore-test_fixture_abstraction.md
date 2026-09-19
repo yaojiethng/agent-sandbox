@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-05-12
-**Milestone:** M2 — Reasoning/Capability Layer Separation
+**Milestone:** M2 -- Reasoning/Capability Layer Separation
 **Type:** Housekeeping
 **Status:** Closed
 
@@ -15,4 +15,4 @@ Extract shared test fixtures from `test_build_context.sh`'s local `make_fixture`
 - Migrated `test_build_context.sh` to source shared fixture instead of local `make_fixture`.
 - Upgraded `tests/libs/git_fixtures.sh` with `make_repo()` (bare init, no commit).
 - Migrated `test_snapshot_host.sh`, `test_checkpoint.sh`, `test_start_agent.sh` to source shared `git_fixtures.sh`.
-- Fixed assertions in `test_snapshot_host.sh` (`tracked.txt` → `file.txt`) to match shared baseline commit.
+- Fixed assertions in `test_snapshot_host.sh` (`tracked.txt` -> `file.txt`) to match shared baseline commit.

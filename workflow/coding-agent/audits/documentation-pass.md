@@ -11,20 +11,23 @@ The checklists are diagnostic -- they identify what has gone wrong, not what to 
 **Canonical owner test.** When a rule appears in two documents, ask: which document will an agent read when they need this rule? That document is the canonical owner. The other should link to it, not restate it.
 
 **Signs of duplication to check:**
+
 - The same constraint stated in both a workflow table cell and a child policy section
 - Exit conditions in iteration_policy that restate rules already in handover_policy
 
 **Signs of misplaced content to check:**
+
 - Future language (`will`, `plan`, `eventually`) in any `architecture/` document
 - TODO items in any `architecture/` document
 - Prescriptive rules in a skill file or prompt template with no corresponding entry in a policy document
 - A rule that only exists in a skill file -- skills are fast paths, not sources of truth
 
 **Signs of structural problems to check:**
+
 - A section an agent would need to locate in isolation that has no `##` or `###` header
 - A document that must be read in full to extract one fact
 - A bridge document -- one that exists solely to connect two documents that could reference each other directly
 - A document-level reference link carrying a section anchor -- anchors on document-level references imply narrower scope than intended
 - Prose with a hard line break that does not fall on a sentence or paragraph boundary
 - A word, phrase, or sentence a reader can delete without changing the required meaning
-- Non-ASCII punctuation or a control/formatting symbol (for example `§` or `¶`) in any document
+- Non-ASCII punctuation or a control/formatting symbol (for example `` or ``) in any document

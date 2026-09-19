@@ -56,8 +56,8 @@ Iteration-scoped resources: a draft branch, a diff bundle.
 
 A session's or image's divergence from the current project or build content, in one of two distinct dimensions:
 
-- **sandbox staleness** — the session's recorded `host-head-sha` differs from the current project `HEAD`. Means the git state the sandbox was built from is out of date (the repo has moved on). Computed over the `.compose` registry record (`host-head-sha` vs current `git rev-parse HEAD`).
-- **image staleness** — retired. The interim `agent-sandbox.container-sig`-based comparison (image content vs recomputed source signature) is removed (P3, 2026-09-19). Image identity is now the recorded image-ID digest (`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); the container-boundary contract is the interface-contract version, ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+- **sandbox staleness** -- the session's recorded `host-head-sha` differs from the current project `HEAD`. Means the git state the sandbox was built from is out of date (the repo has moved on). Computed over the `.compose` registry record (`host-head-sha` vs current `git rev-parse HEAD`).
+- **image staleness** -- retired. The interim `agent-sandbox.container-sig`-based comparison (image content vs recomputed source signature) is removed (P3, 2026-09-19). Image identity is now the recorded image-ID digest (`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); the container-boundary contract is the interface-contract version, ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Identity
 
@@ -72,6 +72,6 @@ A session's or image's divergence from the current project or build content, in 
 ### Relationships
 
 - `session_stale` (`resume_agent.sh`/shared lib) computes sandbox staleness.
-- Image staleness detection is a superseded principle: the settled direction retires list-time staleness in favour of recorded version identity — see [drift_state_coherence.md](../adr/drift_state_coherence.md) and [harness_versioning.md](../adr/harness_versioning.md). Until that implementation lands, the behaviour above is current.
+- Image staleness detection is a superseded principle: the settled direction retires list-time staleness in favour of recorded version identity -- see [drift_state_coherence.md](../adr/drift_state_coherence.md) and [harness_versioning.md](../adr/harness_versioning.md). Until that implementation lands, the behaviour above is current.
 
 **Last updated:** 2026-08-21

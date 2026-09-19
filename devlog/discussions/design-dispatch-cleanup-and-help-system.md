@@ -1,14 +1,14 @@
 # Design: Dispatch Cleanup and Help System
 
 **Date:** 2026-05-30
-**Status:** Approved — ready for implementation
+**Status:** Approved -- ready for implementation
 
 ## 1. Help System
 
 ### 1.1 Command interface
 
-- `agent-sandbox help` — prints list of valid subcommands (hardcoded list)
-- `agent-sandbox help <subcommand>` — prints usage for that subcommand
+- `agent-sandbox help` -- prints list of valid subcommands (hardcoded list)
+- `agent-sandbox help <subcommand>` -- prints usage for that subcommand
 - `<subcommand> --help` also triggers usage output (works when subcommand scripts are called directly)
 
 ### 1.2 Implementation
@@ -56,9 +56,9 @@ Options:
 
 When invalid flags are passed, the subcommand script's `main()` detects this in its `*)` case, calls `usage()` to stderr, and exits 1. The usage string serves as the error message.
 
-### 1.5 Future improvement — automatic discovery
+### 1.5 Future improvement -- automatic discovery
 
-The valid subcommand list is currently hardcoded. A future improvement is to scan `$SCRIPTS/workflows/` and discover subcommand scripts automatically. Deferred — see roadmap.
+The valid subcommand list is currently hardcoded. A future improvement is to scan `$SCRIPTS/workflows/` and discover subcommand scripts automatically. Deferred -- see roadmap.
 
 ---
 
@@ -75,6 +75,7 @@ The valid subcommand list is currently hardcoded. A future improvement is to sca
 ### 2.2 Decision rule: shared lib vs subcommand-specific
 
 A flag's parsing goes into a shared lib when both conditions hold:
+
 1. The flag name and value type are identical across two or more subcommands
 2. The parsing logic is non-trivial (beyond a simple `${ARG#--flag=}` assignment)
 
@@ -114,7 +115,8 @@ Otherwise, parsing stays in the subcommand's `main()`.
 ### 3.1 What `parse_flags` extracts
 
 `parse_flags` extracts exactly 3 flags:
-- `--name`, `--project`, `--sandbox` — the universal flags
+
+- `--name`, `--project`, `--sandbox` -- the universal flags
 
 Everything else goes to `PASSTHROUGH` unmodified. No `rebuild_flags()` or `require_provider_args()` at the dispatch level.
 
@@ -144,29 +146,29 @@ The `build` case is the sole exception to the passthrough rule: it normalises th
 ### 3.4 `PASSTHROUGH` guarantees
 
 - Every flag not recognised by `parse_flags` appears in `PASSTHROUGH` in the order it was given.
-- `PASSTHROUGH` is an array, not a string — handles flags with spaces correctly.
+- `PASSTHROUGH` is an array, not a string -- handles flags with spaces correctly.
 - The subcommand's `$@` receives universal flags first, then the passthrough flags in original order.
 
 ---
 
 ## 4. Implementation Phases
 
-### Phase 1 — Help system (no behaviour change)
+### Phase 1 -- Help system (no behaviour change)
 
 - Add `usage()` to each subcommand script
 - Add `help)` case to `agent-sandbox.sh` dispatch
 - Add `--help` handling to each subcommand's `main()` (calls `usage()` before validation)
 - Update `*)` error case in each subcommand to call `usage()` instead of ad-hoc error text
 
-### Phase 2 — Streamlined dispatch (behaviour change)
+### Phase 2 -- Streamlined dispatch (behaviour change)
 
 - Reduce `parse_flags` to 3 universal flags
 - Remove `rebuild_flags()`, `require_provider_args()` from dispatcher
 - Remove unused local variable declarations from `main()` scope
 - Update each dispatch case to use `"${PASSTHROUGH[@]}"` pattern
-- Remove redundant flag parsing from subcommand scripts (they parse from `$@` instead of pre-parsed variables — but many already do this since the dispatch refactor)
+- Remove redundant flag parsing from subcommand scripts (they parse from `$@` instead of pre-parsed variables -- but many already do this since the dispatch refactor)
 
-### Phase 3 — Cleanup
+### Phase 3 -- Cleanup
 
 - Update `tests/test_dispatch.sh` to reflect new flag flow
 - Verify full test suite passes

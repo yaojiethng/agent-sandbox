@@ -11,10 +11,10 @@ Fix the `test_runner_selftest.sh` FATAL: every clean suite run since the livenes
 
 ## Scope
 
-- `scripts/run_tests.sh` — contract-anchored dead-registration scan.
-- `tests/test_runner_selftest.sh` — Case 12 payload rewritten so the words stay off column 0.
-- `docs/development/testing-conventions.md` — the scan's contract anchor documented.
-- `devlog/roadmap.md` — the selftest-FATAL row closed.
+- `scripts/run_tests.sh` -- contract-anchored dead-registration scan.
+- `tests/test_runner_selftest.sh` -- Case 12 payload rewritten so the words stay off column 0.
+- `docs/development/testing-conventions.md` -- the scan's contract anchor documented.
+- `devlog/roadmap.md` -- the selftest-FATAL row closed.
 
 ## Carried forward
 
@@ -44,7 +44,7 @@ Fix the `test_runner_selftest.sh` FATAL: every clean suite run since the livenes
 |---|---|---|
 | Anchor the scan to the registration contract (`run_test` naming a `test_` function) instead of adding a shell quote/heredoc tokenizer to the awk | the corpus's only non-`test_` targets are exactly payload content (`t_ok`, `t_dead`, `t_noop`); `check_test_liveness.sh` already greps this shape, so the two tools now speak one contract; a 40-line state machine for a heuristic guard has its own correctness risk and must be maintained forever | run_tests.sh, testing-conventions.md, this handover |
 | Case 12's payload names real `test_` targets and is printed via `printf` so the registration words never sit at column 0 in the selftest body | the old `t_*` payload only worked against the naive scan; under the contract anchor it would no longer exercise a dead registration, and typing `run_test test_ok` at column 0 inside the selftest would false-positive its own body | test_runner_selftest.sh |
-| The column-0 limit is a documented boundary, not a handled case | a payload embedding a verbatim `run_test test_x` at column 0 would still trip the scan — same exposure `check_test_liveness.sh` already has; it fails loudly (a FATAL), and payload authors keep words off column 0 (the selftest itself is the template) | run_tests.sh comment, testing-conventions.md |
+| The column-0 limit is a documented boundary, not a handled case | a payload embedding a verbatim `run_test test_x` at column 0 would still trip the scan -- same exposure `check_test_liveness.sh` already has; it fails loudly (a FATAL), and payload authors keep words off column 0 (the selftest itself is the template) | run_tests.sh comment, testing-conventions.md |
 
 ## Findings
 
@@ -56,7 +56,7 @@ Fix the `test_runner_selftest.sh` FATAL: every clean suite run since the livenes
 
 ## Review pass outcome
 
-Not run — recommended: a development-diff review by the operator before merge; the change is a one-regex fix plus a test-payload rewrite, and the design was already operator-challenged and re-released in chat.
+Not run -- recommended: a development-diff review by the operator before merge; the change is a one-regex fix plus a test-payload rewrite, and the design was already operator-challenged and re-released in chat.
 
 ## Completed
 
@@ -81,4 +81,4 @@ Blocking design questions the next agent must resolve before advancing:
 
 - None.
 
-**Conclusions from this iteration:** the runner's dead-registration scan read line shape, not semantics: it flagged any word `run_test` that textually followed `test_done`, so the selftest's own quoted payload content tripped it and every clean suite run exited rc=1 since the scan landed. The fix anchors the scan to the registration contract — a registration names a `test_` function, the same shape `check_test_liveness.sh` already greps — one regex change instead of a shell tokenizer. Case 12 was rewritten to use real `test_` names printed off column 0, so it still exercises dead-registration detection while the selftest body stays scan-clean. Suite: rc=0, 803 passed / 0 failed, 0 FATAL.
+**Conclusions from this iteration:** the runner's dead-registration scan read line shape, not semantics: it flagged any word `run_test` that textually followed `test_done`, so the selftest's own quoted payload content tripped it and every clean suite run exited rc=1 since the scan landed. The fix anchors the scan to the registration contract -- a registration names a `test_` function, the same shape `check_test_liveness.sh` already greps -- one regex change instead of a shell tokenizer. Case 12 was rewritten to use real `test_` names printed off column 0, so it still exercises dead-registration detection while the selftest body stays scan-clean. Suite: rc=0, 803 passed / 0 failed, 0 FATAL.

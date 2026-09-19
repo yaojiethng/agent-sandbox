@@ -4,14 +4,14 @@ ADRs live in `docs/adr/` and follow the project's living format defined in
 `docs/operations/adr_policy.md`. Read that policy before writing or editing
 an ADR; this file is a working summary, not the authority.
 
-An ADR records the *why* behind one standing principle — a pattern, interface
-shape, design philosophy, invariant, or interaction contract — including the
+An ADR records the *why* behind one standing principle -- a pattern, interface
+shape, design philosophy, invariant, or interaction contract -- including the
 rejected alternatives and their reasons. Local design choices ride under an
 existing ADR; they do not each spawn a file.
 
 ## Unit and naming
 
-One file per standing principle, named for the principle it governs —
+One file per standing principle, named for the principle it governs --
 `docs/adr/<principle>[-<scope>].md`, no dates or status in the name. The
 agent recommends names; the operator decides them.
 
@@ -42,7 +42,7 @@ an explicit why-rejected line.
 ## When to offer an ADR
 
 Spawn an ADR when a design settles a principle whose consequences reach
-beyond the change that introduced it — a contract other components must match,
+beyond the change that introduced it -- a contract other components must match,
 or a rule that stabilizes a convention for future work. Reach, not size. A
 choice affecting one implementation detail in one file does not spawn an ADR.
 
@@ -53,7 +53,7 @@ What qualifies:
 - **Integration patterns between contexts.** "Ordering and Billing
   communicate via domain events, not synchronous HTTP."
 - **Technology choices that carry lock-in.** Database, message bus, auth
-  provider, deployment target — not every library.
+  provider, deployment target -- not every library.
 - **Boundary and scope decisions.** The explicit no-s are as valuable as the
   yes-s.
 - **Deliberate deviations from the obvious path.** Anything a reasonable

@@ -6,7 +6,7 @@ Governs the creation, lifecycle, and closure of investigation documents. Investi
 
 ## Purpose
 
-An investigation exists to answer a bounded question: is this specific approach viable, and should it be recommended? It is not an open-ended exploration — it has a defined candidate, a defined parent story, and a defined endpoint (a recommendation or a rejection with reasoning).
+An investigation exists to answer a bounded question: is this specific approach viable, and should it be recommended? It is not an open-ended exploration -- it has a defined candidate, a defined parent story, and a defined endpoint (a recommendation or a rejection with reasoning).
 
 A well-run investigation produces a clear recommendation that the parent story can act on. An investigation that remains open indefinitely without producing a recommendation is a planning failure.
 
@@ -25,9 +25,10 @@ Investigations are reasoning records. They are not architecture documents and ar
 Open an investigation during the major loop when a parent story has identified two or more candidate approaches that need comparative evaluation, and one investigation per candidate is warranted.
 
 An investigation is not required when:
-- A story has only one viable approach — evaluate it within the story itself
+
+- A story has only one viable approach -- evaluate it within the story itself
 - The question can be answered by reading existing documentation or running a targeted grep
-- The candidate is clearly non-viable — record the rejection reasoning in the story directly
+- The candidate is clearly non-viable -- record the rejection reasoning in the story directly
 
 ---
 
@@ -40,7 +41,7 @@ Investigations follow a fixed section order. The fixed order makes grep-based se
 | **Status line** | At creation | One line immediately after the title: current state and key blocker or outcome |
 | **Direction + Parent story** | At creation | Which investigation direction this belongs to; link to parent story |
 | **Required reading** | At creation | Prerequisite documents; links only, no prose |
-| **Summary** | At creation | What this candidate is and how it works; 2–4 sentences |
+| **Summary** | At creation | What this candidate is and how it works; 2-4 sentences |
 | **Findings** | During investigation | What was discovered; may be iterative subsections |
 | **Open Questions** | During investigation | Unresolved questions blocking a recommendation; updated as questions resolve |
 | **Constraints** | At creation or during investigation | Non-negotiable requirements this candidate must satisfy to be viable |
@@ -55,21 +56,22 @@ The Status line sits immediately after the title. No preamble before it.
 
 | Status | Meaning |
 |---|---|
-| `Not started` | Stub — structure created, investigation not begun |
-| `In progress` | Active — open questions remain; findings accumulating |
-| `Resolved` | Closed — Resolution section complete; recommendation fed back to parent story |
-| `Superseded` | Closed — made obsolete by a broader decision; redirect to superseding document |
+| `Not started` | Stub -- structure created, investigation not begun |
+| `In progress` | Active -- open questions remain; findings accumulating |
+| `Resolved` | Closed -- Resolution section complete; recommendation fed back to parent story |
+| `Superseded` | Closed -- made obsolete by a broader decision; redirect to superseding document |
 
 ---
 
 ## Running an Investigation
 
 An investigation advances by answering its open questions. Each finding either closes a question or opens a new one. An investigation is ready to close when:
+
 - All open questions are answered
 - A clear recommendation (adopt, reject, or defer with conditions) can be stated
 - The recommendation is grounded in the findings, not in preference
 
-During investigation, update the Findings section iteratively — do not wait until the investigation is complete to record findings. Findings recorded only in chat do not survive the session boundary.
+During investigation, update the Findings section iteratively -- do not wait until the investigation is complete to record findings. Findings recorded only in chat do not survive the session boundary.
 
 ---
 
@@ -94,6 +96,7 @@ A closed investigation is modified only at the operator's direction and carries 
 An investigation is commissioned by and subordinate to a parent story. The story owns the problem framing and the final design decision. The investigation owns the evaluation of one candidate.
 
 When all investigations for a story are closed:
+
 - The story's Investigation Findings section summarises each candidate's recommendation
 - The story is ready to resolve: choose the approach, write the Resolution section, graduate to a roadmap entry
 
@@ -103,9 +106,9 @@ If a single investigation produces a clear enough recommendation that further in
 
 ## Corrections to Closed Investigations
 
-The full correction principle is defined in `docs/operations/documentation_policy.md` — Post-Close Document Corrections. This section defines the specific form for investigation documents.
+The full correction principle is defined in `docs/operations/documentation_policy.md` -- Post-Close Document Corrections. This section defines the specific form for investigation documents.
 
-### Valid investigation — minor error
+### Valid investigation -- minor error
 
 If the investigation's core findings are sound but a detail is incorrect (wrong filename, inaccurate measurement, incomplete finding):
 
@@ -120,7 +123,7 @@ If the investigation's core findings are sound but a detail is incorrect (wrong 
 3. Do not alter the document's status, title, or metadata.
 4. Propose the amended document to the operator for review.
 
-### Invalid investigation — superseded or incorrect content
+### Invalid investigation -- superseded or incorrect content
 
 If the investigation's core content is wrong or has been superseded by properly organised work elsewhere:
 
@@ -140,8 +143,8 @@ The operator may delete the document. If deleted, the operator will mark any ref
 
 If an investigation document the agent expects to find is absent:
 
-- If its referencing link carries a `[REMOVED]` marker — the absence is expected. No error.
-- If its referencing link has no `[REMOVED]` marker — flag as an error and prompt the operator before proceeding.
+- If its referencing link carries a `[REMOVED]` marker -- the absence is expected. No error.
+- If its referencing link has no `[REMOVED]` marker -- flag as an error and prompt the operator before proceeding.
 
 ---
 
@@ -150,5 +153,5 @@ If an investigation document the agent expects to find is absent:
 | Document | Purpose |
 |---|---|
 | [`story_policy.md`](story_policy.md) | Parent story format, lifecycle, and graduation |
-| [`milestone_policy.md`](milestone_policy.md) | Major loop — when investigations are commissioned |
-| [`iteration_policy.md`](iteration_policy.md) | Minor loop — where deferred investigations may resume |
+| [`milestone_policy.md`](milestone_policy.md) | Major loop -- when investigations are commissioned |
+| [`iteration_policy.md`](iteration_policy.md) | Minor loop -- where deferred investigations may resume |

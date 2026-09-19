@@ -8,9 +8,10 @@ This document is read during the major loop. For iteration execution, see [`iter
 
 ## Purpose of the Major Loop
 
-A major milestone (M1, M2, M3...) is a capability boundary — a meaningful change in what the system can do. Sub-milestones (M2.1, M2.2...) are the implementation increments that deliver it. The major loop exists to scope those increments before coding begins.
+A major milestone (M1, M2, M3...) is a capability boundary -- a meaningful change in what the system can do. Sub-milestones (M2.1, M2.2...) are the implementation increments that deliver it. The major loop exists to scope those increments before coding begins.
 
 The output of the major loop is not a complete plan for every sub-milestone. It is:
+
 - A scoped and ready M2.1 (the first sub-milestone to iterate)
 - Sufficient understanding of M2.2 onward to sequence them correctly
 - Explicit records of what cannot yet be scoped and why
@@ -21,7 +22,7 @@ Sub-milestones that depend on earlier implementation decisions are flagged and d
 
 ## Trigger
 
-The major loop triggers when a top-level milestone closes (via roadmap maintenance in `roadmap_policy.md`) — the milestone has been extracted to the changelog and the next major milestone promoted from `roadmap_future.md` into `roadmap.md`.
+The major loop triggers when a top-level milestone closes (via roadmap maintenance in `roadmap_policy.md`) -- the milestone has been extracted to the changelog and the next major milestone promoted from `roadmap_future.md` into `roadmap.md`.
 
 Do not begin the major loop before the prior milestone is fully closed in the changelog.
 
@@ -30,9 +31,10 @@ Do not begin the major loop before the prior milestone is fully closed in the ch
 ## Inputs
 
 Before beginning, read:
-- The promoted milestone section in `roadmap.md` — objective, sub-milestones, any existing task lists or open decisions
-- `roadmap_future.md` — remaining future milestone context
-- `changelog.md` — the most recent entry, to confirm the prior milestone is fully closed
+
+- The promoted milestone section in `roadmap.md` -- objective, sub-milestones, any existing task lists or open decisions
+- `roadmap_future.md` -- remaining future milestone context
+- `changelog.md` -- the most recent entry, to confirm the prior milestone is fully closed
 - Any open stories or investigations in `devlog/discussions/` that were deferred from the prior major loop
 
 ---
@@ -40,12 +42,14 @@ Before beginning, read:
 ## Scoping Criteria
 
 A sub-milestone is **ready to proceed** when:
+
 - Its objective is stated in one sentence
-- Its design decisions are resolved and recorded with rationale — not just listed as open questions
+- Its design decisions are resolved and recorded with rationale -- not just listed as open questions
 - Its task list is specific enough that each item identifies a file and a nature of change
 - Its dependencies on prior sub-milestones are named explicitly
 
 A sub-milestone is **not ready to proceed** when:
+
 - It has open design questions that can be answered now (these must be resolved before closing the major loop)
 - It has open design questions that depend on earlier implementation decisions (these are explicitly deferred and flagged)
 - Its task list is aspirational rather than specific
@@ -73,6 +77,7 @@ When a story's open questions are resolved, graduate it to a roadmap entry per [
 ## Closing the Major Loop
 
 The major loop closes when:
+
 - M2.1 (or the first active sub-milestone) has a complete, confirmed roadmap entry
 - All stories that could be resolved have been resolved and graduated
 - All stories that cannot be resolved (deferred dependencies) are explicitly flagged in the roadmap entry for the sub-milestone whose iteration will resolve them

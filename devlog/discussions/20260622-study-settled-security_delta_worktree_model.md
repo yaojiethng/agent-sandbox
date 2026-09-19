@@ -1,6 +1,6 @@
-# Security Delta — Worktree Model vs Snapshot+Diff Model
+# Security Delta -- Worktree Model vs Snapshot+Diff Model
 
-**Status:** Analysis complete — incorporated into M2.6 Phase 1 P1-B.
+**Status:** Analysis complete -- incorporated into M2.6 Phase 1 P1-B.
 
 **Companion document:** [`investigation_git_worktrees.md`](investigation_git_worktrees.md)
 **Security baseline:** [`docs/architecture/security.md`](../architecture/security.md)
@@ -14,12 +14,12 @@ The worktree investigation concluded feasible under a set of relaxed assumptions
 
 ---
 
-## Part 1 — Assumption Comparison
+## Part 1 -- Assumption Comparison
 
 ### Current model assumptions
 
 1. **The agent runtime is explicitly untrusted.** The reasoning layer runs agent code (LLM runtime, tool executors, project dependencies) that is not fully auditable.
-2. **PROJECT_DIR is never reachable from either container.** The agent's view of the project is limited to what `git ls-files` enumerated and copied into `.snapshot/` before the run. No path inside `PROJECT_DIR` — including `.git/` — is accessible.
+2. **PROJECT_DIR is never reachable from either container.** The agent's view of the project is limited to what `git ls-files` enumerated and copied into `.snapshot/` before the run. No path inside `PROJECT_DIR` -- including `.git/` -- is accessible.
 3. **Gitignored files are never visible to the agent.** `git ls-files --cached --others --exclude-standard` filters by `.gitignore`. Secrets excluded from tracking are excluded from the snapshot.
 4. **Repository mutation requires human review first.** `staged.diff` must be reviewed by the operator before `apply_workspace.sh` is run. The agent cannot modify PROJECT_DIR without an explicit, operator-initiated apply step.
 5. **Containers are ephemeral.** The agent's Docker volume (`sandbox/`) is anonymous and scoped to the capability layer container's lifetime. It is destroyed on `docker compose down -v`.
@@ -28,16 +28,16 @@ The worktree investigation concluded feasible under a set of relaxed assumptions
 ### New assumptions (worktree model, as proposed)
 
 1. **The agent runtime remains untrusted.** Unchanged.
-2. **`PROJECT_DIR/.git` must be accessible from the container.** A worktree's `.git` file contains an absolute host path pointing back to `PROJECT_DIR/.git`. When only the worktree directory is bind-mounted, that path is unresolvable — git commands inside the container fail. Making the worktree functional requires additionally mounting `PROJECT_DIR/.git` into the container at a reachable path. This is the core mount change.
+2. **`PROJECT_DIR/.git` must be accessible from the container.** A worktree's `.git` file contains an absolute host path pointing back to `PROJECT_DIR/.git`. When only the worktree directory is bind-mounted, that path is unresolvable -- git commands inside the container fail. Making the worktree functional requires additionally mounting `PROJECT_DIR/.git` into the container at a reachable path. This is the core mount change.
 3. **Gitignored files remain invisible in the working tree.** `git worktree add` checks out only tracked files. Gitignored files from `PROJECT_DIR`'s working tree do not appear in the worktree. This filtering property is preserved.
-4. **Commit history is clean.** Assumed by the operator — no secrets have ever been committed. The harness cannot verify or enforce this. It is an operator precondition.
+4. **Commit history is clean.** Assumed by the operator -- no secrets have ever been committed. The harness cannot verify or enforce this. It is an operator precondition.
 5. **Remote operations are blocked.** `--network=none` on the agent container prevents all TCP/IP operations. `git push` and `git fetch` fail at the syscall level.
 6. **Main branch protection is enforced by file permissions.** `git pack-refs --all` consolidates all loose refs into `packed-refs`; `chmod a-w .git/packed-refs` then makes all branch pointers read-only from inside the container.
 7. **Repository mutation occurs on the agent's branch immediately.** The agent's commits go directly into `PROJECT_DIR`'s object store and onto the agent branch. The operator reviews and merges (or discards) after the fact.
 
 ---
 
-## Part 2 — Invariant-by-Invariant Comparison
+## Part 2 -- Invariant-by-Invariant Comparison
 
 The current security invariants are enumerated in `security.md`. Each is assessed below.
 
@@ -47,7 +47,7 @@ The current security invariants are enumerated in `security.md`. Each is assesse
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ❌ Broken — by design |
+| Status | [x] Holds | [ ] Broken -- by design |
 
 The worktree model requires mounting `PROJECT_DIR/.git` into the container. This is a subpath of `PROJECT_DIR` and constitutes mounting part of `PROJECT_DIR`. The original invariant cannot hold and must be rewritten if this model is adopted.
 
@@ -61,7 +61,7 @@ Note: this still requires deciding whether `.git` is mounted into the capability
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ⚠️ Requires revision |
+| Status | [x] Holds | [!] Requires revision |
 
 Under the worktree model, the capability layer needs access to the worktree directory (the agent's working copy) and to `PROJECT_DIR/.git` (to create/remove worktrees and commit pending changes). The invariant must be updated to name these explicitly.
 
@@ -71,17 +71,17 @@ Under the worktree model, the capability layer needs access to the worktree dire
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ❌ Broken — by design |
+| Status | [x] Holds | [ ] Broken -- by design |
 
 The reasoning layer (agent container) needs access to the worktree working directory, which is a bind-mounted host path. This is a new host filesystem access point for the untrusted container.
 
 Whether `PROJECT_DIR/.git` is also accessible to the reasoning layer depends on architecture choice:
 
-- **Option A (preferred):** Only the worktree working directory is mounted into the reasoning layer. `PROJECT_DIR/.git` is mounted into the capability layer only. The agent cannot run `git log`, `git show`, etc. directly — the git object store is outside its reach. Git operations available to the agent are limited to commands that work via the worktree working tree without needing the object store (i.e., almost nothing useful). This option effectively breaks git inside the reasoning layer.
+- **Option A (preferred):** Only the worktree working directory is mounted into the reasoning layer. `PROJECT_DIR/.git` is mounted into the capability layer only. The agent cannot run `git log`, `git show`, etc. directly -- the git object store is outside its reach. Git operations available to the agent are limited to commands that work via the worktree working tree without needing the object store (i.e., almost nothing useful). This option effectively breaks git inside the reasoning layer.
 
 - **Option B:** Both the worktree directory and `PROJECT_DIR/.git` are mounted into the reasoning layer. The agent can run the full git toolchain. This is required if the agent is expected to make its own `git commit` calls. Full history is readable.
 
-Option A preserves more of the original isolation model but requires the capability layer to act as a git proxy (staging and committing changes on behalf of the agent — a behaviour change to the agent workflow). Option B is what the addendum in the investigation assumed.
+Option A preserves more of the original isolation model but requires the capability layer to act as a git proxy (staging and committing changes on behalf of the agent -- a behaviour change to the agent workflow). Option B is what the addendum in the investigation assumed.
 
 ---
 
@@ -89,7 +89,7 @@ Option A preserves more of the original isolation model but requires the capabil
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ✅ Holds — unchanged |
+| Status | [x] Holds | [x] Holds -- unchanged |
 
 No change.
 
@@ -99,9 +99,9 @@ No change.
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ❌ Broken — by design |
+| Status | [x] Holds | [ ] Broken -- by design |
 
-This is the most significant procedural invariant change. Under the current model, the agent cannot modify `PROJECT_DIR` in any form — it works in an isolated Docker volume, and `apply_workspace.sh` is the only path from the sandbox to `PROJECT_DIR`, and it requires operator action. The review gate is mandatory and pre-mutation.
+This is the most significant procedural invariant change. Under the current model, the agent cannot modify `PROJECT_DIR` in any form -- it works in an isolated Docker volume, and `apply_workspace.sh` is the only path from the sandbox to `PROJECT_DIR`, and it requires operator action. The review gate is mandatory and pre-mutation.
 
 Under the worktree model, the agent's commits go directly into `PROJECT_DIR`'s git object store on the agent's branch. Mutation of the repository (object creation) occurs during the session, not after review. The operator can reject the entire branch (`git branch -d agent/session`) but cannot prevent the objects from having been written. The review gate becomes post-mutation.
 
@@ -115,7 +115,7 @@ This changes the threat posture for prompt injection and agent compromise scenar
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ❌ Eliminated — model change |
+| Status | [x] Holds | [ ] Eliminated -- model change |
 
 `staged.diff` does not exist in the worktree model. This invariant is replaced by the branch protection model above. It should be removed from `security.md` if the worktree model is adopted and replaced with the branch-protection invariant.
 
@@ -125,9 +125,9 @@ This changes the threat posture for prompt injection and agent compromise scenar
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds via snapshot pipeline | ✅ Holds via worktree checkout |
+| Status | [x] Holds via snapshot pipeline | [x] Holds via worktree checkout |
 
-As established in the investigation: `git worktree add` checks out only tracked files. Gitignored files in `PROJECT_DIR`'s working tree do not materialise in the worktree. The filtering property is preserved — by a different mechanism (git's own checkout behaviour rather than the snapshot pipeline's explicit enumeration). The invariant holds but should be updated to reference the new mechanism.
+As established in the investigation: `git worktree add` checks out only tracked files. Gitignored files in `PROJECT_DIR`'s working tree do not materialise in the worktree. The filtering property is preserved -- by a different mechanism (git's own checkout behaviour rather than the snapshot pipeline's explicit enumeration). The invariant holds but should be updated to reference the new mechanism.
 
 **Important boundary condition:** this covers the *working tree* only. Gitignored files that were accidentally committed at any point in history are present in the object store and readable under Option B. Under the new assumptions (clean history), this is accepted but unverified.
 
@@ -137,49 +137,51 @@ As established in the investigation: `git worktree add` checks out only tracked 
 
 | | Current | Worktree model |
 |---|---|---|
-| Status | ✅ Holds | ✅ Holds — unchanged |
+| Status | [x] Holds | [x] Holds -- unchanged |
 
 The `workspace/output/` mount is unchanged in the worktree model. No change.
 
 ---
 
-## Part 3 — New Trust Boundaries
+## Part 3 -- New Trust Boundaries
 
 The current trust boundary list (from `security.md`) has seven entries. The worktree model introduces two new ones and modifies one existing one.
 
-**Modified boundary — Containers ↔ Mounted host directories:**
+**Modified boundary -- Containers <-> Mounted host directories:**
 
-Currently: `.snapshot/` (RO) and `.workspace/` subdirectories.  
-Under worktree model: adds `PROJECT_DIR/.git` (RO or RW — see below) and the worktree working directory (RW bind mount).
+Currently: `.snapshot/` (RO) and `.workspace/` subdirectories.
+Under worktree model: adds `PROJECT_DIR/.git` (RO or RW -- see below) and the worktree working directory (RW bind mount).
 
-**New boundary 1 — Reasoning layer ↔ PROJECT_DIR git object store:**
+**New boundary 1 -- Reasoning layer <-> PROJECT_DIR git object store:**
 
 The agent container gains read access to the full git history, config, and ref store. Under Option B (agent runs git directly), it also gains write access for object creation and the agent's branch ref. This boundary does not exist in the current model.
 
-**New boundary 2 — SESSION LIFETIME ↔ PROJECT_DIR repo integrity:**
+**New boundary 2 -- SESSION LIFETIME <-> PROJECT_DIR repo integrity:**
 
-Currently, PROJECT_DIR's git repo is never touched during a session — only after. Under the worktree model, the repo is modified during the session (objects written, refs updated). A crash, an OOM kill, or a malicious mid-session action can leave the repo in a partially-written state. The git object model is content-addressed and self-checking, which provides some protection, but the boundary between "session in progress" and "repo is safe to use" collapses.
+Currently, PROJECT_DIR's git repo is never touched during a session -- only after. Under the worktree model, the repo is modified during the session (objects written, refs updated). A crash, an OOM kill, or a malicious mid-session action can leave the repo in a partially-written state. The git object model is content-addressed and self-checking, which provides some protection, but the boundary between "session in progress" and "repo is safe to use" collapses.
 
 ---
 
-## Part 4 — Assets at Risk After Proposed Mitigations
+## Part 4 -- Assets at Risk After Proposed Mitigations
 
 The investigation proposed two mitigations: `--network=none` (remote blocking) and `chmod a-w .git/packed-refs` (branch pointer protection). This section evaluates what each covers and what remains exposed.
 
 ### Mitigation 1: `--network=none`
 
 **Covers:**
-- `git push` — TCP blocked at syscall level.
-- `git fetch` — TCP blocked.
-- Data exfiltration to remote endpoints — blocked.
-- Connecting to external services injected via git config (`[url]` rewrites, custom remotes) — blocked.
+
+- `git push` -- TCP blocked at syscall level.
+- `git fetch` -- TCP blocked.
+- Data exfiltration to remote endpoints -- blocked.
+- Connecting to external services injected via git config (`[url]` rewrites, custom remotes) -- blocked.
 
 **Does not cover:**
-- Reading `.git/config` (remote URLs, user identity, `core.hooksPath` if set) — config is local, no network needed.
-- Writing to `.git/config` — local write, no network needed.
-- Modifying hook scripts in `.git/hooks/` — local write, no network needed.
-- Object store integrity attacks (writing corrupt or garbage objects) — local, no network needed.
-- Creating new loose refs (new branch names) in `.git/refs/heads/` — local write.
+
+- Reading `.git/config` (remote URLs, user identity, `core.hooksPath` if set) -- config is local, no network needed.
+- Writing to `.git/config` -- local write, no network needed.
+- Modifying hook scripts in `.git/hooks/` -- local write, no network needed.
+- Object store integrity attacks (writing corrupt or garbage objects) -- local, no network needed.
+- Creating new loose refs (new branch names) in `.git/refs/heads/` -- local write.
 
 **Assessment:** `--network=none` is a strong, reliable mitigation for the exfiltration threat. It does not address the local git-level threats.
 
@@ -188,7 +190,8 @@ The investigation proposed two mitigations: `--network=none` (remote blocking) a
 ### Mitigation 2: `chmod a-w .git/packed-refs`
 
 **Covers:**
-- Moving the `main` branch pointer — `packed-refs` is the canonical location after `git pack-refs --all`. A write attempt fails at the OS level.
+
+- Moving the `main` branch pointer -- `packed-refs` is the canonical location after `git pack-refs --all`. A write attempt fails at the OS level.
 - Moving any other branch pointer that has been consolidated into `packed-refs`.
 
 **Does not cover:**
@@ -198,8 +201,8 @@ The investigation proposed two mitigations: `--network=none` (remote blocking) a
    Risk: ref namespace pollution. New branches created by the agent persist in PROJECT_DIR's repo after the session. The operator must manually clean them up. This is an annoyance risk, not a critical security risk, but it degrades repo hygiene and could confuse the operator's review workflow.
 
 2. **`.git/config` write access.** If `.git/config` is writable (which it would be by default), the agent can:
-   - Add new remotes with attacker-controlled URLs — blocked by `--network=none` at execution time, but the config is modified permanently.
-   - Change `core.hooksPath` to point to a directory the agent controls — hooks run on subsequent git operations, potentially on the host after the session ends.
+   - Add new remotes with attacker-controlled URLs -- blocked by `--network=none` at execution time, but the config is modified permanently.
+   - Change `core.hooksPath` to point to a directory the agent controls -- hooks run on subsequent git operations, potentially on the host after the session ends.
    - Add `[include]` directives to pull in a config file the agent has written.
 
    The `core.hooksPath` risk is the most serious: if the agent sets `core.hooksPath` to a path inside the worktree, and the operator later runs a git command in PROJECT_DIR after the session (e.g., `git merge agent/session`), git would execute the agent's hooks **on the host**, outside the container. This is a post-session code execution risk on the host.
@@ -208,7 +211,7 @@ The investigation proposed two mitigations: `--network=none` (remote blocking) a
 
 3. **`.git/hooks/` write access.** Similar to the `core.hooksPath` risk. If the agent can write to `PROJECT_DIR/.git/hooks/`, it can install hooks that execute on the host during the operator's post-session git workflow.
 
-   Note: under Option A (only worktree directory mounted, not `.git/`), this risk does not exist — the agent cannot reach `.git/hooks/`. Under Option B (`.git/` also mounted and writable), this risk is fully present.
+   Note: under Option A (only worktree directory mounted, not `.git/`), this risk does not exist -- the agent cannot reach `.git/hooks/`. Under Option B (`.git/` also mounted and writable), this risk is fully present.
 
 4. **Object store pollution.** The agent can write arbitrary git objects to `PROJECT_DIR/.git/objects/`. These are content-addressed and do not affect the working tree or refs unless referenced by a commit. However, they persist in the object store until `git gc --prune` and accumulate disk space over many sessions. Not a security risk but an operational hygiene concern.
 
@@ -216,7 +219,7 @@ The investigation proposed two mitigations: `--network=none` (remote blocking) a
 
 ---
 
-## Part 5 — Unverifiable Precondition
+## Part 5 -- Unverifiable Precondition
 
 The new assumption that "commit history is clean" is **an operator assertion, not a harness guarantee.** The harness cannot verify it. The consequences of this assumption being wrong:
 
@@ -228,31 +231,31 @@ The correct operational posture is that the harness documentation must state thi
 
 ---
 
-## Part 6 — Summary Table
+## Part 6 -- Summary Table
 
 | Asset | Current model | Worktree model (after proposed mitigations) | Residual risk |
 |---|---|---|---|
-| PROJECT_DIR working tree files | ❌ Not accessible | ❌ Not accessible (worktree checkout only) | None |
-| Gitignored files (working tree) | ❌ Not accessible | ❌ Not accessible | None |
-| Full commit history (object store) | ❌ Not accessible | ✅ Readable (under Option B) | Accepted under new assumptions; unverifiable |
-| Secrets in git history | ❌ Not accessible | ✅ Readable if present | **Unmitigated** — operator precondition only |
-| `.git/config` (remote URLs, identity) | ❌ Not accessible | ✅ Readable; ✅ Writable | **`core.hooksPath` write is high-severity** |
-| `.git/hooks/` | ❌ Not accessible | ✅ Readable; ✅ Writable | **Post-session host code execution** if writable |
-| Main branch pointer | ❌ Not accessible | ✅ Read; ❌ Write-protected by `chmod` | Covered by mitigation |
-| Other branch pointers (packed) | ❌ Not accessible | ✅ Read; ❌ Write-protected by `chmod` | Covered by mitigation |
-| New branch creation (loose refs) | ❌ Not possible | ✅ Possible | Ref pollution; not critical |
-| Remote push/fetch | ❌ Not possible | ❌ Blocked by `--network=none` | Covered by mitigation |
-| `.git/config` write (core.hooksPath) | ❌ Not possible | ✅ Possible | **High severity — not mitigated** |
-| Object store integrity | ❌ Not accessible | ✅ Writable | Operational hygiene concern |
-| Review gate (pre-mutation) | ✅ Mandatory before any mutation | ❌ Mutation occurs during session | Fundamental model change |
+| PROJECT_DIR working tree files | [ ] Not accessible | [ ] Not accessible (worktree checkout only) | None |
+| Gitignored files (working tree) | [ ] Not accessible | [ ] Not accessible | None |
+| Full commit history (object store) | [ ] Not accessible | [x] Readable (under Option B) | Accepted under new assumptions; unverifiable |
+| Secrets in git history | [ ] Not accessible | [x] Readable if present | **Unmitigated** -- operator precondition only |
+| `.git/config` (remote URLs, identity) | [ ] Not accessible | [x] Readable; [x] Writable | **`core.hooksPath` write is high-severity** |
+| `.git/hooks/` | [ ] Not accessible | [x] Readable; [x] Writable | **Post-session host code execution** if writable |
+| Main branch pointer | [ ] Not accessible | [x] Read; [ ] Write-protected by `chmod` | Covered by mitigation |
+| Other branch pointers (packed) | [ ] Not accessible | [x] Read; [ ] Write-protected by `chmod` | Covered by mitigation |
+| New branch creation (loose refs) | [ ] Not possible | [x] Possible | Ref pollution; not critical |
+| Remote push/fetch | [ ] Not possible | [ ] Blocked by `--network=none` | Covered by mitigation |
+| `.git/config` write (core.hooksPath) | [ ] Not possible | [x] Possible | **High severity -- not mitigated** |
+| Object store integrity | [ ] Not accessible | [x] Writable | Operational hygiene concern |
+| Review gate (pre-mutation) | [x] Mandatory before any mutation | [ ] Mutation occurs during session | Fundamental model change |
 
 ---
 
-## Part 7 — Required Additional Mitigations
+## Part 7 -- Required Additional Mitigations
 
 The two proposed mitigations (`--network=none` and `chmod a-w .git/packed-refs`) are necessary but not sufficient. Two additional mitigations are required before the worktree model can be considered adequately hardened:
 
-**Mitigation 3 — Make `.git/config` and `.git/hooks/` read-only inside the container.**
+**Mitigation 3 -- Make `.git/config` and `.git/hooks/` read-only inside the container.**
 
 After worktree creation, in `start_agent.sh`, before the container starts:
 
@@ -270,9 +273,9 @@ chmod -R u+w PROJECT_DIR/.git/hooks/
 
 This closes the `core.hooksPath` and hook-installation vectors. The agent cannot modify git configuration or install hooks that execute on the host post-session.
 
-**Mitigation 4 — Architecture choice: mount `.git/` into capability layer only (Option A), not reasoning layer.**
+**Mitigation 4 -- Architecture choice: mount `.git/` into capability layer only (Option A), not reasoning layer.**
 
-If the agent does not need to run `git` commands directly — if the capability layer handles all git operations (staging pending changes, committing on exit) — then `PROJECT_DIR/.git` does not need to be mounted into the reasoning layer at all. The reasoning layer gets only the worktree working directory (tracked files). This eliminates the object store read access, config write access, hooks write access, and ref pollution risks entirely for the reasoning layer.
+If the agent does not need to run `git` commands directly -- if the capability layer handles all git operations (staging pending changes, committing on exit) -- then `PROJECT_DIR/.git` does not need to be mounted into the reasoning layer at all. The reasoning layer gets only the worktree working directory (tracked files). This eliminates the object store read access, config write access, hooks write access, and ref pollution risks entirely for the reasoning layer.
 
 The cost: the agent cannot run `git status`, `git log`, or `git commit` itself. Whether this is acceptable depends on the agent's workflow. For agents that use git as part of their task (e.g., reading commit history to understand context), this is a regression. For agents that only read and write files, it is not.
 
@@ -280,7 +283,7 @@ The cost: the agent cannot run `git status`, `git log`, or `git commit` itself. 
 
 ## Conclusion
 
-The worktree model requires breaking three current security invariants: (1) no PROJECT_DIR mount, (2) no host mutation before review, (3) diff-as-review-gate. Two of these are fundamental model changes that must be accepted, not mitigated — the worktree model cannot provide a pre-mutation review gate, and it cannot function without mounting part of PROJECT_DIR. The third (diff gate) is eliminated and replaced by a branch-protection model.
+The worktree model requires breaking three current security invariants: (1) no PROJECT_DIR mount, (2) no host mutation before review, (3) diff-as-review-gate. Two of these are fundamental model changes that must be accepted, not mitigated -- the worktree model cannot provide a pre-mutation review gate, and it cannot function without mounting part of PROJECT_DIR. The third (diff gate) is eliminated and replaced by a branch-protection model.
 
 The proposed mitigations (`--network=none` + `chmod a-w packed-refs`) leave two high-severity gaps: `.git/config` write access (enabling `core.hooksPath` manipulation for post-session host code execution) and `.git/hooks/` write access. Both require additional mitigations (making config and hooks read-only, and/or restricting `.git/` to the capability layer only).
 
@@ -290,27 +293,27 @@ The security model documentation (`security.md`, `threat_model_stride.md`) would
 
 ## Resolution
 
-**Status:** Analysis complete — incorporated into M2.6 Phase 1 P1-B.
+**Status:** Analysis complete -- incorporated into M2.6 Phase 1 P1-B.
 
 ### Summary
 
-The invariant-by-invariant comparison (Part 2), the four required mitigations (Part 7), and the residual risk analysis (Parts 4–6) have been incorporated into [`docs/architecture/security.md`](../architecture/security.md) as the Tier 3 (Mount + Worktree) security invariants. Specifically:
+The invariant-by-invariant comparison (Part 2), the four required mitigations (Part 7), and the residual risk analysis (Parts 4-6) have been incorporated into [`docs/architecture/security.md`](../architecture/security.md) as the Tier 3 (Mount + Worktree) security invariants. Specifically:
 
-- **Invariant rewrites** (Part 2): Applied in `security.md` Security Invariants — Tier 3 replacement table.
-- **Required mitigations** (Part 7): All four are encoded as invariants 8–10 and the revision to invariant 1 in `security.md` Tier 3.
+- **Invariant rewrites** (Part 2): Applied in `security.md` Security Invariants -- Tier 3 replacement table.
+- **Required mitigations** (Part 7): All four are encoded as invariants 8-10 and the revision to invariant 1 in `security.md` Tier 3.
 - **Unverifiable precondition** (Part 5): Documented in `security.md` Tier 3 invariants and Non-goals section.
-- **New trust boundaries** (Part 3): Documented in `security.md` Trust Boundaries and Mount Models — Tier 3.
+- **New trust boundaries** (Part 3): Documented in `security.md` Trust Boundaries and Mount Models -- Tier 3.
 - **Residual risk table** (Part 6): Summary retained in `security.md` Tier 3 invariants preamble.
 
 ### Remaining content for M2.6.4 design session
 
 The following sections are not encoded in `security.md` and remain relevant for the M2.6.4 design session:
 
-- Part 4 (Assets at Risk After Proposed Mitigations) — detailed per-mitigation coverage analysis.
-- Part 6 (Summary Table) — reference table for design trade-off discussions.
-- Option A vs. Option B architecture choice (`.git/` in capability layer only vs. also in reasoning layer) — this is an M2.6.4 design decision not yet made.
+- Part 4 (Assets at Risk After Proposed Mitigations) -- detailed per-mitigation coverage analysis.
+- Part 6 (Summary Table) -- reference table for design trade-off discussions.
+- Option A vs. Option B architecture choice (`.git/` in capability layer only vs. also in reasoning layer) -- this is an M2.6.4 design decision not yet made.
 
 ### References
 
-- Security model: [`docs/architecture/security.md`](../architecture/security.md) — Tier 3 invariants and trust boundaries
-- M2.6.4 design session — deferred decisions (Option A/B, `.git/hooks/` restoration, worktree lifecycle)
+- Security model: [`docs/architecture/security.md`](../architecture/security.md) -- Tier 3 invariants and trust boundaries
+- M2.6.4 design session -- deferred decisions (Option A/B, `.git/hooks/` restoration, worktree lifecycle)

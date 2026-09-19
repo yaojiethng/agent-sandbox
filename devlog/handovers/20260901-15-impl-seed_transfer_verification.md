@@ -1,4 +1,4 @@
-# Handover 20260901-15 — impl seed-transfer verification (post-docker-cp fail-closed check)
+# Handover 20260901-15 -- impl seed-transfer verification (post-docker-cp fail-closed check)
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** impl
@@ -66,7 +66,7 @@ fail-closed guard (non-empty worktree when the repo has files) remains a cheap f
 - Verified by construction + stub tests: fresh start seeds the volume and init consumes it
   (trace tests through the stub); resume skips seeding entirely; resume of pre-change volumes
   works with the new entrypoint (needs the one-time `make start REBUILD=1` for image/compose
-  agreement — handover 20260901-14 F8).
+  agreement -- handover 20260901-14 F8).
 - Awaiting operator docker verification: real `make start` healthy status after seed;
   `make stop` / `make resume` round-trip on a seeded volume; diff export from a seeded session.
 - The `0B` message is expected output, not an error (this handover is the record).
@@ -74,4 +74,4 @@ fail-closed guard (non-empty worktree when the repo has files) remains a cheap f
 ## Deferred
 
 - Harness-version-identity impl (would make the old-image/new-compose skew fail fast instead of
-  relying on the one-time rebuild) — existing roadmap item, unchanged.
+  relying on the one-time rebuild) -- existing roadmap item, unchanged.

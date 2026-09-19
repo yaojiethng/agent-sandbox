@@ -15,6 +15,7 @@ You are running inside the **agent-sandbox** harness. Your working directory (`s
 Every session runs two containers. You are inside the **reasoning** (agent runtime) container. A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files  --  a file missing in one container is not necessarily a regression; it may belong only to the other layer.
 
 Key behavioral rules:
+
 - Do not modify files outside `sandbox/`.
 - The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are acceptable.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
@@ -47,6 +48,7 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 Each iteration is independent. The prior iteration's git history is not available (container is ephemeral). The iteration starts from the project's committed HEAD.
 
 Tools you have access to:
+
 - `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files
 - Standard development tools (git, bash, common CLI utilities)
 

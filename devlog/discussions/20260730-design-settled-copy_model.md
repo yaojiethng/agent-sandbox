@@ -1,12 +1,12 @@
-# Design — Copy Model (Volume-backed Sandbox)
+# Design -- Copy Model (Volume-backed Sandbox)
 
 **Status:** settled -- the copy model is implemented and the M2.6.5 sub-milestone is complete; the volume snapshot pipeline replaces the retired baseline transport.
 
-**Direction + Parent:** M2.6.5 — Copy Model: Volume-backed Sandbox. Defines the volume-based persistence and concurrency model that is the current default and the actively-implemented path. Companion to [`20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) (M2.6.6 — Mount Model).
+**Direction + Parent:** M2.6.5 -- Copy Model: Volume-backed Sandbox. Defines the volume-based persistence and concurrency model that is the current default and the actively-implemented path. Companion to [`20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) (M2.6.6 -- Mount Model).
 
 ## Context
 
-The copy model is the current default: the host snapshot is unpacked into a named Docker volume, the agent works inside the volume, and changes are exported through the diff pipeline. M2.6.2 established volume-based persistence — the volume survives `make stop` / `make start` cycles, preserving the agent's git history and working tree.
+The copy model is the current default: the host snapshot is unpacked into a named Docker volume, the agent works inside the volume, and changes are exported through the diff pipeline. M2.6.2 established volume-based persistence -- the volume survives `make stop` / `make start` cycles, preserving the agent's git history and working tree.
 
 Two extensions are in progress:
 
@@ -17,10 +17,10 @@ Two extensions are in progress:
 
 | Component | Current behavior |
 |---|---|
-| Volume naming | `<compose-project>_sandbox-data` — one volume per compose project |
-| Compose project name | `agent-sandbox-<sha256(SANDBOX_DIR)[:6]>` — stable per sandbox dir |
-| Session identity | `RUN_ID` (6-char hex), `SESSION_TS` — computed fresh or read from `.run-identity` |
-| Container lifecycle | `compose_stop` → `docker compose stop` (preserves containers); `stop.sh` → `docker stop` (no `rm`) |
+| Volume naming | `<compose-project>_sandbox-data` -- one volume per compose project |
+| Compose project name | `agent-sandbox-<sha256(SANDBOX_DIR)[:6]>` -- stable per sandbox dir |
+| Session identity | `RUN_ID` (6-char hex), `SESSION_TS` -- computed fresh or read from `.run-identity` |
+| Container lifecycle | `compose_stop` -> `docker compose stop` (preserves containers); `stop.sh` -> `docker stop` (no `rm`) |
 | Container labels | `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.run-id`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts` |
 | Volume labels | `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch` |
 
@@ -30,7 +30,7 @@ Container labels are already sufficient to disambiguate sessions. Volume labels 
 
 ### Volume-per-session
 
-Instead of one volume named `<project>_sandbox-data`, each session gets its own volume: `<project>-<run-id>_sandbox-data`. The `RUN_ID` is the natural differentiator — it's unique per session invocation.
+Instead of one volume named `<project>_sandbox-data`, each session gets its own volume: `<project>-<run-id>_sandbox-data`. The `RUN_ID` is the natural differentiator -- it's unique per session invocation.
 
 The compose project name incorporates `RUN_ID` instead of the `SANDBOX_DIR` hash. This gives each session its own compose namespace (volume, network, containers) without collision.
 
@@ -103,7 +103,7 @@ Volume labels are set in the compose template at creation time, survive `compose
 
 ### stop.sh behavior
 
-`stop.sh` already filters by `agent-sandbox.project-name` and `agent-sandbox.sandbox-dir` labels. With per-session compose projects, the default behavior — stop all containers for the sandbox dir by `sandbox-dir` label — is correct for the multi-volume model. No change needed. `--run-id` targets a specific session.
+`stop.sh` already filters by `agent-sandbox.project-name` and `agent-sandbox.sandbox-dir` labels. With per-session compose projects, the default behavior -- stop all containers for the sandbox dir by `sandbox-dir` label -- is correct for the multi-volume model. No change needed. `--run-id` targets a specific session.
 
 ## Decisions
 
@@ -115,13 +115,13 @@ All volumes for the sandbox dir are shown. Mismatched `host-head-sha` entries ar
 
 ### Decision: Volume pruning via prune.sh
 
-`prune.sh` includes volumes — label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`. Only prunes volumes with no associated containers. Container persistence prevents premature pruning: a stopped container keeps its volume "in use."
+`prune.sh` includes volumes -- label-filtered by `agent-sandbox.sandbox-dir`, aged by `PRUNE_AGE_DAYS`. Only prunes volumes with no associated containers. Container persistence prevents premature pruning: a stopped container keeps its volume "in use."
 
 ### Decision: Volume name stability via .run-identity
 
 `.run-identity` persists `RUN_ID` across restarts. `RUN_ID` only changes on `--refresh`/`--rebuild`. Volume names derived from `RUN_ID` are stable across normal stop/start cycles.
 
-In the multi-volume model, `.run-identity` becomes redundant — volume labels (`agent-sandbox.run-id`, `agent-sandbox.session-ts`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`) carry the same four identity values and are queried directly by the volume selector. The file persists as a backward-compatibility convenience (no label query needed for the single-volume case) but the selector does not depend on it.
+In the multi-volume model, `.run-identity` becomes redundant -- volume labels (`agent-sandbox.run-id`, `agent-sandbox.session-ts`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`) carry the same four identity values and are queried directly by the volume selector. The file persists as a backward-compatibility convenience (no label query needed for the single-volume case) but the selector does not depend on it.
 
 ### Decision: Cross-dir concurrency already works
 
@@ -131,7 +131,7 @@ Different sandbox dirs produce different compose project names today. No change 
 
 | Document | Purpose |
 |---|---|
-| [`devlog/discussions/20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) | Mount model (M2.6.6) — companion design doc |
+| [`devlog/discussions/20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) | Mount model (M2.6.6) -- companion design doc |
 | [`devlog/roadmap.md`](../roadmap.md) | M2.6.5 task list |
-| [`docs/architecture/security.md`](../architecture/security.md) | Security posture — Copy + fresh baseline configuration |
+| [`docs/architecture/security.md`](../architecture/security.md) | Security posture -- Copy + fresh baseline configuration |
 | [`docs/architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline, resume path |

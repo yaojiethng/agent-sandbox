@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Implement the dry-run semantics overhaul (roadmap M2.6 general track, raised `20260901-02`): dry-run always builds and runs current source; a stale container after a fresh build is an error, not a warning.
 
 ## Scope
+
 Current-state survey (this iteration's findings): the digest roundtrip gate already exists and fails closed (`dry_run_image_verify`, `src/libs/dry_run_record.sh`, wired in `compose_dry_run`); `[IMAGE_STALE]` is fully retired. The remaining gap is build policy: dry-run accepted `--refresh`/`--rebuild` passthrough but did not require them -- it ran whatever images existed. Final scope, after operator decisions during the iteration:
 
 1. Build-before-run: dry-run always rebuilds sandbox + provider images before running, unless `--fast` is given (skip build, run existing images; missing images then fail with the preflight remediation error, not a silent build).
@@ -20,8 +22,10 @@ Current-state survey (this iteration's findings): the digest roundtrip gate alre
 7. Update `scripts/templates/Makefile.template` dry-run docs and any roadmap-facing flag documentation.
 
 Design decisions (operator, Gate 1):
+
 - Default build policy: always rebuild using cache layers. `--fast` = looser invocation that skips the rebuild; not "headless" -- different semantics. Name stays `--fast`; future time-consuming-check carveouts also live under fast mode.
 - Labeling, not routing: keep the `dryrun-` prefix (identification of missed-scope residue, workspace tidiness), use `.compose` records, add trap + cleanup for residue. Avoid customizing paths dry-run exists to test.
+
 ## Completed
 
 | File | Change |

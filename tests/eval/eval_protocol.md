@@ -80,6 +80,7 @@ Then state the verdict and which failures require fix.
 Code-based evaluators test prompt *content*. Behavioral eval tests prompt *execution*  --  does the agent following this prompt produce correct output? Currently blocked: session-start prompts require pre-state (handovers, roadmap) but headless `pi -p` shares the real project state. See pre-state setup gap in `20260522-story-active-prompt_eval_infrastructure.md`.
 
 When the parallel session gap is resolved, behavioral eval adds:
+
 - Given a project with handover X and roadmap state Y, does the agent create the correct handover?
 - Does divergence detection trigger under the right conditions?
 - Does the agent stop at Gate 1 / Gate 2 without producing output?

@@ -41,6 +41,7 @@ A full handover audit covers:
 ### 1. Scope the audit
 
 Determine the set of handovers to review:
+
 - **Periodic:** list all handovers in `devlog/handovers/` within the date range. Sort by date.
 - **Event-driven:** trace the deferred item through `## What's Next` and `## Carried forward` sections.
 
@@ -62,6 +63,7 @@ Anomalies fall into two categories:
 ### 3. Deferred chain audit
 
 For each non-null deferred item, trace forward:
+
 1. Read the destination iteration's `## Carried forward`  --  was the item picked up?
 2. If yes, was it resolved (Completed table) or re-deferred (Deferred items)?
 3. If it disappeared without resolution, flag as **dropped**.
@@ -70,6 +72,7 @@ For each non-null deferred item, trace forward:
 ### 4. Status audit
 
 Check each handover's `**Status:**`:
+
 - `Active`  --  only for the most recent handover
 - `Closed`  --  all others
 - Any other value is a correction
@@ -77,16 +80,19 @@ Check each handover's `**Status:**`:
 ### 5. Dangling reference check
 
 For each file mentioned in `## Completed` or `## Hot files`:
+
 - Verify the file exists at the referenced path
 - If deleted or renamed, add a `[CORRECTION]` noting the deletion context
 
 For each function or variable mentioned:
+
 - Grep the codebase to confirm it still exists
 - If removed, the reference is stale
 
 ### 6. Corrections and amendments
 
 Apply corrections per `handover_policy.md`:
+
 - `[CORRECTION  --  YYYY-MM-DD]`  --  factual errors: edit inline, append correction block
 - `[AMENDMENT  --  YYYY-MM-DD]`  --  non-standard formatting or policy violations that cannot be cleanly corrected
 - `[REMOVED in MX.X]`  --  abandoned or superseded items
@@ -94,6 +100,7 @@ Apply corrections per `handover_policy.md`:
 ### 7. Report
 
 Produce a structured audit report covering:
+
 1. Handovers examined and date range
 2. Corrections applied (summary table)
 3. Dropped deferred items (with originating handover)

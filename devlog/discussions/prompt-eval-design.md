@@ -1,11 +1,11 @@
-# prompt-eval — Design Spec
+# prompt-eval -- Design Spec
 
 ## Purpose
 
 `prompt-eval` is a generalized evaluation system for prompt templates and workflow skills. It serves two use cases:
 
-1. **Regression testing** — verify that a template change fixes a target case without breaking existing cases.
-2. **Model benchmarking** — measure how reliably a given model follows defined workflows, and compare models against each other.
+1. **Regression testing** -- verify that a template change fixes a target case without breaking existing cases.
+2. **Model benchmarking** -- measure how reliably a given model follows defined workflows, and compare models against each other.
 
 The system is designed to be extended to any prompt template or skill, with a fixed test methodology applicable to any future prompt change or model evaluation.
 
@@ -139,7 +139,7 @@ Yes / No — <date if yes>
 
 ## Context Files
 
-Each case has a `context.jsonl` file — a messages array in JSONL format representing the conversation state at the point the failure was observed.
+Each case has a `context.jsonl` file -- a messages array in JSONL format representing the conversation state at the point the failure was observed.
 
 **Format:** Standard Anthropic API messages array, one message per line.
 
@@ -175,13 +175,13 @@ A test harness instruction is added to the system prompt:
 
 The model declares its decision in text before acting. The judge model evaluates the declaration against the pass/fail criteria. No tool call stubs required.
 
-**Limitation:** The declaration instruction slightly modifies model behavior — the pause-and-declare may suppress some failure modes via self-correction. Use for cases where the failure is in the decision structure, not in execution detail.
+**Limitation:** The declaration instruction slightly modifies model behavior -- the pause-and-declare may suppress some failure modes via self-correction. Use for cases where the failure is in the decision structure, not in execution detail.
 
 ### Intercept
 
 A code-driven harness intercepts the API response stream at the first tool call boundary. The response up to that point is captured and evaluated. Tool calls are not executed. No declaration instruction needed.
 
-**Use when:** Declaration consistently produces false passes — the model passes the declaration check but would fail if allowed to execute.
+**Use when:** Declaration consistently produces false passes -- the model passes the declaration check but would fail if allowed to execute.
 
 **Implementation:** Deferred. Design the system for declaration first. Promote cases to intercept if declaration proves insufficient.
 
@@ -204,14 +204,14 @@ Each case is scored 0 / 0.5 / 1.
 | Score | Meaning |
 |---|---|
 | 1 | All pass criteria met. No failure criteria present. |
-| 0.5 | Partial — correct path taken but at least one pass criterion missed, or at least one failure criterion present but not all. |
+| 0.5 | Partial -- correct path taken but at least one pass criterion missed, or at least one failure criterion present but not all. |
 | 0 | Failure mode reproduced. All or most failure criteria present. |
 
 **Ground truth:** Each case carries a human-assigned ground truth score in frontmatter. Set when the case is first verified against a known-good or known-bad model response.
 
 **Judge model score:** Produced automatically on each run. Compared against ground truth. Divergences flagged in the report.
 
-**Manual correction:** Test run output files are editable. Edit the score field in the case output JSON, then regenerate the report. The report is always derived from the output files — never from the judge model's raw response alone.
+**Manual correction:** Test run output files are editable. Edit the score field in the case output JSON, then regenerate the report. The report is always derived from the output files -- never from the judge model's raw response alone.
 
 ---
 
@@ -311,17 +311,17 @@ write report to runs/<run_id>/report.md
 
 ### Implementation options
 
-**Option A — Model-driven loop (default)**
+**Option A -- Model-driven loop (default)**
 
 A reasoning model (e.g. the agent itself running in the harness) is given the run configuration and the cases directory. It iterates the loop, calls the API for each case, calls the judge model, writes output files, and produces the report. The operator triggers the run and reviews the report on completion.
 
 Start here. Lower infrastructure cost. Sufficient for most use cases.
 
-**Option B — Code-driven harness**
+**Option B -- Code-driven harness**
 
 A script using the Anthropic SDK iterates the loop programmatically. Tool call interception (Tier 2 execution) is implemented here. More reliable for large case sets and for cases requiring intercept execution.
 
-Implement if Option A proves unreliable in practice — non-deterministic loop behavior, judge model errors not caught, or intercept cases needed at scale.
+Implement if Option A proves unreliable in practice -- non-deterministic loop behavior, judge model errors not caught, or intercept cases needed at scale.
 
 Both options produce the same output file structure and the same report format. The choice of runner does not affect case schema, scoring model, or report design.
 
@@ -464,7 +464,7 @@ To adjust a score: edit the `score` field in the case output JSON, then regenera
 
 ## Extending to a New Template
 
-No system changes required. Add cases with the new template name in the `template` frontmatter field. The runner discovers cases by reading frontmatter — it does not maintain a template registry.
+No system changes required. Add cases with the new template name in the `template` frontmatter field. The runner discovers cases by reading frontmatter -- it does not maintain a template registry.
 
 If the new template introduces tool calls not yet seen, assess whether existing declaration stubs are sufficient or whether new intercept infrastructure is needed.
 
@@ -474,7 +474,7 @@ If the new template introduces tool calls not yet seen, assess whether existing 
 
 | Item | Status |
 |---|---|
-| Intercept execution implementation | Deferred — implement if declaration proves insufficient |
-| Runner implementation (Option A vs B) | Deferred — start with Option A, promote to B if needed |
-| Canonical context templates | Deferred — extract from cases when pattern emerges across 2+ cases |
+| Intercept execution implementation | Deferred -- implement if declaration proves insufficient |
+| Runner implementation (Option A vs B) | Deferred -- start with Option A, promote to B if needed |
+| Canonical context templates | Deferred -- extract from cases when pattern emerges across 2+ cases |
 | AI narrative generation prompt | Draft in judge-prompt.md when first model-eval run is ready |

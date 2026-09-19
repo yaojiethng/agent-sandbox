@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-08-05
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
 **Type:** Implementation
 **Status:** Closed
 
@@ -11,7 +11,7 @@ Fix `_auto_resume_or_new` behavior: when a single stale volume exists, auto-resu
 
 ## Scope
 
-One logic change in `scripts/start_agent.sh` — `_auto_resume_or_new()`.
+One logic change in `scripts/start_agent.sh` -- `_auto_resume_or_new()`.
 
 Exhaustive cases after fix:
 
@@ -37,7 +37,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`scripts/start_agent.sh`](../../scripts/start_agent.sh) | `_auto_resume_or_new` function — case 2 logic change |
+| [`scripts/start_agent.sh`](../../scripts/start_agent.sh) | `_auto_resume_or_new` function -- case 2 logic change |
 
 ## Decisions made this session
 
@@ -51,7 +51,7 @@ None.
 
 | File | Change |
 |---|---|
-| `scripts/start_agent.sh` | `_auto_resume_or_new`: added {0 non-stale, 1 stale} → resume + warn branch; removed redundant stale warning from `_resume_from_volume`; updated function header comment |
+| `scripts/start_agent.sh` | `_auto_resume_or_new`: added {0 non-stale, 1 stale} -> resume + warn branch; removed redundant stale warning from `_resume_from_volume`; updated function header comment |
 
 ## Deferred items
 
@@ -59,6 +59,6 @@ None.
 
 ## Next session
 
-Sub-milestone: M2.6.6 — Mount Model: Host-backed Sandbox
+Sub-milestone: M2.6.6 -- Mount Model: Host-backed Sandbox
 
 Post-close bookkeeping: not applicable.

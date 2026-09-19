@@ -1,4 +1,4 @@
-# Handover 20260904-07 — impl harness version identity (digest, HEAD, symlink)
+# Handover 20260904-07 -- impl harness version identity (digest, HEAD, symlink)
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** impl
@@ -7,15 +7,15 @@
 
 ## Objective
 
-Implement the settled harness version identity design (ADR `harness_versioning.md`, 2026-09-01; design `20260831-design-active-image_and_harness_version_identity.md`): per-surface versions — image = docker digest, worktree = git HEAD (no record field), host = symlink install — with the staleness signal retired and the dry-run digest-roundtrip gate.
+Implement the settled harness version identity design (ADR `harness_versioning.md`, 2026-09-01; design `20260831-design-active-image_and_harness_version_identity.md`): per-surface versions -- image = docker digest, worktree = git HEAD (no record field), host = symlink install -- with the staleness signal retired and the dry-run digest-roundtrip gate.
 
 ## Scope
 
 | # | Item | Files |
 |---|---|---|
 | 1 | Digest stamping: record gains `agent-sandbox.agent-image-digest` + `agent-sandbox.sandbox-image-digest`; `image-sig` label retired from new records | `src/build/docker-compose.yml`, `docker-compose.copy.yml`, `src/build/compose.sh`, `scripts/run_agent.sh` |
-| 2 | Retire list-time staleness: `record_image_stale` removed from the `resume LIST` path (kills 2×N docker inspects); recorded digests shown instead | `scripts/resume_agent.sh`, `src/libs/session_inventory.sh`, `src/libs/container_sig.sh` |
-| 3 | Prune: image-staleness selection retired (`--stale=image|all` removed; `--stale=sandbox` — worktree HEAD identity — stays) | `scripts/prune.sh` |
+| 2 | Retire list-time staleness: `record_image_stale` removed from the `resume LIST` path (kills 2xN docker inspects); recorded digests shown instead | `scripts/resume_agent.sh`, `src/libs/session_inventory.sh`, `src/libs/container_sig.sh` |
+| 3 | Prune: image-staleness selection retired (`--stale=image|all` removed; `--stale=sandbox` -- worktree HEAD identity -- stays) | `scripts/prune.sh` |
 | 4 | Dry-run gate: `dry_run_image_verify` becomes the digest roundtrip (running image's digest == record's stamped digest); container-sig recompute leaves the gate | `src/libs/dry_run_record.sh` |
 | 5 | Symlink install: `make install` links instead of sed-baked copy; dispatcher self-locates the repo via the resolved symlink | `Makefile`, `scripts/agent-sandbox.sh` |
 | 6 | `container-sig` interim role: preflight contract check persists (recompute path kept); image-version and dry-run-gate duty removed | `src/libs/container_sig.sh` |
@@ -25,7 +25,7 @@ Implement the settled harness version identity design (ADR `harness_versioning.m
 
 | # | Finding | Status |
 |---|---|---|
-| F1 | **Design clarification (D2):** the ADR's `<repo>@sha256:` repo-digest exists only for pushed images — locally built, never-pushed images have empty `RepoDigests`. The content-addressed identity for local images is the image ID (`docker inspect .Id` — the config digest, which transitively content-addresses every layer). Implemented with `.Id`; the wiring is identical if the operator prefers post-push repo digests. Clarification recorded in the ADR edge cases. | Resolved (recorded) |
+| F1 | **Design clarification (D2):** the ADR's `<repo>@sha256:` repo-digest exists only for pushed images -- locally built, never-pushed images have empty `RepoDigests`. The content-addressed identity for local images is the image ID (`docker inspect .Id` -- the config digest, which transitively content-addresses every layer). Implemented with `.Id`; the wiring is identical if the operator prefers post-push repo digests. Clarification recorded in the ADR edge cases. | Resolved (recorded) |
 | F2 | `rsync --delete` with `--files-from` cannot remove root-level extraneous destination files (deletion applies only to listed directories). | Resolved (dropped with the mount-path rework, handover 20260904-06) |
 | F3 | The list-path rework left `ENV_REL` in `resume_agent.sh` unused (SC2034): the `--env=` flag is accepted for CLI parity and explicitly ignored (`: ;;`). | Resolved |
 

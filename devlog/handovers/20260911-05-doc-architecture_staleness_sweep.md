@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Run the architecture-doc staleness sweep (roadmap open item), then compare the sweep's method against the documentation-audit files and record the comparison as input for compiling a single comprehensive documentation-audit prompt.
 
 ## Scope
+
 - Fix the known `security.md` violation (copy row claims fresh `git init`; the helper-container seed copies the real host `.git`).
 - Sweep `docs/architecture/` for behavior text predating landed redesigns.
 - Experiment: stash the sweep, run a fresh `pi -p` subagent with the `architecture-doc-reviewer.skill.md` prompt (staleness + consistency only) over the pre-change tree, compare findings, restore, merge verified findings.
@@ -59,4 +61,5 @@ Run the architecture-doc staleness sweep (roadmap open item), then compare the s
 Compiled documentation-audit prompt itself -- M3 task (roadmap_future), per the comparison report.
 
 ## What's Next
+
 Next queued iteration: stash-triage study (check-in item 4).

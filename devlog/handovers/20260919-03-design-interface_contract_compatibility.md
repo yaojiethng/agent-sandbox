@@ -50,11 +50,11 @@ is a follow-up `impl` iteration.
 
 | # | Criterion | Status |
 |---|---|---|
-| AC1 | Design doc settled: contract-version scheme (single version, dual declaration, layered preflight + agent-entrypoint comparator), all three surfaces, mismatch policy (warn-then-strict, operator-released switch-over gates) | **done (agent)** — `devlog/discussions/20260919-design-interface_contract_compatibility.md`, Status settled |
-| AC2 | `container-sig` interim role confirmed, P0-P3 rollover plan recorded (old check not stripped before new proven; exact switch-over moments in the table; live matrix defined) | **done (agent)** — design doc Rollover section |
-| AC3 | ADR written recording the mechanism decision per adr_policy | **done (agent)** — `docs/adr/interface_contract_compatibility.md`, open/pending-impl until the impl lands |
-| AC4 | Roadmap rows reconciled (row 117 design-settled marker + impl task; M2.6.7 future entry) | **done (agent)** — see Verification |
-| AC5 | Design doc status -> settled; no code changed (suite untouched) | **done (agent)** — suite 876/876 (untouched); design doc Status settled |
+| AC1 | Design doc settled: contract-version scheme (single version, dual declaration, layered preflight + agent-entrypoint comparator), all three surfaces, mismatch policy (warn-then-strict, operator-released switch-over gates) | **done (agent)** -- `devlog/discussions/20260919-design-interface_contract_compatibility.md`, Status settled |
+| AC2 | `container-sig` interim role confirmed, P0-P3 rollover plan recorded (old check not stripped before new proven; exact switch-over moments in the table; live matrix defined) | **done (agent)** -- design doc Rollover section |
+| AC3 | ADR written recording the mechanism decision per adr_policy | **done (agent)** -- `docs/adr/interface_contract_compatibility.md`, open/pending-impl until the impl lands |
+| AC4 | Roadmap rows reconciled (row 117 design-settled marker + impl task; M2.6.7 future entry) | **done (agent)** -- see Verification |
+| AC5 | Design doc status -> settled; no code changed (suite untouched) | **done (agent)** -- suite 876/876 (untouched); design doc Status settled |
 
 ## Completed
 
@@ -65,7 +65,7 @@ is a follow-up `impl` iteration.
 
 ## Findings
 
-- No classes A/B/C this iteration. (Past-failure record — new-mechanism errors blocked start after old check stripped — already carried in the thread; encoded as the rollover hard rule.)
+- No classes A/B/C this iteration. (Past-failure record -- new-mechanism errors blocked start after old check stripped -- already carried in the thread; encoded as the rollover hard rule.)
 
 ## Verification
 
@@ -83,6 +83,7 @@ is a follow-up `impl` iteration.
 - **Doc consolidation end state**: one interface concept doc + one lifecycle architecture doc (`sandbox_lifecycle.md`).
 
 ## What's Next
+
 - Implementation iteration (M2.6.7) for the interface-contract version mechanism
   (after operator release of this design): the version constant + dual stamping +
   preflight/entrypoint comparators, per the rollover P0-P3 plan.

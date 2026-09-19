@@ -5,6 +5,7 @@
 **Status:** Design record -- enumerates the problem, constraints, and candidate solutions for the settings.json ownership collision and skills/prompts loading architecture. Implemented in the M2.7 config bind-mount change (see handover 20260513-10). [CORRECTION -- 2026-05-22]: Filesystem compatibility gap -- see CORRECTION block below.
 
 **Related:**
+
 - [`libs/provider-entrypoint.sh`](../../libs/provider-entrypoint.sh) -- current copy-in/copy-out mechanism
 - [`libs/docker-compose.yml`](../../libs/docker-compose.yml) -- current bind-mount structure
 - [`providers/pi/config/agent/settings.json`](../../providers/pi/config/agent/settings.json) -- onboard settings template
@@ -21,7 +22,7 @@
 - **Agent (pi).** Pi reads, modifies, and writes `settings.json`. When pi saves, it writes only keys it manages (model, provider, theme, compaction, etc.). Custom keys that are not part of pi's known set may be dropped.
 - **Agent-sandbox.** The harness seeds `settings.json` with additional keys (`"skills"`, `"prompts"`) that reference image-baked paths at `/opt/workflow/`. These keys tell pi where to find sandbox-layer workflow files (skills and prompts under `agent/` in the repo).
 
-Both owners share a single file, but only pi writes it back. The copy-out cycle (`AGENT_HOME` → bind-mount) propagates pi's runtime version to the host, overwriting the seeded version. Once the custom keys are lost, every subsequent session copies-in the stripped version.
+Both owners share a single file, but only pi writes it back. The copy-out cycle (`AGENT_HOME` -> bind-mount) propagates pi's runtime version to the host, overwriting the seeded version. Once the custom keys are lost, every subsequent session copies-in the stripped version.
 
 **What happened in practice:** The `settings.json` at the bind-mount was stripped of its `"skills"`/`"prompts"` keys by a prior session's copy-out. Subsequent sessions lost access to the sandbox-layer skills and prompts even though the files existed in the image at `/opt/workflow/`. Recovery required manually re-seeding the bind-mount from the onboard source.
 
@@ -31,7 +32,7 @@ Both owners share a single file, but only pi writes it back. The copy-out cycle 
 
 These are system invariants and design decisions that any solution must satisfy:
 
-1. **Image-baking of sandbox-layer files is intentional and must remain.** The `build_context_agent()` → `provider.Dockerfile COPY` chain that bakes `agent/skills/` and `agent/prompts/` into the image at `/opt/workflow/` provides a stable baseline independent of the working tree. When dogfooding, the working tree may be in a broken state during development -- the image-baked files ensure core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This also ensures portability across projects: a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+1. **Image-baking of sandbox-layer files is intentional and must remain.** The `build_context_agent()` -> `provider.Dockerfile COPY` chain that bakes `agent/skills/` and `agent/prompts/` into the image at `/opt/workflow/` provides a stable baseline independent of the working tree. When dogfooding, the working tree may be in a broken state during development -- the image-baked files ensure core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This also ensures portability across projects: a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
 
 2. **`AGENT_HOME`/`~/.pi/agent/` cannot be bind-mounted as a whole directory.** Pi downloads platform-specific binaries (fd, rg) to `~/.pi/agent/bin/` using a cross-device `mv` from `/tmp/`. On a bind mount, this would be a cross-filesystem move and would fail. The `bin/` subdirectory must remain container-local.
 
@@ -64,6 +65,7 @@ The sandbox layer is the only one that depends on `settings.json` keys -- it is 
 Eliminate the `/opt/provider-config` path, the copy-in/copy-out cycle, and the `provider-entrypoint.sh` config logic. Mount the config directory directly at `AGENT_HOME` with a tmpfs overlay at `bin/`:
 
 **In `libs/docker-compose.yml`:**
+
 ```yaml
 services:
   agent:
@@ -145,6 +147,7 @@ Since `settings.json` is bind-mounted, the write goes directly to the host. The 
 ### 4.4 Pre-creation in run_agent.sh
 
 `scripts/run_agent.sh` already does `mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"`. Extended to:
+
 ```bash
 mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME/agent/sessions"
 ```

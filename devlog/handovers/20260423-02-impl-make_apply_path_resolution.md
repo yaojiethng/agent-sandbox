@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-23
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
@@ -12,8 +12,9 @@ Implement Unit C (package-branch function) and fix `make apply` path resolution 
 ## Scope
 
 **Unit C tasks:**
-1. Add `package_branch` function to `libs/diff.sh` — iterates commits since `INIT_SHA`, produces numbered `.diff` files with index lines stripped into `workspace/session-diffs/<branch-name>/`, overwrites on each run
-2. Capture uncommitted changes in `diff_on_exit` — writes `git diff HEAD` with index lines stripped to `workspace/session-diffs/<session-name>/changes.diff` before committing
+
+1. Add `package_branch` function to `libs/diff.sh` -- iterates commits since `INIT_SHA`, produces numbered `.diff` files with index lines stripped into `workspace/session-diffs/<branch-name>/`, overwrites on each run
+2. Capture uncommitted changes in `diff_on_exit` -- writes `git diff HEAD` with index lines stripped to `workspace/session-diffs/<session-name>/changes.diff` before committing
 3. Update `diff_on_exit` to call `package_branch`
 4. Retain `staged.diff`
 
@@ -33,12 +34,13 @@ Implement Unit C (package-branch function) and fix `make apply` path resolution 
 11. Update existing tests to require `SESSION_NAME`
 
 Files to change:
-- `libs/diff.sh` — remove `package_branch`, update `diff_on_exit`, require `SESSION_NAME`
-- `libs/package_branch.sh` — new file
-- `libs/package_diff.sh` — renamed from `package_diff.sh`, update output path
-- `scripts/onboard.sh` — update path references
-- `scripts/apply_workspace.sh` — update APPLY command resolution logic
-- `tests/test_diff.sh` — add `package_branch` tests, update existing tests to require `SESSION_NAME`
+
+- `libs/diff.sh` -- remove `package_branch`, update `diff_on_exit`, require `SESSION_NAME`
+- `libs/package_branch.sh` -- new file
+- `libs/package_diff.sh` -- renamed from `package_diff.sh`, update output path
+- `scripts/onboard.sh` -- update path references
+- `scripts/apply_workspace.sh` -- update APPLY command resolution logic
+- `tests/test_diff.sh` -- add `package_branch` tests, update existing tests to require `SESSION_NAME`
 
 ## Carried forward
 
@@ -48,26 +50,26 @@ None.
 
 | Criterion | Status |
 |---|---|
-| `package_branch` produces numbered `.diff` files in `session-diffs/<branch-name>/` with no `index` lines | ✓ Accepted |
-| `diff_on_exit` captures uncommitted changes to `session-diffs/<session-name>/changes.diff` before committing | ✓ Accepted |
-| `diff_on_exit` calls `package_branch` on session exit | ✓ Accepted |
-| `package_diff.sh` writes to `$OUTPUT_DIR/diffs/<timestamp>-<label>/changes.diff` | ✓ Accepted |
-| `make apply` sorts `$OUTPUT_DIR/diffs/` and uses latest timestamped subfolder | ✓ Accepted |
-| All script names use underscores; `package-diff` (dash) only in prompt template | ✓ Accepted |
-| `SESSION_NAME` required for `diff_on_exit` and `diff_on_autosave` (backward compat removed) | ✓ Accepted |
-| `package_branch` tests pass (numbered diffs, index strip, branch sanitization, no commits) | ✓ Accepted |
-| All `tests/test_diff.sh` tests pass (35 tests) | ✓ Accepted |
+| `package_branch` produces numbered `.diff` files in `session-diffs/<branch-name>/` with no `index` lines | [x] Accepted |
+| `diff_on_exit` captures uncommitted changes to `session-diffs/<session-name>/changes.diff` before committing | [x] Accepted |
+| `diff_on_exit` calls `package_branch` on session exit | [x] Accepted |
+| `package_diff.sh` writes to `$OUTPUT_DIR/diffs/<timestamp>-<label>/changes.diff` | [x] Accepted |
+| `make apply` sorts `$OUTPUT_DIR/diffs/` and uses latest timestamped subfolder | [x] Accepted |
+| All script names use underscores; `package-diff` (dash) only in prompt template | [x] Accepted |
+| `SESSION_NAME` required for `diff_on_exit` and `diff_on_autosave` (backward compat removed) | [x] Accepted |
+| `package_branch` tests pass (numbered diffs, index strip, branch sanitization, no commits) | [x] Accepted |
+| All `tests/test_diff.sh` tests pass (35 tests) | [x] Accepted |
 
 ## Hot files
 
 | File | Why in scope | Status |
 |---|---|---|
-| `libs/diff.sh` | Removed `package_branch`; updated `diff_on_exit` to source `package_branch.sh`; require `SESSION_NAME` | ✓ Complete |
-| `libs/package_branch.sh` | New file: extracted `package_branch` function | ✓ Complete |
-| `libs/package_diff.sh` | Renamed from `package_diff.sh`; updated output path to `/diffs/` subfolder | ✓ Complete |
-| `scripts/onboard.sh` | Updated `package_diff.sh` path references | ✓ Complete |
-| `scripts/apply_workspace.sh` | APPLY command reads from OUTPUT_DIR — update resolution logic | ✓ Complete |
-| `tests/test_diff.sh` | Added `package_branch` tests; updated existing tests to require `SESSION_NAME` | ✓ Complete |
+| `libs/diff.sh` | Removed `package_branch`; updated `diff_on_exit` to source `package_branch.sh`; require `SESSION_NAME` | [x] Complete |
+| `libs/package_branch.sh` | New file: extracted `package_branch` function | [x] Complete |
+| `libs/package_diff.sh` | Renamed from `package_diff.sh`; updated output path to `/diffs/` subfolder | [x] Complete |
+| `scripts/onboard.sh` | Updated `package_diff.sh` path references | [x] Complete |
+| `scripts/apply_workspace.sh` | APPLY command reads from OUTPUT_DIR -- update resolution logic | [x] Complete |
+| `tests/test_diff.sh` | Added `package_branch` tests; updated existing tests to require `SESSION_NAME` | [x] Complete |
 
 ## Decisions made this session
 
@@ -95,14 +97,15 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Type:** Implementation — Unit D (`make apply` update).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation -- Unit D (`make apply` update).
 
 Read `docs/devlog/roadmap.md` M2.3 pending section for Unit D tasks.
 
 **Watch-outs:**
-- `package_diff.sh` output now in `workspace/output/diffs/` — all subsequent units should use this path
+
+- `package_diff.sh` output now in `workspace/output/diffs/` -- all subsequent units should use this path
 - `diff_on_exit` now captures uncommitted changes to `workspace/session-diffs/<session-name>/changes.diff`
 - Script naming: `package_diff.sh` and `package_branch.sh` (underscores); `package-diff` (dash) only in prompt template
 
-**Grep to run:** `grep -r "OUTPUT_DIR" scripts/apply_workspace.sh` — verify all paths updated to use `diffs/` subfolder.
+**Grep to run:** `grep -r "OUTPUT_DIR" scripts/apply_workspace.sh` -- verify all paths updated to use `diffs/` subfolder.

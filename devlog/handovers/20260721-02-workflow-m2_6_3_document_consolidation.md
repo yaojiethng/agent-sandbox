@@ -1,13 +1,13 @@
 # Agent Handover
 
 **Date:** 2026-07-21
-**Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Type:** Workflow — Document consolidation (Phase 1.6)
+**Milestone:** M2.6 -- Session Resume and Mount Model Redesign
+**Type:** Workflow -- Document consolidation (Phase 1.6)
 **Status:** Closed
 
 ## Objective
 
-Complete deferred Phase 1.6 tasks from the document system overhaul session — spec file cleanup, write the worktree mount model ADR, and supersede old mount-model discussion docs.
+Complete deferred Phase 1.6 tasks from the document system overhaul session -- spec file cleanup, write the worktree mount model ADR, and supersede old mount-model discussion docs.
 
 ## Scope
 
@@ -57,7 +57,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 | File | Change |
 |---|---|
-| `docs/adr/sandbox_delivery_model.md` | New — worktree mount model ADR, three-tier decision, supersedes mount-model discussion docs |
+| `docs/adr/sandbox_delivery_model.md` | New -- worktree mount model ADR, three-tier decision, supersedes mount-model discussion docs |
 | `devlog/discussions/20260416-study-superseded-git_worktrees.md` | Renamed from `investigation_git_worktrees.md`; added supersede header |
 | `devlog/discussions/20260417-story-superseded-parallel_sessions_worktree.md` | Renamed from `story_parallel_sessions_worktree.md`; added supersede header |
 | `devlog/discussions/20260611-story-superseded-agent_git_surface.md` | Renamed from `story_agent_git_surface.md`; added supersede header |
@@ -67,11 +67,11 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 | Item | Reason | Next session |
 |---|---|---|
-| Spec file cleanup — 3 single-use specs → roll into handovers and delete; 1 active spec → rename to design type | Deferred from this session scope | M2.6 Phase 1.6 (next session) |
-| Policy file disambiguation pass — 14 policy files with overlapping boundaries | Not started | Future (unassigned) |
+| Spec file cleanup -- 3 single-use specs -> roll into handovers and delete; 1 active spec -> rename to design type | Deferred from this session scope | M2.6 Phase 1.6 (next session) |
+| Policy file disambiguation pass -- 14 policy files with overlapping boundaries | Not started | Future (unassigned) |
 
 ## Next session
 
-**M2.6 Phase 1.6 — Spec file cleanup.**
+**M2.6 Phase 1.6 -- Spec file cleanup.**
 
 Roll `spec_context_dir_removal.md`, `spec_apply_workspace_refactor.md`, `spec_test_infrastructure.md` into their corresponding handovers and delete. Rename `spec_container_layer_redesign.md` to design type and keep.

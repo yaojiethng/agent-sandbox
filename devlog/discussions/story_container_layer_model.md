@@ -1,6 +1,6 @@
-# Story — Container Layer Architecture: Consolidation vs. Isolation
+# Story -- Container Layer Architecture: Consolidation vs. Isolation
 
-**Status:** Resolved — partially implemented; python harness deferred to W1
+**Status:** Resolved -- partially implemented; python harness deferred to W1
 
 > Framing the problem: should the harness's shared plumbing live in one Docker layer shared by all providers, or stay per-provider as it is today? The answer affects build speed, maintenance burden, security surface, and the trajectory of the UID Mapping implementation in M2.7 Track C.
 
@@ -31,15 +31,15 @@ USER agentuser
 ...
 ```
 
-× 4 = 80 lines of duplicated code, and more critically: **5 places** where the UID Mapping changes (`ARG HOST_UID`, collision handling, numeric `chown`) must be applied.
+x 4 = 80 lines of duplicated code, and more critically: **5 places** where the UID Mapping changes (`ARG HOST_UID`, collision handling, numeric `chown`) must be applied.
 
 ### Problem Statement
 
 The current per-provider Dockerfile model creates two pain points:
 
-1. **UID Mapping (Track C, Phase 2) requires 5 parallel edits.** Every provider's `provider.Dockerfile` and the sandbox `Dockerfile` need the same `ARG HOST_UID`/`ARG HOST_GID` + collision handling + numeric `chown` logic. Five nearly-identical changes in five files — a propagation risk.
+1. **UID Mapping (Track C, Phase 2) requires 5 parallel edits.** Every provider's `provider.Dockerfile` and the sandbox `Dockerfile` need the same `ARG HOST_UID`/`ARG HOST_GID` + collision handling + numeric `chown` logic. Five nearly-identical changes in five files -- a propagation risk.
 
-2. **The harness plumbing drifts across providers.** Adding a new shared tool (e.g. `fd-find` to the reasoning layer) requires touching all 4 `base.Dockerfile` files. A bug fix in the entrypoint must be verified against 4 combinations of runtime and base image. There's no single "harness version" — each provider image is a unique combination of harness libs + provider runtime.
+2. **The harness plumbing drifts across providers.** Adding a new shared tool (e.g. `fd-find` to the reasoning layer) requires touching all 4 `base.Dockerfile` files. A bug fix in the entrypoint must be verified against 4 combinations of runtime and base image. There's no single "harness version" -- each provider image is a unique combination of harness libs + provider runtime.
 
 ---
 
@@ -58,11 +58,11 @@ The current per-provider Dockerfile model creates two pain points:
 
 ## Options Considered
 
-### Option 1 — Do nothing
+### Option 1 -- Do nothing
 
 No change to the current 4-provider Dockerfile tree. UID Mapping edits: 5.
 
-### Option 2 — Two harness bases (node + python)
+### Option 2 -- Two harness bases (node + python)
 
 Introduce a `node-harness` and `python-harness` base layer. Providers with Node runtimes (Pi, Claude Code, OpenCode) inherit from `node-harness`. Hermes inherits from `python-harness`. The sandbox stays on its own `ubuntu:24.04` base.
 
@@ -70,19 +70,19 @@ Cache: Node providers share the same `node-harness` cache boundary for the first
 
 UID Mapping edits: **3** (node-harness, python-harness, sandbox).
 
-### Option 3 — Single Ubuntu base with cross-distro binary extraction
+### Option 3 -- Single Ubuntu base with cross-distro binary extraction
 
 A single `harness-base` from `ubuntu:24.04`. Runtimes extracted from official `node:*` and `python:*` images via multi-stage `COPY --from`.
 
 **Rejected.** Cross-distro `COPY --from` works for pure-JS and pure-Python apps but breaks on native C extension dependencies (`cryptography`, `numpy`, ML libraries). These failures manifest as `.so` path mismatches and hardcoded `sysconfig` paths from the Debian-compiled runtime against Ubuntu's `glibc` layout. Hard to debug, hits exactly when running ML workloads. Not worth the risk.
 
-UID Mapping edits: **1** — but at the cost of fragile runtime extraction.
+UID Mapping edits: **1** -- but at the cost of fragile runtime extraction.
 
 ---
 
 ## Decision
 
-**Selected: Option 2 — Two harness bases, sandbox independent.**
+**Selected: Option 2 -- Two harness bases, sandbox independent.**
 
 | Layer | FROM | Location | Contains |
 |---|---|---|---|
@@ -94,10 +94,10 @@ UID Mapping edits: **1** — but at the cost of fragile runtime extraction.
 
 ### Constraints
 
-- **UID logic stays inline** in each harness Dockerfile — not extracted to a shared script. The collision pattern is stable; a 4th file adds traceability cost with no maintenance benefit.
-- **Fast-changing harness libs stay on the provider layer** — `dirs.sh`, `session.sh`, `routing.sh`, `provider-entrypoint.sh` are NOT moved into the harness base. Only the stable plumbing moves: `useradd`, `ARGs`, `WORKSPACE_DIR`, `HEALTHCHECK`, `ENTRYPOINT`, `PATH`.
-- **Claude Code** moves from `node:20-slim` to `node:22.22.3-slim` (shared via `node-harness`). This is expected to work — `@anthropic-ai/claude-code` is an npm package compatible with Node 22. If it breaks, the fix is a version bump or pinning Claude Code to `node-harness` at the risk of diverging from the shared cache.
-- **OpenCode** moves from `ubuntu:24.04` + npm via apt to `node:22.22.3-slim`. This is expected to work — OpenCode is also an npm package. Node 22 ships npm, so the apt npm dependency is eliminated.
+- **UID logic stays inline** in each harness Dockerfile -- not extracted to a shared script. The collision pattern is stable; a 4th file adds traceability cost with no maintenance benefit.
+- **Fast-changing harness libs stay on the provider layer** -- `dirs.sh`, `session.sh`, `routing.sh`, `provider-entrypoint.sh` are NOT moved into the harness base. Only the stable plumbing moves: `useradd`, `ARGs`, `WORKSPACE_DIR`, `HEALTHCHECK`, `ENTRYPOINT`, `PATH`.
+- **Claude Code** moves from `node:20-slim` to `node:22.22.3-slim` (shared via `node-harness`). This is expected to work -- `@anthropic-ai/claude-code` is an npm package compatible with Node 22. If it breaks, the fix is a version bump or pinning Claude Code to `node-harness` at the risk of diverging from the shared cache.
+- **OpenCode** moves from `ubuntu:24.04` + npm via apt to `node:22.22.3-slim`. This is expected to work -- OpenCode is also an npm package. Node 22 ships npm, so the apt npm dependency is eliminated.
 
 ### Result
 
@@ -105,7 +105,7 @@ UID Mapping impact: **3 Dockerfiles to edit** instead of 5 (node-harness, python
 
 ---
 
-## Open Questions — Resolved
+## Open Questions -- Resolved
 
 All open questions from the initial design were resolved during the design audit (see `spec_container_layer_redesign.md` rule 5 Design Decisions):
 
@@ -115,7 +115,7 @@ All open questions from the initial design were resolved during the design audit
 | 2 | Provider base files: keep separate or inline? | Keep `base.Dockerfile` separate. Mechanically separable later if warranted. |
 | 3 | Image tagging: project-scoped or provider-agnostic? | Provider-agnostic (`harness-node`, `harness-python`). Matches current `pi-base` pattern. |
 | 4 | Build context: new mode for harness builds? | New `build_context_harness()` function, peer of `build_context_agent()` and `build_context_sandbox()`. |
-| 5 | Directory structure (`harness/` vs `libs/`)? | Deferred to chore session — structural cleanup is a prerequisite for landing the harness Dockerfiles. The proposed target structure (`harness/reasoning/nodes/`, `harness/capability/`, etc.) remains the design target. |
+| 5 | Directory structure (`harness/` vs `libs/`)? | Deferred to chore session -- structural cleanup is a prerequisite for landing the harness Dockerfiles. The proposed target structure (`harness/reasoning/nodes/`, `harness/capability/`, etc.) remains the design target. |
 
 ---
 
@@ -123,16 +123,16 @@ All open questions from the initial design were resolved during the design audit
 
 | Document | Relevance |
 |---|---|
-| `tool_interface.md` — Provider Interface | Documents the current base.Dockerfile + provider.Dockerfile contract |
-| `execution_model.md` — Build Context | Describes how build contexts are assembled |
+| `tool_interface.md` -- Provider Interface | Documents the current base.Dockerfile + provider.Dockerfile contract |
+| `execution_model.md` -- Build Context | Describes how build contexts are assembled |
 | `provider_lifecycle.md` | Reasoning layer session arc |
-| `containers.sh` — `build_agent()` | The build pipeline that assembles and caches the two-tier images |
-| `design_settings_permissions_group_bind.md` rule 3 | UID Mapping surface area table — the 5 Dockerfiles that need changes |
-| `roadmap.md` — Track C Phase 2 | The implementation phase that would benefit from consolidation |
+| `containers.sh` -- `build_agent()` | The build pipeline that assembles and caches the two-tier images |
+| `design_settings_permissions_group_bind.md` rule 3 | UID Mapping surface area table -- the 5 Dockerfiles that need changes |
+| `roadmap.md` -- Track C Phase 2 | The implementation phase that would benefit from consolidation |
 
 ## Resolution
 
-**Status:** Resolved — partially implemented; python harness deferred to W1.
+**Status:** Resolved -- partially implemented; python harness deferred to W1.
 
 ### What was implemented
 
@@ -140,11 +140,11 @@ Option 2 (two harness bases) was partially implemented:
 
 | Component | Location | Status |
 |---|---|---|
-| `node-harness` (Tier 1) | `src/reasoning/node.dockerfile` | ✅ `FROM node:22.22.3-slim` with common system packages |
-| Pi base (Tier 2) | `src/reasoning/providers/pi/base.dockerfile` | ✅ `FROM agent-node-base`, installs pi agent |
-| OpenCode base (Tier 2) | `src/reasoning/providers/opencode/base.dockerfile` | ✅ `FROM agent-node-base`, installs opencode |
-| Hermes base (Tier 2) | `src/reasoning/providers/hermes/base.dockerfile` | ❌ Independent `FROM python:3.11-slim` — does not inherit from any harness base |
-| Python harness (Tier 1) | `src/reasoning/python.dockerfile` | ❌ Never built |
+| `node-harness` (Tier 1) | `src/reasoning/node.dockerfile` | [x] `FROM node:22.22.3-slim` with common system packages |
+| Pi base (Tier 2) | `src/reasoning/providers/pi/base.dockerfile` | [x] `FROM agent-node-base`, installs pi agent |
+| OpenCode base (Tier 2) | `src/reasoning/providers/opencode/base.dockerfile` | [x] `FROM agent-node-base`, installs opencode |
+| Hermes base (Tier 2) | `src/reasoning/providers/hermes/base.dockerfile` | [ ] Independent `FROM python:3.11-slim` -- does not inherit from any harness base |
+| Python harness (Tier 1) | `src/reasoning/python.dockerfile` | [ ] Never built |
 
 ### Why Hermes diverges
 
@@ -152,16 +152,16 @@ Hermes requires both Python (ML dependencies, Hermes runtime) and Node.js (Whats
 
 ### UID Mapping
 
-UID Mapping (`ARG HOST_UID`/`ARG HOST_GID` with collision handling) was implemented in all 4 provider Dockerfiles (`pi`, `opencode`, `hermes`, `claude-ai` where applicable) plus the sandbox Dockerfile — matching the planned 3-edit target in spirit, though the actual mechanism forked per provider rather than centralising in harness bases.
+UID Mapping (`ARG HOST_UID`/`ARG HOST_GID` with collision handling) was implemented in all 4 provider Dockerfiles (`pi`, `opencode`, `hermes`, `claude-ai` where applicable) plus the sandbox Dockerfile -- matching the planned 3-edit target in spirit, though the actual mechanism forked per provider rather than centralising in harness bases.
 
 ### Deferred
 
-- **Python harness base** (`src/reasoning/python.dockerfile`) — not built. Hermes builds independently. See `devlog/roadmap.md` W1.
-- **HERMES removal question** — if W1 is made to work without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider with a divergent build.
+- **Python harness base** (`src/reasoning/python.dockerfile`) -- not built. Hermes builds independently. See `devlog/roadmap.md` W1.
+- **HERMES removal question** -- if W1 is made to work without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider with a divergent build.
 
 ### References
 
 - Node harness: `src/reasoning/node.dockerfile`
 - Hermes base: `src/reasoning/providers/hermes/base.dockerfile`
-- Roadmap: `devlog/roadmap.md` W1 — Hermes python base refactor deferred
+- Roadmap: `devlog/roadmap.md` W1 -- Hermes python base refactor deferred
 - UID Mapping: provider Dockerfiles (`pi`, `opencode`, `hermes`), sandbox Dockerfile

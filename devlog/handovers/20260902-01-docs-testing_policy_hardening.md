@@ -1,4 +1,4 @@
-# Handover 20260902-01 — docs harden testing policy (seven proposals) + retire discovery_ prefix
+# Handover 20260902-01 -- docs harden testing policy (seven proposals) + retire discovery_ prefix
 
 **Milestone:** M2.6 - Session Persistence (supporting policy work)
 **Type:** docs
@@ -11,13 +11,13 @@ Operator-driven reflection on this session's test output surfaced seven policy g
 
 ## Proposals (queue)
 
-1. `testing-conventions.md` Anti-Pattern 6 — change-mirror test (presented, awaiting apply).
-2. `testing_policy.md` `make test` invariant — prerequisite failure vs assertion failure (presented, awaiting apply).
-3. `testing_policy.md` knowledge-test prefixes — retire `discovery_`, fold probes into `knowledge_` (revised for the operator's prefix list, pending).
-4. `testing-conventions.md` checklist — output-contract propagation checklist item.
-5. `testing-conventions.md` checklist — pins carry a rationale.
-6. `testing-conventions.md` checklist — dead-test liveness (defined-but-unregistered).
-7. `testing_policy.md` Keeping Tests Current — untested behaviour branches.
+1. `testing-conventions.md` Anti-Pattern 6 -- change-mirror test (presented, awaiting apply).
+2. `testing_policy.md` `make test` invariant -- prerequisite failure vs assertion failure (presented, awaiting apply).
+3. `testing_policy.md` knowledge-test prefixes -- retire `discovery_`, fold probes into `knowledge_` (revised for the operator's prefix list, pending).
+4. `testing-conventions.md` checklist -- output-contract propagation checklist item.
+5. `testing-conventions.md` checklist -- pins carry a rationale.
+6. `testing-conventions.md` checklist -- dead-test liveness (defined-but-unregistered).
+7. `testing_policy.md` Keeping Tests Current -- untested behaviour branches.
 
 No policy text is written until the operator approves each proposal. Application happens after approval; the code cleanup items below are a separate pass.
 
@@ -45,4 +45,4 @@ No policy text is written until the operator approves each proposal. Application
 
 - Rename `tests/knowledge/discovery_tar_*.sh` to `knowledge_tar_*.sh`; update the two cross-references (`docs/concepts/copy_delivery.md`).
 - Register or delete the dead test `test_list_no_sig_when_field_empty` in `tests/test_resume.sh`.
-- Add the dead-test liveness check (every `test_*()` registered; every `run_test` target resolves) and the prerequisite-liveness check (stub executable, shim present) — mechanical checkers.
+- Add the dead-test liveness check (every `test_*()` registered; every `run_test` target resolves) and the prerequisite-liveness check (stub executable, shim present) -- mechanical checkers.

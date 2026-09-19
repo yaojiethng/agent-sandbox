@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-03-26
-**Milestone:** M2.2 — Reasoning Layer Modularisation (workflow audit, not implementation)
+**Milestone:** M2.2 -- Reasoning Layer Modularisation (workflow audit, not implementation)
 **Type:** Workflow
 
 ## Objective
@@ -24,7 +24,7 @@ Not in scope: roadmap changes, implementation tasks, M2.2 provider integrations.
 
 | File | Why in scope |
 |---|---|
-| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Primary subject — population rules and format definition |
+| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Primary subject -- population rules and format definition |
 
 ## Decisions made this session
 
@@ -46,17 +46,19 @@ None.
 
 ## Next session
 
-Chore session — `docs/` folder restructure.
+Chore session -- `docs/` folder restructure.
 
 Proposed moves (operator-specified, to be scoped at session open):
-- `docs/log/` → `docs/devlog/`
-- `docs/development/discussions/` → `docs/devlog/discussions/`
-- `docs/development/handovers/` → `docs/devlog/handovers/`
-- `docs/development/changelog.md` → `docs/devlog/changelog.md`
-- `docs/development/roadmap.md` → `docs/devlog/roadmap.md`
-- `docs/development/roadmap_future.md` → `docs/devlog/roadmap_future.md`
+
+- `docs/log/` -> `docs/devlog/`
+- `docs/development/discussions/` -> `docs/devlog/discussions/`
+- `docs/development/handovers/` -> `docs/devlog/handovers/`
+- `docs/development/changelog.md` -> `docs/devlog/changelog.md`
+- `docs/development/roadmap.md` -> `docs/devlog/roadmap.md`
+- `docs/development/roadmap_future.md` -> `docs/devlog/roadmap_future.md`
 
 Watch-out items:
-1. Cross-references to all moved files are pervasive — `documentation_policy.md`, `iteration_policy.md`, `roadmap_policy.md`, `handover_policy.md`, `agent_context_brief.md`, `contributors.md`, `readme.md`, and any story/investigation documents will need link updates.
+
+1. Cross-references to all moved files are pervasive -- `documentation_policy.md`, `iteration_policy.md`, `roadmap_policy.md`, `handover_policy.md`, `agent_context_brief.md`, `contributors.md`, `readme.md`, and any story/investigation documents will need link updates.
 2. `documentation_policy.md` folder ownership table will need amending to reflect the new structure.
-3. Scope the full affected file list before producing any moves — grep for each moved path is the right starting point.
+3. Scope the full affected file list before producing any moves -- grep for each moved path is the right starting point.

@@ -1,16 +1,16 @@
-# agent-sandbox — Future Milestones
+# agent-sandbox -- Future Milestones
 
 Detail sections for milestones not yet active. Kept separate from [`roadmap.md`](roadmap.md) to keep the active milestone document focused and fast to read.
 
 **Promotion rule:** when a milestone becomes active, move its section from here into `roadmap.md` under `## Upcoming Milestones`. Update the summary table row in `roadmap.md` to point to the local anchor. Remove from this file.
 
-**Re-scoping note:** milestone definitions here are planning targets, not commitments. They are expected to evolve as implementation matures and earlier milestones reveal new constraints. Rewrite sections freely — this file is not a historical record. The changelog is.
+**Re-scoping note:** milestone definitions here are planning targets, not commitments. They are expected to evolve as implementation matures and earlier milestones reveal new constraints. Rewrite sections freely -- this file is not a historical record. The changelog is.
 
 ---
 
-## W1 — Vault Capability Layer Prototype
+## W1 -- Vault Capability Layer Prototype
 
-**Status:** Deferred. Not a mainline milestone — separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it.
+**Status:** Deferred. Not a mainline milestone -- separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it.
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
 
@@ -19,57 +19,59 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 **Hermes python base refactor (non-urgent):** The shared `python-harness` base (`src/reasoning/python.dockerfile`) was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
 
 **Tasks:**
+
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency — see [`investigation_mcp_server.md`](discussions/investigation_mcp_server.md) candidates table)
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`investigation_mcp_server.md`](discussions/investigation_mcp_server.md) candidates table)
 - [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
 - [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
 - [ ] Validate binary file handling (vault attachments) under selected MCP server
 - [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
-- [ ] Update `execution_model.md` — document capability layer variants (general vs vault+MCP)
+- [ ] Update `execution_model.md` -- document capability layer variants (general vs vault+MCP)
 
 ---
 
-## M3 — Autonomous Task Execution, Manual Review Workflow
+## M3 -- Autonomous Task Execution, Manual Review Workflow
 
 **Objective:** Move from interactive prompting to structured single-task execution with enough logging to verify the agent is doing useful work. Requires the two-layer foundation from M2.
 
 **Depends on:** M2 two-layer architecture (headless mode requires the capability layer tool interface; task briefs are the operator input channel from M1.5).
 
-**Finding — Sub-milestone containment (recorded, not designed):** Milestones and sub-milestones are intended to be self-contained, but partial implementations from later milestones are frequently needed while the current milestone is incomplete. This suggests that how features are cut into sub-milestones, and how strictly they are sequenced, may be the wrong seam. The sub-milestone-as-container model is recognized as a candidate for re-examination, not as settled. Design and any restructuring is deferred to M3. The current deferred-items / sub-milestone task-list system is maintained until then.
+**Finding -- Sub-milestone containment (recorded, not designed):** Milestones and sub-milestones are intended to be self-contained, but partial implementations from later milestones are frequently needed while the current milestone is incomplete. This suggests that how features are cut into sub-milestones, and how strictly they are sequenced, may be the wrong seam. The sub-milestone-as-container model is recognized as a candidate for re-examination, not as settled. Design and any restructuring is deferred to M3. The current deferred-items / sub-milestone task-list system is maintained until then.
 
-- [ ] Define Task Brief format (`TASK.md` — per-run brief placed in `SANDBOX_DIR/.agent-input/input/` before the run; aligns with the M1.5 input channel)
+- [ ] Define Task Brief format (`TASK.md` -- per-run brief placed in `SANDBOX_DIR/.agent-input/input/` before the run; aligns with the M1.5 input channel)
 - [ ] Define agent execution lifecycle for a single headless task run
-- [ ] Atomic install for `make install` — write to temp file, verify, then `mv` into place
-- [ ] Pre-snapshot validation gate — configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts
+- [ ] Atomic install for `make install` -- write to temp file, verify, then `mv` into place
+- [ ] Pre-snapshot validation gate -- configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts
 - [ ] Store structured logs per agent and task run
-- [ ] Capture metadata with each commit (agent_id, task_id, timestamp) — prerequisite for trusting autonomous output
-- [ ] Converting the roadmap to linear-style task tracking — full linear redesign. The handover next-session trim and always-push-to-roadmap behavior are scoped for immediate implementation (outside M3); only the linear/management-app format remains.
-- [ ] Moving next-session seed out of handover and into a next-task subheader in the sub-milestone — the handover next-session trim is scoped for immediate implementation; next-task subheader placement within the linear format remains.
-- [ ] Close-milestone automation — replace the manual administrative close checklist with a single script (`make close-milestone`) that atomically bumps milestone state. Clean commit, no partial-close risk. Close is ceremonial (no decisions); all substantive work occurs in pre-close (see the milestone lifecycle reframe).
+- [ ] Capture metadata with each commit (agent_id, task_id, timestamp) -- prerequisite for trusting autonomous output
+- [ ] Converting the roadmap to linear-style task tracking -- full linear redesign. The handover next-session trim and always-push-to-roadmap behavior are scoped for immediate implementation (outside M3); only the linear/management-app format remains.
+- [ ] Moving next-session seed out of handover and into a next-task subheader in the sub-milestone -- the handover next-session trim is scoped for immediate implementation; next-task subheader placement within the linear format remains.
+- [ ] Close-milestone automation -- replace the manual administrative close checklist with a single script (`make close-milestone`) that atomically bumps milestone state. Clean commit, no partial-close risk. Close is ceremonial (no decisions); all substantive work occurs in pre-close (see the milestone lifecycle reframe).
 - [ ] AC-machinery policy discussion for chores, doc, plan type sessions
-- [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) — deferred from M2.7
-- [ ] **Proper skill installation from upstream; fork and maintain a version with harness or provider-specific quirks stripped out** — skills imported from upstream (e.g. Claude) carry harness/provider-specific tool references that do not apply in the agent-sandbox/pi context. Adopt a convention: install the upstream skill, fork it, and strip provider-specific quirks, maintaining the harness-local version. Concrete case already found: [`improve-codebase-architecture/SKILL.md`](../src/reasoning/agent/skills/improve-codebase-architecture/SKILL.md) references "the Agent tool with `subagent_type=Explore`" — a Claude-specific Agent tool API, not pi's `pi -p` subagent. Fix that instance and define the fork-and-strip convention (surfaced from session `20260812-09`; recording here in M3).
-- [ ] **Loop-documentation structure decision (deferred to M3)** — decide whether the major/minor loop documentation needs a structural split (e.g. `major_loop_policy` / `minor_loop_policy`), what form it takes, and where the canonical boundary between milestone_policy and iteration_policy lands. Deferred from session `20260809-04`; a split is one possible form, not a settled intent. The milestone_policy scope expansion to own the entire major loop (scoping → story/investigation → roadmap entry → minor-loop handoff → pre-close → formal close) rides on this decision.
-- [ ] **Formal state diagram of the major/minor loop workflow (deferred to M3)** — produce a state diagram of the entire loop workflow (major loop: scoping → story/investigation → roadmap entry → minor-loop handoff → pre-close → formal close; minor loop iterations inside the handoff). Supports the loop-documentation restructure and the combine/re-section effort.
-- [ ] **Separate the new-iteration workflow into the workflows/ folder** — move iteration-specific instructions and procedures out of `AGENTS.md`, the documentation, and the shared policy files, and consolidate workflow-specific logic into standalone policy files bundled with each workflow (the `workflow/knowledge-vault/` bundling is the existing precedent). The shared governance surface keeps only what is true for every workflow; each workflow owns its own procedure. This is the enabling structure for future workflows — plan, policy-change, autonomous-iteration, and similar — which otherwise would grow `AGENTS.md` and the shared policies further.
-- [ ] **Coding-agent workflow consolidation** — reorganize the skill and prompt surface per [`workflow/coding-agent/audits/surface-area-report.md`](../workflow/coding-agent/audits/surface-area-report.md): one canonical file per use case; merge the handover-audit pair into one file; absorb the useful checks from `kelsey-code-reviewer.skill.md` into `bash-audit.skill.md`; drop the non-current Claude-format imports (`dhh-code-audit.skill.md`, `architecture-doc-reviewer.skill.md` -- the latter's purpose merges into the roadmap task "Architecture-doc staleness sweep"); relocate `toc.sh` out of the skills area; rename or dissolve `drafts/`, whose name implies draft status but holds current procedures. Files were relocated to their M3-ready homes in handover `20260911-02`; the audit family was extended and the deployed prompts mirrored in handover `20260911-03` (audits also carry `test-quality-campaign.md` and `documentation-pass.md`; `workflow/coding-agent/prompts/` holds `gm.md` and `test-quality-campaign-run.md` and is deployed by folder COPY). For the documentation-audit use case, compile one pi-native prompt per [`workflow/coding-agent/audits/documentation-audit-comparison.md`](../workflow/coding-agent/audits/documentation-audit-comparison.md), absorbing `architecture-doc-reviewer.skill.md` and `documentation-pass.md`, then drop both.
+- [ ] Process improvements (fast-track criteria, decision recording, stale skill reference) -- deferred from M2.7
+- [ ] **Proper skill installation from upstream; fork and maintain a version with harness or provider-specific quirks stripped out** -- skills imported from upstream (e.g. Claude) carry harness/provider-specific tool references that do not apply in the agent-sandbox/pi context. Adopt a convention: install the upstream skill, fork it, and strip provider-specific quirks, maintaining the harness-local version. Concrete case already found: [`improve-codebase-architecture/SKILL.md`](../src/reasoning/agent/skills/improve-codebase-architecture/SKILL.md) references "the Agent tool with `subagent_type=Explore`" -- a Claude-specific Agent tool API, not pi's `pi -p` subagent. Fix that instance and define the fork-and-strip convention (surfaced from session `20260812-09`; recording here in M3).
+- [ ] **Loop-documentation structure decision (deferred to M3)** -- decide whether the major/minor loop documentation needs a structural split (e.g. `major_loop_policy` / `minor_loop_policy`), what form it takes, and where the canonical boundary between milestone_policy and iteration_policy lands. Deferred from session `20260809-04`; a split is one possible form, not a settled intent. The milestone_policy scope expansion to own the entire major loop (scoping -> story/investigation -> roadmap entry -> minor-loop handoff -> pre-close -> formal close) rides on this decision.
+- [ ] **Formal state diagram of the major/minor loop workflow (deferred to M3)** -- produce a state diagram of the entire loop workflow (major loop: scoping -> story/investigation -> roadmap entry -> minor-loop handoff -> pre-close -> formal close; minor loop iterations inside the handoff). Supports the loop-documentation restructure and the combine/re-section effort.
+- [ ] **Separate the new-iteration workflow into the workflows/ folder** -- move iteration-specific instructions and procedures out of `AGENTS.md`, the documentation, and the shared policy files, and consolidate workflow-specific logic into standalone policy files bundled with each workflow (the `workflow/knowledge-vault/` bundling is the existing precedent). The shared governance surface keeps only what is true for every workflow; each workflow owns its own procedure. This is the enabling structure for future workflows -- plan, policy-change, autonomous-iteration, and similar -- which otherwise would grow `AGENTS.md` and the shared policies further.
+- [ ] **Coding-agent workflow consolidation** -- reorganize the skill and prompt surface per [`workflow/coding-agent/audits/surface-area-report.md`](../workflow/coding-agent/audits/surface-area-report.md): one canonical file per use case; merge the handover-audit pair into one file; absorb the useful checks from `kelsey-code-reviewer.skill.md` into `bash-audit.skill.md`; drop the non-current Claude-format imports (`dhh-code-audit.skill.md`, `architecture-doc-reviewer.skill.md` -- the latter's purpose merges into the roadmap task "Architecture-doc staleness sweep"); relocate `toc.sh` out of the skills area; rename or dissolve `drafts/`, whose name implies draft status but holds current procedures. Files were relocated to their M3-ready homes in handover `20260911-02`; the audit family was extended and the deployed prompts mirrored in handover `20260911-03` (audits also carry `test-quality-campaign.md` and `documentation-pass.md`; `workflow/coding-agent/prompts/` holds `gm.md` and `test-quality-campaign-run.md` and is deployed by folder COPY). For the documentation-audit use case, compile one pi-native prompt per [`workflow/coding-agent/audits/documentation-audit-comparison.md`](../workflow/coding-agent/audits/documentation-audit-comparison.md), absorbing `architecture-doc-reviewer.skill.md` and `documentation-pass.md`, then drop both.
 - [ ] **Git policy rewrite: bind commit-message body length and reference scope (shelved from M2.6, raised 2026-09-18)** - `docs/operations/git_policy.md` commit-message guidance needs a body-length and reference-discipline rule. Symptom: the first line is good, but subsequent lines run overly long, carry excessive detail, and cite unnecessary references (e.g. a handover link in the commit body when the change is already attributed as the latest handover). Rewrite the Body/footer section: state a tight body budget (why-not-what), forbid redundancy with the handover attribution, and require every reference to earn its place.
 - [ ] **Review-pass framing fixes (shelved from AGENT_FEEDBACK 2026-09-18, session `20260918-10`)** - three refinements to the review-pass framing. (1) The round-cap / blocker-re-review loop fits correctness reviews; a model-consensus quality pass converges in one round per model against a shared brief, then the main agent consolidates - `workflow/coding-agent/prompts/review-pass-run.md` should state when each shape applies. (2) A review directive names the base commit or the explicit `git diff <base>..<head>` range instead of a handover date the reader must convert. (3) An edit target with a seeded/runtime copy pair ("pi's AGENTS.md") is named by full path, with the authoritative copy stated.
 - [ ] **Evaluate whether make is still needed as the sandbox command wrapper; if not, assess substitutes (surfaced from handover 20260919-15)** - make is used not for compilation but as a directory-based script wrapper. It can do this but is not specialised for it, so we lose features and jerry-rig arg parsing (Make variables `PROVIDER=pi` vs CLI flags `--provider=pi`), and now carry a second command-invocation idiom whose help/error surfaces must be kept consistent with the direct CLI (a list of those hint surfaces is the files-in-scope table in handover `20260919-15`). The original reason for make -- the full `agent-sandbox` command was too long to provision every arg -- is weakened: the `.env` identity resolution has shortened the command. Evaluate whether make still earns its place; if not, assess possible substitutes (a thin wrapper script, shell aliases, or a direct-CLI-only surface). The evaluation is the deliverable; a decision to remove make, if reached, is a separate follow-up.
 
-### Doc Bloat — Rotate Out Stale Handovers and Discussions
+### Doc Bloat -- Rotate Out Stale Handovers and Discussions
 
 **Deferred from `roadmap.md` (not milestone-scoped).**
 
-`devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone — once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` — once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
+`devlog/handovers/` and `devlog/discussions/` accumulate every session's output. Most are only relevant during their milestone -- once a milestone is closed, the handover detail lives in the changelog. There is no need to keep the full history on `HEAD`. Design a rotate-out process: completed milestone handovers are archived to a git tag or a separate branch, removed from `HEAD`. Roadmap entries, architecture docs, and the changelog are the permanent record. The same applies to resolved stories in `devlog/discussions/` -- once graduated to a roadmap entry, the story discussion document can be archived. See `20260428-story-active-sequencing_and_knowledge_persistence.md` which is related.
 
-- [ ] **Subagent progress visibility (scoped for M3)** — provide internal visibility into a running subagent session (is it progressing, blocked, or stalled on network/provider) so the main agent can triage an interrupted `pi -p` review instead of losing the run. Surfaced from session `20260918`: a review round was lost to network loss with no way to see whether it had progressed before the flush; the midway session had to be recovered by reading the raw session transcript. No solution in mind yet — candidate directions include a subagent heartbeat/status channel, progress markers in the transcript, or a resume-on-interrupt with continuation; design is deferred to M3. Contrast the `team.ts`-style orchestration seams under M4 in the Multi-Agent Coordination section.
+- [ ] **Subagent progress visibility (scoped for M3)** -- provide internal visibility into a running subagent session (is it progressing, blocked, or stalled on network/provider) so the main agent can triage an interrupted `pi -p` review instead of losing the run. Surfaced from session `20260918`: a review round was lost to network loss with no way to see whether it had progressed before the flush; the midway session had to be recovered by reading the raw session transcript. No solution in mind yet -- candidate directions include a subagent heartbeat/status channel, progress markers in the transcript, or a resume-on-interrupt with continuation; design is deferred to M3. Contrast the `team.ts`-style orchestration seams under M4 in the Multi-Agent Coordination section.
 
 ---
 
 ## Multi-Agent Coordination
 
-### M4 — Metadata Seeding
+### M4 -- Metadata Seeding
+
 - [ ] Define `.workspace/metadata.json` format:
   - `agent_id`, `task_id`, allowed files, instructions
 - [ ] Ensure agent reads metadata to guide task execution
@@ -77,31 +79,31 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-### M5 — Agent-Assigned Branch Management
+### M5 -- Agent-Assigned Branch Management
 
 **Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
 
 - [ ] Each agent gets its own branch from the same baseline
 - [ ] `apply_workspace.sh --branch=<n>` supports named branches per agent
 - [ ] Validate branch contents before merge
-- [ ] Merge branch → `main`
-- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling — decision depends on M2.4 checkpoint branch pattern outcome
+- [ ] Merge branch -> `main`
+- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling -- decision depends on M2.4 checkpoint branch pattern outcome
 
 ---
 
 ## Multi-Agent Orchestration
 
-### M6.1 — Task Dispatch
+### M6.1 -- Task Dispatch
 
-**Objective:** Extend the execution model to support coordinated dispatch of multiple task briefs across agents. Design precedes implementation — `execution_model.md` must be updated before any code changes.
+**Objective:** Extend the execution model to support coordinated dispatch of multiple task briefs across agents. Design precedes implementation -- `execution_model.md` must be updated before any code changes.
 
-- [ ] Design multi-task coordination model — how multiple task briefs are dispatched, sequenced, and tracked across agents
+- [ ] Design multi-task coordination model -- how multiple task briefs are dispatched, sequenced, and tracked across agents
 - [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
 - [ ] Implement dispatch mechanism in harness
 
 ---
 
-### M6.2 — Constraint Enforcement
+### M6.2 -- Constraint Enforcement
 
 **Objective:** Enforce SOP constraints on agent dispatch and output. Partial enforcement may exist earlier from features built in prior milestones; this milestone brings it to a complete and auditable state.
 
@@ -111,7 +113,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-### M6.3 — Review & CI/CD Integration
+### M6.3 -- Review & CI/CD Integration
 
 **Objective:** Automate review of agent-produced changes and integrate with CI/CD pipelines.
 
@@ -123,7 +125,8 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ## Standalone
 
-### M7 — Security and Network hardening (Policy Layer)
+### M7 -- Security and Network hardening (Policy Layer)
+
 - [ ] Introduce `.config/workflow.yaml`
   - Configure network access
   - Configure resource limits (`--memory`, `--cpus`)
@@ -137,32 +140,32 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 #### Dependency Security
 
-Part of M7 — supply-chain hardening for provider runtime dependencies.
+Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
 - [x] Pi version pinned in base Dockerfile (current: `@earendil-works/pi-coding-agent@0.85.1`)
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
 - [ ] Consider lockfile for `npm install -g` dependencies (transitive dependency locking)
-- [x] Bump policy — operator decides when to bump based on: new functionality needed, critical fix, or security vulnerability. No automation. Bump manually by editing the pinned version in `base.Dockerfile` and rebuilding.
+- [x] Bump policy -- operator decides when to bump based on: new functionality needed, critical fix, or security vulnerability. No automation. Bump manually by editing the pinned version in `base.Dockerfile` and rebuilding.
 
 ---
 
-### M8 — Skills / Templates
+### M8 -- Skills / Templates
+
 - [ ] Introduce `.skills/` directory
 - [ ] Provide templates or skill definitions for agent
 - [ ] Integrate skills into agent workflow
 
 ---
 
-### M9 — Governance Hardening
+### M9 -- Governance Hardening
 
 Progressive enforcement maturity for the documentation and architecture governance model. Each level builds on the previous.
 
-- [x] Level 1 — Structural Separation — folder ownership, temperature classification, root document audience separation
-- [ ] Level 2 — Review Discipline — PR template with required "does this change system behaviour?" checkbox
-- [ ] Level 3 — Temperature & Freeze Policy — hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
-- [ ] Level 4 — Change Classification Matrix — explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
-- [ ] Level 5 — Automated Enforcement — CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
-
+- [x] Level 1 -- Structural Separation -- folder ownership, temperature classification, root document audience separation
+- [ ] Level 2 -- Review Discipline -- PR template with required "does this change system behaviour?" checkbox
+- [ ] Level 3 -- Temperature & Freeze Policy -- hot/cold system and doc-status layer freeze formalised as enforced convention, not just policy
+- [ ] Level 4 -- Change Classification Matrix -- explicit categories (invariant / design / additive / corrective) with per-class review requirements; gives the PR gate question resolution beyond binary yes/no
+- [ ] Level 5 -- Automated Enforcement -- CI/tooling enforcement of freeze policy and agent write restrictions on cold and frozen documents
 
 ---
 
@@ -172,7 +175,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Problem:** `make install` writes an `agent-sandbox` CLI script that sources scripts/libs/templates from the repo checkout at runtime. After `git pull`, the installed binary silently executes changed code. No mechanism signals the operator to reinstall.
 
-**Solution path — two complementary changes:**
+**Solution path -- two complementary changes:**
 
 1. **Self-contained binary.** `make install` packages all scripts, libs, and templates into the binary itself (shar archive or similar). The installed binary has zero runtime dependency on the repo checkout. This eliminates the entire class of host-side drift problems.
 
@@ -186,6 +189,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 **Depends on:** M2.7 completion (container-sig, build pipeline cleanup). Not part of any current milestone.
 
 **Preconditions for design:**
+
 - Self-contained binary mechanism selected (shar archive vs compiled language vs proper package manager)
 - Version bump policy agreed and documented
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
@@ -196,28 +200,28 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ## Deferred (Unplanned)
 
-### Harness-sig — Host-Side Staleness Detection
+### Harness-sig -- Host-Side Staleness Detection
 
 Described in Harness Packaging and Versioning above.
 
-### Doc Language Cleanup — STE-Clean Sweep
+### Doc Language Cleanup -- STE-Clean Sweep
 
 **Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.
 
-### Copy-Model Seeding — Host-Side Volume Seed (M2.6.5 follow-up) — DONE 20260901-14
+### Copy-Model Seeding -- Host-Side Volume Seed (M2.6.5 follow-up) -- DONE 20260901-14
 
-**Deferred decision `20260818-02` (keep RO-mount-at-start); dependency landed; discovery validated `20260901-13`; implemented `20260901-14` — entry retained as record.** Seed the volume host-side before the sandbox container starts (one-shot `docker compose create` + `docker cp` through the volume mount), no snapshot mount, fresh and resume compose files identical, staging exists only during the seed step. Serialization: git-enumerated tar under the `.agent-sandbox-seed/` sentinel; container-side init reconstructs index=HEAD/worktree=disk. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md). All three subtasks below are resolved: compose template carries no SNAPSHOT_DIR mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir`/SNAPSHOT_DIR env + session-state writes are retired repo-wide (incl. dirs.sh and the knowledge diagnostics).
-- [ ] Drop the always-mounted `SNAPSHOT_DIR` from the compose template — no conditional mount needed once seeding is host-side
-- [ ] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only — vestigial on resume, where the volume's git state is authoritative
+**Deferred decision `20260818-02` (keep RO-mount-at-start); dependency landed; discovery validated `20260901-13`; implemented `20260901-14` -- entry retained as record.** Seed the volume host-side before the sandbox container starts (one-shot `docker compose create` + `docker cp` through the volume mount), no snapshot mount, fresh and resume compose files identical, staging exists only during the seed step. Serialization: git-enumerated tar under the `.agent-sandbox-seed/` sentinel; container-side init reconstructs index=HEAD/worktree=disk. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md). All three subtasks below are resolved: compose template carries no SNAPSHOT_DIR mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir`/SNAPSHOT_DIR env + session-state writes are retired repo-wide (incl. dirs.sh and the knowledge diagnostics).
+
+- [ ] Drop the always-mounted `SNAPSHOT_DIR` from the compose template -- no conditional mount needed once seeding is host-side
+- [ ] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only -- vestigial on resume, where the volume's git state is authoritative
 - [ ] Re-examine `snapshot_dir`/SNAPSHOT_DIR env + session_state writes once the mount disappears
 
-Records: design record `20260730-design-settled-mount_model.md`, handover `20260818-02` (copy-in mechanism decision). The entrypoint branch inversion (if `! -d .git` → init; else → resume bookkeeping) is not filed here — it belongs to the M2.6.6 delivery implementation scope.
+Records: design record `20260730-design-settled-mount_model.md`, handover `20260818-02` (copy-in mechanism decision). The entrypoint branch inversion (if `! -d .git` -> init; else -> resume bookkeeping) is not filed here -- it belongs to the M2.6.6 delivery implementation scope.
 
-### M2.6.7 — Interface Contract Compatibility (Complete)
+### M2.6.7 -- Interface Contract Compatibility (Complete)
 
-**Design settled 20260919-03.** P0 landed 20260919-04 (version constant, image label, record stamps, warn-only preflight check). Doc consolidation landed 20260919-05: one interface concept doc (`docs/concepts/sandbox_host_interface.md`, renamed from the correspondence model) + one lifecycle architecture doc (`sandbox_lifecycle.md`). One version `INTERFACE_CONTRACT_VERSION` declared in `src/libs/interface_contract.sh`, stamped into tier-3 images at build (declaration 1) and into the record (`.compose` label set + `SESSION_STATE` key, declaration 2); comparison layered by surface: host<->container + record at start/resume preflight, container<->container at the agent entrypoint. P2 landed default-warn 20260919-06: flag `interface_contract_strict()` + preflight policy enforcement + agent-entrypoint `_check_container_contract`; container-sig untouched. 20260919-07 removed the flag entirely per operator direction: the contract is authoritative with no runtime escape hatch (an override would be a backdoor that weakens the contract and grows the maintenance surface); preflight refuses on a drift or missing label; the agent entrypoint hard-stops on a container↔container mismatch; a missing record key/file still warns (upgrade path). Container-sig rollover P0-P3, old check stripped only after the new is proven. 20260919-08 retired container-sig (P3): `container_sig`/`current_sig`/`image_baked_sig`, the label bake and `_check_container_sig` removed, `src/libs/container_sig.sh` and `tests/libs/sig_helpers.sh` deleted, install xargs note dropped, `image_digest` relocated to `src/build/image.sh`. ADR `docs/adr/interface_contract_compatibility.md` (closed — authoritative; container-sig retired P3). Discussion `devlog/discussions/20260919-design-interface_contract_compatibility.md` (settled). M2.6.7 complete.
+**Design settled 20260919-03.** P0 landed 20260919-04 (version constant, image label, record stamps, warn-only preflight check). Doc consolidation landed 20260919-05: one interface concept doc (`docs/concepts/sandbox_host_interface.md`, renamed from the correspondence model) + one lifecycle architecture doc (`sandbox_lifecycle.md`). One version `INTERFACE_CONTRACT_VERSION` declared in `src/libs/interface_contract.sh`, stamped into tier-3 images at build (declaration 1) and into the record (`.compose` label set + `SESSION_STATE` key, declaration 2); comparison layered by surface: host<->container + record at start/resume preflight, container<->container at the agent entrypoint. P2 landed default-warn 20260919-06: flag `interface_contract_strict()` + preflight policy enforcement + agent-entrypoint `_check_container_contract`; container-sig untouched. 20260919-07 removed the flag entirely per operator direction: the contract is authoritative with no runtime escape hatch (an override would be a backdoor that weakens the contract and grows the maintenance surface); preflight refuses on a drift or missing label; the agent entrypoint hard-stops on a container<->container mismatch; a missing record key/file still warns (upgrade path). Container-sig rollover P0-P3, old check stripped only after the new is proven. 20260919-08 retired container-sig (P3): `container_sig`/`current_sig`/`image_baked_sig`, the label bake and `_check_container_sig` removed, `src/libs/container_sig.sh` and `tests/libs/sig_helpers.sh` deleted, install xargs note dropped, `image_digest` relocated to `src/build/image.sh`. ADR `docs/adr/interface_contract_compatibility.md` (closed -- authoritative; container-sig retired P3). Discussion `devlog/discussions/20260919-design-interface_contract_compatibility.md` (settled). M2.6.7 complete.
 
-### Environment-Change Persistence — Install Layers Across Runs (Not in scope, current model)
+### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 
-**Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model — containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.
-
+**Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model -- containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.

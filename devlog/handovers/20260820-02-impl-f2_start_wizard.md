@@ -1,13 +1,13 @@
 # Agent Handover
 
 **Date:** 2026-08-20
-**Milestone:** M2.6.6 — Mount Model: Host-backed Sandbox
+**Milestone:** M2.6.6 -- Mount Model: Host-backed Sandbox
 **Type:** Implementation
 **Status:** In progress
 
 ## Objective
 
-**F2 — `start` command redesign (resumable/stale UX wizard)** per the settled
+**F2 -- `start` command redesign (resumable/stale UX wizard)** per the settled
 design (walk `20260818-02`, decision D6), carrying the **dry-run change-source
 gap (F-dryrun)**. Prerequisites are complete: P3 `.run-identity` deprecation
 (`20260819-08`), P2 terminology sweep (`20260819-10..13`), F1 mount delivery
@@ -17,7 +17,7 @@ across both deliveries, resume-or-new, freshness, and `--run=<id>` resume.
 ## Context (verified)
 
 - **F2 roadmap task** (`devlog/roadmap.md` line 150, unchecked): "interactive-by-default
-  wizard — agent-run inventory first (copy via labels; bind-mount via registry),
+  wizard -- agent-run inventory first (copy via labels; bind-mount via registry),
   resume-N or new; freshness-on-new (implicit rebuild, auto-downgraded); config
   prefilled from the newest run; prints the full non-interactive command;
   `--run=<id>` resumes (absence = new); no subcommand split. Decision rows
@@ -40,16 +40,16 @@ across both deliveries, resume-or-new, freshness, and `--run=<id>` resume.
 - **Current `run_agent.sh`** receives identity via exported env from start_agent
   (no `--run=` flag); selects the delivery overlay by `SANDBOX_TYPE`.
 - **F-dryrun gap**: `dry_run_capability.sh` (and `dry_run_reasoning.sh`)
-  hard-depend on the copy snapshot — `critical "SNAPSHOT_DIR readable (snapshot
-  mount)" test -d "$SNAPSHOT_DIR"` — which does not exist in mount mode. Dry-run
+  hard-depend on the copy snapshot -- `critical "SNAPSHOT_DIR readable (snapshot
+  mount)" test -d "$SNAPSHOT_DIR"` -- which does not exist in mount mode. Dry-run
   must be delivery-aware: validate the actual change source (copy: snapshot /
   `baseline.tar`; mount: worktree `.git` + init marker).
 - **Terminology status**: programmed sweep done (`20260819-10..13`) renamed
-  `--session→--run`, `SESSION_TS→RUN_TS`, `SESSION_STATE→RUN_STATE`,
-  `RESUME_SESSION→RESUME_RUN`. Live code uses the new names; the `start_agent.sh`
+  `--session->--run`, `SESSION_TS->RUN_TS`, `SESSION_STATE->RUN_STATE`,
+  `RESUME_SESSION->RESUME_RUN`. Live code uses the new names; the `start_agent.sh`
   wizard surfaces are the remaining consumer.
 
-## Files likely in scope (proposed — pending scope confirmation)
+## Files likely in scope (proposed -- pending scope confirmation)
 
 | File | Change |
 |---|---|
@@ -64,9 +64,9 @@ across both deliveries, resume-or-new, freshness, and `--run=<id>` resume.
 
 ## Out of scope (deferred)
 
-- F3 (mount worktree with git history), F5 (prune redesign) — later items.
-- Copy-side host-volume seeding + vestigial cleanups — deferred (M2.6.5 follow-up).
-- Full repository-wide terminology prose sweep of *historical* docs — completed;
+- F3 (mount worktree with git history), F5 (prune redesign) -- later items.
+- Copy-side host-volume seeding + vestigial cleanups -- deferred (M2.6.5 follow-up).
+- Full repository-wide terminology prose sweep of *historical* docs -- completed;
   only live wizard surfaces are touched here.
 
 ## Verification
@@ -80,7 +80,7 @@ across both deliveries, resume-or-new, freshness, and `--run=<id>` resume.
 
 ## Decisions
 
-None yet — scope pending operator confirmation.
+None yet -- scope pending operator confirmation.
 
 ## Acceptance criteria
 

@@ -100,6 +100,7 @@ None.
 Sub-milestone unchanged (M2.6 - Session Persistence).
 
 Watch-outs:
+
 - Closed historical handover `20260810-13` still records the host `core.filemode=false`
   claim - accurate at the time; left as a session record (not edited). The
   `AGENT_FEEDBACK` annotation and this handover are the corrected record chain.

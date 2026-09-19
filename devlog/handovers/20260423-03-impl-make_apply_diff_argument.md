@@ -1,25 +1,27 @@
 # Agent Handover
 
 **Date:** 2026-04-23
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement Unit D (`make apply` update) — add `DIFF=<path>` argument to allow applying a specific diff file.
+Implement Unit D (`make apply` update) -- add `DIFF=<path>` argument to allow applying a specific diff file.
 
 ## Scope
 
 **Unit D tasks (from roadmap):**
+
 - Add `DIFF=<path>` argument to `make apply`
 - Remove pre-staging block (already removed in prior implementation)
 - Preserve default resolution (latest `.diff` in `workspace/output/diffs/` by timestamp)
 
 **Files to change:**
-- `scripts/apply_workspace.sh` — add `--diff=` flag parsing and logic to use explicit diff path
-- `libs/_templates/Makefile.template` — add `DIFF` variable to apply target
-- `tests/test_apply_workspace.sh` — add tests for `DIFF=` argument and update existing tests for new `diffs/` structure
+
+- `scripts/apply_workspace.sh` -- add `--diff=` flag parsing and logic to use explicit diff path
+- `libs/_templates/Makefile.template` -- add `DIFF` variable to apply target
+- `tests/test_apply_workspace.sh` -- add tests for `DIFF=` argument and update existing tests for new `diffs/` structure
 
 ## Carried forward
 
@@ -29,10 +31,10 @@ None.
 
 | Criterion | Status |
 |---|---|
-| `make apply DIFF=<path>` applies a specific diff file | ✓ Accepted |
-| `make apply` (no args) finds and applies latest diff by timestamp | ✓ Accepted |
-| Applied diff has no `index` lines | ✓ Accepted |
-| Tests pass for Unit D changes | ✓ Accepted |
+| `make apply DIFF=<path>` applies a specific diff file | [x] Accepted |
+| `make apply` (no args) finds and applies latest diff by timestamp | [x] Accepted |
+| Applied diff has no `index` lines | [x] Accepted |
+| Tests pass for Unit D changes | [x] Accepted |
 
 ## Hot files
 
@@ -60,14 +62,15 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Type:** Implementation — Unit E (`make draft` redesign).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation -- Unit E (`make draft` redesign).
 
 Read `docs/devlog/roadmap.md` M2.3 pending section for Unit E tasks.
 
 **Watch-outs:**
-- `package_diff.sh` output now in `workspace/output/diffs/` — all subsequent units should use this path
+
+- `package_diff.sh` output now in `workspace/output/diffs/` -- all subsequent units should use this path
 - `diff_on_exit` now captures uncommitted changes to `workspace/session-diffs/<session-name>/changes.diff`
 - Script naming: `package_diff.sh` and `package_branch.sh` (underscores); `package-diff` (dash) only in prompt template
 
-**Grep to run:** `grep -r "DIFFS_DIR" scripts/apply_workspace.sh` — verify all paths updated to use `diffs/` subfolder.
+**Grep to run:** `grep -r "DIFFS_DIR" scripts/apply_workspace.sh` -- verify all paths updated to use `diffs/` subfolder.

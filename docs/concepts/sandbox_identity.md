@@ -14,17 +14,18 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 
 ## Derived Identifiers
 
-### SESSION_ID — Session Run Identity
+### SESSION_ID -- Session Run Identity
 
 ```
 SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
-A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash — see [session_identifier.md](../adr/session_identifier.md).
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash -- see [session_identifier.md](../adr/session_identifier.md).
 
 `canon(SANDBOX_DIR)` is the sandbox directory resolved to its canonical absolute form (`readlink -f`/`realpath` after leading-`~` expansion), so every path spelling of one folder (absolute, `~`, relative, symlink, trailing-slash, `./`) converges to one `SESSION_ID`. An unresolvable `SANDBOX_DIR` is a hard error (start/resume fail loudly).
 
 **Properties:**
+
 - Unique per session even with the same sandbox instance and branch (timestamp component).
 - Deterministic: same canonical inputs produce same `SESSION_ID`.
 - Sensitive to all three identity factors: canonical sandbox dir, host HEAD, and session timestamp.
@@ -56,25 +57,26 @@ agent-sandbox.session-id:           <SESSION_ID>
 ```
 
 These labels serve two purposes:
+
 - **Provenance:** Operators can inspect any container to determine which project, worktree, host commit, and session run it belongs to.
 - **Lifecycle management:** `make stop` and `make prune` filter by `project-name` + `sandbox-dir` labels to scope operations to a specific worktree.
 
 ### Label Lifecycle by Artifact Type
 
-Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle. Containers carry all labels; volumes carry the stable subset plus `session-id`/`session-ts` because in this harness the copy-model named volume is **per-session** (`<SESSION_ID>-sandbox-data`, one volume per session, created at that session's start) — so its session-scoped labels are accurate for its entire lifetime, not stale-on-resume.
+Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle. Containers carry all labels; volumes carry the stable subset plus `session-id`/`session-ts` because in this harness the copy-model named volume is **per-session** (`<SESSION_ID>-sandbox-data`, one volume per session, created at that session's start) -- so its session-scoped labels are accurate for its entire lifetime, not stale-on-resume.
 
 | Label | Stability | On containers | On volumes | On images | Reason |
 |---|---|---|---|---|---|
-| `project-name` | Stable | ✅ | ✅ | ❌ | Never changes for a project; images are tagged by name, not labeled |
-| `sandbox-dir` | Stable | ✅ | ✅ | ❌ | Never changes for a sandbox instance; canonical form; runtime-only label |
-| `host-head-sha` | Stable | ✅ | ✅ | ❌ | Set at creation; backlink to repo state; runtime-only |
-| `host-branch` | Stable | ✅ | ✅ | ❌ | Set at creation; backlink to branch; runtime-only |
-| `session-ts` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session timestamp; the copy volume is per-session so it is accurate |
-| `session-id` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session id; the copy volume is per-session so it is accurate |
-| `project-dir` | Stable | ✅ | ❌ | ❌ | Host path; not relevant for volume or image lifecycle |
-| `container-sig` | Retired | ❌ | ❌ | ❌ | Removed (P3): superseded by `agent-sandbox.interface-contract-version` |
+| `project-name` | Stable | [x] | [x] | [ ] | Never changes for a project; images are tagged by name, not labeled |
+| `sandbox-dir` | Stable | [x] | [x] | [ ] | Never changes for a sandbox instance; canonical form; runtime-only label |
+| `host-head-sha` | Stable | [x] | [x] | [ ] | Set at creation; backlink to repo state; runtime-only |
+| `host-branch` | Stable | [x] | [x] | [ ] | Set at creation; backlink to branch; runtime-only |
+| `session-ts` | Ephemeral | [x] | [x] (copy) | [ ] | Per-session timestamp; the copy volume is per-session so it is accurate |
+| `session-id` | Ephemeral | [x] | [x] (copy) | [ ] | Per-session id; the copy volume is per-session so it is accurate |
+| `project-dir` | Stable | [x] | [ ] | [ ] | Host path; not relevant for volume or image lifecycle |
+| `container-sig` | Retired | [ ] | [ ] | [ ] | Removed (P3): superseded by `agent-sandbox.interface-contract-version` |
 
-Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. The copy-model named volume is per-session, so carrying `session-id`/`session-ts` is accurate rather than a dangling reference. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
+Containers are ephemeral -- they live for one session and die. All labels are accurate for the container's entire lifetime. The copy-model named volume is per-session, so carrying `session-id`/`session-ts` is accurate rather than a dangling reference. Images are build artifacts -- their labels record build-time provenance (source file hash), not runtime identity.
 
 **Canonical `sandbox-dir` label value.** The `agent-sandbox.sandbox-dir` label is written in its **canonical absolute form** (`readlink -f`, `src/libs/common.sh#sandbox_dir_canon`); `start_agent.sh`/`resume_agent.sh` canonicalize `SANDBOX_DIR` once before compose generation, and stop/prune canonicalize the same way before building label filters. Every path spelling of a folder therefore converges to one label value and one filter value, so label-based discovery (stop, prune Rule 2, the diagnostic) matches regardless of how the operator spells `--sandbox`.
 
@@ -88,7 +90,7 @@ build, written into the session record, and compared at preflight and at the
 agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md)
 and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
-Further reading: the build-time signature model is a superseded principle — the
+Further reading: the build-time signature model is a superseded principle -- the
 standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md)
 (coherence by minimisation, not detection), with the per-surface version
 semantics in [harness_versioning.md](../adr/harness_versioning.md). Image
@@ -98,7 +100,6 @@ version is the image ID digest, recorded per session as
 The interim `agent-sandbox.container-sig` source-subset hash and its preflight
 comparison are retired. The interface-contract version replaces the interim
 check as the standalone container-boundary contract.
-
 
 ## Identity persistence (registry)
 
@@ -127,7 +128,7 @@ session_id=<6-char session run ID>
 | Autosave diffs | `session-diffs/autosave/<SESSION_ID>/` | Single directory, overwritten on autosave ticks (no timestamp component) |
 | Package-branch output | `output/bundles/<EXPORT_TIME>-[<LABEL>-]<SESSION_ID>/` | On explicit branch packaging; optional human-readable label |
 
-Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides unique addressing; a fresh export-time timestamp (`EXPORT_TIME`) orders exports. `SESSION_TS` is not part of artefact directory names — it is carried in Docker labels for human readability.
+Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides unique addressing; a fresh export-time timestamp (`EXPORT_TIME`) orders exports. `SESSION_TS` is not part of artefact directory names -- it is carried in Docker labels for human readability.
 
 ## Resolution Precedence
 

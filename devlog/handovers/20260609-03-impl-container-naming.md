@@ -1,29 +1,29 @@
 # Agent Handover
 
 **Date:** 2026-06-09
-**Milestone:** M2.7 — Session Identity and Harness Versioning
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement M2.7 Track A item 3 — Container naming with RUN_ID. Replace `SESSION_TS` with `RUN_ID` in container name format.
+Implement M2.7 Track A item 3 -- Container naming with RUN_ID. Replace `SESSION_TS` with `RUN_ID` in container name format.
 
 ## Recovery checks
 
 | Check | Result |
 |---|---|
-| Roadmap reflects prior handover state | ✅ Items 1 and 2 marked `[x]` in roadmap |
-| Trigger B pending | ✅ None pending |
+| Roadmap reflects prior handover state | [x] Items 1 and 2 marked `[x]` in roadmap |
+| Trigger B pending | [x] None pending |
 
 ## Scope
 
-**In scope — this session:**
+**In scope -- this session:**
 
-1. **`scripts/start_agent.sh`** — Change `SANDBOX_CONTAINER_NAME` from `sandbox-<project>-<SESSION_TS>` to `sandbox-<project>-<RUN_ID>`. Change `AGENT_CONTAINER_NAME` from `<provider>-<project>-<SESSION_TS>` to `<provider>-<project>-<RUN_ID>`.
-2. **`src/build/compose.sh`** — Update the doc comment that says `(sandbox-<project>-<timestamp>)` / `(<provider>-<project>-<timestamp>)`.
+1. **`scripts/start_agent.sh`** -- Change `SANDBOX_CONTAINER_NAME` from `sandbox-<project>-<SESSION_TS>` to `sandbox-<project>-<RUN_ID>`. Change `AGENT_CONTAINER_NAME` from `<provider>-<project>-<SESSION_TS>` to `<provider>-<project>-<RUN_ID>`.
+2. **`src/build/compose.sh`** -- Update the doc comment that says `(sandbox-<project>-<timestamp>)` / `(<provider>-<project>-<timestamp>)`.
 
-That's it — `{{RUN_ID}}` substitution is already in place from item 1. Container names are derived in `start_agent.sh` and substituted into compose via `{{SANDBOX_CONTAINER_NAME}}` / `{{AGENT_CONTAINER_NAME}}`.
+That's it -- `{{RUN_ID}}` substitution is already in place from item 1. Container names are derived in `start_agent.sh` and substituted into compose via `{{SANDBOX_CONTAINER_NAME}}` / `{{AGENT_CONTAINER_NAME}}`.
 
 ## Decisions
 
@@ -41,4 +41,4 @@ That's it — `{{RUN_ID}}` substitution is already in place from item 1. Contain
 
 ## Next session
 
-Track A item 4 — Docker labels on containers.
+Track A item 4 -- Docker labels on containers.

@@ -5,6 +5,7 @@
 **Status:** Design record -- settled architecture for extending dry-run to assert host-container seam behaviour in both the capability layer (sandbox) and reasoning layer (agent), plus host-side verification.
 
 **Related:**
+
 - [`libs/sandbox-entrypoint.sh`](../../libs/sandbox-entrypoint.sh) -- pre-flight checks will be injected here
 - [`scripts/dry_run_capability.sh`](../../scripts/dry_run_capability.sh) -- **new** capability layer checks
 - [`scripts/dry_run.sh`](../../scripts/dry_run.sh) -- reasoning layer checks, to be rewritten
@@ -17,6 +18,7 @@
 ## Problem
 
 `dry_run.sh` runs only inside the reasoning layer (agent container). It cannot assert:
+
 - Whether the capability layer (sandbox container) initialised correctly
 - Whether the sandbox entrypoint completed its full sequence (git init, SESSION_STATE, mount availability)
 - Whether files written by the sandbox entrypoint actually survive to the host via bind mounts
@@ -187,6 +189,7 @@ Inline in `compose_dry_run` or a small helper script. Runs on the host after bot
 **Cleanup:**
 
 Remove temp files:
+
 ```bash
 rm -f "$CHANGES_DIR/.dryrun_seam_test"
 rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
@@ -240,19 +243,19 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 
 | Check | Pre-flight (every start) | dry_run_capability (dry-run only) |
 |---|---|---|
-| `.git` exists | ✅ | -- |
-| SESSION_STATE has init_sha + session_ts | ✅ | -- |
-| CHANGES_DIR writable | ✅ | -- |
-| SNAPSHOT_DIR readable | ✅ | -- |
-| INPUT_DIR readable | ✅ | -- |
-| OUTPUT_DIR writable | ✅ | -- |
-| AGENTS.md in sandbox (warn) | ✅ | -- |
-| AGENTS.md at AGENT_HOME (warn) | ✅ | -- |
-| Working tree clean (warn) | ✅ | -- |
-| CHANGES_DIR round-trip (write + read via mount) | -- | ✅ |
-| Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | -- | ✅ |
-| Diff pipeline invocable | -- | ✅ |
-| Cross-container marker read | -- | -- | ✅ |
+| `.git` exists | [x] | -- |
+| SESSION_STATE has init_sha + session_ts | [x] | -- |
+| CHANGES_DIR writable | [x] | -- |
+| SNAPSHOT_DIR readable | [x] | -- |
+| INPUT_DIR readable | [x] | -- |
+| OUTPUT_DIR writable | [x] | -- |
+| AGENTS.md in sandbox (warn) | [x] | -- |
+| AGENTS.md at AGENT_HOME (warn) | [x] | -- |
+| Working tree clean (warn) | [x] | -- |
+| CHANGES_DIR round-trip (write + read via mount) | -- | [x] |
+| Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | -- | [x] |
+| Diff pipeline invocable | -- | [x] |
+| Cross-container marker read | -- | -- | [x] |
 | Host-side artifact verification | -- | -- | -- (Phase 3) |
 
 ## Provider dry-run checks (future)
@@ -262,7 +265,8 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 **Current state:** Not implemented. The mechanism was scoped during the M2.7 provider dry-run checks investigation but deferred to align with the provider config lifecycle fix and the workspace path refactor, both of which touch the same path-resolution and mount infrastructure.
 
 **Future implementation sketch:**
-- Provider overlay adds a bind mount: `providers/<name>/dry_run_checks.sh` → `/opt/sandbox/providers/dry_run_checks.sh`
+
+- Provider overlay adds a bind mount: `providers/<name>/dry_run_checks.sh` -> `/opt/sandbox/providers/dry_run_checks.sh`
 - `dry_run_reasoning.sh` sources `/opt/sandbox/providers/dry_run_checks.sh` if present
 - Provider script has access to same env vars as the reasoning layer
 - For pi: checks `~/.pi/agent/AGENTS.md` presence, pi settings integrity, installed tooling

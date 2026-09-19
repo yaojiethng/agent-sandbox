@@ -1,13 +1,13 @@
 # Agent Handover
 
 **Date:** 2026-08-12
-**Milestone:** M2.6 — Session Persistence (general CLI/infra track)
+**Milestone:** M2.6 -- Session Persistence (general CLI/infra track)
 **Type:** Investigation
 
 ## Objective
 
 Audit the diff pipeline end-to-end for git rename handling. Determine whether
-renames survive the full cycle: `git format-patch`/`diff` → export → `git apply`/`am`.
+renames survive the full cycle: `git format-patch`/`diff` -> export -> `git apply`/`am`.
 
 Mid-session finding from previous session (20260812-01): our prior convention
 reorganization used create+delete instead of `git mv` because rename-handling
@@ -39,9 +39,9 @@ durability is unverified.
 
 ## Completed this session
 
-- [x] Traced full diff pipeline: `git diff` → `git apply` rename handling
+- [x] Traced full diff pipeline: `git diff` -> `git apply` rename handling
 - [x] Confirmed `git apply` handles renames in all three cases (pure, small-edit, big-edit)
-- [x] Identified pre-existing bug: `package_branch` passed `INIT_SHA` as 3rd arg to `package_commits`, which reads arg 3 as `NO_RENAMES` — `--no-renames` was silently broken
+- [x] Identified pre-existing bug: `package_branch` passed `INIT_SHA` as 3rd arg to `package_commits`, which reads arg 3 as `NO_RENAMES` -- `--no-renames` was silently broken
 - [x] Fixed `package_branch.sh` line 288: removed `$INIT_SHA` from `package_commits` call
 - [x] Hardened `diff_export.sh`: now passes `"true"` to `package_branch` by default
 - [x] 15-case knowledge test: pure rename, rename+edit, big edit, `--no-renames`, destination conflict, binary, multi-file, cross-directory, `package_branch` with/without flag, `diff_export` integration

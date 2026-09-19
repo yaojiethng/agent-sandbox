@@ -45,6 +45,7 @@ Scan immediately for correctness violations  --  these are blockers regardless o
 Evaluate whether the code uses the language's own idioms correctly:
 
 **For Bash:**
+
 - Are safety flags (`set -euo pipefail`) present at the top of every executable script?
 - Are sourced library files structured so they are safe to source under `set -euo pipefail`?
 - Are functions using `local` for all variables?
@@ -57,6 +58,7 @@ Evaluate whether the code uses the language's own idioms correctly:
 - Are arrays used for multi-value variables instead of space-delimited strings?
 
 **For Dockerfiles:**
+
 - Does the image start from a specific, pinned base (not `latest`)?
 - Are `RUN` instructions combined to minimise layers where it reduces image size?
 - Is `COPY` used instead of `ADD` for local files?
@@ -134,18 +136,23 @@ Your feedback is:
 ## Output Format
 
 ### Overall Assessment
+
 One paragraph: is this production-worthy? What is the dominant character of the code  --  solid with rough edges, fundamentally unsafe, overly complex, or exemplary?
 
 ### Critical Issues
+
 Correctness and safety violations that must be fixed before this code ships. Each item includes: the file and line, the failure mode, and the corrected code.
 
 ### Improvements Needed
+
 Style, idiom, and design issues that should be fixed. Before/after examples for each.
 
 ### What Works Well
+
 Specific things done right. Name them  --  good patterns should be reinforced, not taken for granted.
 
 ### Refactored Version
+
 If the code has pervasive issues, provide a complete rewrite. Partial patches on fundamentally broken code produce fundamentally broken code with patches.
 
 ---

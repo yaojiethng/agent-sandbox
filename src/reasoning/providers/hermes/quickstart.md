@@ -169,6 +169,7 @@ Run `make build PROVIDER=hermes` before the first start. Images are not built au
 
 **`cp: cannot stat` during snapshot**
 Tracked files are missing from disk. Fix:
+
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
@@ -178,6 +179,7 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
 **Line ending issues in scripts or config files**
+
 ```sh
 sed -i 's/\r//' <file>
 ```
@@ -189,13 +191,16 @@ sed -i 's/\r//' <file>
 **Open WebUI cannot connect to Hermes (`Connection refused` at `agent:8642`)**
 
 Confirm Hermes gateway is running and bound to all interfaces:
+
 ```sh
 # From inside the agent container
 docker exec hermes-agent-<PROJECT_NAME> curl -s \
   -H "Authorization: Bearer $API_SERVER_KEY" \
   http://localhost:8642/v1/models
 ```
+
 If this succeeds but Open WebUI still cannot connect, Hermes is binding to loopback only. Ensure the gateway command includes `--host 0.0.0.0`:
+
 ```yaml
 # providers/hermes/docker-compose.serve.yml
 services:
@@ -204,28 +209,35 @@ services:
 ```
 
 **Confirm cross-container connectivity**
+
 ```sh
 # From inside the Open WebUI container
 docker exec hermes-agent-<PROJECT_NAME>-open-webui curl -s \
   -H "Authorization: Bearer none" \
   http://agent:8642/v1/models
 ```
+
 A valid JSON response confirms the connection is working. `Connection refused` means Hermes is not bound to `0.0.0.0`.
 
 **Confirm both containers are on the same network**
+
 ```sh
 docker inspect hermes-agent-<PROJECT_NAME> \
   --format '{{json .NetworkSettings.Networks}}'
 docker inspect hermes-agent-<PROJECT_NAME>-open-webui \
   --format '{{json .NetworkSettings.Networks}}'
 ```
+
 Both should show the same `NetworkID`.
 
 **Ollama connection errors in Open WebUI logs**
+
 ```
 Cannot connect to host host.docker.internal:11434
 ```
+
 This is Open WebUI attempting to reach a local Ollama instance. Not required for Hermes. Suppress by adding to the `open-webui` service environment:
+
 ```yaml
 environment:
   - ENABLE_OLLAMA_API=false

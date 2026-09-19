@@ -1,4 +1,4 @@
-# Design — Diff Packaging and Apply/Draft Workflow
+# Design -- Diff Packaging and Apply/Draft Workflow
 
 **Purpose:** Describes how agent changes are exported from the container and how the operator reviews and merges them into the host repository.
 
@@ -8,7 +8,7 @@
 
 ## Export pipeline
 
-All diff packaging uses a single pipeline: `diff_export` → `package_branch`. The artefact set is identical regardless of trigger:
+All diff packaging uses a single pipeline: `diff_export` -> `package_branch`. The artefact set is identical regardless of trigger:
 
 | Artefact | Content |
 |---|---|
@@ -19,7 +19,7 @@ All diff packaging uses a single pipeline: `diff_export` → `package_branch`. T
 | `EXPORT-TIME.txt` | Wall-clock timestamp of the export |
 | `.export-status` | SUCCESS/FAIL with timestamp and exit code |
 
-All diffs are unified format with index lines stripped — consumed by `git apply` in both directions (sandbox→host and host→sandbox).
+All diffs are unified format with index lines stripped -- consumed by `git apply` in both directions (sandbox->host and host->sandbox).
 
 ### Export triggers
 
@@ -70,7 +70,7 @@ A local savepoint tag (`confirm-savepoint`) protects against mid-rebase failure.
 
 ### `make reject`
 
-Discards the draft branch and returns to the source branch. Checkout and branch delete are chained atomically — if checkout fails, the draft branch is preserved and the operator can retry.
+Discards the draft branch and returns to the source branch. Checkout and branch delete are chained atomically -- if checkout fails, the draft branch is preserved and the operator can retry.
 
 ```
 make reject
@@ -92,11 +92,11 @@ Channel mode resolves a session directory and applies `uncommitted.diff` from it
 
 ---
 
-## Host→container amendment
+## Host->container amendment
 
 The operator can push amendments into a running container without restart:
 
-1. `make package-branch SESSION_SUMMARY=<label>` — packages host changes
+1. `make package-branch SESSION_SUMMARY=<label>` -- packages host changes
 2. Artefacts land in `INPUT_DIR/bundles/<EXPORT_TIME>-<label>-<RUN_ID>/`
 3. Agent reviews and applies inside container
 4. Next `package-branch` includes the amendment in the commit series

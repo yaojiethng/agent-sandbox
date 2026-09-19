@@ -1,6 +1,6 @@
 # Context Resolution
 
-**Role:** Defines how code in the agent-sandbox project determines its runtime context — where it's executing, how to locate its dependencies, and which conventions apply. Establishes a three-layer interface seam that works across host-side execution, container-side execution, and files that bridge both.
+**Role:** Defines how code in the agent-sandbox project determines its runtime context -- where it's executing, how to locate its dependencies, and which conventions apply. Establishes a three-layer interface seam that works across host-side execution, container-side execution, and files that bridge both.
 
 ---
 
@@ -64,7 +64,7 @@ The codebase is organised into three deployment contexts. Each determines its id
 
 ## Context Determination by Layer
 
-### Host Context — `$AGENT_SANDBOX_REPO` or `$REPO_ROOT`
+### Host Context -- `$AGENT_SANDBOX_REPO` or `$REPO_ROOT`
 
 Files in the host context determine the repo root in one of two ways.
 
@@ -99,7 +99,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 ```
 
-### Ambiguous Context — Self-resolution
+### Ambiguous Context -- Self-resolution
 
 Files deployed to both the host filesystem and container images cannot assume any host-only or container-only variable exists. They determine their context dynamically by computing their own directory at source time:
 
@@ -110,6 +110,7 @@ source "$_self_dir/routing.sh"
 ```
 
 This works in both contexts because `BASH_SOURCE[0]` resolves to the file's actual location:
+
 | Context | File location | `_self_dir` resolves to |
 |---|---|---|
 | Host | `$AGENT_SANDBOX_REPO/src/libs/diff_export.sh` | `$AGENT_SANDBOX_REPO/src/libs/` |
@@ -119,7 +120,7 @@ All ambiguous-context files use the canonical variable name `_self_dir`. This wa
 
 **Files in this layer:** `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh`
 
-### Container Context — Hardcoded paths
+### Container Context -- Hardcoded paths
 
 Files that run exclusively inside a container know their layout from the image build. They source dependencies via absolute paths baked in by the Dockerfile:
 
@@ -128,13 +129,13 @@ source /opt/sandbox/lib/session_state.sh
 source /opt/sandbox/lib/diff_export.sh
 ```
 
-These paths are immutable at runtime. The entrypoint files and diagnostic scripts use this convention. The destination paths (`/opt/sandbox/lib/`) are stable across renames of the host-side source tree — only the COPY source paths in Dockerfiles change when files move.
+These paths are immutable at runtime. The entrypoint files and diagnostic scripts use this convention. The destination paths (`/opt/sandbox/lib/`) are stable across renames of the host-side source tree -- only the COPY source paths in Dockerfiles change when files move.
 
 ---
 
 ## How Context Propagates
 
-Context is not inherited — each file declares how it resolves its own location.
+Context is not inherited -- each file declares how it resolves its own location.
 
 ```
 agent-sandbox.sh ── sets $AGENT_SANDBOX_REPO
@@ -146,7 +147,7 @@ sandbox-entrypoint.sh ── hardcoded /opt/sandbox/lib/
   └─ sources ── /opt/sandbox/lib/diff_export.sh ── uses _self_dir (→ /opt/sandbox/lib/)
 ```
 
-At the seam between host context and ambiguous-context libs, the host's variable (`$AGENT_SANDBOX_REPO`) provides the path to the ambiguous-context file, but once that file loads, it resolves its own siblings via self-resolution. The same ambiguous-context file, when loaded inside a container via a hardcoded path, resolves its siblings identically — the mechanism is the same, only the starting path differs.
+At the seam between host context and ambiguous-context libs, the host's variable (`$AGENT_SANDBOX_REPO`) provides the path to the ambiguous-context file, but once that file loads, it resolves its own siblings via self-resolution. The same ambiguous-context file, when loaded inside a container via a hardcoded path, resolves its siblings identically -- the mechanism is the same, only the starting path differs.
 
 ---
 
@@ -154,10 +155,10 @@ At the seam between host context and ambiguous-context libs, the host's variable
 
 | Context | Identity mechanism | Convention | Files |
 |---|---|---|---|
-| Host — installed CLI | `$AGENT_SANDBOX_REPO` (macro) | Repo-root-relative paths | `agent-sandbox.sh` |
-| Host — workflow libs | `$AGENT_SANDBOX_REPO` (inherited) | Repo-root-relative paths | `draft.sh`, `confirm.sh`, `reject.sh`, `apply.sh`, `interactive.sh`, `guards.sh` |
-| Host — repo scripts | `$REPO_ROOT` (derived) | Repo-root-relative paths | `start_agent.sh`, `run_agent.sh`, `onboard.sh` |
-| Host — tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
+| Host -- installed CLI | `$AGENT_SANDBOX_REPO` (macro) | Repo-root-relative paths | `agent-sandbox.sh` |
+| Host -- workflow libs | `$AGENT_SANDBOX_REPO` (inherited) | Repo-root-relative paths | `draft.sh`, `confirm.sh`, `reject.sh`, `apply.sh`, `interactive.sh`, `guards.sh` |
+| Host -- repo scripts | `$REPO_ROOT` (derived) | Repo-root-relative paths | `start_agent.sh`, `run_agent.sh`, `onboard.sh` |
+| Host -- tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
 | Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
 
@@ -179,13 +180,13 @@ containers ──→ libs/shared/ only   entrypoints only source shared libs
 
 ### Boundary rules
 
-- **libs/ → scripts/**: Forbidden. A library must not depend on a host script. If a script contains reusable functions, it belongs in `libs/`, not `scripts/`.
-- **scripts/ → scripts/**: Allowed only when the target script is logically a library (defines functions, has no `main()` entry point). `src/build/image.sh` is the canonical example — it defines `sandbox_image_name()`, `agent_image_name()`, and the identity derivation functions sourced by `start_agent.sh` and `build.sh`.
-- **tests/ → anything**: Tests import whatever they need to test. They are not imported by anything else.
-- **Container → Container only**: Entrypoints inside containers source only from their own `libs/` directory hierarchy (`/opt/sandbox/lib/`).
+- **libs/ -> scripts/**: Forbidden. A library must not depend on a host script. If a script contains reusable functions, it belongs in `libs/`, not `scripts/`.
+- **scripts/ -> scripts/**: Allowed only when the target script is logically a library (defines functions, has no `main()` entry point). `src/build/image.sh` is the canonical example -- it defines `sandbox_image_name()`, `agent_image_name()`, and the identity derivation functions sourced by `start_agent.sh` and `build.sh`.
+- **tests/ -> anything**: Tests import whatever they need to test. They are not imported by anything else.
+- **Container -> Container only**: Entrypoints inside containers source only from their own `libs/` directory hierarchy (`/opt/sandbox/lib/`).
 
 ## References
 
-- [`execution_model.md`](../architecture/execution_model.md) — Directory layout and mount shape
-- [`sandbox_host_interface.md`](sandbox_host_interface.md) — Host-container operation correspondence
-- [`two_layer_model.md`](two_layer_model.md) — Reasoning/capability layer separation
+- [`execution_model.md`](../architecture/execution_model.md) -- Directory layout and mount shape
+- [`sandbox_host_interface.md`](sandbox_host_interface.md) -- Host-container operation correspondence
+- [`two_layer_model.md`](two_layer_model.md) -- Reasoning/capability layer separation

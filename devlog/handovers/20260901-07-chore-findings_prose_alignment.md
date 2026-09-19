@@ -1,4 +1,4 @@
-# Handover 20260901-07 — chore align Findings concept-name prose
+# Handover 20260901-07 -- chore align Findings concept-name prose
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** chore
@@ -28,15 +28,15 @@ report at the end.
 ## Acceptance Criteria
 
 - AC1: Zero "Mid-session findings" references remain in either file.
-- AC2: No meaning changed — pure term alignment.
+- AC2: No meaning changed -- pure term alignment.
 - AC3: `chore:` delivery commit; handover closed in it.
 
 ## Completed
 
-- AC1 ✅ zero "Mid-session findings" references remain (grep = 0 in both
+- AC1 [x] zero "Mid-session findings" references remain (grep = 0 in both
   files); preamble phrase now "tied into the session's Findings section";
   AF recording-discipline entry retitled "Findings recording discipline".
-- AC2 ✅ pure term alignment, 4 lines changed.
+- AC2 [x] pure term alignment, 4 lines changed.
 
 ## What's Next
 

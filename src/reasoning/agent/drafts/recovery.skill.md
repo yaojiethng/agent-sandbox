@@ -9,6 +9,7 @@ Covers two scenarios: recovering lost work after a container/filesystem reset, a
 ## Before Acting
 
 Confirm which scenario applies:
+
 - **Recovery process**  --  container or filesystem state was reset, losing committed work
 - **Recovery verification audit**  --  recovery is complete and needs verification
 
@@ -56,6 +57,7 @@ git commit -m "<message>"
 **4. Create handovers**
 
 For each replayed iteration, create a handover file at `devlog/handovers/`:
+
 - Date the handover to the current day (the replay date), not the original iteration date.
 - Number it sequentially from the existing handovers in the repo.
 - Set `Status: Closed` since the work was already completed.

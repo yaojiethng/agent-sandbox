@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-17
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Workflow
 **Status:** Closed
 
@@ -13,11 +13,11 @@ Audit and update policy documents to address three workflow violations: process-
 
 Policy changes across five documents:
 
-- `agent_context_brief.md` — ban on process-narrating code comments; closed document correction exception; missing document error rule
-- `docs/operations/documentation_policy.md` — unified post-close correction principle and correction forms table
-- `docs/operations/handover_policy.md` — corrections to closed handovers procedure
-- `docs/development/roadmap_policy.md` — inline tag forms and mandatory Trigger B changelog audit
-- `docs/discussions/investigation_policy.md` — corrections to closed investigations; operator deletion model
+- `agent_context_brief.md` -- ban on process-narrating code comments; closed document correction exception; missing document error rule
+- `docs/operations/documentation_policy.md` -- unified post-close correction principle and correction forms table
+- `docs/operations/handover_policy.md` -- corrections to closed handovers procedure
+- `docs/development/roadmap_policy.md` -- inline tag forms and mandatory Trigger B changelog audit
+- `docs/discussions/investigation_policy.md` -- corrections to closed investigations; operator deletion model
 
 ## Carried forward
 
@@ -27,13 +27,13 @@ None.
 
 | # | Check | Result |
 |---|-------|--------|
-| AC-1 | `agent_context_brief.md` bans process-narrating comments in code output | ✅ Accepted |
-| AC-2 | `agent_context_brief.md` Handover first principle permits in-place correction exception | ✅ Accepted |
-| AC-3 | `agent_context_brief.md` missing document rule flags absent-without-`[REMOVED]` as error | ✅ Accepted |
-| AC-4 | `documentation_policy.md` contains unified correction principle with per-document forms table | ✅ Accepted |
-| AC-5 | `handover_policy.md` contains closed handover correction procedure | ✅ Accepted |
-| AC-6 | `roadmap_policy.md` contains inline tag forms and mandatory Trigger B changelog audit | ✅ Accepted |
-| AC-7 | `investigation_policy.md` contains both correction paths and operator deletion model | ✅ Accepted |
+| AC-1 | `agent_context_brief.md` bans process-narrating comments in code output | [x] Accepted |
+| AC-2 | `agent_context_brief.md` Handover first principle permits in-place correction exception | [x] Accepted |
+| AC-3 | `agent_context_brief.md` missing document rule flags absent-without-`[REMOVED]` as error | [x] Accepted |
+| AC-4 | `documentation_policy.md` contains unified correction principle with per-document forms table | [x] Accepted |
+| AC-5 | `handover_policy.md` contains closed handover correction procedure | [x] Accepted |
+| AC-6 | `roadmap_policy.md` contains inline tag forms and mandatory Trigger B changelog audit | [x] Accepted |
+| AC-7 | `investigation_policy.md` contains both correction paths and operator deletion model | [x] Accepted |
 
 ## Hot files
 
@@ -70,13 +70,14 @@ None.
 
 ## Next session
 
-**Next sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline (continuing — Change 2)
+**Next sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline (continuing -- Change 2)
 
 Context handover: [`20260417-02-impl-worktree_namespaced_checkpoints.md`](20260417-02-impl-worktree_namespaced_checkpoints.md)
 
-Change 2 scope is fully specified — no blocking design questions. Proceed directly to implementation after reading the context handover and confirming scope.
+Change 2 scope is fully specified -- no blocking design questions. Proceed directly to implementation after reading the context handover and confirming scope.
 
 Watch-outs:
-- `SESSION_NAME` must be exported to docker-compose for container injection — verify this is not already partially implemented before starting
+
+- `SESSION_NAME` must be exported to docker-compose for container injection -- verify this is not already partially implemented before starting
 - Change 2 context frozen in `20260412-02-m2_3_onhold.md`; cross-check against current spec in `design_git_workflow_improvements.md` before writing code
-- Trigger B is not pending — milestone is mid-flight
+- Trigger B is not pending -- milestone is mid-flight

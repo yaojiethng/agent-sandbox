@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Delete the last remaining sed-extraction probe (`template_version_probe_real` in `tests/test_onboard.sh`) and source `scripts/onboard.sh` directly, per the roadmap open item surfaced in handover `20260901-10`.
 
 ## Scope
+
 The probe extracted the `template_version()` body from `scripts/onboard.sh` with sed and eval'd it in a subshell, breaking silently on function renames. `onboard.sh` is already sourced in-process by this test file (dual-use rule 1.11 guard), so the probe was redundant: call `template_version` on the shipped template directly.
 
 ## Acceptance criteria
@@ -32,4 +34,5 @@ The probe extracted the `template_version()` body from `scripts/onboard.sh` with
 None.
 
 ## What's Next
+
 Next queued iteration: architecture-doc + `security.md` staleness sweep with an audit-effectiveness comparison report.

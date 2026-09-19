@@ -1,4 +1,4 @@
-# Handover 20260901-13 — study copy-delivery tar pipeline: layered discovery tests + delivery design docs
+# Handover 20260901-13 -- study copy-delivery tar pipeline: layered discovery tests + delivery design docs
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** study
@@ -12,7 +12,7 @@ Operator-directed. The copy-delivery snapshot pipeline stages the working tree t
 
 1. Is `.snapshot/` needed at all, and can staging move to tmp?
 2. Can the two-artifact pipeline (rsync tree copy + `git archive HEAD` baseline) be replaced by a
-   tar-only mechanism — one serialization, one extraction?
+   tar-only mechanism -- one serialization, one extraction?
 3. The deferred host-side volume-seed task (roadmap_future "Copy-Model Seeding", decision
    `20260818-02`) removes the RO mount entirely; its dependency (compose file-set mechanism) has
    since landed.
@@ -23,14 +23,14 @@ maintained docs.
 
 ## Acceptance Criteria
 
-- AC1: Discovery test layer 1 — file-list parity between the current pipeline output (rsync
+- AC1: Discovery test layer 1 -- file-list parity between the current pipeline output (rsync
   `snapshot_copy_worktree` + `git archive HEAD`) and the proposed tar-only method, across a
   fixture matrix (tracked / untracked / deleted / renamed / gitignored incl. nested / global
   excludesFile / `.git/info/exclude` / negation patterns / symlinks / exec bits / empty dirs /
   case-conflict / submodules). Divergences reported explicitly, not asserted away.
-- AC2: Discovery test layer 2 — the proposed tar method builds an archive whose extraction
+- AC2: Discovery test layer 2 -- the proposed tar method builds an archive whose extraction
   reproduces the source tree exactly: file list, content hashes, modes, symlink targets.
-- AC3: Discovery verdict recorded — does tar-only preserve the sandbox `git status` parity
+- AC3: Discovery verdict recorded -- does tar-only preserve the sandbox `git status` parity
   invariant (index=HEAD, worktree=on-disk) and exclusion correctness? Findings state the
   go/no-go and the open design decision(s) for implementation (index/worktree split mechanism,
   seed transport).
@@ -41,7 +41,7 @@ maintained docs.
   settled decisions kept, wired-not-runnable status kept, tar work out of scope). Both link the
   ADR `docs/adr/sandbox_delivery_model.md`; historical design records remain in
   `devlog/discussions/` cross-referenced.
-- AC5: Roadmap updated — seeding task notes the discovery outcome; doc promotion recorded.
+- AC5: Roadmap updated -- seeding task notes the discovery outcome; doc promotion recorded.
 
 ## Out of scope (this iteration)
 
@@ -57,7 +57,7 @@ maintained docs.
 | Discovery layer 2 -- tar round-trip fidelity | `scripts/manual/discovery_tar_roundtrip.sh`; lossless (list/hashes/modes/symlinks) |
 | Delivery design docs promoted | `docs/concepts/copy_delivery.md`, `docs/concepts/mount_delivery.md`; registered in `project_index.md`; cross-linked from `sandbox_lifecycle.md`, `security.md` |
 | Roadmap updated | `devlog/roadmap.md` new open item (host-side seed + git-enumerated tar); `devlog/roadmap_future.md` seeding entry updated with discovery outcome |
-| Verification | ShellCheck clean on both discovery scripts; `run_tests.sh` 706 passed / 67 failed / 0 skipped — identical to the HEAD baseline in this environment (docker-dependent tests; verified via `git stash` comparison), no new failures |
+| Verification | ShellCheck clean on both discovery scripts; `run_tests.sh` 706 passed / 67 failed / 0 skipped -- identical to the HEAD baseline in this environment (docker-dependent tests; verified via `git stash` comparison), no new failures |
 
 ## Decisions
 
@@ -102,7 +102,6 @@ mechanical completeness check (every `docs/` file registered; every registration
 fold the routing need into the session-lifecycle/dispatch-hub doc plan (handover Deferred).
 Recorded as a finding only -- no action taken this iteration.
 
-
 ## Deferred
 
 - **Session lifecycle + conceptual dispatch hub** (operator, this session): extend
@@ -110,5 +109,5 @@ Recorded as a finding only -- no action taken this iteration.
   conceptual document with dispatch links across concepts/architecture. Good plan, not this
   iteration.
 - Roadmap_future seeding subtasks (drop SNAPSHOT_DIR from compose template, re-scope preflight
-  gate to fresh-init, re-examine `snapshot_dir` session-state writes) — belong to the impl
+  gate to fresh-init, re-examine `snapshot_dir` session-state writes) -- belong to the impl
   iteration that lands seeding.

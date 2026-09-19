@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-20
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Chore + Test Fix
 **Status:** Complete
 
@@ -15,12 +15,13 @@
 
 - **Path rename:** `CHANGES_DIR_NAME` default value changed from `workspace/changes` to `workspace/session-diffs` in all authoritative files
 - **Test fixes:** `make_project()` and `make_session()` helpers in `tests/test_apply.sh` fixed to properly isolate fixtures
-- **New documentation:** `docs/development/testing_policy.md` — testing standards and anti-patterns
+- **New documentation:** `docs/development/testing_policy.md` -- testing standards and anti-patterns
 - **Packaging:** Session output packaged to `/home/agentuser/workspace/output/` for operator review
 
 Explicitly out of scope:
-- Historical handover documents in `docs/devlog/handovers/` — preserved as-is
-- Superseded discussion doc `docs/devlog/discussions/design_git_workflow_improvements.md` — left unchanged
+
+- Historical handover documents in `docs/devlog/handovers/` -- preserved as-is
+- Superseded discussion doc `docs/devlog/discussions/design_git_workflow_improvements.md` -- left unchanged
 
 ## Carried forward
 
@@ -33,9 +34,9 @@ None.
 - [x] All shell scripts reference `session-diffs` in default paths and comments
 - [x] All documentation files updated with path references (excluding handovers and superseded doc)
 - [x] `grep -rn "\.workspace/changes" .` returns no results outside excluded files
-- [x] `tests/test_diff.sh` — 39 passed, 0 failed
-- [x] `tests/test_apply_workspace.sh` — 22 passed, 0 failed
-- [x] `tests/test_apply.sh` — 35 passed, 0 failed (was 22 passed, 14 failed before fixes)
+- [x] `tests/test_diff.sh` -- 39 passed, 0 failed
+- [x] `tests/test_apply_workspace.sh` -- 22 passed, 0 failed
+- [x] `tests/test_apply.sh` -- 35 passed, 0 failed (was 22 passed, 14 failed before fixes)
 - [x] `docs/development/testing_policy.md` created with patterns, anti-patterns, and templates
 - [x] Session packaged with migration guide to workspace output mount
 
@@ -43,15 +44,15 @@ None.
 
 | File | Why in scope | Status |
 |---|---|---|
-| [`libs/dirs.sh`](libs/dirs.sh) | Primary `CHANGES_DIR_NAME` default definition | ✓ Updated |
-| [`libs/docker-compose.yml`](libs/docker-compose.yml) | Container mount path and env var default | ✓ Updated |
-| [`scripts/onboard.sh`](scripts/onboard.sh) | Directory creation and .env generation | ✓ Updated |
-| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | `CHANGES_DIR` path reference | ✓ Updated |
-| [`tests/test_apply.sh`](tests/test_apply.sh) | Path updates + fixture isolation fixes | ✓ Fixed (35 tests) |
-| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Path updates | ✓ Updated (22 tests) |
-| [`tests/test_capability_layer.sh`](tests/test_capability_layer.sh) | Path and mount point updates | ✓ Updated |
-| [`docs/development/testing_policy.md`](docs/development/testing_policy.md) | New document — test isolation standards | ✓ Created |
-| [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | Change 2 description updated with rename note | ✓ Updated |
+| [`libs/dirs.sh`](libs/dirs.sh) | Primary `CHANGES_DIR_NAME` default definition | [x] Updated |
+| [`libs/docker-compose.yml`](libs/docker-compose.yml) | Container mount path and env var default | [x] Updated |
+| [`scripts/onboard.sh`](scripts/onboard.sh) | Directory creation and .env generation | [x] Updated |
+| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | `CHANGES_DIR` path reference | [x] Updated |
+| [`tests/test_apply.sh`](tests/test_apply.sh) | Path updates + fixture isolation fixes | [x] Fixed (35 tests) |
+| [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Path updates | [x] Updated (22 tests) |
+| [`tests/test_capability_layer.sh`](tests/test_capability_layer.sh) | Path and mount point updates | [x] Updated |
+| [`docs/development/testing_policy.md`](docs/development/testing_policy.md) | New document -- test isolation standards | [x] Created |
+| [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | Change 2 description updated with rename note | [x] Updated |
 
 ## Decisions made this session
 
@@ -64,6 +65,7 @@ None.
 ## Completed this session
 
 ### Path rename (81 occurrences)
+
 - Core libs: `dirs.sh`, `sandbox-entrypoint.sh`, `docker-compose.yml`
 - Scripts: `onboard.sh`, `apply_workspace.sh`
 - Tests: `test_apply.sh`, `test_apply_workspace.sh`, `test_capability_layer.sh`
@@ -72,17 +74,21 @@ None.
 - Provider docs: `opencode/quickstart.md`, `hermes/quickstart.md`
 
 ### Test isolation fixes
+
 **Root cause:** `make_session()` deleted `$SANDBOX_DIR/.workspace` after creating session files, destroying state it had just created. Tests calling `make_session()` multiple times (e.g., `test_draft_explicit_session_selection`) had earlier sessions deleted.
 
 **Fixes applied:**
-1. `make_project()` — added `rm -rf "$DIR"` at start to ensure clean state
-2. `make_session()` — changed sandbox path from shared to unique per `SANDBOX_DIR`
-3. `make_session()` — removed destructive `rm -rf "$SANDBOX_DIR/.workspace"`, now only cleans specific session directory
+
+1. `make_project()` -- added `rm -rf "$DIR"` at start to ensure clean state
+2. `make_session()` -- changed sandbox path from shared to unique per `SANDBOX_DIR`
+3. `make_session()` -- removed destructive `rm -rf "$SANDBOX_DIR/.workspace"`, now only cleans specific session directory
 
 **Result:** All 35 tests in `test_apply.sh` now pass reliably in sequence.
 
 ### New documentation
+
 Created `docs/development/testing_policy.md` (366 lines) covering:
+
 - 3 core principles (isolation, cleanup, no shared state)
 - 3 fixture management patterns
 - 3 common anti-patterns with before/after examples
@@ -91,7 +97,9 @@ Created `docs/development/testing_policy.md` (366 lines) covering:
 - Pre-commit checklist for new tests
 
 ### Packaging
+
 Session output packaged to:
+
 ```
 /home/agentuser/workspace/output/20260420141948-rename_changes_to_session_diffs_and_fix_test_isolation/
 ├── changes.diff (2050 lines, 87KB)
@@ -105,10 +113,11 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Next task:** Change 5 — container naming redesign + Docker labels + `scripts/checkpoint.sh`.
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Next task:** Change 5 -- container naming redesign + Docker labels + `scripts/checkpoint.sh`.
 
 **Files to upload:**
+
 - This handover
 - `roadmap.md`
 - `design_apply_workflow_and_baseline_advancement.md`

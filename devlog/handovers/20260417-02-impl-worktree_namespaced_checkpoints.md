@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-17
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Complete
 
@@ -29,12 +29,12 @@ Met all requirements from the planning handover:
 
 | AC | Description | Result |
 |----|-------------|--------|
-| AC-1.1 | `CHECKPOINT_TS` is the single source of truth; no downstream `date` calls | ✅ |
-| AC-1.2 | `SESSION_NAME` handles detached HEAD by using short SHA | ✅ |
-| AC-1.3 | `WORKTREE_ID` is stable and derived from project path | ✅ |
-| AC-1.4 | Checkpoint tags are namespaced by `WORKTREE_ID` | ✅ |
-| AC-1.5 | Pruning is scoped to the current worktree namespace | ✅ |
-| AC-1.6 | `REPO_COMMIT` (full 40-char SHA) is exported | ✅ |
+| AC-1.1 | `CHECKPOINT_TS` is the single source of truth; no downstream `date` calls | [x] |
+| AC-1.2 | `SESSION_NAME` handles detached HEAD by using short SHA | [x] |
+| AC-1.3 | `WORKTREE_ID` is stable and derived from project path | [x] |
+| AC-1.4 | Checkpoint tags are namespaced by `WORKTREE_ID` | [x] |
+| AC-1.5 | Pruning is scoped to the current worktree namespace | [x] |
+| AC-1.6 | `REPO_COMMIT` (full 40-char SHA) is exported | [x] |
 
 ## Hot Files
 
@@ -73,6 +73,7 @@ Met all requirements from the planning handover:
 ## Verification Results
 
 **Test suite execution:**
+
 ```
 === start_agent.sh tests (Change 1: checkpoint + Change 2: SESSION_NAME) ===
 
@@ -119,7 +120,7 @@ Results: 19 passed, 0 failed
 
 ## Next Session
 
-**Change 2 — Format-patch + session-scoped artefact directory**
+**Change 2 -- Format-patch + session-scoped artefact directory**
 
 This session completed the Change 1 extensions identified in the planning handover. The next step is to proceed with the core M2.3 Change 2 implementation:
 

@@ -1,13 +1,13 @@
 # Agent Handover
 
 **Date:** 2026-04-23
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement Unit F2 — rewrite `make confirm` to read `.draft-state` from the draft branch, drop the `.draft-state` commit, rebase onto target, fast-forward merge, and delete the draft branch; rewrite `make reject` to read `source_branch` from `.draft-state` on the draft branch, check out source branch, and delete draft branch; remove `make sync` and all `SYNC=1` handling.
+Implement Unit F2 -- rewrite `make confirm` to read `.draft-state` from the draft branch, drop the `.draft-state` commit, rebase onto target, fast-forward merge, and delete the draft branch; rewrite `make reject` to read `source_branch` from `.draft-state` on the draft branch, check out source branch, and delete draft branch; remove `make sync` and all `SYNC=1` handling.
 
 ## Scope
 
@@ -17,7 +17,7 @@ Unit F2 from the M2.3 task list. Specifically:
    - Detect if current branch is a `draft/` branch; fail with "not on a draft branch" if absent.
    - Read `.draft-state` from the draft branch tip.
    - Drop `.draft-state` commit via `git rebase --onto`.
-   - Rebase draft onto target — on conflict print exact recovery commands (`git rebase --continue` / `make confirm` / `git rebase --abort` + `make reject`) and exit.
+   - Rebase draft onto target -- on conflict print exact recovery commands (`git rebase --continue` / `make confirm` / `git rebase --abort` + `make reject`) and exit.
    - `git merge --ff-only`.
    - Delete draft branch.
 
@@ -45,27 +45,27 @@ Unit F2 from the M2.3 task list. Specifically:
 
 | Item | From handover |
 |---|---|
-| F2 — `make confirm` rewrite | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
-| F2 — `make reject` update | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
-| F2 — `make sync` removal | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
+| F2 -- `make confirm` rewrite | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
+| F2 -- `make reject` update | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
+| F2 -- `make sync` removal | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
 | Remove `$WORKSPACE_DIR/draft-state` backward-compat file | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
-| G — `.skills/package-diff.md` update | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
+| G -- `.skills/package-diff.md` update | 20260423-07-impl-draft_state_and_make_draft_redesign.md |
 
 ## Acceptance criteria
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `make confirm` run from a valid draft branch drops the `.draft-state` commit, rebases onto source branch, fast-forward merges into target, deletes the current draft branch only, and leaves operator on target branch | ✅ |
-| 2 | `make confirm` run while not on a valid draft branch fails with a descriptive error naming which validation check failed (branch name, missing `.draft-state`, or first commit not `.draft-state`) and exits non-zero | ✅ |
-| 3 | `make confirm` during a rebase conflict prints recovery commands (`git rebase --continue` / `make confirm` / `git rebase --abort` + `make reject`) and exits non-zero | ✅ |
-| 4 | `make reject` run from a valid draft branch checks out the source branch, deletes the current draft branch only, and leaves other `draft/` branches untouched | ✅ |
-| 5 | `make reject` run while not on a valid draft branch fails with a descriptive error naming which validation check failed and exits non-zero | ✅ |
-| 6 | `make draft` rejects with a clear error if run while already on a `draft/` branch | ✅ |
-| 7 | A unified `draft_validate_branch` function in `libs/draft.sh` performs all draft-branch validation checks and is called by `confirm` and `reject` | ✅ |
-| 8 | `tests/test_apply_workspace.sh` includes unit-level tests for each individual validation check in `draft_validate_branch` | ✅ |
-| 9 | `tests/test_apply_workspace.sh` passes all tests | ✅ |
-| 10 | `make sync` returns "unknown command" — target and script command removed | ✅ |
-| 11 | Architecture documents in scope describe the system as built | ✅ |
+| 1 | `make confirm` run from a valid draft branch drops the `.draft-state` commit, rebases onto source branch, fast-forward merges into target, deletes the current draft branch only, and leaves operator on target branch | [x] |
+| 2 | `make confirm` run while not on a valid draft branch fails with a descriptive error naming which validation check failed (branch name, missing `.draft-state`, or first commit not `.draft-state`) and exits non-zero | [x] |
+| 3 | `make confirm` during a rebase conflict prints recovery commands (`git rebase --continue` / `make confirm` / `git rebase --abort` + `make reject`) and exits non-zero | [x] |
+| 4 | `make reject` run from a valid draft branch checks out the source branch, deletes the current draft branch only, and leaves other `draft/` branches untouched | [x] |
+| 5 | `make reject` run while not on a valid draft branch fails with a descriptive error naming which validation check failed and exits non-zero | [x] |
+| 6 | `make draft` rejects with a clear error if run while already on a `draft/` branch | [x] |
+| 7 | A unified `draft_validate_branch` function in `libs/draft.sh` performs all draft-branch validation checks and is called by `confirm` and `reject` | [x] |
+| 8 | `tests/test_apply_workspace.sh` includes unit-level tests for each individual validation check in `draft_validate_branch` | [x] |
+| 9 | `tests/test_apply_workspace.sh` passes all tests | [x] |
+| 10 | `make sync` returns "unknown command" -- target and script command removed | [x] |
+| 11 | Architecture documents in scope describe the system as built | [x] |
 
 ## Hot files
 
@@ -97,27 +97,30 @@ Unit F2 from the M2.3 task list. Specifically:
 
 | Item | Reason | Destination |
 |---|---|---|
-| G — `.skills/package-diff.md` update | Depends on F2 completion; explicit roadmap ordering places G last | Next session (G) |
+| G -- `.skills/package-diff.md` update | Depends on F2 completion; explicit roadmap ordering places G last | Next session (G) |
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Type:** Implementation — Unit G (`.skills/package-diff.md` update).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation -- Unit G (`.skills/package-diff.md` update).
 
 ### Orientation
 
 Unit G is the final task of M2.3. It updates `.skills/package-diff.md` to reflect the completed F1 and F2 redesign:
+
 - Add `package-branch` section
 - Update apply instructions for `make draft` and `make confirm` redesign
 - Update output paths to reflect new folder structure
 - Remove references to `.patch` files and `git am`
 
 ### Blocking design questions
+
 None.
 
 ### Known watch-out items
+
 1. Verify `.skills/package-diff.md` exists and is writable.
 2. Ensure no stale references to `make sync` or `SYNC=1` remain in the skill doc.
 
 ---
-[CORRECTION — 2026-05-06]: Status corrected from "`Complete`" (non-standard) to "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.
+[CORRECTION -- 2026-05-06]: Status corrected from "`Complete`" (non-standard) to "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.

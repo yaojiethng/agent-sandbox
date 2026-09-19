@@ -6,11 +6,11 @@ This document covers preparing an Obsidian vault for use with agent-sandbox. The
 
 ---
 
-## Obsidian Sync — Read First
+## Obsidian Sync -- Read First
 
 Git operations run on the designated desktop machine only. Mobile devices are Sync targets only.
 
-Before running any commands: in Obsidian, go to **Settings → Sync → Excluded files** and add `.git`. This prevents Sync from uploading the git object store to mobile devices.
+Before running any commands: in Obsidian, go to **Settings -> Sync -> Excluded files** and add `.git`. This prevents Sync from uploading the git object store to mobile devices.
 
 During migrations: pause Sync before applying a diff, resume after committing.
 
@@ -36,9 +36,10 @@ agent-sandbox onboard knowledge-vault --vault=/path/to/vault
 ```
 
 This places three files at the vault root:
-- `Makefile` — pre-filled with vault name and paths
-- `AGENTS.md` — agent brief starter template (fill this in before `make start`)
-- `.vault` — symlink to the vault tooling in the agent-sandbox repo (machine-local, gitignored after initialization)
+
+- `Makefile` -- pre-filled with vault name and paths
+- `AGENTS.md` -- agent brief starter template (fill this in before `make start`)
+- `.vault` -- symlink to the vault tooling in the agent-sandbox repo (machine-local, gitignored after initialization)
 
 The command warns if Obsidian Sync appears active and exits without changes if onboarding has already run.
 
@@ -52,7 +53,7 @@ Open `AGENTS.md` at the vault root and fill in the vault description, constraint
 cd /path/to/vault && make initialize
 ```
 
-Initializes git + LFS, creates the baseline commit, and creates the first checkpoint. Re-run this if it fails — it rolls back any partial state on failure and is safe to retry.
+Initializes git + LFS, creates the baseline commit, and creates the first checkpoint. Re-run this if it fails -- it rolls back any partial state on failure and is safe to retry.
 
 If initialization fails and the cause is unclear, run the LFS test suite to diagnose file classification issues:
 
@@ -69,24 +70,31 @@ The vault is now `make start`-ready.
 Checkpoints are dated git branches used as rollback points. Create one before every agent session.
 
 **Create**
+
 ```bash
 bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<suffix>]
 ```
+
 Requires a clean working tree.
 
 **Roll back**
+
 ```bash
 bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]
 ```
-Defaults to `checkpoint/latest`. Creates a rollback commit — does not rewrite history.
+
+Defaults to `checkpoint/latest`. Creates a rollback commit -- does not rewrite history.
 
 **Prune**
+
 ```bash
 bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>
 ```
+
 Keeps N most recent checkpoint branches. Prompts before deleting.
 
 **List**
+
 ```bash
 git -C /path/to/vault branch --list 'checkpoint/*'
 ```
@@ -114,8 +122,8 @@ Migration plans, agent briefs, and scripts go in `.vault/migrations/`.
 | Condition | Behavior |
 |---|---|
 | Live exists, backup missing | Creates backup from live |
-| Live missing, backup exists | Seeds live from backup — included in init commit |
+| Live missing, backup exists | Seeds live from backup -- included in init commit |
 | Both exist | Skips |
 | Neither exists | Skips |
 
-Backup files (`*.backup.json`) are committed to git. Live files are gitignored — they diverge per device and are seeded from backups on new machines.
+Backup files (`*.backup.json`) are committed to git. Live files are gitignored -- they diverge per device and are seeded from backups on new machines.

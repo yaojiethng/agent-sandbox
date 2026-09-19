@@ -1,4 +1,4 @@
-# Handover 20260902-02 — docs add test-quality-campaign prompt template
+# Handover 20260902-02 -- docs add test-quality-campaign prompt template
 
 **Milestone:** none (workflow artifact)
 **Type:** docs

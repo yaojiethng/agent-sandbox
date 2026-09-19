@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-05-26
-**Milestone:** M2.7 — Session Identity and Harness Versioning
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
 **Type:** Implementation
 **Status:** Closed
 
@@ -12,6 +12,7 @@ Fix the Hermes multi-stage build (finding 1 from thermo-nuclear review): make th
 ## Scope
 
 **In scope:**
+
 - Fix `src/reasoning/providers/hermes/base.dockerfile` builder stage to use `agent-node-base`
 - Remove redundant Node.js install from builder stage
 - Keep Python-specific build tools (`gcc`, `python3-dev`, `libffi-dev`) in builder
@@ -57,8 +58,8 @@ None.
 
 ## Deferred items
 
-- **Hermes base.dockerfile `agent-node-base` inheritance** — the builder-stage fix (`ARG BUILDER_BASE`) was applied in this session but subsequently lost. The current `hermes/base.dockerfile` is a fully independent `FROM python:3.11-slim` build. Deferred to W1 (Hermes python base refactor) — non-urgent, Hermes not actively used.
+- **Hermes base.dockerfile `agent-node-base` inheritance** -- the builder-stage fix (`ARG BUILDER_BASE`) was applied in this session but subsequently lost. The current `hermes/base.dockerfile` is a fully independent `FROM python:3.11-slim` build. Deferred to W1 (Hermes python base refactor) -- non-urgent, Hermes not actively used.
 
 ## Next session
 
-Sub-milestone: M2.7 — Session Identity and Harness Versioning
+Sub-milestone: M2.7 -- Session Identity and Harness Versioning

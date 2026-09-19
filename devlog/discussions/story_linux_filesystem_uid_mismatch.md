@@ -1,8 +1,8 @@
-# Document — WSL/Docker Volume Permission Architectural Matrix and Remediation Strategies
+# Document -- WSL/Docker Volume Permission Architectural Matrix and Remediation Strategies
 
-**Status:** Evaluated — resolved via Strategy 4
+**Status:** Evaluated -- resolved via Strategy 4
 
-> **Resolved.** Structural comparison and implementation specifications for host-container volume permission anomalies across WSL2 runtimes. **Strategy 4 (UID Mapping)** selected as the implementation target — see design document at `docs/devlog/discussions/design_settings_permissions_group_bind.md`.
+> **Resolved.** Structural comparison and implementation specifications for host-container volume permission anomalies across WSL2 runtimes. **Strategy 4 (UID Mapping)** selected as the implementation target -- see design document at `docs/devlog/discussions/design_settings_permissions_group_bind.md`.
 
 ---
 
@@ -18,19 +18,13 @@ In this environment, the standard WSL host user operates as `UID 1000`, while th
 
 * **Host-Container Write Blocks:** The container application (`UID 1001`) must perform preflight write checks and maintain persistent write access to host-mounted directories (such as `CHANGES_DIR` or `SANDBOX_DIR`) owned by the host user (`UID 1000`). Because default directory modes (`0755`) restrict write access exclusively to the owner, standard Linux permissions treat `UID 1001` as "Other," resulting in immediate `Permission Denied` errors at container runtime.
 
-
 * **ACL Mask Throttling:** Standard POSIX Access Control Lists (ACLs) are frequently superseded or capped by the effective ACL mask. If the directory's runtime mask is inadvertently set or altered to `r-x`, any granular `rwx` permissions explicitly assigned to `UID 1001` are automatically downgraded to read-only, breaking container write capabilities.
-
 
 * **Metadata Reset during Provisioning:** File operations executed during early setup phases (such as `cp` or `mkdir`) generate entirely new inodes. These newly created files and folders inherit default system `umask` settings rather than the advanced ACLs of their parent directory, effectively "overshadowing" and nullifying prior permission fixes.
 
-
 * **Container Boot Latency:** Remediation strategies that rely on recursive ownership changes (`chown -R`) at container startup introduce an operational bottleneck. If the target bind mount contains large nested directories, startup times scale linearly with inode counts.
 
-
 * **Host-Side Ownership Pollution:** Modifying file ownership directly inside the container alters physical metadata on the host. This causes files within the WSL host filesystem to become owned by `UID 1001`, forcing the developer to use `sudo` on the host to manage local files.
-
-
 
 ---
 
@@ -80,10 +74,7 @@ This method locks down permissions via POSIX Access Control Lists, maintaining t
 
 * **File System Location:** This functions exclusively if the project files reside natively within the WSL Linux file system (e.g., `/home/...`). It fails on Windows interoperability mounts (e.g., `/mnt/c/...`).
 
-
 * **Tooling Prerequisites:** The host system must have the ACL management package installed (`sudo apt install acl`).
-
-
 
 #### Required Commands
 
@@ -108,10 +99,7 @@ This approach shifts remediation responsibility into the container lifecycle. A 
 
 * **Security Exposure:** Requires granting passwordless `sudo` privileges to the containerized application user, adding security risks.
 
-
 * **Driver Requirements:** Must be coupled with either the VirtioFS file-sharing driver in Docker Desktop settings or a native Docker Engine configuration running inside the WSL Ubuntu instance.
-
-
 
 #### Technical Implementation
 
@@ -204,7 +192,7 @@ services:
 
 ---
 
-### Strategy 4: UID Mapping (User Hijack) — Universal Solution
+### Strategy 4: UID Mapping (User Hijack) -- Universal Solution
 
 This strategy synchronizes the container's identity with the host's identity at build time. Instead of making the host open permissions to a foreign user, the container "becomes" the host user. The container process runs as the same UID/GID as the developer who launches it, making file ownership a non-issue across all platforms.
 
@@ -212,22 +200,22 @@ This strategy synchronizes the container's identity with the host's identity at 
 
 | Platform | UID Mapping Outcome |
 |---|---|
-| **WSL (Native Docker Engine)** | The container runs as the host UID — every file `cp`/`mkdir`/`touch` is natively owned by the right user. |
+| **WSL (Native Docker Engine)** | The container runs as the host UID -- every file `cp`/`mkdir`/`touch` is natively owned by the right user. |
 | **Docker Desktop (macOS)** | macOS's virtiofs bridge performs identity translation. UID Mapping is technically redundant on Mac (Docker Desktop grants access regardless), but it does not break anything and provides environment parity. |
 | **Docker Desktop (Windows)** | The hypervisor layer masks host UIDs. UID Mapping ensures the container requests the right identity, avoiding permission denials. |
-| **CI/CD (GitHub Actions, etc.)** | Runners have a known UID — UID Mapping ensures the workspace is always writable. |
+| **CI/CD (GitHub Actions, etc.)** | Runners have a known UID -- UID Mapping ensures the workspace is always writable. |
 
-Unlike Strategy 3 (Shared Group Bind), which fails on macOS and Windows Docker Desktop because the hypervisor does not recognise host-side group assignments, UID Mapping works at the process identity level — a concept every OS and hypervisor respects.
+Unlike Strategy 3 (Shared Group Bind), which fails on macOS and Windows Docker Desktop because the hypervisor does not recognise host-side group assignments, UID Mapping works at the process identity level -- a concept every OS and hypervisor respects.
 
 #### Constraints & Prerequisites
 
 * **Build-time Dependency:** The image must be rebuilt for each machine where the developer has a different UID/GID. This is a one-time cost per machine; subsequent builds use cached layers.
-* **UID Collision Handling:** Official Docker images (e.g., `node`) often pre-create a user at UID 1000. The Dockerfile must handle this case gracefully — if the host UID conflicts with an existing user, rename the existing user rather than failing.
+* **UID Collision Handling:** Official Docker images (e.g., `node`) often pre-create a user at UID 1000. The Dockerfile must handle this case gracefully -- if the host UID conflicts with an existing user, rename the existing user rather than failing.
 * **Pipeline Impact:** The build system (`build_agent`, `build_sandbox`) must accept `HOST_UID` and `HOST_GID` as build arguments and thread them into `docker build --build-arg`.
 
 #### Technical Implementation
 
-**Step A: Dockerfile — Handle UID/GID Arguments and Collisions**
+**Step A: Dockerfile -- Handle UID/GID Arguments and Collisions**
 
 ```dockerfile
 # Accept Host IDs as Build Arguments
@@ -253,7 +241,7 @@ RUN chown -R ${HOST_UID}:${HOST_GID} /home/agentuser
 USER agentuser
 ```
 
-**Step B: Compose — Run as Host UID/GID**
+**Step B: Compose -- Run as Host UID/GID**
 
 ```yaml
 services:
@@ -268,7 +256,7 @@ services:
       - .:/home/agentuser/workspace
 ```
 
-**Step C: Build Pipeline — Export and Thread Host IDs**
+**Step C: Build Pipeline -- Export and Thread Host IDs**
 
 The startup script (`start_agent.sh`) exports the host identity before invoking compose:
 
@@ -290,23 +278,24 @@ docker build \
 
 | Failure | How UID Mapping Avoids It |
 |---|---|
-| **The Mask Trap** — ACL mask downgrades `rwx` to `r-x` | Not applicable — no ACLs involved. Container runs as the file Owner, not Other. |
-| **The Sudo Loop** — recurring `sudo setfacl` after every file sync | Never needed — same UID means every new file is natively owned by the container process. |
-| **The Preflight Fail** — application writability checks fail | Passes natively — the process owns the bind mount directory. |
-| **Platform Lock-In** — solution only works on one OS | Works on macOS, Windows DD, WSL native, Linux, and CI. |
+| **The Mask Trap** -- ACL mask downgrades `rwx` to `r-x` | Not applicable -- no ACLs involved. Container runs as the file Owner, not Other. |
+| **The Sudo Loop** -- recurring `sudo setfacl` after every file sync | Never needed -- same UID means every new file is natively owned by the container process. |
+| **The Preflight Fail** -- application writability checks fail | Passes natively -- the process owns the bind mount directory. |
+| **Platform Lock-In** -- solution only works on one OS | Works on macOS, Windows DD, WSL native, Linux, and CI. |
 
 #### Pros and Cons
 
 **Pros:**
-- Total inheritance: `cp`, `mv`, `mkdir` work natively — no post-copy scripts needed.
+
+- Total inheritance: `cp`, `mv`, `mkdir` work natively -- no post-copy scripts needed.
 - No ACL complexity: eliminates the mask-throttling problem entirely.
 - Zero runtime overhead: no `chown -R` in entrypoint, no `setfacl` at startup.
 - Environment parity: WSL/Linux development feels as seamless as macOS.
 
 **Cons:**
+
 - Build-time dependency: developers with non-standard UIDs must rebuild images locally.
 - Dockerfile complexity: requires conditional user-rename logic for UID collisions.
 - Image tied to host UID: images are not portable across machines with different host UIDs (rebuild required).
 
 ---
-

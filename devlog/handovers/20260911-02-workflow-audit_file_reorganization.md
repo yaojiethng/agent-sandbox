@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Relocate the coding-agent workflow files to their M3-ready homes -- `gm` into `workflow/coding-agent/`, the audit-skill family into `workflow/coding-agent/audits/` -- and record the full surface-area categorization (use case, current or not, consolidation targets) as the M3 reorganization input.
 
 ## Scope
+
 Operator-directed (chat 2026-09-11), gates pre-released; runs autonomously to close:
 
 - Move `src/reasoning/agent/prompts/gm.md` to `workflow/coding-agent/gm.md`; keep it deployable: all three provider dockerfiles COPY it into `/opt/workflow/agent/prompts/`, and `_agent_sig_sources` includes it (the prompts dir no longer holds the file, so the wiring must name it).

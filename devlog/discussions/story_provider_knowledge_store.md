@@ -1,12 +1,13 @@
-# User Story — Knowledge Store Provider
+# User Story -- Knowledge Store Provider
 
 **Status:** Resolved. Work promoted to M2. See Resolution section.
 
 ---
 
 > **Required reading before this document:**
-> - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) — container lifecycle, mount shape, entrypoint sequence, and diff pipeline.
-> - [`docs/architecture/security.md`](../architecture/security.md) — trust boundaries and security invariants that any solution must satisfy.
+>
+> - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, entrypoint sequence, and diff pipeline.
+> - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants that any solution must satisfy.
 
 ---
 
@@ -30,26 +31,26 @@ This story addresses Pain Point 1 only.
 
 ## Investigation Findings
 
-Two independent directions for solving Problem 1. They are not mutually exclusive — a provider replacement can be combined with stack supplementation.
+Two independent directions for solving Problem 1. They are not mutually exclusive -- a provider replacement can be combined with stack supplementation.
 
-### Direction 1 — Replace the provider
+### Direction 1 -- Replace the provider
 
-Swap OpenCode for a provider with better out-of-the-box support for large markdown-heavy workloads. Requires the provider to conform to the harness provider interface (M1.7) or to replace the harness entirely (Claude Desktop path — see note below).
+Swap OpenCode for a provider with better out-of-the-box support for large markdown-heavy workloads. Requires the provider to conform to the harness provider interface (M1.7) or to replace the harness entirely (Claude Desktop path -- see note below).
 
 **Provider candidates:**
 
 | Candidate | Status | Report |
 |---|---|---|
-| Claude Code | Resolved — viable; `start`/`dry-run`/`serve` supported; `serve` via Remote Control (first-party, requires claude.ai subscription auth) | [investigation_claude_code.md](investigation_claude_code.md) |
-| Claude Desktop | Resolved — viable, pending prototype | [investigation_claude_desktop.md](investigation_claude_desktop.md) |
-| Hermes | Resolved — viable; `start`/`dry-run`/`serve` supported; `serve` via Open WebUI compose service; persistent memory differentiates for vault workflows | [investigation_hermes.md](investigation_hermes.md) |
-| Pi | Resolved — viable; `start`/`dry-run` supported; `serve` unsupported (RPC bridge or open-source web UI is a viable future path) | [investigation_pi.md](investigation_pi.md) |
+| Claude Code | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Remote Control (first-party, requires claude.ai subscription auth) | [investigation_claude_code.md](investigation_claude_code.md) |
+| Claude Desktop | Resolved -- viable, pending prototype | [investigation_claude_desktop.md](investigation_claude_desktop.md) |
+| Hermes | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Open WebUI compose service; persistent memory differentiates for vault workflows | [investigation_hermes.md](investigation_hermes.md) |
+| Pi | Resolved -- viable; `start`/`dry-run` supported; `serve` unsupported (RPC bridge or open-source web UI is a viable future path) | [investigation_pi.md](investigation_pi.md) |
 
-**Note on Claude Desktop:** If Claude Desktop is selected, it replaces the agent harness as the reasoning layer — no harness container, just Claude Desktop connected to a Dockerised MCP filesystem server pointed at the existing `SANDBOX_DIR` paths. The investigation confirms that all harness invariants (snapshot isolation, `PROJECT_DIR` separation, diff-and-review via `make apply`) are preserved without codebase changes. Session lifecycle management becomes manual (`make sandbox` / `make apply`) rather than automated. Security guarantees are equivalent to the standard harness model. Platform dependency on Anthropic's desktop product is acknowledged. A prototype is required before adoption.
+**Note on Claude Desktop:** If Claude Desktop is selected, it replaces the agent harness as the reasoning layer -- no harness container, just Claude Desktop connected to a Dockerised MCP filesystem server pointed at the existing `SANDBOX_DIR` paths. The investigation confirms that all harness invariants (snapshot isolation, `PROJECT_DIR` separation, diff-and-review via `make apply`) are preserved without codebase changes. Session lifecycle management becomes manual (`make sandbox` / `make apply`) rather than automated. Security guarantees are equivalent to the standard harness model. Platform dependency on Anthropic's desktop product is acknowledged. A prototype is required before adoption.
 
 Provider investigations answer a standard set of questions defined in [Investigation Questions](#investigation-questions).
 
-### Direction 2 — Supplement the current stack
+### Direction 2 -- Supplement the current stack
 
 Keep OpenCode but address the text support gap by adding capabilities to the stack. Two supplementation options, each investigated separately:
 
@@ -69,7 +70,7 @@ Any candidate provider must support the existing execution modes or declare them
 | `serve` | Interactive terminal wrapped in a webapp; operator connects via browser on an exposed port |
 | `start` | Interactive terminal via direct TTY |
 | `dry-run` | Liveness check only; confirms the provider initialises correctly |
-| `headless` | Non-interactive with task passing — reserved, M2 target |
+| `headless` | Non-interactive with task passing -- reserved, M2 target |
 
 A provider that does not support `serve` natively must either have an evaluated third-party wrapper or declare the mode unsupported. The diff and apply workflow must remain unchanged from the operator's perspective regardless of provider.
 
@@ -79,42 +80,41 @@ A provider that does not support `serve` natively must either have an evaluated 
 
 All provider candidate investigations (Direction 1) must answer:
 
-1. **Execution model** — does the provider support `start` and `dry-run`? Does it have a native serve/web mode, or does it require a third-party wrapper for `serve`? Is there a viable `headless` invocation path for M2?
-2. **Authentication** — what mechanism does the provider use in a containerised environment? Can it be injected via environment variable without interactive setup?
-3. **Dockerfile and image** — what does the provider require to install in a minimal Ubuntu container? Are there additional system dependencies beyond what the current image provides?
-4. **Harness reuse** — which components of `providers/opencode/` are reusable? Does anything in `libs/` or `scripts/` need to change?
-5. **Sandbox constraint compatibility** — can the provider confine file operations to `sandbox/` without host access?
-6. **Document repository suitability** — can the provider navigate and edit large flat or nested markdown structures effectively? Does it handle binary file awareness correctly?
+1. **Execution model** -- does the provider support `start` and `dry-run`? Does it have a native serve/web mode, or does it require a third-party wrapper for `serve`? Is there a viable `headless` invocation path for M2?
+2. **Authentication** -- what mechanism does the provider use in a containerised environment? Can it be injected via environment variable without interactive setup?
+3. **Dockerfile and image** -- what does the provider require to install in a minimal Ubuntu container? Are there additional system dependencies beyond what the current image provides?
+4. **Harness reuse** -- which components of `providers/opencode/` are reusable? Does anything in `libs/` or `scripts/` need to change?
+5. **Sandbox constraint compatibility** -- can the provider confine file operations to `sandbox/` without host access?
+6. **Document repository suitability** -- can the provider navigate and edit large flat or nested markdown structures effectively? Does it handle binary file awareness correctly?
 
 ---
 
 ## Resolution
 
-**Decision date:** M1.5  
+**Decision date:** M1.5
 **Outcome:** Both investigation directions converge on the two-layer architecture (reasoning layer / capability layer). Work is promoted to M2. This story is closed.
 
 ### What was decided
 
-The investigation surfaced that the core problem was not the choice of agent runtime — it was the fused architecture that coupled the agent to its working content. The right fix is architectural: separate the capability layer (what the agent can do) from the reasoning layer (which agent runs). Any MCP-compatible reasoning layer can then work with any capability layer that exposes the right tools.
+The investigation surfaced that the core problem was not the choice of agent runtime -- it was the fused architecture that coupled the agent to its working content. The right fix is architectural: separate the capability layer (what the agent can do) from the reasoning layer (which agent runs). Any MCP-compatible reasoning layer can then work with any capability layer that exposes the right tools.
 
-Full rationale in [`investigation_mcp_server.md`](investigation_mcp_server.md) — Conclusion section. Conceptual model in [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md).
+Full rationale in [`investigation_mcp_server.md`](investigation_mcp_server.md) -- Conclusion section. Conceptual model in [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md).
 
 ### Where each investigation thread goes
 
-**Direction 1 — Provider candidates (Claude Code, Claude Desktop, Hermes, Pi)**  
-These become reasoning layer candidates. Investigations continue as M2 prerequisite work. The evaluation framing changes: candidates no longer need to conform to a per-provider script interface; they need to be MCP-compatible clients. Investigation questions 4 (harness reuse) and 5 (sandbox constraint compatibility) are now answered differently under the two-layer model — update investigation stubs when resuming.
+**Direction 1 -- Provider candidates (Claude Code, Claude Desktop, Hermes, Pi)**
+These become reasoning layer candidates. Investigations continue as M2 prerequisite work. The evaluation framing changes: candidates no longer need to conform to a per-provider script interface; they need to be MCP-compatible clients. Investigation questions 4 (harness reuse) and 5 (sandbox constraint compatibility) are now answered differently under the two-layer model -- update investigation stubs when resuming.
 
-**Direction 2 — MCP server (Dockerized)**  
+**Direction 2 -- MCP server (Dockerized)**
 This is the capability layer prototype and is the primary M2.1 work. `investigation_mcp_server.md` is the design document. Open questions (MCP server selection, working mount strategy) are M2.1 tasks.
 
-**Direction 2 — Workspace input channel**  
+**Direction 2 -- Workspace input channel**
 Absorbed into the reporting workspace design. The operator input channel (`SANDBOX_DIR/input/`) is implemented in M1.5 as part of the directory restructuring. The `investigation_workspace_input_channel.md` open questions around mount shape and lifecycle are resolved by the M1.5 implementation. The `TASK.md` alignment remains a pending decision tracked in W1.
 
 ### Story status per use case
 
 | Use case | Status | Where it goes |
 |---|---|---|
-| Vault (Obsidian) — agent modification workflow (KV5) | Pending M2.1 | Capability layer prototype |
-| Website dev — bash-enabled sandbox, live reload | Deferred | M2.2 as bash-enabled capability layer use case |
-| General coding — current OpenCode workflow | Unchanged | Continues to work under current model through M1.x |
-
+| Vault (Obsidian) -- agent modification workflow (KV5) | Pending M2.1 | Capability layer prototype |
+| Website dev -- bash-enabled sandbox, live reload | Deferred | M2.2 as bash-enabled capability layer use case |
+| General coding -- current OpenCode workflow | Unchanged | Continues to work under current model through M1.x |

@@ -1,14 +1,14 @@
-# ADR — Session Identity and Container Markers
+# ADR -- Session Identity and Container Markers
 
 **Status:** settled
 
-> **Superseded by:** [20260901-adr-settled-version_identity_mechanism.md](20260901-adr-settled-version_identity_mechanism.md) (partial — the image-identity marking claim "images carry no version" is replaced by digest-as-image-version, and the marker/label schema is extended with the two image-digest labels). The session-identity derivation and lifecycle-filtering decisions remain in force.
+> **Superseded by:** [20260901-adr-settled-version_identity_mechanism.md](20260901-adr-settled-version_identity_mechanism.md) (partial -- the image-identity marking claim "images carry no version" is replaced by digest-as-image-version, and the marker/label schema is extended with the two image-digest labels). The session-identity derivation and lifecycle-filtering decisions remain in force.
 
-> **Superseded by:** [20260831-adr-settled-single_canonical_session_identity.md](20260831-adr-settled-single_canonical_session_identity.md) (derivation formula only — the two-stage `SANDBOX_ID`/`RUN_ID` hash is replaced by a single canonical hash; the marker schema and lifecycle-filtering decisions remain in force).
+> **Superseded by:** [20260831-adr-settled-single_canonical_session_identity.md](20260831-adr-settled-single_canonical_session_identity.md) (derivation formula only -- the two-stage `SANDBOX_ID`/`RUN_ID` hash is replaced by a single canonical hash; the marker schema and lifecycle-filtering decisions remain in force).
 
 ## Summary
 
-Container identity is hash-based, not timestamp-based. Every container carries a fixed set of Docker labels that encode provenance, lifecycle scope, and run identity. These labels are the single mechanism for all lifecycle operations — stop, prune, and inspect — eliminating reliance on name parsing or external state files.
+Container identity is hash-based, not timestamp-based. Every container carries a fixed set of Docker labels that encode provenance, lifecycle scope, and run identity. These labels are the single mechanism for all lifecycle operations -- stop, prune, and inspect -- eliminating reliance on name parsing or external state files.
 
 ## Context
 
@@ -18,39 +18,39 @@ As the harness grew to support parallel worktree sessions, multiple providers, a
 
 1. **Unambiguous container identity.** An operator inspecting a running container must be able to determine its project, sandbox instance, host commit, and session run without consulting external state.
 2. **Label-based lifecycle management.** Docker labels are the only runtime-verifiable mechanism for filtering containers and volumes at scale. `docker stop --filter label=X` is more reliable than name-prefix matching.
-3. **Deterministic session naming.** Container and artefact names must be deterministic from their identity factors — the same session replayed from the same inputs produces the same names, enabling reproducible exports and audits.
+3. **Deterministic session naming.** Container and artefact names must be deterministic from their identity factors -- the same session replayed from the same inputs produces the same names, enabling reproducible exports and audits.
 
 ## Options Considered
 
-### Option A — Timestamp-based (status quo ante)
+### Option A -- Timestamp-based (status quo ante)
 
-Containers named with `SESSION_TS` suffix. Labels optional — lifecycle operations parsed container names.
+Containers named with `SESSION_TS` suffix. Labels optional -- lifecycle operations parsed container names.
 
 - **Advantages:** Human-readable ordering (chronological sort). Simple to implement.
-- **Disadvantages:** No identity verification. Parallel worktree sessions produce the same name if started at the same second. Lifecycle operations require external state (project name, sandbox dir passed as CLI flags) — no runtime-verifiable filter exists on the containers themselves.
+- **Disadvantages:** No identity verification. Parallel worktree sessions produce the same name if started at the same second. Lifecycle operations require external state (project name, sandbox dir passed as CLI flags) -- no runtime-verifiable filter exists on the containers themselves.
 
-### Option B — Hash-based (adopted)
+### Option B -- Hash-based (adopted)
 
 Container identity derived from two factors: sandbox instance (`SANDBOX_DIR` + `HOST_HEAD_SHA`) and session timestamp (`SESSION_TS`). A short hash encodes each factor into container names and artefact paths. A fixed label schema provides runtime-verifiable identity on every container.
 
 - **Advantages:** Deterministic from inputs. Labels enable label-based lifecycle filtering. Consistent identity across containers, artefacts, and logs.
-- **Disadvantages:** Hash is not human-readable chronological — must reference `agent-sandbox.session-ts` label for temporal ordering.
+- **Disadvantages:** Hash is not human-readable chronological -- must reference `agent-sandbox.session-ts` label for temporal ordering.
 
-### Option C — UUID-based
+### Option C -- UUID-based
 
 Each session generates a random UUID for container naming. Labels carry the same schema as Option B.
 
 - **Advantages:** No collision risk. Simple generation.
-- **Disadvantages:** Non-deterministic — replaying a session from the same state produces a different identity. Cannot correlate artefacts back to their generating session without an external registry.
+- **Disadvantages:** Non-deterministic -- replaying a session from the same state produces a different identity. Cannot correlate artefacts back to their generating session without an external registry.
 
 ## Decision
 
-Adopt **Option B — Hash-based identity**.
+Adopt **Option B -- Hash-based identity**.
 
 - Identity factors: `SANDBOX_DIR` (instance), `HOST_HEAD_SHA` (branch point), `SESSION_TS` (temporal).
-- `SANDBOX_ID` = `sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` — identifies a sandbox instance at a specific host commit.
-- `RUN_ID` = `sha256(SESSION_TS:SANDBOX_ID)[:6]` — identifies a single session run.
-- Container naming: `<role>-<project>-<RUN_ID>` — e.g. `sandbox-agent-sandbox-f6e5d4`, `pi-agent-sandbox-f6e5d4`.
+- `SANDBOX_ID` = `sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` -- identifies a sandbox instance at a specific host commit.
+- `RUN_ID` = `sha256(SESSION_TS:SANDBOX_ID)[:6]` -- identifies a single session run.
+- Container naming: `<role>-<project>-<RUN_ID>` -- e.g. `sandbox-agent-sandbox-f6e5d4`, `pi-agent-sandbox-f6e5d4`.
 
 ## Marker Schema
 
@@ -62,10 +62,11 @@ Every container carries these Docker labels, set by the compose template at runt
 | `agent-sandbox.sandbox-dir` | `SANDBOX_DIR` | Absolute path of the sandbox instance on the host. Distinguishes parallel worktree sessions of the same project. |
 | `agent-sandbox.host-head-sha` | `HOST_HEAD_SHA` | Full SHA of the host git HEAD at session start. Records the exact branch point for provenance. |
 | `agent-sandbox.host-branch` | Sanitised branch name | Human-readable branch context. |
-| `agent-sandbox.session-ts` | `SESSION_TS` | Timestamp in `YYYYMMDD-HHMMSS` format. Sole source of chronological ordering — names use `RUN_ID` for identity. |
+| `agent-sandbox.session-ts` | `SESSION_TS` | Timestamp in `YYYYMMDD-HHMMSS` format. Sole source of chronological ordering -- names use `RUN_ID` for identity. |
 | `agent-sandbox.run-id` | `RUN_ID` | 6-char hex session identifier. Links containers to artefact paths and logs. |
 
 The label pair `project-name` + `sandbox-dir` is the compound key for all lifecycle operations:
+
 - `docker stop --filter label=agent-sandbox.project-name=<X> --filter label=agent-sandbox.sandbox-dir=<Y>` scopes stop to a specific sandbox instance.
 - `make stop` filters by this pair; `make stop RUN_ID=<id>` adds `agent-sandbox.run-id` for single-session targeting.
 - `make prune` filters by the same pair for aged-resource cleanup.
@@ -74,12 +75,12 @@ The label pair `project-name` + `sandbox-dir` is the compound key for all lifecy
 
 | Marker | Enables |
 |---|---|
-| `project-name` + `sandbox-dir` | Lifecycle operations scoped to a single sandbox instance — stop, prune, inspect. No name parsing needed. |
+| `project-name` + `sandbox-dir` | Lifecycle operations scoped to a single sandbox instance -- stop, prune, inspect. No name parsing needed. |
 | `run-id` | Single-session targeting (`make stop RUN_ID=abc123`). Links artefacts (diffs, exports) to their generating container. |
-| `session-ts` | Human-readable chronological ordering of sessions. Single source of temporal truth — names use `RUN_ID`. |
-| `host-head-sha` + `host-branch` | Provenance tracking — which host commit and branch the session branched from. |
+| `session-ts` | Human-readable chronological ordering of sessions. Single source of temporal truth -- names use `RUN_ID`. |
+| `host-head-sha` + `host-branch` | Provenance tracking -- which host commit and branch the session branched from. |
 
-Image identity is separate: images are tagged by project name only (`sandbox-<project>`, `<provider>-agent-<project>`). Image tags encode harness code identity, not project repo state — the repo state is captured at runtime by the snapshot pipeline and carried by Docker labels. See `docs/concepts/sandbox_identity.md` for the full label schema and artefact path table.
+Image identity is separate: images are tagged by project name only (`sandbox-<project>`, `<provider>-agent-<project>`). Image tags encode harness code identity, not project repo state -- the repo state is captured at runtime by the snapshot pipeline and carried by Docker labels. See `docs/concepts/sandbox_identity.md` for the full label schema and artefact path table.
 
 ## Consequences
 
@@ -87,7 +88,7 @@ Image identity is separate: images are tagged by project name only (`sandbox-<pr
 
 - **Label-based lifecycle works without compose.** `stop.sh` filters by labels using `docker ps --filter`, not `docker compose ps`. This works even if the compose project state is stale or the containers were started by a different compose invocation.
 - **Deterministic artefact paths.** `RUN_ID` in artefact directory names means exports can be correlated to their generating container without consulting a registry.
-- **Consistent identity across layers.** The same `RUN_ID` appears in container names, Docker labels, artefact paths, and error logs — any one can be used to locate the others.
+- **Consistent identity across layers.** The same `RUN_ID` appears in container names, Docker labels, artefact paths, and error logs -- any one can be used to locate the others.
 
 ### Negative
 
@@ -97,7 +98,7 @@ Image identity is separate: images are tagged by project name only (`sandbox-<pr
 
 ## Related Documents
 
-- [`docs/concepts/sandbox_identity.md`](../../docs/concepts/sandbox_identity.md) — stable reference for primitives, derivation formulas, artefact paths, and consumption table
-- [`scripts/start_agent.sh`](../../scripts/start_agent.sh) — primitive set implementation
-- [`scripts/stop.sh`](../../scripts/stop.sh) — label-based lifecycle filtering implementation
-- [`src/build/docker-compose.yml`](../../src/build/docker-compose.yml) — compose template with label schema
+- [`docs/concepts/sandbox_identity.md`](../../docs/concepts/sandbox_identity.md) -- stable reference for primitives, derivation formulas, artefact paths, and consumption table
+- [`scripts/start_agent.sh`](../../scripts/start_agent.sh) -- primitive set implementation
+- [`scripts/stop.sh`](../../scripts/stop.sh) -- label-based lifecycle filtering implementation
+- [`src/build/docker-compose.yml`](../../src/build/docker-compose.yml) -- compose template with label schema

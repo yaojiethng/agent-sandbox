@@ -47,6 +47,7 @@ ENV_FILE := $(CURDIR)/.env
 **Rationale:** pi's thin-interface / deep-resolution model maps cleanly onto the three identity siblings, which were fragmented across two persistence mechanisms (the baked Makefile literal and `.env`) with duplicated per-script flag parsing. Prior behavior was file-beats-flag: a conflicting `.env` value silently overrode an explicit flag. Project identity is genuinely underivable, so a silent default hides misconfiguration. The explicit `--env` pointer makes `.env` location deterministic and independent of the invocation CWD, removing the fragility of relying on `make -C` alone.
 
 **Rejected alternatives:**
+
 - *File-beats-flag* -- a `.env` value overrode an explicit flag because `.env` was loaded last; the explicit input was silently lost. Superseded by flag-wins (R2).
 - *Runtime `SANDBOX_DIR` derivation as a precedence level* -- resolving `dirname PROJECT_DIR/basename-sandbox` at each run reintroduces a computed default (R3). Applied once at onboard into `.env`, never at runtime.
 - *Any host `PROJECT_*` var as the env level* -- a sourced plain `PROJECT_DIR` export would silently beat `.env`. Only `AGENT_SANDBOX_*` is the env level (R4).

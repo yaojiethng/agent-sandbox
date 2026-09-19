@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Implement the roadmap item "Seeder stash-clear": the seeder removes the host stash stack from the volume copy after the native `.git` copy, per the settled ADR entry (2026-09-11) and study `20260911-study-stash_copy_prevention.md`.
 
 ## Scope
+
 - `src/capability/seed_volume.sh`: after the `.git` copy, clear stashes on the volume copy only (`git stash clear`); fail closed on error; add the empty-stash assertion to the self-verification.
 - `tests/test_seed_volume.sh`: new test -- a fixture repo with stash entries seeds successfully, the host stash stack is untouched, and the volume has an empty stash stack.
 - Roadmap: item marked done.

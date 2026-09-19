@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Date:** 2026-04-21  
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline  
-**Type:** Chore / Bug Fix  
+**Date:** 2026-04-21
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Chore / Bug Fix
 **Status:** Closed
 
 ## Objective
@@ -29,15 +29,15 @@ agent-checkpoint/a2cfe5a4/20260421-075249
 ```
 
 All tags with the same worktree ID prefix (e.g., `dd6fe4bb`) pointing to the same commit
-are redundant — only the earliest timestamp is meaningful.
+are redundant -- only the earliest timestamp is meaningful.
 
 ## Scope
 
-- `scripts/checkpoint.sh` — Add idempotency check to `checkpoint_create()`
-- `tests/test_checkpoint.sh` — Update pruning test; add idempotency test
-- `tests/test_start_agent.sh` — Fix test assertion to match actual docker-compose format
+- `scripts/checkpoint.sh` -- Add idempotency check to `checkpoint_create()`
+- `tests/test_checkpoint.sh` -- Update pruning test; add idempotency test
+- `tests/test_start_agent.sh` -- Fix test assertion to match actual docker-compose format
 
-Out of scope: Cleanup of existing redundant tags in the host repository — this requires
+Out of scope: Cleanup of existing redundant tags in the host repository -- this requires
 manual operator action (procedure provided below).
 
 ## Acceptance criteria
@@ -54,9 +54,9 @@ manual operator action (procedure provided below).
 
 | File | Why in scope | Status |
 |---|---|---|
-| `scripts/checkpoint.sh` | Idempotency check added to `checkpoint_create()` | ✓ Complete |
-| `tests/test_checkpoint.sh` | Pruning test updated; idempotency test added | ✓ Complete |
-| `tests/test_start_agent.sh` | Test assertion corrected | ✓ Complete |
+| `scripts/checkpoint.sh` | Idempotency check added to `checkpoint_create()` | [x] Complete |
+| `tests/test_checkpoint.sh` | Pruning test updated; idempotency test added | [x] Complete |
+| `tests/test_start_agent.sh` | Test assertion corrected | [x] Complete |
 
 ## Changes made
 
@@ -76,9 +76,10 @@ if [[ -n "$EXISTING_TAG" ]]; then
 fi
 ```
 
-**Secondary fix:** Corrected typo `&> dev/null` → `&> /dev/null` in prune call.
+**Secondary fix:** Corrected typo `&> dev/null` -> `&> /dev/null` in prune call.
 
-**Behaviour:** 
+**Behaviour:**
+
 - First session on a commit: creates new tag, returns it
 - Subsequent sessions on same commit: returns existing tag, no new tag created
 - Next commit: new tag created as normal
@@ -89,6 +90,7 @@ fi
 commits between tags. Pruning only has meaning when tags point to different commits.
 
 **Change 2:** Added `test_checkpoint_create_idempotent`:
+
 - Creates a tag via `checkpoint_create()`
 - Calls `checkpoint_create()` again with different timestamp on same commit
 - Asserts both calls return the same tag name
@@ -104,7 +106,7 @@ commits between tags. Pruning only has meaning when tags point to different comm
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Idempotency by commit, not by timestamp | The checkpoint marks a commit state — multiple sessions on the same commit should share one checkpoint | `checkpoint_create()` implementation |
+| Idempotency by commit, not by timestamp | The checkpoint marks a commit state -- multiple sessions on the same commit should share one checkpoint | `checkpoint_create()` implementation |
 | Return existing tag, don't error | Silent idempotency is preferable to forcing callers to handle "tag exists" errors | `checkpoint_create()` implementation |
 | Keep earliest timestamp as canonical | First session on a commit is the meaningful checkpoint; later sessions are retries or restarts | `sort | tail -n 1` selects earliest |
 
@@ -201,6 +203,7 @@ echo "Cleanup complete: $deleted redundant tags removed"
 ```
 
 Run with:
+
 ```bash
 chmod +x cleanup_checkpoint_tags.sh
 ./cleanup_checkpoint_tags.sh
@@ -220,14 +223,15 @@ done | sort | uniq -D -w 40
 
 ## Next Session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline  
-**Next task:** Change 6 — Baseline advancement (`make confirm SYNC=1`, `make sync`)
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Next task:** Change 6 -- Baseline advancement (`make confirm SYNC=1`, `make sync`)
 
 **Files to upload:**
+
 - This handover
 - `scripts/checkpoint.sh`
 - `tests/test_checkpoint.sh`
 - `tests/test_start_agent.sh`
 
 ---
-[AMENDMENT — 2026-05-06]: Section headers `## Changes made` and `## Tag cleanup procedure (Manual operator action)` are non-standard. No canonical 1:1 replacement exists — content spans implementation detail and operator instructions that don't map cleanly to standard handover sections. Left unchanged. See 20260506-01-workflow-handover_audit_and_corrections.md.
+[AMENDMENT -- 2026-05-06]: Section headers `## Changes made` and `## Tag cleanup procedure (Manual operator action)` are non-standard. No canonical 1:1 replacement exists -- content spans implementation detail and operator instructions that don't map cleanly to standard handover sections. Left unchanged. See 20260506-01-workflow-handover_audit_and_corrections.md.

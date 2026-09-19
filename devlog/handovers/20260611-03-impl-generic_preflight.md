@@ -1,21 +1,22 @@
 # Agent Handover
 
 **Date:** 2026-06-11
-**Milestone:** M2.7 — Session Identity and Harness Versioning
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Complete Proposal 3 — add generic pre-flight validation to the shared entrypoint. Cover missing lib file checks and agent command presence validation.
+Complete Proposal 3 -- add generic pre-flight validation to the shared entrypoint. Cover missing lib file checks and agent command presence validation.
 
 ## Scope
 
-1. **Add missing lib file checks** to shared entrypoint — `diff.sh`, `diff_export.sh`, `package_branch.sh` are in `/opt/sandbox/lib/` but not checked. Add as WARN-level (consistent with existing pattern).
-2. **Add agent command validation** — before `exec "$@"`, validate that the command (first argument) exists and is executable. If missing, print a FATAL error with the image name hint.
-3. **Update roadmap** — mark the task complete.
+1. **Add missing lib file checks** to shared entrypoint -- `diff.sh`, `diff_export.sh`, `package_branch.sh` are in `/opt/sandbox/lib/` but not checked. Add as WARN-level (consistent with existing pattern).
+2. **Add agent command validation** -- before `exec "$@"`, validate that the command (first argument) exists and is executable. If missing, print a FATAL error with the image name hint.
+3. **Update roadmap** -- mark the task complete.
 
 **Out of scope:**
+
 - Provider-specific bind mount checks (already in pi/preflight.sh)
 - AGENT_HOME writable check (already done)
 - Lib CRITICAL severity changes (session_state.sh is the only CRITICAL)

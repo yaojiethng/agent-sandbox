@@ -38,7 +38,7 @@ Pin census: ~190 raw matches, ~60 excluded (fixture data, self-induced errors, e
 | `tests/test_run_agent.sh` | 1 | `tool_interface.md` L175 SERVE_PORT row; or relax to "names the variable and the default" |
 | `tests/test_prune.sh` | 1 | roadmap l.99 (prune output) |
 
-Self-evident, no action: `tests/test_common_lib.sh` (INTERACTIVE_MAX_ENTRIES=10, value owned by the function under test); `tests/test_runner_selftest.sh` (plants its own `  FAIL:` marker; code-owner citation already in `tests/libs/test_common.sh`). Optional polish: one code-owner header line in the selftest.
+Self-evident, no action: `tests/test_common_lib.sh` (INTERACTIVE_MAX_ENTRIES=10, value owned by the function under test); `tests/test_runner_selftest.sh` (plants its own `FAIL:` marker; code-owner citation already in `tests/libs/test_common.sh`). Optional polish: one code-owner header line in the selftest.
 
 ## Scope proposal
 

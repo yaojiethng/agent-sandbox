@@ -6,12 +6,15 @@
 **Status:** Closed
 
 ## Objective
+
 Trim the dry-run path so each readiness assertion is owned exactly once: the two dry-run containers (bearer) each run their own full L1..L6 self-checks and write a per-container diagnostics record; orchestration validates the correct container was started from those records. Includes the task rename "diet" -> "feature scope trim" and the mount-delivery "wired, not ready-to-run" claim correction. Full repo init RETAINED -- the snapshot cost-trim is out of scope this iteration.
 
 ## Scope
+
 Authoritative design: [`devlog/discussions/20260828-design-settled-dry_run_phase_split.md`](../../devlog/discussions/20260828-design-settled-dry_run_phase_split.md) -- readiness layers L1..L6, responsibility split (bearer / container preflight / orchestration), per-container record contract. This handover carries the iteration-scoped working deltas.
 
 In scope:
+
 - Check-ownership dedup per layer + L1..L6 ordering in each probe (matrix below)
 - Per-container diagnostics record (capability + reasoning) written at startup on a host-visible mount; orchestration consumes + validates correct-container (version/signature in-container == expected)
 - Drop stale `brief.md` from the reasoning probe; fix `tests/knowledge/diagnose_preflight.sh:162` + `docs/architecture/provider_lifecycle.md:41` residue
@@ -62,6 +65,7 @@ Plus: reorder each probe script so checks appear in L1..L6 layer order. Mechanis
 | AC6 | Each dry-run probe lists its checks in L1..L6 layer order | Agent: read of probe files | accepted |
 
 ## Hot files
+
 | File | Why in scope |
 |---|---|
 | [`scripts/dry_run_capability.sh`](../../scripts/dry_run_capability.sh) | bearer capability checks: dedup, L1..L6 order, record write |
@@ -119,10 +123,12 @@ Plus: reorder each probe script so checks appear in L1..L6 layer order. Mechanis
 | This handover | scope, decisions, findings, ACs, deferrals |
 
 ## Deferred items
+
 - **Dry-run execution-point (probes at container start-up, compose `command`/`entrypoint` override)** - deferred: needs a start-up wrapper re-running full init (DRY), container-start path unverifiable without docker. Escalated to a `devlog/roadmap.md` follow-on bullet (sole in-scope deferral).
 - (Pre-existing separate items, not from this session - roadmap-named, not re-listed: snapshot cost-trim, `.compose/*.yml` stale pruning, `confirm.sh` savepoint bug, test-harness hardening follow-ons.)
 
 ## What's Next
+
 M2.6 - Session Persistence. Post-close bookkeeping: n/a (mid-milestone).
 Next iteration: the dry-run execution-point follow-on (roadmap bullet) -- run the bearer checks at container start-up via a compose override reusing full init; verifiable only on a docker machine (the operator's end-to-end run).
 Watch-outs (gotchas, session-open): dual-grep bridge for old-heading handovers; full-tree close-out greps; table-row append edits keep the anchor row.

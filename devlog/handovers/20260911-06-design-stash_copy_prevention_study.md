@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Study, per the operator's direction from the stash-triage check-in item: confirm the mechanism that copies host stashes into the sandbox, and determine the prevention -- or whether dropping all stashes at sandbox initialization is the correct, simpler solution.
 
 ## Scope
+
 Read-only investigation. Confirm the mechanism in `src/capability/seed_volume.sh`; assess risk; write the study doc `devlog/discussions/20260911-study-stash_copy_prevention.md` with a recommendation.
 
 ## Acceptance criteria
@@ -39,4 +41,5 @@ Read-only investigation. Confirm the mechanism in `src/capability/seed_volume.sh
 Implementation of the stash-clear (new roadmap item) -- next iteration.
 
 ## What's Next
+
 Implement the seeder stash-clear with its test, then close the study as adopted.

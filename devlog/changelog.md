@@ -6,16 +6,17 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
-## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID → SESSION_ID
+## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
 
-The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run→session phase). `SESSION_ID` identifies one container lifecycle (start → run → teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`).
+The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`).
 
 Renamed surfaces (current code/docs):
-- Identifier token `RUN_ID` → `SESSION_ID`
-- `SESSION_STATE`/`.draft-state` key `run_id` → `session_id`
-- Docker label `agent-sandbox.run-id` → `agent-sandbox.session-id`
-- Compose registry filename `.compose/<run-id>.yml` → `.compose/<session-id>.yml`
-- `--run-id` CLI flag → `--session-id`
+
+- Identifier token `RUN_ID` -> `SESSION_ID`
+- `SESSION_STATE`/`.draft-state` key `run_id` -> `session_id`
+- Docker label `agent-sandbox.run-id` -> `agent-sandbox.session-id`
+- Compose registry filename `.compose/<run-id>.yml` -> `.compose/<session-id>.yml`
+- `--run-id` CLI flag -> `--session-id`
 - Container/volume/project naming embeds the session id
 
 This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
@@ -136,7 +137,6 @@ Onboarding now populates provider config and seeds the provider-level prompts an
 Foundation work made autosave and session-save reliable (EXIT-trap export with return-value capture, `.export-status` metadata, lockfile polling), documented the security model, and audited repository preconditions. The volume lifecycle is per-run: named volumes keyed by run identity, resume via the host identity record and volume labels, conditional teardown (`compose stop` preserves the container, `down -v` destroys the volume), and container persistence across stops. The copy model adds label-filtered volume pruning, multi-volume concurrency with locking and an interactive selector, and draft-branch rollback via savepoint tags when patch application fails partway. A cross-cutting CLI/infra hardening track unified `--help` across subcommands, fixed the docker network-pool leak and the silent build-failure abort, persisted merged compose files under `SANDBOX_DIR/.compose/`, and closed the test-harness `set -e` blind spot so production scripts now run under the real runtime in trace tests. The mount model (M2.6.6) is complete: runnability verified live end-to-end, the delivery contract reworked per operator steering (`--delivery` parsed once at ingestion, default copy, record-recovered in resume), and the env-dependence audit closed. The M2.6 general-track work (test-harness consolidation, `cli.sh` flag parsing, session-end hints) is appended to this entry at milestone close.
 
 ---
-
 
 ## M2.7 - Session Identity and Harness Versioning
 

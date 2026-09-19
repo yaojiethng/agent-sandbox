@@ -1,19 +1,19 @@
 # Agent Handover
 
 **Date:** 2026-08-12
-**Milestone:** M2.6 — Session Persistence (general CLI/infra track)
+**Milestone:** M2.6 -- Session Persistence (general CLI/infra track)
 **Type:** Implementation
 **Status:** Closed
 
 > This is **sub-task 1 (of an operator-orchestrated 3-way split)** of session
-> `20260812-05`. **This handover's scope is only Task 1 — fix the run-1 rollback
+> `20260812-05`. **This handover's scope is only Task 1 -- fix the run-1 rollback
 > bug.** Task 3 (tidy `.rej`) is handover `20260812-05`; Task 2 (whitespace
 > round-trip hardening) is handover `20260812-07`.
 
 ## Objective (Task 1)
 
 Fix the draft-workflow rollback path so that, when patch application fails, the
-operator is returned to the **source branch** — not left stranded on the (now
+operator is returned to the **source branch** -- not left stranded on the (now
 empty) `draft/*` branch.
 
 ## The bug (confirmed)
@@ -33,7 +33,7 @@ return 1
 is captured (in `draft_create_and_init_branch` / `_run_draft_workflow`) and written
 into `.draft-state`, but the rollback path does not use it. Net effect: after a
 clean rollback, HEAD points at the fork base but the branch is still the (empty)
-`draft/*` branch — observed by the operator as "* draft/9f8cdc-... " (bad branch
+`draft/*` branch -- observed by the operator as "* draft/9f8cdc-... " (bad branch
 afterwards).
 
 ## Files in scope
@@ -46,7 +46,7 @@ afterwards).
 ## Constraints / context
 
 - Same rollback block appears **twice** in `_run_draft_workflow` (once for
-  `draft_apply_patches` failure, once for `draft_apply_uncommitted` failure) — fix both consistently.
+  `draft_apply_patches` failure, once for `draft_apply_uncommitted` failure) -- fix both consistently.
 - The restore must be robust: capture the branch that was current **before**
   `git checkout -b` (prefer it), and guard against restoring to a branch that no
   longer exists.
@@ -54,7 +54,7 @@ afterwards).
   existing `draft/*` branch (`CURRENT_BRANCH == draft/*`), so a correct rollback
   must not leave the operator on a `draft/*` branch.
 - FORCE-mode behavior (commit `.rej` + partial hunks rather than halt) is
-  deliberate and must NOT change — this task is only about the failure *rollback*
+  deliberate and must NOT change -- this task is only about the failure *rollback*
   branch.
 - Follow the repo's `return`/`|| rc=$?` idioms (`docs/development/bash-coding-conventions.md`); shellcheck-clean.
 
@@ -68,20 +68,20 @@ afterwards).
 
 ## Deferred
 
-- Tidy `.rej` → Task 3 (handover `20260812-05`)
-- Whitespace round-trip hardening → Task 2 (handover `20260812-07`)
+- Tidy `.rej` -> Task 3 (handover `20260812-05`)
+- Whitespace round-trip hardening -> Task 2 (handover `20260812-07`)
 
 ## Mid-session findings
 
 - **Root cause confirmed.** `SOURCE_BRANCH` is not captured in `_run_draft_workflow`
-  itself as the objective assumed — it is computed as a `local` inside `draft_run`
+  itself as the objective assumed -- it is computed as a `local` inside `draft_run`
   (line ~313) and only passed downward into `draft_create_and_init_branch` for the
   `.draft-state` record. `_run_draft_workflow` never had it in scope for the
   rollback. Fix: capture `SOURCE_BRANCH` in `_run_draft_workflow` **before** the
   `draft_run` call (which is when HEAD is still on the source branch, before
   `git checkout -b draft/...`), and pass the value to a new `_draft_rollback`
   helper used by both failure sites. `draft_run` keeps its own identical local for
-  the `.draft-state` record — separate scope, unchanged behavior.
+  the `.draft-state` record -- separate scope, unchanged behavior.
 - **Both rollback sites fixed identically.** The patch-apply and the uncommitted-diff
   failure blocks both now call `_draft_rollback "$PROJECT_DIR" "$SOURCE_BRANCH"`
   instead of the bare `reset --hard` + `tag -d`.
@@ -95,7 +95,7 @@ afterwards).
       HEAD at the savepoint commit)
 - [x] `SOURCE_BRANCH` captured in `_run_draft_workflow` before the `draft_run` call
 - [x] Both failure rollback sites (`draft_apply_patches` and `draft_apply_uncommitted`
-      in `_run_draft_workflow`) restore the source branch — operator is not left on
+      in `_run_draft_workflow`) restore the source branch -- operator is not left on
       `draft/*`
 - [x] Regression test `test_draft_failure_returns_to_source_branch` added to
       `tests/test_draft_workflow.sh`; verified discriminating (fails when checkout

@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-30
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Type:** Implementation — Draft rollback on patch failure
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
+**Type:** Implementation -- Draft rollback on patch failure
 **Status:** Active
 
 ## Objective
@@ -11,9 +11,10 @@
 
 ## Design
 
-From roadmap: "Local tags don't push by default — no remote pollution. On success, delete the tag."
+From roadmap: "Local tags don't push by default -- no remote pollution. On success, delete the tag."
 
 Implementation in `scripts/workflows/draft.sh` or wherever patch application lives:
+
 1. Before applying patches: `git tag draft-savepoint` (local only)
 2. Apply patches one by one
 3. On failure: `git reset --hard draft-savepoint; git tag -d draft-savepoint`; exit with error

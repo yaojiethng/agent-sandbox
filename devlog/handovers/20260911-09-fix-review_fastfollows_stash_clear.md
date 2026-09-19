@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Apply the must-fix findings from the thermo-nuclear review of `7e06c4b..HEAD` (fresh `pi -p` subagent, verdict: ship, fast-follows recommended).
 
 ## Scope
+
 - Finding 1 (doc): ADR records the unreachable-objects residual of `git stash clear` (refs removed; stash commit objects remain in the volume object store until gc; not reachable through normal git commands or the diff pipeline).
 - Finding 2 (code): seed self-verification tripwire checks the `git stash list` exit status -- a git failure dies instead of reading as an empty stack.
 - Finding 3 (cosmetic): COPY column alignment in hermes/opencode provider dockerfiles.

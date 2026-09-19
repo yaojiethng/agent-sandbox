@@ -6,10 +6,13 @@
 **Status:** Closed
 
 ## Objective
+
 Implement proposal v3 from audit `20260912-03-workflow-roadmap_maintenance_audit.md`: force the roadmap write-back at the pre-close gate via one prompt amendment, consolidate the roadmap-maintenance timing rule to a single canonical phrasing, thin the AGENTS.md layers to pointers, and clean the roadmap defects the audit surfaced.
 
 ## Scope
+
 Changes are proposed one at a time in chat for operator approval before any write. Queue revised after operator steering (restated paragraphs in AGENTS.md are not value-add; delegate instead):
+
 1. `docs/operations/iteration_policy.md` Step 7: add the mandatory "Roadmap write-back" row to the pre-close summary (canonical home of the gate).
 2. `AGENTS.md`: collapse the four restating paragraphs (Commit when the handover closes / Confirm scope / Confirm acceptance / Plan before executing) into one delegation paragraph + pointers to iteration_policy.md.
 3. `docs/operations/roadmap_policy.md`: collapse the timing-rule phrasings to one canonical wording (GOTCHAS 2026-08-31 wording); retire the "During the iteration" variant.
@@ -17,6 +20,7 @@ Changes are proposed one at a time in chat for operator approval before any writ
 5. GOTCHAS 2026-08-31: note the gate row as the durable fix, move to probation.
 
 ## Out of scope
+
 - pi-layer AGENTS.md (lives outside the repo; recorded as deferred).
 - Any script, test, or structured-fields change (withdrawn in the audit).
 - wrapup.md prompt changes.
@@ -53,4 +57,5 @@ AC4: full suite 742/742 (record files only; no test changes). Historical note: t
 | F1 | (open) | |
 
 ## Deferred items
+
 pi-layer AGENTS.md thinning (file lives outside the repo; needs a provider-image change).

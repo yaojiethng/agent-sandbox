@@ -207,8 +207,8 @@ state: open
 scoped: none
 legacy: none
 mitigation: durable fix applied (session `20260810-01`): `documentation_policy.md` `### Character set` generalized to cover non-ASCII + control/formatting symbols + audit-check entry. Functional `` scrubbed from frequently-read live docs; only deliberate literals remain (documentation_policy rule, AGENT_FEEDBACK finding record). Closed handovers retain `` (read-only, out of scope). Monitor for resurfacing (new ``/non-ASCII in live docs). When confirmed durable, delete and record in changelog/roadmap.
-resurfaced: session `20260821-02`  --  introduced `Q7`/`N2`/`Numbering` in the start/resume design handover"s cross-references. Cause: imitating `` from a closed-handover reference without checking the target doc or the policy. Not durable yet  --  keep monitoring; scrub on sight in live docs.
-resurfaced: session `20260901-12`  --  four section-sign references (`§`) written into an active handover while citing the roadmap-update timing rule. Cause: imported referencing habit from outside the repo, not from any repo document (the policy itself names `§` as banned). Scrubbed on sight. Probation lifted back to open; not durable yet.
+resurfaced: session `20260821-02`  --  introduced `Q7`/`N2`/`Numbering` in the start/resume design handover"s cross-references. Cause: imitating`` from a closed-handover reference without checking the target doc or the policy. Not durable yet  --  keep monitoring; scrub on sight in live docs.
+resurfaced: session `20260901-12`  --  four section-sign references (``) written into an active handover while citing the roadmap-update timing rule. Cause: imported referencing habit from outside the repo, not from any repo document (the policy itself names`` as banned). Scrubbed on sight. Probation lifted back to open; not durable yet.
 
 ### [A] 2026-08-09  --  Tracked-backlog proliferation at close
 
@@ -258,6 +258,7 @@ scoped: none
 legacy: none
 mitigation: the first `edit` call on `common.sh` omitted the required `path` field and was rejected by tool validation. Self-corrected on the retry. Always pass `path` explicitly on edit calls.
 ---
+
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.
 
 ## Agent experience  --  session 20260810-12
@@ -315,7 +316,7 @@ syntactically invalid stop.sh; the test "passed" vacuously (rc=2 from a
 syntax error, not from the bug being tested). Only a `bash -n` after mutating
 caught it. After any negative-test mutation, check (a) the mutated file is
 still valid (`bash -n`), and (b) the test fails for the intended reason, not
-a side effect. A vacuous pass is more dangerous than a detected failure  -- 
+a side effect. A vacuous pass is more dangerous than a detected failure  --
 it looks green while testing nothing. Same family as the "did the write
 land?" reflex but distinct: that catches un-applied edits, this catches
 mis-applied ones.
@@ -392,7 +393,7 @@ legacy: none
 mitigation: adding a new subcommand (or flag) to `scripts/agent-sandbox.sh` does
 not reach the installed CLI until `make install` re-installs it (the dispatcher is
 copied verbatim, sed-substituting `@@AGENT_SANDBOX_REPO@@`). The operator symptom
-is a bare `Unknown subcommand: resume` with no hint that `make install` is needed  -- 
+is a bare `Unknown subcommand: resume` with no hint that `make install` is needed  --
 looks like the feature is un-hooked. Detection gap: the stale installed CLI still
 lists `package-branch` but omits newer entries (e.g. `resume`), and the source
 dispatcher matches. In this session the sandbox Makefile had refreshed (template
@@ -426,8 +427,8 @@ entry points would let tests source and call directly, deleting the
 extraction layer entirely.
 
 reconciled: 2026-09-01  --  all three named scripts now carry the guard
-(`scripts/start_agent.sh` wraps `main "$@"` — flag parsing lives inside
-`main()` — likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.2.
+(`scripts/start_agent.sh` wraps `main "$@"` -- flag parsing lives inside
+`main()` -- likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.2.
 Marked probation per the reconcile-before-acting rule (tree has outgrown the
 entry); drop if it does not resurface. Follow-up completed: the remaining sed-extraction seam
 (`template_version_probe_real`, `tests/test_onboard.sh`) was deleted with handover `20260911-04`,
@@ -500,6 +501,7 @@ legacy: none
 mitigation: none
 
 First drafts of the seed-transport ADR and concept doc mirrored the session's reasoning: narrative history, transient identifiers (session ids, commit hashes, handover names), implementation command dumps, and rationale-as-argument instead of rationale-as-mapping. The operator steer (records state, not session history; problem / solution / rejected-with-failure-locus / follow-up; requirements as behavioral contracts in concept docs; interface-level descriptions, commands only for external interactions) required full rewrites of both. Mitigation for next time: before writing a record-layer document, propose its skeleton (section list + what each section holds) in chat and get the structure confirmed; write prose only against the confirmed skeleton. Findings F8-F14 in handover 20260904-01-design-start_resume_rsync_stall.md carry the policy-amendment candidates.
+
 ## Agent experience  --  session 20260918-10 (thermo-nuclear review pass)
 
 ### [A] 2026-09-18  --  Review-loop round-cap guidance fits correctness reviews, not model-consensus passes

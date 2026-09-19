@@ -72,6 +72,7 @@ Propagation checklist -- <change description>
 ```
 
 Update the checklist:
+
 - When a file is completed -- mark it `done` before moving to the next file.
 - **When the task scope expands** -- add new rows for the new scope before producing any output for it.
 
@@ -105,15 +106,19 @@ These files are tied into the iteration's Findings for recording and into the su
 Before opening any file in full, establish what you need from it first.
 
 **To find which files contain a term across the repo:**
+
 ```bash
 grep -rn "TERM" path/
 ```
+
 Build your change list from the results. Open only files that appear.
 
 **To get a section map of a file before reading it:**
+
 ```bash
 grep -n "^##" filename.md
 ```
+
 Then read only the sections you need.
 
 A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.

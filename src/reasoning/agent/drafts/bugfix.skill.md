@@ -73,6 +73,7 @@ Apply targeted edits to the minimum set of files that address the root causes:
 Document the bug and fix in two places:
 
 **A. Handover `[CORRECTION]` block** (per `docs/operations/handover_policy.md`):
+
 - What was wrong, root cause for each distinct bug, what was changed, which files were modified
 
 **B. Diagnostic script**  --  serves as the permanent record of preconditions and the regression guard.

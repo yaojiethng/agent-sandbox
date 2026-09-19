@@ -1,4 +1,4 @@
-# Handover 20260901-17 — impl resume inventory display compaction + work/state columns
+# Handover 20260901-17 -- impl resume inventory display compaction + work/state columns
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** impl
@@ -9,6 +9,7 @@
 
 Operator field feedback on `make resume --list / --interactive` output (long, messy). Requested
 changes:
+
 1. Column headers in the interactive picker (list already has them).
 2. Drop the `(image-sig)` brackets after the provider.
 3. Truncate branch names to 16 chars + `...`.
@@ -58,7 +59,7 @@ changes:
 | Tests + lint (AC5) | 767/767/0 (compact-time tests; sig-display test updated to the new contract); lint Clean |
 | Tests + lint (AC5) | 767/767/0 (compact-time tests; sig-display test updated to the new contract); lint Clean |
 | Fixes found by the suite | associative-array subscript arithmetic under `set -u`; `--list` stdout contract restored; interactive mode must hand the picker ALL entries (picker paginates itself) |
-| STATE cell consolidation (operator follow-up, same iteration) | STARTED + STATE + LAST USED merged into one STATE cell = the LAST lifecycle event from the session log (start/stop are linearizable; timestamps lexicographically comparable); docker overrides the verb when the log disagrees (crash) — `started 55m ago` / `stopped 29m ago` / `-`. Creation time stays on the record + confirm prompt (`created:`). Covered by `test_list_state_cell_from_log` (both orderings). Registration gap fixed: the provider-without-sig test had lost its run_test line in the rename; now registered. Final: 770/770/0 |
+| STATE cell consolidation (operator follow-up, same iteration) | STARTED + STATE + LAST USED merged into one STATE cell = the LAST lifecycle event from the session log (start/stop are linearizable; timestamps lexicographically comparable); docker overrides the verb when the log disagrees (crash) -- `started 55m ago` / `stopped 29m ago` / `-`. Creation time stays on the record + confirm prompt (`created:`). Covered by `test_list_state_cell_from_log` (both orderings). Registration gap fixed: the provider-without-sig test had lost its run_test line in the rename; now registered. Final: 770/770/0 |
 
 ## Decisions
 

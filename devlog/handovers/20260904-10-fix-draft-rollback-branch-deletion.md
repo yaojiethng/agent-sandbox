@@ -1,4 +1,4 @@
-# Handover 20260904-10 — fix draft rollback deletes the draft branch
+# Handover 20260904-10 -- fix draft rollback deletes the draft branch
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** fix

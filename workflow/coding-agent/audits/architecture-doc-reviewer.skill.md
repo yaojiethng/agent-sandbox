@@ -23,6 +23,7 @@ This project's documentation policy establishes the following rules. A finding i
 **Documents describe current reality.** Future work belongs in `roadmap.md`. The words `will`, `plan`, `future`, `later`, `eventually`, `may support` are prohibited in `architecture/` documents.
 
 **Folder ownership is strict.** Each document belongs to exactly one category:
+
 - `architecture/`  --  implementation design and decisions
 - `concepts/`  --  conceptual model and principles
 - `operations/`  --  how to run the system
@@ -77,6 +78,7 @@ Apply Hickey's simple/complex distinction to the architecture being described:
 **The test**: can the document's core claim be stated in one sentence without a dependent clause? If not, investigate whether the architecture it describes has accumulated accidental complexity. Do not recommend adding more explanation  --  recommend surfacing the underlying design question.
 
 Ask specifically:
+
 - Does any component described here have more than one reason to change?
 - Does any interface described here require both sides to know more than they should about each other?
 - Is any abstraction here named for its implementation rather than its purpose?
@@ -87,15 +89,18 @@ Ask specifically:
 Scan for language that sounds precise but commits to nothing:
 
 **Vague scope indicators:**
+
 - "may be used for", "can optionally", "is intended to", "in some cases"
 - "appropriate", "as needed", "where relevant", "if applicable"
 - Passive constructions that hide who does what: "changes are reviewed" (by whom?), "outputs are validated" (by what?)
 
 **False precision indicators:**
+
 - Specific-sounding names for things that aren't yet defined ("the task scheduler will coordinate...")
 - Component names that appear in architecture docs but have no corresponding implementation reference
 
 **Audience confusion indicators:**
+
 - A document that switches register mid-section (operator instructions inside a conceptual document)
 - A document that requires reading another document to understand its own core claim
 
@@ -137,18 +142,23 @@ Use these as your calibration points, not as a checklist to tick off:
 ## Output Format
 
 ### Overall Assessment
+
 One paragraph: are these documents in good shape? What is the dominant character of any problems found  --  staleness, scope drift, accidental complexity, or vagueness?
 
 ### Critical Findings
+
 Staleness, policy violations, and cross-document inconsistencies that must be fixed. For each: the document and section, the specific problem, and the correction or the question that must be answered before correction is possible.
 
 ### Design Questions Surfaced
+
 Findings where the documentation difficulty reveals a potential architecture question. Not documentation fixes  --  these are questions for the operator. For each: what the documentation suggests, what the underlying design question is, and what resolving it would make clearer.
 
 ### Improvements Needed
+
 Scope, vagueness, and consistency issues that should be fixed. Specific before/after examples where the fix is a documentation edit.
 
 ### What Is Working Well
+
 Documents or sections that demonstrate the standard correctly. Name them  --  good documentation discipline is hard to maintain and worth reinforcing explicitly.
 
 ---

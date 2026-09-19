@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-05-04
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
@@ -13,9 +13,9 @@ Add `/opt/workflow/` directory to the agent container with `agent/skills/` and `
 
 - Stage `agent/skills/` and `agent/prompts/` into the agent build context in `libs/containers.sh` (same `cp -r` convention as `docs/architecture` and `docs/concepts`)
 - Add COPY commands to each provider's `provider.Dockerfile` to populate `/opt/workflow/agent/skills/` and `/opt/workflow/agent/prompts/`
-- `/opt/workflow/` is a data hierarchy for agent workflow files (prompts and skills) — no PATH modification needed
+- `/opt/workflow/` is a data hierarchy for agent workflow files (prompts and skills) -- no PATH modification needed
 - No changes to sandbox container or base images
-- A.3 documentation alignment deferred — resume after this session
+- A.3 documentation alignment deferred -- resume after this session
 
 ## Carried forward
 
@@ -25,8 +25,8 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `grep -c "cp -r.*agent/skills" libs/containers.sh` exits 0 — `agent/skills/` staged in `build_context_agent()` | pending |
-| 2 | `grep -c "cp -r.*agent/prompts" libs/containers.sh` exits 0 — `agent/prompts/` staged in `build_context_agent()` | pending |
+| 1 | `grep -c "cp -r.*agent/skills" libs/containers.sh` exits 0 -- `agent/skills/` staged in `build_context_agent()` | pending |
+| 2 | `grep -c "cp -r.*agent/prompts" libs/containers.sh` exits 0 -- `agent/prompts/` staged in `build_context_agent()` | pending |
 | 3 | Each provider Dockerfile has `COPY agent/skills /opt/workflow/agent/skills/` | pending |
 | 4 | Each provider Dockerfile has `COPY agent/prompts /opt/workflow/agent/prompts/` | pending |
 | 5 | `make build agent PROVIDER=<any>` succeeds | pending |
@@ -67,6 +67,6 @@ None.
 
 ## Next session
 
-M2.3 — Apply Workflow: Capability Layer Diff Pipeline. Documentation alignment (A.3) remains pending per prior handover.
+M2.3 -- Apply Workflow: Capability Layer Diff Pipeline. Documentation alignment (A.3) remains pending per prior handover.
 
 **Conclusions from this session:** None.

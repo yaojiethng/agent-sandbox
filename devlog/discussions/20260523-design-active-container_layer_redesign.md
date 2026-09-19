@@ -1,4 +1,4 @@
-# Design — Directory Restructuring (Structural Cleanup)
+# Design -- Directory Restructuring (Structural Cleanup)
 
 **Status:** Active. Session 1 (libs/ stage) complete; sessions 2+ pending.
 
@@ -8,10 +8,10 @@
 
 | Session | Scope | Status |
 |---|---|---|
-| 1 — libs/ stage | All `libs/` files moved to target directories per assignment table below | ✅ Complete (session `20260526-06`) |
-| 2 — providers/ + agent/ + devlog/ | Move `providers/`, `agent/`, and `docs/devlog/` to their target locations | ⬜ Pending |
-| 3 — Dockerfile layer refactoring | Create `src/reasoning/Dockerfile.node`, `Dockerfile.python`; trim per-provider bases | ⬜ Pending |
-| 4+ — UID Mapping | Per M2.7 Track C | ⬜ Pending |
+| 1 -- libs/ stage | All `libs/` files moved to target directories per assignment table below | [x] Complete (session `20260526-06`) |
+| 2 -- providers/ + agent/ + devlog/ | Move `providers/`, `agent/`, and `docs/devlog/` to their target locations | [ ] Pending |
+| 3 -- Dockerfile layer refactoring | Create `src/reasoning/Dockerfile.node`, `Dockerfile.python`; trim per-provider bases | [ ] Pending |
+| 4+ -- UID Mapping | Per M2.7 Track C | [ ] Pending |
 
 ---
 
@@ -19,140 +19,140 @@
 
 ### Principles
 
-1. **Deployment target as primary split** — files grouped by where they execute: host, reasoning container, or capability container.
-2. **Life stage as secondary split** — build-time configuration separated from runtime code.
-3. **All code under `src/`** — build files, libs, scripts, entrypoints all land under `src/`. No top-level code directories outside `src/`, `docs/`, `devlog/`, `tests/`, `workflow/` and project root files.
-4. **Naming convention: underscores** — all `.sh` file names use underscores (`session_state.sh`). Dashes reserved for CLI subcommands (`agent-sandbox package-diff`). Exceptions: `docker-compose.yml` (Docker convention), `agent-sandbox.sh` (installed binary).
-5. **`devlog/` at root** — agent development history is not project documentation.
+1. **Deployment target as primary split** -- files grouped by where they execute: host, reasoning container, or capability container.
+2. **Life stage as secondary split** -- build-time configuration separated from runtime code.
+3. **All code under `src/`** -- build files, libs, scripts, entrypoints all land under `src/`. No top-level code directories outside `src/`, `docs/`, `devlog/`, `tests/`, `workflow/` and project root files.
+4. **Naming convention: underscores** -- all `.sh` file names use underscores (`session_state.sh`). Dashes reserved for CLI subcommands (`agent-sandbox package-diff`). Exceptions: `docker-compose.yml` (Docker convention), `agent-sandbox.sh` (installed binary).
+5. **`devlog/` at root** -- agent development history is not project documentation.
 
-### Cross-cutting libs → `src/libs/`
+### Cross-cutting libs -> `src/libs/`
 
 | File | Rationale | Status |
 |---|---|---|
-| `dirs.sh` | Sourced by host, reasoning container, and capability container | ✅ |
-| `session_state.sh` | `session_state_read`/`write` — extracted from `session.sh` | ✅ |
-| `routing.sh` | Path layout conventions | ✅ |
-| `diff.sh` | Diff utilities (strip_index_lines, write_*_diff, write_changed_files) | ✅ |
-| `diff_export.sh` | `diff_export` orchestrator — extracted from `diff.sh` | ✅ |
-| `package_branch.sh` | Branch packaging — paired with package_diff | ✅ |
-| `package_diff.sh` | Diff packaging | ✅ |
+| `dirs.sh` | Sourced by host, reasoning container, and capability container | [x] |
+| `session_state.sh` | `session_state_read`/`write` -- extracted from `session.sh` | [x] |
+| `routing.sh` | Path layout conventions | [x] |
+| `diff.sh` | Diff utilities (strip_index_lines, write_*_diff, write_changed_files) | [x] |
+| `diff_export.sh` | `diff_export` orchestrator -- extracted from `diff.sh` | [x] |
+| `package_branch.sh` | Branch packaging -- paired with package_diff | [x] |
+| `package_diff.sh` | Diff packaging | [x] |
 
-### Host-side guards → `scripts/guards.sh`
+### Host-side guards -> `scripts/guards.sh`
 
-`validate_project_dir` and `draft_clear_stale_lock` extracted from `session.sh`. Host-side only — not deployed to containers.
+`validate_project_dir` and `draft_clear_stale_lock` extracted from `session.sh`. Host-side only -- not deployed to containers.
 
 | Function | Source | Status |
 |---|---|---|
-| `validate_project_dir()` | `session.sh` | ✅ |
-| `draft_clear_stale_lock()` | `session.sh` | ✅ |
+| `validate_project_dir()` | `session.sh` | [x] |
+| `draft_clear_stale_lock()` | `session.sh` | [x] |
 
-### Reasoning container → `src/reasoning/`
-
-| File | Rationale | Status |
-|---|---|---|
-| `entrypoint.sh` | Runs inside reasoning container (was `provider-entrypoint.sh`) | ✅ |
-| `agent/` (skills, prompts, config) | Agent workflow files | ⬜ Pending |
-| `Dockerfile.node` / `Dockerfile.python` | Harness bases | ⬜ Pending |
-| `providers/<n>/` (all files) | Per-provider files | ⬜ Pending |
-
-### Capability container → `src/capability/`
+### Reasoning container -> `src/reasoning/`
 
 | File | Rationale | Status |
 |---|---|---|
-| `entrypoint.sh` | Runs inside capability container (was `sandbox-entrypoint.sh`) | ✅ |
-| `Dockerfile` | Capability layer image definition (was `sandbox.Dockerfile`) | ✅ |
-| `snapshot.sh` | Snapshot pipeline | ✅ |
+| `entrypoint.sh` | Runs inside reasoning container (was `provider-entrypoint.sh`) | [x] |
+| `agent/` (skills, prompts, config) | Agent workflow files | [ ] Pending |
+| `Dockerfile.node` / `Dockerfile.python` | Harness bases | [ ] Pending |
+| `providers/<n>/` (all files) | Per-provider files | [ ] Pending |
 
-### Build pipeline → `src/build/`
+### Capability container -> `src/capability/`
 
 | File | Rationale | Status |
 |---|---|---|
-| `image.sh` | Image naming + container identity (extracted from `containers.sh`) | ✅ |
-| `context.sh` | Build context prep (extracted from `containers.sh`) | ✅ |
-| `compose.sh` | Compose file generation (was `libs/compose.sh`) | ✅ |
-| `docker-compose.yml` | Build-time config template | ✅ |
-| `docker-compose.dry-run.yml` | Dry-run compose overlay | ✅ |
+| `entrypoint.sh` | Runs inside capability container (was `sandbox-entrypoint.sh`) | [x] |
+| `Dockerfile` | Capability layer image definition (was `sandbox.Dockerfile`) | [x] |
+| `snapshot.sh` | Snapshot pipeline | [x] |
+
+### Build pipeline -> `src/build/`
+
+| File | Rationale | Status |
+|---|---|---|
+| `image.sh` | Image naming + container identity (extracted from `containers.sh`) | [x] |
+| `context.sh` | Build context prep (extracted from `containers.sh`) | [x] |
+| `compose.sh` | Compose file generation (was `libs/compose.sh`) | [x] |
+| `docker-compose.yml` | Build-time config template | [x] |
+| `docker-compose.dry-run.yml` | Dry-run compose overlay | [x] |
 
 Build orchestration (`build_image`, `build_agent`, `build_sandbox`, `preflight`) moved to `scripts/build.sh`.
 
-### Host orchestration → `src/scripts/`
+### Host orchestration -> `src/scripts/`
 
 All existing `scripts/` files plus host-side workflow files from `libs/`. Build orchestration functions from `containers.sh` moved to `scripts/build.sh`.
 
-### Workflow files → `src/scripts/workflows/`
+### Workflow files -> `src/scripts/workflows/`
 
 | File | Source | Status |
 |---|---|---|
-| `draft.sh` | `libs/draft_workflow.sh` (draft_run + helpers) | ✅ |
-| `confirm.sh` | `libs/draft_workflow.sh` (confirm_run) | ✅ |
-| `reject.sh` | `libs/draft_workflow.sh` (reject_run) | ✅ |
-| `apply.sh` | `libs/diff_workflow.sh` | ✅ |
-| `interactive.sh` | `libs/interactive_session_select.sh` | ✅ |
+| `draft.sh` | `libs/draft_workflow.sh` (draft_run + helpers) | [x] |
+| `confirm.sh` | `libs/draft_workflow.sh` (confirm_run) | [x] |
+| `reject.sh` | `libs/draft_workflow.sh` (reject_run) | [x] |
+| `apply.sh` | `libs/diff_workflow.sh` | [x] |
+| `interactive.sh` | `libs/interactive_session_select.sh` | [x] |
 
 ---
 
 ## 2. Assignment Table
 
-### ✅ Completed — `src/libs/`
+### [x] Completed -- `src/libs/`
 
 | File | Current path (new) | Status |
 |---|---|---|
-| `dirs.sh` | `src/libs/dirs.sh` | ✅ |
-| `session_state.sh` | `src/libs/session_state.sh` | ✅ |
-| `routing.sh` | `src/libs/routing.sh` | ✅ |
-| `diff.sh` | `src/libs/diff.sh` | ✅ |
-| `diff_export.sh` | `src/libs/diff_export.sh` | ✅ |
-| `package_branch.sh` | `src/libs/package_branch.sh` | ✅ |
-| `package_diff.sh` | `src/libs/package_diff.sh` | ✅ |
+| `dirs.sh` | `src/libs/dirs.sh` | [x] |
+| `session_state.sh` | `src/libs/session_state.sh` | [x] |
+| `routing.sh` | `src/libs/routing.sh` | [x] |
+| `diff.sh` | `src/libs/diff.sh` | [x] |
+| `diff_export.sh` | `src/libs/diff_export.sh` | [x] |
+| `package_branch.sh` | `src/libs/package_branch.sh` | [x] |
+| `package_diff.sh` | `src/libs/package_diff.sh` | [x] |
 
-### ✅ Completed — `src/capability/`
-
-| File | New path | Status |
-|---|---|---|
-| `entrypoint.sh` | `src/capability/entrypoint.sh` | ✅ |
-| `Dockerfile` | `src/capability/Dockerfile` | ✅ |
-| `snapshot.sh` | `src/capability/snapshot.sh` | ✅ |
-
-### ✅ Completed — `src/reasoning/`
+### [x] Completed -- `src/capability/`
 
 | File | New path | Status |
 |---|---|---|
-| `entrypoint.sh` | `src/reasoning/entrypoint.sh` | ✅ |
+| `entrypoint.sh` | `src/capability/entrypoint.sh` | [x] |
+| `Dockerfile` | `src/capability/Dockerfile` | [x] |
+| `snapshot.sh` | `src/capability/snapshot.sh` | [x] |
 
-### ✅ Completed — `src/build/`
-
-| File | New path | Status |
-|---|---|---|
-| `image.sh` | `src/build/image.sh` | ✅ |
-| `context.sh` | `src/build/context.sh` | ✅ |
-| `compose.sh` | `src/build/compose.sh` | ✅ |
-| `docker-compose.yml` | `src/build/docker-compose.yml` | ✅ |
-| `docker-compose.dry-run.yml` | `src/build/docker-compose.dry-run.yml` | ✅ |
-
-### ✅ Completed — `scripts/`
+### [x] Completed -- `src/reasoning/`
 
 | File | New path | Status |
 |---|---|---|
-| `build.sh` | `scripts/build.sh` | ✅ |
-| `guards.sh` | `scripts/guards.sh` | ✅ |
+| `entrypoint.sh` | `src/reasoning/entrypoint.sh` | [x] |
 
-### ✅ Completed — `scripts/workflows/`
+### [x] Completed -- `src/build/`
 
 | File | New path | Status |
 |---|---|---|
-| `draft.sh` | `scripts/workflows/draft.sh` | ✅ |
-| `confirm.sh` | `scripts/workflows/confirm.sh` | ✅ |
-| `reject.sh` | `scripts/workflows/reject.sh` | ✅ |
-| `apply.sh` | `scripts/workflows/apply.sh` | ✅ |
-| `interactive.sh` | `scripts/workflows/interactive.sh` | ✅ |
+| `image.sh` | `src/build/image.sh` | [x] |
+| `context.sh` | `src/build/context.sh` | [x] |
+| `compose.sh` | `src/build/compose.sh` | [x] |
+| `docker-compose.yml` | `src/build/docker-compose.yml` | [x] |
+| `docker-compose.dry-run.yml` | `src/build/docker-compose.dry-run.yml` | [x] |
 
-### ✅ Completed — `scripts/templates/`
+### [x] Completed -- `scripts/`
+
+| File | New path | Status |
+|---|---|---|
+| `build.sh` | `scripts/build.sh` | [x] |
+| `guards.sh` | `scripts/guards.sh` | [x] |
+
+### [x] Completed -- `scripts/workflows/`
+
+| File | New path | Status |
+|---|---|---|
+| `draft.sh` | `scripts/workflows/draft.sh` | [x] |
+| `confirm.sh` | `scripts/workflows/confirm.sh` | [x] |
+| `reject.sh` | `scripts/workflows/reject.sh` | [x] |
+| `apply.sh` | `scripts/workflows/apply.sh` | [x] |
+| `interactive.sh` | `scripts/workflows/interactive.sh` | [x] |
+
+### [x] Completed -- `scripts/templates/`
 
 All moved from `libs/_templates/`.
 
 ---
 
-### ⬜ Pending — `src/reasoning/` (remaining items)
+### [ ] Pending -- `src/reasoning/` (remaining items)
 
 | Current path | Target path |
 |---|---|
@@ -170,15 +170,15 @@ All moved from `libs/_templates/`.
 | `providers/pi/onboard-readme.md` | `src/reasoning/providers/pi/onboard-readme.md` |
 | All claude-code, hermes, opencode, claude-ai files | `src/reasoning/providers/<n>/...` |
 
-### ⬜ Pending — `devlog/`
+### [ ] Pending -- `devlog/`
 
-`docs/devlog/` → root `devlog/`.
+`docs/devlog/` -> root `devlog/`.
 
-### ⬜ Pending — `tests/eval/`
+### [ ] Pending -- `tests/eval/`
 
-`eval/` → `tests/eval/`.
+`eval/` -> `tests/eval/`.
 
-### Root level — stays
+### Root level -- stays
 
 `docs/`, `Makefile`, `workflow/`, `.devcontainer/`, `.gitignore`, `AGENTS.md`, `LICENSE`, `readme.md`.
 
@@ -220,10 +220,10 @@ Session 4+: UID Mapping (per M2.7 Track C) ⬜ PENDING
 
 These are now formalised in `agent/drafts/refactor-mv-rename-file.skill.md`:
 
-1. **Rename propagation checklist** — before any `git mv`, grep every reference across the entire tree, categorise by whether it must change, produce a propagation table.
-2. **File lifecycle gate** — create new → update refs → verify (make test) → delete old → re-verify. Never batch-remove before path updates are confirmed.
-3. **Convention-first design** — naming convention frozen in design doc before implementation. No mid-session changes.
-4. **Container-side path verification** — test that every `/opt/sandbox/lib/` source path has a matching Dockerfile COPY.
+1. **Rename propagation checklist** -- before any `git mv`, grep every reference across the entire tree, categorise by whether it must change, produce a propagation table.
+2. **File lifecycle gate** -- create new -> update refs -> verify (make test) -> delete old -> re-verify. Never batch-remove before path updates are confirmed.
+3. **Convention-first design** -- naming convention frozen in design doc before implementation. No mid-session changes.
+4. **Container-side path verification** -- test that every `/opt/sandbox/lib/` source path has a matching Dockerfile COPY.
 
 These apply to all subsequent structural cleanup sessions.
 
@@ -242,15 +242,15 @@ These apply to all subsequent structural cleanup sessions.
 | `draft_workflow.sh` | Host-side | scripts/agent-sandbox.sh |
 | `diff_workflow.sh` | Host-side | scripts/agent-sandbox.sh |
 | `interactive_session_select.sh` | Host-side | scripts/agent-sandbox.sh |
-| `provider-entrypoint.sh` | Reasoning | build_context_agent → reasoning image |
-| `dirs.sh` | Shared lib | Both build contexts → both images |
-| `session.sh` | Shared lib | Both build contexts → both images |
-| `routing.sh` | Shared lib | Both build contexts → both images |
-| `sandbox-entrypoint.sh` | Capability | build_context_sandbox → sandbox image |
-| `snapshot.sh` | Capability | build_context_sandbox → sandbox image |
-| `diff.sh` | Capability | build_context_sandbox → sandbox image |
-| `package_branch.sh` | Capability | Both build contexts → both images |
-| `package_diff.sh` | Reasoning | build_context_agent → reasoning image |
+| `provider-entrypoint.sh` | Reasoning | build_context_agent -> reasoning image |
+| `dirs.sh` | Shared lib | Both build contexts -> both images |
+| `session.sh` | Shared lib | Both build contexts -> both images |
+| `routing.sh` | Shared lib | Both build contexts -> both images |
+| `sandbox-entrypoint.sh` | Capability | build_context_sandbox -> sandbox image |
+| `snapshot.sh` | Capability | build_context_sandbox -> sandbox image |
+| `diff.sh` | Capability | build_context_sandbox -> sandbox image |
+| `package_branch.sh` | Capability | Both build contexts -> both images |
+| `package_diff.sh` | Reasoning | build_context_agent -> reasoning image |
 | `docker-compose.yml` | Compose | compose.sh template |
 | `docker-compose.dry-run.yml` | Compose | compose.sh template |
 | `sandbox.Dockerfile` | Capability | build_sandbox() |
@@ -292,7 +292,7 @@ scripts/
 
 ## 5. Reference: Dependency Chain
 
-*For the implementer. Shows which files `source` which others — needed to validate path substitutions.*
+*For the implementer. Shows which files `source` which others -- needed to validate path substitutions.*
 
 | File | Sources |
 |---|---|
@@ -304,7 +304,7 @@ scripts/
 | `libs/package_diff.sh` | `session.sh`, `diff.sh`, `routing.sh` |
 | `libs/interactive_session_select.sh` | `routing.sh` |
 | `libs/sandbox-entrypoint.sh` | `dirs.sh`, `session.sh`, `snapshot.sh`, `diff.sh`, `routing.sh` (all from `/opt/sandbox/lib/`) |
-| `libs/provider-entrypoint.sh` | (none — it is sourced by the entrypoint) |
+| `libs/provider-entrypoint.sh` | (none -- it is sourced by the entrypoint) |
 | `scripts/agent-sandbox.sh` | `containers.sh`, `draft_workflow.sh`, `diff_workflow.sh`, `routing.sh` (host paths) + exec `package_diff.sh`, `package_branch.sh` |
 | `scripts/run_agent.sh` | `containers.sh`, `compose.sh` |
 | `scripts/start_agent.sh` | `containers.sh`, `snapshot.sh` |

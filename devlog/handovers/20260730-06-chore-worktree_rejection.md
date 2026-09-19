@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-30
-**Milestone:** M2.6 — Session Persistence
-**Type:** Housekeeping — Worktree rejection and simplified mount model
+**Milestone:** M2.6 -- Session Persistence
+**Type:** Housekeeping -- Worktree rejection and simplified mount model
 **Status:** Closed
 
 ## Objective
@@ -13,11 +13,11 @@ Formally reject worktree backing, consolidate all worktree-related documents int
 
 Three units:
 
-**Unit 1 — Worktree rejection study:** Consolidated all worktree investigations into `devlog/discussions/20260730-study-settled-worktree_rejection.md` — mechanism design, security delta (invariant-by-invariant comparison, residual risk table, required mitigations), and rejection rationale. Supersedes 5 documents.
+**Unit 1 -- Worktree rejection study:** Consolidated all worktree investigations into `devlog/discussions/20260730-study-settled-worktree_rejection.md` -- mechanism design, security delta (invariant-by-invariant comparison, residual risk table, required mitigations), and rejection rationale. Supersedes 5 documents.
 
-**Unit 2 — ADR:** `docs/adr/sandbox_delivery_model.md` — formal record of the rejection decision with rationale.
+**Unit 2 -- ADR:** `docs/adr/sandbox_delivery_model.md` -- formal record of the rejection decision with rationale.
 
-**Unit 3 — Mount model simplification:** Stripped worktree content from `devlog/discussions/20260730-design-settled-mount_model.md`. Backing axis now: "user-provided `.git` — whatever repo the user places in the mounted directory. Harness does not mediate." Roadmap updated to link to ADR.
+**Unit 3 -- Mount model simplification:** Stripped worktree content from `devlog/discussions/20260730-design-settled-mount_model.md`. Backing axis now: "user-provided `.git` -- whatever repo the user places in the mounted directory. Harness does not mediate." Roadmap updated to link to ADR.
 
 ## Content migration
 
@@ -39,14 +39,14 @@ Three units:
 | File | Change |
 |---|---|
 | `devlog/discussions/20260730-design-settled-mount_model.md` | Worktree content replaced with one-liner + ADR link |
-| `devlog/roadmap.md` | Not in scope → Rejected; links to ADR; stale backlinks task updated |
+| `devlog/roadmap.md` | Not in scope -> Rejected; links to ADR; stale backlinks task updated |
 
 ## Acceptance criteria
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Single worktree document covers mechanism, security delta, rejection | Accepted — `20260730-study-settled-worktree_rejection.md` |
-| 2 | ADR records rejection decision | Accepted — `docs/adr/sandbox_delivery_model.md` |
+| 1 | Single worktree document covers mechanism, security delta, rejection | Accepted -- `20260730-study-settled-worktree_rejection.md` |
+| 2 | ADR records rejection decision | Accepted -- `docs/adr/sandbox_delivery_model.md` |
 | 3 | Mount model doc has no worktree detail beyond one-liner + link | Accepted |
 | 4 | Roadmap links to ADR | Accepted |
 | 5 | security_delta deleted (content migrated) | Accepted |
@@ -55,9 +55,9 @@ Three units:
 
 | File | Why in scope |
 |---|---|
-| `devlog/discussions/20260730-study-settled-worktree_rejection.md` | New — consolidated worktree investigation |
-| `docs/adr/sandbox_delivery_model.md` | New — worktree rejection ADR |
-| `devlog/discussions/20260730-design-settled-mount_model.md` | Simplified — worktree content removed |
+| `devlog/discussions/20260730-study-settled-worktree_rejection.md` | New -- consolidated worktree investigation |
+| `docs/adr/sandbox_delivery_model.md` | New -- worktree rejection ADR |
+| `devlog/discussions/20260730-design-settled-mount_model.md` | Simplified -- worktree content removed |
 | `devlog/roadmap.md` | Updated links to ADR |
 
 ## Completed this session
@@ -65,10 +65,10 @@ Three units:
 | File | Change summary |
 |---|---|
 | `devlog/discussions/20260730-study-settled-worktree_rejection.md` | New: consolidated worktree investigation (mechanism, security delta, rejection) |
-| `docs/adr/sandbox_delivery_model.md` | New: ADR — worktree backing rejected |
-| `devlog/discussions/20260730-design-settled-mount_model.md` | Simplified: worktree content → one-liner + ADR link |
+| `docs/adr/sandbox_delivery_model.md` | New: ADR -- worktree backing rejected |
+| `devlog/discussions/20260730-design-settled-mount_model.md` | Simplified: worktree content -> one-liner + ADR link |
 | `devlog/discussions/20260622-study-settled-security_delta_worktree_model.md` | Deleted: content migrated to worktree rejection study |
-| `devlog/roadmap.md` | Not in scope → Rejected; links to ADR |
+| `devlog/roadmap.md` | Not in scope -> Rejected; links to ADR |
 
 ## Deferred items
 
@@ -76,6 +76,6 @@ None.
 
 ## Next session
 
-**Type:** Implementation — security.md rewrite
+**Type:** Implementation -- security.md rewrite
 
 Rewrite `docs/architecture/security.md` to reflect the simplified two-path model (M2.6.5 Copy, M2.6.6 Mount). Remove worktree row from Mount modes table. Update stale backlinks. Document the new principle: harness provides container boundary; user provides `.git`; harness does not mediate git operations.

@@ -6,12 +6,15 @@
 **Status:** Closed
 
 ## Objective
+
 Record, in the design record owning the seed contract, the operator-raised question: can the seeder avoid copying the entire `.git`?
 
 ## Scope
+
 Chat analysis from the stash study follow-up, formalized. No code changes; no contract change.
 
 ## Analysis summary
+
 - History is functionally unnecessary: no copy-mode consumer walks below `init_sha`.
 - A subset transport must reconstruct the index (staging state is a verified invariant) and would need repack/bundle machinery over `objects/` -- the transform class the 2026-09-04 redesign retired.
 - Decision: full native copy stands; stashes are removed surgically post-copy (`git stash clear` on the volume, roadmap item open); history-trim rejected absent a measured seed-cost driver, where the mount model is the designed answer.
@@ -36,4 +39,5 @@ Chat analysis from the stash study follow-up, formalized. No code changes; no co
 Seeder stash-clear implementation (roadmap item) -- unchanged.
 
 ## What's Next
+
 Implement the seeder stash-clear with its test to close the roadmap item.

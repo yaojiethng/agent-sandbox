@@ -1,4 +1,4 @@
-# Handover 20260904-09 — fix dry-run digest record labels
+# Handover 20260904-09 -- fix dry-run digest record labels
 
 **Milestone:** M2.6 - Session Persistence (M2.7 harness versioning follow-up)
 **Type:** fix

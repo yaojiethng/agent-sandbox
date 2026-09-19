@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-05-21
-**Milestone:** M2.7 — Session Identity and Harness Versioning
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
 **Type:** Implementation
 **Status:** Closed
 
@@ -14,13 +14,15 @@ Add `n` (next page) and `p` (previous page) navigation to the interactive sessio
 Modify `interactive_select_session` in `libs/interactive_session_select.sh` to support pagination when there are more entries than `INTERACTIVE_MAX_ENTRIES` (currently 10). The option 0 injection from the prior session persists across pages.
 
 **Files in scope:**
-- `libs/interactive_session_select.sh` — pagination loop in `interactive_select_session`
-- `tests/test_interactive_session_select.sh` — tests for pagination behavior
-- `docs/architecture/tool_interface.md` — update interactive mode description
-- `docs/architecture/sandbox_lifecycle.md` — same
+
+- `libs/interactive_session_select.sh` -- pagination loop in `interactive_select_session`
+- `tests/test_interactive_session_select.sh` -- tests for pagination behavior
+- `docs/architecture/tool_interface.md` -- update interactive mode description
+- `docs/architecture/sandbox_lifecycle.md` -- same
 
 **Deferred:**
-- Third change (commit names in `make draft` from package-branch.md export data) — session after next.
+
+- Third change (commit names in `make draft` from package-branch.md export data) -- session after next.
 
 ## Carried forward
 
@@ -32,13 +34,13 @@ Modify `interactive_select_session` in `libs/interactive_session_select.sh` to s
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | When >10 sessions exist, prompt shows `n=next` and `p=prev` options | ✅ |
-| 2 | Typing `n` shows the next page of entries | ✅ |
-| 3 | Typing `p` returns to the previous page | ✅ |
-| 4 | Option 0 injected session persists across pages | ✅ |
-| 5 | Selection by number works within the current page | ✅ |
-| 6 | `q` aborts from any page | ✅ |
-| 7 | All tests pass | ✅ (36/36 interactive, all suites 0 failures) |
+| 1 | When >10 sessions exist, prompt shows `n=next` and `p=prev` options | [x] |
+| 2 | Typing `n` shows the next page of entries | [x] |
+| 3 | Typing `p` returns to the previous page | [x] |
+| 4 | Option 0 injected session persists across pages | [x] |
+| 5 | Selection by number works within the current page | [x] |
+| 6 | `q` aborts from any page | [x] |
+| 7 | All tests pass | [x] (36/36 interactive, all suites 0 failures) |
 
 ## Hot files
 
@@ -71,12 +73,12 @@ None.
 
 ## Deferred items
 
-- Third change: `make draft` commit name application from package-branch.md export data — session after next.
-- M2.7 items (Track A + B) — Context handover in Next session.
+- Third change: `make draft` commit name application from package-branch.md export data -- session after next.
+- M2.7 items (Track A + B) -- Context handover in Next session.
 
 ## Next session
 
-**Sub-milestone:** M2.7 — Session Identity and Harness Versioning
+**Sub-milestone:** M2.7 -- Session Identity and Harness Versioning
 
 **Next task:** Investigate and implement commit name application in `make draft` using package-branch.md export data. Requires checking export format usability (especially for multi-line commit messages) and determining implementation scope.
 

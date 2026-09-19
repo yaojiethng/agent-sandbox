@@ -1,4 +1,4 @@
-# Handover 20260904-05 — fix seeder compose run tty stall
+# Handover 20260904-05 -- fix seeder compose run tty stall
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** fix
@@ -11,11 +11,11 @@ Fix the live-verification stall of the helper seeder (handover 20260904-04, oper
 
 ## Diagnosis
 
-Output fingerprint: `Created` → `failed to resize tty, using default size` → stall; `docker ps -a` empty. `docker compose run` allocates a TTY and attaches stdin by default; the seeder ran and exited (`--rm` removed the container, hence the empty `ps -a`), but compose kept waiting on the never-closing stdin attach stream of the non-interactive caller. The seed itself most likely completed and self-verified before the hang.
+Output fingerprint: `Created` -> `failed to resize tty, using default size` -> stall; `docker ps -a` empty. `docker compose run` allocates a TTY and attaches stdin by default; the seeder ran and exited (`--rm` removed the container, hence the empty `ps -a`), but compose kept waiting on the never-closing stdin attach stream of the non-interactive caller. The seed itself most likely completed and self-verified before the hang.
 
 ## Fix
 
-Run the seeder non-interactively: `docker compose run --rm -T seeder </dev/null` — no TTY allocation, stdin closed, exit code still propagates. `SEED_TIMEOUT` remains the backstop.
+Run the seeder non-interactively: `docker compose run --rm -T seeder </dev/null` -- no TTY allocation, stdin closed, exit code still propagates. `SEED_TIMEOUT` remains the backstop.
 
 ## Second live finding (same iteration)
 

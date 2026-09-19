@@ -1,7 +1,7 @@
 # Agent Handover
 
 **Date:** 2026-04-27
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
@@ -17,7 +17,7 @@ This session redesigns the diff pipeline output directory structure and updates 
 
 2. **Restructure directory layout**: Move from 3-field `<EXPORT_TIME>-<SANITIZED_HOST_BRANCH>-<SESSION_TS>/` with flat files to 2-field `<SESSION_TS>-<SANITIZED_HOST_BRANCH>/` with `session/` and `autosave/` subfolders. Each subfolder contains `EXPORT-TIME.txt`, `changes.diff`, `staged.diff` (session only), and `patches/0001-*.diff`.
 
-3. **Unify path resolution**: Both `make draft` and `make apply` now use consistent path resolution — absolute paths used as-is, relative paths resolved from `$CHANGES_DIR`, no argument triggers auto-resolution. (resolve against `$CHANGES_DIR/` for `make draft` and resolve against `$DIFFS_DIR=$OUTPUT_DIR/diffs/` for `make apply` [AMENDED from priorhandover])
+3. **Unify path resolution**: Both `make draft` and `make apply` now use consistent path resolution -- absolute paths used as-is, relative paths resolved from `$CHANGES_DIR`, no argument triggers auto-resolution. (resolve against `$CHANGES_DIR/` for `make draft` and resolve against `$DIFFS_DIR=$OUTPUT_DIR/diffs/` for `make apply` [AMENDED from priorhandover])
 
 4. **Fix `SESSION=` path resolution bug**: Absolute paths were being treated as relative; corrected.
 
@@ -31,18 +31,18 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `diff_on_exit` writes to `$CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/session/` with `EXPORT-TIME.txt`, `changes.diff`, `staged.diff`, and `patches/*.diff` | ✅ |
-| 2 | `diff_on_autosave` writes to `$CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/autosave/` with `EXPORT-TIME.txt`, `changes.diff`, and `patches/*.diff`; overwritten each tick, no proliferation | ✅ |
-| 3 | Directory names use 2-field format `<SESSION_TS>-<SANITIZED_HOST_BRANCH>` (EXPORT_TIME removed from folder name) | ✅ |
-| 4 | `EXPORT-TIME.txt` inside each subfolder replaces the `EXPORT_TIME` field in folder names | ✅ |
-| 5 | `make draft` resolves numbered diffs from `session/patches/` inside the session directory | ✅ |
-| 6 | `make draft` auto-resolves by finding the latest session with a valid `session/patches/` subdirectory under `$CHANGES_DIR/` | ✅ |
-| 7 | `make draft` branch naming: `draft/<SESSION_TS>-<BRANCH>-<SHA6>` (EXPORT_TIME dropped) | ✅ |
-| 8 | `make apply` resolves `changes.diff` from `session/changes.diff` then `autosave/changes.diff` | ✅ |
-| 9 | `make apply` with `--session=<absolute-path>` works even when `$CHANGES_DIR/` does not exist | ✅ |
-| 10 | `.draft-state` `exported-at` field reads from `session/EXPORT-TIME.txt` | ✅ |
-| 11 | All test suites pass (excluding 2 pre-existing `package_branch` test bugs) | ✅ |
-| 12 | Architecture docs, correspondence model, and quickstarts describe the new structure | ✅ |
+| 1 | `diff_on_exit` writes to `$CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/session/` with `EXPORT-TIME.txt`, `changes.diff`, `staged.diff`, and `patches/*.diff` | [x] |
+| 2 | `diff_on_autosave` writes to `$CHANGES_DIR/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/autosave/` with `EXPORT-TIME.txt`, `changes.diff`, and `patches/*.diff`; overwritten each tick, no proliferation | [x] |
+| 3 | Directory names use 2-field format `<SESSION_TS>-<SANITIZED_HOST_BRANCH>` (EXPORT_TIME removed from folder name) | [x] |
+| 4 | `EXPORT-TIME.txt` inside each subfolder replaces the `EXPORT_TIME` field in folder names | [x] |
+| 5 | `make draft` resolves numbered diffs from `session/patches/` inside the session directory | [x] |
+| 6 | `make draft` auto-resolves by finding the latest session with a valid `session/patches/` subdirectory under `$CHANGES_DIR/` | [x] |
+| 7 | `make draft` branch naming: `draft/<SESSION_TS>-<BRANCH>-<SHA6>` (EXPORT_TIME dropped) | [x] |
+| 8 | `make apply` resolves `changes.diff` from `session/changes.diff` then `autosave/changes.diff` | [x] |
+| 9 | `make apply` with `--session=<absolute-path>` works even when `$CHANGES_DIR/` does not exist | [x] |
+| 10 | `.draft-state` `exported-at` field reads from `session/EXPORT-TIME.txt` | [x] |
+| 11 | All test suites pass (excluding 2 pre-existing `package_branch` test bugs) | [x] |
+| 12 | Architecture docs, correspondence model, and quickstarts describe the new structure | [x] |
 
 ## Hot files
 
@@ -107,4 +107,4 @@ None.
 Not yet defined.
 
 ---
-[CORRECTION — 2026-05-06]: Added missing `## Deferred items` section with canonical null marker. See 20260506-01-workflow-handover_audit_and_corrections.md.
+[CORRECTION -- 2026-05-06]: Added missing `## Deferred items` section with canonical null marker. See 20260506-01-workflow-handover_audit_and_corrections.md.

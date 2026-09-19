@@ -28,36 +28,36 @@ use.
 
 **Code:**
 
-- `src/libs/interface_contract.sh` — delete `interface_contract_strict()`;
+- `src/libs/interface_contract.sh` -- delete `interface_contract_strict()`;
   update the Provides/header comment (self-documenting: authoritative, no
   escape hatch).
-- `scripts/build.sh` — `_check_interface_contract` now refuses unconditionally
+- `scripts/build.sh` -- `_check_interface_contract` now refuses unconditionally
   on a drift or missing label (no flag branch); preflight propagates the
   refusal (`|| return 1`).
-- `src/reasoning/entrypoint.sh` — `_check_container_contract` hard-stops
-  unconditionally on a definite container↔container mismatch (no flag branch);
+- `src/reasoning/entrypoint.sh` -- `_check_container_contract` hard-stops
+  unconditionally on a definite container<->container mismatch (no flag branch);
   missing record key/file still warns; missing lib skips silently.
 
 **Tests:**
 
-- `tests/test_interface_contract.sh` — remove the three `interface_contract_strict`
+- `tests/test_interface_contract.sh` -- remove the three `interface_contract_strict`
   flag units; rewrite the `_check_interface_contract` tests to assert
   authoritative refusal (no env override).
-- `tests/test_trace_build.sh` — rewrite the interface-contract stub test to
+- `tests/test_trace_build.sh` -- rewrite the interface-contract stub test to
   assert refusal/pass without the env override.
-- `tests/test_reasoner_container_contract.sh` — drop the parallel-warn test;
+- `tests/test_reasoner_container_contract.sh` -- drop the parallel-warn test;
   mismatch hard-stop is the only mismatch behavior; drop the env override from
   the missing-record tests.
 
 **Docs:**
 
-- `docs/adr/interface_contract_compatibility.md` — status to authoritative;
+- `docs/adr/interface_contract_compatibility.md` -- status to authoritative;
   add the 20260919-07 note; update the missing-label edge case (refuses, not
   warns).
-- `docs/concepts/sandbox_host_interface.md` — comparison points to
+- `docs/concepts/sandbox_host_interface.md` -- comparison points to
   authoritative, no flag.
-- `docs/architecture/sandbox_lifecycle.md` — preflight policy wording.
-- `devlog/roadmap.md`, `devlog/roadmap_future.md` — authoritative; P3 next.
+- `docs/architecture/sandbox_lifecycle.md` -- preflight policy wording.
+- `devlog/roadmap.md`, `devlog/roadmap_future.md` -- authoritative; P3 next.
 
 **Not changed (deliberately):** container-sig and its tooling (`container_sig.sh`,
 `install.sh`, `prune.sh`), the capability entrypoint, the docker/stub fixtures.
@@ -81,7 +81,7 @@ behavior.
 | Image label != host constant | preflight refuses (rc 1, named surface + remedy) |
 | Image label missing | preflight refuses (rc 1, named cause + remedy) |
 | Agent bake == sandbox record | entrypoint silent |
-| Container↔container mismatch | entrypoint hard-stops (FATAL, exit 1) |
+| Container<->container mismatch | entrypoint hard-stops (FATAL, exit 1) |
 | Record key missing | entrypoint warns (upgrade path, never blocks) |
 | Record file missing | entrypoint warns (never hard-aborts an unavailable check) |
 | Lib unavailable | entrypoint skips silently |
@@ -95,7 +95,7 @@ behavior.
 - container-sig / install / prune / capability entrypoint / stubs untouched.
 - Operator live proof already accepted: strict-regime start ran clean before
   removal; the remaining live matrix is a deliberately drifted start that must
-  refuse pre-flight and a mixed-build container↔container hard-stop.
+  refuse pre-flight and a mixed-build container<->container hard-stop.
 
 ## Acceptance criteria
 
@@ -103,17 +103,17 @@ behavior.
 |---|---|
 | AC1 | `interface_contract_strict()` and every `INTERFACE_CONTRACT_STRICT` branch are deleted (zero references outside closed handovers) |
 | AC2 | Preflight refuses on drift/missing label; passes on aligned (default behavior, no override) |
-| AC3 | Agent entrypoint hard-stops on container↔container mismatch (default behavior) |
+| AC3 | Agent entrypoint hard-stops on container<->container mismatch (default behavior) |
 | AC4 | Missing record key/file still warns; missing lib skips (upgrade path preserved) |
 | AC5 | container-sig untouched (P3 deferred) |
 | AC6 | Suite green; parity checks hold |
 
 ## What's next
 
-- **P3 — strip container-sig**: remove `container_sig` bake + compare, label
+- **P3 -- strip container-sig**: remove `container_sig` bake + compare, label
   injection, `sig_helpers.sh`, container-sig tests, install `xargs` dependency
   note; delete `src/libs/container_sig.sh`; rewrite the `sandbox_identity.md`
   interim section; close the drift_state_coherence / harness_versioning interim
   status; then close the interface-contract ADR.
 - Operator-run gate: live strict matrix incl. a deliberately drifted start that
-  must be refused pre-flight, and a mixed-build container↔container hard-stop.
+  must be refused pre-flight, and a mixed-build container<->container hard-stop.

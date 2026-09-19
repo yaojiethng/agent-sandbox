@@ -6,6 +6,7 @@
 **Status:** Closed
 
 ## Objective
+
 Amend the audit file reorganization: extend the audit family with the campaign and documentation-pass files, create the `workflow/coding-agent/prompts/` mirror with the deployed prompt surface, switch the dockerfile COPY to the folder level, fold the entrypoint-map study into the surface-area report, and drop the roadmap entrypoint-map task.
 
 ## Scope

@@ -6,6 +6,7 @@
 **Status:** Closed
 
 ## Objective
+
 Refine the session check-in procedure: rename `whats-next.md` to `gm.md`, replace its command recipes with a source checklist, add a structured work inventory (per-field plain-language descriptions, progress and impact as separate axes), an optional intent argument, and bounded-depth rules; log the record discrepancies the check-in experiments surfaced.
 
 ## Scope

@@ -94,12 +94,14 @@ None.
 Implement the env-precedence feature in phased `impl` iterations. B is the target; A is its foundation. The operator has directed that prefactors stabilize project state and add tests before the feature lands, because the working branch is stale and feature changes will rebase onto it.
 
 **Phase P (prefactors - no behavior change):**
+
 - P1: move `PROJECT_NAME` into `.env`; drop the sed `<project-name>` injection and the template literal; bump template version.
 - P2: unify `.env` loading into one library function.
 - P3: centralize base flag parsing/validation in `common.sh`.
 - P4: behavioral baseline tests (name-to-image/container routing, `.env` read, SANDBOX canonicalization).
 
 **Phase S (incremental feature landing):**
+
 - S1: new `src/libs/env_resolve.sh` - precedence resolver + `.env` location selection (provided dir, else CWD); unit tests per level.
 - S2: wire the resolver into entrypoints (start/resume, then build/stop/prune, then workflows).
 - S3: thin the CLI and sandbox Makefile (drop per-call identity flags; rely on `.env` via CWD or `--env`).
@@ -108,6 +110,7 @@ Implement the env-precedence feature in phased `impl` iterations. B is the targe
 Resolved design questions before impl: the CLI-vs-file precedence is now known - today `.env` wins (file beats an explicit flag); B makes flag-wins a net-new flip that a P4 test must pin. No runtime `SANDBOX_DIR` derivation level; the default is applied once at onboard into `.env`.
 
 Phase **P** corrections folded in (from thermo-nuclear review):
+
 - P1 must ADD `PROJECT_NAME=` insertion to `_run_refresh` (value is already present - `_validate_refresh` requires `--name`, `onboard.sh:186-194`) plus a dedicated migration test. Do not rely on the version bump to migrate.
 - P4 (behavioral baseline, incl. the `.env`-beats-flag regression test) ships FIRST, before P1.
 - P2's unified loader goes in a new `src/libs/env.sh`, separate from `common.sh` (P3's home) to avoid rebase collision.
@@ -116,6 +119,7 @@ Phase **P** corrections folded in (from thermo-nuclear review):
 Phase **S** additions: package-branch fix-or-exclude (dispatcher requires `--sandbox` but never forwards it, `agent-sandbox.sh:241-248`); resume `--list`/`--interactive` need sandbox-only partial resolution; resolver env-var level reads only `AGENT_SANDBOX_*`.
 
 Watch-out items:
+
 1. Existing onboarded sandboxes have a `.env` WITHOUT `PROJECT_NAME`; P1's refresh insert must detect and add it, and the resolver must treat absence as a hard error, not fall back to a derivation.
 2. Template version bump (4->5) interacts with the refresh staleness path in `_run_refresh`; the bump alone does not migrate.
 3. `make -C` is the CWD contract; `make -f <abs>/Makefile` breaks CWD-`.env` resolution.

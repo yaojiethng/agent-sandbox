@@ -31,6 +31,7 @@ Weaker than `-uo pipefail` in the last row is permitted only with an inline rati
 | [`tests/test_providers_pi_preflight.sh`](../../tests/test_providers_pi_preflight.sh) | same |
 
 Explicitly **not** changed, with reasons:
+
 - `build.sh`  --  dual-use flags already live inside its guard; design deliberate per handovers `20260528-05`/`20260528-06`; direct-exec prevention rejected (see Findings)
 - `guards.sh`, `workflows/interactive.sh`  --  pure libraries; flagless is correct
 - `dry_run_capability.sh`, `dry_run_reasoning.sh`  --  observe-and-report class with documented inline rationale

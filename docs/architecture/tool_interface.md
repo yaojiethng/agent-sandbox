@@ -20,7 +20,7 @@ Internal implementation is in [`execution_model.md`](execution_model.md).
 
 ## Container Naming
 
-Container names match image names exactly — `container_name:` is set explicitly; Docker Compose does not append an index suffix. One session per project can run at a time. `docker inspect`, `docker logs`, and `docker stop` address containers by name directly.
+Container names match image names exactly -- `container_name:` is set explicitly; Docker Compose does not append an index suffix. One session per project can run at a time. `docker inspect`, `docker logs`, and `docker stop` address containers by name directly.
 
 | Container | Name |
 |---|---|
@@ -35,13 +35,14 @@ Container names match image names exactly — `container_name:` is set explicitl
 
 Stops any running session for this project, builds missing images if needed, seeds the sandbox volume from the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
 
-**Default behaviour:** always starts a new session with fresh identity. To resume a previous session, use `make resume` (see below) — `start` carries no resume path.
+**Default behaviour:** always starts a new session with fresh identity. To resume a previous session, use `make resume` (see below) -- `start` carries no resume path.
 
 `PROVIDER` is required (unless `INTERACTIVE=1`). Fast path supplies it explicitly. Optional flags:
-- `SERVE=1` — start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific (see the serve-overlay table under Container Naming).
-- `REFRESH=1` — rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
-- `REBUILD=1` — rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
-- `INTERACTIVE=1` — the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`, `hermes`, `opencode`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted — e.g. `make start PROVIDER=hermes INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
+
+- `SERVE=1` -- start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific (see the serve-overlay table under Container Naming).
+- `REFRESH=1` -- rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
+- `REBUILD=1` -- rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
+- `INTERACTIVE=1` -- the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`, `hermes`, `opencode`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted -- e.g. `make start PROVIDER=hermes INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
 
 **Leaves behind:** `session/` (per-export `<EXPORT_TIME>-<SESSION_ID>/`) and `autosave/` (single overwritten `<SESSION_ID>/`) subfolders in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
 
@@ -51,12 +52,12 @@ Stops any running session for this project, builds missing images if needed, see
 
 Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped.
 
-- `SESSION_ID=<id>` — resume that specific session silently (recommended).
-- `LIST=1` — list resumable sessions as an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`), newest first (by raw `session-ts`), capped at 10 rows per page (same cap as the draft picker; a footer reports any remainder). The `PROVIDER` cell shows the bare provider name. `STARTED` and `LAST_USED` are relative times ("2 hours ago"; `LAST_USED` = time since the session was last stopped, read from its per-session `.compose/<session-id>.log`; `---` when running or never stopped). Staleness is shown exception-only as a warning label: `[SANDBOX_STALE]` when the session's recorded `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired — the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. Dry-run records are excluded from the listing (session_is_dry_run): their volume is destroyed at dry-run teardown, so they are not resumable; prune still reaches them. Accepts an optional `PROVIDER=<n>` filter.
-- `INTERACTIVE=1` — interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. Accepts an optional `PROVIDER=<n>` filter.
-- `PROVIDER=<n>` — filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
+- `SESSION_ID=<id>` -- resume that specific session silently (recommended).
+- `LIST=1` -- list resumable sessions as an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`), newest first (by raw `session-ts`), capped at 10 rows per page (same cap as the draft picker; a footer reports any remainder). The `PROVIDER` cell shows the bare provider name. `STARTED` and `LAST_USED` are relative times ("2 hours ago"; `LAST_USED` = time since the session was last stopped, read from its per-session `.compose/<session-id>.log`; `---` when running or never stopped). Staleness is shown exception-only as a warning label: `[SANDBOX_STALE]` when the session's recorded `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. Dry-run records are excluded from the listing (session_is_dry_run): their volume is destroyed at dry-run teardown, so they are not resumable; prune still reaches them. Accepts an optional `PROVIDER=<n>` filter.
+- `INTERACTIVE=1` -- interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. Accepts an optional `PROVIDER=<n>` filter.
+- `PROVIDER=<n>` -- filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
 
-`--interactive` always shows the picker and asks for confirmation, even when only one session matches — explicit interactivity is deliberate, not a shortcut.
+`--interactive` always shows the picker and asks for confirmation, even when only one session matches -- explicit interactivity is deliberate, not a shortcut.
 
 ---
 
@@ -88,7 +89,7 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 `REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
 
-**Note:** `make start` also triggers builds implicitly via `REFRESH` or `REBUILD`, but with different semantics — it always builds the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
+**Note:** `make start` also triggers builds implicitly via `REFRESH` or `REBUILD`, but with different semantics -- it always builds the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
 
 **Note on the dispatch model:** The `build` subcommand is dispatched to `scripts/build.sh` as an independent process (`exec`). The workflow subcommands (`apply`, `draft`, `confirm`, `reject`) are similarly dispatched to their own scripts in `scripts/workflows/`. Each receives its flags directly from the dispatcher and handles its own argument parsing and execution. This means each subcommand script can also be invoked directly for testing or debugging: `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
@@ -96,25 +97,25 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 ### `make prune [STALE=sandbox] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
 
-Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** — Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
+Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** -- Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
 
-**Rule 1 — stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/concepts/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) — recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
+**Rule 1 -- stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/concepts/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
 
-- `STALE=sandbox` — the only accepted kind (repo out of date — the session's `host-head-sha` ≠ current HEAD); unset behaves the same. Any other value errors.
-- `PROVIDER=<n>` — narrow Rule 1's selection to records of that provider (same filter as `make resume`).
+- `STALE=sandbox` -- the only accepted kind (repo out of date -- the session's `host-head-sha` != current HEAD); unset behaves the same. Any other value errors.
+- `PROVIDER=<n>` -- narrow Rule 1's selection to records of that provider (same filter as `make resume`).
 
-**Rule 2 — orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy → volume + containers; mount → registry resources only. Worktrees are **never** touched.
+**Rule 2 -- orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy -> volume + containers; mount -> registry resources only. Worktrees are **never** touched.
 
-- `INTERACTIVE=1` (flag `--interactive`) — show the prune plan (records + orphaned resources), print the equivalent non-interactive command, then confirm with a y/N prompt before acting.
-- `DRY_RUN=1` (flag `--dry-run`) — print the plan without acting.
+- `INTERACTIVE=1` (flag `--interactive`) -- show the prune plan (records + orphaned resources), print the equivalent non-interactive command, then confirm with a y/N prompt before acting.
+- `DRY_RUN=1` (flag `--dry-run`) -- print the plan without acting.
 
 ---
 
 ### `make apply DIFF=<path> [BRANCH=<branch>] [FORCE=1]`
 
-Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit — changes land unstaged for operator review. An empty diff file (no `diff --git` headers) is skipped with a warning; nothing is applied and the command succeeds.
+Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines stripped. Does not commit -- changes land unstaged for operator review. An empty diff file (no `diff --git` headers) is skipped with a warning; nothing is applied and the command succeeds.
 
-`DIFF=<path>` (flag `--diff=<path>`) is **required** and must be the full path to an exact diff file. `apply` performs no channel, bundle, or auto-resolution — it applies the specified file directly.
+`DIFF=<path>` (flag `--diff=<path>`) is **required** and must be the full path to an exact diff file. `apply` performs no channel, bundle, or auto-resolution -- it applies the specified file directly.
 
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
 
@@ -127,16 +128,17 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only — absolute paths rejected).
+By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only -- absolute paths rejected).
 
 **Channels:**
-- `session` (default) — resolves from `session-diffs/session/`
-- `autosave` — resolves from `session-diffs/autosave/` (shorthand: `FROM=autosave`)
-- `bundles` — resolves from `output/bundles/` (shorthand: `FROM=bundles`)
+
+- `session` (default) -- resolves from `session-diffs/session/`
+- `autosave` -- resolves from `session-diffs/autosave/` (shorthand: `FROM=autosave`)
+- `bundles` -- resolves from `output/bundles/` (shorthand: `FROM=bundles`)
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped — the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
 
 ---
 
@@ -168,7 +170,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
 | `dry-run` | `make dry-run PROVIDER=<n>` | e2e check: rebuild current source, exercise the container pipeline, verify, tear down |
 
-**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/providers/<n>/docker-compose.serve.yml` in the repo — never copied to `SANDBOX_DIR`.
+**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/providers/<n>/docker-compose.serve.yml` in the repo -- never copied to `SANDBOX_DIR`.
 
 | Provider | Serve behaviour |
 |---|---|
@@ -181,11 +183,11 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 
 | Host path | Capability layer path | Reasoning layer path | Mode | Owner |
 |---|---|---|---|---|
-| `$CHANGES_DIR` (derived: `$SANDBOX_DIR/.workspace/session-diffs`) | `/home/agentuser/workspace/session-diffs/` | — | RW | Harness — diff pipeline output |
-| `$INPUT_DIR` | — | `/home/agentuser/workspace/input/` | RO | Operator — populated before a run |
-| `$OUTPUT_DIR` | — | `/home/agentuser/workspace/output/` | RW | Agent — written during a run |
-| `$SANDBOX_DIR/.<provider>/` | — | `/opt/provider-config/` | RW | Harness — provider config; seed and persist via entrypoint |
-| SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker — owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
+| `$CHANGES_DIR` (derived: `$SANDBOX_DIR/.workspace/session-diffs`) | `/home/agentuser/workspace/session-diffs/` | -- | RW | Harness -- diff pipeline output |
+| `$INPUT_DIR` | -- | `/home/agentuser/workspace/input/` | RO | Operator -- populated before a run |
+| `$OUTPUT_DIR` | -- | `/home/agentuser/workspace/output/` | RW | Agent -- written during a run |
+| `$SANDBOX_DIR/.<provider>/` | -- | `/opt/provider-config/` | RW | Harness -- provider config; seed and persist via entrypoint |
+| SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker -- owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
 
 `PROJECT_DIR` is never mounted. `sandbox/` is a named volume filled by the seeder at session start; it survives `docker compose down` (named volumes are kept) so session state supports resume, and is removed by `down -v` or prune Rule 2. The reasoning layer can only access it while the capability layer is running.
 
@@ -206,12 +208,12 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 
 `docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`,
 `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned
-templates — never written to `SANDBOX_DIR`. The merged result of
+templates -- never written to `SANDBOX_DIR`. The merged result of
 `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and
-persists after the session (see [`execution_model.md` — Compose
+persists after the session (see [`execution_model.md` -- Compose
 Generation](execution_model.md#compose-generation)). The delivery overlays
 (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the
-caller's `--delivery` (`copy|mount`) at generation time — see the
+caller's `--delivery` (`copy|mount`) at generation time -- see the
 delivery-overlay note in
 [`execution_model.md`](execution_model.md#compose-generation).
 
@@ -223,14 +225,14 @@ delivery-overlay note in
 |---|---|---|
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
-| `SERVE_PORT` | Operator-supplied | Operator — host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
+| `SERVE_PORT` | Operator-supplied | Operator -- host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
 `SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/providers/<n>/.env.example` at onboard time.
 
 ### Runtime-derived paths (not stored in `.env`)
 
-These paths are derived from `SANDBOX_DIR` at run time by `dirs_resolve` in `libs/dirs.sh`. They are not stored in `.env` because they are strict functions of `SANDBOX_DIR` — storing them would introduce drift risk without providing any configurable behaviour.
+These paths are derived from `SANDBOX_DIR` at run time by `dirs_resolve` in `libs/dirs.sh`. They are not stored in `.env` because they are strict functions of `SANDBOX_DIR` -- storing them would introduce drift risk without providing any configurable behaviour.
 
 | Variable | Derivation |
 |---|---|
@@ -244,15 +246,16 @@ Inside the container, the workspace directory is named `workspace/` (visible) in
 
 ## Capability Layer Contract
 
-Guarantees the capability layer makes to the reasoning layer. Enforced by the harness — a conforming provider does not need to re-verify them.
+Guarantees the capability layer makes to the reasoning layer. Enforced by the harness -- a conforming provider does not need to re-verify them.
 
 **Readiness signal:** When the capability layer reports healthy, `sandbox/` is fully initialised. The reasoning layer may treat a healthy status as the unconditional signal to proceed.
 
 **Volume ownership:** `sandbox/` is a SESSION_ID-scoped named Docker volume owned by the capability layer. The reasoning layer accesses it via `--volumes-from`. The volume persists across `docker compose down` (resume re-attaches it); teardown removes it only via `down -v` or prune. Inaccessible if the capability layer is not running.
 
 **Sandbox initialisation:** Before reporting healthy, the capability layer will have:
-1. Had its volume seeded by the one-shot seeder service — repository (`.git` copied natively) plus the git-enumerated working tree
-2. Received `SESSION_STATE` from the seeder, carrying `init_sha` (HEAD at seed time — the fixed lower boundary for `package-branch`)
+
+1. Had its volume seeded by the one-shot seeder service -- repository (`.git` copied natively) plus the git-enumerated working tree
+2. Received `SESSION_STATE` from the seeder, carrying `init_sha` (HEAD at seed time -- the fixed lower boundary for `package-branch`)
 3. Validated the volume itself: git state and `SESSION_STATE` must exist, or the container start aborts with a readable error
 
 ---
@@ -267,13 +270,13 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 | `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
-| `config/` | Optional | Onboarding template — copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
+| `config/` | Optional | Onboarding template -- copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
-**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../operations/provider_onboarding_guide.md — Step 7`](../operations/provider_onboarding_guide.md#step-7-optional-but-usually-required---write-docker-compose-nyml).
+**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../operations/provider_onboarding_guide.md -- Step 7`](../operations/provider_onboarding_guide.md#step-7-optional-but-usually-required---write-docker-compose-nyml).
 
-Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context — providers do not author it.
+Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context -- providers do not author it.
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 
@@ -288,11 +291,11 @@ A successful `make dry-run` proves:
 - The capability layer initialises `sandbox/` (git baseline + SESSION_STATE `init_sha` is a valid commit)
 - Cross-component link-up is correct: the reasoning layer reads the capability layer's state and markers via the shared volume
 - The diff pipeline runs
-- Orchestration validates the per-container diagnostics records — correct container started (identity echo-back matches expected; every layer `PASS`), in both passes
+- Orchestration validates the per-container diagnostics records -- correct container started (identity echo-back matches expected; every layer `PASS`), in both passes
 - The images that ran are the exact images just built: the digest roundtrip gate compares the build-time stamped digest against the running image (ADR `harness_versioning.md`)
 - The resume path works: pass 2 re-runs the readiness probes on the kept volume with no re-seed, mirroring `make stop` + `make resume`
 
-A dry-run does not prove agent correctness — it proves the harness containers start to a ready state with correct link-up.
+A dry-run does not prove agent correctness -- it proves the harness containers start to a ready state with correct link-up.
 
 ---
 

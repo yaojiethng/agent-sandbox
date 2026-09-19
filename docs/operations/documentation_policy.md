@@ -132,6 +132,7 @@ Inline code (backticks) is for command names, flag values, variable names, and s
 When a workflow document (such as `iteration_policy.md`) hands off to a subprocess governed by a child policy document, the instruction carries a markdown link to that policy at the point of handoff -- not only in a References table. Name the specific section if the document has several.
 
 **Pattern:**
+
 ```
 Perform X per [`policy_document.md`](path/to/policy_document.md) -- Section Name.
 ```

@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-30
-**Milestone:** M2.6 — Session Persistence
-**Type:** Implementation — Security model rewrite for simplified two-path model
+**Milestone:** M2.6 -- Session Persistence
+**Type:** Implementation -- Security model rewrite for simplified two-path model
 **Status:** Closed
 
 ## Objective
@@ -19,19 +19,19 @@ Single file: `docs/architecture/security.md`. Six targeted edits.
 |---|---|
 | Principle | Updated link to new mount model doc. Added: harness does not mediate git operations. |
 | Mount modes table | Removed Worktree row. Renamed Columns: `.snapshot/` / `.git` (was `PROJECT_DIR/.git`). Mount row: user-provided `.git`. Added ADR link for worktree rejection. |
-| Assumptions | Removed `(mount, worktree)` qualifier — mount containment only. |
+| Assumptions | Removed `(mount, worktree)` qualifier -- mount containment only. |
 | Security Invariants | Removed "Worktree backing (not supported)" paragraph. |
-| Execution Model Assumptions | "Containers are ephemeral" → "Containers and volumes persist across restarts via `docker compose stop`" |
+| Execution Model Assumptions | "Containers are ephemeral" -> "Containers and volumes persist across restarts via `docker compose stop`" |
 | Non-goals | Removed worktree residual risk paragraph and "verify no secrets in git history" bullet. |
 
 ## Acceptance criteria
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Zero stale backlinks in security.md | Accepted — `grep` confirms zero references to deleted files |
+| 1 | Zero stale backlinks in security.md | Accepted -- `grep` confirms zero references to deleted files |
 | 2 | Mount modes table: Copy + Mount only, no Worktree | Accepted |
 | 3 | Principle documents harness/git boundary | Accepted |
-| 4 | All stale references outside handovers resolved | Accepted — `adr_policy.md` example updated |
+| 4 | All stale references outside handovers resolved | Accepted -- `adr_policy.md` example updated |
 | 5 | Roadmap stale-backlinks task marked complete | Accepted |
 
 ## Hot files
@@ -56,4 +56,4 @@ None.
 
 ## Next session
 
-Continue M2.6.5 — multi-volume concurrency implementation (volume-per-session via RUN_ID, locking, interactive selector).
+Continue M2.6.5 -- multi-volume concurrency implementation (volume-per-session via RUN_ID, locking, interactive selector).

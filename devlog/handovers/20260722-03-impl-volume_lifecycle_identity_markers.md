@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-22
-**Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Type:** Implementation — Volume lifecycle, identity markers, and prune scoping
+**Milestone:** M2.6 -- Session Resume and Mount Model Redesign
+**Type:** Implementation -- Volume lifecycle, identity markers, and prune scoping
 **Status:** Closed
 
 ## Objective
@@ -13,32 +13,32 @@ Investigate `prune.sh` to verify the three-tier volume removal model is correctl
 
 | Tier | Command | What it removes | Volume preserved? |
 |---|---|---|---|
-| 1 — Stop | `make stop` | Containers only (via `stop.sh`) | ✅ Named volume preserved |
-| 2 — Prune | `make stop PRUNE=1` or `make prune` | Aged containers, images, networks for this project only (via `prune.sh`). Volumes omitted — the named `sandbox-data` volume is managed by compose lifecycle, not prune. | ✅ Named volume preserved |
-| 3 — Fresh | `make start REFRESH=1` | Everything — destroys volume via `compose_teardown -v` | ❌ Named volume destroyed |
+| 1 -- Stop | `make stop` | Containers only (via `stop.sh`) | [x] Named volume preserved |
+| 2 -- Prune | `make stop PRUNE=1` or `make prune` | Aged containers, images, networks for this project only (via `prune.sh`). Volumes omitted -- the named `sandbox-data` volume is managed by compose lifecycle, not prune. | [x] Named volume preserved |
+| 3 -- Fresh | `make start REFRESH=1` | Everything -- destroys volume via `compose_teardown -v` | [ ] Named volume destroyed |
 
 ## Findings
 
-### Finding 1 — prune must not prune the named volume
+### Finding 1 -- prune must not prune the named volume
 
-`prune.sh` was initially changed to include `--volumes` on `docker system prune`, but this would remove the named `sandbox-data` volume if unused and older than 3 days (checked by creation date, not last-used date). Since the only volume belonging to this project is the named persistent volume, `--volumes` would only ever destroy data we want to keep. Volumes removed from scope — prune handles containers, images, and networks only.
+`prune.sh` was initially changed to include `--volumes` on `docker system prune`, but this would remove the named `sandbox-data` volume if unused and older than 3 days (checked by creation date, not last-used date). Since the only volume belonging to this project is the named persistent volume, `--volumes` would only ever destroy data we want to keep. Volumes removed from scope -- prune handles containers, images, and networks only.
 
-### Finding 2 — cross-project volume cleanup removed
+### Finding 2 -- cross-project volume cleanup removed
 
 The original `docker volume prune --filter "label!=agent-sandbox.project-name"` was removed in the initial pass. Confirmed this is correct: it was touching volumes outside the project scope.
 
-### Finding 3 — only one volume exists per project
+### Finding 3 -- only one volume exists per project
 
-The compose template defines exactly one named volume (`sandbox-data`) per project. Docker Compose reuses the same volume across runs — it is not overwritten, it persists. Different projects have different volume names (project-scoped). The named volume is only destroyed on `make start REFRESH=1` or `docker compose down -v`.
+The compose template defines exactly one named volume (`sandbox-data`) per project. Docker Compose reuses the same volume across runs -- it is not overwritten, it persists. Different projects have different volume names (project-scoped). The named volume is only destroyed on `make start REFRESH=1` or `docker compose down -v`.
 
 ## Scope
 
-- `scripts/prune.sh` — Scope to current project only; remove `--volumes` (named volume not for pruning); remove cross-project volume cleanup
-- `scripts/stop.sh` — Update `--prune` description to match actual prune scope
-- `AGENTS.md` — Add final acceptance gate (Gate 3) from iteration_policy.md
-- `devlog/discussions/design_session_identity_hash_based.md` — Rename to modern naming format, mark superseded
-- `docs/adr/session_identifier.md` — New ADR distilling session identity decisions
-- `devlog/discussions/story_session_identity_and_harness_versioning.md` — Update superseded link to point to ADR
+- `scripts/prune.sh` -- Scope to current project only; remove `--volumes` (named volume not for pruning); remove cross-project volume cleanup
+- `scripts/stop.sh` -- Update `--prune` description to match actual prune scope
+- `AGENTS.md` -- Add final acceptance gate (Gate 3) from iteration_policy.md
+- `devlog/discussions/design_session_identity_hash_based.md` -- Rename to modern naming format, mark superseded
+- `docs/adr/session_identifier.md` -- New ADR distilling session identity decisions
+- `devlog/discussions/story_session_identity_and_harness_versioning.md` -- Update superseded link to point to ADR
 
 ## Acceptance criteria
 

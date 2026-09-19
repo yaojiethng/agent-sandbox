@@ -1,17 +1,18 @@
 # Agent Handover
 
 **Date:** 2026-04-23
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 **Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement Unit E (`make draft` redesign) — replace checkpoint-tag-based draft workflow with branch-name-based diff application using `git apply`, add `FROM` and `DIFFS` arguments.
+Implement Unit E (`make draft` redesign) -- replace checkpoint-tag-based draft workflow with branch-name-based diff application using `git apply`, add `FROM` and `DIFFS` arguments.
 
 ## Scope
 
 **Unit E tasks (from roadmap M2.3 pending section):**
+
 - Remove checkpoint tag lookup from `draft` command
 - Add `BRANCH_FROM=<hash>` argument (default: `HEAD`)
 - Replace session-name folder resolution with branch-name folder resolution under `session-diffs/`
@@ -21,8 +22,9 @@ Implement Unit E (`make draft` redesign) — replace checkpoint-tag-based draft 
 - Update `tests/test_apply_workspace.sh` to reflect new `draft` behaviour (branch-name folders, `.diff` files, `git apply`, no checkpoint tags)
 
 **Explicitly out of scope:**
-- Unit F (`make confirm` simplification + `make sync` removal) — depends on E
-- Unit G (`.skills/package-diff.md` update) — depends on E; also the `.skills/` directory does not exist yet
+
+- Unit F (`make confirm` simplification + `make sync` removal) -- depends on E
+- Unit G (`.skills/package-diff.md` update) -- depends on E; also the `.skills/` directory does not exist yet
 
 ## Carried forward
 
@@ -32,13 +34,13 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `make draft` creates a working branch and applies all `.diff` files from the latest branch-name folder under `session-diffs/` using `git apply` (index lines stripped), staging and committing each one | ✓ Accepted |
-| 2 | `make draft BRANCH_FROM=<hash>` creates the draft branch from the specified commit instead of `HEAD` | ✓ Accepted |
-| 3 | `make draft DIFFS=2..4` applies only diffs `0002-*` through `0004-*` from the branch folder | ✓ Accepted |
-| 4 | `make draft SESSION=<branch-name>` resolves the branch-name folder explicitly under `session-diffs/` | ✓ Accepted |
-| 5 | `make draft` rejects if a draft is already in progress (guard preserved) | ✓ Accepted |
-| 6 | Tests pass: `./tests/test_apply_workspace.sh` exits 0 with no failures | ✓ Accepted |
-| 7 | Architecture documents in scope describe the system as built | ✓ Accepted |
+| 1 | `make draft` creates a working branch and applies all `.diff` files from the latest branch-name folder under `session-diffs/` using `git apply` (index lines stripped), staging and committing each one | [x] Accepted |
+| 2 | `make draft BRANCH_FROM=<hash>` creates the draft branch from the specified commit instead of `HEAD` | [x] Accepted |
+| 3 | `make draft DIFFS=2..4` applies only diffs `0002-*` through `0004-*` from the branch folder | [x] Accepted |
+| 4 | `make draft SESSION=<branch-name>` resolves the branch-name folder explicitly under `session-diffs/` | [x] Accepted |
+| 5 | `make draft` rejects if a draft is already in progress (guard preserved) | [x] Accepted |
+| 6 | Tests pass: `./tests/test_apply_workspace.sh` exits 0 with no failures | [x] Accepted |
+| 7 | Architecture documents in scope describe the system as built | [x] Accepted |
 
 ## Hot files
 
@@ -54,7 +56,7 @@ None.
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | `--from` renamed to `--branch-from` | Operator request for clarity | This handover |
-| `SESSION` variable retained in Makefile | Backwards compatibility — now maps to branch-name lookup | `libs/_templates/Makefile.template` |
+| `SESSION` variable retained in Makefile | Backwards compatibility -- now maps to branch-name lookup | `libs/_templates/Makefile.template` |
 
 ## Completed this session
 
@@ -71,14 +73,15 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Type:** Implementation — Unit F (`make confirm` simplification + `make sync` removal).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation -- Unit F (`make confirm` simplification + `make sync` removal).
 
 Read `docs/devlog/roadmap.md` M2.3 pending section for Unit F tasks.
 
 **Watch-outs:**
+
 - `make confirm` currently rebases + fast-forward merges + deletes draft branch. Unit F removes rebase and merge, leaving only branch deletion + draft-state cleanup.
 - `SYNC=1` handling and `make sync` target are removed entirely.
 - `make confirm` must still respect `TARGET_BRANCH` for the branch to return to, but no longer performs any git history manipulation.
 
-**Grep to run:** `grep -n "rebase\|SYNC\|sync" scripts/apply_workspace.sh` — verify all rebase/SYNC/sync logic is removed from confirm.
+**Grep to run:** `grep -n "rebase\|SYNC\|sync" scripts/apply_workspace.sh` -- verify all rebase/SYNC/sync logic is removed from confirm.

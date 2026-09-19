@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Implement Option B from study `20260911-study-seed_object_store_cleanliness.md`: the seeder prunes unreachable objects from the volume copy so the sandbox baseline carries no host archaeology.
 
 ## Scope
+
 - `src/capability/seed_volume.sh`: after the stash clear, probe `git fsck --unreachable`; if anything is found, `git reflog expire --expire=now --all` + `git gc --prune=now --quiet`; fail closed if the probe errors or unreachable objects survive the prune.
 - `tests/test_seed_volume.sh`: new test -- a fixture with stash entries and a dangling blob seeds; the volume has zero unreachable objects and the dangling object is absent; the host stack is untouched.
 - `docs/adr/sandbox_delivery_model.md`: supersede the "residual recorded, accepted" paragraph with the prune mechanism.
@@ -35,4 +37,5 @@ Implement Option B from study `20260911-study-seed_object_store_cleanliness.md`:
 | [`devlog/roadmap.md`](devlog/roadmap.md) | New item recorded and closed |
 
 ## Deferred items
+
 History truncation (shallow boundary, non-HEAD ref deletion) -- separate decision, not in scope.

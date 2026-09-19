@@ -12,12 +12,13 @@ Fix the latent confirm-savepoint rollback bug in `scripts/workflows/confirm.sh` 
 ## Scope
 
 In scope:
+
 - `scripts/workflows/confirm.sh` rollback path: the `git reset --hard confirm-savepoint` calls must never run against a tag not created by the current run, and must never land on a stale leftover tag from a prior run. (delivered)
 - The exact end-state behavior is an operator decision (see Decisions); implementation follows that call. (delivered)
 - Unit tests in `tests/test_draft_workflow.sh` (existing confirm flow tests) + new tests pinning the fixed behavior. (delivered; extended below)
 - Roadmap checkbox for the campaign-findings bullet. (delivered)
-- **Part A (reopened, operator):** fix the contradictory conflict message in confirm.sh's step-3 block — it tells the user to "resolve and --continue" / "--abort" a rebase that confirm has already aborted and reset. Align the message to the auto-rollback behavior.
-- **Part B (reopened, operator):** close the drop-step (`rebase --onto`) rollback test gap — same `SAVEPOINT_COMMIT` mechanism, no coverage; add a regression test forcing the drop-step to fail and asserting the savepoint restore.
+- **Part A (reopened, operator):** fix the contradictory conflict message in confirm.sh's step-3 block -- it tells the user to "resolve and --continue" / "--abort" a rebase that confirm has already aborted and reset. Align the message to the auto-rollback behavior.
+- **Part B (reopened, operator):** close the drop-step (`rebase --onto`) rollback test gap -- same `SAVEPOINT_COMMIT` mechanism, no coverage; add a regression test forcing the drop-step to fail and asserting the savepoint restore.
 
 Deferred / not in scope (unchanged): Bug D (RESUME semantics), Bug E (stop template, operator on it), `.compose` stale-file pruning, prune-command redesign, mount-worktree full-history clone, git_policy "session branch" OOS terms, any file in the `20260828-02` hot-file set (`compose.sh`, docker-compose files, entrypoints, provider dockerfiles, dry-run scripts/tests, dry-run docs).
 

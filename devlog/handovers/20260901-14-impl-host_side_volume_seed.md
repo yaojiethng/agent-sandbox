@@ -1,4 +1,4 @@
-# Handover 20260901-14 — impl host-side volume seed: git-enumerated tar, .snapshot/ retirement
+# Handover 20260901-14 -- impl host-side volume seed: git-enumerated tar, .snapshot/ retirement
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** impl
@@ -16,14 +16,14 @@ discovery scripts to `tests/knowledge/` (operator direction).
 ## Design (settled in-iteration from `20260901-13` findings + code walk)
 
 - **Seed trigger:** `RESET_VOLUME=true` + `SANDBOX_TYPE=copy` in `run_agent.sh` (start always
-  resets; resume never does — exact correspondence with fresh-init).
+  resets; resume never does -- exact correspondence with fresh-init).
 - **Serialization:** `snapshot_seed_tar PROJECT_DIR OUT.tar` in `src/capability/snapshot.sh`:
   git-enumerated worktree (`git ls-files --cached` present-on-disk + `--others
   --exclude-standard`, packed via `tar --null -T` with `--transform` to `worktree/` prefix),
   then `baseline.tar` (`git archive HEAD`) appended as a member. One tar, no persistent staging.
-- **Transport:** `docker compose create sandbox` (creates volume + container, no start) →
+- **Transport:** `docker compose create sandbox` (creates volume + container, no start) ->
   `docker cp - <container>:/home/agentuser/sandbox < seed.tar` (writes through the volume mount)
-  → subsequent `up -d` starts the seeded container. No volume-name computation, no separate
+  -> subsequent `up -d` starts the seeded container. No volume-name computation, no separate
   volume create, labels/locking untouched.
 - **Container init:** entrypoint fresh-init path drops gate 2; `snapshot_init_git` reads
   `baseline.tar` and `worktree/` from inside the volume (call: `SNAPSHOT_DIR="$SANDBOX_DIR"`),
@@ -46,7 +46,7 @@ discovery scripts to `tests/knowledge/` (operator direction).
 - AC4: Deprecated functions, gates, `snapshot_dir` session-state writes, and `.snapshot/`
   staging removed; no stale references (grep sweep).
 - AC5: Docs swept: `copy_delivery.md` (pipeline now implemented), `sandbox_lifecycle.md`,
-  `execution_model.md`, `tool_interface.md`, `security.md` — no current-tense `.snapshot/` RO
+  `execution_model.md`, `tool_interface.md`, `security.md` -- no current-tense `.snapshot/` RO
   mount claims.
 - AC6: Discovery scripts relocated to `tests/knowledge/` (operator direction).
 - AC7: Test suite green vs baseline in this environment (docker-dependent failures unchanged);
@@ -56,7 +56,7 @@ discovery scripts to `tests/knowledge/` (operator direction).
 
 - Mount delivery runnability (M2.6.6 separate).
 - Harness version identity impl (separate roadmap item).
-- The rsync negation-leak fix note: resolved by construction (git enumeration) — no backport.
+- The rsync negation-leak fix note: resolved by construction (git enumeration) -- no backport.
 
 ## Completed
 
@@ -70,7 +70,7 @@ discovery scripts to `tests/knowledge/` (operator direction).
 | Compose overlay cleaned (AC2) | `docker-compose.copy.yml`: volume only, no snapshot mount/env; `compose.sh` substitution dropped |
 | `.snapshot/` retirement sweep (AC4) | `dirs.sh` `SNAPSHOT_DIR`/`SNAPSHOT_DIR_NAME` removed (prod + stub); `snapshot_validate` deleted; `snapshot_dir` session-state writes removed; knowledge diagnostics swept |
 | Docs sweep (AC5) | `copy_delivery.md` (implemented-record rewrite), `sandbox_lifecycle.md` Phase 1 rewritten, `execution_model.md`, `tool_interface.md`, `security.md`, `system_overview.md`, correspondence model, `project_index.md` rows |
-| Verification (AC7) | Full suite: 705 passed / 67 failed / 0 skipped — failure set identical to HEAD baseline (verified via `git stash` before/after diff; 67 pre-existing docker-dependent failures, remaining diffs are hash/path cosmetics). Net −1 test: 4 obsolete validate tests removed, seed tests added. ShellCheck clean on all changed scripts (one pre-existing SC2034 in start_agent.sh matches baseline) |
+| Verification (AC7) | Full suite: 705 passed / 67 failed / 0 skipped -- failure set identical to HEAD baseline (verified via `git stash` before/after diff; 67 pre-existing docker-dependent failures, remaining diffs are hash/path cosmetics). Net -1 test: 4 obsolete validate tests removed, seed tests added. ShellCheck clean on all changed scripts (one pre-existing SC2034 in start_agent.sh matches baseline) |
 
 ## Decisions
 
@@ -158,16 +158,16 @@ counts) and syntax/shellcheck checks.
 
 | AC | Criterion | Status | Evidence |
 |---|---|---|---|
-| AC1 | `snapshot_seed_tar` unit tests | ✅ | `test_snapshot_container.sh` 32/0: round-trip (list/hash/mode), gitignored exclusion, negation honored, submodule + no-commit rejection |
-| AC2 | Seeded start; compose has no snapshot mount | ✅ | `run_agent.sh` `seed_sandbox_volume`; `test_trace_compose_gen.sh` copy-overlay assertion (no SNAPSHOT_DIR / no .snapshot); entrypoint init from seeded members |
-| AC3 | Resume unchanged | ✅ | resume path in entrypoint untouched; seed gated on `RESET_VOLUME=true && SANDBOX_TYPE=copy`; `test_trace_resume.sh` failure-set parity |
-| AC4 | Deprecated code, gates, snapshot_dir writes, `.snapshot/` staging removed | ✅ | grep sweep: zero production `.snapshot`/`SNAPSHOT_DIR` references remain outside `snapshot.sh` internals and `copy_delivery.md` historical record |
-| AC5 | Docs swept | ✅ | 9 docs updated (sandbox_lifecycle, execution_model, tool_interface, security, system_overview, correspondence model, copy_delivery, mount_delivery n/a, project_index) |
-| AC6 | Discovery scripts in `tests/knowledge/` | ✅ | moved via `git mv`; paths verified |
-| AC7 | Suite fully green under stub coverage | ✅ | **758 tests / 758 passed / 0 failed / 0 skipped** after stub consolidation; ShellCheck clean, one pre-existing warning matches baseline |
-| AC8 | Field bug fixes verified | ✅ | F7: seed lookup uses deterministic container name (code review + stub trace); F8: migration documented, no code change needed; F5b: dry-run trace exercises the seed path end-to-end through the stub |
+| AC1 | `snapshot_seed_tar` unit tests | [x] | `test_snapshot_container.sh` 32/0: round-trip (list/hash/mode), gitignored exclusion, negation honored, submodule + no-commit rejection |
+| AC2 | Seeded start; compose has no snapshot mount | [x] | `run_agent.sh` `seed_sandbox_volume`; `test_trace_compose_gen.sh` copy-overlay assertion (no SNAPSHOT_DIR / no .snapshot); entrypoint init from seeded members |
+| AC3 | Resume unchanged | [x] | resume path in entrypoint untouched; seed gated on `RESET_VOLUME=true && SANDBOX_TYPE=copy`; `test_trace_resume.sh` failure-set parity |
+| AC4 | Deprecated code, gates, snapshot_dir writes, `.snapshot/` staging removed | [x] | grep sweep: zero production `.snapshot`/`SNAPSHOT_DIR` references remain outside `snapshot.sh` internals and `copy_delivery.md` historical record |
+| AC5 | Docs swept | [x] | 9 docs updated (sandbox_lifecycle, execution_model, tool_interface, security, system_overview, correspondence model, copy_delivery, mount_delivery n/a, project_index) |
+| AC6 | Discovery scripts in `tests/knowledge/` | [x] | moved via `git mv`; paths verified |
+| AC7 | Suite fully green under stub coverage | [x] | **758 tests / 758 passed / 0 failed / 0 skipped** after stub consolidation; ShellCheck clean, one pre-existing warning matches baseline |
+| AC8 | Field bug fixes verified | [x] | F7: seed lookup uses deterministic container name (code review + stub trace); F8: migration documented, no code change needed; F5b: dry-run trace exercises the seed path end-to-end through the stub |
 
 ## Deferred
 
-- `make prune` staleness-criteria restoration subtask (compose-record as source of truth) — unchanged, separate roadmap item.
+- `make prune` staleness-criteria restoration subtask (compose-record as source of truth) -- unchanged, separate roadmap item.
 - Empty-directory support (F3, `20260901-13`): git cannot represent them; accepted behavior change.

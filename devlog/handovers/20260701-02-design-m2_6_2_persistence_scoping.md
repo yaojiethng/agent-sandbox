@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-07-01
-**Milestone:** M2.6 — Session Resume and Mount Model Redesign
-**Type:** Design — Phase 1.5 scoping
+**Milestone:** M2.6 -- Session Resume and Mount Model Redesign
+**Type:** Design -- Phase 1.5 scoping
 **Status:** Closed
 
 ## Objective
@@ -49,7 +49,7 @@ make start REFRESH=1
 - `docker compose down -v` removes the named volume
 - The named volume is labelled with `agent-sandbox.project-name` for lifecycle management
 
-### Identity model — `.run-identity`
+### Identity model -- `.run-identity`
 
 **Problem:** On resume, env vars (SESSION_TS, RUN_ID, HOST_HEAD_SHA) must match the values in the volume's SESSION_STATE so that diff_export at teardown and package_branch after the session use the same RUN_ID.
 
@@ -83,20 +83,21 @@ No staleness warning on resume. The INIT_SHA in the volume's SESSION_STATE is co
 ### REFRESH mechanism
 
 `REFRESH=1` is gated at both teardown calls in `run_agent.sh` (pre-start and post-exit). When set:
-1. `rm -f "$SANDBOX_DIR/.run-identity"` — removes the identity file
-2. `-v` is added to `docker compose down` — removes the named volume
 
-On the next `start`, no `.run-identity` + no volume → fresh init pipeline.
+1. `rm -f "$SANDBOX_DIR/.run-identity"` -- removes the identity file
+2. `-v` is added to `docker compose down` -- removes the named volume
+
+On the next `start`, no `.run-identity` + no volume -> fresh init pipeline.
 
 ## Env var lifecycle under persistence
 
 | Env var | Fresh init | Resume (from .run-identity) | Used by | Divergence risk resolved? |
 |---|---|---|---|---|
-| `SESSION_TS` | computed from `date -u` | read from `.run-identity` | `routing.sh` (diff export paths), `draft_state.sh`, compose labels | ✅ — same value on host and in SESSION_STATE |
-| `RUN_ID` | derived from `SESSION_TS:SANDBOX_ID` | read from `.run-identity` | `diff_export.sh` (error logs), `package_diff.sh` → SESSION_STATE, `routing.sh` (output paths) | ✅ — `diff_export.sh` uses env var, `package_branch.sh` reads SESSION_STATE, both same value |
-| `HOST_HEAD_SHA` | `git rev-parse HEAD` of PROJECT_DIR | read from `.run-identity` | SANDBOX_ID derivation, compose labels, SESSION_STATE (`host_head_sha`) | ✅ — stored but never consumed for validation |
-| `SANDBOX_ID` | derived from `SANDBOX_DIR:HOST_HEAD_SHA` | read from `.run-identity` | RUN_ID derivation, debug output | ✅ |
-| `SANITIZED_HOST_BRANCH` | derived from `git branch --show-current` | **not in .run-identity** — recomputed fresh | compose labels, draft branch naming | ✅ — branch identity is operational (which branch to review on) not historical; draft.sh reads from session-diffs path anyway |
+| `SESSION_TS` | computed from `date -u` | read from `.run-identity` | `routing.sh` (diff export paths), `draft_state.sh`, compose labels | [x] -- same value on host and in SESSION_STATE |
+| `RUN_ID` | derived from `SESSION_TS:SANDBOX_ID` | read from `.run-identity` | `diff_export.sh` (error logs), `package_diff.sh` -> SESSION_STATE, `routing.sh` (output paths) | [x] -- `diff_export.sh` uses env var, `package_branch.sh` reads SESSION_STATE, both same value |
+| `HOST_HEAD_SHA` | `git rev-parse HEAD` of PROJECT_DIR | read from `.run-identity` | SANDBOX_ID derivation, compose labels, SESSION_STATE (`host_head_sha`) | [x] -- stored but never consumed for validation |
+| `SANDBOX_ID` | derived from `SANDBOX_DIR:HOST_HEAD_SHA` | read from `.run-identity` | RUN_ID derivation, debug output | [x] |
+| `SANITIZED_HOST_BRANCH` | derived from `git branch --show-current` | **not in .run-identity** -- recomputed fresh | compose labels, draft branch naming | [x] -- branch identity is operational (which branch to review on) not historical; draft.sh reads from session-diffs path anyway |
 
 ## Files changed
 
@@ -104,10 +105,10 @@ On the next `start`, no `.run-identity` + no volume → fresh init pipeline.
 |---|---|---|
 | **PREFACTOR** | `scripts/start_agent.sh` | Add `.run-identity` write (after computing identity vars) and read (before using them). Add volume-resume gating: skip copy pipeline if volume exists + `.git/HEAD` valid. Export `REFRESH` flag. |
 | **PREFACTOR** | `src/build/docker-compose.yml` | Add top-level `volumes:` with named volume `sandbox-{{PROJECT_NAME}}-data`. Add `sandbox-data` volume mount to sandbox service (replaces implicit anonymous volume from Dockerfile `VOLUME`). |
-| **CORE** | `src/build/compose.sh` | `compose_teardown()` — conditionally add `-v` only when `REFRESH=1`. |
-| **CORE** | `scripts/run_agent.sh` | Both teardown calls — pass `REFRESH` to teardown logic. |
+| **CORE** | `src/build/compose.sh` | `compose_teardown()` -- conditionally add `-v` only when `REFRESH=1`. |
+| **CORE** | `scripts/run_agent.sh` | Both teardown calls -- pass `REFRESH` to teardown logic. |
 | **CORE** | `src/capability/entrypoint.sh` | Add pre-init check: if `/.git/HEAD` resolves, skip `snapshot_init_git` and log "resuming existing volume". If HEAD doesn't resolve, error with "Use REFRESH=1" message. |
-| **DOCS** | `docs/architecture/security.md` | Update Execution Model Assumptions: "Containers are ephemeral" — Tier 1 now persists by default. |
+| **DOCS** | `docs/architecture/security.md` | Update Execution Model Assumptions: "Containers are ephemeral" -- Tier 1 now persists by default. |
 | **DOCS** | `docs/operations/quickstart.md` | Document REFRESH flag and persistence model. Include decision diagram. |
 | **DOCS** | `docs/operations/provider_onboarding_guide.md` | Note the new named volume in compose template. |
 | **DOCS** | `devlog/roadmap.md` | Add Phase 1.5 subsection between Phase 1 and Phase 2. |
@@ -120,22 +121,22 @@ On the next `start`, no `.run-identity` + no volume → fresh init pipeline.
 | `src/capability/snapshot.sh` | Init functions stay as fallback for fresh init path. |
 | `scripts/stop.sh` | Label-based volume filtering is a no-op for named volumes managed by compose (compose handles lifecycle). |
 | `scripts/prune.sh` | No change needed. |
-| `src/libs/` (libs) | No lib changes — env vars flow unchanged; `.run-identity` just changes their source on resume. |
-| `scripts/onboard.sh` | No change — SANDBOX_DIR structure unaffected. |
-| `src/reasoning/entrypoint.sh` | No change — agent-side entrypoint is unaffected by volume model. |
+| `src/libs/` (libs) | No lib changes -- env vars flow unchanged; `.run-identity` just changes their source on resume. |
+| `scripts/onboard.sh` | No change -- SANDBOX_DIR structure unaffected. |
+| `src/reasoning/entrypoint.sh` | No change -- agent-side entrypoint is unaffected by volume model. |
 
-## Documentation impact — each env var's lifecycle
+## Documentation impact -- each env var's lifecycle
 
 When these docs describe env vars, they must state whether the value is recomputed or persisted:
 
 | Env var | Under persistence | Doc update needed in |
 |---|---|---|
-| `SESSION_TS` | Set once at first start, reused on resume (via `.run-identity`) | `sandbox_identity.md` — lifecycle description |
-| `RUN_ID` | Set once at first start, reused on resume (via `.run-identity`) | `sandbox_identity.md` — lifecycle description |
-| `HOST_HEAD_SHA` | Set once at first start, reused on resume | `sandbox_identity.md` — note that it reflects original baseline, not current HEAD |
-| `SANDBOX_ID` | Set once at first start, reused on resume | `sandbox_identity.md` — lifecycle description |
-| `SANITIZED_HOST_BRANCH` | Recomputed each start (not persisted) | `sandbox_identity.md` — note that this is operational, not historical |
-| `REFRESH` | New — fresh each invocation | `quickstart.md` — new flag documentation |
+| `SESSION_TS` | Set once at first start, reused on resume (via `.run-identity`) | `sandbox_identity.md` -- lifecycle description |
+| `RUN_ID` | Set once at first start, reused on resume (via `.run-identity`) | `sandbox_identity.md` -- lifecycle description |
+| `HOST_HEAD_SHA` | Set once at first start, reused on resume | `sandbox_identity.md` -- note that it reflects original baseline, not current HEAD |
+| `SANDBOX_ID` | Set once at first start, reused on resume | `sandbox_identity.md` -- lifecycle description |
+| `SANITIZED_HOST_BRANCH` | Recomputed each start (not persisted) | `sandbox_identity.md` -- note that this is operational, not historical |
+| `REFRESH` | New -- fresh each invocation | `quickstart.md` -- new flag documentation |
 
 ## Acceptance criteria
 

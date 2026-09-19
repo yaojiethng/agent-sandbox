@@ -7,20 +7,22 @@
 
 ## Objective
 
-Fix Bug E (task brief `task-brief-20260828-bug-E-stop.md`): two defects in the `make stop` path. (1) the `stop:` target in `scripts/templates/Makefile.template` omits `--project`, so `make stop PRUNE=1` errors out; (2) a duplicate-container-ID / `docker rm ... already in progress` defect — mechanism to diagnose, then fix. Parallel notebooks: Bug D was resolved elsewhere (`20260828-04`), and a stop-teardown change may land from `20260828-05` (last_stopped `.log`, per the brief); operator manages rebase.
+Fix Bug E (task brief `task-brief-20260828-bug-E-stop.md`): two defects in the `make stop` path. (1) the `stop:` target in `scripts/templates/Makefile.template` omits `--project`, so `make stop PRUNE=1` errors out; (2) a duplicate-container-ID / `docker rm ... already in progress` defect -- mechanism to diagnose, then fix. Parallel notebooks: Bug D was resolved elsewhere (`20260828-04`), and a stop-teardown change may land from `20260828-05` (last_stopped `.log`, per the brief); operator manages rebase.
 
 ## Scope
 
 In scope (both defects from the brief's objective/ACs):
-- **Defect 1 — Makefile `stop:` omits `--project`:** add `--project=$(PROJECT_DIR)` to the `stop:` target in `scripts/templates/Makefile.template` (other commands in the same template already pass it). `stop.sh` already parses `--project` and forwards it to prune; `--sandbox=$(SANDBOX_DIR)` is already present. No prune behavior change.
-- **Defect 2 — duplicate-ID / `docker rm ... already in progress`:** diagnose the mechanism (docker-stub trace + code reasoning; no docker host in-env), then fix defensively:
+
+- **Defect 1 -- Makefile `stop:` omits `--project`:** add `--project=$(PROJECT_DIR)` to the `stop:` target in `scripts/templates/Makefile.template` (other commands in the same template already pass it). `stop.sh` already parses `--project` and forwards it to prune; `--sandbox=$(SANDBOX_DIR)` is already present. No prune behavior change.
+- **Defect 2 -- duplicate-ID / `docker rm ... already in progress`:** diagnose the mechanism (docker-stub trace + code reasoning; no docker host in-env), then fix defensively:
   - Dedupe `CONTAINER_IDS` after the `docker ps -aq` capture (defensive against duplicate emission).
-  - Make `docker rm` tolerant of already-removed / already-being-removed containers (the race with `run_agent.sh`'s EXIT-trap `compose down` under the Container State Contract — durable state lives in the volume/bind mounts, containers are disposable). Keep `docker ps` fail-closed (`test_stop_docker_failure_aborts` contract).
+  - Make `docker rm` tolerant of already-removed / already-being-removed containers (the race with `run_agent.sh`'s EXIT-trap `compose down` under the Container State Contract -- durable state lives in the volume/bind mounts, containers are disposable). Keep `docker ps` fail-closed (`test_stop_docker_failure_aborts` contract).
   - Add a docker-stub hook to simulate `docker rm` failure ("already in progress") + a trace test asserting stop still completes cleanly.
 - Tests: lock both fixes (a Makefile-target assertion for Defect 1; a trace test for Defect 2). Full suite + lint green.
 
 Deferred / not in scope:
-- Confirming the runtime race against a real docker host (operator e2e) — I verify the mechanism from code + stub only.
+
+- Confirming the runtime race against a real docker host (operator e2e) -- I verify the mechanism from code + stub only.
 - Any change to `prune.sh` (Defect 1 is Makefile-only, per brief).
 - Bug D (`20260828-04`) and resume/teardown changes from other parallel sessions.
 
@@ -28,7 +30,7 @@ Deferred / not in scope:
 
 | Item | From handover |
 |---|---|
-| Bug E — `make stop` template missing `--project`/`--sandbox` + duplicate container-ID emission -> `docker rm ... already in progress`; "operator is already on it" | `20260828-02` findings (assigned to this brief) |
+| Bug E -- `make stop` template missing `--project`/`--sandbox` + duplicate container-ID emission -> `docker rm ... already in progress`; "operator is already on it" | `20260828-02` findings (assigned to this brief) |
 
 ## Acceptance criteria
 
@@ -43,11 +45,11 @@ Deferred / not in scope:
 
 | File | Why in scope |
 |---|---|
-| [`scripts/templates/Makefile.template`](../../scripts/templates/Makefile.template) | `stop:` target — add `--project=$(PROJECT_DIR)` |
+| [`scripts/templates/Makefile.template`](../../scripts/templates/Makefile.template) | `stop:` target -- add `--project=$(PROJECT_DIR)` |
 | [`scripts/stop.sh`](../../scripts/stop.sh) | dedupe `CONTAINER_IDS`; tolerant `docker rm` (race) |
 | [`tests/test_trace_stop.sh`](../../tests/test_trace_stop.sh) | new trace test for the rm-failure tolerance; keeps existing stop/prune tests green |
 | [`test/stubs/docker`](../../test/stubs/docker) | add a `docker rm` failure hook (e.g. `DOCKER_STUB_RM_FAIL`) |
-| [`tests/test_onboard.sh`](../../tests/test_onboard.sh) | template-version site — lock the `stop:` target flag set (AC1) |
+| [`tests/test_onboard.sh`](../../tests/test_onboard.sh) | template-version site -- lock the `stop:` target flag set (AC1) |
 
 ## Decisions
 
@@ -59,8 +61,8 @@ Deferred / not in scope:
 
 ## Findings
 
-- **Defect 1 confirmed by code read:** `stop:` target (`Makefile.template` lines 208-212) passes only `--name`, `--sandbox`, `$SESSION_ID_FLAG`, `$PRUNE_FLAG`; `stop.sh` errors `--prune requires --project` when `--project` is absent. Every other command in the template (start/resume/build/dry-run/diff/apply) already passes `--project`. No test asserts the stop target, so the omission was invisible to the suite (same class as the confirm-savepoint bug last iteration — untested path).
-- **Defect 2 diagnosis (from code + stub):** `stop.sh` captures unique IDs from `docker ps -aq`, then `docker stop` then `docker rm "${CONTAINER_IDS[@]}"`. On a docker host, `docker stop` signals the running agent; `run_agent.sh`'s EXIT trap runs `session_teardown`/`compose down`, removing the same containers concurrently → `stop.sh`'s subsequent `docker rm` hits `removal of container ... already in progress` and, under `set -e`, aborts. The "same IDs listed twice" in the operator's symptom is `docker stop` then `docker rm` printing the same IDs (normal output), not duplicate capture entries.
+- **Defect 1 confirmed by code read:** `stop:` target (`Makefile.template` lines 208-212) passes only `--name`, `--sandbox`, `$SESSION_ID_FLAG`, `$PRUNE_FLAG`; `stop.sh` errors `--prune requires --project` when `--project` is absent. Every other command in the template (start/resume/build/dry-run/diff/apply) already passes `--project`. No test asserts the stop target, so the omission was invisible to the suite (same class as the confirm-savepoint bug last iteration -- untested path).
+- **Defect 2 diagnosis (from code + stub):** `stop.sh` captures unique IDs from `docker ps -aq`, then `docker stop` then `docker rm "${CONTAINER_IDS[@]}"`. On a docker host, `docker stop` signals the running agent; `run_agent.sh`'s EXIT trap runs `session_teardown`/`compose down`, removing the same containers concurrently -> `stop.sh`'s subsequent `docker rm` hits `removal of container ... already in progress` and, under `set -e`, aborts. The "same IDs listed twice" in the operator's symptom is `docker stop` then `docker rm` printing the same IDs (normal output), not duplicate capture entries.
 - **Parallel-overlap risk (flagged):** `scripts/stop.sh` teardown may also be edited by `20260828-05` (last_stopped `.log`, per brief gotcha) and Bug D touched stop/resume tests (`20260828-04`). My stop.sh changes will be rebased by the operator.
 
 ## Completed

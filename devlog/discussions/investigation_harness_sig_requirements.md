@@ -5,6 +5,7 @@
 **[SUPERSEDED in 20260831 - image & harness version identity:](./20260831-story-settled-image_and_harness_version_identity.md) the harness-sig requirement is subsumed as the host-surface branch of the version-identity reconciliation; supersedes this doc's standalone harness-sig framing.**
 
 **Related:**
+
 - [`devlog/roadmap.md`](../../devlog/roadmap.md) -- M2.7 (container-sig settled, harness-sig deferred)
 - [`devlog/discussions/design_session_identity_hash_based.md`](../discussions/design_session_identity_hash_based.md) -- container-sig design
 - [`devlog/handovers/20260513-11-plan-rescope_items_1_7.md`](../../devlog/handovers/20260513-11-plan-rescope_items_1_7.md) -- rescoping context
@@ -30,6 +31,7 @@ Re-framed from per-file scenarios to broad classes of changes that could make th
 Container-sig (image content hash) covers classes that affect the image. The compose template (4b) is loaded fresh at every `make start` -- no staleness risk. The Makefile template (4a) has its own version check.
 
 **The remaining gap harness-sig would fill:** changes to classes 1, 2, and 3 (scripts, libs, command shape) that:
+
 - Don't change the image (host-side only logic)
 - Aren't caught by `MAKEFILE_VERSION`
 - But do change the behavior of the installed CLI
@@ -38,12 +40,12 @@ Container-sig (image content hash) covers classes that affect the image. The com
 
 | Criterion | Self-contained binary | Semantic versioning |
 |---|---|---|
-| Covers class 1 (script dispatch) | ✅ Scripts baked in | ✅ If version bumped |
-| Covers class 2 (lib dispatch) | ✅ Libs baked in | ✅ If version bumped |
-| Covers class 3 (command shape) | ✅ Binary replaced atomically | ✅ If version bumped |
-| Covers class 4a (Makefile template) | ❌ Existing sandbox dirs stale | ✅ If version bumped |
-| Covers class 4b (compose template) | ✅ Embedded in binary | ✅ If version bumped |
-| Covers class 5 (install contract) | ✅ Binary is self-describing | ✅ If version bumped |
+| Covers class 1 (script dispatch) | [x] Scripts baked in | [x] If version bumped |
+| Covers class 2 (lib dispatch) | [x] Libs baked in | [x] If version bumped |
+| Covers class 3 (command shape) | [x] Binary replaced atomically | [x] If version bumped |
+| Covers class 4a (Makefile template) | [ ] Existing sandbox dirs stale | [x] If version bumped |
+| Covers class 4b (compose template) | [x] Embedded in binary | [x] If version bumped |
+| Covers class 5 (install contract) | [x] Binary is self-describing | [x] If version bumped |
 | Engineering cost | High -- packer or compiled rewrite | Low -- add VERSION file + start_agent check |
 | Maintenance burden | One-time build transition | Ongoing -- discipline of bumping on every meaningful change |
 | False positive risk | None -- atomic replacement | Low -- version only changes when bumped intentionally |
@@ -66,6 +68,7 @@ Grilling in progress -- outcome not yet settled.
 ## Recommendation (preliminary)
 
 Do not design harness-sig until a comparison target exists. The two viable paths are:
+
 1. Self-contained binary -- eliminates the entire class of drift problems at high engineering cost.
 2. Semantic versioning -- pragmatic, low cost, but relies on bump discipline.
 

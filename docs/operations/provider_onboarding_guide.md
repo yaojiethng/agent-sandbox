@@ -2,7 +2,7 @@
 
 Step-by-step guide to adding a new reasoning layer provider to agent-sandbox. A provider is a self-contained directory under `providers/<n>/` that supplies the Dockerfiles, serve overlay, and `.env` stubs for one reasoning layer agent.
 
-The provider interface contract is defined in [`../architecture/tool_interface.md` — Provider Interface](../architecture/tool_interface.md#provider-interface). This guide walks through implementing that contract. Refer to [`../architecture/execution_model.md`](../architecture/execution_model.md) for implementation detail on how the harness calls provider scripts.
+The provider interface contract is defined in [`../architecture/tool_interface.md` -- Provider Interface](../architecture/tool_interface.md#provider-interface). This guide walks through implementing that contract. Refer to [`../architecture/execution_model.md`](../architecture/execution_model.md) for implementation detail on how the harness calls provider scripts.
 
 `claude-ai` and `claude-code` are both conforming providers and are the reference implementations for this guide.
 
@@ -12,9 +12,9 @@ The provider interface contract is defined in [`../architecture/tool_interface.m
 
 Two directories contain scripts in the agent-sandbox repo. Understanding the distinction matters when deciding where provider-specific logic belongs:
 
-**`scripts/`** — control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh` and `run_agent.sh` live here.
+**`scripts/`** -- control flow entry points. Scripts that own a session lifecycle or orchestrate a sequence of operations. Not intended for direct reuse by providers. `start_agent.sh` and `run_agent.sh` live here.
 
-**`libs/`** — reusable utility functions. Sourced by scripts and providers alike. No top-level control flow — only named functions. `compose.sh`, `snapshot.sh` live here.
+**`libs/`** -- reusable utility functions. Sourced by scripts and providers alike. No top-level control flow -- only named functions. `compose.sh`, `snapshot.sh` live here.
 
 Provider `setup.sh` hooks are sourced by `scripts/run_agent.sh` and have access to all functions in `libs/`. They must not source scripts from `scripts/` directly.
 
@@ -25,6 +25,7 @@ Provider `setup.sh` hooks are sourced by `scripts/run_agent.sh` and have access 
 A conforming provider supplies four required files and up to four optional files:
 
 **Required:**
+
 ```
 providers/<n>/
 ├── base.dockerfile               ← stable install layers; tagged <provider>-base
@@ -34,6 +35,7 @@ providers/<n>/
 ```
 
 **Optional:**
+
 ```
 providers/<n>/
 ├── config/                       ← default config files; seeded into AGENT_HOME at container start
@@ -42,13 +44,13 @@ providers/<n>/
 └── setup.sh                      ← pre-run host setup hook, sourced if present
 ```
 
-Providers do not supply `build.sh` or `run.sh` — the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh` is injected into every provider image via repo-relative COPY in the provider's `provider.dockerfile` — providers do not author or maintain it.
+Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh` is injected into every provider image via repo-relative COPY in the provider's `provider.dockerfile` -- providers do not author or maintain it.
 
 None of these files are copied to `SANDBOX_DIR`. They live in the agent-sandbox repo and are referenced directly at run time.
 
 ---
 
-## Step 1 — Create the provider directory
+## Step 1 -- Create the provider directory
 
 ```sh
 mkdir providers/<n>
@@ -58,7 +60,7 @@ Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-cod
 
 ---
 
-## Step 2 — Write `base.dockerfile`
+## Step 2 -- Write `base.dockerfile`
 
 `base.dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
 
@@ -78,7 +80,7 @@ The base image ends as root. User creation and runtime configuration belong in `
 
 ---
 
-## Step 3 — Write `provider.dockerfile`
+## Step 3 -- Write `provider.dockerfile`
 
 `provider.dockerfile` inherits from `<provider>-base` and adds the fast-changing provider layer: shared libs, user creation, runtime config, working directories, healthcheck, and entrypoint. It is tagged `<provider>-agent-<project>`.
 
@@ -123,7 +125,7 @@ ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]
 
 The `ARG BASE_IMAGE` declaration allows `scripts/build.sh`'s `build_agent` function to inject the correct base image name at build time via `--build-arg`. The default value is the conventional base image name for the provider.
 
-Shared libs (`src/libs/`) and `entrypoint.sh` are injected automatically via repo-relative COPY in the provider's `provider.dockerfile` — they are harness-owned files and must not be authored or modified by the provider. `config/` is also included from `providers/<n>/config/` if that directory exists.
+Shared libs (`src/libs/`) and `entrypoint.sh` are injected automatically via repo-relative COPY in the provider's `provider.dockerfile` -- they are harness-owned files and must not be authored or modified by the provider. `config/` is also included from `providers/<n>/config/` if that directory exists.
 
 The operator input files are available at `/home/agentuser/workspace/input/` via a read-only bind mount at runtime. `sandbox/` is available at `/home/agentuser/sandbox/` via `--volumes-from`. Neither path needs to be created in the Dockerfile.
 
@@ -145,9 +147,9 @@ The wrapper runs its preflight then execs the command verbatim (`"$@"`). Because
 
 **Conformance (Step 10):** the provider image MUST set `ENTRYPOINT` to the wrapper only and provide its agent binary as `CMD`; the serve overlay MUST prefix the binary in `command:`.
 
-## Step 4 — Write `docker-compose.serve.yml`
+## Step 4 -- Write `docker-compose.serve.yml`
 
-The serve overlay is a static Compose file that extends the base configuration for serve mode. It is referenced directly by `scripts/run_agent.sh` using a deterministic path into the repo — it is never copied to `SANDBOX_DIR`.
+The serve overlay is a static Compose file that extends the base configuration for serve mode. It is referenced directly by `scripts/run_agent.sh` using a deterministic path into the repo -- it is never copied to `SANDBOX_DIR`.
 
 It must declare the agent `command:` for serve mode. It may also define port bindings, additional services (e.g. a UI container), and provider credentials.
 
@@ -163,9 +165,9 @@ If the provider does not support serve mode, create the file anyway with a comme
 
 ---
 
-## Step 5 — Write `.env.example`
+## Step 5 -- Write `.env.example`
 
-`.env.example` documents and seeds the provider-specific variables the provider requires. It is appended to the project's `.env` by `agent-sandbox onboard` — once for each provider present in the repo at onboard time.
+`.env.example` documents and seeds the provider-specific variables the provider requires. It is appended to the project's `.env` by `agent-sandbox onboard` -- once for each provider present in the repo at onboard time.
 
 Format: one variable per line, with a comment explaining the expected value. Variables should be left empty or given a safe default.
 
@@ -175,13 +177,13 @@ SOME_API_KEY=
 SOME_PORT=8080
 ```
 
-Variables that are always derivable from other `.env` values (e.g. image names) should not appear here — they are exported by `scripts/start_agent.sh` at run time.
+Variables that are always derivable from other `.env` values (e.g. image names) should not appear here -- they are exported by `scripts/start_agent.sh` at run time.
 
 **Reference:** `providers/claude-ai/.env.example`, `providers/claude-code/.env.example`
 
 ---
 
-## Step 6 (optional) — Add `config/`
+## Step 6 (optional) -- Add `config/`
 
 If the provider requires default configuration files to be present before the agent starts, place them in:
 
@@ -189,9 +191,9 @@ If the provider requires default configuration files to be present before the ag
 providers/<n>/config/
 ```
 
-The provider's `provider.dockerfile` copies this directory into the image (via repo-relative COPY). At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist — files are never overwritten, so operator edits and prior session state are preserved.
+The provider's `provider.dockerfile` copies this directory into the image (via repo-relative COPY). At container start, `provider-entrypoint.sh` seeds each file into `AGENT_HOME` if it does not already exist -- files are never overwritten, so operator edits and prior session state are preserved.
 
-Name the `.env` stub file `env.stub` — it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
+Name the `.env` stub file `env.stub` -- it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
 
 ```
 providers/<n>/config/
@@ -200,19 +202,20 @@ providers/<n>/config/
 └── env.stub        ← seeded as AGENT_HOME/.env if absent
 ```
 
-Files in `config/` are stubs — they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
+Files in `config/` are stubs -- they contain commented defaults only. Real values belong in `$SANDBOX_DIR/.<provider>/` on the host, which is never committed.
 
 If the provider has no config to seed, omit the `config/` directory and the `COPY config/` line from `provider.dockerfile`.
 
 ---
 
-## Step 7 — Write `config/AGENTS.md`
+## Step 7 -- Write `config/AGENTS.md`
 
 Every provider must supply a provider-layer `AGENTS.md` at `providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh` and orients the agent to its immediate environment.
 
-Use `providers/AGENTS.template.md` as the starting point. The template includes authoring notes for each section — remove all comment blocks before committing.
+Use `providers/AGENTS.template.md` as the starting point. The template includes authoring notes for each section -- remove all comment blocks before committing.
 
 **Provider-layer content covers:**
+
 - What interface the agent is operating in
 - Sandbox context: working directory, diff pipeline, operator authority
 - Input and output channels and their paths
@@ -221,17 +224,18 @@ Use `providers/AGENTS.template.md` as the starting point. The template includes 
 - Provider-specific session start steps
 
 **Provider-layer content does not include:**
-- Project workflow, session conventions, or collaboration principles — those are in the project-layer `AGENTS.md` at the repository root
-- Policy document reading lists — those are in the project-layer `AGENTS.md`
-- Duplicate content from other layers — link rather than restate
 
-The two-layer agent context model is defined in [`../concepts/agent_workflow.md` — Agent Context Model](../concepts/agent_workflow.md#agent-context-model).
+- Project workflow, session conventions, or collaboration principles -- those are in the project-layer `AGENTS.md` at the repository root
+- Policy document reading lists -- those are in the project-layer `AGENTS.md`
+- Duplicate content from other layers -- link rather than restate
+
+The two-layer agent context model is defined in [`../concepts/agent_workflow.md` -- Agent Context Model](../concepts/agent_workflow.md#agent-context-model).
 
 **Reference:** `providers/claude-ai/config/AGENTS.md`, `providers/claude-code/config/AGENTS.md`
 
 ---
 
-## Step 8 (optional) — Write `docker-compose.<n>.yml`
+## Step 8 (optional) -- Write `docker-compose.<n>.yml`
 
 If the provider requires environment variables or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
 
@@ -249,7 +253,7 @@ base → provider overlay → mode overlay
 
 ---
 
-## Step 9 (optional) — Write `setup.sh`
+## Step 9 (optional) -- Write `setup.sh`
 
 If the provider requires host-side setup before containers start, add a setup hook:
 
@@ -262,14 +266,15 @@ providers/<n>/setup.sh
 `setup.sh` has access to all variables exported by `scripts/start_agent.sh` (including `OUTPUT_DIR`, `SANDBOX_DIR`, `REPO_ROOT`) and all functions in `libs/`.
 
 Common uses:
-- Export vars that compose overlays reference via `${VAR}` — these must be exported before `compose_generate` runs
-- `mkdir -p $SANDBOX_DIR/.<provider>/` — pre-create the host-side config directory so it exists for copy-out to land in on the first session
+
+- Export vars that compose overlays reference via `${VAR}` -- these must be exported before `compose_generate` runs
+- `mkdir -p $SANDBOX_DIR/.<provider>/` -- pre-create the host-side config directory so it exists for copy-out to land in on the first session
 
 **Reference:** `providers/claude-code/setup.sh`
 
 ---
 
-## Step 10 — Verify conformance
+## Step 10 -- Verify conformance
 
 Run the dry-run sequence against an onboarded project to verify the provider integrates correctly:
 
@@ -277,9 +282,10 @@ Run the dry-run sequence against an onboarded project to verify the provider int
 make dry-run PROVIDER=<n>
 ```
 
-The base compose template (`src/build/docker-compose.yml`) defines a named volume (`sandbox-data`) for sandbox state persistence. Provider overlays must not declare a volume with the same name. The volume lifecycle is managed by the harness — providers should not reference it directly.
+The base compose template (`src/build/docker-compose.yml`) defines a named volume (`sandbox-data`) for sandbox state persistence. Provider overlays must not declare a volume with the same name. The volume lifecycle is managed by the harness -- providers should not reference it directly.
 
 A passing dry-run confirms:
+
 - Both images build without error (`<provider>-base` and `<provider>-agent-<project>`)
 - Both containers start and the capability layer initialises `sandbox/`
 - The reasoning layer can access `sandbox/` via the shared volume
@@ -298,7 +304,7 @@ Confirm the serve overlay is picked up from the repo (not from `SANDBOX_DIR`) an
 
 ---
 
-## Step 11 — Register the provider
+## Step 11 -- Register the provider
 
 No changes to `scripts/` or `libs/` are required. The harness discovers providers by scanning `providers/*/base.dockerfile`. Once the required files exist under `providers/<n>/`, the provider is available to all onboarded projects.
 

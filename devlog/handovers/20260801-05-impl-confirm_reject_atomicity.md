@@ -1,8 +1,8 @@
 # Agent Handover
 
 **Date:** 2026-08-01
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Type:** Implementation — Confirm savepoint and atomic reject
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
+**Type:** Implementation -- Confirm savepoint and atomic reject
 **Status:** Closed
 
 **Note:** This commit closes M2.6.5 (Copy Model: Volume-backed Sandbox). Will reopen if issues surface during live use. Preliminary testing OK.
@@ -15,13 +15,13 @@ Add rollback safety to `make confirm` and make `make reject` atomic. `confirm` u
 
 Two units:
 
-1. **`confirm` savepoint tag** — Tag `confirm-savepoint` before dropping `.draft-state` commit. On failure at either rebase step, reset to savepoint and clean up. On success, delete tag.
+1. **`confirm` savepoint tag** -- Tag `confirm-savepoint` before dropping `.draft-state` commit. On failure at either rebase step, reset to savepoint and clean up. On success, delete tag.
 
-2. **`reject` atomic** — Chain `git checkout && git branch -D` with `&&` instead of sequential commands. No savepoint needed.
+2. **`reject` atomic** -- Chain `git checkout && git branch -D` with `&&` instead of sequential commands. No savepoint needed.
 
 ## Design
 
-Both mechanisms use the same savepoint tag pattern proven in `draft.sh`: local tags created before the risky operation, rolled back to on failure, deleted on success. Local tags are never pushed by default git push — no remote pollution.
+Both mechanisms use the same savepoint tag pattern proven in `draft.sh`: local tags created before the risky operation, rolled back to on failure, deleted on success. Local tags are never pushed by default git push -- no remote pollution.
 
 ### confirm savepoint
 
@@ -39,7 +39,7 @@ confirm_run:
 
 ### reject atomic
 
-`reject` doesn't need a savepoint. The two operations (`checkout` + `branch -D`) are chained with `&&` — if checkout fails, nothing changed. If checkout succeeds, branch delete is guaranteed (the branch exists by prior validation). No partial state possible.
+`reject` doesn't need a savepoint. The two operations (`checkout` + `branch -D`) are chained with `&&` -- if checkout fails, nothing changed. If checkout succeeds, branch delete is guaranteed (the branch exists by prior validation). No partial state possible.
 
 ```
 reject_run:
@@ -72,11 +72,11 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | New — unified design doc: export pipeline, channels, commands, file map |
-| [`docs/adr/diff_packaging.md`](../../docs/adr/diff_packaging.md) | New — ADR: command rationale, package-diff removal, savepoint rollback |
-| `devlog/discussions/design_apply_workflow_and_baseline_advancement.md` | Deleted — superseded |
-| `devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Deleted — superseded |
-| `devlog/discussions/design_remove_package_diff.md` | Deleted — absorbed into ADR |
+| [`devlog/discussions/design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | New -- unified design doc: export pipeline, channels, commands, file map |
+| [`docs/adr/diff_packaging.md`](../../docs/adr/diff_packaging.md) | New -- ADR: command rationale, package-diff removal, savepoint rollback |
+| `devlog/discussions/design_apply_workflow_and_baseline_advancement.md` | Deleted -- superseded |
+| `devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Deleted -- superseded |
+| `devlog/discussions/design_remove_package_diff.md` | Deleted -- absorbed into ADR |
 | [`docs/concepts/sandbox_host_correspondence_model.md`](../../docs/concepts/sandbox_host_correspondence_model.md) | Updated design doc references |
 | [`docs/development/project_index.md`](../../docs/development/project_index.md) | Updated design doc reference |
 
@@ -86,6 +86,6 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox (close after testing)
+**Sub-milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox (close after testing)
 
 **Conclusions from this session:** TBD

@@ -43,11 +43,11 @@ parallel rule from the rollover plan).
 
 | # | Criterion | Status |
 |---|---|---|
-| AC1 | `src/libs/interface_contract.sh` declares the version; suite tests it | **done** — `interface_contract_version` pinned as positive integer; 9 new units green |
-| AC2 | Tier-3 image build stamps the version label | **done** — `build_image` adds `agent-sandbox.interface-contract-version`, same gate as container-sig (tiers 1/2 unchanged) |
-| AC3 | Record stamps the version (compose label + SESSION_STATE key) | **done** — x-session-labels entry (compose.sh substitution) + `session_state_write_set` key; compose-gen assertion green |
-| AC4 | Preflight warn-only check compares host vs image labels; drifted warns, aligned silent; container-sig untouched | **done** — `_check_interface_contract` at both preflight sites; 3 drift/label states tested (lib + trace_build); prune/install/container_sig.sh untouched |
-| AC5 | Suite green (876 baseline + new tests); parity: no behavior change on aligned runs | **done** — **888/888 across 50 files** (+2 assertions in trace_build, +1 in trace_compose_gen, +9 new units) |
+| AC1 | `src/libs/interface_contract.sh` declares the version; suite tests it | **done** -- `interface_contract_version` pinned as positive integer; 9 new units green |
+| AC2 | Tier-3 image build stamps the version label | **done** -- `build_image` adds `agent-sandbox.interface-contract-version`, same gate as container-sig (tiers 1/2 unchanged) |
+| AC3 | Record stamps the version (compose label + SESSION_STATE key) | **done** -- x-session-labels entry (compose.sh substitution) + `session_state_write_set` key; compose-gen assertion green |
+| AC4 | Preflight warn-only check compares host vs image labels; drifted warns, aligned silent; container-sig untouched | **done** -- `_check_interface_contract` at both preflight sites; 3 drift/label states tested (lib + trace_build); prune/install/container_sig.sh untouched |
+| AC5 | Suite green (876 baseline + new tests); parity: no behavior change on aligned runs | **done** -- **888/888 across 50 files** (+2 assertions in trace_build, +1 in trace_compose_gen, +9 new units) |
 
 ## Completed
 
@@ -75,5 +75,6 @@ parallel rule from the rollover plan).
 - Label stamp gated on the container-sig gate (tier-3 only) and inherited from the base compose template by all delivery overlays.
 
 ## What's Next
+
 - P1 live proof (operator-run matrix; gates P1/P2 per the design) - ship this P0 first.
 - After P1 release: P2 flip authoritative (one reversible flag) + agent-entrypoint container<->container check; then P3 strip container-sig; then the separate doc-consolidation iteration (rename to `sandbox_host_interface.md`).

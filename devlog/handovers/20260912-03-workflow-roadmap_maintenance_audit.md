@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Audit the roadmap-maintenance process end to end -- every instruction that governs when and how the roadmap is updated, across all layers and policy files -- to find the root cause of recurring roadmap staleness (most recently: the sed-probe row left open after its work landed) and produce a targeted, validated proposal for resolving it. Explicitly validate or reject the operator's hypothesis that the instructions are too scattered (causing inconsistent context-loading) and that consolidation-and-linking is the right shape of fix. No policy text changes in this iteration.
 
 ## Scope
+
 - Inventory every roadmap-maintenance instruction in: the pi-layer AGENTS.md, the sandbox AGENTS.md, `docs/operations/roadmap_policy.md`, `docs/operations/iteration_policy.md`, `docs/operations/handover_policy.md`, `docs/operations/documentation_policy.md`, and `docs/operations/git_policy.md`; map which task moment each instruction is load-bearing for (iteration start / during / close).
 - Audit the actual roadmap against those rules: filing questions (operator raised: M2.6.6 rows referencing `baseline.tar`, a copy-delivery artefact), stale open rows, done items with forward-looking text, and close-time update gaps in recent handovers.
 - Cross-check `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` for entries in the same problem class (e.g. GOTCHAS "Roadmap open-item status can go stale against closed handovers"; feedback on tracked-backlog proliferation and findings discipline).
@@ -16,6 +18,7 @@ Audit the roadmap-maintenance process end to end -- every instruction that gover
 - Answer the operator's filing question (baseline.tar under M2.6.6) from the records.
 
 ## Out of scope
+
 - Applying any policy or roadmap restructure (follow-up iteration, only after the operator picks a proposal).
 - Fixing individual roadmap rows beyond what the audit needs as evidence.
 
@@ -80,7 +83,8 @@ Five durable locations + two memory records govern one maintenance action. The a
 Three coordinated changes, each addressing a distinct failure point:
 
 1. **Persist the write-back in the artifact (highest leverage).** Add a `## Roadmap write-back` section to the handover skeleton (handover_policy.md format block) between Completed and Deferred items: at close, the agent must state, per task touched, the exact row change (mark `[x]`, new named entry, or `none`). The close commit then contains both the handover claim and the roadmap edit -- a stale claim becomes a visible diff inconsistency instead of an invisible omission. The lightweight flow keeps working because the write-back travels with the artifact the operator already reviews.
-2. **Make the close-time check mechanical (revised per F6: script, not test).** New `scripts/checks/roadmap_lint.sh` (read-only check script, sibling convention to `scripts/manual/`; `scripts/checks/` becomes the home for future codebase-record mechanical checks, with a make target). It lints the committed state: (a) no `[x]` item inside a section titled `Open`/`Open:`; (b) every `[x]` item carries a `done \`YYYYMMDD-NN\`` reference to an existing handover file whose Status is `Closed`; (c) the active sub-milestone has an `**Acceptance criteria:**` block. Runs offline at close. Not wired into `make test` -- the test suite stays behavioural; record lint is a check.
+2. **Make the close-time check mechanical (revised per F6: script, not test).** New `scripts/checks/roadmap_lint.sh` (read-only check script, sibling convention to `scripts/manual/`; `scripts/checks/` becomes the home for future codebase-record mechanical checks, with a make target). It lints the committed state: (a) no `[x]` item inside a section titled `Open`/`Open:`; (b) every `[x]` item carries a `done \`YYYYMMDD-NN\`` reference to an existing handover file whose Status is `Closed`; (c) the active sub-milestone has an`**Acceptance criteria:**` block. Runs offline at close. Not wired into `make test` -- the test suite stays behavioural; record lint is a check.
+
 ### AC4 -- Targeted root-cause proposal, v3 (lightest hand; code changes withdrawn)
 
 Rejected from v2: `scripts/checks/roadmap_lint.sh`. It bundles two checks -- a whole-repo state lint over roadmap + all handovers, and a claim-to-diff parity check across close commits. Both add code maintenance to the administrative side for a loosely-structured markdown corpus; the parity check especially (commit diffing) outweighs the benefit. Structured fields are not proposed. The script is withdrawn.
@@ -94,6 +98,7 @@ v3 -- one prompt amendment, zero code:
 This forces consideration at the exact chat-time moment (the release gate), travels through the review the operator already performs, and produces the roadmap edit without any parsing. The distinction "marked this session vs not yet done" remains a judgment call at release -- by design; the row just makes the claim explicit and reviewable before the commit exists, rather than reconstructable after it.
 
 Existing adjacent mechanisms, left as-is:
+
 - `wrapup.md` prompt already contains the Step 8 roadmap-marking instruction; it is the heavier invocation of the same step and stays optional.
 - GOTCHAS 2026-08-31 keeps its monitoring role; if the row is skipped again after the amendment, that resurfacing is the recorded trigger for escalating to the artifact-section variant (a mandatory `## Roadmap write-back` section in the handover skeleton).
 
@@ -103,4 +108,5 @@ Also in scope for the follow-up iteration (unchanged from v1/v2): consolidation 
 Proposed acceptance criteria for the follow-up implementation iteration: handover skeleton gains the section (with canonical `None.` marker); `scripts/checks/roadmap_lint.sh` exists with a make target and passes on the current roadmap after the six stale `[x]` items are compacted out of the `Open:` list; parity checks operate on the close commit; M2.6.6 gains its acceptance-criteria block; the three timing phrasings collapse to one. Verification: offline script run + `make test` (no test additions).
 
 ## Deferred items
+
 Implementation of the chosen proposal -- follow-up iteration after operator review.

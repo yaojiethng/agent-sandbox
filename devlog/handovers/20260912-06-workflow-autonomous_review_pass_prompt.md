@@ -6,9 +6,11 @@
 **Status:** Closed
 
 ## Objective
+
 Document the first autonomous review pass (iteration `20260912-05`: thermo-nuclear code review + test-quality campaign run as fresh subagents, WIP-commit fix rounds, review-until-APPROVE, proposal accept + fold, squash into delivery) as a reusable prompt draft, so the process can be invoked again.
 
 ## Scope
+
 1. New prompt template `workflow/coding-agent/prompts/autonomous-review-pass.md` -- the main-agent orchestration template, generalized from what iteration 20260912-05 actually did:
    - Preconditions (working tree committed as WIP so subagents review exact commits; campaign-style subagents may leave proposals uncommitted).
    - Spawn review subagents (`pi -p`) with: scoped diff range, do-not-modify constraint, prior-round blockers to verify, explicit VERDICT contract.
@@ -43,4 +45,5 @@ Document the first autonomous review pass (iteration `20260912-05`: thermo-nucle
 | AC3 | project_index row added; no other docs claim to index prompts/ | offline grep | pending |
 
 ## Deferred items
+
 (none yet)

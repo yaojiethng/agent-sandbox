@@ -17,6 +17,7 @@ The 9p implementation in Docker Desktop's WSL2 backend does not support several 
 ### Issue 1: `utime()` EPERM in Pi's settings.json locking
 
 **Manifestation:** Three warnings on every Pi startup:
+
 ```
 Warning: (startup session lookup, global settings) EPERM: operation not permitted, utime /home/agentuser/.pi/agent/settings.json.lock
 Warning: (runtime creation, global settings) EPERM: operation not permitted, utime ...
@@ -27,6 +28,7 @@ Warning: (runtime creation, global settings) EPERM: operation not permitted, uti
 **First observed:** 2026-05-22, session investigating EPERM warnings.
 
 **Status:** Investigated and documented. See CORRECTION blocks in:
+
 - `devlog/handovers/20260513-10-impl-settings_json_collision_fix.md`
 - `devlog/discussions/design_provider_config_ownership_and_loading.md`
 - `libs/docker-compose.yml` (CONSTRAINT comment at the `AGENT_HOME` mount)

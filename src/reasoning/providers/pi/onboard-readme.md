@@ -117,7 +117,7 @@ added back in `docker-compose.pi.yml`:
 
 `auth.json` stores env var **references** (e.g. `DEEPSEEK_API_KEY`), not actual
 secret values. Real API keys are injected as container environment variables.
-Keeping `auth.json` ephemeral prevents write-back of env var values to the host  -- 
+Keeping `auth.json` ephemeral prevents write-back of env var values to the host  --
 a **security feature**, not an implementation gap.
 
 Adding a new provider key requires a chore commit to update the template

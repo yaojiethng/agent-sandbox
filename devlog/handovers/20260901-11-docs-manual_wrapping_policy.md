@@ -1,4 +1,4 @@
-# Handover 20260901-11 — docs manual-wrapping policy adjustment + violation sweep
+# Handover 20260901-11 -- docs manual-wrapping policy adjustment + violation sweep
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** docs
@@ -13,7 +13,7 @@ does not work and there are live violations in the tree. Adjust the policy
 wording, then sweep and fix violations.
 
 Note: policy-text changes need per-section operator approval (recorded
-gotcha) — propose wording in chat, wait for release before writing.
+gotcha) -- propose wording in chat, wait for release before writing.
 
 ## Acceptance Criteria
 
@@ -21,6 +21,7 @@ gotcha) — propose wording in chat, wait for release before writing.
 - AC2: Replacement wording approved by operator per section.
 - AC3: Violation sweep executed; findings and fixes recorded.
 - AC4: Single `docs:` delivery commit; handover closed in it.
+
 ## Completed
 
 | Task | Evidence |

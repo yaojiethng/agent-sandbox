@@ -1,21 +1,21 @@
 # Agent Handover
 
 **Date:** 2026-07-30
-**Milestone:** M2.6.5 — Copy Model: Volume-backed Sandbox
-**Type:** Implementation — Interactive volume selector
+**Milestone:** M2.6.5 -- Copy Model: Volume-backed Sandbox
+**Type:** Implementation -- Interactive volume selector
 **Status:** Closed
 
 ## Corrections
 
-### 2026-07-30 (post-close) — 73f6474
+### 2026-07-30 (post-close) -- 73f6474
 
 Two bugs caught on live test after session close:
 
 1. **Empty session-ts/run-id labels in selector.** Volume labels `session-ts` and `run-id` were only on the `x-session-labels` YAML anchor (applied to containers), not on the volume definition itself. Added to `docker-compose.yml` volume `labels:`. `discover_volumes()` now also filters by `agent-sandbox.session-ts` to exclude pre-multi-volume volumes that lack identity labels.
 
-2. **REFRESH destroyed all volumes.** The REFRESH block called `docker volume rm` on every volume discovered for the sandbox directory. This was leftover from the single-volume mental model where "refresh" meant "reset the one volume." With multi-volume, REFRESH starts a new session alongside existing volumes — `prune --volumes` is the only destroy path. Removed the `docker volume rm` loop.
+2. **REFRESH destroyed all volumes.** The REFRESH block called `docker volume rm` on every volume discovered for the sandbox directory. This was leftover from the single-volume mental model where "refresh" meant "reset the one volume." With multi-volume, REFRESH starts a new session alongside existing volumes -- `prune --volumes` is the only destroy path. Removed the `docker volume rm` loop.
 
-3. **Selector format tightened.** `branch: feat-x  host SHA: a34b95a` → `branch: feat-x (a34b95a)`.
+3. **Selector format tightened.** `branch: feat-x  host SHA: a34b95a` -> `branch: feat-x (a34b95a)`.
 
 ## Objective
 
@@ -33,12 +33,12 @@ Multiple sessions found for this sandbox directory:
 Select (1-3):
 ```
 
-Inline in `start_agent.sh` — no dependency on `workflows/interactive.sh`. Simple `read`-based picker, no external libraries needed.
+Inline in `start_agent.sh` -- no dependency on `workflows/interactive.sh`. Simple `read`-based picker, no external libraries needed.
 
 ## Scope
 
-`scripts/start_agent.sh` — replace the multi-volume error block with interactive picker.
-`src/build/docker-compose.yml` — add `session-ts` and `run-id` labels to volume definition (correction).
+`scripts/start_agent.sh` -- replace the multi-volume error block with interactive picker.
+`src/build/docker-compose.yml` -- add `session-ts` and `run-id` labels to volume definition (correction).
 
 ## Acceptance criteria
 
@@ -50,5 +50,5 @@ Inline in `start_agent.sh` — no dependency on `workflows/interactive.sh`. Simp
 | 4 | Invalid input re-prompts | Accepted |
 | 5 | Stale volumes flagged `[STALE]` | Accepted |
 | 6 | `[start new session]` computes fresh identity | Accepted |
-| 7 | Volume labels include session-ts and run-id | Accepted — correction 73f6474 |
-| 8 | REFRESH does not destroy existing volumes | Accepted — correction 73f6474 |
+| 7 | Volume labels include session-ts and run-id | Accepted -- correction 73f6474 |
+| 8 | REFRESH does not destroy existing volumes | Accepted -- correction 73f6474 |

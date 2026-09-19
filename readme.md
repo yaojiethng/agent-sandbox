@@ -30,7 +30,7 @@ Harness is built around a small set of architectural invariants.
 
 - Code execution occurs in **Standard** or **Safe** modes.
 - Standard mode allows network access for AI provider communication.
-- Safe mode enforces no-network execution (reserved, not yet implemented — see M6).
+- Safe mode enforces no-network execution (reserved, not yet implemented -- see M6).
 
 ### Change Control
 
@@ -53,13 +53,13 @@ The implementation stack has three layers where lower layers must stabilize befo
 | 1 | Execution Mechanics | How a single agent runs tasks and generates diffs |
 | 2 | Orchestration | Coordination between multiple agents |
 
-Two elements frame the stack without belonging to it: the **Security Model**, which is a design constraint specified before implementation and applied to all layers; and the **Human Workflow**, which is a system invariant — the operator initiates every run and has final authority over all outputs.
+Two elements frame the stack without belonging to it: the **Security Model**, which is a design constraint specified before implementation and applied to all layers; and the **Human Workflow**, which is a system invariant -- the operator initiates every run and has final authority over all outputs.
 
 See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
 
 ## Documentation Guide
 
-Start here and follow the path in order. Architecture documents describe the system as it currently exists — future work belongs in the roadmap, not in architecture docs.
+Start here and follow the path in order. Architecture documents describe the system as it currently exists -- future work belongs in the roadmap, not in architecture docs.
 
 | Step | Document | Purpose |
 |---|---|---|
@@ -75,11 +75,10 @@ For architecture detail, start at [system_overview.md](docs/architecture/system_
 
 This repository separates concerns into three categories:
 
-- **Workflow** → What currently happens
-- **Security** → What is guaranteed
-- **Roadmap** → What may happen later
+- **Workflow** -> What currently happens
+- **Security** -> What is guaranteed
+- **Roadmap** -> What may happen later
 
 Future design work and planned features are tracked in the roadmap rather than architecture documentation.
-
 
    This work is licensed under a [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).

@@ -1,10 +1,11 @@
-# Design — UID Mapping Permission Strategy for Docker Bind Mounts
+# Design -- UID Mapping Permission Strategy for Docker Bind Mounts
 
 **Status:** Approved for implementation
 
 **Linked artifacts:**
-- Story: [`story_linux_filesystem_uid_mismatch.md`](story_linux_filesystem_uid_mismatch.md) — problem analysis and strategy catalog
-- Plan handover: [`20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md`](../handovers/20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md) — session record
+
+- Story: [`story_linux_filesystem_uid_mismatch.md`](story_linux_filesystem_uid_mismatch.md) -- problem analysis and strategy catalog
+- Plan handover: [`20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md`](../handovers/20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md) -- session record
 
 ---
 
@@ -14,11 +15,11 @@ Docker bind mounts map host file permissions directly into the container. When t
 
 - **Workspace directories** (`.workspace/session-diffs/`, `.workspace/input/`, `.workspace/output/`)
 - **Provider config directories** (`.pi/agent/`, `.opencode/`, etc.)
-- **Any file created or copied post-setup** — new inodes inherit default `umask`, not arbitrary ACLs
+- **Any file created or copied post-setup** -- new inodes inherit default `umask`, not arbitrary ACLs
 
 The current remedy (Resolution 1 in the story document) uses POSIX ACLs (`setfacl`) to grant the container UID write access. This approach is fragile: ACL masks can be silently downgraded by file operations, ACLs do not survive `cp` to new filesystems, and the solution fails entirely on `/mnt/c/` (Windows interoperability mounts) where ACLs are unsupported.
 
-Additionally, the solution must work across all platforms developers use — WSL native, macOS Docker Desktop, Windows Docker Desktop — not just one.
+Additionally, the solution must work across all platforms developers use -- WSL native, macOS Docker Desktop, Windows Docker Desktop -- not just one.
 
 ---
 
@@ -45,9 +46,9 @@ File operations (`cp`, `mv`, `mkdir`) create new inodes with default permissions
 
 | Mechanism | Reliability | Platform Support |
 |---|---|---|
-| Default ACLs (`setfacl -d`) | Fragile — mask can be reset by intermediate operations | Linux only (fails on `/mnt/c/`) |
-| Setgid bit (`chmod g+s`) | Reliable — kernel-enforced, survives operations | Linux only |
-| Same UID (no fix needed) | **Native** — new files are owned by the process UID | **All platforms** |
+| Default ACLs (`setfacl -d`) | Fragile -- mask can be reset by intermediate operations | Linux only (fails on `/mnt/c/`) |
+| Setgid bit (`chmod g+s`) | Reliable -- kernel-enforced, survives operations | Linux only |
+| Same UID (no fix needed) | **Native** -- new files are owned by the process UID | **All platforms** |
 
 **Decision:** Same UID is the only truly reliable inheritance mechanism. No post-copy permission fixes are needed when the container process and the file owner are the same numeric identity.
 
@@ -61,11 +62,11 @@ Three approaches to achieving UID alignment were considered:
 | **B: Build args + compose `user:`** | `ARG HOST_UID`/`HOST_GID`, collision handling in `RUN` | Same as A | `build_agent`/`build_sandbox` must accept and thread `--build-arg` | None |
 | **C: Host group bind** | Drop `-u 1001` only | `group_add: [${SHARED_GID}]` | None | `sudo groupadd`, `sudo usermod`, `chgrp`, `chmod` |
 
-Approach A fails because the image has pre-baked files owned by UID 1001 — the process runs as a different UID and cannot write to its own `$HOME`. **Approach B is required** — the user must be created at the correct UID during image build.
+Approach A fails because the image has pre-baked files owned by UID 1001 -- the process runs as a different UID and cannot write to its own `$HOME`. **Approach B is required** -- the user must be created at the correct UID during image build.
 
 Approach C (group bind) requires zero pipeline changes but fails on macOS/Windows DD.
 
-**Decision:** Approach B. The pipeline change is mechanical — thread `HOST_UID` and `HOST_GID` through existing build function signatures.
+**Decision:** Approach B. The pipeline change is mechanical -- thread `HOST_UID` and `HOST_GID` through existing build function signatures.
 
 ### 2.4 UID Collision Handling
 
@@ -81,15 +82,15 @@ Three collision strategies:
 
 **Decision:** Use `usermod`/`groupmod` to rename the colliding user/group, preserving all state. This is the pattern shown in the Dockerfile implementation (Strategy 4, Step A in the story document).
 
-### 2.5 Agent ↔ Sandbox Seam
+### 2.5 Agent <-> Sandbox Seam
 
 The agent and sandbox containers share volumes via `--volumes-from`. Both must run as the same identity for files to be readable/writable across them.
 
-With UID Mapping, both containers receive the same `HOST_UID`/`HOST_GID` at build time and run as the same numeric identity via `user:` in compose. The seam is solved implicitly — no separate group mechanism needed.
+With UID Mapping, both containers receive the same `HOST_UID`/`HOST_GID` at build time and run as the same numeric identity via `user:` in compose. The seam is solved implicitly -- no separate group mechanism needed.
 
 ### 2.6 Container-Sig / Image Determinism
 
-M2.7's hash-based container identity captures the built image hash. The UID baked into the image is part of that hash. Since images are built per-machine (each host has its own Docker daemon), a different UID on a different machine produces a different hash — this is correct behaviour, not a conflict. Container-sig compares an image against itself on the same machine, so preflight validation remains valid regardless of UID.
+M2.7's hash-based container identity captures the built image hash. The UID baked into the image is part of that hash. Since images are built per-machine (each host has its own Docker daemon), a different UID on a different machine produces a different hash -- this is correct behaviour, not a conflict. Container-sig compares an image against itself on the same machine, so preflight validation remains valid regardless of UID.
 
 ---
 
@@ -97,7 +98,7 @@ M2.7's hash-based container identity captures the built image hash. The UID bake
 
 **Selected strategy:** Strategy 4 from the story document.
 
-The container's `agentuser` is created at the host user's UID/GID at build time. The process runs as that user. Bind mounts see the same numeric UID on both sides — no permission fixing needed.
+The container's `agentuser` is created at the host user's UID/GID at build time. The process runs as that user. Bind mounts see the same numeric UID on both sides -- no permission fixing needed.
 
 ### How It Works
 
@@ -123,14 +124,14 @@ Host (UID 1000, GID 1000)          Container (UID 1000, GID 1000)
 | **4** | `providers/hermes/provider.Dockerfile` | Same as #3 | Parallel with #3 |
 | **5** | `providers/claude-code/provider.Dockerfile` | Same as #3 | Parallel with #3 |
 | **6** | `providers/opencode/provider.Dockerfile` | Same as #3 | Parallel with #3 |
-| **7** | `libs/sandbox.Dockerfile` | Same as #3 — add ARGs, UID-aware useradd, numeric chown | Independent |
+| **7** | `libs/sandbox.Dockerfile` | Same as #3 -- add ARGs, UID-aware useradd, numeric chown | Independent |
 | **8** | `providers/pi/onboard.sh` | Remove `chmod 775` additions (not needed with UID mapping). The `mkdir -p` remains; no permission fixing required. | After #1 |
-| **9** | `libs/build.sh` (or `libs/containers.sh`) | `build_sandbox()` and `build_agent()` must accept `--uid`/`--gid` flags and pass them as `--build-arg HOST_UID=... --build-arg HOST_GID=...` to `docker build` | After #1, blocks #3–#7 |
+| **9** | `libs/build.sh` (or `libs/containers.sh`) | `build_sandbox()` and `build_agent()` must accept `--uid`/`--gid` flags and pass them as `--build-arg HOST_UID=... --build-arg HOST_GID=...` to `docker build` | After #1, blocks #3-#7 |
 | **10** | `scripts/start_agent.sh` | Export `HOST_UID=$(id -u)` and `HOST_GID=$(id -g)` before compose invocation | After #1 |
 | **11** | `scripts/run_agent.sh` (if exists) | Ensure host IDs are propagated to compose generation | After #1 |
 | **12** | `devlog/discussions/story_linux_filesystem_uid_mismatch.md` | Already updated with Strategy 4 | Done this session |
 | **13** | All provider compose overlays | Verify `user:` override is not needed (base template handles it). If any provider overlay sets `user:`, remove or align. | After #2 |
-| **14** | Tests | Update any tests that assert ACL presence or specific UID 1001. Tests that check bind mount writability should pass without change. | After #1–#7 |
+| **14** | Tests | Update any tests that assert ACL presence or specific UID 1001. Tests that check bind mount writability should pass without change. | After #1-#7 |
 
 ### Dependency Ordering
 
@@ -152,11 +153,11 @@ Host (UID 1000, GID 1000)          Container (UID 1000, GID 1000)
                    #14 (tests)
 ```
 
-Items #3–#7 are parallelisable across the 5 Dockerfiles.
+Items #3-#7 are parallelisable across the 5 Dockerfiles.
 
 ---
 
-## 4. Documentation Changes — New User-Facing Contract
+## 4. Documentation Changes -- New User-Facing Contract
 
 The following concepts become part of the system contract and must be documented for users/operators:
 
@@ -171,7 +172,7 @@ The user's UID/GID is now a build-time input, not just a runtime variable. This 
 
 ### 4.2 Removal of ACL Requirement
 
-The `setfacl` pre-requisite (ACL package installed, ACL commands run at onboard time) is **eliminated**. No user-facing ACL management needed. Onboarding is simpler — no `sudo apt install acl`, no `setfacl` commands.
+The `setfacl` pre-requisite (ACL package installed, ACL commands run at onboard time) is **eliminated**. No user-facing ACL management needed. Onboarding is simpler -- no `sudo apt install acl`, no `setfacl` commands.
 
 ### 4.3 Image Portability Constraint
 
@@ -189,7 +190,7 @@ The base compose template now explicitly sets `user:` on both services. Document
 
 | File | What to Add/Change |
 |---|---|
-| `scripts/onboard.sh` header | Update "What this script produces" — remove ACL references, add `HOST_UID`/`HOST_GID` export note |
+| `scripts/onboard.sh` header | Update "What this script produces" -- remove ACL references, add `HOST_UID`/`HOST_GID` export note |
 | `docs/development/quickstart.md` | Add "First build" section explaining UID detection and image rebuild |
 | `docs/architecture/security.md` | Document that container runs as host UID (not root, not a fixed internal UID) |
 | `docs/concepts/execution_model.md` | Update container identity model to mention UID mapping |
@@ -239,14 +240,15 @@ sudo chmod -R g+s "$SANDBOX_DIR"
 ```
 
 **Platform behaviour:**
-- **WSL:** Group ownership and permissions are enforced. The GID must match the container's supplementary group for write access.
-- **macOS:** `sudo` prompts for password. `chgrp`/`chmod` execute but the virtiofs bridge overrides the Linux permission bits — macOS Docker Desktop grants write access regardless, so the commands are redundant but harmless.
-- **Windows DD:** Same as macOS — hypervisor masks the permissions.
 
-**Limitation:** Unlike the UID Mapping approach (selected strategy), this does not solve the overshadoing problem during provisioning. The setgid bit (`g+s`) only triggers when the Linux kernel creates a **brand new inode** inside the setgid directory — it does not affect files brought in from elsewhere:
+- **WSL:** Group ownership and permissions are enforced. The GID must match the container's supplementary group for write access.
+- **macOS:** `sudo` prompts for password. `chgrp`/`chmod` execute but the virtiofs bridge overrides the Linux permission bits -- macOS Docker Desktop grants write access regardless, so the commands are redundant but harmless.
+- **Windows DD:** Same as macOS -- hypervisor masks the permissions.
+
+**Limitation:** Unlike the UID Mapping approach (selected strategy), this does not solve the overshadoing problem during provisioning. The setgid bit (`g+s`) only triggers when the Linux kernel creates a **brand new inode** inside the setgid directory -- it does not affect files brought in from elsewhere:
 
 - **`cp -r`**: Creates subdirectories based on source metadata, overshadowing the destination's setgid bit. New subdirectories are owned by the host group (GID 1000) with restricted mask (755), not the shared group.
-- **`mv`**: Preserves original attributes entirely — group does not change to the shared GID.
+- **`mv`**: Preserves original attributes entirely -- group does not change to the shared GID.
 - **ACL Mask Trap**: Even if the group is correct, the copy process can reset the ACL Mask to `r-x`, blocking write access.
 
 **Consequence:** The setgid bit reliably handles files the **container creates at runtime** (logs, session checkpoints). It does **not** handle provisioned files. A recursive permission fix after provisioning, or `rsync --chmod` (see rule 8.2), is required for deployment.
@@ -267,7 +269,7 @@ rsync -rtv --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
 | `--chmod=Fu=rw,Fg=rw,Fo=r` | Force files to mode 664 (owner+group writable, all readable) |
 | `--chown=1000:1001` | Force owner to host user UID and group to container GID (WSL only; macOS ignores or requires `sudo`) |
 
-**Why setgid does not solve this:** The `chmod g+s` setgid bit only fires for **new inodes created inside the directory** by the kernel. When `cp -r` copies a tree, it creates new inodes based on source `stat()` metadata (ownership, mode), bypassing the setgid mechanism entirely. This is not a bug in setgid — it is operating as designed. The kernel has no way to know that the inode it just created is a "copy" that should inherit differently. `rsync --chmod` works around this by forcing the permission bits at the point of write, before the kernel ever sees the source metadata.
+**Why setgid does not solve this:** The `chmod g+s` setgid bit only fires for **new inodes created inside the directory** by the kernel. When `cp -r` copies a tree, it creates new inodes based on source `stat()` metadata (ownership, mode), bypassing the setgid mechanism entirely. This is not a bug in setgid -- it is operating as designed. The kernel has no way to know that the inode it just created is a "copy" that should inherit differently. `rsync --chmod` works around this by forcing the permission bits at the point of write, before the kernel ever sees the source metadata.
 
 **Comparison with `cp`:**
 
@@ -279,7 +281,7 @@ rsync -rtv --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
 
 **Integration with the selected UID Mapping strategy:**
 
-If UID Mapping is in effect, `--chown` is not needed — the container and host share the same UID, so native owner permissions apply. However, `rsync --chmod` remains useful as a belt-and-suspenders approach to ensure group/other permissions are correct regardless of source file modes.
+If UID Mapping is in effect, `--chown` is not needed -- the container and host share the same UID, so native owner permissions apply. However, `rsync --chmod` remains useful as a belt-and-suspenders approach to ensure group/other permissions are correct regardless of source file modes.
 
 If provisioning uses `rsync` instead of `cp -r`, the recommended command is:
 
@@ -290,4 +292,4 @@ rsync -rtv --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
 find "$TARGET_DIR" -type d -exec chmod g+s {} \;
 ```
 
-The `find ... chmod g+s` is a cheap safety catch that ensures any directories created by the rsync inherit the setgid bit, so subsequent files written into them will use the correct group. This is necessary because `rsync --chmod` does not set the setgid bit — it only sets permissions.
+The `find ... chmod g+s` is a cheap safety catch that ensures any directories created by the rsync inherit the setgid bit, so subsequent files written into them will use the correct group. This is necessary because `rsync --chmod` does not set the setgid bit -- it only sets permissions.

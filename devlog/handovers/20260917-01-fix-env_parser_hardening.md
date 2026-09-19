@@ -18,7 +18,7 @@ Make the `.env` loader in `session_env.sh` skip malformed lines instead of abort
 
 ## Scope
 
-Operator reported `make start` failing with `export: '=': not a valid identifier` at `session_env.sh:54`. Root cause: the blank/comment guard ran on the raw key before whitespace stripping, so a line of the form ` = ` passed the guard, trimmed to an empty key, and `export "="` aborted the caller under errexit. The same defect misfired on indented comment lines (`  # c` -> `export "#c=..."`). No identifier validation existed, so any non-identifier key (digit prefix, dash) produced the same failure class.
+Operator reported `make start` failing with `export: '=': not a valid identifier` at `session_env.sh:54`. Root cause: the blank/comment guard ran on the raw key before whitespace stripping, so a line of the form ` = ` passed the guard, trimmed to an empty key, and `export "="` aborted the caller under errexit. The same defect misfired on indented comment lines (`# c` -> `export "#c=..."`). No identifier validation existed, so any non-identifier key (digit prefix, dash) produced the same failure class.
 
 ## Carried forward
 

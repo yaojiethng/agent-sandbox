@@ -1,22 +1,22 @@
 # Agent Handover
 
 **Date:** 2026-03-26
-**Milestone:** M2.2 — Reasoning Layer Modularisation
+**Milestone:** M2.2 -- Reasoning Layer Modularisation
 **Type:** Workflow
 
 ## Objective
 
-Audit and fix unreliable session open housekeeping — handover creation and roadmap compaction were not firing consistently at session start. Define an operator convention and policy gates to make both mandatory.
+Audit and fix unreliable session open housekeeping -- handover creation and roadmap compaction were not firing consistently at session start. Define an operator convention and policy gates to make both mandatory.
 
 ## Scope
 
-- `agents (claude.ai).md` — session open convention (operator template, agent fallback)
-- `handover_policy.md` — compaction gate at Step 1
+- `agents (claude.ai).md` -- session open convention (operator template, agent fallback)
+- `handover_policy.md` -- compaction gate at Step 1
 
 ## Acceptance criteria
 
-- [ ] Operator can paste a single session open message and the agent runs Step 1 housekeeping before accepting any task — verified by opening a new session with the convention message and observing the agent compact and create the handover before asking for task input.
-- [ ] If operator sends a task prompt with no session open message, agent pauses and runs Step 1 before acting — verified by opening a session with a bare task prompt and observing the pause.
+- [ ] Operator can paste a single session open message and the agent runs Step 1 housekeeping before accepting any task -- verified by opening a new session with the convention message and observing the agent compact and create the handover before asking for task input.
+- [ ] If operator sends a task prompt with no session open message, agent pauses and runs Step 1 before acting -- verified by opening a session with a bare task prompt and observing the pause.
 
 ## Hot files
 
@@ -47,16 +47,18 @@ None.
 
 ## Next session
 
-**M2.2 — Reasoning Layer Modularisation** (continuing from `20260326-01-impl`).
+**M2.2 -- Reasoning Layer Modularisation** (continuing from `20260326-01-impl`).
 
-Trigger B has not run — M2.2 is still active.
+Trigger B has not run -- M2.2 is still active.
 
 Priority order per prior handover:
+
 1. Investigate why `docker-compose.yml` in `SANDBOX_DIR` still contains `${...}` placeholders. Upload `scripts/start_agent.sh` and `scripts/onboard.sh` to diagnose.
 2. Implement `scripts/stop.sh` using Option B2 (compose project filter) once root cause is understood.
 3. If stop is resolved and all criteria met: run Trigger B for M2.2.
 
 **Watch-out items:**
-1. `docker-compose.yml` placeholder issue may mean the file is regenerated each run — Option B2 for stop is the right path regardless.
+
+1. `docker-compose.yml` placeholder issue may mean the file is regenerated each run -- Option B2 for stop is the right path regardless.
 2. Trigger B cannot fire until `make stop` criterion is resolved or explicitly dropped from M2.2 scope.
-3. Architecture docs are current as of `20260326-01-impl` — no further doc updates needed before Trigger B.
+3. Architecture docs are current as of `20260326-01-impl` -- no further doc updates needed before Trigger B.

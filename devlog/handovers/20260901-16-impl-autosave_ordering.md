@@ -1,4 +1,4 @@
-# Handover 20260901-16 — impl autosave channel ordering by last-saved time
+# Handover 20260901-16 -- impl autosave channel ordering by last-saved time
 
 **Milestone:** M2.6 - Session Persistence
 **Type:** impl
@@ -15,9 +15,10 @@ name-sorting can never express recency. Operator asks: order by last-saved time 
 ## Root cause
 
 Three consumers order bundle dirs by name:
-1. `interactive.sh _interactive_select_channel` — "newest: <name>" (hash for autosave)
-2. `interactive.sh _interactive_select_bundle` — picker ordering (hash order for autosave)
-3. `routing.sh resolve_latest_dir` — `sort | tail -1` (lexicographically-largest hash for autosave;
+
+1. `interactive.sh _interactive_select_channel` -- "newest: <name>" (hash for autosave)
+2. `interactive.sh _interactive_select_bundle` -- picker ordering (hash order for autosave)
+3. `routing.sh resolve_latest_dir` -- `sort | tail -1` (lexicographically-largest hash for autosave;
    used by non-interactive draft auto-resolve AND the entrypoint's autosave fallback)
 
 The lexicographic contract of `resolve_latest_dir` is deliberately pinned by a test (name-embedded
@@ -45,7 +46,7 @@ mtime is exactly "last saved".
 | `resolve_latest_dir_by_mtime` added to routing.sh (AC1/AC2) | autosave-specific mtime resolution; `resolve_latest_dir` lexicographic contract untouched (pinned test stays green) |
 | `resolve_source_for_draft` autosave auto-resolve uses mtime (AC1) | unit test `test_resolve_draft_autosave_newest_by_mtime` (mtime wins over lexicographically-larger name) |
 | Entrypoint autosave fallback uses mtime (AC2) | `src/capability/entrypoint.sh` session-export fallback path |
-| Interactive picker: autosave ordered by mtime + `last saved:` column (AC3) | `scripts/workflows/interactive.sh`; reuses `relative_time` (session_inventory.sh) — same format as `resume --list` |
+| Interactive picker: autosave ordered by mtime + `last saved:` column (AC3) | `scripts/workflows/interactive.sh`; reuses `relative_time` (session_inventory.sh) -- same format as `resume --list` |
 | Channel list: autosave newest shown as relative time (AC4) | `newest: 5 minutes ago` instead of a bare session-id hash |
 | Tests + lint (AC5) | 761/761/0 (3 new tests); `check_lint.sh` Clean |
 

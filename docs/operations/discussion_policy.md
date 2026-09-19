@@ -16,9 +16,9 @@ Hyphens as section delimiters. Underscores as word separators in the description
 
 | Code | When to use |
 |---|---|
-| `story` | Problem framing — what does the operator need? |
-| `study` | Feasibility — can we do X? |
-| `design` | Decision exploration — should we, and how? |
+| `story` | Problem framing -- what does the operator need? |
+| `study` | Feasibility -- can we do X? |
+| `design` | Decision exploration -- should we, and how? |
 
 ### Statuses
 
@@ -29,7 +29,7 @@ Hyphens as section delimiters. Underscores as word separators in the description
 | `settled` | Discussion closed, decision reached | `superseded`, `archived` |
 | `superseded` | Replaced by a newer doc | `archived` |
 | `rejected` | Decided against | `archived` |
-| `archived` | Terminal — no active references | — |
+| `archived` | Terminal -- no active references | -- |
 
 ### Standalone policy docs
 
@@ -42,18 +42,20 @@ Existing docs with old-format names keep their names until substantively edited.
 ## Document types
 
 ### Stories (`story`)
+
 See [`story_policy.md`](story_policy.md).
 
 Defines the problem space. Created during the major loop when a sub-milestone objective is understood but the approach is not.
 
 ### Studies (`study`)
+
 See [`study_policy.md`](study_policy.md).
 
 Evaluates a specific candidate approach. One study per candidate. Runs until a recommendation can be made and fed back to the parent story.
 
 ### Designs (`design`)
 
-Opened during the minor loop Step 3 (Design) — see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
+Opened during the minor loop Step 3 (Design) -- see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
 
 #### Required sections
 

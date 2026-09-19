@@ -1,7 +1,7 @@
 # Interface Contract Compatibility
 
 **Current:** 2026-09-19
-**Status:** closed — mechanism landed and authoritative (P0 + P2); interim `container-sig` retired (P3)
+**Status:** closed -- mechanism landed and authoritative (P0 + P2); interim `container-sig` retired (P3)
 
 ## Requirements
 
@@ -27,13 +27,13 @@ timing: host<->container and record at start/resume preflight (before any
 container exists); container<->container at the agent entrypoint (the first
 moment both containers are up, since the sandbox initializes first).
 
-**Bump rule:** increment exactly when a cross-boundary contract changes — wiring
+**Bump rule:** increment exactly when a cross-boundary contract changes -- wiring
 shape, mount/bind shape, `SANDBOX_DIR` format, onboard command shape,
 host/container command semantics, session-record schema, docker labels the
 container consumes. Doc edits, tests, and internal refactors never bump it.
 
 **Mismatch policy:** two regimes gated by the migration plan. Parallel phase:
-the new check warns exactly as `container-sig` does today — a warning never
+the new check warns exactly as `container-sig` does today -- a warning never
 blocks a start. Authoritative phase (after live proof): a mismatch is a hard,
 preflight-time refusal naming the mismatched surface and the fix (rebuild, or
 restart the session from the record). Refusal happens before any container is
@@ -47,23 +47,24 @@ comparability, no resume decision, no record linkage. A deliberate version
 number closes that gap without reintroducing file-hash fingerprints (immune to
 doc edits by construction). Baking into the image names the artifact's own
 revision; stamping the record names the session's revision and makes the check
-cheap — a file read, no docker inspect. Checking early minimises wasted
+cheap -- a file read, no docker inspect. Checking early minimises wasted
 operations and blast radius: a failed preflight check costs only the preflight
 work; a failed entrypoint check stops an already-invested session with a named
 cause.
 
 **Rejected alternatives:**
-- *Container-sig-style source fingerprint* (status quo, extended) — intent:
+
+- *Container-sig-style source fingerprint* (status quo, extended) -- intent:
   a subset hash cannot name a version, cannot drive a resume decision, and
   doc edits change it without a contract change (R3 fails). Superseded by this
   mechanism.
-- *Build-baked version only* — execution gap: needs an image present/inspect,
+- *Build-baked version only* -- execution gap: needs an image present/inspect,
   so the record surface is not comparable without starting (R4 fails) and the
   session-record schema is uncovered.
-- *Record-layered version only* — execution gap: the image's own wiring
+- *Record-layered version only* -- execution gap: the image's own wiring
   declares nothing; host<->container and container<->container drift are
   invisible (R2 fails on the image surface).
-- *Per-surface version split from day one* — neither intent nor execution:
+- *Per-surface version split from day one* -- neither intent nor execution:
   the harness ships as one repo and its copies move together; split adds
   ceremony without detection value. Deferred as a compatible extension (additive
   constants + comparators, not rework).
@@ -103,7 +104,7 @@ The agent entrypoint (`src/reasoning/entrypoint.sh`) gains
 `_check_container_contract`, the container<->container check: it compares the
 agent image's baked version against the sandbox's recorded version
 (`SESSION_STATE.interface_contract_version`, written by the sandbox at init
-from its own bake — available to the agent via `volumes_from: sandbox`). It
+from its own bake -- available to the agent via `volumes_from: sandbox`). It
 hard-stops on a definite mismatch under strict, warns in the parallel phase,
 warns on a missing record key (pre-record image, upgrade path), and skips
 silently when the lib is unavailable. `container-sig` untouched. Default-warn
@@ -145,11 +146,11 @@ the interface contract). `sandbox_lifecycle.md` carries the contract-check
 position in the lifecycle sequence. This ADR stays open until the mechanism
 is authoritative (P2/P3).
 
-**Edge cases / drivers:** old images carry no version label — the check treats a
+**Edge cases / drivers:** old images carry no version label -- the check treats a
 missing label as "pre-dating the contract version" and refuses preflight with
 the rebuild remedy (a missing label is indistinguishable from a stale build and
 must not start); container<->container comparison requires both images present
-— the agent entrypoint reads its own baked version and the sandbox's recorded
+-- the agent entrypoint reads its own baked version and the sandbox's recorded
 version (the sandbox writes its bake into `SESSION_STATE` at init, available to
 the agent via `volumes_from: sandbox`), both available by then; a missing
 record key or file warns rather than aborts so the pre-record upgrade path
