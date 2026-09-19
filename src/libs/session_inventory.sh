@@ -79,6 +79,42 @@ project_current_sha() {
   git -C "$dir" rev-parse HEAD 2>/dev/null || true
 }
 
+# project_current_branch  --  print the caller's current git position
+# (PROJECT_DIR): the branch name when on a branch, `<short-sha> (detached)` when
+# HEAD is a detached commit, or `(absent)` when PROJECT_DIR is unset or not a
+# git repository. The single shared derivation for the "current branch" display
+# hint; empty is never a valid return (absent is spelled explicitly).
+project_current_branch() {
+  local dir="${PROJECT_DIR:-}"
+  local ref sha
+  if [[ -n "$dir" ]] && ref="$(git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null)" && [[ -n "$ref" ]]; then
+    echo "$ref"; return 0
+  fi
+  if [[ -n "$dir" ]] \
+     && sha="$(git -C "$dir" rev-parse --short HEAD 2>/dev/null)" && [[ -n "$sha" ]]; then
+    echo "$sha (detached)"; return 0
+  fi
+  echo "(absent)"
+}
+
+# project_branch_age SHA  --  print how far the current project HEAD is ahead
+# of the given commit SHA: "N commit[s] ago", "0 commits ago", "not in
+# tree" when SHA is not a resolvable commit in the current project (PROJECT_DIR
+# git), or "-" when SHA is empty. Shared by the resume session table and the
+# draft bundle table AGE columns.
+project_branch_age() {
+  local sha="$1" n
+  [[ -n "$sha" ]] || { echo "-"; return 0; }
+  [[ -n "${PROJECT_DIR:-}" && -d "$PROJECT_DIR/.git" ]] || { echo "not in tree"; return 0; }
+  if ! git -C "$PROJECT_DIR" cat-file -e "$sha^{commit}" >/dev/null 2>&1; then
+    echo "not in tree"; return 0
+  fi
+  n="$(git -C "$PROJECT_DIR" rev-list --count "$sha"..HEAD 2>/dev/null || true)"
+  if [[ -z "$n" ]]; then echo "not in tree"; return 0; fi
+  if [[ "$n" -eq 0 ]]; then echo "0 commits ago"; return 0; fi
+  echo "$n commit$([[ "$n" -eq 1 ]] && echo '' || echo 's') ago"
+}
+
 # enumerate_records  --  print one `sid|provider|ts|branch` line per registry
 # record (glob `.compose/*.yml`; skips unreadable / unrecoverable-provider
 # records), optionally narrowed by PROVIDER_FILTER (caller scope). The shared

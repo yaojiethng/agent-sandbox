@@ -65,7 +65,7 @@ test_list_renders_enriched() {
   sandbox="$(build_fixture "list")"
   local out
   out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/list/project" --sandbox="$sandbox" --list)"
-  if echo "$out" | grep -q "SESSION.*PROVIDER.*BRANCH.*WORK.*STATE" \
+  if echo "$out" | grep -q "SESSION.*PROVIDER.*BRANCH.*AGE.*WORK.*STATE" \
      && echo "$out" | grep -q "abc123.*pi.*main"; then
     pass "resume --list: renders enriched record display (headers + row)"
   else
@@ -338,9 +338,151 @@ test_interactive_paginates_at_page_size() {
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Run
-# ---------------------------------------------------------------------------
+# --list --interactive: the AGE column reports how many commits the current
+# HEAD is ahead of the session's recorded host-head sha ("N commits ago",
+# "0 commits ago"), and "not in tree" when the recorded sha is not resolvable
+# in the current project.
+test_list_shows_branch_point_age() {
+  local dir="$FIXTURE_DIR/branch_age"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m c1 >/dev/null 2>&1
+  local c1
+  c1="$(git -C "$dir/project" rev-parse HEAD)"
+  local c2
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m c2 >/dev/null 2>&1
+  c2="$(git -C "$dir/project" rev-parse HEAD)"
+  # A record whose host head is c1: HEAD is 1 commit ahead -> "1 commit ago".
+  local f="$dir/sandbox/.compose/aaa.yml"
+  cat > "$f" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $c1
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  # A record whose host head equals HEAD -> "0 commits ago".
+  cat > "$dir/sandbox/.compose/bbb.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $c2
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  # A record with an unresolvable sha -> "not in tree".
+  cat > "$dir/sandbox/.compose/ccc.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list 2>&1)"
+  if echo "$out" | grep -qE "aaa.*1 commit ago" \
+     && echo "$out" | grep -qE "bbb.*0 commits ago" \
+     && echo "$out" | grep -qE "ccc.*not in tree"; then
+    pass "resume --list: AGE column shows commit distance (1 ago / 0 ago / not in tree)"
+  else
+    fail "resume --list: expected 1 commit ago / 0 commits ago / not in tree, got: $out"
+  fi
+}
+
+# --interactive prints a hint naming the operator's current branch above the
+# picker, so the stale-session choice is made against a known reference.
+test_interactive_shows_current_branch_hint() {
+  local dir="$FIXTURE_DIR/branch_hint"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  git -C "$dir/project" checkout -q -b feat/current-hint >/dev/null 2>&1
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $(git -C "$dir/project" rev-parse HEAD)
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(printf '\nq\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "current branch: feat/current-hint"; then
+    pass "resume --interactive: prints current branch hint (feat/current-hint)"
+  else
+    fail "resume --interactive: expected current-branch hint, got: $out"
+  fi
+
+  # Detached HEAD: the hint falls back to the short SHA + "(detached)" rather
+  # than an empty branch cell.
+  git -C "$dir/project" checkout -q --detach >/dev/null 2>&1
+  local detached_sha
+  detached_sha="$(git -C "$dir/project" rev-parse --short HEAD)"
+  out="$(printf '\nq\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "current branch: ${detached_sha} \(detached\)"; then
+    pass "resume --interactive: detached HEAD shows short SHA + (detached)"
+  else
+    fail "resume --interactive: expected \(${detached_sha} \(detached\)\) hint, got: $out"
+  fi
+}
+
+# --interactive with a non-git project dir: the branch hint reads (absent)
+# rather than omitting the hint line (empty is never a valid return).
+test_interactive_branch_hint_absent() {
+  local dir="$FIXTURE_DIR/branch_absent"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(printf '\nq\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "current branch: \(absent\)"; then
+    pass "resume --interactive: non-git project prints (absent) branch hint"
+  else
+    fail "resume --interactive: expected (absent) branch hint, got: $out"
+  fi
+}
+
+# --interactive zero-pads the picker index to a fixed column width (01..10)
+# so the empty slot never shifts as the count crosses 10; 1-based numbering is
+# kept (0 is the injected-default slot, not a real index).
+test_interactive_zero_pads_index() {
+  local dir="$FIXTURE_DIR/index_pad"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  local i
+  for i in $(seq -w 1 12); do
+    write_minimal_record "$dir" "s$i" "pi-agent-test-project"
+  done
+  local out
+  out="$(printf 'q\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "^  01:" && echo "$out" | grep -qE "^  10:"; then
+    pass "resume --interactive: picker index zero-padded to fixed width (01..10)"
+  else
+    fail "resume --interactive: expected zero-padded 01..10 index, got: $out"
+  fi
+}
 
 # STATE cell is the LAST lifecycle event (start/stop) from the session log,
 # verb overridden by live docker state; stopped sessions show when they were
@@ -379,6 +521,10 @@ run_test test_list_provider_no_match
 run_test test_list_shows_provider_without_image_sig
 run_test test_list_no_sig_when_field_empty
 run_test test_list_state_cell_from_log
+run_test test_list_shows_branch_point_age
+run_test test_interactive_shows_current_branch_hint
+run_test test_interactive_branch_hint_absent
+run_test test_interactive_zero_pads_index
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help
 run_test test_interactive_confirm_abort

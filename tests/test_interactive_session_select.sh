@@ -17,6 +17,7 @@ test_setup
 AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/interactive.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
+source "$TEST_DIR/libs/git_fixtures.sh"
 
 # =============================================================================
 # interactive_confirm_or_abort tests
@@ -212,8 +213,11 @@ test_select_session_patch_count_shown() {
   local STDERR
   STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   local OK=true
-  echo "$STDERR" | grep -q "patches: 5" || OK=false
-  echo "$STDERR" | grep -q "patches: 0" || OK=false
+  # The bundle table shows the patch count as a PATCHES column value;
+  # anchor the count to the row's trailing UNCOMMITTED cell ([ ]) so the
+  # digit in the STATE cell (e.g. "5M ago") cannot match.
+  echo "$STDERR" | grep -qE -- "-five.*[[:space:]]5[[:space:]]+\\[" || OK=false
+  echo "$STDERR" | grep -qE -- "-zero.*[[:space:]]0[[:space:]]+\\[" || OK=false
   if [[ "$OK" == true ]]; then
     pass "interactive_select_bundle shows patch count instead of checkmark"
   else
@@ -491,6 +495,55 @@ test_select_session_pagination_no_n_at_last_page() {
   fi
 }
 
+
+# =============================================================================
+# interactive_select_bundle  --  STATE / AGE columns + current-branch hint
+# =============================================================================
+
+test_select_session_state_and_age_columns() {
+  local SANDBOX="$FIXTURE_DIR/ss_stateage"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1
+
+  # Without a PROJECT_DIR git repo the AGE cell is "not in tree"; the header
+  # carries the new BUNDLE/STATE/AGE/... column titles.
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  local OK=true
+  echo "$STDERR" | grep -q "STATE" || OK=false
+  echo "$STDERR" | grep -q "AGE" || OK=false
+  echo "$STDERR" | grep -q "not in tree" || OK=false
+  if [[ "$OK" == true ]]; then
+    pass "interactive_select_bundle renders STATE/AGE columns"
+  else
+    fail "interactive_select_bundle should show STATE/AGE columns, got: $STDERR"
+  fi
+}
+
+test_select_session_current_branch_hint() {
+  local SANDBOX="$FIXTURE_DIR/ss_branchhint"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-alpha" 1
+
+  local PROJ="$FIXTURE_DIR/ss_branchhint_proj"
+  make_committed_repo "$PROJ"
+  git -C "$PROJ" checkout -q -b feat/bundle-hint
+  PROJECT_DIR="$PROJ"
+
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  if echo "$STDERR" | grep -qE "current branch: feat/bundle-hint"; then
+    pass "interactive_select_bundle prints the current project branch"
+  else
+    fail "interactive_select_bundle should show the current branch, got: $STDERR"
+  fi
+  unset PROJECT_DIR
+}
+
 # =============================================================================
 # Run all
 # =============================================================================
@@ -529,6 +582,8 @@ run_test test_select_session_pagination_page_header
 run_test test_select_session_pagination_single_page
 run_test test_select_session_pagination_option_zero_persists
 run_test test_select_session_pagination_no_n_at_last_page
+run_test test_select_session_state_and_age_columns
+run_test test_select_session_current_branch_hint
 
 test_done
 

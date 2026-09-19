@@ -93,6 +93,12 @@ interactive_pick() {
     PAGE_SIZE="$TOTAL"
   fi
   local PAGE_OFFSET=0
+  # Index-column width: the picker numbers rows from 1 per page, zero-padded
+  # to a fixed width so the column does not shift as the count crosses 10 (a
+  # 1-based scheme -- 0 reads as 'none/quit' and is the injected-default slot).
+  # The width follows the per-page cap, so every page uses the same padding.
+  local INDEX_W="${#PAGE_SIZE}"
+  (( INDEX_W < 1 )) && INDEX_W=1
 
   # Find absolute index of default
   local DEFAULT_INDEX=-1
@@ -135,11 +141,17 @@ interactive_pick() {
     else
       echo "$LABEL" >&2
     fi
-    [[ -n "$HEADER" ]] && echo "$HEADER" >&2
+    # A supplied column HEADER (dense tables) sits under the title. It carries
+    # NO leading offset of its own (callers give a bare header), so it is
+    # indented by the same left-margin + index-column prefix the numbered rows
+    # use -- 2 spaces, the padded index, " : " -- to line up with the data.
+    if [[ -n "$HEADER" ]]; then
+      printf "%*s%s\n" "$((2 + INDEX_W + 2))" "" "$HEADER" >&2
+    fi
 
     # Option 0 (injected default)
     if [[ "$INJECT_ZERO" == true ]]; then
-      printf "  0: %-50s (selected)\n" "$INJECTED_VALUE" >&2
+      printf "  %0${INDEX_W}d: %-50s (selected)\n" 0 "$INJECTED_VALUE" >&2
     fi
 
     # Entries
@@ -149,7 +161,7 @@ interactive_pick() {
       local entry="${_PICK_ENTRIES[$abs]}"
       local display="${entry#*|}"
       [[ "$display" == "$entry" ]] && display="$entry"
-      printf "  %d: %s\n" "$rel" "$display" >&2
+      printf "  %0${INDEX_W}d: %s\n" "$rel" "$display" >&2
       rel=$((rel + 1))
     done
 
@@ -383,9 +395,22 @@ interactive_select_bundle() {
     return 1
   fi
 
-  # Build display entries: "name|name  patches: [x]  uncommitted: [x]"
+  # Build display rows: aligned columns BUNDLE / STATE / AGE / PATCHES /
+  # UNCOMMITTED. A header string passes to interactive_pick, which prints it
+  # under the title, indented to the same column origin as the numbered rows.
+  # By language, STATE names the bundle's branch state now vs its baseline
+  # (how many commits the current HEAD is ahead of INIT_SHA on .export-status,
+  # via the shared project_branch_age), and AGE names how long ago the bundle
+  # was EXPORTED (the .export-status TIMESTAMP -- the export moment, NOT the
+  # session/container start that the resume table tracks). Autosave dirs carry
+  # no embedded time, so they fall back to the dir mtime.
   local -a ENTRIES=()
-  local bname
+  local -A _BW=( [BUNDLE]=34 [STATE]=16 [AGE]=16 [PATCHES]=8 [UNCOMM]=12 )
+  local _DRAFT_HEADER
+  _DRAFT_HEADER=$(printf '%-*s %-*s %-*s %-*s %-*s' \
+    "${_BW[BUNDLE]}" "BUNDLE" "${_BW[STATE]}" "STATE" "${_BW[AGE]}" "AGE" \
+    "${_BW[PATCHES]}" "PATCHES" "${_BW[UNCOMM]}" "UNCOMMITTED")
+
   for bname in "${BUNDLE_DIRS[@]}"; do
     local ENTRY_DIR="${BASE_DIR}/${bname}"
 
@@ -401,22 +426,54 @@ interactive_select_bundle() {
       HAS_UNCOMMITTED="[x]"
     fi
 
-    # Truncate long names
+    # STATE: the bundle's branch state now vs its baseline  --  how many
+    # commits the current project HEAD is ahead of the bundle baseline
+    # (INIT_SHA on .export-status).
+    local init_sha=""
+    if [[ -f "$ENTRY_DIR/.export-status" ]]; then
+      init_sha=$(grep '^INIT_SHA=' "$ENTRY_DIR/.export-status" 2>/dev/null | head -1 | cut -d= -f2-)
+    fi
+    local state
+    state="$(project_branch_age "$init_sha")"
+
+    # AGE: how old the bundle is in wall-clock  --  time since it was
+    # EXPORTED (the .export-status TIMESTAMP, written at export time). This is
+    # deliberately the export moment, NOT the session/container start
+    # (session-ts, which the resume table tracks via its lifecycle log). The
+    # bundle never reads session-ts or the .compose lifecycle entries. Prefer
+    # the .export-status TIMESTAMP; fall back to the directory mtime (autosave
+    # dirs have no embedded time).
+    local ts=""
+    if [[ -f "$ENTRY_DIR/.export-status" ]]; then
+      ts=$(grep '^TIMESTAMP=' "$ENTRY_DIR/.export-status" 2>/dev/null | head -1 | cut -d= -f2-)
+    fi
+    if [[ -z "$ts" ]]; then
+      local m_ep
+      m_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)
+      [[ -n "$m_ep" ]] && ts=$(date -u -d "@${m_ep}" '+%Y%m%d-%H%M%S' 2>/dev/null)
+    fi
+    local age
+    age="$(relative_time_compact "$ts")"
+    # Spell the semantic explicitly: AGE is how long ago this bundle was
+    # EXPORTED (never the container/session start). "---" (no timestamp)
+    # stays bare.
+    [[ "$age" != "---" ]] && age="exported $age"
+
+    # Truncate long names to the BUNDLE column width.
     local DISPLAY_NAME="$bname"
-    if [[ ${#DISPLAY_NAME} -gt 50 ]]; then
-      DISPLAY_NAME="${DISPLAY_NAME:0:47}..."
+    if (( ${#DISPLAY_NAME} > _BW[BUNDLE] )); then
+      DISPLAY_NAME="${DISPLAY_NAME:0:$((_BW[BUNDLE] - 3))}..."
     fi
 
-    # Autosave: show when the checkpoint was last written (dir mtime).
-    local LAST_SAVED=""
-    if [[ "$CHANNEL" == "autosave" ]]; then
-      local saved_ep
-      saved_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)
-      LAST_SAVED="  last saved: $(relative_time_compact "$(date -u -d "@${saved_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)"
-    fi
-
-    ENTRIES+=("${bname}|${DISPLAY_NAME}  patches: ${PATCH_COUNT}  uncommitted: ${HAS_UNCOMMITTED}${LAST_SAVED}")
+    local row
+    row=$(printf '%-*s %-*s %-*s %-*s %-*s' \
+      "${_BW[BUNDLE]}" "$DISPLAY_NAME" "${_BW[STATE]}" "$state" "${_BW[AGE]}" "$age" \
+      "${_BW[PATCHES]}" "$PATCH_COUNT" "${_BW[UNCOMM]}" "$HAS_UNCOMMITTED")
+    ENTRIES+=("${bname}|${row}")
   done
 
-  interactive_pick "Available bundles (${CHANNEL}):" ENTRIES "$DEFAULT_BUNDLE" "$INTERACTIVE_MAX_ENTRIES"
+  # Current-branch hint on the title, same as the resume picker.
+  local bundle_label="Available bundles (${CHANNEL}):"
+  bundle_label="$bundle_label  --  current branch: $(project_current_branch)"
+  interactive_pick "$bundle_label" ENTRIES "$DEFAULT_BUNDLE" "$INTERACTIVE_MAX_ENTRIES" "$_DRAFT_HEADER"
 }

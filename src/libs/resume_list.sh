@@ -20,15 +20,16 @@ source "$(dirname "${BASH_SOURCE[0]}")/session_inventory.sh"
 RESUME_INVENTORY=()
 build_inventory() {
   RESUME_INVENTORY=()
-  local current_sha stale last_used short_sha line sid provider ts branch
+  local current_sha stale last_used host_sha branch_age line sid provider ts branch
   current_sha="$(project_current_sha)"
   while IFS= read -r line; do
     IFS='|' read -r sid provider ts branch <<< "$line"
     session_is_dry_run "$sid" && continue
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     last_used="$(session_log_read "$sid" last_stopped)"
-    short_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)" && short_sha="${short_sha:0:7}"
-    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$short_sha" )
+    host_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)"
+    branch_age="$(_resume_branch_age "$host_sha")"
+    RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$host_sha|$branch_age" )
   done < <(enumerate_records)
   # Newest first by session-ts.
   local sorted
@@ -55,28 +56,41 @@ _no_sessions() {
 # -------------------------
 # Inventory display (shared by --list and --interactive)
 # -------------------------
-# Row shape (compact): sid | provider | started | branch | work | state | last used.
+# Row shape (compact): sid | provider | branch | age | work | state.
+#   BRANCH -- truncated to 11 chars (+ ...) so long branch names cannot blow
+#             the row width; the full name is on the record.
+#   AGE    -- the wall-clock age of the last lifecycle event: `up <t>`
+#             (started t ago) or `down <t>` (stopped t ago), per the
+#             operator's event-ordering model. start/stop events are
+#             linearizable (log timestamps are lexicographically comparable),
+#             so the last event is the relevant one. Docker is the
+#             authoritative override on the verb (a crashed container's log
+#             still says up); docker absent -> log-truth only; no events at
+#             all -> `-`. By the shared AGE/STATE convention (see below) this
+#             "how long ago" value sits under the AGE header.
 #   WORK   -- host-side proxy for saved work: newest checkpoint for the session
 #             id under session-diffs (autosave dir, else newest session export):
-#             `<N>c` commits (the sandbox state; the export wraps them as patches), `+u` when uncommitted.diff is non-empty; `--` when
+#             `<N>c` commits (the sandbox state; the export wraps them as
+#             patches), `+u` when uncommitted.diff is non-empty; `--` when
 #             the session never exported. Volume-truth (git inside the sandbox)
 #             would cost one docker run per session  --  the cost class already
 #             rejected for list-time staleness.
-#   STATE  -- one merged cell: the LAST lifecycle event, per the operator's
-#             event-ordering model. start/stop events are linearizable (log
-#             timestamps are lexicographically comparable), so the last event
-#             is the relevant one: `up <t>` (started t ago) or `down <t>`
-#             (stopped t ago). Docker is the authoritative override on the
-#             verb (a crashed container's log still says up); docker absent ->
-#             log-truth only; no events at all -> `-`. Creation time
-#             (session-ts) stays on the record; it is not the actionable
-#             number.
-#   BRANCH -- truncated to 16 chars (+ ...) so long branch names cannot blow
-#             the row width; the full name is on the record.
+#   STATE  -- the branch's commit state: how many commits the current project
+#             HEAD is ahead of the session's recorded host-head commit
+#             ("N commit[s] ago"), "0 commits ago" when the recorded head
+#             equals HEAD, "not in tree" when the recorded head is not a
+#             resolvable commit in the current project, "-" when the record
+#             has no host-head sha. By the shared AGE/STATE convention (AGE =
+#             wall-clock, STATE = commit distance) this sits under STATE.
 # Image-sig value is dropped from rows (diagnostic clutter); the actionable
-# staleness marker [SANDBOX_STALE] is kept (exact words --
-# pinned by tests).
-_RESUME_BRANCH_MAX=16
+# staleness marker [SANDBOX_STALE] is kept (exact words -- pinned by tests).
+_RESUME_BRANCH_MAX=11
+
+# _resume_branch_age SHA  --  "<N> commit[s] ago"/"0 commits ago"/"not in
+# tree"/"-" as above. Uses the current project (PROJECT_DIR) git HEAD.
+_resume_branch_age() {
+  project_branch_age "$1"
+}
 declare -A _WORK_MAP=()   # sid -> "<N>c[+u]" (filled by _resume_work_map)
 declare -A _STATE_MAP=()  # sid -> running|stopped (filled by _resume_state_map)
 
@@ -168,12 +182,14 @@ _resume_render_rows() {
   local MODE="$1"
   _resume_work_map
   _resume_state_map
-  _RESUME_HEADER=$(printf '  %-8s  %-9s  %-19s  %-7s  %-12s' \
-    "SESSION" "PROVIDER" "BRANCH" "WORK" "STATE")
+  # Column header (no leading offset: list mode adds its own 2-space margin,
+  # the interactive picker aligns it under the numbered rows).
+  _RESUME_HEADER=$(printf '%-7s %-9s %-14s %-14s %-6s %-13s' \
+    "SESSION" "PROVIDER" "BRANCH" "AGE" "WORK" "STATE")
 
-  local _line sid provider ts branch stale last_used short_sha
-  local _br work state
-  if [[ "$MODE" == "list" ]]; then echo "$_RESUME_HEADER"; fi
+  local _line sid provider ts branch stale last_used host_sha branch_age
+  local _br _state_val _wall_val work
+  if [[ "$MODE" == "list" ]]; then echo "  $_RESUME_HEADER"; fi
 
   [[ "$MODE" == "interactive" ]] && PICKER=()
   # list mode caps the table at the page size (footer hints at the rest);
@@ -186,14 +202,19 @@ _resume_render_rows() {
     _LINES=( "${RESUME_INVENTORY[@]}" )
   fi
   for _line in "${_LINES[@]}"; do
-    IFS='|' read -r sid provider ts branch stale last_used short_sha <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale last_used host_sha branch_age <<< "$_line"
     _br=$(_resume_truncate_branch "$branch")
     [[ "$stale" == "stale" ]] && _br+=" [SANDBOX_STALE]"
+    # By language, STATE holds the branch's commit state (how many commits the
+    # current HEAD is ahead of the recorded host-head) and AGE holds the last
+    # lifecycle event's wall-clock age ("down 5m ago", "running"). Same
+    # convention as the draft bundle table.
+    _state_val="${branch_age:-not in tree}"
     work="${_WORK_MAP[$sid]:---}"
-    state=$(_resume_state_cell "$sid" "$ts")
+    _wall_val=$(_resume_state_cell "$sid" "$ts")
     local row
-    row=$(printf '%-8s  %-9s  %-19s  %-7s  %-12s' \
-      "$sid" "$provider" "$_br" "$work" "$state")
+    row=$(printf '%-7s %-9s %-14s %-14s %-6s %-13s' \
+      "$sid" "$provider" "$_br" "$_wall_val" "$work" "$_state_val")
     if [[ "$MODE" == "list" ]]; then
       echo "  $row"
     else

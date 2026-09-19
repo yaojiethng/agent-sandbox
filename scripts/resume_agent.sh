@@ -120,14 +120,16 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   # deliberately slow mode.
   source "$REPO_ROOT/scripts/workflows/interactive.sh"
   _resume_render_rows "interactive"
-  chosen="$(interactive_pick "Resume which session?" PICKER "" "$RESUME_LIST_PAGE_SIZE" "$_RESUME_HEADER")" || exit 1
+  _label="Resume which session?"
+  _label="$_label  --  current branch: $(project_current_branch)"
+  chosen="$(interactive_pick "$_label" PICKER "" "$RESUME_LIST_PAGE_SIZE" "$_RESUME_HEADER")" || exit 1
 
   # Confirm display re-reads the chosen entry's fields from the in-memory
   # inventory (build_inventory already parsed the record) rather than
   # re-parsing it from disk.
   disp_provider=""; disp_ts=""; disp_branch=""
   for _line in "${RESUME_INVENTORY[@]}"; do
-    IFS='|' read -r sid provider ts branch stale last_used short_sha <<< "$_line"
+    IFS='|' read -r sid provider ts branch stale last_used host_sha branch_age <<< "$_line"
     if [[ "$sid" == "$chosen" ]]; then
       disp_provider="$provider"; disp_ts="$ts"; disp_branch="$branch"; break
     fi
