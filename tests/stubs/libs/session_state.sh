@@ -27,6 +27,16 @@ session_state_write() {
   echo "${key}=${value}" >> "$file"
 }
 
+# Mirrors src/libs/session_state.sh (identity block used by the seed and
+# mount init paths).
+session_state_write_set() {
+  local dir="$1" init_sha="$2"
+  session_state_write "$dir" "init_sha"      "$init_sha"
+  session_state_write "$dir" "session_ts"    "${SESSION_TS:-}"
+  session_state_write "$dir" "session_id"    "${SESSION_ID:-}"
+  session_state_write "$dir" "host_head_sha" "${HOST_HEAD_SHA:-}"
+}
+
 # Mirrors src/libs/session_state.sh (used by the capability probe gate and the
 # knowledge diagnostics).
 init_sha_is_valid() {

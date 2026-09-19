@@ -7,6 +7,7 @@
 # Provides:
 #   session_state_read    --  read a key from SESSION_STATE
 #   session_state_write   --  write a key=value pair to SESSION_STATE
+#   session_state_write_set --  write the identity block (init_sha + identity)
 
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
@@ -45,6 +46,19 @@ session_state_write() {
   fi
 
   echo "${KEY}=${VALUE}" >> "$STATE_FILE"
+}
+
+# session_state_write_set SANDBOX_DIR INIT_SHA
+#   Writes the SESSION_STATE identity block (init_sha + session identity).
+#   Shared by the seed and mount init paths; the only difference between
+#   the delivery modes is the init_sha source.
+session_state_write_set() {
+  local SANDBOX_DIR="$1"
+  local INIT_SHA="$2"
+  session_state_write "$SANDBOX_DIR" "init_sha"      "$INIT_SHA"
+  session_state_write "$SANDBOX_DIR" "session_ts"    "${SESSION_TS:-}"
+  session_state_write "$SANDBOX_DIR" "session_id"    "${SESSION_ID:-}"
+  session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
 }
 
 # init_sha_is_valid SANDBOX_DIR

@@ -115,10 +115,7 @@ if [[ "$SANDBOX_TYPE" == "mount" ]]; then
       echo "  Recreate the worktree: remove $SANDBOX_DIR and start again." >&2
       exit 1
     fi
-    session_state_write "$SANDBOX_DIR" "init_sha" "$_init_sha"
-    session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
-    session_state_write "$SANDBOX_DIR" "session_id" "${SESSION_ID:-}"
-    session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
+    session_state_write_set "$SANDBOX_DIR" "$_init_sha"
   fi
   session_state_write "$SANDBOX_DIR" "changes_dir" "$CHANGES_DIR"
   session_state_write "$SANDBOX_DIR" "input_dir"   "$INPUT_DIR"

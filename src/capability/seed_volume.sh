@@ -45,6 +45,24 @@ FLATTEN="${SEED_FLATTEN:-false}"
 
 die() { echo "Error: seed_volume: $*" >&2; exit 1; }
 
+# _nul_streams_equal LEFT_FILE RIGHT_FILE MESSAGE
+# Compares two NUL-delimited sorted streams held in files. On mismatch,
+# prints MESSAGE to stderr, then a readable head-20 diff. Removes both files
+# in all cases. Shared by verify_parity and verify_baseline.
+_nul_streams_equal() {
+  local lhs="$1" rhs="$2" msg="$3"
+  if cmp -s "$lhs" "$rhs"; then
+    rm -f "$lhs" "$rhs"
+    return 0
+  fi
+  echo "Error: $msg" >&2
+  diff <(tr '\0' '\n' < "$lhs" | sed '/^$/d') \
+       <(tr '\0' '\n' < "$rhs" | sed '/^$/d') \
+       | head -20 >&2 || true
+  rm -f "$lhs" "$rhs"
+  return 1
+}
+
 # verify_parity <src> <dest>
 # Fail-closed seed verification: git status --porcelain must be identical.
 # Compares sorted NUL streams with cmp (bash variables cannot hold NUL bytes,
@@ -60,15 +78,10 @@ verify_parity() {
   s2="$(mktemp /tmp/seed-status-dest.XXXXXX)"
   git -C "$src" status --porcelain=v1 -uall -z | sort -z > "$s1"
   git -C "$dest" status --porcelain=v1 -uall -z | sort -z > "$s2"
-  if ! cmp -s "$s1" "$s2"; then
-    echo "Error: seed verification failed -- git status diverges between source and volume." >&2
-    diff <(tr '\0' '\n' < "$s1" | sed '/^$/d') \
-         <(tr '\0' '\n' < "$s2" | sed '/^$/d') \
-         | head -20 >&2 || true
-    rm -f "$s1" "$s2"
+  if ! _nul_streams_equal "$s1" "$s2" \
+      "seed verification failed -- git status diverges between source and volume."; then
     return 1
   fi
-  rm -f "$s1" "$s2"
 }
 
 # verify_baseline <src> <dest>
@@ -93,28 +106,12 @@ verify_baseline() {
   s2="$(mktemp /tmp/seed-baseline-dest.XXXXXX)"
   snapshot_enumerate_worktree "$src" | sort -z > "$s1"
   git -C "$dest" ls-files -z | sort -z > "$s2"
-  if ! cmp -s "$s1" "$s2"; then
-    echo "Error: flatten seed verification failed -- the volume file set diverges from the source enumeration." >&2
-    diff <(tr '\0' '\n' < "$s1" | sed '/^$/d') \
-         <(tr '\0' '\n' < "$s2" | sed '/^$/d') \
-         | head -20 >&2 || true
-    rm -f "$s1" "$s2"
+  if ! _nul_streams_equal "$s1" "$s2" \
+      "flatten seed verification failed -- the volume file set diverges from the source enumeration."; then
     return 1
   fi
-  rm -f "$s1" "$s2"
 }
 
-# session_state_write_set DEST INIT_SHA
-# Writes the SESSION_STATE identity block (init_sha + session identity).
-# Shared by the full and flatten seed tails; the only difference is the
-# init_sha source.
-session_state_write_set() {
-  local dest="$1" init_sha="$2"
-  session_state_write "$dest" "init_sha"      "$init_sha"
-  session_state_write "$dest" "session_ts"    "${SESSION_TS:-}"
-  session_state_write "$dest" "session_id"    "${SESSION_ID:-}"
-  session_state_write "$dest" "host_head_sha" "${HOST_HEAD_SHA:-}"
-}
 main() {
   [[ -d "$SRC/.git" ]] || die "no git repository at $SRC -- is the project mounted?"
 
