@@ -14,7 +14,7 @@
 # contract is authoritative -- a drift or missing label refuses preflight, and
 # the agent entrypoint hard-stops on a container<->container mismatch. There is
 # no runtime escape hatch: an override would be a backdoor that weakens the
-# contract. container-sig rolls over separately (P3 strips it).
+# contract. The interim container-sig check retired in P3.
 #
 # Bump rule: increment INTERFACE_CONTRACT_VERSION below exactly when a
 # cross-boundary contract changes (wiring shape, mount/bind shape, SANDBOX_DIR

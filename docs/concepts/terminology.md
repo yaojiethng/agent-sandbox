@@ -57,21 +57,20 @@ Iteration-scoped resources: a draft branch, a diff bundle.
 A session's or image's divergence from the current project or build content, in one of two distinct dimensions:
 
 - **sandbox staleness** — the session's recorded `host-head-sha` differs from the current project `HEAD`. Means the git state the sandbox was built from is out of date (the repo has moved on). Computed over the `.compose` registry record (`host-head-sha` vs current `git rev-parse HEAD`).
-- **image staleness** — the image's baked `agent-sandbox.container-sig` differs from the recomputed source signature. Means the image content (feature set, `/opt/sandbox/` + `/opt/workflow/` sources) is out of date, so even resuming the session may carry an incomplete feature set. Computed by comparing the image `container-sig` label against `container_sig` recomputation (`build.sh`).
+- **image staleness** — retired. The interim `agent-sandbox.container-sig`-based comparison (image content vs recomputed source signature) is removed (P3, 2026-09-19). Image identity is now the recorded image-ID digest (`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); the container-boundary contract is the interface-contract version, ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Identity
 
 - sandbox staleness: `agent-sandbox.host-head-sha` vs current `HEAD` (registry-truth).
-- image staleness: `agent-sandbox.container-sig` label vs recomputed `container_sig`.
+- image staleness: retired (2026-09-19); image identity is the recorded digest.
 
 ### Scope
 
-- Applies per session (sandbox staleness) and per image (image staleness).
+- Applies per session (sandbox staleness); image staleness is retired.
 - Staleness is **surfaced** in `resume --list` and used as a **selection criterion** in `prune` (Rule 1); it is not a blocking resume gate.
 
 ### Relationships
 
-- Distinct from the image/container `container-sig` *marker* (see `sandbox_identity.md`); staleness is the comparison, not the marker.
 - `session_stale` (`resume_agent.sh`/shared lib) computes sandbox staleness.
 - Image staleness detection is a superseded principle: the settled direction retires list-time staleness in favour of recorded version identity — see [drift_state_coherence.md](../adr/drift_state_coherence.md) and [harness_versioning.md](../adr/harness_versioning.md). Until that implementation lands, the behaviour above is current.
 

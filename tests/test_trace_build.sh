@@ -11,8 +11,8 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
-# For container_sig / *_sig_sources behavior-lock tests. build.sh's main() is
-# guarded, so sourcing is safe and exposes only its library functions.
+# build.sh's main() is guarded, so sourcing is safe and exposes only its
+# library functions (build_image, _check_interface_contract, preflight).
 source "$REPO_ROOT/scripts/build.sh"
 # record_image / record_provider live in session_inventory.sh (pure lib).
 source "$REPO_ROOT/src/libs/session_inventory.sh"
@@ -167,83 +167,6 @@ test_build_default_targets_all() {
   fi
 }
 
-test_container_sig_sources_list() {
-  local -a sandbox agent
-  mapfile -t sandbox < <(_sandbox_sig_sources)
-  # Count check catches string-as-list regressions: `echo "a b c"` yields a
-  # single element (the space-joined string), which `"${arr[*]}"` would stringify
-  # identically and hide. Element count + ordered string together lock the list.
-  local sandbox_expected="src/libs src/capability/entrypoint.sh src/capability/snapshot.sh docs/architecture docs/concepts"
-  if [[ "${#sandbox[@]}" -ne 5 || "${sandbox[*]}" != "$sandbox_expected" ]]; then
-    fail "container_sig: sandbox source list differs; got ${#sandbox[@]} elts '${sandbox[*]}'"
-    return
-  fi
-
-  mapfile -t agent < <(_agent_sig_sources "$REPO_ROOT" "pi")
-  local agent_expected="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts workflow/coding-agent/prompts src/reasoning/providers/pi/config src/reasoning/providers/pi/preflight.sh"
-  if [[ "${#agent[@]}" -ne 9 || "${agent[*]}" != "$agent_expected" ]]; then
-    fail "container_sig: agent[pi] source list differs; got ${#agent[@]} elts '${agent[*]}'"
-    return
-  fi
-
-  pass "container_sig: sandbox + agent[pi] source lists exact and ordered"
-}
-
-# End-to-end plumbing check: container_sig over the loaded sources returns a
-# 64-hex hash (NOT pinned to a value  --  content is environmental and shifts on
-# any edit). The behavior-lock for the refactor is the list test above.
-test_container_sig_hashes_real_sources() {
-  local -a sandbox
-  mapfile -t sandbox < <(_sandbox_sig_sources)
-  local sig
-  sig="$(container_sig "$REPO_ROOT" "${sandbox[@]+${sandbox[@]}}")" || {
-    fail "container_sig: sandbox sources hashing failed with rc=$?"
-    return
-  }
-  assert_matches "$sig" '^[0-9a-f]{64}$' "container_sig: real-sources end-to-end hash is a 64-hex string (${sig:0:12})..."
-}
-
-# A missing source path must fail loudly (diagnostic + non-zero), not silently
-# abort (no diagnostic) and not silently return a hash of an empty file set.
-# The `|| rc=$?` capture keeps this test from aborting if the harness is
-# switched to `set -e` (roadmap), while still recording the non-zero status.
-test_container_sig_missing_path_fails_with_diagnostic() {
-  local -a sources=( "src/libs" "src/capability/DOES_NOT_EXIST" )
-  local out err rc=0
-  out="$(container_sig "$REPO_ROOT" "${sources[@]+${sources[@]}}" 2>/tmp/csig_err)" || rc=$?
-  err="$(cat /tmp/csig_err)"
-  rm -f /tmp/csig_err
-
-  if [[ "$rc" -ne 0 && -z "$out" && "$err" == *"source path not found"* ]]; then
-    pass "container_sig: missing source path fails loudly with diagnostic"
-  else
-    fail "container_sig: expected rc!=0 + empty output + diagnostic, got rc=$rc out='$out' err='$err'"
-  fi
-}
-
-# The preflight warning -- start's contract-drift surface (build.sh ->
-# _check_container_sig) -- compares the baked container-sig label against a
-# recomputation of the current source subset: a differing sig warns (the
-# container was built from a different contract revision), a matching one
-# stays silent. Interim role per ADR harness_versioning.md.
-test_check_container_sig_warns_via_shared_predicate() {
-
-  local out
-  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_SIG_LABEL="stale-baked-sig" \
-        _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
-  assert_contains "$out" "container-sig differs from current source (contract drift)" "preflight: differing baked sig warns as contract drift"
-
-  # Fresh: both images carry their own recomputed sig -> no warning.
-  local -a s=(); mapfile -t s < <(_agent_sig_sources "$REPO_ROOT" "pi")
-  local agent_sig; agent_sig="$(container_sig "$REPO_ROOT" "${s[@]}")"
-  local -a ss=(); mapfile -t ss < <(_sandbox_sig_sources)
-  local sandbox_sig; sandbox_sig="$(container_sig "$REPO_ROOT" "${ss[@]}")"
-  out="$(PATH="$STUB_DIR:$PATH" \
-        DOCKER_STUB_IMAGE_SIG_LABELS="pi-agent-test-project:$agent_sig sandbox-test-project:$sandbox_sig" \
-        _check_container_sig "pi-agent-test-project" agent "pi" "$REPO_ROOT" 2>&1)"
-  assert_empty "$out" "preflight: matching recomputed sig stays silent"
-}
-
 # Interface-contract preflight check (build.sh -> _check_interface_contract,
 # ADR interface_contract_compatibility.md): the image's baked
 # agent-sandbox.interface-contract-version label is compared against the
@@ -297,33 +220,12 @@ EOF
   fi
 }
 
-# current_sig is deterministic per (type, repo_root, provider) and distinct
-# across types  --  a pure recomputation on every call (the former memoization was
-# removed as inert; see handover 20260823-09).
-test_current_sig_deterministic() {
-  local a1 a2 s1 s2
-  a1="$(current_sig agent "$REPO_ROOT" pi)"
-  a2="$(current_sig agent "$REPO_ROOT" pi)"
-  s1="$(current_sig sandbox "$REPO_ROOT")"
-  s2="$(current_sig sandbox "$REPO_ROOT")"
-  if [[ -n "$a1" && "$a1" == "$a2" && -n "$s1" && "$s1" == "$s2" && "$a1" != "$s1" ]]; then
-    pass "current_sig: deterministic and distinct per type"
-  else
-    fail "current_sig: expected deterministic distinct per type, got agent=$a1 sandbox=$s1"
-  fi
-}
-
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
-run_test test_container_sig_sources_list
-run_test test_container_sig_hashes_real_sources
-run_test test_container_sig_missing_path_fails_with_diagnostic
-run_test test_check_container_sig_warns_via_shared_predicate
 run_test test_check_interface_contract_refuses_and_passes_via_stub
 run_test test_record_image_service_scoped
-run_test test_current_sig_deterministic
 run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command

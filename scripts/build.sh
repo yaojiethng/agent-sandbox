@@ -4,8 +4,9 @@
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   build/image.sh       --  image naming functions
-#   libs/container_sig.sh  --  container-signature computation + staleness predicate
+#   src/build/image.sh   --  image naming + identity (image_digest)
+#   libs/interface_contract.sh   --  interface-contract version (authoritative)
+#   libs/cli.sh          --  flag parsing
 #
 # Provides:
 #   build_image    - run docker build using repo root as context
@@ -17,42 +18,34 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
-source "$REPO_ROOT/src/libs/container_sig.sh"
 source "$REPO_ROOT/src/libs/interface_contract.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 
-# -------------------------
-# Container-sig source lists
-# These define which source files map to /opt/sandbox/ and /opt/workflow/
-# in each image type. Both build_sandbox/build_agent and _check_container_sig
-# use these to compute the container-sig hash  --  single source of truth.
-# (Defined in src/libs/container_sig.sh.)
-# -------------------------
 
 # -------------------------
 # Build execution
 # -------------------------
 
-# build_image <image_name> <dockerfile> <repo_root> <container_sig> <no_cache> [docker build args...]
+# build_image <image_name> <dockerfile> <repo_root> <stamp_contract> <no_cache> [docker build args...]
 # Builds using repo root as docker build context.
-# Injects the container-sig label for staleness detection and the
-# interface-contract-version label for the contract check (ADR
-# interface_contract_compatibility.md).
+# Injects the interface-contract-version label for the contract check (ADR
+# interface_contract_compatibility.md) on tier-3 images only (stamp_contract
+# non-empty); tiers 1/2 shared bases carry no baked harness content and pass
+# an empty stamp_contract.
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
   local repo_root="${3:?build_image requires repo_root}"
-  local sig="${4:-}"
+  local stamp_contract="${4:-}"
   local no_cache="${5:-}"
   shift 5
 
   local build_cmd=(docker build)
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
   build_cmd+=(-t "$image_name" -f "$dockerfile")
-  [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.container-sig=$sig")
-  # Tier-3 images (those carrying container-sig) also carry the contract
+  # Tier-3 images (those with baked harness content) carry the contract
   # version; tiers 1/2 are shared bases with no baked harness content.
-  [[ -n "$sig" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$(interface_contract_version)")
+  [[ -n "$stamp_contract" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$(interface_contract_version)")
   build_cmd+=("$@" "$repo_root")
 
   # Run docker build with its default progress mode (auto).  The exit status
@@ -133,35 +126,30 @@ build_agent() {
   fi
 
   # --- Helper: build image only if missing (or --no-cache forces rebuild) ---
-  # Arguments: image dockerfile context_dir [container_sig] [cache_flag] [extra docker build args...]
+  # Arguments: image dockerfile context_dir [stamp_contract] [cache_flag] [extra docker build args...]
   build_if_missing() {
     local image="$1" dockerfile="$2" context_dir="$3"
-    local sig="${4:-}"
+    local stamp_contract="${4:-}"
     local cache="${5:-}"
     shift 5
     if ! docker image inspect "$image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-      build_image "$image" "$dockerfile" "$context_dir" "$sig" "$cache" "$@"
+      build_image "$image" "$dockerfile" "$context_dir" "$stamp_contract" "$cache" "$@"
     else
       echo "Image exists, skipping: $image"
     fi
   }
 
-  # Tier 1: shared node base  --  no container-sig (no sandbox/workflow content)
+  # Tier 1: shared node base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base  --  no container-sig (no sandbox/workflow content)
+  # Tier 2: provider-specific base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image  --  with container-sig
-  local agent_sources
-  mapfile -t agent_sources < <(_agent_sig_sources "$repo_root" "$provider")
-  local provider_sig
-  provider_sig="$(container_sig "$repo_root" "${agent_sources[@]+${agent_sources[@]}}")"
-
-  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$provider_sig" "" \
+  # Tier 3: always build provider image  --  carries the contract label
+  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "1" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
@@ -182,11 +170,6 @@ build_sandbox() {
 
   local image; image="$(sandbox_image_name "$project")"
 
-  local sandbox_sources
-  mapfile -t sandbox_sources < <(_sandbox_sig_sources)
-  local sandbox_sig
-  sandbox_sig="$(container_sig "$repo_root" "${sandbox_sources[@]+${sandbox_sources[@]}}")"
-
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
     uid_args+=(--build-arg "HOST_UID=$host_uid")
@@ -195,7 +178,7 @@ build_sandbox() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  build_image "$image" "$dockerfile" "$repo_root" "$sandbox_sig" "" "${uid_args[@]+${uid_args[@]}}"
+  build_image "$image" "$dockerfile" "$repo_root" "1" "" "${uid_args[@]+${uid_args[@]}}"
 }
 
 # -------------------------
@@ -237,12 +220,6 @@ preflight() {
     fi
   fi
 
-  # --- Container-sig staleness check (warning only) ---
-  # Check sandbox image
-  _check_container_sig "$sandbox_image" sandbox "$repo_root"
-  # Check agent image
-  _check_container_sig "$agent_image" agent "$provider" "$repo_root"
-
   # --- Interface-contract version check (authoritative) ---
   # ADR interface_contract_compatibility.md. The contract is authoritative:
   # a drift or missing label refuses preflight (non-zero) so start fails
@@ -273,43 +250,6 @@ _check_interface_contract() {
     echo "ERROR: $image_name interface-contract version $baked differs from current source ($current)." >&2
     echo "  Rebuild with --rebuild to align the container with the current contract." >&2
     return 1
-  fi
-}
-
-# _check_container_sig <image_name> <type: sandbox|agent> <...>
-# Interim interface-contract check (ADR harness_versioning.md): warns when the
-# image's baked `container-sig` label differs from a recomputation of the
-# current source subset -- i.e. the container was built from a different
-# contract revision than the working tree. Scoped for deletion once the
-# redesigned interface-contract check lands.
-# Type-specific args:
-#   sandbox: <repo_root>
-#   agent:   <provider> <repo_root>
-_check_container_sig() {
-  local image_name="${1:?}"
-  local type="${2:?}"
-  shift 2
-
-  local provider="" repo_root=""
-  if [[ "$type" == "agent" ]]; then
-    provider="${1:?}"
-    repo_root="${2:?}"
-  else
-    repo_root="${1:?}"
-  fi
-
-  local baked current
-  baked="$(image_baked_sig "$image_name")"
-  if [[ -z "$baked" ]]; then
-    echo "WARNING: $image_name has no container-sig label (built before the two-sig model)." >&2
-    return 0
-  fi
-  if ! current="$(current_sig "$type" "$repo_root" "$provider")"; then
-    return 0
-  fi
-  if [[ "$baked" != "$current" ]]; then
-    echo "WARNING: $image_name container-sig differs from current source (contract drift)." >&2
-    echo "  Rebuild with --rebuild to align the container with the current contract." >&2
   fi
 }
 

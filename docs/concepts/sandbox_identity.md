@@ -72,7 +72,7 @@ Labels are classified by stability: a label's value changes at most once per art
 | `session-ts` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session timestamp; the copy volume is per-session so it is accurate |
 | `session-id` | Ephemeral | ✅ | ✅ (copy) | ❌ | Per-session id; the copy volume is per-session so it is accurate |
 | `project-dir` | Stable | ✅ | ❌ | ❌ | Host path; not relevant for volume or image lifecycle |
-| `container-sig` | Stable | ❌ | ❌ | ✅ | SHA-256 of source files baked at build time; never changes for a given image |
+| `container-sig` | Retired | ❌ | ❌ | ❌ | Removed (P3): superseded by `agent-sandbox.interface-contract-version` |
 
 Containers are ephemeral — they live for one session and die. All labels are accurate for the container's entire lifetime. The copy-model named volume is per-session, so carrying `session-id`/`session-ts` is accurate rather than a dangling reference. Images are build artifacts — their labels record build-time provenance (source file hash), not runtime identity.
 
@@ -80,42 +80,24 @@ Containers are ephemeral — they live for one session and die. All labels are a
 
 **Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
-## Container-sig (Interim Interface-Contract Check)
+## Interface contract (container boundary)
 
-The interface contract and its version declaration live in [sandbox_host_interface.md](sandbox_host_interface.md). This section describes the interim check that predates it.
+The interface contract governs the container boundary. Its version
+(`agent-sandbox.interface-contract-version`) is baked into tier-3 images at
+build, written into the session record, and compared at preflight and at the
+agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md)
+and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
-Further reading: the build-time signature model is a superseded principle — the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). With the version-identity implementation landed, image version is the image ID digest (recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`); container-sig's remaining role is the interim interface-contract check below, scoped for deletion once a redesigned interface-contract check lands.
+Further reading: the build-time signature model is a superseded principle — the
+standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md)
+(coherence by minimisation, not detection), with the per-surface version
+semantics in [harness_versioning.md](../adr/harness_versioning.md). Image
+version is the image ID digest, recorded per session as
+`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
 
-Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
-
-### Derivation
-
-For the sandbox image, the hash covers all files under these repo-relative paths:
-- `src/libs/` (→ `/opt/sandbox/lib/`)
-- `src/capability/entrypoint.sh` (→ `/opt/sandbox/bin/sandbox-entrypoint.sh`)
-- `src/capability/snapshot.sh` (→ `/opt/sandbox/lib/snapshot.sh`)
-- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
-- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
-
-For an agent image, the hash covers:
-- `src/libs/` (→ `/opt/sandbox/lib/`)
-- `src/reasoning/entrypoint.sh` (→ `/opt/sandbox/bin/provider-entrypoint.sh`)
-- `src/reasoning/providers/<n>/preflight.sh` (if exists → `/opt/sandbox/bin/provider-preflight.sh`)
-- `src/reasoning/agent/skills/` (→ `/opt/workflow/agent/skills/`)
-- `src/reasoning/agent/prompts/` (→ `/opt/workflow/agent/prompts/`)
-- `src/reasoning/providers/<n>/config/` (if exists → `/opt/workflow/agent/config/`)
-- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
-- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
-
-### Preflight check
-
-The `_check_container_sig()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch (contract drift: the container was built from a different contract revision than the working tree). The check is non-blocking (warning only) — drift is not an error, to avoid blocking development workflows. The parallel check `_check_interface_contract()` (ADR interface_contract_compatibility.md) warns on `agent-sandbox.interface-contract-version` label mismatch against the host constant; both run at the same preflight sites.
-
-### Scope
-
-Container-sig covers only the sandbox image and tier-3 agent images (the final provider image in the three-tier build). Tier 1 (shared node base) and tier 2 (provider base) images do not carry `/opt/sandbox/` or `/opt/workflow/` content and therefore have no container-sig label.
-
-Harness-sig (runtime drift detection for the harness binary itself) is deferred to a future milestone.
+The interim `agent-sandbox.container-sig` source-subset hash and its preflight
+comparison are retired. The interface-contract version replaces the interim
+check as the standalone container-boundary contract.
 
 
 ## Identity persistence (registry)

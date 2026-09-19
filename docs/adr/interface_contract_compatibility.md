@@ -1,7 +1,7 @@
 # Interface Contract Compatibility
 
 **Current:** 2026-09-19
-**Status:** open — mechanism landed and authoritative (P0 + P2); closes when `container-sig` is stripped (P3)
+**Status:** closed — mechanism landed and authoritative (P0 + P2); interim `container-sig` retired (P3)
 
 ## Requirements
 
@@ -122,6 +122,18 @@ container<->container mismatch. A missing record key or file still warns
 (upgrade path). `container-sig` untouched (P3 strips it). Operator live proof
 passes: `INTERFACE_CONTRACT_STRICT=1 REFRESH=1 make start` ran clean under the
 strict regime before the flag was removed.
+
+**Implementation note (2026-09-19, P3 strip, handover `20260919-08`):** the
+interim `container-sig` check is retired. `container_sig()` / `current_sig()` /
+`image_baked_sig()`, the `_sandbox_sig_sources` / `_agent_sig_sources` list
+helpers, the `agent-sandbox.container-sig` label bake and injection, and
+`_check_container_sig` in `scripts/build.sh` are removed; `src/libs/container_sig.sh`
+and `tests/libs/sig_helpers.sh` are deleted; the install `xargs` dependency note is
+removed. [image_digest](harness_versioning.md) (the recorded image-ID digest
+identity mechanism) relocated from `container_sig.sh` to `src/build/image.sh`.
+`sandbox_identity.md` interim section rewritten; the interim status is closed.
+The interface contract is the standalone container-boundary mechanism (R6
+satisfied: the old check was stripped only after the new was proven).
 
 **Documentation note (2026-09-19, handover `20260919-05`):** the doc
 consolidation landed. The interface concept document is

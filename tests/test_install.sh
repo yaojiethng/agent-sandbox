@@ -24,8 +24,7 @@ printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/realpath"
 printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/sha256sum"
 printf '#!/bin/sh\nprintf "2026-09-17\\n"\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/date"
 printf '#!/bin/sh\necho "sed (GNU sed) 4.8.1"\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/sed"
-printf '#!/bin/sh\necho "xargs (GNU findutils) 4.9.0"\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/xargs"
-chmod +x "$FIXTURE_DIR/gnu_shim"/{realpath,sha256sum,date,sed,xargs}
+chmod +x "$FIXTURE_DIR/gnu_shim"/{realpath,sha256sum,date,sed}
 ln -s "$(command -v git)" "$FIXTURE_DIR/gnu_shim/git"
 ln -s "$(command -v grep)" "$FIXTURE_DIR/gnu_shim/grep"
 

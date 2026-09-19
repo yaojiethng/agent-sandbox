@@ -14,11 +14,10 @@ This document records the host tools and versions agent-sandbox requires, per pl
 
 | Tool | Minimum | Used by | What breaks if missing |
 |---|---|---|---|
-| bash | 4.0 | All scripts | `mapfile` and associative arrays (bash 4.0+) appear in `scripts/build.sh`, `src/libs/container_sig.sh`, and five other files. macOS ships bash 3.2.57. |
+| bash | 4.0 | All scripts | `mapfile` and associative arrays (bash 4.0+) appear in `scripts/build.sh` and other files. macOS ships bash 3.2.57. |
 | git | any | All host workflows | Everything fails: onboarding, commits, diffs. |
 | GNU coreutils | any | `realpath` (or `readlink -f`), `sha256sum`, GNU `date -d` | `scripts/onboard.sh`, `scripts/run_agent.sh`, `src/libs/session_env.sh`, `scripts/prune.sh`, `src/build/compose.sh` use these. BSD tools reject the GNU flags. |
 | GNU sed | any | `sed -i` without a backup argument | `scripts/onboard.sh`, `src/libs/session_inventory.sh` use the GNU form. BSD `sed -i` demands a backup suffix. |
-| GNU findutils | any | `xargs -0 -r` | `src/libs/container_sig.sh` uses `-r` (no-run-if-empty), which BSD `xargs` parses as a replacement-string option. |
 
 ## macOS Setup
 
@@ -34,13 +33,13 @@ The bootstrap is idempotent and fails closed when Homebrew is missing. It only i
 macOS does not ship any of the missing tools. Install them with Homebrew:
 
 ```bash
-brew install bash coreutils gnu-sed findutils git
+brew install bash coreutils gnu-sed git
 ```
 
 Then put the GNU binaries first in `PATH`. Add this line to `~/.zshrc` (or `~/.bashrc`):
 
 ```bash
-export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:/opt/homebrew/opt/gnu-sed/libexec/gnubin:/opt/homebrew/opt/findutils/libexec/gnubin:$PATH"
+export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
 ```
 
 The scripts resolve bash through `PATH` (`#!/usr/bin/env bash`). With the export above, `bash scripts/install.sh` and `make install` run under bash 5 instead of bash 3.2. To make bash 5 the interactive login shell as well:
@@ -59,7 +58,6 @@ bash --version            # Bash version 5.x
 realpath /                # prints /
 sha256sum --version       # coreutils
 sed --version             # prints "GNU sed"
-xargs --version           # prints "GNU findutils"
 date -d '1 day ago'       # prints a date
 ```
 

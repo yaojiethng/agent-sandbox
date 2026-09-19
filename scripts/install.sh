@@ -6,7 +6,7 @@
 # per-tool install hints when a requirement is missing.
 #
 # The gate exists because the harness uses modern bash (mapfile, associative
-# arrays) and GNU userland (realpath, sha256sum, GNU date/sed, GNU xargs).
+# arrays) and GNU userland (realpath, sha256sum, GNU date/sed).
 # macOS ships bash 3.2 and BSD tools; Homebrew provides both.
 #
 # Usage:
@@ -86,15 +86,6 @@ check_gnu_sed() {
   fi
 }
 
-check_gnu_xargs() {
-  if ! xargs --version 2>/dev/null | grep -q 'GNU findutils'; then
-    echo "  - GNU findutils: xargs --no-run-if-empty missing" >&2
-    echo "    Used by src/libs/container_sig.sh (xargs -0 -r)." >&2
-    echo "    macOS: brew install findutils" >&2
-    return 1
-  fi
-}
-
 # --- Install / uninstall ----------------------------------------------------
 
 # install_dir  -- INSTALL_DIR resolution order: env, <repo>/.env, ~/.local/bin.
@@ -140,7 +131,6 @@ install_main() {
     check_sha256sum || failures=$((failures + 1))
     check_gnu_date || failures=$((failures + 1))
     check_gnu_sed || failures=$((failures + 1))
-    check_gnu_xargs || failures=$((failures + 1))
   fi
 
   if (( failures > 0 )); then

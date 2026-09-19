@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_interface_contract.sh
 # Unit tests for src/libs/interface_contract.sh (interface-contract version,
-# ADR interface_contract_compatibility.md) and build.sh's warn-only preflight
-# check `_check_interface_contract` (P0, parallel with container-sig).
+# ADR interface_contract_compatibility.md) and build.sh's authoritative
+# preflight check `_check_interface_contract`.
 #
 # Covers:
 #   interface_contract_version          --  positive integer constant
@@ -81,7 +81,7 @@ test_record_contract_version_empty_when_key_missing() {
 }
 
 # =============================================================================
-# _check_interface_contract  (authoritative; container-sig untouched)
+# _check_interface_contract  (authoritative)
 # =============================================================================
 
 test_check_interface_contract_silent_on_aligned() {

@@ -37,7 +37,7 @@ The interface contract has four surfaces. Each is versioned by the same `INTERFA
 
 Declaration points:
 
-1. **Build time** — tier-3 images receive `agent-sandbox.interface-contract-version` as a build label (`build_image` in `scripts/build.sh`), beside the existing `agent-sandbox.container-sig`.
+1. **Build time** — tier-3 images receive `agent-sandbox.interface-contract-version` as a build label (`build_image` in `scripts/build.sh`).
 2. **Session write** — the generated `.compose/<session-id>.yml` records the constant in its session label set; `session_state_write_set` writes the `interface_contract_version` key into `SESSION_STATE`.
 
 Comparison points (authoritative, at start and resume preflight): the contract is fail-closed by default, with no runtime escape hatch. An override was considered and rejected as a backdoor that would weaken the contract.
@@ -48,11 +48,11 @@ Container↔container comparison (agent entrypoint, sandbox inits first and writ
 
 - The agent entrypoint compares its baked version against the sandbox's recorded version. A definite mismatch hard-stops the agent as an orchestration/corruption signal; a missing record key or file warns (pre-record image, upgrade path); a missing lib skips silently.
 
-Deferred (P3, container-sig retirement): the container-sig check, bake, label, and tooling are still present and retire in P3. The strict refusal regime landed; only the container-sig strip remains.
+The interim `container-sig` source-subset hash and its preflight comparison are retired; the interface-contract version is the standalone container-boundary contract.
 
 Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The P0-P3 rollover gates and the container-sig retirement are in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Relationship to MAKEFILE_VERSION
 

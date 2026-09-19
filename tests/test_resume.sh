@@ -9,7 +9,6 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
-source "$TEST_DIR/libs/sig_helpers.sh"
 test_setup
 
 RESUME="$REPO_ROOT/scripts/resume_agent.sh"

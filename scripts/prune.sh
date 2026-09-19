@@ -221,7 +221,6 @@ show_rule2() {
 main() {
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   source "$REPO_ROOT/src/libs/common.sh"
-  # session_inventory.sh also sources container_sig.sh (image-staleness criterion).
   source "$REPO_ROOT/src/libs/session_inventory.sh"
   source "$REPO_ROOT/src/libs/cli.sh"
   _CLI_TOLERANT=1

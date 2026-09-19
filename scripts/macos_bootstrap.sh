@@ -1,7 +1,7 @@
 #!/bin/bash
 # scripts/macos_bootstrap.sh  --  install the agent-sandbox host requirements on macOS.
 #
-# Installs via Homebrew: bash (4.0+), coreutils, gnu-sed, findutils, and git.
+# Installs via Homebrew: bash (4.0+), coreutils, gnu-sed, and git.
 # The harness needs the GNU toolchain; macOS ships bash 3.2 and BSD tools.
 # See docs/development/host_requirements.md for the requirement matrix.
 #
@@ -24,7 +24,7 @@ set -uo pipefail
 # Requirement source of truth: docs/development/host_requirements.md. The same
 # list is enforced for Linux by scripts/install.sh (check_* probes) -- a new
 # requirement must be added to all three.
-REQUIRED_PACKAGES=(bash coreutils gnu-sed findutils git)
+REQUIRED_PACKAGES=(bash coreutils gnu-sed git)
 
 bootstrap_os() {
   echo "${INSTALL_OS:-$(uname -s)}"
@@ -54,7 +54,7 @@ require_homebrew() {
 gnubin_paths() {
   local prefix
   prefix="$(homebrew_prefix)"
-  echo "$prefix/opt/coreutils/libexec/gnubin:$prefix/opt/gnu-sed/libexec/gnubin:$prefix/opt/findutils/libexec/gnubin"
+  echo "$prefix/opt/coreutils/libexec/gnubin:$prefix/opt/gnu-sed/libexec/gnubin"
 }
 
 install_packages() {
@@ -100,8 +100,7 @@ verify_installed() {
   local missing=0 bin
   for bin in "$prefix/opt/coreutils/libexec/gnubin/realpath" \
              "$prefix/opt/coreutils/libexec/gnubin/sha256sum" \
-             "$prefix/opt/gnu-sed/libexec/gnubin/sed" \
-             "$prefix/opt/findutils/libexec/gnubin/xargs"; do
+             "$prefix/opt/gnu-sed/libexec/gnubin/sed"; do
     if [[ ! -x "$bin" ]]; then
       echo "  missing: $bin" >&2
       missing=1

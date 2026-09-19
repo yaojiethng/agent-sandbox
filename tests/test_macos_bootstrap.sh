@@ -23,7 +23,7 @@ printf '#!/bin/sh\nif [ "$1" = "list" ] && [ "${BOOTSTRAP_FAKE_BREW:-absent}" = 
   > "$FIXTURE_DIR/shim_brew/brew"
 chmod +x "$FIXTURE_DIR/shim_brew/brew"
 
-# homebrew-prefix fixture: brew bash + the four gnubin binaries.
+# homebrew-prefix fixture: brew bash + the gnubin binaries.
 make_prefix() {
   local PREFIX="$1" WITH_GNUBIN="$2"
   mkdir -p "$PREFIX/bin"
@@ -31,12 +31,10 @@ make_prefix() {
   chmod +x "$PREFIX/bin/bash"
   if [[ "$WITH_GNUBIN" == "yes" ]]; then
     mkdir -p "$PREFIX/opt/coreutils/libexec/gnubin" \
-             "$PREFIX/opt/gnu-sed/libexec/gnubin" \
-             "$PREFIX/opt/findutils/libexec/gnubin"
+             "$PREFIX/opt/gnu-sed/libexec/gnubin"
     for bin in "$PREFIX/opt/coreutils/libexec/gnubin/realpath" \
                "$PREFIX/opt/coreutils/libexec/gnubin/sha256sum" \
-               "$PREFIX/opt/gnu-sed/libexec/gnubin/sed" \
-               "$PREFIX/opt/findutils/libexec/gnubin/xargs"; do
+               "$PREFIX/opt/gnu-sed/libexec/gnubin/sed"; do
       printf '#!/bin/sh\nexit 0\n' > "$bin"
       chmod +x "$bin"
     done
@@ -76,7 +74,7 @@ test_bootstrap_installs_missing_packages() {
 
   local installed
   installed="$(sort "$LOG" | tr '\n' ' ')"
-  if [[ $RC -eq 0 && "$installed" == "bash coreutils findutils git gnu-sed " \
+  if [[ $RC -eq 0 && "$installed" == "bash coreutils git gnu-sed " \
      && "$OUT" == *"ok: brew bash 5.2.0"* && "$OUT" == *"make install"* ]]; then
     pass "absent packages install via brew and verification passes"
   else

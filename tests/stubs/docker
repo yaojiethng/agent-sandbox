@@ -35,17 +35,6 @@ _session_id_for() {
   echo "${DOCKER_STUB_SESSION_ID_LABEL:-}"
 }
 
-# _sig_for IMAGE — resolve the container-sig label reported for an image.
-# DOCKER_STUB_IMAGE_SIG_LABELS is a space-separated `image:sig` map (per-image);
-# DOCKER_STUB_IMAGE_SIG_LABEL is a single fallback for all images.
-_sig_for() {
-  local img="$1" pair
-  for pair in ${DOCKER_STUB_IMAGE_SIG_LABELS:-}; do
-    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
-  done
-  echo "${DOCKER_STUB_IMAGE_SIG_LABEL:-}"
-}
-
 # _contract_version_for IMAGE — resolve the interface-contract-version label
 # reported for an image. DOCKER_STUB_IMAGE_CONTRACT_VERSIONS is a
 # space-separated `image:version` map (per-image);
@@ -148,7 +137,7 @@ if [[ "$CMD" == "docker" ]]; then
         # agent-sandbox.session-id label (per-resource map or fallback).
         _session_id_for "${1:-}"
       else
-        echo '{"Config":{"Labels":{"agent-sandbox.container-sig":"stub"}}}'
+        echo '{"Config":{"Labels":{}}}'
       fi
       ;;
     wait)
@@ -230,11 +219,10 @@ STUBEOF
     image)
       log "image $*"
       if [[ "$1" == "inspect" ]]; then
-        # container-sig reads the baked label via --format; stub it via a
-        # per-image map or single fallback (empty = no label / missing image).
-        if [[ "$*" == *"container-sig"* ]]; then
-          _sig_for "${@: -1}"
-        elif [[ "$*" == *"interface-contract-version"* ]]; then
+        # interface-contract-version reads the baked label via --format; stub it
+        # via a per-image map or single fallback (empty = no label / missing
+        # image). image_digest reads the image ID via {{.Id}}.
+        if [[ "$*" == *"interface-contract-version"* ]]; then
           _contract_version_for "${@: -1}"
         elif [[ "$*" == *".Id}"* ]]; then
           _digest_for "${@: -1}"

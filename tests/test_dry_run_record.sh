@@ -118,7 +118,7 @@ run_with_docker_stub() {
 # run_digest_verify IMAGE COMPOSE_FILE TYPE  --  sources both libs, runs the gate.
 run_digest_verify() {
   local image="$1" record="$2" type="$3"
-  bash -c "source '$REPO_ROOT/src/libs/container_sig.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$record' '$type'" 2>&1
+  bash -c "source '$REPO_ROOT/src/build/image.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$record' '$type'" 2>&1
 }
 
 test_digest_gate_passes_when_digests_match() {

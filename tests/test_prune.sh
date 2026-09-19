@@ -13,7 +13,6 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
-source "$TEST_DIR/libs/sig_helpers.sh"
 test_setup
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
@@ -33,11 +32,8 @@ setup_prune_fixture() {
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
-  unset DOCKER_STUB_SESSION_ID_LABELS DOCKER_STUB_IMAGE_SIG_LABEL DOCKER_STUB_IMAGE_SIG_LABELS
+  unset DOCKER_STUB_SESSION_ID_LABELS
 }
-
-# Recompute the container-sig the prune will compare against, for a "fresh"
-# image. Sources the shared lib; deterministic content hash over the repo.
 current_sha() { git -C "$PROJECT_DIR" rev-parse HEAD; }
 
 write_record() {
