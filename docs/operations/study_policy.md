@@ -85,7 +85,7 @@ When closing an investigation:
 3. If superseded, add a blockquote redirect after the Status line pointing to the superseding document
 4. Update the parent story's Investigation Findings section with a summary link to this investigation and its recommendation
 
-A closed investigation is not modified without cause. It is the reasoning record for why a candidate was chosen or rejected. Future agents must be able to read it and reconstruct the decision. Corrections to closed investigations follow the procedure below.
+A closed investigation is modified only at the operator's direction and carries the corresponding correction tag. It is the reasoning record for why a candidate was chosen or rejected. Future agents must be able to read it and reconstruct the decision. Corrections to closed investigations follow the procedure below.
 
 ---
 
@@ -114,7 +114,7 @@ If the investigation's core findings are sound but a detail is incorrect (wrong 
 
 ```
 ---
-[CORRECTION — YYYY-MM-DD]: <description of what was wrong and what was changed>
+[CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
 ```
 
 3. Do not alter the document's status, title, or metadata.

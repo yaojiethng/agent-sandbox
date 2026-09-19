@@ -4,7 +4,7 @@
 
 A handover is a log describing the work done in the iteration: what was done and what comes next, with enough fidelity that a new agent can continue without reconstructing state from the iteration history.
 
-A handover is not a document and is not subject to `documentation_policy.md`. It is committed with the iteration's changes, retained for the life of the milestone, and read-only once closed. It describes the iteration, not the system. This is what "ephemeral" means here: it is not a reference document. It does not mean excluded from version control or from packaging.
+A handover is not a document and is not subject to `documentation_policy.md` drafting rules. It is committed with the iteration's changes and retained for the life of the milestone. A closed handover is edited only at the operator's direction and carries the corresponding correction tag (see [Corrections to Closed Handovers](handover_policy.md#corrections-to-closed-handovers)). It describes the iteration, not the system. This is what "ephemeral" means here: it is not a reference document. It does not mean excluded from version control or from packaging.
 
 ---
 
@@ -181,38 +181,42 @@ When a section has nothing to record, write the canonical marker and nothing els
 
 ## Corrections to Closed Handovers
 
-Closed handovers are read-only records with one exception: documented corrections applied under the post-close correction policy (`docs/operations/documentation_policy.md` -- Post-Close Document Corrections).
+A closed handover is edited only at the operator's direction, and every edit carries the corresponding correction tag. The operator signals direction any way it is said: "amend the handover", "re-open the handover", "edit it", "fix the typo", or by naming the change. None of these signals changes the Status field; the correction procedure runs without re-opening the record.
+
+A handover is a decision log, not a factual reference. It is never corrected autonomously. Only the operator directs an edit.
 
 ### When to apply
 
-Apply a correction when a factual error is found in the document -- an incorrect status, a wrong filename, a misrecorded decision. Do not apply a correction to add new information, change scope, or extend the iteration record. New work belongs in a new handover.
+Apply a correction only when the operator directs it. Reasons include a factual error in the record (an incorrect status, a wrong filename, a misrecorded decision) and folding a later fix into a close commit (a squash, a fixup, or an amend). Do not use a correction to add new information, change scope, or extend the record. New work belongs in a new handover.
 
 ### Procedure
 
-1. Identify the error and its location in the document.
-2. Edit the affected text in the body directly. If the error requires context, add a brief inline note: `[see correction below]`.
-3. Append a dated amendment block at the bottom of the document:
+1. Confirm the operator's direction and identify the paragraph or section.
+2. Rewrite the entire affected paragraph (or section) in place. Do not leave inline markers such as a reference count or a `[see correction below]` label. The rewritten text reads as the record.
+3. Insert the correction tag as a block at the end of the corrected section, immediately before the start of the next section:
 
 ```
 ---
-[CORRECTION -- YYYY-MM-DD]: <description of what was wrong and what was changed>
+[CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
+---
 ```
 
-4. Do not alter the document's Status, timestamps, or any other metadata field.
-5. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
+4. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
+5. Do not alter the Status, timestamps, or any other metadata field.
+6. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
 
   - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
   - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
   - If the finding is a deferred item for the next iteration, add it to Deferred items in the active handover.
   - If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.
 
-   The correction block must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).
+   The correction tag must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).
 
-6. Propose the amended document to the operator for review. Do not self-commit.
+7. Propose the amended handover to the operator. Do not self-commit.
 
 ### What this is not
 
-A correction to a closed handover is not a substitute for a new handover. If the iteration requires new work, create a new handover first. The correction procedure applies only to errors in the record -- not to work that was omitted or deferred.
+A correction is not a substitute for a new handover. If the iteration requires new work, create a new handover first. The correction procedure applies only to the operator-directed edit, not to work that was omitted or deferred.
 
 ---
 

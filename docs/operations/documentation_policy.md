@@ -240,7 +240,7 @@ Rules:
 
 ### Post-close document corrections
 
-**Principle.** Closed documents are not re-issued. Correct an error in a closed document in place, with a marked, minimal annotation; the document stays a readable record and the correction is visible at the point of change. The agent never deletes documents -- deletion is an operator action. The agent applies the correct correction form and marks referencing links where applicable.
+**Principle.** A closed document is edited only at the operator's direction, and every edit carries the corresponding correction tag. Correct the text in place: rewrite the affected paragraph, mark the change with a `[CORRECTION -- YYYY-MM-DD: <...>]` tag block at the end of the corrected section, ordered newest first. The document stays a readable record and the correction is visible at the point of change. The agent never deletes documents -- deletion is an operator action. The decision-log rationale differs by document type (a handover is a decision record, a concept doc a factual reference), but the procedure is the same.
 
 **Correction forms by document type:**
 

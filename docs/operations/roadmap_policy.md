@@ -186,7 +186,9 @@ The operator appends the block contents verbatim to `changelog.md`.
 
 ## Corrections to Closed Roadmap and Changelog Entries
 
-Closed roadmap entries and changelog entries are corrected in-place by appending a `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag to the affected sentence or claim. The tag names the milestone that superseded or removed the content. The original text is preserved — the tag marks it as stale without deleting it.
+Closed roadmap entries and changelog entries are edited only at the operator's direction. Every edit carries the corresponding correction tag.
+
+An entry is corrected in-place by appending a `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag to the affected sentence or claim. The tag names the milestone that superseded or removed the content. The original text is preserved -- the tag marks it as stale without deleting it.
 
 - `[SUPERSEDED in M2.3]` — the claim is still valid but has been superseded by a later implementation
 - `[REMOVED in M2.4]` — the claim is no longer accurate and has been removed from the active system description
