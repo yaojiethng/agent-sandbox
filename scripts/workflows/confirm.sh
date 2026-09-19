@@ -99,6 +99,8 @@ Usage: agent-sandbox confirm --project=<path> --sandbox=<path> [options]
 
 Rebases the current draft branch onto its target and fast-forward merges.
 
+or, from a sandbox Makefile: make confirm [TARGET=<branch>]
+
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory

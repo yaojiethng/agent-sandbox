@@ -46,6 +46,8 @@ usage() {
   cat >&2 <<EOF
 Usage: agent-sandbox onboard [--refresh] --name=<n> --project=<path> --sandbox=<path>
 
+or, from a Makefile: make onboard SANDBOX_DIR=<path> (or make refresh SANDBOX_DIR=<path> for --refresh)
+
   --name=<project_name>   Short name for the project (used for image naming,
                           container names). No spaces. Example: my-project
 

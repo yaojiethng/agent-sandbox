@@ -273,6 +273,8 @@ Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [opti
 
 Builds Docker images for the sandbox and/or agent providers.
 
+or, from a sandbox Makefile: make build [TARGET=<p>] [REBUILD=1]
+
 Required:
   --name=<name>       Project name (used for image tags)
   --project=<path>    Path to the project directory

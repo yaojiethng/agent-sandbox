@@ -356,6 +356,8 @@ Usage: agent-sandbox draft --project=<path> --sandbox=<path> [options]
 
 Creates a draft branch and applies session patches.
 
+or, from a sandbox Makefile: make draft [FROM=<channel>] [BUNDLE=<name>]
+
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory

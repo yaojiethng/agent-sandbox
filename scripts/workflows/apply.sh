@@ -120,6 +120,8 @@ Usage: agent-sandbox apply --project=<path> --sandbox=<path> --diff=<path> [opti
 
 Applies a diff file to the project working tree. Does not commit.
 
+or, from a sandbox Makefile: make apply [DIFF=<path>] [BRANCH=<name>] [FORCE=1]
+
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory

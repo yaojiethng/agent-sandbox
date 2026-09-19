@@ -554,3 +554,13 @@ Safe-removal answer: NOT safe as-is -- the freeze role must be preserved. Safe r
 
 Operator decision (2026-09-18): took the second option -- freeze table into `system_overview.md`, `project_index.md` deleted. Recorded in `mitigation` above.
 
+## Agent experience  --  session 20260919-15
+
+### [A] 2026-09-19  --  Task-type classification is ambiguous between feature and workflow
+
+state: open
+scoped: M2.6 (general CLI refactor / help-text track)
+legacy: none
+mitigation: none
+
+The task-type taxonomy (git_policy commit-type prefixes: feature vs workflow) reads as ambiguous at classification time. In session 20260919-14 the same class of change -- a cross-command help-text consistency pass touching user-facing strings in `scripts/` -- was classified as workflow by the agent and corrected by the operator to feature, with the rule stated as: workflow is reserved for policy and prompt changes; user-facing code/help-text behavior is a feature. The two single-word prefixes do not carry that boundary, and the git_policy type descriptions alone do not disambiguate a "help strings / error diagnostics across the command set" task from a "policy text" task. Candidate durable fix (next iteration): sharpen the type descriptions in `git_policy.md` to state explicitly that workflow = process/policy/prompt, feature = any user-facing behavioral or textual change (including help and error strings), or add a worked two-line decision rule to the type table.

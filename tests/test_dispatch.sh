@@ -607,6 +607,30 @@ test_build_missing_args() {
   fi
 }
 
+# Every make-reachable command's usage() must present the make-style invocation
+# alongside the direct CLI form, so a `make <target>` user hitting an error is
+# told a make-style remedy, not only an agent-sandbox CLI one (report intent:
+# make-vs-cli hint inconsistency; see session 20260919-15 finding).
+test_make_form_in_usage_first_help_leaf() {
+  # subcommand -> <script>|<make-form needle>
+  local row script needle
+  local rows=(
+    'build|scripts/build.sh|make build'
+    'prune|scripts/prune.sh|make prune'
+    'onboard|scripts/onboard.sh|make onboard'
+    'apply|scripts/workflows/apply.sh|make apply'
+    'draft|scripts/workflows/draft.sh|make draft'
+    'confirm|scripts/workflows/confirm.sh|make confirm'
+    'package-branch|src/libs/package_branch.sh|make package-branch'
+  )
+  for row in "${rows[@]}"; do
+    IFS='|' read -r sub script needle <<< "$row"
+    local output
+    output=$(bash "$REPO_ROOT/$script" --help 2>&1) || true
+    assert_contains "$output" "$needle" "$sub --help: usage shows the make-style invocation"
+  done
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -640,6 +664,7 @@ run_test test_help_flag_shows_list
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args
+run_test test_make_form_in_usage_first_help_leaf
 
 # Cleanup
 rm -rf "$MOCK_SCRIPTS_DIR"

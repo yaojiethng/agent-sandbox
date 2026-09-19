@@ -52,6 +52,8 @@ Usage: agent-sandbox package-branch --sandbox=<path> [options]
 
 Packages branch artefacts: per-commit diffs, uncommitted diff, all-changes diff.
 
+or, from a sandbox Makefile: make package-branch [BUNDLE_SUMMARY=<slug>] [BASELINE=<baseline>]
+
 Required:
   --sandbox=<path>    Path to the sandbox directory
 
