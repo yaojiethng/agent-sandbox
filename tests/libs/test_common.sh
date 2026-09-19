@@ -210,7 +210,8 @@ assert_eq_num() {
 #   belong inside it. Output is discarded -- assert on the rc, not on
 #   what the function printed.
 assert_subshell_rc() {
-  local EXPECTED="$1" CMD="$2" LABEL="${3:-subshell rc $EXPECTED}" RC
+  local EXPECTED="$1" CMD="$2"
+  local LABEL="${3:-subshell rc $EXPECTED}" RC
   ( eval "$CMD" ) >/dev/null 2>&1
   RC=$?
   if [[ "$RC" == "$EXPECTED" ]]; then

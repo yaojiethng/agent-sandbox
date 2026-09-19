@@ -72,7 +72,7 @@ run_entrypoint() {
   git -C "$worktree" add -A && git -C "$worktree" commit -q -m baseline
   EP_STATE="$worktree/.git/SESSION_STATE"
 
-  sed "s|^ROOT=.*$|ROOT="$dir"|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
+  sed "s|^ROOT=.*$|ROOT=$dir|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
   invoke_entrypoint_mount "$dir"
 }
 
@@ -81,7 +81,7 @@ test_mount_fail_closed_no_git() {
   mkdir -p "$dir/worktree" "$dir/.workspace/session-diffs" \
            "$dir/.workspace/input" "$dir/.workspace/output"
   # Worktree without .git -- host materialization did not run.
-  sed "s|^ROOT=.*$|ROOT="$dir"|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
+  sed "s|^ROOT=.*$|ROOT=$dir|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
   EP_OUT="$(cd "$dir" && SANDBOX_LIB_DIR="$STUB_LIB_DIR" \
     SANDBOX_TYPE=mount \
     SANDBOX_DIR_NAME=worktree \
@@ -145,7 +145,7 @@ test_mount_attach_preserves_existing_state() {
     > "$dir/worktree/.git/SESSION_STATE"
   EP_STATE="$dir/worktree/.git/SESSION_STATE"
 
-  sed "s|^ROOT=.*$|ROOT="$dir"|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
+  sed "s|^ROOT=.*$|ROOT=$dir|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
   invoke_entrypoint_mount "$dir"
 
   if [[ "$EP_RC" -ne 0 ]]; then

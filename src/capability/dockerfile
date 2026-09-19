@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY src/libs/                          /opt/sandbox/lib/
 COPY src/capability/entrypoint.sh       /opt/sandbox/bin/sandbox-entrypoint.sh
 COPY src/capability/snapshot.sh         /opt/sandbox/lib/snapshot.sh
+COPY src/capability/git-hooks/          /opt/sandbox/git-hooks/
 COPY docs/architecture/                 /opt/sandbox/docs/architecture/
 COPY docs/concepts/                     /opt/sandbox/docs/concepts/
 RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh

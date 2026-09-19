@@ -45,6 +45,9 @@ FLATTEN="${FLATTEN:-false}"
 # Container lib dir. Overridable for tests (SANDBOX_LIB_DIR seam); the default
 # is the baked image path. Assigned once here, used everywhere below.
 : "${SANDBOX_LIB_DIR:=/opt/sandbox/lib}"
+# Git hooks baked into the image (copy delivery only; see docs/adr/git_hooks.md).
+# Overridable for tests (GIT_HOOKS_DIR seam), mirroring SANDBOX_LIB_DIR.
+: "${GIT_HOOKS_DIR:=/opt/sandbox/git-hooks}"
 
 if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
@@ -156,6 +159,21 @@ else
   session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
   session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
 fi
+
+# -------------------------
+# Git hooks (copy delivery only)
+# -------------------------
+# The copy-delivery .git lives inside the session volume, so a hook installed
+# there can never execute on the host. The mount-delivery .git is a host
+# directory, so the harness installs no hook there. docs/adr/git_hooks.md.
+# Installed on every start (fresh and resume) so a refreshed image updates the
+# hook. The hook is harness-owned, not part of the project's committed files.
+if [[ "$SANDBOX_TYPE" == "copy" && -f "$GIT_HOOKS_DIR/pre-commit.sh" ]]; then
+  mkdir -p "$SANDBOX_DIR/.git/hooks"
+  install -m 0755 "$GIT_HOOKS_DIR/pre-commit.sh" "$SANDBOX_DIR/.git/hooks/pre-commit"
+  echo "Git hook installed: pre-commit (staged Markdown lint)"
+fi
+
 echo "Working tree status:"
 git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
 echo "  (empty = clean working tree)"

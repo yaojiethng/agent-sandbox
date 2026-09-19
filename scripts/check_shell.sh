@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_lint.sh
+# scripts/check_shell.sh
 # ShellCheck gate over all tracked shell scripts (src/, scripts/, tests/).
 # BLOCKING since handover 20260823-15: exits nonzero on any warning.
 #

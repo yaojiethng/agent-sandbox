@@ -133,7 +133,7 @@ Failure in intent, not execution: staging a disposable payload inside a git work
 - **Empty worktrees.** (Superseded by 2026-09-12: the shared enumeration feeds `rsync`, which no-ops on an empty list.) Tar refuses an empty archive, so the 2026-09-04 seeder skipped the tar step when the enumeration was empty.
 - **Submodules.** The gitlink crosses but module content does not. The seeder fails closed with a readable remediation message, matching the existing `snapshot_copy_worktree` precedent.
 - **Stale index stat cache.** The copied index carries host inode and device ids; git reconciles them by content on the first status call. Correctness is unaffected.
-- **Absolute `core.hooksPath`.** A local config pointing outside the project breaks hooks in the volume. Declared limitation; the harness runs no hooks itself.
+- **Absolute `core.hooksPath`.** A local config pointing outside the project breaks hooks in the volume. Declared limitation; the harness installs one hook, in copy delivery only -- see [`git_hooks.md`](git_hooks.md).
 - **Case-sensitivity.** The existing case-mismatch check runs before the seed and is retained unchanged.
 - **Offline and restricted hosts.** The seeder must not pull images or install packages at seed time; the sandbox image is the dependency floor (R6).
 

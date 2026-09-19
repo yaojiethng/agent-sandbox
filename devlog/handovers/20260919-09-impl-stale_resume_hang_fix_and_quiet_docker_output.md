@@ -71,6 +71,7 @@ safety. Documented in a new ADR (`docs/adr/docker_output_presentation.md`).
 
 ---
 [CORRECTION -- 2026-09-20: The `--progress quiet` flag added here to the dry-run `up` in `src/build/compose.sh` was not recognised by the compose-arg parser in `tests/stubs/docker`, so `compose up -d` was misparsed, the stub never wrote the per-container diagnostics records, and every dry-run test polled the full 180s `DRY_RUN_RECORD_TIMEOUT` default twice per run before failing. The suite was not green and did not terminate; AC5's claim did not hold. Fixed by teaching the stub parser that `--progress` takes a value, and by supplying `OUTPUT_DIR` and `DRY_RUN_RECORD_TIMEOUT` from the `test_start_agent.sh` dry-run fixture. The two test files are recorded under Files in scope above. The stub-parser gap is routed to GOTCHAS.md; the stale AC5 claim is corrected in place.]
+
 ---
 
 ## Operator gate

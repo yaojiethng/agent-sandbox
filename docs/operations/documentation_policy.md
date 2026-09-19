@@ -38,7 +38,7 @@ Move such content to `roadmap.md`.
 
 Prohibited content:
 
-```
+```text
 TODO: add sandbox enforcement
 TODO: implement agent queue
 ```
@@ -63,6 +63,14 @@ Record a change to an invariant, interface, or contract when you make it. If the
 When you update an architecture or concepts document, check every code block, variable name, path, and function signature against the current implementation. A document updated across several sessions collects stale examples that contradict the system as built.
 
 Before closing a session that touched such a document, update or remove every stale example.
+
+### Markdown lint gate
+
+The repository holds zero Markdown lint findings. The Markdown gate runs `markdownlint-cli2` with the repository config [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs) and the custom `doc-ascii` rule in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs). A finding is a defect: fix it in the same change.
+
+`make lint` runs [`scripts/lint.sh`](../../scripts/lint.sh), which runs the ShellCheck gate in [`scripts/check_shell.sh`](../../scripts/check_shell.sh) and the Markdown gate in [`scripts/check_markdown.sh`](../../scripts/check_markdown.sh). Run `make lint` before an iteration closes. When `make` is not available, run `bash scripts/check_markdown.sh` for the Markdown gate alone.
+
+The config enables the rules that match this policy. It disables `MD013` because `### Line wrapping` forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Do not silence a finding with a per-file disable; fix the text or change the config.
 
 ---
 
@@ -103,9 +111,9 @@ Documents use plain ASCII punctuation.
 - Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. In headings, use the space-separated form.
 - To reference a document or section, write its name, or link with an anchor.
 - Write status markers as `[x]` / `[ ]` (tables) or `- [x]` / `- [ ]` (lists). Do not use checkmark or cross emoji.
-- Do not use non-ASCII punctuation (`§`, `¶`) or control and formatting symbols (space glyphs, chapter symbols).
+- Do not use non-ASCII punctuation (section sign U+00A7, pilcrow U+00B6) or control and formatting symbols (space glyphs, chapter symbols).
 
-**Allowed exception -- box-drawing characters.** Box-drawing characters (`│ ├ └ ─`) may appear inside ASCII-art diagrams (for example directory trees), where they carry the diagram's geometry. Use them nowhere else; convert banners, table rules, and decoration to ASCII hyphens.
+**Allowed exception -- box-drawing characters.** Box-drawing characters (U+2502 vertical, U+251C left tee, U+2514 corner, U+2500 horizontal) may appear inside ASCII-art diagrams (for example directory trees), where they carry the diagram's geometry. Use them nowhere else; convert banners, table rules, and decoration to ASCII hyphens.
 
 ### Line wrapping
 
@@ -133,7 +141,7 @@ When a workflow document (such as `iteration_policy.md`) hands off to a subproce
 
 **Pattern:**
 
-```
+```text
 Perform X per [`policy_document.md`](path/to/policy_document.md) -- Section Name.
 ```
 
@@ -145,7 +153,7 @@ Step-level references carry section anchors to the governing section. Document-l
 
 When a document is long enough that an agent might need to locate a section programmatically, give a grep command in code backticks instead of a link. A link says "open the document"; a grep says "find the section".
 
-```
+```bash
 grep -n "## Section Name" docs/operations/policy.md
 ```
 
@@ -222,7 +230,7 @@ All documents in `docs/` open with a consistent header block, so status and scop
 
 **Standard opening sequence:**
 
-```
+```text
 # <Title>
 <blank line>
 **Status:** <value>         (stories and investigations only)

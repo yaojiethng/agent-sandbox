@@ -65,13 +65,14 @@ test:
 	VERBOSE=$(VERBOSE) bash scripts/run_tests.sh
 
 # -------------------------
-# Static checks. lint is a blocking gate (zero-warning baseline, see
-# scripts/check_lint.sh header); smoke + liveness remain advisory.
+# Static checks. lint is a blocking gate: scripts/lint.sh runs the ShellCheck
+# gate (check_shell.sh) and the Markdown gate (check_markdown.sh); smoke +
+# liveness remain advisory.
 # -------------------------
 
 .PHONY: lint test-smoke lib-liveness test-liveness
 lint:
-	bash scripts/check_lint.sh
+	bash scripts/lint.sh
 
 test-smoke:
 	bash scripts/check_test_smoke.sh

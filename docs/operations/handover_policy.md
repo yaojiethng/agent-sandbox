@@ -198,8 +198,11 @@ Apply a correction only when the operator directs it. Reasons include a factual 
 ```text
 ---
 [CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
+
 ---
 ```
+
+Keep the blank line before the closing fence. Without it, the tag paragraph parses as a setext heading and the Markdown lint gate reports `MD022` (see [`documentation_policy.md`](documentation_policy.md#markdown-lint-gate)).
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
 2. Do not alter the Status, timestamps, or any other metadata field.

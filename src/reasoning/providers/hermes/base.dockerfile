@@ -58,6 +58,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Install markdownlint-cli2 (Markdown linter; repo gate via scripts/check_markdown.sh)
+RUN npm install -g markdownlint-cli2@0.23.2
+
 # uv in runtime  --  needed for MCP tool support at runtime
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"

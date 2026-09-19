@@ -102,7 +102,8 @@ EOF
   :> "$DOCKER_TRACE_LOG"
   # Bake the current interface-contract version onto the stub images so the
   # authoritative preflight check passes on resume.
-  export DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)"
+  export DOCKER_STUB_IMAGE_CONTRACT_VERSION
+  DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)"
   unset DOCKER_STUB_UP_RC DOCKER_STUB_RUN_RC DOCKER_STUB_PS_IDS DOCKER_STUB_SANDBOX_HEALTH
 }
 

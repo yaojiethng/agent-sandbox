@@ -193,6 +193,8 @@ test_seeder_flat_verification_detects_dropped_file() {
   # would produce); the committed set in the dest no longer matches.
   rm "$proj/committed.txt"
   source "$REPO_ROOT/src/capability/snapshot.sh"
+  # SCRIPT path is computed at runtime and validated above
+  # shellcheck disable=SC1090
   SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"
   if verify_baseline "$proj" "$dest" 2>/dev/null; then
     fail "flatten drop: verify_baseline passed despite source/volume divergence"
