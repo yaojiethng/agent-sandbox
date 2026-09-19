@@ -47,10 +47,21 @@ EOF
   # aligned label is required for a start to succeed.
   local contract_version
   contract_version="$(interface_contract_version)"
+  # The dry-run path waits for the per-container diagnostics records that the
+  # docker stub writes on `compose up` (tests/stubs/docker). The stub gates that
+  # write on OUTPUT_DIR, and exports it into the compose file by substitution
+  # rather than into the stub's environment, so the test must supply it here.
+  # DRY_RUN_RECORD_TIMEOUT clamps the record wait so a genuine record failure
+  # fails fast instead of polling for the 180s default (two passes per run).
+  local dry_run_env=()
+  if [[ " $* " == *" dry-run "* ]]; then
+    dry_run_env=("OUTPUT_DIR=$dir/sandbox/.workspace/output" "DRY_RUN_RECORD_TIMEOUT=2")
+  fi
   START_OUT="$(cd "$dir" && \
     PATH="$REPO_ROOT/tests/stubs:$PATH" \
     DOCKER_TRACE_LOG="$START_TRACE" \
     DOCKER_STUB_IMAGE_CONTRACT_VERSION="$contract_version" \
+    env "${dry_run_env[@]}" \
     bash "$REPO_ROOT/scripts/start_agent.sh" "$@" 2>&1)"
   START_RC=$?
   START_COMPOSE="$(ls "$dir/sandbox/.compose"/*.yml 2>/dev/null | head -1)"

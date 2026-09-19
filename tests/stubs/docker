@@ -74,6 +74,9 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
       --project-name)   shift 2 ;;
       --project-directory) shift 2 ;;
       --no-interpolate|--no-ansi|--rm) shift ;;
+      # --progress takes a value; skipping it as a value-less flag would leave
+      # the value (e.g. "quiet") as compose_sub and misroute the whole call.
+      --progress) shift 2 ;;
       *) compose_sub="$1"; shift; break ;;
     esac
   done

@@ -199,3 +199,17 @@ feature presence against the project tree before touching the project source.
 A fresh install (re-run `install.sh`/`make install` to re-point the symlink at
 the current checkout) resolved it. The interface-contract P2 work is unrelated
 to this failure; it touched only identity-independent contract logic.
+
+### [G] 2026-09-19 - A green committed iteration without an open handover is a record defect, not a fast close
+
+state: open
+scoped: iteration lifecycle (handover open/close)
+legacy: none
+mitigation: after handover 20260919-08 (P3) closed, five further iterations ran in the same session, each opened with the operator saying "new iteration" or "next iteration", and NONE created a handover file. The agent implemented, committed (15 commits, correctly typed), and certified the suite green each time, but omitted iteration_policy Step 1 (Open handover) and Steps 8-9 (Close and seed) entirely. The operator's "new iteration" / "next iteration" phrasing IS a Step-1 trigger and must be acted on as such: open the handover file and run the Step-2 scope gate before any implementation, per the workflow table. The commits alone, even correctly typed with docs, do not constitute an iteration; the handover is the close record. A handover-less green delivery is a missing record, not a fast close. This is the inverse of the 2026-08-23 "Hollow iterations" gotcha (too many handovers for one task), where here there were zero handovers across five tasks. The whole post-08 stretch had to be backfilled by reading the pi session log and rebasing the handover files into history.
+
+### [G] 2026-09-20 - A production flag added without updating the test double's argument parser turns the suite red and slow
+
+state: open
+scoped: test infrastructure (`tests/stubs/`)
+legacy: none
+mitigation: commit `ea080bf` added `--progress quiet` to the dry-run `compose up -d` in `src/build/compose.sh`, but did not teach the compose-arg parser in `tests/stubs/docker` that `--progress` takes a value. The parser's catch-all branch then read the value (`quiet`) as the compose subcommand, so the call never reached the `up` branch: the stub never wrote the per-container diagnostics records, and every dry-run test polled the full `DRY_RUN_RECORD_TIMEOUT` default (180s), twice per run, before failing. The suite did not terminate and two test files went red, while the handover recorded the suite as green. Rule: when you add, rename, or remove a flag on any docker or compose invocation that tests exercise, update `tests/stubs/docker` in the same commit, and give the stub parser an explicit value-taking arm for every flag that takes an argument. A catch-all `*)` arm silently absorbs a misparsed token -- the failure appears as a hang or an unrelated assertion, not as a parse error. Verify by running the affected test file, not just the suite tail; a 180s-per-test poll is the signature of a dry-run record wait that never resolves.

@@ -404,7 +404,11 @@ if [[ -n "${SESSION_ID:-}" ]]; then
 fi
 if [[ "$MODE" == "serve" ]]; then
   echo "Starting agent: $PROJECT_NAME (serve mode)"
-  docker compose "${COMPOSE_ARGS[@]}" up -d
+  # < /dev/null: protects against external compose/docker behavior -- compose v5
+  # may block on an interactive prompt (volume/config mismatch) and must not
+  # hang this unattended path waiting on a TTY answer. --progress quiet:
+  # suppress the resource progress table at source.
+  docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d < /dev/null
   echo "Stop with: make stop"
   echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
 
@@ -419,7 +423,15 @@ if [[ "$MODE" == "serve" ]]; then
 else
   echo "Starting agent: $PROJECT_NAME"
   echo "+ starting sandbox..."
-  docker compose "${COMPOSE_ARGS[@]}" up -d sandbox 2>&1 | (grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true)
+  # < /dev/null: protects against external compose/docker behavior. Compose v5
+  # prompts interactively to recreate a volume whose config no longer matches
+  # the regenerated compose file (stale-session resume). On this unattended
+  # path the harness must never destroy a session volume via an unanswered
+  # prompt; non-interactive stdin makes compose keep the existing volume. Same
+  # class as the seeder < /dev/null guard (handover 20260904-05).
+  # --progress quiet: compose suppresses its resource progress table at source,
+  # so no stdout filter is needed here.
+  docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d sandbox < /dev/null
 
   compose_sandbox_wait "$PROJECT_NAME"
 

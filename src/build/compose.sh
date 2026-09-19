@@ -279,13 +279,17 @@ compose_dry_run() {
     rm -f "$_cap_record" "$_rea_record" 2>/dev/null || true
     echo "[$pass_label] Starting containers (bearer probes run at start-up)..."
     # up failure must fail the pass loudly, not surface later as a record
-    # timeout: capture the exit code (the pipe to grep would otherwise eat it),
-    # then filter the noise from the output.
-    local _up_rc=0 _up_out
-    _up_out=$(DRY_RUN_SCRIPT="$dry_run_script" \
+    # timeout: capture the exit code. --progress quiet suppresses the resource
+    # table at source, so there is nothing to filter and compose writes
+    # directly to the caller's stdout. < /dev/null: protects against external
+    # compose/docker behavior -- compose v5 can block on an interactive prompt
+    # (volume/config mismatch); this unattended dry-run pass must not hang
+    # waiting on a TTY answer.
+    local _up_rc=0
+    DRY_RUN_SCRIPT="$dry_run_script" \
       DRY_RUN_CAPABILITY_SCRIPT="$dry_run_capability_script" \
-      docker compose "${COMPOSE_ARGS[@]}" up -d 2>&1) || _up_rc=$?
-    printf '%s\n' "$_up_out" | grep -vE '^ ?Container |^ ?Network |^ ?Volume |^ ?$' || true
+      docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d < /dev/null \
+      || _up_rc=$?
     if (( _up_rc != 0 )); then
       echo "RECORD-VERIFY FAIL: compose up failed (exit $_up_rc) -- cannot run the dry-run $pass_label pass" >&2
       return 1

@@ -40,7 +40,7 @@ build_image() {
   local no_cache="${5:-}"
   shift 5
 
-  local build_cmd=(docker build)
+  local build_cmd=(docker build --quiet)
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
   build_cmd+=(-t "$image_name" -f "$dockerfile")
   # Tier-3 images (those with baked harness content) carry the contract
@@ -48,12 +48,13 @@ build_image() {
   [[ -n "$stamp_contract" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$(interface_contract_version)")
   build_cmd+=("$@" "$repo_root")
 
-  # Run docker build with its default progress mode (auto).  The exit status
-  # is captured so a failure surfaces a single, descriptive message instead of
-  # a bare `set -e` abort. `_build_rc` defaults to a non-zero sentinel (fail
-  # closed): the `&& ... || ...` capture clears it to 0 on success or the
-  # build's real status on failure, so a path that never runs a build still
-  # reports failure rather than silently passing.
+  # Run docker build with --quiet: per-step progress output (the cached-step
+  # staircase) is suppressed so the harness log stays clean; failures still
+  # surface their error text. The exit status is captured so a failure surfaces
+  # a single, descriptive message instead of a bare `set -e` abort. `_build_rc`
+  # defaults to a non-zero sentinel (fail closed): the `&& ... || ...` capture
+  # clears it to 0 on success or the build's real status on failure, so a path
+  # that never runs a build still reports failure rather than silently passing.
   local _build_rc=1
   echo "Building image: $image_name"
   "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
