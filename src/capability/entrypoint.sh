@@ -232,6 +232,20 @@ _session_export() {
   # call would abort the export at exactly the point of proceeding.
   wait_git_lockfile "$_sandbox_dir" || true
 
+  # Skip when nothing changed since the last save (session_save_needed). The
+  # baseline is the freshest continuous checkpoint -- the autosave dir's own
+  # .export-status HEAD (init_sha when no autosave has fired yet). A clean
+  # tree at the last-saved HEAD means a fresh session bundle would be empty
+  # and redundant, so we do not create one at all.
+  local _prior
+  _prior=$(export_path "$_changes_dir" "autosave" "$_session_id")
+  local _baseline
+  _baseline=$(_save_baseline "$_sandbox_dir" "$_prior")
+  if ! session_save_needed "$_sandbox_dir" "$_baseline"; then
+    echo "session-export: nothing to save  --  clean tree at last-saved HEAD" >&2
+    return 0
+  fi
+
   local _exit_dir
   _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")
   mkdir -p "$_exit_dir"
@@ -297,6 +311,13 @@ if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
     while true; do
       sleep "$AUTOSAVE_INTERVAL"
       _as_dir=$(export_path "$CHANGES_DIR" "autosave" "${SESSION_ID:-}")
+      # Read the previous checkpoint's HEAD as the baseline BEFORE wiping the
+      # dir, so session_save_needed can skip a cycle with nothing new to save.
+      _baseline=$(_save_baseline "$SANDBOX_DIR" "$_as_dir")
+      if ! session_save_needed "$SANDBOX_DIR" "$_baseline"; then
+        echo "autosave: nothing to save  --  clean tree at last-saved HEAD" >&2
+        continue
+      fi
       rm -rf "$_as_dir"
       mkdir -p "$_as_dir"
       echo "autosave: checkpoint started  --  ${_as_dir}" >&2

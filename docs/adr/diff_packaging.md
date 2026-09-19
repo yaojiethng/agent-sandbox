@@ -1,6 +1,23 @@
 # Diff Packaging
 
-**Current:** 2026-08-01
+**Current:** 2026-09-19
+
+## 2026-09-19 -- Save only when there is a change to save
+
+**Decision:** The save step — the autosave loop and the session export — runs only when the working tree is dirty (any uncommitted or untracked change) or when HEAD differs from the save baseline. It skips only when the tree is completely clean and HEAD equals the baseline. Previously both ran unconditionally on every cycle / container exit, writing an empty bundle even for a session that changed nothing.
+
+A helper, `session_save_needed SANDBOX_DIR BASELINE`, makes the decision: 0 (save) when dirty or HEAD != baseline, 1 (skip) only when clean and HEAD == baseline. The baseline is the HEAD the previous SUCCESS save recorded in its `.export-status` (a new `HEAD=<sha>` line stamped at export time), falling back to the session baseline `init_sha` from SESSION_STATE for the first save. `_save_baseline` resolves it from the previous `.export-status`, else `init_sha`. A skipped autosave cycle writes nothing and leaves the previous checkpoint untouched; a skipped session export creates no session directory at all.
+
+**Rationale:** The baseline folds two rules into one comparison, so there is a single code path. Level 1 (baseline = `init_sha`) skips a session that never changed. Level 2 (baseline = last save's HEAD) skips re-saving an unchanged state after the first save — once HEAD has passed `init_sha`, comparing against `init_sha` alone would keep re-creating empty bundles every cycle. The baseline is always the last-saved HEAD, never a moving marker the harness must keep in sync: it is read from the previous save's own `.export-status`, so the save path stays self-describing. `init_sha` remains the immutable fixed lower boundary for the diff pipeline (`package_branch` diffs `init_sha..HEAD`); the save decision reuses it as the first-save baseline rather than introducing a new tracker file.
+
+The dirty-first precedence is the contract: any uncommitted change forces a save regardless of HEAD. So an in-progress edit is never dropped — the guard never drops a change, it only avoids writing byte-identical empty bundles. `git status --porcelain` captures modified, staged, and untracked files alike.
+
+**Rejected alternatives:**
+- *Save every cycle / exit unconditionally* (prior behaviour) — costs a full `rm -rf` + `package_branch` rebuild and stamps a new `session/<ts>-<sid>/` directory even when nothing changed; the waste is systemic on idle sessions and long-running resumed ones. Rejected as the baseline for the no-op rule.
+- *`init_sha`-only baseline (level 1 alone)* — skips the never-changed session but cannot skip re-saving an unchanged committed state after the first save; a session that committed once then stalled would re-create empty bundles every cycle. Rejected as insufficient: level 2 is the actual optimization.
+- *A separate persisted last-save tracker file* — an extra file the harness must write, read, and keep consistent. Rejected as unnecessary: the previous save's `.export-status` already records what was captured; its `HEAD` line is the natural comparison point.
+
+**Edge cases / drivers:** The autosave loop reads the baseline *before* its `rm -rf`, because the wipe destroys the very `.export-status` that holds the comparison point. A FAILed previous export is not a baseline — `_save_baseline` falls back to `init_sha` rather than trust an interrupted save. A busy agent with uncommitted edits always saves, so an export is never lost to the guard. The lifecycle and layout are documented in [sandbox_lifecycle.md](../architecture/sandbox_lifecycle.md).
 
 ## 2026-08-01 -- Single export mechanism, four guarded workflow commands
 

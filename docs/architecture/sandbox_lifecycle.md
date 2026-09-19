@@ -107,11 +107,15 @@ On capability layer container exit, an EXIT trap runs the diff pipeline. The ent
 
 No sweep commit is performed. Uncommitted changes are preserved in the working tree — `diff_export` never commits.
 
+### No-op guard
+
+Before a save runs, the entrypoint asks `session_save_needed`: save when the working tree is dirty (any uncommitted/untracked change) or when HEAD differs from the baseline; skip only when the tree is completely clean and HEAD equals the baseline. The baseline is the previous save's HEAD from `.export-status`, falling back to `init_sha` for the first save. This folds two rules into one comparison: level 1 skips a session that never changed (clean tree at `init_sha`), and level 2 skips re-saving an unchanged state after the first save. A skipped autosave cycle writes nothing; a skipped session export creates no session directory at all.
+
 All artefacts land in the session export directory constructed by `export_path`:
 
 ```
 workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
-  .export-status        — STATUS, TIMESTAMP, INIT_SHA (and EXIT_CODE on failure)
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (and EXIT_CODE on failure)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
@@ -125,17 +129,16 @@ workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
 ### Autosave
 
 The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle overwrites a single directory:
-
 ```
 workspace/session-diffs/autosave/<SESSION_ID>/
-  .export-status        — STATUS, TIMESTAMP, INIT_SHA (updated each cycle)
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (updated each cycle)
   uncommitted.diff      — uncommitted changes vs HEAD
   all-changes.diff      — net delta init_sha..HEAD
   patches/
   changed-files/
 ```
 
-Only one autosave directory exists per session — the old one is `rm -rf`'d before each write. No accumulation, no pruning needed within a session.
+Only one autosave directory exists per session — the old one is `rm -rf`'d before each write. No accumulation, no pruning needed within a session. When a cycle finds nothing to save (clean tree at the last-saved HEAD), it skips the write entirely and leaves the previous checkpoint untouched.
 
 `workspace/session-diffs/session/` accumulates one directory per container stop and is not automatically pruned.
 

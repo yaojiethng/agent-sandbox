@@ -19,6 +19,7 @@ _write_export_status() {
   local _ts="$3"
   local _exit_code="${4:-}"
   local _init_sha="${5:-}"
+  local _head="${6:-}"
 
   local _content="STATUS=${_status}"
   _content="${_content}"$'\n'"TIMESTAMP=${_ts}"
@@ -27,6 +28,9 @@ _write_export_status() {
   fi
   if [[ -n "$_init_sha" ]]; then
     _content="${_content}"$'\n'"INIT_SHA=${_init_sha}"
+  fi
+  if [[ -n "$_head" ]]; then
+    _content="${_content}"$'\n'"HEAD=${_head}"
   fi
 
   # Atomic write: temp file + rename
