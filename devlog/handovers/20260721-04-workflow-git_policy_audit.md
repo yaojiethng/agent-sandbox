@@ -34,4 +34,4 @@ Resolution of the 6 inconsistencies identified in the git rules audit. No new po
 
 ## Key files modified this session
 
-*(Null: no files yet)*
+(Null: no files yet)

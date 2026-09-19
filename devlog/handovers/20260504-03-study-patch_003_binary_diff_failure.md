@@ -67,7 +67,7 @@ None.
 | Finding | Type | Impact |
 |---|---|---|
 | `test_package_branch.sh` and `test_diff_helpers.sh` define all their tests but never execute them -- no `run_test` calls, no `test_common.sh` source, no production lib sourcing | bug | Both files contributed 0 to the test count. Fixed in this session. |
-| `grep -c ... || echo 0` in bash double-prints when no match is found (grep prints "0" + exits 1, then `echo 0` fires) -- use `|| true` instead | bug | Fixed in test assertions. |
+| `grep -c ... \|\| echo 0` in bash double-prints when no match is found (grep prints "0" + exits 1, then `echo 0` fires) -- use `\|\| true` instead | bug | Fixed in test assertions. |
 | `[[ -f "path/"*.diff ]]` in `[[ ]]` context does NOT perform pathname expansion -- must use `ls` or array | bug | Fixed in `test_dispatcher_creates_all_artefacts` |
 
 ## Completed this session
@@ -111,7 +111,7 @@ None.
 
 **Grep at session start:**
 
-```
+```text
 grep -rn "changes.diff\|staged.diff\|diff_on_exit\|diff_on_autosave\|diff_commit_pending\|BASELINE_SHA\|resolve_session_dir" docs/ --include="*.md"
 ```
 

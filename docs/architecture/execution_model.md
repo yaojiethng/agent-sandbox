@@ -10,7 +10,7 @@ Capability layer session arc (fork, work, join) is in [`sandbox_lifecycle.md`](s
 
 The harness operates against two directories: `PROJECT_DIR` (the project git repository) and `SANDBOX_DIR` (the harness workspace). Both are absolute paths supplied via `.env`. Their location relative to each other on the host is not constrained.
 
-```
+```text
 SANDBOX_DIR/
 ├── Makefile
 ├── .env

@@ -15,7 +15,7 @@ Implement the settled harness version identity design (ADR `harness_versioning.m
 |---|---|---|
 | 1 | Digest stamping: record gains `agent-sandbox.agent-image-digest` + `agent-sandbox.sandbox-image-digest`; `image-sig` label retired from new records | `src/build/docker-compose.yml`, `docker-compose.copy.yml`, `src/build/compose.sh`, `scripts/run_agent.sh` |
 | 2 | Retire list-time staleness: `record_image_stale` removed from the `resume LIST` path (kills 2xN docker inspects); recorded digests shown instead | `scripts/resume_agent.sh`, `src/libs/session_inventory.sh`, `src/libs/container_sig.sh` |
-| 3 | Prune: image-staleness selection retired (`--stale=image|all` removed; `--stale=sandbox` -- worktree HEAD identity -- stays) | `scripts/prune.sh` |
+| 3 | Prune: image-staleness selection retired (`--stale=image\|all` removed; `--stale=sandbox` -- worktree HEAD identity -- stays) | `scripts/prune.sh` |
 | 4 | Dry-run gate: `dry_run_image_verify` becomes the digest roundtrip (running image's digest == record's stamped digest); container-sig recompute leaves the gate | `src/libs/dry_run_record.sh` |
 | 5 | Symlink install: `make install` links instead of sed-baked copy; dispatcher self-locates the repo via the resolved symlink | `Makefile`, `scripts/agent-sandbox.sh` |
 | 6 | `container-sig` interim role: preflight contract check persists (recompute path kept); image-version and dry-run-gate duty removed | `src/libs/container_sig.sh` |
@@ -48,7 +48,7 @@ Implement the settled harness version identity design (ADR `harness_versioning.m
 | `src/libs/dry_run_record.sh` | `dry_run_image_verify` = digest roundtrip (record digest vs image digest), inline label read |
 | `scripts/run_agent.sh` | `RESET_VOLUME` exported for the entrypoint's fresh-start message |
 | `scripts/resume_agent.sh` | list path: image-staleness column + `[IMAGE_STALE]` marker removed; zero docker calls; `--env=` accepted-and-ignored |
-| `scripts/prune.sh` | `--stale=image|all` removed; sandbox-only selection |
+| `scripts/prune.sh` | `--stale=image\|all` removed; sandbox-only selection |
 | `scripts/build.sh` | `_check_container_sig` reframed as contract-drift check |
 | `Makefile` + `scripts/agent-sandbox.sh` | symlink install; self-locating dispatcher (`readlink -f $0`) |
 | Tests | stub gains `.Id` digest support; container_sig/session_inventory/dry_run_record/prune/resume/trace tests rewritten for the new contracts; digest-gate tests added |

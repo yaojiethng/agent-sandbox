@@ -45,7 +45,7 @@ An ADR is the current record of one principle. When the principle changes, edit 
 
 ### Structure
 
-```
+```text
 
 # <Principle>
 

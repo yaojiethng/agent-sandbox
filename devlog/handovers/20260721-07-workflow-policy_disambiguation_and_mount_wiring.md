@@ -13,18 +13,18 @@ Close M2.6.3 remaining items (policy file disambiguation, design policy extracti
 
 Three units:
 
-**Unit 1 -- Policy file disambiguation pass**
+### Unit 1 -- Policy file disambiguation pass
 
 - Identify and resolve content overlaps across the 14 files in `docs/operations/`
 - Targeted edits to existing files -- no restructure, no merges
 - Focus areas: `documentation_policy.md` / `handover_policy.md` correction overlap, `iteration_policy.md` / `milestone_policy.md` major loop duplication, `iteration_policy.md` step detail duplication of child policy content
 
-**Unit 2 -- Design policy extraction decision**
+### Unit 2 -- Design policy extraction decision
 
 - Assess whether a standalone design policy document is warranted
 - Outcome: either extract a new `design_policy.md` or add a clear ownership anchor in `iteration_policy.md` Step 3
 
-**Unit 3 -- PROJECT_DIR mount wiring investigation**
+### Unit 3 -- PROJECT_DIR mount wiring investigation
 
 - Trace how `PROJECT_DIR` flows through Makefile, compose template, `start_agent.sh`, config files
 - Identify cross-platform path concerns (Linux/macOS/Windows)

@@ -42,8 +42,8 @@ None.
 
 ## Mid-session findings
 
-| Finding | Type | Impact |
-|---|---|---|
+| # | Finding | Type | Impact |
+|---|---|---|---|
 | 1 | **(Communication clarification, not a finding.)** The operator initially said "M3 task scoped to trim it" referring to feedback/gotchas bloat; on my flag that no such task exists, the operator clarified the target is the handover/discussion Doc Bloat trim | process awareness | Triaged to: none (resolved via clarification; no doc action beyond the corrected target) |
 
 ## Completed this session

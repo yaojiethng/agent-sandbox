@@ -53,7 +53,7 @@ git commit -m "init"
 
 `.gitignore` should cover machine-specific and sync-state Obsidian files:
 
-```
+```text
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/cache

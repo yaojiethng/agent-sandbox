@@ -56,7 +56,7 @@ Deferred / not in scope:
 | Decision | Status |
 |---|---|
 | Defect 2 root cause: the "already in progress" is the RACE with `run_agent.sh`'s EXIT-trap `compose down`, NOT duplicate IDs in the `ps` capture (`docker ps -aq` yields each matched container once; `docker rm id id` does not error). "Lists same IDs twice" is stop-then-rm normal output. Fix = make `docker rm` idempotent; NO internal dedupe (dropped per operator - redundant under idempotent semantics) | CONFIRMED (operator) |
-| `docker rm` failure handling: make `docker rm "${CONTAINER_IDS[@]}" || true` (silent, commented) the idempotent tolerance; keep `docker stop` fail-closed (stop failure = containers not signalled -> real precondition failure; rm failure = disposable containers already gone -> tolerate). `|| true` is the repo-canonical scoped idiom (bash-coding-conventions rule 1.16/4.3) | CONFIRMED (operator) |
+| `docker rm` failure handling: make `docker rm "${CONTAINER_IDS[@]}" \|\| true` (silent, commented) the idempotent tolerance; keep `docker stop` fail-closed (stop failure = containers not signalled -> real precondition failure; rm failure = disposable containers already gone -> tolerate). `\|\| true` is the repo-canonical scoped idiom (bash-coding-conventions rule 1.16/4.3) | CONFIRMED (operator) |
 | Handover numbering `-06` | CONFIRMED (operator: continue with own numbering) |
 
 ## Findings
@@ -70,7 +70,7 @@ Deferred / not in scope:
 | File | Change |
 |---|---|
 | [`scripts/templates/Makefile.template`](../../scripts/templates/Makefile.template) | Defect 1: `stop:` target now passes `--project=$(PROJECT_DIR)` (was omitted -> `make stop PRUNE=1` errored; `--sandbox` already present) |
-| [`scripts/stop.sh`](../../scripts/stop.sh) | Defect 2: `docker rm "${CONTAINER_IDS[@]}" || true` -- idempotent against the run_agent EXIT-trap `compose down` removal race (commented); `docker stop` stays fail-closed; no dedupe (dropped per operator) |
+| [`scripts/stop.sh`](../../scripts/stop.sh) | Defect 2: `docker rm "${CONTAINER_IDS[@]}" \|\| true` -- idempotent against the run_agent EXIT-trap `compose down` removal race (commented); `docker stop` stays fail-closed; no dedupe (dropped per operator) |
 | [`test/stubs/docker`](../../test/stubs/docker) | `DOCKER_STUB_RM_FAIL` hook simulates the "already in progress" removal race |
 | [`tests/test_trace_stop.sh`](../../tests/test_trace_stop.sh) | `test_stop_removal_race_is_tolerated` (PASS on fix, FAIL on old stop.sh); `DOCKER_STUB_RM_FAIL` added to per-test unset; `test_stop_docker_failure_aborts` kept green |
 | [`tests/test_onboard.sh`](../../tests/test_onboard.sh) | `test_stop_target_forwards_project_dir` locks the `stop:` target flag set (PASS on fix, FAIL on old template) |

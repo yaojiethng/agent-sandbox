@@ -54,7 +54,7 @@ Implement the first M2.6.6 implementation task -- **Compose template: realize th
 | Decision | Rationale |
 |---|---|
 | Scope: compose file-set task only | operator-confirmed 2026-08-18 |
-| `SANDBOX_TYPE=copy|mount` as the generation-time selector, default `copy` | settled naming from design walk `20260818-02`; invalid values rejected before any compose invocation |
+| `SANDBOX_TYPE=copy\|mount` as the generation-time selector, default `copy` | settled naming from design walk `20260818-02`; invalid values rejected before any compose invocation |
 | Named sandbox volume + snapshot mount/env move wholly into the copy overlay | the only delivery with a snapshot; mount compose must not inherit them |
 | Delivery overlays live in `src/build/` alongside base + dry-run | harness-level, not provider-level (same class as the dry-run overlay) |
 | Overlay merge ordering: base -> delivery overlay -> provider overlay -> mode overlay | delivery wiring precedes provider/mode additions; `docker compose config` merges `environment` by key and appends `volumes` |

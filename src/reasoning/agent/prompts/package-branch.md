@@ -32,7 +32,7 @@ bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<
 
 The script produces one numbered `.diff` file per commit since `init_sha`, with the commit subject embedded in the filename, plus a sibling `.msg` file with the full commit message:
 
-```
+```text
 <to>/bundles/<EXPORT_TIME>-<BUNDLE_SUMMARY>[-<SESSION_ID>]/
   patches/
     0001-<sha>-<subject>.diff     --  per-commit diff (index lines stripped)
@@ -61,7 +61,7 @@ After the script finishes, echo its final lines to the conversation. The script 
 
 Write `migration-guide.md` in the output directory. The script does not generate it. Assemble it from the content you drafted in step 1. Use this template:
 
-```
+```text
 # Migration Guide - <bundle-summary>
 
 Bundle: <bundle-id>

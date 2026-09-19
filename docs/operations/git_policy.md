@@ -6,7 +6,7 @@ Policy for commit messages and branch naming in agent-sandbox. Commit types are 
 
 ## Commit Message Format
 
-```
+```text
 type: short description
 ```
 
@@ -66,7 +66,7 @@ Parked until the project has a use case. Introduce them when the first commit wo
 
 ## Branch Naming
 
-```
+```text
 type/milestone_description
 ```
 
@@ -98,7 +98,7 @@ When a change is not tied to a specific sub-milestone (e.g. a cross-cutting poli
 
 Most sub-milestones fit in one to three sessions and produce a single branch. The branch is created at session start, receives commits across sessions, and merges to `main` when the sub-milestone is complete and reviewed.
 
-```
+```text
 main ──────────────────────────────●── ...
         \                         /
          feat/m2_1-snapshot ─────
@@ -110,13 +110,13 @@ When a sub-milestone is too large or too varied for a single branch -- multiple 
 
 The integration branch is named for the sub-milestone without a type prefix:
 
-```
+```text
 milestone/m2_1
 ```
 
 Session branches are created from the integration branch and merged back into it as each session or functional slice completes. The integration branch merges to `main` when the full sub-milestone is reviewed and approved.
 
-```
+```text
 main ──────────────────────────────────────────●── ...
         \                                      /
          milestone/m2_1 ──────●────────●──────
@@ -208,7 +208,7 @@ If the file cannot be split by hunk boundaries (interleaved changes to the same 
 
 **Merge commit.** Preserves the sub-milestone as a visible unit in `main`'s history. The merge commit message follows the format:
 
-```
+```text
 feat: complete M2.1 — snapshot pipeline and diff workflow
 ```
 
@@ -232,7 +232,7 @@ Tags mark major milestone boundaries on `main`. The tag is placed on the merge c
 
 **Format:**
 
-```
+```text
 m1
 m1.5
 m2.1

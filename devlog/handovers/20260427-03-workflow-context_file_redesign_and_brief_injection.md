@@ -111,7 +111,7 @@ Any additional instances found by grep must be resolved -- either updated to ref
 
 Replace with:
 
-```
+```text
 Currently supported agent providers:
 - claude-code
 - opencode

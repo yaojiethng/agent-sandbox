@@ -65,11 +65,11 @@ None.
 | `scripts/start_agent.sh` | Removed dirs.sh/dirs_resolve, derives paths directly from SANDBOX_DIR |
 | `libs/sandbox-entrypoint.sh` | Reads paths from env vars, writes to SESSION_STATE, fallback to dirs.sh if unset |
 | `libs/routing.sh` | Added _resolve_paths helper (SESSION_STATE-first, dirs_resolve fallback) |
-| `libs/interactive_session_select.sh` | Replaced dirs_resolve with _resolve_paths |
+| `libs/interactive_session_select.sh` | Replaced dirs_resolve with_resolve_paths |
 | `scripts/agent-sandbox.sh` | Uses _resolve_paths for interactive path resolution |
 | `scripts/dry_run.sh` | Reads paths from env vars, fallback to dirs.sh if unset |
 | `scripts/dry_run_capability.sh` | Reads paths from env vars, fallback to dirs.sh if unset |
-| `docs/devlog/roadmap.md` | Marked item 10 as [x]
+| `docs/devlog/roadmap.md` | Marked item 10 as [x] |
 
 ## Deferred items
 

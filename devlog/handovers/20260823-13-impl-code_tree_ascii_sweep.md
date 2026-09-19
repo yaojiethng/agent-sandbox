@@ -29,7 +29,7 @@ Out of scope: historical corpus (operator decision, `-11`); devlog/docs prose al
 
 | # | Criterion | Verification | Status |
 |---|---|---|---|
-| AC1 | Zero non-ASCII outside the box-drawing exception in the code tree | final grep: only `domain-model/SKILL.md` tree geometry remains (60 glyphs, all `+-- --- |`) | accepted |
+| AC1 | Zero non-ASCII outside the box-drawing exception in the code tree | final grep: only `domain-model/SKILL.md` tree geometry remains (60 glyphs, all `+-- --- \|`) | accepted |
 | AC2 | Every retained box-drawing site is a diagram (or converted to md table if tabular docs) | 3 sites inspected: SKILL.md trees = diagrams, kept; hermes dockerfile/yaml comment banners = not diagrams, converted to ASCII hyphens | accepted |
 | AC3 | Box-drawing exception recorded in documentation_policy.md | Character set section gained exception paragraph + status-marker instruction | accepted |
 | AC4 | No behavior change: suite green and deterministic x2 | 634 tests / 39 files / 0 failed x2 | accepted |

@@ -58,7 +58,7 @@ Implement M2.3 Change 2: Format-patch generation + session-scoped artefact direc
 
 **Test suite execution:**
 
-```
+```text
 Results: 24 passed, 0 failed
 ```
 
@@ -78,7 +78,7 @@ All existing tests preserved. New tests cover:
 
 ## Next Session
 
-**Change 3 -- draft/confirm/reject workflow**
+### Change 3 -- draft/confirm/reject workflow
 
 Change 2 is complete. The next step is to implement Change 3: the `draft/confirm/reject` workflow in `scripts/apply_workspace.sh` and `Makefile.template`.
 

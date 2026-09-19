@@ -26,7 +26,7 @@ Copy delivery is a behavioral contract between the harness and the operator. Eve
 
 Fresh start fills the empty volume with a one-shot seeder container. The interface:
 
-```
+```text
 project (bind, read-only)  ──►  seeder  ──►  session volume (write)
 ```
 

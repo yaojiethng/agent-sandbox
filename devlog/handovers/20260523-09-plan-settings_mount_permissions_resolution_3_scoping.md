@@ -59,7 +59,7 @@ None.
 |---|---|
 | **UID Mapping (User Hijack) is the final solution**, replacing ACL approach | Only approach that works across WSL, macOS, Windows DD, and CI. Eliminates ACL fragility entirely. |
 | Build args + compose `user:` override (not compose-only or group bind) | Compose-only breaks entrypoint (pre-baked files owned by wrong UID). Group bind fails on macOS/Windows DD. Build args are the only complete solution. |
-| Collision handling via `usermod` rename (not `|| true` or user deletion) | Renaming preserves existing user's files; `useradd -u ... || true` leaves no `agentuser` user; deletion breaks packages. |
+| Collision handling via `usermod` rename (not `\|\| true` or user deletion) | Renaming preserves existing user's files; `useradd -u ... \|\| true` leaves no `agentuser` user; deletion breaks packages. |
 | Numeric UID/GID in `chown` (not username) | If `useradd` was skipped due to collision, the `agentuser` username does not exist; numeric UID always works. |
 
 ## Mid-session findings

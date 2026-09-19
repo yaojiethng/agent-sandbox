@@ -101,7 +101,7 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 
 The full lifecycle -- init, running, stopped, restart -- as a single sequence. Loop checkpoints mark where the cycle repeats.
 
-```
+```text
 [Host]                               [Sandbox]
 HEAD = A                             (not yet started)
   │                                    │
@@ -139,11 +139,11 @@ HEAD = B
   └─ (new container snapshots HEAD = B; new init_sha established)
 ```
 
-**INIT -- establishing correspondence**
+### INIT -- establishing correspondence
 
 Before the container starts, the harness seeds the sandbox volume with the helper-container transport: a one-shot seeder copies the repository natively (`.git` including the index), streams the git-enumerated working tree into the volume, and writes `init_sha` (the repository HEAD at seed time) plus the session identity into SESSION_STATE. The seeder verifies the result by comparing `git status` between the project and the volume before it exits. At this point sandbox file content and staging state exactly match the host. `init_sha` is the fixed reference for all diff packaging in this container lifetime.
 
-**RUNNING -- bidirectional flow**
+### RUNNING -- bidirectional flow
 
 Changes can flow in either direction at any time while the sandbox is live. All transfers use the same diff format and the same `make apply` command regardless of direction.
 
@@ -151,13 +151,13 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 - **Host -> sandbox (amendment):** Operator packages a host change with `make package-branch` (host-side, writes to `INPUT_DIR`). Agent reviews and commits. The next `package-branch` includes this commit in the series.
 - **Sandbox -> host (committed work):** On container exit, `diff_export` writes `uncommitted.diff`, `all-changes.diff`, `patches/*.diff`, and `changed-files/` into `session/<EXPORT_TIME>-<SESSION_ID>/`. This runs automatically via the EXIT trap.
 
-**STOPPED -- applying persisted artefacts**
+### STOPPED -- applying persisted artefacts
 
 The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` creates a `draft/<branch>` branch from `FROM` (default: `HEAD`; supply an explicit hash if the host has advanced) and applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch.
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
-**RESTART -- resetting correspondence**
+### RESTART -- resetting correspondence
 
 On the next container start, the harness snapshots the current host HEAD -- incorporating all sessions confirmed since the last container -- and establishes a new `init_sha` from that snapshot. What carries over: session artefacts in `session-diffs/` persist in `SANDBOX_DIR` and remain available to the operator; provider config files are copied into the new container at startup. What resets: `init_sha` is recomputed from scratch; agent session context (conversation history, in-progress work) is lost unless the provider supports session resume (M2.6 scope).
 

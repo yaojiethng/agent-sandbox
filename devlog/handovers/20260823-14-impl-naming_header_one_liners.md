@@ -43,4 +43,4 @@ Resolve the four naming/header contradiction one-liners queued on the roadmap (b
 
 ## Deferred items
 
-_(none)_
+(none)

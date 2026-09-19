@@ -33,7 +33,7 @@ The agent operates across two distinct workspaces with different access patterns
 
 **Reporting workspace** -- owned by the agent container. A direct mount, read-write, managed by the harness as now. This is where the agent reads the brief, writes `todo.md`, tracks task state, and logs progress. No MCP involved. Maps directly onto the existing `.workspace/` mount.
 
-```
+```text
 Agent container
 ├── .workspace/ mount (reporting — brief in, todo/state/progress out)
 │   read-write, direct mount, no MCP

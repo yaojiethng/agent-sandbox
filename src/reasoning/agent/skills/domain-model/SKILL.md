@@ -18,7 +18,7 @@ During codebase exploration, also look for existing documentation:
 
 Most repos have a single context:
 
-```
+```text
 /
 ├── CONTEXT.md
 ├── docs/
@@ -30,7 +30,7 @@ Most repos have a single context:
 
 If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives:
 
-```
+```text
 /
 ├── CONTEXT-MAP.md
 ├── docs/

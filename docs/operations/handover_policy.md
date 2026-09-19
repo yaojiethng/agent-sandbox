@@ -25,7 +25,7 @@ A well-written handover orients the next iteration. A missing or incomplete hand
 
 ## File Naming Standard
 
-```
+```text
 YYYYMMDD-NN-TYPE-description.md
 ```
 
@@ -195,24 +195,24 @@ Apply a correction only when the operator directs it. Reasons include a factual 
 2. Rewrite the entire affected paragraph (or section) in place. Do not leave inline markers such as a reference count or a `[see correction below]` label. The rewritten text reads as the record.
 3. Insert the correction tag as a block at the end of the corrected section, immediately before the start of the next section:
 
-```
+```text
 ---
 [CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
 ---
 ```
 
-4. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
-5. Do not alter the Status, timestamps, or any other metadata field.
-6. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
+1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
+2. Do not alter the Status, timestamps, or any other metadata field.
+3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
 
-  - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
-  - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
-  - If the finding is a deferred item for the next iteration, add it to Deferred items in the active handover.
-  - If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.
+- If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
+- If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
+- If the finding is a deferred item for the next iteration, add it to Deferred items in the active handover.
+- If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.
 
    The correction tag must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).
 
-7. Propose the amended handover to the operator. Do not self-commit.
+1. Propose the amended handover to the operator. Do not self-commit.
 
 ### What this is not
 

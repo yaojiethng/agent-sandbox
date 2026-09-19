@@ -46,7 +46,7 @@ Land the thermo-nuclear review findings (F1-F8) from the fresh-subagent review o
 | **F3** | `: "${INTERACTIVE_MAX_ENTRIES:=10}"` in `src/libs/common.sh` (single canonical home); `interactive.sh` sources common.sh, drops its literal; resume derives `RESUME_LIST_PAGE_SIZE="$INTERACTIVE_MAX_ENTRIES"` (sources common.sh). |
 | **F4** | `--list` cap via slice `${RESUME_INVENTORY[@]:0:$PAGE}` + subtraction footer (deleted `shown`/`remaining`); `_no_sessions` helper dedupes the empty-inventory error across `--list`/`--interactive`. |
 | **F5** | `tests/libs/sig_helpers.sh` (`sandbox_sig`/`agent_sig`/`fresh_sig_map`); sourced by test_prune/test_resume/test_trace_build; three copies deleted. |
-| **F6** | `_check_container_sig` uses `local st="$(image_is_stale ...)"` + exact `case "$st" in stale|unknown|fresh)` -- trailing-space hack and prefix-match removed. |
+| **F6** | `_check_container_sig` uses `local st="$(image_is_stale ...)"` + exact `case "$st" in stale\|unknown\|fresh)` -- trailing-space hack and prefix-match removed. |
 | **F7** | Picker marks ONLY stale states (`[STALE]`/`[IMG-STALE]`); fresh/unknown render no marker (no more `[img-ok]` for an uninspectable/unknown image). |
 | **F8** | Dropped the dead literal `stale` field from prune Rule-1 pipe contract (emit + read + header); trailing newline added to `container_sig.sh`; tool_interface + sandbox_lifecycle Rule-1 text now state default `STALE` selects sandbox OR image. |
 

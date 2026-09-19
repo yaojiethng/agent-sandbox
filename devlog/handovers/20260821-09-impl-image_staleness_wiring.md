@@ -29,10 +29,10 @@ Wire **image-staleness detection** into prune so `make prune STALE=image` select
 
 | File | Change |
 |---|---|
-| `src/libs/container_sig.sh` | NEW shared lib: `container_sig`, `_sandbox_sig_sources`, `_agent_sig_sources` (moved from build.sh) + `image_is_stale` predicate (`fresh|stale|unknown`) |
+| `src/libs/container_sig.sh` | NEW shared lib: `container_sig`, `_sandbox_sig_sources`, `_agent_sig_sources` (moved from build.sh) + `image_is_stale` predicate (`fresh\|stale\|unknown`) |
 | `scripts/build.sh` | Source the lib; remove local sig fns; `_check_container_sig` delegates to `image_is_stale` (single criterion for build + prune) |
 | `scripts/prune.sh` | Source container_sig lib; `STALE=image` selects image-stale records; `STALE=all`/unset = sandbox OR image; `record_image_stale` derives images from the record's agent-image line; removed the "not yet implemented" guard; help/header updated |
-| `scripts/templates/Makefile.template` | `STALE=sandbox|image|all` documented; removed "not yet implemented" |
+| `scripts/templates/Makefile.template` | `STALE=sandbox\|image\|all` documented; removed "not yet implemented" |
 | `test/stubs/docker` | `docker image inspect` container-sig via `DOCKER_STUB_IMAGE_SIG_LABELS` (per-image map) / `DOCKER_STUB_IMAGE_SIG_LABEL` fallback |
 | `tests/test_prune.sh` | NEW image-staleness property tests: selects image-stale, keeps image-fresh (recomputed per-image sigs), `STALE=all` OR semantics (image-stale+sandbox-fresh pruned by all, kept by sandbox-only) |
 | `tests/test_trace_stop.sh` | `--stale=image` selects+removes image-stale record (replaces not-implemented guard) |

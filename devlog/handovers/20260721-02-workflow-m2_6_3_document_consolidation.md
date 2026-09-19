@@ -42,7 +42,7 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 ## Key files modified this session
 
-*(Null: no files yet)*
+(Null: no files yet)
 
 ## Acceptance criteria
 

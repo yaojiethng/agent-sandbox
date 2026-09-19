@@ -41,4 +41,4 @@ Clear the ShellCheck warning baseline recorded at handover `20260823-07` (31 war
 
 ## Deferred items
 
-_(none)_
+(none)

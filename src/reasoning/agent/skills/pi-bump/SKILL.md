@@ -87,7 +87,7 @@ container start regardless).
 
 ### 5. Commit
 
-```
+```text
 workflow: bump pi to <NEW> and codify the bump procedure
 ```
 

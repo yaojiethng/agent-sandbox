@@ -24,7 +24,7 @@ mkdir /path/to/<project>-sandbox
 
 After onboarding, the layout will be:
 
-```
+```text
 WORKDIR/
 ├── <project-dir>/              ← PROJECT_DIR (git repo, untouched by harness)
 └── <project-dir>-sandbox/      ← SANDBOX_DIR (harness workspace)

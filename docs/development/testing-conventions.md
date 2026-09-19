@@ -291,7 +291,7 @@ When testing a CLI dispatch layer that routes flags to subcommand scripts:
 exec() { echo "capture: exec $*"; }
 ```
 
-2. **Create mock scripts** in a temp directory and point `SCRIPTS` at it:
+1. **Create mock scripts** in a temp directory and point `SCRIPTS` at it:
 
 ```bash
 MOCK_DIR=$(mktemp -d)
@@ -302,7 +302,7 @@ chmod +x "$MOCK_DIR/start_agent.sh"
 SCRIPTS="$MOCK_DIR"
 ```
 
-3. **Resolve placeholder variables** before sourcing the harness:
+1. **Resolve placeholder variables** before sourcing the harness:
 
 ```bash
 resolved=$(mktemp)
@@ -312,7 +312,7 @@ source "$resolved"
 rm -f "$resolved"
 ```
 
-4. **Parse captured output** by filtering stdout lines with a marker:
+1. **Parse captured output** by filtering stdout lines with a marker:
 
 ```bash
 CAPTURED=()

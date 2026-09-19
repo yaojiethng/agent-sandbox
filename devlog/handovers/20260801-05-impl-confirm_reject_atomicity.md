@@ -25,7 +25,7 @@ Both mechanisms use the same savepoint tag pattern proven in `draft.sh`: local t
 
 ### confirm savepoint
 
-```
+```text
 confirm_run:
   1. git tag confirm-savepoint              # savepoint — tag current HEAD
   2. Drop .draft-state commit (rebase --onto)
@@ -41,7 +41,7 @@ confirm_run:
 
 `reject` doesn't need a savepoint. The two operations (`checkout` + `branch -D`) are chained with `&&` -- if checkout fails, nothing changed. If checkout succeeds, branch delete is guaranteed (the branch exists by prior validation). No partial state possible.
 
-```
+```text
 reject_run:
   1. git checkout "$source_branch" && git branch -D "$CURRENT_BRANCH"
 ```

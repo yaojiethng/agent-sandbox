@@ -13,7 +13,7 @@ Scope the Phase 1.5 implementation: volume-based session persistence without the
 
 ### Decision diagram (persisted in docs/)
 
-```
+```text
 make start (no REFRESH)
   │
   ├─ .run-identity exists?  (host file in SANDBOX_DIR)
@@ -55,7 +55,7 @@ make start REFRESH=1
 
 **Solution:** `$SANDBOX_DIR/.run-identity` stores the session identity for the current volume. Written once at first start, read back on resume, deleted on REFRESH.
 
-```
+```text
 # .run-identity format (key=value, one per line)
 SESSION_TS=20260622-104203
 RUN_ID=abc123
@@ -70,7 +70,7 @@ SANDBOX_ID=12345678
 
 ### Init gating in capability entrypoint
 
-```
+```text
 Volume's sandbox/.git/HEAD resolves?
   ├── No  → ERROR: "Volume has no valid git state. Use REFRESH=1 to recreate."
   │         Container exits with non-zero.

@@ -28,7 +28,7 @@ None.
 | 2 | The reconciliation report exists with the full updated disposition table | `head -5 recovery-pre-clean-report.md` -> file exists with "Disposition table" header |
 | 3 | The bootstrap handover is updated with confirmed AC and closed status | `grep "Status:" docs/devlog/handovers/20260501-03-plan-pre_clean_bootstrap.md` -> shows `Closed` |
 | 4 | No code changes were made | `git diff --name-only -- libs/ scripts/ tests/ Makefile*` -> empty (only docs/devlog/ files may change) |
-| 5 | Tree remains green | `scripts/run_tests.sh 2>&1 | tail -3` -> exits 0 |
+| 5 | Tree remains green | `scripts/run_tests.sh 2>&1 \| tail -3` -> exits 0 |
 
 ## Hot files
 

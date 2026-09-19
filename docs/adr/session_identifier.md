@@ -6,7 +6,7 @@
 
 **Decision:** The session identifier is derived in one hash over all three identity factors, with the sandbox directory canonicalized first:
 
-```
+```text
 SESSION_ID = sha256(canon(SANDBOX_DIR) : HOST_HEAD_SHA : SESSION_TS)[0:6]
 ```
 
@@ -31,7 +31,7 @@ Migration is forward-only: resume reads `SESSION_ID` off the record filename and
 
 **Decision:** Container identity is hash-based, not timestamp-based, derived from two factors -- sandbox instance (`SANDBOX_DIR` + `HOST_HEAD_SHA`) and session timestamp (`SESSION_TS`) -- encoded as a short hash in container names and artefact paths:
 
-```
+```text
 SANDBOX_ID = sha256(SANDBOX_DIR : HOST_HEAD_SHA)[0:8]
 SESSION_ID = sha256(SESSION_TS : SANDBOX_ID)[0:6]
 ```

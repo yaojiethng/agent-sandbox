@@ -27,17 +27,17 @@ tracked:
 ## Scope
 
 - **Operator-confirmed scope (reproduced exactly):**
- - Item 1 -- Add a header comment + `help` section pointer in the repo-root
+- Item 1 -- Add a header comment + `help` section pointer in the repo-root
    `Makefile` directing to `scripts/templates/Makefile.template` as the canonical
    home of run/lifecycle commands. No stubbed no-op targets.
- - Item 2 -- Fix the `start_agent.sh` line 18 docstring: drop `(default:
+- Item 2 -- Fix the `start_agent.sh` line 18 docstring: drop `(default:
    opencode)`, document `--provider` as required. No code behavior change --
    the no-default behavior is intentional.
- - Item 3 -- Give `start_agent.sh` a real `usage()` (full help string: modes
+- Item 3 -- Give `start_agent.sh` a real `usage()` (full help string: modes
    `standard|serve|dry-run`, all args + meanings, `--provider` required) and
    handle `--help|-h` before mode validation. Route the CLI so both
    `agent-sandbox start --help` and `agent-sandbox help start` reach it.
- - Item 4 (operator-added) -- Include the `--help` flag and `make help` shape in
+- Item 4 (operator-added) -- Include the `--help` flag and `make help` shape in
    tests as far as possible.
 - **Not in scope:** adding a provider default (explicitly rejected by operator);
   prune-stale-regardless-of-age semantics (deferred to M2.6.6); any M2.6 mount
@@ -61,7 +61,7 @@ tracked:
 | 1 | Repo-root `Makefile` help + header pointer to the sandbox Makefile template | done | read the file |
 | 2 | `start_agent.sh` `--provider` docstring no longer claims a default; states required | done | grep for `default: opencode` -- zero live hits |
 | 3 | `agent-sandbox start --help`, `--help` on serve/dry-run, and `agent-sandbox help start` all print the full usage string without error | done | run CLI |
-| 4 | `start_agent.sh` handles `--help|-h` via `usage()` before mode validation | done | run script |
+| 4 | `start_agent.sh` handles `--help\|-h` via `usage()` before mode validation | done | run script |
 | 5 | New/updated tests cover `--help` flag + `make help` shape; full suite green | done | `make test` (run via `bash scripts/run_tests.sh`) |
 | 6 | Zero stale `default: opencode` notarizations remain in live docs/scripts | done | grep |
 
@@ -71,7 +71,7 @@ tracked:
 |---|---|
 | [Makefile](../../Makefile) | header comment + help pointer to template |
 | [scripts/templates/Makefile.template](../../scripts/templates/Makefile.template) | canonical home of run/lifecycle commands (reference for pointer) |
-| [scripts/start_agent.sh](../../scripts/start_agent.sh) | docstring fix + `usage()` + `--help|-h` handling |
+| [scripts/start_agent.sh](../../scripts/start_agent.sh) | docstring fix + `usage()` + `--help\|-h` handling |
 | [scripts/agent-sandbox.sh](../../scripts/agent-sandbox.sh) | CLI routing of `--help` for start/serve/dry-run |
 | [tests/test_dispatch.sh](../../tests/test_dispatch.sh) | dispatch oracle tests for `--help` routing |
 | [tests/test_common_lib.sh](../../tests/test_common_lib.sh) | shared help-flag convention tests (reference) |
@@ -82,9 +82,9 @@ tracked:
 |---|---|---|
 | 1 | No provider default -- `--provider` is always required; only the docs are fixed | Operator-directed; deliberate, matches handover `20260325-04` |
 | 2 | Root Makefile gets a pointer, not stubbed no-op targets | Avoids a false "works here" surface in the repo root |
-| 3 | `start_agent.sh` adopts the shared `usage()` + `parse_help_flag` convention from `src/libs/common.sh` | Source `common.sh` (same pattern as `stop.sh`/`prune.sh`); use `parse_help_flag` for `--help|-h`; the dispatcher keeps a local`wants_help` predicate because it must delegate to `start_agent.sh --help` rather than print usage itself |
+| 3 | `start_agent.sh` adopts the shared `usage()` + `parse_help_flag` convention from `src/libs/common.sh` | Source `common.sh` (same pattern as `stop.sh`/`prune.sh`); use `parse_help_flag` for `--help\|-h`; the dispatcher keeps a local`wants_help` predicate because it must delegate to `start_agent.sh --help` rather than print usage itself |
 | 4 | Help surface tested via `test_dispatch.sh` (routing) + `test_start_agent.sh` (`usage()` output) | Operator: "include in tests as far as possible" |
-| 5 | CLI help guard is a pure `wants_help` predicate (no side effects), not a helper that runs/returns | Thermo-nuclear review: dropped dead `mode` param + `|| true`/`return 1` contract |
+| 5 | CLI help guard is a pure `wants_help` predicate (no side effects), not a helper that runs/returns | Thermo-nuclear review: dropped dead `mode` param + `\|\| true`/`return 1` contract |
 | 6 | Test names avoid encoding syntax (no `dashdash`/`short_dash_h`); routing tests loop over modes | Operator naming feedback; matches existing `test_serve_mode`/`test_help_apply` conventions |
 | 7 | Reuse `parse_help_flag` in `start_agent.sh` rather than a hand-rolled `--help` loop | Operator: Option A -- source `common.sh`, use the canonical helper so all three routing scripts follow one pattern |
 | 8 | "SCRIPT_DIR clobber" is benign for start_agent.sh today but is a latent landmine | Empirically verified immediate behavior is safe (BASH_SOURCE[1] resolves to same scripts/ value), but the clobber is coincidental, not contractual -- see Mid-session Finding B; fix deferred |
@@ -96,7 +96,7 @@ Recorded for a subsequent session; the root-cause fixes are **deferred**, not im
 **Finding A -- `--help` is broken for *every* subcommand, not just start (systemic CLI bug).**
 The dispatcher validates required args before delegating to the child script. Each leaf script (`stop.sh`, `prune.sh`) follows the convention `parse_help_flag "$@"` **before** `check_base_flags`, so the child *would* handle `--help` cleanly -- but never gets control, because the CLI rejects on missing required args first. Verified empirically:
 
-```
+```text
 agent-sandbox stop --help    → fail  ("Error: --name and --sandbox are required")
 agent-sandbox build --help   → fail
 agent-sandbox apply --help   → fail
@@ -125,8 +125,8 @@ The start/serve/dry-run cases are the only ones where the CLI intercepts `--help
 
 | File | Change |
 |---|---|
-| [scripts/start_agent.sh](../../scripts/start_agent.sh) | `--provider` docstring: dropped `(default: opencode)` -> required; added full `usage()`; added clear required-provider diagnostic (no default, behaviour unchanged); sources `common.sh` and uses `parse_help_flag` for `--help|-h` (reuses canonical helper instead of hand-rolled loop) |
-| [scripts/agent-sandbox.sh](../../scripts/agent-sandbox.sh) | `wants_help` predicate: `start`/`serve`/`dry-run --help|-h` route to `start_agent.sh --help` before `require_base_args` (replaces an earlier dead-parameter `help_or_run_start_agent` wrapper) |
+| [scripts/start_agent.sh](../../scripts/start_agent.sh) | `--provider` docstring: dropped `(default: opencode)` -> required; added full `usage()`; added clear required-provider diagnostic (no default, behaviour unchanged); sources `common.sh` and uses `parse_help_flag` for `--help\|-h` (reuses canonical helper instead of hand-rolled loop) |
+| [scripts/agent-sandbox.sh](../../scripts/agent-sandbox.sh) | `wants_help` predicate: `start`/`serve`/`dry-run --help\|-h` route to `start_agent.sh --help` before `require_base_args` (replaces an earlier dead-parameter `help_or_run_start_agent` wrapper) |
 | [Makefile](../../Makefile) | Header comment + help section pointing to `scripts/templates/Makefile.template` as canonical home of run/lifecycle commands |
 | [tests/test_dispatch.sh](../../tests/test_dispatch.sh) | Tests: `help_flag_routes_run_modes_to_start_agent` (loop over 3 modes), `help_start_subcommand`; collapses earlier triplicated routing tests |
 | [tests/test_start_agent.sh](../../tests/test_start_agent.sh) | Tests: `help_flag_prints_full_usage` functional, `help_short_flag` functional, `no_default_provider` doc check; deduplicated duplicated `run_test` block; dropped brittle "no default" prose assertion |

@@ -115,9 +115,5 @@ M2.5 is the next active sub-milestone. The first task is "Validate vault workflo
 cat docs/discussions/investigation_mcp_server.md | grep -A5 "candidates table"
 ```
 
-## Next session
-
-Not yet defined.
-
 ---
 [CORRECTION -- 2026-05-06]: Status corrected from "`Closed`" (backtick-wrapped) to standard "Closed" per handover_policy.md. See 20260506-01-workflow-handover_audit_and_corrections.md.

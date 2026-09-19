@@ -76,10 +76,10 @@ If the argument already names the workflow intent and the branch line, use them;
 
 Answer these four during this iteration.
 
-3. Project primer: one to three sentences on what the project does; which parts are current and which are legacy; where config lives; anything that must not be touched.
-4. Goal and definition of done: the first milestone line for `roadmap.md`.
-5. Verification contract: tests run operator-side or in the capability layer - this container may lack the runtimes. State the test command. State whether network calls are permitted; assume offline-only unless the operator says otherwise.
-6. Convention overrides: commit-type vocabulary, language, and whether feedback and gotchas entries are welcome.
+1. Project primer: one to three sentences on what the project does; which parts are current and which are legacy; where config lives; anything that must not be touched.
+2. Goal and definition of done: the first milestone line for `roadmap.md`.
+3. Verification contract: tests run operator-side or in the capability layer - this container may lack the runtimes. State the test command. State whether network calls are permitted; assume offline-only unless the operator says otherwise.
+4. Convention overrides: commit-type vocabulary, language, and whether feedback and gotchas entries are welcome.
 
 ## Materialize
 

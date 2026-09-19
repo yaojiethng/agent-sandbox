@@ -58,7 +58,7 @@ The recovery design document `recovery-design-step-b.md` was written during an e
 
 **Two-step picker:**
 
-```
+```text
 Step 1 — Pick channel:
   Available channels:
     1: session     (3 entries, newest: 20260504-120000-feature-X)
@@ -90,7 +90,7 @@ Step 2 — Pick session entry:
 
 **Three-step picker:**
 
-```
+```text
 Step 1 — Pick channel:
   Available channels:
     1: diffs        (2 entries, newest: 20260504-120000-snapshot)
@@ -116,7 +116,7 @@ Step 3 — Pick diff type:
 
 **When `--diff=<path>` is supplied** -- all three steps are skipped. Interactive mode shows the resolved path and a confirmation prompt:
 
-```
+```text
 Apply: /path/to/explicit.diff
 
 Proceed? [y/N]
@@ -126,7 +126,7 @@ Proceed? [y/N]
 
 When both `--channel` and `--session` are provided, both selection steps are skipped. Interactive mode shows the full patch list and prompts for confirmation:
 
-```
+```text
 Draft from: 20260504-120000-feature-X
   Patches:
     0001-abc1234.diff
@@ -138,7 +138,7 @@ Proceed? [y/N]
 
 ### 3.4. Table Layout
 
-```
+```text
 Available sessions (<channel>):
   1: <SESSION_TS>-<BRANCH>              patches: ✓  uncommitted: ✓
   2: <SESSION_TS>-<BRANCH>              patches: ✓  uncommitted: ✗
@@ -151,7 +151,7 @@ Selection [1-N, q to quit, Enter for default]:
 - Availability indicators: right-aligned, `patches: [x]/[ ]`, `uncommitted: [x]/[ ]`
 - Default entry: shown at position 1 (newest), marked with `(default)` hint in the prompt line
 - Max entries: capped at 10, hardcoded as `INTERACTIVE_MAX_ENTRIES=10` at top of script
-- Overflow: when more than 10 entries, append "... and N more. Use SESSION=<name> to select older sessions directly."
+- Overflow: when more than 10 entries, append "... and N more. Use SESSION=`<name>` to select older sessions directly."
 - Zero entries: print "No sessions available." and exit non-zero
 - `q` or empty input at any step: abort with exit 1
 - Invalid number: re-prompt
@@ -288,15 +288,15 @@ INTERACTIVE ?=
 DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
 draft:
-	agent-sandbox draft \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --channel=$(DRAFT_CHANNEL) \
-	  $(if $(SESSION),--session=$(SESSION),) \
-	  $(if $(INTERACTIVE),--interactive,) \
-	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
-	  $(if $(DIFFS),--diffs=$(DIFFS),) \
-	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
+ agent-sandbox draft \
+   --project=$(PROJECT_DIR) \
+   --sandbox=$(SANDBOX_DIR) \
+   --channel=$(DRAFT_CHANNEL) \
+   $(if $(SESSION),--session=$(SESSION),) \
+   $(if $(INTERACTIVE),--interactive,) \
+   $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
+   $(if $(DIFFS),--diffs=$(DIFFS),) \
+   $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
 ```
 
 **Operator migration:** `BUNDLE=1` -> `FROM=bundles`, `AUTOSAVE=1` -> `FROM=autosave`. One variable, explicit channel names, no implicit mapping.
@@ -401,7 +401,7 @@ File: `tests/test_interactive_session_select.sh`
 
 ## 6. Dependency Ordering
 
-```
+```text
 Unit 1 (interactive_session_select.sh)
   │
   ├──► Unit 2 (apply wiring — depends on Unit 1)

@@ -78,14 +78,6 @@ Grep-mapped exact locations (post-`20260821-03` refactor, which introduced the s
 
 ## Completed
 
-| File | Change |
-|---|---|
-| `devlog/handovers/20260821-04-impl-strip_resume_from_start.md` | Created this impl handover (strip `--resume`/`_auto_resume_or_new` from `start`; fold in the two post-close items) |
-| `scripts/resume_agent.sh` | **(pre-folded, uncommitted)** help Makefile forms -> `LIST=1`/`INTERACTIVE=1` |
-| `devlog/AGENT_FEEDBACK.md` | **(pre-folded, uncommitted)** Class A staleness-guard entry |
-
-## Completed
-
 | File | Change | Status |
 |---|---|---|
 | `devlog/handovers/20260821-04-impl-strip_resume_from_start.md` | Created this impl handover (strip `--resume`/`_auto_resume_or_new` from `start`; fold in the two post-close items) | done |

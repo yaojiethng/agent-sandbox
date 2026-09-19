@@ -49,14 +49,6 @@ None.
 | Procedural (operator-directed): run-context items (state the model/thinking level in the brief; capture to a log file; resume needs an explicit continuation prompt; startup warnings are noise) recorded into the seeded pi `AGENTS.md` subagent section; suggested models/thinking (`deepseek-v4-flash` xhigh, `glm-5.3-flash` high) added to `review-pass-run.md` and the thermo-nuclear skill | steering | pi AGENTS.md / skills / AGENT_FEEDBACK.md |
 | Procedural (logged to AGENT_FEEDBACK.md): (a) round-cap framing fits correctness reviews, not model-consensus passes; (b) name the base commit/range in review directives; (c) "pi's AGENTS.md" is ambiguous between the runtime copy and the seeded source | steering | AGENT_FEEDBACK.md |
 
-## Decision
-
-Not yet defined.
-
-## Findings
-
-None.
-
 ## Completed
 
 | File | Change |

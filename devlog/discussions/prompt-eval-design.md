@@ -13,7 +13,7 @@ The system is designed to be extended to any prompt template or skill, with a fi
 
 ## Directory Structure
 
-```
+```text
 prompt-eval/
 ├── README.md                        ← system overview and how to run
 ├── index.md                         ← case registry with status and scores
@@ -221,7 +221,7 @@ The judge model reads the case definition and the model output, then produces a 
 
 ### System prompt (`judge/judge-prompt.md`)
 
-```
+```text
 You are an evaluator for prompt template behavioral tests.
 
 You will be given:
@@ -295,7 +295,7 @@ A run is parameterized by:
 
 The runner iterates the following nested loop:
 
-```
+```text
 for each model in models:
   for each prompt_version in prompt_versions:
     for each case matching case_filter:
@@ -311,13 +311,13 @@ write report to runs/<run_id>/report.md
 
 ### Implementation options
 
-**Option A -- Model-driven loop (default)**
+#### Option A -- Model-driven loop (default)
 
 A reasoning model (e.g. the agent itself running in the harness) is given the run configuration and the cases directory. It iterates the loop, calls the API for each case, calls the judge model, writes output files, and produces the report. The operator triggers the run and reviews the report on completion.
 
 Start here. Lower infrastructure cost. Sufficient for most use cases.
 
-**Option B -- Code-driven harness**
+#### Option B -- Code-driven harness
 
 A script using the Anthropic SDK iterates the loop programmatically. Tool call interception (Tier 2 execution) is implemented here. More reliable for large case sets and for cases requiring intercept execution.
 

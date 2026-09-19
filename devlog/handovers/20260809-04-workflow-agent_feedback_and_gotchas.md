@@ -13,12 +13,12 @@ Run a workflow exploration session (grill-me style) to design two operator-facin
 
 Exploration by conversation. No code/file changes beyond the summary artifacts at session end. The finalized workflow (to be fully implemented next session) comprises:
 
-**Documentation**
+### Documentation
 
 - `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` (flat, no-index, per-entry state, STE-clean).
 - Subsume `bash_complaints.md`.
 
-**Policy**
+### Policy
 
 - Expand Mid-session findings (shared stream; classify at publish).
 - Replace mid-session findings triage gate with review/publish step.
@@ -27,7 +27,7 @@ Exploration by conversation. No code/file changes beyond the summary artifacts a
 - AGENTS.md pointers.
 - Milestone lifecycle reframe (`active -> pre-close -> close`).
 
-**M3 (record only)**
+### M3 (record only)
 
 - Sub-milestone-containment finding; close-script automation; re-word linear/next-task tasks.
 
@@ -96,8 +96,8 @@ None.
 
 ## Mid-session findings
 
-| Finding | Type | Impact |
-|---|---|---|
+| # | Finding | Type | Impact | Triaged to |
+|---|---|---|---|---|
 | 1 | Session is exploration-by-conversation; deliverables = summary artifacts + finalized workflow; implementation to follow | scope change | current unit | Triaged to: Decisions 3, 4, 25 |
 | 2 | Operator repeated original decisions 1 & 2 (two files; subsume bash_complaints) | steering | settled | Triaged to: Decisions 1, 2 |
 | 3 | Probation concerns: changelog-scan isn't reliable; fixes can resurface; dead fixes are maintenance weight | design | informed decisions 9-13 | Triaged to: Decisions 9-13 |

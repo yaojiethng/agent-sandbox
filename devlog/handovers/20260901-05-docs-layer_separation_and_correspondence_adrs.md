@@ -83,7 +83,7 @@ impl (roadmap 158), pre-existing broken links (candidate `chore`).
 ## Completed
 
 - Wrote `docs/adr/agent_sandbox_two_container_separation.md` (current entry
-  + fused-model historical entry with why-rejected; cross-links to delivery
+  - fused-model historical entry with why-rejected; cross-links to delivery
   model and session identifier).
 - Wrote `docs/adr/container_host_correspondence_mechanism.md` (single current
   entry; git-mediated correspondence and stateful apply tracking as rejected
@@ -100,8 +100,6 @@ impl (roadmap 158), pre-existing broken links (candidate `chore`).
 - Original settlement dates are unrecoverable (git history squashed to a
   baseline); entries are dated with the recording date (2026-09-01) and name
   the originating milestone/investigation in the entry text (D4).
-
-## Findings
 
 - Both rationales already exist in prose; no new design decisions needed --
   this is distillation, not settlement.

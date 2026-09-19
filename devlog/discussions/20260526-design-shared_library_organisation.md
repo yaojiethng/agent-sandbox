@@ -62,7 +62,7 @@ Current deployment of packaging files:
 
 ## Proposed Structure
 
-```
+```text
 build/                                    # Build-time only (host side)
   image.sh                                # Image naming: agent_base_image_name,
                                           #   agent_image_name, sandbox_image_name

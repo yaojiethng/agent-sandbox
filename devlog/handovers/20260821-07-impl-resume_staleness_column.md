@@ -19,7 +19,7 @@ The volume/sandbox staleness criterion (`agent-sandbox.host-head-sha` != current
 
 `scripts/resume_agent.sh` builds `RESUME_INVENTORY` as `SESSION_ID|provider|session-ts|branch` (newest first), optionally filtered by provider, and renders:
 
-```
+```text
 Resumable sessions (make resume SESSION_ID=<id>):
   <sid><-8>  <provider><-10>  <session-ts><-17>  <branch>
 ```

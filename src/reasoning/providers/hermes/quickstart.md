@@ -178,7 +178,7 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 **WSL path errors**
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
-**Line ending issues in scripts or config files**
+### Line ending issues in scripts or config files
 
 ```sh
 sed -i 's/\r//' <file>
@@ -208,7 +208,7 @@ services:
     command: ["hermes", "gateway", "--host", "0.0.0.0"]
 ```
 
-**Confirm cross-container connectivity**
+### Confirm cross-container connectivity
 
 ```sh
 # From inside the Open WebUI container
@@ -219,7 +219,7 @@ docker exec hermes-agent-<PROJECT_NAME>-open-webui curl -s \
 
 A valid JSON response confirms the connection is working. `Connection refused` means Hermes is not bound to `0.0.0.0`.
 
-**Confirm both containers are on the same network**
+### Confirm both containers are on the same network
 
 ```sh
 docker inspect hermes-agent-<PROJECT_NAME> \
@@ -230,9 +230,9 @@ docker inspect hermes-agent-<PROJECT_NAME>-open-webui \
 
 Both should show the same `NetworkID`.
 
-**Ollama connection errors in Open WebUI logs**
+### Ollama connection errors in Open WebUI logs
 
-```
+```text
 Cannot connect to host host.docker.internal:11434
 ```
 

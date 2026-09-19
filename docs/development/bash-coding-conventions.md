@@ -241,7 +241,7 @@ Notes:
 
 ### 2.1 Control flow graph
 
-```
+```text
 scripts/  ---> src/libs/, src/build/     host scripts source shared libs
 scripts/  ---> scripts/                  may source other scripts if logically
                                           a library (e.g. checkpoint.sh)

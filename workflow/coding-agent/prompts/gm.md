@@ -50,7 +50,7 @@ One row per open work item. The sample row below is illustrative, not a live ite
 
 | Item | Type | Size | Progress | Impact | Verification |
 |---|---|---|---|---|---|
-| <work item> -- <roadmap entry, handover, or feedback entry that names it> | chore | small | deferred, no pickup date | cosmetic | offline `make test` |
+| `<work item>` -- `<roadmap entry, handover, or feedback entry that names it>` | chore | small | deferred, no pickup date | cosmetic | offline `make test` |
 
 Field meanings:
 

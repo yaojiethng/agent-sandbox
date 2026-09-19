@@ -57,15 +57,6 @@ Suspected **abuse** (probing our own maintained, modern seams as if external -> 
 
 (none yet)
 
-## Completed this session
-
-- [x] Read current testing-policy knowledge-test convention
-- [x] Inventoried all `tests/knowledge/` files (13) and audited the `knowledge_*.sh` subset against the external-vs-internal seam test
-- [x] Confirmed the runner glob (`tests/test_*.sh`, non-recursive) excludes `tests/knowledge/` from `make test`
-- [x] Confirmed prior precedent: session `20260812-07` converted a maintained-pipeline knowledge test into unit tests
-- [x] Classified each suspect against the operator's two measures (promote-if-now-testable vs keep-in-integr/diagnostics)
-- [x] Audited the 6 skipped tests to the exact skip sites
-
 ## Important discrepancy (flags before implementing)
 
 The operator's stated premise: the 6 skipped tests "cannot be run due to lack of certain utilities inside the container." **The code disagrees.** The exact 6 skips (fresh run) are:
@@ -117,6 +108,13 @@ All three wrongly-classified knowledge tests probe **pure, host-sourceable inter
 - [x] Stale/wrong policy wording removed (knowledge-test section rewritten); cross-refs updated
 
 ## Completed this session
+
+- [x] Read current testing-policy knowledge-test convention
+- [x] Inventoried all `tests/knowledge/` files (13) and audited the `knowledge_*.sh` subset against the external-vs-internal seam test
+- [x] Confirmed the runner glob (`tests/test_*.sh`, non-recursive) excludes `tests/knowledge/` from `make test`
+- [x] Confirmed prior precedent: session `20260812-07` converted a maintained-pipeline knowledge test into unit tests
+- [x] Classified each suspect against the operator's two measures (promote-if-now-testable vs keep-in-integr/diagnostics)
+- [x] Audited the 6 skipped tests to the exact skip sites
 
 - [x] Wrote the Test Placement rule + `make test` invariant into `testing_policy.md`/`testing-conventions.md`
 - [x] Created `tests/test_dirs.sh` (unit test of `src/libs/dirs.sh` path resolution; 5 assertions)

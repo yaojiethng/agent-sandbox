@@ -44,7 +44,7 @@ By convention the sandbox directory is named `<project-dir>-sandbox` and sits al
 
 After onboarding, `SANDBOX_DIR` contains:
 
-```
+```text
 <project-dir>-sandbox/
 ├── Makefile
 ├── .env

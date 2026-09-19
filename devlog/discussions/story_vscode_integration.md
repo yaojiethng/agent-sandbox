@@ -219,7 +219,7 @@ Task names appear in Command Palette (`Ctrl+Shift+P -> Tasks: Run Task`). Each r
 
 Multiple integrated terminal panes, each started via Command Palette or split terminal:
 
-```
+```text
 Terminal 1 (SANDBOX_DIR, B0): make commands, git, general ops
 Terminal 2 (docker attach <provider>-agent-<project>, B1): live agent TTY
 Terminal 3 (docker exec -it <provider>-agent-<project> bash, B2): inspection shell
@@ -231,7 +231,7 @@ No harness change. VSCode supports multiple terminal panes per window. **(unveri
 
 Once the harness containers are running, from VSCode Command Palette:
 
-```
+```text
 Dev Containers: Attach to Running Container...
 → select sandbox-<project>
 → workspaceFolder: /home/agentuser/sandbox
@@ -356,7 +356,7 @@ code --version
 # x64
 ```
 
-**(unverified -- community-documented pattern; download URL format confirmed from VSCode update infrastructure. Needs hands-on confirmation that the path and binary are picked up correctly on attach. Version coupling is a real maintenance cost -- evaluate against actual attach latency before committing to this.)**
+(unverified -- community-documented pattern; download URL format confirmed from VSCode update infrastructure. Needs hands-on confirmation that the path and binary are picked up correctly on attach. Version coupling is a real maintenance cost -- evaluate against actual attach latency before committing to this.)
 
 ### Axes of the integration design
 

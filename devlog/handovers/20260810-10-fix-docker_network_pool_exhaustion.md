@@ -42,15 +42,15 @@ exhausted.
 **Doc (part of the fix -- doc drift is a bug):**
 5. `docs/architecture/execution_model.md`:
 
-   - Correct the stale anonymous-volume text (lines 127-129) -- the current
+- Correct the stale anonymous-volume text (lines 127-129) -- the current
      design uses a NAMED RUN_ID volume for sandbox/, not the anonymous
      `--volumes-from` design the doc describes.
-   - Add a **Container State Contract** subsection (Session Lifecycle):
+- Add a **Container State Contract** subsection (Session Lifecycle):
      container writable layer holds only regenerable config (copy-in) + caches;
      all user-authored state lives in the named volume + bind mounts. The
      container is disposable; resume comes from the volume. This is the
      as-expected record for future environment-setup features.
-   - Note the docker verb-semantics mismatch (`start`/`stop`/`down` vs ours).
+- Note the docker verb-semantics mismatch (`start`/`stop`/`down` vs ours).
 
 ## Mid-session findings (to record)
 
@@ -71,6 +71,6 @@ persistence (finding 2); docker-verb renaming (finding 3); build-output UX fix
 |---|---|
 | Docker build-output single-line progress fix | next session (operator split) |
 | run_agent unified teardown refactor | mid-session finding 1 |
-| compose-file persistence (.compose/<run-id>.yml) | mid-session finding 2 |
+| compose-file persistence (.compose/`<run-id>`.yml) | mid-session finding 2 |
 | docker-verb semantics decision | mid-session finding 3 |
 | `stop.sh` string-as-list -> array refactor (removes SC2086 disables) | mid-session finding 4 |

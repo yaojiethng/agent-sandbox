@@ -106,7 +106,7 @@ A **composition (Option D)** is adopted, per surface:
 
 ## Consequences
 
-**(Completed 20260901-02 with the Decision; see ADR.)**
+(Completed 20260901-02 with the Decision; see ADR.)
 
 - **Record schema**: adds the two `*-image-digest` labels; retires `image-sig`
   from new records; no `harness-head-sha` field. Older (two-sig) records do not

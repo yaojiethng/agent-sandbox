@@ -37,7 +37,7 @@ All packaging operations produce the same directory layout under their target ba
 
 ### Directory structure
 
-```
+```text
 <base>/
   EXPORT-TIME.txt              — audit trail timestamp
   patches/
@@ -220,7 +220,7 @@ The current `diff_on_exit` produces empty output because it runs the old code pa
 
 ## 7. Dependency Ordering
 
-```
+```text
 A.0 (sourceability)
   │
   ▼

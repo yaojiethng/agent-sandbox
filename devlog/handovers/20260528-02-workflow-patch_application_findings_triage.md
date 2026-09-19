@@ -34,9 +34,9 @@ None.
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
-| 1 | No `Running: make.*CHANNEL=` echo messages remain in `scripts/agent-sandbox.sh`; all 3 use `FROM=` | `grep 'Running: make.*FROM=' scripts/agent-sandbox.sh | wc -l` = 3; `grep 'Running: make.*CHANNEL=' scripts/agent-sandbox.sh | wc -l` = 0 | Agent |
+| 1 | No `Running: make.*CHANNEL=` echo messages remain in `scripts/agent-sandbox.sh`; all 3 use `FROM=` | `grep 'Running: make.*FROM=' scripts/agent-sandbox.sh \| wc -l` = 3; `grep 'Running: make.*CHANNEL=' scripts/agent-sandbox.sh \| wc -l` = 0 | Agent |
 | 2 | Makefile template errors if `CHANNEL=bundles` is passed | Make: pass `CHANNEL=bundles` to any target, exits 1 with error mentioning `FROM` | Agent |
-| 3 | `cli-conventions.md` has a Makefile variable validation section | `grep -n "^## \\|Makefile" docs/development/cli-conventions.md` shows new section | Agent |
+| 3 | `cli-conventions.md` has a Makefile variable validation section | `grep -n "^## \|Makefile" docs/development/cli-conventions.md` shows new section | Agent |
 | 4 | `story-patch_application_failures.md` has no `## Mid-session Findings` section | `grep -c "^## Mid-session" devlog/discussions/story-patch_application_failures.md` = 0 | Agent |
 | 5 | Proposed Fixes in story file updated: F1 resolved, F2-F6 closed; status reflects the triage | Read Proposed Fixes section | Operator |
 

@@ -34,8 +34,8 @@ Carried forward / NOT in scope: full preflight/dry-run logging into the unified 
 
 | # | Criterion | Status | Evidence |
 |---|---|---|---|
-| AC1 | `--list` renders aligned headers `SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`; STARTED + LAST_USED relative | MET | manual + `test_resume.sh` |
-| AC2 | Sorting remains newest-first by raw session-ts | MET | `build_inventory` `sort -t'|' -k3 -r` on raw ts unchanged |
+| AC1 | `--list` renders aligned headers `SESSION_ID \| PROVIDER \| STARTED \| BRANCH \| LAST_USED`; STARTED + LAST_USED relative | MET | manual + `test_resume.sh` |
+| AC2 | Sorting remains newest-first by raw session-ts | MET | `build_inventory` `sort -t'\|' -k3 -r` on raw ts unchanged |
 | AC3 | Stale shown as optional `[SANDBOX_STALE]`/`[IMAGE_STALE]` labels, not value columns | MET | `test_list_shows_{sandbox,image}_staleness`, `test_list_columns_are_independent` |
 | AC4 | `.compose/<sid>.log` written: last_stopped on teardown; last_started + cleared last_stopped on start/resume; running -> LAST_USED `---` | MET | `test_resume_writes_session_log`, `test_session_log.sh` |
 | AC5 | `--interactive` picker markers renamed + last_used surfaced | MET | `test_interactive_marks_image_stale` |

@@ -70,7 +70,7 @@ Trigger B: Not run (mid-milestone, no sub-milestone completed)
 **Conclusions from this session:** The directory model for the structural cleanup has been agreed:
 
 - `src/libs/` -- cross-target libs (dirs, session, routing, diff, snapshot, package_branch, package_diff)
-- `src/reasoning/` -- agent container (providers/<n>/, agent/, provider-entrypoint.sh, Dockerfiles)
+- `src/reasoning/` -- agent container (providers/`<n>`/, agent/, provider-entrypoint.sh, Dockerfiles)
 - `src/capability/` -- sandbox container (Dockerfile.sandbox, sandbox-entrypoint.sh)
 - `src/scripts/` -- host-level orchestration (all CLI entrypoints, workflow scripts, templates)
 - `src/build/` -- build pipeline code (compose templates, compose.sh, containers.sh)

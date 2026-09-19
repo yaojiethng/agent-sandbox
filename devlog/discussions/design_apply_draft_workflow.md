@@ -50,7 +50,7 @@ Channels are named directories under `CHANGES_DIR` or `OUTPUT_DIR`:
 
 Creates a review branch from the host's current HEAD, applies `patches/*.diff` sequentially, then applies `uncommitted.diff` if present.
 
-```
+```text
 make draft [SESSION=<name>] [FROM=<channel>]
 ```
 
@@ -62,7 +62,7 @@ If any patch fails mid-series, a local savepoint tag (`draft-savepoint`) rolls t
 
 Rebases the draft branch onto the target (default: source branch recorded in `.draft-state`), drops the `.draft-state` commit, fast-forward merges, and deletes the draft branch.
 
-```
+```text
 make confirm [TARGET=<branch>]
 ```
 
@@ -72,7 +72,7 @@ A local savepoint tag (`confirm-savepoint`) protects against mid-rebase failure.
 
 Discards the draft branch and returns to the source branch. Checkout and branch delete are chained atomically -- if checkout fails, the draft branch is preserved and the operator can retry.
 
-```
+```text
 make reject
 ```
 
@@ -80,7 +80,7 @@ make reject
 
 Direct-apply of a diff file to the working tree without branch or commit overhead. Used for recovery and mid-session sync.
 
-```
+```text
 make apply [CHANNEL=<channel>] [DIFF=<path>]
 ```
 

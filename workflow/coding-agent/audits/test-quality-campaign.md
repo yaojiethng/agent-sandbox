@@ -70,7 +70,7 @@ Only when the success criteria are met (or a hard external blocker appears), wri
 
 Then leave the test changes uncommitted in the working tree, and stop. Do not commit. End your output with a summary block the main agent can collect:
 
-```
+```text
 SESSION_DIR: <path>
 changes: <files changed>
 suite: <passed>/<failed>/<skipped>

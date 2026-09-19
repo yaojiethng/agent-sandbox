@@ -138,10 +138,6 @@ Open items from the roadmap policy audit, tracked here during the grill-me sessi
 | **G5** | Summary line governance | Remove floating prose summary -- `- [x]` task list is the visual summary. No governance rules needed. | [x] Resolved |
 | **G6** | Superseded item lifecycle | Remove immediately on supersession; rationale in session handover + discussion doc if architecturally significant. | [x] Resolved |
 
-## Deferred items
-
-None.
-
 ## Conclusions from this session
 
 - **Policy architecture settled.** Three amended documents (`roadmap_policy.md`, `handover_policy.md`, `iteration_policy.md`) with a coherent Step 7/8/9 flow -- compaction at session close after Gate 3, `- [x]`/`- [ ]` format, during-session marking with revert-on-disagreement.

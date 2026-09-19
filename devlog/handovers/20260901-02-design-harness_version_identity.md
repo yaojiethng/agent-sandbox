@@ -117,4 +117,4 @@ ADR-status discipline is being confirmed via the design grill.)
 
 ## Post-close correction
 
-*(none yet)*
+(none yet)

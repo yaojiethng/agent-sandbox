@@ -120,7 +120,7 @@ None.
 |---|---|---|
 | SNAPSHOT_DIR/CHANGES_DIR/INPUT_DIR/OUTPUT_DIR are currently resolved differently inside the container (from dirs.sh + ROOT) vs on the host (from `.env`). Could be unified behind a single interface that only varies the base path, eliminating the duplicate resolution logic. Identified during A.2 routing design but out of scope. | scope change | A.5 -- host path resolution unification |
 | Detecting `$HOME/workspace/output` for IN_CONTAINER logic is fragile -- assumes fixed container layout. Fix alongside finding #1. One host repo can have many SANDBOX_DIRs (one-to-many), so auto-deriving SANDBOX_DIR from REPO_ROOT is incorrect. Approach undecided -- could be a Makefile target, an explicit git alias with `--sandbox-dir=<path>`, or something else. | design gap | A.5 -- host path resolution (approach TBD) |
-| A.2 scope expansion (host path resolution) is valuable but would bloat this session. Better to schedule as A.5 after A.2, before A.3. A.2 stays focused on routing module + workflow contracts. | steering | A.2 scope confirmed as-is; A.5 added to roadmap
+| A.2 scope expansion (host path resolution) is valuable but would bloat this session. Better to schedule as A.5 after A.2, before A.3. A.2 stays focused on routing module + workflow contracts. | steering | A.2 scope confirmed as-is; A.5 added to roadmap |
 
 ## Completed this session
 
@@ -149,14 +149,10 @@ None.
 
 ## Deferred items
 
-None.
-
-## Deferred items
-
 | Item | Reason | Destination |
 |---|---|---|
 | A.5 -- Host path resolution unification | Out of scope for A.2. IN_CONTAINER detection is fragile; host-side wrapper approach TBD (Makefile, git alias, or scripts/ shim). | A.5, before A.3 |
-| A.3 -- Documentation alignment | Blocked on A.2 completing. Architecture docs describe old layout. | A.3, after A.2
+| A.3 -- Documentation alignment | Blocked on A.2 completing. Architecture docs describe old layout. | A.3, after A.2 |
 
 ## Next session
 

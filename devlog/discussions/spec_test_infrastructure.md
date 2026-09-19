@@ -59,7 +59,7 @@ A lint script checking for missing `mktemp`/`trap` in test files was considered 
 
 ### `scripts/run_tests.sh`
 
-```
+```text
 Usage: bash scripts/run_tests.sh
        make test
 ```
@@ -89,7 +89,7 @@ Verify that `make test` does not conflict with any existing Makefile target befo
 
 ### `scripts/check_test_coverage.sh`
 
-```
+```text
 Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]
 ```
 
@@ -98,7 +98,7 @@ Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]
 1. For each argument: run `grep -rl "$(basename "$FILE")" tests/` (basename only -- test files reference by name, not full path).
 2. Print results grouped by input file:
 
-   ```
+   ```text
    libs/session.sh:
      tests/test_session.sh
      tests/test_draft_workflow.sh
@@ -108,7 +108,7 @@ Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]
 
 3. If no test files reference an argument, print:
 
-   ```
+   ```text
    libs/new_lib.sh:
      (no test files found — review whether coverage is needed)
    ```

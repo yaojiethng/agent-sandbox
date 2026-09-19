@@ -16,33 +16,33 @@ Implement the `--interactive` flag for `make apply` and `make draft` -- a multi-
 
 Targets the **Pending -- interactive confirmation flag** task group from the roadmap. Per the design at `docs/devlog/discussions/design_interactive_confirmation_flag.md`:
 
-**Unit 1 -- `libs/interactive_session_select.sh`**
+### Unit 1 -- `libs/interactive_session_select.sh`
 
 - `interactive_confirm_or_abort` -- shared print-and-prompt helper
 - `interactive_select_channel` -- channel picker (entry counts, newest timestamps)
 - `interactive_select_session` -- session entry picker (availability indicators)
 - `interactive_select_diff_type` -- diff type picker (uncommitted vs all-changes)
 
-**Unit 2 -- `apply --interactive` wiring in `agent-sandbox.sh`**
+### Unit 2 -- `apply --interactive` wiring in `agent-sandbox.sh`
 
 - Three paths: `--diff=` (one-step confirm), full channel->session->diff-type picker, or skip if all args provided
 
-**Unit 3 -- `draft --interactive` wiring in `agent-sandbox.sh`**
+### Unit 3 -- `draft --interactive` wiring in `agent-sandbox.sh`
 
 - Two paths: both `--channel` and `--session` given (show patch list + confirm), or channel->session picker
 
-**Unit 4 -- Makefile template update**
+### Unit 4 -- Makefile template update
 
 - Replace `BUNDLE ?=` / `AUTOSAVE ?=` with `FROM ?=` (value is channel name directly)
 - Add `INTERACTIVE ?=`
 - Wire `--interactive` into both targets
 
-**Unit 5 -- Tests in `tests/test_interactive_session_select.sh`**
+### Unit 5 -- Tests in `tests/test_interactive_session_select.sh`
 
 - Unit tests for all four interactive functions
 - Integration tests in `test_diff_workflow.sh` and `test_draft_workflow.sh`
 
-**Unit 6 -- Documentation alignment**
+### Unit 6 -- Documentation alignment
 
 - Update `tool_interface.md`, `sandbox_lifecycle.md`, `sandbox_host_correspondence_model.md`, `project_index.md`, `roadmap.md`
 
@@ -123,7 +123,7 @@ None.
 
 ## Next session
 
-<To be populated at session close.>
+`<To be populated at session close.>`
 
 **Conclusions from this session:**
 

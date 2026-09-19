@@ -29,7 +29,7 @@ None.
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
 | 1 | F5: `handover_policy.md` `<...>` guidance blocks unwrapped to single-flowing paragraphs; no mid-thought soft-wraps | definitive prose wrap scan = 0 | Agent |
-| 1b | F5 durable rule: `documentation_policy.md` gains `### Simplified Technical English` + `### Line wrapping` subsections under `## Conventions`; audit-check additions | `grep -n "^### Simplified Technical English\\|^### Line wrapping" docs/operations/documentation_policy.md` | Agent |
+| 1b | F5 durable rule: `documentation_policy.md` gains `### Simplified Technical English` + `### Line wrapping` subsections under `## Conventions`; audit-check additions | `grep -n -e "^### Simplified Technical English" -e "^### Line wrapping" docs/operations/documentation_policy.md` | Agent |
 | 2 | F6: live/frequently-read docs have zero functional ``; only deliberate literals (documentation_policy rule, AGENT_FEEDBACK finding record) remain | `grep -r "" docs/operations docs/development docs/concepts docs/architecture AGENTS.md` shows only documentation_policy.md literal | Agent |
 | 2b | F6 rule generalized beyond ``: banner + audit check now cover non-ASCII + control/formatting symbols | read docs/operations/documentation_policy.md lines 122-126, 264 | Agent |
 | 3 | Word-wrap remediation across frequently-read set: AGENTS.md x2, all skills, all policy files, cli-conventions, project_index | definitive prose wrap scan = 0 across the set | Agent |
@@ -59,8 +59,8 @@ None.
 
 ## Mid-session findings
 
-| Finding | Type | Impact |
-|---|---|---|
+| # | Finding | Type | Impact |
+|---|---|---|---|
 | 1 | Operator expanded finding-5 scope: line-wrap standard is general (all prose), with a code-comment exception at ~80 cols; applies across AGENTS.md + provider files + skills. Operator corrected the example (pi AGENTS.md lines 15-16). STE convention formalized in documentation_policy (was ad-hoc, non-authoritative) | scope/steering | Triaged to: applied in this session (documentation_policy `### Line wrapping` + `### Simplified Technical English`) |
 | 2 | `git checkout docs/operations/handover_policy.md` during the -replacement reverted the earlier finding-5 unwrap of handover_policy; had to re-unwrap 3 blocks (Scope, Mid-session, Deferred). Lesson: do not revert a whole file mid-scope when only a targeted no-op perl failed | process awareness | Triaged to: none (self-corrected; lesson noted) |
 | 3 | **State policy misapplied: deleted remediated entries should be `probation`.** Operator corrected: the two remediated entries (Hard-wrapped blocks, Non-ASCII ) were deleted as "resolved", but per the state machine a fix applied this session is subject to recurrence -- it becomes `probation` (durable fix in place, monitor for resurfacing), not immediate deletion. Corrected: re-added both entries as `state: probation`. Deletion happens only after a probation period confirms the fix holds, then the durable fix is recorded in changelog/roadmap | process / state-policy | Triaged to: corrected in this session (AGENT_FEEDBACK entries now `probation`); lessons apply to future remediation |
@@ -88,7 +88,6 @@ None.
 
 ## Next session
 
-Sub-milestone M2.6.6 (or current). See findings 5/6/4 completion.
----
+## Sub-milestone M2.6.6 (or current). See findings 5/6/4 completion
 
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

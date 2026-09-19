@@ -84,7 +84,7 @@ Each item was audited against the current codebase state after items 8-12 were i
 
 ### Updated dependency graph
 
-```
+```text
 item 1 (run_id) ──→ item 2 (labels) ──→ item 3 (stop redesign)
                                               │
                                               └──→ item 4 (prune)

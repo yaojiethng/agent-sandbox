@@ -37,7 +37,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`libs/draft_workflow.sh`](../../libs/draft_workflow.sh) | Fixed: `draft_validate_branch` now searches for `.draft-state` by commit message (not first-commit assumption); fixed `eval "$(...)" || return 1` bash pattern in `confirm_run` + `reject_run`; drop step skips if`.draft-state` commit already removed |
+| [`libs/draft_workflow.sh`](../../libs/draft_workflow.sh) | Fixed: `draft_validate_branch` now searches for `.draft-state` by commit message (not first-commit assumption); fixed `eval "$(...)" \|\| return 1` bash pattern in `confirm_run` + `reject_run`; drop step skips if`.draft-state` commit already removed |
 | [`tests/knowledge/knowledge_draft_confirm_lock_trace.sh`](../../tests/knowledge/knowledge_draft_confirm_lock_trace.sh) | Created -- systematic lock-trace knowledge test (6 sections, 41 assertions) |
 | [`tests/knowledge/workflow_draft_then_confirm.sh`](../../tests/knowledge/workflow_draft_then_confirm.sh) | Created -- end-to-end draft->confirm via real libs (22 assertions) |
 | [`tests/knowledge/workflow_draft_then_reject.sh`](../../tests/knowledge/workflow_draft_then_reject.sh) | Created -- end-to-end draft->reject via real libs (22 assertions) |
@@ -48,7 +48,7 @@ None.
 |---|---|---|
 | `.git/index.lock` error was from an external stale lock, not a code bug in apply loop | Confirmed via systematic testing of all git operations in the apply loop across all input methods | Handover |
 | `draft_validate_branch` must find `.draft-state` by commit message, not first-commit position | After `git rebase -i` (the recommended workflow), the `.draft-state` commit may not be first in `from_hash..CURRENT_BRANCH` | `libs/draft_workflow.sh` |
-| `eval "$(...)" || return 1` pattern must be replaced with separate cmd-sub + eval | When the inner function fails with empty stdout, `eval ""` returns 0 and `||` doesn't trigger -- cascading unbound variable error | `libs/draft_workflow.sh` |
+| `eval "$(...)" \|\| return 1` pattern must be replaced with separate cmd-sub + eval | When the inner function fails with empty stdout, `eval ""` returns 0 and `\|\|` doesn't trigger -- cascading unbound variable error | `libs/draft_workflow.sh` |
 
 ## Mid-session findings
 

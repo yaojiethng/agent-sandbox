@@ -16,7 +16,7 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 
 ### SESSION_ID -- Session Run Identity
 
-```
+```text
 SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
@@ -46,7 +46,7 @@ Images are tagged by harness code identity, not project repo state. Project repo
 
 The compose template exports the following labels on all containers:
 
-```
+```text
 agent-sandbox.project-name:     <PROJECT_NAME>
 agent-sandbox.project-dir:      <PROJECT_DIR>
 agent-sandbox.sandbox-dir:      <SANDBOX_DIR>
@@ -111,7 +111,7 @@ On resume, `start_agent.sh` reads this file and exports the values as env vars i
 
 Written to the sandbox git repository's state file at container init (first start only):
 
-```
+```text
 init_sha=<40-char sandbox baseline commit SHA>
 session_ts=<timestamp>
 host_head_sha=<40-char host HEAD SHA>

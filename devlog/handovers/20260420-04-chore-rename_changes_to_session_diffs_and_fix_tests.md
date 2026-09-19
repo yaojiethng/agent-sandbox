@@ -100,7 +100,7 @@ Created `docs/development/testing_policy.md` (366 lines) covering:
 
 Session output packaged to:
 
-```
+```text
 /home/agentuser/workspace/output/20260420141948-rename_changes_to_session_diffs_and_fix_test_isolation/
 ├── changes.diff (2050 lines, 87KB)
 ├── changed-files/ (30 files)

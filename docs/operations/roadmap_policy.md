@@ -102,7 +102,7 @@ When top-level milestone close runs (roadmap maintenance compaction reaches the 
 
 Milestones use a fractal numbering system that nests arbitrarily:
 
-```
+```text
 M{n}          — top-level milestone (e.g. M2)
 M{n}.{m}      — sub-milestone (e.g. M2.6)
 M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
@@ -148,7 +148,7 @@ Changelog entries live in `devlog/changelog.md`, appended in milestone order. Ea
 
 ### Entry structure
 
-```
+```text
 ## M{n} — {Title}
 
 *{One sentence: what the system can now do.}*
@@ -169,7 +169,7 @@ Changelog entries live in `devlog/changelog.md`, appended in milestone order. Ea
 
 When producing a changelog entry during a milestone completion pass, output the entry as a fenced block so it can be appended to `changelog.md` without reading the existing file:
 
-````
+````text
 ```changelog
 ## M{n} -- {Title}
 

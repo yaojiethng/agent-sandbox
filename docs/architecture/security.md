@@ -72,9 +72,9 @@ Validation procedures for these invariants are defined in operational documentat
 
 **Mount delivery** revises invariant 2 and adds invariant 7:
 
-> 2. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories, the `.<provider>/` provider-config mount, and the mounted worktree.
+> 1. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories, the `.<provider>/` provider-config mount, and the mounted worktree.
 >
-> 7. The seeded sandbox volume must not be mounted into the reasoning layer. Only the capability layer accesses the sandbox content directly.
+> 2. The seeded sandbox volume must not be mounted into the reasoning layer. Only the capability layer accesses the sandbox content directly.
 
 ---
 
@@ -143,9 +143,9 @@ Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are trac
 
 ## References
 
-- Microsoft STRIDE Threat Model: https://docs.microsoft.com/en-us/security/compass/stride
-- Docker Security Best Practices: https://docs.docker.com/engine/security/security/
-- LLM and AI Security Considerations: https://arxiv.org/abs/2301.11381
+- Microsoft STRIDE Threat Model: <https://docs.microsoft.com/en-us/security/compass/stride>
+- Docker Security Best Practices: <https://docs.docker.com/engine/security/security/>
+- LLM and AI Security Considerations: <https://arxiv.org/abs/2301.11381>
 
 ## Further Reading
 

@@ -117,7 +117,7 @@ The snapshot operation is split across host and container:
 - `snapshot_copy_to_sandbox` -- copies `.bootstrap/snapshot/` -> `sandbox/` (container-local, read-write).
 - `snapshot_init_git` -- `git init` + baseline commit in `sandbox/`. Owns container readiness: an incomplete copy reaching `init_git` is an `init_git` failure. Non-zero exit halts the container before the agent starts.
 
-**Validation gates -- scope**
+#### Validation gates -- scope
 
 `snapshot_validate` is intentionally narrow: structural correctness only. It confirms presence and shape, not behavioural properties. Behavioural assertions (symlink handling, dirty working tree, untracked-only repos) belong in the test suite.
 
@@ -127,7 +127,7 @@ All snapshot functions are extracted into `libs/snapshot.sh` and sourced by both
 
 ### Test Structure
 
-```
+```text
 tests/
   test_snapshot_host.sh       ← enumerate + copy, no container required
   test_snapshot_container.sh  ← validate + copy_to_sandbox + init_git, fixture snapshot input
@@ -142,7 +142,7 @@ Test cases for open M1.2 checklist items are added here rather than in runtime v
 
 ### Updated Mount Shape
 
-```
+```text
 HOST                              CONTAINER
 ──────────────────────────────────────────────────────
 PROJECT_ROOT/.bootstrap/       → /home/agentuser/.bootstrap:ro

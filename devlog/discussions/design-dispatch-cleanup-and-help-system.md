@@ -34,7 +34,7 @@ When `--help` is passed to a subcommand script, its `main()` detects it as the f
 
 ### 1.3 Usage string format
 
-```
+```text
 Usage: agent-sandbox apply --project=<path> --sandbox=<path> [options]
 
 Applies a diff file to the project working tree. Does not commit.

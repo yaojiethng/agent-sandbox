@@ -45,7 +45,7 @@ Failures`, `## Checklist for New Tests` (+ Mock Infrastructure) and
 `## Checklist for Lib and Script Changes` -- which now live in
 `docs/development/testing-conventions.md`, replacing them with:
 
-```
+```text
 ## See Also
 
 [`testing-conventions.md`](testing-conventions.md) — fixture patterns, anti-patterns, templates, checklists, and debug steps.
@@ -101,7 +101,7 @@ Task 3 must still contain `## Common Anti-Patterns` *removed* and `## See Also`
 | 1 | Apply the `0009` intent; do not preserve the removed FINDINGS content inline (recoverable from bundle) | operator-confirmed |
 | 2 | Task 3 must not touch the rollback bug or whitespace hardening | operator-orchestrated split |
 | 3 | Removed the entire duplicated how-to region (line 213 -> EOF) including the 2-space blank line at former line 237, matching the `0009` new-side intent from the `.rej` | the `.rej` new-side (331/334) is the authoritative intent; the whitespace line was inside the replaced region, so it was removed with it -- flagged for Task 2 |
-| 4 | Used the exact See Also block text from the `.rej` new-side (2 added lines: `## See Also` + the `testing-conventions.md` link); left one blank line between the trailing `---` and `## See Also` | match patch formatting exactly; final file ends with the See Also block
+| 4 | Used the exact See Also block text from the `.rej` new-side (2 added lines: `## See Also` + the `testing-conventions.md` link); left one blank line between the trailing `---` and `## See Also` | match patch formatting exactly; final file ends with the See Also block |
 | 5 | (orchestrator correction) removed one extra blank line the subagent had left between the trailing `---` and `## See Also` | authoritative `git apply` re-application of patch 0009 (test-C) showed exactly one blank line there; repo docs end with a single newline (no trailing blank), so none was added |
 
 ## Reference material (elsewhere on disk)

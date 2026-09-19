@@ -31,7 +31,7 @@ This session targets M2.7 Track A's document layer: resolving the specification 
 
 ## Completed this session
 
-*(No files changed yet -- placeholder.)*
+(No files changed yet -- placeholder.)
 
 ## Carried forward
 
@@ -64,4 +64,4 @@ Decisions reached via grill-me -- see chat log for full reasoning.
 
 ## Next session
 
-*(None yet -- plan output pending.)*
+(None yet -- plan output pending.)

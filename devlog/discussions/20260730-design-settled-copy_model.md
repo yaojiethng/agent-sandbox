@@ -42,7 +42,7 @@ A volume can only be attached to one running session at a time. Two containers c
 
 When `make start` is invoked with no explicit session identifier, and more than one volume exists under the sandbox directory, present a numbered picker:
 
-```
+```text
 Available sessions:
   1) 20260730-130000 (RUN_ID: a1b2c3) — branch: feat-m2.6, host SHA: 2d69a4d
   2) 20260730-090000 (RUN_ID: d4e5f6) — branch: master, host SHA: dfed41d [STALE]
@@ -72,7 +72,7 @@ The volume declaration moves from a static `sandbox-data` to a `RUN_ID`-scoped n
 
 The compose project name derivation changes:
 
-```
+```text
 Current:  agent-sandbox-<sha256(SANDBOX_DIR)[:6]>
 Proposed: agent-sandbox-<RUN_ID>
 ```
@@ -89,7 +89,7 @@ Volume labels are set in the compose template at creation time, survive `compose
 
 ### start_agent.sh flow
 
-```
+```text
 1. compute/read session identity (RUN_ID, SESSION_TS) — unchanged
 2. if --session flag: use that volume directly, skip selector
 3. else: query volumes by sandbox-dir label

@@ -76,7 +76,7 @@ The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<pr
 
 The provider config cycle can be visualised as:
 
-```
+```text
    Onboard source  ──┬──> Bind mount ──┬──copy-in──> AGENT_HOME ──> pi reads
    (providers/       │                 │                                     │
     <n>/config/)     │                 │                                     │

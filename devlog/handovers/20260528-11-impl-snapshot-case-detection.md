@@ -34,10 +34,6 @@ None.
 | 5 | Existing tests pass -- no regression |
 | 6 | Warning is non-blocking -- snapshot still proceeds |
 
-## Decisions made this session
-
-None.
-
 ## Mid-session findings
 
 None.

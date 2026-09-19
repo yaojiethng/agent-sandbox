@@ -76,7 +76,7 @@ Three collision strategies:
 
 | Strategy | Outcome |
 |---|---|
-| `useradd -u ${UID} ... || true` (ignore error) | No agentuser user exists; `chown -R agentuser:agentuser` fails; `USER agentuser` errors |
+| `useradd -u ${UID} ... \|\| true` (ignore error) | No agentuser user exists; `chown -R agentuser:agentuser` fails; `USER agentuser` errors |
 | Remove existing user before `useradd` | Breaks Node package installs that depend on the `node` user's files |
 | **Rename existing user to agentuser** | Preserves all files; `USER agentuser` works; home dir is correct |
 
@@ -102,7 +102,7 @@ The container's `agentuser` is created at the host user's UID/GID at build time.
 
 ### How It Works
 
-```
+```text
 Host (UID 1000, GID 1000)          Container (UID 1000, GID 1000)
          │                                     │
          │  HOST_UID=$(id -u) ──build-arg──►  │  useradd -u 1000 agentuser
@@ -135,7 +135,7 @@ Host (UID 1000, GID 1000)          Container (UID 1000, GID 1000)
 
 ### Dependency Ordering
 
-```
+```text
 #1 (onboard.sh) ────────────────────────────► #8 (pi/onboard.sh)
                                             ► #9 (build.sh: args)
                                                  │

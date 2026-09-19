@@ -50,7 +50,7 @@ Not yet defined.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Use simple `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard instead of BASH_SOURCE array-length pattern | Verified correct for all three scenarios: direct execution (passes), sourced by executed parent (rejects), sourced by sourced parent (rejects). The array-length pattern proposed (`-gt 1 || !=`) was logically inverted -- it would pass the guard when a parent sourced the file, creating a broken guard. The simple standard pattern is the correct one. | Chat (2026-05-28) |
+| Use simple `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard instead of BASH_SOURCE array-length pattern | Verified correct for all three scenarios: direct execution (passes), sourced by executed parent (rejects), sourced by sourced parent (rejects). The array-length pattern proposed (`-gt 1 \|\| !=`) was logically inverted -- it would pass the guard when a parent sourced the file, creating a broken guard. The simple standard pattern is the correct one. | Chat (2026-05-28) |
 | Changed `${0}` -> `$0` | Cosmetic consistency -- both expand identically in bash. | This session |
 
 ## Completed this session

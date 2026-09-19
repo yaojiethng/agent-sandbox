@@ -52,7 +52,7 @@ Design the approach for removing the temp-dir build context mechanism. Evaluate 
 
 | File | Change |
 |---|---|
-| `devlog/discussions/spec_context_dir_removal.md` | Created -- spec document detailing subdirectory COPY approach with repo root as build context
+| `devlog/discussions/spec_context_dir_removal.md` | Created -- spec document detailing subdirectory COPY approach with repo root as build context |
 
 ## Mid-session findings
 

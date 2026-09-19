@@ -138,7 +138,7 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 **WSL path errors**
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
-**Line ending issues in scripts or config files**
+### Line ending issues in scripts or config files
 
 ```sh
 sed -i 's/\r//' <file>

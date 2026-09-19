@@ -57,7 +57,7 @@ Operator report: roadmap updates have lapsed (recorded as GOTCHAS
 **Countermeasure proposals (operator decides; policy text only after per-section approval):**
 
 - **A -- Step 7 split** (`iteration_policy.md`, small): reword the Step 7 roadmap bullet into two mandatory rows -- (a) compaction entries for completed groups, or an explicit "none worked this iteration"; (b) tasks generated this iteration, each either proposed as a roadmap entry or explicitly declared deferred/no-task. Forces the timing-rule question to Gate 3 for every iteration type.
-- **B -- Handover close-section field** (`handover_policy.md` template): fixed "Roadmap write-back: none / <entry>" line in the close section -- the footprint becomes part of the reviewed artifact. Heavier (template change).
+- **B -- Handover close-section field** (`handover_policy.md` template): fixed "Roadmap write-back: none / `<entry>`" line in the close section -- the footprint becomes part of the reviewed artifact. Heavier (template change).
 - **C -- Mechanical check** (no policy change): `scripts/manual/roadmap_reconcile.sh` flags `- [ ]` roadmap items whose text references a handover ID whose Status is Closed (the 2026-08-31 class). Cheap, on-demand or at close.
 - **D -- Record only:** accept the rare lapse; this audit is the record.
 

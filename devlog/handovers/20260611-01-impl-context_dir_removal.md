@@ -32,7 +32,7 @@ Implement the build context simplification spec -- replace temp-dir assembly (`b
 
 | File | Change |
 |---|---|
-| `src/build/context.sh` | Deleted (~112 lines)
+| `src/build/context.sh` | Deleted (~112 lines) |
 | `scripts/build.sh` | Replaced temp-dir build context with repo-root context; removed `build_image()`, `cleanup_build_context()`, `_BUILD_CONTEXT_DIRS` |
 | `src/capability/dockerfile` | Rewrote COPY to repo-relative paths (`src/libs/`, `src/capability/entrypoint.sh`, `src/capability/snapshot.sh`, `docs/architecture/`, `docs/concepts/`) |
 | `src/reasoning/providers/pi/provider.dockerfile` | Rewrote COPY to repo-relative paths (`src/libs/`, `src/reasoning/entrypoint.sh`, `providers/pi/preflight.sh`, `agent/skills/`, `agent/prompts/`, `providers/pi/config/`, docs) |
@@ -97,10 +97,6 @@ Implement the build context simplification spec -- replace temp-dir assembly (`b
 | `src/reasoning/entrypoint.sh` | Update doc comment | done |
 | `docs/architecture/execution_model.md` | Update stale `agent-sandbox.digest` ref | done |
 | `devlog/roadmap.md` | Mark Context_dir removal complete | done |
-
-## Completed this session
-
-*Not yet defined.*
 
 ## Mid-session findings
 

@@ -58,7 +58,7 @@ No staging exists anywhere: the seeder streams content directly into the volume 
 
 **Current -- single-volume model:**
 
-```
+```text
 volume exists + REFRESH not set?
   ├── No  → normal init
   │         Host: compute fresh identity, run the seeder
@@ -74,7 +74,7 @@ Before any container starts, preflight compares the baked images against current
 
 **Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`. `make start INTERACTIVE=1` opens the config wizard (pick a provider + build policy, confirm, then start); provider and `.env` values otherwise come from the Makefile/`.env`.
 
-```
+```text
 --refresh/--rebuild passed?
   ├── Yes → new session (rebuild images + fresh volume + full seed)
   └── No  → new session (fresh volume + full seed)
@@ -113,7 +113,7 @@ Before a save runs, the entrypoint asks `session_save_needed`: save when the wor
 
 All artefacts land in the session export directory constructed by `export_path`:
 
-```
+```text
 workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
   .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (and EXIT_CODE on failure)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
@@ -130,7 +130,7 @@ workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
 
 The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle overwrites a single directory:
 
-```
+```text
 workspace/session-diffs/autosave/<SESSION_ID>/
   .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (updated each cycle)
   uncommitted.diff      — uncommitted changes vs HEAD

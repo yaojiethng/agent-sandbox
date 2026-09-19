@@ -10,7 +10,7 @@
 
 Every provider image is built from two Dockerfiles:
 
-```
+```text
 base.Dockerfile       ← slow-changing layers (OS, runtimes, agent npm/pip install)
        ↓
 provider.Dockerfile   ← fast-changing layers (harness libs, workflow files, config)

@@ -76,7 +76,7 @@ Entries are **deleted when resolved**. A resolved durable fix is recorded in the
 
 ## Lifecycle of an entry
 
-```
+```text
 discover → record → review/publish → durable-fix scope → probation → cleanup
 ```
 
@@ -130,7 +130,7 @@ There is no dedicated "close-blocked" state. The sub-milestone simply stays `act
 
 The major loop is restated as:
 
-```
+```text
 active → pre-close → close → [post-close admin, only if broken]
 ```
 
@@ -179,7 +179,7 @@ New and changed policy language must be drafted in Simplified Technical English 
 - **P2.** Replace the mid-session findings triage gate with the review/publish step. (`iteration_policy.md`)
 - **P3.** Add the pre-close review gate + dismiss/maintain/escalate probation at sub-milestone cleanup. (`milestone_policy.md`)
 - **P4.** Trim the handover **Next session** section to context-only, and always push deferred tasks to the roadmap (coupled). (`handover_policy.md`, `roadmap_policy.md`)
-    - **Roadmap-update timing rule (P4 companion):** when a session generates tasks, update the roadmap at end of session. State this behavior explicitly; do not leave roadmap-update timing implicit.
+  - **Roadmap-update timing rule (P4 companion):** when a session generates tasks, update the roadmap at end of session. State this behavior explicitly; do not leave roadmap-update timing implicit.
 - **P5.** Add AGENTS.md pointers for the two files.
 - **P6.** Restate the milestone lifecycle in the major loop (`active -> pre-close -> close`). (`milestone_policy.md`)
 

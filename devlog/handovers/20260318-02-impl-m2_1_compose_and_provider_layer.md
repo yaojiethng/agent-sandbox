@@ -77,7 +77,7 @@ Orchestration & lifecycle task group. `.agent-input/` rename scoped into this se
 | Item | Reason | Next |
 |---|---|---|
 | `libs/_templates/docker-compose.yml.template` | Base compose template for onboarded projects; derive from confirmed dogfood | Next session |
-| `scripts/agent-sandbox.sh` full rewrite | `build sandbox|agent|all` variants; staleness pre-flight removal; `libs/image.sh` deletion is co-requisite | Build & context session |
+| `scripts/agent-sandbox.sh` full rewrite | `build sandbox\|agent\|all` variants; staleness pre-flight removal; `libs/image.sh` deletion is co-requisite | Build & context session |
 | `Makefile` (project-side template) update | Depends on `agent-sandbox.sh` shape | Next session |
 | `libs/build_context.sh` and `context/` dirs | `libs/image.sh` + `tests/test_image.sh` deletion included | Build & context session |
 | `dry_run.sh` bind-mount -> image copy | When `context/` restructuring lands, drop bind mount from overlay | Build & context session |

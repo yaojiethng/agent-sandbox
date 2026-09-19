@@ -54,7 +54,7 @@ None.
 | Finding | Type | Impact |
 |---|---|---|
 | `package_branch.sh` strips all `^index` lines via `grep -v`. For binary file diffs, the index line is required -- `git apply` rejects binary hunks without it ("cannot apply binary patch without full index line"). This session removes `snapshot_copy_to_sandbox` (which was the root cause of `baseline.tar` being tracked). But `baseline.tar` is still tracked in the project repo itself (committed before our changes). Our fix only prevents future sandbox inits from re-introducing it. The existing `git ls-files baseline.tar` hit will persist until the repo's own tracked copy is dealt with. | bug / residual risk | future session |
-| `--exclude='baseline.tar'` in the rsync overlay and `resync_snapshot` was initially removed (assumed to be a workaround for `snapshot_copy_to_sandbox`). It was restored when tests failed -- it prevents `baseline.tar` in `$SNAPSHOT_DIR` (from `snapshot_archive_head`) from leaking into the sandbox working tree. The exclude is a separate, independent safeguard. | steering / correction | this session (corrected)
+| `--exclude='baseline.tar'` in the rsync overlay and `resync_snapshot` was initially removed (assumed to be a workaround for `snapshot_copy_to_sandbox`). It was restored when tests failed -- it prevents `baseline.tar` in `$SNAPSHOT_DIR` (from `snapshot_archive_head`) from leaking into the sandbox working tree. The exclude is a separate, independent safeguard. | steering / correction | this session (corrected) |
 
 ## Completed this session
 

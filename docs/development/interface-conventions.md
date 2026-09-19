@@ -8,7 +8,7 @@ Conventions for all user- and agent-facing interfaces: CLI, TUI, and API contrac
 
 When a required argument is missing, the tool **must not** silently use a default or crash with a bare message like "Error: missing --to". It must emit a full error block that lets the caller immediately retry:
 
-```
+```text
 Error: --bundle-summary is required. Provide a concise snake_case label.
 
   Good: --bundle-summary=fix_provisioning_metadata_agnostic
@@ -34,7 +34,7 @@ The error must include:
 
 A tool that produces artefacts should not just print its output path -- it should tell the caller what to do next:
 
-```
+```text
 package_commits: generated 1 diff(s) in /path/to/bundles/TS-LABEL-TS/patches
 package_branch: artefacts written to:
   /path/to/bundles/TS-LABEL-TS

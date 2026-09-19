@@ -16,7 +16,7 @@ name-sorting can never express recency. Operator asks: order by last-saved time 
 
 Three consumers order bundle dirs by name:
 
-1. `interactive.sh _interactive_select_channel` -- "newest: <name>" (hash for autosave)
+1. `interactive.sh _interactive_select_channel` -- "newest: `<name>`" (hash for autosave)
 2. `interactive.sh _interactive_select_bundle` -- picker ordering (hash order for autosave)
 3. `routing.sh resolve_latest_dir` -- `sort | tail -1` (lexicographically-largest hash for autosave;
    used by non-interactive draft auto-resolve AND the entrypoint's autosave fallback)

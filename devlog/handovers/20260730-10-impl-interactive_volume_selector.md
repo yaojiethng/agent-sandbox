@@ -23,7 +23,7 @@ Wire up an interactive numbered picker when multiple volumes exist for a sandbox
 
 ## Design
 
-```
+```text
 Multiple sessions found for this sandbox directory:
 
   1) 20260730-130000  RUN_ID: a1b2c3  branch: feat-m2.6 (2d69a4d)

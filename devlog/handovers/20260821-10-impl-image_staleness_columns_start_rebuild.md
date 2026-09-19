@@ -55,7 +55,7 @@ Consolidate image-staleness across every surface that reasons about a session's 
 |---|---|
 | `src/libs/container_sig.sh` | `record_image_stale <file> <repo_root>` lifted from prune.sh (moved verbatim, signature gains `repo_root`) -- one record-level image-staleness criterion shared by prune + resume |
 | `scripts/prune.sh` | Local `record_image_stale` deleted; both call sites pass `"$f" "$REPO_ROOT"` to the lib version |
-| `scripts/resume_agent.sh` | Sources `container_sig.sh`; `build_inventory` emits 6 fields (`sid|provider|ts|branch|sandbox_stale|image_stale`);`--list` prints both columns, capped at `RESUME_LIST_PAGE_SIZE=10` with a stderr remainder footer; `--interactive` PICKER marks `[STALE]`/`[IMG-STALE]` and passes `PAGE_SIZE=$RESUME_LIST_PAGE_SIZE` (pagination); usage text updated |
+| `scripts/resume_agent.sh` | Sources `container_sig.sh`; `build_inventory` emits 6 fields (`sid\|provider\|ts\|branch\|sandbox_stale\|image_stale`);`--list` prints both columns, capped at `RESUME_LIST_PAGE_SIZE=10` with a stderr remainder footer; `--interactive` PICKER marks `[STALE]`/`[IMG-STALE]` and passes `PAGE_SIZE=$RESUME_LIST_PAGE_SIZE` (pagination); usage text updated |
 | `tests/test_resume.sh` | +6 property tests: image-stale column, image-fresh when sigs match, independent columns (sandbox-fresh+image-stale), `[IMG-STALE]` picker marker, `--list` caps at 10 with footer, picker paginates at 10 |
 | `tests/test_trace_build.sh` | `test_check_container_sig_warns_via_shared_predicate` -- stale sig warns / matching sig silent via the shared `image_is_stale` (start's preflight surface) |
 | `docs/architecture/tool_interface.md` | `resume LIST=1` two stale columns + 10-row cap; `INTERACTIVE=1` marker + pagination |

@@ -15,22 +15,27 @@ This session targets the apply/draft unification refactoring -- concrete impleme
 
 The work decomposes into 6 units:
 
-**Unit 1 -- Extract `_apply_patch_file` into `src/libs/diff.sh`**
+### Unit 1 -- Extract `_apply_patch_file` into `src/libs/diff.sh`
+
 Core `git apply` logic extracted from `apply_run` into a shared helper: handles normal, FORCE (`--reject`), and PERMISSIVE (`--recount`) modes. Strips index lines via `strip_index_lines` (already in `diff.sh`).
 
-**Unit 2 -- Add `apply_and_commit`**
+### Unit 2 -- Add `apply_and_commit`
+
 Calls `_apply_patch_file`, then `git add -A && git commit`. Takes `AUTHOR` as parameter. Lives in `src/libs/diff.sh` alongside `_apply_patch_file`.
 
-**Unit 3 -- Refactor `apply_run` to delegate to `_apply_patch_file`**
+### Unit 3 -- Refactor `apply_run` to delegate to `_apply_patch_file`
+
 No behavioural change for `make apply`. `apply_run` in `scripts/workflows/apply.sh` sources `diff.sh` and delegates the `git apply` call.
 
-**Unit 4 -- Decompose `draft_run` into branch-creation only**
+### Unit 4 -- Decompose `draft_run` into branch-creation only
+
 `draft_run` becomes branch-creation + `.draft-state` only. No apply logic. `main()` in `draft.sh` orchestrates: collect patches -> count -> create branch -> apply loop -> apply uncommitted. Patch list collected once, fed to both `draft_run` (for count) and `draft_apply_patches` (for apply).
 
-**Unit 5 -- Refactor apply loop to use shared helpers**
+### Unit 5 -- Refactor apply loop to use shared helpers
+
 `draft_apply_patches` and `draft_apply_uncommitted` call `apply_and_commit` instead of inline `git apply`, `git add`, `git commit`. Both gain `FORCE` and `PERMISSIVE` parameters.
 
-**Unit 6 -- Wire CLI and Makefile**
+### Unit 6 -- Wire CLI and Makefile
 
 - `draft.sh` CLI parser: add `--force` and `--permissive` flags
 - `Makefile.template` `draft` target: add `$(if $(FORCE),--force,)` and `$(if $(PERMISSIVE),--permissive,)`
@@ -98,7 +103,7 @@ Not in scope: the broader `make apply` vs `make draft` command unification quest
 | `src/libs/diff.sh` | Add `_apply_patch_file`, `apply_and_commit` | done |
 | `scripts/workflows/apply.sh` | Delegate to `_apply_patch_file` | done |
 | `scripts/workflows/draft.sh` | Decompose `draft_run`, refactor apply loop, add CLI flags | done |
-| `scripts/agent-sandbox.sh` | Updated usage comment to document `--force` and `--permissive` for draft |
+| `scripts/agent-sandbox.sh` | Updated usage comment to document `--force` and `--permissive` for draft | done |
 | `scripts/templates/Makefile.template` | Wire FORCE/PERMISSIVE + add per-target variable validation | done |
 | `docs/development/cli-conventions.md` | Check for draft FORCE docs -- no update needed (no per-flag docs) | done |
 | `docs/development/quickstart.md` | Check for FORCE/draft drift -- no update needed | done |
@@ -153,7 +158,6 @@ Post-close bookkeeping: nothing pending (sub-milestone still in progress). The a
 3. `echo "$PATCH_LIST"` -> `printf '%s\n' "$PATCH_LIST"` for null-safe piping
 4. Stripped empty `?=` declarations from `scripts/templates/Makefile.template` (redundant with `_validate_overrides`)
 
-All 418 tests still pass.
----
+## All 418 tests still pass
 
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

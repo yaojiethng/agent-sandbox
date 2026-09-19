@@ -34,7 +34,7 @@ The capability layer tests in `test_capability_layer.sh` skip entirely when Dock
 
 `compose_dry_run` in `libs/compose.sh` executes in three sequential phases:
 
-```
+```text
 Phase 1 (capability checks):
   docker compose exec sandbox bash /dry_run_capability.sh
   → Exit code 0 = all CRITICAL checks pass
@@ -255,8 +255,8 @@ rm -f "$OUTPUT_DIR/.dryrun_reasoning_test"
 | CHANGES_DIR round-trip (write + read via mount) | -- | [x] |
 | Image file existence (`sandbox-entrypoint.sh`, `snapshot.sh`, etc.) | -- | [x] |
 | Diff pipeline invocable | -- | [x] |
-| Cross-container marker read | -- | -- | [x] |
-| Host-side artifact verification | -- | -- | -- (Phase 3) |
+| Cross-container marker read | -- | [x] |
+| Host-side artifact verification | -- | -- (Phase 3) |
 
 ## Provider dry-run checks (future)
 

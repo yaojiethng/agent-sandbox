@@ -74,7 +74,8 @@ Blocking design questions: host-side `make draft` must read `init_sha` from bund
 
 Post-close bookkeeping: not applicable.
 
-**Conclusions from this session:** The `init_sha` value exists in the container (`SESSION_STATE`) and was always read correctly for diff generation -- it just was never written to the bundle. The host-side `fatal: Failed to resolve '' as a valid ref` error is caused by `BRANCH_FROM=""` bypassing the `${BRANCH_FROM_ARG:-HEAD}` default in `draft.sh`. Both sides need fixing: container now writes `init_sha`; host must consume it.
----
+## Conclusions from this session
+
+**Conclusions from this session:** The `init_sha` value exists in the container (`SESSION_STATE`) and was always read correctly for diff generation -- it just was never written to the bundle. The host-side `fatal: Failed to resolve '' as a valid ref` error is caused by `BRANCH_FROM=""` bypassing the `${BRANCH_FROM_ARG:-HEAD}` default in `draft.sh`. Both sides need fixing: container now writes `init_sha`; host must consume it
 
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

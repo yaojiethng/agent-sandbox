@@ -91,7 +91,7 @@ Copy-out does not run.
 
 **Verified by test execution:**
 
-```
+```text
 bash -c '
   set -euo pipefail; set -m
   sleep 0.5 &; AGENT_PID=$!
@@ -223,7 +223,7 @@ state. In the case of opencode, this results in exit code 150.
 
 **Verified by process group inspection:**
 
-```
+```text
 # with set -m:
 shell PGID=9  agent PGID=11  same=NO   ← agent outside foreground group → SIGTTIN on read
 

@@ -38,7 +38,7 @@ When writing code, always take into account the following:
 
 Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
 
-**Handover rules**
+### Handover rules
 
 - Close -> done. No commits after close. Open a new handover for new work.
 - Type must match dominant activity at close. Rename if it diverged.
@@ -72,7 +72,7 @@ Apply these to all prose you write: documentation, comments, chat deliverables, 
 
 When a fresh perspective is needed for code review (e.g. thermo-nuclear review of changes made in the current iteration), invoke a fresh subagent using:
 
-```
+```text
 pi -p "Subagent instructions..."
 ```
 

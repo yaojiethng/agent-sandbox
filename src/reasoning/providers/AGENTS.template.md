@@ -1,4 +1,4 @@
-# AGENTS.md  --  <Provider Name> (<project name>)
+# AGENTS.md  --  `<Provider Name>` (`<project name>`)
 
 <!--
   This is the reference template for provider-layer AGENTS.md files.

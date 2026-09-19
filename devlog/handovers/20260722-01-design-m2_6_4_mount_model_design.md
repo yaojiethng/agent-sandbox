@@ -18,13 +18,14 @@ Complete the M2.6.4 mount model design session: resolve all design decisions for
 - Identified 6 stale/contradictory documentation items, 4 undocumented behaviors, 1 .env variable lifecycle gap
 - Output: `devlog/discussions/20260722-study-settled-mount_wiring_survey.md`
 
-**Unit 2 -- Design decisions (not started)**
+### Unit 2 -- Design decisions (not started)
+
 All design questions needed before implementation can start:
 
 - Mount path specification, worktree lifecycle, compose template changes
 - Command adaptation, migration path, security invariant updates
 
-**Unit 3 -- Design document output (not started)**
+### Unit 3 -- Design document output (not started)
 
 - ADR for resolved design decisions, updated architecture docs, roadmap task list
 

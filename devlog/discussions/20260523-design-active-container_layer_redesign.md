@@ -186,7 +186,7 @@ All moved from `libs/_templates/`.
 
 ## 3. Implementation Sequence (updated)
 
-```
+```text
 Session 1: libs/ stage ✅ COMPLETE
   - All src/libs/, src/build/, src/capability/, src/reasoning/entrypoint,
     scripts/build.sh, scripts/guards.sh, scripts/workflows/, scripts/templates/
@@ -258,7 +258,7 @@ These apply to all subsequent structural cleanup sessions.
 
 ### Current `providers/` tree
 
-```
+```text
 providers/
 ├── pi/            base.Dockerfile, provider.Dockerfile, preflight.sh,
 │                    setup.sh, onboard.sh, AGENTS.md, config/,
@@ -274,7 +274,7 @@ providers/
 
 ### Current `scripts/` tree
 
-```
+```text
 scripts/
 ├── agent-sandbox.sh         CLI entrypoint — dispatches to scripts/
 ├── start_agent.sh           Session startup — preflight, snapshot, compose

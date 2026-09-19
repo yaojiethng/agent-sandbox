@@ -69,7 +69,7 @@ The vault is now `make start`-ready.
 
 Checkpoints are dated git branches used as rollback points. Create one before every agent session.
 
-**Create**
+### Create
 
 ```bash
 bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<suffix>]
@@ -77,7 +77,7 @@ bash .vault/scripts/checkpoint-create.sh --root=<path> [--label=<suffix>]
 
 Requires a clean working tree.
 
-**Roll back**
+### Roll back
 
 ```bash
 bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]
@@ -85,7 +85,7 @@ bash .vault/scripts/checkpoint-rollback.sh --root=<path> [--checkpoint=<ref>]
 
 Defaults to `checkpoint/latest`. Creates a rollback commit -- does not rewrite history.
 
-**Prune**
+### Prune
 
 ```bash
 bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>
@@ -93,7 +93,7 @@ bash .vault/scripts/checkpoint-prune.sh --root=<path> --keep=<n>
 
 Keeps N most recent checkpoint branches. Prompts before deleting.
 
-**List**
+### List
 
 ```bash
 git -C /path/to/vault branch --list 'checkpoint/*'

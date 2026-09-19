@@ -115,13 +115,13 @@ If the investigation's core findings are sound but a detail is incorrect (wrong 
 1. Edit the affected text directly in the body of the document.
 2. Append a dated amendment block at the bottom:
 
-```
+```text
 ---
 [CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
 ```
 
-3. Do not alter the document's status, title, or metadata.
-4. Propose the amended document to the operator for review.
+1. Do not alter the document's status, title, or metadata.
+2. Propose the amended document to the operator for review.
 
 ### Invalid investigation -- superseded or incorrect content
 
@@ -130,12 +130,12 @@ If the investigation's core content is wrong or has been superseded by properly 
 1. Set the document status to `Superseded`.
 2. Add a blockquote redirect after the status line pointing to the correct source:
 
-```
+```text
 > **Superseded.** This investigation has been superseded by [correct document name](path/to/document). Do not rely on the findings below.
 ```
 
-3. Do not edit the body content.
-4. Propose the amended document to the operator for review.
+1. Do not edit the body content.
+2. Propose the amended document to the operator for review.
 
 The operator may delete the document. If deleted, the operator will mark any referencing links `[REMOVED]`. The agent does not delete investigation documents.
 

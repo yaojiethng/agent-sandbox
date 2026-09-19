@@ -15,7 +15,7 @@ Invert the capability-layer entrypoint's primary branch so the fresh-init path i
 
 Current `src/capability/entrypoint.sh` (~L83-132) is shaped:
 
-```
+```bash
 if [[ -d "$SANDBOX_DIR/.git" ]]; then
   # RESUME branch — skip snapshot gate/init; workspace-path writes + upgrade path
 else

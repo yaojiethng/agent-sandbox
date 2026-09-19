@@ -117,7 +117,7 @@ would abort the shell. The guard prevents that.
 |---|---|---|
 | AC1 | `interface_contract_strict()` is the one reversible flag, default warn | [x] |
 | AC2 | `_check_interface_contract` warns under default, refuses under strict | [x] (tests) |
-| AC3 | Preflight propagates a strict refusal (non-zero) | [x] `|| return 1` |
+| AC3 | Preflight propagates a strict refusal (non-zero) | [x] `\|\| return 1` |
 | AC4 | Agent entrypoint container<->container check added; hard-stops under strict, warns under default | [x] (tests) |
 | AC5 | Missing record file/key never blocks start | [x] (tests + guard) |
 | AC6 | `container-sig` and its tooling untouched | [x] (diff clean) |

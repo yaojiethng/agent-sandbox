@@ -17,7 +17,7 @@ agent recommends names; the operator decides them.
 
 ## Structure
 
-```
+```text
 # <Principle>
 
 **Current:** YYYY-MM-DD

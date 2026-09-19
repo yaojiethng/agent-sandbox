@@ -52,7 +52,7 @@ Met all requirements from the planning handover:
 
 | Decision | Rationale | Where recorded |
 |----------|-----------|----------------|
-| Use `sha1sum | head -c8` for `WORKTREE_ID` | Collision-resistant enough for local namespacing; simple to derive from path; stable across runs | `start_agent.sh` |
+| Use `sha1sum \| head -c8` for `WORKTREE_ID` | Collision-resistant enough for local namespacing; simple to derive from path; stable across runs | `start_agent.sh` |
 | Keep `CHECKPOINT_TS` variable name (not `SESSION_TS`) | Avoided broad rename to keep this Change 1 extension focused; `SESSION_TS` is the preferred name in future stories but unnecessary churn here | This handover |
 | Scope pruning via `git tag --list "agent-checkpoint/${WORKTREE_ID}/*"` | Robust way to ensure one worktree doesn't delete another's checkpoints; prevents cross-session interference | `start_agent.sh` |
 | Detached HEAD guard: check for literal `HEAD` string | `rev-parse --abbrev-ref HEAD` returns `HEAD` in detached state; substituting short SHA maintains session name uniqueness and readability | `start_agent.sh` |
@@ -74,7 +74,7 @@ Met all requirements from the planning handover:
 
 **Test suite execution:**
 
-```
+```text
 === start_agent.sh tests (Change 1: checkpoint + Change 2: SESSION_NAME) ===
 
 [ checkpoint_tag_created ]
@@ -120,7 +120,7 @@ Results: 19 passed, 0 failed
 
 ## Next Session
 
-**Change 2 -- Format-patch + session-scoped artefact directory**
+### Change 2 -- Format-patch + session-scoped artefact directory
 
 This session completed the Change 1 extensions identified in the planning handover. The next step is to proceed with the core M2.3 Change 2 implementation:
 

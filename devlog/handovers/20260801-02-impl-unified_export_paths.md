@@ -46,7 +46,7 @@ Three units:
 
 ### Path convention
 
-```
+```text
 <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<RUN_ID>/
 <PARENT_DIR>/<SUBDIR>/<EXPORT_TIME>-<LABEL>-<RUN_ID>/
 ```
@@ -62,7 +62,7 @@ Autosave is the exception: no EXPORT_TIME in the directory name because it's ove
 
 ### export_path function
 
-```
+```text
 export_path PARENT_DIR SUBDIR RUN_ID [LABEL]
 ```
 

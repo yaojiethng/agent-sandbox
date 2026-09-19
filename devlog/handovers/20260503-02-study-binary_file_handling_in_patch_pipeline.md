@@ -32,7 +32,7 @@ Not yet defined.
 | [`libs/package_branch.sh`](../../libs/package_branch.sh) | Line 78: `grep -v '^index '` filter strips binary index lines |
 | [`libs/package_diff.sh`](../../libs/package_diff.sh) | Line 193: same pattern as package_branch.sh |
 | [`tests/knowledge/knowledge_binary_diff_apply.sh`](../../tests/knowledge/knowledge_binary_diff_apply.sh) | Knowledge test documenting git's binary diff/apply behaviour |
-| [`docs/development/testing_policy.md`](../../docs/development/testing_policy.md) | Updated to document knowledge test conventions | |
+| [`docs/development/testing_policy.md`](../../docs/development/testing_policy.md) | Updated to document knowledge test conventions |
 
 ## Decisions made this session
 
@@ -50,7 +50,7 @@ None.
 | [`docs/development/testing_policy.md`](../../docs/development/testing_policy.md) | Added Knowledge Tests section -- conventions, purpose, exclusion from test runner |
 | [`libs/package_branch.sh`](../../libs/package_branch.sh) | `git diff` -> `git diff --binary`; `grep -v '^index '` -> selective awk filter (keeps index for binary, strips for text) |
 | [`libs/package_diff.sh`](../../libs/package_diff.sh) | Same change as package_branch.sh |
-| [`docs/devlog/handovers/20260503-02-study-binary_file_handling_in_patch_pipeline.md`](../../docs/devlog/handovers/20260503-02-study-binary_file_handling_in_patch_pipeline.md) | This handover | |
+| [`docs/devlog/handovers/20260503-02-study-binary_file_handling_in_patch_pipeline.md`](../../docs/devlog/handovers/20260503-02-study-binary_file_handling_in_patch_pipeline.md) | This handover |
 
 ## Deferred items
 

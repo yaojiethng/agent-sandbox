@@ -52,7 +52,8 @@ These principles are stable. The operating workflow and policy documents are the
 
 **No restatement of completed work.** Reference by name only.
 
-**Keep tests green docs up-to-date.** After completing a change, always ensure changes are propagated to features and tests.
+**Keep tests green docs up-to-date.** After completing a change, always ensure changes are propagated to features and tests
+
 ---
 
 ## Propagation Discipline
@@ -61,7 +62,7 @@ When a task requires applying a change across multiple files -- a naming rule, a
 
 **Before writing any file**, produce a checklist in chat:
 
-```
+```text
 Propagation checklist -- <change description>
 
 | File | Change | Status |

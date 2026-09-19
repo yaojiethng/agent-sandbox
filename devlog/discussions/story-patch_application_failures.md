@@ -17,7 +17,7 @@ When applying a bundle of numbered patches via `make draft`, patches can fail to
 
 **Error:**
 
-```
+```text
 error: src/reasoning/providers/opencode/base.Dockerfile: No such file or directory
 ```
 
@@ -45,7 +45,7 @@ Not yet encountered -- see the `--recount` fallback in `apply_run` which handles
 
 **Error:**
 
-```
+```text
 error: src/capability/Dockerfile: does not exist in index
 error: src/reasoning/Dockerfile.node: does not exist in index
 ...
@@ -71,7 +71,7 @@ This produces `deleted file mode` for the old name and `new file mode` for the n
 
 **Error:**
 
-```
+```text
 error: src/reasoning/providers/hermes/base.dockerfile: already exists in working directory
 error: src/reasoning/Dockerfile.python: patch does not apply
 ```
@@ -102,7 +102,7 @@ The snapshot pipeline produces:
 
 Inside the container on case-sensitive ext4:
 
-```
+```text
 HEAD tree:    base.Dockerfile  (from git archive HEAD)
 Working tree:  base.dockerfile  (from rsync overlay)
 Index:         base.Dockerfile  (from git add -A at baseline creation)
@@ -135,7 +135,7 @@ After this, `git archive HEAD` will produce `base.dockerfile` and all future con
 
 **Error:**
 
-```
+```text
 error: patch failed: devlog/discussions/security_delta_worktree_model.md:1
 error: devlog/discussions/security_delta_worktree_model.md: patch does not apply
 ```
@@ -190,7 +190,6 @@ Status after triage session `20260528-02-workflow-patch_application_findings_tri
 | F5 -- `DIFFS` range filter skips patch 1 | **Closed** | Correct behaviour -- feature, not a bug. |
 | F6 -- Cumulative patch verified clean | **Closed** | Workaround confirmed functional. |
 
-This is the recommended fallback when per-commit patches cannot apply due to rename conflicts or baseline divergence.
----
+## This is the recommended fallback when per-commit patches cannot apply due to rename conflicts or baseline divergence
 
 [CORRECTION -- 2026-08-10]: CLI interaction standards document renamed from `cli-standards.md` to `cli-conventions.md` (ste-framing: conventions, not standards). All in-body `cli-standards` references in this record updated to the new filename to keep the historical link resolvable. The rename and new framing are recorded in handover `20260810-09`.

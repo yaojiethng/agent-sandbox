@@ -15,9 +15,9 @@ Re-audit of the committed design surfaced one spec bug and several unrecorded co
 
 ## Scope (operator-confirmed)
 
-| # | Item | Target |
-|---|---|---|
-| 1 | Deleted-file tar bug fix: enumeration carries an existence filter (keeps paths where `[[ -e ]] || [[ -L ]]`), so deleted tracked paths are absent from the tar by construction. Adopted from the knowledge probe's validated enumeration; replaces the comm-subtraction idea. | ADR 2026-09-04 entry | done |
+| # | Change | Reference/ADR | Status |
+|---|---|---|---|
+| 1 | Deleted-file tar bug fix: enumeration carries an existence filter (keeps paths where `[[ -e ]] \|\| [[ -L ]]`), so deleted tracked paths are absent from the tar by construction. Adopted from the knowledge probe's validated enumeration; replaces the comm-subtraction idea. | ADR 2026-09-04 entry | done |
 | 2 | Self-verifying seed: final seeder step compares `git status --porcelain=v1 -uall` between `/src` and `/dest`; divergence aborts the seed. | ADR 2026-09-04 entry | done |
 | 3 | Parity guarantee strengthened: **porcelain-identical**. Reset dropped; index crosses with the repository; staging state preserved. Consumer sweep clean (F5). | ADR (R2 reword + entry) | done |
 | 4 | User-identity parity: seeder and agent service run as the same UID; volume file ownership is load-bearing. | ADR entry; compose wiring in impl iteration | recorded |

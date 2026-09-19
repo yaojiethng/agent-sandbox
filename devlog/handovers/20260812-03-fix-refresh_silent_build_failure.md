@@ -48,7 +48,7 @@ Minimal, pattern-consistent (uses the `|| true` / `|| _rc=$?` idiom already cano
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | Use `\|\| true` / `\| _rc=$?` capture (repo-canonical) rather than a bare `set +e` region or `|| :` | matches `bash-coding-conventions.md` rule 4.3 and the open AGENT_FEEDBACK mitigation; `\|\| _rc=$?` preserves the child's exact exit code (e.g. 42), not just "non-zero". |
+| 1 | Use `\|\| true` / `\| _rc=$?` capture (repo-canonical) rather than a bare `set +e` region or `\|\| :` | matches `bash-coding-conventions.md` rule 4.3 and the open AGENT_FEEDBACK mitigation; `\|\| _rc=$?` preserves the child's exact exit code (e.g. 42), not just "non-zero". |
 | 2 | Unify `build_image` TTY/non-TTY failure handling | the two modes were handling the identical "docker failed" condition differently (one descriptive, one a silent `set -e` abort); unify failure, keep each mode's existing success rendering to avoid regression. |
 | 3 | Keep `_buildkit_run` contract "return child's exit status" | correct per GOTCHA [H]: a returned library function may return non-zero; the caller guarding with `\|\|` is the documented pattern. Do not silently swallow status. |
 
@@ -56,8 +56,8 @@ Minimal, pattern-consistent (uses the `|| true` / `|| _rc=$?` idiom already cano
 
 | # | Finding | Disposition |
 |---|---|---|
-| 1 | `set -e` + `pipefail` + a `grep`-no-match pipeline in a command-substitution assignment aborts the whole script, not just the assignment | fixed; the canonical `|| true` / `|| _rc=$?` idioms now applied |
-| 2 | `wait` on a failed child aborts under `set -e` before failure handling runs | fixed with `wait ... || _rc=$?` |
+| 1 | `set -e` + `pipefail` + a `grep`-no-match pipeline in a command-substitution assignment aborts the whole script, not just the assignment | fixed; the canonical `\|\| true` / `\|\| _rc=$?` idioms now applied |
+| 2 | `wait` on a failed child aborts under `set -e` before failure handling runs | fixed with `wait ... \|\| _rc=$?` |
 | 3 | A sourced function returning non-zero, called at top level, aborts under `set -e` before the caller reads `$?` | the caller (`build_image`) now captures status via `\|\| _rc=$?` |
 | 4 | **Googler's shell style guide is silent on `\|\| true`** (it is not blessed or forbidden); it is standard POSIX/bash for "this command legitimately fails sometimes, don't blow up" and matches this repo's conventions | n/a (answered operator question) |
 | 5 | non-TTY `build_image` branch had the same silent-abort class | fixed in scope (see Completed #4) |

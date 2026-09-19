@@ -123,8 +123,8 @@ Audited all shared libraries (copied into every provider image) for Pi-specific 
 
 **Compose template** -- has two hardcoded Pi paths that are not templated:
 
-  - Line 102: `target: /home/agentuser/.pi/agent` (bind mount target)
-  - Line 106: `target: /home/agentuser/.pi/agent/bin` (tmpfs mount target)
+- Line 102: `target: /home/agentuser/.pi/agent` (bind mount target)
+- Line 106: `target: /home/agentuser/.pi/agent/bin` (tmpfs mount target)
   These are broken for non-Pi providers; they will only mount at the Pi path regardless of `{{PROVIDER_NAME}}` in the source.
 
 **Provider Dockerfiles** -- structurally identical across all 4 providers for the shared libs + agent file COPY commands. All bake `/opt/workflow/agent/skills/` and `/opt/workflow/agent/prompts/` into the image, even though only Pi consumes them.

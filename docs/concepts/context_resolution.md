@@ -8,7 +8,7 @@
 
 The codebase is organised into three deployment contexts. Each determines its identity and locates its neighbours differently.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │ HOST CONTEXT                                             │
 │                                                          │
@@ -137,7 +137,7 @@ These paths are immutable at runtime. The entrypoint files and diagnostic script
 
 Context is not inherited -- each file declares how it resolves its own location.
 
-```
+```text
 agent-sandbox.sh ── sets $AGENT_SANDBOX_REPO
   └─ sources ── workflow/draft.sh ── uses $AGENT_SANDBOX_REPO
                    └─ sources ── src/libs/session_state.sh ── uses _self_dir (self-resolution)
@@ -168,7 +168,7 @@ At the seam between host context and ambiguous-context libs, the host's variable
 
 The dependency graph follows directional rules that enforce separation between layers:
 
-```
+```text
 scripts/  ──→ libs/shared/          host scripts source shared libs
 scripts/  ──→ scripts/              may source other scripts if logically
                                       a library (e.g. checkpoint.sh)

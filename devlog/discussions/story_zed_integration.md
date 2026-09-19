@@ -235,7 +235,7 @@ How each axis value contributes to each use case. `[x]` = covers; `partial` = pa
 - Use case (6) -- live view into agent file changes -- was confirmed high-importance in Session 1 (Q4 resolved). The on-axis option is C2; **Session 3 is scoped to test it.** C4 is the documented fallback if Session 3 fails.
 - A2 is closed for pi (no server API; ACP rejected). The row remains in the table for traceability but is not pursued.
 
-** Caveat -- Zed git-pane lock contention.** Recent Zed versions hold `.git/index.lock` on every detected git repo in open workspaces whenever git features are enabled. This blocks host-side git mutation: any concurrent `make confirm` / `make draft` / `make apply` (or operator `git commit`) from a bare terminal will fail or block while Zed is open on `PROJECT_DIR`. Workaround: close the Zed workspace before running these commands. Use case (1) (review changes) is unaffected as long as no concurrent host-side git mutation is running. See Open Questions Q13 and Investigation Findings -> Session 2 for details. Status: upstream-pending.
+**Caveat -- Zed git-pane lock contention.** Recent Zed versions hold `.git/index.lock` on every detected git repo in open workspaces whenever git features are enabled. This blocks host-side git mutation: any concurrent `make confirm` / `make draft` / `make apply` (or operator `git commit`) from a bare terminal will fail or block while Zed is open on `PROJECT_DIR`. Workaround: close the Zed workspace before running these commands. Use case (1) (review changes) is unaffected as long as no concurrent host-side git mutation is running. See Open Questions Q13 and Investigation Findings -> Session 2 for details. Status: upstream-pending.
 
 These are observations from the table updated against Sessions 1 and 2 findings.
 
@@ -255,33 +255,33 @@ What remains unresolved given the preliminary context above. Numbered for cross-
 
 4. **How important is use case (6) (live view into agent file changes) in practice?** **Resolved: high.** Two named motivations: cross-platform UI consistency, and live view into agent file changes to catch incomplete implementations before review. Promotes the C2 experiment into active scope. See Session 1 findings.
 
-6. **Is `make serve` + Zed-on-host (A2 + C0/C1 cluster) viable for pi?** **Closed: no.** Pi does not currently expose a server API; the closest analog is ACP, which is rejected. Reopens if a non-pi provider with a server API enters scope.
+5. **Is `make serve` + Zed-on-host (A2 + C0/C1 cluster) viable for pi?** **Closed: no.** Pi does not currently expose a server API; the closest analog is ACP, which is rejected. Reopens if a non-pi provider with a server API enters scope.
 
 ### Closed by workaround / shelved
 
-9. **Why does B1 TUI rendering fail intermittently?** **Closed by workaround.** Wait-for-welcome discipline resolves the issue; deeper investigation deferred indefinitely.
+1. **Why does B1 TUI rendering fail intermittently?** **Closed by workaround.** Wait-for-welcome discipline resolves the issue; deeper investigation deferred indefinitely.
 
-10. **Does multi-pane attach have practical use given Ctrl-D coupling and state divergence?** **Shelved.** Multi-attach has no current use; multi-exec needs harness work; one-agent-one-pane is good enough for now. Pi subagents (headless mode) noted as a future direction.
+2. **Does multi-pane attach have practical use given Ctrl-D coupling and state divergence?** **Shelved.** Multi-attach has no current use; multi-exec needs harness work; one-agent-one-pane is good enough for now. Pi subagents (headless mode) noted as a future direction.
 
 ### Active -- Session 3 scope
 
-5. **Does C2 (devcontainer remote-server in the reasoning layer) work without disrupting the agent runtime?** Properly formulated in Experiments to Run -> Session 3. Phased: prerequisite -> non-disruption -> live view -> teardown.
+1. **Does C2 (devcontainer remote-server in the reasoning layer) work without disrupting the agent runtime?** Properly formulated in Experiments to Run -> Session 3. Phased: prerequisite -> non-disruption -> live view -> teardown.
 
 ### Still open
 
-7. **What is the operator value of multi-writer (D2)?** Lower priority than Q5 given Session 1 findings. Run as opportunity arises.
+1. **What is the operator value of multi-writer (D2)?** Lower priority than Q5 given Session 1 findings. Run as opportunity arises.
 
-8. **Watch item: any finding that contradicts the framing axiom.** No contradictions in Session 1 -- the cheapest-coverage cluster works without harness modification, supporting the axiom. Watch item remains open across future sessions.
+2. **Watch item: any finding that contradicts the framing axiom.** No contradictions in Session 1 -- the cheapest-coverage cluster works without harness modification, supporting the axiom. Watch item remains open across future sessions.
 
 ### New questions surfaced by Session 1
 
-11. **What workflow-grouping primitives does Zed offer (sessions, threads, task collections), and are they tied to ACP / Agent Panel?** Multi-workspace + multi-pane works but each pane is currently managed individually from operator memory. If Zed offers a way to group panes and tasks into named workflow units that does not require ACP, this would consolidate operator overhead. Investigation not yet framed; needs research before a clean experiment can be designed.
+ 1. **What workflow-grouping primitives does Zed offer (sessions, threads, task collections), and are they tied to ACP / Agent Panel?** Multi-workspace + multi-pane works but each pane is currently managed individually from operator memory. If Zed offers a way to group panes and tasks into named workflow units that does not require ACP, this would consolidate operator overhead. Investigation not yet framed; needs research before a clean experiment can be designed.
 
-12. **What does a parallel-sandbox workflow need from the harness?** Multi-workspace's intended use case (parallel pi sessions in distinct sandbox folders) is currently blocked by harness-side gaps: per-instance sandbox folders, multi-branch `persist_on_exit`, per-instance commit hygiene. **This is agent-sandbox work, not Zed work** -- would belong in a separate story scoped to parallel-session support. Surfaced here so the dependency is visible.
+ 2. **What does a parallel-sandbox workflow need from the harness?** Multi-workspace's intended use case (parallel pi sessions in distinct sandbox folders) is currently blocked by harness-side gaps: per-instance sandbox folders, multi-branch `persist_on_exit`, per-instance commit hygiene. **This is agent-sandbox work, not Zed work** -- would belong in a separate story scoped to parallel-session support. Surfaced here so the dependency is visible.
 
 ### Upstream-pending
 
-13. **Zed git-pane lock contention on the host repo's `.git/`.** Recent Zed holds `.git/index.lock` on every detected repo in open workspaces whenever git features are enabled, blocking external host-side git mutation (`make confirm` / `make draft` / `make apply`, plus operator `git commit`). Operator's chosen workaround: close Zed workspace before running affected commands. Watching for a Zed-side fix. Other workarounds (disable git features, route make through Zed tasks) considered and not pursued today. See Investigation Findings -> Session 2.
+ 1. **Zed git-pane lock contention on the host repo's `.git/`.** Recent Zed holds `.git/index.lock` on every detected repo in open workspaces whenever git features are enabled, blocking external host-side git mutation (`make confirm` / `make draft` / `make apply`, plus operator `git commit`). Operator's chosen workaround: close Zed workspace before running affected commands. Watching for a Zed-side fix. Other workarounds (disable git features, route make through Zed tasks) considered and not pursued today. See Investigation Findings -> Session 2.
 
 ---
 

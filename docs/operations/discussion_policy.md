@@ -6,7 +6,7 @@ Governs files in `devlog/discussions/`. For ADRs, see `adr_policy.md`.
 
 Format:
 
-```
+```text
 YYYYMMDD-{type}-{status}-{description}.md
 ```
 

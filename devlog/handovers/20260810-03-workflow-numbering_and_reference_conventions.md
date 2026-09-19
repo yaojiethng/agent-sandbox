@@ -12,17 +12,17 @@ Establish a general communication convention for numbering and cross-references 
 ## Scope
 
 - **Operator ask (new session):** address the context-heavy numbering concern as a general communication rule, observed in writing and in chat turns:
- - Standardize numbering conventions between chat and documentation, including code comments
- - Discontinue transient chat numbering in document records
- - Discontinue transient numbering in discussion documents where the referenced document already has its own numbering -- qualified references only (e.g. "Open Question Q11 of [document]")
- - Use the descriptive name as the canonical reference (e.g. "loop-documentation structure + state diagram", not a question/finding number)
- - Context-aware numbering: an enumeration in one context (chat Q1..Q5, handover finding table) is never pointed to from another context without carrying the defining context
+- Standardize numbering conventions between chat and documentation, including code comments
+- Discontinue transient chat numbering in document records
+- Discontinue transient numbering in discussion documents where the referenced document already has its own numbering -- qualified references only (e.g. "Open Question Q11 of [document]")
+- Use the descriptive name as the canonical reference (e.g. "loop-documentation structure + state diagram", not a question/finding number)
+- Context-aware numbering: an enumeration in one context (chat Q1..Q5, handover finding table) is never pointed to from another context without carrying the defining context
 - **Convention home (to be proposed):** canonical section in `docs/operations/documentation_policy.md`; chat + code-comment clauses in `AGENTS.md`. Text proposed one section at a time, operator-approved before writing (governance gate).
 - **Known instances to remediate (pending scope confirmation):**
- - `devlog/discussions/design_dual_layer_seam_testing.md` -- "Session 11b-11e" headings, "(11b)" inline refs, "M2.7 item 8/10/12" refs (dangling after M2.7 compaction)
- - `scripts/dry_run_reasoning.sh` L97, `tests/knowledge/knowledge_pi_config_cycle.sh` L23 -- "M2.7 item 8" comment refs (dangling)
- - `docs/operations/handover_policy.md` L203 -- "roadmap.md item 13" example (position-based reference)
- - Prior chat reply: "Finding 11 (loop-documentation structure + state diagram) -- M3" (context-heavy; behavior fix)
+- `devlog/discussions/design_dual_layer_seam_testing.md` -- "Session 11b-11e" headings, "(11b)" inline refs, "M2.7 item 8/10/12" refs (dangling after M2.7 compaction)
+- `scripts/dry_run_reasoning.sh` L97, `tests/knowledge/knowledge_pi_config_cycle.sh` L23 -- "M2.7 item 8" comment refs (dangling)
+- `docs/operations/handover_policy.md` L203 -- "roadmap.md item 13" example (position-based reference)
+- Prior chat reply: "Finding 11 (loop-documentation structure + state diagram) -- M3" (context-heavy; behavior fix)
 - **Not in scope:** the loop-documentation structure decision + state diagram (M3) itself; STE sweep; harness-sig; any other Deferred entry.
 
 ## Carried forward

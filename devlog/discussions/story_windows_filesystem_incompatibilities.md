@@ -18,7 +18,7 @@ The 9p implementation in Docker Desktop's WSL2 backend does not support several 
 
 **Manifestation:** Three warnings on every Pi startup:
 
-```
+```text
 Warning: (startup session lookup, global settings) EPERM: operation not permitted, utime /home/agentuser/.pi/agent/settings.json.lock
 Warning: (runtime creation, global settings) EPERM: operation not permitted, utime ...
 ```
@@ -62,7 +62,7 @@ This shadows the bind-mount's `bin/` with a container-local tmpfs, so Pi's cross
 
 **Root cause:** The tmpfs overlay mounted at `~/.pi/agent/bin/` (the mitigation for Issue 2) carries the default `tmpfs` mount flag `noexec`. The mount line from `/proc/mounts`:
 
-```
+```text
 tmpfs on /home/agentuser/.pi/agent/bin type tmpfs (rw,nosuid,nodev,noexec,relatime,mode=777)
 ```
 

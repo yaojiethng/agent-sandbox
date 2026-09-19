@@ -23,7 +23,7 @@ Documentation updates as scoped in `20260701-02-design-m2_6_2_persistence_scopin
 
 ## Key files modified this session
 
-*(Null: files listed in Completed table above.)*
+(Null: files listed in Completed table above.)
 
 ## Deferred items
 

@@ -32,32 +32,12 @@ In this environment, the standard WSL host user operates as `UID 1000`, while th
 
 | Feature / Criteria | Solution 1: Host-Side ACLs | Solution 2: Runtime Entrypoint | Solution 3: Shared Group Bind | Solution 4: UID Mapping (User Hijack) |
 | --- | --- | --- | --- | --- |
-| **Execution Point** | Host-Side Setup Script
-
- | Container Runtime Boot
-
- | One-Time Host Setup + Compose | Build Time (Dockerfile + Compose) |
-| **Privilege Escalation** | Host `sudo` during setup
-
- | Passwordless `sudo` in container
-
- | Host `sudo` during configuration | Build-time root (standard in Dockerfiles) |
-| **Boot Time Impact** | None (Zero latency) | High (Linear with inode count)
-
- | None (Zero latency) | None (Zero latency) |
-| **Host File Ownership** | Retained by Host User (`1000`)
-
- | Hijacked by Container User (`1001`)
-
- | Shared (Owner: `1000`, Group: `1001`) | **Natively shared** (Container runs as Host UID) |
-| **Docker Driver Support** | Requires WSL Native / Ext4 FS
-
- | Driver Dependent (Fails on gRPC FUSE)
-
- | WSL Native Linux only (fails on macOS/Windows DD) | **Universal** (macOS, Windows DD, WSL, Linux, CI) |
-| **Inheritance (cp/mkdir)** | Fragile (ACL mask can be reset)
-
- | N/A (runtime fix) | Reliable via setgid bit | **Native** (same UID = same owner) |
+| **Execution Point** | Host-Side Setup Script | Container Runtime Boot | One-Time Host Setup + Compose | Build Time (Dockerfile + Compose) |
+| **Privilege Escalation** | Host `sudo` during setup | Passwordless `sudo` in container | Host `sudo` during configuration | Build-time root (standard in Dockerfiles) |
+| **Boot Time Impact** | None (Zero latency) | High (Linear with inode count) | None (Zero latency) | None (Zero latency) |
+| **Host File Ownership** | Retained by Host User (`1000`) | Hijacked by Container User (`1001`) | Shared (Owner: `1000`, Group: `1001`) | **Natively shared** (Container runs as Host UID) |
+| **Docker Driver Support** | Requires WSL Native / Ext4 FS | Driver Dependent (Fails on gRPC FUSE) | WSL Native Linux only (fails on macOS/Windows DD) | **Universal** (macOS, Windows DD, WSL, Linux, CI) |
+| **Inheritance (cp/mkdir)** | Fragile (ACL mask can be reset) | N/A (runtime fix) | Reliable via setgid bit | **Native** (same UID = same owner) |
 | **Host-Side Changes** | ACL package + `setfacl` | None | `sudo groupadd`, `sudo usermod`, log-out/in | **None** (`id -u`/`id -g` are free) |
 | **Build Pipeline Impact** | None | None | None | Requires `--build-arg` threading for host UID/GID |
 | **Image Portability** | Portable | Portable | Portable | **Tied to host UID** (rebuild per machine) |
@@ -149,7 +129,8 @@ This strategy resolves boundaries by aligning group memberships rather than indi
 
 #### Technical Implementation
 
-**Step A: Host Group Registration (One-time)**
+##### Step A: Host Group Registration (One-time)
+
 Expose GID `1001` on the WSL host machine and link the primary user to it:
 
 ```bash
@@ -158,7 +139,8 @@ sudo usermod -aG agentgroup $USER
 
 ```
 
-**Step B: Host Folder Permission Mapping**
+##### Step B: Host Folder Permission Mapping
+
 Configure the project directory to use group ownership and enable group propagation:
 
 ```bash
@@ -177,7 +159,8 @@ sudo chmod -R g+s "$SANDBOX_DIR"
 
 ```
 
-**Step C: Container Engine Configuration**
+##### Step C: Container Engine Configuration
+
 Update `docker-compose.yml` to run processes under the shared scope:
 
 ```yaml
@@ -215,7 +198,7 @@ Unlike Strategy 3 (Shared Group Bind), which fails on macOS and Windows Docker D
 
 #### Technical Implementation
 
-**Step A: Dockerfile -- Handle UID/GID Arguments and Collisions**
+##### Step A: Dockerfile -- Handle UID/GID Arguments and Collisions
 
 ```dockerfile
 # Accept Host IDs as Build Arguments
@@ -241,7 +224,7 @@ RUN chown -R ${HOST_UID}:${HOST_GID} /home/agentuser
 USER agentuser
 ```
 
-**Step B: Compose -- Run as Host UID/GID**
+##### Step B: Compose -- Run as Host UID/GID
 
 ```yaml
 services:
@@ -256,7 +239,7 @@ services:
       - .:/home/agentuser/workspace
 ```
 
-**Step C: Build Pipeline -- Export and Thread Host IDs**
+##### Step C: Build Pipeline -- Export and Thread Host IDs
 
 The startup script (`start_agent.sh`) exports the host identity before invoking compose:
 
@@ -287,15 +270,15 @@ docker build \
 
 **Pros:**
 
-- Total inheritance: `cp`, `mv`, `mkdir` work natively -- no post-copy scripts needed.
-- No ACL complexity: eliminates the mask-throttling problem entirely.
-- Zero runtime overhead: no `chown -R` in entrypoint, no `setfacl` at startup.
-- Environment parity: WSL/Linux development feels as seamless as macOS.
+* Total inheritance: `cp`, `mv`, `mkdir` work natively -- no post-copy scripts needed.
+* No ACL complexity: eliminates the mask-throttling problem entirely.
+* Zero runtime overhead: no `chown -R` in entrypoint, no `setfacl` at startup.
+* Environment parity: WSL/Linux development feels as seamless as macOS.
 
 **Cons:**
 
-- Build-time dependency: developers with non-standard UIDs must rebuild images locally.
-- Dockerfile complexity: requires conditional user-rename logic for UID collisions.
-- Image tied to host UID: images are not portable across machines with different host UIDs (rebuild required).
+* Build-time dependency: developers with non-standard UIDs must rebuild images locally.
+* Dockerfile complexity: requires conditional user-rename logic for UID collisions.
+* Image tied to host UID: images are not portable across machines with different host UIDs (rebuild required).
 
 ---

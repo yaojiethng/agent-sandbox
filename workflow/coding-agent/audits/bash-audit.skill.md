@@ -14,7 +14,7 @@ One-line findings, ranked by impact. Read-only, one-shot.
 | `local-top:` | `local` at script top level | plain assignment |
 | `export-leak:` | unnecessary `export` of behaviour flag | CLI flag |
 | `source-cycle:` | circular sourcing between libs | extract to shared leaf lib |
-| `subshell-pitfall:` | `|| true` on whole pipeline | subshell scope `(cmd \|\| true)` |
+| `subshell-pitfall:` | `\|\| true` on whole pipeline | subshell scope `(cmd \|\| true)` |
 | `shrink:` | same logic, fewer lines | show shorter form |
 | `stdlib:` | hand-rolled thing bash builtins cover | name the builtin |
 

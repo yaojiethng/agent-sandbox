@@ -38,7 +38,7 @@ Claude Desktop has no native file access. Without MCP server configuration, it o
 
 The standard integration pattern is:
 
-```
+```text
 Claude Desktop (MCP client, host process)
     │  stdio
     ▼

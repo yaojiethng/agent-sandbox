@@ -35,14 +35,6 @@ Recommendation: **(a) + (c)** -- make `build.sh` self-set `-e` (so invocation se
 | `scripts/run_agent.sh` | already sets `set -euo pipefail` (subprocess-safely) -- reference |
 | `tests/libs/test_common.sh` | harness `set -uo pipefail`, no `-e` |
 
-## Deferred
-
-(none)
-
-## Completed this session
-
-- [x] Reproduced/verified the blind spot: `build.sh` lacks self-set `-e`; subprocess tests inherit the harness's no-`-e`; `test_trace_start.sh` is safe (run_agent self-sets) but `test_trace_build.sh` is not.
-
 ## Decisions
 
 | # | Decision | Rationale |
@@ -63,6 +55,8 @@ Recommendation: **(a) + (c)** -- make `build.sh` self-set `-e` (so invocation se
 (none)
 
 ## Completed this session
+
+- [x] Reproduced/verified the blind spot: `build.sh` lacks self-set `-e`; subprocess tests inherit the harness's no-`-e`
 
 - [x] Verified the blind spot: `build.sh` lacks self-set `-e`; standalone `bash build.sh` in tests inherited the harness's no-`-e`
 - [x] Added `set -euo pipefail` to build.sh's standalone guard (sourcing does not mutate callers)

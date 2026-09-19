@@ -18,7 +18,7 @@ During M2.3 Change 1 implementation, the checkpoint tagging mechanism created a 
 for every session start, even when multiple sessions were started on the same commit.
 This resulted in tag proliferation:
 
-```
+```text
 agent-checkpoint/dd6fe4bb/20260421-074330
 agent-checkpoint/dd6fe4bb/20260421-030443
 agent-checkpoint/dd6fe4bb/20260420-161243
@@ -108,7 +108,7 @@ commits between tags. Pruning only has meaning when tags point to different comm
 |---|---|---|
 | Idempotency by commit, not by timestamp | The checkpoint marks a commit state -- multiple sessions on the same commit should share one checkpoint | `checkpoint_create()` implementation |
 | Return existing tag, don't error | Silent idempotency is preferable to forcing callers to handle "tag exists" errors | `checkpoint_create()` implementation |
-| Keep earliest timestamp as canonical | First session on a commit is the meaningful checkpoint; later sessions are retries or restarts | `sort | tail -n 1` selects earliest |
+| Keep earliest timestamp as canonical | First session on a commit is the meaningful checkpoint; later sessions are retries or restarts | `sort \| tail -n 1` selects earliest |
 
 ## Completed this session
 

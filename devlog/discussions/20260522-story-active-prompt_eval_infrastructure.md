@@ -46,7 +46,7 @@ Any solution must satisfy:
 
 A published case study describes selecting a local 3B model to replace Claude Sonnet for production summarization features. The approach maps directly to our prompt/skill evaluation problem:
 
-**Core pattern: capability eval -> golden dataset -> evaluators -> Pareto tradeoff**
+#### Core pattern: capability eval -> golden dataset -> evaluators -> Pareto tradeoff
 
 1. **Golden dataset** -- A set of ideal outcomes to measure generated outputs against. For prompts/skills, this is a checklist of invariants the skill must satisfy: correct step numbers, correct policy references, absence of stale terminology, presence of required gates. Not a collection of outputs -- an invariant spec.
 
@@ -97,9 +97,9 @@ grep -qi "recovery check.*bookkeeping\|bookkeeping.*recover" $f && echo "$f: CHE
 
 v2 is the Pareto-dominant option for correctness -- it's longer but every line of length is justified by correctness coverage. v1 is shorter but misses divergence detection entirely.
 
-4. **How do we test session-start prompts without an active session?** The current system has no mechanism for parallel or sandboxed sessions -- running a session-start prompt headless still operates on the real project state (handovers, roadmap). This is a known limitation related to parallel session support, scoped somewhere in M2 but not yet assigned to a specific milestone. Marked as a gap in the current eval approach: code-based evaluators (grep) work fine, but behavioral evals that require the prompt to produce actual handover output cannot be run without disrupting the active session.
+1. **How do we test session-start prompts without an active session?** The current system has no mechanism for parallel or sandboxed sessions -- running a session-start prompt headless still operates on the real project state (handovers, roadmap). This is a known limitation related to parallel session support, scoped somewhere in M2 but not yet assigned to a specific milestone. Marked as a gap in the current eval approach: code-based evaluators (grep) work fine, but behavioral evals that require the prompt to produce actual handover output cannot be run without disrupting the active session.
 
-5. **Code-based evaluators can't parse negation.** The I2 check (`grep -qi "compact.*step 1"`) false-flags V3 which says "Compaction is no longer a Step 1 action." Dumb grep catches the proximity of "compaction" and "Step 1" but can't distinguish instruction ("compact at Step 1") from clarification ("do NOT compact at Step 1"). Fix: add exclusion patterns (`grep ... | grep -v "no longer"`) or accept that code-based evaluators produce false positives that require human triage.
+2. **Code-based evaluators can't parse negation.** The I2 check (`grep -qi "compact.*step 1"`) false-flags V3 which says "Compaction is no longer a Step 1 action." Dumb grep catches the proximity of "compaction" and "Step 1" but can't distinguish instruction ("compact at Step 1") from clarification ("do NOT compact at Step 1"). Fix: add exclusion patterns (`grep ... | grep -v "no longer"`) or accept that code-based evaluators produce false positives that require human triage.
 
 ### Pre-state setup problem for new-session behavioral evals
 

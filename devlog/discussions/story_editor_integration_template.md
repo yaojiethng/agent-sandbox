@@ -295,7 +295,7 @@ Findings get appended to **Investigation Findings** as a new "Hand-rolled sessio
 
 | Question | Status | Notes |
 |---|---|---|
-| &lt;&lt;Q-X-N&gt;&gt; | &lt;&lt;Resolved | Closed by workaround | Active | Still open | N/A&gt;&gt; | &lt;&lt;Brief notes&gt;&gt; |
+| `<<Q-X-N>>` | `<<Resolved \| Closed by workaround \| Active \| Still open \| N/A>>` | `<<Brief notes>>` |
 
 ---
 
@@ -313,5 +313,5 @@ Findings get appended to **Investigation Findings** as a new "Hand-rolled sessio
 | [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, and graduation |
 | [`investigation_policy.md`](../operations/investigation_policy.md) | If candidate evaluation is split into sub-investigations |
 | [`story_agent_git_surface.md`](story_agent_git_surface.md) | Adjacent surface -- agent's relationship to git, tracked separately |
-| &lt;&lt;Cross-link to parallel editor evaluations&gt;&gt; | &lt;&lt;e.g. [`story_zed_integration.md`] | Parallel evaluation of Zed for the same use cases&gt;&gt; |
+| `<<Cross-link to parallel editor evaluations>>` | `Parallel evaluation of Zed for the same use cases; see [story_zed_integration.md](story_zed_integration.md)` |
 | &lt;&lt;Tool-specific references -- vendor docs, threat model deltas, etc.&gt;&gt; | |

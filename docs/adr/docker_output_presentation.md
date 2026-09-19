@@ -24,7 +24,7 @@
 
 **Diagnostic trail (host commands that back these conclusions):** on a real host, under a pty, with `TERM=xterm-256color`:
 
-```
+```text
 # 1. Are the fds TTYs in this shell?
 for f in 0 1 2; do [ -t $f ] && echo "fd$f: tty" || echo "fd$f: NOT tty"; done
 # Results: fd0/fd1/fd2 all tty

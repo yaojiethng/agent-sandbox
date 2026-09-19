@@ -20,7 +20,7 @@ As described above. Correct invariants (git-enumerated content crosses, gitignor
 
 ### Option B -- rejected: whole-tree copy then purge (external "Method 1")
 
-```
+```bash
 docker run --rm \
   -v "$(pwd)":/src \
   -v my_volume_name:/dest \
@@ -33,7 +33,7 @@ Copy the entire project (including `.git`, untracked files, and gitignored files
 
 ### Option C -- rejected: clone into volume + patch stream (external "Method 2")
 
-```
+```bash
 docker run --rm -v "$(pwd)":/src -v my_volume_name:/dest alpine/git clone /src /dest
 git diff | docker run --rm -i -v my_volume_name:/dest alpine/git -C /dest apply
 ```
@@ -52,7 +52,7 @@ Keep the seed-tar pipeline but `docker cp` into a second mount of the sandbox vo
 
 A one-shot seeder container (the sandbox image -- already carries git and rsync; no network dependency) with the project bind-mounted **read-only** at `/src` and the sandbox volume at `/dest`:
 
-```
+```text
 cp -a /src/.git /dest/.git
 
 git -C /src ls-files -z --cached --others --exclude-standard \

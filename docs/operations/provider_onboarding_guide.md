@@ -26,7 +26,7 @@ A conforming provider supplies four required files and up to four optional files
 
 **Required:**
 
-```
+```text
 providers/<n>/
 ├── base.dockerfile               ← stable install layers; tagged <provider>-base
 ├── provider.dockerfile           ← provider layer inheriting from base; tagged <provider>-agent-<project>
@@ -36,7 +36,7 @@ providers/<n>/
 
 **Optional:**
 
-```
+```text
 providers/<n>/
 ├── config/                       ← default config files; seeded into AGENT_HOME at container start
 │   └── AGENTS.md                 ← provider-layer agent context (see Step 7)
@@ -187,7 +187,7 @@ Variables that are always derivable from other `.env` values (e.g. image names) 
 
 If the provider requires default configuration files to be present before the agent starts, place them in:
 
-```
+```text
 providers/<n>/config/
 ```
 
@@ -195,7 +195,7 @@ The provider's `provider.dockerfile` copies this directory into the image (via r
 
 Name the `.env` stub file `env.stub` -- it will be seeded as `.env` inside the container. This avoids `.gitignore` match on `.env` while keeping the file committed.
 
-```
+```text
 providers/<n>/config/
 ├── AGENTS.md       ← provider-layer agent context brief (see Step 7)
 ├── config.yaml     ← seeded as AGENT_HOME/config.yaml if absent
@@ -239,13 +239,13 @@ The two-layer agent context model is defined in [`../concepts/agent_workflow.md`
 
 If the provider requires environment variables or service configuration that applies in **all modes** (not just serve), add a provider overlay file:
 
-```
+```text
 providers/<n>/docker-compose.<n>.yml
 ```
 
 `scripts/run_agent.sh` merges this overlay automatically if the file exists, before the mode overlay (dry-run or serve). The merge order is:
 
-```
+```text
 base → provider overlay → mode overlay
 ```
 
@@ -257,7 +257,7 @@ base → provider overlay → mode overlay
 
 If the provider requires host-side setup before containers start, add a setup hook:
 
-```
+```text
 providers/<n>/setup.sh
 ```
 

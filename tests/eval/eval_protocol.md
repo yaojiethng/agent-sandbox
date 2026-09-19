@@ -55,7 +55,7 @@ Code-based evaluators are free, fast, and reproducible. They produce false posit
 
 When comparing variants, isolate the variable. Same golden dataset, same evaluators, different prompt:
 
-```
+```text
 v1 -> eval -> {I1:FAIL, I2:FAIL, I3:PASS, I4:PASS}
 v2 -> eval -> {I1:PASS, I2:FAIL, I3:PASS, I4:PASS}
 v3 -> eval -> {I1:PASS, I2:PASS, I3:PASS, I4:PASS}

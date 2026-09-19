@@ -47,7 +47,7 @@ spinning and the operator can't tell.
 
 **Architecture:**
 
-```
+```text
 build_image (scripts/build.sh)
   ├─ if TTY → _run_with_progress (src/libs/spinner.sh)
   │    ├─ _buildkit_current_step   parse step from log

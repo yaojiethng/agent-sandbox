@@ -86,10 +86,10 @@ None.
 | 1 | `sandbox_lifecycle.md` has no `INIT_SHA` references outside historical-context paragraphs | `grep -c "INIT_SHA" docs/architecture/sandbox_lifecycle.md` returns 0 |
 | 2 | Stale roadmap duplicate deleted, cross-references cleaned up | `ls docs/devlog/discussions/roadmap.md` exits 2; `grep -rn "discussions/roadmap.md" docs/` returns no results |
 | 3 | `design_diff_and_branch_packaging_workflow.md` has no `.git/INIT_SHA` references | `grep -c "\.git/INIT_SHA" docs/discussions/design_diff_and_branch_packaging_workflow.md` returns 0 |
-| 4 | Every `.sh` entry in `project_index.md` (Scripts/Lib/Tests sections) corresponds to a tracked file | `while read f; do git ls-files --error-unmatch "$f" >/dev/null 2>&1 || echo "missing: $f"; done < <(grep -oP '`\K[^`]+\.sh(?=`)' docs/development/project_index.md)` exits 0 |
+| 4 | Every `.sh` entry in `project_index.md` (Scripts/Lib/Tests sections) corresponds to a tracked file | `while read f; do git ls-files --error-unmatch "$f" >/dev/null 2>&1 \|\| echo "missing: $f"; done < <(grep -oP '`\K[^`]+\.sh(?=`)' docs/development/project_index.md)` exits 0 |
 | 5 | `baseline.tar` is untracked and `.gitignore` has an entry for it | `git ls-files --error-unmatch baseline.tar` exits 1; `grep -c "baseline\.tar" .gitignore` returns >= 1 |
-| 6 | `sandbox.Dockerfile` line 47 no longer mentions `staged.diff` | `sed -n '47p' libs/sandbox.Dockerfile | grep -c "staged\.diff"` returns 0 |
-| 7 | Architecture documents in scope describe the system as built | All 5 files touched are self-consistent and the SESSION_STATE migration is correctly reflected
+| 6 | `sandbox.Dockerfile` line 47 no longer mentions `staged.diff` | `sed -n '47p' libs/sandbox.Dockerfile \| grep -c "staged\.diff"` returns 0 |
+| 7 | Architecture documents in scope describe the system as built | All 5 files touched are self-consistent and the SESSION_STATE migration is correctly reflected |
 
 ---
 

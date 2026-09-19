@@ -17,11 +17,11 @@ Maintenance rules -- task granularity, cleanup on completion, section removal --
 | M1.4 -- Image Staleness Detection | [Complete -- see changelog](changelog.md) |
 | M1.5 -- Workflow Convergence & Directory Restructuring | [Complete -- see changelog](changelog.md) |
 | **Two-Layer Architecture** | |
-| [M2 -- Reasoning/Capability Layer Separation](#m2--reasoningcapability-layer-separation) | In progress |
+| [M2 -- Reasoning/Capability Layer Separation](#m2----reasoningcapability-layer-separation) | In progress |
 | M2.1 -- General Capability Layer Prototype | [Complete -- see changelog](changelog.md) |
 | M2.2 -- Reasoning Layer Modularisation | [Complete -- see changelog](changelog.md) |
 | M2.3 -- Apply Workflow: Capability Layer Diff Pipeline | [Complete -- see changelog](changelog.md) |
-| [M2.4 -- Session and Config Persistence](#m24--session-and-config-persistence) | Complete |
+| [M2.4 -- Session and Config Persistence](#m24----session-and-config-persistence) | Complete |
 | W1 -- Vault Capability Layer Prototype | Deferred |
 | M2.6 -- Session Resume Across Provider Implementations | Not started |
 | M2.7 -- Session Identity and Harness Versioning | [Complete -- see changelog](changelog.md) |
@@ -206,7 +206,7 @@ Milestone definitions in `roadmap_future.md` are planning targets and expected t
 
 - **Submodules not supported** -- `snapshot_enumerate_files` detects gitlink entries and aborts with a clear message. Full submodule support (recursive enumeration into nested repos) is deferred; operators must deinitialise submodules before running the harness.
 
-- **Bad diff applied to host repo corrupts future snapshots** -- `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff -- the host repo is then in a bad state and future snapshots reflect it. See [Recovery](#recovery) in `docs/development/quickstart.md` for how to reset to a known-good state.
+- **Bad diff applied to host repo corrupts future snapshots** -- `PROJECT_DIR` is never mounted during a run and the agent works exclusively in `sandbox/`, so a bad run cannot corrupt the host repo during execution. The risk is after the operator applies a bad diff -- the host repo is then in a bad state and future snapshots reflect it. See [`docs/development/quickstart.md#Recovery`](docs/development/quickstart.md#recovery) for how to reset to a known-good state.
 
 - **`make start opencode` and `make start hermes` do not share a capability layer** -- each provider invocation builds and runs its own capability layer image independently. They should share a single capability layer per project, since the sandbox, snapshot pipeline, and diff pipeline are provider-agnostic. This is a known architectural gap; resolving it requires the capability layer build and lifecycle to be fully decoupled from the provider selection path.
 

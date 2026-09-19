@@ -247,9 +247,9 @@ What remains unresolved. The list is short because most candidate questions were
 
 ### Still open
 
-6. **Q-W4 -- Watch item: any finding that contradicts the framing axiom.** No contradictions found in research. The integration as scoped (A4 overlay, Workflows, host-side workspaces) is composition of existing primitives. Watch item remains open across any future hands-on use.
+1. **Q-W4 -- Watch item: any finding that contradicts the framing axiom.** No contradictions found in research. The integration as scoped (A4 overlay, Workflows, host-side workspaces) is composition of existing primitives. Watch item remains open across any future hands-on use.
 
-7. **Q-W11 -- Warp's UX quirks at sustained-use intensity.** Brief operator hands-on flagged real-world friction not present in static feature analysis: tabs opening unexpectedly, terminal shortcuts not matching expectations from other terminal emulators. This is below the threshold of being a feature gap but above the threshold of being negligible. Ergonomics of sustained Warp use vs the operator's incumbent terminal is an open question, answered only by trying it for a real session if the operator chooses to. Not blocking the Warp-vs-Zed comparison, which can proceed on documented features alone, but worth noting before commitment.
+2. **Q-W11 -- Warp's UX quirks at sustained-use intensity.** Brief operator hands-on flagged real-world friction not present in static feature analysis: tabs opening unexpectedly, terminal shortcuts not matching expectations from other terminal emulators. This is below the threshold of being a feature gap but above the threshold of being negligible. Ergonomics of sustained Warp use vs the operator's incumbent terminal is an open question, answered only by trying it for a real session if the operator chooses to. Not blocking the Warp-vs-Zed comparison, which can proceed on documented features alone, but worth noting before commitment.
 
 ---
 

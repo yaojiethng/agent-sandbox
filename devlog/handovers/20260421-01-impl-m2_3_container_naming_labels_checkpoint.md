@@ -152,7 +152,7 @@ checkpoint_latest <project-dir>             # Alias for checkpoint_lookup
 
 **Label schema (sandbox only):**
 
-```
+```text
 agent-sandbox.project-dir=<absolute-path>
 agent-sandbox.session-name=<session-name>
 agent-sandbox.checkpoint-tag=<checkpoint-tag>
@@ -166,7 +166,7 @@ docker ps --filter "label=agent-sandbox.project-dir=${PROJECT_DIR}" --format '{{
 
 **Test results:**
 
-```
+```text
 test_checkpoint.sh:     13 passed, 0 failed
 test_start_agent.sh:    21 passed, 0 failed  (17 original + 4 container labels)
 test_apply_workspace.sh: 28 passed, 0 failed

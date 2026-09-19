@@ -43,7 +43,7 @@ None.
 | 2 | Dispatch tests pass: build (default, sandbox, single provider, provider+sandbox, multi-provider), start/serve/dry-run modes, apply with diff/branch/force, confirm with/without target, reject, stop, onboard, unknown subcommand, missing subcommand | `bash tests/test_dispatch.sh` -- 21 passed, 0 failed | Agent [x] |
 | 3 | `test_resolve_channel_base_dir` added to `test_routing.sh` covering session, autosave, diffs, bundles, invalid | `bash tests/test_routing.sh` -- routing tests pass incl. 5 new base_dir tests | Agent [x] |
 | 4 | No test regressions in full suite | `bash scripts/run_tests.sh` -- previous: 357/363, current: 383/389, 0 failed | Agent [x] |
-| 5 | Dispatch oracle tests document a known gap: build without required args does not validate | Read test: `test_build_missing_args` comment says "known gap" | Operator
+| 5 | Dispatch oracle tests document a known gap: build without required args does not validate | Read test: `test_build_missing_args` comment says "known gap" | Operator |
 
 ## Hot files
 

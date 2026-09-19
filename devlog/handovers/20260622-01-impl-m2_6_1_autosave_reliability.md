@@ -28,7 +28,7 @@ P1-A (Autosave / session-save reliability) with amendments from operator review:
 
 | File | Change |
 |---|---|
-| `src/libs/diff_export.sh` | Added `_write_export_status()` -- atomic `.export-status` writer; `_write_export_error_log()` -- timestamped error log with RUN_ID; `wait_git_lockfile()` -- poll for git index.lock (3s timeout, 200ms intervals); fixed exit code capture (`! cmd` -> `cmd || { ... }`) |
+| `src/libs/diff_export.sh` | Added `_write_export_status()` -- atomic `.export-status` writer; `_write_export_error_log()` -- timestamped error log with RUN_ID; `wait_git_lockfile()` -- poll for git index.lock (3s timeout, 200ms intervals); fixed exit code capture (`! cmd` -> `cmd \|\| { ... }`) |
 | `src/capability/entrypoint.sh` | Replaced inline EXIT trap with `_session_export()` -- waits for lockfile, runs diff_export, falls back to latest autosave on failure, writes `.export-status`; added per-attempt stderr logging to autosave loop |
 | `tests/test_diff_export.sh` | 12 tests: export status SUCCESS/FAIL/omit EXIT_CODE, error log filename/RUN_ID/contents, lockfile present/released/timeout/warning, diff_export failure path |
 
@@ -45,7 +45,7 @@ P1-A (Autosave / session-save reliability) with amendments from operator review:
 
 | Finding | Type | Impact |
 |---|---|---|
-| Bash `!` inverts exit code for `$?` -- `if ! cmd; then local ec=$?; fi` sets `ec=0` when `cmd` fails | bug (in implementation) | fixed during session; used `cmd || { local ec=$?; ... }` instead |
+| Bash `!` inverts exit code for `$?` -- `if ! cmd; then local ec=$?; fi` sets `ec=0` when `cmd` fails | bug (in implementation) | fixed during session; used `cmd \|\| { local ec=$?; ... }` instead |
 
 ## Acceptance criteria
 

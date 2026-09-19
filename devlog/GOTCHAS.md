@@ -99,7 +99,7 @@ mitigation: handover 20260823-09 changed `current_sig`"s contract but its close-
 residue grep covered only `src/`, `scripts/`, and the directly-edited test file  --  stale
 "memoized" contract comments survived in `tests/test_trace_build.sh` and
 `tests/test_session_inventory.sh` until the operator challenged propagation (fixed within
-the same handover"s scope). Rule: the AC "no references to <old contract> remain" sweep is always
+the same handover"s scope). Rule: the AC "no references to `<old contract>` remain" sweep is always
 `grep -rn <term> scripts/ src/ tests/ docs/ Makefile`, never a file subset; test
 comments asserting removed behavior are contract references and count as residue.
 

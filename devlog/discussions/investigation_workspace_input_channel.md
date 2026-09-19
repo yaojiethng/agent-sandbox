@@ -35,11 +35,11 @@ M1.6 adds a third container mount for the OpenCode session DB (`~/.local/share/o
 
 ## Open Design Questions
 
-**1. Container awareness of sandbox and workspace**
+### 1. Container awareness of sandbox and workspace
 
 Currently the container is aware of `sandbox/` (working copy of project files) but treats `.workspace/` only as an output channel. For the agent to read from an input channel in `.workspace/`, the provider entrypoint must make both paths and their purposes explicit -- e.g. via a brief placed in `sandbox/` at startup that describes the available channels. This is a provider entrypoint concern and intersects with the M1.7 provider interface definition.
 
-**2. Mount shape for the input channel**
+### 2. Mount shape for the input channel
 
 Current mount shape:
 
@@ -55,11 +55,11 @@ Options for adding an input channel:
 
 A separate RO mount is the preferred approach. Must be coordinated with M1.6 (third mount addition).
 
-**3. Git history exposure**
+### 3. Git history exposure
 
 The agent works from a snapshot copy in `sandbox/` specifically to avoid access to the host repository's git history. Whether read access to `.workspace/` changes this exposure needs to be confirmed before any mount shape change is made.
 
-**4. Input channel lifecycle**
+### 4. Input channel lifecycle
 
 The brief in the input channel must have a defined lifecycle: written by operator before run, read by agent during run, cleared or overwritten before the next run. Retention and versioning of past briefs is a secondary consideration.
 

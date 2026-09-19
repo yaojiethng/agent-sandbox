@@ -9,7 +9,7 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 
 Read the most recent handover and the roadmap:
 
-```
+```text
 ls devlog/handovers/ | sort | tail -1 | xargs -I{} read devlog/handovers/{}
 read devlog/roadmap.md
 ```
@@ -59,7 +59,7 @@ If the directive slot is non-empty:
 
 Before creating the handover:
 
-```
+```text
 Range-read: docs/operations/iteration_policy.md [Step 1  --  Open handover and Step 1 Details](iteration_policy.md#step-1-open-handover).
 ```
 

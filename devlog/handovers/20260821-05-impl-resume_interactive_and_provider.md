@@ -54,7 +54,7 @@ Note: interactive.sh currently lives under `scripts/workflows/` (sourced by draf
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `--interactive` with >=1 record -> picker (value|display), confirm, resumes chosen session | [x] picker+confirm+resume wired (end-to-end verified via fixture) |
+| 1 | `--interactive` with >=1 record -> picker (value\|display), confirm, resumes chosen session | [x] picker+confirm+resume wired (end-to-end verified via fixture) |
 | 2 | `--interactive` with 0 records -> clear "no sessions" error, non-zero | [x] test |
 | 3 | `--interactive` sole record -> still shows picker + confirm (I-1, no auto-select) | [x] |
 | 4 | `PROVIDER=<n>` filters inventory; with `--interactive` picker shows only that provider | [x] test |
@@ -100,9 +100,9 @@ Both render/behave under the word `stale`, but they are different requirements (
 | File | Change | Status |
 |---|---|---|
 | `devlog/handovers/20260821-05-impl-resume_interactive_and_provider.md` | Created this impl handover (ID 03) | done |
-| `scripts/resume_agent.sh` | Added shared inventory helpers (`record_provider`/`record_label`/`build_inventory`); `--list` enriched table (id|provider|ts|branch, newest first); `--interactive` picker+confirm (sources `interactive.sh`, no auto-select, I-1); `PROVIDER=<n>` filter for list+interactive; provider-alone guidance; downstream `--session-id` reuses helpers; help updated | done |
+| `scripts/resume_agent.sh` | Added shared inventory helpers (`record_provider`/`record_label`/`build_inventory`); `--list` enriched table (id\|provider\|ts\|branch, newest first); `--interactive` picker+confirm (sources `interactive.sh`, no auto-select, I-1); `PROVIDER=<n>` filter for list+interactive; provider-alone guidance; downstream `--session-id` reuses helpers; help updated | done |
 | `tests/test_resume.sh` | 3 new tests (enriched list, list provider-filter, list no-match, interactive abort, interactive no-records, provider-alone) replacing 2 not-implemented tests; fixture now builds pi + hermes records | done |
-| `scripts/templates/Makefile.template` | resume target help + comment block: LIST/interactive no longer NOT-YET-IMPLEMENTED; PROVIDER=<n> filter documented | done |
+| `scripts/templates/Makefile.template` | resume target help + comment block: LIST/interactive no longer NOT-YET-IMPLEMENTED; PROVIDER=`<n>` filter documented | done |
 | `docs/architecture/tool_interface.md` | `make resume` section: enriched list, interactive picker+confirm, PROVIDER filter | done |
 | `docs/architecture/sandbox_lifecycle.md` | resume via registry: enriched list + interactive picker + PROVIDER filter | done |
 | `docs/development/quickstart.md` | resume persistence: list/interactive/provider | done |

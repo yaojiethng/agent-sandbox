@@ -67,7 +67,7 @@ None.
 
 | Finding | Type | Impact |
 |---|---|---|
-| `diff_on_exit` and `diff_on_autosave` are nearly identical -- both build a subfolder path and call `package_branch`. Unify into a single `diff_export(SANDBOX_DIR, OUTPUT_DIR)` where path construction moves to callers (`sandbox-entrypoint.sh`). Reduces test surface; aligns with A.2's path-resolution focus. | scope change | A.2 -- CLI contract; `libs/diff.sh` and `libs/sandbox-entrypoint.sh` updated together
+| `diff_on_exit` and `diff_on_autosave` are nearly identical -- both build a subfolder path and call `package_branch`. Unify into a single `diff_export(SANDBOX_DIR, OUTPUT_DIR)` where path construction moves to callers (`sandbox-entrypoint.sh`). Reduces test surface; aligns with A.2's path-resolution focus. | scope change | A.2 -- CLI contract; `libs/diff.sh` and `libs/sandbox-entrypoint.sh` updated together |
 
 ## Completed this session
 

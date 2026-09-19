@@ -1,12 +1,12 @@
-> **Current milestone status:** see the active handover in `devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
-
 # Autonomous Coding Agent Sandbox
+
+> **Current milestone status:** see the active handover in `devlog/handovers/` (most recent `YYYYMMDD-NN-*.md`).
 
 This repository provides a containerized sandbox and orchestration harness for running autonomous coding agents safely.
 
 The system isolates agents inside containers, stages their changes as diffs, and requires human review before repository modification.
 
-### System Invariants
+## System Invariants
 
 The following guarantees define the harness architecture. Defined authoritatively in [`docs/architecture/security.md`](docs/architecture/security.md#security-invariants):
 

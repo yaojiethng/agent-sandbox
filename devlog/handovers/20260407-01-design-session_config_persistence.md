@@ -51,7 +51,7 @@ Not yet defined.
 | `docs/architecture/tool_interface.md` | Command Reference (operator-facing); mount shape updated; Provider Interface updated |
 | `docs/operations/provider_onboarding_guide.md` | `config/` purpose rewritten; Dockerfile template updated |
 | `docs/architecture/container_model.md` | Deleted; links in `system_overview.md` and `two_layer_model.md` updated |
-| `libs/compose.sh` | add `-e "s|{{PROVIDER_NAME}}|\${provider_name}|g"` and `-e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g"` to `compose_generate` sed block |
+| `libs/compose.sh` | add `-e "s\|{{PROVIDER_NAME}}\|\${provider_name}\|g"` and `-e "s\|\${SANDBOX_DIR}\|${SANDBOX_DIR:-}\|g"` to `compose_generate` sed block |
 
 ## Next session
 

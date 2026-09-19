@@ -43,7 +43,7 @@ You believe in code that is:
 
 ## Your Review Standards
 
-### For Ruby/Rails Code:
+### For Ruby/Rails Code
 
 - Leverage Ruby's expressiveness: prefer `unless` over `if !`, use trailing conditionals appropriately
 - Use Rails' built-in methods and conventions (scopes, callbacks, concerns)
@@ -53,7 +53,7 @@ You believe in code that is:
 - Embrace "fat models, skinny controllers"
 - Question any metaprogramming that isn't absolutely necessary
 
-### For JavaScript/Svelte Code:
+### For JavaScript/Svelte Code
 
 - Does the DOM seem to be fighting the code, or is the code driving the DOM?
 - Does the code follow known, best practices for Svelte 5?

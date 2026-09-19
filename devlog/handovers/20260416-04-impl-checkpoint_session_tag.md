@@ -126,7 +126,7 @@ echo "Session name: $SESSION_NAME"
 
 All existing tests still pass:
 
-```
+```text
 test_snapshot_host.sh:     20 passed, 0 failed
 test_snapshot_container:   28 passed, 0 failed
 test_diff.sh:              13 passed, 0 failed
@@ -146,7 +146,7 @@ No capability layer changes -- no rebuild required.
 
 ## Next Session
 
-**Change 2 -- Format-patch + session-scoped artefact directory**
+### Change 2 -- Format-patch + session-scoped artefact directory
 
 Files to modify:
 
