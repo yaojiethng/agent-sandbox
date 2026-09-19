@@ -147,6 +147,78 @@ done
 unset LIB_DIR
 
 # ---------------------------------------------------------------------------
+# Preflight: container<->container interface contract
+# ---------------------------------------------------------------------------
+# The sandbox container starts and finishes initializing first, writing its
+# own baked interface-contract version into SESSION_STATE at init. This agent
+# entrypoint runs once both are up -- the first moment a container<->
+# container comparison is possible (ADR interface_contract_compatibility.md).
+#
+# It compares this agent's baked version against the sandbox's recorded
+# version (which reflects the sandbox image's bake). A definite mismatch means
+# the two images were built from different contract revisions -- an
+# orchestration error or corrupt session state, not ordinary drift -- and is
+# surfaced as such. The check is expected to be superfluous when preflight
+# passes; a failure therefore names the larger problem. Policy follows
+# interface_contract_strict(): hard-stop on definite mismatch under strict;
+# warn in the parallel phase.
+
+# _check_container_contract
+#   Compares the agent image's baked interface-contract version against the
+#   sandbox's recorded version (SESSION_STATE.interface_contract_version,
+#   written by the sandbox at init from its own bake).
+#   Returns 1 only on a definite mismatch under strict policy. Warns (returns
+#   0) on a missing record key (pre-record image -- upgrade path) and under
+#   warn policy. Best-effort: skips silently when the lib or record is
+#   unavailable so the entrypoint never hard-aborts on a missing check.
+_check_container_contract() {
+  # Test seams mirror the capability entrypoint (SANDBOX_LIB_DIR). Production
+  # defaults resolve to the baked image paths.
+  local lib="${CONTRACT_LIB:-/opt/sandbox/lib/interface_contract.sh}"
+  [[ -f "$lib" ]] || return 0
+  # shellcheck disable=SC1090
+  source "$lib"
+
+  local sandbox_root="${SANDBOX_ROOT:-/home/agentuser}"
+  local sandbox_name="${SANDBOX_DIR_NAME:-sandbox}"
+  local state_file="$sandbox_root/$sandbox_name/.git/SESSION_STATE"
+
+  # Guard the read: a missing record file would abort under the entrypoint's
+  # `set -euo pipefail` (the while-read redirection failure is a command
+  # failure). A missing record means the sandbox did not initialize (or predates
+  # the record) -- warn, never hard-abort the entrypoint on an unavailable check.
+  if [[ ! -f "$state_file" ]]; then
+    echo "WARN: container contract: no SESSION_STATE at $state_file" >&2
+    echo "  (cannot compare container to container; the sandbox record is missing)" >&2
+    return 0
+  fi
+
+  local agent_baked sandbox_recorded
+  agent_baked="$(interface_contract_version)"
+  sandbox_recorded="$(record_contract_version "$state_file")"
+
+  if [[ -z "$sandbox_recorded" ]]; then
+    echo "WARN: container contract: sandbox has no interface_contract_version in $state_file" >&2
+    echo "  (image predates the interface-contract check; cannot compare container to container)" >&2
+    return 0
+  fi
+
+  if [[ "$agent_baked" != "$sandbox_recorded" ]]; then
+    local msg="container contract mismatch: agent baked version $agent_baked, sandbox recorded $sandbox_recorded"
+    if [[ "$(interface_contract_strict)" == "1" ]]; then
+      echo "FATAL: $msg" >&2
+      echo "  The agent and sandbox images were built from different contract revisions (orchestration error)." >&2
+      echo "  Rebuild both images from the same source, then restore the session from its record." >&2
+      exit 1
+    fi
+    echo "WARN: $msg" >&2
+    echo "  (parallel phase: rebuild both images from the same source to align)" >&2
+  fi
+}
+
+_check_container_contract
+
+# ---------------------------------------------------------------------------
 # Preflight: generic AGENT_HOME validation
 # ---------------------------------------------------------------------------
 # AGENT_HOME is created by _provision_agent_home when the image template is

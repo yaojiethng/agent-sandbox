@@ -176,3 +176,26 @@ the transform emit a match/replacement count to stderr BEFORE any output, and
 (3) diff against the input to verify the change before committing. A
 long-running transform with no stderr progress is the signal to inspect the
 loop, not to wait.
+
+### [G] 2026-09-19 - A symlinked CLI can resolve to a stale checkout and masquerade as a code regression
+
+state: open
+scoped: host surface / install
+legacy: none
+mitigation: `agent-sandbox` is a symlink into the repo
+(`install.sh`: `ln -sfn "$REPO_ROOT/scripts/agent-sandbox.sh" ...`), so ``$0``
+resolves to whichever git checkout the link points at. When a matched change
+lands in one commit (here `e76c33f`: the dispatcher gained `resolve_identity`
+for `start`, and the Makefile.template stopped passing `--name/--project/--sandbox`
+in the same commit), the two files are internally consistent ONLY within one
+coherent checkout. If the installed symlink points at a tree older than the
+matched commit while the project's Makefile.template is newer, `make start`
+fails with `Error: --name, --project, and --sandbox are required` -- the old
+CLI's `require_base_args`, which read like a regression in the project tree
+but was a skew between two on-disk trees. Diagnose before fixing: an error
+from a self-locating/symlinked CLI is a red flag for install skew -- resolve
+the link (`readlink -f "$(which <cmd>)"`) and check that checkout's git log /
+feature presence against the project tree before touching the project source.
+A fresh install (re-run `install.sh`/`make install` to re-point the symlink at
+the current checkout) resolved it. The interface-contract P2 work is unrelated
+to this failure; it touched only identity-independent contract logic.

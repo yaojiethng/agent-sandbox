@@ -120,6 +120,13 @@ Any command expected to sometimes fail (`ls missing*`, `grep -c` on absent patte
 
 Scope: language design limitation. The subshell-scoped `|| true` pattern (from session `20260805-01`) is the best available mitigation. Cross-reference: Trap 16 covers pipeline-level swallowing only; individual-command patterns are not addressed.
 
+### [A] 2026-09-19  --  A sourced-lib `while read < file` aborts a `set -e` caller on a missing file
+
+state: open
+scoped: `src/libs/*.sh` (sourced libraries), callers under `set -euo pipefail` (entrypoints)
+legacy: none
+mitigation: a read of a nonexistent file inside a sourced lib function -- `while IFS='=' read ...; done < "$file"` -- makes the *function call site* fail under `set -e`. The caller that wrote `x="$(record_contract_version "$file")"` in a `set -euo pipefail` entrypoint dies silently mid-shell when `$file` is absent; a surrounding `|| ...` does not rescue it because the abort happens inside the command substitution, not at the call. Guard the file before the read (`[[ -f "$file" ]] || return 0` in the caller) or make the lib function itself tolerate absence. General rule: a sourced-lib read of a path the caller cannot guarantee is a `set -e` hazard, distinct from the exit-vs-return gotcha (GOTCHAS H 2026-08-12) -- this is a redirection abort, not a status-choice issue. Cross-reference: the `set -e` trap entries above.
+
 ### [A] 2026-08-09  --  No test fixture lifecycle  --  manual `rm -rf` everywhere
 
 state: probation

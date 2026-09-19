@@ -260,8 +260,20 @@ test_check_interface_contract_warns_and_silent_via_stub() {
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
         _check_interface_contract "pi-agent-test-project" 2>&1)"
   assert_empty "$out" "interface-contract: matching baked version stays silent"
+
+  # Strict policy (one reversible flag, ADR rollover): drift refuses preflight
+  # with a non-zero status; alignment still passes.
+  local rc=0
+  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
+        DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
+        _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "interface-contract strict: differing baked version refuses"
+  rc=0
+  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
+        DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
+        _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "interface-contract strict: matching baked version passes"
 }
-# or stray `image:` outside the service block (or another service) must not
 # shadow the service's own image, and the provider is recovered from the agent
 # image. Locks the one-parser contract (F2: no divergent -agent- grep).
 test_record_image_service_scoped() {

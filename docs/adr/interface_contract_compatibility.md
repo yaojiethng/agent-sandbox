@@ -1,7 +1,7 @@
 # Interface Contract Compatibility
 
 **Current:** 2026-09-19
-**Status:** open/pending-impl (closes when the mechanism lands)
+**Status:** open — mechanism landed (P0 + P2 default-warn); closes when the strict flip lands and `container-sig` is stripped (P3)
 
 ## Requirements
 
@@ -92,6 +92,23 @@ substituted by compose.sh) and the `SESSION_STATE` key `interface_contract_versi
 entrypoint container<->container check and the P3 strip remain; the P2
 warn/strict flip is a single flag.
 
+**Implementation note (2026-09-19, P2 landed default-warn, handover `20260919-06`):**
+`src/libs/interface_contract.sh` gains `interface_contract_strict()`, the one
+reversible mismatch-policy flag (default warn; runtime override
+`INTERFACE_CONTRACT_STRICT=0/1`). `_check_interface_contract` (build.sh) honors
+it: warn-only in the parallel phase, hard preflight refusal (non-zero, named
+surface + rebuild remedy) under strict; preflight propagates the refusal.
+The agent entrypoint (`src/reasoning/entrypoint.sh`) gains
+`_check_container_contract`, the container<->container check: it compares the
+agent image's baked version against the sandbox's recorded version
+(`SESSION_STATE.interface_contract_version`, written by the sandbox at init
+from its own bake — available to the agent via `volumes_from: sandbox`). It
+hard-stops on a definite mismatch under strict, warns in the parallel phase,
+warns on a missing record key (pre-record image, upgrade path), and skips
+silently when the lib is unavailable. `container-sig` untouched. Default-warn
+per operator direction; the strict flip (flip the flag + fix any errors) is a
+scheduled follow-up iteration.
+
 **Documentation note (2026-09-19, handover `20260919-05`):** the doc
 consolidation landed. The interface concept document is
 `docs/concepts/sandbox_host_interface.md` (renamed from
@@ -106,8 +123,7 @@ is authoritative (P2/P3).
 missing label as "pre-dating the contract version" and warns (matching
 `container-sig`'s missing-label behavior); container<->container comparison
 requires both images present — the agent entrypoint reads its own baked version
-and the sandbox image's baked version, both available by then. The design record
-resolves the remaining review items: warn-then-strict confirmed, single version
-first, doc consolidation to one interface concept doc
-(`sandbox_host_interface.md`, renamed from the correspondence model) + one
-lifecycle architecture doc (`sandbox_lifecycle.md`).
+and the sandbox's recorded version (the sandbox writes its bake into
+`SESSION_STATE` at init, available to the agent via `volumes_from: sandbox`),
+both available by then; a missing record key warns rather than aborts so the
+pre-record upgrade path stays open.

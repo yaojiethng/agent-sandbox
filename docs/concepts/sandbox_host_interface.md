@@ -40,14 +40,18 @@ Declaration points:
 1. **Build time** — tier-3 images receive `agent-sandbox.interface-contract-version` as a build label (`build_image` in `scripts/build.sh`), beside the existing `agent-sandbox.container-sig`.
 2. **Session write** — the generated `.compose/<session-id>.yml` records the constant in its session label set; `session_state_write_set` writes the `interface_contract_version` key into `SESSION_STATE`.
 
-Comparison points (P0, warn-only parallel with container-sig, at start and resume preflight):
+Comparison points (landed, policy-gated by the one flag `interface_contract_strict()`, currently default warn like container-sig, at start and resume preflight):
 
 - Host constant vs sandbox-image label; host constant vs agent-image label. Drift warns and names the rebuild remedy; alignment stays silent. A missing label warns "built before the interface-contract check".
 
-Deferred comparison points (P2, authoritative regime, operator-released):
+Container↔container comparison (landed, agent entrypoint, sandbox inits first and writes its own baked version into `SESSION_STATE`, read by the agent via `volumes_from: sandbox`):
+
+- The agent entrypoint compares its baked version against the sandbox's recorded version. Under strict policy a definite mismatch hard-stops the agent as an orchestration/corruption signal; under warn policy it warns. A missing record key warns (pre-record image, upgrade path); a missing lib skips silently.
+
+Deferred (authoritative regime, operator-released). The strict flip is a scheduled follow-up iteration (one reversible flag); while default-warn, no drift blocks a start:
 
 - The record surfaces at preflight: host constant vs record stamps.
-- The agent entrypoint container↔container check (sandbox inits first) as the earliest-possible point with strong consequences.
+- The strict refusal regime (preflight fail-closed + entrypoint hard-stop) and the container-sig retirement (P3).
 
 The warn→strict switch-over, the P0-P3 rollover gates, and the container-sig retirement are in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 

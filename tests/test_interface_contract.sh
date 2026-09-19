@@ -110,6 +110,59 @@ test_check_interface_contract_warns_on_missing_label() {
 }
 
 # =============================================================================
+# interface_contract_strict  (mismatch-policy flag, ADR rollover)
+# =============================================================================
+
+test_interface_contract_strict_defaults_to_warn() {
+  assert_eq "$(interface_contract_strict)" "0" \
+      "interface_contract_strict defaults to warn (parallel phase)"
+}
+
+test_interface_contract_strict_env_override_1() {
+  assert_eq "$(INTERFACE_CONTRACT_STRICT=1 interface_contract_strict)" "1" \
+      "interface_contract_strict honors INTERFACE_CONTRACT_STRICT=1"
+}
+
+test_interface_contract_strict_env_override_0() {
+  assert_eq "$(INTERFACE_CONTRACT_STRICT=0 interface_contract_strict)" "0" \
+      "interface_contract_strict honors INTERFACE_CONTRACT_STRICT=0"
+}
+
+# =============================================================================
+# _check_interface_contract  (strict policy refuses preflight)
+# =============================================================================
+
+test_check_interface_contract_strict_refuses_drift() {
+  local rc=0 out
+  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
+        DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
+        _check_interface_contract "test-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "strict policy: drifted label refuses preflight"
+  assert_contains "$out" "ERROR" "strict policy: refusal is marked an error"
+  assert_contains "$out" "version 9 differs from current source" \
+      "strict policy: refusal names the drifted surface"
+}
+
+test_check_interface_contract_strict_refuses_missing_label() {
+  local rc=0 out
+  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
+        _check_interface_contract "pre-label-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "strict policy: missing label refuses preflight"
+  assert_contains "$out" "predates the interface contract" \
+      "strict policy: missing-label refusal names the rebuild remedy"
+}
+
+test_check_interface_contract_strict_silent_on_aligned() {
+  local current out rc=0
+  current="$(interface_contract_version)"
+  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
+        DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
+        _check_interface_contract "test-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "strict policy: aligned label passes preflight"
+  assert_empty "$out" "strict policy: aligned label stays silent"
+}
+
+# =============================================================================
 # Runner
 # =============================================================================
 
@@ -122,3 +175,9 @@ run_test test_record_contract_version_empty_when_key_missing
 run_test test_check_interface_contract_warns_on_drifted_label
 run_test test_check_interface_contract_silent_on_aligned
 run_test test_check_interface_contract_warns_on_missing_label
+run_test test_interface_contract_strict_defaults_to_warn
+run_test test_interface_contract_strict_env_override_1
+run_test test_interface_contract_strict_env_override_0
+run_test test_check_interface_contract_strict_refuses_drift
+run_test test_check_interface_contract_strict_refuses_missing_label
+run_test test_check_interface_contract_strict_silent_on_aligned
