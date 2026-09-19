@@ -24,18 +24,20 @@ Every delivery commit (at iteration end) must use one of the types defined below
 
 ## Active Types
 
-These types are adopted now. Each maps to one or more iteration types from `handover_policy.md`.
+These types are adopted now. The commit type is decided from the nature of the change, independent of the handover type.
 
-| Type | When to use | Iteration type mapping |
-|---|---|---|
-| `feat` | New capability or behaviour | `impl` |
-| `fix` | Bug fix — corrects broken behaviour | `impl` |
-| `refactor` | Code restructuring with no behaviour change | `impl` |
-| `docs` | Documentation-only changes | `design` |
-| `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting | `chore` |
-| `workflow` | Policy changes, CI/CD rules, governance — skill files under `src/reasoning/agent/` count as governance | `workflow` |
-| `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) | `impl` |
-| `build` | Changes to Dockerfile, build scripts, image pipeline | `impl` |
+| Type | When to use |
+|---|---|
+| `feat` | New capability or behaviour |
+| `fix` | Bug fix — corrects broken behaviour |
+| `refactor` | Code restructuring with no behaviour change; large sweeping cleanups |
+| `docs` | Documentation-only changes — descriptive prose, decision records, plans, reports |
+| `chore` | Inert maintenance — stale refs, index cleanup, linting, formatting |
+| `workflow` | Policy changes, CI/CD rules, governance — skill files under `src/reasoning/agent/` count as governance |
+| `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) |
+| `build` | Changes to Dockerfile, build scripts, image pipeline |
+
+The commit type is chosen from the diff alone, not from the handover type. Both are evaluated at close: the commit type names what the change is; the handover type (set at scope time) names the deliverable. The two tables in `handover_policy.md` and here stay independent — a documentation iteration that only touches an ADR is `docs` regardless, while any behaviour change's commit is `feat`, `fix`, or `refactor` according to the diff.
 
 ### Choosing between types
 

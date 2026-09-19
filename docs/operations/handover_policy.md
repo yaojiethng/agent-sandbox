@@ -44,19 +44,22 @@ Stored in the `devlog/handovers/` directory. One file per iteration. Do not over
 
 ## Types
 
-Each iteration has a type that reflects its dominant activity. The type appears in the handover header and in the filename shortform.
-Each iteration type (Eg. workflow vs implementation) must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types. 
+Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at scope confirmation (Steps 1-2), before the work is known in detail; the commit type at close disambiguates the subclass.
+Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
 
-| Type | Shortform | Scope |
-|---|---|---|
-| Design | `design` | Minor loop Steps 3 + 4 (design and information gathering) |
-| Spec | `spec` | Prepare to land: check consistency between roadmap, handover, and docs; surface prefactors; map surface area. Output goes to the handover and roadmap -- no single-use document. |
-| Implementation | `impl` | Minor loop Step 6 |
-| Story | `story` | Major loop -- problem framing |
-| Study | `study` | Major loop -- candidate evaluation |
-| Planning | `plan` | Major loop -- milestone scoping |
-| Workflow | `workflow` | Policy changes, governance, audit |
-| Housekeeping | `chore` | Stale links, linting, index cleanup |
+| Type | Shortform | Deliverable -- what the iteration produces | Commit mapping |
+|---|---|---|---|
+| Implementation | `impl` | Behaviour work: a new capability, a fix, or a restructure. The commit type (`feat`/`fix`/`refactor`/`test`/`build`) disambiguates the subclass at close. | `feat`, `fix`, `refactor`, `test`, `build` |
+| Discussion | `discussion` | An in-flight discussion document that has not yet resolved to a decision. | `docs` |
+| Design | `design` | Decision and evaluation work: ADRs, running investigations, option evaluation, maintaining ADRs while evaluating multiple candidates. Jump-right-in, often interleaved with `impl` commits. | `docs` |
+| Plan | `plan` | Major-loop milestone scoping: a large task list and assigning work to iterations. | `docs` |
+| Documentation | `docs` | Project documentation under `docs/` -- descriptive prose that is not a decision record. | `docs` |
+| Workflow | `workflow` | Policy, governance, AGENTS.md, prompts, and `workflow/` agent-behaviour contract files. | `workflow` |
+| Housekeeping | `chore` | Small administrative or cosmetic maintenance: stale links, linting, index cleanup, roadmap bookkeeping. | `chore` |
+| Audit | `audit` | Compliance or review sweep, usually producing a report or a non-content reordering sweep. | `refactor`, `docs`, or `chore` |
+| Story | `story` | Deprecated -- folded into `discussion`; retained for historical handovers only. | -- |
+| Study | `study` | Deprecated -- folded into `design`; retained for historical handovers only. | -- |
+| Spec | `spec` | Deprecated -- folded into `design`; retained for historical handovers only. | -- |
 
 ---
 
@@ -79,7 +82,8 @@ A handover has three states:
 
 **Date:** YYYY-MM-DD
 **Milestone:** <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
-**Type:** <Design | Spec | Implementation | Story | Study | Planning | Workflow | Housekeeping>
+**Type:** <Implementation | Discussion | Design | Plan | Documentation | Workflow | Housekeeping | Audit>
+<Story | Study | Spec> (deprecated -- historical handovers only)
 **Status:** <Active | Closed>
 
 ## Objective
