@@ -40,20 +40,19 @@ Declaration points:
 1. **Build time** — tier-3 images receive `agent-sandbox.interface-contract-version` as a build label (`build_image` in `scripts/build.sh`), beside the existing `agent-sandbox.container-sig`.
 2. **Session write** — the generated `.compose/<session-id>.yml` records the constant in its session label set; `session_state_write_set` writes the `interface_contract_version` key into `SESSION_STATE`.
 
-Comparison points (landed, policy-gated by the one flag `interface_contract_strict()`, currently default warn like container-sig, at start and resume preflight):
+Comparison points (authoritative, at start and resume preflight): the contract is fail-closed by default, with no runtime escape hatch. An override was considered and rejected as a backdoor that would weaken the contract.
 
-- Host constant vs sandbox-image label; host constant vs agent-image label. Drift warns and names the rebuild remedy; alignment stays silent. A missing label warns "built before the interface-contract check".
+- Host constant vs sandbox-image label; host constant vs agent-image label. A drift or missing label refuses preflight (non-zero) and names the rebuild remedy; alignment stays silent.
 
-Container↔container comparison (landed, agent entrypoint, sandbox inits first and writes its own baked version into `SESSION_STATE`, read by the agent via `volumes_from: sandbox`):
+Container↔container comparison (agent entrypoint, sandbox inits first and writes its own baked version into `SESSION_STATE`, read by the agent via `volumes_from: sandbox`):
 
-- The agent entrypoint compares its baked version against the sandbox's recorded version. Under strict policy a definite mismatch hard-stops the agent as an orchestration/corruption signal; under warn policy it warns. A missing record key warns (pre-record image, upgrade path); a missing lib skips silently.
+- The agent entrypoint compares its baked version against the sandbox's recorded version. A definite mismatch hard-stops the agent as an orchestration/corruption signal; a missing record key or file warns (pre-record image, upgrade path); a missing lib skips silently.
 
-Deferred (authoritative regime, operator-released). The strict flip is a scheduled follow-up iteration (one reversible flag); while default-warn, no drift blocks a start:
+Deferred (P3, container-sig retirement): the container-sig check, bake, label, and tooling are still present and retire in P3. The strict refusal regime landed; only the container-sig strip remains.
 
-- The record surfaces at preflight: host constant vs record stamps.
-- The strict refusal regime (preflight fail-closed + entrypoint hard-stop) and the container-sig retirement (P3).
+Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The warn→strict switch-over, the P0-P3 rollover gates, and the container-sig retirement are in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The P0-P3 rollover gates and the container-sig retirement are in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Relationship to MAKEFILE_VERSION
 

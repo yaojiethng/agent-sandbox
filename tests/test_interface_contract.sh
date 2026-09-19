@@ -81,85 +81,37 @@ test_record_contract_version_empty_when_key_missing() {
 }
 
 # =============================================================================
-# _check_interface_contract  (warn-only; container-sig untouched)
+# _check_interface_contract  (authoritative; container-sig untouched)
 # =============================================================================
 
-test_check_interface_contract_warns_on_drifted_label() {
-  local out
-  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="2" \
-        _check_interface_contract "test-image" 2>&1)"
-  assert_contains "$out" "interface-contract version 2 differs from current source" \
-      "preflight: drifted contract version warns"
-}
-
 test_check_interface_contract_silent_on_aligned() {
-  local current
+  local current out rc=0
   current="$(interface_contract_version)"
-  local out
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
-        _check_interface_contract "test-image" 2>&1)"
+        _check_interface_contract "test-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "preflight: aligned contract version passes"
   assert_empty "$out" "preflight: aligned contract version stays silent"
 }
 
-test_check_interface_contract_warns_on_missing_label() {
-  local out
+test_check_interface_contract_refuses_drift() {
+  local rc=0 out
+  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="2" \
+        _check_interface_contract "test-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "preflight: drifted contract version refuses"
+  assert_contains "$out" "ERROR" "preflight: refusal is marked an error"
+  assert_contains "$out" "interface-contract version 2 differs from current source" \
+      "preflight: refusal names the drifted surface"
+}
+
+test_check_interface_contract_refuses_missing_label() {
+  local rc=0 out
   out="$(PATH="$STUB_DIR:$PATH" \
-        _check_interface_contract "pre-label-image" 2>&1)"
-  assert_contains "$out" "has no interface-contract-version label" \
-      "preflight: missing label warns (built before the check)"
-}
-
-# =============================================================================
-# interface_contract_strict  (mismatch-policy flag, ADR rollover)
-# =============================================================================
-
-test_interface_contract_strict_defaults_to_warn() {
-  assert_eq "$(interface_contract_strict)" "0" \
-      "interface_contract_strict defaults to warn (parallel phase)"
-}
-
-test_interface_contract_strict_env_override_1() {
-  assert_eq "$(INTERFACE_CONTRACT_STRICT=1 interface_contract_strict)" "1" \
-      "interface_contract_strict honors INTERFACE_CONTRACT_STRICT=1"
-}
-
-test_interface_contract_strict_env_override_0() {
-  assert_eq "$(INTERFACE_CONTRACT_STRICT=0 interface_contract_strict)" "0" \
-      "interface_contract_strict honors INTERFACE_CONTRACT_STRICT=0"
-}
-
-# =============================================================================
-# _check_interface_contract  (strict policy refuses preflight)
-# =============================================================================
-
-test_check_interface_contract_strict_refuses_drift() {
-  local rc=0 out
-  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
-        DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
-        _check_interface_contract "test-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "1" "strict policy: drifted label refuses preflight"
-  assert_contains "$out" "ERROR" "strict policy: refusal is marked an error"
-  assert_contains "$out" "version 9 differs from current source" \
-      "strict policy: refusal names the drifted surface"
-}
-
-test_check_interface_contract_strict_refuses_missing_label() {
-  local rc=0 out
-  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
         _check_interface_contract "pre-label-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "1" "strict policy: missing label refuses preflight"
+  assert_eq "$rc" "1" "preflight: missing label refuses"
+  assert_contains "$out" "has no interface-contract-version label" \
+      "preflight: missing-label refusal names the cause"
   assert_contains "$out" "predates the interface contract" \
-      "strict policy: missing-label refusal names the rebuild remedy"
-}
-
-test_check_interface_contract_strict_silent_on_aligned() {
-  local current out rc=0
-  current="$(interface_contract_version)"
-  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
-        DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
-        _check_interface_contract "test-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "strict policy: aligned label passes preflight"
-  assert_empty "$out" "strict policy: aligned label stays silent"
+      "preflight: missing-label refusal names the rebuild remedy"
 }
 
 # =============================================================================
@@ -172,12 +124,6 @@ run_test test_image_contract_version_per_image_map
 run_test test_image_contract_version_empty_for_unlabeled_image
 run_test test_record_contract_version_reads_stamp
 run_test test_record_contract_version_empty_when_key_missing
-run_test test_check_interface_contract_warns_on_drifted_label
 run_test test_check_interface_contract_silent_on_aligned
-run_test test_check_interface_contract_warns_on_missing_label
-run_test test_interface_contract_strict_defaults_to_warn
-run_test test_interface_contract_strict_env_override_1
-run_test test_interface_contract_strict_env_override_0
-run_test test_check_interface_contract_strict_refuses_drift
-run_test test_check_interface_contract_strict_refuses_missing_label
-run_test test_check_interface_contract_strict_silent_on_aligned
+run_test test_check_interface_contract_refuses_drift
+run_test test_check_interface_contract_refuses_missing_label

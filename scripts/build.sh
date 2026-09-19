@@ -243,50 +243,36 @@ preflight() {
   # Check agent image
   _check_container_sig "$agent_image" agent "$provider" "$repo_root"
 
-  # --- Interface-contract version check (policy: warn or strict) ---
-  # ADR interface_contract_compatibility.md. The warn/strict decision is the
-  # one flag interface_contract_strict(); default parallel warn-only, flips
-  # authoritative in a scheduled follow-up iteration. A strict refusal returns
-  # non-zero so preflight fails closed.
+  # --- Interface-contract version check (authoritative) ---
+  # ADR interface_contract_compatibility.md. The contract is authoritative:
+  # a drift or missing label refuses preflight (non-zero) so start fails
+  # closed. No runtime escape hatch -- an override would be a backdoor.
   _check_interface_contract "$sandbox_image" || return 1
   _check_interface_contract "$agent_image"   || return 1
 }
 
 # _check_interface_contract <image_name>
-# Interface-contract check (ADR interface_contract_compatibility.md): warns
-# when the image's baked `agent-sandbox.interface-contract-version` label
-# differs from the current host-side constant -- the container was built from
-# a different contract revision than the working tree.
-#
-# Mismatch policy follows the one reversible flag interface_contract_strict()
-# (P0-P2 rollover): parallel phase warns (the warning never blocks a start);
-# the authoritative phase refuses preflight with the named surface and remedy.
-# Returns 0 on aligned/warn, 1 on strict refusal.
+# Interface-contract check (ADR interface_contract_compatibility.md): refuses
+# (returns 1) when the image's baked `agent-sandbox.interface-contract-version`
+# label differs from the current host-side constant -- the container was built
+# from a different contract revision than the working tree -- and names the
+# surface and the rebuild remedy. Missing label (built before the check)
+# refuses identically. Returns 0 only when aligned.
 _check_interface_contract() {
   local image_name="${1:?}"
 
-  local baked current strict_msg
+  local baked current
   baked="$(image_contract_version "$image_name")"
   if [[ -z "$baked" ]]; then
-    local msg="$image_name has no interface-contract-version label (built before the interface-contract check)."
-    if [[ "$(interface_contract_strict)" == "1" ]]; then
-      echo "ERROR: $msg" >&2
-      echo "  The image predates the interface contract; rebuild with --rebuild." >&2
-      return 1
-    fi
-    echo "WARNING: $msg" >&2
-    return 0
+    echo "ERROR: $image_name has no interface-contract-version label (built before the interface-contract check)." >&2
+    echo "  The image predates the interface contract; rebuild with --rebuild." >&2
+    return 1
   fi
   current="$(interface_contract_version)"
   if [[ "$baked" != "$current" ]]; then
-    local drift="$image_name interface-contract version $baked differs from current source ($current)."
-    if [[ "$(interface_contract_strict)" == "1" ]]; then
-      echo "ERROR: $drift" >&2
-      echo "  Rebuild with --rebuild to align the container with the current contract." >&2
-      return 1
-    fi
-    echo "WARNING: $drift" >&2
+    echo "ERROR: $image_name interface-contract version $baked differs from current source ($current)." >&2
     echo "  Rebuild with --rebuild to align the container with the current contract." >&2
+    return 1
   fi
 }
 

@@ -245,34 +245,25 @@ test_check_container_sig_warns_via_shared_predicate() {
 }
 
 # Interface-contract preflight check (build.sh -> _check_interface_contract,
-# ADR interface_contract_compatibility.md, P0): the image's baked
+# ADR interface_contract_compatibility.md): the image's baked
 # agent-sandbox.interface-contract-version label is compared against the
-# current host-side constant; a mismatch warns, an aligned label stays silent.
-test_check_interface_contract_warns_and_silent_via_stub() {
+# current host-side constant; a mismatch refuses preflight, an aligned label
+# passes silently.
+test_check_interface_contract_refuses_and_passes_via_stub() {
 
-  local out
+  local out rc=0
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
-        _check_interface_contract "pi-agent-test-project" 2>&1)"
+        _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "interface-contract: differing baked version refuses"
   assert_contains "$out" "interface-contract version 9 differs from current source" \
-      "interface-contract: differing baked version warns"
+      "interface-contract: refusal names the drifted surface"
 
   local current; current="$(interface_contract_version)"
-  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
-        _check_interface_contract "pi-agent-test-project" 2>&1)"
-  assert_empty "$out" "interface-contract: matching baked version stays silent"
-
-  # Strict policy (one reversible flag, ADR rollover): drift refuses preflight
-  # with a non-zero status; alignment still passes.
-  local rc=0
-  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
-        DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
-        _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
-  assert_eq "$rc" "1" "interface-contract strict: differing baked version refuses"
   rc=0
-  out="$(PATH="$STUB_DIR:$PATH" INTERFACE_CONTRACT_STRICT=1 \
-        DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
+  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
         _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "interface-contract strict: matching baked version passes"
+  assert_eq "$rc" "0" "interface-contract: matching baked version passes"
+  assert_empty "$out" "interface-contract: matching baked version stays silent"
 }
 # shadow the service's own image, and the provider is recovered from the agent
 # image. Locks the one-parser contract (F2: no divergent -agent- grep).
@@ -330,7 +321,7 @@ run_test test_container_sig_sources_list
 run_test test_container_sig_hashes_real_sources
 run_test test_container_sig_missing_path_fails_with_diagnostic
 run_test test_check_container_sig_warns_via_shared_predicate
-run_test test_check_interface_contract_warns_and_silent_via_stub
+run_test test_check_interface_contract_refuses_and_passes_via_stub
 run_test test_record_image_service_scoped
 run_test test_current_sig_deterministic
 run_test test_build_inspects_images

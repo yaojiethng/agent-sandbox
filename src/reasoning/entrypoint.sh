@@ -155,22 +155,21 @@ unset LIB_DIR
 # container comparison is possible (ADR interface_contract_compatibility.md).
 #
 # It compares this agent's baked version against the sandbox's recorded
-# version (which reflects the sandbox image's bake). A definite mismatch means
-# the two images were built from different contract revisions -- an
-# orchestration error or corrupt session state, not ordinary drift -- and is
-# surfaced as such. The check is expected to be superfluous when preflight
-# passes; a failure therefore names the larger problem. Policy follows
-# interface_contract_strict(): hard-stop on definite mismatch under strict;
-# warn in the parallel phase.
+# version (which reflects the sandbox image's bake). The contract is
+# authoritative: a definite mismatch means the two images were built from
+# different contract revisions -- an orchestration error or corrupt session
+# state, not ordinary drift -- and hard-stops the agent. The check is expected
+# to be superfluous when preflight passes; a failure therefore names the
+# larger problem. There is no runtime escape hatch.
 
 # _check_container_contract
 #   Compares the agent image's baked interface-contract version against the
 #   sandbox's recorded version (SESSION_STATE.interface_contract_version,
 #   written by the sandbox at init from its own bake).
-#   Returns 1 only on a definite mismatch under strict policy. Warns (returns
-#   0) on a missing record key (pre-record image -- upgrade path) and under
-#   warn policy. Best-effort: skips silently when the lib or record is
-#   unavailable so the entrypoint never hard-aborts on a missing check.
+#   Hard-stops (exit 1) only on a definite mismatch. Warns (returns 0) on a
+#   missing record key or file (pre-record image -- upgrade path): the
+#   entrypoint never hard-aborts on an unavailable check. Best-effort: skips
+#   silently when the lib is unavailable.
 _check_container_contract() {
   # Test seams mirror the capability entrypoint (SANDBOX_LIB_DIR). Production
   # defaults resolve to the baked image paths.
@@ -204,15 +203,10 @@ _check_container_contract() {
   fi
 
   if [[ "$agent_baked" != "$sandbox_recorded" ]]; then
-    local msg="container contract mismatch: agent baked version $agent_baked, sandbox recorded $sandbox_recorded"
-    if [[ "$(interface_contract_strict)" == "1" ]]; then
-      echo "FATAL: $msg" >&2
-      echo "  The agent and sandbox images were built from different contract revisions (orchestration error)." >&2
-      echo "  Rebuild both images from the same source, then restore the session from its record." >&2
-      exit 1
-    fi
-    echo "WARN: $msg" >&2
-    echo "  (parallel phase: rebuild both images from the same source to align)" >&2
+    echo "FATAL: container contract mismatch: agent baked version $agent_baked, sandbox recorded $sandbox_recorded" >&2
+    echo "  The agent and sandbox images were built from different contract revisions (orchestration error)." >&2
+    echo "  Rebuild both images from the same source, then restore the session from its record." >&2
+    exit 1
   fi
 }
 

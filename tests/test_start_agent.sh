@@ -16,6 +16,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$TEST_DIR/libs/git_fixtures.sh"
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/src/libs/interface_contract.sh"
+
 # ---------------------------------------------------------------------------
 # Behavioral start tests: run start_agent.sh end-to-end under docker stubs and
 # assert on observable outcomes (docker trace, persisted compose file).
@@ -40,9 +42,15 @@ EOF
   make_committed_repo "$dir/project"
   START_TRACE="$dir/docker-trace.log"
   : > "$START_TRACE"
+  # Bake the current interface-contract version onto the stub images so the
+  # authoritative preflight check (drift/missing label refuses) passes; the
+  # aligned label is required for a start to succeed.
+  local contract_version
+  contract_version="$(interface_contract_version)"
   START_OUT="$(cd "$dir" && \
     PATH="$REPO_ROOT/tests/stubs:$PATH" \
     DOCKER_TRACE_LOG="$START_TRACE" \
+    DOCKER_STUB_IMAGE_CONTRACT_VERSION="$contract_version" \
     bash "$REPO_ROOT/scripts/start_agent.sh" "$@" 2>&1)"
   START_RC=$?
   START_COMPOSE="$(ls "$dir/sandbox/.compose"/*.yml 2>/dev/null | head -1)"
@@ -381,6 +389,7 @@ EOF
   out="$(cd "$dir" && printf '1\n2\ny\n' | \
     PATH="$REPO_ROOT/tests/stubs:$PATH" \
     DOCKER_TRACE_LOG="$trace" \
+    DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)" \
     bash "$REPO_ROOT/scripts/start_agent.sh" standard \
       --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" \
       --interactive) 2>&1"; rc=$?

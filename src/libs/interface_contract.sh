@@ -9,13 +9,12 @@
 #   interface_contract_version          --  the current contract version
 #   image_contract_version IMAGE_NAME   --  the version baked into an image
 #   record_contract_version STATE_FILE  --  the version stamped in a record
-#   interface_contract_strict          --  the mismatch-policy flag (ADR rollover)
 #
 # Mismatch policy (ADR interface_contract_compatibility.md rollover): the
-# warn/strict decision is one flag, reversible by hand. This lib is
-# cross-context (host + container), so the flag travels with the code that
-# enforces it. Default warn (false); the operator flips it authoritative in a
-# scheduled follow-up iteration after live proof under the strict regime.
+# contract is authoritative -- a drift or missing label refuses preflight, and
+# the agent entrypoint hard-stops on a container<->container mismatch. There is
+# no runtime escape hatch: an override would be a backdoor that weakens the
+# contract. container-sig rolls over separately (P3 strips it).
 #
 # Bump rule: increment INTERFACE_CONTRACT_VERSION below exactly when a
 # cross-boundary contract changes (wiring shape, mount/bind shape, SANDBOX_DIR
@@ -27,19 +26,6 @@
 #   Prints the current interface-contract version.
 interface_contract_version() {
   echo "1"
-}
-
-# interface_contract_strict
-#   Prints 1 when the mismatch policy is fail-closed (drift refuses preflight,
-#   and the agent entrypoint hard-stops on a container<->container mismatch),
-#   0 when it is warn-only (parallel phase). One reversible flag: override at
-#   runtime with INTERFACE_CONTRACT_STRICT=0/1, or edit the default below.
-interface_contract_strict() {
-  if [[ "${INTERFACE_CONTRACT_STRICT:-0}" == "1" ]]; then
-    echo 1
-  else
-    echo 0
-  fi
 }
 
 # image_contract_version IMAGE_NAME

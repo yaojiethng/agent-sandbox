@@ -32,6 +32,10 @@ test_setup
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
 
+# Source the real interface-contract lib so the stub images can bake the
+# current contract version (authoritative preflight requires an aligned label).
+source "$REPO_ROOT/src/libs/interface_contract.sh"
+
 # Build a resumable fixture: sandbox/.env + a `.compose/<sid>.yml` registry
 # record + a git-backed project dir. $1=fixture root, $2=sandbox_type,
 # $3=flatten (optional; "true" writes a FLATTEN literal into the record).
@@ -96,6 +100,9 @@ EOF
 
   export DOCKER_TRACE_LOG="$FIX/trace.log"
   :> "$DOCKER_TRACE_LOG"
+  # Bake the current interface-contract version onto the stub images so the
+  # authoritative preflight check passes on resume.
+  export DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)"
   unset DOCKER_STUB_UP_RC DOCKER_STUB_RUN_RC DOCKER_STUB_PS_IDS DOCKER_STUB_SANDBOX_HEALTH
 }
 

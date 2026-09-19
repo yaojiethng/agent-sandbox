@@ -1,7 +1,7 @@
 # Interface Contract Compatibility
 
 **Current:** 2026-09-19
-**Status:** open — mechanism landed (P0 + P2 default-warn); closes when the strict flip lands and `container-sig` is stripped (P3)
+**Status:** open — mechanism landed and authoritative (P0 + P2); closes when `container-sig` is stripped (P3)
 
 ## Requirements
 
@@ -90,7 +90,8 @@ record gains the label set entry (`docker-compose.yml` x-session-labels,
 substituted by compose.sh) and the `SESSION_STATE` key `interface_contract_version`
 (written by session_state_write_set). `container-sig` untouched. The P2
 entrypoint container<->container check and the P3 strip remain; the P2
-warn/strict flip is a single flag.
+warn/strict flip is a single flag (see the 20260919-06 and 20260919-07 notes
+for how the flag landed and was subsequently removed).
 
 **Implementation note (2026-09-19, P2 landed default-warn, handover `20260919-06`):**
 `src/libs/interface_contract.sh` gains `interface_contract_strict()`, the one
@@ -109,6 +110,19 @@ silently when the lib is unavailable. `container-sig` untouched. Default-warn
 per operator direction; the strict flip (flip the flag + fix any errors) is a
 scheduled follow-up iteration.
 
+**Implementation note (2026-09-19, authoritative, handover `20260919-07`):**
+the strict flip landed by removing the flag entirely rather than toggling its
+default. `interface_contract_strict()` and every `INTERFACE_CONTRACT_STRICT`
+branch are deleted: the contract is now authoritative by default with no
+runtime escape hatch. An override would be a backdoor that weakens the
+contract and grows the maintenance surface. `_check_interface_contract`
+refuses preflight (non-zero, named surface + rebuild remedy) on a drifted or
+missing label; `_check_container_contract` hard-stops the agent on a definite
+container<->container mismatch. A missing record key or file still warns
+(upgrade path). `container-sig` untouched (P3 strips it). Operator live proof
+passes: `INTERFACE_CONTRACT_STRICT=1 REFRESH=1 make start` ran clean under the
+strict regime before the flag was removed.
+
 **Documentation note (2026-09-19, handover `20260919-05`):** the doc
 consolidation landed. The interface concept document is
 `docs/concepts/sandbox_host_interface.md` (renamed from
@@ -120,10 +134,11 @@ position in the lifecycle sequence. This ADR stays open until the mechanism
 is authoritative (P2/P3).
 
 **Edge cases / drivers:** old images carry no version label — the check treats a
-missing label as "pre-dating the contract version" and warns (matching
-`container-sig`'s missing-label behavior); container<->container comparison
-requires both images present — the agent entrypoint reads its own baked version
-and the sandbox's recorded version (the sandbox writes its bake into
-`SESSION_STATE` at init, available to the agent via `volumes_from: sandbox`),
-both available by then; a missing record key warns rather than aborts so the
-pre-record upgrade path stays open.
+missing label as "pre-dating the contract version" and refuses preflight with
+the rebuild remedy (a missing label is indistinguishable from a stale build and
+must not start); container<->container comparison requires both images present
+— the agent entrypoint reads its own baked version and the sandbox's recorded
+version (the sandbox writes its bake into `SESSION_STATE` at init, available to
+the agent via `volumes_from: sandbox`), both available by then; a missing
+record key or file warns rather than aborts so the pre-record upgrade path
+stays open.

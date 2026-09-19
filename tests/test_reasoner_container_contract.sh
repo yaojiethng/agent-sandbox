@@ -6,10 +6,10 @@
 #
 # The check compares the agent image's baked interface-contract version against
 # the sandbox's recorded version (SESSION_STATE.interface_contract_version,
-# written by the sandbox at init from its own bake). Policy follows the one
-# reversible flag interface_contract_strict(): hard-stop on a definite
-# mismatch under strict, warn in the parallel phase, warn on a missing record
-# key (upgrade path), and skip silently when the lib is unavailable.
+# written by the sandbox at init from its own bake). The contract is
+# authoritative: a definite mismatch hard-stops the agent (orchestration
+# error), a missing record key or file warns (upgrade path), and a missing
+# lib skips silently. There is no runtime policy flag.
 #
 # Run:   bash tests/test_reasoner_container_contract.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -69,29 +69,17 @@ test_agent_baked_equals_sandbox_recorded_silent() {
   assert_empty "$out" "aligned: container to container check stays silent"
 }
 
-test_definite_mismatch_warns_in_parallel_phase() {
+test_definite_mismatch_hard_stops() {
   local state="$FIXTURE_DIR/sandbox/.git/SESSION_STATE"
   mkdir -p "$(dirname "$state")"
   printf 'interface_contract_version=9\n' > "$state"
   local out rc=0
-  out="$(INTERFACE_CONTRACT_STRICT=0 _run_check "$state" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "parallel: mismatch warns, does not stop the agent"
-  assert_contains "$out" "container contract mismatch" \
-      "parallel: mismatch names the container pair"
-  assert_contains "$out" "parallel phase" "parallel: warning states the phase"
-}
-
-test_definite_mismatch_hard_stops_under_strict() {
-  local state="$FIXTURE_DIR/sandbox/.git/SESSION_STATE"
-  mkdir -p "$(dirname "$state")"
-  printf 'interface_contract_version=9\n' > "$state"
-  local out rc=0
-  out="$(INTERFACE_CONTRACT_STRICT=1 _run_check "$state" 2>&1)" || rc=$?
-  assert_ne "$rc" "0" "strict: mismatch hard-stops (non-zero exit)"
+  out="$(_run_check "$state" 2>&1)" || rc=$?
+  assert_ne "$rc" "0" "container contract mismatch hard-stops (non-zero exit)"
   assert_contains "$out" "FATAL: container contract mismatch" \
-      "strict: hard stop is marked the fatal orchestration signal"
+      "hard stop is marked the fatal orchestration signal"
   assert_contains "$out" "different contract revisions" \
-      "strict: hard stop names the orchestration cause"
+      "hard stop names the orchestration cause"
 }
 
 test_missing_record_key_warns_not_aborts() {
@@ -99,8 +87,8 @@ test_missing_record_key_warns_not_aborts() {
   mkdir -p "$(dirname "$state")"
   printf 'init_sha=abc\nsession_ts=2026\n' > "$state"  # no interface_contract_version key
   local out rc=0
-  out="$(INTERFACE_CONTRACT_STRICT=1 _run_check "$state" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "missing record key warns even under strict (upgrade path)"
+  out="$(_run_check "$state" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "missing record key warns, does not hard-stop (upgrade path)"
   assert_contains "$out" "predates the interface-contract check" \
       "missing record key names the pre-record image cause"
 }
@@ -112,8 +100,8 @@ test_missing_record_file_warns_not_aborts() {
   # an earlier test's record file does not satisfy the check.
   local state="$FIXTURE_DIR/norec/sandbox/.git/SESSION_STATE"
   local out rc=0
-  out="$(INTERFACE_CONTRACT_STRICT=1 _run_check "$state" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "missing record file warns, does not abort under strict"
+  out="$(_run_check "$state" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "missing record file warns, does not hard-stop"
   assert_contains "$out" "no SESSION_STATE" \
       "missing record file names the missing record"
 }
@@ -135,8 +123,7 @@ test_missing_lib_skips_silently() {
 # ---------------------------------------------------------------------------
 
 run_test test_agent_baked_equals_sandbox_recorded_silent
-run_test test_definite_mismatch_warns_in_parallel_phase
-run_test test_definite_mismatch_hard_stops_under_strict
+run_test test_definite_mismatch_hard_stops
 run_test test_missing_record_key_warns_not_aborts
 run_test test_missing_record_file_warns_not_aborts
 run_test test_missing_lib_skips_silently
