@@ -26,26 +26,25 @@ source "$REPO_ROOT/src/libs/cli.sh"
 # Build execution
 # -------------------------
 
-# build_image <image_name> <dockerfile> <repo_root> <stamp_contract> <no_cache> [docker build args...]
+# build_image <image_name> <dockerfile> <repo_root> <contract_label> <no_cache> [docker build args...]
 # Builds using repo root as docker build context.
-# Injects the interface-contract-version label for the contract check (ADR
-# interface_contract_compatibility.md) on tier-3 images only (stamp_contract
-# non-empty); tiers 1/2 shared bases carry no baked harness content and pass
-# an empty stamp_contract.
+# contract_label is the interface-contract version to bake as the
+# `agent-sandbox.interface-contract-version` label (ADR
+# interface_contract_compatibility.md). Pass the version to stamp it, or the
+# empty string to build an image with no label (tier-1/2 shared bases carry no
+# baked harness content, so they take no label).
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
   local repo_root="${3:?build_image requires repo_root}"
-  local stamp_contract="${4:-}"
+  local contract_label="${4:-}"
   local no_cache="${5:-}"
   shift 5
 
   local build_cmd=(docker build --quiet)
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
   build_cmd+=(-t "$image_name" -f "$dockerfile")
-  # Tier-3 images (those with baked harness content) carry the contract
-  # version; tiers 1/2 are shared bases with no baked harness content.
-  [[ -n "$stamp_contract" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$(interface_contract_version)")
+  [[ -n "$contract_label" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$contract_label")
   build_cmd+=("$@" "$repo_root")
 
   # Run docker build with --quiet: per-step progress output (the cached-step
@@ -127,14 +126,14 @@ build_agent() {
   fi
 
   # --- Helper: build image only if missing (or --no-cache forces rebuild) ---
-  # Arguments: image dockerfile context_dir [stamp_contract] [cache_flag] [extra docker build args...]
+  # Arguments: image dockerfile context_dir [contract_label] [cache_flag] [extra docker build args...]
   build_if_missing() {
     local image="$1" dockerfile="$2" context_dir="$3"
-    local stamp_contract="${4:-}"
+    local contract_label="${4:-}"
     local cache="${5:-}"
     shift 5
     if ! docker image inspect "$image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-      build_image "$image" "$dockerfile" "$context_dir" "$stamp_contract" "$cache" "$@"
+      build_image "$image" "$dockerfile" "$context_dir" "$contract_label" "$cache" "$@"
     else
       echo "Image exists, skipping: $image"
     fi
@@ -150,7 +149,7 @@ build_agent() {
     "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 3: always build provider image  --  carries the contract label
-  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "1" "" \
+  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
@@ -179,7 +178,7 @@ build_sandbox() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  build_image "$image" "$dockerfile" "$repo_root" "1" "" "${uid_args[@]+${uid_args[@]}}"
+  build_image "$image" "$dockerfile" "$repo_root" "$(interface_contract_version)" "" "${uid_args[@]+${uid_args[@]}}"
 }
 
 # -------------------------
