@@ -253,6 +253,15 @@ _session_export() {
   # call would abort the export at exactly the point of proceeding.
   wait_git_lockfile "$_sandbox_dir" || true
 
+  # SESSION_ID is required to build any artefact path. Mirrors the autosave
+  # tick's guard so both save paths treat the state the same way: report it and
+  # record a FAIL, rather than aborting the trap with no diagnostic.
+  if [[ -z "$_session_id" ]]; then
+    echo "session-export: SESSION_ID is unset; cannot build the export path" >&2
+    _write_export_status "$_changes_dir" "FAIL" "$(date -u +%Y%m%d-%H%M%S)" "1" 2>/dev/null || true
+    return 1
+  fi
+
   # Skip when nothing changed since the last save (session_save_needed). The
   # baseline is the freshest continuous checkpoint -- the autosave dir's own
   # .export-status HEAD (init_sha when no autosave has fired yet). A clean
@@ -260,12 +269,7 @@ _session_export() {
   # and redundant, so we do not create one at all.
   local _prior
   _prior=$(export_path "$_changes_dir" "autosave" "$_session_id")
-  local _baseline
-  _baseline=$(_save_baseline "$_sandbox_dir" "$_prior")
-  if ! session_save_needed "$_sandbox_dir" "$_baseline"; then
-    echo "session-export: nothing to save  --  clean tree at last-saved HEAD" >&2
-    return 0
-  fi
+  save_decision "$_sandbox_dir" "$_prior" "session-export" || return 0
 
   local _exit_dir
   _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")

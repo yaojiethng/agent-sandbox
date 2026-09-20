@@ -7,6 +7,7 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/export_status.sh"
 source "$_self_dir/package_branch.sh"
+source "$_self_dir/session_save_policy.sh"
 # Provides:
 #   diff_export           --  package session artefacts via package-branch + export time
 #   _write_export_status  --  write .export-status atomically
@@ -23,7 +24,7 @@ source "$_self_dir/package_branch.sh"
 # diff_export SANDBOX_DIR OUTPUT_DIR [SESSION_ID]
 #   Packages session artefacts into OUTPUT_DIR via package_branch with
 #   --no-renames by default (safe: avoids rename conflicts during git apply).
-#   then writes .export-status (STATUS, TIMESTAMP, INIT_SHA, optional EXIT_CODE)
+#   then writes .export-status (STATUS, TIMESTAMP, INIT_SHA, HEAD, optional EXIT_CODE)
 #   for audit trail. Optional SESSION_ID is embedded in error log filenames.
 diff_export() {
   local SANDBOX_DIR="$1"
@@ -83,47 +84,9 @@ diff_export() {
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$_init_sha" "$_head"
 }
 
-# session_save_needed SANDBOX_DIR BASELINE
-#   Decides whether an autosave/session save must run. Returns 0 (save) when
-#   the working tree is dirty (any uncommitted/untracked change  --  always
-#   save, regardless of how many) or when HEAD differs from BASELINE (new
-#   commits since the last save). Returns 1 (skip) only when the tree is
-#   completely clean AND HEAD equals BASELINE.
-#
-#   BASELINE is the comparison point: the HEAD the previous save captured,
-#   or init_sha on the first save. Callers resolve it from the previous
-#   .export-status HEAD line (falling back to init_sha) before calling.
-session_save_needed() {
-  local _sandbox_dir="$1" _baseline="$2"
-  local _dirty _head
-  _dirty=$(git -C "$_sandbox_dir" status --porcelain 2>/dev/null) || true
-  if [[ -n "$_dirty" ]]; then
-    return 0   # dirty tree  --  always save
-  fi
-  _head=$(git -C "$_sandbox_dir" rev-parse HEAD 2>/dev/null) || true
-  [[ -n "$_head" && "$_head" != "$_baseline" ]]
-}
-
-# _save_baseline SANDBOX_DIR EXPORT_DIR
-#   The comparison point for session_save_needed: the HEAD the previous
-#   SUCCESS export in EXPORT_DIR captured (its .export-status HEAD line), or
-#   init_sha when EXPORT_DIR has no successful export (first save). This folds
-#   level 1 (baseline = init_sha) and level 2 (baseline = last saved HEAD)
-#   into one rule: after the first save, the baseline is whatever that save
-#   recorded, so "nothing new since last save" is the check that runs.
-_save_baseline() {
-  local _sandbox_dir="$1" _export_dir="$2"
-  local _head=""
-  if [[ -f "$_export_dir/.export-status" ]] \
-     && grep -q '^STATUS=SUCCESS' "$_export_dir/.export-status" 2>/dev/null; then
-    _head=$(grep '^HEAD=' "$_export_dir/.export-status" 2>/dev/null | head -1 | cut -d= -f2-)
-  fi
-  if [[ -n "$_head" ]]; then
-    echo "$_head"
-    return 0
-  fi
-  session_state_read "$_sandbox_dir" "init_sha" 2>/dev/null || true
-}
+# session_save_needed and _save_baseline live in session_save_policy.sh: the
+# decision is pure policy over git state, so it stays sourceable without the
+# export pipeline's docker and packaging dependencies.
 
 # _write_export_error_log OUTPUT_DIR TIMESTAMP [SESSION_ID] [EXIT_CODE] [STDERR_DUMP] [SUMMARY]
 #   Writes a timestamped error log file in OUTPUT_DIR for diagnosis.
