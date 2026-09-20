@@ -169,13 +169,14 @@ mitigation: a perl one-liner intended to count matches in a test file was
 written with the `/g` modifier against a full-file slurp; it matched nothing,
 but the loop structure ran forever, emitting a line count that grew into the
 hundreds of millions before the run was aborted and the log killed. The
-operator's standing rule applies: run every script through `timeout`. The
 deeper fix: a mechanical transform that prints only a summary at the end is
 invisible while it spins. Always (1) bound the tool with `timeout`, (2) have
 the transform emit a match/replacement count to stderr BEFORE any output, and
 (3) diff against the input to verify the change before committing. A
 long-running transform with no stderr progress is the signal to inspect the
-loop, not to wait.
+loop, not to wait. The standing order to run every script through `timeout`
+is withdrawn: a blanket timeout on a simple script maxes out the wait every
+run. Move to a test harness with per-test timeouts.
 
 ### [G] 2026-09-19 - A symlinked CLI can resolve to a stale checkout and masquerade as a code regression
 
