@@ -8,7 +8,7 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
 
-The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`).
+The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`). [SUPERSEDED in M2.6 -- the session-identity prefactor fold: derivation is now `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.]
 
 Renamed surfaces (current code/docs):
 
@@ -144,7 +144,7 @@ Foundation work made autosave and session-save reliable (EXIT-trap export with r
 
 ### Container Identity & Lifecycle (Track A)
 
-Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
+Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. [SUPERSEDED in M2.6 -- the session-identity prefactor fold replaced the two-stage derivation with a single canonical `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.] Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
 
 ### Build Pipeline & Staleness Detection (Track B)
 

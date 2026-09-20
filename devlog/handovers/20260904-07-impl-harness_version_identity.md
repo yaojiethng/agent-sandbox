@@ -7,7 +7,9 @@
 
 ## Objective
 
-Implement the settled harness version identity design (ADR `harness_versioning.md`, 2026-09-01; design `20260831-design-active-image_and_harness_version_identity.md`): per-surface versions -- image = docker digest, worktree = git HEAD (no record field), host = symlink install -- with the staleness signal retired and the dry-run digest-roundtrip gate.
+Implement the settled harness version identity design (ADR `harness_versioning.md`, 2026-09-01; design `20260831-design-settled-image_and_harness_version_identity.md`): per-surface versions -- image = docker digest, worktree = git HEAD (no record field), host = symlink install -- with the staleness signal retired and the dry-run digest-roundtrip gate.
+
+[CORRECTION -- 2026-09-20: the design reference cited the pre-rename `-active-` filename; the discussion file carries the `-settled-` token per the 20260831 settlement pass.]
 
 ## Scope
 

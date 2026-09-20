@@ -2,6 +2,8 @@
 
 **Status:** settled
 
+**Implemented by:** handover [`20260904-07`](../handovers/20260904-07-impl-harness_version_identity.md) (ADR [`harness_versioning.md`](../../docs/adr/harness_versioning.md)).
+
 Mechanism decision recorded in ADR
 [`harness_versioning.md`](../../docs/adr/harness_versioning.md).
 The story [`20260831-story-settled-image_and_harness_version_identity.md`](20260831-story-settled-image_and_harness_version_identity.md)
