@@ -46,10 +46,10 @@ Bash friction entries migrated from `devlog/discussions/20260809-story-active-ba
 
 ### [A] 2026-09-20  --  `run_test`'s `$1 || true` suppresses `set -e` inside the test, so an `set -e` guard cannot be observed
 
-state: open
-scoped: none
+state: closed
+scoped: M2.6 close
 legacy: none
-mitigation: assert the observable outcome (a call count, an artefact) rather than relying on the shell aborting; when the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does.
+mitigation: 2026-09-20 -- the rule landed in `testing_policy.md` (run_test docs) in handover `20260920-03`, and the inert autosave-loop test was reworked to the fresh-`bash`-probe pattern: `tests/test_routing.sh::test_autosave_loop_survives_failing_ticks` now runs the shipped loop under a real `set -euo pipefail` shell in a separate process and asserts a marker file. Verified: removing the `|| true` guard from `autosave_loop` turns that test red (mutation test, then restored).
 
 `tests/libs/test_common.sh`'s `run_test` invokes each test as `$1 || true`. Bash disables `set -e` for a command in a `||` list, and that suppression covers the whole function body: nested function calls and even a subshell the body starts with its own `set -euo pipefail` do not abort on a failing command. A test written to prove "this loop survives a failing step under `set -e`" therefore passes whether or not the production code guards the failure, because the guard is never exercised. This produced an inert regression test for the autosave loop's status absorption: removing the `|| true` from the shipped `autosave_loop` left the suite green. Measured directly: the mutated loop makes one attempt and dies in a plain `set -e` shell, and 86 attempts under `run_test`.
 
