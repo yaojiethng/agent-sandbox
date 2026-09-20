@@ -285,11 +285,23 @@ check_base_flags() {
 
 Entrypoint scripts (`scripts/*.sh`) and standalone `main()` blocks may use `exit` legitimately.
 
-### 3.2 Dual-use scripts: library functions + standalone guard
+### 3.2 Exit codes carry a verdict, never a magnitude
+
+An exit code answers one question: did the operation succeed? Use `0` for success and `1` for failure. Do not encode a count, a severity, or a tool-missing condition in the code. A missing tool is a finding, not a special code: print the finding and exit `1`. A count belongs in the output, where a reader can see it, not in a code that wraps at 256.
+
+A function that cannot determine its answer must not return the same status as one that determined a negative answer. Give the undeterminable case its own status, and make every caller handle it explicitly. Two states that share one status make a broken input indistinguishable from a benign one, which is how a silent failure is born.
+
+An in-process function may carry a distinguishing status when one helper owns its dispatch. The rule is about the boundary a caller sees: a process exit status carries a verdict only, and a caller that would otherwise have to switch on several codes is better served by a single helper that maps them to a boolean and prints the diagnostic. Prefer that helper over repeating a `case` at every call site.
+
+One standing exemption: a test harness may exit with its failure count, because the count is the point of the report, every consumer reads only zero versus non-zero, and a suite that reaches 256 failures has a problem the exit code cannot express anyway. See [`testing_policy.md`](testing_policy.md).
+
+**Renumbering note (2026-09-19):** this section was inserted as 3.2, so the former 3.2 (dual-use scripts) is now 3.3 and the former 3.3 (no speculative flags) is now 3.4. A record written before that date that cites rule 3.2 for the dual-use guard means 3.3, and one that cites 3.3 for no-speculative-flags means 3.4. Nothing else moved.
+
+### 3.3 Dual-use scripts: library functions + standalone guard
 
 Files in `src/libs/` may export functions (for sourcing) and also run standalone. The `BASH_SOURCE[0] == "$0"` guard separates the two modes.
 
-### 3.3 No speculative flags: boolean parameters need a production caller
+### 3.4 No speculative flags: boolean parameters need a production caller
 
 Do not add boolean/string mode parameters to a function unless at least one production call site passes a value that changes behaviour. A flag "for later" is dead API surface: it widens every signature it threads through, invites untested branches, and its eventual removal touches every file in between (`STRICT` and `AUTO_SELECT` were both removed for exactly this  --  see the 2026-08-21 loc-reduction campaign). When a mode is genuinely needed, add the parameter and the call-site change in the same commit.
 

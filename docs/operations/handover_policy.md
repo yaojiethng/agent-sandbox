@@ -56,7 +56,7 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 | Documentation | `docs` | Project documentation under `docs/` -- descriptive prose that is not a decision record. | `docs` |
 | Workflow | `workflow` | Policy, governance, AGENTS.md, prompts, and `workflow/` agent-behaviour contract files. | `workflow` |
 | Housekeeping | `chore` | Small administrative or cosmetic maintenance: stale links, linting, index cleanup, roadmap bookkeeping. | `chore` |
-| Audit | `audit` | Compliance or review sweep, usually producing a report or a non-content reordering sweep. | `refactor`, `docs`, or `chore` |
+| Audit | `audit` | Compliance or review sweep, usually producing a report or a non-content reordering sweep. A review-driven sweep lands corrections, so its commits take any type the findings call for. | any |
 | Story | `story` | Deprecated -- folded into `discussion`; retained for historical handovers only. | -- |
 | Study | `study` | Deprecated -- folded into `design`; retained for historical handovers only. | -- |
 | Spec | `spec` | Deprecated -- folded into `design`; retained for historical handovers only. | -- |
