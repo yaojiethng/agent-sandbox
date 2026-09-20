@@ -21,14 +21,14 @@ SANDBOX_DIR/
     └── session-diffs/         ← diff pipeline output
         ├── session/            ← exit artefacts
         │   └── <EXPORT_TIME>-<SESSION_ID>/  ← session-scoped directory
-        │       ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA
+        │       ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA (diff_export adds HEAD)
         │       ├── uncommitted.diff
         │       ├── all-changes.diff
         │       ├── patches/         ← per-commit .diff files
         │       └── changed-files/   ← working tree copies
         └── autosave/           ← checkpoint artefacts
-            └── <SESSION_ID>/  ← single checkpoint directory, overwritten per tick
-                ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA
+            └── <SESSION_ID>/  ← single checkpoint directory, swapped in per successful tick
+                ├── .export-status    ← STATUS, TIMESTAMP, INIT_SHA (diff_export adds HEAD)
                 ├── uncommitted.diff
                 ├── patches/
                 └── changed-files/

@@ -68,7 +68,7 @@ Before closing a session that touched such a document, update or remove every st
 
 The repository holds zero Markdown lint findings. The Markdown gate runs `markdownlint-cli2` with the repository config [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs) and the custom `doc-ascii` rule in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs). A finding is a defect: fix it in the same change.
 
-`make lint` runs [`scripts/lint.sh`](../../scripts/lint.sh), which runs the ShellCheck gate in [`scripts/check_shell.sh`](../../scripts/check_shell.sh) and the Markdown gate in [`scripts/check_markdown.sh`](../../scripts/check_markdown.sh). Run `make lint` before an iteration closes. When `make` is not available, run `bash scripts/check_markdown.sh` for the Markdown gate alone.
+`make lint` runs [`scripts/lint.sh`](../../scripts/lint.sh), which runs the ShellCheck gate in [`scripts/check_shell.sh`](../../scripts/check_shell.sh) and the Markdown gate in [`scripts/check_markdown.sh`](../../scripts/check_markdown.sh). Run `make lint` before an iteration closes. When `make` is not available, run `bash scripts/lint.sh` for both gates.
 
 The config enables the rules that match this policy. It disables `MD013` because `### Line wrapping` forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Do not silence a finding with a per-file disable; fix the text or change the config.
 

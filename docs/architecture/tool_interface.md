@@ -44,7 +44,7 @@ Stops any running session for this project, builds missing images if needed, see
 - `REBUILD=1` -- rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
 - `INTERACTIVE=1` -- the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`, `hermes`, `opencode`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted -- e.g. `make start PROVIDER=hermes INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
 
-**Leaves behind:** `session/` (per-export `<EXPORT_TIME>-<SESSION_ID>/`) and `autosave/` (single overwritten `<SESSION_ID>/`) subfolders in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
+**Leaves behind:** `session/` (per-export `<EXPORT_TIME>-<SESSION_ID>/`) and `autosave/` (single `<SESSION_ID>/`, replaced on a successful tick) subfolders in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
 
 ---
 
@@ -142,9 +142,9 @@ By default, resolves from the `session` channel (`session-diffs/session/`) using
 
 ---
 
-### `make confirm [TARGET=<branch>]`
+### `make confirm [TARGET_BRANCH=<branch>]`
 
-Rebases the current `draft/` branch onto `TARGET` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch.
+Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch.
 
 ---
 

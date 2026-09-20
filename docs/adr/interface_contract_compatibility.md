@@ -111,6 +111,18 @@ silently when the lib is unavailable. `container-sig` untouched. Default-warn
 per operator direction; the strict flip (flip the flag + fix any errors) is a
 scheduled follow-up iteration.
 
+**Implementation note (2026-09-19, handover `20260919-19`):** the container
+check moved from the entrypoint into the library and lost a copy of the record
+parser. `_check_container_contract` is deleted; the check is now
+`container_contract_check SANDBOX_DIR` in `src/libs/session_state.sh`, next to
+the record reader it uses, and it returns a verdict instead of exiting so the
+entrypoint owns the exit. `record_contract_version` is deleted -- it duplicated
+the `session_state_read` loop and omitted that function's file guard, which was
+the documented `set -e` hazard in `devlog/AGENT_FEEDBACK.md`. A missing library
+is no longer a silent skip: `session_state.sh` and `interface_contract.sh` are
+CRITICAL in the entrypoint preflight, so a stale image fails with the named
+rebuild remedy.
+
 **Implementation note (2026-09-19, authoritative, handover `20260919-07`):**
 the strict flip landed by removing the flag entirely rather than toggling its
 default. `interface_contract_strict()` and every `INTERFACE_CONTRACT_STRICT`

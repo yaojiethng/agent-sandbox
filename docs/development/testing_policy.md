@@ -118,7 +118,7 @@ Always source `test_common.sh` instead of defining `pass()`, `fail()`, and count
 - `pass()` / `fail()` -- identical formatting across all test files
 - `skip()` -- for tests that cannot run in the current environment
 - `run_test()` -- test runner that continues on failure
-- `test_done()` -- summary reporter that exits with failure count
+- `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
 
 ```bash
 source "$REPO_ROOT/tests/libs/test_common.sh"

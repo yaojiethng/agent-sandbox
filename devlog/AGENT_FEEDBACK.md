@@ -44,6 +44,17 @@ Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
+### [A] 2026-09-20  --  `run_test`'s `$1 || true` suppresses `set -e` inside the test, so an `set -e` guard cannot be observed
+
+state: open
+scoped: none
+legacy: none
+mitigation: assert the observable outcome (a call count, an artefact) rather than relying on the shell aborting; when the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does.
+
+`tests/libs/test_common.sh`'s `run_test` invokes each test as `$1 || true`. Bash disables `set -e` for a command in a `||` list, and that suppression covers the whole function body: nested function calls and even a subshell the body starts with its own `set -euo pipefail` do not abort on a failing command. A test written to prove "this loop survives a failing step under `set -e`" therefore passes whether or not the production code guards the failure, because the guard is never exercised. This produced an inert regression test for the autosave loop's status absorption: removing the `|| true` from the shipped `autosave_loop` left the suite green. Measured directly: the mutated loop makes one attempt and dies in a plain `set -e` shell, and 86 attempts under `run_test`.
+
+Scope: bash `set -e` semantics interacting with the test harness. Cross-reference: `docs/development/testing-conventions.md` documents the harness structure but not this suppression; the rule above belongs there when it is next touched.
+
 ## Edit tool
 
 Collation entry for pitfalls of the `edit` tool (exact-match text replacement). Goal: once sufficient entries accumulate, distill them into AGENTS.md steering guidelines for edit-tool usage (drafted by the agent, proposed to the operator per the governance one-section rule). Append new pitfalls as sub-bullets; keep each one line.
@@ -51,9 +62,9 @@ Collation entry for pitfalls of the `edit` tool (exact-match text replacement). 
 ### [G] 2026-09-12  --  Edit-tool pitfalls (collation, seeded)
 
 state: open
-scoped: none
+scoped: M3 -- `perf` workstream (`devlog/roadmap_future.md`, "Perf -- Subagent and Tool Observability")
 legacy: none
-mitigation: collation pending -- this entry exists to accumulate instances; the distillation into steering guidelines is the durable fix.
+mitigation: collation pending -- this entry exists to accumulate instances; the distillation into steering guidelines is the durable fix. Postponed 2026-09-19: the proper resolution now rides on the M3 `perf` workstream, which instruments the `edit` tool (failed-call counts classified by cause, plus the retry cost) so the distillation is grounded in measurements rather than impressions. Do not close this entry before that task lands.
 
 Seed instances (all observed 2026-09-12):
 
@@ -125,7 +136,7 @@ Scope: language design limitation. The subshell-scoped `|| true` pattern (from s
 state: open
 scoped: `src/libs/*.sh` (sourced libraries), callers under `set -euo pipefail` (entrypoints)
 legacy: none
-mitigation: a read of a nonexistent file inside a sourced lib function -- `while IFS='=' read ...; done < "$file"` -- makes the *function call site* fail under `set -e`. The caller that wrote `x="$(record_contract_version "$file")"` in a `set -euo pipefail` entrypoint dies silently mid-shell when `$file` is absent; a surrounding `|| ...` does not rescue it because the abort happens inside the command substitution, not at the call. Guard the file before the read (`[[ -f "$file" ]] || return 0` in the caller) or make the lib function itself tolerate absence. General rule: a sourced-lib read of a path the caller cannot guarantee is a `set -e` hazard, distinct from the exit-vs-return gotcha (GOTCHAS H 2026-08-12) -- this is a redirection abort, not a status-choice issue. Cross-reference: the `set -e` trap entries above.
+mitigation: a read of a nonexistent file inside a sourced lib function -- `while IFS='=' read ...; done < "$file"` -- makes the *function call site* fail under `set -e`. The caller that wrote `x="$(record_contract_version "$file")"` in a `set -euo pipefail` entrypoint dies silently mid-shell when `$file` is absent; a surrounding `|| ...` does not rescue it because the abort happens inside the command substitution, not at the call. Guard the file before the read (`[[ -f "$file" ]] || return 0` in the caller) or make the lib function itself tolerate absence. General rule: a sourced-lib read of a path the caller cannot guarantee is a `set -e` hazard, distinct from the exit-vs-return gotcha (GOTCHAS H 2026-08-12) -- this is a redirection abort, not a status-choice issue. Cross-reference: the `set -e` trap entries above. The instance that produced this entry is gone: `record_contract_version` was deleted in handover `20260919-19`, and its replacement reads through `session_state_read`, which carries the file guard. The general rule stands.
 
 ### [A] 2026-08-09  --  No test fixture lifecycle  --  manual `rm -rf` everywhere
 
@@ -161,6 +172,17 @@ mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib 
 `diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
 
 Scope: architecture decision recorded in ADR (not yet written). Cross-reference: no skill trap covers this; should be added as an architecture trap.
+
+### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
+
+state: open
+scoped: none
+legacy: none
+mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent").
+
+ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
+
+Scope: ShellCheck directive parsing. Cross-reference: `docs/development/bash-coding-conventions.md` states the suppression policy (targeted `# shellcheck disable=` with a rationale) but does not warn that a bare leading `shellcheck` word is parsed at all.
 
 ---
 
@@ -420,7 +442,7 @@ in `tests/test_onboard.sh`, was deleted `20260911-04` (handover
 `scripts/prune.sh`, `scripts/onboard.sh` and the flag-parsing section of
 `scripts/start_agent.sh` execute unconditionally when sourced  --  no
 `BASH_SOURCE[0] == "$0"` guard, although `bash-coding-conventions.md` rule 1.11
-and rule 3.2 mandate exactly that for dual-use scripts. Consequence: every
+and rule 3.3 mandate exactly that for dual-use scripts. Consequence: every
 function inside them is unit-testable only by textually extracting its body,
 which breaks silently if the function is renamed or reformatted (the probes
 fail loudly by design, but the seam itself is fragile). Guards on those three
@@ -429,7 +451,7 @@ extraction layer entirely.
 
 reconciled: 2026-09-01  --  all three named scripts now carry the guard
 (`scripts/start_agent.sh` wraps `main "$@"` -- flag parsing lives inside
-`main()` -- likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.2.
+`main()` -- likewise `prune.sh` and `onboard.sh`), satisfying rules 1.11/3.3.
 Marked probation per the reconcile-before-acting rule (tree has outgrown the
 entry); drop if it does not resurface. Follow-up completed: the remaining sed-extraction seam
 (`template_version_probe_real`, `tests/test_onboard.sh`) was deleted with handover `20260911-04`,
@@ -634,3 +656,16 @@ legacy: none
 mitigation: schedule a skill-maintenance row at M2.6 close, or accept the backlog as-is. Per GOTCHAS `2026-09-11`, a feedback follow-up note is not a task assignment.
 
 At the 2026-09-20 check-in, `AGENT_FEEDBACK.md` held 32 open entries. The consolidation basket is deferred with no task row: bash skill-trap coverage, the edit-tool collation pending distillation, and the circular-sourcing ADR "not yet written". The roadmap is the sole task list, so these observations stay inert until a row assigns them. The newest instance keeps biting: the 2026-09-19 sourced-lib `while read < file` `set -e` hazard is the third `set -e` language-limitation entry in the Bash section. The M2.6 close should decide whether a skill-maintenance row is scheduled or the backlog is accepted as it stands.
+
+## Agent experience  --  session 20260919-19
+
+### [A] 2026-09-20  --  A subagent review pass is expensive and unmeasured
+
+state: open
+scoped: M3 -- `perf` workstream (`devlog/roadmap_future.md`, "Perf -- Subagent and Tool Observability")
+legacy: none
+mitigation: postponed to the M3 `perf` workstream, which owns the instrument for both halves (liveness and per-run metrics). Verbosity guidance until then: seed each round with the prior round's blockers and state the scope narrowly, because a fresh reviewer re-derives context that a measured, resumable run would not need to.
+
+The thermo-nuclear review pass over this iteration ran two models per round across ten rounds in two tranches. Each round is a fresh `pi -p` context, so no round inherits the previous round's reasoning, and the log stays empty until the run flushes: neither the main agent nor the operator can see whether a round is progressing, stalled on the provider, or merely slow. There is no per-run accounting of wall-clock, tokens, throughput, latency, tool-call time, or agent turns, so the cost of a review tranche cannot be compared against its yield. The concrete cost of that blindness: a round that reports nothing new still consumes a full model pass, and the operator cannot tell from the outside whether a silent log means "thinking hard" or "network died".
+
+Scope: harness-wide measurement gap, not a bash or skill trap. Cross-reference: the `edit`-tool collation entry in the `## Edit tool` section is postponed to the same M3 `perf` task, which also instruments failed tool calls by cause.

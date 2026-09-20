@@ -109,13 +109,13 @@ No sweep commit is performed. Uncommitted changes are preserved in the working t
 
 ### No-op guard
 
-Before a save runs, the entrypoint asks `session_save_needed`: save when the working tree is dirty (any uncommitted/untracked change) or when HEAD differs from the baseline; skip only when the tree is completely clean and HEAD equals the baseline. The baseline is the previous save's HEAD from `.export-status`, falling back to `init_sha` for the first save. This folds two rules into one comparison: level 1 skips a session that never changed (clean tree at `init_sha`), and level 2 skips re-saving an unchanged state after the first save. A skipped autosave cycle writes nothing; a skipped session export creates no session directory at all.
+Before a save runs, the entrypoint asks `session_save_needed`: save when the working tree is dirty (any uncommitted/untracked change) or when HEAD differs from the baseline; skip only when the tree is completely clean and HEAD equals the baseline; save anyway when git cannot read the repository, which is the undeterminable case. The baseline is the previous save's HEAD from `.export-status`, falling back to `init_sha` for the first save. This folds two rules into one comparison: level 1 skips a session that never changed (clean tree at `init_sha`), and level 2 skips re-saving an unchanged state after the first save. A skipped autosave cycle writes nothing; a skipped session export creates no session directory at all.
 
 All artefacts land in the session export directory constructed by `export_path`:
 
 ```text
 workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
-  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (and EXIT_CODE on failure)
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (HEAD and EXIT_CODE written by diff_export)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
@@ -128,18 +128,18 @@ workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
 
 ### Autosave
 
-The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle overwrites a single directory:
+The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle replaces a single directory:
 
 ```text
 workspace/session-diffs/autosave/<SESSION_ID>/
-  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (updated each cycle)
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (replaced on a successful tick; HEAD written by diff_export)
   uncommitted.diff      — uncommitted changes vs HEAD
   all-changes.diff      — net delta init_sha..HEAD
   patches/
   changed-files/
 ```
 
-Only one autosave directory exists per session -- the old one is `rm -rf`'d before each write. No accumulation, no pruning needed within a session. When a cycle finds nothing to save (clean tree at the last-saved HEAD), it skips the write entirely and leaves the previous checkpoint untouched.
+One autosave directory exists per session. Each cycle builds the next checkpoint at a staging path outside the channel and swaps it in only when the export succeeds, so a failed or interrupted cycle never removes the last good checkpoint. No accumulation, no pruning needed within a session. When a cycle finds nothing to save (clean tree at the last-saved HEAD), it skips the write entirely and leaves the previous checkpoint untouched.
 
 `workspace/session-diffs/session/` accumulates one directory per container stop and is not automatically pruned.
 
@@ -155,7 +155,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make draft INTERACTIVE=1`** -- interactive mode: guides the operator through a two-step numbered picker (channel then bundle) instead of requiring explicit `BUNDLE=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
 
-**`make confirm [TARGET=<branch>]`** -- cleans up the draft branch after the operator has rebased and merged.
+**`make confirm [TARGET_BRANCH=<branch>]`** -- cleans up the draft branch after the operator has rebased and merged.
 
 **`make reject`** -- discards the draft branch, returning to the source branch. Draft residue (uncommitted changes left by `uncommitted.diff` on the working tree) is discarded automatically, since once the draft commits are dropped the final working-tree changes carry no information. Artefacts unchanged.
 
