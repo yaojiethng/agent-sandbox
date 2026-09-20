@@ -578,3 +578,59 @@ legacy: none
 mitigation: 2026-09-19 -- reframed in handover `20260919-17`: the absolute "read-only once closed" rule in `handover_policy.md` and `documentation_policy.md` was replaced with one shared principle across all closed documents: a closed document is edited only at the operator's direction and every edit carries the corresponding correction tag. The correction procedure now rewrites the affected paragraph in place (no inline markers), inserts a `[CORRECTION -- YYYY-MM-DD: ...]` tag block at the end of the corrected section ordered newest-first, and names the operator's signal words (amend, re-open, edit, fix). `study_policy.md` and `roadmap_policy.md` carry the same principle; study's em-dash tag normalized to `--`.
 
 The `handover_policy.md` framing read "read-only once closed", which is stricter than the intended behaviour. The repo has a working post-close correction path, and sometimes a close commit must be amended (a squash, a fixup, or a bug found after commit A where rolling the fix into A is cleaner than a second handover). The absolute wording made the agent refuse such operator-directed edits. The durable fix is the reframe in handover `20260919-17`; the operator's decision-log vs factual-reference rationale is recorded as a note, not a second procedure, to avoid procedure drift.
+
+## Agent experience  --  check-in survey 2026-09-20
+
+### [A] 2026-09-20  --  Roadmap milestone state lagged at the M2.6 close seam
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: held per operator steering 2026-09-20. Resolve the write-back when preparing to close M2.6, not now.
+
+The check-in survey (2026-09-20) found the roadmap state lagged the tree. `devlog/roadmap.md` frontmatter names `active-milestone: M2.6 - Session Persistence` with status `in-progress`, and the Milestone Summary shows M2.6 "In progress" and M3 "Not started". The M2.6 section is fully checked: every sub-milestone row is `[x]`, and the general-track list holds only completed rows, compacted at the `20260919-18` close. The changelog records the milestone at close. Commit `9858186` then seeded the M3 Backpressure group into `devlog/roadmap_future.md`. The lag is the probation class of GOTCHAS `2026-08-31` (roadmap state goes stale against closed milestones). Per the operator steering, the write-back is held for the M2.6 close preparation, where the escalation clause of that gotcha resolves it.
+
+### [A] 2026-09-20  --  A suite-green correction landed without a certified rerun
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: certified on 2026-09-20 -- the affected files and the full suite rerun green below; the root cause is recorded in GOTCHAS `2026-09-20`.
+
+Handover `20260919-09` AC5 recorded "Suite green across the three code commits". The correction block, dated 2026-09-20, states the claim did not hold: the compose-arg parser in `tests/stubs/docker` did not know `--progress` takes a value, so the dry-run `up` was misparsed, the stub wrote no diagnostics records, and every dry-run test polled the full 180s `DRY_RUN_RECORD_TIMEOUT` twice per run before failing. The fix landed: the stub gained the `--progress` arm, and the `test_start_agent.sh` dry-run fixture supplies `OUTPUT_DIR` and `DRY_RUN_RECORD_TIMEOUT`. The correction did not record a post-fix rerun, so a reader could not trust the corrected claim. The check-in reran the affected files (`test_start_agent.sh` 34/0/0, `test_dry_run_probe.sh` 51/0/0, `test_dry_run_record.sh` 25/0/0, `test_trace_dry_run.sh` 7/0/0) and the full suite: 930 passed, 0 failed, 0 skipped across 54 files. Rule: an in-place correction of a suite claim requires a certified rerun recorded beside the correction.
+
+### [A] 2026-09-20  --  A gotcha cited a commit hash absent from history
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: no action planned now; the hash anchor in a durable record should be re-verified when the history is rewritten.
+
+GOTCHAS `2026-09-20` cites commit `ea080bf` as the source of the `--progress quiet` change. `git log --all` finds no such hash in this repository. The change is in `a1684f3` ("fix: prevent compose prompt hang and quiet docker output at source"). The hash likely transposed during a rebase of the landed history. A durable lesson record cites a hash a reader must find; a wrong hash loses the anchor. Verify a cited hash against `git log` before recording it, and re-verify after a history rewrite. Correction of the single hash is deferred to the M2.6 close record pass.
+
+### [A] 2026-09-20  --  Changelog identity derivation describes the pre-fold model
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: correct the derivation text at M2.6 close; the tree and the roadmap identity row already state the folded model.
+
+The M2.6 changelog entry states the `SESSION_ID` derivation is unchanged: `sha256(SESSION_TS:SANDBOX_ID)[:6]`. The tree implements the folded model: `session_id_derive` in `src/libs/session_env.sh` hashes the three factors together (`sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`), matching the roadmap identity row. The fold resolved the settled prefactor `20260831-design-settled-session_identity_prefactor.md` (Option B: fold the intermediate, keep the three factors). `SANDBOX_ID` no longer exists in `src/` or `scripts/`. The changelog text is stale against the tree.
+
+### [A] 2026-09-20  --  Settled designs implemented without a handover citation
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: add the citations at M2.6 close, or rotate the records via the Doc Bloat future task in `devlog/roadmap_future.md`.
+
+Two settled designs are implemented, and no implementation handover cites them. `20260831-design-settled-image_and_harness_version_identity.md` was implemented by handover `20260904-07` with ADR `harness_versioning.md`; the handover does not name the design. `20260831-design-settled-session_identity_prefactor.md` has a design handover (`20260831-06`) and a passing citation (`20260831-08`), but the fold has no implementation handover. A settled design should be traceable from its implementation. The Doc Bloat future task plans rotational archiving of resolved story and design records; the citations belong there or at the M2.6 close.
+
+### [A] 2026-09-20  --  The feedback backlog has no roadmap home
+
+state: open
+scoped: M2.6 close
+legacy: none
+mitigation: schedule a skill-maintenance row at M2.6 close, or accept the backlog as-is. Per GOTCHAS `2026-09-11`, a feedback follow-up note is not a task assignment.
+
+At the 2026-09-20 check-in, `AGENT_FEEDBACK.md` held 32 open entries. The consolidation basket is deferred with no task row: bash skill-trap coverage, the edit-tool collation pending distillation, and the circular-sourcing ADR "not yet written". The roadmap is the sole task list, so these observations stay inert until a row assigns them. The newest instance keeps biting: the 2026-09-19 sourced-lib `while read < file` `set -e` hazard is the third `set -e` language-limitation entry in the Bash section. The M2.6 close should decide whether a skill-maintenance row is scheduled or the backlog is accepted as it stands.
