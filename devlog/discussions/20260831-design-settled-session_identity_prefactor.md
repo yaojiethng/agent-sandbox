@@ -3,6 +3,7 @@
 **Status:** settled
 **Type:** design
 **Date:** 20260831
+**Implemented by:** handover [`20260831-07`](../handovers/20260831-07-impl-session_identity_prefactor.md) (Option B fold); passing citation `20260831-08`.
 **Predecessor (lineage):** supersedes the hash-based identity decision recorded
 in `docs/adr/session_identifier.md`
 as a *re-examination of the intermediate*, not a rejection of the model.

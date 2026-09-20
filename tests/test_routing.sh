@@ -314,14 +314,14 @@ EOF
 # first non-zero status (review round 4's blocker), and an unset session id
 # must be reported rather than fatal.
 #
-# Harness limitation, recorded because it makes this guard weaker than it looks:
-# `run_test` calls the test function as `$1 || true`, and bash suppresses
-# `set -e` for a shell invoked in a `||` list -- including nested function calls
-# and background subshells started from it. The unguarded call in `autosave_loop`
-# therefore does NOT abort here, so this test cannot observe the absence of
-# `|| true`; it pins the contract (the loop keeps ticking) and the diagnostic,
-# not the mechanism. Removing `|| true` from autosave_loop was verified by hand
-# against the shipped function under a plain `set -euo pipefail` shell.
+# Mechanism is observed in a fresh bash process, not through `run_test`:
+# `run_test` invokes the test function as `$1 || true`, and bash suppresses
+# `set -e` for a command in a `||` list -- including nested function calls
+# and background subshells started from it. An unguarded call in
+# `autosave_loop` therefore does NOT abort here; the probe below runs the
+# shipped loop under a real `set -euo pipefail` shell, so removing the
+# `|| true` from `autosave_loop` aborts the probe on the first failing tick
+# and the marker file never appears.
 test_autosave_loop_survives_failing_ticks() {
   source "$REPO_ROOT/src/libs/routing.sh"
   local SD="$FIXTURE_DIR/sandbox_tickloop"
@@ -329,26 +329,31 @@ test_autosave_loop_survives_failing_ticks() {
   local SID="tickloop"
   mkdir -p "$CHANGES"
 
-  local calls="$FIXTURE_DIR/tickcalls"
-  : > "$calls"
-  stub_export_fails_and_counts() {
-    echo x >> "$calls"
-    return 1
-  }
-
-  local pid
-  autosave_loop 0 export_path "$CHANGES" "$SD" "$SID" stub_export_fails_and_counts >/dev/null 2>&1 &
-  pid=$!
-  sleep 1
-  kill -TERM "$pid" 2>/dev/null
-  wait "$pid" 2>/dev/null || true
+  local probe="$FIXTURE_DIR/loop_marker_probe.sh"
+  local reached="$SD/reached"
+  rm -f "$reached"
+  cat > "$probe" <<EOF
+set -euo pipefail
+source "$REPO_ROOT/src/libs/export_status.sh"
+source "$REPO_ROOT/src/libs/session_state.sh"
+source "$REPO_ROOT/src/libs/routing.sh"
+source "$REPO_ROOT/src/libs/session_save_policy.sh"
+calls="$SD/calls"; : > "\$calls"
+stub() { echo x >> "\$calls"; if [[ \$(wc -l < "\$calls") -ge 3 ]]; then echo ok > "$reached"; fi; return 1; }
+autosave_loop 0 export_path "$CHANGES" "$SD" "$SID" stub >/dev/null 2>&1 & pid=\$!
+for _ in \$(seq 1 50); do [[ -f "$reached" ]] && break; sleep 0.05; done
+kill -TERM \$pid 2>/dev/null || true
+wait \$pid 2>/dev/null || true
+EOF
+  local rc=0
+  bash "$probe" >/dev/null 2>&1 || rc=$?
 
   local attempts
-  attempts=$(wc -l < "$calls" 2>/dev/null || echo 0)
-  if [[ "$attempts" -ge 3 ]]; then
+  attempts=$(wc -l < "$SD/calls" 2>/dev/null || echo 0)
+  if [[ -f "$reached" ]]; then
     pass "autosave loop: kept ticking after repeated failing ticks ($attempts attempts)"
   else
-    fail "autosave loop: stopped on a non-zero tick ($attempts attempt(s))"
+    fail "autosave loop: stopped on a non-zero tick ($attempts attempt(s), rc=$rc)"
   fi
 
   # An unset session id must skip the tick with a diagnostic, not kill the cell.

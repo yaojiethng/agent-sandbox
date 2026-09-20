@@ -120,6 +120,12 @@ Always source `test_common.sh` instead of defining `pass()`, `fail()`, and count
 - `run_test()` -- test runner that continues on failure
 - `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
 
+`run_test` invokes the test function as `$1 || true`. Bash suppresses `set -e` for a command in a `||` list, and that suppression covers the whole test function body -- nested function calls and any background subshell the body starts are also exempt. Consequences for writing tests:
+
+- A test cannot observe whether a production `set -e` guard exists by calling the production function directly in the test body; the guard is never exercised.
+- Assert the observable outcome instead: a call count, a marker file, a captured artefact.
+- When the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does -- the probe sources the production libraries, starts its own `set -euo pipefail`, and the test asserts on a marker the probe writes.
+
 ```bash
 source "$REPO_ROOT/tests/libs/test_common.sh"
 ```

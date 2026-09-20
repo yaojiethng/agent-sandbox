@@ -8,7 +8,7 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
 
-The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`).
+The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`). [SUPERSEDED in M2.6 -- the session-identity prefactor fold: derivation is now `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.]
 
 Renamed surfaces (current code/docs):
 
@@ -98,6 +98,14 @@ Harness artefacts -- snapshot, brief, workspace output -- moved from `PROJECT_RO
 
 ---
 
+## M2 - Reasoning/Capability Layer Separation
+
+*The harness now runs as two separated layers -- a capability layer that owns the sandbox worktree and the diff pipeline, and a reasoning layer that runs the agent -- with session state that survives stop/start, resumable sessions, and a dry-run path that verifies the production seam end-to-end.*
+
+M2 carried the two-layer model from concept to production. Each session runs a capability container and a reasoning container with deterministic identity and lifecycle: named compose projects, labels, stop/resume/prune, and per-run volumes or host-backed worktrees. Session persistence matured through autosave hardening, volume lifecycle management, the copy and mount delivery models, and a canonical session identifier; the build and dry-run surface gates on the image digest and an interface contract stamped into images and records. The draft/apply/reject workflow became the controlled port-back channel, guarded on clean-tree verdicts, and the harness's own loop was consolidated -- unified flag parsing, shared test fixtures, fail-closed lint gates, and a real-runtime test suite. Permanently out of scope: SERVE-mode integration, submodule support, multi-service project composition, direct-leaf env-resolution thinness, and worktree-backed delivery (rejected -- see `docs/adr/sandbox_delivery_model.md`).
+
+---
+
 ## M2.1 - General Capability Layer Prototype
 
 *The harness now runs two containers per session: a capability layer that owns the sandbox and diff pipeline, and a reasoning layer that runs the agent -- proving the two-container model end-to-end against a real coding project.*
@@ -134,7 +142,7 @@ Onboarding now populates provider config and seeds the provider-level prompts an
 
 *The agent's working state survives container stop/start cycles: session export is reliable, the volume lifecycle is managed per run, and the volume-backed copy model gives each sandbox a durable and isolated working copy.*
 
-Foundation work made autosave and session-save reliable (EXIT-trap export with return-value capture, `.export-status` metadata, lockfile polling), documented the security model, and audited repository preconditions. The volume lifecycle is per-run: named volumes keyed by run identity, resume via the host identity record and volume labels, conditional teardown (`compose stop` preserves the container, `down -v` destroys the volume), and container persistence across stops. The copy model adds label-filtered volume pruning, multi-volume concurrency with locking and an interactive selector, and draft-branch rollback via savepoint tags when patch application fails partway. A cross-cutting CLI/infra hardening track unified `--help` across subcommands, fixed the docker network-pool leak and the silent build-failure abort, persisted merged compose files under `SANDBOX_DIR/.compose/`, and closed the test-harness `set -e` blind spot so production scripts now run under the real runtime in trace tests. The mount model (M2.6.6) is complete: runnability verified live end-to-end, the delivery contract reworked per operator steering (`--delivery` parsed once at ingestion, default copy, record-recovered in resume), and the env-dependence audit closed. The M2.6 general-track work (test-harness consolidation, `cli.sh` flag parsing, session-end hints) is appended to this entry at milestone close.
+Foundation work made autosave and session-save reliable (EXIT-trap export with return-value capture, `.export-status` metadata, lockfile polling), documented the security model, and audited repository preconditions. The volume lifecycle is per-run: named volumes keyed by run identity, resume via the host identity record and volume labels, conditional teardown (`compose stop` preserves the container, `down -v` destroys the volume), and container persistence across stops. The copy model adds label-filtered volume pruning, multi-volume concurrency with locking and an interactive selector, and draft-branch rollback via savepoint tags when patch application fails partway. A cross-cutting CLI/infra hardening track unified `--help` across subcommands, fixed the docker network-pool leak and the silent build-failure abort, persisted merged compose files under `SANDBOX_DIR/.compose/`, and closed the test-harness `set -e` blind spot so production scripts now run under the real runtime in trace tests. The mount model (M2.6.6) is complete: runnability verified live end-to-end, the delivery contract reworked per operator steering (`--delivery` parsed once at ingestion, default copy, record-recovered in resume), and the env-dependence audit closed. The M2.6 general track consolidated the harness at milestone close: the test suite was deduplicated into shared fixtures and data-driven assert helpers, per-command flag parsing moved into one shared `cli.sh` parser, and the workflow tests split by family (draft / confirm / reject). Session-end teardown prints the resume and draft hints for the session just shut down; the review loop gained fail-closed lint gates with a copy-delivery Markdown `pre-commit` hook, and the review-findings sweep closed the last `set -e` and gate blind spots.
 
 ---
 
@@ -144,7 +152,7 @@ Foundation work made autosave and session-save reliable (EXIT-trap export with r
 
 ### Container Identity & Lifecycle (Track A)
 
-Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
+Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. [SUPERSEDED in M2.6 -- the session-identity prefactor fold replaced the two-stage derivation with a single canonical `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.] Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
 
 ### Build Pipeline & Staleness Detection (Track B)
 
