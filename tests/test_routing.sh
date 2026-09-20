@@ -398,6 +398,48 @@ test_entrypoint_autosave_call_arguments() {
   unset -f diff_export
 }
 
+# The full chain with the REAL export: a corrupt index must leave the previous
+# checkpoint byte-identical, not replace it with an empty SUCCESS bundle. Stub
+# export verbs cannot observe this, because they replace the layer that used to
+# swallow the failure.
+test_autosave_cycle_refuses_unreadable_repo_end_to_end() {
+  source "$REPO_ROOT/src/libs/export_status.sh"
+  source "$REPO_ROOT/src/libs/session_state.sh"
+  source "$REPO_ROOT/src/libs/session_save_policy.sh"
+  source "$REPO_ROOT/src/libs/diff_export.sh"
+
+  local SD="$FIXTURE_DIR/sandbox_e2e"
+  local CH="$SD/.workspace/session-diffs"
+  local as_dir="$CH/autosave/e2e"
+  mkdir -p "$SD/.git" "$CH"
+  git -C "$SD" init -q
+  git -C "$SD" config user.email t@t && git -C "$SD" config user.name t
+  echo one > "$SD/a.txt"
+  git -C "$SD" add -A && git -C "$SD" commit -qm base
+  printf 'init_sha=%s\n' "$(git -C "$SD" rev-parse HEAD)" > "$SD/.git/SESSION_STATE"
+
+  # Healthy cycle: write a real checkpoint.
+  echo two > "$SD/b.txt"
+  autosave_cycle "$as_dir" "$CH/autosave" "$SD" diff_export >/dev/null 2>&1 || true
+  local before
+  before=$(cat "$as_dir/all-changes.diff" 2>/dev/null | wc -c)
+  if [[ "$before" -gt 0 ]]; then
+    pass "end-to-end: a healthy cycle writes a non-empty checkpoint"
+  else
+    fail "end-to-end: healthy cycle produced no checkpoint content"
+  fi
+
+  # Corrupt the index, dirty the tree so the cycle attempts a save, then run it.
+  printf 'garbage' > "$SD/.git/index"
+  local rc=0
+  autosave_cycle "$as_dir" "$CH/autosave" "$SD" diff_export >/dev/null 2>&1 || rc=$?
+  assert_eq "$rc" "1" "end-to-end: an unreadable repository fails the cycle"
+  assert_eq "$(cat "$as_dir/all-changes.diff" 2>/dev/null | wc -c)" "$before" \
+      "end-to-end: the previous checkpoint is byte-identical after a refused cycle"
+  assert_contains "$(cat "$as_dir/.export-status" 2>/dev/null)" "STATUS=SUCCESS" \
+      "end-to-end: the surviving checkpoint keeps its SUCCESS status"
+}
+
 # The same mtime semantics for the raw helper (entrypoint autosave fallback).
 test_resolve_latest_dir_by_mtime() {
   local B="$FIXTURE_DIR/mtime_base"
@@ -645,6 +687,7 @@ run_test test_staging_dir_is_not_selectable
 run_test test_autosave_tick_absorbs_status_under_real_set_e
 run_test test_autosave_loop_survives_failing_ticks
 run_test test_entrypoint_autosave_call_arguments
+run_test test_autosave_cycle_refuses_unreadable_repo_end_to_end
 run_test test_autosave_swap_sequence
 run_test test_resolve_draft_named_session
 run_test test_resolve_draft_absolute_path_rejected

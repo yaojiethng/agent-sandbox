@@ -324,6 +324,15 @@ test_dispatcher_export_status_contents() {
   else
     fail "package_branch .export-status missing expected fields"
   fi
+
+  # package_branch does not stamp HEAD; diff_export does, because only the
+  # export path knows the commit it captured. Docs that bundle the two writers
+  # into one field list have been wrong three times, so pin the distinction.
+  if grep -q '^HEAD=' "$ES"; then
+    fail "package_branch should not stamp HEAD (diff_export owns that field)"
+  else
+    pass "package_branch leaves HEAD to the diff_export caller"
+  fi
 }
 
 # =============================================================================
@@ -431,8 +440,33 @@ run_test test_dispatcher_strips_text_index_keeps_binary_index
 run_test test_dispatcher_binary_patch_applies_to_fresh_repo
 run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
+test_dispatcher_refuses_unreadable_repository() {
+  # A corrupt index degrades every git command below to empty output while this
+  # function still reports success, so the caller would stamp a SUCCESS bundle
+  # over the last good one. The save decision routes its undeterminable case
+  # into this function, so it must refuse the state.
+  local DIR="$FIXTURE_DIR/pb_corrupt"
+  local OUT="$FIXTURE_DIR/pb_corrupt_out"
+  mkdir -p "$OUT"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+  printf 'garbage' > "$DIR/.git/index"
+
+  if package_branch "$DIR" "$OUT" 2>/dev/null; then
+    fail "package_branch should refuse a repository whose index is unreadable"
+  else
+    pass "package_branch refuses an unreadable repository"
+  fi
+  if [[ -f "$OUT/.export-status" ]]; then
+    fail "package_branch wrote export metadata for a refused repository"
+  else
+    pass "package_branch writes no metadata when it refuses"
+  fi
+}
+
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
+run_test test_dispatcher_refuses_unreadable_repository
 run_test test_dispatcher_export_status_contents
 run_test test_preflight_bypass_returns_before_any_git
 run_test test_preflight_clean_tree_is_silent

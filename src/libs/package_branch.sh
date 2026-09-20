@@ -15,7 +15,8 @@
 #   all-changes.diff         --  net delta INIT_SHA..HEAD (with untracked)
 #   changed-files/           --  working tree copies of all changed files
 #     MANIFEST.txt
-#   .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD is added by
+#                                the diff_export caller) for host consumers
 #
 # Usage (library):
 #   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
@@ -159,7 +160,7 @@ package_commits() {
 #   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
 #   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
 #   4. write_changed_files      --  changed-files/ with MANIFEST.txt
-#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
@@ -247,7 +248,7 @@ _package_preflight_check() {
 #   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
 #   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
 #   4. write_changed_files      --  changed-files/ with MANIFEST.txt
-#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA for draft.sh consumer
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
 # Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
@@ -279,6 +280,16 @@ package_branch() {
     return 1
   fi
 
+  # A corrupt index or unreadable object store makes every artefact below
+  # degrade to empty or partial while this function still reports success, so the
+  # caller stamps a SUCCESS bundle over the last good one. Refuse the state here:
+  # the save decision routes its undeterminable case into this function, and the
+  # callers' failure paths keep the previous artefact and write FAIL.
+  if ! git -C "$SANDBOX_DIR" status --porcelain >/dev/null 2>&1; then
+    echo "package_branch: cannot read the repository state at $SANDBOX_DIR; refusing to export" >&2
+    return 1
+  fi
+
   # Pre-flight: check for potential patch divergence from baseline
   _package_preflight_check "$SANDBOX_DIR" "$INIT_SHA"
 
@@ -298,7 +309,7 @@ package_branch() {
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
 
-  # 5. Export metadata  --  .export-status with STATUS, TIMESTAMP, INIT_SHA
+  # 5. Export metadata  --  .export-status with STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
   #    so the host-side make draft can resolve the baseline and timestamp
   #    from a single file.
   local _export_ts
