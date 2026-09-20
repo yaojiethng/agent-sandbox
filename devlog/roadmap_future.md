@@ -164,7 +164,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
-- [x] Pi version pinned in base Dockerfile (current: `@earendil-works/pi-coding-agent@0.85.1`)
+- [x] Pi version pinned in base Dockerfile (current: `@earendil-works/pi-coding-agent@0.86.0`)
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
 - [ ] Consider lockfile for `npm install -g` dependencies (transitive dependency locking)
 - [x] Bump policy -- operator decides when to bump based on: new functionality needed, critical fix, or security vulnerability. No automation. Bump manually by editing the pinned version in `base.Dockerfile` and rebuilding.
