@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-21
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Implementation
+**Date:** 2026-05-21
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Implementation
 **Status:** Active
 
 ## Objective
@@ -24,8 +24,8 @@ None.
 | 1 | `make draft --interactive` shows `Running: make draft CHANNEL=<x> SESSION=<y>` before existing draft output | Run with piped input, observe first line after selections |
 | 2 | `make apply --interactive` (uncommitted) shows `Running: make apply CHANNEL=<x> SESSION=<y>` before existing apply output | Same |
 | 3 | `make apply --interactive` (all-changes) shows `Running: make apply DIFF=<path>` before existing apply output | Same |
-| 4 | `SESSION=<outside-session> make draft --interactive` — option 0 lists it, Enter selects it | Run with Enter input, verifies it resolves to the correct session |
-| 5 | `SESSION=<visible-session> make draft --interactive` — session uses normal index | Verify via test |
+| 4 | `SESSION=<outside-session> make draft --interactive` -- option 0 lists it, Enter selects it | Run with Enter input, verifies it resolves to the correct session |
+| 5 | `SESSION=<visible-session> make draft --interactive` -- session uses normal index | Verify via test |
 | 6 | All existing + new tests pass | `./tests/test_interactive_session_select.sh` exits 0 |
 
 ## Hot files
@@ -42,7 +42,7 @@ None.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Option 0 for outside-display session | `SESSION=foo` outside display → option 0. If within display, normal index. Enter selects default (option 0 when injected). | Chat |
+| Option 0 for outside-display session | `SESSION=foo` outside display -> option 0. If within display, normal index. Enter selects default (option 0 when injected). | Chat |
 | Command output uses Makefile form | Consistent with existing `draft_workflow.sh` confirm hint | Chat |
 | diff-type selection has no non-interactive equivalent | `make apply DIFF=<path>` is the only route for `all-changes.diff` outside interactive mode | Chat |
 
@@ -50,7 +50,7 @@ None.
 
 | Finding | Type | Impact |
 |---|---|---|
-| No Makefile variable or CLI flag for diff type (`uncommitted.diff` vs `all-changes.diff`) — non-interactive `make apply` always resolves `uncommitted.diff`. `all-changes.diff` requires `make apply DIFF=<path>`. | interface gap | recorded; not blocking |
+| No Makefile variable or CLI flag for diff type (`uncommitted.diff` vs `all-changes.diff`) -- non-interactive `make apply` always resolves `uncommitted.diff`. `all-changes.diff` requires `make apply DIFF=<path>`. | interface gap | recorded; not blocking |
 
 ## Completed this session
 
@@ -64,12 +64,12 @@ None.
 
 ## Deferred items
 
-- n/p pagination — next session.
-- M2.7 items — Context handover recorded in Next session.
+- n/p pagination -- next session.
+- M2.7 items -- Context handover recorded in Next session.
 
 ## Next session
 
-**Sub-milestone:** M2.7 — Session Identity and Harness Versioning
+**Sub-milestone:** M2.7 -- Session Identity and Harness Versioning
 
 **Divergence note:** This session superseded the M2.7 implementation thread. The prior context is at `20260521-01-impl-fix_dry_run_rename.md` and earlier sessions. When resuming M2.7, start with the roadmap task list under Track A and Track B.
 

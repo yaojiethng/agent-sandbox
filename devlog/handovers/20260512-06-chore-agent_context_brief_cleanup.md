@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-12
-**Milestone:** M2 — Reasoning/Capability Layer Separation
-**Session type:** Housekeeping
+**Date:** 2026-05-12
+**Milestone:** M2 -- Reasoning/Capability Layer Separation
+**Type:** Housekeeping
 **Status:** Closed
 
 ## Objective

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-21
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Implementation
+**Date:** 2026-05-21
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -17,14 +17,15 @@ All scripts referencing `/opt/sandbox/lib/` should resolve their dependencies wi
 
 Per the bugfix protocol (`docs/operations/bugfix_protocol.md`):
 
-1. **Replicate** — done: `bash /opt/sandbox/lib/package_diff.sh` fails with `diff.sh: No such file or directory`
-2. **Trace** — done: `/opt/sandbox/lib/` is missing 3 of 6 expected files, has 1 unexpected file
-3. **Diagnose** — write diagnostic check(s) for `/opt/sandbox/lib/` completeness
-4. **Fix** — ensure the build produces images with all required files
-5. **Record** — diagnostic script + handover correction
-6. **Close** — verify fix
+1. **Replicate** -- done: `bash /opt/sandbox/lib/package_diff.sh` fails with `diff.sh: No such file or directory`
+2. **Trace** -- done: `/opt/sandbox/lib/` is missing 3 of 6 expected files, has 1 unexpected file
+3. **Diagnose** -- write diagnostic check(s) for `/opt/sandbox/lib/` completeness
+4. **Fix** -- ensure the build produces images with all required files
+5. **Record** -- diagnostic script + handover correction
+6. **Close** -- verify fix
 
 **Correction-prescribed work (completed post-session):**
+
 - Harden provider-layer AGENTS.md files with two-layer architecture context so the agent knows which container it is in
 - Propagate preflight library completeness check to reasoning layer entrypoint (`provider-entrypoint.sh`)
 - Expand reasoning-layer diagnostic (`diagnose_dry_run_reasoning.sh`) with severity-labeled library check
@@ -38,24 +39,24 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Preflight check in sandbox-entrypoint.sh warns on missing WARN files, aborts on missing CRITICAL files | ✅ (syntax check + manual review) |
-| 2 | diagnose_dry_run_capability.sh checks all 7 expected library files with severity labels | ✅ (verified by running diagnostic) |
-| 3 | All tests pass | ✅ (full suite, 0 failures) |
+| 1 | Preflight check in sandbox-entrypoint.sh warns on missing WARN files, aborts on missing CRITICAL files | [x] (syntax check + manual review) |
+| 2 | diagnose_dry_run_capability.sh checks all 7 expected library files with severity labels | [x] (verified by running diagnostic) |
+| 3 | All tests pass | [x] (full suite, 0 failures) |
 
 ## Hot files
 
 | File | Why in scope |
 |---|---|
-| `libs/sandbox.Dockerfile` | Specifies which files go into `/opt/sandbox/lib/` — verify correct |
-| `libs/containers.sh` | `build_context_sandbox` populates build context — verify correct |
+| `libs/sandbox.Dockerfile` | Specifies which files go into `/opt/sandbox/lib/` -- verify correct |
+| `libs/containers.sh` | `build_context_sandbox` populates build context -- verify correct |
 | `tests/knowledge/diagnose_*.sh` | Existing diagnostics that check `/opt/sandbox/lib/` files |
 | `libs/package_diff.sh` | Script that failed due to missing dependency |
 | `libs/sandbox-entrypoint.sh` | Sources from `/opt/sandbox/lib/` |
-| `libs/provider-entrypoint.sh` | Reasoning layer entrypoint — needs symmetric preflight checks |
+| `libs/provider-entrypoint.sh` | Reasoning layer entrypoint -- needs symmetric preflight checks |
 | `providers/AGENTS.template.md` | Template for provider-layer AGENTS.md files |
-| `providers/pi/config/agent/AGENTS.md` | Pi provider AGENTS.md — needs two-layer architecture context |
-| `providers/claude-code/AGENTS.md` | Claude Code provider AGENTS.md — needs two-layer architecture context |
-| `AGENTS.md` (root) | Had duplicate two-layer section — removed on propagation |
+| `providers/pi/config/agent/AGENTS.md` | Pi provider AGENTS.md -- needs two-layer architecture context |
+| `providers/claude-code/AGENTS.md` | Claude Code provider AGENTS.md -- needs two-layer architecture context |
+| `AGENTS.md` (root) | Had duplicate two-layer section -- removed on propagation |
 | `tests/knowledge/diagnose_dry_run_reasoning.sh` | Needs severity-labeled library check matching capability layer |
 
 ## Decisions made this session
@@ -89,9 +90,9 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.7 — Session Identity and Harness Versioning
+**Sub-milestone:** M2.7 -- Session Identity and Harness Versioning
 
 **Next task:** Continue M2.7 Track A or Track B items.
 
 ---
-[CORRECTION — 2026-05-22]: The original Objective stated "Fix the container image library regression" — this was incorrect. There was no regression; the confusion arose because the agent did not know which container it was in (reasoning vs capability layer), and each layer has a different `/opt/sandbox/lib/` file set. The Objective, Scope, and filename have been corrected to reflect the real scope: preflight hardening + container identity clarification. The originally completed work (capability-layer preflight checks and diagnostic) remains correct. The correction-prescribed AGENTS.md hardening and reasoning-layer propagation have been completed and added to the Completed this session table.
+[CORRECTION -- 2026-05-22]: The original Objective stated "Fix the container image library regression" -- this was incorrect. There was no regression; the confusion arose because the agent did not know which container it was in (reasoning vs capability layer), and each layer has a different `/opt/sandbox/lib/` file set. The Objective, Scope, and filename have been corrected to reflect the real scope: preflight hardening + container identity clarification. The originally completed work (capability-layer preflight checks and diagnostic) remains correct. The correction-prescribed AGENTS.md hardening and reasoning-layer propagation have been completed and added to the Completed this session table.

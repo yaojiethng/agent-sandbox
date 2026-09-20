@@ -1,14 +1,16 @@
 # Agent Handover
 
-**Session date:** 2026-03-24
-**Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Workflow
+**Date:** 2026-03-24
+**Milestone:** M2.2 -- Reasoning Layer Modularisation
+**Type:** Workflow
 
 ## Objective
+
 Identify and close the doc-update enforcement gap in the minor loop: architecture and concepts documents were intended to land before implementation but lacked gates preventing deferral.
 
 ## Scope
-Workflow audit of doc update sequencing. No roadmap tasks — this session addressed a policy gap identified by operator review of the minor loop step sequence.
+
+Workflow audit of doc update sequencing. No roadmap tasks -- this session addressed a policy gap identified by operator review of the minor loop step sequence.
 
 ## Acceptance criteria
 
@@ -24,9 +26,9 @@ Not yet defined.
 
 | Decision | Rationale | Recorded in |
 |---|---|---|
-| Doc deferral blocks Trigger B | Without a hard block, doc updates accumulated as cleanup across milestones. Tying Trigger B to doc state makes deferral costly and visible. | `iteration_policy.md` — Principles, Step 8 |
-| Doc divergence found during implementation must be corrected before Step 7 exits | Implementation that reveals a spec divergence is a signal the spec slipped — the correction belongs in the same session, not the next one. | `iteration_policy.md` — Step 7 |
-| Doc state added as a required acceptance criterion for architecture-touching sessions | File-state checks are not normally acceptance criteria, but doc correctness has no runtime observable — this is the appropriate form for this class of criterion. | `iteration_policy.md` — Step 6 |
+| Doc deferral blocks Trigger B | Without a hard block, doc updates accumulated as cleanup across milestones. Tying Trigger B to doc state makes deferral costly and visible. | `iteration_policy.md` -- Principles, Step 8 |
+| Doc divergence found during implementation must be corrected before Step 7 exits | Implementation that reveals a spec divergence is a signal the spec slipped -- the correction belongs in the same session, not the next one. | `iteration_policy.md` -- Step 7 |
+| Doc state added as a required acceptance criterion for architecture-touching sessions | File-state checks are not normally acceptance criteria, but doc correctness has no runtime observable -- this is the appropriate form for this class of criterion. | `iteration_policy.md` -- Step 6 |
 
 ## Completed this session
 
@@ -39,10 +41,11 @@ Not yet defined.
 None.
 
 ## Next session
-**M2.2 — Reasoning Layer Modularisation.**
+
+**M2.2 -- Reasoning Layer Modularisation.**
 
 This session was a workflow-only change. M2.2 implementation work is unaffected. Resume from the prior session's (20260318-07) watch-out items:
 
 1. The policy files edited in session 20260318-07 (`roadmap_policy.md`, `iteration_policy.md`, `handover_policy.md`) plus `iteration_policy.md` edited this session must be committed before M2.2 implementation work begins.
-2. M2.2 opens with a design step — audit `start_agent.sh` and `container-entrypoint.sh` before any files are changed.
-3. The base reasoning image extraction must not bake project-specific content — constraint carried from M2.1.
+2. M2.2 opens with a design step -- audit `start_agent.sh` and `container-entrypoint.sh` before any files are changed.
+3. The base reasoning image extraction must not bake project-specific content -- constraint carried from M2.1.

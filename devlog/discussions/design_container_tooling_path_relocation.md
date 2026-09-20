@@ -30,18 +30,18 @@ Relevant for maintenance: each category has a different path strategy.
 
 | Category | Examples | Path strategy |
 |---|---|---|
-| **Container infrastructure** — always run from image, never from repo | `sandbox-entrypoint.sh`, `dry_run.sh` | Update absolute prefix from `/libs/` → `/opt/sandbox/lib/` |
-| **Co-located tooling** — sourced via relative path from siblings | `diff.sh` → `package_branch.sh`, `package_diff.sh` → `session.sh` | Keep relative paths. **Maintenance note:** co-location dependency — if files move to different dirs in the image, update source paths |
-| **Prompt templates** — code blocks call container-bundled tooling | `package-diff.md`, `package-branch.md`, `agent-sandbox.md` | Update paths from `~/sandbox/libs/...` → `/opt/sandbox/lib/...` and docs reference → `/opt/sandbox/docs/` |
-| **Repo-only test scripts** — never inside image | `test_capability_layer.sh`, `test_build_context.sh` | Keep repo-relative paths. Update test assertions to reflect new image paths |
+| **Container infrastructure** -- always run from image, never from repo | `sandbox-entrypoint.sh`, `dry_run.sh` | Update absolute prefix from `/libs/` -> `/opt/sandbox/lib/` |
+| **Co-located tooling** -- sourced via relative path from siblings | `diff.sh` -> `package_branch.sh`, `package_diff.sh` -> `session.sh` | Keep relative paths. **Maintenance note:** co-location dependency -- if files move to different dirs in the image, update source paths |
+| **Prompt templates** -- code blocks call container-bundled tooling | `package-diff.md`, `package-branch.md`, `agent-sandbox.md` | Update paths from `~/sandbox/libs/...` -> `/opt/sandbox/lib/...` and docs reference -> `/opt/sandbox/docs/` |
+| **Repo-only test scripts** -- never inside image | `test_capability_layer.sh`, `test_build_context.sh` | Keep repo-relative paths. Update test assertions to reflect new image paths |
 
 ---
 
-## File change spec — exact changes per file
+## File change spec -- exact changes per file
 
-### 1. `libs/containers.sh` — build context functions
+### 1. `libs/containers.sh` -- build context functions
 
-**`build_context_sandbox`** — 7 files + docs:
+**`build_context_sandbox`** -- 7 files + docs:
 
 ```bash
 _build_context_copy "$repo_root/libs/sandbox-entrypoint.sh"     "$context_dir/" || return 1
@@ -55,7 +55,7 @@ cp -r "$repo_root/docs/architecture" "$context_dir/docs/architecture" || return 
 cp -r "$repo_root/docs/concepts"     "$context_dir/docs/concepts"     || return 1
 ```
 
-**`build_context_agent`** — 4 files + docs:
+**`build_context_agent`** -- 4 files + docs:
 
 ```bash
 _build_context_copy "$repo_root/libs/provider-entrypoint.sh"     "$context_dir/" || return 1
@@ -83,6 +83,7 @@ RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
 ```
 
 Update ENTRYPOINT:
+
 ```dockerfile
 ENTRYPOINT ["/opt/sandbox/bin/sandbox-entrypoint.sh"]
 ```
@@ -122,6 +123,7 @@ COPY session.sh /opt/sandbox/lib/session.sh
 ```
 
 Add ENV PATH before ENTRYPOINT:
+
 ```dockerfile
 ENV PATH=/opt/sandbox/bin:$PATH
 ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "<provider>"]
@@ -131,7 +133,7 @@ Replace existing ENTRYPOINT line entirely. Keep all other lines.
 
 ### 6. `agent/prompts/package-diff.md`
 
-6 occurrences of `bash ~/sandbox/libs/package_diff.sh` → `bash /opt/sandbox/lib/package_diff.sh`:
+6 occurrences of `bash ~/sandbox/libs/package_diff.sh` -> `bash /opt/sandbox/lib/package_diff.sh`:
 
 | Line | Old | New |
 |---|---|---|
@@ -156,7 +158,7 @@ Replace existing ENTRYPOINT line entirely. Keep all other lines.
 |---|---|
 | `in this project's \`docs/\` folder` | `in \`/opt/sandbox/docs/\`` |
 
-### 9. `libs/package_diff.sh` — usage comment (line 35)
+### 9. `libs/package_diff.sh` -- usage comment (line 35)
 
 | Old | New |
 |---|---|
@@ -227,12 +229,12 @@ assert_dir_file_count "agent: contains at least 4 files"       "$context" 4
 
 | File | Issue | Note |
 |---|---|---|
-| `agent/prompts/defer.md` | References `docs/operations/iteration_policy.md` — not baked into image | Pre-existing concern; all prompt templates rely on sandbox `docs/` for agent-sandbox itself |
+| `agent/prompts/defer.md` | References `docs/operations/iteration_policy.md` -- not baked into image | Pre-existing concern; all prompt templates rely on sandbox `docs/` for agent-sandbox itself |
 | `agent/prompts/wrapup.md` | Same | Same |
 | `agent/prompts/new-session.md` | Same | Same |
 | `agent/prompts/new-session-v2.md` | Same | Same |
 
-These prompt templates reference agent-sandbox policy docs by project-relative path and are only resolvable when the project IS agent-sandbox (dogfooding). Fixing them would require baking operation policies into docs/ or restructuring how workflow prompts resolve documentation — deferred to future session.
+These prompt templates reference agent-sandbox policy docs by project-relative path and are only resolvable when the project IS agent-sandbox (dogfooding). Fixing them would require baking operation policies into docs/ or restructuring how workflow prompts resolve documentation -- deferred to future session.
 
 ---
 

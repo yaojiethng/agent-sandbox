@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for libs/package_branch.sh — dispatcher produces unified output format
+# Tests for libs/package_branch.sh  --  dispatcher produces unified output format
 #
 # Expected output layout (under OUTPUT_DIR/):
 #   patches/0001-<sha>.diff
@@ -9,17 +9,13 @@
 #   all-changes.diff
 #   changed-files/MANIFEST.txt
 #   changed-files/<path>/<file>
+#   .export-status
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-FIXTURE_DIR=$(mktemp -d)
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/package_branch.sh"
 
 # -------------------------------------------------------------------
@@ -83,9 +79,10 @@ test_dispatcher_creates_all_artefacts() {
   [[ -f "$OUT/all-changes.diff" ]] || ALL_OK=false
   [[ -d "$OUT/changed-files" && -f "$OUT/changed-files/a.txt" && -f "$OUT/changed-files/b.txt" ]] || ALL_OK=false
   [[ -f "$OUT/changed-files/MANIFEST.txt" && -s "$OUT/changed-files/MANIFEST.txt" ]] || ALL_OK=false
+  [[ -f "$OUT/.export-status" && -s "$OUT/.export-status" ]] || ALL_OK=false
 
   if [[ "$ALL_OK" == true ]]; then
-    pass "package_branch creates all 5 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt)"
+    pass "package_branch creates all 6 artefact types (patches/, uncommitted.diff, all-changes.diff, changed-files/, MANIFEST.txt, .export-status)"
   else
     fail "package_branch missing one or more artefact types"
   fi
@@ -270,11 +267,7 @@ test_dispatcher_no_commits() {
 
   local PATCH_COUNT
   PATCH_COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
-  if [[ "$PATCH_COUNT" -eq 0 ]]; then
-    pass "package_branch produces no diffs when no commits"
-  else
-    fail "package_branch should produce 0 diffs when no commits, got $PATCH_COUNT"
-  fi
+  assert_eq_num "$PATCH_COUNT" "0" "package_branch produces no diffs when no commits"
 }
 
 test_dispatcher_missing_args() {
@@ -310,6 +303,131 @@ test_dispatcher_missing_session_state() {
   fi
 }
 
+test_dispatcher_export_status_contents() {
+  local DIR="$FIXTURE_DIR/pb_es_content"
+  local OUT="$FIXTURE_DIR/pb_es_content_out"
+  mkdir -p "$OUT"
+  local INIT_SHA
+  INIT_SHA=$(make_sandbox_with_state "$DIR")
+  commit_file "$DIR" "a.txt"
+
+  package_branch "$DIR" "$OUT"
+
+  local ES="$OUT/.export-status"
+  local ALL_OK=true
+  grep -q '^STATUS=SUCCESS$' "$ES" || ALL_OK=false
+  grep -q '^TIMESTAMP=' "$ES" || ALL_OK=false
+  grep -q "^INIT_SHA=${INIT_SHA}$" "$ES" || ALL_OK=false
+
+  if [[ "$ALL_OK" == true ]]; then
+    pass "package_branch writes .export-status with STATUS, TIMESTAMP, INIT_SHA"
+  else
+    fail "package_branch .export-status missing expected fields"
+  fi
+
+  # package_branch does not stamp HEAD; diff_export does, because only the
+  # export path knows the commit it captured. Docs that bundle the two writers
+  # into one field list have been wrong three times, so pin the distinction.
+  if grep -q '^HEAD=' "$ES"; then
+    fail "package_branch should not stamp HEAD (diff_export owns that field)"
+  else
+    pass "package_branch leaves HEAD to the diff_export caller"
+  fi
+}
+
+# =============================================================================
+# _package_preflight_check  --  warning-branch coverage
+# =============================================================================
+
+test_preflight_bypass_returns_before_any_git() {
+  # Bypass must short-circuit BEFORE touching git: a nonexistent dir proves it.
+  local OUT RC=0
+  OUT=$(PACKAGE_BYPASS_PREFLIGHT=true \
+    _package_preflight_check "$FIXTURE_DIR/does-not-exist" "deadbeef" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "preflight: PACKAGE_BYPASS_PREFLIGHT=true short-circuits before git access"
+  else
+    fail "bypass should be silent rc0, got rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_clean_tree_is_silent() {
+  local P="$FIXTURE_DIR/pf_clean"
+  make_committed_repo "$P"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "preflight: no changes since baseline -> silent success"
+  else
+    fail "clean tree should be silent, rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_flags_uncommitted_modifications() {
+  local P="$FIXTURE_DIR/pf_dirty"
+  make_committed_repo "$P"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD)
+  echo committed-change > "$P/file.txt"
+  git -C "$P" commit -qam c2
+  echo dirty-working-tree >> "$P/file.txt"
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == *"uncommitted modifications"* \
+     && "$OUT" == *"flagged potential patch divergence"* ]]
+  then
+    pass "preflight: dirty working tree flagged with bypass hint, still rc0 (advisory)"
+  else
+    fail "dirty-tree flagging broken: rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_flags_cancelled_out_modification() {
+  # Reachable path into the 'identical content' advisory: a committed change
+  # whose working tree was reverted back to baseline content (uncommitted).
+  # The file appears in the INIT..HEAD diff, yet `git diff --quiet $INIT -- f`
+  # (INIT tree vs WORKING TREE  --  note: the code comment claims HEAD, it is
+  # actually the worktree) finds them identical -> flagged.
+  local P="$FIXTURE_DIR/pf_cancel"
+  make_committed_repo "$P"
+  local BASE_CONTENT; BASE_CONTENT=$(cat "$P/file.txt")
+  echo changed > "$P/file.txt"
+  git -C "$P" commit -qam c2
+  printf '%s\n' "$BASE_CONTENT" > "$P/file.txt"
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD~1)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == *"identical content at"* ]]; then
+    pass "preflight: committed-then-worktree-reverted change hits identical-content advisory"
+  else
+    fail "cancelled-modification branch broken: rc=$RC out='$OUT'"
+  fi
+}
+
+test_preflight_skips_deleted_files_without_warning() {
+  # With rename detection disabled the diff lists BOTH rename sides; the old
+  # name is gone from HEAD and must be skipped silently (no uncommitted/
+  # identical-content warnings for it).
+  local P="$FIXTURE_DIR/pf_renamed"
+  make_committed_repo "$P"
+  git -C "$P" config diff.renames false
+  git -C "$P" mv file.txt renamed.txt
+  git -C "$P" commit -qm rename
+  local INIT; INIT=$(git -C "$P" rev-parse HEAD~1)
+
+  local OUT RC=0
+  OUT=$(_package_preflight_check "$P" "$INIT" 2>&1 </dev/null) || RC=$?
+  if [[ $RC -eq 0 && "$OUT" != *"file.txt"* ]]
+  then
+    pass "preflight: deleted side of a rename skipped without warnings"
+  else
+    fail "deleted-file skip broken: rc=$RC out='$OUT'"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -322,7 +440,39 @@ run_test test_dispatcher_strips_text_index_keeps_binary_index
 run_test test_dispatcher_binary_patch_applies_to_fresh_repo
 run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
+test_dispatcher_refuses_unreadable_repository() {
+  # A corrupt index degrades every git command below to empty output while this
+  # function still reports success, so the caller would stamp a SUCCESS bundle
+  # over the last good one. The save decision routes its undeterminable case
+  # into this function, so it must refuse the state.
+  local DIR="$FIXTURE_DIR/pb_corrupt"
+  local OUT="$FIXTURE_DIR/pb_corrupt_out"
+  mkdir -p "$OUT"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+  printf 'garbage' > "$DIR/.git/index"
+
+  if package_branch "$DIR" "$OUT" 2>/dev/null; then
+    fail "package_branch should refuse a repository whose index is unreadable"
+  else
+    pass "package_branch refuses an unreadable repository"
+  fi
+  if [[ -f "$OUT/.export-status" ]]; then
+    fail "package_branch wrote export metadata for a refused repository"
+  else
+    pass "package_branch writes no metadata when it refuses"
+  fi
+}
+
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
+run_test test_dispatcher_refuses_unreadable_repository
+run_test test_dispatcher_export_status_contents
+run_test test_preflight_bypass_returns_before_any_git
+run_test test_preflight_clean_tree_is_silent
+run_test test_preflight_flags_uncommitted_modifications
+run_test test_preflight_flags_cancelled_out_modification
+run_test test_preflight_skips_deleted_files_without_warning
 
 test_done
+

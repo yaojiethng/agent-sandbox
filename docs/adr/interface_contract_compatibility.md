@@ -1,0 +1,169 @@
+# Interface Contract Compatibility
+
+**Current:** 2026-09-19
+**Status:** closed -- mechanism landed and authoritative (P0 + P2); interim `container-sig` retired (P3)
+
+## Requirements
+
+| # | Requirement | Meaning |
+|---|---|---|
+| R1 | Serializable | The contract version is a value a script can read and compare |
+| R2 | Comparable across boundaries | Every co-resident copy (host source, image, record) can be compared against the others |
+| R3 | Bump discipline | The version increments only on a cross-boundary contract change, never on doc edits or internal refactors |
+| R4 | Without-starting check | The record surface is comparable without starting a container |
+| R5 | Early check | Comparison runs at the earliest possible point per surface |
+| R6 | Rollover without breakage | The old check (container-sig) is stripped only after the new check is proven |
+
+## 2026-09-19 -- Interface-contract version: one version, two declarations, layered comparison
+
+**Decision:** The harness gets one explicit interface-contract version,
+`INTERFACE_CONTRACT_VERSION`, a single positive integer declared once in a
+host-side lib (`src/libs/interface_contract.sh`). It is stamped into each
+tier-3 image at build time (declaration 1: the container's artifact names its
+own contract revision) and into the session record at write time (declaration
+2: `.compose/<session-id>.yml` label set + in-worktree `SESSION_STATE` key,
+readable without starting a container). Comparison is layered by surface and
+timing: host<->container and record at start/resume preflight (before any
+container exists); container<->container at the agent entrypoint (the first
+moment both containers are up, since the sandbox initializes first).
+
+**Bump rule:** increment exactly when a cross-boundary contract changes -- wiring
+shape, mount/bind shape, `SANDBOX_DIR` format, onboard command shape,
+host/container command semantics, session-record schema, docker labels the
+container consumes. Doc edits, tests, and internal refactors never bump it.
+
+**Mismatch policy:** two regimes gated by the migration plan. Parallel phase:
+the new check warns exactly as `container-sig` does today -- a warning never
+blocks a start. Authoritative phase (after live proof): a mismatch is a hard,
+preflight-time refusal naming the mismatched surface and the fix (rebuild, or
+restart the session from the record). Refusal happens before any container is
+created. The entrypoint container<->container check is expected to be
+superfluous when preflight passes; its failure signals a larger problem
+(orchestration error, corrupt container state), not ordinary drift.
+
+**Rationale:** The retired freshness signal and the interim `container-sig`
+check detect drift they cannot name: no serializable version means no
+comparability, no resume decision, no record linkage. A deliberate version
+number closes that gap without reintroducing file-hash fingerprints (immune to
+doc edits by construction). Baking into the image names the artifact's own
+revision; stamping the record names the session's revision and makes the check
+cheap -- a file read, no docker inspect. Checking early minimises wasted
+operations and blast radius: a failed preflight check costs only the preflight
+work; a failed entrypoint check stops an already-invested session with a named
+cause.
+
+**Rejected alternatives:**
+
+- *Container-sig-style source fingerprint* (status quo, extended) -- intent:
+  a subset hash cannot name a version, cannot drive a resume decision, and
+  doc edits change it without a contract change (R3 fails). Superseded by this
+  mechanism.
+- *Build-baked version only* -- execution gap: needs an image present/inspect,
+  so the record surface is not comparable without starting (R4 fails) and the
+  session-record schema is uncovered.
+- *Record-layered version only* -- execution gap: the image's own wiring
+  declares nothing; host<->container and container<->container drift are
+  invisible (R2 fails on the image surface).
+- *Per-surface version split from day one* -- neither intent nor execution:
+  the harness ships as one repo and its copies move together; split adds
+  ceremony without detection value. Deferred as a compatible extension (additive
+  constants + comparators, not rework).
+
+**Rollover (container-sig -> interface-contract version), exact switch-over
+moments:** see the design record
+[`20260919-design-interface_contract_compatibility.md`](../../devlog/discussions/20260919-design-interface_contract_compatibility.md)
+for the live matrix and the operator-released gates. The hard rule, from the
+recorded past failure (new-mechanism errors blocked container start after the
+old check was stripped): the old check is not stripped before the new check is
+proven under the strict regime. Phases: P0 land in parallel (warn-only, both
+checks live), P1 live proof (full matrix + deliberately drifted samples),
+P2 flip authoritative (one reversible flag; entrypoint check added), P3 strip
+(`container_sig.sh` deleted, interim-section rewrite, ADR entries
+drift_state_coherence / harness_versioning updated to close the interim
+status).
+
+**Implementation note (2026-09-19, P0 landed, handover `20260919-04`):**
+`src/libs/interface_contract.sh` declares the version and provides the image /
+record readers; `scripts/build.sh` stamps `agent-sandbox.interface-contract-version`
+into tier-3 images at build (alongside container-sig) and warns via
+`_check_interface_contract` at the same preflight call sites; the session
+record gains the label set entry (`docker-compose.yml` x-session-labels,
+substituted by compose.sh) and the `SESSION_STATE` key `interface_contract_version`
+(written by session_state_write_set). `container-sig` untouched. The P2
+entrypoint container<->container check and the P3 strip remain; the P2
+warn/strict flip is a single flag (see the 20260919-06 and 20260919-07 notes
+for how the flag landed and was subsequently removed).
+
+**Implementation note (2026-09-19, P2 landed default-warn, handover `20260919-06`):**
+`src/libs/interface_contract.sh` gains `interface_contract_strict()`, the one
+reversible mismatch-policy flag (default warn; runtime override
+`INTERFACE_CONTRACT_STRICT=0/1`). `_check_interface_contract` (build.sh) honors
+it: warn-only in the parallel phase, hard preflight refusal (non-zero, named
+surface + rebuild remedy) under strict; preflight propagates the refusal.
+The agent entrypoint (`src/reasoning/entrypoint.sh`) gains
+`_check_container_contract`, the container<->container check: it compares the
+agent image's baked version against the sandbox's recorded version
+(`SESSION_STATE.interface_contract_version`, written by the sandbox at init
+from its own bake -- available to the agent via `volumes_from: sandbox`). It
+hard-stops on a definite mismatch under strict, warns in the parallel phase,
+warns on a missing record key (pre-record image, upgrade path), and skips
+silently when the lib is unavailable. `container-sig` untouched. Default-warn
+per operator direction; the strict flip (flip the flag + fix any errors) is a
+scheduled follow-up iteration.
+
+**Implementation note (2026-09-19, handover `20260919-19`):** the container
+check moved from the entrypoint into the library and lost a copy of the record
+parser. `_check_container_contract` is deleted; the check is now
+`container_contract_check SANDBOX_DIR` in `src/libs/session_state.sh`, next to
+the record reader it uses, and it returns a verdict instead of exiting so the
+entrypoint owns the exit. `record_contract_version` is deleted -- it duplicated
+the `session_state_read` loop and omitted that function's file guard, which was
+the documented `set -e` hazard in `devlog/AGENT_FEEDBACK.md`. A missing library
+is no longer a silent skip: `session_state.sh` and `interface_contract.sh` are
+CRITICAL in the entrypoint preflight, so a stale image fails with the named
+rebuild remedy.
+
+**Implementation note (2026-09-19, authoritative, handover `20260919-07`):**
+the strict flip landed by removing the flag entirely rather than toggling its
+default. `interface_contract_strict()` and every `INTERFACE_CONTRACT_STRICT`
+branch are deleted: the contract is now authoritative by default with no
+runtime escape hatch. An override would be a backdoor that weakens the
+contract and grows the maintenance surface. `_check_interface_contract`
+refuses preflight (non-zero, named surface + rebuild remedy) on a drifted or
+missing label; `_check_container_contract` hard-stops the agent on a definite
+container<->container mismatch. A missing record key or file still warns
+(upgrade path). `container-sig` untouched (P3 strips it). Operator live proof
+passes: `INTERFACE_CONTRACT_STRICT=1 REFRESH=1 make start` ran clean under the
+strict regime before the flag was removed.
+
+**Implementation note (2026-09-19, P3 strip, handover `20260919-08`):** the
+interim `container-sig` check is retired. `container_sig()` / `current_sig()` /
+`image_baked_sig()`, the `_sandbox_sig_sources` / `_agent_sig_sources` list
+helpers, the `agent-sandbox.container-sig` label bake and injection, and
+`_check_container_sig` in `scripts/build.sh` are removed; `src/libs/container_sig.sh`
+and `tests/libs/sig_helpers.sh` are deleted; the install `xargs` dependency note is
+removed. [image_digest](harness_versioning.md) (the recorded image-ID digest
+identity mechanism) relocated from `container_sig.sh` to `src/build/image.sh`.
+`sandbox_identity.md` interim section rewritten; the interim status is closed.
+The interface contract is the standalone container-boundary mechanism (R6
+satisfied: the old check was stripped only after the new was proven).
+
+**Documentation note (2026-09-19, handover `20260919-05`):** the doc
+consolidation landed. The interface concept document is
+`docs/concepts/sandbox_host_interface.md` (renamed from
+`sandbox_host_correspondence_model.md`), carrying the contract surfaces, the
+per-copy expectations, the version declaration and comparison points, and the
+`MAKEFILE_VERSION` relationship (separate host-internal marker, not part of
+the interface contract). `sandbox_lifecycle.md` carries the contract-check
+position in the lifecycle sequence. This ADR stays open until the mechanism
+is authoritative (P2/P3).
+
+**Edge cases / drivers:** old images carry no version label -- the check treats a
+missing label as "pre-dating the contract version" and refuses preflight with
+the rebuild remedy (a missing label is indistinguishable from a stale build and
+must not start); container<->container comparison requires both images present
+-- the agent entrypoint reads its own baked version and the sandbox's recorded
+version (the sandbox writes its bake into `SESSION_STATE` at init, available to
+the agent via `volumes_from: sandbox`), both available by then; a missing
+record key or file warns rather than aborts so the pre-record upgrade path
+stays open.

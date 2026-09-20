@@ -11,6 +11,8 @@ Getting agent-sandbox running on a new machine for the first time. Covers instal
 - Git installed
 - agent-sandbox repository cloned locally
 
+Full host-tool requirements and the macOS setup (bash 4.0+ and the GNU toolchain): `docs/development/host_requirements.md`. Enforced by `scripts/install.sh` at install time.
+
 ---
 
 ## 1. Install the CLI
@@ -38,15 +40,14 @@ agent-sandbox onboard \
   --sandbox=/path/to/<project-dir>-sandbox
 ```
 
-By convention the sandbox directory is named `<project-dir>-sandbox` and sits alongside the project repository. All paths must be Linux/WSL format — convert Windows paths with `wslpath 'C:\your\path'`.
+By convention the sandbox directory is named `<project-dir>-sandbox` and sits alongside the project repository. All paths must be Linux/WSL format -- convert Windows paths with `wslpath 'C:\your\path'`.
 
 After onboarding, `SANDBOX_DIR` contains:
 
-```
+```text
 <project-dir>-sandbox/
 ├── Makefile
 ├── .env
-├── AGENTS.md               ← fill this in before the first run
 └── .workspace/
     ├── input/
     ├── output/
@@ -59,24 +60,10 @@ See [`project_onboarding_guide.md`](project_onboarding_guide.md) for the full pr
 
 ## 3. Complete the setup
 
-**Edit `.env`** — set `SERVE_PORT` and any provider-specific variables flagged in the file comments. Path variables are derived automatically; do not edit them.
-
-**Fill in `AGENTS.md`** — the agent reads this at the start of every session. It must be complete enough for a fresh agent to begin work without further instruction:
-
-```markdown
-# Agent Context Brief — <project-name>
-
-## Project
-<what the project is, what it does, its current state>
-
-## Constraints
-<coding standards, conventions, files not to touch>
-
-## Output
-<what a correct output looks like>
-```
+**Edit `.env`** -- set `SERVE_PORT` and any provider-specific variables flagged in the file comments. Path variables are derived automatically; do not edit them.
 
 **Confirm prerequisites in `PROJECT_DIR`:**
+
 - `.env` is covered by `.gitignore`
 - Project has at least one git commit
 
@@ -110,12 +97,25 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 - [ ] `agent-sandbox` CLI installed (`which agent-sandbox`)
 - [ ] `agent-sandbox onboard` run; sandbox directory exists
-- [ ] `AGENTS.md` filled in
-- [ ] `.env` complete — `SERVE_PORT` and provider variables set
+- [ ] `.env` complete -- `SERVE_PORT` and provider variables set
 - [ ] `.env` gitignored in `PROJECT_DIR`
 - [ ] `PROJECT_DIR` is a git repo with at least one commit
 - [ ] Docker running (`docker info`)
 - [ ] `make dry-run PROVIDER=<provider>` passes
+
+---
+
+## Session persistence
+
+The sandbox directory persists across `make start` / `make stop` cycles via a named Docker volume. All git state, uncommitted changes, and session artifacts are preserved.
+
+- **New session:** `make start` always starts a NEW session with a fresh volume. `make start INTERACTIVE=1` opens the config wizard: pick a provider + build policy, confirm, then start (provider and .env values otherwise come from the Makefile/`.env`).
+- **Resume a session:** `make resume SESSION_ID=<id>` resumes that session's git state and volume. `make resume LIST=1` lists resumable sessions in an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`, relative times, newest first, capped at 10 rows), flagging staleness as the `[SANDBOX_STALE]` warning label (worktree identity); `make resume INTERACTIVE=1` picks + confirms (same marker); `PROVIDER=<n>` filters either by provider.
+- **Rebuild and fresh start:** `make start REFRESH=1` or `REBUILD=1` rebuilds images before starting a new session with a fresh volume.
+- **Stop without destroying:** `make stop` preserves the volume and prints the hint pair (`make resume SESSION_ID=<id>`, `make draft BUNDLE=<name>`).
+- **Prune stale/orphaned sessions:** `make prune` removes stale `.compose` records and now-orphaned resources (containers/volumes whose session has no record). Always a complete pass; `STALE=sandbox`/`PROVIDER`/`AGE_DAYS` narrow the stale-record selection, `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
+
+The session identity (SESSION_ID, SESSION_TS) is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and reused across resumes. This ensures container labels, error logs, and export paths remain consistent.
 
 ---
 

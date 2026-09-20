@@ -27,12 +27,12 @@ if [[ -n "${AUTOSAVE_INTERVAL:-}" ]]; then
   if [[ "$AUTOSAVE_INTERVAL" =~ ^[0-9]+$ ]] && [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
     pass "AUTOSAVE_INTERVAL=$AUTOSAVE_INTERVAL (numeric, > 0)"
   elif [[ "$AUTOSAVE_INTERVAL" =~ ^[0-9]+$ ]] && [[ "$AUTOSAVE_INTERVAL" -eq 0 ]]; then
-    fail "AUTOSAVE_INTERVAL=0 — autosave loop is DISABLED"
+    fail "AUTOSAVE_INTERVAL=0  --  autosave loop is DISABLED"
   else
     fail "AUTOSAVE_INTERVAL='$AUTOSAVE_INTERVAL' is not a positive integer"
   fi
 else
-  fail "AUTOSAVE_INTERVAL is UNSET — sandbox-entrypoint defaults to 60 (line 46), but compose env may not have passed it"
+  fail "AUTOSAVE_INTERVAL is UNSET  --  sandbox-entrypoint defaults to 60 (line 46), but compose env may not have passed it"
 fi
 
 echo ""
@@ -41,7 +41,6 @@ source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 echo "CHANGES_DIR=$CHANGES_DIR"
 echo "SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
-echo "SNAPSHOT_DIR=$SNAPSHOT_DIR"
 
 # Check the directories actually exist
 [[ -d "$CHANGES_DIR" ]] && pass "CHANGES_DIR exists ($CHANGES_DIR)" || fail "CHANGES_DIR missing"
@@ -53,16 +52,11 @@ SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 if [[ -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
   pass "SESSION_STATE file exists"
   cat "$SANDBOX_DIR/.git/SESSION_STATE"
-  source /opt/sandbox/lib/session.sh 2>/dev/null
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -n "$INIT_SHA" ]]; then
-    if git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$INIT_SHA" >/dev/null 2>&1; then
-      pass "init_sha=$INIT_SHA is a valid commit"
-    else
-      fail "init_sha=$INIT_SHA is NOT a valid commit in the sandbox repo"
-    fi
+  source /opt/sandbox/lib/session_state.sh 2>/dev/null
+  if init_sha_is_valid "$SANDBOX_DIR"; then
+    pass "init_sha is a valid commit in the sandbox repo"
   else
-    fail "init_sha is missing from SESSION_STATE"
+    fail "init_sha is NOT a valid commit in the sandbox repo (missing, bogus, or not a commit object)"
   fi
   SESSION_TS_CHECK=$(session_state_read "$SANDBOX_DIR" "session_ts")
   [[ -n "$SESSION_TS_CHECK" ]] && pass "session_ts=$SESSION_TS_CHECK" || fail "session_ts missing"
@@ -76,9 +70,9 @@ echo "=== 4. Autosave process ==="
 # that are children of sandbox-entrypoint (PID 1)
 AUTOSAVE_PROC=$(ps -eo pid,ppid,args 2>/dev/null | grep -E '[s]leep.*[0-9]+' | awk '{print $1, $NF}')
 if [[ -n "$AUTOSAVE_PROC" ]]; then
-  pass "Found sleep process(es) — autosave loop may be alive: $AUTOSAVE_PROC"
+  pass "Found sleep process(es)  --  autosave loop may be alive: $AUTOSAVE_PROC"
 else
-  fail "No sleep processes found — autosave loop is NOT running or has crashed"
+  fail "No sleep processes found  --  autosave loop is NOT running or has crashed"
 fi
 
 # Check if there are any diff_export processes or children of PID 1
@@ -89,9 +83,9 @@ echo "$PID1_CHILDREN" | sed 's/^/    /'
 echo ""
 echo "=== 5. Autosave path construction ==="
 source /opt/sandbox/lib/routing.sh 2>/dev/null
-AS_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
+AS_DIR=$(export_path "$CHANGES_DIR" "autosave" "${SESSION_ID:-unknown}" 2>/dev/null) || AS_DIR="<ERROR>"
 echo "Autosave target path: $AS_DIR"
-echo "Session target path:  $(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" 2>/dev/null || echo '<ERROR>')"
+echo "Session target path:  $(export_path "$CHANGES_DIR" "session" "${SESSION_ID:-unknown}" 2>/dev/null || echo '<ERROR>')"
 
 # Manually try to write to the autosave path
 echo "" > "/tmp/autosave_writability_test" 2>/dev/null
@@ -100,7 +94,7 @@ if [[ "$TEST_AS_DIR" != "<ERROR>" ]]; then
   mkdir -p "$TEST_AS_DIR" 2>/dev/null && pass "Can mkdir -p autosave path ($TEST_AS_DIR)" || fail "Cannot mkdir -p autosave path"
   echo "test" > "$TEST_AS_DIR/.write_test" 2>/dev/null && { pass "Can write to autosave path"; rm -f "$TEST_AS_DIR/.write_test"; } || fail "Cannot write to autosave path"
 else
-  fail "Cannot construct autosave path (session_export_path failed)"
+  fail "Cannot construct autosave path (export_path failed)"
 fi
 
 echo ""
@@ -111,9 +105,14 @@ if [[ -d "$CHANGES_DIR/autosave" ]]; then
   ls -t "$CHANGES_DIR/autosave/" 2>/dev/null | head -5
   AS_COUNT=$(ls -U "$CHANGES_DIR/autosave/" 2>/dev/null | wc -l)
   echo "  Total autosave entries: $AS_COUNT"
-  # Check if any match our session
+  # Check if any match our session (glob, not ls | grep -- names are data)
   OUR_TS="${SESSION_TS:-unknown}"
-  MATCHING=$(ls "$CHANGES_DIR/autosave/" 2>/dev/null | grep "$OUR_TS" | wc -l)
+  MATCHING=0
+  if [[ -d "$CHANGES_DIR/autosave" ]]; then
+    for d in "$CHANGES_DIR/autosave/"*"$OUR_TS"*; do
+      [[ -e "$d" ]] && MATCHING=$((MATCHING + 1))
+    done
+  fi
   if [[ "$MATCHING" -gt 0 ]]; then
     pass "Found $MATCHING autosave entries matching session TS '$OUR_TS'"
   else

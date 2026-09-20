@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-30
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Impl
+**Date:** 2026-05-30
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Impl
 **Status:** Closed
 
 ## Objective
@@ -21,4 +21,4 @@ Resolve thermo-nuclear review Finding 1: remove redundant `--sandbox=` from pack
 
 | Finding | Description | Triaged to |
 |---|---|---|
-| package-branch and package-diff use different working-context variables that should be unified | `package_diff.sh` derives its target from `git rev-parse --show-toplevel` (REPO_ROOT). `package_branch.sh` hardcodes `$HOME/sandbox` and errors on host. Both should accept a common target path (e.g. `--sandbox` or `--target`) and use it consistently instead of self-resolving. The `REPO_ROOT` vs `SANDBOX/SANDBOX_DIR` naming is confounding — they represent the same concept (the working context to package changes from) but are derived differently for historical reasons. Proper resolution requires adding a `--target` or similar flag that both scripts accept and use. | Future session — requires design and additional logic |
+| package-branch and package-diff use different working-context variables that should be unified | `package_diff.sh` derives its target from `git rev-parse --show-toplevel` (REPO_ROOT). `package_branch.sh` hardcodes `$HOME/sandbox` and errors on host. Both should accept a common target path (e.g. `--sandbox` or `--target`) and use it consistently instead of self-resolving. The `REPO_ROOT` vs `SANDBOX/SANDBOX_DIR` naming is confounding -- they represent the same concept (the working context to package changes from) but are derived differently for historical reasons. Proper resolution requires adding a `--target` or similar flag that both scripts accept and use. | Future session -- requires design and additional logic |

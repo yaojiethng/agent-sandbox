@@ -1,13 +1,13 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-04-23
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement Unit F1 — complete `make draft` + `.draft-state`. Rewrite the `draft` command in `apply_workspace.sh` to resolve exports from `$CHANGES_DIR/` by lexicographic sort, parse session identity from folder names, create draft branches with the new naming convention, and commit `.draft-state` as the first commit on the branch.
+Implement Unit F1 -- complete `make draft` + `.draft-state`. Rewrite the `draft` command in `apply_workspace.sh` to resolve exports from `$CHANGES_DIR/` by lexicographic sort, parse session identity from folder names, create draft branches with the new naming convention, and commit `.draft-state` as the first commit on the branch.
 
 ## Scope
 
@@ -20,7 +20,7 @@ Unit F1 from the M2.3 task list. Specifically:
    - Draft branch name: `draft/<EXPORT_TIME>-<SESSION_TS>-<BRANCH_SUMMARY or SANITIZED_HOST_BRANCH>-<sha6>`.
    - First commit on branch is `.draft-state` with required fields.
    - Apply numbered diffs via `git apply` with index lines stripped, staging and committing each.
-   - Guard against an existing `draft/` branch with the same computed name — refuse if a collision exists. Other `draft/` branches from different sessions are allowed.
+   - Guard against an existing `draft/` branch with the same computed name -- refuse if a collision exists. Other `draft/` branches from different sessions are allowed.
    - Print operator hint on completion.
 
 2. Update `scripts/agent-sandbox.sh` to passthrough `BRANCH_SUMMARY` argument if needed.
@@ -39,25 +39,25 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | `make draft` resolves the latest export folder from `$CHANGES_DIR/` by lexicographic sort of folder basenames | ✅ |
-| 2 | `make draft --session=<path>` applies diffs from an arbitrary folder path, including `$OUTPUT_DIR/bundles/` exports | ✅ |
-| 3 | Draft branch name follows `draft/<EXPORT_TIME>-<SESSION_TS>-<sanitized-host-branch>-<sha6>` when no `BRANCH_SUMMARY` is provided | ✅ |
-| 4 | Draft branch name uses `BRANCH_SUMMARY` in place of the sanitized host branch slug when provided | ✅ |
-| 5 | The first commit on the draft branch is `.draft-state` containing all required fields: `source_branch`, `from_hash`, `author`, `session_ts`, `host_branch`, `diff_count`, `exported-at`, `drafted-at` | ✅ |
-| 6 | Numbered diffs from the export folder are applied as subsequent commits after `.draft-state`, in sort order | ✅ |
-| 7 | Same-name collision guard: `make draft` refuses with a clear error if a `draft/` branch with the identical computed name already exists | ✅ |
-| 8 | Other `draft/` branches from different sessions do **not** trigger the guard | ✅ |
-| 9 | Operator hint printed on completion shows the draft branch name, export source, diff count, and next-step commands | ✅ |
-| 10 | `tests/test_apply_workspace.sh` passes all tests | ✅ |
-| 11 | Architecture documents in scope describe the system as built | ✅ |
+| 1 | `make draft` resolves the latest export folder from `$CHANGES_DIR/` by lexicographic sort of folder basenames | [x] |
+| 2 | `make draft --session=<path>` applies diffs from an arbitrary folder path, including `$OUTPUT_DIR/bundles/` exports | [x] |
+| 3 | Draft branch name follows `draft/<EXPORT_TIME>-<SESSION_TS>-<sanitized-host-branch>-<sha6>` when no `BRANCH_SUMMARY` is provided | [x] |
+| 4 | Draft branch name uses `BRANCH_SUMMARY` in place of the sanitized host branch slug when provided | [x] |
+| 5 | The first commit on the draft branch is `.draft-state` containing all required fields: `source_branch`, `from_hash`, `author`, `session_ts`, `host_branch`, `diff_count`, `exported-at`, `drafted-at` | [x] |
+| 6 | Numbered diffs from the export folder are applied as subsequent commits after `.draft-state`, in sort order | [x] |
+| 7 | Same-name collision guard: `make draft` refuses with a clear error if a `draft/` branch with the identical computed name already exists | [x] |
+| 8 | Other `draft/` branches from different sessions do **not** trigger the guard | [x] |
+| 9 | Operator hint printed on completion shows the draft branch name, export source, diff count, and next-step commands | [x] |
+| 10 | `tests/test_apply_workspace.sh` passes all tests | [x] |
+| 11 | Architecture documents in scope describe the system as built | [x] |
 
 ## Hot files
 
 | File | Why in scope |
 |---|---|
-| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | `make draft` command rewrite — folder resolution, branch naming, `.draft-state` commit, diff application |
+| [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | `make draft` command rewrite -- folder resolution, branch naming, `.draft-state` commit, diff application |
 | [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | Argument passthrough for `BRANCH_SUMMARY` |
-| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | `make draft` target update — new arguments |
+| [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | `make draft` target update -- new arguments |
 | [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Test fixtures for new draft branch naming and `.draft-state` commit |
 
 ## Decisions made this session
@@ -83,29 +83,31 @@ None.
 
 | Item | Reason | Destination |
 |---|---|---|
-| F2 — `make confirm` rewrite | Depends on F1 `.draft-state` commit model; confirm must read `.draft-state` from branch instead of file | Next session (F2) |
-| F2 — `make reject` update | Depends on F1; reject must read `source_branch` from `.draft-state` on branch | Next session (F2) |
-| F2 — `make sync` removal | Part of F2 scope; `SYNC=1` handling and `make sync` target removal | Next session (F2) |
+| F2 -- `make confirm` rewrite | Depends on F1 `.draft-state` commit model; confirm must read `.draft-state` from branch instead of file | Next session (F2) |
+| F2 -- `make reject` update | Depends on F1; reject must read `source_branch` from `.draft-state` on branch | Next session (F2) |
+| F2 -- `make sync` removal | Part of F2 scope; `SYNC=1` handling and `make sync` target removal | Next session (F2) |
 | Remove `$WORKSPACE_DIR/draft-state` backward-compat file | Kept only so existing confirm/reject pass this session; obsolete once F2 reads from branch | Next session (F2) |
-| G — `.skills/package-diff.md` update | Depends on F2 completion | F2 close or follow-up |
+| G -- `.skills/package-diff.md` update | Depends on F2 completion | F2 close or follow-up |
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation — Unit F2 (`make confirm` rewrite + `make reject` update + `make sync` removal).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation -- Unit F2 (`make confirm` rewrite + `make reject` update + `make sync` removal).
 
 ### Orientation
 
 Unit F2 depends on F1 (now complete). It rewrites the `confirm` and `reject` commands to read `.draft-state` from the draft branch instead of the `$WORKSPACE_DIR/draft-state` file.
 
 **`make confirm`:**
-1. Read `.draft-state` from draft branch — fail with "not on a draft branch" if absent.
+
+1. Read `.draft-state` from draft branch -- fail with "not on a draft branch" if absent.
 2. Drop `.draft-state` commit via `git rebase --onto`.
-3. Rebase draft onto target — on conflict print exact recovery commands and exit.
+3. Rebase draft onto target -- on conflict print exact recovery commands and exit.
 4. `git merge --ff-only`.
 5. Delete draft branch.
 
 **`make reject`:**
+
 1. Read `source_branch` from `.draft-state` on the draft branch.
 2. Check out source branch.
 3. Delete draft branch.
@@ -113,15 +115,18 @@ Unit F2 depends on F1 (now complete). It rewrites the `confirm` and `reject` com
 **`make sync` removal:** Remove `SYNC=1` handling and `make sync` target entirely.
 
 Files to change:
-- `scripts/apply_workspace.sh` — `confirm` and `reject` command rewrites, `sync` removal
-- `libs/_templates/Makefile.template` — remove `make sync` target
-- `tests/test_apply_workspace.sh` — update confirm/reject tests for branch-based `.draft-state` reading; remove sync tests
-- `libs/draft.sh` — may need `draft_read_state_from_branch` usage pattern
+
+- `scripts/apply_workspace.sh` -- `confirm` and `reject` command rewrites, `sync` removal
+- `libs/_templates/Makefile.template` -- remove `make sync` target
+- `tests/test_apply_workspace.sh` -- update confirm/reject tests for branch-based `.draft-state` reading; remove sync tests
+- `libs/draft.sh` -- may need `draft_read_state_from_branch` usage pattern
 
 ### Blocking design questions
+
 None.
 
 ### Known watch-out items
-1. Existing tests rely on `$WORKSPACE_DIR/draft-state` — they will break when confirm/reject stop reading the file. Update tests in the same session.
+
+1. Existing tests rely on `$WORKSPACE_DIR/draft-state` -- they will break when confirm/reject stop reading the file. Update tests in the same session.
 2. `confirm` rebase conflict recovery messages must be tested.
-3. `make sync` removal may have references in Makefile.template comments — grep for `sync` before closing.
+3. `make sync` removal may have references in Makefile.template comments -- grep for `sync` before closing.

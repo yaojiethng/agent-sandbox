@@ -1,28 +1,23 @@
 #!/usr/bin/env bash
-# Tests for entrypoint diff dispatch: session_export_path + diff_export.
+# Tests for entrypoint diff dispatch: export_path + diff_export.
 #
 # These tests simulate what sandbox-entrypoint.sh does: construct an export
-# path via session_export_path, then call diff_export.
+# path via export_path, then call diff_export.
 #
 # Sources libs/diff.sh and libs/routing.sh for function access.
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-FIXTURE_DIR=$(mktemp -d)
-FIXTURE="$FIXTURE_DIR"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/diff.sh"
 source "$REPO_ROOT/src/libs/diff_export.sh"
 source "$REPO_ROOT/src/libs/package_branch.sh"
+FIXTURE="$FIXTURE_DIR"
 
 # ===================================================================
-# diff_export — entrypoint dispatch proxy
+# diff_export  --  entrypoint dispatch proxy
 # ===================================================================
 
 test_diff_export_creates_output() {
@@ -34,10 +29,10 @@ test_diff_export_creates_output() {
 
   diff_export "$DIR" "$OUTPUT_DIR"
 
-  if [[ -f "$OUTPUT_DIR/EXPORT-TIME.txt" ]]; then
-    pass "diff_export writes EXPORT-TIME.txt"
+  if [[ -f "$OUTPUT_DIR/.export-status" ]]; then
+    pass "diff_export writes .export-status"
   else
-    fail "diff_export should write EXPORT-TIME.txt"
+    fail "diff_export should write .export-status"
   fi
 }
 
@@ -150,16 +145,16 @@ test_diff_export_missing_session_state() {
   # diff_export currently swallows package_branch's error.
   # This test asserts that diff_export returns non-zero when
   # package_branch fails due to missing SESSION_STATE.
-  # Initially FAILS — fix libs/diff.sh to propagate the error.
+  # Initially FAILS  --  fix libs/diff.sh to propagate the error.
   if ! diff_export "$DIR" "$OUTPUT_DIR" 2>/dev/null; then
     pass "diff_export fails when SESSION_STATE is missing"
   else
-    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0 — needs fix)"
+    fail "diff_export should fail when SESSION_STATE is missing (currently returns 0  --  needs fix)"
   fi
 }
 
 # ===================================================================
-# session_export_path + diff_export (entrypoint simulation)
+# export_path + diff_export (entrypoint simulation)
 # ===================================================================
 
 test_session_path_exit_export() {
@@ -170,19 +165,19 @@ test_session_path_exit_export() {
 
   local CHANGES_DIR="${FIXTURE}/changes"
   local EXPORT_DIR
-  EXPORT_DIR=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  EXPORT_DIR=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$EXPORT_DIR"
   diff_export "$DIR" "$EXPORT_DIR"
 
-  if [[ -d "$CHANGES_DIR/session/20260408-120000-main" ]]; then
-    pass "session_export_path + diff_export: session dir created under session/"
-    if [[ -f "$CHANGES_DIR/session/20260408-120000-main/uncommitted.diff" ]]; then
-      pass "session_export_path + diff_export: uncommitted.diff inside session dir"
+  if [[ -d "$EXPORT_DIR" ]]; then
+    pass "export_path + diff_export: session dir created with EXPORT_TIME-SESSION_ID pattern"
+    if [[ -f "$EXPORT_DIR/uncommitted.diff" ]]; then
+      pass "export_path + diff_export: uncommitted.diff inside session dir"
     else
-      fail "session_export_path + diff_export: uncommitted.diff not found"
+      fail "export_path + diff_export: uncommitted.diff not found"
     fi
   else
-    fail "session_export_path + diff_export: session dir not created"
+    fail "export_path + diff_export: session dir not created"
   fi
 }
 
@@ -194,19 +189,19 @@ test_session_path_autosave_export() {
 
   local CHANGES_DIR="${FIXTURE}/changes2"
   local EXPORT_DIR
-  EXPORT_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "20260408-120000" "main")
+  EXPORT_DIR=$(export_path "$CHANGES_DIR" "autosave" "a1b2c3")
   mkdir -p "$EXPORT_DIR"
   diff_export "$DIR" "$EXPORT_DIR"
 
-  if [[ -d "$CHANGES_DIR/autosave/20260408-120000-main" ]]; then
-    pass "session_export_path + diff_export: autosave dir created under autosave/"
-    if [[ -f "$CHANGES_DIR/autosave/20260408-120000-main/uncommitted.diff" ]]; then
-      pass "session_export_path + diff_export: uncommitted.diff inside autosave dir"
+  if [[ -d "$EXPORT_DIR" ]]; then
+    pass "export_path + diff_export: autosave dir created under autosave/ (no EXPORT_TIME)"
+    if [[ -f "$EXPORT_DIR/uncommitted.diff" ]]; then
+      pass "export_path + diff_export: uncommitted.diff inside autosave dir"
     else
-      fail "session_export_path + diff_export: uncommitted.diff not found in autosave"
+      fail "export_path + diff_export: uncommitted.diff not found in autosave"
     fi
   else
-    fail "session_export_path + diff_export: autosave dir not created"
+    fail "export_path + diff_export: autosave dir not created"
   fi
 }
 
@@ -220,17 +215,17 @@ test_session_path_session_and_autosave_independent() {
 
   # Write session export
   local SESSION_DIR
-  SESSION_DIR=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  SESSION_DIR=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$SESSION_DIR"
   diff_export "$DIR" "$SESSION_DIR"
 
   # Write autosave export
   local AUTOSAVE_DIR
-  AUTOSAVE_DIR=$(session_export_path "$CHANGES_DIR" "autosave" "20260408-120000" "main")
+  AUTOSAVE_DIR=$(export_path "$CHANGES_DIR" "autosave" "a1b2c3")
   mkdir -p "$AUTOSAVE_DIR"
   diff_export "$DIR" "$AUTOSAVE_DIR"
 
-  if [[ -d "$CHANGES_DIR/session/20260408-120000-main" && -d "$CHANGES_DIR/autosave/20260408-120000-main" ]]; then
+  if [[ -d "$AUTOSAVE_DIR" && "$AUTOSAVE_DIR" == *"/autosave/a1b2c3" ]]; then
     pass "session and autosave exports go to separate subdirectories"
   else
     fail "session and autosave should go to separate subdirectories"
@@ -247,30 +242,35 @@ test_session_path_multiple_sessions_accumulate() {
   local CHANGES_DIR="${FIXTURE}/changes4"
 
   local OUT1
-  OUT1=$(session_export_path "$CHANGES_DIR" "session" "20260408-100000" "main")
+  OUT1=$(export_path "$CHANGES_DIR" "session" "run001")
   mkdir -p "$OUT1"
   echo "s1" > "$DIR1/s1.txt"
   diff_export "$DIR1" "$OUT1"
 
   local OUT2
-  OUT2=$(session_export_path "$CHANGES_DIR" "session" "20260408-110000" "main")
+  OUT2=$(export_path "$CHANGES_DIR" "session" "run002")
   mkdir -p "$OUT2"
   echo "s2" > "$DIR2/s2.txt"
   diff_export "$DIR2" "$OUT2"
 
   local COUNT
   COUNT=$(find "$CHANGES_DIR/session" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
-  if [[ "$COUNT" -eq 2 ]]; then
-    pass "multiple session exports accumulate under session/"
-  else
-    fail "expected 2 session dirs under session/, got $COUNT"
-  fi
+  assert_eq_num "$COUNT" "2" "multiple session exports accumulate under session/"
 
-  # Check the directory naming includes SESSION_TS
-  if [[ -d "$CHANGES_DIR/session/20260408-100000-main" && -d "$CHANGES_DIR/session/20260408-110000-main" ]]; then
-    pass "session dirs use SESSION_TS-BRANCH naming"
+  # Check directory naming uses EXPORT_TIME-SESSION_ID pattern (glob, not
+  # ls | grep -- names are data)
+  local NAMING_OK=no d
+  for d in "$CHANGES_DIR/session/"*; do
+    [[ -d "$d" ]] || continue
+    if [[ "$(basename "$d")" =~ ^[0-9]{8}-[0-9]{6}-run00[12]$ ]]; then
+      NAMING_OK=yes
+      break
+    fi
+  done
+  if [[ "$NAMING_OK" == yes ]]; then
+    pass "session dirs use EXPORT_TIME-SESSION_ID naming"
   else
-    fail "session dirs should use SESSION_TS-BRANCH naming"
+    fail "session dirs should use EXPORT_TIME-SESSION_ID naming"
   fi
 }
 
@@ -282,14 +282,14 @@ test_session_path_export_time_written() {
 
   local CHANGES_DIR="${FIXTURE}/changes5"
   local OUT
-  OUT=$(session_export_path "$CHANGES_DIR" "session" "20260408-120000" "main")
+  OUT=$(export_path "$CHANGES_DIR" "session" "a1b2c3")
   mkdir -p "$OUT"
   diff_export "$DIR" "$OUT"
 
-  if [[ -f "$OUT/EXPORT-TIME.txt" && -s "$OUT/EXPORT-TIME.txt" ]]; then
-    pass "diff_export writes EXPORT-TIME.txt in output dir"
+  if [[ -f "$OUT/.export-status" && -s "$OUT/.export-status" ]]; then
+    pass "diff_export writes .export-status in output dir"
   else
-    fail "diff_export should write EXPORT-TIME.txt"
+    fail "diff_export should write .export-status"
   fi
 }
 
@@ -312,3 +312,4 @@ run_test test_session_path_multiple_sessions_accumulate
 run_test test_session_path_export_time_written
 
 test_done
+

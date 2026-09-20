@@ -46,7 +46,7 @@ write_session_state() {
   SHA=$(get_init_sha "$DIR")
 
   mkdir -p "$DIR/.git"
-  > "$DIR/.git/SESSION_STATE"
+  : > "$DIR/.git/SESSION_STATE"
   echo "init_sha=$SHA" >> "$DIR/.git/SESSION_STATE"
   echo "session_ts=$SESSION_TS" >> "$DIR/.git/SESSION_STATE"
 }
@@ -70,4 +70,30 @@ commit_change() {
   echo "$MSG" > "$DIR/change-${RANDOM}.txt"
   git -C "$DIR" add .
   git -C "$DIR" commit -m "$MSG" --quiet
+}
+
+# commit_file REPO FILE CONTENT
+#   Writes CONTENT to REPO/FILE and commits it with "add <file>" message.
+#   One shared fixture helper for every test that builds git history by
+#   commit.
+_commit_file() {
+  local REPO="$1" FILE="$2" CONTENT="$3"
+  mkdir -p "$(dirname "$REPO/$FILE")"
+  echo "$CONTENT" > "$REPO/$FILE"
+  git -C "$REPO" add "$FILE" 2>/dev/null
+  git -C "$REPO" commit -m "add $FILE" --quiet
+}
+
+# assert_diff_has DIFF_FILE PATTERN
+#   true when PATTERN appears in DIFF_FILE.
+_assert_diff_has() {
+  local DIFF_FILE="$1" PATTERN="$2"
+  grep -q "$PATTERN" "$DIFF_FILE"
+}
+
+# assert_diff_lacks DIFF_FILE PATTERN
+#   true when PATTERN is absent from DIFF_FILE.
+_assert_diff_lacks() {
+  local DIFF_FILE="$1" PATTERN="$2"
+  ! grep -q "$PATTERN" "$DIFF_FILE"
 }

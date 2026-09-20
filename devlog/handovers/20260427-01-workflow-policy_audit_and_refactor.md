@@ -1,10 +1,9 @@
 # Agent Handover
 
-**Session date:** 2026-04-27
-**Milestone:** M2.3 — Workflow Audit and Policy Refactor
-**Session type:** Workflow
+**Date:** 2026-04-27
+**Milestone:** M2.3 -- Workflow Audit and Policy Refactor
+**Type:** Workflow
 **Status:** Closed
-
 
 ## Objective
 
@@ -52,9 +51,9 @@ Not yet defined.
 |---|---|---|
 | Inline recovery checks into new-session prompt | Eliminates full iteration_policy read at boot; check logic is self-contained | new-session-v2.md |
 | Replace ASCII diagrams with linkable tables | Grants section-level anchor links; minor human readability tradeoff | iteration_policy.md |
-| Collapse steps 3–6 into information gathering pass | Steps are a read pass, not confirmation-gated steps; lapses accumulated and surfaced together | iteration_policy.md |
+| Collapse steps 3-6 into information gathering pass | Steps are a read pass, not confirmation-gated steps; lapses accumulated and surfaced together | iteration_policy.md |
 | Add explicit gate rows to minor loop table | Gates were hidden in exit conditions; explicit rows make stopping criteria visible in sequence | iteration_policy.md |
-| Renumber minor loop steps fully — no sub-steps | 1b and 7b were amendment artifacts; clean sequential numbering throughout | iteration_policy.md |
+| Renumber minor loop steps fully -- no sub-steps | 1b and 7b were amendment artifacts; clean sequential numbering throughout | iteration_policy.md |
 | Index Maintenance moves to project_index.md | project_index.md is the canonical owner; policy files link rather than restate | project_index.md |
 | Layer Model and Architecture Freeze Policy removed from documentation_policy | System architecture descriptions belong in system_overview.md; documentation-facing freeze rule retained as one sentence | documentation_policy.md, system_overview.md |
 | Policy documents vs skill files rules move to agent_workflow.md | Skill files and prompt templates are not documentation; agent_workflow.md owns the three-layer expression model | agent_workflow.md |
@@ -67,8 +66,8 @@ Not yet defined.
 | File | Change summary |
 |---|---|
 | `new-session-v2.md` | Recovery checks inlined; policy reads deferred and scoped to targeted grep; bold pseudo-headers replaced with `##` headings; step references updated to new numbering |
-| `iteration_policy.md` | ASCII diagrams replaced with linkable tables; inner diagram removed; step tags inlined as one sentence; steps renumbered 1–9 with no sub-steps; gates added as explicit rows; steps 3–6 collapsed to information gathering pass with lapse-grouping rules; five patch cases restored; Index Maintenance trimmed to link handoff |
-| `handover_policy.md` | All step number references updated (1b→2, 7b→7, Step 6 AC→Step 5, Step 7 impl→Step 6); session types table updated; Index Maintenance trimmed to link handoff |
+| `iteration_policy.md` | ASCII diagrams replaced with linkable tables; inner diagram removed; step tags inlined as one sentence; steps renumbered 1-9 with no sub-steps; gates added as explicit rows; steps 3-6 collapsed to information gathering pass with lapse-grouping rules; five patch cases restored; Index Maintenance trimmed to link handoff |
+| `handover_policy.md` | All step number references updated (1b->2, 7b->7, Step 6 AC->Step 5, Step 7 impl->Step 6); session types table updated; Index Maintenance trimmed to link handoff |
 | `project_index.md` | Maintenance Rules section added with update triggers and temperature table; opening paragraph links to new section; agent_workflow.md entry note updated |
 | `documentation_policy.md` | Added: link anchors convention, read pass economics, document depth and verbosity, audit checks section; scope exclusion for skill files and prompt templates made explicit in opening; Layer Model and Architecture Freeze Policy sections removed; freeze rule retained as one sentence under Folder Structure; policy vs skill rules moved to agent_workflow.md |
 | `agent_workflow.md` | Full rescope: Core Principles trimmed with links; Core Invariants links to security.md; How the Workflow is Expressed owns three-layer authority model with full rules; Policy Map table with eleven rows, boundary notes, and overlap detection handoff |
@@ -90,4 +89,4 @@ None.
 Not yet defined
 
 ---
-[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". This session was superseded by 20260428-04-workflow-policy_audit_and_refactor.md which completed the workflow audit. See 20260506-01-workflow-handover_audit_and_corrections.md.
+[CORRECTION -- 2026-05-06]: Status corrected from "Active" to "Closed". This session was superseded by 20260428-04-workflow-policy_audit_and_refactor.md which completed the workflow audit. See 20260506-01-workflow-handover_audit_and_corrections.md.

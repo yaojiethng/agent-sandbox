@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-21
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-04-21
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -30,16 +30,16 @@ None.
 
 | File | Why in scope | Status |
 |---|---|---|
-| `libs/package_diff.sh` | Strip index lines; remove changed-files generation | ✓ Complete |
-| `scripts/apply_workspace.sh` | Replace git apply with patch -p1 in apply command | ✓ Complete |
-| `.skills/package-diff.md` | Update output description and apply instructions | ✓ Complete |
+| `libs/package_diff.sh` | Strip index lines; remove changed-files generation | [x] Complete |
+| `scripts/apply_workspace.sh` | Replace git apply with patch -p1 in apply command | [x] Complete |
+| `.skills/package-diff.md` | Update output description and apply instructions | [x] Complete |
 
 ## Decisions made this session
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | Strip `index <sha>..<sha>` lines from diff output | These lines encode blob SHAs that `git apply` validates against the index; stripping them makes the diff purely context-line based so `patch` can apply it regardless of index state | `package_diff.sh` comment |
-| Use `patch -p1` instead of `git apply` | `patch` matches hunks by context lines only — no index SHA validation, no new-file index requirement, tolerant of sequential application and index drift | `apply_workspace.sh` |
+| Use `patch -p1` instead of `git apply` | `patch` matches hunks by context lines only -- no index SHA validation, no new-file index requirement, tolerant of sequential application and index drift | `apply_workspace.sh` |
 | Remove `changed-files/` entirely | `patch -p1` applies new files natively from `--- /dev/null` headers; the directory was only needed as a fallback when `git apply` failed, which is no longer possible | `package_diff.sh` |
 | Force path uses `patch --force` | Consistent with non-force path; `.rej` files land next to originals for manual resolution | `apply_workspace.sh` |
 
@@ -57,10 +57,11 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Next task:** Change 6 — baseline advancement (`make confirm SYNC=1`, `make sync`).
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Next task:** Change 6 -- baseline advancement (`make confirm SYNC=1`, `make sync`).
 
 **Files to upload:**
+
 - Most recent handover for immediate prior context (this file, or `20260421-06`)
 - `scripts/apply_workspace.sh`
 - `scripts/checkpoint.sh`

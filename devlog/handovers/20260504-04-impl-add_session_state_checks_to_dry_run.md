@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-04
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-05-04
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -38,8 +38,8 @@ None.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| `init_sha` validated in two phases (readable + valid git commit) | Catches both missing key and truncated/corrupt value — the truncation case would pass a single non-empty check but fail at packaging time | Handover |
-| `session_ts` is warn not critical | Packaging falls back to env var if missing — degraded but functional | Handover |
+| `init_sha` validated in two phases (readable + valid git commit) | Catches both missing key and truncated/corrupt value -- the truncation case would pass a single non-empty check but fail at packaging time | Handover |
+| `session_ts` is warn not critical | Packaging falls back to env var if missing -- degraded but functional | Handover |
 | No `.git/index.lock` check added | Sandbox entrypoint already clears stale locks via `snapshot_init_git`; the dry-run exec runs after the entrypoint completes | Handover |
 
 ## Mid-session findings
@@ -58,10 +58,10 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 
-Trigger B is not yet fireable — A.3 (documentation alignment) remains pending.
+Trigger B is not yet fireable -- A.3 (documentation alignment) remains pending.
 
-The SESSION_STATE checks added this session are runtime-only. The M2.7 context_dir removal task (item 7) records pre-scoping findings for when container-sig obsoletes the temp-directory staging layer — that work is not part of this session's scope.
+The SESSION_STATE checks added this session are runtime-only. The M2.7 context_dir removal task (item 7) records pre-scoping findings for when container-sig obsoletes the temp-directory staging layer -- that work is not part of this session's scope.
 
 **Conclusions from this session:** dry-run now validates the sandbox entrypoint completed its full init sequence (SESSION_STATE written, init_sha corresponds to a real git commit). This catches both stale volumes from before the SESSION_STATE feature existed and partial/corrupt writes.

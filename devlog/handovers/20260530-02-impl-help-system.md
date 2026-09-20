@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-30
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Impl
+**Date:** 2026-05-30
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Impl
 **Status:** Closed
 
 ## Objective
@@ -25,4 +25,4 @@ Implement the help system and consistent error handling (Phase 1 of the dispatch
 
 ## Next session
 
-Phase 2 — Streamline dispatch: reduce `parse_flags` to 3 universal flags, remove `rebuild_flags()` and `require_provider_args()` from dispatch level, use `PASSTHROUGH` pattern.
+Phase 2 -- Streamline dispatch: reduce `parse_flags` to 3 universal flags, remove `rebuild_flags()` and `require_provider_args()` from dispatch level, use `PASSTHROUGH` pattern.

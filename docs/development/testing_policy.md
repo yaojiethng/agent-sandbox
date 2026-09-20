@@ -9,6 +9,7 @@ This document defines the testing standards, patterns, and anti-patterns for the
 ### 1. Test Isolation is Mandatory
 
 Every test must be independent and reproducible. Tests must not depend on:
+
 - State from previous tests
 - User's home directory or working directory
 - Any path outside the test's temporary fixture directory
@@ -82,77 +83,12 @@ A test file may only source helpers from `tests/libs/`. It must never source ano
 
 ```bash
 # ✓ Correct: source only from tests/libs/
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
-source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
-source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"
+source "$REPO_ROOT/tests/libs/test_common.sh"
+source "$REPO_ROOT/tests/libs/git_fixtures.sh"
+source "$REPO_ROOT/tests/libs/session_fixtures.sh"
 
 # ✗ Wrong: sourcing another test file
-source "$SCRIPT_DIR/test_draft_workflow.sh"   # ← Executes tests, pollutes state
-```
-
----
-
-## Fixture Management Patterns
-
-### Pattern 1: Unique Paths Per Test
-
-Each test function should use unique fixture paths derived from the test name:
-
-```bash
-test_draft_creates_branch() {
-  local P="$FIXTURE_DIR/draft_branch_p"
-  local S="$FIXTURE_DIR/draft_branch_s"
-  make_project "$P"
-  make_session "$P" "$S"
-  ...
-}
-
-test_draft_applies_patches() {
-  local P="$FIXTURE_DIR/draft_patches_p"
-  local S="$FIXTURE_DIR/draft_patches_s"
-  make_project "$P"
-  make_session "$P" "$S"
-  ...
-}
-```
-
-### Pattern 2: Unique Paths Per Helper Call
-
-When a helper creates subdirectories (e.g., sandbox working directories), use paths unique to the caller's SANDBOX_DIR, not shared paths:
-
-```bash
-# ✓ Correct: sandbox path is unique per SANDBOX_DIR
-make_session() {
-  local SANDBOX_DIR="$1"
-  local SANDBOX="$SANDBOX_DIR/sandbox-work"   # ← Unique per test
-  rm -rf "$SANDBOX"
-  ...
-}
-
-# ✗ Wrong: sandbox path is shared across all tests
-make_session() {
-  local SESSION="$1"
-  local SANDBOX="$FIXTURE_DIR/sandbox-${SESSION}"  # ← Collision if same SESSION
-  ...
-}
-```
-
-### Pattern 3: Cleanup in Reverse Order
-
-When tests create nested state, clean up in reverse order of creation:
-
-```bash
-# Creation order:
-# 1. Project directory
-# 2. Sandbox directory
-# 3. Session directory inside sandbox workspace
-# 4. Checkpoint tag in project
-
-# Cleanup (handled by trap, but be mindful in helpers):
-# 1. Session directory (rm -rf "$SESSION_DIR")
-# 2. Sandbox directory (rm -rf "$SANDBOX")
-# 3. Project directory (rm -rf "$PROJECT_DIR")
-# 4. Checkpoint tag (git tag -d)
+source "$REPO_ROOT/test_draft_workflow.sh"   # ← Executes tests, pollutes state
 ```
 
 ---
@@ -165,10 +101,10 @@ Helpers used by more than one test file live in `tests/libs/` and are sourced ex
 |---|---|
 | `tests/libs/test_common.sh` | Pass/fail/skip counters and reporting: `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
 | `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
-| `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` — unified session directory creator with optional patches and uncommitted.diff |
-| `tests/libs/mock_repo_fixtures.sh` | Mock agent-sandbox repo layout: `make_mock_repo()` |
+| `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` -- unified session directory creator with optional patches and uncommitted.diff |
 
 **Rules for `tests/libs/` files:**
+
 - Helper functions only - no test execution
 - Every helper must follow Core Principles 1-3 (isolation, clean-before-create, no shared state)
 - A new helper belongs in `tests/libs/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
@@ -179,52 +115,88 @@ Do not add a new `tests/libs/` file without a clear category boundary. If a help
 
 Always source `test_common.sh` instead of defining `pass()`, `fail()`, and counter variables inline. It provides:
 
-- `pass()` / `fail()` — identical formatting across all test files
-- `skip()` — for tests that cannot run in the current environment
-- `run_test()` — test runner that continues on failure
-- `test_done()` — summary reporter that exits with failure count
+- `pass()` / `fail()` -- identical formatting across all test files
+- `skip()` -- for tests that cannot run in the current environment
+- `run_test()` -- test runner that continues on failure
+- `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
 
 ```bash
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
+source "$REPO_ROOT/tests/libs/test_common.sh"
 ```
 
 Every test file and knowledge test file must source `test_common.sh` instead of defining `pass()` / `fail()` locally. The only exception is diagnostic scripts (`diagnose_*.sh`) that run inside containers where `tests/libs/` is not available.
 
 ---
 
-## `tests/knowledge/` Directory
+## Test Placement -- `tests/`, `tests/knowledge/`, `tests/integration/`
 
-The `tests/knowledge/` directory contains three file categories with distinct purposes. None are run by `make test` or `scripts/run_tests.sh` — the runner uses `tests/test_*.sh` and the knowledge directory is excluded by glob. All files must be self-contained, create and clean up their own temporary directories, and exit 0 on success or non-zero on failure.
+Tests live in one of three homes based on **who owns the seam under test** and **whether the harness can run it deterministically**.
+
+### The decision rule
+
+> A test belongs under the **`make test` suite** (`tests/test_*.sh`) when the seam is **our own maintained code with a callable API**. Write the test **directly against that API**.
+>
+> A test belongs in `tests/knowledge/knowledge_*.sh` only when it probes a seam the harness **cannot** test through an API -- an **unmodifiable** seam: an external binary/library/network service, or legacy code **mid-refactor** where we are documenting current behaviour before reworking it.
+>
+> A test belongs in `tests/integration/` when it is **still not runnable** in the unit harness (chunky end-to-end flows, container/daemon needs, no clear pass/fail, metrics without thresholds) but the knowledge is too valuable to discard.
+
+Knowledge tests and integration tests are **not** run by `make test`. The runner glob is `tests/test_*.sh` (non-recursive), so `tests/knowledge/` and `tests/integration/` are excluded.
+
+**Do not treat the knowledge test as a primitive for testing our own code.** If the seam is our maintained code, it is testable by definition -- write a unit test under `tests/` and run it in `make test`. A knowledge test is a *last resort for unmodifiable seams*, not a home for internal behaviour.
+
+### Promotions over time
+
+If a seam was previously untestable but becomes testable -- e.g. a docker mock now allows asserting the exact `docker ...` command we pass -- promote the coverage to a **unit test** (`tests/test_*.sh`) using that mock, rather than leaving it as a knowledge/integration note.
+
+### `tests/knowledge/` Directory -- three categories
+
+The `tests/knowledge/` directory contains three file categories with distinct purposes. All files must be self-contained, create and clean up their own temporary directories, and exit 0 on success or non-zero on failure.
 
 ### 1. Knowledge tests (`knowledge_*.sh`)
 
-Document behavioural assumptions about external tools (git, docker, rsync, etc.) that inform the harness design. These are one-off executable documents produced during investigation sessions.
+Document behavioural assumptions about **unmodifiable** seams (git, docker, rsync, pi, external libs) that inform the harness design. These are one-off executable documents produced during investigation sessions. A one-off feasibility probe from an investigation is a knowledge test and uses the `knowledge_` prefix.
 
-**Purpose:** Record what was learned about a tool's behaviour, assert key assumptions still hold, and provide a reference for future developers.
+**Purpose:** Record what was learned about an external tool's behaviour, assert key assumptions still hold, and provide a reference for future developers.
 
-**Rule:** A knowledge test's assertions are **not** acceptance criteria for implementation sessions. They document external tool behaviour, not internal system behaviour. Implementation acceptance criteria are defined per-session in the handover.
+**Rule:** A knowledge test's assertions are **not** acceptance criteria for implementation sessions. They document external tool behaviour, not internal system behaviour. **A knowledge test must not probe our own maintained code that has an API -- that belongs in `tests/` under `make test`.** Implementation acceptance criteria are defined per-session in the handover.
 
 ### 2. Diagnostic scripts (`diagnose_*.sh`)
 
-Debug helpers that verify the internal invariants of a specific production script or subsystem. They are referenced when dry-run or pre-flight checks fail, to isolate the root cause.
+Debug helpers that verify the internal invariants of a specific production script or subsystem, referenced when dry-run or pre-flight checks fail to isolate the root cause. They run inside a container for troubleshooting -- **not** as regression unit tests. A `diagnose_` script tests current behaviour to find the exact behavioural violation behind an error, especially when the unit tests pass.
 
-**Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does dry-run Phase 2 fail?"). Each section checks one link in the chain — environment, library sourcing, path resolution, script hygiene, etc.
+**Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does the dry-run reasoning probe fail?"). Each section checks one link in the chain -- environment, library sourcing, path resolution, script hygiene, etc. Because they are diagnostic (not deterministic pass/fail, may need operator interpretation, or run only in a container), they are **not** in the `make test` suite.
 
-**Relation to ACs:** Unlike knowledge tests, diagnostic scripts test internal invariants and can be referenced from acceptance criteria — e.g. as a regression-guard AC for a recurring bug class. See handover policy §Acceptance criteria — Regression guard.
+**Relation to ACs:** Diagnostic scripts can be referenced from acceptance criteria as a regression-guard AC for a recurring bug class where a full unit test is impractical. See [handover policy Acceptance criteria -- Regression guard](handover_policy.md#acceptance-criteria).
 
-**Naming:** `tests/knowledge/diagnose_<subsystem>.sh` — mirrors the production script name it diagnoses.
+**Naming:** `tests/knowledge/diagnose_<subsystem>.sh` -- mirrors the production script name it diagnoses.
 
 ### 3. Workflow tests (`workflow_*.sh`)
 
-End-to-end sequence validators that exercise a complete operator workflow (e.g. draft → confirm, draft → reject). They run against a mock repository to avoid side effects.
+End-to-end sequence validators that exercise a complete operator workflow (e.g. draft -> confirm, draft -> reject) against a mock repository to avoid side effects.
 
 **Purpose:** Validate that a multi-step workflow produces the expected repository state, file layout, and exit codes without requiring a full harness session. Used during implementation and regression-checked after refactors.
 
 **Relation to ACs:** Workflow test assertions are system behaviour and can be referenced from acceptance criteria. Prefer adding a workflow test over manual verification for any multi-step operator workflow.
 
-### Shared Fixtures in Knowledge Tests
+### 4. Integration tests (`tests/integration/`)
 
-Knowledge tests, workflow tests, and diagnostic scripts **must** source shared fixture libraries instead of defining boilerplate inline:
+End-to-end or environment-gated tests that cannot run deterministically in the `make test` harness (container/daemon requirements, chunky multi-process flows, metrics/thresholds without a defined pass/fail). **Excluded from `make test`** so the unit suite stays deterministic.
+
+**Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0, skipped 0**.
+
+**Rule:** If an integration flow's seam becomes unit-testable (e.g. via a mock), promote it to `tests/test_*.sh`. Do not use `integration/` as a permanent home for code our own unit suite *could* cover.
+
+### The `make test` invariant
+
+`make test` (the `tests/test_*.sh` suite) **must report `failed 0, skipped 0`**. Any test that cannot run deterministically (missing utility, container/daemon absent, optional file absent that yields a `skip`) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`. The runner (`scripts/run_tests.sh`) enforces this by treating `skip` as a failure.
+
+A `skip()` in a `tests/test_*.sh` file is a **defect** under this policy -- it means the seam was moved out of the unit suite rather than made deterministic.
+
+A prerequisite is something the suite needs before a test runs: an executable stub, or a docker shim that must be present. A prerequisite failure is not a test failure. The runner checks the prerequisites before it runs the tests. It reports a missing prerequisite by name. A broken environment then reports one prerequisite error, not many unrelated test failures. This rule records a real failure: a stub lost its exec bit and failed 67 tests with exit 126 before the cause was found.
+
+### Shared Fixtures in Knowledge/Integration/Diagnostic Tests
+
+Knowledge, workflow, integration, and diagnostic tests **must** source shared fixture libraries instead of defining boilerplate inline:
 
 | Boilerplate | Source instead | Files affected |
 |---|---|---|
@@ -235,9 +207,10 @@ Knowledge tests, workflow tests, and diagnostic scripts **must** source shared f
 **Exception:** Diagnostic scripts (`diagnose_*.sh`) that run inside containers may keep inline `pass()` / `fail()` because `tests/libs/` is not available in the container filesystem.
 
 **Rules:**
+
 - Every new `knowledge_*.sh` or `workflow_*.sh` file must source `tests/libs/test_common.sh` for `pass()` / `fail()` instead of defining them inline.
 - If the test creates git repositories, source `tests/libs/git_fixtures.sh` for `make_repo()` / `make_committed_repo()` instead of defining them inline.
-- Domain-specific helpers used by only one file (e.g. `make_binary()`, `make_sandbox()`) stay local — do not add them to a shared library until a second consumer exists.
+- Domain-specific helpers used by only one file (e.g. `make_binary()`, `make_sandbox()`) stay local -- do not add them to a shared library until a second consumer exists.
 
 These rules align with the core principle that `tests/libs/` is the only allowed source of shared test helpers.
 
@@ -255,6 +228,14 @@ This runs all test files in sequence and prints a consolidated pass/fail summary
 
 **Rule:** A change to any lib or script is not complete until `make test` passes clean. Running a subset of test files is not sufficient.
 
+### Registration liveness
+
+A `test_*()` function that is defined but never registered via `run_test` never executes -- it rots silently, and the suite still reports green. A `run_test` target without a definition fails at runtime with an unrelated error.
+
+**Rule:** every `test_*()` function in `tests/test_*.sh` carries exactly one `run_test` registration in the same file, and every `run_test` target resolves to a defined function. Parameterized helpers invoked by registered wrappers are named outside the `test_` namespace.
+
+**Check:** `make test-liveness` (or `bash scripts/check_test_liveness.sh`) verifies both directions statically, plus prerequisite liveness for the docker stub and stub libs. Run it alongside `make test` when touching test files; it is advisory like the other static checks, but a finding is a defect to fix in the same change.
+
 ---
 
 ## Keeping Tests Current
@@ -269,338 +250,12 @@ grep -rl "script_or_lib_name" tests/
 
 Read each file returned and assess whether any test case is invalidated or no longer sufficient given the change. If a test needs updating, update it in the same change - do not defer test updates to a follow-up.
 
+A handover or finding must not claim a code path that no test exercises. A behaviour branch claimed in a handover or finding is covered by a test, or the handover states why it is untested.
+
 This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour - but if in doubt, grep and check.
 
 ---
 
-## Common Anti-Patterns
+## See Also
 
-### Anti-Pattern 1: Destructive Reset After Creation
-
-**Symptom:** Test passes in isolation, fails in sequence.
-
-```bash
-# ✗ Wrong: creates session, then deletes it
-make_session() {
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
-  mkdir -p "$SESSION_DIR/patches"
-  # create patches and diff files
-  rm -rf "$SANDBOX_DIR/.workspace"    # ← Deletes what we just created!
-  mkdir -p "$SANDBOX_DIR/.workspace"
-  echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
-}
-```
-
-**Fix:** Create parent directories first, then populate:
-
-```bash
-# ✓ Correct: prepare parent, then create child
-make_session() {
-  mkdir -p "$SANDBOX_DIR/.workspace"  # ← Prepare first
-  
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
-  rm -rf "$SESSION_DIR"               # ← Clean only this session
-  mkdir -p "$SESSION_DIR/patches"
-  # create patches and diff files
-  echo "$CHECKPOINT_TAG" > "$SANDBOX_DIR/.workspace/checkpoint-latest.ref"
-}
-```
-
-### Anti-Pattern 2: Shared Temporary Paths
-
-**Symptom:** Tests interfere with each other when run in sequence.
-
-```bash
-# ✗ Wrong: multiple tests use same sandbox path
-make_session() {
-  local SANDBOX="$FIXTURE_DIR/sandbox-main"  # ← Same for all tests with same session
-  # ...
-}
-```
-
-**Fix:** Scope temporary paths to the test's fixture directory:
-
-```bash
-# ✓ Correct: each test has its own sandbox
-make_session() {
-  local SANDBOX_DIR="$1"
-  local SANDBOX="$SANDBOX_DIR/sandbox-work"  # ← Unique per test
-  # ...
-}
-```
-
-### Anti-Pattern 3: Silent State Accumulation
-
-**Symptom:** Test passes first time, fails on re-run or in different order.
-
-```bash
-# ✗ Wrong: assumes directory is empty
-make_project() {
-  mkdir -p "$DIR"
-  git -C "$DIR" init  # ← Fails if already a git repo
-  # ...
-}
-```
-
-**Fix:** Explicit cleanup before creation:
-
-```bash
-# ✓ Correct: guaranteed clean state
-make_project() {
-  rm -rf "$DIR"
-  mkdir -p "$DIR"
-  git -C "$DIR" init
-  # ...
-}
-```
-
-### Anti-Pattern 4: Cross-Test-File Sourcing
-
-**Symptom:** Sourcing a test file to reuse its helpers executes its tests as a side effect and may corrupt state.
-
-```bash
-# ✗ Wrong: sources a test file to get its helpers
-source "$SCRIPT_DIR/test_draft_workflow.sh"
-```
-
-**Fix:** Move the shared helper to `tests/libs/` and source it from there in both files.
-
----
-
-## Test Structure Template
-
-```bash
-#!/usr/bin/env bash
-# tests/test_example.sh
-
-set -uo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_SCRIPT="$SCRIPT_DIR/../scripts/example.sh"
-
-# Shared fixtures - source only from tests/libs/
-source "$SCRIPT_DIR/tests/libs/test_common.sh"
-source "$SCRIPT_DIR/tests/libs/git_fixtures.sh"
-# source "$SCRIPT_DIR/tests/libs/session_fixtures.sh"  # if needed
-
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# -------------------------
-# Local helpers (not shared across files)
-# -------------------------
-
-make_fixture() {
-  local DIR="$1"
-  rm -rf "$DIR"              # ← Always clean first
-  mkdir -p "$DIR"
-  # ... setup ...
-}
-
-# -------------------------
-# Tests
-# -------------------------
-
-test_example_feature() {
-  local P="$FIXTURE_DIR/example_p"
-  local S="$FIXTURE_DIR/example_s"
-  make_fixture "$P"
-  make_fixture "$S"
-  # ... test logic ...
-  if [[ condition ]]; then
-    pass "description"
-  else
-    fail "description"
-  fi
-}
-
-# -------------------------
-# Run all tests
-# -------------------------
-
-run_test test_example_feature
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-```
-
----
-
-## [FINDINGS: 2026-05-22] — Proposed Testing Rules from Session Practice
-
-This section captures rule proposals derived from hands-on debugging and investigation patterns during sessions. These are **not adopted policy** — they are candidates observed to solve recurring problems. After multiple sessions produce overlapping proposals, common patterns will be distilled into the main testing policy sections above.
-
-Each entry states the observed symptom, the provisional rule that addressed it, and the reasoning.
-
----
-
-### Finding: Layered debugging — strip orchestration to isolate root cause
-
-**Observed:** EPERM warnings in Pi's settings.json locking required tracing through five layers (main.js → settings-manager.js → proper-lockfile → fs.utimesSync → kernel). The root cause — 9p filesystem not supporting `utime()` — was confirmed by a 6-line Node.js script that bypassed all orchestration and called `fs.utimesSync` directly on a test path.
-
-**Proposed rule:** When debugging a failure that crosses abstraction layers, write a minimal reproduction that bypasses all but the suspected layer. The reproduction should:
-
-1. Import/call only the system call or primitive that is suspected to fail.
-2. Use literal paths (not configuration-derived paths) to eliminate indirection.
-3. Print only the error and exit — no logging framework, no orchestration.
-4. Run from a clean state (no prior setup, no environment variables beyond what is required for the call itself).
-
-```bash
-# Example: reproducing a filesystem permission issue
-node -e "
-const fs = require('fs');
-try {
-  fs.utimesSync('/path/to/test', new Date(), new Date());
-  console.log('OK');
-} catch(e) {
-  console.error('FAILED:', e.code, e.message);
-}
-"
-```
-
-**Rationale:** Each abstraction layer adds failure modes (caching, error handling, concurrency, retry logic). A minimal reproduction eliminates all of them. If the minimal reproduction succeeds, the bug is in the orchestration. If it fails, the orchestration is irrelevant — the root cause is at the tested layer.
-
-**When to apply:** Any investigation where the error message originates from a system call (filesystem, network, process) and the call chain is more than two layers deep from the entrypoint.
-
----
-
-### Finding: Mount-as-evidence — verify filesystem type before debugging behaviour
-
-**Observed:** The filesystem type (9p) was the root cause of EPERM on `utime()` and EXDEV on cross-filesystem `mv()`. In both cases, running `mount | grep <path>` or `stat -f <path>` at the start of debugging would have identified the constraint immediately, saving the time spent tracing through application code.
-
-**Proposed rule:** When a bug involves file operations (read, write, rename, utime, chmod) and the path may be a bind mount or network filesystem, check the filesystem type first:
-
-```bash
-# Is the path on the expected filesystem?
-df -T /path/to/suspect   # Filesystem type (ext4, 9p, overlay, tmpfs, nfs)
-mount | grep /path       # Mount source and options
-stat -f /path/to/suspect  # Filesystem ID and type
-```
-
-If the filesystem type is unexpected (e.g., 9p for a path assumed to be ext4, or overlay for a path assumed to be a bind mount), stop debugging the application code — the behaviour is a filesystem constraint, not a software bug.
-
----
-
-### Finding: Layer-jumping — test the innermost assumption first
-
-**Observed:** The EPERM debugging session followed a clean innermost-first chain: identify the system call (`utimesSync`) → test it directly → confirm failure → check filesystem type → confirm 9p constraint. This produced a definitive answer in minutes.
-
-**Proposed rule:** When investigating a failure, order your tests from innermost (system call) to outermost (application orchestration). Do not start by reading application code — start by testing the primitive that the error message names. If the primitive works, move outward. If it fails, you have found the layer where the bug lives.
-
----
-
-## Debugging Test Failures
-
-### Symptom: Test Passes in Isolation, Fails in Sequence
-
-**Likely cause:** State pollution from previous test.
-
-**Debug steps:**
-1. Run the full test suite and note which test fails
-2. Run only the failing test - it should pass
-3. Run the test immediately before the failing test, then the failing test
-4. Check for:
-   - Shared fixture paths
-   - Missing `rm -rf` in helper functions
-   - Global state (tags, branches, files) not cleaned up
-
-### Symptom: Test Fails on Re-run in Same Session
-
-**Likely cause:** Test doesn't clean up its own state.
-
-**Debug steps:**
-1. Run the test twice in the same shell
-2. Check if the second run fails
-3. Look for:
-   - Git tags not deleted
-   - Directories not removed
-   - Files appended to instead of overwritten
-
-### Symptom: Test Behavior Changes Based on Test Order
-
-**Likely cause:** Tests share state through a common path.
-
-**Debug steps:**
-1. Shuffle test order (manually reorder `run_test` calls)
-2. Note which orderings fail
-3. Check for:
-   - Hardcoded paths (e.g., `/tmp/sandbox` instead of `$FIXTURE_DIR/...`)
-   - Helper functions that don't scope paths to their caller
-   - Global variables not reset between tests
-
----
-
-## Checklist for New Tests
-
-Before committing a new test:
-
-- [ ] Uses `mktemp -d` for fixture directory
-- [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
-- [ ] All helper functions clean their inputs before creating state
-- [ ] No hardcoded paths outside fixture directory
-- [ ] Sources shared fixtures from `tests/libs/` - no sourcing of other test files
-- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()` instead of defining them inline
-- [ ] Test passes when run in isolation
-- [ ] Test passes when run after every other test in the file
-- [ ] Test passes when run twice in a row
-- [ ] `make test` passes clean after the new test is added
-- [ ] Test failure message clearly describes what went wrong
-
-### Mock Infrastructure for Dispatch Tests
-
-When testing a CLI dispatch layer that routes flags to subcommand scripts
-(via `exec` or subprocess calls), use the following proven pattern:
-
-1. **Override `exec()`** with a bash function that captures invocations
-   instead of executing them:
-
-```bash
-exec() { echo "capture: exec $*"; }
-```
-
-2. **Create mock scripts** in a temp directory and point `SCRIPTS` at it:
-
-```bash
-MOCK_DIR=$(mktemp -d)
-cat > "$MOCK_DIR/start_agent.sh" << 'SCRIPT'
-echo "capture: MOCK start_agent.sh $*"
-SCRIPT
-chmod +x "$MOCK_DIR/start_agent.sh"
-SCRIPTS="$MOCK_DIR"
-```
-
-3. **Resolve placeholder variables** before sourcing the harness:
-
-```bash
-resolved=$(mktemp)
-sed "s|@@AGENT_SANDBOX_REPO@@|$REPO_ROOT|g" \
-  "$REPO_ROOT/scripts/agent-sandbox.sh" > "$resolved"
-source "$resolved"
-rm -f "$resolved"
-```
-
-4. **Parse captured output** by filtering stdout lines with a marker:
-
-```bash
-CAPTURED=()
-stdout=$(main "$@" 2>/dev/null) || true
-while IFS= read -r line; do
-  if [[ "$line" == capture:* ]]; then
-    CAPTURED+=("${line#capture: }")
-  fi
-done <<< "$stdout"
-```
-
-This pattern covers three invocation methods in one harness:
-- `exec` calls (via `exec()` override)
-- Subprocess scripts (via mock scripts on `SCRIPTS`)
-- Sourced function calls (via function shadowing before sourcing)
-
-## Checklist for Lib and Script Changes
-
-Before marking a lib or script change complete:
-
-- [ ] `grep -rl "<changed file>" tests/` run; all returned files reviewed for staleness
-- [ ] Any stale test cases updated in the same change
-- [ ] `make test` passes clean
+[`testing-conventions.md`](testing-conventions.md) -- fixture patterns, anti-patterns, templates, checklists, and debug steps.

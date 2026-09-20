@@ -1,13 +1,13 @@
 # Agent Handover
 
-**Session date:** 2026-06-09
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Implementation
+**Date:** 2026-06-09
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Implement M2.7 Track A item 8 — Artefact path updates to use RUN_ID.
+Implement M2.7 Track A item 8 -- Artefact path updates to use RUN_ID.
 
 ## Scope
 

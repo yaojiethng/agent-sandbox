@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-01
-**Milestone:** Unassigned — container tooling path relocation (prerequisite for M2.x)
-**Session type:** Design
+**Date:** 2026-05-01
+**Milestone:** Unassigned -- container tooling path relocation (prerequisite for M2.x)
+**Type:** Design
 **Status:** Closed
 
 ## Objective
@@ -67,42 +67,44 @@ None.
 
 | Finding | Type | Impact |
 |---|---|---|
-| Script category table (container-infra / co-located / prompt-templates / repo-only) with per-category path strategies needs to be persisted for maintenance | design | Persistent reference — recorded in `design_container_tooling_path_relocation.md` |
-| `system_overview.md` links to `project_index.md` (in development/) — link will break when development/ is excluded from baked docs. Broader concern: concept/architecture docs cross-reference dev/ops/doc folders, violating the sandbox-vs-coding-agent contract. Operations/ and development/ should be logically folded into a coding-agent workflow/ and taken out of the overarching docs/ repository. Same for devlog/ (artifacts of the coding-agent workflow). | architecture | Not in scope — big renaming change for future investigation |
-| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) reference `docs/operations/iteration_policy.md` etc. by project-relative path. Only resolves when project IS agent-sandbox (dogfooding). Seeding docs into `/opt/sandbox/docs/` doesn't fix these — they reference operations/ which is excluded. | pre-existing concern | Deferred — these need a separate mechanism or a decision to seed operations/ too |
-| Repo directory structure for bash scripts does not properly organise files according to logical requirements (not against functionality, not against use location). The script category table (container-infra / co-located / prompt-templates / repo-only) surfaces a diagnosis: files are grouped by `libs/` or `scripts/` directory rather than by their lifecycle (image-baked vs host-only vs bind-mounted), creating ambiguity about what path strategy each file needs. | architecture | Not in scope — restructure needed as a separate investigation |
+| Script category table (container-infra / co-located / prompt-templates / repo-only) with per-category path strategies needs to be persisted for maintenance | design | Persistent reference -- recorded in `design_container_tooling_path_relocation.md` |
+| `system_overview.md` links to `project_index.md` (in development/) -- link will break when development/ is excluded from baked docs. Broader concern: concept/architecture docs cross-reference dev/ops/doc folders, violating the sandbox-vs-coding-agent contract. Operations/ and development/ should be logically folded into a coding-agent workflow/ and taken out of the overarching docs/ repository. Same for devlog/ (artifacts of the coding-agent workflow). | architecture | Not in scope -- big renaming change for future investigation |
+| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) reference `docs/operations/iteration_policy.md` etc. by project-relative path. Only resolves when project IS agent-sandbox (dogfooding). Seeding docs into `/opt/sandbox/docs/` doesn't fix these -- they reference operations/ which is excluded. | pre-existing concern | Deferred -- these need a separate mechanism or a decision to seed operations/ too |
+| Repo directory structure for bash scripts does not properly organise files according to logical requirements (not against functionality, not against use location). The script category table (container-infra / co-located / prompt-templates / repo-only) surfaces a diagnosis: files are grouped by `libs/` or `scripts/` directory rather than by their lifecycle (image-baked vs host-only vs bind-mounted), creating ambiguity about what path strategy each file needs. | architecture | Not in scope -- restructure needed as a separate investigation |
 
 ## Completed this session
 
 | File | Change summary |
 |---|---|
-| `docs/devlog/discussions/design_container_tooling_path_relocation.md` | Created — complete design spec with exact per-file change descriptions, script category table, and proposed AC |
+| `docs/devlog/discussions/design_container_tooling_path_relocation.md` | Created -- complete design spec with exact per-file change descriptions, script category table, and proposed AC |
 | This handover | Created with all 8 decisions, mid-session findings, and acceptance criteria |
 
 ## Deferred items
 
 | Item | Reason | Destination |
 |---|---|---|
-| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) referencing `docs/` by project-relative path | Out of scope — these reference operations/ policy, not architecture/concepts docs | Future session (after docs restructuring investigation) — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — not worth resolving |
-| Docs restructuring: fold operations/ + development/ into a coding-agent workflow/, remove from overarching docs/ | Big renaming change, not in scope | Future investigation — [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 — not worth pursuing |
+| Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) referencing `docs/` by project-relative path | Out of scope -- these reference operations/ policy, not architecture/concepts docs | Future session (after docs restructuring investigation) -- [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 -- not worth resolving |
+| Docs restructuring: fold operations/ + development/ into a coding-agent workflow/, remove from overarching docs/ | Big renaming change, not in scope | Future investigation -- [REMOVED in M2.3] Cancelled per operator direction 2026-05-06 -- not worth pursuing |
 
 ## Next session
 
-**Context handover:** Prior implementation handover `docs/devlog/handovers/20260430-01-impl-container_tooling_path_relocation.md` — superseded by this design session. The implementation thread can be resumed once the design spec is confirmed.
+**Context handover:** Prior implementation handover `docs/devlog/handovers/20260430-01-impl-container_tooling_path_relocation.md` -- superseded by this design session. The implementation thread can be resumed once the design spec is confirmed.
 
 **Sub-milestone:** Container tooling path relocation (prerequisite).
-**Trigger B:** Not applicable — not a sub-milestone close.
-**Blocking questions:** None — all eight design questions resolved.
+**Trigger B:** Not applicable -- not a sub-milestone close.
+**Blocking questions:** None -- all eight design questions resolved.
 **Watch-outs:**
-- The use of `lib/` (not `libs/`) per FHS convention — ensure no Dockerfile COPY or script path uses `libs/` under `/opt/sandbox/`
-- The `agent-sandbox.md` prompt reference to `docs/` is being updated — verify the other prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) are intentionally out of scope
-- File count assertions in `test_build_context.sh` change significantly (sandbox: 4→7+docs, agent: 2→4+docs)
+
+- The use of `lib/` (not `libs/`) per FHS convention -- ensure no Dockerfile COPY or script path uses `libs/` under `/opt/sandbox/`
+- The `agent-sandbox.md` prompt reference to `docs/` is being updated -- verify the other prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) are intentionally out of scope
+- File count assertions in `test_build_context.sh` change significantly (sandbox: 4->7+docs, agent: 2->4+docs)
 **Session start grep:**
-- `grep -rn 'source /libs/' .` — verify all cleared after implementation
-- `grep -rn '/usr/local/bin/' libs/ providers/` — verify all updated
-- `grep -rn '~/sandbox/libs/' agent/prompts/` — verify all updated
+- `grep -rn 'source /libs/' .` -- verify all cleared after implementation
+- `grep -rn '/usr/local/bin/' libs/ providers/` -- verify all updated
+- `grep -rn '~/sandbox/libs/' agent/prompts/` -- verify all updated
 
 **Conclusions from this session:**
+
 - The `/opt/sandbox/bin/` + `/opt/sandbox/lib/` + `/opt/sandbox/docs/` layout is confirmed, with no backward-compat symlinks
 - All 8 container-invoked libs files are seeded into their respective images, segmented by container type
 - docs/ is seeded into the agent image only, limited to `architecture/` + `concepts/`
@@ -113,4 +115,4 @@ None.
 - A future investigation is needed to restructure docs/ with a coding-agent workflow/ boundary
 
 ---
-[CORRECTION — 2026-05-06]: Status corrected from "Active" to "Closed". Design session superseded by 20260501-02-impl-container_tooling_path_relocation.md (implementation completed). See 20260506-01-workflow-handover_audit_and_corrections.md.
+[CORRECTION -- 2026-05-06]: Status corrected from "Active" to "Closed". Design session superseded by 20260501-02-impl-container_tooling_path_relocation.md (implementation completed). See 20260506-01-workflow-handover_audit_and_corrections.md.

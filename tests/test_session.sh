@@ -3,23 +3,19 @@
 # Tests for libs/session.sh
 #
 # Covers:
-#   validate_project_dir     — checks existence, git repo, commits
-#   session_state_read       — key-value lookup from SESSION_STATE
-#   session_state_write      — key-value append to SESSION_STATE
+#   validate_project_dir      --  checks existence, git repo, commits
+#   session_state_read        --  key-value lookup from SESSION_STATE
+#   session_state_write       --  key-value append to SESSION_STATE
 #
-# Note: resolve_session_dir was removed in A.2 — routing concerns moved
+# Note: resolve_session_dir was removed in A.2  --  routing concerns moved
 # to libs/routing.sh (tested in test_routing.sh).
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 source "$REPO_ROOT/src/libs/session_state.sh"
 source "$REPO_ROOT/scripts/guards.sh"
-source "$SCRIPT_DIR/libs/test_common.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
 
 
 # =============================================================================
@@ -86,11 +82,7 @@ test_session_state_read_existing_key() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ "$RESULT" == "abc123" ]]; then
-    pass "session_state_read returns value for existing key"
-  else
-    fail "session_state_read: expected abc123, got $RESULT"
-  fi
+  assert_eq "$RESULT" "abc123" "session_state_read returns value for existing key"
 }
 
 test_session_state_read_missing_file() {
@@ -99,11 +91,7 @@ test_session_state_read_missing_file() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read returns empty for missing file"
-  else
-    fail "session_state_read should return empty for missing file, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read returns empty for missing file"
 }
 
 test_session_state_read_missing_key() {
@@ -113,11 +101,7 @@ test_session_state_read_missing_key() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read returns empty for missing key"
-  else
-    fail "session_state_read should return empty for missing key, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read returns empty for missing key"
 }
 
 test_session_state_read_malformed() {
@@ -127,11 +111,7 @@ test_session_state_read_malformed() {
 
   local RESULT
   RESULT=$(session_state_read "$DIR" "init_sha")
-  if [[ -z "$RESULT" ]]; then
-    pass "session_state_read handles malformed file gracefully"
-  else
-    fail "session_state_read should return empty for malformed file, got: $RESULT"
-  fi
+  assert_empty "$RESULT" "session_state_read handles malformed file gracefully"
 }
 
 # =============================================================================
@@ -148,3 +128,4 @@ run_test test_session_state_read_missing_key
 run_test test_session_state_read_malformed
 
 test_done
+

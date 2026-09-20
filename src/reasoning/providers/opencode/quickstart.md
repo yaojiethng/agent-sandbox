@@ -1,4 +1,4 @@
-# OpenCode Provider — Quick Reference
+# OpenCode Provider  --  Quick Reference
 
 Day-to-day command reference and troubleshooting for the OpenCode provider. All commands run from `SANDBOX_DIR`.
 
@@ -33,13 +33,13 @@ make serve PROVIDER=opencode REBUILD=1
 
 ```sh
 # Review the diff first
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/session/staged.diff
 
-# Apply to current branch
-make apply
+# Apply an exact diff file (required)
+make apply DIFF=<full path to the exact diff file>
 
 # Apply to a named branch (created if it does not exist)
-make apply BRANCH=<branch-name>
+make apply DIFF=<path> BRANCH=<branch-name>
 ```
 
 ---
@@ -90,10 +90,10 @@ docker rmi opencode-agent-<PROJECT_NAME>
 
 ```sh
 # Check staged diff (full session delta) after a run
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/session/staged.diff
 
 # Check autosave diff mid-session
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/autosave/changes.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/autosave/changes.diff
 
 # Check snapshot contents before a run
 ls -la .snapshot/
@@ -116,7 +116,7 @@ rm .workspace/input/*
 ## Troubleshooting
 
 **Container exits immediately**
-Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause — check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
 **`staged.diff` is empty after run**
 Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
@@ -129,6 +129,7 @@ Run `make build` before the first start. Images are not built automatically unle
 
 **`cp: cannot stat` during snapshot**
 Tracked files are missing from disk. Fix:
+
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
@@ -137,7 +138,8 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 **WSL path errors**
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
-**Line ending issues in scripts or config files**
+### Line ending issues in scripts or config files
+
 ```sh
 sed -i 's/\r//' <file>
 ```
@@ -166,5 +168,5 @@ make dry-run PROVIDER=opencode
 
 | Document | Purpose |
 |---|---|
-| [`../../docs/operations/quickstart.md`](../../docs/operations/quickstart.md) | First-run setup guide |
-| [`../../docs/architecture/tool_interface.md`](../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |
+| [`../../docs/operations/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
+| [`../../docs/architecture/tool_interface.md`](../../../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |

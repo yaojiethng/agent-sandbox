@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+# test/stubs/docker
+# Docker and docker-compose stub for trace testing.
+#
+# Intercepts docker invocations via PATH shadowing. Records all commands
+# to DOCKER_TRACE_LOG. Does not execute real docker commands.
+#
+# Special return-value stubs:
+#   compose config   — returns first input file unchanged (valid YAML from sed substitution)
+#   inspect (health) — returns "healthy"
+#   wait             — returns immediately (exit 0)
+#   ps -aq           — returns nothing unless DOCKER_STUB_PS_IDS is set
+#   network ls -q    — returns nothing unless DOCKER_STUB_NETWORK_IDS is set
+
+set -euo pipefail
+
+LOG="${DOCKER_TRACE_LOG:-/tmp/docker-trace.log}"
+mkdir -p "$(dirname "$LOG")"
+
+CMD="${0##*/}"
+
+log() {
+  echo "[$(date +%s)] $*" >> "$LOG"
+}
+
+# _session_id_for ID — resolve the agent-sandbox.session-id label reported for
+# a resource. DOCKER_STUB_SESSION_ID_LABELS is a space-separated `id:sid` map
+# (per-resource); DOCKER_STUB_SESSION_ID_LABEL is a single fallback for all.
+# Empty (unset) means the resource has no session-id label.
+_session_id_for() {
+  local id="$1" pair
+  for pair in ${DOCKER_STUB_SESSION_ID_LABELS:-}; do
+    [[ "${pair%%:*}" == "$id" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_SESSION_ID_LABEL:-}"
+}
+
+# _contract_version_for IMAGE — resolve the interface-contract-version label
+# reported for an image. DOCKER_STUB_IMAGE_CONTRACT_VERSIONS is a
+# space-separated `image:version` map (per-image);
+# DOCKER_STUB_IMAGE_CONTRACT_VERSION is a single fallback for all images
+# (empty = no label / missing image).
+_contract_version_for() {
+  local img="$1" pair
+  for pair in ${DOCKER_STUB_IMAGE_CONTRACT_VERSIONS:-}; do
+    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_IMAGE_CONTRACT_VERSION:-}"
+}
+
+# _digest_for IMAGE — resolve the image ID digest reported for an image
+# (image version identity, ADR harness_versioning.md).
+# DOCKER_STUB_IMAGE_DIGESTS is a space-separated `image:digest` map (per-image);
+# DOCKER_STUB_IMAGE_DIGEST is a single fallback for all images
+# (default sha256:stub so record stamping succeeds).
+_digest_for() {
+  local img="$1" pair
+  for pair in ${DOCKER_STUB_IMAGE_DIGESTS:-}; do
+    [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo "${DOCKER_STUB_IMAGE_DIGEST-sha256:stub}"
+}
+
+# --- docker compose ---
+if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
+  shift
+
+  # Parse compose args: skip flags and their values until we find the subcommand
+  compose_files=()
+  compose_sub=""
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      -f)               compose_files+=("$2"); log "compose-file $2"; shift 2 ;;
+      --project-name)   shift 2 ;;
+      --project-directory) shift 2 ;;
+      --no-interpolate|--no-ansi|--rm) shift ;;
+      # --progress takes a value; skipping it as a value-less flag would leave
+      # the value (e.g. "quiet") as compose_sub and misroute the whole call.
+      --progress) shift 2 ;;
+      *) compose_sub="$1"; shift; break ;;
+    esac
+  done
+  compose_rest="$*"
+
+  case "$compose_sub" in
+    config)
+      log "compose config ${compose_files[*]} $compose_rest"
+      if [[ ${#compose_files[@]} -gt 0 && -f "${compose_files[0]}" ]]; then
+        cat "${compose_files[0]}"
+      else
+        echo "services: {}"
+      fi
+      ;;
+    up|down|exec|stop|run)
+      log "compose $compose_sub $compose_rest"
+      # Simulate the dry-run bearer probes: in real runs each probe writes its
+      # diagnostics record at container start-up (command: override). Gated on
+      # DRY_RUN_SCRIPT (exported only by the dry-run path) so standard-mode
+      # stubs stay record-free.
+      if [[ "$compose_sub" == "up" && -n "${DRY_RUN_SCRIPT:-}" && -n "${OUTPUT_DIR:-}" ]]; then
+        mkdir -p "$OUTPUT_DIR"
+        printf 'container=%s\nstatus=PASS\n' "${SANDBOX_IMAGE_NAME:-unknown}" \
+          > "$OUTPUT_DIR/dryrun.capability.record"
+        printf 'container=%s\nstatus=PASS\n' "${AGENT_IMAGE_NAME:-unknown}" \
+          > "$OUTPUT_DIR/dryrun.reasoning.record"
+      fi
+      # Failure simulation (env-gated, empty = success):
+      #   DOCKER_STUB_UP_RC   — exit code for compose up to return
+      #   DOCKER_STUB_RUN_RC  — exit code for compose run to return
+      if [[ "$compose_sub" == "up" && -n "${DOCKER_STUB_UP_RC:-}" ]]; then
+        exit "$DOCKER_STUB_UP_RC"
+      fi
+      if [[ "$compose_sub" == "run" && -n "${DOCKER_STUB_RUN_RC:-}" ]]; then
+        exit "$DOCKER_STUB_RUN_RC"
+      fi
+      ;;
+    *)
+      log "compose $compose_sub $compose_rest"
+      ;;
+  esac
+  exit 0
+fi
+
+# --- docker (standalone commands) ---
+if [[ "$CMD" == "docker" ]]; then
+  sub="${1:-}"; shift || true
+
+  case "$sub" in
+    inspect)
+      log "inspect $*"
+      if [[ "$*" == *"Health.Status"* ]]; then
+        # Failure simulation: DOCKER_STUB_SANDBOX_HEALTH overrides the sandbox
+        # health status (empty = healthy, as in production). compose_sandbox_wait
+        # loops until healthy, so a non-healthy value makes it time out/exit.
+        echo "${DOCKER_STUB_SANDBOX_HEALTH:-healthy}"
+      elif [[ "$*" == *"State.Status"* ]]; then
+        echo "running"
+      elif [[ "$*" == *"session-id"* ]]; then
+        # Registry-truth Rule 2 orphan detection reads each resource's
+        # agent-sandbox.session-id label (per-resource map or fallback).
+        _session_id_for "${1:-}"
+      else
+        echo '{"Config":{"Labels":{}}}'
+      fi
+      ;;
+    wait)
+      log "wait $*"
+      ;;
+    stop|rm)
+      log "$sub $*"
+      # DOCKER_STUB_RM_FAIL simulates the "already in progress" removal race.
+      if [[ "$sub" == "rm" && -n "${DOCKER_STUB_RM_FAIL:-}" ]]; then
+        echo "error: removal of container ... already in progress" >&2
+        exit 1
+      fi
+      ;;
+    ps)
+      log "ps $*"
+      # Tests stub container IDs via DOCKER_STUB_PS_IDS (whitespace-separated)
+      if [[ -n "${DOCKER_STUB_FAIL_PS:-}" ]]; then
+        echo "stub: docker ps failed" >&2
+        exit 1
+      fi
+      if [[ -n "${DOCKER_STUB_PS_IDS:-}" ]]; then
+        read -ra _ps_ids <<< "$DOCKER_STUB_PS_IDS"
+        printf '%s\n' "${_ps_ids[@]}"
+      fi
+      ;;
+    network)
+      log "network $*"
+      # Tests stub network IDs via DOCKER_STUB_NETWORK_IDS (whitespace-separated)
+      if [[ "${1:-}" == "ls" && -n "${DOCKER_STUB_NETWORK_IDS:-}" ]]; then
+        read -ra _net_ids <<< "$DOCKER_STUB_NETWORK_IDS"
+        printf '%s\n' "${_net_ids[@]}"
+      elif [[ "${1:-}" == "inspect" && "$*" == *"session-id"* ]]; then
+        _session_id_for "${2:-}"
+      fi
+      ;;
+    volume)
+      vol_sub="${1:-}"; shift || true
+      case "$vol_sub" in
+        ls)
+          log "volume ls $*"
+          # Return nothing by default; tests stub names via DOCKER_STUB_VOLUME_NAMES
+          if [[ -n "${DOCKER_STUB_VOLUME_NAMES:-}" ]]; then
+            printf '%s\n' $DOCKER_STUB_VOLUME_NAMES
+          fi
+          ;;
+        inspect)
+          log "volume inspect $*"
+          # Identity labels are read via --format. Return valid JSON with
+          # labels from env vars that start_agent.sh sets.
+          if [[ "$*" == *"session-id"* ]]; then
+            _session_id_for "${1:-}"
+            exit 0
+          fi
+          cat <<'STUBEOF'
+[
+  {
+    "Labels": {
+      "agent-sandbox.session-ts": "20260730-120000",
+      "agent-sandbox.run-id": "stub1d",
+      "agent-sandbox.host-head-sha": "abc123def456",
+      "agent-sandbox.host-branch": "master",
+      "agent-sandbox.project-name": "stub"
+    }
+  }
+]
+STUBEOF
+          ;;
+        rm)
+          log "volume rm $*"
+          ;;
+        *)
+          log "volume $vol_sub $*"
+          ;;
+      esac
+      ;;
+    system)
+      log "system $*"
+      ;;
+    image)
+      log "image $*"
+      if [[ "$1" == "inspect" ]]; then
+        # interface-contract-version reads the baked label via --format; stub it
+        # via a per-image map or single fallback (empty = no label / missing
+        # image). image_digest reads the image ID via {{.Id}}.
+        if [[ "$*" == *"interface-contract-version"* ]]; then
+          _contract_version_for "${@: -1}"
+        elif [[ "$*" == *".Id}"* ]]; then
+          _digest_for "${@: -1}"
+        else
+          echo '[{"Id":"stub"}]'
+        fi
+      fi
+      ;;
+    build)
+      log "build $*"
+      # Failure simulation (env-gated, empty = success):
+      #   DOCKER_STUB_BUILD_RC  — exit code for `docker build` to return
+      if [[ -n "${DOCKER_STUB_BUILD_RC:-}" ]]; then
+        echo "stub: docker build failed" >&2
+        exit "$DOCKER_STUB_BUILD_RC"
+      fi
+      ;;
+    *)
+      log "$sub $*"
+      ;;
+  esac
+  exit 0
+fi
+
+log "UNKNOWN: $CMD $*"
+exit 0

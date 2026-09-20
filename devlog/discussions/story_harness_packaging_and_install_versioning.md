@@ -1,12 +1,14 @@
-# Story — Harness Packaging and Install Versioning
+# Story -- Harness Packaging and Install Versioning
 
 **Status:** Investigation in progress
+
+**[SUPERSEDED in 20260831 -- image & harness version identity:](./20260831-story-settled-image_and_harness_version_identity.md) the host-packaging/install-versioning thread is reframed as the host-surface branch of the same root problem (no serializable version on image / worktree / host surfaces). The reconciliation story supersedes this doc's standalone framing; the design appears in `20260831-design-settled-image_and_harness_version_identity.md`.**
 
 ---
 
 ## Context
 
-The harness is currently installed by dropping a dispatcher binary into the user's bin path. The full harness source — `scripts/`, `libs/`, `providers/` — is always read from the working tree at invocation time. This means there is no stable installed version: any change to the working tree affects all invocations immediately, including sessions intended to use a known-good harness state.
+The harness is currently installed by dropping a dispatcher binary into the user's bin path. The full harness source -- `scripts/`, `libs/`, `providers/` -- is always read from the working tree at invocation time. This means there is no stable installed version: any change to the working tree affects all invocations immediately, including sessions intended to use a known-good harness state.
 
 This story was extracted from the session identity and harness versioning story, where it was identified as a prerequisite for meaningful installed-vs-local isolation. It is scoped as a future large task and does not block the sig model defined in the parent story.
 
@@ -14,7 +16,7 @@ This story was extracted from the session identity and harness versioning story,
 
 ## Pain Points
 
-**No stable installed version.** `make install` installs a dispatcher, not a snapshot. Changes to `scripts/` or `libs/` in the working tree take effect immediately for all invocations — there is no way to pin to a known-good state without manually reverting the working tree.
+**No stable installed version.** `make install` installs a dispatcher, not a snapshot. Changes to `scripts/` or `libs/` in the working tree take effect immediately for all invocations -- there is no way to pin to a known-good state without manually reverting the working tree.
 
 **Dogfooding has no safe recovery path.** The harness is used to develop itself. A breaking change to the working tree leaves the harness unable to run, with no fallback. The operator must manually revert or patch before they can invoke the harness again.
 
@@ -42,7 +44,7 @@ This story was extracted from the session identity and harness versioning story,
 
 3. **Install path layout:** Where do versioned snapshots live? Proposed: `~/.agent-sandbox/<version>/` with a symlink at `~/.agent-sandbox/current/` pointing to the active version. The dispatcher binary resolves `HARNESS_DIR` against `current/` unless overridden.
 
-4. **`make install` workflow:** What does the new install sequence look like? Likely: compute version identity → snapshot working tree (or archive from tag) → write to versioned path → update `current/` symlink → write `harness-sig.ref` into snapshot.
+4. **`make install` workflow:** What does the new install sequence look like? Likely: compute version identity -> snapshot working tree (or archive from tag) -> write to versioned path -> update `current/` symlink -> write `harness-sig.ref` into snapshot.
 
 5. **Relationship to `HARNESS_DIR` override:** Once versioned installs exist, `HARNESS_DIR` becomes an escape hatch for local dev testing. Project `.env` normally unset (uses `current/`). For dogfooding: `HARNESS_DIR=/path/to/local/agent-sandbox make start`. This composites cleanly with the versioned install model.
 
@@ -52,10 +54,10 @@ This story was extracted from the session identity and harness versioning story,
 
 ## Relationship to Other Stories
 
-**Blocks partial resolution of:** [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) — specifically OQ3 (storage of `harness-sig`) and OQ4 (installed-vs-local model). Those questions are noted as deferred in the parent story pending resolution here. The sig model itself does not require this story to be resolved — it is useful immediately as a drift warning mechanism.
+**Blocks partial resolution of:** [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) -- specifically OQ3 (storage of `harness-sig`) and OQ4 (installed-vs-local model). Those questions are noted as deferred in the parent story pending resolution here. The sig model itself does not require this story to be resolved -- it is useful immediately as a drift warning mechanism.
 
 ---
 
 ## Resolution
 
-_Not yet written — future task, not yet scheduled._
+_Not yet written -- future task, not yet scheduled._

@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-23
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Design
+**Date:** 2026-04-23
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Design
 **Status:** Closed
 
 ## Objective
@@ -14,6 +14,7 @@ Design hash-based session identity (run_id) to replace timestamp-based container
 Design session triggered by operator proposal: replace timestamp-based container naming with a short hash (run_id) that encodes the M2.7 primitive set (SESSION_TS, REPO_COMMIT, WORKTREE_ID).
 
 **In scope:**
+
 1. Design document creation: hash-based run_id for container naming and session identity
 2. Define hash input factors (M2.7 primitives) and output format (6-char hex with `:` separator)
 3. Mark existing `story_session_identity_and_harness_versioning.md` as SUPERSEDED
@@ -22,10 +23,12 @@ Design session triggered by operator proposal: replace timestamp-based container
 6. Add `make prune` task to M2.7 roadmap (Docker cache/volume cleanup)
 
 **Explicitly deferred:**
-- Implementation — this is design only
+
+- Implementation -- this is design only
 - M2.3 implementation units C-G (pending per roadmap)
 
 **Files to change:**
+
 - `devlog/discussions/design_session_identity_hash_based.md` (new)
 - `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` (SUPERSEDED marker)
 - `docs/devlog/roadmap.md` (M2.7 design reference + prune task)
@@ -38,18 +41,18 @@ None.
 
 | Criterion | Status |
 |---|---|
-| Design document exists with run_id formula, container naming, stop/prune design | ✓ Accepted |
-| Old design document has SUPERSEDED marker with link to new design | ✓ Accepted |
-| M2.7 roadmap entry references new design document | ✓ Accepted |
-| M2.7 roadmap includes make stop redesign and make prune task | ✓ Accepted |
+| Design document exists with run_id formula, container naming, stop/prune design | [x] Accepted |
+| Old design document has SUPERSEDED marker with link to new design | [x] Accepted |
+| M2.7 roadmap entry references new design document | [x] Accepted |
+| M2.7 roadmap includes make stop redesign and make prune task | [x] Accepted |
 
 ## Hot files
 
 | File | Why in scope | Status |
 |---|---|---|
-| `devlog/discussions/design_session_identity_hash_based.md` | New design document for hash-based run_id | ✓ Complete |
-| `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` | Mark as SUPERSEDED | ✓ Complete |
-| `docs/devlog/roadmap.md` | Update M2.7 design reference + add prune task | ✓ Complete |
+| `devlog/discussions/design_session_identity_hash_based.md` | New design document for hash-based run_id | [x] Complete |
+| `docs/devlog/discussions/story_session_identity_and_harness_versioning.md` | Mark as SUPERSEDED | [x] Complete |
+| `docs/devlog/roadmap.md` | Update M2.7 design reference + add prune task | [x] Complete |
 | `scripts/start_agent.sh` | Read for SESSION_TS/WORKTREE_ID/REPO_COMMIT context | Read only |
 | `scripts/checkpoint.sh` | Read for WORKTREE_ID derivation context | Read only |
 | `scripts/stop.sh` | Document stop criteria (Docker Compose project labels) | Read only |
@@ -73,14 +76,15 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.7 — Session Identity and Harness Versioning.
-**Session type:** Implementation — Phase 1 (run_id derivation and container naming).
+**Sub-milestone:** M2.7 -- Session Identity and Harness Versioning.
+**Type:** Implementation -- Phase 1 (run_id derivation and container naming).
 
 Read `devlog/roadmap.md` M2.7 section for task list. Start with Phase 1 tasks in `devlog/discussions/design_session_identity_hash_based.md`.
 
 **Watch-outs:**
+
 - `SESSION_NAME` retained for backwards compatibility in Docker labels
 - Existing containers use timestamp-based naming; new sessions use run_id
 - Image rename (dropping `<project>` suffix) blocked on agents.md code review
 
-**Grep to run:** `grep -r "SESSION_TS" scripts/ libs/` — identify all timestamp usages for migration.
+**Grep to run:** `grep -r "SESSION_TS" scripts/ libs/` -- identify all timestamp usages for migration.

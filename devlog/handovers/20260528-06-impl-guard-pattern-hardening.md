@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-28
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Impl
+**Date:** 2026-05-28
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Impl
 **Status:** Closed
 
 ## Objective
@@ -12,16 +12,18 @@ Harden the `[[ "${BASH_SOURCE[0]}" == "${0}" ]]` guard pattern across all 7 file
 ## Scope
 
 **In scope:**
+
 - Replace 9 guard instances across 7 files with a hardened pattern
 - Files affected: `scripts/build.sh`, `scripts/agent-sandbox.sh`, `scripts/workflows/apply.sh`, `scripts/workflows/draft.sh`, `scripts/workflows/confirm.sh`, `scripts/workflows/reject.sh`, `src/libs/package_diff.sh`, `src/libs/package_branch.sh`
 
 **Not in scope:**
+
 - Interactive/non-interactive dispatch duplication removal
 - `draft_run` decomposition
 - `set -euo pipefail` cleanup
 - `require_run_args` naming consistency
 
-**Design questions:** None — the fix is a single, well-defined pattern replacement.
+**Design questions:** None -- the fix is a single, well-defined pattern replacement.
 
 ## Carried forward
 
@@ -48,14 +50,14 @@ Not yet defined.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Use simple `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard instead of BASH_SOURCE array-length pattern | Verified correct for all three scenarios: direct execution (passes), sourced by executed parent (rejects), sourced by sourced parent (rejects). The array-length pattern proposed (`-gt 1 || !=`) was logically inverted — it would pass the guard when a parent sourced the file, creating a broken guard. The simple standard pattern is the correct one. | Chat (2026-05-28) |
-| Changed `${0}` → `$0` | Cosmetic consistency — both expand identically in bash. | This session |
+| Use simple `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard instead of BASH_SOURCE array-length pattern | Verified correct for all three scenarios: direct execution (passes), sourced by executed parent (rejects), sourced by sourced parent (rejects). The array-length pattern proposed (`-gt 1 \|\| !=`) was logically inverted -- it would pass the guard when a parent sourced the file, creating a broken guard. The simple standard pattern is the correct one. | Chat (2026-05-28) |
+| Changed `${0}` -> `$0` | Cosmetic consistency -- both expand identically in bash. | This session |
 
 ## Completed this session
 
 | File | Change summary |
 |---|---|
-| 8 files across 9 guard instances | Changed `${0}` → `$0` in guard expression. All syntax checks pass. Full test suite: 384/390, 0 failed. |
+| 8 files across 9 guard instances | Changed `${0}` -> `$0` in guard expression. All syntax checks pass. Full test suite: 384/390, 0 failed. |
 
 ## Mid-session findings
 
@@ -70,13 +72,14 @@ None.
 
 ## Next session
 
-M2.7 — Session Identity and Harness Versioning — remaining cleanup items from deferred list.
+M2.7 -- Session Identity and Harness Versioning -- remaining cleanup items from deferred list.
 
 **Conclusions from this session:**
+
 - Guard pattern hardened: 9 instances across 8 files, `$0` used consistently
 - Verified the simple guard correctly rejects all sourcing scenarios:
-   1. Direct execution: `${BASH_SOURCE[0]}` == `$0` → passes ✅
-   2. Sourced by executed parent: `${BASH_SOURCE[0]}` != `$0` → rejects ✅
-   3. Sourced by sourced parent: `${BASH_SOURCE[0]}` != `$0` → rejects ✅
-- Rejected the array-length `||` pattern — it was logically inverted and would create a broken guard
+   1. Direct execution: `${BASH_SOURCE[0]}` == `$0` -> passes [x]
+   2. Sourced by executed parent: `${BASH_SOURCE[0]}` != `$0` -> rejects [x]
+   3. Sourced by sourced parent: `${BASH_SOURCE[0]}` != `$0` -> rejects [x]
+- Rejected the array-length `||` pattern -- it was logically inverted and would create a broken guard
 - Full test suite: 384/390, 0 failed

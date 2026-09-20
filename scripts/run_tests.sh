@@ -4,8 +4,13 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_DIR="$SCRIPT_DIR/../tests"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
+# RUN_TESTS_DIR overrides discovery for the runner self-test
+# (tests/test_runner_selftest.sh feeds it synthetic files).
+TEST_DIR="${RUN_TESTS_DIR:-$TEST_DIR}"
+
+# Prerequisites live in the real tests dir (not the RUN_TESTS_DIR override).
+REAL_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 
 VERBOSE="${VERBOSE:-0}"
 
@@ -23,19 +28,53 @@ TOTAL_SKIP=0
 ANY_FAILED=0
 FILE_COUNT=0
 
+# check_prerequisites
+#   Verifies the suite's prerequisites before any test runs. A broken docker
+#   stub would otherwise fail dozens of tests with unrelated 126/127 errors;
+#   report it once, by name (testing_policy.md prerequisite rule).
+#   PREREQ_STUB overrides the path for the runner self-test.
+check_prerequisites() {
+  local stub="${PREREQ_STUB:-$REAL_TESTS_DIR/stubs/docker}"
+  if [[ ! -x "$stub" ]]; then
+    echo "ERROR: prerequisite missing or not executable: $stub" >&2
+    echo "       The docker stub must be present and executable." >&2
+    echo "       Restore it with: chmod +x $stub" >&2
+    return 1
+  fi
+}
+
 discover_tests() {
-  local PATTERN="$TEST_DIR"/test_*.sh
   local FILES=()
-  for F in $PATTERN; do
+  for F in "$TEST_DIR"/test_*.sh; do
     if [[ -f "$F" ]]; then
       FILES+=("$F")
     fi
   done
   if [[ ${#FILES[@]} -eq 0 ]]; then
-    echo "Warning: no test files found matching $PATTERN" >&2
+    echo "Warning: no test files found in $TEST_DIR" >&2
     return 1
   fi
   printf '%s\n' "${FILES[@]}" | sort
+}
+
+# check_liveness FILE
+#   Static guard for the structural template (testing-conventions.md): a
+#   run_test registration after test_done is dead code -- test_done exits the
+#   process, so the test never runs and never fails. test_done cannot guard
+#   this in-process (it exits), so the runner scans the file. The scan anchors
+#   on the registration contract (run_test naming a test_ function, the same
+#   shape check_test_liveness.sh greps): a registration-shaped word inside a
+#   quoted payload is not flagged unless it sits at column 0.
+check_liveness() {
+  local FILE="$1" BASENAME
+  BASENAME="$(basename "$FILE")"
+  if ! awk '
+    /^[[:space:]]*test_done([[:space:]]|$)/ { seen = 1 }
+    /^[[:space:]]*run_test[[:space:]]+test_[A-Za-z0-9_]+([[:space:]]|$)/ { if (seen) exit 1 }
+  ' "$FILE"; then
+    echo "FATAL $BASENAME: run_test registered after test_done -- the registration is dead code (testing-conventions.md, Test Structure Template)" >&2
+    ANY_FAILED=1
+  fi
 }
 
 run_single() {
@@ -45,7 +84,12 @@ run_single() {
   local TMPFILE
   TMPFILE=$(mktemp)
 
-  bash "$FILE" > "$TMPFILE" 2>&1
+  check_liveness "$FILE"
+
+  # stdin from /dev/null: the runner iterates test files via a `<<<` here-string
+  # (shared temp-file FD); a test subprocess that reads stdin would advance that
+  # FD offset and cause `read` in the discovery loop to skip trailing files.
+  bash "$FILE" > "$TMPFILE" 2>&1 < /dev/null
   local RC=$?
 
   local FILE_PASS FILE_FAIL FILE_SKIP
@@ -57,8 +101,12 @@ run_single() {
   TOTAL_FAIL=$((TOTAL_FAIL + FILE_FAIL))
   TOTAL_SKIP=$((TOTAL_SKIP + FILE_SKIP))
 
-  if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 ]]; then
+  if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 || "$FILE_SKIP" -gt 0 ]]; then
     ANY_FAILED=1
+  fi
+
+  if [[ "$RC" -eq 0 && "$FILE_PASS" -eq 0 && "$FILE_FAIL" -eq 0 && "$FILE_SKIP" -eq 0 ]]; then
+    echo "WARN $BASENAME (0 tests executed  --  file may be missing run_test calls)" >&2
   fi
 
   case "$VERBOSE" in
@@ -90,6 +138,20 @@ run_single() {
 }
 
 main() {
+  check_prerequisites || exit 1
+
+  # Registration liveness gate (mandatory, runs before any test): a test
+  # function without a run_test registration never executes, so the suite can
+  # report green while silently excluding coverage -- the gate makes that
+  # loud instead. Skipped under the runner self-test's RUN_TESTS_DIR override
+  # (synthetic fixture dir; the real suite's liveness is not the subject).
+  if [[ -z "${RUN_TESTS_DIR:-}" ]]; then
+    if ! bash "$REAL_TESTS_DIR/../scripts/check_test_liveness.sh"; then
+      echo "ERROR: test liveness gate failed -- fix the findings above before running the suite." >&2
+      exit 1
+    fi
+  fi
+
   local TEST_FILES
   TEST_FILES=$(discover_tests) || exit 1
 
@@ -102,6 +164,12 @@ main() {
   echo ""
   local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
   echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped"
+
+  if [[ "$TOTAL_SKIP" -gt 0 ]]; then
+    echo "ERROR: make test must have zero skips (expected deterministic unit/integration suite)." >&2
+    echo "       $TOTAL_SKIP skipped. Move non-deterministic/utility-gated tests to tests/integration/." >&2
+    ANY_FAILED=1
+  fi
 
   if [[ "$ANY_FAILED" -eq 1 ]]; then
     exit 1

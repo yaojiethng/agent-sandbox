@@ -1,44 +1,35 @@
 # Sandbox Identity Model
 
-The agent-sandbox harness uses a content-addressed identity model with three scopes: project-level identity, sandbox-instance identity, and session-run identity. This document defines the primitives, derivation rules, and consumption patterns.
+The agent-sandbox harness uses a content-addressed identity model with three scopes: project-level identity, sandbox-instance identity, and session-run identity. This document defines the primitives, derivation rules, and consumption patterns. The terms [session](terminology.md#session) and [iteration](terminology.md#iteration) are reserved technical terms.
 
 ## Primitives
 
 | Primitive | Derivation | Scope | Purpose |
 |---|---|---|---|
-| `PROJECT_NAME` | User-provided at `onboard` | Host | Human-readable project identifier. Used in container names, image names, labels. |
-| `PROJECT_DIR` | User-provided at `onboard` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
-| `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`) | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
-| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. |
-| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` | Session run | Human-readable session timestamp. Retained in Docker labels and environment for operator inspection, not used for identity derivation. |
+| `PROJECT_NAME` | User-provided at `onboard`; stored in the sandbox `.env` | Host | Human-readable project identifier. Used in container names, image names, labels. |
+| `PROJECT_DIR` | User-provided at `onboard`; stored in the sandbox `.env` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
+| `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`); stored in the sandbox `.env` | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
+| `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On copy-mode resume, read from the volume label; on mount-mode resume, from the registry record. |
+| `SESSION_TS` | `date -u +%Y%m%d-%H%M%S` at first start | Session run | Human-readable session timestamp. On resume, read from the volume label / registry record to ensure consistency with the volume's SESSION_STATE. |
 
 ## Derived Identifiers
 
-### SANDBOX_ID — Sandbox Instance Identity
+### SESSION_ID -- Session Run Identity
 
-```
-SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]
+```text
+SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
-An 8-character hex hash that identifies a specific sandbox instance at a specific host commit. Appended to Docker image names to prevent image collision when multiple sandboxes of the same project exist at different host commits.
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash -- see [session_identifier.md](../adr/session_identifier.md).
+
+`canon(SANDBOX_DIR)` is the sandbox directory resolved to its canonical absolute form (`readlink -f`/`realpath` after leading-`~` expansion), so every path spelling of one folder (absolute, `~`, relative, symlink, trailing-slash, `./`) converges to one `SESSION_ID`. An unresolvable `SANDBOX_DIR` is a hard error (start/resume fail loudly).
 
 **Properties:**
-- Two sandboxes at different directories but the same `HOST_HEAD_SHA` produce different `SANDBOX_ID`s.
-- Same directory, different `HOST_HEAD_SHA` produces a different `SANDBOX_ID` — a new sandbox state.
-- 32 bits of entropy (8 hex chars), sufficient for sandbox-instance disambiguation. Collision risk is 32:1 preimage-to-tag ratio before expected collision.
 
-### RUN_ID — Session Run Identity
-
-```
-RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]
-```
-
-A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability.
-
-**Properties:**
 - Unique per session even with the same sandbox instance and branch (timestamp component).
-- Deterministic: same inputs produce same `RUN_ID`.
-- 24 bits of entropy (6 hex chars), sufficient for session disambiguation within a sandbox instance.
+- Deterministic: same canonical inputs produce same `SESSION_ID`.
+- Sensitive to all three identity factors: canonical sandbox dir, host HEAD, and session timestamp.
+- 24 bits of entropy (6 hex chars), sufficient for session disambiguation.
 
 ## Container and Image Naming
 
@@ -46,85 +37,102 @@ A 6-character hex hash that identifies a single session run. Replaces `SESSION_T
 |---|---|---|
 | Sandbox (base) image | `sandbox-<project>` | `sandbox-agent-sandbox` |
 | Agent image | `<provider>-agent-<project>` | `pi-agent-sandbox` |
-| Sandbox container | `sandbox-<project>-<run_id>` | `sandbox-agent-sandbox-f6e5d4` |
-| Agent container | `<provider>-<project>-<run_id>` | `pi-agent-sandbox-f6e5d4` |
+| Sandbox container | `sandbox-<project>-<session_id>` | `sandbox-agent-sandbox-f6e5d4` |
+| Agent container | `<provider>-<project>-<session_id>` | `pi-agent-sandbox-f6e5d4` |
 
-Images are tagged by harness code identity, not project repo state. Project repo state is captured at runtime by the snapshot pipeline. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.run-id`), not by image tags.
+Images are tagged by harness code identity, not project repo state. Project repo state is captured at runtime by the snapshot pipeline. Provenance for past sessions is carried by Docker labels (`agent-sandbox.host-head-sha`, `agent-sandbox.sandbox-dir`, `agent-sandbox.session-id`), not by image tags.
 
 ## Docker Label Schema
 
 The compose template exports the following labels on all containers:
 
-```
+```text
 agent-sandbox.project-name:     <PROJECT_NAME>
 agent-sandbox.project-dir:      <PROJECT_DIR>
 agent-sandbox.sandbox-dir:      <SANDBOX_DIR>
 agent-sandbox.host-head-sha:    <HOST_HEAD_SHA>
 agent-sandbox.host-branch:      <sanitised branch name>
 agent-sandbox.session-ts:       <SESSION_TS>
-agent-sandbox.run-id:           <RUN_ID>
+agent-sandbox.session-id:           <SESSION_ID>
 ```
 
 These labels serve two purposes:
+
 - **Provenance:** Operators can inspect any container to determine which project, worktree, host commit, and session run it belongs to.
 - **Lifecycle management:** `make stop` and `make prune` filter by `project-name` + `sandbox-dir` labels to scope operations to a specific worktree.
 
-## Container-sig (Image Staleness Detection)
+### Label Lifecycle by Artifact Type
 
-Images carry an `agent-sandbox.container-sig` Docker label that records a SHA-256 hash of the source files that populate the image's `/opt/sandbox/` and `/opt/workflow/` directories at build time. This hash is computed in `scripts/build.sh` by the `container_sig()` function and injected as a `--label` at build time.
+Labels are classified by stability: a label's value changes at most once per artifact lifetime (stable) or changes every session (ephemeral). The set of labels carried by an artifact reflects its lifecycle. Containers carry all labels; volumes carry the stable subset plus `session-id`/`session-ts` because in this harness the copy-model named volume is **per-session** (`<SESSION_ID>-sandbox-data`, one volume per session, created at that session's start) -- so its session-scoped labels are accurate for its entire lifetime, not stale-on-resume.
 
-### Derivation
+| Label | Stability | On containers | On volumes | On images | Reason |
+|---|---|---|---|---|---|
+| `project-name` | Stable | [x] | [x] | [ ] | Never changes for a project; images are tagged by name, not labeled |
+| `sandbox-dir` | Stable | [x] | [x] | [ ] | Never changes for a sandbox instance; canonical form; runtime-only label |
+| `host-head-sha` | Stable | [x] | [x] | [ ] | Set at creation; backlink to repo state; runtime-only |
+| `host-branch` | Stable | [x] | [x] | [ ] | Set at creation; backlink to branch; runtime-only |
+| `session-ts` | Ephemeral | [x] | [x] (copy) | [ ] | Per-session timestamp; the copy volume is per-session so it is accurate |
+| `session-id` | Ephemeral | [x] | [x] (copy) | [ ] | Per-session id; the copy volume is per-session so it is accurate |
+| `project-dir` | Stable | [x] | [ ] | [ ] | Host path; not relevant for volume or image lifecycle |
+| `container-sig` | Retired | [ ] | [ ] | [ ] | Removed (P3): superseded by `agent-sandbox.interface-contract-version` |
 
-For the sandbox image, the hash covers all files under these repo-relative paths:
-- `src/libs/` (→ `/opt/sandbox/lib/`)
-- `src/capability/entrypoint.sh` (→ `/opt/sandbox/bin/sandbox-entrypoint.sh`)
-- `src/capability/snapshot.sh` (→ `/opt/sandbox/lib/snapshot.sh`)
-- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
-- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
+Containers are ephemeral -- they live for one session and die. All labels are accurate for the container's entire lifetime. The copy-model named volume is per-session, so carrying `session-id`/`session-ts` is accurate rather than a dangling reference. Images are build artifacts -- their labels record build-time provenance (source file hash), not runtime identity.
 
-For an agent image, the hash covers:
-- `src/libs/` (→ `/opt/sandbox/lib/`)
-- `src/reasoning/entrypoint.sh` (→ `/opt/sandbox/bin/provider-entrypoint.sh`)
-- `src/reasoning/providers/<n>/preflight.sh` (if exists → `/opt/sandbox/bin/provider-preflight.sh`)
-- `src/reasoning/agent/skills/` (→ `/opt/workflow/agent/skills/`)
-- `src/reasoning/agent/prompts/` (→ `/opt/workflow/agent/prompts/`)
-- `src/reasoning/providers/<n>/config/` (if exists → `/opt/workflow/agent/config/`)
-- `docs/architecture/` (→ `/opt/sandbox/docs/architecture/`)
-- `docs/concepts/` (→ `/opt/sandbox/docs/concepts/`)
+**Canonical `sandbox-dir` label value.** The `agent-sandbox.sandbox-dir` label is written in its **canonical absolute form** (`readlink -f`, `src/libs/common.sh#sandbox_dir_canon`); `start_agent.sh`/`resume_agent.sh` canonicalize `SANDBOX_DIR` once before compose generation, and stop/prune canonicalize the same way before building label filters. Every path spelling of a folder therefore converges to one label value and one filter value, so label-based discovery (stop, prune Rule 2, the diagnostic) matches regardless of how the operator spells `--sandbox`.
 
-### Preflight check
+**Standardization rule:** all Docker artifacts carry the same label schema. Where a label is omitted (images carrying only build-time labels), the omission is intentional and documented here. No artifact type introduces labels not present in the base schema.
 
-The `preflight()` function in `scripts/build.sh` reads the baked `agent-sandbox.container-sig` label from existing images, re-computes it from current source files, and warns on mismatch. The check is non-blocking (warning only) — stale images are not an error to avoid blocking development workflows.
+## Interface contract (container boundary)
 
-### Scope
+The interface contract governs the container boundary. Its version
+(`agent-sandbox.interface-contract-version`) is baked into tier-3 images at
+build, written into the session record, and compared at preflight and at the
+agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md)
+and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
-Container-sig covers only the sandbox image and tier-3 agent images (the final provider image in the three-tier build). Tier 1 (shared node base) and tier 2 (provider base) images do not carry `/opt/sandbox/` or `/opt/workflow/` content and therefore have no container-sig label.
+Further reading: the build-time signature model is a superseded principle -- the
+standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md)
+(coherence by minimisation, not detection), with the per-surface version
+semantics in [harness_versioning.md](../adr/harness_versioning.md). Image
+version is the image ID digest, recorded per session as
+`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
 
-Harness-sig (runtime drift detection for the harness binary itself) is deferred to a future milestone.
+The interim `agent-sandbox.container-sig` source-subset hash and its preflight
+comparison are retired. The interface-contract version replaces the interim
+check as the standalone container-boundary contract.
 
+## Identity persistence (registry)
+
+Host-side session identity is recorded in the per-run compose registry, the persisted file `$SANDBOX_DIR/.compose/<SESSION_ID>.yml` (written every run by the compose pipeline). The merged file embeds the identity in the container labels and environment (`SESSION_ID`, `HOST_HEAD_SHA`, `SESSION_TS`), so each run's effective identity survives for inspection and resume recall. Copy-mode resume additionally reads identity from the named volume's Docker labels; mount-mode resume reads it from the registry (M2.6.6). The legacy `.run-identity` cache file is deprecated and no longer written.
+
+On resume, `start_agent.sh` reads this file and exports the values as env vars instead of recomputing them. This guarantees that `diff_export` (reads env vars at teardown) and `package_branch` (reads SESSION_STATE from the volume) use the same identity values.
 
 ## SESSION_STATE Schema
 
-Written to the sandbox git repository's state file at container init:
+Written to the sandbox git repository's state file at container init (first start only):
 
-```
+```text
 init_sha=<40-char sandbox baseline commit SHA>
 session_ts=<timestamp>
 host_head_sha=<40-char host HEAD SHA>
+session_id=<6-char session run ID>
 ```
 
-`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime.
+`host_head_sha` enables downstream scripts (apply, draft) running on the host to determine the exact host commit the session branched from, without needing the variable passed in from the session runtime. `session_id` is read by `package_branch` to construct output paths consistent with the session's diff exports.
 
 ## Artefact Paths
 
 | Artefact | Path | Notes |
 |---|---|---|
-| Session diff export | `session-diffs/session/<RUN_ID>-<BRANCH>/` | Written on container exit |
-| Autosave diffs | `session-diffs/autosave/<RUN_ID>-<BRANCH>/` | Written on autosave ticks |
-| Package-diff output | `output/diffs/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | On explicit diff packaging |
-| Package-branch output | `output/bundles/<EXPORT_TIME>-<LABEL>-<RUN_ID>/` | On explicit branch packaging |
+| Session diff export | `session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/` | Written on container exit |
+| Autosave diffs | `session-diffs/autosave/<SESSION_ID>/` | Single directory, replaced on a successful autosave tick (no timestamp component) |
+| Package-branch output | `output/bundles/<EXPORT_TIME>-[<LABEL>-]<SESSION_ID>/` | On explicit branch packaging; optional human-readable label |
 
-`RUN_ID` replaces `SESSION_TS` in artefact directory names. The branch name component (when present) provides human-readable context; `RUN_ID` provides unique addressing.
+Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides unique addressing; a fresh export-time timestamp (`EXPORT_TIME`) orders exports. `SESSION_TS` is not part of artefact directory names -- it is carried in Docker labels for human readability.
+
+## Resolution Precedence
+
+The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: [env_resolution.md](../adr/env_resolution.md).
 
 ## Where Primitives Are Consumed
 
@@ -132,8 +140,7 @@ host_head_sha=<40-char host HEAD SHA>
 |---|---|---|
 | `PROJECT_NAME` | User input | Image names, container names, Docker labels, compose project name |
 | `PROJECT_DIR` | User input | git operations, `HOST_HEAD_SHA` derivation, Docker labels |
-| `SANDBOX_DIR` | Operator-supplied | `SANDBOX_ID` derivation, Docker labels, workspace path derivation |
-| `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SANDBOX_ID` derivation, SESSION_STATE, Docker labels |
-| `SESSION_TS` | `date -u` | `RUN_ID` derivation, Docker labels |
-| `SANDBOX_ID` | `SANDBOX_DIR:HOST_HEAD_SHA` hash | `RUN_ID` derivation |
-| `RUN_ID` | `SESSION_TS:SANDBOX_ID` hash | Container names, artefact paths, Docker labels |
+| `SANDBOX_DIR` | Operator-supplied | `SESSION_ID` derivation (canonicalized), Docker labels, workspace path derivation |
+| `HOST_HEAD_SHA` | `git rev-parse HEAD` | `SESSION_ID` derivation, SESSION_STATE, Docker labels |
+| `SESSION_TS` | `date -u` | `SESSION_ID` derivation, Docker labels |
+| `SESSION_ID` | `canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS` hash | Container names, artefact paths, Docker labels |

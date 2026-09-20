@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-13
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Implementation
+**Date:** 2026-05-13
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -11,7 +11,7 @@ Implement the workspace path resolution refactor (M2.7 item 10): unify all works
 
 ## Scope
 
-M2.7 item 10 — Workspace path resolution refactor.
+M2.7 item 10 -- Workspace path resolution refactor.
 
 Full implementation per the design document. See change inventory in `docs/devlog/discussions/design_workspace_path_resolution.md`.
 
@@ -23,14 +23,14 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | x-workspace anchor added to docker-compose.yml documenting all path mappings | ✅ |
-| 2 | start_agent.sh derives paths directly from SANDBOX_DIR (no dirs_resolve) | ✅ |
-| 3 | Compose template passes absolute paths as env vars (no _NAME overrides) | ✅ |
-| 4 | sandbox-entrypoint.sh reads paths from env vars, writes to SESSION_STATE | ✅ |
-| 5 | routing.sh and interactive_session_select.sh use _resolve_paths (SESSION_STATE-first) | ✅ |
-| 6 | dry-run scripts read paths from env vars, fallback to dirs.sh only if unset | ✅ |
-| 7 | bash -n passes on all modified files | ✅ |
-| 8 | make test passes clean | ✅ |
+| 1 | x-workspace anchor added to docker-compose.yml documenting all path mappings | [x] |
+| 2 | start_agent.sh derives paths directly from SANDBOX_DIR (no dirs_resolve) | [x] |
+| 3 | Compose template passes absolute paths as env vars (no _NAME overrides) | [x] |
+| 4 | sandbox-entrypoint.sh reads paths from env vars, writes to SESSION_STATE | [x] |
+| 5 | routing.sh and interactive_session_select.sh use _resolve_paths (SESSION_STATE-first) | [x] |
+| 6 | dry-run scripts read paths from env vars, fallback to dirs.sh only if unset | [x] |
+| 7 | bash -n passes on all modified files | [x] |
+| 8 | make test passes clean | [x] |
 
 ## Hot files
 
@@ -45,7 +45,7 @@ None.
 | `libs/routing.sh` | Replace dirs_resolve with SESSION_STATE reads |
 | `libs/interactive_session_select.sh` | Replace dirs_resolve with SESSION_STATE reads |
 | `scripts/agent-sandbox.sh` | Host-side tools read from SESSION_STATE |
-| `libs/compose.sh` | Template generation — verify substitutions |
+| `libs/compose.sh` | Template generation -- verify substitutions |
 | `tests/` | Update hardcoded paths |
 | `tests/knowledge/knowledge_session_diffs_path_resolution.sh` | May need updates if variable names change |
 
@@ -65,11 +65,11 @@ None.
 | `scripts/start_agent.sh` | Removed dirs.sh/dirs_resolve, derives paths directly from SANDBOX_DIR |
 | `libs/sandbox-entrypoint.sh` | Reads paths from env vars, writes to SESSION_STATE, fallback to dirs.sh if unset |
 | `libs/routing.sh` | Added _resolve_paths helper (SESSION_STATE-first, dirs_resolve fallback) |
-| `libs/interactive_session_select.sh` | Replaced dirs_resolve with _resolve_paths |
+| `libs/interactive_session_select.sh` | Replaced dirs_resolve with_resolve_paths |
 | `scripts/agent-sandbox.sh` | Uses _resolve_paths for interactive path resolution |
 | `scripts/dry_run.sh` | Reads paths from env vars, fallback to dirs.sh if unset |
 | `scripts/dry_run_capability.sh` | Reads paths from env vars, fallback to dirs.sh if unset |
-| `docs/devlog/roadmap.md` | Marked item 10 as ✅
+| `docs/devlog/roadmap.md` | Marked item 10 as [x] |
 
 ## Deferred items
 

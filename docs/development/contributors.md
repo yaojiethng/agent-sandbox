@@ -1,6 +1,6 @@
-# Contributor Guidelines — agent-sandbox
+# Contributor Guidelines -- agent-sandbox
 
-Guidelines for contributing safely and consistently to the agent-sandbox project. All contributors — human and agent — must follow these procedures to maintain security, integrity, and reproducibility.
+Guidelines for contributing safely and consistently to the agent-sandbox project. All contributors -- human and agent -- must follow these procedures to maintain security, integrity, and reproducibility.
 
 Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to your interface. This document covers rules that apply to all contributors regardless of type.
 
@@ -9,7 +9,7 @@ Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to
 ## General Principles
 
 - All contributions must respect container isolation, staging, and output validation procedures.
-- Agents are **untrusted** — outputs must always be staged and validated before merging.
+- Agents are **untrusted** -- outputs must always be staged and validated before merging.
 - Link to existing documents rather than duplicating guidance.
 
 ---
@@ -18,7 +18,7 @@ Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to
 
 - The agent runtime is untrusted. Agents operate inside containers; no direct host access.
 - All outputs are proposals. The operator reviews, approves, and commits all changes.
-- Multi-agent orchestration (parent/child dispatch) is a future milestone — not currently active. See `roadmap_future.md` — M4–M6.
+- Multi-agent orchestration (parent/child dispatch) is a future milestone -- not currently active. See `roadmap_future.md` -- M4-M6.
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
 For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
@@ -28,10 +28,10 @@ For the workflow expression model, policy map, and authority hierarchy between p
 ## Security and Secrets
 
 - Secrets must reside in dedicated `.env` files inside `SANDBOX_DIR`. Never committed to the repo.
-- Agents receive secrets via environment variable injection at container runtime — never preloaded in the workspace or baked into images.
+- Agents receive secrets via environment variable injection at container runtime -- never preloaded in the workspace or baked into images.
 - Network outputs are untrusted and must be validated before use.
 
-See [`docs/architecture/security.md`](../architecture/security.md) and [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) — Secrets Handling.
+See [`docs/architecture/security.md`](../architecture/security.md) and [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Secrets Handling.
 
 ---
 
@@ -40,9 +40,9 @@ See [`docs/architecture/security.md`](../architecture/security.md) and [`docs/op
 - Protect key branches with branch protection rules.
 - All merges follow PR review and CI/CD validation.
 - Manual interventions should be minimal and logged.
-- Workspace integrity must be maintained — accidental overwrites are prohibited.
+- Workspace integrity must be maintained -- accidental overwrites are prohibited.
 
-See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) — Human / Operational Protocols.
+See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Human / Operational Protocols.
 
 ---
 
@@ -53,7 +53,7 @@ See [`docs/operations/standard_operating_procedures.md`](../operations/standard_
 - Containers must run unprivileged with minimal capabilities.
 - Do not mount sensitive host directories.
 
-See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) — Container Build & Deployment.
+See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Container Build & Deployment.
 
 ---
 
@@ -61,9 +61,9 @@ See [`docs/operations/standard_operating_procedures.md`](../operations/standard_
 
 Before making any documentation or roadmap change, read the relevant policy:
 
-- [`docs/operations/documentation_policy.md`](documentation_policy.md) — document structure, folder ownership, enforcement rules
-- [`docs/operations/roadmap_policy.md`](roadmap_policy.md) — roadmap update sequence and cleanup rules
-- [`docs/operations/iteration_policy.md`](iteration_policy.md) — session workflow, milestone planning, story and investigation conventions
+- [`docs/operations/documentation_policy.md`](documentation_policy.md) -- document structure, folder ownership, enforcement rules
+- [`docs/operations/roadmap_policy.md`](roadmap_policy.md) -- roadmap update sequence and cleanup rules
+- [`docs/operations/iteration_policy.md`](iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
 
 ---
 
@@ -75,6 +75,6 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/architecture/security.md`](../architecture/security.md) | Security model and trust boundaries |
 | [`docs/architecture/threat_model_stride.md`](../architecture/threat_model_stride.md) | STRIDE threat model |
 | [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) | Operational SOPs |
-| [`docs/operations/iteration_policy.md`](iteration_policy.md) | Session workflow and milestone planning |
+| [`docs/operations/iteration_policy.md`](iteration_policy.md) | Iteration workflow and milestone planning |
 | [`docs/operations/roadmap_policy.md`](roadmap_policy.md) | Roadmap policy |
 | [`docs/concepts/autonomous_task.md`](../concepts/autonomous_task.md) | Autonomous task lifecycle (M3) |

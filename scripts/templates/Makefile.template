@@ -1,11 +1,11 @@
-# Makefile — <project-name>
-# agent-sandbox template version: 3
+# Makefile  --  agent-sandbox project Makefile
+# agent-sandbox template version: 5
 # Runs agent-sandbox against this project.
 # Requires agent-sandbox CLI installed on the host:
 #   make install  (from the agent-sandbox repo)
 #
-# PROJECT_DIR and SANDBOX_DIR are read from .env in the same directory as
-# this Makefile. Both are written by: agent-sandbox onboard
+# PROJECT_NAME, PROJECT_DIR and SANDBOX_DIR are read from .env in the same
+# directory as this Makefile. All are written by: agent-sandbox onboard
 #
 # If .env is missing, run:
 #   agent-sandbox onboard --name=<n> --project=<path> --sandbox=<path>
@@ -18,7 +18,7 @@
 #   Example: make start PROVIDER=hermes
 #
 # REFRESH
-#   Optional. Rebuilds sandbox and provider images before running (base skipped if exists).
+#   Optional. Rebuilds sandbox and provider images + starts a new session.
 #   Example: make start PROVIDER=hermes REFRESH=1
 #
 # REBUILD
@@ -28,36 +28,76 @@
 #   Example: make start PROVIDER=hermes REBUILD=1
 #   Example: make build REBUILD=1
 #
+# INTERACTIVE
+#   Optional. Starts the interactive config wizard: pick a provider and image
+#   build policy, confirm, then start a new session. Fast path supplies
+#   PROVIDER= (and optionally REFRESH=1/REBUILD=1) directly; --interactive is
+#   the explicit slow mode (recommended when unsure of the provider).
+#   Example: make start INTERACTIVE=1
+#            make start PROVIDER=hermes INTERACTIVE=1
+#
+# NOTE ON RESUME
+#   start always begins a NEW session; do not pass RESUME to make start. To
+#   resume a previous session, use `make resume` (make resume SESSION_ID=<id>).
+#
+# STALE
+#   Optional (prune only). Staleness kind to target. sandbox = session's
+#   host-head-sha differs from the current HEAD (the repo moved on). Image
+#   staleness is retired (ADR harness_versioning.md): image identity is the
+#   recorded digest, and the roundtrip gate enforces it at dry-run time.
+#   Example: make prune STALE=sandbox
+#
+# AGE_DAYS
+#   Optional (prune only). Stale-record age cutoff (default 3 days).
+#   Example: make prune STALE=sandbox AGE_DAYS=7
+#
+# DRY_RUN
+#   Optional (prune only). Print what would be pruned without acting.
+#   Example: make prune DRY_RUN=1
+#
+# INTERACTIVE (prune)
+#   Optional (prune only). Show the prune plan + equivalent non-interactive
+#   command, then confirm before acting. Example: make prune INTERACTIVE=1
+#
 # BUILD TARGETS
-#   make build                        — builds sandbox + all providers
-#   make build TARGET=all             — explicit alias for build-all
-#   make build TARGET=hermes          — builds hermes provider only
-#   make build TARGET=hermes,sandbox  — builds hermes and sandbox
-#   make build REBUILD=1              — forces full rebuild including base images
+#   make build                         --  builds sandbox + all providers
+#   make build TARGET=all              --  explicit alias for build-all
+#   make build TARGET=hermes           --  builds hermes provider only
+#   make build TARGET=hermes,sandbox   --  builds hermes and sandbox
+#   make build REBUILD=1               --  forces full rebuild including base images
 #
 # STOP
-#   make stop                         — stop and remove all session containers and volumes
+#   make stop                          --  stop and remove all session containers and volumes
 
 -include .env
 export
 
-PROJECT_NAME := <project-name>
-PROJECT_DIR  ?= $(error PROJECT_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-SANDBOX_DIR  ?= $(error SANDBOX_DIR not set — .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-ENV_FILE     := .env
+PROJECT_NAME ?= $(error PROJECT_NAME not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>)
+PROJECT_DIR  ?= $(error PROJECT_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
+SANDBOX_DIR  ?= $(error SANDBOX_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
+# The .env is written by onboard next to the Makefile. Under the make -C
+# contract (how the workflow is invoked: `make -C <sandbox> <target>`),
+# $(CURDIR) is the sandbox directory that holds the Makefile and the .env, so
+# ENV_FILE resolves to the per-sandbox .env. $(CURDIR) is portable to both GNU
+# and BSD make. Identity (name, project, sandbox) is no longer passed per
+# target: the CLI resolves it from this .env (--env), the AGENT_SANDBOX_* env
+# level, or the invocation CWD.
+ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
 REFRESH      ?=
 REBUILD      ?=
 TARGET       ?=
-SESSION      ?=
 FROM         ?=
 INTERACTIVE  ?=
-DIFF_TYPE    ?=
 DIFF         ?=
 TARGET_BRANCH ?=
-SESSION_SUMMARY ?=
+BUNDLE       ?=
+BUNDLE_SUMMARY ?=
 BASELINE ?=
 ALL ?=
+STALE        ?=
+AGE_DAYS     ?=
+DRY_RUN      ?=
 
 # Guard: reject known misspelled variables
 # Make silently ignores unknown variable overrides. Catch the common mistakes.
@@ -65,14 +105,75 @@ ifdef CHANNEL
 $(error CHANNEL is not a Make variable. Did you mean FROM? Example: make $(MAKECMDGOALS) FROM=$(CHANNEL))
 endif
 
+ifdef STALE_ONLY
+$(error STALE_ONLY is not a Make variable. Did you mean STALE? Example: make prune STALE=sandbox)
+endif
+
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
+INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
+SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
-RUN_ID_FLAG       = $(if $(RUN_ID),--run-id=$(RUN_ID),)
+SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
+RESUME_LIST_FLAG        = $(if $(LIST),--list,)
+RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
+RESUME_PROVIDER_FLAG    = $(if $(PROVIDER),--provider=$(PROVIDER),)
 PRUNE_FLAG        = $(if $(PRUNE),--prune,)
+STALE_FLAG        = $(if $(STALE),--stale=$(STALE),)
+AGE_DAYS_FLAG     = $(if $(AGE_DAYS),--age-days=$(AGE_DAYS),)
+DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
+DELIVERY_FLAG     = $(if $(SANDBOX_TYPE),--delivery=$(SANDBOX_TYPE),)
+FLATTEN_FLAG      = $(if $(filter 1 true TRUE,$(FLATTEN)),--flatten,)
 
-.PHONY: build start serve dry-run stop apply draft confirm reject refresh
+.PHONY: build start dry-run stop apply draft confirm reject refresh help
+
+# -------------------------
+# Help
+# -------------------------
+
+help:
+	@echo "Usage: make [target] [VARIABLE=value ...]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make build                         --  build sandbox + all provider images"
+	@echo "  make build TARGET=<p>              --  build specific provider (e.g. TARGET=pi)"
+	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
+	@echo "  make dry-run PROVIDER=<p>          --  e2e check: rebuild current source, verify, tear down"
+	@echo "  make dry-run PROVIDER=<p> FAST=1   --  skip the rebuild, run existing images"
+	@echo "  make stop                          --  stop and remove session containers"
+	@echo "  make resume SESSION_ID=<id>       --  resume a specific session (silent, recommended)"
+	@echo "  make resume LIST=1                --  list resumable session ids (optional PROVIDER=<n> filter)"
+	@echo "  make resume INTERACTIVE=1         --  interactive picker + confirm (optional PROVIDER=<n> filter)"
+	@echo "  make prune STALE=sandbox  --  remove stale records + orphaned resources"
+	@echo "  make prune INTERACTIVE=1         --  show plan + confirm before pruning"
+	@echo "  make prune DRY_RUN=1             --  print what would be pruned without acting"
+	@echo "  make draft                         --  apply session patches to a draft branch"
+	@echo "  make confirm                       --  merge draft branch to source"
+	@echo "  make reject                        --  discard draft branch"
+	@echo "  make apply                         --  apply uncommitted changes"
+	@echo "  make package-branch                --  export branch as numbered diffs"
+	@echo "  make refresh                       --  update templates after harness upgrade"
+	@echo ""
+	@echo "Common variables:"
+	@echo "  PROVIDER=<p>     --  provider name (required for start/dry-run)"
+	@echo "  FAST=1           --  dry-run only: skip the image build, run existing images"
+	@echo "  SERVE=1           --  run the started session in provider serve mode (start only)"
+	@echo "  REFRESH=1         --  rebuild images + start new session (make start; dry-run always rebuilds)"
+	@echo "  REBUILD=1         --  force full rebuild including base images (make start)"
+	@echo "  SESSION_ID=<id>   --  resume a specific session (make resume)"
+	@echo "  LIST=1            --  list resumable session ids (make resume)"
+	@echo "  STALE=sandbox     --  prune sessions whose host-head-sha != current HEAD (prune only)"
+	@echo "  SANDBOX_TYPE=<t>  --  delivery: copy|mount (default copy; passed as --delivery; resume reads it from the session record)"
+	@echo "  FLATTEN=1        --  flattened history: fresh git-init baseline, no host history (default: full history; passed as --flatten; resume reads it from the session record)"
+	@echo "  WORKTREE_DIR=<p>  --  mount only: host worktree path (default <sandbox>/.worktree)"
+	@echo "  AGE_DAYS=<n>      --  prune stale-record age cutoff, default 3 (prune only)"
+	@echo "  DRY_RUN=1         --  print the prune plan without acting (prune only)"
+	@echo "  FORCE=1           --  apply with --reject (draft/apply)"
+	@echo "  FROM=<channel>    --  resolution channel: session|autosave|bundles (draft only)"
+	@echo "  INTERACTIVE=1     --  interactive config wizard: pick provider + build policy, then start (make start)"
+	@echo ""
+	@echo "See the comment block at the top of this Makefile for full usage."
 
 # -------------------------
 # Build
@@ -82,9 +183,7 @@ build:
 	agent-sandbox build \
 	  $(TARGET_FLAG) \
 	  $(REBUILD_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --env=$(ENV_FILE)
 
 # -------------------------
 # Run
@@ -93,31 +192,20 @@ build:
 start:
 	agent-sandbox start \
 	  $(PROVIDER_FLAG) \
+	  $(SERVE_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --env=$(ENV_FILE)
-
-serve:
-	agent-sandbox serve \
-	  $(PROVIDER_FLAG) \
-	  $(REFRESH_FLAG) \
-	  $(REBUILD_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  $(INTERACTIVE_FLAG) \
+	  $(DELIVERY_FLAG) \
+	  $(FLATTEN_FLAG) \
 	  --env=$(ENV_FILE)
 
 dry-run:
 	agent-sandbox dry-run \
 	  $(PROVIDER_FLAG) \
-	  $(REFRESH_FLAG) \
-	  $(REBUILD_FLAG) \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  $(if $(FAST),--fast,) \
+	  $(DELIVERY_FLAG) \
+	  $(FLATTEN_FLAG) \
 	  --env=$(ENV_FILE)
 
 # -------------------------
@@ -126,91 +214,116 @@ dry-run:
 
 stop:
 	agent-sandbox stop \
-	  --name=$(PROJECT_NAME) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  $(RUN_ID_FLAG) \
+	  --env=$(ENV_FILE) \
+	  $(SESSION_ID_FLAG) \
 	  $(PRUNE_FLAG)
+
+# -------------------------
+# Resume
+# -------------------------
+#
+# Resumes a previously-started session (split-out resume command; see
+# scripts/resume_agent.sh). The unified session inventory is the
+# .compose/<session-id>.yml registry under SANDBOX_DIR.
+#
+#   make resume SESSION_ID=<id>   --  resume that specific session (silent, recommended)
+#   make resume LIST=1            --  list resumable session ids (no resume)
+#   make resume INTERACTIVE=1     --  interactive picker + confirm (slow mode)
+#   make resume PROVIDER=<n>      --  filter the session inventory by provider (use with LIST=1 or INTERACTIVE=1)
+
+resume:
+	agent-sandbox resume \
+	  --env=$(ENV_FILE) \
+	  $(RESUME_LIST_FLAG) \
+	  $(RESUME_INTERACTIVE_FLAG) \
+	  $(RESUME_PROVIDER_FLAG) \
+	  $(SESSION_ID_FLAG)
 
 # -------------------------
 # Prune
 # -------------------------
+#
+# Registry-based prune (Rules 1+2). Always a complete pass: Rule 1 removes
+# stale .compose/*.yml records; Rule 2 removes resources whose session has no
+# matching record (orphaned). Simulation is DRY_RUN=1; confirmation is
+# INTERACTIVE=1.
+#
+# STALE:
+#   make prune STALE=sandbox  --  prune sessions whose host-head-sha != current
+#   HEAD (the repo moved on). Image staleness is retired (ADR
+#   harness_versioning.md); sandbox is the only kind.
 
 prune:
 	agent-sandbox prune \
-	  --name=$(PROJECT_NAME) \
-	  --sandbox=$(SANDBOX_DIR)
+	  --env=$(ENV_FILE) \
+	  $(STALE_FLAG) \
+	  $(AGE_DAYS_FLAG) \
+	  $(PROVIDER_FLAG) \
+	  $(if $(INTERACTIVE),--interactive,) \
+	  $(DRY_RUN_FLAG)
 
 # Apply workflow
 # -------------------------
 #
-# CHANNELS:
-#   --channel=session  (draft default) — resolve from session-diffs/session/
-#   --channel=autosave                 — resolve from session-diffs/autosave/
-#   --channel=bundles  (draft only)    — resolve from output/bundles/
-#   --channel=diffs    (apply default) — resolve from output/diffs/
+# CHANNELS (draft only):
+#   --channel=session  (draft default)  --  resolve from session-diffs/session/
+#   --channel=autosave                  --  resolve from session-diffs/autosave/
+#   --channel=bundles                   --  resolve from output/bundles/
 #
 # SHORTCUTS:
-#   make draft FROM=bundles  →  --channel=bundles
-#   make draft FROM=autosave  →  --channel=autosave
-#   make apply FROM=autosave  →  --channel=autosave
-#   make draft INTERACTIVE=1  →  --interactive (multi-step picker)
-#   make apply INTERACTIVE=1  →  --interactive (multi-step picker)
+#   make draft FROM=bundles  ->  --channel=bundles
+#   make draft FROM=autosave  ->  --channel=autosave
+#   make draft INTERACTIVE=1  ->  --interactive (channel + bundle picker)
+#   make apply INTERACTIVE=1  ->  --interactive (preview + confirm)
 #
 # WORKFLOW:
-#   make draft                           — apply session patches to a working branch for review
-#   make draft SESSION=<name>            — apply from a named session under the channel directory
-#   make draft FROM=bundles              — resolve from output/bundles/ instead of session-diffs/
-#   make draft FROM=autosave             — resolve from session-diffs/autosave/ instead of session/
-#   make draft INTERACTIVE=1             — interactive picker for channel and session selection
-#   git log -p HEAD~N..HEAD              — review changes on the working branch
-#   make confirm                         — rebase + fast-forward merge to source branch
-#   make confirm TARGET_BRANCH=x         — merge to a different target branch
-#   make reject                          — discard draft branch, return to source branch
+#   make draft                            --  apply session patches to a working branch for review
+#   make draft BUNDLE=<name>              --  apply from a named bundle under the channel directory
+#   make draft FROM=bundles               --  resolve from output/bundles/ instead of session/
+#   make draft FROM=autosave              --  resolve from session-diffs/autosave/ instead of session/
+#   make draft FORCE=1                    --  apply with --reject; .rej files for conflicts
+#   make draft PERMISSIVE=1               --  retry with --recount on apply failure
+#   make draft INTERACTIVE=1              --  interactive picker for channel and bundle selection
+#   git log -p HEAD~N..HEAD               --  review changes on the working branch
+#   make confirm                          --  rebase + fast-forward merge to source branch
+#   make confirm TARGET_BRANCH=x          --  merge to a different target branch
+#   make reject                           --  discard draft branch, return to source branch
 #
-#   make apply                           — apply uncommitted changes (auto-resolves from output/diffs/)
-#   make apply SESSION=<name>            — apply from a named session under the channel directory
-#   make apply FROM=autosave             — resolve from session-diffs/autosave/ instead of output/diffs/
-#   make apply DIFF=<path>               — apply a specific diff file (no session resolution needed)
-#   make apply BRANCH=<name>             — apply to a named branch
-#   make apply FORCE=1                   — apply with --reject; .rej files created for conflicts
-#   make apply INTERACTIVE=1             — interactive picker for channel, session, and diff type
+#   make apply DIFF=<path>                --  apply an exact diff file (required)
+#   make apply INTERACTIVE=1              --  preview the changes, then confirm before applying
+#   make apply BRANCH=<name>              --  apply to a named branch
+#   make apply FORCE=1                    --  apply with --reject; .rej files created for conflicts
+
 
 DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
 
 draft:
 	agent-sandbox draft \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  --channel=$(DRAFT_CHANNEL) \
-	  $(if $(SESSION),--session=$(SESSION),) \
+	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
 	  $(if $(DIFFS),--diffs=$(DIFFS),) \
-	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),)
+	  $(if $(BRANCH_SUMMARY),--branch-summary=$(BRANCH_SUMMARY),) \
+	  $(if $(FORCE),--force,) \
+	  $(if $(PERMISSIVE),--permissive,)
 
 confirm:
 	agent-sandbox confirm \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
+	  --env=$(ENV_FILE) \
 	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),)
 
 reject:
 	agent-sandbox reject \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
-
-APPLY_CHANNEL := $(if $(FROM),$(FROM),diffs)
+	  --env=$(ENV_FILE)
 
 apply:
 	agent-sandbox apply \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR) \
-	  --channel=$(APPLY_CHANNEL) \
-	  $(if $(SESSION),--session=$(SESSION),) \
-	  $(if $(INTERACTIVE),--interactive,) \
-	  $(if $(BRANCH),--branch=$(BRANCH),) \
+	  --env=$(ENV_FILE) \
 	  $(if $(DIFF),--diff=$(DIFF),) \
-	  $(if $(DIFF_TYPE),--diff-type=$(DIFF_TYPE),) \
+	  $(if $(BRANCH),--branch=$(BRANCH),) \
+	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(FORCE),--force,)
 
 # -------------------------
@@ -218,23 +331,16 @@ apply:
 # -------------------------
 #
 # refresh: update stale template files and re-register git aliases after a
-# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+# harness update. Safe to run repeatedly  --  does not overwrite .env.
 
 # -------------------------
 # Package exports
 # -------------------------
 
-package-diff:
-	agent-sandbox package-diff \
-	  --sandbox=$(SANDBOX_DIR) \
-	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
-	  $(if $(ALL),--all,) \
-	  $(if $(BASELINE),--baseline=$(BASELINE),)
-
 package-branch:
 	agent-sandbox package-branch \
-	  --sandbox=$(SANDBOX_DIR) \
-	  $(if $(SESSION_SUMMARY),--session-summary=$(SESSION_SUMMARY),) \
+	  --env=$(ENV_FILE) \
+	  $(if $(BUNDLE_SUMMARY),--bundle-summary=$(BUNDLE_SUMMARY),) \
 	  $(if $(BASELINE),--baseline=$(BASELINE),) \
 	  $(if $(NO_RENAMES),--no-renames,)
 
@@ -243,7 +349,7 @@ package-branch:
 # -------------------------
 #
 # refresh: update stale template files and re-register git aliases after a
-# harness update. Safe to run repeatedly — does not overwrite .env or AGENTS.md.
+# harness update. Safe to run repeatedly  --  does not overwrite .env.
 
 refresh:
 	agent-sandbox onboard --refresh \

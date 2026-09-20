@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # -------------------------
 # System packages (root)
 # -------------------------
-# No Node/npm/opencode — the capability layer owns the sandbox and diff
+# No Node/npm/opencode  --  the capability layer owns the sandbox and diff
 # pipeline only. The reasoning layer container handles agent invocation.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         bash ca-certificates curl git jq rsync \
@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY src/libs/                          /opt/sandbox/lib/
 COPY src/capability/entrypoint.sh       /opt/sandbox/bin/sandbox-entrypoint.sh
 COPY src/capability/snapshot.sh         /opt/sandbox/lib/snapshot.sh
+COPY src/capability/git-hooks/          /opt/sandbox/git-hooks/
 COPY docs/architecture/                 /opt/sandbox/docs/architecture/
 COPY docs/concepts/                     /opt/sandbox/docs/concepts/
 RUN chmod +x /opt/sandbox/bin/sandbox-entrypoint.sh
@@ -44,18 +45,25 @@ RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
       groupmod -n agentuser "$existing_group" 2>/dev/null || true; \
       usermod -d /home/agentuser -m agentuser; \
     fi
-USER agentuser
 
 # -------------------------
 # Working directories
 # -------------------------
+# Create key directories before user switch so agentuser
+# owns them. Docker bind mounts on macOS create parent dirs as root
+# when they don't exist in the image, which blocks writes by the
+# unprivileged user.
 RUN mkdir -p /home/agentuser/sandbox \
              /home/agentuser/workspace/session-diffs \
-             /home/agentuser/.snapshot
+             /home/agentuser/.snapshot && \
+    chown -R agentuser:agentuser /home/agentuser
+
+USER agentuser
 
 VOLUME /home/agentuser/sandbox
 
 WORKDIR /home/agentuser
+
 
 # -------------------------
 # Health check

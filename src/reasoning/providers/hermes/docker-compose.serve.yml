@@ -9,7 +9,7 @@
 
 services:
   agent:
-    command: ["gateway"]
+    command: ["hermes", "gateway"]
     environment:
       - API_SERVER_ENABLED=true
       - API_SERVER_PORT=8642

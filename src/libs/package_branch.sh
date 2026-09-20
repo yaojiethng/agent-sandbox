@@ -2,45 +2,49 @@
 # libs/package_branch.sh
 #
 # Package branch artefacts: per-commit diffs, uncommitted diff, all-changes
-# diff, and changed-file copies — all in a single dispatcher call.
+# diff, and changed-file copies  --  all in a single dispatcher call.
 #
 # Produces (under OUTPUT_DIR/):
 #   patches/
-#     0001-<sha>[-<subject>].diff  — per-commit diffs (index lines stripped)
-#     0001-<sha>[-<subject>].msg   — full commit message for each diff
+#     0001-<sha>[-<subject>].diff   --  per-commit diffs (index lines stripped)
+#     0001-<sha>[-<subject>].msg    --  full commit message for each diff
 #     0002-<sha>[-<subject>].diff
 #     0002-<sha>[-<subject>].msg
 #     ...
-#   uncommitted.diff        — uncommitted changes vs HEAD (with untracked)
-#   all-changes.diff        — net delta INIT_SHA..HEAD (with untracked)
-#   changed-files/          — working tree copies of all changed files
+#   uncommitted.diff         --  uncommitted changes vs HEAD (with untracked)
+#   all-changes.diff         --  net delta INIT_SHA..HEAD (with untracked)
+#   changed-files/           --  working tree copies of all changed files
 #     MANIFEST.txt
+#   .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD is added by
+#                                the diff_export caller) for host consumers
 #
 # Usage (library):
-#   package_branch SANDBOX_DIR OUTPUT_DIR
+#   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
 #
 # Usage (direct):
-#   package_branch.sh --to=<dir> [--session-summary=<text>] [--baseline=<sha>]
+#   package_branch.sh --to=<dir> --bundle-summary=<text>
 #
 # Arguments (library mode):
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory path
-#   INIT_SHA_OVERRIDE — optional explicit baseline SHA
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory path
+#   NO_RENAMES         --  if true, use git diff --no-renames
 #
 # Flags (direct mode):
 #   --to=<dir>        Base parent directory (required). Script creates
 #                     <to>/bundles/<ts>-<label>[-<ts>]/ subdirectory.
-#   --session-summary Short snake_case label for the output directory.
+#   --bundle-summary Short snake_case label for the output directory.
 #                     Default: "snapshot".
-#   --baseline=<sha>  Explicit baseline SHA for commit history.
+#   --no-renames      Use git diff --no-renames (avoid rename operations)
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
+source "$_self_dir/export_status.sh"
+source "$_self_dir/cli.sh"
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
@@ -49,13 +53,14 @@ Usage: agent-sandbox package-branch --sandbox=<path> [options]
 
 Packages branch artefacts: per-commit diffs, uncommitted diff, all-changes diff.
 
+or, from a sandbox Makefile: make package-branch [BUNDLE_SUMMARY=<slug>] [BASELINE=<baseline>]
+
 Required:
   --sandbox=<path>    Path to the sandbox directory
 
 Options:
   --to=<dir>              Output directory (default: auto-resolved from sandbox)
-  --session-summary=<txt> Required snake_case label for the bundle directory
-  --baseline=<sha>        Override baseline SHA (default: read from SESSION_STATE)
+  --bundle-summary=<txt>  Required snake_case label for the bundle directory
   --no-renames            Use git diff --no-renames (avoid rename operations in diffs)
 EOF
 }
@@ -68,15 +73,14 @@ fi
 # -------------------------
 # package_commits
 #
-# Iterates commits since INIT_SHA, produces numbered .diff files with index
-# lines stripped into OUTPUT_DIR/, overwrites on each run.
-# Reads init_sha from SESSION_STATE.
+# Iterates commits since INIT_SHA (read from SESSION_STATE), produces
+# numbered .diff files with index lines stripped into OUTPUT_DIR/,
+# overwrites on each run.
 # -------------------------
 package_commits() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
-  local INIT_SHA_OVERRIDE="${3:-}"
-  local NO_RENAMES="${4:-false}"
+  local NO_RENAMES="${3:-false}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_commits: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -84,14 +88,10 @@ package_commits() {
   fi
 
   local INIT_SHA
-  if [[ -n "$INIT_SHA_OVERRIDE" ]]; then
-    INIT_SHA="$INIT_SHA_OVERRIDE"
-  else
-    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-    if [[ -z "$INIT_SHA" ]]; then
-      echo "package_commits: init_sha not found in SESSION_STATE" >&2
-      return 1
-    fi
+  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  if [[ -z "$INIT_SHA" ]]; then
+    echo "package_commits: init_sha not found in SESSION_STATE" >&2
+    return 1
   fi
 
   # Validate SANDBOX_DIR exists and is a git repository
@@ -131,14 +131,13 @@ package_commits() {
       DIFF_FILE="${OUTPUT_DIR}/${PADDING}-${COMMIT_SHA}.diff"
     fi
 
-    local GIT_DIFF_OPTS="--binary"
+    local GIT_DIFF_OPTS=(--binary)
     if [[ "$NO_RENAMES" == "true" ]]; then
-      GIT_DIFF_OPTS="--binary --no-renames"
+      GIT_DIFF_OPTS=(--binary --no-renames)
     fi
-    git -C "$SANDBOX_DIR" diff $GIT_DIFF_OPTS "${PREVIOUS_SHA}..${COMMIT_SHA}" \
+    git -C "$SANDBOX_DIR" diff "${GIT_DIFF_OPTS[@]}" "${PREVIOUS_SHA}..${COMMIT_SHA}" \
       | strip_index_lines \
-      | sed 's/[[:space:]]*$//' \
-      | sed -e '$a\' \
+      | awk '{print} END{print ""}' \
       > "$DIFF_FILE"
 
     # Write sibling .msg file with full commit message
@@ -157,22 +156,18 @@ package_commits() {
 # package_branch (dispatcher)
 #
 # Orchestrates all packaging output in a single call:
-#   1. package_commits  — per-commit diffs under patches/
-#   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
-#   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
-#   4. write_changed_files     — changed-files/ with MANIFEST.txt
+#   1. package_commits   --  per-commit diffs under patches/
+#   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
+#   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
+#   4. write_changed_files      --  changed-files/ with MANIFEST.txt
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
-# Reads init_sha from SESSION_STATE, or uses an explicit override if provided.
-# Overwrites OUTPUT_DIR on each run.
+# Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
 # Args:
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
-#   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
-#                       init_sha from SESSION_STATE
-#   NO_RENAMES        — if true, use git diff --no-renames to produce diffs
-#                       without rename operations (avoids rename-target-already-exists
-#                       conflicts during apply at the cost of larger diffs)
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
+#   NO_RENAMES         --  if true, use git diff --no-renames
 # -------------------------
 # -------------------------
 # _package_preflight_check
@@ -190,7 +185,7 @@ package_commits() {
 #   devlog/discussions/20260526-study-unappliable_patch_structural_cleanup.md
 #
 # Skips check when PACKAGE_BYPASS_PREFLIGHT=true is set.
-# Returns 0 always — warnings only, never blocks packaging.
+# Returns 0 always  --  warnings only, never blocks packaging.
 # -------------------------
 _package_preflight_check() {
   local SANDBOX_DIR="$1"
@@ -225,7 +220,7 @@ _package_preflight_check() {
 
     # Check for intermediate committed reorders: compare the file's blob
     # at INIT_SHA vs HEAD. If they match but the file appears in the diff
-    # list, the file was modified and reverted during the session — the
+    # list, the file was modified and reverted during the session  --  the
     # patch may reference a state that never existed at INIT_SHA.
     if git -C "$SANDBOX_DIR" cat-file -e "${INIT_SHA}:$f" 2>/dev/null; then
       if git -C "$SANDBOX_DIR" diff --quiet "$INIT_SHA" -- "$f" 2>/dev/null; then
@@ -249,25 +244,23 @@ _package_preflight_check() {
 # package_branch (dispatcher)
 #
 # Orchestrates all packaging output in a single call:
-#   1. package_commits  — per-commit diffs under patches/
-#   2. write_uncommitted_diff  — uncommitted.diff (git diff HEAD)
-#   3. write_all_changes_diff  — all-changes.diff (git diff INIT_SHA)
-#   4. write_changed_files     — changed-files/ with MANIFEST.txt
+#   1. package_commits   --  per-commit diffs under patches/
+#   2. write_uncommitted_diff   --  uncommitted.diff (git diff HEAD)
+#   3. write_all_changes_diff   --  all-changes.diff (git diff INIT_SHA)
+#   4. write_changed_files      --  changed-files/ with MANIFEST.txt
+#   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
-# Reads init_sha from SESSION_STATE, or uses an explicit override if provided.
-# Overwrites OUTPUT_DIR on each run.
+# Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
 #
 # Args:
-#   SANDBOX_DIR       — path to the git repository
-#   OUTPUT_DIR        — full destination directory (parent of patches/, etc.)
-#   INIT_SHA_OVERRIDE — optional explicit baseline SHA; if omitted, reads
-#                       init_sha from SESSION_STATE
+#   SANDBOX_DIR        --  path to the git repository
+#   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
+#   NO_RENAMES         --  if true, use git diff --no-renames
 # -------------------------
 package_branch() {
   local SANDBOX_DIR="${1:-}"
   local OUTPUT_DIR="${2:-}"
-  local INIT_SHA_OVERRIDE="${3:-}"
-  local NO_RENAMES="${4:-false}"
+  local NO_RENAMES="${3:-false}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
@@ -275,19 +268,25 @@ package_branch() {
   fi
 
   local INIT_SHA
-  if [[ -n "$INIT_SHA_OVERRIDE" ]]; then
-    INIT_SHA="$INIT_SHA_OVERRIDE"
-  else
-    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-    if [[ -z "$INIT_SHA" ]]; then
-      echo "package_branch: init_sha not found in SESSION_STATE" >&2
-      return 1
-    fi
+  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  if [[ -z "$INIT_SHA" ]]; then
+    echo "package_branch: init_sha not found in SESSION_STATE" >&2
+    return 1
   fi
 
   # Validate SANDBOX_DIR exists and is a git repository
   if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
     echo "package_branch: SANDBOX_DIR is not a git repository: $SANDBOX_DIR" >&2
+    return 1
+  fi
+
+  # A corrupt index or unreadable object store makes every artefact below
+  # degrade to empty or partial while this function still reports success, so the
+  # caller stamps a SUCCESS bundle over the last good one. Refuse the state here:
+  # the save decision routes its undeterminable case into this function, and the
+  # callers' failure paths keep the previous artefact and write FAIL.
+  if ! git -C "$SANDBOX_DIR" status --porcelain >/dev/null 2>&1; then
+    echo "package_branch: cannot read the repository state at $SANDBOX_DIR; refusing to export" >&2
     return 1
   fi
 
@@ -299,7 +298,7 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$INIT_SHA" "$NO_RENAMES"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"
@@ -310,35 +309,33 @@ package_branch() {
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
 
+  # 5. Export metadata  --  .export-status with STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
+  #    so the host-side make draft can resolve the baseline and timestamp
+  #    from a single file.
+  local _export_ts
+  _export_ts=$(date -u +%Y%m%d-%H%M%S)
+  _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
+
   echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
 
   local bundle_name
   bundle_name=$(basename "$OUTPUT_DIR")
   echo "To draft this bundle on host, run:" >&2
-  echo "  make draft FROM=bundles SESSION=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
+  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
 }
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   TO_ARG=""
-  SESSION_SUMMARY_ARG=""
-  BASELINE_ARG=""
+  BUNDLE_SUMMARY_ARG=""
   NO_RENAMES_ARG=false
 
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-      --session-summary=*) SESSION_SUMMARY_ARG="${ARG#--session-summary=}" ;;
-      --to=*)              TO_ARG="${ARG#--to=}" ;;
-      --baseline=*)        BASELINE_ARG="${ARG#--baseline=}" ;;
-      --no-renames)        NO_RENAMES_ARG=true ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --bundle-summary=BUNDLE_SUMMARY_ARG \
+    --to=TO_ARG \
+    --no-renames:NO_RENAMES_ARG \
+    -- "$@"
+  [ $? -eq 2 ] && exit 0
 
   # --to is required
   if [[ -z "$TO_ARG" ]]; then
@@ -356,30 +353,35 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     exit 1
   fi
 
-  # --session-summary is required (same class as --to)
-  if [[ -z "$SESSION_SUMMARY_ARG" ]]; then
-    echo "Error: --session-summary is required. Provide a concise snake_case label." >&2
+  # --bundle-summary is required (same class as --to)
+  if [[ -z "$BUNDLE_SUMMARY_ARG" ]]; then
+    echo "Error: --bundle-summary is required. Provide a concise snake_case label." >&2
     echo "" >&2
-    echo "  Good: --session-summary=fix_provisioning_metadata_agnostic" >&2
-    echo "  Good: --session-summary=add_format_patch_support" >&2
-    echo "  Bad:  --session-summary=changes" >&2
-    echo "  Bad:  --session-summary=snapshot" >&2
-    echo "  Bad:  --session-summary=misc" >&2
+    echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
+    echo "  Good: --bundle-summary=add_format_patch_support" >&2
+    echo "  Bad:  --bundle-summary=changes" >&2
+    echo "  Bad:  --bundle-summary=snapshot" >&2
+    echo "  Bad:  --bundle-summary=misc" >&2
     echo "" >&2
-    echo "Usage: package_branch.sh --to=<dir> --session-summary=<text> [--baseline=<sha>]" >&2
+    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<text>" >&2
     echo "" >&2
     echo "  --to=<dir>           Required. Base output directory." >&2
-    echo "  --session-summary    Required. Snake_case label for the bundle directory." >&2
-    echo "  --baseline=<sha>     Optional. Override baseline SHA (default: read from SESSION_STATE)." >&2
+    echo "  --bundle-summary     Required. Snake_case label for the bundle directory." >&2
     exit 1
   fi
-  SESSION_SUMMARY="$SESSION_SUMMARY_ARG"
+  BUNDLE_SUMMARY="$BUNDLE_SUMMARY_ARG"
 
-  # Auto-resolve RUN_ID from SESSION_STATE
-  RUN_ID=$(session_state_read "$SANDBOX_DIR" "run_id" 2>/dev/null || true)
+  # Auto-resolve SESSION_ID from SESSION_STATE
+  SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
-  # Construct output directory via output_export_path
-  OUTPUT_DIR=$(output_export_path "$TO_ARG" "bundles" "$SESSION_SUMMARY" "$RUN_ID")
+  # Construct output directory via export_path. LABEL (BUNDLE_SUMMARY)
+  # is optional  --  when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
+  if [[ -n "$BUNDLE_SUMMARY" ]]; then
+    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
+  else
+    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID")
+  fi
+  mkdir -p "$OUTPUT_DIR"
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$BASELINE_ARG" "$NO_RENAMES_ARG"
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG"
 fi

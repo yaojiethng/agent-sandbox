@@ -4,8 +4,7 @@
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_DIR="$SCRIPT_DIR/../tests"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 
 usage() {
   echo "Usage: bash scripts/check_test_coverage.sh <file> [<file> ...]"
@@ -22,7 +21,7 @@ check_file() {
   MATCHES=$(grep -rl "$BASENAME" "$TEST_DIR" 2>/dev/null | grep -v "^$TEST_DIR/libs/" || true)
 
   if [[ -z "$MATCHES" ]]; then
-    echo "  (no test files found — review whether coverage is needed)"
+    echo "  (no test files found  --  review whether coverage is needed)"
   else
     while IFS= read -r MATCH; do
       [[ -n "$MATCH" ]] || continue

@@ -3,26 +3,24 @@
 # Snapshot unpacking, git baseline, diff pipeline, autosave.
 #
 # Sequence:
-#   1. snapshot_validate (gate 2)       — confirm .snapshot/ is intact
-#   2. snapshot_init_git                — git init + baseline commit; records baseline SHA
-#   3. register EXIT trap → diff        — fires on any exit; writes session export
-#                                         via package_branch dispatcher, kills autosave subshell
-#   4. register TERM trap → exit 0      — docker stop sends SIGTERM to PID 1; clean exit
+#   1. seeded volume validation          --  git state must exist (seeder wrote it); records baseline SHA
+#   3. register EXIT trap -> _session_export  --  fires on any exit; waits for git lockfile,
+#                                         runs session export, falls back to autosave on failure
+#   4. register TERM trap -> exit 0       --  docker stop sends SIGTERM to PID 1; clean exit
 #                                         ensures EXIT trap fires reliably
-#   5. start autosave loop              — if AUTOSAVE_INTERVAL > 0
-#   6. wait                             — stays running while reasoning layer is active
+#   5. start autosave loop               --  if AUTOSAVE_INTERVAL > 0; logs every attempt to stderr
+#   6. wait                              --  stays running while reasoning layer is active
 #
 # The reasoning layer container exits first. The harness then stops this
 # container via docker stop, which sends SIGTERM to PID 1 (this script).
-# SIGTERM triggers the TERM trap → exit 0 → EXIT trap → diff written.
+# SIGTERM triggers the TERM trap -> exit 0 -> EXIT trap -> diff written.
 #
 # Environment variables (all have defaults defined in libs/dirs.sh,
 # override via docker run -e or compose .env):
-#   SNAPSHOT_DIR_NAME      — name of the snapshot mount directory  (default: .snapshot)
-#   SANDBOX_DIR_NAME       — name of the sandbox directory         (default: sandbox)
-#   CHANGES_DIR_NAME       — session-diffs leaf under workspace    (default: session-diffs)
-#   WORKSPACE_DIR_NAME     — workspace subdirectory name           (default: .workspace)
-#   AUTOSAVE_INTERVAL      — autosave interval in seconds; 0 disables (default: 60)
+#   SANDBOX_DIR_NAME        --  name of the sandbox directory         (default: sandbox)
+#   CHANGES_DIR_NAME        --  session-diffs leaf under workspace    (default: session-diffs)
+#   WORKSPACE_DIR_NAME      --  workspace subdirectory name           (default: .workspace)
+#   AUTOSAVE_INTERVAL       --  autosave interval in seconds; 0 disables (default: 60)
 
 set -euo pipefail
 
@@ -37,14 +35,31 @@ ROOT="/home/agentuser"
 # Workspace paths are passed as absolute env vars from the compose template
 # (x-workspace anchor). Fallback to dirs_resolve only if unset (testing).
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
-SNAPSHOT_DIR="${SNAPSHOT_DIR:-}"
 CHANGES_DIR="${CHANGES_DIR:-}"
 INPUT_DIR="${INPUT_DIR:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
+SANDBOX_TYPE="${SANDBOX_TYPE:-copy}"
+# FLATTEN: false/empty = full history (native .git copy); true = flattened
+# (git-init baseline). Set by the sandbox service env from the session record.
+FLATTEN="${FLATTEN:-false}"
+# Container lib dir. Overridable for tests (SANDBOX_LIB_DIR seam); the default
+# is the baked image path. Assigned once here, used everywhere below.
+: "${SANDBOX_LIB_DIR:=/opt/sandbox/lib}"
+# Git hooks baked into the image (copy delivery only; see docs/adr/git_hooks.md).
+# Overridable for tests (GIT_HOOKS_DIR seam), mirroring SANDBOX_LIB_DIR.
+: "${GIT_HOOKS_DIR:=/opt/sandbox/git-hooks}"
 
-if [[ -z "$SNAPSHOT_DIR" || -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+# dirs.sh owns _source_lib and lib_preflight, so it is the one library that
+# cannot be sourced through them. Verify and source it first.
+if [[ ! -f "$SANDBOX_LIB_DIR/dirs.sh" ]]; then
+  echo "FATAL: $SANDBOX_LIB_DIR/dirs.sh is missing  --  image is stale, rebuild with 'make build'" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090  # runtime-resolved, -f validated above
+source "$SANDBOX_LIB_DIR/dirs.sh"
+
+if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
-  source /opt/sandbox/lib/dirs.sh
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi
 
@@ -60,53 +75,108 @@ mkdir -p "$CHANGES_DIR"
 # /opt/sandbox/lib/ is baked into the image at build time. If files are
 # missing, the image is stale and must be rebuilt with `make build`.
 #
-# Files required for startup are CRITICAL — container aborts if absent.
-# Files needed later are WARN — container continues but certain operations
-# (diff pipeline, routing) will fail at runtime.
-LIB_DIR="/opt/sandbox/lib"
-for entry in "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
-             "package_diff.sh:WARN"; do
-  lib="${entry%%:*}"
-  severity="${entry##*:}"
-  if [[ ! -f "$LIB_DIR/$lib" ]]; then
-    if [[ "$severity" == "CRITICAL" ]]; then
-      echo "FATAL: $LIB_DIR/$lib is missing — image is stale, rebuild with 'make build'" >&2
-      exit 1
-    else
-      echo "WARN: $LIB_DIR/$lib is missing — image may be stale" >&2
-    fi
-  fi
-done
-unset LIB_DIR
+# Severity is about what the container can still do, and about where a missing
+# file surfaces: a CRITICAL file aborts inside this preflight with the named
+# remedy, a WARN file is reported here and then aborts when the startup path
+# reaches its source (every WARN entry is sourced during startup). The
+# entrypoint's own sources go through _source_lib for the same reason.
+lib_preflight "$SANDBOX_LIB_DIR" \
+  "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
+  "interface_contract.sh:CRITICAL" "diff_export.sh:WARN" \
+  "session_save_policy.sh:WARN" "export_status.sh:WARN" \
+  "cli.sh:WARN" "diff.sh:WARN" "routing.sh:WARN" \
+  "package_branch.sh:WARN"
 
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source /opt/sandbox/lib/session_state.sh
-source /opt/sandbox/lib/snapshot.sh
+_source_lib "$SANDBOX_LIB_DIR/session_state.sh"
+_source_lib "$SANDBOX_LIB_DIR/snapshot.sh"
 
-# Gate 2 — confirm mounted snapshot is intact before unpacking.
-snapshot_validate "$SNAPSHOT_DIR"
-
-# The snapshot is already validated above and baseline.tar is read directly
-# from the snapshot mount by snapshot_init_git — no copy needed.
-
-# Initialise git baseline. Failure here means the container cannot start.
-> /dev/null; snapshot_init_git "$SANDBOX_DIR" "$SNAPSHOT_DIR" || {
-  echo "Error: sandbox git initialisation failed — container cannot start." >&2
-  echo "  Check sandbox contents: ls -la $SANDBOX_DIR" >&2
+if [[ "$SANDBOX_TYPE" == "mount" ]]; then
+  # Mount delivery (bind-mount worktree): the host has already materialized the
+  # worktree into ${SANDBOX_DIR} via the shared delivery dispatcher
+  # (snapshot_deliver; full copies .git, flatten inits a baseline).
+  # No snapshot mount. Validate .git is present; write the SESSION_STATE init
+  # marker into the worktree .git (metadata) if absent; then write workspace paths.
+  echo "Mount delivery: validating worktree at $SANDBOX_DIR"
+  if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+    echo "Error: mount worktree has no .git  --  host materialization failed." >&2
+    echo "  Check WORKTREE_DIR contents: ls -la $SANDBOX_DIR" >&2
+    exit 1
+  fi
+  if [[ ! -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
+    # First mount run: write the init marker. init_sha is the session start
+    # state -- the baseline root commit for a flattened worktree, or the host
+    # HEAD at materialization for a full-history worktree.
+    echo "Mount delivery: writing SESSION_STATE init marker" >&2
+    _init_sha=""
+    if [[ "$FLATTEN" == "true" ]]; then
+      _init_sha=$(git -C "$SANDBOX_DIR" rev-list --max-parents=0 HEAD || true)
+    else
+      _init_sha=$(git -C "$SANDBOX_DIR" rev-parse HEAD || true)
+    fi
+    if [[ -z "$_init_sha" ]]; then
+      echo "Error: mount worktree has no resolvable HEAD -- materialization produced an empty repository." >&2
+      echo "  Recreate the worktree: remove $SANDBOX_DIR and start again." >&2
+      exit 1
+    fi
+    session_state_write_set "$SANDBOX_DIR" "$_init_sha"
+  fi
+  session_state_write "$SANDBOX_DIR" "changes_dir" "$CHANGES_DIR"
+  session_state_write "$SANDBOX_DIR" "input_dir"   "$INPUT_DIR"
+  session_state_write "$SANDBOX_DIR" "output_dir"  "$OUTPUT_DIR"
+elif [[ ! -d "$SANDBOX_DIR/.git" ]]; then
+  # Copy delivery with an unseeded volume: the seeder either did not run or
+  # failed and its volume was discarded. The container cannot start.
+  echo "Error: sandbox volume has no git state  --  the seeder did not run or failed." >&2
+  echo "  Re-run the start; check the seeder output above the container log." >&2
   exit 1
-}
+else
+  # Initialized path: the volume carries git state -- seeded fresh (the
+  # seeder wrote .git + SESSION_STATE before this container started) or
+  # resumed. Workspace paths are still written in case this is a
+  # post-migration resume where SESSION_STATE exists but path fields are
+  # from an old layout.
+  if [[ "$RESET_VOLUME" == "true" ]]; then
+    echo "Sandbox volume seeded and verified."
+  else
+    echo "Resuming existing volume  --  git state found at $SANDBOX_DIR/.git"
+  fi
+  if [[ ! -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
+    echo "WARN: SESSION_STATE missing from existing volume  --  some features may not work" >&2
+  else
+    # Upgrade path: on first resume after upgrading from pre-Phase-1.5,
+    # SESSION_STATE may have identity values that don't match the current
+    # env vars (set from the volume labels / compose record or freshly computed). Update to
+    # match so that package_branch and diff_export use consistent identity.
+    _sr=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
+    if [[ -n "$_sr" && "$_sr" != "${SESSION_ID:-}" ]]; then
+      echo "Upgrade path: SESSION_STATE.session_id ($_sr) differs from SESSION_ID (${SESSION_ID:-})  --  updating" >&2
+      session_state_write "$SANDBOX_DIR" "session_id" "${SESSION_ID:-}"
+      session_state_write "$SANDBOX_DIR" "session_ts" "${SESSION_TS:-}"
+      session_state_write "$SANDBOX_DIR" "host_head_sha" "${HOST_HEAD_SHA:-}"
+    fi
+  fi
+  session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
+  session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
+  session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
+fi
 
-# SESSION_STATE is written by snapshot_init_git internally (init_sha + session_ts).
-# Write workspace paths so downstream consumers can read them deterministically.
-session_state_write "$SANDBOX_DIR" "changes_dir"  "$CHANGES_DIR"
-session_state_write "$SANDBOX_DIR" "snapshot_dir" "$SNAPSHOT_DIR"
-session_state_write "$SANDBOX_DIR" "input_dir"    "$INPUT_DIR"
-session_state_write "$SANDBOX_DIR" "output_dir"   "$OUTPUT_DIR"
+# -------------------------
+# Git hooks (copy delivery only)
+# -------------------------
+# The copy-delivery .git lives inside the session volume, so a hook installed
+# there can never execute on the host. The mount-delivery .git is a host
+# directory, so the harness installs no hook there. docs/adr/git_hooks.md.
+# Installed on every start (fresh and resume) so a refreshed image updates the
+# hook. The hook is harness-owned, not part of the project's committed files.
+if [[ "$SANDBOX_TYPE" == "copy" && -f "$GIT_HOOKS_DIR/pre-commit.sh" ]]; then
+  mkdir -p "$SANDBOX_DIR/.git/hooks"
+  install -m 0755 "$GIT_HOOKS_DIR/pre-commit.sh" "$SANDBOX_DIR/.git/hooks/pre-commit"
+  echo "Git hook installed: pre-commit (staged Markdown lint)"
+fi
 
-echo "Sandbox ready. Baseline recorded in SESSION_STATE."
 echo "Working tree status:"
 git -C "$SANDBOX_DIR" status --short | sed 's/^/  /'
 echo "  (empty = clean working tree)"
@@ -116,7 +186,7 @@ echo "  (empty = clean working tree)"
 # -------------------------
 # Critical invariants that must hold for every session start.
 # CRITICAL failures exit non-zero (container fails healthcheck).
-# WARN failures log but do not exit — the session can proceed.
+# WARN failures log but do not exit  --  the session can proceed.
 
 PREFLIGHT_FAILS=0
 _preflight_crit() {
@@ -125,7 +195,7 @@ _preflight_crit() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT FAIL: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT FAIL: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
     PREFLIGHT_FAILS=$(( PREFLIGHT_FAILS + 1 ))
   fi
 }
@@ -135,28 +205,25 @@ _preflight_warn() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT WARN: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT WARN: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
   fi
 }
 
 echo "--- pre-flight checks ---"
 
-# SESSION_STATE written by snapshot_init_git
+# SESSION_STATE written by the seeder (init_sha, session_ts, session_id, host_head_sha)
 _preflight_crit "SESSION_STATE has init_sha" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *init_sha=* ]]'
 _preflight_crit "SESSION_STATE has session_ts" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
 
 # Mount checks
-_preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"           test -f "$SNAPSHOT_DIR/baseline.tar"
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 # viable for provider-entrypoint only
 # _preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"
 # _preflight_crit "OUTPUT_DIR is writable (output mount)"              touch "$OUTPUT_DIR/.preflight_write_test" && rm -f "$OUTPUT_DIR/.preflight_write_test"
 
-# WARN: AGENTS.md in sandbox (project context loaded by pi via CWD discovery)
-_preflight_warn "AGENTS.md present in sandbox (project context)"  test -f "$SANDBOX_DIR/AGENTS.md"
-# WARN: AGENTS.md at AGENT_HOME (pi-specific global context — seeded by provider config)
+# WARN: AGENTS.md at AGENT_HOME (pi-specific global context  --  seeded by provider config)
 _preflight_warn "AGENTS.md present at AGENT_HOME (pi context)"  test -f "${AGENT_HOME:-~/.pi}/AGENTS.md"
 _preflight_warn "Working tree is clean"                              bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'
 
@@ -169,20 +236,83 @@ fi
 # -------------------------
 # Diff pipeline
 # -------------------------
-source /opt/sandbox/lib/diff_export.sh
-source /opt/sandbox/lib/routing.sh
+_source_lib "$SANDBOX_LIB_DIR/diff_export.sh"
+_source_lib "$SANDBOX_LIB_DIR/routing.sh"
 
-# On exit: kill autosave subshell if running, write session export via
-# session_export_path + diff_export. Runs on any exit — clean shutdown,
-# SIGTERM, or error.
+# _session_export SANDBOX_DIR CHANGES_DIR SESSION_ID
+# Runs the final session export on container exit.
+# 1. Waits for git lockfile to settle (autosave may have been mid-operation)
+# 2. Runs diff_export to the session export path (session/<EXPORT_TIME>-<SESSION_ID>/)
+# 3. On failure, falls back to the most recent autosave if one exists
+# 4. Writes .export-status in both the session dir and CHANGES_DIR root
+_session_export() {
+  local _sandbox_dir="$1" _changes_dir="$2" _session_id="$3"
+
+  # Best-effort: export even if the lock never cleared. wait_git_lockfile
+  # prints its own diagnostic and returns 1 in that case; under set -e a bare
+  # call would abort the export at exactly the point of proceeding.
+  wait_git_lockfile "$_sandbox_dir" || true
+
+  # SESSION_ID is required to build any artefact path. Mirrors the autosave
+  # tick's guard so both save paths treat the state the same way: report it and
+  # record a FAIL, rather than aborting the trap with no diagnostic.
+  if [[ -z "$_session_id" ]]; then
+    echo "session-export: SESSION_ID is unset; cannot build the export path" >&2
+    _write_export_status "$_changes_dir" "FAIL" "$(date -u +%Y%m%d-%H%M%S)" "1" 2>/dev/null || true
+    return 1
+  fi
+
+  # Skip when nothing changed since the last save (session_save_needed). The
+  # baseline is the freshest continuous checkpoint -- the autosave dir's own
+  # .export-status HEAD (init_sha when no autosave has fired yet). A clean
+  # tree at the last-saved HEAD means a fresh session bundle would be empty
+  # and redundant, so we do not create one at all.
+  local _prior
+  _prior=$(export_path "$_changes_dir" "autosave" "$_session_id")
+  save_decision "$_sandbox_dir" "$_prior" "session-export" || return 0
+
+  local _exit_dir
+  _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")
+  mkdir -p "$_exit_dir"
+
+  if diff_export "$_sandbox_dir" "$_exit_dir" "$_session_id"; then
+    echo "session-export: SUCCESS  --  artefacts written to $_exit_dir" >&2
+    _write_export_status "$_changes_dir" "SUCCESS" "$(date -u +%Y%m%d-%H%M%S)" "0" 2>/dev/null || true
+    return
+  fi
+
+  echo "session-export: FAILED  --  final export incomplete" >&2
+
+  # Fallback: find the most recently SAVED autosave directory. Autosave dir
+  # names are bare SESSION_IDs (no timestamp), so recency comes from the
+  # directory mtime (rewritten on every save cycle).
+  local _autosave_base
+  _autosave_base=$(resolve_channel_base_dir "autosave") || true
+  local _latest_autosave
+  _latest_autosave=$(resolve_latest_dir_by_mtime "${_autosave_base:-}" 2>/dev/null) || true
+
+  if [[ -n "$_latest_autosave" ]]; then
+    echo "session-export: falling back to autosave: $_latest_autosave" >&2
+    # Copy autosave artefacts into the session dir so the operator
+    # has the latest checkpoint at the expected session path
+    cp -r "$_latest_autosave"/* "$_exit_dir/" 2>/dev/null || true
+  else
+    echo "session-export: no autosave fallback available  --  session artefacts may be lost" >&2
+  fi
+
+  _write_export_status "$_changes_dir" "FAIL" "$(date -u +%Y%m%d-%H%M%S)" "1" 2>/dev/null || true
+}
+
+# On exit: kill autosave subshell if running, wait for git lockfile to settle,
+# then write session export via _session_export.
 #
-# Uses session_export_path from routing.sh to construct the output path
-# under CHANGES_DIR/session/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then calls
+# Uses export_path from routing.sh to construct the output path
+# under CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/, then calls
 # diff_export which delegates to package_branch.
+#
+# If diff_export fails, falls back to the most recent autosave.
 trap '[[ -n "$AUTOSAVE_PID" ]] && kill "$AUTOSAVE_PID" 2>/dev/null || true
-     local _exit_dir="$(session_export_path "$CHANGES_DIR" "session" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")"
-     mkdir -p "$_exit_dir"
-     diff_export "$SANDBOX_DIR" "$_exit_dir"' EXIT
+     _session_export "$SANDBOX_DIR" "$CHANGES_DIR" "${SESSION_ID:-}"' EXIT
 
 # On SIGTERM (docker stop): exit cleanly so EXIT trap fires with code 0.
 # Without this, SIGTERM interrupts wait and bash exits with 128+15=143,
@@ -193,22 +323,41 @@ trap 'exit 0' TERM
 # -------------------------
 # Optional autosave loop
 # -------------------------
-# Writes autosave checkpoint on interval without committing — provides
-# incremental checkpoints during a session without disturbing the baseline
-# diff. Uses session_export_path from routing.sh to construct the output
-# path under CHANGES_DIR/autosave/<SESSION_TS>-<BRANCH>-<RUN_ID>/, then
-# calls diff_export which delegates to package_branch.
+# Writes a single autosave checkpoint per session, replaced on each cycle.
+# Uses export_path from routing.sh  --  autosave/<SESSION_ID>/ (no
+# EXPORT_TIME in the path). Each cycle builds the new checkpoint beside the
+# old one and swaps it in on success, so only the latest checkpoint is
+# retained and a failed cycle leaves the previous one intact.
 # PID is tracked so the EXIT trap can kill the subshell cleanly on shutdown.
+#
+# Every save attempt is logged to stderr (visible via docker logs).
+# On failure, writes a timestamped error log for diagnosis.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
-  (
-    while true; do
-      sleep "$AUTOSAVE_INTERVAL"
-      local _as_dir="$(session_export_path "$CHANGES_DIR" "autosave" "${SESSION_TS:-unknown}" "${SANITIZED_HOST_BRANCH:-unknown}" "${RUN_ID:-}")"
-      mkdir -p "$_as_dir"
-      diff_export "$SANDBOX_DIR" "$_as_dir"
-    done
-  ) &
+  # The loop body lives in session_save_policy.sh so the shipped tick sequence
+  # is testable without docker or a live container. The cycle supplies the
+  # export's arguments; the caller names only the verb.
+  autosave_loop "$AUTOSAVE_INTERVAL" export_path "$CHANGES_DIR" "$SANDBOX_DIR" \
+    "${SESSION_ID:-}" diff_export &
   AUTOSAVE_PID=$!
+fi
+
+# -------------------------
+# Optional start-up command (prelude)
+# -------------------------
+# If a start-up command was supplied (compose `command:` override, e.g. the
+# dry-run capability probe), run it now -- after init, preflight and autosave
+# are set up -- then continue to stay alive. Running it and then staying up is
+# required because the reasoning layer mounts sandbox/ via --volumes-from and
+# depends on this container being healthy; a run-and-exit would tear the
+# cross-component link before the reasoning layer finishes.
+#
+# The command's exit code is not acted on here: the harness owns handling of
+# the result (e.g. dry-run reads the diagnostics record, not the exit code).
+# The sandbox image sets no CMD, so `$#` is non-zero only when a command is
+# explicitly provided -- normal start/serve pass no command.
+if (( $# > 0 )); then
+  echo "entrypoint: running start-up command: $*" >&2
+  "$@"
 fi
 
 # -------------------------
@@ -220,7 +369,7 @@ fi
 # reasoning layer exits.
 #
 # sleep infinity runs in the background; wait blocks the shell on it.
-# This keeps bash as PID 1 and the signal-receiving process — SIGTERM
+# This keeps bash as PID 1 and the signal-receiving process  --  SIGTERM
 # from docker stop is delivered to bash, the TERM trap fires, exit 0
 # triggers the EXIT trap, and the diff pipeline runs.
 # Plain `sleep infinity` as a foreground process receives the signal

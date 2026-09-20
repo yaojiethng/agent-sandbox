@@ -1,31 +1,33 @@
-# Design — Change A: Unified Output Format and CLI Contract
+# Design -- Change A: Unified Output Format and CLI Contract
 
-**Target milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
+**Target milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 
-**Status:** Design record — describes the system as it will be after Change A
+**Status:** Design record -- describes the system as it will be after Change A
 **Supersedes:** The "Contract Amendments" sections in `design_diff_and_branch_packaging_workflow.md`
-**Related:** [`design_diff_and_branch_packaging_workflow.md`](design_diff_and_branch_packaging_workflow.md) — core design document (diff format, primitives, invariants unchanged)
+**Related:** [`design_diff_and_branch_packaging_workflow.md`](design_diff_and_branch_packaging_workflow.md) -- core design document (diff format, primitives, invariants unchanged)
 
 ---
 
 ## 1. Scope
 
-Change A restructures the diff packaging pipeline and CLI contract around a unified output format, a `--channel` routing layer, and a consolidated `SESSION_STATE` identity model. It comprises sequenced implementation groups (A.0–A.5), each with its own roadmap entry.
+Change A restructures the diff packaging pipeline and CLI contract around a unified output format, a `--channel` routing layer, and a consolidated `SESSION_STATE` identity model. It comprises sequenced implementation groups (A.0-A.5), each with its own roadmap entry.
 
 **What Change A is:**
+
 - A new output format for all diff packaging (exit, autosave, manual `package_branch`, manual `package_diff`)
 - A `--channel` flag that replaces hardcoded path resolution
 - A file-path contract for `apply_run` (no hardcoded filename)
 - A `SOURCE_DIR` contract for `draft_run` (caller supplies the directory)
 - A shared `write_changed_files` helper extracted from inline copy logic
 - Sourceability for `agent-sandbox.sh` so it can be sourced in tests
-- Sourceability for `package_diff.sh` (add main guard), preserved for `package_branch.sh` (already present) — both are invoked as scripts via agent prompt templates (`agent/prompts/package-diff.md`, `agent/prompts/package-branch.md`) and must remain executable directly, while also being sourceable as libraries
+- Sourceability for `package_diff.sh` (add main guard), preserved for `package_branch.sh` (already present) -- both are invoked as scripts via agent prompt templates (`agent/prompts/package-diff.md`, `agent/prompts/package-branch.md`) and must remain executable directly, while also being sourceable as libraries
 
 **What Change A is not:**
+
 - Not a redesign of the diff format or git-agnostic principle (those are settled in the core design doc)
 - Not interactive mode (that is Change B)
 - Not `SESSION_STATE` migration (that is already complete via pre-clean)
-- Not host path resolution unification (that is A.5 — `agent-sandbox package-diff`/`package-branch` subcommands, `--to` flag, git alias removal)
+- Not host path resolution unification (that is A.5 -- `agent-sandbox package-diff`/`package-branch` subcommands, `--to` flag, git alias removal)
 
 ---
 
@@ -35,7 +37,7 @@ All packaging operations produce the same directory layout under their target ba
 
 ### Directory structure
 
-```
+```text
 <base>/
   EXPORT-TIME.txt              — audit trail timestamp
   patches/
@@ -69,7 +71,7 @@ All packaging operations produce the same directory layout under their target ba
 |---|---|---|
 | `changes.diff` | `uncommitted.diff` | Unambiguous intent |
 | `staged.diff` | `all-changes.diff` | Net delta from `INIT_SHA` including untracked |
-| — | `patches/` | Subfolder for per-commit diffs (was parent-level) |
+| -- | `patches/` | Subfolder for per-commit diffs (was parent-level) |
 
 ---
 
@@ -84,21 +86,23 @@ package_branch SANDBOX_DIR OUTPUT_DIR
 ```
 
 Sequence:
-1. `package_commits(SANDBOX_DIR, OUTPUT_DIR/patches/)` — numbered per-commit diffs since `INIT_SHA`
-2. `write_uncommitted_diff(SANDBOX_DIR, OUTPUT_DIR/uncommitted.diff)` — `git diff HEAD` with untracked staging
-3. `write_all_changes_diff(SANDBOX_DIR, OUTPUT_DIR/all-changes.diff)` — `git diff INIT_SHA` with untracked staging
-4. `write_changed_files(SANDBOX_DIR, INIT_SHA, OUTPUT_DIR/changed-files/)` — working tree copies
+
+1. `package_commits(SANDBOX_DIR, OUTPUT_DIR/patches/)` -- numbered per-commit diffs since `INIT_SHA`
+2. `write_uncommitted_diff(SANDBOX_DIR, OUTPUT_DIR/uncommitted.diff)` -- `git diff HEAD` with untracked staging
+3. `write_all_changes_diff(SANDBOX_DIR, OUTPUT_DIR/all-changes.diff)` -- `git diff INIT_SHA` with untracked staging
+4. `write_changed_files(SANDBOX_DIR, INIT_SHA, OUTPUT_DIR/changed-files/)` -- working tree copies
 
 All four operations strip index lines from text diffs (retain for binary patches).
 
 ### `diff_on_exit` / `diff_on_autosave` (thin dispatchers)
 
 Both become wrappers that:
+
 1. Create the output directory
 2. Write `EXPORT-TIME.txt`
 3. Call `package_branch "$SANDBOX_DIR" "$OUTPUT_DIR"`
 
-No sweep commit. No `BASELINE_SHA` parameter — session identity is read from `SESSION_STATE`.
+No sweep commit. No `BASELINE_SHA` parameter -- session identity is read from `SESSION_STATE`.
 
 ### `write_uncommitted_diff`
 
@@ -178,7 +182,7 @@ draft_run PROJECT_DIR SOURCE_DIR SESSION_NAME BRANCH_FROM DIFFS BRANCH_SUMMARY
 apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE
 ```
 
-- `DIFF_FILE` is a file path directly — no internal routing, no hardcoded filename
+- `DIFF_FILE` is a file path directly -- no internal routing, no hardcoded filename
 - 4 positional arguments (was 6)
 
 ### Makefile flag mappings
@@ -216,7 +220,7 @@ The current `diff_on_exit` produces empty output because it runs the old code pa
 
 ## 7. Dependency Ordering
 
-```
+```text
 A.0 (sourceability)
   │
   ▼
@@ -241,7 +245,7 @@ A.4 was folded into A.1. A.5 (git alias removal, `agent-sandbox package-diff`/`p
 | Document | Purpose |
 |---|---|
 | `design_diff_and_branch_packaging_workflow.md` | Core design: diff format, primitives, invariants |
-| `roadmap.md` (§ A.0–A.4) | Executable task entries |
-| `execution_model.md` | Architecture — diff pipeline |
-| `sandbox_lifecycle.md` | Container lifecycle — SESSION_STATE initialisation |
+| `roadmap.md` ( A.0-A.4) | Executable task entries |
+| `execution_model.md` | Architecture -- diff pipeline |
+| `sandbox_lifecycle.md` | Container lifecycle -- SESSION_STATE initialisation |
 | `tool_interface.md` | Operator-facing command reference |

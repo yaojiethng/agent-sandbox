@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_providers_pi_preflight.sh
 # Unit tests for src/reasoning/providers/pi/preflight.sh
+# Pins cite: devlog/discussions/design_provider_config_ownership_and_loading.md (warning surface).
+
 #
 # Tests:
 #   - _ensure_harness_keys injects skills/prompts/packages keys
@@ -8,16 +10,16 @@
 #   - Warn when settings.json is missing
 #   - Warn when AGENTS.md is missing (Pi-specific path)
 #   - _preflight_check_bind_mounts validates prompts/, sessions/, skills/
+#   - _reset_models_store_freshness zeroes checkedAt, keeps etag/lastModified
 #
 # Run:   bash tests/test_providers_pi_preflight.sh
 # Exit:  0 = all passed, non-zero = failure count
 
-set -euo pipefail
+set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFLIGHT="${SCRIPT_DIR}/../src/reasoning/providers/pi/preflight.sh"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+PREFLIGHT="${TEST_DIR}/../src/reasoning/providers/pi/preflight.sh"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -30,6 +32,8 @@ _source_preflight() {
   (
     export AGENT_HOME="$ah"
     export PROVIDER_NAME="pi"
+    # Fixture-written preflight copy; not statically followable.
+    # shellcheck disable=SC1090
     source "$PREFLIGHT" 2>&1 || true
   )
 }
@@ -102,11 +106,7 @@ test_merge_deduplicates_paths() {
   local settings="$ah/agent/settings.json"
   local count
   count=$(grep -c '/opt/workflow/agent/skills' "$settings" || true)
-  if [[ "$count" -eq 1 ]]; then
-    pass "merge deduplicates existing paths"
-  else
-    fail "merge duplicated path (count=$count)"
-  fi
+  assert_eq_num "$count" "1" "merge deduplicates existing paths"
 
   rm -rf "$tmpdir"
 }
@@ -163,6 +163,85 @@ test_merge_does_not_fail_on_missing_agents_md() {
     pass "merge succeeds even when AGENTS.md is missing"
   else
     fail "merge failed when AGENTS.md was missing"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+# ---------------------------------------------------------------------------
+# Tests: models-store freshness reset
+# ---------------------------------------------------------------------------
+
+test_freshness_reset_zeroes_checked_at() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent"
+  echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"},"opencode-go":{"checkedAt":1700000001000}}' > "$ah/agent/models-store.json"
+
+  _source_preflight "$ah" >/dev/null
+
+  if node -e '
+    const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    process.exit(d.openrouter.checkedAt === 0 && d["opencode-go"].checkedAt === 0 ? 0 : 1);
+  ' "$ah/agent/models-store.json"; then
+    pass "freshness reset zeroes checkedAt on every entry"
+  else
+    fail "freshness reset did not zero checkedAt"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_freshness_reset_preserves_etag_and_last_modified() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent"
+  echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"}}' > "$ah/agent/models-store.json"
+
+  _source_preflight "$ah" >/dev/null
+
+  if node -e '
+    const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    process.exit(d.openrouter.etag === "w/abc" && d.openrouter.lastModified === 1789000000000 && d.openrouter.models.length === 1 ? 0 : 1);
+  ' "$ah/agent/models-store.json"; then
+    pass "freshness reset keeps etag, lastModified, and models for conditional revalidation"
+  else
+    fail "freshness reset dropped revalidation metadata"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_freshness_reset_noop_when_store_missing() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent"
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -q "models-store"; then
+    fail "unexpected models-store message when store is absent"
+  else
+    pass "freshness reset is a no-op when the store is absent"
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_freshness_reset_warns_on_invalid_json() {
+  local tmpdir; tmpdir=$(mktemp -d)
+  local ah="$tmpdir/ah"
+  mkdir -p "$ah/agent"
+  echo '{broken' > "$ah/agent/models-store.json"
+
+  local output
+  output=$(_source_preflight "$ah")
+
+  if echo "$output" | grep -q "not valid JSON"; then
+    pass "warns when models-store.json is not valid JSON"
+  else
+    fail "no warning for invalid models-store.json"
   fi
 
   rm -rf "$tmpdir"
@@ -287,5 +366,10 @@ run_test test_bind_mount_warns_on_missing_prompts
 run_test test_bind_mount_warns_on_missing_sessions
 run_test test_bind_mount_warns_on_not_writable
 run_test test_bind_mount_messages_on_all_missing
+run_test test_freshness_reset_zeroes_checked_at
+run_test test_freshness_reset_preserves_etag_and_last_modified
+run_test test_freshness_reset_noop_when_store_missing
+run_test test_freshness_reset_warns_on_invalid_json
 
 test_done
+

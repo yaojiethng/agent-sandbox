@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # scripts/build.sh
-# Build orchestration — builds Docker images for agent and sandbox layers.
+# Build orchestration  --  builds Docker images for agent and sandbox layers.
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   build/image.sh   — image naming functions
+#   src/build/image.sh   --  image naming + identity (image_digest)
+#   libs/interface_contract.sh   --  interface-contract version (authoritative)
+#   libs/cli.sh          --  flag parsing
 #
 # Provides:
 #   build_image    - run docker build using repo root as context
-#   build_agent    - three-tier build (shared → provider-base → provider-image)
+#   build_agent    - three-tier build (shared -> provider-base -> provider-image)
 #   build_sandbox  - build the capability layer image for a given project
 #   preflight      - verify both images exist; build if missing
 
@@ -16,94 +18,58 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/libs/interface_contract.sh"
+source "$REPO_ROOT/src/libs/cli.sh"
 
-# -------------------------
-# Container-sig source lists
-# These define which source files map to /opt/sandbox/ and /opt/workflow/
-# in each image type. Both build_sandbox/build_agent and _check_container_sig
-# use these to compute the container-sig hash — single source of truth.
-# -------------------------
-
-# _sandbox_sig_sources
-# Source paths for the sandbox image (maps to /opt/sandbox/).
-_sandbox_sig_sources() {
-  echo "src/libs src/capability/entrypoint.sh src/capability/snapshot.sh docs/architecture docs/concepts"
-}
-
-# _agent_sig_sources <repo_root> <provider>
-# Source paths for an agent image (maps to /opt/sandbox/ + /opt/workflow/).
-# Provider-specific paths (config/, preflight.sh) included when they exist.
-_agent_sig_sources() {
-  local repo_root="$1"
-  local provider="$2"
-  local sources="src/libs src/reasoning/entrypoint.sh docs/architecture docs/concepts src/reasoning/agent/skills src/reasoning/agent/prompts"
-  if [[ -d "$repo_root/src/reasoning/providers/$provider/config" ]]; then
-    sources="$sources src/reasoning/providers/$provider/config"
-  fi
-  if [[ -f "$repo_root/src/reasoning/providers/$provider/preflight.sh" ]]; then
-    sources="$sources src/reasoning/providers/$provider/preflight.sh"
-  fi
-  echo "$sources"
-}
 
 # -------------------------
 # Build execution
 # -------------------------
 
-# container_sig <repo_root> <sandbox_sources> <workflow_sources>
-# Computes a deterministic SHA-256 hash of all files under the given source
-# directories. The source paths are repo-relative (e.g. src/libs).
-# Returns a hex string suitable for use as a Docker label value.
-container_sig() {
-  local repo_root="${1:?container_sig requires repo_root}"
-  shift 1
-  local sources=("$@")
-  local find_args=()
-  local src
-  for src in "${sources[@]}"; do
-    find_args+=("$repo_root/$src")
-  done
-  find "${find_args[@]}" -type f -print0 2>/dev/null \
-    | sort -z \
-    | xargs -0 sha256sum \
-    | sha256sum \
-    | awk '{print $1}'
-}
-
-# build_image <image_name> <dockerfile> <repo_root> <container_sig> <no_cache> [docker build args...]
+# build_image <image_name> <dockerfile> <repo_root> <contract_label> <no_cache> [docker build args...]
 # Builds using repo root as docker build context.
-# Injects the container-sig label for staleness detection.
+# contract_label is the interface-contract version to bake as the
+# `agent-sandbox.interface-contract-version` label (ADR
+# interface_contract_compatibility.md). Pass the version to stamp it, or the
+# empty string to build an image with no label (tier-1/2 shared bases carry no
+# baked harness content, so they take no label).
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
   local repo_root="${3:?build_image requires repo_root}"
-  local sig="${4:-}"
+  local contract_label="${4:-}"
   local no_cache="${5:-}"
   shift 5
 
+  local build_cmd=(docker build --quiet)
+  [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
+  build_cmd+=(-t "$image_name" -f "$dockerfile")
+  [[ -n "$contract_label" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$contract_label")
+  build_cmd+=("$@" "$repo_root")
+
+  # Run docker build with --quiet: per-step progress output (the cached-step
+  # staircase) is suppressed so the harness log stays clean; failures still
+  # surface their error text. The exit status is captured so a failure surfaces
+  # a single, descriptive message instead of a bare `set -e` abort. `_build_rc`
+  # defaults to a non-zero sentinel (fail closed): the `&& ... || ...` capture
+  # clears it to 0 on success or the build's real status on failure, so a path
+  # that never runs a build still reports failure rather than silently passing.
+  local _build_rc=1
   echo "Building image: $image_name"
-  if [[ -n "$sig" ]]; then
-    docker build $no_cache \
-      --label "agent-sandbox.container-sig=$sig" \
-      -t "$image_name" \
-      -f "$dockerfile" \
-      "$@" \
-      "$repo_root"
-  else
-    docker build $no_cache \
-      -t "$image_name" \
-      -f "$dockerfile" \
-      "$@" \
-      "$repo_root"
+  "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
+  [[ $_build_rc -eq 0 ]] && echo "  Build complete: $image_name"
+
+  if [[ $_build_rc -ne 0 ]]; then
+    echo "build_image: ERROR build FAILED for $image_name (exit $_build_rc)." >&2
+    exit 1
   fi
-  echo "Build complete: $image_name"
 }
 
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
-#   1. agent-node-base (shared — node.dockerfile)
-#   2. <provider>-base (provider-specific — providers/<n>/base.dockerfile)
-#   3. <provider>-agent-<project> (final — providers/<n>/provider.dockerfile)
+#   1. agent-node-base (shared  --  node.dockerfile)
+#   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
+#   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
 #
 # Tier 1 cached across all providers on this machine.
 # Tier 2 cached per-provider.
@@ -160,33 +126,30 @@ build_agent() {
   fi
 
   # --- Helper: build image only if missing (or --no-cache forces rebuild) ---
-  # Arguments: image dockerfile context_dir [container_sig] [cache_flag] [extra docker build args...]
+  # Arguments: image dockerfile context_dir [contract_label] [cache_flag] [extra docker build args...]
   build_if_missing() {
     local image="$1" dockerfile="$2" context_dir="$3"
-    local sig="${4:-}"
+    local contract_label="${4:-}"
     local cache="${5:-}"
     shift 5
     if ! docker image inspect "$image" >/dev/null 2>&1 || [[ -n "$no_cache" ]]; then
-      build_image "$image" "$dockerfile" "$context_dir" "$sig" "$cache" "$@"
+      build_image "$image" "$dockerfile" "$context_dir" "$contract_label" "$cache" "$@"
     else
       echo "Image exists, skipping: $image"
     fi
   }
 
-  # Tier 1: shared node base — no container-sig (no sandbox/workflow content)
+  # Tier 1: shared node base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base — no container-sig (no sandbox/workflow content)
+  # Tier 2: provider-specific base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image — with container-sig
-  local provider_sig
-  provider_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
-
-  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$provider_sig" "" \
+  # Tier 3: always build provider image  --  carries the contract label
+  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "" \
     --build-arg "BASE_IMAGE=$agent_base_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
@@ -207,9 +170,6 @@ build_sandbox() {
 
   local image; image="$(sandbox_image_name "$project")"
 
-  local sandbox_sig
-  sandbox_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
-
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
     uid_args+=(--build-arg "HOST_UID=$host_uid")
@@ -218,20 +178,20 @@ build_sandbox() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  build_image "$image" "$dockerfile" "$repo_root" "$sandbox_sig" "" "${uid_args[@]+${uid_args[@]}}"
+  build_image "$image" "$dockerfile" "$repo_root" "$(interface_contract_version)" "" "${uid_args[@]+${uid_args[@]}}"
 }
 
 # -------------------------
 # Preflight
 # -------------------------
 
-# preflight <provider> <project_name> <repo_root> <sandbox_dir>
+# preflight <provider> <project_name> <repo_root>
 # Checks that both images exist. Build before running rather than failing.
 preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
-  local sandbox_dir="${4:?preflight requires sandbox dir}"
+  local build_missing="${4:-true}"  # resume passes false  --  a resume must not rebuild
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -247,75 +207,72 @@ preflight() {
   fi
 
   if [[ "$missing" == true ]]; then
-    echo "One or more required images are missing. Building them now."
-    build_sandbox "$project" "$repo_root"
-    build_agent   "$provider" "$project" "$repo_root"
-    # Staleness check skipped for fresh builds
-    return 0
+    if [[ "$build_missing" == "true" ]]; then
+      echo "One or more required images are missing. Building them now."
+      build_sandbox "$project" "$repo_root"
+      build_agent   "$provider" "$project" "$repo_root"
+      # Staleness check skipped for fresh builds
+      return 0
+    else
+      echo "Error: required images are missing and resume does not build." >&2
+      echo "  Run 'make start' (or 'make build') to build them first." >&2
+      return 1
+    fi
   fi
 
-  # --- Container-sig staleness check (warning only) ---
-  # Check sandbox image
-  _check_container_sig "$sandbox_image" sandbox "$repo_root"
-  # Check agent image
-  _check_container_sig "$agent_image" agent "$provider" "$repo_root"
+  # --- Interface-contract version check (authoritative) ---
+  # ADR interface_contract_compatibility.md. The contract is authoritative:
+  # a drift or missing label refuses preflight (non-zero) so start fails
+  # closed. No runtime escape hatch -- an override would be a backdoor.
+  _check_interface_contract "$sandbox_image" || return 1
+  _check_interface_contract "$agent_image"   || return 1
 }
 
-# _check_container_sig <image_name> <type: sandbox|agent> <...>
-# Reads the baked container-sig label from an existing image, re-computes
-# from current source files, and warns on mismatch.
-# Type-specific args:
-#   sandbox: <repo_root>
-#   agent:   <provider> <repo_root>
-_check_container_sig() {
+# _check_interface_contract <image_name>
+# Interface-contract check (ADR interface_contract_compatibility.md): refuses
+# (returns 1) when the image's baked `agent-sandbox.interface-contract-version`
+# label differs from the current host-side constant -- the container was built
+# from a different contract revision than the working tree -- and names the
+# surface and the rebuild remedy. Missing label (built before the check)
+# refuses identically. Returns 0 only when aligned.
+_check_interface_contract() {
   local image_name="${1:?}"
-  local type="${2:?}"
-  shift 2
 
-  local baked_sig
-  baked_sig="$(docker image inspect --format '{{ index .Config.Labels "agent-sandbox.container-sig" }}' "$image_name" 2>/dev/null || true)"
-
-  if [[ -z "$baked_sig" ]]; then
-    echo "WARNING: $image_name has no container-sig label (built before two-sig model)." >&2
-    return 0
+  local baked current
+  baked="$(image_contract_version "$image_name")"
+  if [[ -z "$baked" ]]; then
+    echo "ERROR: $image_name has no interface-contract-version label (built before the interface-contract check)." >&2
+    echo "  The image predates the interface contract; rebuild with --rebuild." >&2
+    return 1
   fi
-
-  local current_sig=""
-  if [[ "$type" == "sandbox" ]]; then
-    local repo_root="${1:?}"
-    current_sig="$(container_sig "$repo_root" $(_sandbox_sig_sources))"
-  elif [[ "$type" == "agent" ]]; then
-    local provider="${1:?}"
-    local repo_root="${2:?}"
-    current_sig="$(container_sig "$repo_root" $(_agent_sig_sources "$repo_root" "$provider"))"
-  fi
-
-  if [[ "$baked_sig" != "$current_sig" ]]; then
-    echo "WARNING: $image_name container-sig mismatch (image is stale)." >&2
-    echo "  baked:    $baked_sig" >&2
-    echo "  current:  $current_sig" >&2
-    echo "  Rebuild with --rebuild to update." >&2
+  current="$(interface_contract_version)"
+  if [[ "$baked" != "$current" ]]; then
+    echo "ERROR: $image_name interface-contract version $baked differs from current source ($current)." >&2
+    echo "  Rebuild with --rebuild to align the container with the current contract." >&2
+    return 1
   fi
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox build
+# main  --  entry point when exec'd by agent-sandbox build
 # =============================================================================
 
 # Parses operator-facing flags and calls build_sandbox/build_agent as needed.
 # Expected flags: --name=<n> --project=<p> --sandbox=<s> [--targets=<t,...>] [--rebuild]
 #
 # --targets defaults to "all" if omitted. Use comma-separated values:
-#   all               — sandbox + all providers
-#   sandbox           — sandbox only
-#   pi,hermes         — named providers only
-#   pi,sandbox        — named provider + sandbox
+#   all                --  sandbox + all providers
+#   sandbox            --  sandbox only
+#   pi,hermes          --  named providers only
+#   pi,sandbox         --  named provider + sandbox
 
 usage() {
   cat <<EOF
 Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [options]
 
 Builds Docker images for the sandbox and/or agent providers.
+
+or, from a sandbox Makefile: make build [TARGET=<p>] [REBUILD=1]
 
 Required:
   --name=<name>       Project name (used for image tags)
@@ -329,32 +286,18 @@ EOF
 }
 
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_NAME=""
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local BUILD_TARGETS=""
+  parse_args usage \
+    --name=PROJECT_NAME \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --targets=BUILD_TARGETS \
+    --rebuild \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
   local REBUILD_FLAG=""
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-      --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --targets=*) BUILD_TARGETS="${ARG#--targets=}" ;;
-      --rebuild)   REBUILD_FLAG="--no-cache" ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  [[ "$REBUILD" == true ]] && REBUILD_FLAG="--no-cache"
 
   if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2
@@ -394,7 +337,14 @@ main() {
   fi
 }
 
-# Guard: only run main() when executed directly, not when sourced
+# Guard: only run main() when executed directly, not when sourced.
+# Also enforce the production runtime on standalone invocation: production
+# callers set `set -euo pipefail` before sourcing this file, but a standalone
+# `bash build.sh` (e.g. the trace tests) inherits the caller's options. Enabling
+# `-e` here makes standalone runs exercise the same failure-abort semantics as
+# production, so a silent `set -e` abort after a backgrounded/piped build is
+# caught.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
   main "$@"
 fi

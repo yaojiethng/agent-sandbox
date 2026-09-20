@@ -26,11 +26,11 @@ Yes: "Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:"
 
 ### Examples
 
-**"Why React component re-render?"**
+#### "Why React component re-render?"
 
 > Inline obj prop -> new ref -> re-render. `useMemo`.
 
-**"Explain database connection pooling."**
+#### "Explain database connection pooling."
 
 > Pool = reuse DB conn. Skip handshake -> fast under load.
 

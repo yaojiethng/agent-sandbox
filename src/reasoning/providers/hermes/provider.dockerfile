@@ -7,9 +7,9 @@
 # Slow install layers (apt, uv, Hermes source, Playwright) live in base.dockerfile.
 #
 # Provider contract (harness interface):
-#   AGENT_HOME    — where Hermes writes config, sessions, and memories
-#   PROVIDER_NAME — used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT    — provider-entrypoint.sh wraps the agent command; seeds config
+#   AGENT_HOME     --  where Hermes writes config, sessions, and memories
+#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
 #                   and registers copy-out trap before exec-ing hermes
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
@@ -23,8 +23,10 @@ ARG HOST_GID=1000
 # Build context is the repo root; COPY paths are repo-relative.
 COPY src/libs/                                  /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                /opt/sandbox/bin/provider-entrypoint.sh
+RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 COPY src/reasoning/agent/skills/                 /opt/workflow/agent/skills/
 COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
+COPY workflow/coding-agent/prompts/              /opt/workflow/agent/prompts/
 COPY docs/architecture/                          /opt/sandbox/docs/architecture/
 COPY docs/concepts/                              /opt/sandbox/docs/concepts/
 
@@ -41,6 +43,15 @@ RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
       groupmod -n agentuser "$existing_group" 2>/dev/null || true; \
       usermod -d /home/agentuser -m agentuser; \
     fi
+
+# Create key directories before user switch so agentuser
+# owns them. Docker bind mounts on macOS create parent dirs as root
+# when they don't exist in the image, which blocks writes by the
+# unprivileged user.
+RUN mkdir -p /home/agentuser/workspace/input \
+             /home/agentuser/workspace/output && \
+    chown -R agentuser:agentuser /home/agentuser/workspace
+
 USER agentuser
 
 # -------------------------
@@ -52,10 +63,8 @@ ENV AGENT_HOME=/home/agentuser/.hermes
 # -------------------------
 # Working directories
 # -------------------------
-# sandbox/ is NOT pre-created here — provided by the capability layer
-# via --volumes-from. workspace/ dirs are bind-mounted from SANDBOX_DIR.
-RUN mkdir -p /home/agentuser/workspace/input \
-             /home/agentuser/workspace/output
+# sandbox/ is NOT pre-created here  --  provided by the capability layer
+# via --volumes-from.
 
 WORKDIR /home/agentuser/sandbox
 
@@ -66,4 +75,5 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
 ENV PATH=/opt/sandbox/bin:$PATH
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "hermes"]
+CMD ["hermes"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]

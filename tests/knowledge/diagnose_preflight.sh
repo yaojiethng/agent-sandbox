@@ -18,7 +18,7 @@ ROOT="/home/agentuser"
 SANDBOX_DIR="$ROOT/sandbox"
 
 echo "=== 1. Environment ==="
-for var in SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME AUTOSAVE_INTERVAL SESSION_TS; do
+for var in SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME AUTOSAVE_INTERVAL SESSION_TS; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -27,33 +27,25 @@ echo ""
 echo "=== 2. Path resolution ==="
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$SANDBOX_DIR"
 
 # Check directories
-[[ -d "$SNAPSHOT_DIR" ]] && pass "SNAPSHOT_DIR exists ($SNAPSHOT_DIR)" || fail "SNAPSHOT_DIR missing"
 [[ -d "$CHANGES_DIR" ]] && pass "CHANGES_DIR exists ($CHANGES_DIR)" || fail "CHANGES_DIR missing"
 [[ -d "$INPUT_DIR" ]]   && pass "INPUT_DIR exists ($INPUT_DIR)"     || pass "INPUT_DIR absent (expected: capability layer lacks this mount)"
 [[ -d "$OUTPUT_DIR" ]]  && pass "OUTPUT_DIR exists ($OUTPUT_DIR)"   || pass "OUTPUT_DIR absent (expected: capability layer lacks this mount)"
-[[ -f "$SNAPSHOT_DIR/baseline.tar" ]] && pass "baseline.tar present" || fail "baseline.tar missing"
 
 echo ""
 echo "=== 3. SESSION_STATE ==="
 if [[ -f "$SANDBOX_DIR/.git/SESSION_STATE" ]]; then
   pass "SESSION_STATE file exists"
-  source /opt/sandbox/lib/session.sh 2>/dev/null
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
-  if [[ -n "$INIT_SHA" ]]; then
-    if git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$INIT_SHA" >/dev/null 2>&1; then
-      pass "init_sha=$INIT_SHA is a valid commit"
-    else
-      fail "init_sha=$INIT_SHA is NOT a valid commit in the sandbox repo"
-    fi
+  source /opt/sandbox/lib/session_state.sh 2>/dev/null
+  if init_sha_is_valid "$SANDBOX_DIR"; then
+    pass "init_sha is a valid commit in the sandbox repo"
   else
-    fail "init_sha is missing from SESSION_STATE"
+    fail "init_sha is NOT a valid commit in the sandbox repo (missing, bogus, or not a commit object)"
   fi
   SESSION_TS_CHECK=$(session_state_read "$SANDBOX_DIR" "session_ts")
   [[ -n "$SESSION_TS_CHECK" ]] && pass "session_ts=$SESSION_TS_CHECK" || fail "session_ts missing"
@@ -81,7 +73,7 @@ _preflight_crit() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "PASS: $msg"
   else
-    echo "FAIL: $msg${_err:+ — ${_err%%$'\''\n'\''*}}" >&2
+    echo "FAIL: $msg${_err:+  --  ${_err%%$'\''\n'\''*}}" >&2
   fi
 }
 PREFLIGHT_FAILS=0
@@ -132,7 +124,7 @@ _preflight_crit() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT FAIL: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT FAIL: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
     PREFLIGHT_FAILS=$(( PREFLIGHT_FAILS + 1 ))
   fi
 }
@@ -142,7 +134,7 @@ _preflight_warn() {
   if _err=$("$@" 2>&1 >/dev/null); then
     echo "  PREFLIGHT PASS: $msg"
   else
-    echo "  PREFLIGHT WARN: $msg${_err:+ — ${_err%%$'\n'*}}" >&2
+    echo "  PREFLIGHT WARN: $msg${_err:+  --  ${_err%%$'\n'*}}" >&2
   fi
 }
 
@@ -155,11 +147,9 @@ _preflight_crit "SESSION_STATE has session_ts" \
   bash -c 's="$(cat /home/agentuser/sandbox/.git/SESSION_STATE 2>/dev/null)"; [[ "$s" == *session_ts=* ]]'
 
 # Mount checks (capability layer mounts only)
-_preflight_crit "SNAPSHOT_DIR is readable (snapshot mount)"       test -f "$SNAPSHOT_DIR/baseline.tar"
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"   touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
 
 # WARN checks
-_preflight_warn "brief.md present in INPUT_DIR (AGENTS.md injected)"  test -f "$INPUT_DIR/brief.md"
 _preflight_warn "Working tree is clean"    bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'
 
 SUMMARY=$([ "$PREFLIGHT_FAILS" -eq 0 ] && echo "ALL CHECKS PASSED" || echo "$PREFLIGHT_FAILS FAILURE(S)")
@@ -187,9 +177,9 @@ echo "Passed: $PASS, Failed: $FAIL"
 
 echo ""
 echo "If any checks fail:"
-echo "  1. set -e safety failure → _preflight_crit uses _err=\$(cmd) instead of if _err=\$(cmd); then"
-echo "  2. stderr capture failure → the 2>&1 >/dev/null redirection may be misordered"
-echo "  3. SESSION_STATE failure  → snapshot_init_git did not write it, or .git is missing"
-echo "  4. Mount failures         → check compose volume definitions for the sandbox service"
+echo "  1. set -e safety failure -> _preflight_crit uses _err=\$(cmd) instead of if _err=\$(cmd); then"
+echo "  2. stderr capture failure -> the 2>&1 >/dev/null redirection may be misordered"
+echo "  3. SESSION_STATE failure  -> the seeder did not write it, or .git is missing"
+echo "  4. Mount failures         -> check compose volume definitions for the sandbox service"
 
 [[ "$FAIL" -eq 0 ]]

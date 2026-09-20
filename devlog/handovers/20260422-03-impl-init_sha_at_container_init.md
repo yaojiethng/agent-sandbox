@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-22
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-04-22
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -17,7 +17,7 @@ Unit A from the M2.3 pending task list:
 - Remove `.git/BASELINE_SHA` file fallback from `libs/package_diff.sh`
 - Add test case for `INIT_SHA` file creation in `tests/test_snapshot_container.sh`
 
-**Confirmed:** No `BASELINE_SHA` file write logic exists to remove — only stdout echo. No existing tests need updating; only new test for `INIT_SHA` file.
+**Confirmed:** No `BASELINE_SHA` file write logic exists to remove -- only stdout echo. No existing tests need updating; only new test for `INIT_SHA` file.
 
 ## Carried forward
 
@@ -25,23 +25,23 @@ None.
 
 ## Acceptance criteria
 
-1. **`INIT_SHA` file written at container init** — Run `snapshot_init_git` and verify `.git/INIT_SHA` exists with the first commit SHA. ✓ Accepted
-2. **Tests pass** — Run `bash tests/test_snapshot_container.sh` and observe `30 passed, 0 failed`. ✓ Accepted
-3. **No `BASELINE_SHA` file fallback** — Verify `libs/package_diff.sh` references `.git/INIT_SHA` instead of `.git/BASELINE_SHA`. ✓ Accepted
+1. **`INIT_SHA` file written at container init** -- Run `snapshot_init_git` and verify `.git/INIT_SHA` exists with the first commit SHA. [x] Accepted
+2. **Tests pass** -- Run `bash tests/test_snapshot_container.sh` and observe `30 passed, 0 failed`. [x] Accepted
+3. **No `BASELINE_SHA` file fallback** -- Verify `libs/package_diff.sh` references `.git/INIT_SHA` instead of `.git/BASELINE_SHA`. [x] Accepted
 
 ## Hot files
 
 | File | Why in scope | Status |
 |---|---|---|
-| [`libs/snapshot.sh`](libs/snapshot.sh) | `snapshot_init_git` function — add `INIT_SHA` file write | ✓ Complete |
-| [`libs/package_diff.sh`](libs/package_diff.sh) | Remove `.git/BASELINE_SHA` file fallback | ✓ Complete |
-| [`tests/test_snapshot_container.sh`](tests/test_snapshot_container.sh) | Add test case for `INIT_SHA` file creation | ✓ Complete |
+| [`libs/snapshot.sh`](libs/snapshot.sh) | `snapshot_init_git` function -- add `INIT_SHA` file write | [x] Complete |
+| [`libs/package_diff.sh`](libs/package_diff.sh) | Remove `.git/BASELINE_SHA` file fallback | [x] Complete |
+| [`tests/test_snapshot_container.sh`](tests/test_snapshot_container.sh) | Add test case for `INIT_SHA` file creation | [x] Complete |
 
 ## Decisions made this session
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| No `BASELINE_SHA` file write to remove — only stdout echo | Investigation confirmed no file write exists; only updated `package_diff.sh` fallback | N/A — investigation finding |
+| No `BASELINE_SHA` file write to remove -- only stdout echo | Investigation confirmed no file write exists; only updated `package_diff.sh` fallback | N/A -- investigation finding |
 | Added test case for `INIT_SHA` file creation | Tests should verify new file is created with correct content | `tests/test_snapshot_container.sh` |
 
 ## Completed this session
@@ -58,13 +58,14 @@ None.
 
 ## Next session
 
-**Sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline.
-**Session type:** Implementation.
-**Trigger B:** Not pending — mid-milestone.
+**Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline.
+**Type:** Implementation.
+**Trigger B:** Not pending -- mid-milestone.
 
 Next task is Unit B (Remove checkpoint tags). Read the roadmap M2.3 pending section for the full unit list and dependency order. Implement Unit B only.
 
 **Watch-outs:**
+
 - Unit B is independent of Unit A (can be done in any order with B)
 - Check `start_agent.sh` and `scripts/checkpoint.sh` for checkpoint tag creation/pruning/lookup
 - Container labels may reference `agent-sandbox.checkpoint-tag`

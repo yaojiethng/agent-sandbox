@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-17
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Workflow
+**Date:** 2026-04-17
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Workflow
 **Status:** Closed
 
 ## Objective
@@ -13,8 +13,8 @@ Strengthen two workflow gates: the scope confirmation gate (Step 1b) to require 
 
 Policy changes across two documents:
 
-- `docs/operations/iteration_policy.md` — Step 1b exit condition; new Step 7b row in step table; Step 7b added to both diagrams
-- `docs/operations/handover_policy.md` — scope confirmation exit condition and step-by-step release rule; new `At pre-close verification (Step 7b)` section; descriptive filename naming rule
+- `docs/operations/iteration_policy.md` -- Step 1b exit condition; new Step 7b row in step table; Step 7b added to both diagrams
+- `docs/operations/handover_policy.md` -- scope confirmation exit condition and step-by-step release rule; new `At pre-close verification (Step 7b)` section; descriptive filename naming rule
 
 ## Carried forward
 
@@ -24,14 +24,14 @@ None.
 
 | # | Check | Result |
 |---|-------|--------|
-| AC-1 | `iteration_policy.md` Step 1b exit condition requires explicit release signal, not just scope acknowledgement | ✅ Accepted |
-| AC-2 | `iteration_policy.md` Step 1b action states release applies to immediately following step only | ✅ Accepted |
-| AC-3 | `iteration_policy.md` Step 7b row exists in step table with entry condition, action, and exit condition | ✅ Accepted |
-| AC-4 | `iteration_policy.md` Step 7b appears in both the top-level diagram and the session type diagram | ✅ Accepted |
-| AC-5 | `handover_policy.md` scope confirmation exit condition names "hold changes" as a non-releasing message | ✅ Accepted |
-| AC-6 | `handover_policy.md` step-by-step release rule states a single release does not authorise the full session | ✅ Accepted |
-| AC-7 | `handover_policy.md` `At pre-close verification (Step 7b)` section exists with four-part summary format and three operator response modes | ✅ Accepted |
-| AC-8 | `handover_policy.md` filename description rule requires concrete subject, includes bad/good examples, and updates the example filename | ✅ Accepted |
+| AC-1 | `iteration_policy.md` Step 1b exit condition requires explicit release signal, not just scope acknowledgement | [x] Accepted |
+| AC-2 | `iteration_policy.md` Step 1b action states release applies to immediately following step only | [x] Accepted |
+| AC-3 | `iteration_policy.md` Step 7b row exists in step table with entry condition, action, and exit condition | [x] Accepted |
+| AC-4 | `iteration_policy.md` Step 7b appears in both the top-level diagram and the session type diagram | [x] Accepted |
+| AC-5 | `handover_policy.md` scope confirmation exit condition names "hold changes" as a non-releasing message | [x] Accepted |
+| AC-6 | `handover_policy.md` step-by-step release rule states a single release does not authorise the full session | [x] Accepted |
+| AC-7 | `handover_policy.md` `At pre-close verification (Step 7b)` section exists with four-part summary format and three operator response modes | [x] Accepted |
+| AC-8 | `handover_policy.md` filename description rule requires concrete subject, includes bad/good examples, and updates the example filename | [x] Accepted |
 
 ## Hot files
 
@@ -62,14 +62,15 @@ None.
 
 ## Next session
 
-**Next sub-milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline (continuing — Change 2)
+**Next sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline (continuing -- Change 2)
 
 Context handover: [`20260417-02-impl-worktree_namespaced_checkpoints.md`](20260417-02-impl-worktree_namespaced_checkpoints.md)
 
-Change 2 scope is fully specified — no blocking design questions. Read the context handover before scoping. Proceed to implementation after confirming scope at Step 1b.
+Change 2 scope is fully specified -- no blocking design questions. Read the context handover before scoping. Proceed to implementation after confirming scope at Step 1b.
 
 Watch-outs:
-- `SESSION_NAME` must be exported to docker-compose for container injection — verify not already partially implemented before starting
+
+- `SESSION_NAME` must be exported to docker-compose for container injection -- verify not already partially implemented before starting
 - Change 2 context frozen in `20260412-02-m2_3_onhold.md`; cross-check against current spec in `design_git_workflow_improvements.md` before writing code
-- Trigger B is not pending — milestone is mid-flight
-- `iteration_policy.md` and `handover_policy.md` were both updated this session — next impl session should upload the updated versions, not stale copies
+- Trigger B is not pending -- milestone is mid-flight
+- `iteration_policy.md` and `handover_policy.md` were both updated this session -- next impl session should upload the updated versions, not stale copies

@@ -12,13 +12,13 @@ Maps each threat category to its primary SOP mitigations. Impact ratings use STR
 
 | Threat | D | I | T | R | E | S | Primary SOPs |
 |---|---|---|---|---|---|---|---|
-| [1. Resource Exhaustion](#1-resource-exhaustion) | High | Low | Med | Med | Low | Low | [API Control](#4-api--billable-resource-control), [Output Handling](#1-child-agent-output-handling), [Container Build](#6-container-build--deployment) |
-| [2. Orchestration / Agent Runtime Compromise](#2-orchestration--agent-runtime-compromise) | High | High | High | Med | High | Med | [Output Handling](#1-child-agent-output-handling), [Secrets Handling](#2-secrets-handling), [Container Build](#6-container-build--deployment), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
-| [3. Container Misconfiguration / Image Compromise](#3-container-misconfiguration--image-compromise) | Med/High | High | High | Med | High | Low/Med | [Container Build](#6-container-build--deployment), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
-| [4. External Network Threats](#4-external-network-threats) | Med | High | High | Med | Low/Med | Med | [Network Access Rules](#3-network-access-rules), [Output Handling](#1-child-agent-output-handling), [Secrets Handling](#2-secrets-handling) |
-| [5. Package / Dependency Compromise](#5-package--dependency-compromise) | Med/High | High | High | Med | High | Med | [Container Build](#6-container-build--deployment), [Secrets Handling](#2-secrets-handling), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
-| [6. Secrets / Sensitive Data Leakage](#6-secrets--sensitive-data-leakage) | Low | High | Med | Med | Med | Med | [Secrets Handling](#2-secrets-handling), [Output Handling](#1-child-agent-output-handling), [Network Access Rules](#3-network-access-rules) |
-| [7. Human / Operational Misuse](#7-human--operational-misuse) | Med | Med/High | High | High | Low/Med | Low/Med | [Human Protocols](#5-human--operational-protocols), [Container Build](#6-container-build--deployment), [Output Handling](#1-child-agent-output-handling), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
+| 1. Resource Exhaustion | High | Low | Med | Med | Low | Low | [API Control](#4-api--billable-resource-control), [Output Handling](#1-child-agent-output-handling), [Container Build](#6-container-build--deployment) |
+| 2. Orchestration / Agent Runtime Compromise | High | High | High | Med | High | Med | [Output Handling](#1-child-agent-output-handling), [Secrets Handling](#2-secrets-handling), [Container Build](#6-container-build--deployment), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
+| 3. Container Misconfiguration / Image Compromise | Med/High | High | High | Med | High | Low/Med | [Container Build](#6-container-build--deployment), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
+| 4. External Network Threats | Med | High | High | Med | Low/Med | Med | [Network Access Rules](#3-network-access-rules), [Output Handling](#1-child-agent-output-handling), [Secrets Handling](#2-secrets-handling) |
+| 5. Package / Dependency Compromise | Med/High | High | High | Med | High | Med | [Container Build](#6-container-build--deployment), [Secrets Handling](#2-secrets-handling), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
+| 6. Secrets / Sensitive Data Leakage | Low | High | Med | Med | Med | Med | [Secrets Handling](#2-secrets-handling), [Output Handling](#1-child-agent-output-handling), [Network Access Rules](#3-network-access-rules) |
+| 7. Human / Operational Misuse | Med | Med/High | High | High | Low/Med | Low/Med | [Human Protocols](#5-human--operational-protocols), [Container Build](#6-container-build--deployment), [Output Handling](#1-child-agent-output-handling), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
 
 ---
 

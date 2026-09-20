@@ -13,55 +13,76 @@ It defines trust boundaries, threat assumptions, and security invariants.
 - Local, single-user environment
 - Agent Runtimes may read, generate, and execute code inside containers
 - Isolation is enforced via Docker, mount permissions, and OS primitives
-- Host repository integrity must be protected from direct container mutation
+- Host repository integrity must be protected from unauthorized direct container mutation
 
 This document defines the security properties of that model.
 
 ---
 
-## Trust Boundaries
+## Trust Boundaries and Mount Models
 
-The system includes the following explicit trust boundaries:
+The system includes the following explicit trust boundaries, which hold in every configuration:
 
-1. Host OS ↔ WSL
-2. WSL ↔ Docker daemon
-3. Docker daemon ↔ Container
-4. Container ↔ Mounted directories (`.bootstrap/`, `.workspace/`)
-5. Agent runtime ↔ Project files within the container
+1. Host OS <-> WSL
+2. WSL <-> Docker daemon
+3. Docker daemon <-> Container
+4. Container <-> Mounted directories
+5. Agent runtime <-> Project files within the container
 
-Within the container:
+**The agent runtime is explicitly untrusted** in all configurations. The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies -- none of which are fully auditable.
 
-- `.bootstrap/` is mounted read-only — contains the pre-built project snapshot and agent brief
-- `.workspace/` is mounted read-write — the sole output channel from the container to the host
-- `PROJECT_ROOT` is not mounted at container runtime
-- The agent works exclusively in `sandbox/`, a container-local copy of `.bootstrap/snapshot/` made at startup
+### Principle
 
-**The agent runtime is explicitly untrusted.** The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies — none of which are fully auditable. `PROJECT_ROOT` is not mounted into the container, so the agent runtime cannot read host repository files directly. The agent's view of the project is limited to what was enumerated by `git ls-files` on the host and copied into `.bootstrap/snapshot/` before the container started.
+The sandbox adds no security beyond what the host provides -- it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design -- Mount Model](../../devlog/discussions/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../concepts/copy_delivery.md), [mount_delivery.md](../concepts/mount_delivery.md).
 
-Gitignore controls what enters the snapshot. Sensitive files gitignored on the host are excluded from the snapshot and therefore never visible to the agent runtime. Sensitive files must not exist in `PROJECT_ROOT` at all if there is any risk of them being unintentionally tracked. See [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) for operational guidance.
+### Mount modes
+
+| Mode | Project content | `.git` | Consequence |
+|---|---|---|---|
+| **Copy** (current default, M2.6.5) | Seeded into the named volume at session start (one-shot helper-container seed); frozen view | Host `.git` copied in full by the seeder (native copy, history included); no live link to the host repo | Baseline posture plus host git history inside the volume -- history content is not gitignore-filtered |
+| **Mount** (M2.6.6, runnable) | Bind-mounted live from host | Materialized by the harness from the project on first run: full history by default (native `.git` copy), or `--flatten` for a fresh baseline. Recorded in worktree config (`agent-sandbox.flatten`). Harness does not otherwise mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
+| *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | -- see [Non-goals](#non-goals) |
+
+Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope -- see [ADR -- Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
+
+**Invariants (all modes):**
+
+- `PROJECT_ROOT`'s working tree is never mounted into any container.
+- The working tree content enters the sandbox only through the git-enumerated seed -- gitignore controls what enters. Sensitive files must not exist in `PROJECT_ROOT` at all if there is any risk of unintentional tracking.
+- `.workspace/` mounted read-write (sole output channel); the sandbox volume is the agent's working content, seeded once from the git-enumerated project state.
+
+**Assumptions:**
+
+- *Mount containment* -- the agent cannot escape the mount boundary to reach the backing filesystem. Container escapes are outside the current threat model, but the assumption's strength erodes over time.
 
 ---
 
 ## Security Invariants
 
-The following invariants must hold:
+The following invariants hold in every configuration. Per-mode mount shapes are defined in [Mount modes](#mount-modes).
 
-- `PROJECT_ROOT` must not be mounted into the container at runtime.
-- The container must not access host filesystem paths outside `.bootstrap/` and `.workspace/`.
-- The container must not have access to the Docker socket.
-- Repository mutation must occur only on the host after human review.
-- Agent-produced changes must be staged as `patch.diff` before application.
-- Gitignored files (including secrets) must never be copied into `.bootstrap/snapshot/` or `sandbox/`.
+1. `PROJECT_ROOT`'s working tree must not be mounted into any container.
+2. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories and the `.<provider>/` provider-config mount. No other host path is reachable.
+3. The container must not have access to the Docker socket.
+4. Repository mutation must occur only on the host after human review.
+5. Agent-produced changes must be exported as diff artefacts (`uncommitted.diff`, `all-changes.diff`, `patches/`) before application.
+6. Gitignored files (including secrets) must never enter the agent's working tree.
 
 Validation procedures for these invariants are defined in operational documentation.
+
+**Mount delivery** revises invariant 2 and adds invariant 7:
+
+> 1. Host filesystem access is limited to the explicit grants: the `.workspace/` subdirectories, the `.<provider>/` provider-config mount, and the mounted worktree.
+>
+> 2. The seeded sandbox volume must not be mounted into the reasoning layer. Only the capability layer accesses the sandbox content directly.
 
 ---
 
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
-- Containers are ephemeral.
-- Only `.workspace/` persists agent outputs across runs.
+- Session state persists across restarts via a named Docker volume (`{{SESSION_ID}}-sandbox-data`) and host bind mounts; containers are disposable and are removed at teardown (`session_teardown` -> `compose down`, keeps named volumes). With mount delivery, the agent's working tree in the mounted host directory additionally survives container restarts.
+- `.workspace/` persists agent outputs across runs via host bind mounts. The sandbox's git state persists via the named volume. With mount delivery, the worktree additionally persists (it is a host bind mount rather than a volume).
 - Network access may be enabled depending on execution mode.
 
 Network policy details are defined by configuration, not by this document.
@@ -77,6 +98,7 @@ This sandbox does not attempt to:
 - Provide compliance guarantees
 - Protect secrets that are explicitly injected into the container
 - Prevent all forms of denial-of-service within resource limits
+- Offer the operator's own checkout as the agent's working tree (raw project dir mount)
 
 Residual risk is acknowledged.
 
@@ -121,9 +143,9 @@ Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are trac
 
 ## References
 
-- Microsoft STRIDE Threat Model: https://docs.microsoft.com/en-us/security/compass/stride
-- Docker Security Best Practices: https://docs.docker.com/engine/security/security/
-- LLM and AI Security Considerations: https://arxiv.org/abs/2301.11381
+- Microsoft STRIDE Threat Model: <https://docs.microsoft.com/en-us/security/compass/stride>
+- Docker Security Best Practices: <https://docs.docker.com/engine/security/security/>
+- LLM and AI Security Considerations: <https://arxiv.org/abs/2301.11381>
 
 ## Further Reading
 

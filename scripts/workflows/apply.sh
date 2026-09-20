@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# libs/diff_workflow.sh
+# scripts/workflows/apply.sh
 #
 # Diff application workflow: apply a diff file to the project working tree.
-# Sourced by agent-sandbox.sh — not executed standalone.
+# Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
+# sourced, so test suites may source this file for its functions.
 #
-# Depends on: AGENT_SANDBOX_REPO, git, standard shell utilities.
+# Depends on: AGENT_SANDBOX_REPO, src/libs/diff.sh, git, standard shell utilities.
 
 set -euo pipefail
 
@@ -14,35 +15,34 @@ _apply_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_apply_self/../.." && pwd)}"
 
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
 
 # =============================================================================
-# apply_run — apply a diff file
+# apply_run  --  apply a diff file
 # =============================================================================
 
-# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE PERMISSIVE
+# apply_run PROJECT_DIR DIFF_FILE APPLY_BRANCH FORCE
 #
-# Applies a diff file to the project working tree. Does not create commits —
+# Applies a diff file to the project working tree. Does not create commits  -- 
 # leaves changes unstaged for operator review.
 #
 # Args:
-#   PROJECT_DIR   — absolute path to the target git repository
-#   DIFF_FILE     — absolute path to a diff file (uncommitted.diff or similar)
-#   APPLY_BRANCH  — optional branch to checkout/create before applying
-#   FORCE         — if true, apply with --reject; .rej files for conflicts
-#   PERMISSIVE    — if true, on git apply failure retry with --recount
+#   PROJECT_DIR    --  absolute path to the target git repository
+#   DIFF_FILE      --  absolute path to a diff file (uncommitted.diff or similar)
+#   APPLY_BRANCH   --  optional branch to checkout/create before applying
+#   FORCE          --  if true, apply with --reject; .rej files for conflicts
 #                   to handle minor hunk-context drift (line reorders,
 #                   whitespace shifts that don't affect the content delta)
 #
-# No internal path resolution — the caller (router in agent-sandbox.sh or
+# No internal path resolution  --  the caller (router in agent-sandbox.sh or
 # explicit --diff=<path>) supplies the file path directly.
 apply_run() {
   local PROJECT_DIR="$1"
   local DIFF_FILE="$2"
   local APPLY_BRANCH="${3:-}"
   local FORCE="${4:-false}"
-  local PERMISSIVE="${5:-false}"
 
   if [[ -z "$PROJECT_DIR" || -z "$DIFF_FILE" ]]; then
     echo "apply_run: PROJECT_DIR and DIFF_FILE are required" >&2
@@ -56,6 +56,27 @@ apply_run() {
 
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
+
+  # Clean-tree guard: apply onto the working tree, which is only safe when
+  # it is clean. --force tolerates a dirty tree as one form of apply conflict;
+  # hunks may then fail, so warn loudly about collateral consequences.
+  local _tree_rc=0
+  require_clean_working_tree "$PROJECT_DIR" || _tree_rc=$?
+  if [[ "$_tree_rc" -eq 2 ]]; then
+    echo "Error: make apply cannot read the working tree state." >&2
+    clean_tree_hint_unreadable
+    return 1
+  fi
+  if [[ "$_tree_rc" -eq 1 ]]; then
+    if [[ "$FORCE" != true ]]; then
+      echo "Error: make apply requires a clean working tree." >&2
+      clean_tree_hint
+      return 1
+    fi
+    echo "Warning: make apply --force tolerates a dirty working tree." >&2
+    echo "  Uncommitted or untracked changes are present; some hunks may fail to apply cleanly." >&2
+    echo "  Review .rej files and the full tree state before proceeding." >&2
+  fi
 
   # Optionally check out branch
   if [[ -n "$APPLY_BRANCH" ]]; then
@@ -72,45 +93,21 @@ apply_run() {
 
   if [[ "$FORCE" == true ]]; then
     echo "Force mode enabled: applying with --reject; .rej files will be created for conflicts."
-    if ! git -C "$PROJECT_DIR" apply --reject < <(strip_index_lines < "$DIFF_FILE"); then
-      echo "" >&2
-      echo "Warning: some hunks failed to apply." >&2
-      echo "Review .rej files and resolve manually." >&2
-    fi
-  elif [[ "$PERMISSIVE" == true ]]; then
-    # Permissive mode: try normal apply first, then retry with --recount
-    # on failure. --recount relaxes hunk-context matching so minor context
-    # shifts (line reorders, whitespace changes) don't cause rejection.
-    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
-      # Check if --recount might help
-      if git -C "$PROJECT_DIR" apply --check --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE") 2>/dev/null; then
-        echo "Normal apply failed; retrying with --recount (relaxed context matching)..." >&2
-        git -C "$PROJECT_DIR" apply --recount --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE")
-      else
-        echo "Error: git apply failed even with --recount." >&2
-        echo "  Diff file: $DIFF_FILE" >&2
-        echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
-        echo "" >&2
-        echo "Hint: use --force to apply with --reject and create .rej files for conflicts." >&2
-        return 1
-      fi
-    fi
-  else
-    if ! git -C "$PROJECT_DIR" apply --ignore-whitespace < <(strip_index_lines < "$DIFF_FILE"); then
-      echo "Error: git apply failed." >&2
-      echo "  Diff file: $DIFF_FILE" >&2
-      echo "  Target branch: $(git -C "$PROJECT_DIR" branch --show-current)" >&2
-      echo "" >&2
-      echo "Hints:" >&2
-      echo "  Use --force to apply with --reject (.rej files for conflicts)." >&2
-      echo "  Use --permissive to retry with --recount (relaxed context matching)." >&2
-      return 1
-    fi
   fi
 
-  # Count changed files from the diff
+  # Empty diff: skip the patch step; the count below reports 0 and the
+  # normal tail output follows.
+  if diff_is_empty "$DIFF_FILE"; then
+    echo "Warning: $(basename "$DIFF_FILE") is empty; nothing to apply." >&2
+  else
+    _apply_patch_file "$PROJECT_DIR" "$DIFF_FILE" "$FORCE" || return 1
+  fi
+
+  # Count changed files from the diff. grep -c self-reports zero on stdout
+  # while exiting 1; `|| echo 0` here would double-emit ("0\n0").
   local FILES_CHANGED
-  FILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || echo "0")
+  FILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)
+  FILES_CHANGED=${FILES_CHANGED:-0}
 
   echo ""
   echo "Done. Files changed: $FILES_CHANGED"
@@ -123,141 +120,102 @@ apply_run() {
 }
 
 # =============================================================================
-# usage — print help text
+# usage  --  print help text
 # =============================================================================
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox apply --project=<path> --sandbox=<path> [options]
+Usage: agent-sandbox apply --project=<path> --sandbox=<path> --diff=<path> [options]
 
 Applies a diff file to the project working tree. Does not commit.
+
+or, from a sandbox Makefile: make apply [DIFF=<path>] [BRANCH=<name>] [FORCE=1]
 
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory
+  --diff=<path>       Path to the exact diff file to apply
 
 Options:
-  --diff=<path>       Apply a specific diff file (default: auto-resolve)
   --branch=<name>     Check out or create a branch before applying
-  --channel=<name>    Resolution channel: diffs, session, autosave (default: diffs)
-  --session=<name>    Named session to resolve from (default: newest)
-  --diff-type=<type>  Diff file type: uncommitted or all-changes (default: uncommitted)
   --force             Apply with --reject for conflicts
   --permissive        Retry with --recount on failure
-  --interactive       Interactive picker mode
+  --interactive       Preview the changes, then ask for confirmation
 EOF
 }
 
 # =============================================================================
-# main — entry point when exec'd by agent-sandbox apply
+# apply_preview  --  print a git-oneline-style summary of an external diff file
+# =============================================================================
+
+# apply_preview DIFF_FILE
+#
+# Prints each file the diff touches (from 'diff --git' headers), then the
+# total file count. The diff is external to the working tree, so the summary
+# is read from the file rather than from git.
+apply_preview() {
+  local DIFF_FILE="$1"
+  local has_changes=false
+  local file
+  while IFS= read -r line; do
+    if [[ "$line" == diff\ --git* ]]; then
+      has_changes=true
+      file=${line#diff --git }
+      file=${file#a/}
+      file=${file%% *}
+      printf '%s\n' "$file"
+    fi
+  done < "$DIFF_FILE"
+  if [[ "$has_changes" == false ]]; then
+    echo "No changes found in $DIFF_FILE"
+    return 0
+  fi
+  printf 'Total files: %s\n' "$(grep -c '^diff --git' "$DIFF_FILE" || true)"
+}
+
+# =============================================================================
+# main  --  entry point when exec'd by agent-sandbox apply
 # =============================================================================
 
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
-# Expected flags: --project=<dir> --sandbox=<dir> [--diff=<path>] [--branch=<n>] [--force] [--permissive] [--interactive]
+# Expected flags: --project=<dir> --sandbox=<dir> --diff=<path> [--branch=<n>] [--force] [--permissive] [--interactive]
 main() {
-  for ARG in "$@"; do
-    case "$ARG" in
-      --help|-h) usage; exit 0 ;;
-    esac
-  done
-
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local DIFF_FILE=""
-  local APPLY_BRANCH=""
-  local FORCE=false
-  local PERMISSIVE=false
-  local CHANNEL=""
-  local SESSION=""
-  local INTERACTIVE=false
-  local DIFF_TYPE=""
-
-  for ARG in "$@"; do
-    case "$ARG" in
-      --project=*)     PROJECT_DIR="${ARG#--project=}" ;;
-      --sandbox=*)     SANDBOX_DIR="${ARG#--sandbox=}" ;;
-      --diff=*)        DIFF_FILE="${ARG#--diff=}" ;;
-      --branch=*)      APPLY_BRANCH="${ARG#--branch=}" ;;
-      --force)         FORCE=true ;;
-      --permissive)    PERMISSIVE=true ;;
-      --channel=*)     CHANNEL="${ARG#--channel=}" ;;
-      --session=*)     SESSION="${ARG#--session=}" ;;
-      --interactive)   INTERACTIVE=true ;;
-      --diff-type=*)   DIFF_TYPE="${ARG#--diff-type=}" ;;
-      *)
-        echo "Unknown argument: $ARG" >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-  done
+  parse_args usage \
+    --project=PROJECT_DIR \
+    --sandbox=SANDBOX_DIR \
+    --diff=DIFF_FILE \
+    --branch=APPLY_BRANCH \
+    --force \
+    --permissive \
+    --interactive \
+    -- "$@"
+  local rc=$?
+  if [[ $rc -eq 2 ]]; then exit 0; fi
+  [[ $rc -eq 0 ]] || exit 1
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2
     exit 1
   fi
 
-  # Interactive mode: let the operator pick or confirm via picker
+  if [[ -z "$DIFF_FILE" ]]; then
+    echo "Error: --diff=<path> is required. apply applies an exact diff file; pass --diff=<full path>." >&2
+    usage >&2
+    exit 1
+  fi
+
+  # Interactive mode: preview the changes, then ask for confirmation
   if [[ "$INTERACTIVE" == true ]]; then
     source "$AGENT_SANDBOX_REPO/scripts/workflows/interactive.sh"
-
-    if [[ -n "$DIFF_FILE" ]]; then
-      # --diff given: confirm with y/N and apply directly
-      interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
-      echo "Running: make apply DIFF=${DIFF_FILE}"
-      apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
-      exit $?
-    fi
-
-    # Step 1: pick channel (default from --channel or diffs)
-    source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
-    local CHANNEL
-    CHANNEL=$(interactive_select_channel "apply" "$SANDBOX_DIR" "${CHANNEL:-diffs}") || exit 1
-    # Step 2: pick session
-    local SESSION
-    SESSION=$(interactive_select_session "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
-    # Step 3: pick diff type
-    local DIFF_TYPE
-    DIFF_TYPE=$(interactive_select_diff_type "$SANDBOX_DIR" "$SESSION" "$CHANNEL") || exit 1
-
-    # Resolve the diff file path
-    _resolve_paths "$SANDBOX_DIR"
-    local BASE_DIR
-    BASE_DIR=$(resolve_channel_base_dir "$CHANNEL") || exit 1
-    local DIFF_FILE="${BASE_DIR}/${SESSION}/${DIFF_TYPE}.diff"
-    if [[ ! -f "$DIFF_FILE" ]]; then
-      echo "Error: diff file not found: $DIFF_FILE" >&2
-      exit 1
-    fi
-
-    if [[ "$DIFF_TYPE" == "uncommitted" ]]; then
-      echo "Running: make apply FROM=${CHANNEL} SESSION=${SESSION}"
-    else
-      echo "Running: make apply DIFF=${DIFF_FILE}"
-    fi
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
+    echo "Preview of $(basename "$DIFF_FILE"):" >&2
+    apply_preview "$DIFF_FILE" >&2
+    interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
+    echo "Running: make apply DIFF=${DIFF_FILE}"
+    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
     exit $?
   fi
 
-  # Non-interactive path
-  if [[ -n "$DIFF_FILE" ]]; then
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
-  else
-    source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
-    local CHANNEL="${CHANNEL:-diffs}"
-    local DIFF_TYPE="${DIFF_TYPE:-uncommitted}"
-
-    # Resolve session, then swap the diff file type (uncommitted vs all-changes)
-    local RESOLVED
-    RESOLVED=$(resolve_diff_for_apply "$SANDBOX_DIR" "$CHANNEL" "$SESSION") || exit 1
-    local DIFF_FILE="${RESOLVED%/*}/${DIFF_TYPE}.diff"
-    if [[ ! -f "$DIFF_FILE" ]]; then
-      echo "Error: diff file not found: $DIFF_FILE" >&2
-      echo "  Available types: uncommitted.diff, all-changes.diff" >&2
-      exit 1
-    fi
-    apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE" "$PERMISSIVE"
-  fi
+  apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
 }
 
 # Guard: only run main() when executed directly, not when sourced

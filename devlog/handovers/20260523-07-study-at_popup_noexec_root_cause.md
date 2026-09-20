@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-23
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Study / Implementation
+**Date:** 2026-05-23
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Study / Implementation
 **Status:** Closed
 
 ## Objective
@@ -12,12 +12,14 @@ Trace the root cause of the `@` file reference popup (fuzzy file search) silentl
 ## Scope
 
 Investigate why `@` file reference popup stopped working. Covers:
+
 - Pi's autocomplete pipeline (`CombinedAutocompleteProvider` in `@earendil-works/pi-tui`)
 - The `fd` binary dependency and its provisioning via `ensureTool()`
 - The mount strategy for `~/.pi/agent/bin/` (tmpfs overlay introduced by M2.7 mount strategy redesign)
 - Any interaction between the tmpfs overlay mount flags and binary execution
 
 **Out of scope:**
+
 - Fixing the mount configuration (operator resolves)
 - Fixing Pi's silent error handling (upstream concern)
 
@@ -27,16 +29,16 @@ None.
 
 ## Acceptance criteria
 
-Not defined — investigation session. Root cause was identified and a workaround applied before formal AC were written. Operator reviewed and confirmed the output directly.
+Not defined -- investigation session. Root cause was identified and a workaround applied before formal AC were written. Operator reviewed and confirmed the output directly.
 
 ## Hot files
 
 | File | Reason | Status |
 |---|---|---|
-| `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` | Issue 3 (`noexec` tmpfs) added | ✅ Completed |
-| `providers/pi/base.Dockerfile` | `fd-find`/`ripgrep` added to apt install | ✅ Completed |
-| `/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/autocomplete.js` | Silent failure point (upstream) | 🔍 Referenced only |
-| `/proc/mounts` | Showed `noexec` flag during investigation | 🔍 Referenced only |
+| `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` | Issue 3 (`noexec` tmpfs) added | [x] Completed |
+| `providers/pi/base.Dockerfile` | `fd-find`/`ripgrep` added to apt install | [x] Completed |
+| `/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/autocomplete.js` | Silent failure point (upstream) | [r] Referenced only |
+| `/proc/mounts` | Showed `noexec` flag during investigation | [r] Referenced only |
 
 ## Decisions made this session
 
@@ -48,8 +50,8 @@ Not defined — investigation session. Root cause was identified and a workaroun
 
 | Finding | Triaged to |
 |---|---|
-| `~/.pi/agent/bin/` tmpfs has `noexec` — blocks `fd`/`rg` execution | `story_windows_filesystem_incompatibilities.md` Issue 3 |
-| Pi silently swallows spawn errors in `walkDirectoryWithFd()` | Deferred — upstream concern, not in scope |
+| `~/.pi/agent/bin/` tmpfs has `noexec` -- blocks `fd`/`rg` execution | `story_windows_filesystem_incompatibilities.md` Issue 3 |
+| Pi silently swallows spawn errors in `walkDirectoryWithFd()` | Deferred -- upstream concern, not in scope |
 
 ## Completed this session
 

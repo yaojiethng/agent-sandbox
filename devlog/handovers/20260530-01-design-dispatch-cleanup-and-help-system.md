@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-30
-**Milestone:** M2.7 — Session Identity and Harness Versioning
-**Session type:** Design
+**Date:** 2026-05-30
+**Milestone:** M2.7 -- Session Identity and Harness Versioning
+**Type:** Design
 **Status:** Closed
 
 ## Objective
@@ -13,13 +13,14 @@ Design the `agent-sandbox help` system, flag group taxonomy, and the streamlined
 
 **Design outputs:**
 
-1. **`agent-sandbox help <subcommand>`** — Spec for a help subcommand that prints a usage string per subcommand. Spec for consistent error handling: invalid flags → print subcommand's usage string (not an ad-hoc error). Cover how usage strings are stored (inline? separate file?).
+1. **`agent-sandbox help <subcommand>`** -- Spec for a help subcommand that prints a usage string per subcommand. Spec for consistent error handling: invalid flags -> print subcommand's usage string (not an ad-hoc error). Cover how usage strings are stored (inline? separate file?).
 
-2. **Flag group taxonomy** — Catalogue of flag groups with their behavioural boundary definitions. For each group: which flags belong, which subcommands share them, what the consistent interface looks like (flag name, value type), and the decision rule for placing a new flag into a group vs leaving it as a subcommand-specific passthrough.
+2. **Flag group taxonomy** -- Catalogue of flag groups with their behavioural boundary definitions. For each group: which flags belong, which subcommands share them, what the consistent interface looks like (flag name, value type), and the decision rule for placing a new flag into a group vs leaving it as a subcommand-specific passthrough.
 
-3. **Streamlined dispatch architecture** — Spec for `parse_flags` to only extract universal + group-level flags, forwarding every other flag untouched to the `exec`'d subcommand. No parse-and-re-serialize.
+3. **Streamlined dispatch architecture** -- Spec for `parse_flags` to only extract universal + group-level flags, forwarding every other flag untouched to the `exec`'d subcommand. No parse-and-re-serialize.
 
 **Not in scope:**
+
 - Implementation of any of the above
 - Changes to `scripts/` or `src/` files
 
@@ -49,26 +50,26 @@ None.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Usage strings stored inline in each subcommand script's `usage()` function | Co-locates help with implementation. Each subcommand script is independently executable — `--help` should work when called directly. | Design document §1.2 |
-| Flag groups are documentation, not code enforcement | The taxonomy catalogs shared flags and their canonical parsers. No group-level variables or enforcement. Shared parsing logic lives in libs/ files called by multiple subcommands. | Design document §2.1 |
-| `parse_flags` extracts only 3 universal flags (`--name`, `--project`, `--sandbox`) | All other flags pass through via `PASSTHROUGH` untouched. No parse-and-re-serialize. No `rebuild_flags()` or `require_provider_args()` at dispatch level. | Design document §3.1–3.2 |
-| `agent-sandbox help` uses hardcoded subcommand list | Discovery from filesystem adds complexity. Flagged as future improvement in roadmap. | Design document §1.5 |
-| `--help` flag triggers `usage()` in each subcommand script | Consistent with `agent-sandbox help <subcommand>` — both paths call the same `usage()` function. | Design document §1.2 |
-| `require_base_args` is the only validation at dispatch level | Checks `--sandbox`, `--project`, `--name`. Subcommand scripts validate their own required flags. | Design document §3.2 |
+| Usage strings stored inline in each subcommand script's `usage()` function | Co-locates help with implementation. Each subcommand script is independently executable -- `--help` should work when called directly. | Design document rule 1.2 |
+| Flag groups are documentation, not code enforcement | The taxonomy catalogs shared flags and their canonical parsers. No group-level variables or enforcement. Shared parsing logic lives in libs/ files called by multiple subcommands. | Design document rule 2.1 |
+| `parse_flags` extracts only 3 universal flags (`--name`, `--project`, `--sandbox`) | All other flags pass through via `PASSTHROUGH` untouched. No parse-and-re-serialize. No `rebuild_flags()` or `require_provider_args()` at dispatch level. | Design document rule 3.1-3.2 |
+| `agent-sandbox help` uses hardcoded subcommand list | Discovery from filesystem adds complexity. Flagged as future improvement in roadmap. | Design document rule 1.5 |
+| `--help` flag triggers `usage()` in each subcommand script | Consistent with `agent-sandbox help <subcommand>` -- both paths call the same `usage()` function. | Design document rule 1.2 |
+| `require_base_args` is the only validation at dispatch level | Checks `--sandbox`, `--project`, `--name`. Subcommand scripts validate their own required flags. | Design document rule 3.2 |
 
 ## Mid-session findings
 
 | Finding | Description | Triaged to |
 |---|---|---|
-| `rebuild_flags()` and `require_provider_args()` don't need to be at dispatch level | `--rebuild`, `--refresh`, `--provider` pass through to `start_agent.sh` via `PASSTHROUGH`. The dispatch layer doesn't need them. | Design document §3.2 — removed from spec |
-| Repeat-back-to-confirm is a useful alignment tool but not documented | The pattern of restating understanding after a clarification arose naturally. Should be formalised in AGENTS.md or the grill-me skill. | Future — process doc update |
-| Mid-session findings should be written immediately, not accumulated | Findings were generated during grilling but not persisted until the design doc was written. The grill-me skill should recommend inline recording. | Future — grill-me skill update |
+| `rebuild_flags()` and `require_provider_args()` don't need to be at dispatch level | `--rebuild`, `--refresh`, `--provider` pass through to `start_agent.sh` via `PASSTHROUGH`. The dispatch layer doesn't need them. | Design document rule 3.2 -- removed from spec |
+| Repeat-back-to-confirm is a useful alignment tool but not documented | The pattern of restating understanding after a clarification arose naturally. Should be formalised in AGENTS.md or the grill-me skill. | Future -- process doc update |
+| Mid-session findings should be written immediately, not accumulated | Findings were generated during grilling but not persisted until the design doc was written. The grill-me skill should recommend inline recording. | Future -- grill-me skill update |
 
 ## Completed this session
 
 | File | Change summary |
 |---|---|
-| `devlog/discussions/design-dispatch-cleanup-and-help-system.md` | Design document — help system spec, flag group taxonomy with grouping criteria, streamlined dispatch architecture, 3-phase implementation plan |
+| `devlog/discussions/design-dispatch-cleanup-and-help-system.md` | Design document -- help system spec, flag group taxonomy with grouping criteria, streamlined dispatch architecture, 3-phase implementation plan |
 
 ## Deferred items
 
@@ -76,7 +77,7 @@ None.
 
 ## Next session
 
-Done — see completed session 20260530-02 for implementation.
+Done -- see completed session 20260530-02 for implementation.
 
 ## Conclusions from this session
 

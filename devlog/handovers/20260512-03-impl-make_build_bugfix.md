@@ -1,13 +1,13 @@
 # Agent Handover
 
-**Session date:** 2026-05-12
-**Milestone:** M2 — Reasoning/Capability Layer Separation
-**Session type:** Implementation
+**Date:** 2026-05-12
+**Milestone:** M2 -- Reasoning/Capability Layer Separation
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
 
-Fix the `make build` bug (swapped arguments in `build_agent` call for comma-separated target branch) and streamline the build and rebuild code flows — dropping unused parameters, removing pass-through modules, and consolidating the rebuild decision into a single owner.
+Fix the `make build` bug (swapped arguments in `build_agent` call for comma-separated target branch) and streamline the build and rebuild code flows -- dropping unused parameters, removing pass-through modules, and consolidating the rebuild decision into a single owner.
 
 ## Scope
 

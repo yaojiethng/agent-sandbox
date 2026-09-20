@@ -1,4 +1,4 @@
-# M1.4 Discussion — Image Staleness Detection
+# M1.4 Discussion -- Image Staleness Detection
 
 **Status:** Pre-implementation discussion. Not yet on roadmap.
 
@@ -8,11 +8,11 @@
 
 Operators frequently encounter broken or outdated container behaviour after
 updating agent-sandbox scripts or the Dockerfile, without realising the image
-needs a rebuild. The failure mode is silent — the container starts from the
+needs a rebuild. The failure mode is silent -- the container starts from the
 stale image, behaves incorrectly, and the operator has to diagnose why before
 discovering a rebuild was all that was needed.
 
-This is especially acute when agent-sandbox is being developed using itself —
+This is especially acute when agent-sandbox is being developed using itself --
 changes to entrypoint scripts, snapshot functions, or the Dockerfile take no
 effect until the image is explicitly rebuilt.
 
@@ -25,7 +25,7 @@ Currently the only remedies are `--rebuild` (manual, easy to forget) and
 
 The image should declare itself stale automatically when the source files it
 was built from have changed. The operator should never have to remember to
-rebuild — the harness should detect the mismatch and rebuild before starting.
+rebuild -- the harness should detect the mismatch and rebuild before starting.
 
 ---
 
@@ -34,7 +34,7 @@ rebuild — the harness should detect the mismatch and rebuild before starting.
 ### Build-time digest
 
 At build time, `build_agent.sh` computes a digest from all files that affect
-the image — the Dockerfile and anything `COPY`ed into it:
+the image -- the Dockerfile and anything `COPY`ed into it:
 
 ```sh
 DIGEST=$(cat providers/opencode/Dockerfile \
@@ -73,14 +73,14 @@ fi
 ### Key constraints
 
 - The digest file list must be **identical** in `build_agent.sh` and the
-  staleness check. Centralise it — either a shared `libs/image.sh` helper or
+  staleness check. Centralise it -- either a shared `libs/image.sh` helper or
   a variable defined once and reused in both scripts.
 - The check belongs in the **CLI wrapper** (`agent-sandbox.sh`), which already
   owns build-if-missing logic. `start_agent.sh` hard-fails if the image is
   missing; the wrapper is the right place for pre-flight decisions.
 - `--rebuild` stays as a manual escape hatch (e.g. to force a base image
   pull), but should no longer be needed for the common case.
-- If no image exists at all, the existing build-if-missing path handles it —
+- If no image exists at all, the existing build-if-missing path handles it --
   no digest comparison needed.
 
 ---
@@ -103,21 +103,21 @@ fi
    all files in `libs/` plus a provider-supplied `image-files.txt`.
 
 2. **Stale image behaviour:** Warn-then-continue. The problem being solved is
-   discovery — the operator not knowing a rebuild is needed. `--rebuild`
+   discovery -- the operator not knowing a rebuild is needed. `--rebuild`
    remains the remedy. If the rebuild fails, the staleness warning must be the
    last visible line before exit to ensure it is not lost in build output.
 
 3. **`dry-run` staleness check:** Yes. A dry-run against a stale image produces
-   misleading output — the same class of problem as starting against one.
+   misleading output -- the same class of problem as starting against one.
    The staleness check applies to both `start` and `dry-run`.
 
 ---
 
 ## Next Steps
 
-1. ~~Add M1.4 to roadmap with objective and task list.~~ ✓
-2. ~~Agree on file list centralisation approach (inline vs `libs/image.sh`).~~ ✓ — see Design Decisions above
+1. ~~Add M1.4 to roadmap with objective and task list.~~ [x]
+2. ~~Agree on file list centralisation approach (inline vs `libs/image.sh`).~~ [x] -- see Design Decisions above
 3. Implement `build_agent.sh` digest label.
 4. Implement staleness check in `agent-sandbox.sh`.
-5. Update `execution_model.md` — document the digest label, staleness check,
+5. Update `execution_model.md` -- document the digest label, staleness check,
    shared-lib assumption, and `image-files.txt` convention.

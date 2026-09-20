@@ -21,7 +21,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 ROOT="/home/agentuser"
 
 echo "=== 1. Environment ==="
-for var in SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME; do
+for var in SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -32,12 +32,13 @@ echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
 # Files required at startup are CRITICAL (must exist).
 # Files used later in the session are WARN (missing = stale image).
 for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "diff.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"
   if [[ -f "$libpath" ]]; then
+# Runtime-resolved lib path, validated by the -f check above.
+    # shellcheck disable=SC1090
     if source "$libpath" 2>/dev/null; then
       pass "source $libpath succeeded"
     else
@@ -45,7 +46,7 @@ for entry in "dirs.sh:CRITICAL" "session.sh:CRITICAL" "snapshot.sh:CRITICAL" \
     fi
   else
     if [[ "$severity" == "CRITICAL" ]]; then
-      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+      fail "$libpath does not exist  --  IMAGE STALE [CRITICAL]"
     else
       fail "$libpath does not exist [WARN]"
     fi
@@ -57,14 +58,12 @@ echo "=== 3. Path resolution ==="
 # Re-source dirs.sh after the loop above consumed it, then resolve paths.
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
 # Verify derived paths are non-empty
-[[ -n "$SNAPSHOT_DIR" ]]  && pass "SNAPSHOT_DIR resolved"  || fail "SNAPSHOT_DIR is empty"
 [[ -n "$CHANGES_DIR" ]]   && pass "CHANGES_DIR resolved"   || fail "CHANGES_DIR is empty"
 [[ -n "$INPUT_DIR" ]]     && pass "INPUT_DIR resolved"     || fail "INPUT_DIR is empty"
 [[ -n "$OUTPUT_DIR" ]]    && pass "OUTPUT_DIR resolved"    || fail "OUTPUT_DIR is empty"
@@ -72,7 +71,7 @@ echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 echo ""
 echo "=== 4. Script hygiene: local keyword ==="
 # dry_run_capability.sh is bind-mounted at /dry_run_capability.sh.
-# 'local' at the top level of an executed script is invalid in bash —
+# 'local' at the top level of an executed script is invalid in bash  -- 
 # it works only inside functions. Grep for local assignments that
 # are not inside a function definition.
 SCRIPT="/dry_run_capability.sh"
@@ -110,35 +109,22 @@ if [[ -f "$SCRIPT" ]]; then
     fail "$BAD_LOCALS top-level local usage(s) found in $SCRIPT (must use plain variables in executed scripts)"
   fi
 else
-  fail "$SCRIPT not found — cannot check local keyword hygiene"
+  fail "$SCRIPT not found  --  cannot check local keyword hygiene"
 fi
 
 # Also check that the check framework helpers (critical, warn_check) use
 # 'local' correctly (inside function bodies). If they don't, the pass/fail
 # counting would break.
-echo "  (check framework helpers defined in script — verified above by function tracking)"
+echo "  (check framework helpers defined in script  --  verified above by function tracking)"
 
 echo ""
 echo "=== 5. Mount expectations ==="
 # The capability layer (sandbox) mounts:
-#   - SNAPSHOT_DIR  (read-only, snapshot)
 #   - CHANGES_DIR   (writable, session-diffs)
 # It does NOT mount:
 #   - INPUT_DIR     (agent-only)
 #   - OUTPUT_DIR    (agent-only)
 # Check that the EXPECTED mounts are present and the UNEXPECTED ones are absent.
-
-# Expected mounts
-if [[ -d "$SNAPSHOT_DIR" ]]; then
-  pass "SNAPSHOT_DIR exists ($SNAPSHOT_DIR)"
-  if [[ -f "$SNAPSHOT_DIR/baseline.tar" ]]; then
-    pass "  baseline.tar present"
-  else
-    fail "  baseline.tar MISSING"
-  fi
-else
-  fail "SNAPSHOT_DIR missing (snapshot mount not attached)"
-fi
 
 if [[ -d "$CHANGES_DIR" ]]; then
   pass "CHANGES_DIR exists ($CHANGES_DIR)"
@@ -152,17 +138,17 @@ else
   fail "CHANGES_DIR missing (session-diffs mount not attached)"
 fi
 
-# Agent-only mounts — expected to be ABSENT in sandbox
+# Agent-only mounts  --  expected to be ABSENT in sandbox
 if [[ -d "$INPUT_DIR" ]]; then
-  pass "INPUT_DIR exists (unexpected — agent mount present in sandbox)"
+  pass "INPUT_DIR exists (unexpected  --  agent mount present in sandbox)"
 else
-  pass "INPUT_DIR absent (expected — agent-only mount)"
+  pass "INPUT_DIR absent (expected  --  agent-only mount)"
 fi
 
 if [[ -d "$OUTPUT_DIR" ]]; then
-  pass "OUTPUT_DIR exists (unexpected — agent mount present in sandbox)"
+  pass "OUTPUT_DIR exists (unexpected  --  agent mount present in sandbox)"
 else
-  pass "OUTPUT_DIR absent (expected — agent-only mount)"
+  pass "OUTPUT_DIR absent (expected  --  agent-only mount)"
 fi
 
 echo ""
@@ -170,7 +156,7 @@ echo "=== 6. diff_export live test ==="
 # Test that the diff pipeline can be invoked without error.
 # This validates that diff.sh was sourced and diff_export is available.
 source /opt/sandbox/lib/diff.sh 2>/dev/null || {
-  fail "Cannot source diff.sh — diff_export unavailable"
+  fail "Cannot source diff.sh  --  diff_export unavailable"
 }
 
 SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
@@ -230,10 +216,10 @@ echo "=== Summary ==="
 echo "Passed: $PASS, Failed: $FAIL"
 echo ""
 echo "If any checks fail:"
-echo "  1. Library sourcing → check /opt/sandbox/lib/ contents"
-echo "  2. Top-level local  → edit dry_run_capability.sh; remove 'local' from top-level vars"
-echo "  3. Mount failures   → check docker-compose.dry-run.yml volume definitions"
-echo "  4. diff_export fail  → check diff.sh is sourced before calling diff_export"
-echo "  5. Marker write fail → check CHANGES_DIR mount is writable"
+echo "  1. Library sourcing -> check /opt/sandbox/lib/ contents"
+echo "  2. Top-level local  -> edit dry_run_capability.sh; remove 'local' from top-level vars"
+echo "  3. Mount failures   -> check docker-compose.dry-run.yml volume definitions"
+echo "  4. diff_export fail  -> check diff.sh is sourced before calling diff_export"
+echo "  5. Marker write fail -> check CHANGES_DIR mount is writable"
 
 [[ "$FAIL" -eq 0 ]]

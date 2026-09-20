@@ -1,4 +1,4 @@
-# Hermes Provider — Quick Reference
+# Hermes Provider  --  Quick Reference
 
 Day-to-day command reference and troubleshooting for the Hermes provider. All commands run from `SANDBOX_DIR`.
 
@@ -33,13 +33,13 @@ make serve PROVIDER=hermes REBUILD=1
 
 ```sh
 # Review the diff first
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/session/staged.diff
 
-# Apply to current branch
-make apply
+# Apply an exact diff file (required)
+make apply DIFF=<full path to the exact diff file>
 
 # Apply to a named branch (created if it does not exist)
-make apply BRANCH=<branch-name>
+make apply DIFF=<path> BRANCH=<branch-name>
 ```
 
 ---
@@ -102,7 +102,7 @@ docker images | grep hermes
 # Remove provider image (forces rebuild on next run)
 docker rmi hermes-agent-<PROJECT_NAME>
 
-# Remove base image (forces full rebuild — slow)
+# Remove base image (forces full rebuild  --  slow)
 docker rmi hermes-base
 ```
 
@@ -112,10 +112,10 @@ docker rmi hermes-base
 
 ```sh
 # Check staged diff (full session delta) after a run
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/session/staged.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/session/staged.diff
 
 # Check autosave diff mid-session
-cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<RUN_ID>/autosave/changes.diff
+cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/autosave/changes.diff
 
 # Check snapshot contents before a run
 ls -la .snapshot/
@@ -147,7 +147,7 @@ $EDITOR .workspace/output/.hermes/.env
 $EDITOR .workspace/output/.hermes/config.yaml
 ```
 
-Both files are bind-mounted into the container at runtime. Changes take effect on the next `make start` or `make serve` — no rebuild required.
+Both files are bind-mounted into the container at runtime. Changes take effect on the next `make start` or `make serve`  --  no rebuild required.
 
 If `.workspace/output/.hermes/config.yaml` does not exist, `setup.sh` seeds it from `providers/hermes/config.yaml` on first run.
 
@@ -156,7 +156,7 @@ If `.workspace/output/.hermes/config.yaml` does not exist, `setup.sh` seeds it f
 ## Troubleshooting
 
 **Container exits immediately**
-Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause — check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
 **`staged.diff` is empty after run**
 Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
@@ -169,6 +169,7 @@ Run `make build PROVIDER=hermes` before the first start. Images are not built au
 
 **`cp: cannot stat` during snapshot**
 Tracked files are missing from disk. Fix:
+
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
@@ -177,7 +178,8 @@ git -C <PROJECT_DIR> commit -m "remove missing file from index"
 **WSL path errors**
 All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
-**Line ending issues in scripts or config files**
+### Line ending issues in scripts or config files
+
 ```sh
 sed -i 's/\r//' <file>
 ```
@@ -189,13 +191,16 @@ sed -i 's/\r//' <file>
 **Open WebUI cannot connect to Hermes (`Connection refused` at `agent:8642`)**
 
 Confirm Hermes gateway is running and bound to all interfaces:
+
 ```sh
 # From inside the agent container
 docker exec hermes-agent-<PROJECT_NAME> curl -s \
   -H "Authorization: Bearer $API_SERVER_KEY" \
   http://localhost:8642/v1/models
 ```
+
 If this succeeds but Open WebUI still cannot connect, Hermes is binding to loopback only. Ensure the gateway command includes `--host 0.0.0.0`:
+
 ```yaml
 # providers/hermes/docker-compose.serve.yml
 services:
@@ -203,36 +208,43 @@ services:
     command: ["hermes", "gateway", "--host", "0.0.0.0"]
 ```
 
-**Confirm cross-container connectivity**
+### Confirm cross-container connectivity
+
 ```sh
 # From inside the Open WebUI container
 docker exec hermes-agent-<PROJECT_NAME>-open-webui curl -s \
   -H "Authorization: Bearer none" \
   http://agent:8642/v1/models
 ```
+
 A valid JSON response confirms the connection is working. `Connection refused` means Hermes is not bound to `0.0.0.0`.
 
-**Confirm both containers are on the same network**
+### Confirm both containers are on the same network
+
 ```sh
 docker inspect hermes-agent-<PROJECT_NAME> \
   --format '{{json .NetworkSettings.Networks}}'
 docker inspect hermes-agent-<PROJECT_NAME>-open-webui \
   --format '{{json .NetworkSettings.Networks}}'
 ```
+
 Both should show the same `NetworkID`.
 
-**Ollama connection errors in Open WebUI logs**
-```
+### Ollama connection errors in Open WebUI logs
+
+```text
 Cannot connect to host host.docker.internal:11434
 ```
+
 This is Open WebUI attempting to reach a local Ollama instance. Not required for Hermes. Suppress by adding to the `open-webui` service environment:
+
 ```yaml
 environment:
   - ENABLE_OLLAMA_API=false
 ```
 
 **Open WebUI shows no models**
-Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI ↔ Hermes connection has not been established — work through the connectivity steps above.
+Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI <-> Hermes connection has not been established  --  work through the connectivity steps above.
 
 ---
 
@@ -258,5 +270,5 @@ make dry-run PROVIDER=hermes
 
 | Document | Purpose |
 |---|---|
-| [`../../docs/operations/quickstart.md`](../../docs/operations/quickstart.md) | First-run setup guide |
-| [`../../docs/architecture/tool_interface.md`](../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |
+| [`../../docs/operations/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
+| [`../../docs/architecture/tool_interface.md`](../../../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |

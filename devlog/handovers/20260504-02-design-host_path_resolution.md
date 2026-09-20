@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-05-04
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-05-04
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Closed
 
 ## Objective
@@ -13,9 +13,10 @@ Implement host path resolution unification
 
 ## Scope
 
-A.5 — Host path resolution unification. Design confirmed via grill-me protocol.
+A.5 -- Host path resolution unification. Design confirmed via grill-me protocol.
 
 **Confirmed approach:**
+
 - Host entry point: `agent-sandbox package-diff` / `agent-sandbox package-branch` subcommands
 - Makefile targets: `make package-diff` / `make package-branch` calling `agent-sandbox`
 - Git alias stripped from `onboard.sh`
@@ -27,7 +28,7 @@ A.5 — Host path resolution unification. Design confirmed via grill-me protocol
 - Prompt templates updated to use `--to=$HOME/workspace/output`
 - Docstring for `agent-sandbox.sh` updated to reflect host-side tool
 
-**Not in scope:** A.3 (documentation alignment) — deferred.
+**Not in scope:** A.3 (documentation alignment) -- deferred.
 
 ## Carried forward
 
@@ -58,10 +59,10 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`libs/package_diff.sh`](../../libs/package_diff.sh) | Currently has IN_CONTAINER detection + `.package-diff-output` fallback — target for A.5 |
-| [`libs/package_branch.sh`](../../libs/package_branch.sh) | Script-mode path construction — may need host-side entry point |
-| [`libs/routing.sh`](../../libs/routing.sh) | `output_export_path` already exists — A.5 host wrapper calls it |
-| [`scripts/onboard.sh`](../../scripts/onboard.sh) | Currently registers git alias for package-diff — A.5 may update this |
+| [`libs/package_diff.sh`](../../libs/package_diff.sh) | Currently has IN_CONTAINER detection + `.package-diff-output` fallback -- target for A.5 |
+| [`libs/package_branch.sh`](../../libs/package_branch.sh) | Script-mode path construction -- may need host-side entry point |
+| [`libs/routing.sh`](../../libs/routing.sh) | `output_export_path` already exists -- A.5 host wrapper calls it |
+| [`scripts/onboard.sh`](../../scripts/onboard.sh) | Currently registers git alias for package-diff -- A.5 may update this |
 | [`libs/_templates/Makefile.template`](../../libs/_templates/Makefile.template) | May gain a host-package-diff target |
 | [`scripts/agent-sandbox.sh`](../../scripts/agent-sandbox.sh) | Host-side entry point consideration |
 
@@ -88,8 +89,8 @@ None.
 | File | Change |
 |---|---|
 | `libs/diff.sh` | `write_all_changes_diff` gets optional 3rd arg `SINCE_SHA` |
-| `libs/package_diff.sh` | `--outdir` → `--to`; added `--all`/`--baseline`; removed `IN_CONTAINER` detection; removed `.package-diff-output` fallback; `REPO_ROOT` moved behind source guard |
-| `libs/package_branch.sh` | `--outdir` → `--to`; added `--baseline`; `package_commits` and `package_branch` get optional `init_sha_override`; updated docs |
+| `libs/package_diff.sh` | `--outdir` -> `--to`; added `--all`/`--baseline`; removed `IN_CONTAINER` detection; removed `.package-diff-output` fallback; `REPO_ROOT` moved behind source guard |
+| `libs/package_branch.sh` | `--outdir` -> `--to`; added `--baseline`; `package_commits` and `package_branch` get optional `init_sha_override`; updated docs |
 | `scripts/agent-sandbox.sh` | Added `package-diff` and `package-branch` subcommands; updated docstring to host-side-only |
 | `libs/_templates/Makefile.template` | Added `package-diff` and `package-branch` targets; added `SESSION_SUMMARY`, `BASELINE`, `ALL` vars |
 | `scripts/onboard.sh` | Removed git alias registration for `package-diff`; updated refresh summary |
@@ -102,13 +103,14 @@ None.
 
 ## Next session
 
-**A.3 — Documentation alignment.**
+**A.3 -- Documentation alignment.**
 
 **Trigger B pending:** Not yet. A.2, A.3, and A.5 must all complete before Trigger B can fire.
 
 **Context handover:** This session completed A.5 design and implementation. Resume A.3 by reading `20260504-01-impl-cli_contract_channel_flag_routing.md` Next session and watch-out items.
 
 **Conclusions from this session:**
+
 - Host entry point: `agent-sandbox package-diff` / `package-branch` subcommands
 - Makefile targets delegate to `agent-sandbox`
 - `--to=<dir>` replaces `--outdir`; required everywhere

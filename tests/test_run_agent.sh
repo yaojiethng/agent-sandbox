@@ -1,146 +1,265 @@
 #!/usr/bin/env bash
-# tests/test_run_agent.sh — Tests for scripts/run_agent.sh path resolution.
+# tests/test_run_agent.sh  --  Behavioural tests for scripts/run_agent.sh
+# provider hook + provider overlay selection.
+# Pins cite: docs/architecture/tool_interface.md l.41, l.225 (SERVE_PORT contract);
+#             code-owner: scripts/run_agent.sh SERVE_PORT_DEFAULT.
+
 #
-# These tests assert that the compose and provider file paths constructed
-# by run_agent.sh resolve correctly for each registered provider.
-# The duplicated-path bug (src/reasoning/src/reasoning/providers/) would be
-# caught by checking that each path contains no repeated segments.
+# Replaces the former source-grep suite (extract_path_expr string checks +
+# provider-file existence loop). That suite asserted the exact source text a
+# change would touch and never executed run_agent.sh; coverage for the paths
+# it nominally guarded is now behavioural:
 #
-# Run:
-#   bash tests/test_run_agent.sh
+#   1. Provider setup hook (scripts/run_agent.sh "Provider setup hook"):
+#      - absent setup.sh          -> hook is a no-op, session proceeds
+#      - present + rc 0 (pi)      -> hook runs, session proceeds to compose
+#      - present + non-zero rc    -> abort with attribution, BEFORE compose
+#   2. Provider overlay merge: docker-compose.<provider>.yml reaches the
+#      compose file set passed to `docker compose config` (asserted on the
+#      docker-stub trace, which logs every -f argument).
+#
+# The provider setup hook is a documented contract (run_agent.sh header: "If
+# setup.sh exits non-zero, the session aborts with a clear error attributing
+# the failure to the provider setup hook") that previously had zero tests.
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
-source "$SCRIPT_DIR/libs/test_common.sh"
+source "$TEST_DIR/libs/test_common.sh"
+test_setup
 
-# Initialize vars used in for-loop probes (set -u safety)
-RP=
-PROVIDER_NAME=
-expected_setup=
-expected_overlay=
-expected_serve=
+STUB_DIR="$TEST_DIR/../tests/stubs"
 
-# -------------------------------------------------------------------
-# Helper: extract a variable assignment from run_agent.sh by grep
-# -------------------------------------------------------------------
-extract_path_expr() {
-  local var_name="$1"
-  grep "^${var_name}=" "$REPO_ROOT/scripts/run_agent.sh" | head -1 | sed 's/^[^=]*=//'
+# make_run_agent_fixture FIXTURE_DIR PROVIDER [READONLY_SANDBOX]
+#   Builds the minimal environment run_agent.sh expects from its caller
+#   (start_agent.sh normally exports these). Sets DOCKER_TRACE_LOG.
+#   READONLY_SANDBOX=1 strips write permission from the sandbox dir so the
+#   pi setup hook's `mkdir -p $SANDBOX_DIR/.pi` fails (the hook's only
+#   side effect) without touching any file under src/.
+make_run_agent_fixture() {
+  local FIX="$1" provider="$2" readonly="${3:-0}"
+
+  export PROJECT_NAME="test-project"
+  export PROVIDER_NAME="$provider"
+  export SANDBOX_DIR="$FIX/sandbox"
+  export SERVE_PORT="46553"
+  export HOST_UID="1000"
+  export HOST_GID="1000"
+
+  export SESSION_TS="20260730-000000"
+  export HOST_HEAD_SHA="abc123def456"
+  export SESSION_ID="test01"
+  export SANITIZED_HOST_BRANCH="master"
+  export SANDBOX_CONTAINER_NAME="sandbox-test-project-${SESSION_ID}"
+  export AGENT_CONTAINER_NAME="${provider}-test-project-${SESSION_ID}"
+
+  mkdir -p "$SANDBOX_DIR"
+  cat > "$SANDBOX_DIR/.env" <<EOF
+SANDBOX_DIR=$SANDBOX_DIR
+PROJECT_DIR=$FIX/project
+EOF
+
+  if [[ "$readonly" == "1" ]]; then
+    chmod 555 "$SANDBOX_DIR"
+  fi
+
+  export DOCKER_TRACE_LOG="$FIX/docker-trace.log"
+  :> "$DOCKER_TRACE_LOG"
 }
 
-# -------------------------------------------------------------------
-# Tests
-# -------------------------------------------------------------------
+# invoke_run_agent OUT_FILE MODE [FLATTEN]
+#   Runs run_agent.sh (standard mode) with the docker stub shadowing PATH.
+#   Captures stdout+stderr into OUT_FILE; the function's rc is returned.
+#   Optional FLATTEN="--flatten" appends the flag.
+invoke_run_agent() {
+  local out_file="$1" mode="${2:-standard}" flatten="${3:-}"
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" "$mode" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy \
+      $flatten < /dev/null
+  ) > "$out_file" 2>&1
+}
 
-echo ""
-echo "=== test_run_agent.sh ==="
-echo ""
+# ---------------------------------------------------------------------------
+# Provider setup hook
+# ---------------------------------------------------------------------------
 
-echo "-- Path resolution correctness --"
+# A provider without src/reasoning/providers/<n>/setup.sh: the hook is a
+# no-op and the session must reach compose generation (rc 0, compose called).
+test_setup_hook_absent_is_noop() {
+  local FIX="$FIXTURE_DIR/hook_absent"
+  make_run_agent_fixture "$FIX" ghost
 
-SETUP_EXPR=$(extract_path_expr "PROVIDER_SETUP")
-if echo "$SETUP_EXPR" | grep -q 'src/reasoning/providers/'; then
-  pass "PROVIDER_SETUP references src/reasoning/providers/"
-else
-  fail "PROVIDER_SETUP should reference src/reasoning/providers/, got: $SETUP_EXPR"
-fi
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
 
-if echo "$SETUP_EXPR" | grep -qv 'src/reasoning/src/reasoning'; then
-  pass "PROVIDER_SETUP has no duplicated src/reasoning/"
-else
-  fail "PROVIDER_SETUP has duplicated src/reasoning/: $SETUP_EXPR"
-fi
-
-OVERLAY_EXPR=$(extract_path_expr "PROVIDER_OVERLAY")
-if echo "$OVERLAY_EXPR" | grep -q 'src/reasoning/providers/'; then
-  pass "PROVIDER_OVERLAY references src/reasoning/providers/"
-else
-  fail "PROVIDER_OVERLAY should reference src/reasoning/providers/, got: $OVERLAY_EXPR"
-fi
-
-if echo "$OVERLAY_EXPR" | grep -qv 'src/reasoning/src/reasoning'; then
-  pass "PROVIDER_OVERLAY has no duplicated src/reasoning/"
-else
-  fail "PROVIDER_OVERLAY has duplicated src/reasoning/: $OVERLAY_EXPR"
-fi
-
-SERVE_EXPR=$(extract_path_expr "SERVE_OVERLAY")
-if echo "$SERVE_EXPR" | grep -q 'src/reasoning/providers/'; then
-  pass "SERVE_OVERLAY references src/reasoning/providers/"
-else
-  fail "SERVE_OVERLAY should reference src/reasoning/providers/, got: $SERVE_EXPR"
-fi
-
-if echo "$SERVE_EXPR" | grep -qv 'src/reasoning/src/reasoning'; then
-  pass "SERVE_OVERLAY has no duplicated src/reasoning/"
-else
-  fail "SERVE_OVERLAY has duplicated src/reasoning/: $SERVE_EXPR"
-fi
-
-TEMPLATE_EXPR=$(extract_path_expr "COMPOSE_TEMPLATE")
-if echo "$TEMPLATE_EXPR" | grep -q 'src/build/'; then
-  pass "COMPOSE_TEMPLATE references src/build/"
-else
-  fail "COMPOSE_TEMPLATE should reference src/build/, got: $TEMPLATE_EXPR"
-fi
-
-DRY_EXPR=$(extract_path_expr "DRY_RUN_OVERLAY")
-if echo "$DRY_EXPR" | grep -q 'src/build/'; then
-  pass "DRY_RUN_OVERLAY references src/build/"
-else
-  fail "DRY_RUN_OVERLAY should reference src/build/, got: $DRY_EXPR"
-fi
-
-echo ""
-echo "-- Provider file existence --"
-
-RP="$REPO_ROOT"
-for PROVIDER_DIR in "$RP/src/reasoning/providers/"*/; do
-  [[ -d "$PROVIDER_DIR" ]] || continue
-  PROVIDER_NAME="$(basename "$PROVIDER_DIR")"
-
-  expected_setup="$RP/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
-  expected_overlay="$RP/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-  expected_serve="$RP/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
-
-  if [[ -f "$expected_setup" ]]; then
-    pass "$PROVIDER_NAME: setup.sh exists at expected path"
+  if [[ $rc -eq 0 ]] && [[ "$(trace_count 'compose config')" -gt 0 ]]; then
+    pass "setup hook absent (ghost provider): session proceeds to compose, rc 0"
   else
-    skip "$PROVIDER_NAME: no setup.sh (optional)"
+    fail "setup hook absent: expected rc 0 + compose config, got rc=$rc out='$(cat "$out")'"
   fi
-
-  if [[ -f "$expected_overlay" ]]; then
-    pass "$PROVIDER_NAME: compose overlay exists at expected path"
+  if grep -q "setup hook failed" "$out"; then
+    fail "setup hook absent: spurious failure attribution"
   else
-    skip "$PROVIDER_NAME: no compose overlay (optional)"
+    pass "setup hook absent: no failure attribution"
   fi
+}
 
-  if [[ -f "$expected_serve" ]]; then
-    pass "$PROVIDER_NAME: serve overlay exists at expected path"
+# The pi provider ships setup.sh (mkdir -p .pi). A run that reaches compose
+# proves the hook was sourced and exited 0 (a failing hook aborts first).
+test_setup_hook_present_runs_and_proceeds() {
+  local FIX="$FIXTURE_DIR/hook_present"
+  make_run_agent_fixture "$FIX" pi
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
+
+  if [[ $rc -eq 0 ]] && [[ "$(trace_count 'compose config')" -gt 0 ]]; then
+    pass "setup hook present (pi): hook sourced, session proceeds to compose"
   else
-    skip "$PROVIDER_NAME: no serve overlay (optional)"
+    fail "setup hook present: expected rc 0 + compose config, got rc=$rc out='$(cat "$out")'"
   fi
-done
-echo ""
-echo "-- Compose template file existence --"
+}
 
-if [[ -f "$REPO_ROOT/src/build/docker-compose.yml" ]]; then
-  pass "compose template exists"
-else
-  fail "compose template missing: $REPO_ROOT/src/build/docker-compose.yml"
-fi
+# A failing setup hook must abort the session with an attribution message
+# naming the hook file, BEFORE any docker/compose invocation (documented
+# contract in run_agent.sh: "the session aborts with a clear error
+# attributing the failure to the provider setup hook").
+test_setup_hook_failure_aborts_with_attribution() {
+  local FIX="$FIXTURE_DIR/hook_fails"
+  make_run_agent_fixture "$FIX" pi 1
 
-if [[ -f "$REPO_ROOT/src/build/docker-compose.dry-run.yml" ]]; then
-  pass "dry-run overlay exists"
-else
-  fail "dry-run overlay missing: $REPO_ROOT/src/build/docker-compose.dry-run.yml"
-fi
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
+  chmod -R u+w "$SANDBOX_DIR" 2>/dev/null || true  # let the trap clean up
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+  if [[ $rc -ne 0 ]] && grep -q "provider setup hook failed" "$out" \
+     && grep -q "providers/pi/setup.sh" "$out"; then
+    pass "failing setup hook: aborts with attribution naming providers/pi/setup.sh"
+  else
+    fail "failing setup hook: expected non-zero rc + attribution, got rc=$rc out='$(cat "$out")'"
+  fi
+  if [[ "$(trace_count 'compose')" -eq 0 ]]; then
+    pass "failing setup hook: aborts before any compose invocation"
+  else
+    fail "failing setup hook: compose was invoked despite hook failure"
+  fi
+}
 
-# Exit with non-zero if any test failed
-[[ "$FAIL" -eq 0 ]]
+# --flatten is accepted and the session proceeds to compose (default is full;
+# the flag is the flatten opt-out, so its acceptance is the contract).
+test_flatten_flag_accepted() {
+  local FIX="$FIXTURE_DIR/flatten"
+  make_run_agent_fixture "$FIX" pi
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" standard --flatten || rc=$?
+
+  if [[ $rc -eq 0 ]] && [[ "$(trace_count 'compose config')" -gt 0 ]]; then
+    pass "flatten flag: --flatten accepted, session proceeds to compose"
+  else
+    fail "flatten flag: expected rc 0 + compose config, got rc=$rc out='$(cat "$out")'"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Provider overlay selection
+# ---------------------------------------------------------------------------
+# The provider overlay (src/reasoning/providers/pi/docker-compose.pi.yml) must
+# be part of the compose file set: the docker-stub trace logs every -f argument
+# of `docker compose config`, and compose_generate preserves input basenames in
+# its staging filenames (01-docker-compose.pi.yml).
+test_provider_overlay_reaches_compose_file_set() {
+  local FIX="$FIXTURE_DIR/overlay_merged"
+  make_run_agent_fixture "$FIX" pi
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
+
+  if [[ "$(trace_count 'compose config')" -eq 0 ]]; then
+    fail "provider overlay: run did not reach compose generation (rc=$rc)"
+    return
+  fi
+  if grep -q 'docker-compose\.pi\.yml' "$DOCKER_TRACE_LOG"; then
+    pass "provider overlay: docker-compose.pi.yml included in compose file set"
+  else
+    fail "provider overlay: pi overlay missing from compose file set: $(grep 'compose config' "$DOCKER_TRACE_LOG")"
+  fi
+}
+
+# A provider without an overlay file: the merge must still succeed (the
+# overlay is optional by contract) and no ghost overlay may appear.
+test_provider_overlay_absent_is_optional() {
+  local FIX="$FIXTURE_DIR/overlay_absent"
+  make_run_agent_fixture "$FIX" ghost
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
+
+  if [[ $rc -eq 0 && "$(trace_count 'compose config')" -gt 0 ]] \
+     && ! grep -q 'docker-compose\.ghost\.yml' "$DOCKER_TRACE_LOG"; then
+    pass "provider overlay absent (ghost): merge succeeds without it"
+  else
+    fail "provider overlay absent: expected rc 0 + config without ghost overlay, got rc=$rc"
+  fi
+}
+
+# SERVE_PORT unset: run_agent.sh still resolves the fallback default (46553,
+# matching the provider serve overlays) so the session proceeds. The warning is
+# serve-mode-only: in non-serve modes the port is irrelevant and would be
+# noise. Warning originally added for the unset case (handover 20260325-01);
+# mode gate pinned by handover 20260912-11.
+test_serve_port_unset_standard_is_quiet() {
+  local FIX="$FIXTURE_DIR/serve_port_unset_std"
+  make_run_agent_fixture "$FIX" pi
+  unset SERVE_PORT
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" || rc=$?
+
+  if [[ $rc -eq 0 ]] && ! grep -q "SERVE_PORT is not set" "$out"; then
+    pass "SERVE_PORT unset, standard mode: no warning, session proceeds on the default"
+  else
+    fail "SERVE_PORT unset, standard mode: expected rc 0 without warning, got rc=$rc out='$(cat "$out")'"
+  fi
+  export SERVE_PORT="46553"
+}
+
+test_serve_port_unset_serve_warns() {
+  local FIX="$FIXTURE_DIR/serve_port_unset_serve"
+  make_run_agent_fixture "$FIX" pi
+  unset SERVE_PORT
+
+  local out="$FIX/out.txt" rc=0
+  invoke_run_agent "$out" serve || rc=$?
+
+  if [[ $rc -eq 0 ]] && grep -q "SERVE_PORT is not set" "$out" \
+     && grep -q "falling back to default (46553)" "$out"; then
+    pass "SERVE_PORT unset, serve mode: warning emitted, session proceeds on the default port"
+  else
+    fail "SERVE_PORT unset, serve mode: expected warning + rc 0, got rc=$rc out='$(cat "$out")'"
+  fi
+  export SERVE_PORT="46553"
+}
+
+# ---------------------------------------------------------------------------
+# Run
+# ---------------------------------------------------------------------------
+
+run_test test_setup_hook_absent_is_noop
+run_test test_setup_hook_present_runs_and_proceeds
+run_test test_setup_hook_failure_aborts_with_attribution
+run_test test_flatten_flag_accepted
+run_test test_serve_port_unset_standard_is_quiet
+run_test test_serve_port_unset_serve_warns
+run_test test_provider_overlay_reaches_compose_file_set
+run_test test_provider_overlay_absent_is_optional
+
+test_done "test_run_agent"

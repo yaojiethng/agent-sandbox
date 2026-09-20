@@ -1,0 +1,405 @@
+#!/usr/bin/env bash
+# tests/test_seed_volume.sh
+# Helper-container seeder tests (src/capability/seed_volume.sh).
+#
+# Covers the ADR 2026-09-04 entry contract:
+#   - guards fail closed: submodules, unborn HEAD, linked worktrees, tracked sentinel
+#   - existence filter: unstaged deletions absent from the volume
+#   - porcelain parity: staging state preserved; self-check detects induced divergence
+#   - SESSION_STATE written by the seeder (init_sha = HEAD, session_id, session_ts)
+#   - empty enumeration (everything tracked deleted, no untracked) seeds (rsync no-ops)
+#
+# The script is exercised both as a subprocess (full flow) and via sourced
+# functions (verify_parity unit case). No docker involved: /src and /dest are
+# local fixture directories.
+
+set -uo pipefail
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+source "$TEST_DIR/libs/git_fixtures.sh"
+
+SEED_SCRIPT="$REPO_ROOT/src/capability/seed_volume.sh"
+LIBS_DIR="$REPO_ROOT/src/libs"
+
+# run_seeder SRC DEST [FLATTEN]
+# Runs the seeder as a subprocess against fixture dirs. Optional FLATTEN is
+# "true" to run the flattened-history branch.
+run_seeder() {
+  local src="$1" dest="$2"
+  local flatten="${3:-false}"
+  SEED_SRC="$src" SEED_DEST="$dest" SEED_LIB_DIR="$LIBS_DIR" \
+  SEED_FLATTEN="$flatten" \
+  SESSION_ID="testses" SESSION_TS="20260904-000000" HOST_HEAD_SHA="$(git -C "$src" rev-parse HEAD)" \
+    bash "$SEED_SCRIPT" > /dev/null 2>&1
+}
+
+# make_rich_project DIR
+# Committed repo exercising every parity dimension: staged + unstaged edits,
+# staged new file, unstaged deletion, untracked file, negation patterns,
+# symlink, exec bit, unicode name, ignored file.
+make_rich_project() {
+  local DIR="$1"
+  make_committed_repo "$DIR"
+  # committed.txt: staged edit (index differs from HEAD, worktree == index)
+  echo "baseline line" > "$DIR/committed.txt"
+  git -C "$DIR" add committed.txt
+  git -C "$DIR" commit -q -m "add committed.txt"
+  echo "staged edit" >> "$DIR/committed.txt"
+  git -C "$DIR" add committed.txt
+  # unstaged.txt: unstaged edit (worktree differs from index)
+  # Pathspec-scoped commits: a plain `git commit` would sweep the previously
+  # staged committed.txt edit into HEAD and destroy the fixture's staged state.
+  echo "one" > "$DIR/unstaged.txt"
+  git -C "$DIR" add unstaged.txt
+  git -C "$DIR" commit -q -m "add unstaged.txt" -- unstaged.txt
+  echo "two" >> "$DIR/unstaged.txt"
+  # gone.txt: unstaged deletion
+  echo "doomed" > "$DIR/gone.txt"
+  git -C "$DIR" add gone.txt
+  git -C "$DIR" commit -q -m "add gone.txt" -- gone.txt
+  rm "$DIR/gone.txt"
+  # staged new file (in index, not in HEAD)
+  echo "staged new" > "$DIR/staged_new.txt"
+  git -C "$DIR" add staged_new.txt
+  # untracked + negation patterns + ignored content
+  printf '*.log\n!keep.log\n' > "$DIR/.gitignore"
+  echo "untracked data" > "$DIR/untracked.txt"
+  mkdir -p "$DIR/nested dir"
+  echo "unicode content" > "$DIR/nested dir/üñícode.txt"
+  echo "dropped" > "$DIR/drop.log"
+  echo "kept" > "$DIR/keep.log"
+  # ignored file must not cross
+  echo "secret data" > "$DIR/secret.env"
+  printf 'secret.env\n' >> "$DIR/.gitignore"
+  # symlink + exec bit
+  ln -s committed.txt "$DIR/link.txt"
+  echo "#!/bin/sh" > "$DIR/run.sh"
+  chmod +x "$DIR/run.sh"
+}
+
+# -------------------------
+# Guard tests (fail closed)
+# -------------------------
+
+test_seeder_rejects_submodule() {
+  local proj="$FIXTURE_DIR/sub_project"
+  make_committed_repo "$proj"
+  local tree
+  tree=$(git -C "$proj" hash-object -w -t tree /dev/null)
+  git -C "$proj" update-index --add --cacheinfo "160000,$tree,sub" 2>/dev/null
+  local dest="$FIXTURE_DIR/sub_dest"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    fail "seeder: submodule repo rejected"
+  else
+    pass "seeder: submodule repo rejected"
+  fi
+}
+
+test_seeder_rejects_unborn_head() {
+  local proj="$FIXTURE_DIR/unborn_project"
+  make_repo "$proj"
+  local dest="$FIXTURE_DIR/unborn_dest"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    fail "seeder: unborn HEAD rejected"
+  else
+    pass "seeder: unborn HEAD rejected"
+  fi
+}
+
+test_seeder_rejects_linked_worktree() {
+  local proj="$FIXTURE_DIR/wt_project"
+  make_committed_repo "$proj"
+  git -C "$proj" worktree add "$FIXTURE_DIR/wt_linked" --quiet 2>/dev/null
+  local dest="$FIXTURE_DIR/wt_dest"
+  mkdir -p "$dest"
+  if run_seeder "$FIXTURE_DIR/wt_linked" "$dest"; then
+    fail "seeder: linked worktree rejected"
+  else
+    pass "seeder: linked worktree rejected"
+  fi
+}
+
+test_seeder_rejects_tracked_sentinel() {
+  local proj="$FIXTURE_DIR/sentinel_project"
+  make_committed_repo "$proj"
+  mkdir -p "$proj/.agent-sandbox-seed/worktree"
+  echo "stale payload" > "$proj/.agent-sandbox-seed/worktree/stale.txt"
+  git -C "$proj" add .agent-sandbox-seed
+  git -C "$proj" commit -q -m "accidental harness staging"
+  local dest="$FIXTURE_DIR/sentinel_dest"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    fail "seeder: tracked sentinel rejected"
+  else
+    pass "seeder: tracked sentinel rejected"
+  fi
+}
+
+# -------------------------
+# Happy path: porcelain parity
+# -------------------------
+
+# Flattened seed: no host history or staging state crosses; the volume is a
+# fresh single baseline commit.
+test_seeder_flat_single_baseline() {
+  local proj="$FIXTURE_DIR/flat_project"
+  local dest="$FIXTURE_DIR/flat_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten seeder: rich project flattens successfully"; return 0
+  fi
+  pass "flatten seeder: rich project flattens successfully"
+
+  # Exactly one commit (the fresh baseline), no host history.
+  local count
+  count=$(git -C "$dest" rev-list --count HEAD 2>/dev/null || echo 0)
+  [[ "$count" -eq 1 ]] \
+    && pass "flatten seeder: exactly one baseline commit" \
+    || fail "flatten seeder: expected 1 commit, got $count"
+
+  # Worktree is clean by construction.
+  [[ -z "$(git -C "$dest" status --porcelain)" ]] \
+    && pass "flatten seeder: worktree clean" \
+    || fail "flatten seeder: worktree not clean"
+
+  # init_sha points at the baseline root commit.
+  local init_sha root_sha
+  init_sha=$(sed -n 's/^init_sha=//p' "$dest/.git/SESSION_STATE")
+  root_sha=$(git -C "$dest" rev-list --max-parents=0 HEAD)
+  [[ "$init_sha" == "$root_sha" ]] \
+    && pass "flatten seeder: init_sha is the baseline root commit" \
+    || fail "flatten seeder: init_sha ($init_sha) != baseline root ($root_sha)"
+}
+
+# The flatten verification must detect a dropped file: the committed set must
+# equal the source enumeration (B1 -- coverage verification, not just a clean
+# worktree). Drive verify_baseline directly (sourced) against a seeded dest
+# whose source has since lost a file: the set comparison must fail.
+test_seeder_flat_verification_detects_dropped_file() {
+  local proj="$FIXTURE_DIR/flat_drop_project"
+  local dest="$FIXTURE_DIR/flat_drop_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten drop: rich project flattens successfully"; return 0
+  fi
+  pass "flatten drop: rich project flattens successfully"
+
+  # Source loses a tracked file AFTER the seed (the race a mid-run sync defect
+  # would produce); the committed set in the dest no longer matches.
+  rm "$proj/committed.txt"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+  # SCRIPT path is computed at runtime and validated above
+  # shellcheck disable=SC1090
+  SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"
+  if verify_baseline "$proj" "$dest" 2>/dev/null; then
+    fail "flatten drop: verify_baseline passed despite source/volume divergence"
+  else
+    pass "flatten drop: verify_baseline fails when the source enumeration diverges"
+  fi
+}
+
+test_seeder_parity_preserves_everything() {
+  local proj="$FIXTURE_DIR/rich_project"
+  local dest="$FIXTURE_DIR/rich_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest"; then
+    fail "seeder: rich project seeds successfully"
+    return 0
+  fi
+  pass "seeder: rich project seeds successfully"
+
+  local status
+  status=$(git -C "$dest" status --porcelain)
+
+  # Staged edit stays staged (the porcelain guarantee: "M " not " M")
+  echo "$status" | grep -q '^M  committed\.txt$' \
+    && pass "parity: staged edit stays staged" \
+    || fail "parity: staged edit should be 'M  committed.txt', got: $(echo "$status" | grep committed)"
+
+  # Staged new file stays staged
+  echo "$status" | grep -q '^A  staged_new\.txt$' \
+    && pass "parity: staged new file stays staged" \
+    || fail "parity: staged new file should be 'A  staged_new.txt'"
+
+  # Unstaged edit stays unstaged
+  echo "$status" | grep -q '^ M unstaged\.txt$' \
+    && pass "parity: unstaged edit shows ' M'" \
+    || fail "parity: unstaged edit should show ' M'"
+
+  # Unstaged deletion visible
+  echo "$status" | grep -q '^ D gone\.txt$' \
+    && pass "parity: unstaged deletion shows ' D'" \
+    || fail "parity: unstaged deletion should show ' D'"
+
+  # Untracked file + unicode name present
+  [[ -f "$dest/untracked.txt" && -f "$dest/nested dir/üñícode.txt" ]] \
+    && pass "parity: untracked content crosses" \
+    || fail "parity: untracked content missing from volume"
+
+  # Negation: keep.log crosses, drop.log and ignored secret do not
+  [[ -f "$dest/keep.log" && ! -f "$dest/drop.log" && ! -f "$dest/secret.env" ]] \
+    && pass "parity: negation patterns honored, ignored content absent" \
+    || fail "parity: ignore resolution wrong (keep.log/drop.log/secret.env)"
+
+  # Symlink target + exec bit preserved
+  [[ "$(readlink "$dest/link.txt")" == "committed.txt" ]] \
+    && pass "parity: symlink target preserved" \
+    || fail "parity: symlink target wrong: $(readlink "$dest/link.txt")"
+  [[ -x "$dest/run.sh" ]] \
+    && pass "parity: exec bit preserved" \
+    || fail "parity: exec bit lost"
+
+  # SESSION_STATE: init_sha = HEAD, identity keys present
+  local head_sha
+  head_sha=$(git -C "$proj" rev-parse HEAD)
+  grep -q "^init_sha=$head_sha$" "$dest/.git/SESSION_STATE" \
+    && pass "session state: init_sha equals HEAD" \
+    || fail "session state: init_sha mismatch"
+  grep -q "^session_id=testses$" "$dest/.git/SESSION_STATE" \
+    && pass "session state: session_id written" \
+    || fail "session state: session_id missing"
+
+  # Direct parity assertion (what the seeder's self-check enforces)
+  if diff <(git -C "$proj" status --porcelain=v1 -uall | sort) \
+          <(git -C "$dest" status --porcelain=v1 -uall | sort) > /dev/null; then
+    pass "parity: git status porcelain-identical between source and volume"
+  else
+    fail "parity: git status diverges between source and volume"
+  fi
+}
+
+# -------------------------
+# Self-check: induced divergence is detected
+# -------------------------
+
+test_seeder_parity_fail_detected() {
+  local proj="$FIXTURE_DIR/corrupt_project"
+  local dest="$FIXTURE_DIR/corrupt_dest"
+  make_committed_repo "$proj"
+  mkdir -p "$dest"
+  run_seeder "$proj" "$dest" || { fail "seeder: clean project seeds"; return 0; }
+  # Induce divergence after the seed: tamper with volume content
+  echo "tampered" > "$dest/file.txt"
+  # Subshell: the script sets -e for itself; the test shell must not inherit it.
+  # shellcheck disable=SC1090  # path is a repo-relative variable by design
+  if ( SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"; verify_parity "$proj" "$dest" ) 2>/dev/null; then
+    fail "self-check: induced divergence detected"
+  else
+    pass "self-check: induced divergence detected"
+  fi
+}
+
+# -------------------------
+# Empty enumeration: tracked file deleted, nothing untracked
+# -------------------------
+
+test_seeder_empty_enumeration() {
+  local proj="$FIXTURE_DIR/empty_project"
+  local dest="$FIXTURE_DIR/empty_dest"
+  make_committed_repo "$proj"
+  rm "$proj/file.txt"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    pass "seeder: empty enumeration (deleted-only worktree) seeds"
+  else
+    fail "seeder: empty enumeration should seed successfully (rsync no-ops)"
+    return 0
+  fi
+  if git -C "$dest" status --porcelain | grep -q '^ D file\.txt$'; then
+    pass "parity: deletion visible in seeded volume"
+  else
+    fail "parity: deletion should show as ' D file.txt'"
+  fi
+}
+
+# Stash clear: host stash entries must not cross into the volume (ADR
+# sandbox_delivery_model.md, 2026-09-11 entry), and the host stack must be
+# untouched by the seeder.
+test_seeder_clears_host_stash() {
+  local proj="$FIXTURE_DIR/stashed_project"
+  local dest="$FIXTURE_DIR/stashed_dest"
+  make_committed_repo "$proj"
+  echo "wip one" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip one"
+  echo "wip two" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip two"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest"; then
+    fail "seeder: stashed project seeds successfully"
+    return 0
+  fi
+  pass "seeder: stashed project seeds successfully"
+
+  if [[ -z "$(git -C "$dest" stash list)" ]]; then
+    pass "stash: seeded volume carries no stash entries"
+  else
+    fail "stash: volume stash stack should be empty, got: $(git -C "$dest" stash list | tr '\n' '; ')"
+  fi
+
+  local host_count
+  host_count=$(git -C "$proj" stash list | wc -l)
+  assert_eq_num "$host_count" "2" "stash: host stash stack untouched by the seeder"
+}
+
+# Object-store prune: stash objects, a dangling blob, and reflog-anchored
+# history must not survive into the volume (study
+# 20260911-study-seed_object_store_cleanliness.md); the host repo is untouched.
+test_seeder_prunes_unreachable_objects() {
+  local proj="$FIXTURE_DIR/dirty_objects_project"
+  local dest="$FIXTURE_DIR/dirty_objects_dest"
+  make_committed_repo "$proj"
+  echo "wip" > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip"
+  local dangling_sha
+  dangling_sha=$(printf 'secret dangling content' | git -C "$proj" hash-object -w --stdin)
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest"; then
+    fail "seeder: dirty-objects project seeds successfully"
+    return 0
+  fi
+  pass "seeder: dirty-objects project seeds successfully"
+
+  if [[ -z "$(git -C "$dest" fsck --unreachable 2>/dev/null)" ]]; then
+    pass "prune: seeded volume carries no unreachable objects"
+  else
+    fail "prune: volume should have no unreachable objects, got: $(git -C "$dest" fsck --unreachable 2>/dev/null | tr '\n' '; ')"
+  fi
+
+  if git -C "$dest" cat-file -e "$dangling_sha" 2>/dev/null; then
+    fail "prune: dangling host blob should be absent from the volume"
+  else
+    pass "prune: dangling host blob absent from the volume"
+  fi
+
+  if git -C "$proj" cat-file -e "$dangling_sha" 2>/dev/null \
+    && [[ "$(git -C "$proj" stash list | wc -l)" -eq 1 ]]; then
+    pass "prune: host repo untouched by the seeder"
+  else
+    fail "prune: host repo should still hold the dangling blob and 1 stash"
+  fi
+}
+
+# -------------------------
+# Registration
+# -------------------------
+
+run_test test_seeder_rejects_submodule
+run_test test_seeder_rejects_unborn_head
+run_test test_seeder_rejects_linked_worktree
+run_test test_seeder_rejects_tracked_sentinel
+run_test test_seeder_parity_preserves_everything
+run_test test_seeder_parity_fail_detected
+run_test test_seeder_empty_enumeration
+run_test test_seeder_clears_host_stash
+run_test test_seeder_prunes_unreachable_objects
+run_test test_seeder_flat_single_baseline
+run_test test_seeder_flat_verification_detects_dropped_file
+
+test_done
+

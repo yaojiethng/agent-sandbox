@@ -11,12 +11,14 @@ ARG HOST_GID=1000
 # Build context is the repo root; COPY paths are repo-relative.
 COPY src/libs/                                          /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provider-entrypoint.sh
-COPY src/reasoning/providers/pi/preflight.sh             /opt/sandbox/bin/provider-preflight.sh
-COPY src/reasoning/agent/skills/                         /opt/workflow/agent/skills/
-COPY src/reasoning/agent/prompts/                        /opt/workflow/agent/prompts/
-COPY src/reasoning/providers/pi/config/                  /opt/workflow/agent/config/
-COPY docs/architecture/                                  /opt/sandbox/docs/architecture/
-COPY docs/concepts/                                      /opt/sandbox/docs/concepts/
+COPY src/reasoning/providers/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
+COPY src/reasoning/agent/skills/                        /opt/workflow/agent/skills/
+COPY src/reasoning/agent/prompts/                       /opt/workflow/agent/prompts/
+COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/
+COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
+COPY docs/architecture/                                 /opt/sandbox/docs/architecture/
+COPY docs/concepts/                                     /opt/sandbox/docs/concepts/
+RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.
 RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
@@ -29,14 +31,14 @@ RUN if ! id -u ${HOST_UID} >/dev/null 2>&1; then \
       usermod -d /home/agentuser -m agentuser; \
     fi
 
-# AGENT_HOME — most files are container-local. Only prompts/, sessions/,
+# AGENT_HOME  --  most files are container-local. Only prompts/, sessions/,
 # skills/ are bind-mounted from host per the selective mount layout.
 ENV AGENT_HOME=/home/agentuser/.pi
 ENV WORKSPACE_DIR=/home/agentuser/workspace
 ENV PROVIDER_NAME=pi
 
 # Create key directories before user switch so agentuser
-# owns it. Docker bind mounts create parent dirs as root when they
+# owns them. Docker bind mounts on macOS create parent dirs as root when they
 # don't exist in the image, which would block the entrypoint's
 # copy-in provisioning step.
 RUN mkdir -p $AGENT_HOME/agent/prompts \
@@ -64,4 +66,9 @@ HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
 # provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
 # EXIT trap, then execs the agent command.
 ENV PATH=/opt/sandbox/bin:$PATH
-ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh", "pi"]
+RUN pi install npm:pi-opencode-provider
+RUN pi install npm:pi-copy-soft-wrap
+RUN pi install npm:@narumitw/pi-goal
+
+CMD ["pi"]
+ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]

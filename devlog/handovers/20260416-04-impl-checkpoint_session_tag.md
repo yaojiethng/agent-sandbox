@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-04-16
-**Milestone:** M2.3 — Apply Workflow: Capability Layer Diff Pipeline
-**Session type:** Implementation
+**Date:** 2026-04-16
+**Milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
+**Type:** Implementation
 **Status:** Complete
 
 ## Objective
@@ -11,12 +11,14 @@ Implement Change 1 (checkpoint tag) for M2.3, plus SESSION_NAME derivation as a 
 
 ## Scope
 
-**Change 1 — Pre-session checkpoint tag** (`scripts/start_agent.sh`):
+**Change 1 -- Pre-session checkpoint tag** (`scripts/start_agent.sh`):
+
 - Create lightweight tag `agent-checkpoint/YYYYMMDD-HHMMSS` before each session
 - Prune to keep only 5 most recent checkpoint tags
 - Write tag name to `.workspace/checkpoint-latest.ref` for operator recovery
 
-**Bonus — SESSION_NAME derivation** (prepares for Change 2):
+**Bonus -- SESSION_NAME derivation** (prepares for Change 2):
+
 - Derive `SESSION_NAME` as `<sanitized-branch>-<timestamp>`
 - Export for docker-compose injection (to be added in Change 2)
 
@@ -26,16 +28,16 @@ All acceptance criteria from `20260412-02-m2_3_onhold.md` (AC-1) met:
 
 | AC | Description | Result |
 |----|-------------|--------|
-| AC-1.1 | Tag created with correct naming | ✅ |
-| AC-1.2 | Ref file written with correct content | ✅ |
-| AC-1.3 | Pruning keeps 5 most recent tags | ✅ |
+| AC-1.1 | Tag created with correct naming | [x] |
+| AC-1.2 | Ref file written with correct content | [x] |
+| AC-1.3 | Pruning keeps 5 most recent tags | [x] |
 
 ## Hot Files
 
 | File | Why in scope |
 |------|--------------|
 | [`scripts/start_agent.sh`](../../../scripts/start_agent.sh) | Checkpoint tag creation, pruning, SESSION_NAME derivation |
-| [`tests/test_start_agent.sh`](../../../tests/test_start_agent.sh) | **New** — 12 tests covering checkpoint and SESSION_NAME |
+| [`tests/test_start_agent.sh`](../../../tests/test_start_agent.sh) | **New** -- 12 tests covering checkpoint and SESSION_NAME |
 
 ## Decisions Made This Session
 
@@ -50,7 +52,7 @@ All acceptance criteria from `20260412-02-m2_3_onhold.md` (AC-1) met:
 | File | Change |
 |------|--------|
 | `scripts/start_agent.sh` | Added checkpoint tag creation (lines 181-200); added SESSION_NAME derivation (lines 203-208) |
-| `tests/test_start_agent.sh` | **New file** — 12 tests: 7 checkpoint tests, 5 SESSION_NAME tests |
+| `tests/test_start_agent.sh` | **New file** -- 12 tests: 7 checkpoint tests, 5 SESSION_NAME tests |
 
 ## Implementation Details
 
@@ -101,20 +103,22 @@ echo "Session name: $SESSION_NAME"
 **New test file:** `tests/test_start_agent.sh` (12 tests)
 
 **Checkpoint tests (7):**
-- `test_checkpoint_tag_created` — tag exists with correct naming
-- `test_checkpoint_tag_points_to_correct_commit` — tag points to HEAD
-- `test_checkpoint_ref_file_written` — ref file contains correct tag
-- `test_checkpoint_ref_file_creates_workspace_dir` — workspace dir created
-- `test_checkpoint_pruning_keeps_five` — exactly 5 tags after pruning
-- `test_checkpoint_pruning_keeps_newest` — oldest deleted, newest kept
-- `test_checkpoint_no_pruning_when_under_limit` — no pruning when < 5 tags
+
+- `test_checkpoint_tag_created` -- tag exists with correct naming
+- `test_checkpoint_tag_points_to_correct_commit` -- tag points to HEAD
+- `test_checkpoint_ref_file_written` -- ref file contains correct tag
+- `test_checkpoint_ref_file_creates_workspace_dir` -- workspace dir created
+- `test_checkpoint_pruning_keeps_five` -- exactly 5 tags after pruning
+- `test_checkpoint_pruning_keeps_newest` -- oldest deleted, newest kept
+- `test_checkpoint_no_pruning_when_under_limit` -- no pruning when < 5 tags
 
 **SESSION_NAME tests (5):**
-- `test_session_name_from_master_branch` — correct for master
-- `test_session_name_from_main_branch` — correct for main
-- `test_session_name_sanitizes_feature_branch` — slashes → dashes
-- `test_session_name_sanitizes_nested_branch` — nested branches handled
-- `test_session_name_exported` — available to subshells (docker-compose)
+
+- `test_session_name_from_master_branch` -- correct for master
+- `test_session_name_from_main_branch` -- correct for main
+- `test_session_name_sanitizes_feature_branch` -- slashes -> dashes
+- `test_session_name_sanitizes_nested_branch` -- nested branches handled
+- `test_session_name_exported` -- available to subshells (docker-compose)
 
 **All tests pass:** 12 passed, 0 failed
 
@@ -122,7 +126,7 @@ echo "Session name: $SESSION_NAME"
 
 All existing tests still pass:
 
-```
+```text
 test_snapshot_host.sh:     20 passed, 0 failed
 test_snapshot_container:   28 passed, 0 failed
 test_diff.sh:              13 passed, 0 failed
@@ -138,15 +142,16 @@ Total:                      73 passed, 0 failed
 | `scripts/start_agent.sh` | Host-side only | **No** |
 | `tests/test_start_agent.sh` | Host-side only | **No** |
 
-No capability layer changes — no rebuild required.
+No capability layer changes -- no rebuild required.
 
 ## Next Session
 
-**Change 2 — Format-patch + session-scoped artefact directory**
+### Change 2 -- Format-patch + session-scoped artefact directory
 
 Files to modify:
-- `libs/docker-compose.yml` — add `SESSION_NAME` to sandbox container environment
-- `libs/diff.sh` — add `diff_format_patch` function; update `diff_on_exit` and `diff_on_autosave` for session-scoped directories
+
+- `libs/docker-compose.yml` -- add `SESSION_NAME` to sandbox container environment
+- `libs/diff.sh` -- add `diff_format_patch` function; update `diff_on_exit` and `diff_on_autosave` for session-scoped directories
 
 Context handover: [`20260412-02-m2_3_onhold.md`](20260412-02-m2_3_onhold.md) (frozen design)
 Current spec: [`docs/devlog/discussions/design_git_workflow_improvements.md`](../discussions/design_git_workflow_improvements.md) (Change 2 section)
@@ -155,7 +160,7 @@ Current spec: [`docs/devlog/discussions/design_git_workflow_improvements.md`](..
 
 ## Notes
 
-**SESSION_NAME is exported but not yet used in container.** The docker-compose environment injection is part of Change 2. This is intentional — the variable is available but harmless until consumed.
+**SESSION_NAME is exported but not yet used in container.** The docker-compose environment injection is part of Change 2. This is intentional -- the variable is available but harmless until consumed.
 
 **Checkpoint tags are lightweight tags.** They point to commits, not annotated tags with metadata. This is correct for the use case (point-in-time markers, not signed releases).
 

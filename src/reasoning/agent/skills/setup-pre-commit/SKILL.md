@@ -22,7 +22,7 @@ Check for `package-lock.json` (npm), `pnpm-lock.yaml` (pnpm), `yarn.lock` (yarn)
 
 Install as devDependencies:
 
-```
+```text
 husky lint-staged prettier
 ```
 
@@ -38,7 +38,7 @@ This creates `.husky/` dir and adds `prepare: "husky"` to package.json.
 
 Write this file (no shebang needed for Husky v9+):
 
-```
+```text
 npx lint-staged
 npm run typecheck
 npm run test
@@ -82,7 +82,7 @@ Only create if no Prettier config exists. Use these defaults:
 
 Stage all changed/created files and commit with message: `Add pre-commit hooks (husky + lint-staged + prettier)`
 
-This will run through the new pre-commit hooks — a good smoke test that everything works.
+This will run through the new pre-commit hooks  --  a good smoke test that everything works.
 
 ## Notes
 

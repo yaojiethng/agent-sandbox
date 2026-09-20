@@ -1,0 +1,73 @@
+# docker-compose.copy.yml  --  COPY delivery overlay (default).
+# Delivery overlay for --delivery=copy. Assembled into the compose file set by
+# run_agent.sh (compose_generate merges the assembled set).
+# Carries the copy-delivery wiring that bind-mount compose must never inherit:
+#   - the SESSION_ID-scoped named sandbox volume (per-run state persistence,
+#     volume labels for lifecycle tooling)
+#
+# Content transfer: run_agent.sh seeds the volume before the sandbox container
+# starts. The one-shot seeder service below (ADR 2026-09-04 entry) is the sole
+# transport; its exit code is the seed's readiness signal.
+#
+# Volume name incorporates SESSION_ID so each session gets its own volume.
+# Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
+# destroyed by `docker compose down -v` or pruned via `make prune --volumes`.
+# Labels enable lifecycle tooling (prune, inspect, volume discovery) without
+# project-name prefix parsing.
+
+volumes:
+  {{SESSION_ID}}-sandbox-data:
+    labels:
+      agent-sandbox.project-name: {{PROJECT_NAME}}
+      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+      agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
+      agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
+      agent-sandbox.session-ts: {{SESSION_TS}}
+      agent-sandbox.session-id: {{SESSION_ID}}
+
+services:
+  sandbox:
+    volumes:
+      - type: volume
+        source: {{SESSION_ID}}-sandbox-data
+        target: /home/agentuser/sandbox
+    environment:
+      - SANDBOX_TYPE=copy
+      - FLATTEN={{FLATTEN}}
+
+  # Helper-container seeder (helper seed transport, ADR 2026-09-04 entry).
+  # One-shot: run_agent.sh runs `docker compose run --rm seeder` before the
+  # sandbox container is created; the seeder's exit code is the seed's
+  # readiness signal. The script is bind-mounted from the harness repo so the
+  # seeder always executes current source, independent of image freshness.
+  # User matches the sandbox service (UID parity: no root-owned volume content).
+  seeder:
+    image: {{SANDBOX_IMAGE_NAME}}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    entrypoint: ["bash", "/opt/harness-bin/seed_volume.sh"]
+    volumes:
+      - type: bind
+        source: {{PROJECT_DIR}}
+        target: /src
+        read_only: true
+      - type: bind
+        source: {{REPO_ROOT}}/src/capability
+        target: /opt/harness-bin
+        read_only: true
+      - type: bind
+        source: {{REPO_ROOT}}/src/libs
+        target: /opt/harness-libs
+        read_only: true
+      - type: volume
+        source: {{SESSION_ID}}-sandbox-data
+        # Same target as the sandbox service: first-mount ownership
+        # initialization of the empty volume comes from the image's directory
+        # at this path (agentuser-owned). Any other target leaves the volume
+        # root root-owned and the unprivileged seeder cannot write.
+        target: /home/agentuser/sandbox
+    environment:
+      - SESSION_TS=${SESSION_TS:-}
+      - SESSION_ID=${SESSION_ID:-}
+      - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
+      - SEED_FLATTEN={{FLATTEN}}
+    restart: "no"

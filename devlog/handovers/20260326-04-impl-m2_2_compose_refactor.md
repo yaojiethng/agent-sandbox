@@ -1,8 +1,8 @@
 # Agent Handover
 
-**Session date:** 2026-03-26
-**Milestone:** M2.2 — Reasoning Layer Modularisation
-**Session type:** Implementation
+**Date:** 2026-03-26
+**Milestone:** M2.2 -- Reasoning Layer Modularisation
+**Type:** Implementation
 
 ## Objective
 
@@ -11,17 +11,17 @@ Close M2.2: resolve `make stop` project naming bug, extract shared compose primi
 ## Scope
 
 - `make stop` project name fix (label filter using `--name`)
-- `libs/compose.sh` extraction — `compose_generate`, `compose_args`, `compose_dry_run`, `compose_teardown`, `compose_sandbox_wait`
-- Compose generation refactor — single merged tmpfile per run, never written to `SANDBOX_DIR`
-- `run.sh` thinning — receives `--compose-file`, drives harness functions directly
-- `onboard.sh` cleanup — removed `docker-compose.yml`, `Dockerfile.sandbox`, version tracking for both
-- `build_sandbox.sh` cleanup — removed `check_template_version`
+- `libs/compose.sh` extraction -- `compose_generate`, `compose_args`, `compose_dry_run`, `compose_teardown`, `compose_sandbox_wait`
+- Compose generation refactor -- single merged tmpfile per run, never written to `SANDBOX_DIR`
+- `run.sh` thinning -- receives `--compose-file`, drives harness functions directly
+- `onboard.sh` cleanup -- removed `docker-compose.yml`, `Dockerfile.sandbox`, version tracking for both
+- `build_sandbox.sh` cleanup -- removed `check_template_version`
 - `execution_model.md` update
 
 ## Acceptance criteria
 
 - [x] `make stop` finds and stops containers by correct compose project label
-- [x] `make serve PROVIDER=opencode` starts cleanly — compose file generated as tmpfile, no files written to `SANDBOX_DIR`
+- [x] `make serve PROVIDER=opencode` starts cleanly -- compose file generated as tmpfile, no files written to `SANDBOX_DIR`
 - [x] `make serve PROVIDER=hermes` starts cleanly
 - [x] `make dry-run PROVIDER=opencode` passes
 - [x] `make dry-run PROVIDER=hermes` passes
@@ -29,16 +29,16 @@ Close M2.2: resolve `make stop` project naming bug, extract shared compose primi
 - [x] Architecture documents in scope describe the system as built
 - [ ] Claude Desktop provider integration complete
 - [ ] Pi provider integration complete
-- [ ] Open WebUI ↔ Hermes API connection confirmed in serve mode
+- [ ] Open WebUI <-> Hermes API connection confirmed in serve mode
 
 ## Hot files
 
 | File | Why in scope |
 |---|---|
-| [`scripts/stop.sh`](scripts/stop.sh) | New — label-filter stop |
+| [`scripts/stop.sh`](scripts/stop.sh) | New -- label-filter stop |
 | [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | `stop)` case updated |
 | [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | `stop` passes `--name` |
-| [`libs/compose.sh`](libs/compose.sh) | New — shared compose primitives |
+| [`libs/compose.sh`](libs/compose.sh) | New -- shared compose primitives |
 | [`libs/docker-compose.yml`](libs/docker-compose.yml) | Renamed from `_templates/`; `{{VAR}}` baked values; explicit bind syntax |
 | [`libs/docker-compose.dry-run.yml`](libs/docker-compose.dry-run.yml) | Moved from `_templates/`; explicit bind syntax |
 | [`scripts/start_agent.sh`](scripts/start_agent.sh) | Compose generation block; `--compose-file` passthrough |
@@ -65,10 +65,10 @@ Close M2.2: resolve `make stop` project naming bug, extract shared compose primi
 
 | File | Change |
 |---|---|
-| `scripts/stop.sh` | New — derives compose project from `--name`; filters containers by label; removes volumes |
+| `scripts/stop.sh` | New -- derives compose project from `--name`; filters containers by label; removes volumes |
 | `scripts/agent-sandbox.sh` | `stop)` dispatches to `stop.sh` with `--name` and `--sandbox` |
 | `libs/_templates/Makefile.template` | `stop` target passes `--name=$(PROJECT_NAME)` |
-| `libs/compose.sh` | New — `compose_generate` (merge + bake + preserve), `compose_args`, `compose_dry_run`, `compose_teardown`, `compose_sandbox_wait` |
+| `libs/compose.sh` | New -- `compose_generate` (merge + bake + preserve), `compose_args`, `compose_dry_run`, `compose_teardown`, `compose_sandbox_wait` |
 | `libs/docker-compose.yml` | Renamed from `_templates/docker-compose.yml.template`; `{{VAR}}` for image names; explicit bind syntax for all volumes |
 | `libs/docker-compose.dry-run.yml` | Moved from `_templates/docker-compose.dry-run.yml.template`; explicit bind syntax; `{{DRY_RUN_SCRIPT}}` baked |
 | `scripts/start_agent.sh` | Replaced ad-hoc compose generation with `compose_generate`; mode-aware file list; passes `--compose-file` to `run.sh` |
@@ -79,31 +79,35 @@ Close M2.2: resolve `make stop` project naming bug, extract shared compose primi
 | `docs/architecture/execution_model.md` | `Dockerfile.sandbox` removed from SANDBOX_DIR tree; container lifecycle step 3 split to reflect `start_agent.sh` generates compose, `run.sh` assembles overlays |
 
 **Deleted files:**
-- `libs/_templates/docker-compose.yml.template` — replaced by `libs/docker-compose.yml`
-- `libs/_templates/docker-compose.dry-run.yml.template` — replaced by `libs/docker-compose.dry-run.yml`
+
+- `libs/_templates/docker-compose.yml.template` -- replaced by `libs/docker-compose.yml`
+- `libs/_templates/docker-compose.dry-run.yml.template` -- replaced by `libs/docker-compose.dry-run.yml`
 
 ## Deferred items
 
-**Hermes serve mode model configuration** — `HERMES_HOME/.hermes/.env` inside the container needs provider credentials (e.g. `OPENROUTER_API_KEY`) to show models in Open WebUI. Needs: (1) variables added to `providers/hermes/.env.example`; (2) serve overlay injects them into agent environment. Defer to dedicated session after M2.2 closes.
+**Hermes serve mode model configuration** -- `HERMES_HOME/.hermes/.env` inside the container needs provider credentials (e.g. `OPENROUTER_API_KEY`) to show models in Open WebUI. Needs: (1) variables added to `providers/hermes/.env.example`; (2) serve overlay injects them into agent environment. Defer to dedicated session after M2.2 closes.
 
-**Second provider addition criterion** — structurally met by the refactor; not empirically proven by a third provider. Revisit when a new provider is added.
+**Second provider addition criterion** -- structurally met by the refactor; not empirically proven by a third provider. Revisit when a new provider is added.
 
-**`make serve PROVIDER=hermes` and `make dry-run PROVIDER=hermes` final validation** — not confirmed by operator this session. Required before Trigger B.
+**`make serve PROVIDER=hermes` and `make dry-run PROVIDER=hermes` final validation** -- not confirmed by operator this session. Required before Trigger B.
 
 ## Next session
 
-**M2.2 — Reasoning Layer Modularisation** (continuing — provider integrations and docs audit).
+**M2.2 -- Reasoning Layer Modularisation** (continuing -- provider integrations and docs audit).
 
 Trigger B has not run. Remaining open items:
+
 - Claude Desktop provider integration
-- Pi provider integration  
-- Open WebUI ↔ Hermes API connection in serve mode
+- Pi provider integration
+- Open WebUI <-> Hermes API connection in serve mode
 
 Docs audit task (schedule for next session):
-- Review design decisions in roadmap M2.2 section — move decisions with architectural significance to the relevant `docs/architecture/` documents, compact the rest to a brief rationale note or remove entirely
+
+- Review design decisions in roadmap M2.2 section -- move decisions with architectural significance to the relevant `docs/architecture/` documents, compact the rest to a brief rationale note or remove entirely
 - Review Known Limitations in roadmap and consolidate by functionality, clear redundant points
 - Final pass: confirm no architecture document contradicts the system as built after this session's changes
 
 Watch-out items:
-1. Delete `libs/_templates/docker-compose.yml.template` and `libs/_templates/docker-compose.dry-run.yml.template` from disk — superseded, will cause confusion if left.
+
+1. Delete `libs/_templates/docker-compose.yml.template` and `libs/_templates/docker-compose.dry-run.yml.template` from disk -- superseded, will cause confusion if left.
 2. Patch existing sandbox `Makefile` `stop` target to add `--name=$(PROJECT_NAME)`, or run `agent-sandbox onboard --refresh`.

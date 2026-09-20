@@ -21,7 +21,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 ROOT="/home/agentuser"
 
 echo "=== 1. Environment ==="
-for var in AGENT_HOME PROVIDER_NAME PROVIDER_CONFIG_DIR SNAPSHOT_DIR_NAME SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME; do
+for var in AGENT_HOME PROVIDER_NAME PROVIDER_CONFIG_DIR SANDBOX_DIR_NAME CHANGES_DIR_NAME WORKSPACE_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME; do
   val="${!var:-<UNSET>}"
   echo "  $var='$val'"
 done
@@ -29,14 +29,16 @@ done
 echo ""
 echo "=== 2. Library completeness (/opt/sandbox/lib/) ==="
 # The agent image bakes library scripts at /opt/sandbox/lib/.
-# session.sh is CRITICAL — sourced unconditionally by dry_run_reasoning.sh.
-# The remaining files are WARN — used later in the session or conditionally.
+# session.sh is CRITICAL  --  sourced unconditionally by dry_run_reasoning.sh.
+# The remaining files are WARN  --  used later in the session or conditionally.
 for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
-             "package_diff.sh:WARN"; do
+             "diff.sh:WARN" "diff_export.sh:WARN"; do
   lib="${entry%%:*}"
   severity="${entry##*:}"
   libpath="/opt/sandbox/lib/$lib"
   if [[ -f "$libpath" ]]; then
+# Runtime-resolved lib path, validated by the -f check above.
+    # shellcheck disable=SC1090
     if source "$libpath" 2>/dev/null; then
       pass "source $libpath succeeded"
     else
@@ -44,7 +46,7 @@ for entry in "session.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
     fi
   else
     if [[ "$severity" == "CRITICAL" ]]; then
-      fail "$libpath does not exist — IMAGE STALE [CRITICAL]"
+      fail "$libpath does not exist  --  IMAGE STALE [CRITICAL]"
     else
       fail "$libpath does not exist [WARN]"
     fi
@@ -55,13 +57,11 @@ echo ""
 echo "=== 3. Path resolution ==="
 source /opt/sandbox/lib/dirs.sh 2>/dev/null
 WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-echo "  SNAPSHOT_DIR=$SNAPSHOT_DIR"
 echo "  CHANGES_DIR=$CHANGES_DIR"
 echo "  INPUT_DIR=$INPUT_DIR"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
 echo "  SANDBOX_DIR=$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 
-[[ -n "$SNAPSHOT_DIR" ]]  && pass "SNAPSHOT_DIR resolved"  || fail "SNAPSHOT_DIR is empty"
 [[ -n "$CHANGES_DIR" ]]   && pass "CHANGES_DIR resolved"   || fail "CHANGES_DIR is empty"
 [[ -n "$INPUT_DIR" ]]     && pass "INPUT_DIR resolved"     || fail "INPUT_DIR is empty"
 [[ -n "$OUTPUT_DIR" ]]    && pass "OUTPUT_DIR resolved"    || fail "OUTPUT_DIR is empty"
@@ -92,7 +92,7 @@ if [[ -f "$SCRIPT" ]]; then
     fail "$BAD_LOCALS top-level local usage(s) found in $SCRIPT"
   fi
 else
-  fail "$SCRIPT not found — cannot check local keyword hygiene"
+  fail "$SCRIPT not found  --  cannot check local keyword hygiene"
 fi
 
 echo ""
@@ -101,7 +101,7 @@ echo "=== 5. Mount expectations ==="
 #   - INPUT_DIR    (read-only, brief mount)
 #   - OUTPUT_DIR   (writable, output mount)
 #   - SANDBOX_DIR  (via --volumes-from, shared filesystem with sandbox)
-# It also has access to SNAPSHOT_DIR and CHANGES_DIR via volumes-from.
+# It also has access to CHANGES_DIR via volumes-from.
 
 # Agent-specific mounts
 if [[ -d "$INPUT_DIR" ]]; then
@@ -150,16 +150,11 @@ SANDBOX_DIR="$ROOT/${SANDBOX_DIR_NAME:-sandbox}"
 STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
 if [[ -f "$STATE_FILE" ]]; then
   pass "SESSION_STATE file exists at $STATE_FILE"
-  source /opt/sandbox/lib/session.sh 2>/dev/null
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null)
-  if [[ -n "$INIT_SHA" ]]; then
-    if git -C "$SANDBOX_DIR" rev-parse --verify --quiet "$INIT_SHA" >/dev/null 2>&1; then
-      pass "  init_sha=$INIT_SHA is a valid commit"
-    else
-      fail "  init_sha=$INIT_SHA is NOT a valid commit in the sandbox repo"
-    fi
+  source /opt/sandbox/lib/session_state.sh 2>/dev/null
+  if init_sha_is_valid "$SANDBOX_DIR"; then
+    pass "  init_sha is a valid commit in the sandbox repo"
   else
-    fail "  init_sha is missing from SESSION_STATE"
+    fail "  init_sha is NOT a valid commit in the sandbox repo (missing, bogus, or not a commit object)"
   fi
   TS=$(session_state_read "$SANDBOX_DIR" "session_ts" 2>/dev/null)
   [[ -n "$TS" ]] && pass "  session_ts=$TS" || fail "  session_ts missing"
@@ -184,9 +179,9 @@ else
   # The marker may not exist if Phase 1 hasn't run yet.
   # Check if CHANGES_DIR at least exists and is writable.
   if [[ -d "$CHANGES_DIR" ]]; then
-    pass "CHANGES_DIR exists — marker absent (expected if Phase 1 hasn't run)"
+    pass "CHANGES_DIR exists  --  marker absent (expected if Phase 1 hasn't run)"
   else
-    fail "CHANGES_DIR does NOT exist — volumes-from may be broken"
+    fail "CHANGES_DIR does NOT exist  --  volumes-from may be broken"
   fi
 fi
 
@@ -212,10 +207,10 @@ echo "=== Summary ==="
 echo "Passed: $PASS, Failed: $FAIL"
 echo ""
 echo "If any checks fail:"
-echo "  1. Library sourcing → check /opt/sandbox/lib/ contents"
-echo "  2. Top-level local  → edit dry_run_reasoning.sh; remove 'local' from top-level vars"
-echo "  3. Mount failures   → check docker-compose.dry-run.yml volume definitions"
-echo "  4. SESSION_STATE    → check sandbox init wrote init_sha and session_ts"
-echo "  5. Round-trip fail  → check CHANGES_DIR path matches volumes-from target"
+echo "  1. Library sourcing -> check /opt/sandbox/lib/ contents"
+echo "  2. Top-level local  -> edit dry_run_reasoning.sh; remove 'local' from top-level vars"
+echo "  3. Mount failures   -> check docker-compose.dry-run.yml volume definitions"
+echo "  4. SESSION_STATE    -> check sandbox init wrote init_sha and session_ts"
+echo "  5. Round-trip fail  -> check CHANGES_DIR path matches volumes-from target"
 
 [[ "$FAIL" -eq 0 ]]

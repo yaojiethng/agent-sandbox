@@ -2,11 +2,11 @@
 
 This document describes the capability layer session arc: how project content enters the sandbox, how the agent works, and how changes are returned to the host.
 
-The reasoning layer lifecycle — provider config copy-in, input channels, copy-out — is in [`provider_lifecycle.md`](provider_lifecycle.md). How the two layers are wired together — mount shape, compose generation, start/stop sequencing — is in [`execution_model.md`](execution_model.md).
+The reasoning layer lifecycle -- provider config copy-in, input channels, copy-out -- is in [`provider_lifecycle.md`](provider_lifecycle.md). How the two layers are wired together -- mount shape, compose generation, start/stop sequencing -- is in [`execution_model.md`](execution_model.md). The conceptual delivery models this lifecycle implements: [`copy_delivery.md`](../concepts/copy_delivery.md) (current) and [`mount_delivery.md`](../concepts/mount_delivery.md) (runnable `20260912-10`).
 
-The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation — this is an implementation choice, not an architectural constraint.
+The sandbox is the unit of isolation. The current implementation uses git for baseline tracking and diff generation -- this is an implementation choice, not an architectural constraint.
 
-All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff_export.sh`, sourced by both `scripts/start_agent.sh` and the capability layer entrypoint.
+Snapshot functions live in `src/capability/snapshot.sh`; diff functions in `src/libs/diff_export.sh`. `start_agent.sh` sources the snapshot primitive for mount worktree materialization; the capability entrypoint sources both libraries from the baked `/opt/sandbox/lib/` path.
 
 ---
 
@@ -14,87 +14,108 @@ All snapshot and diff functions are defined in `libs/snapshot.sh` and `libs/diff
 
 A capability layer session has three phases:
 
-1. **Fork** — the host project state is replicated into the sandbox before the containers start. The host repository is never modified.
-2. **Work** — the agent operates exclusively inside the sandbox. The host is untouched.
-3. **Join** — the agent's changes are packaged as diffs and written to the host for operator review.
+1. **Fork** -- the host project state is replicated into the sandbox before the containers start. The host repository is never modified.
+2. **Work** -- the agent operates exclusively inside the sandbox. The host is untouched.
+3. **Join** -- the agent's changes are packaged as diffs and written to the host for operator review.
 
 ---
 
-## Phase 1 — Fork (Snapshot Pipeline)
+## Phase 1 -- Fork (Volume Seed Pipeline)
 
-The snapshot pipeline replicates the host repository state into the capability layer sandbox. It runs in two stages separated by the container boundary.
+The seed pipeline replicates the host repository state into the capability layer sandbox volume. The seed is the helper-container transport: a one-shot seeder service (the sandbox image) fills the volume before the sandbox container exists. Design and requirement mapping: [`docs/adr/sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md), 2026-09-04 entry.
 
-### Stage 1 — Host side (`scripts/start_agent.sh`)
+### Host side (`scripts/run_agent.sh` seed_sandbox_volume)
 
-**`snapshot_copy_worktree`** uses `rsync` to replicate the operator's working tree into `.snapshot/`. It copies what is on disk, including untracked non-ignored files, and excludes files matched by `.gitignore`, global gitignore (`core.excludesFile`), and `.git/info/exclude`. rsync enumerates directly from the filesystem — it does not consult the git index — so it correctly handles uncommitted deletions, moves, and new files.
+On a fresh start (`--reset-volume`, copy delivery), `run_agent.sh` runs the `seeder` compose service once (`docker compose run --rm -T seeder`). The seeder mounts the project read-only at `/src` and the session volume at the sandbox service's own target path (first-mount ownership initialization: the volume root inherits the image directory's `agentuser` ownership). The seeder's exit code is the only readiness signal: the invocation is timeout-bounded (`SEED_TIMEOUT`, default 300s), and a nonzero exit or timeout aborts the start and discards the session volume. Resume never seeds.
 
-Files excluded by global gitignore or `.git/info/exclude` (but not local `.gitignore`) emit a warning to `stderr` to alert the operator of potential missing dependencies.
+Inside the seeder (`src/capability/seed_volume.sh`):
 
-**`snapshot_archive_head`** produces a tar archive of the committed state at HEAD:
+1. **Guards (fail closed, readable errors):** repository tracks the `.agent-sandbox-seed/` sentinel (harness staging captured by a host commit), linked worktree (`.git` is a gitfile), no commits (unborn HEAD -- the session-env gate requires commits for every session before delivery dispatch), submodules (the gitlink would cross without its content).
+2. **Shared delivery dispatch** -- `snapshot_deliver` routes both modes through one primitives set: full (default) copies `.git` natively then syncs the worktree; flatten syncs the worktree then inits a fresh baseline.
+3. **Working tree copy** -- the shared enumeration (`snapshot_enumerate_worktree`) lists the working tree (tracked files still on disk plus untracked non-ignored files, all ignore sources honored, negation patterns included); an existence filter drops tracked paths absent from the disk, so unstaged deletions are visible in the volume. `rsync --from0 --files-from` streams the enumerated set into the volume; an empty enumeration is a no-op. The stream never touches an intermediate location, and no harness state is written into the operator's worktree (R7).
+4. **SESSION_STATE** -- the seeder writes `init_sha` (HEAD at seed time for full; the baseline root commit for flatten; the fixed lower boundary for `package-branch`), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory.
+5. **Self-verification** -- full: `git status --porcelain` is compared between `/src` and `/dest`, any divergence aborts the seed. Flatten: the committed file set must equal the source enumeration and the worktree must be clean.
 
-```bash
-git -C "$PROJECT_DIR" archive HEAD > "$SNAPSHOT_DIR/baseline.tar"
-```
-
-This runs on the host where `PROJECT_DIR` is available. The tar contains exactly the files as they exist in the HEAD commit — no working tree changes, no untracked files. It is written into `.snapshot/` alongside the rsync copy and is used by the container to construct the baseline commit.
-
-**`snapshot_validate` (gate 1)** runs after both copy and archive, before the containers start. Checks that `.snapshot/` is non-empty, structurally sound, and contains `baseline.tar`. Non-zero exit aborts the run before Docker is invoked.
-
-### Stage 2 — Capability layer side (capability layer entrypoint)
-
-**`snapshot_validate` (gate 2)** runs first, against the mounted `.snapshot/`. Catches mount failures or transfer corruption before the sandbox is prepared.
-
-**`snapshot_init_git`** initialises the sandbox git repository in two steps:
-
-1. **Baseline commit from archive** — unpacks `baseline.tar` into `sandbox/`, stages all files, and commits as "baseline". This commit represents exactly `HEAD` in `PROJECT_DIR`. After the commit is created, both the root commit SHA and session timestamp are written to `sandbox/.git/SESSION_STATE` as key-value pairs:
-
-```bash
-session_state_write "$SANDBOX_DIR" "init_sha" "$sha"
-session_state_write "$SANDBOX_DIR" "session_ts" "$SESSION_TS"
-```
-
-`init_sha` is set once and never updated. It is the fixed lower boundary for `package-branch` throughout this container lifetime. `session_ts` records the session start timestamp.
-
-2. **Working tree overlay** — rsync copies `.snapshot/` (the operator's working tree) over `sandbox/` with `--delete`, without touching the git index. The index now reflects the baseline commit (HEAD); the working tree reflects the operator's current on-disk state. The result is a sandbox whose `git status` matches what the operator would see in `PROJECT_DIR`.
-
-The two-step design ensures all four working tree states are handled correctly:
+The seed guarantees the full working tree state matrix in the volume:
 
 | Operator state | git status in sandbox |
 |---|---|
 | Untracked file | `??` untracked |
 | Tracked file with unstaged edits | `M` unstaged modification |
+| Tracked file with staged edits | `M` staged (staging state preserved) |
 | Tracked file deleted without staging | `D` unstaged deletion |
-| No changes | Clean |
 | Gitignored file | Not visible |
+
+### Capability layer side (entrypoint)
+
+The entrypoint validates the volume: git state and `SESSION_STATE` must exist (the seeder wrote them); an unseeded volume aborts the container start with a readable error. Workspace paths (`changes_dir`, `input_dir`, `output_dir`) are written to `SESSION_STATE` deterministically on every start.
 
 ### Harness directory lifecycle
 
-`.snapshot/` is overwritten on each run — rebuilt from `PROJECT_DIR` before the containers start. It is not archived or cleaned up between runs.
+No staging exists anywhere: the seeder streams content directly into the volume and nothing is ever extracted into the operator's worktree. On a resumed session, the seed step is skipped entirely.
+
+### Resume path (M2.6.2 volume-based persistence)
+
+**Current -- single-volume model:**
+
+```text
+volume exists + REFRESH not set?
+  ├── No  → normal init
+  │         Host: compute fresh identity, run the seeder
+  │         Container: .git present → validate + write workspace paths
+  └── Yes → resume
+            Host: read identity from the compose registry, skip seeding
+            Container: .git present → validate + write workspace paths
+```
+
+Host-side identity is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and, for copy-mode resume, read from the named volume's Docker labels. The legacy `.run-identity` cache file is deprecated and no longer written.
+
+Before any container starts, preflight compares the baked images against current source: `_check_interface_contract` compares the baked `agent-sandbox.interface-contract-version` label against the host constant and refuses preflight (non-zero) on a drift or missing label (authoritative, ADR interface_contract_compatibility.md / [../concepts/sandbox_host_interface.md](../concepts/sandbox_host_interface.md)). The record carries the version stamped at session write; see the interface concept doc for declaration and comparison points. The agent entrypoint runs the container<->container check against the sandbox's recorded version and hard-stops on a definite mismatch.
+
+**Session start (M2.6.5):** `start` always begins a NEW session; resume is split out into `make resume`. `make start INTERACTIVE=1` opens the config wizard (pick a provider + build policy, confirm, then start); provider and `.env` values otherwise come from the Makefile/`.env`.
+
+```text
+--refresh/--rebuild passed?
+  ├── Yes → new session (rebuild images + fresh volume + full seed)
+  └── No  → new session (fresh volume + full seed)
+            start carries no resume path (F2 design D10); to resume a
+            previous session, use the split-out `make resume` command.
+```
+
+**Session resume (`make resume`):** the resume command reads identity from the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker volume labels. `make resume SESSION_ID=<id>` selects exactly one session and resumes silently. `make resume LIST=1` lists registry sessions in an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`) filtered by an optional `PROVIDER=<n>`, capped at 10 rows per page (same cap as the draft picker; remainder reported in a footer). `STARTED` and `LAST_USED` are relative times ("2 hours ago"; `LAST_USED` = time since the session was last stopped, read from its `.compose/<session-id>.log` per-session activity log; `---` when the session is running or never stopped). The table sorts newest-first by the raw `session-ts`. Staleness is reported exception-only as a warning label rather than an always-present column: `[SANDBOX_STALE]` when the record's `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls.
+`make resume INTERACTIVE=1` presents a picker over the inventory and confirms before resuming (also `PROVIDER=<n>`-filterable); the picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. The legacy volume-label resume machinery was removed from `start` (see `20260821-04`).
+
+**Session prune (`make prune`):** the registry-based prune (Rules 1+2, `20260821-08`) replaces the legacy volume-label `--stale` + `docker system prune` path. It is always a complete pass: **Rule 1** removes stale `.compose/<session-id>.yml` records (selected by registry-truth sandbox staleness or image-staleness per the `STALE` kind -- default `all` picks a record stale by either dimension -- plus optional `PROVIDER` / `AGE_DAYS` filters); **Rule 2** removes now-orphaned resources (containers, networks, volumes labeled `sandbox-dir` whose `session-id` has no record), delivery-scoped (copy -> volume + containers; mount -> registry resources only; worktrees never touched). `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
+`STALE=sandbox` selects the sandbox-stale criterion; image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness, and no image recomputation runs (`20260911-05`).
 
 ---
 
-## Phase 2 — Work
+## Phase 2 -- Work
 
 The agent works exclusively inside `sandbox/`. The host repository is never mounted and cannot be reached from inside the container.
 
 ---
 
-## Phase 3 — Join (Diff Pipeline)
+## Phase 3 -- Join (Diff Pipeline)
 
-On capability layer container exit, an EXIT trap runs the diff pipeline. The entrypoint constructs the output path via `session_export_path` (from `routing.sh`) and calls `diff_export`, which delegates to `package_branch`:
+On capability layer container exit, an EXIT trap runs the diff pipeline. The entrypoint constructs the output path via `export_path` (from `routing.sh`) and calls `diff_export`, which delegates to `package_branch`:
 
-1. **`package_commits`** — Produces one numbered `.diff` file per agent commit since `init_sha`, written into `patches/`. Git index lines are stripped. No sweep commit — uncommitted changes are captured separately.
-2. **`write_uncommitted_diff`** — Captures working tree delta from HEAD as `uncommitted.diff`. Includes untracked files via temporary `git add -N` staging.
-3. **`write_all_changes_diff`** — Captures net delta from `init_sha` (committed + uncommitted) as `all-changes.diff`.
-4. **`write_changed_files`** — Copies all changed files into `changed-files/` with `MANIFEST.txt`, preserving directory structure.
+1. **`package_commits`** -- Produces one numbered `.diff` file per agent commit since `init_sha`, written into `patches/`. Git index lines are stripped. No sweep commit -- uncommitted changes are captured separately.
+2. **`write_uncommitted_diff`** -- Captures working tree delta from HEAD as `uncommitted.diff`. Includes untracked files via temporary `git add -N` staging.
+3. **`write_all_changes_diff`** -- Captures net delta from `init_sha` (committed + uncommitted) as `all-changes.diff`.
+4. **`write_changed_files`** -- Copies all changed files into `changed-files/` with `MANIFEST.txt`, preserving directory structure.
 
-No sweep commit is performed. Uncommitted changes are preserved in the working tree — `diff_export` never commits.
+No sweep commit is performed. Uncommitted changes are preserved in the working tree -- `diff_export` never commits.
 
-All artefacts land in the session export directory constructed by `session_export_path`:
+### No-op guard
 
-```
-workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
-  EXPORT-TIME.txt       — timestamp of the exit export
+Before a save runs, the entrypoint asks `session_save_needed`: save when the working tree is dirty (any uncommitted/untracked change) or when HEAD differs from the baseline; skip only when the tree is completely clean and HEAD equals the baseline; save anyway when git cannot read the repository, which is the undeterminable case. The baseline is the previous save's HEAD from `.export-status`, falling back to `init_sha` for the first save. This folds two rules into one comparison: level 1 skips a session that never changed (clean tree at `init_sha`), and level 2 skips re-saving an unchanged state after the first save. A skipped autosave cycle writes nothing; a skipped session export creates no session directory at all.
+
+All artefacts land in the session export directory constructed by `export_path`:
+
+```text
+workspace/session-diffs/session/<EXPORT_TIME>-<SESSION_ID>/
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (HEAD and EXIT_CODE written by diff_export)
   uncommitted.diff      — uncommitted changes vs HEAD (no sweep)
   all-changes.diff      — net delta init_sha..HEAD
   patches/
@@ -105,35 +126,44 @@ workspace/session-diffs/session/<SESSION_TS>-<SANITIZED_HOST_BRANCH>/
     <path>/<file>        — working tree copies of all changed files
 ```
 
-The autosave loop uses the same pattern but writes to `workspace/session-diffs/autosave/<SESSION_TS>-<BRANCH>/`. `session/` and `autosave/` are separate subdirectories under the new flipped layout — they no longer share a parent `<SESSION>-<BRANCH>/` directory.
+### Autosave
 
-`workspace/session-diffs/` accumulates session and autosave directories over time and is not automatically pruned by the harness.
+The autosave loop runs inside the capability container on a configurable interval (default 60s). Each cycle replaces a single directory:
+
+```text
+workspace/session-diffs/autosave/<SESSION_ID>/
+  .export-status        — STATUS, TIMESTAMP, INIT_SHA, HEAD (replaced on a successful tick; HEAD written by diff_export)
+  uncommitted.diff      — uncommitted changes vs HEAD
+  all-changes.diff      — net delta init_sha..HEAD
+  patches/
+  changed-files/
+```
+
+One autosave directory exists per session. Each cycle builds the next checkpoint at a staging path outside the channel and swaps it in only when the export succeeds, so a failed or interrupted cycle never removes the last good checkpoint. No accumulation, no pruning needed within a session. When a cycle finds nothing to save (clean tree at the last-saved HEAD), it skips the write entirely and leaves the previous checkpoint untouched.
+
+`workspace/session-diffs/session/` accumulates one directory per container stop and is not automatically pruned.
 
 ### Apply workflow
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [SESSION=<name>] [CHANNEL=<channel>]`** — resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_TS>-<slug>-<sha6>` branch. `SESSION` is name-only (rejected if absolute).
+**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** -- resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute). Draft runs only on a clean working tree: uncommitted or untracked changes abort it with a stash-or-commit hint. The guard is never bypassed, not even by `--force` -- force tolerates apply conflicts only, never an unclean fork base.
 
-**`make draft FROM=bundles`** — shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
+**`make draft FROM=bundles`** -- shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
-**`make draft FROM=autosave`** — shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
+**`make draft FROM=autosave`** -- shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
 
-**`make draft INTERACTIVE=1`** — interactive mode: guides the operator through a two-step numbered picker (channel then session) instead of requiring explicit `SESSION=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session SESSION=<name>`). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
+**`make draft INTERACTIVE=1`** -- interactive mode: guides the operator through a two-step numbered picker (channel then bundle) instead of requiring explicit `BUNDLE=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
 
-**`make confirm [TARGET=<branch>]`** — cleans up the draft branch after the operator has rebased and merged.
+**`make confirm [TARGET_BRANCH=<branch>]`** -- cleans up the draft branch after the operator has rebased and merged.
 
-**`make reject`** — discards the draft branch. Artefacts unchanged.
+**`make reject`** -- discards the draft branch, returning to the source branch. Draft residue (uncommitted changes left by `uncommitted.diff` on the working tree) is discarded automatically, since once the draft commits are dropped the final working-tree changes carry no information. Artefacts unchanged.
 
-**`make apply [CHANNEL=<channel>] [DIFF=<path>]`** — applies a diff file via `git apply` with index lines stripped. The diff file is resolved by the router (default: `diffs` channel, resolving from `output/diffs/`). `DIFF=<path>` bypasses all channel resolution. No commits created.
+**`make apply DIFF=<path>`** -- applies an exact diff file via `git apply` with index lines stripped. `DIFF=<path>` is required; no channel, bundle, or auto-resolution is performed. No commits created. Runs only on a clean working tree; uncommitted changes abort it. `--force` tolerates a dirty tree (treated as one form of apply conflict) and warns that some hunks may fail.
 
-**`make apply FROM=autosave`** — shorthand for `--channel=autosave`. Resolves `uncommitted.diff` from `session-diffs/autosave/`.
+**`make apply INTERACTIVE=1`** -- interactive mode: prints a git-oneline-style preview of the changes (the files the diff touches and the total file count), then asks for confirmation with a single y/N prompt before applying.
 
-**`make apply INTERACTIVE=1`** — interactive mode: guides the operator through a three-step numbered picker (channel, session, diff type) instead of requiring explicit flags. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make apply CHANNEL=session SESSION=<name>` or `Running: make apply DIFF=<path>` for all-changes.diff). When `SESSION=<name>` is provided and the named session is not in the displayed list, it is injected as option 0 and becomes the default. When more sessions exist than the display limit (10), `n` and `p` navigate between pages.
-
-**`make package-diff [SESSION_SUMMARY=<text>] [ALL=1] [BASELINE=<sha>]`** — runs `agent-sandbox package-diff --sandbox=$(SANDBOX_DIR)`, which sources `.env` and writes to `INPUT_DIR/diffs/<ts>-<summary>/`. Default: packages uncommitted changes only. `ALL=1` packages all changes since session baseline. `BASELINE=<sha>` packages against explicit SHA.
-
-**`make package-branch [SESSION_SUMMARY=<text>] [BASELINE=<sha>]`** — runs `agent-sandbox package-branch`, which sources `.env` and writes to `INPUT_DIR/bundles/<ts>-<summary>/`.
+**`make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`** -- runs `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`. Produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
 
 No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
 
@@ -143,7 +173,7 @@ No checkpoint git tags are used. No `git am`. No `docker exec`. All corresponden
 
 | Topic | Document |
 |---|---|
-| Correspondence model — three cases, bidirectional flow | [../concepts/sandbox_host_correspondence_model.md](../concepts/sandbox_host_correspondence_model.md) |
+| Correspondence -- the harness/container interface contract, three cases, bidirectional flow, version declaration | [../concepts/sandbox_host_interface.md](../concepts/sandbox_host_interface.md) |
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
 | Mount shape guarantees | [tool_interface.md](tool_interface.md#mount-shape-guarantees) |

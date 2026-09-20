@@ -1,133 +1,119 @@
 #!/usr/bin/env bash
 # tests/test_checkpoint.sh
-# Unit tests for SHA-based identity derivation.
+# SESSION_ID identity-derivation contract tests.
 #
-# Covers:
-#   SANDBOX_ID derivation formula — 8-char hex hash from SANDBOX_DIR and HOST_HEAD_SHA
+# The derivation formula lives in src/libs/session_env.sh (session_id_derive)
+# using sandbox_dir_canon from src/libs/common.sh. start_agent.sh and
+# resume_agent.sh both use these helpers. These tests execute the PRODUCTION
+# functions directly  --  no copies, no drift guards needed.
 #
-# Note: checkpoint_* functions were removed in 20260422-04-impl-remove_checkpoint_tags.md.
-# worktree_id_derive tests migrated to SANDBOX_ID derivation tests in M2.7.
+# Model: one hash over all identity factors, canonicalized sandbox dir first:
+#   SESSION_ID = sha256(canon(SANDBOX_DIR) : HOST_HEAD_SHA : SESSION_TS)[0:6]
+# The separate SANDBOX_ID intermediate was removed (see ADR 20260831).
 
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+source "$REPO_ROOT/src/libs/common.sh"   # sandbox_dir_canon (canonical home)
+source "$REPO_ROOT/src/libs/session_env.sh"
 
-source "$SCRIPT_DIR/libs/test_common.sh"
-source "$SCRIPT_DIR/libs/git_fixtures.sh"
-
-FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
-
-# Helper: compute SANDBOX_ID same way start_agent.sh does.
-sandbox_id_derive() {
-  local sandbox_dir="$1"
-  local host_head_sha="$2"
-  echo "${sandbox_dir}:${host_head_sha}" | sha256sum | cut -c1-8
-}
-
-# -------------------------
-# SANDBOX_ID derivation tests
-# -------------------------
-
-test_sandbox_id_returns_8_chars() {
-  local dir="$FIXTURE_DIR/sid_8_repo"
-  make_committed_repo "$dir"
-  local sha; sha=$(git -C "$dir" rev-parse HEAD)
-  local sid
-  sid=$(sandbox_id_derive "$dir" "$sha")
-
-  if [[ ${#sid} -eq 8 ]]; then
-    pass "SANDBOX_ID is 8 characters"
+test_session_id_returns_6_chars() {
+  local out
+  out=$(session_id_derive "/tmp/sandbox" "deadbeef1234" "20260831-120000")
+  if [[ ${#out} -eq 6 ]]; then
+    pass "SESSION_ID: 6 characters"
   else
-    fail "SANDBOX_ID returned ${#sid} chars, expected 8"
+    fail "SESSION_ID returned ${#out} chars"
   fi
 }
 
-test_sandbox_id_is_hex() {
-  local dir="$FIXTURE_DIR/sid_hex_repo"
-  make_committed_repo "$dir"
-  local sha; sha=$(git -C "$dir" rev-parse HEAD)
-  local sid
-  sid=$(sandbox_id_derive "$dir" "$sha")
+test_session_id_is_hex() {
+  local out
+  out=$(session_id_derive "/tmp/sandbox" "deadbeef1234" "20260831-120000")
+  assert_matches "$out" '^[a-f0-9]{6}$' "SESSION_ID: valid lowercase hex"
+}
 
-  if [[ "$sid" =~ ^[a-f0-9]{8}$ ]]; then
-    pass "SANDBOX_ID is valid hex"
+test_session_id_stable_across_calls() {
+  if [[ "$(session_id_derive /d s1 20260831-120000)" == "$(session_id_derive /d s1 20260831-120000)" ]]; then
+    pass "SESSION_ID: deterministic for identical inputs"
   else
-    fail "SANDBOX_ID returned non-hex: $sid"
+    fail "SESSION_ID not deterministic"
   fi
 }
 
-test_sandbox_id_stable_across_calls() {
-  local dir="$FIXTURE_DIR/sid_stable_repo"
-  make_committed_repo "$dir"
-  local sha; sha=$(git -C "$dir" rev-parse HEAD)
-
-  local sid1 sid2
-  sid1=$(sandbox_id_derive "$dir" "$sha")
-  sid2=$(sandbox_id_derive "$dir" "$sha")
-
-  if [[ "$sid1" == "$sid2" ]]; then
-    pass "SANDBOX_ID is stable across multiple calls"
+test_session_id_sensitive_to_all_factors() {
+  if [[ "$(session_id_derive /d s1 20260831-120000)" != "$(session_id_derive /d2 s1 20260831-120000)" \
+     && "$(session_id_derive /d s1 20260831-120000)" != "$(session_id_derive /d s2 20260831-120000)" \
+     && "$(session_id_derive /d s1 20260831-120000)" != "$(session_id_derive /d s1 20260831-120001)" ]]
+  then
+    pass "SESSION_ID: sensitive to sandbox dir, head SHA, and timestamp"
   else
-    fail "SANDBOX_ID not stable: $sid1 vs $sid2"
+    fail "SESSION_ID collides on differing inputs"
   fi
 }
 
-test_sandbox_id_different_for_different_sandbox_dirs() {
-  local dir1="$FIXTURE_DIR/sid_diff_dir1"
-  local dir2="$FIXTURE_DIR/sid_diff_dir2"
-  local sha_repo="$FIXTURE_DIR/sid_diff_sha_repo"
-  make_committed_repo "$sha_repo"
-  mkdir -p "$dir1" "$dir2"
-  local sha; sha=$(git -C "$sha_repo" rev-parse HEAD)
+# Multiple spellings of one folder must converge to one SESSION_ID (the
+# canonicalization contract -- see ADR 20260831).
+test_session_id_converges_across_path_spellings() {
+  local base
+  base="$(mktemp -d)"
+  mkdir -p "$base/sub"
+  ln -sfn "$base/sub" "$base/link"
 
-  local sid1 sid2
-  sid1=$(sandbox_id_derive "$dir1" "$sha")
-  sid2=$(sandbox_id_derive "$dir2" "$sha")
+  local abs sub_link trailing rel
+  abs="$base/sub"
+  sub_link="$base/link"
+  trailing="$base/sub/"
+  rel="$base/./sub"
 
-  if [[ "$sid1" != "$sid2" ]]; then
-    pass "SANDBOX_ID differs for different SANDBOX_DIR paths"
+  local id1 id2 id3 id4
+  id1=$(session_id_derive "$abs"        "deadbeef" "20260831-120000")
+  id2=$(session_id_derive "$sub_link"   "deadbeef" "20260831-120000")
+  id3=$(session_id_derive "$trailing"   "deadbeef" "20260831-120000")
+  id4=$(session_id_derive "$rel"        "deadbeef" "20260831-120000")
+
+  rm -rf "$base"
+
+  if [[ "$id1" == "$id2" && "$id1" == "$id3" && "$id1" == "$id4" ]]; then
+    pass "SESSION_ID: all spellings of one folder converge"
   else
-    fail "SANDBOX_ID should differ for different SANDBOX_DIR paths"
+    fail "SESSION_ID did not converge: abs=$id1 link=$id2 slash=$id3 rel=$id4"
   fi
 }
 
-test_sandbox_id_different_for_different_commits() {
-  local dir="$FIXTURE_DIR/sid_diff_commit_repo"
-  make_committed_repo "$dir"
-
-  # Use two different commits in the same repo
-  local sha1; sha1=$(git -C "$dir" rev-parse HEAD)
-
-  # Create a second commit
-  echo "change" > "$dir/newfile.txt"
-  git -C "$dir" add -A
-  git -C "$dir" commit -m "second commit"
-  local sha2; sha2=$(git -C "$dir" rev-parse HEAD)
-
-  local sid1 sid2
-  sid1=$(sandbox_id_derive "$dir" "$sha1")
-  sid2=$(sandbox_id_derive "$dir" "$sha2")
-
-  if [[ "$sid1" != "$sid2" ]]; then
-    pass "SANDBOX_ID differs for different HOST_HEAD_SHA values"
+test_sandbox_id_functions_removed() {
+  if ! declare -f sandbox_id_derive >/dev/null 2>&1; then
+    pass "sandbox_id_derive removed"
   else
-    fail "SANDBOX_ID should differ for different HOST_HEAD_SHA values"
+    fail "sandbox_id_derive still present"
+  fi
+  if declare -f sandbox_dir_canon >/dev/null 2>&1; then
+    pass "sandbox_dir_canon present (from common.sh)"
+  else
+    fail "sandbox_dir_canon missing"
   fi
 }
 
-# -------------------------
-# Run all tests
-# -------------------------
+# Both entrypoints must go through the shared helpers  --  no inline re-derivation.
+test_no_inline_identity_pipelines_remain() {
+  local N
+  N=$(grep -c 'SESSION_ID=.*sha256sum' "$REPO_ROOT/scripts/start_agent.sh" \
+            "$REPO_ROOT/scripts/resume_agent.sh" | awk -F: '{s+=$2} END {print s}')
+  assert_eq_num "$N" "0" "no inline sha256sum identity pipelines remain in start/resume scripts"
+}
 
-echo "=== SANDBOX_ID derivation unit tests ==="
-echo
+# =============================================================================
+# Run all
+# =============================================================================
 
-run_test test_sandbox_id_returns_8_chars
-run_test test_sandbox_id_is_hex
-run_test test_sandbox_id_stable_across_calls
-run_test test_sandbox_id_different_for_different_sandbox_dirs
-run_test test_sandbox_id_different_for_different_commits
+run_test test_session_id_returns_6_chars
+run_test test_session_id_is_hex
+run_test test_session_id_stable_across_calls
+run_test test_session_id_sensitive_to_all_factors
+run_test test_session_id_converges_across_path_spellings
+run_test test_sandbox_id_functions_removed
+run_test test_no_inline_identity_pipelines_remain
 
-test_done
+test_done test_checkpoint.sh
+

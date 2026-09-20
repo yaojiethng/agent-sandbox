@@ -14,19 +14,26 @@
 # Run:   bash tests/test_provider_entrypoint.sh
 # Exit:  0 = all passed, non-zero = failure count
 
-set -euo pipefail
+set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
 ENTRYPOINT="$REPO_ROOT/src/reasoning/entrypoint.sh"
-
-source "$SCRIPT_DIR/libs/test_common.sh"
 
 _run() {
   local agent_home="$1"; shift
   mkdir -p "$agent_home"
+  # A real container bakes the library directory into the image and mounts its
+  # sandbox. Point at the repository's libs so the preflight and the
+  # interface-contract check see the shipped libraries, and at a fixture sandbox
+  # so the check does not read the ambient session record (which a contract bump
+  # would make disagree with the working copy).
+  SANDBOX_DIR="$FIXTURE_DIR/sandbox"
+  mkdir -p "$SANDBOX_DIR"
   AGENT_HOME="$agent_home" \
   PROVIDER_NAME="test-provider" \
+  SANDBOX_LIB_DIR="$REPO_ROOT/src/libs" \
+  SANDBOX_DIR="$SANDBOX_DIR" \
   bash "$ENTRYPOINT" "$@"
 }
 
@@ -36,15 +43,11 @@ _run() {
 
 test_missing_agent_home() {
   local out
-  out=$(unset AGENT_HOME; PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) && {
+  out=$(env -u AGENT_HOME PROVIDER_NAME=test bash "$ENTRYPOINT" true 2>&1) && {
     fail "missing AGENT_HOME env var"
     return
   }
-  if [[ "$out" == *"AGENT_HOME is not set"* ]]; then
-    pass "missing AGENT_HOME env var"
-  else
-    fail "missing AGENT_HOME env var"
-  fi
+  assert_contains "$out" "AGENT_HOME is not set" "missing AGENT_HOME env var"
 }
 
 test_missing_provider_name() {
@@ -106,21 +109,33 @@ test_stdin_not_devnull() {
 
 # -- _provision_agent_home --
 #
-# Note: these tests inline the function definition rather than sourcing
-# the entrypoint, because sourcing runs the full top-level code including
-# an `exit` at the end, which would kill the subshell.
+# The function under test is lifted from the LIVE entrypoint source at run
+# time. Sourcing the whole entrypoint is not possible (its top-level code ends
+# in `exit`), but the former approach -- inlining a copy of the function here --
+# tested dead text: the tests stayed green while production changed. Extraction
+# keeps the tests honest; if the function is renamed, moved, or restructured so
+# the extraction pattern no longer matches, the prerequisite check below fails
+# with one named error instead of N confusing test failures.
 
-_provision_agent_home() {
-  local template="${1:?provision_agent_home requires template_dir}"
-  local target="${2:?provision_agent_home requires target_dir}"
+ENTRYPOINT="$REPO_ROOT/src/reasoning/entrypoint.sh"
+PROVISION_SRC="$(sed -n '/^_provision_agent_home()/,/^}/p' "$ENTRYPOINT")"
+if [[ -z "$PROVISION_SRC" ]]; then
+  echo "FATAL: prerequisite missing: _provision_agent_home() not extractable from $ENTRYPOINT" >&2
+  echo "       The extraction pattern is: sed -n '/^_provision_agent_home()/,/^}/p'" >&2
+  echo "       Update tests/test_provider_entrypoint.sh if the function moved or was renamed." >&2
+  exit 1
+fi
+eval "$PROVISION_SRC"
 
-  if [[ ! -d "$template" ]]; then
-    echo "FATAL: Config template $template not found" >&2
-    return 1
+test_provision_extraction_targets_live_source() {
+  # Drift guard: the extracted text must still contain the behaviour the
+  # tests below assert (cp -RT, --no-preserve=all). If production diverged
+  # from these pins, this test names the drift instead of failing opaquely.
+  if grep -q 'cp -RT --no-preserve=all' <<<"$PROVISION_SRC"; then
+    pass "extraction targets live source (cp -RT --no-preserve=all present)"
+  else
+    fail "production _provision_agent_home changed: cp -RT --no-preserve=all no longer present -- review the provisioning tests"
   fi
-
-  mkdir -p "$target"
-  cp -RT --no-preserve=all "$template/" "$target/"
 }
 
 test_provision_copies_config_files() {
@@ -138,10 +153,10 @@ test_provision_copies_config_files() {
   else
     fail "settings.json missing or wrong content"
   fi
-  if [[ -f "$ah/auth.json" ]]; then
+  if [[ -f "$ah/auth.json" ]] && grep -q 'auth-value' "$ah/auth.json"; then
     pass "copies auth.json"
   else
-    fail "auth.json missing"
+    fail "auth.json missing or wrong content"
   fi
 
   rm -rf "$tmpdir"
@@ -188,8 +203,9 @@ test_provision_fails_on_missing_template() {
   local tpl="$tmpdir/nonexistent"
   local ah="$tmpdir/ah"
   local rc=0
-
-  _provision_agent_home "$tpl" "$ah" 2>/dev/null || rc=$?
+  # The production function exits the shell on a missing template (CLI
+  # semantics); run it in a subshell so the test file survives.
+  ( _provision_agent_home "$tpl" "$ah" ) 2>/dev/null || rc=$?
 
   if [[ $rc -ne 0 ]]; then
     pass "returns non-zero when template is missing"
@@ -244,9 +260,11 @@ run_test test_missing_provider_name
 run_test test_exit_code_zero
 run_test test_exit_code_nonzero
 run_test test_stdin_not_devnull
+run_test test_provision_extraction_targets_live_source
 run_test test_provision_copies_config_files
 run_test test_provision_copies_all_items
 run_test test_provision_fails_on_missing_template
 run_test test_provision_no_double_nesting
 
 test_done
+

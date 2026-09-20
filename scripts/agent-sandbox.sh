@@ -2,22 +2,32 @@
 # agent-sandbox
 # Installed by: make install (agent-sandbox repo)
 # Host-side CLI tool for managing agent-sandbox sessions and exports.
-# All subcommands run on the host — never inside a container.
+# All subcommands run on the host  --  never inside a container.
 # Inside the container, invoke lib scripts directly (see prompt templates).
 #
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox build    [--targets=<targets>] --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox start    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox serve    --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox dry-run  --provider=<n> --name=<n> --project=<path> --sandbox=<path> [--refresh|--rebuild] [flags]
-#   agent-sandbox stop     --name=<n> --sandbox=<path>
-#   agent-sandbox apply    --project=<path> --sandbox=<path> [--branch=<n>] [--channel=<channel>] [--session=<name>] [--diff=<path>] [--force]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--session=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>]
+#   agent-sandbox build    [--targets=<targets>] [identity] [--env=<path>]
+#   agent-sandbox start    [--serve] --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [flags]
+#   agent-sandbox dry-run  --provider=<n> [identity] [--env=<path>] [--fast] [flags]
+#   agent-sandbox resume   [identity] [--env=<path>] [--session-id=<id>] [--list] [--interactive]
+#   agent-sandbox stop     [identity] [--env=<path>] [--session-id=<id>] [--prune]
+#   agent-sandbox prune    [identity] [--env=<path>] [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
+#   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
-#   agent-sandbox package-diff   --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--all|--baseline=<sha>]
-#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--session-summary=<text>] [--baseline=<sha>]
+#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]
+#
+# --env=<path> is an absolute path or a name relative to the sandbox dir; it sets
+# the per-sandbox .env used for both identity resolution and the run's env load.
+#
+# identity = [--name=<n>] [--project=<path>] [--sandbox=<path>]. Every command
+# keeps a hard identity requirement, but it need not be passed per invocation:
+# each missing field resolves from the AGENT_SANDBOX_<KEY> env level, then the
+# per-sandbox .env located via --env (else <sandbox>/.env, else the invocation
+# CWD). onboard is the exception: it creates the .env and requires
+# --name/--project/--sandbox. The sandbox Makefile passes --env=$(ENV_FILE).
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --targets=all
@@ -28,17 +38,91 @@
 
 set -euo pipefail
 
-AGENT_SANDBOX_REPO="@@AGENT_SANDBOX_REPO@@"
+# Self-locating dispatcher (ADR harness_versioning.md, host surface): the
+# installed CLI is a symlink into the repo, so resolving $0 yields the repo
+# itself -- the installed tool IS the working tree's copy and no independent
+# host version exists by construction. Rollback is `git checkout <sha>`.
+# An already-exported AGENT_SANDBOX_REPO wins (tests preset it before sourcing).
+_SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$(dirname "$_SELF")/.." && pwd)}"
 
 SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
 
-# No top-level sources — each dispatch case handles its own dependencies.
-# This file is a pure dispatch table: validate required flags, exec the target.
+# Shared parsing and the resolver core are sourced once at module scope; the
+# dispatcher is a thin route table over them. Identity flags become optional via
+# resolve_identity, which delegates to the canonical resolver.
+source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
+
+# Dispatcher state, reset by main() on every invocation (tests call main twice).
+PROJECT_NAME=""
+PROJECT_DIR=""
+SANDBOX_DIR=""
+ENV_REL=""
+PASSTHROUGH=()
+
+# =============================================================================
+# Helpers (file scope)
+# =============================================================================
+
+# require_base_args  --  onboard's hard requirement (it creates the .env, so it
+# cannot resolve identity from one).
+require_base_args() {
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+    echo "Error: --name, --project, and --sandbox are required"
+    exit 1
+  fi
+}
+
+# resolve_identity [name dir sandbox]  --  thin-interface seam over the
+# canonical resolver. For each requested field: explicit > AGENT_SANDBOX_<KEY>
+# > the .env (via ENV_REL, else <sandbox>/.env, else CWD) > a hard error.
+# onboard is exempt. The resolver emits the single per-key error message and
+# exports the normalized ENV_FILE.
+resolve_identity() {
+  env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_REL" "$@" || exit 1
+}
+
+# print_subcommand_list  --  single source of truth for the valid set.
+print_subcommand_list() {
+  echo "Valid subcommands: onboard, build, start, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
+}
+
+# route_help SUB  --  '<sub> --help', 'help <sub>', and 'help --help' route to
+# the child's own help (or, for help itself, to the subcommand list). Exec's so
+# the child prints its own usage  --  the dispatcher only locates it.
+route_help() {
+  local sub="$1"
+  case "$sub" in
+    help)
+      echo "Usage: agent-sandbox <subcommand> [flags]"
+      echo ""
+      print_subcommand_list
+      echo ""
+      echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
+      exit 0
+      ;;
+    onboard|build|stop|prune)
+      exec bash "$SCRIPTS/$sub.sh" --help ;;
+    resume)
+      exec bash "$SCRIPTS/resume_agent.sh" --help ;;
+    apply|draft|confirm|reject)
+      exec bash "$SCRIPTS/workflows/$sub.sh" --help ;;
+    start|dry-run)
+      exec bash "$SCRIPTS/start_agent.sh" --help ;;
+    package-branch)
+      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
+    *)
+      echo "Unknown subcommand: $sub" >&2
+      exit 1 ;;
+  esac
+}
 
 # =============================================================================
 # CLI entry point
 # =============================================================================
-# When sourced (for tests), only functions are defined — dispatch is not run.
+# When sourced (for tests), only functions are defined  --  dispatch is not run.
 # When executed directly, main() parses flags and dispatches to subcommands.
 
 main() {
@@ -46,35 +130,32 @@ main() {
   shift || true
 
   if [[ -z "$SUBCOMMAND" ]]; then
-    echo "Usage: agent-sandbox <onboard|build|start|serve|dry-run|stop|prune|apply|draft|confirm|reject> <flags>"
+    echo "Usage: agent-sandbox <onboard|build|start|dry-run|resume|stop|prune|apply|draft|confirm|reject> <flags>"
     exit 1
   fi
 
-  # -------------------------
-  # Flag parsing (shared)
-  # -------------------------
-  local PROJECT_NAME=""
-  local PROJECT_DIR=""
-  local SANDBOX_DIR=""
-  local -a PASSTHROUGH=()
+  PROJECT_NAME=""
+  PROJECT_DIR=""
+  SANDBOX_DIR=""
+  ENV_REL=""
+  PASSTHROUGH=()
 
-  parse_flags() {
-    for ARG in "$@"; do
-      case "$ARG" in
-        --name=*)    PROJECT_NAME="${ARG#--name=}" ;;
-        --project=*) PROJECT_DIR="${ARG#--project=}" ;;
-        --sandbox=*) SANDBOX_DIR="${ARG#--sandbox=}" ;;
-        *)           PASSTHROUGH+=("$ARG") ;;
-      esac
-    done
-  }
+  # Identity and --env parse through the canonical cli.sh spec; every other
+  # argument is collected in order and forwarded to the leaf unchanged.
+  parse_args_collect PASSTHROUGH --env=ENV_REL \
+      --name=PROJECT_NAME --project=PROJECT_DIR --sandbox=SANDBOX_DIR \
+      -- "$@"
 
-  require_base_args() {
-    if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-      echo "Error: --name, --project, and --sandbox are required"
-      exit 1
-    fi
-  }
+  # --help/-h on any subcommand delegates to the child's own help BEFORE the
+  # per-case required-arg checks below  --  mirroring each leaf script's own
+  # convention (parse_help_flag runs before arg validation). This makes
+  # `agent-sandbox <sub> --help` work uniformly for every subcommand, and
+  # `agent-sandbox help --help` show help's own page (the subcommand list).
+  for _arg in "$@"; do
+    case "$_arg" in
+      --help|-h) route_help "$SUBCOMMAND" ;;
+    esac
+  done
 
   # -------------------------
   # Dispatch
@@ -82,9 +163,8 @@ main() {
   case "$SUBCOMMAND" in
 
     onboard)
-      parse_flags "$@"
       require_base_args
-      exec "$SCRIPTS/onboard.sh" \
+      exec bash "$SCRIPTS/onboard.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -92,8 +172,7 @@ main() {
       ;;
 
     build)
-      parse_flags "$@"
-      require_base_args
+      resolve_identity name dir sandbox
       exec bash "$SCRIPTS/build.sh" \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
@@ -102,60 +181,47 @@ main() {
       ;;
 
     start)
-      parse_flags "$@"
-      require_base_args
-      "$SCRIPTS/start_agent.sh" standard \
+      resolve_identity name dir sandbox
+      exec bash "$SCRIPTS/start_agent.sh" standard \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    serve)
-      parse_flags "$@"
-      require_base_args
-      "$SCRIPTS/start_agent.sh" serve \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_REL" \
         "${PASSTHROUGH[@]}"
       ;;
 
     dry-run)
-      parse_flags "$@"
-      require_base_args
-      "$SCRIPTS/start_agent.sh" dry-run \
+      resolve_identity name dir sandbox
+      exec bash "$SCRIPTS/start_agent.sh" dry-run \
         --name="$PROJECT_NAME" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_REL" \
         "${PASSTHROUGH[@]}"
       ;;
 
     stop)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --name and --sandbox are required"
-        exit 1
-      fi
-      exec "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
+      resolve_identity name dir sandbox
+      exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --project="$PROJECT_DIR" "${PASSTHROUGH[@]}"
+      ;;
+
+    resume)
+      resolve_identity sandbox
+      exec bash "$SCRIPTS/resume_agent.sh" \
+        --name="$PROJECT_NAME" \
+        --project="$PROJECT_DIR" \
+        --sandbox="$SANDBOX_DIR" \
+        --env="$ENV_REL" \
+        "${PASSTHROUGH[@]}"
       ;;
 
     prune)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_NAME" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --name and --sandbox are required"
-        exit 1
-      fi
-      exec "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR"
+      resolve_identity name dir sandbox
+      exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
       ;;
 
     apply)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
-
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -163,12 +229,7 @@ main() {
       ;;
 
     draft)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
-
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -176,11 +237,7 @@ main() {
       ;;
 
     confirm)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
@@ -188,77 +245,30 @@ main() {
       ;;
 
     reject)
-      parse_flags "$@"
-      if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --project and --sandbox are required"
-        exit 1
-      fi
+      resolve_identity dir sandbox
       exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" \
         --project="$PROJECT_DIR" \
         --sandbox="$SANDBOX_DIR" \
         "${PASSTHROUGH[@]}"
       ;;
 
-    package-diff)
-      parse_flags "$@"
-      if [[ -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --sandbox is required"
-        exit 1
-      fi
-
-      local ENV_FILE="$SANDBOX_DIR/.env"
-      if [[ ! -f "$ENV_FILE" ]]; then
-        echo "Error: .env not found in $SANDBOX_DIR" >&2
-        echo "  Run 'agent-sandbox onboard' first to create it." >&2
-        exit 1
-      fi
-
-      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_diff.sh" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
     package-branch)
-      parse_flags "$@"
-      if [[ -z "$SANDBOX_DIR" ]]; then
-        echo "Error: --sandbox is required"
-        exit 1
-      fi
-
+      resolve_identity sandbox
       exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" \
+        --sandbox="$SANDBOX_DIR" \
         "${PASSTHROUGH[@]}"
       ;;
 
     help)
-      if [[ -z "${1:-}" ]]; then
-        echo "Usage: agent-sandbox <subcommand> [flags]"
-        echo ""
-        echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
-        echo ""
-        echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
-        exit 0
-      fi
-
-      local SUB="$1"
-      case "$SUB" in
-        onboard|build|stop|prune)
-          exec bash "$SCRIPTS/$SUB.sh" --help ;;
-        apply|draft|confirm|reject)
-          exec bash "$SCRIPTS/workflows/$SUB.sh" --help ;;
-        start|serve|dry-run)
-          exec bash "$SCRIPTS/start_agent.sh" --help ;;
-        package-diff)
-          exec bash "$AGENT_SANDBOX_REPO/src/libs/package_diff.sh" --help ;;
-        package-branch)
-          exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
-        *)
-          echo "Unknown subcommand: $SUB" >&2
-          exit 1 ;;
-      esac
+      # help is itself a subcommand; its page is the subcommand list.
+      # Bare 'help' -> route_help help (prints the list). 'help <sub>' and
+      # 'help --help' are handled by route_help too (no recursion).
+      route_help "${1:-help}"
       ;;
 
     *)
       echo "Unknown subcommand: $SUBCOMMAND"
-      echo "Valid subcommands: onboard, build, start, serve, dry-run, stop, prune, apply, draft, confirm, reject, package-diff, package-branch"
+      print_subcommand_list
       exit 1
       ;;
   esac

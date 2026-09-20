@@ -3,7 +3,7 @@
 # Merged by scripts/run_agent.sh before the mode overlay.
 #
 # Provider config (config.yaml, .env) is seeded into AGENT_HOME by
-# provider-entrypoint.sh at container start — not mounted. See sandbox_lifecycle.md.
+# provider-entrypoint.sh at container start  --  not mounted. See sandbox_lifecycle.md.
 
 services:
   agent:

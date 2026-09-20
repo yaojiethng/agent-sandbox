@@ -1,6 +1,6 @@
-> pi can create prompt templates. Ask it to build one for your workflow.
-
 # Prompt Templates
+
+> pi can create prompt templates. Ask it to build one for your workflow.
 
 Prompt templates are Markdown snippets that expand into full prompts. Type `/name` in the editor to invoke a template, where `name` is the filename without `.md`.
 
@@ -45,18 +45,18 @@ argument-hint: "<PR-URL>"
 
 This renders in the autocomplete dropdown as:
 
-```
-→ pr   <PR-URL>       — Review PRs from URLs with structured issue and code analysis
-  is   <issue>        — Analyze GitHub issues (bugs or feature requests)
-  wr   [instructions] — Finish the current task end-to-end
-  cl   — Audit changelog entries before release
+```text
+-> pr   <PR-URL>        --  Review PRs from URLs with structured issue and code analysis
+  is   <issue>         --  Analyze GitHub issues (bugs or feature requests)
+  wr   [instructions]  --  Finish the current task end-to-end
+  cl    --  Audit changelog entries before release
 ```
 
 ## Usage
 
 Type `/` followed by the template name in the editor. Autocomplete shows available templates with descriptions.
 
-```
+```text
 /review                           # Expands review.md
 /component Button                 # Expands with argument
 /component Button "click handler" # Multiple arguments
