@@ -169,7 +169,7 @@ EOF
 
   if [[ $RC -ne 0 \
      && "$ERR" == *"requires a clean working tree"* \
-     && "$ERR" == *"Commit or stash"* ]]; then
+     && "$ERR" == *"Stash them (git stash) or commit them first"* ]]; then
     pass "apply blocks on a dirty tree without --force"
   else
     fail "expected clean-tree refusal, got rc=$RC err='$ERR'"
@@ -203,6 +203,14 @@ EOF
   else
     fail "expected force tolerance + warning, got rc=$RC warn='$WARN'"
   fi
+
+  # A path that continues must not also emit an error: the operator sees a
+  # warning, not a refusal it then ignores.
+  if [[ "$WARN" != *"Error:"* ]]; then
+    pass "apply --force reports a warning, never an error, on the path it continues"
+  else
+    fail "apply --force printed an error on a path it continues: '$WARN'"
+  fi
 }
 
 test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
@@ -226,6 +234,36 @@ test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
   fi
 }
 
+test_apply_run_unreadable_tree_refuses_without_stash_hint() {
+  local repo="$FIXTURE_DIR/repo_unreadable"
+  _make_repo "$repo"
+
+  local diff_file="$FIXTURE_DIR/one.diff"
+  cat > "$diff_file" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-base
++changed
+EOF
+
+  # A corrupt index is not a dirty tree: git status fails while HEAD resolves.
+  # The operator must not be told to stash changes that do not exist.
+  printf 'garbage' > "$repo/.git/index"
+
+  local ERR RC=0
+  ERR=$(apply_run "$repo" "$diff_file" "" false </dev/null 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 \
+     && "$ERR" == *"cannot read the working tree state"* \
+     && "$ERR" != *"Stash them"* ]]; then
+    pass "apply refuses an unreadable tree without a phantom stash hint"
+  else
+    fail "expected unreadable-tree refusal, got rc=$RC err='$ERR'"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -235,6 +273,7 @@ run_test test_apply_run_multi_file_diff_reports_exact_count
 run_test test_apply_run_empty_diff_skips_with_warning
 run_test test_apply_run_clean_tree_guard_blocks_unstaged_changes
 run_test test_apply_run_force_tolerates_dirty_tree_with_warning
+run_test test_apply_run_unreadable_tree_refuses_without_stash_hint
 run_test test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit
 run_test test_draft_apply_uncommitted_empty_diff_skips_with_warning
 

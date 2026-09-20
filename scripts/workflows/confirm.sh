@@ -36,7 +36,7 @@ confirm_run() {
 
   if ! git -C "$PROJECT_DIR" rev-parse --verify "$MERGE_TARGET" >/dev/null 2>&1; then
     echo "Error: target branch does not exist: $MERGE_TARGET" >&2
-    echo "  Specify a different target: make confirm TARGET=<branch>" >&2
+    echo "  Specify a different target: make confirm TARGET_BRANCH=<branch>" >&2
     return 1
   fi
 
@@ -99,7 +99,7 @@ Usage: agent-sandbox confirm --project=<path> --sandbox=<path> [options]
 
 Rebases the current draft branch onto its target and fast-forward merges.
 
-or, from a sandbox Makefile: make confirm [TARGET=<branch>]
+or, from a sandbox Makefile: make confirm [TARGET_BRANCH=<branch>]
 
 Required:
   --project=<path>    Path to the git repository

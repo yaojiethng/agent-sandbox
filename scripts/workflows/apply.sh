@@ -60,12 +60,21 @@ apply_run() {
   # Clean-tree guard: apply onto the working tree, which is only safe when
   # it is clean. --force tolerates a dirty tree as one form of apply conflict;
   # hunks may then fail, so warn loudly about collateral consequences.
-  if ! require_clean_working_tree "$PROJECT_DIR" "make apply"; then
+  local _tree_rc=0
+  require_clean_working_tree "$PROJECT_DIR" || _tree_rc=$?
+  if [[ "$_tree_rc" -eq 2 ]]; then
+    echo "Error: make apply cannot read the working tree state." >&2
+    clean_tree_hint_unreadable
+    return 1
+  fi
+  if [[ "$_tree_rc" -eq 1 ]]; then
     if [[ "$FORCE" != true ]]; then
+      echo "Error: make apply requires a clean working tree." >&2
+      clean_tree_hint
       return 1
     fi
     echo "Warning: make apply --force tolerates a dirty working tree." >&2
-    echo "  Uncommitted changes were present; some hunks may fail to apply cleanly." >&2
+    echo "  Uncommitted or untracked changes are present; some hunks may fail to apply cleanly." >&2
     echo "  Review .rej files and the full tree state before proceeding." >&2
   fi
 

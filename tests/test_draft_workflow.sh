@@ -718,6 +718,25 @@ test_draft_fails_on_dirty_working_tree() {
   fi
 }
 
+test_draft_fails_on_unreadable_working_tree() {
+  make_draft_fixture draft_unreadable 1
+
+  # A corrupt index is not a dirty tree: the operator must not be told to stash
+  # changes that do not exist. git status fails while HEAD still resolves.
+  printf 'garbage' > "$P/.git/index"
+
+  local OUT RC=0
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 \
+     && "$OUT" == *"cannot read the working tree state"* \
+     && "$OUT" != *"Stash them"* ]]; then
+    pass "draft refuses an unreadable tree without a phantom stash hint"
+  else
+    fail "expected unreadable-tree refusal, got rc=$RC out='$OUT'"
+  fi
+}
+
 test_reject_discards_uncommitted_draft_residue() {
   make_draft_fixture reject_residue 1
 
@@ -1050,6 +1069,7 @@ run_test test_draft_branch_from
 run_test test_draft_diffs_range
 run_test test_draft_no_diffs_error
 run_test test_draft_fails_on_dirty_working_tree
+run_test test_draft_fails_on_unreadable_working_tree
 run_test test_draft_failure_returns_to_source_branch
 run_test test_draft_failure_deletes_draft_branch
 run_test test_draft_strips_index_lines

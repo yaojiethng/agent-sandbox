@@ -613,6 +613,9 @@ test_build_missing_args() {
 # make-vs-cli hint inconsistency; see session 20260919-15 finding).
 test_make_form_in_usage_first_help_leaf() {
   # subcommand -> <script>|<make-form needle>
+  # The needle pins the make variable name too, where the command has one: a
+  # hint naming a variable the target ignores is worse than no hint. `confirm`
+  # takes TARGET_BRANCH, not TARGET (TARGET drives the build target).
   local row script needle
   local rows=(
     'build|scripts/build.sh|make build'
@@ -620,7 +623,7 @@ test_make_form_in_usage_first_help_leaf() {
     'onboard|scripts/onboard.sh|make onboard'
     'apply|scripts/workflows/apply.sh|make apply'
     'draft|scripts/workflows/draft.sh|make draft'
-    'confirm|scripts/workflows/confirm.sh|make confirm'
+    'confirm|scripts/workflows/confirm.sh|make confirm [TARGET_BRANCH='
     'package-branch|src/libs/package_branch.sh|make package-branch'
   )
   for row in "${rows[@]}"; do
@@ -631,6 +634,23 @@ test_make_form_in_usage_first_help_leaf() {
   done
 }
 
+# The same variable rule applies everywhere a make-confirm hint appears -- in
+# docs, prompts, and discussion records, not just the help text. A hint that
+# names TARGET sends the operator to the build variable the confirm target
+# ignores. This guards the whole tree so the drift cannot come back.
+test_confirm_hints_never_name_target() {
+  local hits
+  hits=$(cd "$REPO_ROOT" && grep -rn 'make confirm TARGET=' \
+           --include='*.md' --include='*.sh' . 2>/dev/null \
+         | grep -v '^./devlog/handovers/' \
+         | grep -v '^./tests/test_dispatch.sh' || true)
+  if [[ -z "$hits" ]]; then
+    pass "no live make-confirm hint names TARGET instead of TARGET_BRANCH"
+  else
+    fail "make-confirm hint names TARGET (the confirm target ignores it): $hits"
+  fi
+}
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -639,6 +659,7 @@ source_harness
 setup_mocks
 
 run_test test_build_default_all
+run_test test_confirm_hints_never_name_target
 run_test test_build_resolves_identity_from_env_file
 run_test test_build_resolves_identity_from_relative_env
 run_test test_build_with_targets

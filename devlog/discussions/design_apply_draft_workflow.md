@@ -63,7 +63,7 @@ If any patch fails mid-series, a local savepoint tag (`draft-savepoint`) rolls t
 Rebases the draft branch onto the target (default: source branch recorded in `.draft-state`), drops the `.draft-state` commit, fast-forward merges, and deletes the draft branch.
 
 ```text
-make confirm [TARGET=<branch>]
+make confirm [TARGET_BRANCH=<branch>]
 ```
 
 A local savepoint tag (`confirm-savepoint`) protects against mid-rebase failure. On failure, the branch resets to the savepoint; on success, the tag is deleted.

@@ -306,10 +306,16 @@ draft_run() {
   # branch (checkout -b carries it; git add -A sweeps it into draft commits).
   # Never bypassed by --force -- force only tolerates apply conflicts, never an
   # unclean fork base. The hint tells the operator how to proceed.
-  if ! require_clean_working_tree "$PROJECT_DIR" "make draft" >/dev/null 2>&1; then
+  local _tree_rc=0
+  require_clean_working_tree "$PROJECT_DIR" || _tree_rc=$?
+  if [[ "$_tree_rc" -eq 2 ]]; then
+    echo "Error: make draft cannot read the working tree state." >&2
+    clean_tree_hint_unreadable
+    return 1
+  fi
+  if [[ "$_tree_rc" -eq 1 ]]; then
     echo "Error: make draft requires a clean working tree." >&2
-    echo "  Uncommitted or untracked changes are present." >&2
-    echo "  Stash them (git stash) or commit them before drafting." >&2
+    clean_tree_hint
     return 1
   fi
 
@@ -505,7 +511,7 @@ _run_draft_workflow() {
   echo ""
   echo "Shape your commits, then confirm:"
   echo "  git rebase -i ${SOURCE_BRANCH}"
-  echo "  make confirm TARGET=${SOURCE_BRANCH}"
+  echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
   echo ""
   echo "To discard: make reject"
 }
