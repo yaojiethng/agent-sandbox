@@ -19,6 +19,7 @@ unset CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/routing.sh"
+source "$REPO_ROOT/src/libs/session_save_policy.sh"
 
 # =============================================================================
 # export_path
@@ -121,6 +122,280 @@ test_resolve_draft_autosave_newest_by_mtime() {
   local BUNDLE_NAME
   BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
   assert_eq "$BUNDLE_NAME" "aaaa" "resolve_source_for_draft: autosave auto-resolve picks newest mtime, not largest name"
+}
+
+# A stale staging directory must never be selectable as a bundle. Driven by
+# the shipped autosave_cycle: an interrupted cycle leaves the staging path
+# outside autosave/, so the readers cannot pick it up. Guards the invariant
+# that the channel holds checkpoint directories only.
+test_staging_dir_is_not_selectable() {
+  local SD="$FIXTURE_DIR/sandbox_staging"
+  local CHANGES="$SD/.workspace/session-diffs"
+  local SID="main"
+  mkdir -p "$CHANGES/autosave/aaaa/patches" "$CHANGES/autosave/zzzz/patches"
+  touch "$CHANGES/autosave/aaaa/patches/0001-a.diff" "$CHANGES/autosave/zzzz/patches/0001-z.diff"
+  touch -d "2030-01-01" "$CHANGES/autosave/aaaa"
+
+  # An interrupted cycle: a partial bundle at the staging path, newer than the
+  # good checkpoint. The staging path belongs outside the channel, so the
+  # readers must ignore it. Planting it directly models a SIGKILL mid-export,
+  # which the cycle cannot clean up.
+  mkdir -p "${CHANGES}/.autosave-staging-$SID/patches"
+  touch "${CHANGES}/.autosave-staging-$SID/patches/0001-partial.diff"
+  touch -d "2040-01-01" "${CHANGES}/.autosave-staging-$SID"
+
+  local RESULT BUNDLE_NAME
+  RESULT=$(resolve_source_for_draft "$SD" "autosave" "") || { fail "resolve_source_for_draft failed"; return; }
+  BUNDLE_NAME=$(echo "$RESULT" | cut -f2)
+  assert_eq "$BUNDLE_NAME" "aaaa" "an interrupted cycle's staging path is not selectable"
+
+  local LATEST
+  LATEST=$(resolve_latest_dir_by_mtime "$CHANGES/autosave")
+  assert_eq "$LATEST" "$CHANGES/autosave/aaaa" "mtime reader ignores the staging path"
+}
+
+# The autosave cycle, driven through the shipped autosave_cycle in
+# src/libs/session_save_policy.sh (never a copy of it -- an inlined copy cannot
+# detect the production code drifting). Two defects lived here: the staging
+# path inside the channel, and `mv` into a channel directory that was never
+# created, which failed outright on a fresh sandbox.
+test_autosave_swap_sequence() {
+  local SD="$FIXTURE_DIR/sandbox_swap"
+  local CHANGES="$SD/.workspace/session-diffs"
+  local SID="swapmain"
+  local as_dir="$CHANGES/autosave/$SID"
+
+  # The stub export records the directory it was handed, so the test can assert
+  # where the cycle stages. The stage must be outside the channel: the readers
+  # enumerate autosave/'s direct children, so a stage there becomes selectable
+  # as a bundle after an interrupted cycle.
+  stub_export_ok() { echo "$2" > "$2/marker"; echo "$2" >> "$STAGE_LOG"; }
+  STAGE_LOG="$FIXTURE_DIR/stage.log"
+  : > "$STAGE_LOG"
+
+  # Cycle 1: fresh sandbox, no channel directory yet. The cycle must create it
+  # and land the checkpoint at the channel path.
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_ok >/dev/null 2>&1
+  local rc=$?
+  if [[ "$rc" -eq 0 && -f "$as_dir/marker" ]]; then
+    pass "autosave cycle: a fresh sandbox lands the checkpoint at the channel path"
+  else
+    fail "autosave cycle: fresh-sandbox checkpoint missing (rc=$rc, found: $(find "$CHANGES" -maxdepth 3 2>/dev/null | tr '\n' ' '))"
+  fi
+
+  # The staging path must be outside the channel, and cleared afterwards.
+  if [[ -e "$CHANGES/.autosave-staging-$SID" ]]; then
+    fail "autosave cycle: the staging path survived a successful cycle"
+  else
+    pass "autosave cycle: the staging path is cleared after a successful swap"
+  fi
+  local staged
+  staged="$(head -1 "$STAGE_LOG")"
+  # Pin the documented path, not merely "not under the channel": the ADR's
+  # atomicity argument depends on the staging path sharing a filesystem with
+  # the channel, so the move is a rename.
+  assert_eq "$staged" "$CHANGES/.autosave-staging-$SID" "autosave cycle: stages beside the channel"
+  if [[ -e "$as_dir/.autosave-staging-$SID" ]]; then
+    fail "autosave cycle: the stage was nested inside the channel"
+  else
+    pass "autosave cycle: nothing is nested inside the checkpoint directory"
+  fi
+
+  # No staging or aside artefact may remain anywhere after a successful cycle.
+  local leftovers
+  leftovers=$(find "$CHANGES" -maxdepth 1 -name '.autosave-*' 2>/dev/null)
+  if [[ -z "$leftovers" ]]; then
+    pass "autosave cycle: no staging or aside directory survives a success"
+  else
+    fail "autosave cycle: leftover working directory after success: $leftovers"
+  fi
+
+  # Cycle 2: the channel holds a checkpoint; the cycle replaces it in place.
+  stub_export_new() { echo new > "$2/marker"; }
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_new >/dev/null 2>&1
+  assert_eq "$(cat "$as_dir/marker")" "new" "autosave cycle: replacement lands in place"
+
+  # Cycle 3: the export fails. The previous checkpoint must survive intact.
+  stub_export_fail() { return 1; }
+  local out rc3=0 as_old="$CHANGES/.autosave-previous-$SID"
+  out=$(autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_fail 2>&1) || rc3=$?
+  assert_eq "$rc3" "1" "autosave cycle: a failed export reports failure"
+  assert_eq "$(cat "$as_dir/marker")" "new" "autosave cycle: a failed export keeps the previous checkpoint"
+
+  # A failed export writes its diagnostic into the directory it was handed (the
+  # staging path). The cycle must rescue the log before removing that path, or
+  # the file the export just announced is destroyed one statement later.
+  stub_export_fail_with_log() {
+    echo "boom" > "$2/20260101-000000-EXPORT-ERROR.log"
+    return 1
+  }
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_fail_with_log >/dev/null 2>&1 || true
+  if [[ -n "$(find "$CHANGES" -maxdepth 1 -name '*EXPORT-ERROR.log' 2>/dev/null)" ]]; then
+    pass "autosave cycle: a failed export's error log is rescued from the staging path"
+  else
+    fail "autosave cycle: the export's error log was destroyed with the staging path"
+  fi
+  rm -f "$CHANGES"/*EXPORT-ERROR.log
+
+  # The export receives the session id, so its diagnostic filename carries it.
+  stub_export_records_id() { echo "$3" > "$FIXTURE_DIR/id.log"; return 1; }
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_records_id >/dev/null 2>&1 || true
+  assert_eq "$(cat "$FIXTURE_DIR/id.log")" "$SID" "autosave cycle: the export receives the session id"
+
+  # A failure message must not claim a checkpoint was kept when none exists.
+  rm -rf "$as_dir" "$as_old"
+  local no_kept
+  no_kept=$(autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_fail 2>&1) || true
+  if [[ "$no_kept" == *"kept"* ]]; then
+    fail "autosave cycle: claims a checkpoint was kept when none exists"
+  else
+    pass "autosave cycle: no kept-checkpoint claim when there is none"
+  fi
+
+  # Cycle 4: a cycle killed mid-swap leaves the checkpoint at the aside path
+  # with no live path. The next cycle must recover it rather than discard it.
+  rm -rf "$as_dir" "$as_old"
+  mkdir -p "$as_old" && echo orphan > "$as_old/marker"
+  stub_export_after() { echo after > "$2/marker"; }
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_after >/dev/null 2>&1
+  assert_eq "$(cat "$as_dir/marker")" "after" "autosave cycle: a mid-swap orphan does not lose the checkpoint"
+  if [[ -e "$as_old" ]]; then
+    fail "autosave cycle: the aside path survived a successful cycle"
+  else
+    pass "autosave cycle: the aside path is cleared after success"
+  fi
+
+  # Cycle 5: a mid-swap orphan followed by a FAILING export. The orphan must be
+  # restored before the export is attempted, or the only checkpoint is stranded
+  # at the aside path where no reader looks.
+  rm -rf "$as_dir" "$as_old"
+  mkdir -p "$as_old" && echo orphan > "$as_old/marker"
+  stub_export_fail2() { return 1; }
+  autosave_cycle "$CHANGES/autosave/$SID" "$CHANGES/autosave" "$SD" stub_export_fail2 >/dev/null 2>&1 || true
+  assert_eq "$(cat "$as_dir/marker" 2>/dev/null)" "orphan" \
+      "autosave cycle: a failed export still restores a mid-swap orphan"
+}
+
+# The status-absorption mechanism, verified in a fresh shell. This runs bash
+# directly (not through `run_test`) because `run_test`'s `$1 || true` suppresses
+# `set -e` for everything the test function spawns, which is exactly the
+# condition the mechanism has to survive. A fixture script sources the shipped
+# library under `set -euo pipefail`, runs one tick whose export fails, and must
+# reach a second tick.
+test_autosave_tick_absorbs_status_under_real_set_e() {
+  local probe="$FIXTURE_DIR/loop_probe.sh"
+  local SD="$FIXTURE_DIR/sandbox_probe"
+  mkdir -p "$SD/.git"
+  printf 'init_sha=abc\n' > "$SD/.git/SESSION_STATE"
+  cat > "$probe" <<EOF
+set -euo pipefail
+source "$REPO_ROOT/src/libs/export_status.sh"
+source "$REPO_ROOT/src/libs/session_state.sh"
+source "$REPO_ROOT/src/libs/routing.sh"
+source "$REPO_ROOT/src/libs/session_save_policy.sh"
+calls="$SD/calls"; : > "\$calls"
+stub() { echo x >> "\$calls"; if [[ \$(wc -l < "\$calls") -ge 2 ]]; then echo ok > "$SD/reached"; fi; return 1; }
+autosave_loop 0 export_path "$SD" "$SD" sid stub & pid=\$!
+for _ in \$(seq 1 50); do [[ -f "$SD/reached" ]] && break; sleep 0.05; done
+kill -TERM \$pid 2>/dev/null || true
+wait \$pid 2>/dev/null || true
+EOF
+  local rc=0
+  bash "$probe" >/dev/null 2>&1 || rc=$?
+  if [[ -f "$SD/reached" ]]; then
+    pass "autosave loop: absorbs a failing tick under a real set -e shell"
+  else
+    fail "autosave loop: a failing tick ended the loop under set -e (rc=$rc)"
+  fi
+}
+
+# The shipped autosave_loop, driven with an export that always fails. The loop
+# must keep ticking: a bare `autosave_tick` call under `set -e` ends it on the
+# first non-zero status (review round 4's blocker), and an unset session id
+# must be reported rather than fatal.
+#
+# Harness limitation, recorded because it makes this guard weaker than it looks:
+# `run_test` calls the test function as `$1 || true`, and bash suppresses
+# `set -e` for a shell invoked in a `||` list -- including nested function calls
+# and background subshells started from it. The unguarded call in `autosave_loop`
+# therefore does NOT abort here, so this test cannot observe the absence of
+# `|| true`; it pins the contract (the loop keeps ticking) and the diagnostic,
+# not the mechanism. Removing `|| true` from autosave_loop was verified by hand
+# against the shipped function under a plain `set -euo pipefail` shell.
+test_autosave_loop_survives_failing_ticks() {
+  source "$REPO_ROOT/src/libs/routing.sh"
+  local SD="$FIXTURE_DIR/sandbox_tickloop"
+  local CHANGES="$SD/.workspace/session-diffs"
+  local SID="tickloop"
+  mkdir -p "$CHANGES"
+
+  local calls="$FIXTURE_DIR/tickcalls"
+  : > "$calls"
+  stub_export_fails_and_counts() {
+    echo x >> "$calls"
+    return 1
+  }
+
+  local pid
+  autosave_loop 0 export_path "$CHANGES" "$SD" "$SID" stub_export_fails_and_counts >/dev/null 2>&1 &
+  pid=$!
+  sleep 1
+  kill -TERM "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null || true
+
+  local attempts
+  attempts=$(wc -l < "$calls" 2>/dev/null || echo 0)
+  if [[ "$attempts" -ge 3 ]]; then
+    pass "autosave loop: kept ticking after repeated failing ticks ($attempts attempts)"
+  else
+    fail "autosave loop: stopped on a non-zero tick ($attempts attempt(s))"
+  fi
+
+  # An unset session id must skip the tick with a diagnostic, not kill the cell.
+  stub_export_always_fails() { return 1; }
+  local out
+  out=$(
+    set -euo pipefail
+    autosave_loop 0 export_path "$CHANGES" "$SD" "" stub_export_always_fails 2>&1 &
+    local p=$!
+    sleep 1
+    kill -TERM "$p" 2>/dev/null
+    wait "$p" 2>/dev/null || true
+  ) || true
+  if [[ "$out" == *"SESSION_ID is unset"* ]]; then
+    pass "autosave loop: an unset session id is reported, not fatal"
+  else
+    fail "autosave loop: unset session id produced no diagnostic: '$out'"
+  fi
+}
+
+# The entrypoint's autosave invocation, driven verbatim. The tests above call
+# autosave_cycle directly with stubs, so they cannot see the argument order the
+# entrypoint passes to diff_export. That gap shipped a production break: the
+# extracted tick dropped $SANDBOX_DIR, so every real tick called
+# diff_export <staging> <session-id> and autosave never wrote a checkpoint.
+test_entrypoint_autosave_call_arguments() {
+  source "$REPO_ROOT/src/libs/routing.sh"
+  local SD="$FIXTURE_DIR/sandbox_callargs"
+  local CHANGES="$SD/.workspace/session-diffs"
+  mkdir -p "$CHANGES"
+
+  # Record diff_export's arguments as the entrypoint passes them.
+  diff_export() { printf '%s\n' "$@" > "$FIXTURE_DIR/callargs.log"; return 1; }
+  # Drive the shipped loop for a single tick rather than transcribing the
+  # entrypoint's call: the entrypoint names only the export verb and the cycle
+  # supplies the arguments, which is what keeps a dropped argument from being
+  # invisible. autosave_tick is the shipped path from the caller's side.
+  autosave_tick export_path "$CHANGES" "$SD" "sid1" diff_export >/dev/null 2>&1 || true
+
+  local a1 a2 a3
+  a1=$(sed -n 1p "$FIXTURE_DIR/callargs.log")
+  a2=$(sed -n 2p "$FIXTURE_DIR/callargs.log")
+  a3=$(sed -n 3p "$FIXTURE_DIR/callargs.log")
+  assert_eq "$a1" "$SD" "autosave: diff_export arg 1 is the sandbox dir (cycle-supplied)"
+  assert_eq "$a2" "$CHANGES/.autosave-staging-sid1" "autosave: diff_export arg 2 is the staging path (cycle-supplied)"
+  assert_eq "$a3" "sid1" "autosave: diff_export arg 3 is the session id (cycle-supplied)"
+  unset -f diff_export
 }
 
 # The same mtime semantics for the raw helper (entrypoint autosave fallback).
@@ -366,6 +641,11 @@ run_test test_export_path_missing_session_id
 run_test test_resolve_draft_default_channel
 run_test test_resolve_draft_explicit_channel_autosave
 run_test test_resolve_draft_autosave_newest_by_mtime
+run_test test_staging_dir_is_not_selectable
+run_test test_autosave_tick_absorbs_status_under_real_set_e
+run_test test_autosave_loop_survives_failing_ticks
+run_test test_entrypoint_autosave_call_arguments
+run_test test_autosave_swap_sequence
 run_test test_resolve_draft_named_session
 run_test test_resolve_draft_absolute_path_rejected
 run_test test_resolve_draft_missing_session

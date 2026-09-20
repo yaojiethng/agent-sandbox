@@ -323,37 +323,21 @@ trap 'exit 0' TERM
 # -------------------------
 # Optional autosave loop
 # -------------------------
-# Writes a single autosave checkpoint per session, overwritten on each
-# cycle. Uses export_path from routing.sh  --  autosave/<SESSION_ID>/ (no
-# EXPORT_TIME in the path). Before writing, rm -rf the old directory
-# so only the latest checkpoint is retained.
+# Writes a single autosave checkpoint per session, replaced on each cycle.
+# Uses export_path from routing.sh  --  autosave/<SESSION_ID>/ (no
+# EXPORT_TIME in the path). Each cycle builds the new checkpoint beside the
+# old one and swaps it in on success, so only the latest checkpoint is
+# retained and a failed cycle leaves the previous one intact.
 # PID is tracked so the EXIT trap can kill the subshell cleanly on shutdown.
 #
 # Every save attempt is logged to stderr (visible via docker logs).
 # On failure, writes a timestamped error log for diagnosis.
 if [[ "$AUTOSAVE_INTERVAL" -gt 0 ]]; then
-  (
-    while true; do
-      sleep "$AUTOSAVE_INTERVAL"
-      _as_dir=$(export_path "$CHANGES_DIR" "autosave" "${SESSION_ID:-}")
-      # Read the previous checkpoint's HEAD as the baseline BEFORE wiping the
-      # dir, so session_save_needed can skip a cycle with nothing new to save.
-      _baseline=$(_save_baseline "$SANDBOX_DIR" "$_as_dir")
-      if ! session_save_needed "$SANDBOX_DIR" "$_baseline"; then
-        echo "autosave: nothing to save  --  clean tree at last-saved HEAD" >&2
-        continue
-      fi
-      rm -rf "$_as_dir"
-      mkdir -p "$_as_dir"
-      echo "autosave: checkpoint started  --  ${_as_dir}" >&2
-      if diff_export "$SANDBOX_DIR" "$_as_dir" "${SESSION_ID:-}"; then
-        echo "autosave: checkpoint SUCCESS  --  ${_as_dir}" >&2
-      else
-        _as_ec=$?
-        echo "autosave: checkpoint FAILED (exit $_as_ec)  --  ${_as_dir}" >&2
-      fi
-    done
-  ) &
+  # The loop body lives in session_save_policy.sh so the shipped tick sequence
+  # is testable without docker or a live container. The cycle supplies the
+  # export's arguments; the caller names only the verb.
+  autosave_loop "$AUTOSAVE_INTERVAL" export_path "$CHANGES_DIR" "$SANDBOX_DIR" \
+    "${SESSION_ID:-}" diff_export &
   AUTOSAVE_PID=$!
 fi
 

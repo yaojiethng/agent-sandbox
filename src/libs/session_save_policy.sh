@@ -85,3 +85,137 @@ _save_baseline() {
   session_state_read "$_sandbox_dir" "init_sha" 2>/dev/null || true
 }
 
+# autosave_cycle CHECKPOINT_DIR CHANNEL_DIR SANDBOX_DIR EXPORT_CMD...
+#   One autosave cycle. Builds the next checkpoint at a staging path beside
+#   CHECKPOINT_DIR's channel, runs EXPORT_CMD against it, and swaps it into
+#   place only on success.
+#   Returns:
+#     0  the checkpoint was swapped in.
+#     1  the export or the swap failed; the previous checkpoint is kept.
+#     2  nothing to save; the live checkpoint is untouched.
+#
+#   CHECKPOINT_DIR is the checkpoint directory itself (the caller resolves it
+#   with routing's export_path, so the channel layout keeps one owner).
+#
+#   The staging path must NOT sit inside the channel: every reader enumerates
+#   the channel's direct children (the interactive pickers,
+#   resolve_latest_dir_by_mtime, resolve_source_for_draft), so a staging
+#   directory there would be selected as a bundle after an interrupted cycle.
+#   The channel parent is created before the swap because `mv` into a missing
+#   destination directory fails, and the live checkpoint is moved aside rather
+#   than deleted so a failed swap can restore it.
+#
+#   EXPORT_CMD is the export verb, called as EXPORT_CMD SANDBOX_DIR STAGE_DIR
+#   SESSION_ID. The cycle supplies all three arguments, so a caller cannot drop
+#   or misorder them; taking the verb as a parameter keeps the shipped sequence
+#   testable without docker.
+autosave_cycle() {
+  local as_dir="${1:?autosave_cycle requires the checkpoint dir}"
+  local channel_dir="${2:?autosave_cycle requires the channel dir}"
+  local sandbox_dir="${3:?autosave_cycle requires a sandbox dir}"
+  shift 3
+  local export_cmd=("$@")
+
+  local as_stage as_old as_side
+  # The staging, aside, and rescued-log paths sit beside the channel, not inside
+  # it: the channel's direct children are what every reader enumerates.
+  as_side="$(dirname "$channel_dir")"
+  as_stage="$as_side/.autosave-staging-$(basename "$as_dir")"
+  as_old="$as_side/.autosave-previous-$(basename "$as_dir")"
+  local rc=0
+
+  # Recover a checkpoint left aside by a cycle killed mid-swap before deciding
+  # anything else: if the live path is missing but the aside path is present,
+  # the aside path holds the only checkpoint, and no reader scans it. Doing this
+  # first means even a "nothing to save" cycle restores it, and lets the stale
+  # staging path be cleared before the decision can return early.
+  mkdir -p "$channel_dir"
+  rm -rf "$as_stage"
+  if [[ ! -d "$as_dir" && -d "$as_old" ]]; then
+    mv "$as_old" "$as_dir"
+  fi
+
+  # The decision and its diagnostics belong to save_decision; this function maps
+  # its boolean back onto "skip" (2).
+  save_decision "$sandbox_dir" "$as_dir" "autosave" || return 2
+
+  mkdir -p "$as_stage"
+  echo "autosave: checkpoint started  --  $as_dir" >&2
+  # The cycle supplies the first two arguments from state it already holds, so a
+  # caller cannot drop or misorder them: EXPORT_CMD is called as
+  # EXPORT_CMD SANDBOX_DIR STAGE_DIR SESSION_ID. The sandbox dir was previously
+  # passed twice, once here and once by the caller, and one copy was dropped --
+  # which broke every autosave in production while the suite stayed green.
+  "${export_cmd[@]}" "$sandbox_dir" "$as_stage" "$(basename "$as_dir")" || rc=$?
+  if (( rc != 0 )); then
+    # The export writes its diagnostic inside the directory it was handed, which
+    # is the staging path about to be removed. Rescue the log beside the channel
+    # first, or the operator loses the file the export just announced.
+    local _log
+    for _log in "$as_stage"/*EXPORT-ERROR.log; do
+      [[ -f "$_log" ]] || continue
+      mv "$_log" "$as_side/" 2>/dev/null || true
+    done
+    rm -rf "$as_stage"
+    local _kept=""
+    [[ -d "$as_dir" ]] && _kept="; previous checkpoint kept"
+    echo "autosave: checkpoint FAILED (exit $rc)${_kept}  --  $as_dir" >&2
+    return 1
+  fi
+
+  rm -rf "$as_old"
+  [[ -d "$as_dir" ]] && mv "$as_dir" "$as_old"
+  rc=0
+  mv "$as_stage" "$as_dir" || rc=$?
+  if (( rc != 0 )); then
+    rm -rf "$as_stage"
+    [[ -d "$as_old" ]] && mv "$as_old" "$as_dir"
+    echo "autosave: checkpoint swap FAILED (exit $rc); previous checkpoint kept  --  $as_dir" >&2
+    return 1
+  fi
+  rm -rf "$as_old"
+  echo "autosave: checkpoint SUCCESS  --  $as_dir" >&2
+}
+
+# autosave_tick PATH_FN CHANGES_DIR SANDBOX_DIR SESSION_ID EXPORT_CMD...
+#   One autosave tick: resolve the checkpoint path via PATH_FN (export_path from
+#   routing.sh, passed in so this module stays free of the channel layout), then
+#   run the cycle. Returns whatever autosave_cycle returns -- 0 swapped in,
+#   1 export or swap failed, 2 nothing to save -- and 1 as well when SESSION_ID
+#   is unset, since there is then no checkpoint path to write. The caller loops
+#   on this and absorbs every status, because a tick's outcome is not a reason
+#   to end the loop.
+autosave_tick() {
+  local path_fn="${1:?autosave_tick requires a path function}"
+  local changes_dir="${2:?autosave_tick requires a changes dir}"
+  local sandbox_dir="${3:?autosave_tick requires a sandbox dir}"
+  local session_id="${4:-}"
+  shift 4
+
+  local checkpoint=""
+  checkpoint=$("$path_fn" "$changes_dir" "autosave" "$session_id" 2>/dev/null) || checkpoint=""
+  if [[ -z "$checkpoint" ]]; then
+    echo "autosave: SESSION_ID is unset; skipping tick" >&2
+    return 1
+  fi
+  autosave_cycle "$checkpoint" "$changes_dir/autosave" "$sandbox_dir" "$@"
+}
+
+# autosave_loop INTERVAL PATH_FN CHANGES_DIR SANDBOX_DIR SESSION_ID EXPORT_CMD
+#   The autosave loop: every INTERVAL seconds, run one tick. Every non-zero
+#   status a tick can return (1 export or swap failed, 2 nothing to save, 1 for
+#   an unset session id) is an outcome of that tick, never a reason to end the
+#   loop, so each call absorbs its status. Runs in the foreground; the caller
+#   backgrounds it and tracks the PID for teardown.
+autosave_loop() {
+  local interval="${1:?autosave_loop requires an interval}"
+  local path_fn="${2:?autosave_loop requires a path function}"
+  local changes_dir="${3:?autosave_loop requires a changes dir}"
+  local sandbox_dir="${4:?autosave_loop requires a sandbox dir}"
+  local session_id="${5:-}"
+  shift 5
+  while true; do
+    sleep "$interval"
+    autosave_tick "$path_fn" "$changes_dir" "$sandbox_dir" "$session_id" "$@" || true
+  done
+}
