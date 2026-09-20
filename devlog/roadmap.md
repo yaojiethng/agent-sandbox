@@ -1,6 +1,6 @@
 ---
 active-milestone: M2.6 - Session Persistence
-active-milestone-status: in-progress
+active-milestone-status: complete
 ---
 
 # agent-sandbox Development Roadmap
@@ -117,6 +117,7 @@ Completed work, at contract level (history in handovers/changelog):
 - [x] **Mount worktree with full git history** - full history is the default for copy and mount, with `--flatten` as the opt-out; the diff pipeline remains the only port-back channel. Handover `20260912-14`.
 - [x] **Centralized env-precedence resolver** - single-source resolution for `PROJECT_NAME`/`PROJECT_DIR`/`SANDBOX_DIR` (CLI flag > `AGENT_SANDBOX_*` env > per-sandbox `.env`), with thin CLI wiring. ADR [`env_resolution.md`](../docs/adr/env_resolution.md); handover `20260917-06`.
 - [x] **Markdown lint gate** - `markdownlint-cli2` config (`.markdownlint-cli2.mjs`) with a policy-aligned rule subset plus the custom `doc-ascii` rule; one `make lint` runs [`scripts/lint.sh`](../scripts/lint.sh), which sequences the ShellCheck gate ([`scripts/check_shell.sh`](../scripts/check_shell.sh)) and the Markdown gate ([`scripts/check_markdown.sh`](../scripts/check_markdown.sh)); the linter installs in every provider base (shared node layer and `hermes/base.dockerfile`); a copy-delivery `pre-commit` hook lints staged Markdown and blocks the commit (mount excluded, ADR [`git_hooks.md`](../docs/adr/git_hooks.md)); documented in `documentation_policy.md` and referenced from the project `AGENTS.md`. The repo holds zero findings. Handover `20260919-18`.
+- [x] **Review-findings sweep** (thermo-nuclear pass over `b1aac61..0037dba`, two models): both lint gates now fail closed (a missing tool, an empty file set, a tool that could not run, and a zero-file lint run are findings, not passes); the save decision is three-valued with one helper owning the dispatch, so an unreadable repository can no longer report "nothing to save"; the autosave checkpoint is staged outside the reader-enumerated channel and swapped in, and a failed or interrupted cycle keeps the previous checkpoint; one `SESSION_STATE` parser and one `.export-status` reader replace six hand-rolled copies; the container contract check and the library preflight are sourceable functions rather than inlined entrypoint bodies; the exit-code verdict rule is codified in `bash-coding-conventions.md` 3.2. Ten review rounds over two tranches, both models approving the final state. Handover `20260919-19`.
 
 ##### M2.6.1 - Foundation: Autosave, Security, Preconditions (Complete)
 
