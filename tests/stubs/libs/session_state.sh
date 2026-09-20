@@ -1,49 +1,11 @@
 #!/usr/bin/env bash
 # tests/stubs/libs/session_state.sh
-# Minimal controllable fake for src/libs/session_state.sh.
-# Reads keys from <SANDBOX_DIR>/.git/SESSION_STATE exactly like the real lib, so
-# tests drive outcomes purely by what they write into the SESSION_STATE file.
+# Test stand-in for src/libs/session_state.sh. The real library is file I/O over
+# SESSION_STATE plus the container contract check, with no docker dependency, so
+# the stub sources it rather than forking it: tests drive outcomes purely by what
+# they write into the SESSION_STATE file, and the reader under test is the
+# shipped one. Keeping a copy here let the stub and the library drift (the stub
+# carried the missing-file guard the library once lacked).
 
-session_state_read() {
-  local dir="$1" key="$2"
-  local file="$dir/.git/SESSION_STATE"
-  [[ -f "$file" ]] || return 0
-  local k v
-  while IFS='=' read -r k v; do
-    if [[ "$k" == "$key" ]]; then
-      echo "$v"
-      return 0
-    fi
-  done < "$file"
-  return 0
-}
-
-session_state_write() {
-  local dir="$1" key="$2" value="$3"
-  local file="$dir/.git/SESSION_STATE"
-  local d
-  d="$(dirname "$file")"
-  [[ -d "$d" ]] || return 1
-  echo "${key}=${value}" >> "$file"
-}
-
-# Mirrors src/libs/session_state.sh (identity block used by the seed and
-# mount init paths).
-session_state_write_set() {
-  local dir="$1" init_sha="$2"
-  session_state_write "$dir" "init_sha"      "$init_sha"
-  session_state_write "$dir" "session_ts"    "${SESSION_TS:-}"
-  session_state_write "$dir" "session_id"    "${SESSION_ID:-}"
-  session_state_write "$dir" "host_head_sha" "${HOST_HEAD_SHA:-}"
-  session_state_write "$dir" "interface_contract_version" "${INTERFACE_CONTRACT_VERSION_TEST:-1}"
-}
-
-# Mirrors src/libs/session_state.sh (used by the capability probe gate and the
-# knowledge diagnostics).
-init_sha_is_valid() {
-  local dir="$1"
-  local sha
-  sha=$(session_state_read "$dir" "init_sha" 2>/dev/null) || return 1
-  [[ -z "$sha" ]] && return 1
-  git -C "$dir" cat-file -e "$sha^{commit}" >/dev/null 2>&1
-}
+# shellcheck source=/dev/null
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/src/libs/session_state.sh"

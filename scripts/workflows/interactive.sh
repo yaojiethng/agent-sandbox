@@ -30,6 +30,7 @@
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_inventory.sh"   # relative_time (autosave last-saved column)
+source "$AGENT_SANDBOX_REPO/src/libs/export_status.sh"      # export_status_read (bundle metadata)
 
 # =============================================================================
 # Internal helpers
@@ -429,10 +430,8 @@ interactive_select_bundle() {
     # STATE: the bundle's branch state now vs its baseline  --  how many
     # commits the current project HEAD is ahead of the bundle baseline
     # (INIT_SHA on .export-status).
-    local init_sha=""
-    if [[ -f "$ENTRY_DIR/.export-status" ]]; then
-      init_sha=$(grep '^INIT_SHA=' "$ENTRY_DIR/.export-status" 2>/dev/null | head -1 | cut -d= -f2-)
-    fi
+    local init_sha
+    init_sha=$(export_status_read "$ENTRY_DIR" INIT_SHA)
     local state
     state="$(project_branch_age "$init_sha")"
 
@@ -443,10 +442,8 @@ interactive_select_bundle() {
     # bundle never reads session-ts or the .compose lifecycle entries. Prefer
     # the .export-status TIMESTAMP; fall back to the directory mtime (autosave
     # dirs have no embedded time).
-    local ts=""
-    if [[ -f "$ENTRY_DIR/.export-status" ]]; then
-      ts=$(grep '^TIMESTAMP=' "$ENTRY_DIR/.export-status" 2>/dev/null | head -1 | cut -d= -f2-)
-    fi
+    local ts
+    ts=$(export_status_read "$ENTRY_DIR" TIMESTAMP)
     if [[ -z "$ts" ]]; then
       local m_ep
       m_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)

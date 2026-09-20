@@ -28,7 +28,7 @@ build_inventory() {
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     last_used="$(session_log_read "$sid" last_stopped)"
     host_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)"
-    branch_age="$(_resume_branch_age "$host_sha")"
+    branch_age="$(project_branch_age "$host_sha")"
     RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$host_sha|$branch_age" )
   done < <(enumerate_records)
   # Newest first by session-ts.
@@ -41,8 +41,10 @@ build_inventory() {
   return 0
 }
 
-# _no_sessions  --  emit the empty-inventory guidance and exit 1. Shared by the
-# --list and --interactive branches (same message in both).
+# _no_sessions  --  emit the empty-inventory guidance and return 1. Shared by
+# the --list and --interactive branches (same message in both). Returns rather
+# than exits, per the library rule in bash-coding-conventions.md 3.1: callers
+# run under `set -euo pipefail`, so the status aborts them identically.
 _no_sessions() {
   if [[ -n "$PROVIDER_FILTER" ]]; then
     echo "Error: no resumable sessions for provider '$PROVIDER_FILTER'." >&2
@@ -50,7 +52,7 @@ _no_sessions() {
     echo "No resumable sessions found (${SANDBOX_DIR:-<sandbox>}/.compose)." >&2
     echo "  Start a session first: make start" >&2
   fi
-  exit 1
+  return 1
 }
 
 # -------------------------
@@ -86,11 +88,6 @@ _no_sessions() {
 # staleness marker [SANDBOX_STALE] is kept (exact words -- pinned by tests).
 _RESUME_BRANCH_MAX=11
 
-# _resume_branch_age SHA  --  "<N> commit[s] ago"/"0 commits ago"/"not in
-# tree"/"-" as above. Uses the current project (PROJECT_DIR) git HEAD.
-_resume_branch_age() {
-  project_branch_age "$1"
-}
 declare -A _WORK_MAP=()   # sid -> "<N>c[+u]" (filled by _resume_work_map)
 declare -A _STATE_MAP=()  # sid -> running|stopped (filled by _resume_state_map)
 
@@ -209,7 +206,7 @@ _resume_render_rows() {
     # current HEAD is ahead of the recorded host-head) and AGE holds the last
     # lifecycle event's wall-clock age ("down 5m ago", "running"). Same
     # convention as the draft bundle table.
-    _state_val="${branch_age:-not in tree}"
+    _state_val="$branch_age"
     work="${_WORK_MAP[$sid]:---}"
     _wall_val=$(_resume_state_cell "$sid" "$ts")
     local row

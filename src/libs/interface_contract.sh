@@ -8,7 +8,6 @@
 # Provides:
 #   interface_contract_version          --  the current contract version
 #   image_contract_version IMAGE_NAME   --  the version baked into an image
-#   record_contract_version STATE_FILE  --  the version stamped in a record
 #
 # Mismatch policy (ADR interface_contract_compatibility.md rollover): the
 # contract is authoritative -- a drift or missing label refuses preflight, and
@@ -35,19 +34,4 @@ interface_contract_version() {
 image_contract_version() {
   local image_name="${1:?image_contract_version requires an image name}"
   docker image inspect --format '{{index .Config.Labels "agent-sandbox.interface-contract-version"}}' "$image_name" 2>/dev/null
-}
-
-# record_contract_version STATE_FILE
-#   Reads the version stamped into a SESSION_STATE record (key
-#   `interface_contract_version=`, one per line). Empty when the key is
-#   missing. The record is host-readable -- no docker involved.
-record_contract_version() {
-  local state_file="${1:?record_contract_version requires a state file}"
-  local k v
-  while IFS='=' read -r k v; do
-    if [[ "$k" == "interface_contract_version" ]]; then
-      echo "$v"
-      return 0
-    fi
-  done < "$state_file"
 }

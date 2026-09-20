@@ -15,6 +15,7 @@ AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_draft_self/../.." && pwd)}"
 
 source "$AGENT_SANDBOX_REPO/src/libs/draft_state.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_state.sh"
+source "$AGENT_SANDBOX_REPO/src/libs/export_status.sh"
 source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/diff.sh"
@@ -238,8 +239,8 @@ _ingest_export_metadata() {
   local _es="$_source_dir/.export-status"
   local _time="" _init=""
   if [[ -f "$_es" ]]; then
-    _time=$(grep '^TIMESTAMP=' "$_es" | cut -d= -f2- || true)
-    _init=$(grep '^INIT_SHA=' "$_es" | cut -d= -f2- || true)
+    _time=$(export_status_read "$_source_dir" TIMESTAMP)
+    _init=$(export_status_read "$_source_dir" INIT_SHA)
   elif [[ -z "$_explicit_from" ]]; then
     echo "Error: .export-status not found in $_source_dir" >&2
     echo "  This directory was not produced by a recent diff_export or package_branch run." >&2

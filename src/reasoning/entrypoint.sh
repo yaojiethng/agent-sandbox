@@ -126,25 +126,26 @@ unset PROVISION_TEMPLATE
 # /opt/sandbox/lib/ is baked into the image at build time. If files are
 # missing, the image is stale and must be rebuilt with `make build`.
 #
-# session_state.sh is CRITICAL  --  sourced unconditionally by dry_run_reasoning.sh.
+# session_state.sh and interface_contract.sh are CRITICAL  --  session_state.sh is
+# sourced unconditionally by dry_run_reasoning.sh and sources its sibling
+# contract accessor, so both must be present for the container contract check.
 # The remaining files are WARN  --  fine to start but certain diagnostics or
 # session operations will fail at runtime.
-LIB_DIR="/opt/sandbox/lib"
-for entry in "session_state.sh:CRITICAL" "dirs.sh:WARN" "routing.sh:WARN" \
-             "diff.sh:WARN" "diff_export.sh:WARN" \
-             "package_branch.sh:WARN"; do
-  lib="${entry%%:*}"
-  severity="${entry##*:}"
-  if [[ ! -f "$LIB_DIR/$lib" ]]; then
-    if [[ "$severity" == "CRITICAL" ]]; then
-      echo "FATAL: $LIB_DIR/$lib is missing  --  image is stale, rebuild with 'make build'" >&2
-      exit 1
-    else
-      echo "WARN: $LIB_DIR/$lib is missing  --  image may be stale" >&2
-    fi
-  fi
-done
-unset LIB_DIR
+: "${SANDBOX_LIB_DIR:=/opt/sandbox/lib}"
+# dirs.sh owns lib_preflight. It is the one library the preflight cannot check
+# with lib_preflight, so it is verified first and sourced, then everything else
+# goes through the shared helper.
+if [[ ! -f "$SANDBOX_LIB_DIR/dirs.sh" ]]; then
+  echo "FATAL: $SANDBOX_LIB_DIR/dirs.sh is missing  --  image is stale, rebuild with 'make build'" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090  # runtime-resolved, -f validated above
+source "$SANDBOX_LIB_DIR/dirs.sh"
+lib_preflight "$SANDBOX_LIB_DIR" \
+  "session_state.sh:CRITICAL" "interface_contract.sh:CRITICAL" \
+  "routing.sh:WARN" \
+  "diff.sh:WARN" "diff_export.sh:WARN" "session_save_policy.sh:WARN" \
+  "export_status.sh:WARN" "package_branch.sh:WARN"
 
 # ---------------------------------------------------------------------------
 # Preflight: container<->container interface contract
@@ -154,63 +155,19 @@ unset LIB_DIR
 # entrypoint runs once both are up -- the first moment a container<->
 # container comparison is possible (ADR interface_contract_compatibility.md).
 #
-# It compares this agent's baked version against the sandbox's recorded
-# version (which reflects the sandbox image's bake). The contract is
-# authoritative: a definite mismatch means the two images were built from
-# different contract revisions -- an orchestration error or corrupt session
-# state, not ordinary drift -- and hard-stops the agent. The check is expected
-# to be superfluous when preflight passes; a failure therefore names the
-# larger problem. There is no runtime escape hatch.
-
-# _check_container_contract
-#   Compares the agent image's baked interface-contract version against the
-#   sandbox's recorded version (SESSION_STATE.interface_contract_version,
-#   written by the sandbox at init from its own bake).
-#   Hard-stops (exit 1) only on a definite mismatch. Warns (returns 0) on a
-#   missing record key or file (pre-record image -- upgrade path): the
-#   entrypoint never hard-aborts on an unavailable check. Best-effort: skips
-#   silently when the lib is unavailable.
-_check_container_contract() {
-  # Test seams mirror the capability entrypoint (SANDBOX_LIB_DIR). Production
-  # defaults resolve to the baked image paths.
-  local lib="${CONTRACT_LIB:-/opt/sandbox/lib/interface_contract.sh}"
-  [[ -f "$lib" ]] || return 0
-  # shellcheck disable=SC1090
-  source "$lib"
-
-  local sandbox_root="${SANDBOX_ROOT:-/home/agentuser}"
-  local sandbox_name="${SANDBOX_DIR_NAME:-sandbox}"
-  local state_file="$sandbox_root/$sandbox_name/.git/SESSION_STATE"
-
-  # Guard the read: a missing record file would abort under the entrypoint's
-  # `set -euo pipefail` (the while-read redirection failure is a command
-  # failure). A missing record means the sandbox did not initialize (or predates
-  # the record) -- warn, never hard-abort the entrypoint on an unavailable check.
-  if [[ ! -f "$state_file" ]]; then
-    echo "WARN: container contract: no SESSION_STATE at $state_file" >&2
-    echo "  (cannot compare container to container; the sandbox record is missing)" >&2
-    return 0
-  fi
-
-  local agent_baked sandbox_recorded
-  agent_baked="$(interface_contract_version)"
-  sandbox_recorded="$(record_contract_version "$state_file")"
-
-  if [[ -z "$sandbox_recorded" ]]; then
-    echo "WARN: container contract: sandbox has no interface_contract_version in $state_file" >&2
-    echo "  (image predates the interface-contract check; cannot compare container to container)" >&2
-    return 0
-  fi
-
-  if [[ "$agent_baked" != "$sandbox_recorded" ]]; then
-    echo "FATAL: container contract mismatch: agent baked version $agent_baked, sandbox recorded $sandbox_recorded" >&2
-    echo "  The agent and sandbox images were built from different contract revisions (orchestration error)." >&2
-    echo "  Rebuild both images from the same source, then restore the session from its record." >&2
-    exit 1
-  fi
-}
-
-_check_container_contract
+# The comparison lives in session_state.sh, next to the record reader it uses.
+# A definite mismatch means the two images were built from different contract
+# revisions -- an orchestration error or corrupt session state, not ordinary
+# drift -- and hard-stops the agent. The check is expected to be superfluous
+# when preflight passes; a failure therefore names the larger problem. There is
+# no runtime escape hatch.
+_source_lib "$SANDBOX_LIB_DIR/session_state.sh"
+# The sandbox container's directory inside this container. Compose supplies
+# SANDBOX_DIR_NAME; the workspace parent is fixed by the image.
+SANDBOX_DIR="${SANDBOX_DIR:-/home/agentuser/${SANDBOX_DIR_NAME:-sandbox}}"
+if ! container_contract_check "$SANDBOX_DIR"; then
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Preflight: generic AGENT_HOME validation

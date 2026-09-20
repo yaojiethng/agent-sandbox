@@ -15,7 +15,7 @@
 #
 # Directory layout under OUTPUT_DIR/ (caller constructs the path):
 #
-#   .export-status            --  consolidated metadata (STATUS, TIMESTAMP, INIT_SHA)
+#   .export-status            --  consolidated metadata (STATUS, TIMESTAMP, INIT_SHA; HEAD added by diff_export)
 #   uncommitted.diff          --  uncommitted changes vs HEAD
 #   all-changes.diff          --  net delta INIT_SHA..HEAD
 #   patches/

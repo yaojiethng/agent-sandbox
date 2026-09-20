@@ -23,8 +23,17 @@ ENTRYPOINT="$REPO_ROOT/src/reasoning/entrypoint.sh"
 _run() {
   local agent_home="$1"; shift
   mkdir -p "$agent_home"
+  # A real container bakes the library directory into the image and mounts its
+  # sandbox. Point at the repository's libs so the preflight and the
+  # interface-contract check see the shipped libraries, and at a fixture sandbox
+  # so the check does not read the ambient session record (which a contract bump
+  # would make disagree with the working copy).
+  SANDBOX_DIR="$FIXTURE_DIR/sandbox"
+  mkdir -p "$SANDBOX_DIR"
   AGENT_HOME="$agent_home" \
   PROVIDER_NAME="test-provider" \
+  SANDBOX_LIB_DIR="$REPO_ROOT/src/libs" \
+  SANDBOX_DIR="$SANDBOX_DIR" \
   bash "$ENTRYPOINT" "$@"
 }
 

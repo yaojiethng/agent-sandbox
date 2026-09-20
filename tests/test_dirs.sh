@@ -77,6 +77,36 @@ test_custom_leaf_overrides() {
   assert_eq "$OUT" "/base/.workspace/diffs|/base/.workspace/in|/base/.workspace/out" "custom leaf names override defaults"
 }
 
+# lib_preflight: the shared loop both entrypoints call. Ordering and severity
+# behaviour are the contract.
+test_lib_preflight_passes_when_all_present() {
+  local d="$FIXTURE_DIR/libs_ok"
+  mkdir -p "$d"
+  touch "$d/aaa.sh" "$d/bbb.sh"
+  local OUT RC=0
+  OUT=$(lib_preflight "$d" "aaa.sh:CRITICAL" "bbb.sh:WARN" 2>&1) || RC=$?
+  assert_eq "$RC" "0" "lib_preflight: all present -> 0"
+  assert_eq "$OUT" "" "lib_preflight: all present -> silent"
+}
+
+test_lib_preflight_critical_exits() {
+  local d="$FIXTURE_DIR/libs_crit"
+  mkdir -p "$d"
+  touch "$d/aaa.sh"
+  local RC=0
+  lib_preflight "$d" "aaa.sh:CRITICAL" "missing.sh:CRITICAL" >/dev/null 2>&1 || RC=$?
+  assert_eq "$RC" "1" "lib_preflight: a missing CRITICAL file returns 1"
+}
+
+test_lib_preflight_warn_continues() {
+  local d="$FIXTURE_DIR/libs_warn"
+  mkdir -p "$d"
+  local OUT RC=0
+  OUT=$(lib_preflight "$d" "missing.sh:WARN" 2>&1) || RC=$?
+  assert_eq "$RC" "0" "lib_preflight: a missing WARN file does not fail the entrypoint"
+  assert_contains "$OUT" "image may be stale" "lib_preflight: the WARN names the remedy"
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -86,6 +116,9 @@ run_test test_host_default_paths
 run_test test_container_override
 run_test test_changes_dir_name_is_leaf
 run_test test_custom_leaf_overrides
+run_test test_lib_preflight_passes_when_all_present
+run_test test_lib_preflight_critical_exits
+run_test test_lib_preflight_warn_continues
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"

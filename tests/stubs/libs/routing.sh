@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
 # tests/stubs/libs/routing.sh
-# Minimal fake for src/libs/routing.sh -- only the subset consumed by the
-# dry-run probes is provided (export_path). Mirrors the real contract: requires
-# PARENT_DIR, SUBDIR and SESSION_ID; prints a non-empty path on success.
-export_path() {
-  local parent="$1" sub="$2" sid="$3"
-  if [[ -z "$parent" || -z "$sub" || -z "$sid" ]]; then
-    return 1
-  fi
-  if [[ "$sub" == "autosave" ]]; then
-    echo "${parent}/autosave/${sid}"
-    return 0
-  fi
-  echo "${parent}/${sub}/stub-${sid}"
-}
+# Test stand-in for src/libs/routing.sh. `export_path` is pure path derivation
+# with no docker dependency, so the stub sources the production file rather
+# than keeping a copy. The copy re-implemented the autosave branch shape that
+# the checkpoint swap and every autosave reader depend on, so it could drift
+# from the layout the code actually uses.
+
+# shellcheck source=/dev/null
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/src/libs/routing.sh"

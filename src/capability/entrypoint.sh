@@ -49,9 +49,17 @@ FLATTEN="${FLATTEN:-false}"
 # Overridable for tests (GIT_HOOKS_DIR seam), mirroring SANDBOX_LIB_DIR.
 : "${GIT_HOOKS_DIR:=/opt/sandbox/git-hooks}"
 
+# dirs.sh owns _source_lib and lib_preflight, so it is the one library that
+# cannot be sourced through them. Verify and source it first.
+if [[ ! -f "$SANDBOX_LIB_DIR/dirs.sh" ]]; then
+  echo "FATAL: $SANDBOX_LIB_DIR/dirs.sh is missing  --  image is stale, rebuild with 'make build'" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090  # runtime-resolved, -f validated above
+source "$SANDBOX_LIB_DIR/dirs.sh"
+
 if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
-  source "$SANDBOX_LIB_DIR/dirs.sh"
   WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
 fi
 
@@ -67,28 +75,23 @@ mkdir -p "$CHANGES_DIR"
 # /opt/sandbox/lib/ is baked into the image at build time. If files are
 # missing, the image is stale and must be rebuilt with `make build`.
 #
-# Files required for startup are CRITICAL  --  container aborts if absent.
-# Files needed later are WARN  --  container continues but certain operations
-# (diff pipeline, routing) will fail at runtime.
-for entry in "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
-             "diff_export.sh:WARN" "routing.sh:WARN" "package_branch.sh:WARN"; do
-  lib="${entry%%:*}"
-  severity="${entry##*:}"
-  if [[ ! -f "$SANDBOX_LIB_DIR/$lib" ]]; then
-    if [[ "$severity" == "CRITICAL" ]]; then
-      echo "FATAL: $SANDBOX_LIB_DIR/$lib is missing  --  image is stale, rebuild with 'make build'" >&2
-      exit 1
-    else
-      echo "WARN: $SANDBOX_LIB_DIR/$lib is missing  --  image may be stale" >&2
-    fi
-  fi
-done
+# Severity is about what the container can still do, and about where a missing
+# file surfaces: a CRITICAL file aborts inside this preflight with the named
+# remedy, a WARN file is reported here and then aborts when the startup path
+# reaches its source (every WARN entry is sourced during startup). The
+# entrypoint's own sources go through _source_lib for the same reason.
+lib_preflight "$SANDBOX_LIB_DIR" \
+  "dirs.sh:CRITICAL" "session_state.sh:CRITICAL" "snapshot.sh:CRITICAL" \
+  "interface_contract.sh:CRITICAL" "diff_export.sh:WARN" \
+  "session_save_policy.sh:WARN" "export_status.sh:WARN" \
+  "cli.sh:WARN" "diff.sh:WARN" "routing.sh:WARN" \
+  "package_branch.sh:WARN"
 
 # -------------------------
 # Snapshot pipeline (container side)
 # -------------------------
-source "$SANDBOX_LIB_DIR/session_state.sh"
-source "$SANDBOX_LIB_DIR/snapshot.sh"
+_source_lib "$SANDBOX_LIB_DIR/session_state.sh"
+_source_lib "$SANDBOX_LIB_DIR/snapshot.sh"
 
 if [[ "$SANDBOX_TYPE" == "mount" ]]; then
   # Mount delivery (bind-mount worktree): the host has already materialized the
@@ -233,8 +236,8 @@ fi
 # -------------------------
 # Diff pipeline
 # -------------------------
-source "$SANDBOX_LIB_DIR/diff_export.sh"
-source "$SANDBOX_LIB_DIR/routing.sh"
+_source_lib "$SANDBOX_LIB_DIR/diff_export.sh"
+_source_lib "$SANDBOX_LIB_DIR/routing.sh"
 
 # _session_export SANDBOX_DIR CHANGES_DIR SESSION_ID
 # Runs the final session export on container exit.

@@ -89,7 +89,7 @@ fi
 warn_check "diff_export: .export-status exists after successful export" \
   test -f "$_diff_test_dir/.export-status"
 warn_check "diff_export: .export-status reports SUCCESS" \
-  bash -c 'test -f "$1" && grep -q "^STATUS=SUCCESS$" "$1"' _ "$_diff_test_dir/.export-status"
+  export_status_is_success "$_diff_test_dir"
 rm -rf "$_diff_test_dir"
 
 section "session_data autosave"

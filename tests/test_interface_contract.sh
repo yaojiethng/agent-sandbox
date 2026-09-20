@@ -7,9 +7,8 @@
 # Covers:
 #   interface_contract_version          --  positive integer constant
 #   image_contract_version              --  baked label read via docker (stubbed)
-#   record_contract_version             --  SESSION_STATE stamp read (no docker)
-#   _check_interface_contract           --  drifted label warns, aligned silent,
-#                                        missing label warns (built before check)
+#   _check_interface_contract           --  refuses drift and a missing label,
+#                                        silent when aligned (authoritative)
 
 set -uo pipefail
 
@@ -61,26 +60,6 @@ test_image_contract_version_empty_for_unlabeled_image() {
 }
 
 # =============================================================================
-# record_contract_version  (SESSION_STATE stamp, host-readable, no docker)
-# =============================================================================
-
-test_record_contract_version_reads_stamp() {
-  local state="$FIXTURE_DIR/SESSION_STATE"
-  mkdir -p "$(dirname "$state")"
-  printf 'init_sha=abc\ninterface_contract_version=3\nsession_ts=2026\n' > "$state"
-  assert_eq "$(record_contract_version "$state")" "3" \
-      "record_contract_version reads the stamped key"
-}
-
-test_record_contract_version_empty_when_key_missing() {
-  local state="$FIXTURE_DIR/SESSION_STATE2"
-  mkdir -p "$(dirname "$state")"
-  printf 'init_sha=abc\n' > "$state"
-  assert_empty "$(record_contract_version "$state")" \
-      "record_contract_version is empty when the key is absent"
-}
-
-# =============================================================================
 # _check_interface_contract  (authoritative)
 # =============================================================================
 
@@ -122,8 +101,6 @@ run_test test_interface_contract_version_is_positive_integer
 run_test test_image_contract_version_reads_baked_label
 run_test test_image_contract_version_per_image_map
 run_test test_image_contract_version_empty_for_unlabeled_image
-run_test test_record_contract_version_reads_stamp
-run_test test_record_contract_version_empty_when_key_missing
 run_test test_check_interface_contract_silent_on_aligned
 run_test test_check_interface_contract_refuses_drift
 run_test test_check_interface_contract_refuses_missing_label
