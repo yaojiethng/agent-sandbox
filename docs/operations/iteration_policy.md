@@ -173,6 +173,10 @@ Findings is the shared agent-managed recording surface for the agent-feedback an
 - Record new acceptance criteria as they are defined. Pushed (unresolved) criteria from prior iterations are already present in the handover from iteration open -- do not re-copy them.
 - Update Deferred items immediately when something is flagged out of scope -- do not accumulate them at iteration end.
 
+**Record write-back gate.** When announcing a record write (a finding row, a decision, a task, a roadmap row), verify it landed in the same turn. Grep the row key or the content you claim to have written. A claimed record that is not verified to exist is a record defect: the write is not done until the grep finds it. This gate is distinct from the roadmap write-back section at Step 7/8-9, which fires at pre-close; this gate fires at the moment of writing.
+
+**Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly (for example the test runner, not just "tests"); if a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. A prompt whose scope statement conflicts with a success criterion is a defect. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently by extending or narrowing scope. The stop-and-ask behavior applies to the subagent and to the main agent authoring the prompt.
+
 ### Step 7 -- Pre-close verification
 
 Step 7 is a mandatory gate before iteration end. Present a pre-close summary and wait for an explicit operator release before advancing to Steps 8-9. The summary has these sections:

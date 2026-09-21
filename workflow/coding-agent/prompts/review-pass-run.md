@@ -30,7 +30,7 @@ Capture to a log file, never through a pipe: a pipe loses the unflushed output o
 
 Every review prompt carries, explicitly:
 
-- **Scope**: the exact diff range and the list of touched files. State that uncommitted working-tree files (e.g. a campaign proposal sitting in the tree) are out of scope and must not be modified.
+- **Scope**: the exact diff range and the list of touched files. State that uncommitted working-tree files (e.g. a campaign proposal sitting in the tree) are out of scope and must not be modified. State the in-scope targets explicitly. If the review directive or campaign prompt contradicts its own success criteria, stop and ask the operator rather than extending or narrowing scope silently.
 - **Read-only constraint**: report inline; no edits, no writes, no commits.
 - **Context block**: the design decisions the diff implements, so the reviewer does not re-litigate settled operator decisions. Link the handover.
 - **Prior-round blockers** (rounds 2+): the list of previous blockers with a claim of where each was fixed, so the reviewer verifies rather than re-discovers.

@@ -102,6 +102,8 @@ Quick rules for writers (a working subset, not the full dictionary):
 
 State encoding rules as instructions, not prohibitions. "Write a dash as a space-separated hyphen" beats "do not use an em-dash": the instruction gives the allowed form directly.
 
+Apply the literal-reader test to every instruction. A literal reader follows the words exactly and infers no intent. Ask: could a literal reader turn this sentence into a task, an action, or an inference that was not intended? If yes, rephrase as a positive, bounded, noun-first imperative. Name the actor and the object. State what the reader does, never what it avoids. An instruction that tells the reader to "avoid or re-check those patterns" leaves the action undefined; an instruction that says "apply the durable fix the entry's `scoped:` row names" names the object and the action.
+
 **Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
 
 ### Character set

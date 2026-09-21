@@ -36,6 +36,10 @@ When writing code, always take into account the following:
 6. One line?                  -> one line
 7. Only then: the minimum that works
 
+Run throwaway verification in `/tmp`, never in the repo tree. The repository is git-tracked; a stray file created during verification surfaces in `git status` and pollutes the diff. A throwaway file is any file you create only to check something and do not keep.
+
+Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss when its `oldText` does not match; a `sed` one-liner run through the `bash` tool with a missing file operand silently writes nothing. After a `sed` change, verify the write landed.
+
 Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
 
 ### Handover rules

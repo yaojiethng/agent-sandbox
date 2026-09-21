@@ -7,6 +7,8 @@ A persistent record of the coding agent"s experience: friction points, poor stac
 
 Entries are point-in-time records. Reconcile an entry against the current tree before acting on it. If the tree has outgrown an entry, mark it probation; if the entry is superseded  --  its lesson already carried by another entry or record  --  it jumps to probation as well. Either way, follow the normal procedure: wait to see whether it resurfaces; drop it if it does not.
 
+Catalogue a recurrence on its existing entry. Before writing a new entry, grep the file for an entry on the same topic. If one exists, record the recurrence on it instead of creating a new one: set `state` to `open`, note the prior fix in `legacy:` (or, if already present, add to the resurfacing evidence), and fold the new failure mode into the entry. A recurrence re-opens and extends its entry. This keeps the count of recurrences rising on one entry so the operator can see the pattern and scope a durable fix. Do not open a sibling entry for the same topic.
+
 This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
@@ -61,7 +63,7 @@ mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) 
 
 ### [A] 2026-09-21  --  Record write-back gate (T1)
 
-state: open
+state: probation
 scoped: M3 T1 -- record write-back gate
 legacy: none
 mitigation: a claimed record must be verified to have landed. When announcing a write-back (findings row, decision, task), grep the row key / content in the same turn. Keep findings rows as candidate records consolidated at review/publish, not one row per observation; run throwaway verification in `/tmp`, never in the repo tree; a feedback follow-up note is an observation, not a task assignment (the roadmap is the sole task list).
@@ -215,7 +217,7 @@ The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`,
 
 ### [A] 2026-09-02  --  Campaign prompt scope contradicted its own success criteria
 
-state: open
+state: probation
 scoped: M3 T1 -- prompt-scope discipline
 legacy: none
 mitigation: none

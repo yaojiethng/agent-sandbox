@@ -69,8 +69,8 @@ Entries are **deleted when resolved**. A resolved durable fix is recorded in the
 - **Writer:** operator.
 - **Purpose:** recurring agent mistakes and code smells.
 - **Source of entries:** chiefly mid-turn steering. When the operator says "did you forget X", the agent reacts, then lists it as a mid-session finding with an explicit note, then moves it into `GOTCHAS.md` at the review/publish step.
-- **Agent integration:** at session open (Step 1), the agent reads open gotchas and avoids/re-checks those patterns during the session. This is a session-open primer. Sweep-and-fix happens at sub-milestone cleanup.
-- **Durable housing:** when gotchas accumulate, fold the recurring patterns into a skill so the loaded surface stays small.
+- **Agent integration:** the agent does not read the raw file as a behavior source. The agent reads the durable fixes that elevated entries route to (`scoped:` roadmap rows). A mistake the agent trips is recorded as a Finding in the handover, so the agent knows the error when it recurs. Sweep-and-fix happens at sub-milestone cleanup.
+- **Durable housing:** when gotchas accumulate, fold the recurring patterns into a skill or a durable fix routed to a roadmap row so the loaded surface stays small. Long length is a signal the underlying problem needs a permanent fix, not better indexing.
 
 ---
 
@@ -155,8 +155,8 @@ active → pre-close → close → [post-close admin, only if broken]
 
 ## Next session integration
 
-- **GOTCHAS pointer** in `AGENTS.md` (agent-facing section): at session open, read open gotchas and avoid/re-check them; sweep at sub-milestone cleanup.
-- **AGENT_FEEDBACK pointer** in `AGENTS.md` (adjacent to the Bash Friction Log): at sub-milestone pre-close review gate, surface open entries to the operator.
+- **GOTCHAS pointer** in `AGENTS.md` (agent-facing section): the raw file is not the agent's behavior source. The agent records a tripped mistake as a Finding in the handover; the durable fix routes to a roadmap row (`scoped:`); sweep at sub-milestone cleanup. Recurrences accumulate on one entry to raise a frequency signal the operator acts on at scoping time.
+- **AGENT_FEEDBACK pointer** in `AGENTS.md` (adjacent to the Bash Friction Log): catalogue a recurrence on its existing entry (grep-first, re-open); surface open entries to the operator at the sub-milestone pre-close review gate.
 - Both files are pointed to from `AGENTS.md`, which loads every session. Integration is automatic on both sides.
 
 ---

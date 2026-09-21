@@ -1,9 +1,9 @@
 # Gotchas
 
-A persistent record of recurring agent mistakes and code smells witnessed by the operator, chiefly via mid-turn steering. Recorded by the operator. Surfaced to the agent at session open as a primer. Fixed by the agent.
+A persistent record of recurring agent mistakes and code smells witnessed by the operator, chiefly via mid-turn steering. Recorded by the operator. The agent records a tripped mistake as a Finding in the handover; a durable fix routes to a roadmap row. Fixed by the agent.
 
 **Writer:** operator.
-**Reader:** agent (session-open primer) and operator (pre-close review gate).
+**Reader:** operator (pre-close review gate) and the agent at scoping time (frequency signal).
 
 Entries are point-in-time records. Reconcile an entry against the current tree before acting on it. If the tree has outgrown an entry, mark it probation; if the entry is superseded  --  its lesson already carried by another entry or record  --  it jumps to probation as well. Either way, follow the normal procedure: wait to see whether it resurfaces; drop it if it does not.
 
@@ -41,7 +41,7 @@ Attribution is operator-owned. The agent proposes a class and the operator confi
 
 ## Open gotchas
 
-This section holds the active gotcha backlog. The agent reads it at session open (Step 1) and avoids or re-checks the patterns during the session. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill so the loaded surface stays small.
+This section holds the active gotcha backlog. The raw file is not the agent's behavior source. The agent records a tripped mistake as a Finding in the handover; a recurrence re-opens its entry and extends the frequency record; a durable fix routes to a roadmap row (`scoped:`) the agent follows. At sub-milestone cleanup, a sweep applies each gotcha's durable fix across recent code. When gotchas accumulate, fold the recurring patterns into a skill so the loaded surface stays small.
 
 ### [G] 2026-08-09 - Set handover Status Closed before the final commit (close = the commit)
 
