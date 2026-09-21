@@ -66,3 +66,5 @@ Implement the **`make resume` command** first, per operator steering (`2026-08-2
 - Resume `--session-id` + `--list` + routing + stop-print implemented this iteration; review-driven refactor (shared `session_env` prelude, `set -e`, no-build preflight) applied (suite 465/465).
 - After resume is confirmed clean: strip `--resume`/`_auto_resume_or_new` from `start` (ID 04).
 - Later: `PROVIDER=` filter + `--interactive` picker (shared parser, ID 03); `make start` new-only config wizard (D11).
+
+[CORRECTION -- 2026-09-21]: the installed-CLI-staleness entry raised this session was closed by the M3 cleanup pass; it consolidated into the M3 T4 install-and-staleness entry (self-contained binary + semantic versioning). Entry reconciled and removed from `AGENT_FEEDBACK.md`.

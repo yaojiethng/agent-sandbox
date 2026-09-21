@@ -36,3 +36,5 @@ None.
 ## What's Next
 
 Next queued iteration: architecture-doc + `security.md` staleness sweep with an audit-effectiveness comparison report.
+
+[CORRECTION -- 2026-09-21]: the last unit-extraction seam deleted this session (`template_version_probe_real`) resolved the exec-style dual-use-guards entry, which the M3 cleanup pass consolidated into M3 T4 library-migrations. Entry reconciled in `AGENT_FEEDBACK.md`.

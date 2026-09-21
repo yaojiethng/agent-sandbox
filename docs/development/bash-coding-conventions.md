@@ -337,6 +337,14 @@ COUNT=${COUNT:-0}   # only needed for the error paths (missing file)
 
 Do NOT write `|| echo 0`: since grep already printed `0`, the substitution captures both lines and the variable becomes `0\n0` (two zeros). The plain `|| true` absorbs only the exit code; `${COUNT:-0}` covers the cases where grep produced no output at all.
 
+### 4.4 Sourced-lib reads must not redirect from unguaranteed paths
+
+A `while read` redirection inside a sourced-lib function -- `while IFS='=' read -r ...; done < "$file"` -- aborts the *call site* under `set -e` when `$file` is absent, even if the call is wrapped in `|| ...` (the abort happens inside the command substitution, not at the call). A sourced-lib function must not read a path the caller cannot guarantee. Guard before the read (`[[ -f "$file" ]] || return 0`) either in the caller or in the lib function itself.
+
+### 4.5 Absolutize `git rev-parse --git-path` output before filesystem use
+
+`git -C "$REPO" rev-parse --git-path info/exclude` prints `.git/info/exclude` -- relative to the repo root, not the caller's cwd. Using the output directly in a `mkdir -p`/append sequence writes into the caller's cwd. Absolutize before filesystem use: `[[ $p == /* ]] || p="$REPO/$p"`.
+
 ---
 
 ## 5. Cross-References

@@ -173,3 +173,5 @@ Ten rounds across two tranches. The recurring class was propagation: a fix that 
 ## What's Next
 
 The lint-gate exit-code contract was codified in an ADR folded into the gate-box commit after close (see `docs/adr/lint_gate_exit_codes.md`). M2.6 is complete. The remaining deferred item is splitting `tests/test_draft_workflow.sh` (M3 backpressure group).
+
+[CORRECTION -- 2026-09-21]: the sourced-lib while-read set-e entry raised this session was closed and its rule added to `docs/development/bash-coding-conventions.md` section 4.4; the subagent-review-expensive entry it cross-referenced persists (routes M3 T2 perf). Entries reconciled in `AGENT_FEEDBACK.md`.

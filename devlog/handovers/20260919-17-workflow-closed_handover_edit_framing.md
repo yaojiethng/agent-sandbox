@@ -49,3 +49,5 @@ correction tag.
 | AC4 | study_policy and roadmap_policy carry the same principle and tag convention; the em-dash tag is normalized to `--` |
 | AC5 | No same-type absolute read-only framing remains in the policies or the agent-facing prompts/skills/AGENTS.md |
 | AC6 | Changes follow documentation-policy prose rules (one paragraph per physical line, plain ASCII) |
+
+[CORRECTION -- 2026-09-21]: the closed-handover-read-only framing entry raised this session was closed by the M3 cleanup pass (reframed; every closed-doc edit carries a `[CORRECTION]` tag). Entry reconciled and removed from `AGENT_FEEDBACK.md`.

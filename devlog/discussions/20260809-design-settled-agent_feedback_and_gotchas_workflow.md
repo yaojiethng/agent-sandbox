@@ -96,6 +96,18 @@ discover → record → review/publish → durable-fix scope → probation → c
 
 ---
 
+## Consolidation and deletion (cleanup pass)
+
+When several entries share one roadmap solution (scoped to the same row), consolidate them into a single entry rather than keeping one entry per instance. Run consolidation at the cleanup pass together with deletion of confirmed-closed entries.
+
+**Consolidation rule:** merge entries that share a `scoped:` destination. The surviving entry lives in `AGENT_FEEDBACK.md` only ` -- ` when a family spans `AGENT_FEEDBACK.md` and `GOTCHAS.md`, the single merged entry sits in the feedback file and the GOTCHAS member is removed. Date the surviving entry to today. Keep the distinct failure modes as sub-bullets so the family history survives inside the entry. Drop the consolidated member entries.
+
+**Deletion rule:** delete a probation or closed entry when monitoring confirms the fix durable and it has not resurfaced. Delete closed entries at the cleanup pass. Do not delete an entry without recording its history.
+
+**History preservation (mandatory):** whenever an entry is deleted or merged away, add a `[CORRECTION -- YYYY-MM-DD]` note to the handover that raised the original entry, recording the historical reconciliation record and that the entry is now closed or superseded. This preserves the record despite the entry leaving the active file. The correction follows the procedural rules for editing closed docs (`documentation_policy.md`); the handover carries the correction even though it is closed.
+
+---
+
 ## The review/publish step
 
 At session close, the review/publish step **replaces** the mid-session findings triage gate (iteration_policy -- Steps 8-9). It performs the existing triage responsibilities plus routing to the two files.
