@@ -305,6 +305,46 @@ test_clean_tree_guard_is_three_valued() {
   rm -rf "$fix"
 }
 
+# -- session_export_needed (exit-time durable-record decision) --------------
+
+test_session_export_runs_with_work_despite_committed_or_uncommitted() {
+  local fix
+  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  make_committed_repo "$fix"
+  write_session_state "$fix"
+
+  # one committed change past the branch point
+  commit_change "$fix" "second commit"
+  local rc=0
+  session_export_needed "$fix" || rc=$?
+  assert_eq "$rc" "0" "session export runs after a committed change"
+
+  # one uncommitted change
+  echo dirty >> "$fix/file.txt"
+  rc=0
+  session_export_needed "$fix" || rc=$?
+  assert_eq "$rc" "0" "session export runs with an uncommitted change"
+
+  # a current autosave dir must not suppress it (the reported defect)
+  mkdir -p "$fix/changes/autosave/s-x"
+  rc=0
+  session_export_needed "$fix" || rc=$?
+  assert_eq "$rc" "0" "session export runs when an autosave already captured the state"
+  rm -rf "$fix"
+}
+
+test_session_export_skips_clean_tree_at_branch_point() {
+  local fix
+  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  make_committed_repo "$fix"
+  write_session_state "$fix"
+
+  local rc=99
+  session_export_needed "$fix" || rc=$?
+  assert_eq "$rc" "1" "session export skips a clean tree at the branch point"
+  rm -rf "$fix"
+}
+
 # -- run ---------------------------------------------------------------------
 
 run_test test_dirty_tree_always_saves
@@ -322,5 +362,7 @@ run_test test_export_status_stamps_head
 run_test test_save_decision_save_arm_is_silent_and_returns_0
 run_test test_clean_tree_guard_is_three_valued
 run_test test_export_status_no_head_when_empty
+run_test test_session_export_runs_with_work_despite_committed_or_uncommitted
+run_test test_session_export_skips_clean_tree_at_branch_point
 
 test_done

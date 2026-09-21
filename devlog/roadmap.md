@@ -117,6 +117,7 @@ The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.
 
 #### T6 - Performance Optimizations / UI Tweaks
 
+- [x] **Session save suppressed by the autosave baseline** -- session export reads its no-op baseline from the autosave dir, so an autosave that is current with the final state freshly suppresses the durable exit record (`_session_export` in `src/capability/entrypoint.sh`). Surface: latest autosave has no corresponding session save. Fix the baseline to the durable branch point, close the dry-run gap that cannot see it, and pin the coupling with a test. Iteration `20260921-06`.
 - [ ] **Pre-snapshot validation gate** -- configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts
 - [ ] **Structured task logs** -- store structured logs per agent and task run (overlaps the T5 generated-artifact storage task)
 

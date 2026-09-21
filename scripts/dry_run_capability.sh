@@ -100,6 +100,61 @@ warn_check "export_path: resolves with available env vars" \
 warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
   wait_git_lockfile "$SANDBOX_DIR"
 
+# Session-export decision: the exit-time durable record must not be suppressed
+# by an autosave that already captured the state. Build an isolated fixture so
+# the decision runs against real git state; the live CHANGES_DIR is never
+# touched. The fixture seeds a branch point, makes a committed and an
+# uncommitted change, and leaves a current autosave dir in place, then asserts
+# the session export still runs.
+section "session_data session-export decision"
+_fixture_dir=$(mktemp -d 2>/dev/null) || {
+  _fail "session-export: could not create fixture directory"
+}
+_fx="$_fixture_dir/sandbox"
+mkdir -p "$_fx"
+if git -C "$_fx" init -q 2>/dev/null; then
+  git -C "$_fx" config user.email dryrun@agent-sandbox 2>/dev/null
+  git -C "$_fx" config user.name dryrun 2>/dev/null
+  echo base > "$_fx/base.txt"
+  git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm base 2>/dev/null
+  _init=$(git -C "$_fx" rev-parse HEAD 2>/dev/null)
+  session_state_write_set "$_fx" "$_init"
+  # real work: one committed change, one uncommitted change
+  echo c2 >> "$_fx/base.txt"
+  git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm c2 2>/dev/null
+  echo dirty >> "$_fx/base.txt"
+  # a current autosave dir that already carries the state
+  mkdir -p "$_fixture_dir/changes/autosave/s-x"
+  echo base > "$_fixture_dir/changes/autosave/s-x/change.diff"
+  _fx_rc=0
+  session_export_needed "$_fx" || _fx_rc=$?
+  if [[ "$_fx_rc" -eq 0 ]]; then
+    _pass "session-export: runs when work exists relative to the branch point (committed + uncommitted, autosave present)"
+  else
+    _fail "session-export: suppressed despite real work (rc=$_fx_rc)"
+  fi
+  # inverse: a clean tree at the branch point must skip
+  _fx2="$_fixture_dir/clean"
+  mkdir -p "$_fx2"
+  git -C "$_fx2" init -q 2>/dev/null
+  git -C "$_fx2" config user.email dryrun@agent-sandbox 2>/dev/null
+  git -C "$_fx2" config user.name dryrun 2>/dev/null
+  echo base > "$_fx2/base.txt"
+  git -C "$_fx2" add -A 2>/dev/null && git -C "$_fx2" commit -qm base 2>/dev/null
+  _init2=$(git -C "$_fx2" rev-parse HEAD 2>/dev/null)
+  session_state_write_set "$_fx2" "$_init2"
+  _fx_rc=0
+  session_export_needed "$_fx2" || _fx_rc=$?
+  if [[ "$_fx_rc" -eq 1 ]]; then
+    _pass "session-export: skips a clean tree at the branch point"
+  else
+    _fail "session-export: should skip a clean tree at the branch point (rc=$_fx_rc)"
+  fi
+else
+  _fail "session-export: could not init fixture repository"
+fi
+rm -rf "$_fixture_dir"
+
 # ---------------------------------------------------------------------------
 # container_network - cross-component (capability half of the marker round-trip)
 # ---------------------------------------------------------------------------

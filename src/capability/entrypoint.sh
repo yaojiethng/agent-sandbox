@@ -262,14 +262,12 @@ _session_export() {
     return 1
   fi
 
-  # Skip when nothing changed since the last save (session_save_needed). The
-  # baseline is the freshest continuous checkpoint -- the autosave dir's own
-  # .export-status HEAD (init_sha when no autosave has fired yet). A clean
-  # tree at the last-saved HEAD means a fresh session bundle would be empty
-  # and redundant, so we do not create one at all.
-  local _prior
-  _prior=$(export_path "$_changes_dir" "autosave" "$_session_id")
-  save_decision "$_sandbox_dir" "$_prior" "session-export" || return 0
+  # Skip only when the session did no work relative to the durable branch
+  # point (SESSION_STATE init_sha), never because an autosave captured the
+  # state. The autosave dir is an ephemeral overwritten fallback slot, so an
+  # autosave that is current with the final state must not suppress the durable
+  # exit record.
+  session_export_needed "$_sandbox_dir" || return 0
 
   local _exit_dir
   _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")

@@ -109,7 +109,11 @@ No sweep commit is performed. Uncommitted changes are preserved in the working t
 
 ### No-op guard
 
-Before a save runs, the entrypoint asks `session_save_needed`: save when the working tree is dirty (any uncommitted/untracked change) or when HEAD differs from the baseline; skip only when the tree is completely clean and HEAD equals the baseline; save anyway when git cannot read the repository, which is the undeterminable case. The baseline is the previous save's HEAD from `.export-status`, falling back to `init_sha` for the first save. This folds two rules into one comparison: level 1 skips a session that never changed (clean tree at `init_sha`), and level 2 skips re-saving an unchanged state after the first save. A skipped autosave cycle writes nothing; a skipped session export creates no session directory at all.
+Each save path asks a decision function from `session_save_policy.sh` before it writes.
+
+An autosave cycle calls `save_decision` with its own checkpoint directory. It saves when the working tree is dirty (any uncommitted or untracked change) or when HEAD differs from the baseline; it skips only when the tree is completely clean and HEAD equals the baseline; it saves anyway when git cannot read the repository (the undeterminable case). The autosave baseline is the previous checkpoint's HEAD from its `.export-status`, falling back to `init_sha` for the first save. A skipped autosave cycle writes nothing and leaves the previous checkpoint untouched.
+
+The exit-time session export calls `session_export_needed`, whose baseline is the durable branch point (`init_sha`) only. It never uses the autosave checkpoint as its baseline: an autosave is an ephemeral, overwritten fallback slot, not a durable record, so a current autosave must not suppress the durable exit bundle. A session export is skipped only when the tree is clean at the branch point, meaning the session did no work.
 
 All artefacts land in the session export directory constructed by `export_path`:
 

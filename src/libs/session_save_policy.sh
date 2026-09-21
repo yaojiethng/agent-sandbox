@@ -9,6 +9,7 @@
 # Provides:
 #   session_save_needed SANDBOX_DIR BASELINE  --  decide whether to save
 #   save_decision SANDBOX_DIR EXPORT_DIR LABEL  --  resolve the baseline and decide
+#   session_export_needed SANDBOX_DIR  --  the exit-time session-export decision
 #   autosave_tick PATH_FN CHANGES_DIR SANDBOX_DIR SESSION_ID EXPORT_CMD...  --  one tick
 #   autosave_cycle CHECKPOINT_DIR CHANNEL_DIR SANDBOX_DIR EXPORT_CMD...  --  one cycle
 
@@ -62,6 +63,31 @@ save_decision() {
     1) echo "$_label: nothing to save  --  clean tree at last-saved HEAD" >&2; return 1 ;;
     2) echo "$_label: cannot read the sandbox repository; saving anyway" >&2; return 0 ;;
     *) echo "$_label: unknown save status $_rc; saving anyway" >&2; return 0 ;;
+  esac
+}
+
+# session_export_needed SANDBOX_DIR
+#   The exit-time session-export decision. The baseline is the durable branch
+#   point (SESSION_STATE init_sha), never an autosave checkpoint: a session
+#   that did any work must produce its durable exit bundle even when an
+#   autosave already captured the state. The autosave dir is an ephemeral,
+#   overwritten fallback slot, not a durable record, so it must not suppress
+#   the session export.
+#   Returns:
+#     0  run       -- the tree is dirty or HEAD differs from the branch point.
+#     1  skip      -- the tree is clean at the branch point (no work at all).
+#     2  undeterminable -- git cannot read the repository; the caller saves or
+#                    fails loudly.
+session_export_needed() {
+  local _sandbox_dir="${1:?session_export_needed requires a sandbox dir}" _rc=0
+  local _baseline
+  _baseline=$(session_state_read "$_sandbox_dir" "init_sha" 2>/dev/null || true)
+  session_save_needed "$_sandbox_dir" "$_baseline" || _rc=$?
+  case "$_rc" in
+    0) return 0 ;;
+    1) echo "session-export: nothing to save  --  clean tree at the branch point" >&2; return 1 ;;
+    2) echo "session-export: cannot read the sandbox repository; saving anyway" >&2; return 0 ;;
+    *) echo "session-export: unknown save status $_rc; saving anyway" >&2; return 0 ;;
   esac
 }
 
