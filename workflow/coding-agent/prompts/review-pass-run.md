@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Spawn fresh subagent reviewers against the iteration's changes, work their findings through WIP commits, and converge on an approved state before closing the iteration. Generalized from the first full pass (iteration `20260912-05`: thermo-nuclear code review + test-quality campaign; 8 review rounds to APPROVE, campaign proposal accepted and folded).
+Spawn fresh subagent reviewers against the iteration's changes, work their findings through wip commits, and converge on an approved state before closing the iteration. Generalized from the first full pass (iteration `20260912-05`: thermo-nuclear code review + test-quality campaign; 8 review rounds to APPROVE, campaign proposal accepted and folded).
 
 The main agent orchestrates; subagents review. Subagents are fresh contexts (`pi -p`) -- they see only what the prompt states and what the committed diff contains. They never commit; the main agent commits.
 
 ## Preconditions
 
-1. **Working tree committed as WIP.** Subagents review an exact diff range (`git diff <base>..<head>`), not a moving tree. Commit the session's work first with a free-form WIP message; the delivery commit at close replaces it (git_policy: squash).
+1. **Working tree committed as wip.** Subagents review an exact diff range (`git diff <base>..<head>`), not a moving tree. Commit the session's work first with a free-form wip message; the delivery commit at close replaces it (git_policy: squash).
 2. **Review concerns chosen.** Typically two: a structural code-quality review (e.g. the thermo-nuclear skill) and an audit campaign (e.g. the test-quality campaign). The operator may substitute or add concerns; each concern is one subagent.
 3. **Operator release of scope** per iteration_policy (this template runs mid-iteration, after implementation, before close).
 
@@ -50,7 +50,7 @@ Two finding classes proved high-yield and are not reliably produced by reviewer 
 1. Run the review round (fresh subagent each round -- never reuse a context; the reviewer must see the code, not the previous review's reasoning).
 2. Triage the verdict:
    - **APPROVE**: stop the loop. Record non-blocking observations in the handover findings for the operator to triage.
-   - **BLOCK**: for each blocker, diagnose, fix, and commit as a WIP commit (one commit per fix round). Then go to 1 with the updated blocker history.
+   - **BLOCK**: for each blocker, diagnose, fix, and commit as a wip commit (one commit per fix round). Then go to 1 with the updated blocker history.
 3. **Round cap**: if not converged after ~6 rounds, stop and report to the operator with the open blockers -- either the change has a structural problem the fixes keep masking, or the review scope needs narrowing. Do not grind silently.
 
 Calibration from 20260912-05: blockers converged quickly (rounds 1-3 were mechanism bugs; rounds 4-7 were almost entirely doc-contract drift and vocabulary/count reconciliation). Late-round blockers are still worth fixing -- they are one-line, zero-risk, and the consistency bar is the point of the review -- but the main agent should self-check the cheap classes (docs pinning changed strings, counts in the handover, header/usage text lagging behavior) BEFORE spawning each round; self-checking removes most of the late-round churn.
@@ -69,7 +69,7 @@ Per iteration_policy Step 7 and git_policy:
 
 1. Apply the roadmap write-back (including rows for accepted proposals).
 2. Mark the handover Closed with AC statuses, findings (including the review round history and outcome), and deferred items.
-3. `git add -A && git commit` -- the single typed delivery commit. WIP commits squash into it; the campaign proposal (if accepted) is part of it.
+3. `git add -A && git commit` -- the single typed delivery commit. wip commits squash into it; the campaign proposal (if accepted) is part of it.
 4. Report the commit hash; surface any operator-owned follow-ups (e.g. feedback entries the campaign closed, version pins pending image rebuild).
 
 ## Invariants

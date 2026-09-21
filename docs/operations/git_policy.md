@@ -18,7 +18,7 @@ Body and footer are optional. Use a body when the "why" is not obvious from the 
 
 The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body -- that is the diff's job.
 
-Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- WIP checkpoints, corrections, test rollbacks, amends -- are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
+Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
 
 ---
 
@@ -159,7 +159,7 @@ An iteration that ends with uncommitted work is a risk -- the handover records i
 
 - At iteration end, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
 - `wip` is not a commit type -- it is a prefix that signals the commit is not reviewable. The next iteration amends or follows up.
-- Intermediate commits (WIP, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end.
+- Intermediate commits (wip, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end.
 - Do not leave uncommitted changes across iteration boundaries -- this includes stashes. If work is incomplete at iteration end, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
@@ -167,12 +167,26 @@ This is the git-level equivalent of the `autosave.diff` pattern in the execution
 
 ---
 
+## WIP Commits
+
+`wip:` is an accepted commit prefix for intermediate checkpoints. A `wip:` commit is a checkpoint, not a deliverable. It is never reviewable and never reaches `main` as-is. Squash every `wip:` commit into the typed delivery commit at iteration end.
+
+Use `wip:` when:
+
+- The current task is a far-reaching refactor or audit-type change and you need checkpoints.
+- The operator directs a wip commit.
+- You propose a wip commit and the operator accepts.
+
+The delivery commit at iteration end always carries a type prefix from the Active Types table, however many wip commits preceded it. wip commits are implementation detail; the delivery commit replaces them.
+
+---
+
 ## Amending
 
 Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:
 
-- **Squashing WIP commits** -- WIP checkpoints accumulated during an iteration are squashed into the delivery commit at iteration end.
-- **Correcting a prior commit** -- when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made this iteration. The amendment bundles the fix with the commit where the work was done.
+- **Squashing wip commits** -- wip checkpoints accumulated during an iteration are squashed into the delivery commit at iteration end.
+- **Correcting a prior commit** -- when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made *in this iteration*. The amendment bundles the fix with the commit where the work was done. A correction that targets a non-HEAD commit in the same iteration folds into it via interactive rebase.
 - **Early iteration end** -- when the agent committed the delivery commit but the operator identifies a gap before the next iteration starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
 
 **Boundary:** Amend only within the current iteration's commit chain. Do not amend commits from prior iterations -- those are part of the permanent reviewed record. If a prior iteration's commit needs fixing, file a new issue or create a new iteration.

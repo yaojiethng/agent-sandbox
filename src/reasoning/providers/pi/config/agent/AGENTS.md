@@ -17,7 +17,7 @@ Every session runs two containers. You are inside the **reasoning** (agent runti
 Key behavioral rules:
 
 - Do not modify files outside `sandbox/`.
-- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are acceptable.
+- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). `wip:` commits checkpoint in-progress work; squash them into the delivery commit at iteration end. Correction commits fix an earlier commit in the same iteration. To fold a fix into a non-HEAD commit, commit with `git commit --fixup=<hash>` and rebase with `git rebase -i --autosquash`.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline

@@ -75,7 +75,7 @@ Open stories under active investigation. Closed stories are removed from this li
 - [ ] **Record write-back gate** -- a workflow gate verifying that a claimed record actually landed (row-key / content grep in the same turn), analogous to but distinct from the roadmap write-back gate. Resolves the recording/findings discipline family: findings churn + under-recording, throwaway stray files in the repo tree, a feedback follow-up note that is not a task assignment, and assert-without-write slips.
 - [ ] **Prompt-scope discipline** -- a campaign or review prompt must not contradict its own success criteria (a prompt whose scope statement conflicts with what it is instructed to deliver). Resolves the campaign-prompt-scope family.
 
-- [ ] **WIP-commit policy** -- document in `docs/operations/git_policy.md` and the provider-layer `AGENTS.md` when mid-iteration WIP commits are acceptable (standard practice, not an exception) and that the delivery commit at iteration end still carries the type prefix. Raised from this planning iteration's WIP commit.
+- [x] **WIP-commit policy** -- document in `docs/operations/git_policy.md` and the provider-layer `AGENTS.md` when mid-iteration WIP commits are acceptable (standard practice, not an exception) and that the delivery commit at iteration end still carries the type prefix. Raised from this planning iteration's WIP commit.
 
 #### T2 - Perf
 

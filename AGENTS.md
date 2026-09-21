@@ -24,7 +24,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are free-form -- only the delivery commit at iteration end is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
