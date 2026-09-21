@@ -91,12 +91,9 @@ Update the checklist:
 
 Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md) for canonical rules. The former separate friction-log file was subsumed here (session `20260809-04`).
 
-## Feedback and Gotchas Files
+## Feedback and Gotchas Record
 
-Two persistent records live in `devlog/`:
-
-- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- agent-experience feedback, recorded by the agent, reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
-- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- recurring agent mistakes and code smells, recorded by the operator. A mistake the agent trips is recorded as a Finding in the handover. A recurrence re-opens its entry and extends the frequency record. When frequency shows a pattern, the operator scopes a durable fix. The durable fix routes to a roadmap row (`scoped:`) that the agent follows; the raw file is not the agent's behavior source. At sub-milestone cleanup, a sweep applies each gotcha's durable fix across recent code.
+- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- the single living record of the coding agent's experience and recurring mistakes. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). Reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
 
 These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 

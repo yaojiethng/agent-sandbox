@@ -355,5 +355,5 @@ A `while read` redirection inside a sourced-lib function -- `while IFS='=' read 
 | `testing-conventions.md` | Test patterns and anti-patterns |
 | `testing_policy.md` | Testing policy and rules |
 | `workflow/coding-agent/audits/bash-audit.skill.md` | Automated audit skill |
-| `devlog/GOTCHAS.md` [H] | Original `exit` vs `return` finding |
+| `devlog/AGENT_FEEDBACK.md` Gotchas section `[O]` | Original `exit` vs `return` finding |
 | `devlog/AGENT_FEEDBACK.md` Bash section | Historical bash friction records |

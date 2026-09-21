@@ -24,8 +24,7 @@ needs.
   open items. Check done items for forward-looking text left behind.
 - Recent git history (`git log --oneline -20`): what landed, and the time
   gap since the last iteration.
-- Open entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) and
-  [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- states `open` and `probation`.
+- Open entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
 - Stale-state sweep: `git status`, `git stash list`, `git branch` -- look for
   uncommitted changes, stashes, leftover branches.
 - Settled design docs in [`devlog/discussions/`](devlog/discussions/) with

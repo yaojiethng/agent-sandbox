@@ -217,8 +217,7 @@ A sub-milestone follows the sequence `active -> pre-close -> close`.
 
 **Pre-close review gate.** At sub-milestone cleanup, the agent surfaces to the operator:
 
-- Open entries in `devlog/AGENT_FEEDBACK.md`.
-- Open entries in `devlog/GOTCHAS.md` and any pending sweeps.
+- Open entries in `devlog/AGENT_FEEDBACK.md` (including operator-raised `[O]` entries) and any pending sweeps.
 - Entries under `probation`, for a `dismiss` / `maintain` / `escalate` decision.
 
 For an entry under `probation`, the operator decides:
@@ -248,7 +247,7 @@ After Gate 3 is released, these steps are mechanical -- the operator has already
 
 **Carry-forward escalation:** per [`roadmap_policy.md`](roadmap_policy.md#carry-forward-escalation) -- if a deferred item cannot be picked up in the immediately following iteration, escalate it to a named task entry under the current sub-milestone.
 
-**Findings review/publish step -- do this after the carry-forward resolution gate.** This step replaces the former findings triage gate. It performs the triage responsibilities and routes each entry to its destination. For each entry in Findings, route it: to the Decisions table, to Deferred items, to What's Next (via Carried forward), to `roadmap.md` (via a named task entry), or to the feedback records [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) and [`devlog/GOTCHAS.md`](../../devlog/GOTCHAS.md). Class A (agent experience, friction, poor stack design, poor operator prompting) goes to `AGENT_FEEDBACK.md`. Class B (recurring agent mistakes and code smells) goes to `GOTCHAS.md`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not self-classify its own boo-boo as not-its-fault. An entry cannot remain in Findings unless it has been explicitly marked as triaged with its destination noted. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
+**Findings review/publish step -- do this after the carry-forward resolution gate.** This step replaces the former findings triage gate. It performs the triage responsibilities and routes each entry to its destination. For each entry in Findings, route it: to the Decisions table, to Deferred items, to What's Next (via Carried forward), to `roadmap.md` (via a named task entry), or to the feedback record [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry: the agent (`[A]`) or the operator (`[O]`). **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not self-classify its own boo-boo as not-its-fault. An entry cannot remain in Findings unless it has been explicitly marked as triaged with its destination noted. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
 
 **Spec amendment:** if any implementation gap discovered this iteration affects the spec -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the spec before closing. Do not leave spec gaps for the next iteration to re-derive.
 

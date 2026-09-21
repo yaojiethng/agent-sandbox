@@ -1,5 +1,7 @@
 # Finalized Workflow -- Agent Feedback and Gotchas
 
+> **SUPERSEDED 2026-09-21:** the two-file design specified here was superseded by the unified-record decision. Iteration `20260921-04` merged `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` into one record file; `GOTCHAS.md` is deleted and its entries merged under an operator-raised `[O]` section. The live authority is `docs/adr/harness_iterative_improvement_loop.md` and `AGENTS.md`. This document is retained as the historical record of the two-file design and its reader model.
+
 **Status:** Settled (design complete; implementation pending next session)
 **Date:** 2026-08-09
 > This document is the finalized workflow to be implemented. It is the deliverable of the workflow exploration session `20260809-03`. It is the spec for the next implementation session. It is not the current system state.

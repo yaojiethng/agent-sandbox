@@ -1,6 +1,6 @@
 # Harness Iterative Improvement Loop
 
-**Current:** 2026-09-21
+**Current:** 2026-09-25
 
 ## Requirements
 
@@ -10,8 +10,21 @@
 | R2 | Recurrence accumulates on one entry | a repeat opens the same entry, not a sibling; the frequency record rises |
 | R3 | A durable fix routes to a roadmap or skill home | the agent follows the elevated rule, not the raw tracking file |
 | R4 | The operator sees the pattern and scopes elevation | the frequency signal surfaces at scoping time, not in a per-session read |
+| R5 | One record hosts all entries | class is an entry tag, not a file boundary |
+
+## 2026-09-25 -- Unified record
+
+**Decision:** collapse the two records (`AGENT_FEEDBACK.md` and `GOTCHAS.md`) into a single record file. `GOTCHAS.md` is deleted; its entries merge into `AGENT_FEEDBACK.md` under an operator-raised section. The entry tag carries the class: `[A]` for an entry raised by the agent, `[O]` for an entry raised by the operator. The former `[G]`/`[H]` tags are dropped. The single file hosts all feedback and gotchas entries; descriptive section labels keep the M3 consolidated groups.
+
+**Rationale:** the two files already shared the entry format, lifecycle, writer, and pre-close review gate; the only real distinction was owner (agent vs operator), which is expressible as a per-entry tag. One file removes the redundant routing and the two-pointer maintenance surface. Satisfies requirements R1-R4 and adds R5.
+
+**Rejected alternatives:** kept the two-file boundary with the tag as the sole distinction (the prior model) -- rejected because the file boundary duplicated what the tag already carries, doubling the surface to maintain and route.
+
+**Edge cases / drivers:** the descriptive section labels (for example `## Bash`, `## Consolidated (M3 cleanup 2026-09-21)`) carry grouping that the tag does not; keep them. The operator-raised gotchas entries previously in `GOTCHAS.md` (tagged `[G]`/`[H]`, including the undocumented `[H]`) are canonicalized to `[O]`.
 
 ## 2026-09-21 -- Cataloguing and frequency reader model
+
+**Reason superseded by 2026-09-25:** the cataloguing/frequency reader model stands; this entry's file boundary (two records) is superseded by the unified-record decision, which keeps the same reader model under one file.
 
 **Decision:** this session changed the processing procedure of the improvement loop. The changes, each contrasted against the previous design:
 

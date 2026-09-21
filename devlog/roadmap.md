@@ -76,7 +76,7 @@ Open stories under active investigation. Closed stories are removed from this li
 - [x] **Prompt-scope discipline** -- a campaign or review prompt must not contradict its own success criteria (a prompt whose scope statement conflicts with what is instructed to deliver); on detecting a contradiction, stop and ask the operator. Resolves the campaign-prompt-scope family.
 
 - [x] **WIP-commit policy** -- document in `docs/operations/git_policy.md` and the provider-layer `AGENTS.md` when mid-iteration WIP commits are acceptable (standard practice, not an exception) and that the delivery commit at iteration end still carries the type prefix. Raised from this planning iteration's WIP commit.
-- [ ] **Unify `AGENT_FEEDBACK.md` and `GOTCHAS.md` into one record** -- the two files share format, handling, and the same writer (the agent); the agent-autonomous vs operator-owned distinction is expressible as an entry-level source tag rather than a file boundary. Settle the merge and collapse the pair, then rewrite the `harness_iterative_improvement_loop` ADR with a log entry. Raised from iteration `20260921-03` (operator, current two-file design recorded in the ADR; merge lands next iteration).
+- [x] **Unify `AGENT_FEEDBACK.md` and `GOTCHAS.md` into one record** -- the two files share format, handling, and the same writer (the agent); the agent-autonomous vs operator-owned distinction is expressible as an entry-level source tag rather than a file boundary. Settle the merge and collapse the pair, then rewrite the `harness_iterative_improvement_loop` ADR with a log entry. Raised from iteration `20260921-03` (operator, current two-file design recorded in the ADR; merge lands next iteration).
 
 #### T2 - Perf
 
