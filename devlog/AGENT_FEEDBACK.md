@@ -92,7 +92,7 @@ mitigation: one failure family across the `edit` tool, resolved from the T2 meas
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 
 state: probation
-scoped: M3 T3 -- doc-format lint rules
+scoped: M3.1 -- doc-format lint rules
 legacy: none
 mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure).
 
@@ -129,7 +129,7 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
 state: open
-scoped: M3 T3 -- ShellCheck gate (directive-parse warning)
+scoped: M3.1 -- ShellCheck gate (directive-parse warning)
 legacy: none
 mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent").
 
@@ -157,14 +157,14 @@ mitigation: the final commit must include the Closed handover. Set Status to `Cl
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 
 state: open
-scoped: M3 T3 -- sourced-lib / library lint rules
+scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
 mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1.
 
 ### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout
 
 state: open
-scoped: M3 T3 -- tool timeout / run-budget on the bash tool, tests, and lint
+scoped: M3 T2 -- tool timeout / run-budget on the bash tool, tests, and lint
 legacy: none
 mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
 

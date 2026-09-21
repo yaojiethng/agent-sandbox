@@ -29,6 +29,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M2.6 - Session Persistence](changelog.md#m26--session-persistence-foundation-and-copy-model) | Complete |
 | &nbsp;&nbsp;[M2.7 - Session Identity and Harness Versioning](changelog.md#m27--session-identity-and-harness-versioning) | Complete |
 | **M3 - Autonomous Task Execution, Manual Review Workflow** | [In progress](#m3--autonomous-task-execution-manual-review-workflow) |
+| &nbsp;&nbsp;[M3.1 - Backpressure](#m31---backpressure) | Active |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;M4 - Metadata Seeding | Not started |
 | &nbsp;&nbsp;M5 - Agent-Assigned Branch Management | Not started |
@@ -87,16 +88,17 @@ The parent finding (cost, throughput, and failure modes are invisible for subage
 - [ ] **Time attribution** -- split wall-clock into model time, tool-execution time, and harness overhead, so a slow review is attributable (provider vs tooling vs orchestration)
 - [ ] **Tool-call telemetry** -- count every tool call by name and outcome with duration and per-tool failure rate
 - [ ] **`edit`-tool failure metrics + feedback resolution** -- count and classify every failed `edit` call by cause (text not found, ambiguous match, overlapping/nested regions, unread/renamed file, missing `path`), record follow-up cost, and surface per-type frequency for triage. Then resolve the [edit-tool collation entry](AGENT_FEEDBACK.md) and its write-land-reflex / overwrite-vs-append family from data (agent-prompting vs tool-contract vs harness problem), distilling the findings into AGENTS.md edit-tool steering.
+- [ ] **Tool timeout / run budget** -- do we need a max-time timeout on the `bash` tool? Arbitrary one-off bash scripts, `make test`, and lint are the common hang sites. Minimally, test and lint should carry a maximum-time timeout; `sleep` should never be used; `timeout` may be used only with a correct invocation (some invocation forms always wait the maximum). Resolves the mechanical-edit-one-liner-hang family.
 
-#### T3 - Backpressure
+#### M3.1 - Backpressure
 
-The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.md`](../docs/adr/git_hooks.md)); mount delivery carries no hook under the current delivery constraint. The test-family split landed in handover `20260920-03`.
+The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.md`](../docs/adr/git_hooks.md)); mount delivery carries no hook under the current delivery constraint. The test-family split landed in handover `20260920-03`. This sub-milestone owns the backpressure mechanisms: the commit-time hooks and the lint rules that give code and prose commit-time feedback, and the cost of running those gates.
 
 - [ ] **Mount-delivery hooks (constraint change)** -- git hooks for mount delivery require changing the delivery model's host-exposure constraint (an agent-writable hook in the mount `.git` executes on the host). The constraint change and its security cost are the deliverable; implementation follows only if the constraint changes.
 - [ ] **ShellCheck as a git hook** -- extend the commit hook to run the ShellCheck gate over staged shell files, giving shell rules the same commit-time backpressure as the Markdown rules
 - [ ] **Doc-format lint rules** -- add lint coverage for the documentation-format discipline: a rule detecting manually column-wrapped prose (hard-wrapped instruction blocks; the `MD013` line-length rule is disabled per the no-wrap policy, so the wrap has no detector). Resolves the hard-wrapped-instruction-blocks and editing-a-doc-whose-own-policy-forbids families; the plain-ASCII `doc-ascii` rule already covers non-ASCII.
-- [ ] **Sourced-lib / library lint rules** -- a lint check that sourced-library functions (`src/libs/`, `src/build/`) use `return`, not `exit`, and that sourced-lib reads do not redirect from unguaranteed paths (the conventions-doc rules from the M3 feedback close). Resolves the [!H] library `return`-not-`exit` family.
-- [ ] **Tool timeout / run budget** -- do we need a max-time timeout on the `bash` tool? Arbitrary one-off bash scripts, `make test`, and lint are the common hang sites. Minimally, test and lint should carry a maximum-time timeout; `sleep` should never be used; `timeout` may be used only with a correct invocation (some invocation forms always wait the maximum). Resolves the mechanical-edit-one-liner-hang family.
+- [ ] **Sourced-lib / library lint rules** -- a lint check that sourced-library functions (`src/libs/`, `src/build/`) use `return`, not `exit`, and that sourced-lib reads do not redirect from unguaranteed paths (the conventions-doc rules from the M3 feedback close). Resolves the [O] library `return`-not-`exit` family.
+- [ ] **Lint and tests take forever** -- raise issues with the existing backpressure mechanisms. The copy-delivery pre-commit hook lints the staged Markdown file list and the full `scripts/lint.sh` run costs about 30s because it lints every tracked file (recorded in handover `20260921-01`); the test-family split landed in handover `20260920-03`. The gate should be cheap enough to run on every commit without slowing the write path. Investigate why the full lint run is so slow and confirm the staged-file hook does not re-lint the whole repository.
 
 #### T4 - Library Migrations
 
