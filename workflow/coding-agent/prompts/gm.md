@@ -5,9 +5,7 @@ argument-hint: "[context or intent - optional, e.g. back after a break, easy sta
 
 > $@
 
-gm is a check-in, not an iteration. No code or document changes, nor handover
-creation, is expected as a result of this survey. Wait for the user to pick a
-next task before starting a new iteration proper -- see
+gm is a check-in, not an iteration. The agent's only permitted change during a check-in is a cosmetic record-bug fix: a stale record state, a mis-dated record entry, or forward-looking text in a completed item. Apply all such fixes found, aggregate them into a single `chore:` commit, and do not open a handover. All other changes wait; the user picks the next task before a new iteration starts -- see
 [iteration policy](docs/operations/iteration_policy.md).
 
 ## Survey
@@ -35,6 +33,9 @@ already landed on disk; a done item still carrying forward-looking text; a
 finding marked open whose fix landed; a feedback entry describing files that
 no longer exist; a test suite whose last recorded run is red or stale. Each
 becomes an inventory row or a finding, never a silent correction.
+
+Cosmetic record-bug fixes (the class named above) are applied immediately;
+substantive discrepancies are surfaced as rows and wait.
 
 ## State summary
 

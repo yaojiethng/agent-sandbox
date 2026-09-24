@@ -128,7 +128,7 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
-state: open
+state: probation
 scoped: M3.1 -- ShellCheck gate (directive-parse warning)
 legacy: none
 mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent").
@@ -156,7 +156,7 @@ mitigation: the final commit must include the Closed handover. Set Status to `Cl
 
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 
-state: open
+state: probation
 scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
 mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1.
