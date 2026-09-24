@@ -66,7 +66,7 @@ Before closing a session that touched such a document, update or remove every st
 
 ### Markdown lint gate
 
-The repository holds zero Markdown lint findings. The Markdown gate runs `markdownlint-cli2` with the repository config [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs) and the custom rules `doc-ascii` (plain-ASCII prose, in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs)) and `doc-wrap` (one paragraph per physical line, in [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs)). The `doc-wrap` rule is introduced but not yet live in the config; the M3.1 roadmap records the enable step. A finding is a defect: fix it in the same change.
+The repository holds zero Markdown lint findings. The Markdown gate runs `markdownlint-cli2` with the repository config [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs) and the custom rules `doc-ascii` (plain-ASCII prose, in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs)) and `doc-wrap` (one paragraph per physical line, in [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs)). The `doc-wrap` rule is live (M3.1 roadmap, iteration `20260921-11`) and carries a config-driven `legacyFiles` exemption seam for any carve-out. A finding is a defect: fix it in the same change.
 
 `make lint` runs [`scripts/lint.sh`](../../scripts/lint.sh), which runs the ShellCheck gate in [`scripts/check_shell.sh`](../../scripts/check_shell.sh) and the Markdown gate in [`scripts/check_markdown.sh`](../../scripts/check_markdown.sh). Run `make lint` before an iteration closes. When `make` is not available, run `bash scripts/lint.sh` for both gates.
 

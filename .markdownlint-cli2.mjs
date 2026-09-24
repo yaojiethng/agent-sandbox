@@ -2,8 +2,8 @@
 // Enables the subset of markdownlint rules that align with
 // docs/operations/documentation_policy.md, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
-// physical line). doc-wrap is introduced but not yet live; the
-// legacyFiles exemption seam in the rule is tested and empty.
+// physical line). doc-wrap is live; the legacyFiles exemption seam
+// in the rule stays available for any future carve-out.
 //
 // Deliberately DISABLED (they contradict written policy):
 //   MD013 line-length -- documentation_policy.md `### Line wrapping`
@@ -45,11 +45,10 @@ export default {
 
     // custom rule, enabled by name (default:false suppresses it otherwise)
     "doc-ascii": true,
-    // doc-wrap: introduced in the workflow, deliberately not live.
-    // Enable (true, or { legacyFiles: [...] } while legacy files await
-    // conversion) only after confirming the gate reports zero findings --
-    // the M3.1 roadmap enable step.
-    "doc-wrap": false,
+    // doc-wrap: live since the zero-findings confirmation (iteration
+    // 20260921-11). An object value { legacyFiles: [...] } exempts the
+    // named files, config-driven, never a per-file disable comment.
+    "doc-wrap": true,
   },
   customRules: ["./scripts/lint/doc-ascii.mjs"],
   globs: ["**/*.md"],
