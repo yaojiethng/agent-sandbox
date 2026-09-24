@@ -65,7 +65,7 @@ invoke_stop() {
       --sandbox="$SANDBOX_DIR" \
       --project="$PROJECT_DIR" \
       "$@"
-  ) > /dev/null 2>&1 || true
+  ) > /dev/null 2>&1
 }
 
 invoke_prune() {
@@ -88,8 +88,9 @@ test_stop_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_nc"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "compose"; then
     fail "stop: docker compose should not be invoked"
   else
@@ -101,8 +102,9 @@ test_stop_no_containers_does_not_teardown() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_none"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   # Stub ps -aq returns nothing by default: no containers, no teardown.
   if trace_has "ps " && ! trace_has "rm "; then
     pass "stop: no containers -> ps only, no rm"
@@ -116,8 +118,9 @@ test_stop_removes_containers() {
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   export DOCKER_STUB_PS_IDS="abc123def456 fedcba654321"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "stop abc123def456" && trace_has "rm abc123def456"; then
     pass "stop: containers stopped and removed"
   else
@@ -130,8 +133,9 @@ test_stop_removes_networks() {
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   export DOCKER_STUB_NETWORK_IDS="net1 net2"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "network rm net1"; then
     pass "stop: session networks removed by label"
   else
@@ -188,8 +192,9 @@ test_stop_prune_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_nc"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR" --prune
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" --prune || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "compose"; then
     fail "stop --prune: docker compose should not be invoked"
   else
@@ -201,8 +206,9 @@ test_stop_prune_has_registrybased_prune() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_sp"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR" --prune
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" --prune || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   # stop --prune delegates to prune.sh (now registry-based  --  no docker system prune).
   if trace_has "system prune"; then
     fail "stop --prune: docker system prune should not be invoked (registry-based prune)"

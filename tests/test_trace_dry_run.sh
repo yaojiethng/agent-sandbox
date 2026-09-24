@@ -66,7 +66,7 @@ invoke_dry_run() {
       --env="$SANDBOX_DIR/.env" \
       --provider="$PROVIDER_NAME" \
       "$@"
-  ) > /dev/null 2>&1 || true
+  ) > /dev/null 2>&1
 }
 
 # ---------------------------------------------------------------------------
@@ -77,8 +77,9 @@ test_dry_run_has_compose_up() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_up"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
-
+  local DRY_RC=0
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy || DRY_RC=$?
+  assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   if trace_has "compose up"; then
     pass "dry-run: 'compose up -d' issued"
   else
@@ -90,8 +91,9 @@ test_dry_run_no_compose_exec() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_noexec"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
-
+  local DRY_RC=0
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy || DRY_RC=$?
+  assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   if trace_has "compose exec"; then
     fail "dry-run: 'compose exec' should NOT be issued (probes run at start-up)"
   else
@@ -106,8 +108,9 @@ test_dry_run_always_tears_down_with_volumes() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_teardown"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
-
+  local DRY_RC=0
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy || DRY_RC=$?
+  assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   if [[ $(trace_count "compose down -v") -eq 1 ]] \
      && [[ $(grep -cE "compose down *$" "$DOCKER_TRACE_LOG") -eq 1 ]]; then
     pass "dry-run: one stop (down, volume kept) + one final teardown (down -v)"
@@ -123,8 +126,9 @@ test_dry_run_exercises_resume_pass() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_resume_pass"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy
-
+  local DRY_RC=0
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy || DRY_RC=$?
+  assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   local ups downs
   ups=$(trace_count "compose up")
   downs=$(trace_count "compose down")
@@ -169,8 +173,9 @@ test_dry_run_mount_overlay_stacked_and_probe_hygiene() {
   local FIXTURE_DIR="$FIXTURE_DIR/dry_mount"
   mkdir -p "$FIXTURE_DIR"
   setup_dry_run_fixture "$FIXTURE_DIR"
-  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=mount
-
+  local DRY_RC=0
+  DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=mount || DRY_RC=$?
+  assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   if trace_has "docker-compose.mount.yml"; then
     pass "dry-run (mount): mount overlay stacked into compose invocation"
   else

@@ -54,7 +54,6 @@ test_missing_provider_name() {
   local tmpdir; tmpdir=$(get_fixture_dir)
   local out rc=0
   out=$(unset PROVIDER_NAME; AGENT_HOME="$tmpdir/ah" bash "$ENTRYPOINT" true 2>&1) || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -ne 0 && "$out" == *"PROVIDER_NAME is not set"* ]]; then
     pass "missing PROVIDER_NAME env var"
   else
@@ -68,7 +67,6 @@ test_exit_code_zero() {
   local tmpdir; tmpdir=$(get_fixture_dir)
   local rc=0
   _run "$tmpdir/ah" bash -c "exit 0" || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -eq 0 ]]; then
     pass "exit code 0 preserved"
   else
@@ -80,7 +78,6 @@ test_exit_code_nonzero() {
   local tmpdir; tmpdir=$(get_fixture_dir)
   local rc=0
   _run "$tmpdir/ah" bash -c "exit 42" || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -eq 42 ]]; then
     pass "exit code 42 preserved"
   else
@@ -99,7 +96,6 @@ test_stdin_not_devnull() {
 
   local rc=0
   [[ -f "$stdin_content" ]] && grep -q "test-input-42" "$stdin_content" || rc=1
-  rm -rf "$tmpdir"
   if [[ $rc -eq 0 ]]; then
     pass "agent stdin is not /dev/null"
   else
@@ -159,7 +155,6 @@ test_provision_copies_config_files() {
     fail "auth.json missing or wrong content"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_copies_all_items() {
@@ -195,7 +190,6 @@ test_provision_copies_all_items() {
     fail "skills/ subtree not copied"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_fails_on_missing_template() {
@@ -213,7 +207,6 @@ test_provision_fails_on_missing_template() {
     fail "should return non-zero for missing template"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_no_double_nesting() {
@@ -245,7 +238,6 @@ test_provision_no_double_nesting() {
     fail "agent/agent/ double nesting detected"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 # ---------------------------------------------------------------------------

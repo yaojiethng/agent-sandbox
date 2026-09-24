@@ -56,12 +56,12 @@ test_parse_args_tolerant_drops_unknown() {
 }
 
 test_parse_args_help_exits_2() {
-  parse_args _test_usage --known -- --help x >/dev/null 2>&1
-  local rc=$?
-  if [[ "$rc" == 2 ]]; then
+  local OUT RC=0
+  OUT=$(parse_args _test_usage --known -- --help x 2>&1) || RC=$?
+  if [[ "$RC" == 2 && "$OUT" == *"usage"* ]]; then
     pass "parse_args: --help prints usage and exits 2"
   else
-    fail "parse_args: --help rc=$rc, expected 2"
+    fail "parse_args: --help rc=$RC out='$OUT', expected rc 2 printing usage"
   fi
 }
 

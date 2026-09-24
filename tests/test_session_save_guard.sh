@@ -59,7 +59,6 @@ test_dirty_tree_always_saves() {
     fail "untracked file must force a save"
   fi
 
-  rm -rf "$fix"
 }
 
 test_clean_tree_at_baseline_skips() {
@@ -73,7 +72,6 @@ test_clean_tree_at_baseline_skips() {
   local rc=0
   session_save_needed "$fix" "$baseline" || rc=$?
   assert_eq "$rc" "1" "clean tree at baseline reports skip (1), not undeterminable"
-  rm -rf "$fix"
 }
 
 test_clean_tree_past_baseline_saves() {
@@ -97,7 +95,6 @@ test_clean_tree_past_baseline_saves() {
   new_head=$(git -C "$fix" rev-parse HEAD)
   session_save_needed "$fix" "$new_head" || rc=$?
   assert_eq "$rc" "1" "clean tree at last-saved HEAD reports skip (level 2)"
-  rm -rf "$fix"
 }
 
 # -- save_decision (the caller-facing dispatch) ------------------------------
@@ -113,7 +110,6 @@ test_save_decision_skip_reports_and_returns_1() {
   out=$(save_decision "$fix" "$fix/no-prior-export" "session-export" 2>&1) || rc=$?
   assert_eq "$rc" "1" "save_decision: skip maps to 1"
   assert_contains "$out" "session-export: nothing to save" "save_decision: skip prints the label"
-  rm -rf "$fix"
 }
 
 test_save_decision_undeterminable_saves_and_warns() {
@@ -132,7 +128,6 @@ test_save_decision_undeterminable_saves_and_warns() {
   else
     pass "save_decision: undeterminable is not reported as nothing to save"
   fi
-  rm -rf "$fix"
 }
 
 # -- _save_baseline ----------------------------------------------------------
@@ -148,7 +143,6 @@ test_baseline_falls_back_to_init_sha() {
   local out
   out=$(_save_baseline "$fix" "$fix/nonexistent-dir")
   assert_eq "$out" "$expect" "_save_baseline falls back to init_sha when no prior export"
-  rm -rf "$fix"
 }
 
 test_baseline_reads_last_export_head() {
@@ -165,7 +159,6 @@ test_baseline_reads_last_export_head() {
   local out
   out=$(_save_baseline "$fix" "$exp_dir")
   assert_eq "$out" "deadbeefcafe" "_save_baseline uses last saved HEAD over init_sha"
-  rm -rf "$fix"
 }
 
 test_baseline_ignores_failed_export() {
@@ -183,7 +176,6 @@ test_baseline_ignores_failed_export() {
   local out
   out=$(_save_baseline "$fix" "$exp_dir")
   assert_eq "$out" "$expect" "_save_baseline falls back to init_sha when prior export FAILed"
-  rm -rf "$fix"
 }
 
 # -- _write_export_status stamps HEAD ----------------------------------------
@@ -194,7 +186,6 @@ test_export_status_stamps_head() {
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "init1234" "head5678"
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
   assert_contains "$_content" "HEAD=head5678" "_write_export_status stamps HEAD given as 6th arg"
   assert_contains "$_content" "INIT_SHA=init1234" "_write_export_status keeps INIT_SHA"
 }
@@ -205,7 +196,6 @@ test_export_status_no_head_when_empty() {
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "init1234"
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
   if [[ "$_content" == *"HEAD="* ]]; then
     fail "_write_export_status should omit empty HEAD"
   else
@@ -228,7 +218,6 @@ test_unreadable_repository_is_undeterminable() {
   rc=0
   session_save_needed "$fix" "whatever" || rc=$?
   assert_eq "$rc" "2" "corrupt .git: undeterminable, not skip"
-  rm -rf "$fix"
 }
 
 # -- export_status_read / export_status_is_success ---------------------------
@@ -242,7 +231,6 @@ test_export_status_read_fields() {
   assert_eq "$(export_status_read "$fix" TIMESTAMP)" "20260622-120000" "reader returns the TIMESTAMP field"
   assert_empty "$(export_status_read "$fix" NOPE)" "reader returns empty for an absent key"
   assert_eq "$(export_status_read "$fix/nonexistent" STATUS)" "" "reader returns empty for an absent file"
-  rm -rf "$fix"
 }
 
 test_export_status_is_success() {
@@ -265,7 +253,6 @@ test_export_status_is_success() {
   else
     pass "is_success: false when the file is absent"
   fi
-  rm -rf "$fix"
 }
 
 test_save_decision_save_arm_is_silent_and_returns_0() {
@@ -278,7 +265,6 @@ test_save_decision_save_arm_is_silent_and_returns_0() {
   out=$(save_decision "$fix" "$fix/no-prior-export" "session-export" 2>&1) || rc=$?
   assert_eq "$rc" "0" "save_decision: dirty tree maps to 0 (save)"
   assert_empty "$out" "save_decision: the save arm prints nothing"
-  rm -rf "$fix"
 }
 
 # -- require_clean_working_tree ---------------------------------------------
@@ -302,7 +288,6 @@ test_clean_tree_guard_is_three_valued() {
   rc=0
   require_clean_working_tree "$fix" || rc=$?
   assert_eq "$rc" "1" "guard: a dirty tree reports dirty (1)"
-  rm -rf "$fix"
 }
 
 # -- session_export_needed (exit-time durable-record decision) --------------
@@ -330,7 +315,6 @@ test_session_export_runs_with_work_despite_committed_or_uncommitted() {
   rc=0
   session_export_needed "$fix" || rc=$?
   assert_eq "$rc" "0" "session export runs when an autosave already captured the state"
-  rm -rf "$fix"
 }
 
 test_session_export_skips_clean_tree_at_branch_point() {
@@ -342,7 +326,6 @@ test_session_export_skips_clean_tree_at_branch_point() {
   local rc=99
   session_export_needed "$fix" || rc=$?
   assert_eq "$rc" "1" "session export skips a clean tree at the branch point"
-  rm -rf "$fix"
 }
 
 # -- run ---------------------------------------------------------------------

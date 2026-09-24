@@ -53,7 +53,7 @@ invoke_build() {
       --project="$PROJECT_DIR" \
       --sandbox="$SANDBOX_DIR" \
       --targets="$PROVIDER_NAME"
-  ) > /dev/null 2>&1 || true
+  ) > /dev/null 2>&1
 }
 
 # invoke_build_err  --  like invoke_build but captures combined stdout+stderr and
@@ -77,8 +77,9 @@ test_build_inspects_images() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_inspect"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
-  invoke_build
-
+  local BUILD_RC=0
+  invoke_build || BUILD_RC=$?
+  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
   if trace_has "image inspect"; then
     pass "build: docker image inspect issued"
   else
@@ -90,8 +91,9 @@ test_build_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_noc"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
-  invoke_build
-
+  local BUILD_RC=0
+  invoke_build || BUILD_RC=$?
+  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
   if trace_has "compose"; then
     fail "build: docker compose should not be invoked"
   else
@@ -103,8 +105,9 @@ test_build_has_build_command() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_cmd"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
-  invoke_build
-
+  local BUILD_RC=0
+  invoke_build || BUILD_RC=$?
+  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
   if trace_has "build "; then
     pass "build: docker build issued"
   else

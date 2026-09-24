@@ -132,10 +132,11 @@ test_stub_docker_config_preserves_structure() {
   staging_dir=$(get_fixture_dir)
   cp "$REPO_ROOT/src/build/docker-compose.yml" "$staging_dir/00-test.yml"
 
-  local out
-  out=$(PATH="$STUB_DIR:$PATH" docker compose -f "$staging_dir/00-test.yml" config --no-interpolate 2>/dev/null || true)
-
-  rm -rf "$staging_dir"
+  # A failed compose config is a failure, not an empty-output blessing: the
+  # rc is asserted before the grep, or an empty out would satisfy name_lines=0.
+  local out RC=0
+  out=$(PATH="$STUB_DIR:$PATH" docker compose -f "$staging_dir/00-test.yml" config --no-interpolate 2>&1) || RC=$?
+  assert_rc 0 "$RC" "stub docker compose config succeeds"
 
   # Stub returns the file directly; source templates have no name: lines
   # But container_name: has "name:" as a substring  --  confirm grep doesn't match it

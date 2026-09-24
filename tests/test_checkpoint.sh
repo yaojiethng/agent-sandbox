@@ -73,7 +73,6 @@ test_session_id_converges_across_path_spellings() {
   id3=$(session_id_derive "$trailing"   "deadbeef" "20260831-120000")
   id4=$(session_id_derive "$rel"        "deadbeef" "20260831-120000")
 
-  rm -rf "$base"
 
   if [[ "$id1" == "$id2" && "$id1" == "$id3" && "$id1" == "$id4" ]]; then
     pass "SESSION_ID: all spellings of one folder converge"

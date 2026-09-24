@@ -65,11 +65,15 @@ test_apply_force_mode() {
   echo "$COMMITTED_FILE content changed" > "$P/$COMMITTED_FILE"
   git -C "$P" diff > "$FIXTURE_DIR/reject.diff" 2>/dev/null || true
   git -C "$P" checkout -- "$COMMITTED_FILE"
-  apply_run "$P" "$FIXTURE_DIR/reject.diff" "" "true"
-  # Force mode should have applied the diff (may produce .rej files)
-  local APPLIED
-  APPLIED=$(grep -c "^diff --git" "$FIXTURE_DIR/reject.diff" 2>/dev/null || echo "0")
-  pass "apply_run force mode completes (diff had $APPLIED changed files)"
+  # Force mode should return 0 even though the hunks conflict (may produce
+  # .rej files); the rc is the contract, not the input diff's line count.
+  local OUT RC=0
+  OUT=$(apply_run "$P" "$FIXTURE_DIR/reject.diff" "" "true" 2>&1) || RC=$?
+  if [[ "$RC" == 0 ]]; then
+    pass "apply_run force mode completes (rc=0)"
+  else
+    fail "apply_run force mode failed rc=$RC: $OUT"
+  fi
 }
 test_apply_missing_diff_file() {
   local P="$FIXTURE_DIR/apply_missing_p"
@@ -197,9 +201,14 @@ test_apply_patch_file_force() {
   echo "$COMMITTED_FILE content changed" > "$P/$COMMITTED_FILE"
   git -C "$P" diff > "$FIXTURE_DIR/apf_force.diff" 2>/dev/null || true
   git -C "$P" checkout -- "$COMMITTED_FILE"
-  _apply_patch_file "$P" "$FIXTURE_DIR/apf_force.diff" true false
+  local OUT RC=0
+  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_force.diff" true false 2>&1) || RC=$?
   # Force mode should succeed (returns 0) even if conflicts produce .rej
-  pass "_apply_patch_file force mode completes (may produce .rej files)"
+  if [[ "$RC" == 0 ]]; then
+    pass "_apply_patch_file force mode completes (rc=0)"
+  else
+    fail "_apply_patch_file force mode failed rc=$RC: $OUT"
+  fi
 }
 test_apply_patch_file_missing_diff() {
   local P="$FIXTURE_DIR/apf_missing_p"

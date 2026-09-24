@@ -185,7 +185,7 @@ test_start_standard_has_compose_up() {
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard" --delivery=copy
 
-  if trace_grep "compose up -d sandbox" > /dev/null; then
+  if trace_has "compose up -d sandbox"; then
     pass "start (standard): 'compose up -d sandbox' issued"
   else
     fail "start (standard): 'compose up -d sandbox' not found in trace"
@@ -198,7 +198,7 @@ test_start_standard_has_compose_run_agent() {
   setup_start_fixture "$FIXTURE_DIR"
   invoke_run_agent "standard" --delivery=copy
 
-  if trace_grep "compose run" > /dev/null; then
+  if trace_has "compose run"; then
     pass "start (standard): 'compose run ... agent' issued"
   else
     fail "start (standard): 'compose run ... agent' not found in trace"
@@ -236,12 +236,15 @@ test_start_refresh_volume_rm() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_rm"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
+  # A stale volume exists; the fresh-session reset seeds a new volume and
+  # never issues an explicit volume rm (run_agent.sh seed path).
+  export DOCKER_STUB_VOLUME_NAMES="vol1"
   invoke_run_agent "standard" --reset-volume --delivery=copy
 
   local count
   count=$(trace_count "volume rm")
-  # May be 0 if no volumes exist, which is fine  --  stub returns none
-  pass "start --refresh: volume rm count = $count"
+  assert_eq_num "$count" "0" "start --refresh: stale volume is not removed (seed-based reset)"
+  unset DOCKER_STUB_VOLUME_NAMES
 }
 
 test_start_refresh_post_agent_uses_down() {

@@ -279,3 +279,33 @@ mitigation: postponed to the M3 `perf` workstream, which owns the instrument for
 The thermo-nuclear review pass over this iteration ran two models per round across ten rounds in two tranches. Each round is a fresh `pi -p` context, so no round inherits the previous round's reasoning, and the log stays empty until the run flushes: neither the main agent nor the operator can see whether a round is progressing, stalled on the provider, or merely slow. There is no per-run accounting of wall-clock, tokens, throughput, latency, tool-call time, or agent turns, so the cost of a review tranche cannot be compared against its yield. The concrete cost of that blindness: a round that reports nothing new still consumes a full model pass, and the operator cannot tell from the outside whether a silent log means "thinking hard" or "network died".
 
 Scope: harness-wide measurement gap, not a bash or skill trap. Cross-reference: the consolidated `edit`-tool failure entry in the `## Consolidated (M3 cleanup 2026-09-21)` section routes to the same M3 `perf`/T2 task, which instruments failed tool calls by cause.
+
+## Agent experience  --  session 20260922 (test-harness isolation, M3.1 U1-U7)
+
+### [A] 2026-09-22  --  Command substitution loses array writes: journal allocated state to a file
+
+state: probation
+scoped: M3.1 -- test-harness execution model (U1)
+legacy: none
+mitigation: `get_fixture_dir()` is called inside command substitution, so its `_ALLOC_DIRS+=()` append wrote to a lost sub-subshell copy and the allocator's teardown never removed the directories. A helper that registers state while called via `$( )` must persist it to a file (append on allocate, read on cleanup), not to a shell array.
+
+### [A] 2026-09-22  --  An EXIT trap's final command overrides the shell exit status
+
+state: probation
+scoped: M3.1 -- test-harness execution model (U1)
+legacy: none
+mitigation: the per-test subshell's cleanup trap ended in `return 0`, flipping `fail()`'s exit 1 to exit 0: a failing test reported PASS. A cleanup EXIT trap must capture `$?` before cleaning and re-exit with it (`trap '_trap_rc=$?; cleanup; exit "$_trap_rc"' EXIT`).
+
+### [A] 2026-09-22  --  Test subshells run `set +e`; capture-and-assert needs it
+
+state: probation
+scoped: M3.1 -- test-harness execution model (U1)
+legacy: none
+mitigation: a sourced script's `set -euo pipefail` leaks into the test file's shell, and `out=$(cmd); rc=$?` with a failing cmd aborts under errexit. The per-test subshell runs `set +e` so capture-and-assert works; the verdict is fail()/pass(), never the shell's errexit. Related capture trap: `( ... ) || rc=$?` only assigns rc on the failure arm, so initialize `rc=0` or a passing subshell leaves it unbound under `set -u`.
+
+### [A] 2026-09-22  --  A condition on an always-true helper is a vacuous assertion; a masked rc hides real defects
+
+state: probation
+scoped: M3.1 -- final per-assertion sweep (U7)
+legacy: ties to [A] 2026-09-20 "A subagent review pass is expensive and unmeasured" -- the fresh-subagent sweep is the yield side of that entry
+mitigation: `if trace_grep "..." > /dev/null` always took the pass branch because `trace_grep` ends in `|| true`; the traced operation was never gated. Any conditional on a helper that always returns 0 is a vacuous assertion -- use the `grep -q` variant. The sweep found six such assertions and one silent-green (an empty failed `docker compose config` satisfied its own grep). The reverse face: a masked invocation rc hid a real production defect (`scripts/prune.sh` committed without its exec bit, so `stop --prune` returned 126); the same masks that U4 documented as load-bearing also conceal genuine failures, so assert the rc of any success-expected command.

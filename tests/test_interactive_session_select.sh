@@ -286,11 +286,12 @@ test_select_session_name_truncation() {
   local STDERR
   STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
   # The displayed name should be truncated (contains "...")
+  # The fixture name exceeds 50 chars, so truncation must happen: a missing
+  # "..." is a regression, not an acceptable alternative.
   if echo "$STDERR" | grep -q "\.\.\."; then
     pass "interactive_select_bundle truncates names longer than 50 chars"
   else
-    # If the name is actually <= 50 chars, that's also fine  --  just verify it works
-    pass "interactive_select_bundle handles long names (no truncation needed if <= 50 chars)"
+    fail "expected truncated name with '...', got: $STDERR"
   fi
 }
 

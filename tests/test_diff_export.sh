@@ -31,14 +31,12 @@ test_export_status_writes_success() {
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123"
 
   if [[ ! -f "$_tmpdir/.export-status" ]]; then
-    rm -rf "$_tmpdir"
     fail ".export-status not created"
     return
   fi
 
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
 
   if [[ "$_content" == *"STATUS=SUCCESS"* ]] && [[ "$_content" == *"TIMESTAMP=20260622-120000"* ]]; then
     pass "_write_export_status writes SUCCESS with timestamp"
@@ -55,7 +53,6 @@ test_export_status_includes_init_sha() {
 
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
 
   assert_contains "$_content" "INIT_SHA=abc123def456" "_write_export_status includes INIT_SHA when provided"
 }
@@ -68,7 +65,6 @@ test_export_status_omits_init_sha_when_empty() {
 
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
 
   if [[ "$_content" != *"INIT_SHA"* ]]; then
     pass "_write_export_status omits INIT_SHA when empty"
@@ -85,7 +81,6 @@ test_export_status_writes_failure_with_exit_code() {
 
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
 
   if [[ "$_content" == *"STATUS=FAIL"* ]] && [[ "$_content" == *"EXIT_CODE=1"* ]]; then
     pass "_write_export_status writes FAIL with exit code"
@@ -102,7 +97,6 @@ test_export_status_does_not_include_exit_code_on_success() {
 
   local _content
   _content=$(cat "$_tmpdir/.export-status")
-  rm -rf "$_tmpdir"
 
   if [[ "$_content" != *"EXIT_CODE"* ]]; then
     pass "_write_export_status omits EXIT_CODE for SUCCESS"
@@ -124,7 +118,6 @@ test_export_error_log_creates_file() {
   # Should create 20260622-120000-EXPORT-ERROR.log
   local _files
   _files=$(ls "$_tmpdir" 2>/dev/null) || true
-  rm -rf "$_tmpdir"
 
   assert_contains "$_files" "20260622-120000-EXPORT-ERROR.log" "_write_export_error_log creates correctly named file"
 }
@@ -137,7 +130,6 @@ test_export_error_log_includes_session_id() {
 
   local _files
   _files=$(ls "$_tmpdir" 2>/dev/null) || true
-  rm -rf "$_tmpdir"
 
   assert_contains "$_files" "20260622-120000-abc123-EXPORT-ERROR.log" "_write_export_error_log embeds SESSION_ID in filename"
 }
@@ -150,7 +142,6 @@ test_export_error_log_contains_error_details() {
 
   local _content
   _content=$(cat "$_tmpdir/20260622-120000-abc123-EXPORT-ERROR.log")
-  rm -rf "$_tmpdir"
 
   if [[ "$_content" == *"EXIT_CODE=2"* ]] && [[ "$_content" == *"SESSION_ID=abc123"* ]] && [[ "$_content" == *"stderr line 1"* ]]; then
     pass "_write_export_error_log contains exit code, run id, and stderr"
@@ -173,7 +164,6 @@ test_wait_git_lockfile_no_lockfile() {
   else
     fail "wait_git_lockfile: expected 0 with no lockfile"
   fi
-  rm -rf "$_tmpdir"
 }
 
 test_wait_git_lockfile_lockfile_appears_and_disappears() {
@@ -195,7 +185,6 @@ test_wait_git_lockfile_lockfile_appears_and_disappears() {
   else
     fail "wait_git_lockfile: expected 0 when lockfile is released"
   fi
-  rm -rf "$_tmpdir"
 }
 
 test_wait_git_lockfile_timeout() {
@@ -207,12 +196,10 @@ test_wait_git_lockfile_timeout() {
   touch "$_tmpdir/.git/index.lock"
 
   if wait_git_lockfile "$_tmpdir" "1"; then
-    rm -rf "$_tmpdir"
     fail "wait_git_lockfile: expected 1 on timeout"
   else
     pass "wait_git_lockfile returns 1 on timeout"
   fi
-  rm -rf "$_tmpdir"
 }
 
 test_wait_git_lockfile_timeout_message() {
@@ -225,7 +212,6 @@ test_wait_git_lockfile_timeout_message() {
   local _output
   _output=$(wait_git_lockfile "$_tmpdir" "1" 2>&1) || true
 
-  rm -rf "$_tmpdir"
 
   assert_contains "$_output" "lockfile persisted" "wait_git_lockfile warns on timeout"
 }
@@ -249,20 +235,17 @@ test_diff_export_failure_writes_export_status() {
   mkdir -p "$_bad_sandbox"
 
   if diff_export "$_bad_sandbox" "$_outdir" "test123"; then
-    rm -rf "$_tmpdir"
     fail "diff_export: expected non-zero exit on bad sandbox"
     return
   fi
 
   if [[ ! -f "$_outdir/.export-status" ]]; then
-    rm -rf "$_tmpdir"
     fail "diff_export: .export-status not created on failure"
     return
   fi
 
   local _content
   _content=$(cat "$_outdir/.export-status")
-  rm -rf "$_tmpdir"
 
   assert_contains "$_content" "STATUS=FAIL" "diff_export failure writes FAIL export status"
 }
@@ -281,7 +264,6 @@ test_diff_export_failure_writes_error_log() {
   # Should have an error log file with SESSION_ID
   local _files
   _files=$(ls "$_outdir" 2>/dev/null) || true
-  rm -rf "$_tmpdir"
 
   assert_contains "$_files" "EXPORT-ERROR.log" "diff_export failure writes error log"
 }
