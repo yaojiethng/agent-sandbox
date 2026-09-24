@@ -174,7 +174,7 @@ fi
 if [[ "$SANDBOX_TYPE" == "copy" && -f "$GIT_HOOKS_DIR/pre-commit.sh" ]]; then
   mkdir -p "$SANDBOX_DIR/.git/hooks"
   install -m 0755 "$GIT_HOOKS_DIR/pre-commit.sh" "$SANDBOX_DIR/.git/hooks/pre-commit"
-  echo "Git hook installed: pre-commit (staged Markdown lint)"
+  echo "Git hook installed: pre-commit (staged Markdown + ShellCheck lint)"
 fi
 
 echo "Working tree status:"

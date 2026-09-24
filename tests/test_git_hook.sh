@@ -56,6 +56,19 @@ EOF
   chmod +x "$dir/bin/markdownlint-cli2"
 }
 
+# make_sc_stub DIR RC  --  a fake shellcheck on PATH recording every call to
+# DIR/sc-calls and exiting RC.
+make_sc_stub() {
+  local dir="$1" rc="$2"
+  mkdir -p "$dir/bin"
+  cat > "$dir/bin/shellcheck" <<EOF
+#!/usr/bin/env bash
+echo called >> "$dir/sc-calls"
+exit $rc
+EOF
+  chmod +x "$dir/bin/shellcheck"
+}
+
 # invoke_entrypoint DIR TYPE SANDBOX_DIR_NAME
 #   Runs the sed-patched entrypoint copy in the background, waits for the hook
 #   install line or preflight completion, SIGTERMs it, and collects rc/output.
@@ -114,6 +127,67 @@ test_hook_passes_clean_staged_markdown() {
   local rc=0
   (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add good") || rc=$?
   assert_rc 0 "$rc" "hook allows the commit when the linter passes"
+}
+
+test_hook_blocks_staged_shell_finding() {
+  local dir="$FIXTURE_DIR/sc_block"
+  make_repo "$dir/repo"
+  make_sc_stub "$dir" 1
+  install -m 0755 "$HOOK_SRC" "$dir/repo/.git/hooks/pre-commit"
+  echo "echo broken" > "$dir/repo/bad.sh"
+  git -C "$dir/repo" add bad.sh
+
+  local out rc=0
+  out="$(cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -m "add bad sh" 2>&1)" || rc=$?
+  assert_ne "$rc" "0" "hook blocks the commit on a staged ShellCheck finding"
+  assert_contains "$out" "ShellCheck findings" "hook names the ShellCheck gate in the failure"
+  assert_contains "$out" "no-verify" "hook output names the --no-verify bypass"
+}
+
+test_hook_passes_clean_staged_shell() {
+  local dir="$FIXTURE_DIR/sc_pass"
+  make_repo "$dir/repo"
+  make_lint_stub "$dir" 0
+  make_sc_stub "$dir" 0
+  install -m 0755 "$HOOK_SRC" "$dir/repo/.git/hooks/pre-commit"
+  echo "echo clean" > "$dir/repo/clean.sh"
+  git -C "$dir/repo" add clean.sh
+
+  local rc=0
+  (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add clean sh") || rc=$?
+  assert_rc 0 "$rc" "hook allows the commit when ShellCheck passes"
+  assert_subshell_rc 1 "test -f '$dir/mdl-calls'" "a shell-only commit never invokes markdownlint"
+}
+
+test_hook_ignores_non_shell_commit() {
+  local dir="$FIXTURE_DIR/sc_scope"
+  make_repo "$dir/repo"
+  make_sc_stub "$dir" 1
+  install -m 0755 "$HOOK_SRC" "$dir/repo/.git/hooks/pre-commit"
+  echo note > "$dir/repo/notes.txt"
+  git -C "$dir/repo" add notes.txt
+
+  local rc=0
+  (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add notes") || rc=$?
+  assert_rc 0 "$rc" "hook allows a commit with no staged shell"
+  assert_subshell_rc 1 "test -f '$dir/sc-calls'" "hook never invoked shellcheck for a non-shell commit"
+}
+
+test_hook_runs_both_gates_on_mixed_commit() {
+  local dir="$FIXTURE_DIR/sc_mixed"
+  make_repo "$dir/repo"
+  make_lint_stub "$dir" 0
+  make_sc_stub "$dir" 0
+  install -m 0755 "$HOOK_SRC" "$dir/repo/.git/hooks/pre-commit"
+  echo "# clean" > "$dir/repo/good.md"
+  echo "echo clean" > "$dir/repo/clean.sh"
+  git -C "$dir/repo" add good.md clean.sh
+
+  local rc=0
+  (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add both") || rc=$?
+  assert_rc 0 "$rc" "hook allows a clean mixed Markdown + shell commit"
+  assert_subshell_rc 0 "test -f '$dir/mdl-calls'" "mixed commit invoked the Markdown gate"
+  assert_subshell_rc 0 "test -f '$dir/sc-calls'" "mixed commit invoked the ShellCheck gate"
 }
 
 test_hook_ignores_non_markdown_commit() {
@@ -175,6 +249,10 @@ test_entrypoint_skips_hook_for_mount() {
 run_test test_hook_blocks_staged_markdown_finding
 run_test test_hook_passes_clean_staged_markdown
 run_test test_hook_ignores_non_markdown_commit
+run_test test_hook_blocks_staged_shell_finding
+run_test test_hook_passes_clean_staged_shell
+run_test test_hook_ignores_non_shell_commit
+run_test test_hook_runs_both_gates_on_mixed_commit
 run_test test_entrypoint_installs_hook_for_copy
 run_test test_entrypoint_skips_hook_for_mount
 
