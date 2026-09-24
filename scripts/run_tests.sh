@@ -15,14 +15,10 @@ TEST_DIR="${RUN_TESTS_DIR:-$TEST_DIR}"
 REAL_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 
 VERBOSE="${VERBOSE:-0}"
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -v)  VERBOSE=1; shift ;;
-    -vv) VERBOSE=2; shift ;;
-    *)   echo "Unknown option: $1" >&2; exit 1 ;;
-  esac
-done
+# TEST_PARALLEL controls the xargs job count (default 8; 1 for serial runs).
+TEST_PARALLEL="${TEST_PARALLEL:-8}"
+# TEST_TIMEOUT is the per-file deadline in seconds (default 5).
+TEST_TIMEOUT="${TEST_TIMEOUT:-5}"
 
 TOTAL_PASS=0
 TOTAL_FAIL=0
@@ -47,6 +43,7 @@ check_prerequisites() {
 
 discover_tests() {
   local FILES=()
+  local F
   for F in "$TEST_DIR"/test_*.sh; do
     if [[ -f "$F" ]]; then
       FILES+=("$F")
@@ -79,41 +76,65 @@ check_liveness() {
   fi
 }
 
-run_single() {
+# run_with_deadline DEADLINE OUT FILE
+#   Runs the test file under a pure-bash wall-clock deadline. Backgrounds the
+#   test and polls it at 0.1s, killing it on expiry and returning 124. No
+#   external `timeout` binary: GNU and BSD `sleep` both accept fractional
+#   seconds, `kill -0` and `wait` are builtins (bash-3.2-safe).
+run_with_deadline() {
+  local deadline_ticks=$(( ${1#-} * 10 ))
+  local out="$2"; shift 2
+  local pid ticks=0
+  bash "$@" < /dev/null > "$out" 2>&1 &
+  pid=$!
+  while (( ticks < deadline_ticks )); do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.1
+    ticks=$((ticks + 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill -TERM "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    return 124
+  fi
+  wait "$pid"
+  return $?
+}
+
+# worker FILE
+#   Runs one test file in a child shell under the deadline, counts its markers,
+#   writes the status record to $RESULTS_DIR, and prints the per-file line.
+#   stdin from /dev/null: a test subprocess reading stdin must not disturb the
+#   parent's xargs pipe (the FD-offset bug class). Always exits 0; failures are
+#   carried in the record and the printed line.
+worker() {
   local FILE="$1"
   local BASENAME
   BASENAME="$(basename "$FILE")"
-  local TMPFILE
+  local TMPFILE RECORD RC FILE_PASS FILE_FAIL FILE_SKIP
   TMPFILE=$(mktemp)
+  RECORD="$RESULTS_DIR/$BASENAME.record"
 
-  check_liveness "$FILE"
+  run_with_deadline "$TEST_TIMEOUT" "$TMPFILE" "$FILE"
+  RC=$?
 
-  # stdin from /dev/null: the runner iterates test files via a `<<<` here-string
-  # (shared temp-file FD); a test subprocess that reads stdin would advance that
-  # FD offset and cause `read` in the discovery loop to skip trailing files.
-  bash "$FILE" > "$TMPFILE" 2>&1 < /dev/null
-  local RC=$?
-
-  local FILE_PASS FILE_FAIL FILE_SKIP
   FILE_PASS=$(grep -c "^  PASS:" "$TMPFILE" 2>/dev/null) || true
   FILE_FAIL=$(grep -c "^  FAIL:" "$TMPFILE" 2>/dev/null) || true
   FILE_SKIP=$(grep -c "^  SKIP:" "$TMPFILE" 2>/dev/null) || true
 
-  TOTAL_PASS=$((TOTAL_PASS + FILE_PASS))
-  TOTAL_FAIL=$((TOTAL_FAIL + FILE_FAIL))
-  TOTAL_SKIP=$((TOTAL_SKIP + FILE_SKIP))
+  printf '%s %s %s %s\n' "$FILE_PASS" "$FILE_FAIL" "$FILE_SKIP" "$RC" > "$RECORD"
 
-  if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 || "$FILE_SKIP" -gt 0 ]]; then
-    ANY_FAILED=1
-  fi
-
-  if [[ "$RC" -eq 0 && "$FILE_PASS" -eq 0 && "$FILE_FAIL" -eq 0 && "$FILE_SKIP" -eq 0 ]]; then
+  if [[ "$RC" -eq 124 ]]; then
+    echo "TIMEOUT $BASENAME (exceeded ${TEST_TIMEOUT}s deadline)"
+  elif [[ "$RC" -eq 0 && "$FILE_PASS" -eq 0 && "$FILE_FAIL" -eq 0 && "$FILE_SKIP" -eq 0 ]]; then
     echo "WARN $BASENAME (0 tests executed  --  file may be missing run_test calls)" >&2
   fi
 
   case "$VERBOSE" in
     0)
-      if [[ "$RC" -ne 0 || "$FILE_FAIL" -gt 0 ]]; then
+      if [[ "$RC" -ne 0 && "$RC" -ne 124 || "$FILE_FAIL" -gt 0 ]]; then
         echo "FAIL $BASENAME"
         grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
       fi
@@ -139,6 +160,27 @@ run_single() {
   rm -f "$TMPFILE"
 }
 
+# Worker entry point. The parent dispatches each test file to a child copy of
+# this script with `--worker FILE` (see main). The worker runs the one file
+# under a deadline, writes a status record for the parent to aggregate, prints
+# the per-file PASS/FAIL/TIMEOUT line, and always exits 0 so xargs schedules
+# every file regardless of any single failure. Placed after the worker()
+# definition: bash executes top-level statements as it reads them, so the
+# function must already be defined before this branch can call it.
+if [[ "${1:-}" == "--worker" ]]; then
+  shift
+  worker "$1"
+  exit 0
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -v)  VERBOSE=1; shift ;;
+    -vv) VERBOSE=2; shift ;;
+    *)   echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
 main() {
   check_prerequisites || exit 1
 
@@ -157,11 +199,49 @@ main() {
   local TEST_FILES
   TEST_FILES=$(discover_tests) || exit 1
 
+  # Live registration scans run before dispatch (not in workers) so the
+  # findings print once, deterministically, before any test output.
+  local FILE
   while IFS= read -r FILE; do
     [[ -n "$FILE" ]] || continue
-    run_single "$FILE"
-    FILE_COUNT=$((FILE_COUNT + 1))
+    check_liveness "$FILE"
   done <<< "$TEST_FILES"
+
+  # Dispatch every file in parallel. Each worker is a child copy of this script
+  # (`bash "$0" --worker`), inheriting VERBOSE / RESULTS_DIR / TEST_TIMEOUT by
+  # environment; xargs reads the file list from the pipe and passes each path
+  # as the worker's argument, so no shared stdin is advanced by the tests.
+  local RESULTS_DIR
+  RESULTS_DIR=$(mktemp -d)
+  export RESULTS_DIR VERBOSE TEST_TIMEOUT
+
+  printf '%s\n' "$TEST_FILES" \
+    | xargs -P"$TEST_PARALLEL" -I{} bash "$0" --worker "{}"
+
+  # Aggregate the workers' records. One record per dispatched file; a missing
+  # record means the worker died, which is a failure.
+  local RECORD BASENAME PASS FAIL SKIP RC
+  while IFS= read -r FILE; do
+    [[ -n "$FILE" ]] || continue
+    BASENAME="$(basename "$FILE")"
+    RECORD="$RESULTS_DIR/$BASENAME.record"
+    if [[ ! -f "$RECORD" ]]; then
+      echo "FAIL $BASENAME (worker produced no record)" >&2
+      ANY_FAILED=1
+      FILE_COUNT=$((FILE_COUNT + 1))
+      continue
+    fi
+    read -r PASS FAIL SKIP RC < "$RECORD"
+    TOTAL_PASS=$((TOTAL_PASS + PASS))
+    TOTAL_FAIL=$((TOTAL_FAIL + FAIL))
+    TOTAL_SKIP=$((TOTAL_SKIP + SKIP))
+    FILE_COUNT=$((FILE_COUNT + 1))
+    if [[ "$RC" -ne 0 || "$FAIL" -gt 0 || "$SKIP" -gt 0 ]]; then
+      ANY_FAILED=1
+    fi
+  done <<< "$TEST_FILES"
+
+  rm -rf "$RESULTS_DIR"
 
   echo ""
   local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))

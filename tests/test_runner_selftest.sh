@@ -256,6 +256,41 @@ test_runner_dead_registration() {
   assert_contains "$OUT" "test_dead_reg.sh" "runner: dead registration reported by file name"
 }
 
+# ---------------------------------------------------------------
+# Case 13: a file that beats the deadline is reported and fails the
+# run (the pure-bash per-file timeout). TEST_TIMEOUT is the contract.
+# ---------------------------------------------------------------
+test_runner_deadline_expiry() {
+  local dir="$FIXTURE_DIR/timeout_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_hang.sh" \
+    '#!/usr/bin/env bash
+sleep 30'
+  local OUTRC
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  local rc=$?
+  assert_ne "0" "$rc" "runner: a deadline-beating file fails the run"
+  assert_contains "$OUTRC" "TIMEOUT test_hang.sh" "runner: deadline expiry reported by name"
+}
+
+# ---------------------------------------------------------------
+# Case 14: many files under parallel dispatch are all counted exactly
+# (no file lost to the worker scheduling) and the suite still exits 0.
+# ---------------------------------------------------------------
+test_runner_parallel_dispatch_integrity() {
+  local dir="$FIXTURE_DIR/par_dir"
+  mkdir -p "$dir"
+  local i
+  for i in $(seq 1 6); do
+    write_test "$dir/test_p${i}.sh" '#!/usr/bin/env bash
+echo "  PASS: p"'
+  done
+  run_runner "$dir"
+  assert_rc 0 "$RC" "runner: parallel all-pass directory exits 0"
+  assert_contains "$OUT" "6 tests across 6 files, 6 passed, 0 failed, 0 skipped" \
+    "runner: parallel dispatch counts every file exactly"
+}
+
 run_test test_runner_passing_file
 run_test test_runner_failing_file
 run_test test_runner_crash_no_markers
@@ -270,5 +305,7 @@ run_test test_runner_empty_discovery
 run_test test_runner_broken_prerequisite
 run_test test_runner_satisfied_prerequisite
 run_test test_runner_dead_registration
+run_test test_runner_deadline_expiry
+run_test test_runner_parallel_dispatch_integrity
 
 test_done test_runner_selftest.sh
