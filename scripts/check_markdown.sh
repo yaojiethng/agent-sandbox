@@ -9,8 +9,10 @@
 #
 # Uses .markdownlint-cli2.mjs at the repo root. The config enables the
 # rule subset that matches docs/operations/documentation_policy.md plus
-# the custom doc-ascii rule (plain-ASCII prose). MD013 and MD060 are
-# disabled because they contradict written policy (see config header).
+# the custom doc-ascii rule (plain-ASCII prose) and the doc-wrap rule
+# (one paragraph per physical line, currently off pending the M3.1
+# enable step). MD013 and MD060 are disabled because they contradict
+# written policy (see config header).
 
 set -uo pipefail
 
