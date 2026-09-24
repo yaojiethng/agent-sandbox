@@ -112,16 +112,20 @@ compose_generate() {
   fi
 
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
-  # then run docker compose config --no-interpolate to merge them.
+  # then run docker compose config --no-interpolate to merge them. The staging
+  # dir is cleaned explicitly on every return path (no RETURN trap: under bats'
+  # functrace a RETURN trap fires across command-substitution boundaries, so the
+  # dir could be deleted mid-function). Paths before staging creation need no
+  # cleanup.
   local staging_dir
   staging_dir="$(mktemp -d)"
-  trap 'rm -rf "$staging_dir"' RETURN
 
   local staged_files=()
   local i=0
   for src in "${input_files[@]}"; do
     if [[ ! -f "$src" ]]; then
       echo "compose_generate: input file not found: $src" >&2
+      rm -rf "$staging_dir"
       return 1
     fi
     local dst
@@ -161,9 +165,13 @@ compose_generate() {
   #   name:              --  top-level project name (set via --project-name in compose_args)
   #   networks.default.name:  --  Compose injects the staging dir name; we want the
   #                            project-scoped default, set at runtime by --project-name
+  local merge_rc
   docker compose "${staged_files[@]}" config --no-interpolate \
     | grep -v '^[[:space:]]*name:' \
     > "$output_file"
+  merge_rc=$?
+  rm -rf "$staging_dir"
+  return "$merge_rc"
 }
 
 # -------------------------
