@@ -31,6 +31,10 @@ reject_run() {
   DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
   eval "$DRAFT_VALIDATION"
 
+  # source_branch and CURRENT_BRANCH are printed by draft_validate_branch
+  # (the assignments eval'd above) and materialized in this scope; ShellCheck
+  # cannot trace assignments introduced by `eval`.
+  # shellcheck disable=SC2154
   echo "Rejecting draft. Returning to $source_branch..."
   if ! git -C "$PROJECT_DIR" checkout "$source_branch" 2>/dev/null; then
     # Draft residue (e.g. uncommitted.diff applied to the working tree) blocks

@@ -308,6 +308,9 @@ test_compose_file_from_args_extracts_f_value() {
 test_compose_file_from_args_empty_without_f() {
   (
     source "$REPO_ROOT/src/build/compose.sh"
+    # COMPOSE_ARGS is read by compose_file_from_args in the sourced
+    # compose.sh; ShellCheck cannot trace the cross-source read.
+    # shellcheck disable=SC2034
     COMPOSE_ARGS=(--project-name p)
     [[ -z "$(compose_file_from_args)" ]]
   )

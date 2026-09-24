@@ -4,6 +4,8 @@
 
 set -uo pipefail
 
+SECONDS=0
+
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 # RUN_TESTS_DIR overrides discovery for the runner self-test
 # (tests/test_runner_selftest.sh feeds it synthetic files).
@@ -163,7 +165,7 @@ main() {
 
   echo ""
   local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
-  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped"
+  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)"
 
   if [[ "$TOTAL_SKIP" -gt 0 ]]; then
     echo "ERROR: make test must have zero skips (expected deterministic unit/integration suite)." >&2

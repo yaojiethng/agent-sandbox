@@ -233,6 +233,10 @@ main() {
   PROJECT_NAME=""
   PROJECT_DIR=""
   SANDBOX_DIR_OVERRIDE=""
+  # ENV_REL is the --env parse target; its default .env is read by
+  # env_resolve_identity in the sourced session_env.sh, which ShellCheck
+  # cannot trace across `source`.
+  # shellcheck disable=SC2034
   ENV_REL=".env"
   PROVIDER_NAME=""
   REFRESH=false

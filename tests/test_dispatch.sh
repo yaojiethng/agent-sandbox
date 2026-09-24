@@ -92,7 +92,7 @@ source_harness() {
   # it here so its top-level `source $AGENT_SANDBOX_REPO/src/libs/...` resolves
   # the real common.sh and env_resolve.sh. Source the real dispatcher directly
   # (no temp render: there is no @@AGENT_SANDBOX_REPO@@ placeholder anymore).
-  AGENT_SANDBOX_REPO="$REPO_ROOT"
+  export AGENT_SANDBOX_REPO="$REPO_ROOT"
 
   # Override exec to capture: the dispatcher's exec'd leaves are mocked.
   exec() { mock_exec "$@"; }

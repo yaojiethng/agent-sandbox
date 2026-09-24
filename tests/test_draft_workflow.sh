@@ -17,7 +17,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
-AGENT_SANDBOX_REPO="$REPO_ROOT"
+export AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/draft.sh"
 source "$REPO_ROOT/scripts/guards.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
@@ -25,7 +25,6 @@ source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/draft_fixtures.sh"
 
 make_real_session() {
-  local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
   local SESSION_TS="${3:-20260408-120000}"
   local BRANCH="${4:-main}"

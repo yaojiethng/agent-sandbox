@@ -22,6 +22,8 @@
 
 set -uo pipefail
 
+SECONDS=0
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 SCAN_DIRS=("$REPO_ROOT/src/libs" "$REPO_ROOT/src/build")
@@ -153,5 +155,5 @@ if (( RC != 0 )); then
   exit 1
 fi
 
-echo "Clean"
+echo "Clean (${SECONDS}s)"
 exit 0

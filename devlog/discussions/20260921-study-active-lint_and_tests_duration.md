@@ -1,6 +1,6 @@
 # Study: Lint and Tests Duration
 
-**Status:** In progress - measurement complete; the approach selection and the fix wait for operator input.
+**Status:** Lint recommendation adopted and landed (iteration `20260921-12`); the suite-duration approach remains open.
 
 ## Direction + Parent story
 
@@ -56,9 +56,13 @@ The copy-delivery hook (`src/capability/git-hooks/pre-commit.sh`, ADR entry 2026
 ## Open Questions
 
 1. May the ShellCheck gate switch from one batch invocation to per-file checking? Per-file is strict (8 files fail until reconciled) and faster (9s serial, ~1s parallel). The strictness is a semantics change, not a pure speed change.
+   **Resolved:** yes - the operator chose parallel per-file. `check_shell.sh` now runs shellcheck once per file, concurrently (`20260921-12`), cutting the shell gate from ~30s to ~1.5s.
 2. If strict per-file becomes the gate, are the 8 failing references fixed (real defects) or suppressed with rationale (sourced-context false positives)?
-3. If the batch stays, is the 30s cost acceptable at pre-close, given the commit hook already gives fast feedback on staged files? The cheap-path argument: the hook is the backpressure; the full gate is a periodic whole-tree sweep.
+   **Resolved:** mixed - each was judged on its merit. One dead assignment removed (`make_real_session`'s unused `PROJECT_DIR`); five `AGENT_SANDBOX_REPO` presets exported (the documented preset-and-sourcing contract, matching two sibling tests); four flagged sites got a targeted rationale directive (`ENV_REL`, the interactive-test `PROJECT_DIR`, `COMPOSE_ARGS`, and `reject.sh`'s eval-emitted `source_branch`) where the value is genuinely consumed by code `source`/`eval` introduces that ShellCheck cannot trace.
+3. If the batch stays, is the 30s cost acceptable at pre-close, given the commit hook already gives fast feedback on staged files?
+   **Resolved:** moot - per-file parallel replaced the batch.
 4. May the three gates run in parallel (background jobs) to cut the lint total, or must output stay serial per gate?
+   **Resolved:** yes - the operator authorized background jobs. `lint.sh` runs the shell, lib-contract, and markdown gates concurrently and prints each gate's output on completion, so the report stays deterministic.
 
 ## Constraints
 
@@ -69,6 +73,5 @@ The copy-delivery hook (`src/capability/git-hooks/pre-commit.sh`, ADR entry 2026
 
 ## Next Steps
 
-1. Operator selects an approach from the Open Questions.
-2. The chosen approach lands as a follow-up M3.1 task (the selection and the 8-file reconciliation decide its size: small for batch-parallel only, medium if strict per-file becomes the gate).
-3. Test-runner parallelism, if wanted, is a separate change under the same follow-up.
+1. Lint-side recommendation landed in iteration `20260921-12`: per-file parallel shellcheck + concurrent gates, with the 8 exposed sites patched. The lint roadmap row is closed.
+2. The suite-duration task is now its own roadmap row; its approach selection (test-runner parallelism) is open and lands separately.

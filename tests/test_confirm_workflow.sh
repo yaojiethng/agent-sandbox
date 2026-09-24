@@ -16,7 +16,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
-AGENT_SANDBOX_REPO="$REPO_ROOT"
+export AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/draft.sh"
 source "$REPO_ROOT/scripts/workflows/confirm.sh"
 source "$REPO_ROOT/scripts/guards.sh"

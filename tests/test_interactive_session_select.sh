@@ -14,7 +14,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
-AGENT_SANDBOX_REPO="$REPO_ROOT"
+export AGENT_SANDBOX_REPO="$REPO_ROOT"
 source "$REPO_ROOT/scripts/workflows/interactive.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
@@ -532,6 +532,9 @@ test_select_session_current_branch_hint() {
   local PROJ="$FIXTURE_DIR/ss_branchhint_proj"
   make_committed_repo "$PROJ"
   git -C "$PROJ" checkout -q -b feat/bundle-hint
+  # PROJECT_DIR is read by interactive_select_bundle in the sourced
+  # interactive.sh; ShellCheck cannot trace the cross-source read.
+  # shellcheck disable=SC2034
   PROJECT_DIR="$PROJ"
 
   local STDERR

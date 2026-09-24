@@ -15,6 +15,8 @@
 
 set -uo pipefail
 
+SECONDS=0
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$REPO_ROOT" || exit 1
@@ -59,5 +61,5 @@ if (( STATUS != 0 || COUNT > 0 )); then
   exit 1
 fi
 echo "markdownlint: 0 finding(s)"
-echo "Clean"
+echo "Clean (${SECONDS}s)"
 exit 0
