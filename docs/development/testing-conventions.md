@@ -181,6 +181,16 @@ fi
 
 ---
 
+### Anti-Pattern 8: Whole-Project Scan as a Unit Assertion
+
+**Symptom:** A unit test lints or scans the whole project tree as its assertion (for example "the repository carries zero findings of rule X"). The repo tree is not guaranteed to contain the negative cases the rule must reject, so the assertion checks project identity, not rule behaviour. It also re-does at test time the work the lint gate owns, and it makes the suite slow.
+
+**Rule:** A unit test probes the rule with fixtures that carry the positive and negative cases it must handle. A whole-tree scan as an assertion is an anti-pattern when the corpus is incidental (the pass holds only because the current files happen not to vary) and when it is expensive enough to slow the suite; in that case the negative cases you care about are the fixtures, and asserting zero findings across the whole tree is the lint gate's responsibility, not a fixture test's. A whole-tree conformance smoke is acceptable when it is cheap and the scanned corpus is exactly the object the rule governs (so the corpus itself is the negative-case set) -- for example `test_lib_contract.sh` scans the sourced libraries the return-not-exit rule constrains in ~0.1s. Either way, a whole-tree scan must never substitute for the fixture tests that carry the rule's behaviour.
+
+**Example:** `test_doc_wrap_rule.sh`'s `test_real_tree_zero_findings` ran `markdownlint-cli2` over every `.md` file in the repository with the rule on. It added about 4 seconds of node time to the suite and could pass only as long as no project file ever hard-wrapped prose -- a fact unrelated to whether the rule rejects wrapped fixtures. Removed as Anti-Pattern 8 (iteration `20260921-13`); the fixture tests carry the rule's behaviour, and the whole-tree lint is `check_markdown.sh`'s job.
+
+---
+
 ## Test Structure Template
 
 **The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.

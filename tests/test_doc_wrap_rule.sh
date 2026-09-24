@@ -15,9 +15,11 @@
 #   wrapped blockquote    --  flagged
 #   legacyFiles seam      --  a file named in the rule config is exempt, and
 #                             only that file
-#   real tree guard        --  the whole repository carries zero findings with
-#                             the rule on and no exemptions
 #
+# The rule's live whole-tree behaviour is the Markdown lint gate's job
+# (`check_markdown.sh`), not a fixture unit test's: the repo tree is not
+# guaranteed to hold the negative cases, and this test would re-lint the
+# project inside the suite. See testing-conventions.md Anti-Pattern 8.
 # Run:   bash tests/test_doc_wrap_rule.sh
 # Exit:  0 = all passed, non-zero = failure count
 
@@ -118,27 +120,11 @@ test_legacy_exemption_seam() {
   assert_not_contains "$out" "a.md:1 error doc-wrap" "exempt file not flagged"
 }
 
-test_real_tree_zero_findings() {
-  local cfg="$FIXTURE_DIR/treecfg.mjs"
-  cat > "$cfg" <<EOF
-export default {
-  config: { default: false, "doc-wrap": true },
-  customRules: ["$RULE"],
-  globs: ["$REPO_ROOT/**/*.md"],
-  ignores: ["$REPO_ROOT/**/node_modules/**"],
-};
-EOF
-  local out rc=0
-  out="$(cd "$FIXTURE_DIR" && markdownlint-cli2 --config "$cfg" 2>&1)" || rc=$?
-  assert_eq "0" "$rc" "the real tree carries zero doc-wrap findings (rule on, no exemptions)"
-}
-
 run_test test_wrapped_paragraph_flagged
 run_test test_single_line_paragraph_clean
 run_test test_fence_and_table_exempt
 run_test test_frontmatter_exempt
 run_test test_wrapped_list_item_and_quote_flagged
 run_test test_legacy_exemption_seam
-run_test test_real_tree_zero_findings
 
 test_done
