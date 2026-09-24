@@ -256,6 +256,8 @@ Run a command that must fail (or whose rc matters) with the capture-and-assert h
 
 Some commands return non-zero as a signal, not an error, and `|| true` after them is load-bearing -- do not strip it as noise. `git diff` returns rc 1 when it finds differences (rc 0 means no changes), so `git diff --cached > x.diff || true` must tolerate rc 1 to capture a real diff; `grep -c` returns rc 1 when it finds no matches, so a count expression needs it; a whole-pipeline `grep -v | awk` chain signals "nothing matched" the same way; a sourced preflight script may legitimately exit; and under the strict per-test rule (a non-zero exit from the test subshell is a failed test) the last command of a test function is its return, so a trailing cleanup command (for example `git rebase --abort`) must be masked or restructured or it flips an otherwise-passing test to a failure. These masks are the explicit tolerance the "no reliance on benign non-zero intermediates" rule permits; a mask on a plain command whose rc 0 means success is the one to avoid -- prefer `assert_run` and an rc or output assertion.
 
+Assertion labels carry the meaning, not the string: every `assert_*` call takes a label that names the behavior under test (for example `"serve: up failure still tears down"`), never a restatement of the values. The suite verifies at zero bare calls: no assertion relies on a helper's default label, so a failure names the behavior, not just the mismatch.
+
 ---
 
 ## Debugging Test Failures
