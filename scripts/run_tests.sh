@@ -136,7 +136,11 @@ worker() {
     0)
       if [[ "$RC" -ne 0 && "$RC" -ne 124 || "$FILE_FAIL" -gt 0 ]]; then
         echo "FAIL $BASENAME"
-        grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
+        if [[ "$FILE_FAIL" -gt 0 ]]; then
+          grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
+        else
+          echo "  - file exited $RC with no FAIL: marker (crash or uncaught non-zero command)"
+        fi
       fi
       ;;
     1)
@@ -144,7 +148,11 @@ worker() {
         echo "PASS $BASENAME ($FILE_PASS passed, $FILE_SKIP skipped)"
       else
         echo "FAIL $BASENAME ($FILE_PASS passed, $FILE_FAIL failed, $FILE_SKIP skipped)"
-        grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
+        if [[ "$FILE_FAIL" -gt 0 ]]; then
+          grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
+        elif [[ "$RC" -ne 124 ]]; then
+          echo "  - file exited $RC with no FAIL: marker (crash or uncaught non-zero command)"
+        fi
       fi
       ;;
     2)

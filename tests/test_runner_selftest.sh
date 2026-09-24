@@ -88,6 +88,7 @@ exit 3'
   run_runner "$dir"
   assert_ne "0" "$RC" "runner: marker-less crash exits non-zero"
   assert_contains "$OUT" "FAIL test_crash.sh" "runner: crashed file reported by name"
+  assert_contains "$OUT" "file exited 3 with no FAIL: marker" "runner: crash carries an accompanying reason"
 }
 
 # ---------------------------------------------------------------
