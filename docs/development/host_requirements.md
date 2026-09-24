@@ -70,4 +70,3 @@ The gate deliberately fails closed. A silent partial setup fails later in the se
 ## Notes
 
 - The inside-the-container work always runs on Linux, regardless of the host. The requirement surface above is only the host-side prelude (`scripts/`, `src/libs/`).
-- A full rewrite of the host tooling in a cross-platform language (nushell) is indefinitely deferred. See `devlog/roadmap.md`, `#### Not in scope`.
