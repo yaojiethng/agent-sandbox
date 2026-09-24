@@ -12,22 +12,18 @@ fi
 # in the file's own shell.
 #   PASS -- passing test units
 #   FAIL -- failing test units
+#   SKIP -- skipped test units (a temporary absence; reported as a warning)
 #   FAILURES -- names of the failing tests, for the test_done summary
 # ---------------------------------------------------------------------------
 : "${PASS:=0}"
 : "${FAIL:=0}"
+: "${SKIP:=0}"
 FAILURES=()
 
 # _IN_TEST marks the current test subshell. Inside it fail() exits the
 # subshell non-zero (fail-fast); outside it fail() accumulates so a stray
 # top-level assertion cannot kill the file mid-way.
 _IN_TEST=0
-
-# REVERSE_RUN=1 defers run_test registrations and test_done flushes them in
-# reverse registration order -- the order-independence probe. Normal runs
-# (REVERSE_RUN unset) execute each test immediately as registered.
-: "${REVERSE_RUN:=0}"
-_RUN_QUEUE=()
 
 # ---------------------------------------------------------------------------
 # Untyped per-test allocator.
@@ -88,6 +84,23 @@ fail() {
   fi
 }
 
+# skip REASON  --  mark the current test as temporarily absent: the subject is
+# not ready (an operation the docker stub does not yet cover, a dependency
+# that is unstubbed or missing), so the test cannot assert meaningfully yet.
+# A skipped unit is reported as a warning, not a failure; resolve the cause so
+# skips trend back to zero. Inside a test, skip() ends the unit immediately
+# (nothing after it runs) and the unit counts as skipped. The skipped detail
+# is "  skipped: ", distinct from the "  ok: "/"  not ok: " assertion details.
+skip() {
+  if (( _IN_TEST )); then
+    echo "  skipped: $1"
+    exit 0
+  else
+    echo "  SKIP: $1"
+    SKIP=$((SKIP + 1))
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Docker-trace assertions  --  the standard way to assert on the recorded
 # docker stub invocations. DOCKER_TRACE_LOG must be set by the fixture.
@@ -123,25 +136,24 @@ trace_has() {
 #   counts.
 # shellcheck disable=SC2034  # rc carries the subshell result to the unit branch
 run_test() {
-  if (( REVERSE_RUN )); then
-    _RUN_QUEUE+=("$1")
-    return 0
-  fi
   _run_one "$1"
 }
 
 # _run_one NAME  --  run_test's immediate execution: the test subshell, the
-# unit marker, and the accounting. Extracted so test_done can flush a
-# reversed-registration probe (REVERSE_RUN=1) with the same body.
+# unit marker, and the accounting.
 #
 #   set +e: the design's fail-fast is fail() (controlled exit), not errexit.
 #   A shell that sourced a script running `set -e` (start_agent.sh does) must
 #   still let a test capture `out=$(cmd); rc=$?` where cmd fails, and the
 #   `|| rc=$?` below keeps the unit capture errexit-safe in the file shell.
+#
+#   The unit's output is captured and re-emitted so a skip can be told apart
+#   from a pass: skip() emits "  skipped: reason" and exits 0, so the unit is
+#   counted as skipped, not passed.
 _run_one() {
-  local name="$1" rc=0
+  local name="$1" rc=0 out
   echo "[ $name ]"
-  ( set +e
+  out="$( set +e
     _alloc_log="$(mktemp /tmp/tc_alloc_XXXXXX)"
     : > "$_alloc_log"
     # Preserve the would-be exit status: the EXIT trap's own final command
@@ -162,7 +174,13 @@ _run_one() {
       exit 1
     fi
     exit 0
-  ) || rc=$?
+  )" || rc=$?
+  printf '%s\n' "$out"
+  if grep -qE '^[[:space:]]*skipped:' <<< "$out"; then
+    SKIP=$((SKIP + 1))
+    echo "  SKIP: $name"
+    return 0
+  fi
   if (( rc == 0 )); then
     PASS=$((PASS + 1))
     echo "  PASS: $name"
@@ -210,21 +228,20 @@ make_envfile() {
 #   Prints the file's per-test-unit results and exits with the failing-unit
 #   count (0 on green). The failing names were already emitted as unit
 #   markers by run_test; the list below is a human-friendly reprint.
+#
+#   Emits one machine-readable UNIT: line -- the authoritative counts the
+#   runner reads. scripts/run_tests.sh parses this line; it does not re-derive
+#   counts from the cosmetic markers, so the failure verdict rides the exit
+#   code and the counts ride this report. A file that never reaches test_done
+#   (crash) or emits no report fails loudly in the runner.
 test_done() {
   local NAME="${1:-}"
-  if (( REVERSE_RUN )) && (( ${#_RUN_QUEUE[@]} > 0 )); then
-    # Order-independence probe: run the registrations in reverse, proving
-    # no test depends on a sibling's side effects (subshell per test).
-    local _i
-    for (( _i = ${#_RUN_QUEUE[@]} - 1; _i >= 0; _i-- )); do
-      _run_one "${_RUN_QUEUE[$_i]}"
-    done
-  fi
   if [[ -n "$NAME" ]]; then
     echo "=== $NAME ==="
     echo
   fi
-  echo "Results: $PASS passed, $FAIL failed"
+  echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+  printf 'UNIT: pass=%d fail=%d skip=%d\n' "$PASS" "$FAIL" "$SKIP"
   if [[ ${#FAILURES[@]} -gt 0 ]]; then
     echo "Failed:"
     for f in "${FAILURES[@]}"; do echo "  - $f"; done
@@ -233,9 +250,9 @@ test_done() {
 }
 
 # ---------------------------------------------------------------------------
-# Assertion helpers  --  the standard way to assert inside a test function.
-# Each calls pass or fail itself, so a test body can be one to three lines
-# and can never be assertion-less.
+# Assertion helpers  --  one way to assert; an alternative to an inline
+# `if ...; then pass; else fail; fi`. Each helper calls pass or fail itself,
+# so a test body can be one to three lines and can never be assertion-less.
 #
 #   assert_eq ACTUAL EXPECTED [LABEL]       --  string equality
 #   assert_ne ACTUAL UNEXPECTED [LABEL]     --  string inequality

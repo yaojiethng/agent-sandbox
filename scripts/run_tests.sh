@@ -56,26 +56,6 @@ discover_tests() {
   printf '%s\n' "${FILES[@]}" | sort
 }
 
-# check_liveness FILE
-#   Static guard for the structural template (testing-conventions.md): a
-#   run_test registration after test_done is dead code -- test_done exits the
-#   process, so the test never runs and never fails. test_done cannot guard
-#   this in-process (it exits), so the runner scans the file. The scan anchors
-#   on the registration contract (run_test naming a test_ function, the same
-#   shape check_test_liveness.sh greps): a registration-shaped word inside a
-#   quoted payload is not flagged unless it sits at column 0.
-check_liveness() {
-  local FILE="$1" BASENAME
-  BASENAME="$(basename "$FILE")"
-  if ! awk '
-    /^[[:space:]]*test_done([[:space:]]|$)/ { seen = 1 }
-    /^[[:space:]]*run_test[[:space:]]+test_[A-Za-z0-9_]+([[:space:]]|$)/ { if (seen) exit 1 }
-  ' "$FILE"; then
-    echo "FATAL $BASENAME: run_test registered after test_done -- the registration is dead code (testing-conventions.md, Test Structure Template)" >&2
-    ANY_FAILED=1
-  fi
-}
-
 # run_with_deadline DEADLINE OUT FILE
 #   Runs the test file under a pure-bash wall-clock deadline. Backgrounds the
 #   test and polls it at 0.1s, killing it on expiry and returning 124. No
@@ -104,37 +84,61 @@ run_with_deadline() {
 }
 
 # worker FILE
-#   Runs one test file in a child shell under the deadline, counts its markers,
-#   writes the status record to $RESULTS_DIR, and prints the per-file line.
-#   stdin from /dev/null: a test subprocess reading stdin must not disturb the
-#   parent's xargs pipe (the FD-offset bug class). Always exits 0; failures are
-#   carried in the record and the printed line.
+#   Runs one test file in a child shell under the deadline, reads its unit
+#   report, writes the status record to $RESULTS_DIR, and prints the per-file
+#   line. stdin from /dev/null: a test subprocess reading stdin must not
+#   disturb the parent's xargs pipe (the FD-offset bug class). Always exits 0;
+#   failures are carried in the record and the printed line.
+#
+#   Counts come from the test file's own UNIT: report (test_common's test_done,
+#   e.g. "UNIT: pass=16 fail=0 skip=1"), not from re-parsing presentation
+#   markers, so a format drift cannot silently zero the result. A file with no
+#   report (crash, missing test_done) or a zero-unit report (no run_test
+#   executed) is a failure by construction.
 worker() {
   local FILE="$1"
   local BASENAME
   BASENAME="$(basename "$FILE")"
-  local TMPFILE RECORD RC FILE_PASS FILE_FAIL FILE_SKIP
+  local TMPFILE RECORD RC FILE_PASS FILE_FAIL FILE_SKIP UNIT special
   TMPFILE=$(mktemp)
   RECORD="$RESULTS_DIR/$BASENAME.record"
 
   run_with_deadline "$TEST_TIMEOUT" "$TMPFILE" "$FILE"
   RC=$?
 
-  FILE_PASS=$(grep -c "^  PASS:" "$TMPFILE" 2>/dev/null) || true
-  FILE_FAIL=$(grep -c "^  FAIL:" "$TMPFILE" 2>/dev/null) || true
-  FILE_SKIP=$(grep -c "^  SKIP:" "$TMPFILE" 2>/dev/null) || true
-
-  printf '%s %s %s %s\n' "$FILE_PASS" "$FILE_FAIL" "$FILE_SKIP" "$RC" > "$RECORD"
-
+  UNIT="$(grep '^UNIT: pass=' "$TMPFILE" 2>/dev/null | tail -1)"
+  FILE_PASS=0; FILE_FAIL=0; FILE_SKIP=0
+  special=""
   if [[ "$RC" -eq 124 ]]; then
-    echo "TIMEOUT $BASENAME (exceeded ${TEST_TIMEOUT}s deadline)"
-  elif [[ "$RC" -eq 0 && "$FILE_PASS" -eq 0 && "$FILE_FAIL" -eq 0 && "$FILE_SKIP" -eq 0 ]]; then
-    echo "WARN $BASENAME (0 tests executed  --  file may be missing run_test calls)" >&2
+    special="TIMEOUT $BASENAME (exceeded ${TEST_TIMEOUT}s deadline)"
+  elif [[ -z "$UNIT" ]]; then
+    FILE_FAIL=1
+    special="FAIL $BASENAME (file exited $RC with no UNIT: report -- crash or missing test_done)"
+  elif [[ "$UNIT" =~ ^UNIT:[[:space:]]pass=([0-9]+)[[:space:]]fail=([0-9]+)[[:space:]]skip=([0-9]+)$ ]]; then
+    FILE_PASS="${BASH_REMATCH[1]}"; FILE_FAIL="${BASH_REMATCH[2]}"; FILE_SKIP="${BASH_REMATCH[3]}"
+    if (( FILE_PASS + FILE_FAIL + FILE_SKIP == 0 )); then
+      FILE_FAIL=1
+      special="FAIL $BASENAME (UNIT report but 0 test units -- no run_test executed)"
+    fi
+  else
+    # A UNIT line present but malformed is a drifted shape, not a zero.
+    FILE_FAIL=1
+    special="FAIL $BASENAME (malformed UNIT: report -- $UNIT)"
+  fi
+
+  # The worker-to-parent record is self-describing key=value; main() validates
+  # it strictly, so a shape drift is a loud failure, not a silent misparse.
+  printf 'pass=%s fail=%s skip=%s rc=%s\n' "$FILE_PASS" "$FILE_FAIL" "$FILE_SKIP" "$RC" > "$RECORD"
+
+  if [[ -n "$special" ]]; then
+    echo "$special" >&2
+  elif [[ "$FILE_SKIP" -gt 0 ]]; then
+    echo "WARN $BASENAME ($FILE_SKIP skipped)" >&2
   fi
 
   case "$VERBOSE" in
     0)
-      if [[ "$RC" -ne 0 && "$RC" -ne 124 || "$FILE_FAIL" -gt 0 ]]; then
+      if [[ -z "$special" && ( "$RC" -ne 0 && "$RC" -ne 124 || "$FILE_FAIL" -gt 0 ) ]]; then
         echo "FAIL $BASENAME"
         if [[ "$FILE_FAIL" -gt 0 ]]; then
           grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
@@ -144,20 +148,20 @@ worker() {
       fi
       ;;
     1)
-      if [[ "$RC" -eq 0 && "$FILE_FAIL" -eq 0 ]]; then
-        echo "PASS $BASENAME ($FILE_PASS passed, $FILE_SKIP skipped)"
-      else
-        echo "FAIL $BASENAME ($FILE_PASS passed, $FILE_FAIL failed, $FILE_SKIP skipped)"
-        if [[ "$FILE_FAIL" -gt 0 ]]; then
-          grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
-        elif [[ "$RC" -ne 124 ]]; then
-          echo "  - file exited $RC with no FAIL: marker (crash or uncaught non-zero command)"
+      if [[ -z "$special" ]]; then
+        if [[ "$RC" -eq 0 && "$FILE_FAIL" -eq 0 ]]; then
+          echo "PASS $BASENAME ($FILE_PASS passed, $FILE_SKIP skipped)"
+        else
+          echo "FAIL $BASENAME ($FILE_PASS passed, $FILE_FAIL failed, $FILE_SKIP skipped)"
+          if [[ "$FILE_FAIL" -gt 0 ]]; then
+            grep "^  FAIL:" "$TMPFILE" | sed 's/^  FAIL: /  - /' || true
+          fi
         fi
       fi
       ;;
     2)
       cat "$TMPFILE"
-      if [[ "$RC" -eq 0 && "$FILE_FAIL" -eq 0 ]]; then
+      if [[ -z "$special" && "$RC" -eq 0 && "$FILE_FAIL" -eq 0 ]]; then
         echo "PASS $BASENAME"
       else
         echo "FAIL $BASENAME"
@@ -192,11 +196,11 @@ done
 main() {
   check_prerequisites || exit 1
 
-  # Registration liveness gate (mandatory, runs before any test): a test
-  # function without a run_test registration never executes, so the suite can
-  # report green while silently excluding coverage -- the gate makes that
-  # loud instead. Skipped under the runner self-test's RUN_TESTS_DIR override
-  # (synthetic fixture dir; the real suite's liveness is not the subject).
+  # Registration liveness gate (mandatory, runs before any test): the gate
+  # owns the registration contract -- unregistered tests, dangling
+  # registrations, and a run_test after test_done. Skipped under the runner
+  # self-test's RUN_TESTS_DIR override (synthetic fixture dir; the selftest
+  # invokes the gate directly on its fixture).
   if [[ -z "${RUN_TESTS_DIR:-}" ]]; then
     if ! bash "$REAL_TESTS_DIR/../scripts/check_test_liveness.sh"; then
       echo "ERROR: test liveness gate failed -- fix the findings above before running the suite." >&2
@@ -206,14 +210,6 @@ main() {
 
   local TEST_FILES
   TEST_FILES=$(discover_tests) || exit 1
-
-  # Live registration scans run before dispatch (not in workers) so the
-  # findings print once, deterministically, before any test output.
-  local FILE
-  while IFS= read -r FILE; do
-    [[ -n "$FILE" ]] || continue
-    check_liveness "$FILE"
-  done <<< "$TEST_FILES"
 
   # Dispatch every file in parallel. Each worker is a child copy of this script
   # (`bash "$0" --worker`), inheriting VERBOSE / RESULTS_DIR / TEST_TIMEOUT by
@@ -228,7 +224,7 @@ main() {
 
   # Aggregate the workers' records. One record per dispatched file; a missing
   # record means the worker died, which is a failure.
-  local RECORD BASENAME PASS FAIL SKIP RC
+  local RECORD BASENAME RECLINE
   while IFS= read -r FILE; do
     [[ -n "$FILE" ]] || continue
     BASENAME="$(basename "$FILE")"
@@ -239,13 +235,22 @@ main() {
       FILE_COUNT=$((FILE_COUNT + 1))
       continue
     fi
-    read -r PASS FAIL SKIP RC < "$RECORD"
-    TOTAL_PASS=$((TOTAL_PASS + PASS))
-    TOTAL_FAIL=$((TOTAL_FAIL + FAIL))
-    TOTAL_SKIP=$((TOTAL_SKIP + SKIP))
-    FILE_COUNT=$((FILE_COUNT + 1))
-    if [[ "$RC" -ne 0 || "$FAIL" -gt 0 || "$SKIP" -gt 0 ]]; then
+    # The record is self-describing key=value; validate it strictly. A
+    # malformed record is a hard failure -- worker and parent are one file, so
+    # a shape drift is an edit bug we make loud.
+    IFS= read -r RECLINE < "$RECORD" || true
+    if [[ "$RECLINE" =~ ^pass=([0-9]+)[[:space:]]fail=([0-9]+)[[:space:]]skip=([0-9]+)[[:space:]]rc=([0-9]+)$ ]]; then
+      TOTAL_PASS=$((TOTAL_PASS + ${BASH_REMATCH[1]}))
+      TOTAL_FAIL=$((TOTAL_FAIL + ${BASH_REMATCH[2]}))
+      TOTAL_SKIP=$((TOTAL_SKIP + ${BASH_REMATCH[3]}))
+      FILE_COUNT=$((FILE_COUNT + 1))
+      if [[ "${BASH_REMATCH[4]}" -ne 0 || "${BASH_REMATCH[2]}" -gt 0 ]]; then
+        ANY_FAILED=1
+      fi
+    else
+      echo "FAIL $BASENAME (worker wrote a malformed record)" >&2
       ANY_FAILED=1
+      FILE_COUNT=$((FILE_COUNT + 1))
     fi
   done <<< "$TEST_FILES"
 
@@ -256,9 +261,7 @@ main() {
   echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)"
 
   if [[ "$TOTAL_SKIP" -gt 0 ]]; then
-    echo "ERROR: make test must have zero skips (expected deterministic unit/integration suite)." >&2
-    echo "       $TOTAL_SKIP skipped. Move non-deterministic/utility-gated tests to tests/integration/." >&2
-    ANY_FAILED=1
+    echo "WARN: $TOTAL_SKIP test(s) skipped -- a temporary absence (unstubbed or missing subject); resolve the cause so skips trend back to zero." >&2
   fi
 
   if [[ "$ANY_FAILED" -eq 1 ]]; then

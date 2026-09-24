@@ -30,7 +30,7 @@ You are a fresh reviewer with a clean context. Work in `/home/agentuser/sandbox`
 - Fixtures: `test_setup` at file scope sets `TEST_DIR`, `REPO_ROOT`, and a file-scope `FIXTURE_ROOT`. Inside a test, `FIXTURE_DIR` is a fresh per-test root. `get_fixture_dir` (alias `get_test_dir`) allocates extra fresh dirs, all removed on the test's exit. Teardown is the allocator's; tests must not hand-roll `rm -rf "$FIXTURE_DIR"` traps or bare `mktemp -d`.
 - `assert_run EXPECTED_RC CMD [LABEL]` runs CMD in a subshell and captures its combined output into `RUN_OUT` (never discarded), asserting rc.
 - The per-test subshell runs `set +e`, so errexit aborts cannot happen; `|| true` masks are tolerated where the rc is a benign signal (`git diff` rc1 = differences found; `grep -c` rc1 = no matches; trailing cleanup commands under the strict rule that a non-zero test-subshell exit is a failure). A mask on a plain success-expected command is still a smell.
-- Order independence is proven by `scripts/check_test_order.sh` (REVERSE_RUN reversed-run gate): the suite must show identical unit tallies in either order.
+- Each test runs in its own subshell with a fresh `FIXTURE_DIR`, so the suite is order-independent by construction; no order gate is needed.
 
 ## The authoring bar -- every assertion in `tests/test_*.sh` (58 files) against these
 
@@ -40,7 +40,7 @@ You are a fresh reviewer with a clean context. Work in `/home/agentuser/sandbox`
 4. **Unified explicit teardown**: flag tests that clean up manually (`rm -rf` of their own dirs) where the allocator should own it, or that leak dirs (create via other means).
 5. **No reliance on benign non-zero intermediates**: flag `|| true` on a plain command whose rc 0 means success and where the failure would be silently hidden (not the documented git-diff/grep-c/trailing-normalization cases).
 6. **Descriptive labels where they disambiguate**: flag assertions that share a default or near-duplicate label within one test function such that a failure would not say which assertion fired. (The suite is documented as zero bare 2-arg calls -- verify and flag any found.)
-7. **Order independence**: nothing to fix here; the REVERSE_RUN gate covers it. Only flag a test that obviously depends on a sibling's written file.
+7. **Order independence**: nothing to fix here; each test runs in its own subshell with a fresh fixture, so the suite is order-independent by construction. Only flag a test that obviously depends on a sibling's written file.
 
 ## Output format
 

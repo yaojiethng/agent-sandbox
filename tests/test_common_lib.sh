@@ -190,11 +190,30 @@ test_source_function_from_fails_when_pattern_missing() {
   fi
 }
 
+test_skip_counts_as_skipped_unit() {
+  # skip() goes through the real _run_one in a fresh script, so the shared
+  # counters here are unaffected and the suite keeps a committed skip count of
+  # zero. The fixture asserts the third unit outcome: skipped, not passed.
+  local fixture="$FIXTURE_DIR/skip_me.sh"
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    "source '$REPO_ROOT/tests/libs/test_common.sh'" \
+    'test_pending() { skip "operation not yet stubbed"; }' \
+    'run_test test_pending' \
+    'test_done' > "$fixture"
+  local out rc
+  out="$(bash "$fixture" 2>&1)"; rc=$?
+  assert_rc 0 "$rc" "a skipped file exits 0 (warning, not failure)"
+  assert_contains "$out" "  SKIP: test_pending" "skip unit emits the SKIP marker"
+  assert_contains "$out" "0 failed, 1 skipped" "the skipped unit is counted, not failed"
+}
+
 run_test test_interactive_max_entries_default
 run_test test_subshell_rc_matches_expected
 run_test test_subshell_rc_mismatch_fails
 run_test test_source_function_from_extracts_and_defines
 run_test test_source_function_from_fails_when_pattern_missing
+run_test test_skip_counts_as_skipped_unit
 
 test_done
 

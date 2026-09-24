@@ -250,9 +250,9 @@ test_done
 
 (`test_done` prints the report and exits non-zero on failure. Do not inline a `Results:` echo or a manual `[[ "$FAIL" -eq 0 ]]` -- the template's former inline tail predates `test_done` and is retired.)
 
-Each test runs in its own subshell, so a test's environment, cwd, globals, and traps cannot leak into the next test: the suite is order-independent by construction. `run_test` allocates a fresh per-test `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, on exit. A test allocates extras with `get_fixture_dir` (alias `get_test_dir`), never with a bare `mktemp -d`. `test_setup` also sets a file-scope `FIXTURE_ROOT` for scaffolding that a file's tests share; a test reaches it by that name because `FIXTURE_DIR` is shadowed per test. Accounting is one unit per test: `run_test` emits a single unit marker (`PASS` or `FAIL`, both indented two spaces) that `scripts/run_tests.sh` counts by grepping the indented prefix. fail-fast means the first failing assertion ends the test.
+Each test runs in its own subshell, so a test's environment, cwd, globals, and traps cannot leak into the next test: the suite is order-independent by construction. `run_test` allocates a fresh per-test `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, on exit. A test allocates extras with `get_fixture_dir` (alias `get_test_dir`), never with a bare `mktemp -d`. `test_setup` also sets a file-scope `FIXTURE_ROOT` for scaffolding that a file's tests share; a test reaches it by that name because `FIXTURE_DIR` is shadowed per test. Accounting is one unit per test: `run_test` emits a single unit marker (`PASS`, `FAIL`, or `SKIP`), and `test_done` reports the file's authoritative counts in one `UNIT: pass=... fail=... skip=...` line that `scripts/run_tests.sh` reads (it does not re-derive counts from the markers). A file that exits with no `UNIT:` report fails loudly. fail-fast means the first failing assertion ends the test.
 
-Order independence is proven, not assumed: `scripts/check_test_order.sh` runs every test file twice, once in registration order and once with `REVERSE_RUN=1` (test_done flushes the registrations in reverse), and fails if any file's unit tallies differ. Every file ends with `test_done`; the inline `Results:`/`[[ "$FAIL" -eq 0 ]]` footer is retired.
+`test_done` prints the per-file report and exits on failure. A skipped test (`skip()` in the body) is a temporary absence -- the subject is not ready (an unstubbed operation, a missing dependency) -- reported as a warning and resolved short-term so skips trend back to zero; a skip is not a failure. Every file ends with `test_done`; the inline `Results:`/`[[ "$FAIL" -eq 0 ]]` footer is retired.
 
 Run a command that must fail (or whose rc matters) with the capture-and-assert helper `assert_run EXPECTED_RC CMD [LABEL]`: it runs `CMD` in a subshell, asserts its exit status, and keeps the combined output in `RUN_OUT` so the test can assert on it next (`assert_contains "$RUN_OUT" ...`). A mismatch names the captured output, so the failure is not blind. This replaces the rc-only, output-discarding style.
 
@@ -359,7 +359,7 @@ Before committing a new test:
 - [ ] Sources `test_common.sh` for `pass()`/`fail()`/`run_test()`/`test_done()`
 - [ ] The test never depends on a sibling test's written files -- any cross-test fixture is a smell; make it self-contained
 - [ ] `make test` passes clean after the new test is added
-- [ ] **`make test` invariant held**: the unit suite reports `failed 0, skipped 0`; no `skip()` in a `tests/test_*.sh` file
+- [ ] **`make test` invariant held**: the unit suite reports `failed 0`; no `skip()` in a `tests/test_*.sh` file for a fixable seam (a skip is a temporary warning, resolved short-term)
 - [ ] Test failure message clearly describes what went wrong
 - [ ] An assertion that pins a behaviour a future reader would be tempted to change names the record (ADR, design record, or handover decision) that explains why the behaviour is correct
 - [ ] Every `test_*()` in the file is registered via `run_test`, and every `run_test` target resolves

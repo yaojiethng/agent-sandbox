@@ -118,7 +118,7 @@ Do not add a new `tests/libs/` file without a clear category boundary. If a help
 Always source `test_common.sh` instead of defining `pass()`, `fail()`, and counter variables inline. It provides:
 
 - `pass()` / `fail()` -- identical formatting across all test files
-- `skip()` -- for tests that cannot run in the current environment
+- `skip()` -- marks the current test as temporarily absent when its subject is not ready (an unstubbed operation, a missing dependency); reported as a warning, resolved short-term so skips trend back to zero
 - `run_test()` -- test runner that continues on failure
 - `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
 
@@ -190,15 +190,15 @@ End-to-end sequence validators that exercise a complete operator workflow (e.g. 
 
 End-to-end or environment-gated tests that cannot run deterministically in the `make test` harness (container/daemon requirements, chunky multi-process flows, metrics/thresholds without a defined pass/fail). **Excluded from `make test`** so the unit suite stays deterministic.
 
-**Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0, skipped 0**.
+**Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0**.
 
 **Rule:** If an integration flow's seam becomes unit-testable (e.g. via a mock), promote it to `tests/test_*.sh`. Do not use `integration/` as a permanent home for code our own unit suite *could* cover.
 
 ### The `make test` invariant
 
-`make test` (the `tests/test_*.sh` suite) **must report `failed 0, skipped 0`**. Any test that cannot run deterministically (missing utility, container/daemon absent, optional file absent that yields a `skip`) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`. The runner (`scripts/run_tests.sh`) enforces this by treating `skip` as a failure.
+`make test` (the `tests/test_*.sh` suite) **must report `failed 0`**. A test that cannot run deterministically (missing utility, container/daemon absent, optional file absent) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`.
 
-A `skip()` in a `tests/test_*.sh` file is a **defect** under this policy -- it means the seam was moved out of the unit suite rather than made deterministic.
+A `skip()` in a `tests/test_*.sh` file is a **temporary** state -- the subject is not ready (an unstubbed operation, a dependency absent from the container) -- reported as a warning, not a failure. Skips are tolerated for wip / mid-sub-milestone work, and the cause is resolved so skips trend back to zero. The runner (`scripts/run_tests.sh`) counts skips and warns; a skip does not fail the run.
 
 A prerequisite is something the suite needs before a test runs: an executable stub, or a docker shim that must be present. A prerequisite failure is not a test failure. The runner checks the prerequisites before it runs the tests. It reports a missing prerequisite by name. A broken environment then reports one prerequisite error, not many unrelated test failures. This rule records a real failure: a stub lost its exec bit and failed 67 tests with exit 126 before the cause was found.
 

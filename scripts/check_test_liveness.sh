@@ -4,9 +4,11 @@
 #
 #   1. Registration liveness  --  every `test_*()` function defined in a test
 #      file has a `run_test` registration in the same file; every `run_test`
-#      target resolves to a function defined in that file. A defined-but-
-#      unregistered test never executes (silent rot); a registration without
-#      a definition fails at runtime with an unrelated error.
+#      target resolves to a function defined in that file; and no `run_test`
+#      appears after `test_done` (a registration there is dead code). A
+#      defined-but-unregistered test never executes (silent rot); a
+#      registration without a definition fails at runtime with an unrelated
+#      error; a registration after test_done never runs.
 #   2. Prerequisite liveness  --  the docker stub exists, is executable, and
 #      answers a smoke invocation; stub libs referenced by test files exist.
 #
@@ -22,11 +24,15 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# TESTS_DIR names the directory of test_*.sh files to check; it defaults to
+# the real suite and is overridable so the runner self-test can point the gate
+# at a synthetic fixture directory.
+TESTS_DIR="${1:-$REPO_ROOT/tests}"
 FINDINGS=0
 COUNT=0
 
 # --- 1. Registration liveness, per test file ---
-for F in "$REPO_ROOT"/tests/test_*.sh; do
+for F in "$TESTS_DIR"/test_*.sh; do
   [[ -e "$F" ]] || continue
   NAME="${F#$REPO_ROOT/}"
   COUNT=$((COUNT + 1))
@@ -51,6 +57,19 @@ for F in "$REPO_ROOT"/tests/test_*.sh; do
       FINDINGS=$((FINDINGS + 1))
     fi
   done
+
+  # A run_test registered after test_done is dead code: test_done exits the
+  # process, so the test never runs and never fails, and a file cannot self-
+  # guard it in-process. The scan anchors on the registration shape (column-0
+  # run_test naming a test_ function); a registration-shaped word inside a
+  # quoted payload is not flagged.
+  if ! awk '
+    /^[[:space:]]*test_done([[:space:]]|$)/ { seen = 1 }
+    /^[[:space:]]*run_test[[:space:]]+test_[A-Za-z0-9_]+([[:space:]]|$)/ { if (seen) exit 1 }
+  ' "$F"; then
+    echo "DEAD-REGISTRATION: $NAME: run_test registered after test_done -- the registration is dead code (testing-conventions.md, Test Structure Template)" >&2
+    FINDINGS=$((FINDINGS + 1))
+  fi
 done
 
 # --- 2. Prerequisite liveness: docker stub + stub libs ---

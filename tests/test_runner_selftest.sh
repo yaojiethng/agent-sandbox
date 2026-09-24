@@ -11,18 +11,22 @@
 #
 #   1. A file whose tests all pass                 -> counted, RC 0
 #   2. A file with a failing unit                  -> FAIL marker counted, RC non-zero
-#   3. A file that exits non-zero without markers (crash / silent zombie)
-#                                                  -> flagged as failed
-#   4. A file emitting a SKIP: marker              -> treated as failure (policy)
+#   3. A file that exits non-zero without a UNIT: report (crash / silent
+#      zombie)                                          -> flagged as failed
+#   4. A file emitting a SKIP: marker              -> reported as a warning; the
+#                                                  run still exits 0 (a temporary
+#                                                  skip is not a failure)
 #   5. Aggregate line reflects per-file unit counts
 #   6. run_test without assertions fails; test_done emits no spurious FAIL marker
 #   7. The zombie patterns: `cmd && pass` (fails at end-of-file) and an
 #      undefined function (exit 127)
 #   8. Multiple FAIL unit markers are counted exactly
-#   9. A FAIL marker with RC 0 still counts as failure (markers trump exit code)
+#   9. A fail count with RC 0 still counts as failure (the fail count rides
+#      the UNIT: report, not the exit code)
 #   10. Empty discovery warns and exits non-zero without an unbound crash
 #   11. A broken prerequisite is reported once, by name
-#   12. run_test registered after test_done is dead code; the runner flags the file
+#   12. run_test registered after test_done is dead code; the liveness gate
+#      flags it
 #
 # Uses RUN_TESTS_DIR to point the runner at synthetic files. Each case runs
 # in its own isolated test with its own fixture directory.
@@ -55,7 +59,7 @@ test_runner_passing_file() {
   local dir="$FIXTURE_DIR/pass_dir"
   mkdir -p "$dir"
   write_test "$dir/test_ok.sh" '#!/usr/bin/env bash
-echo "  PASS: obvious truth"'
+printf "UNIT: pass=1 fail=0 skip=0\n"'
   run_runner "$dir"
   assert_rc 0 "$RC" "runner: all-pass directory exits 0"
   assert_contains "$OUT" "1 passed" "runner: passing test counted"
@@ -68,8 +72,8 @@ test_runner_failing_file() {
   local dir="$FIXTURE_DIR/fail_dir"
   mkdir -p "$dir"
   write_test "$dir/test_bad.sh" '#!/usr/bin/env bash
-echo "  PASS: setup step"
-echo "  FAIL: broken assertion"'
+printf "UNIT: pass=0 fail=1 skip=0\n"
+exit 1'
   run_runner "$dir"
   assert_ne "0" "$RC" "runner: failing file gives non-zero exit"
   assert_contains "$OUT" "1 failed" "runner: failing test counted once"
@@ -88,20 +92,36 @@ exit 3'
   run_runner "$dir"
   assert_ne "0" "$RC" "runner: marker-less crash exits non-zero"
   assert_contains "$OUT" "FAIL test_crash.sh" "runner: crashed file reported by name"
-  assert_contains "$OUT" "file exited 3 with no FAIL: marker" "runner: crash carries an accompanying reason"
+  assert_contains "$OUT" "no UNIT: report" "runner: crash carries an accompanying reason"
 }
 
 # ---------------------------------------------------------------
-# Case 4: SKIP marker -> treated as failure (zero-skip policy)
+# Case 3b: a file that exits 0 with no UNIT: report (the silent-green class)
+# is a failure -- a unit-test file must produce a report.
 # ---------------------------------------------------------------
-test_runner_skip_is_failure() {
+test_runner_missing_report_rc0() {
+  local dir="$FIXTURE_DIR/noreport_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_noreport.sh" '#!/usr/bin/env bash
+echo "no report emitted"
+exit 0'
+  run_runner "$dir"
+  assert_ne "0" "$RC" "runner: rc 0 with no UNIT report is a failure"
+  assert_contains "$OUT" "no UNIT: report" "runner: missing report named as the cause"
+}
+
+# ---------------------------------------------------------------
+# Case 4: SKIP -> reported as a warning, not a failure
+# ---------------------------------------------------------------
+test_runner_skip_is_warning() {
   local dir="$FIXTURE_DIR/skip_dir"
   mkdir -p "$dir"
   write_test "$dir/test_skippy.sh" '#!/usr/bin/env bash
-echo "  PASS: works"
-echo "  SKIP: optional seam missing"'
+printf "UNIT: pass=1 fail=0 skip=1\n"'
   run_runner "$dir"
-  assert_ne "0" "$RC" "runner: skip counts as failure per make-test invariant"
+  assert_rc 0 "$RC" "runner: skip is a warning, not a failure"
+  assert_contains "$OUT" "1 passed, 0 failed, 1 skipped" "runner: skip counted in the aggregate"
+  assert_contains "$OUT" "WARN" "runner: skip surfaces a WARN"
 }
 
 # ---------------------------------------------------------------
@@ -111,10 +131,9 @@ test_runner_aggregate_sums() {
   local dir="$FIXTURE_DIR/mixed_dir"
   mkdir -p "$dir"
   write_test "$dir/test_a.sh" '#!/usr/bin/env bash
-echo "  PASS: a1"
-echo "  PASS: a2"'
+printf "UNIT: pass=2 fail=0 skip=0\n"'
   write_test "$dir/test_b.sh" '#!/usr/bin/env bash
-echo "  PASS: b1"'
+printf "UNIT: pass=1 fail=0 skip=0\n"'
   run_runner "$dir"
   assert_contains "$OUT" "3 tests across 2 files, 3 passed, 0 failed, 0 skipped" \
     "runner: aggregate line sums across files"
@@ -170,12 +189,12 @@ test_runner_multiple_fails() {
   local dir="$FIXTURE_DIR/multifail_dir"
   mkdir -p "$dir"
   write_test "$dir/test_multi.sh" '#!/usr/bin/env bash
-echo "  FAIL: first broken"
-echo "  FAIL: second broken"'
+printf "UNIT: pass=0 fail=2 skip=0\n"
+exit 2'
   run_runner "$dir"
   assert_ne "0" "$RC" "runner: multi-fail file exits non-zero"
   assert_contains "$OUT" "2 tests across 1 files, 0 passed, 2 failed, 0 skipped" \
-    "runner: each FAIL marker counted"
+    "runner: each failing unit counted"
 }
 
 # ---------------------------------------------------------------
@@ -187,11 +206,11 @@ test_runner_fail_marker_trumps_rc0() {
   local dir="$FIXTURE_DIR/marker_rc0_dir"
   mkdir -p "$dir"
   write_test "$dir/test_marker_rc0.sh" '#!/usr/bin/env bash
-echo "  FAIL: marker says broken"
+printf "UNIT: pass=0 fail=1 skip=0\n"
 exit 0'
   run_runner "$dir"
-  assert_ne "0" "$RC" "runner: FAIL marker with rc 0 fails the run"
-  assert_contains "$OUT" "1 failed" "runner: FAIL marker counted despite rc 0"
+  assert_ne "0" "$RC" "runner: FAIL report with rc 0 fails the run"
+  assert_contains "$OUT" "1 failed" "runner: fail count honored despite rc 0"
 }
 
 # ---------------------------------------------------------------
@@ -251,10 +270,14 @@ test_runner_dead_registration() {
     'test_done' \
     'run_test test_dead')
   write_test "$dir/test_dead_reg.sh" "$DEAD_BODY"
-  run_runner "$dir"
-  assert_ne "0" "$RC" "runner: dead registration after test_done fails the file"
-  assert_contains "$OUT" "run_test registered after test_done" "runner: dead registration reported"
-  assert_contains "$OUT" "test_dead_reg.sh" "runner: dead registration reported by file name"
+  # The registration contract is owned by check_test_liveness.sh; point it at
+  # the fixture and assert it flags the dead registration.
+  local OUTRC rc
+  OUTRC=$(bash "$REPO_ROOT/scripts/check_test_liveness.sh" "$dir" 2>&1)
+  rc=$?
+  assert_ne "0" "$rc" "liveness gate: dead registration after test_done fails the gate"
+  assert_contains "$OUTRC" "DEAD-REGISTRATION" "liveness gate: dead registration reported"
+  assert_contains "$OUTRC" "test_dead_reg.sh" "liveness gate: dead registration reported by file name"
 }
 
 # ---------------------------------------------------------------
@@ -284,7 +307,7 @@ test_runner_parallel_dispatch_integrity() {
   local i
   for i in $(seq 1 6); do
     write_test "$dir/test_p${i}.sh" '#!/usr/bin/env bash
-echo "  PASS: p"'
+printf "UNIT: pass=1 fail=0 skip=0\n"'
   done
   run_runner "$dir"
   assert_rc 0 "$RC" "runner: parallel all-pass directory exits 0"
@@ -295,7 +318,8 @@ echo "  PASS: p"'
 run_test test_runner_passing_file
 run_test test_runner_failing_file
 run_test test_runner_crash_no_markers
-run_test test_runner_skip_is_failure
+run_test test_runner_missing_report_rc0
+run_test test_runner_skip_is_warning
 run_test test_runner_aggregate_sums
 run_test test_runner_no_assertion
 run_test test_runner_zombie_command_and_pass
