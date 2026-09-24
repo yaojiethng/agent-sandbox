@@ -403,7 +403,4 @@ run_test test_env_field_no_substring_matches
 run_test test_env_field_first_match_wins
 run_test test_env_field_missing_key_is_empty_and_clean
 run_test test_env_field_tolerates_dash_spacing_variants
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+test_done test_prune

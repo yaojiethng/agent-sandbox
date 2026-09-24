@@ -688,11 +688,4 @@ run_test test_unknown_subcommand
 run_test test_missing_subcommand
 run_test test_build_missing_args
 run_test test_make_form_in_usage_first_help_leaf
-
-# Cleanup
-rm -rf "$MOCK_SCRIPTS_DIR"
-
-echo ""
-echo "${PASS} passed, ${FAIL} failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_dispatch

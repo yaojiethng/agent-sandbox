@@ -59,3 +59,4 @@ test_image_digest_empty_for_missing_image() {
 run_test test_image_digest_returns_stub_digest
 run_test test_image_digest_per_image_map
 run_test test_image_digest_empty_for_missing_image
+test_done test_image

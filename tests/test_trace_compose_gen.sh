@@ -336,8 +336,4 @@ run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_digests
 run_test test_compose_file_from_args_extracts_f_value
 run_test test_compose_file_from_args_empty_without_f
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_trace_compose_gen

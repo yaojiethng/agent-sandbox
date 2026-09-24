@@ -534,7 +534,4 @@ run_test test_session_id_missing_record
 run_test test_list_shows_sandbox_staleness
 run_test test_list_caps_at_page_size
 run_test test_interactive_paginates_at_page_size
-
-echo ""
-echo "Test complete: $PASS passed, $FAIL failed."
-[[ $FAIL -eq 0 ]] && exit 0 || exit 1
+test_done test_resume

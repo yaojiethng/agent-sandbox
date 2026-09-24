@@ -119,8 +119,4 @@ run_test test_custom_leaf_overrides
 run_test test_lib_preflight_passes_when_all_present
 run_test test_lib_preflight_critical_exits
 run_test test_lib_preflight_warn_continues
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_dirs

@@ -344,8 +344,4 @@ run_test test_prune_rule2_removes_orphan_container
 run_test test_prune_dry_run_removes_nothing
 run_test test_stop_shutdown_hints
 run_test test_stop_draft_hint_suppressed_without_export
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_trace_stop

@@ -202,8 +202,4 @@ run_test test_dry_run_always_tears_down_with_volumes
 run_test test_dry_run_exercises_resume_pass
 run_test test_dry_run_up_failure_tears_down_and_fails
 run_test test_dry_run_mount_overlay_stacked_and_probe_hygiene
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_trace_dry_run

@@ -23,6 +23,12 @@ FAILURES=()
 # top-level assertion cannot kill the file mid-way.
 _IN_TEST=0
 
+# REVERSE_RUN=1 defers run_test registrations and test_done flushes them in
+# reverse registration order -- the order-independence probe. Normal runs
+# (REVERSE_RUN unset) execute each test immediately as registered.
+: "${REVERSE_RUN:=0}"
+_RUN_QUEUE=()
+
 # ---------------------------------------------------------------------------
 # Untyped per-test allocator.
 #   get_fixture_dir / get_test_dir  --  the same backend, a fresh directory
@@ -117,12 +123,24 @@ trace_has() {
 #   counts.
 # shellcheck disable=SC2034  # rc carries the subshell result to the unit branch
 run_test() {
+  if (( REVERSE_RUN )); then
+    _RUN_QUEUE+=("$1")
+    return 0
+  fi
+  _run_one "$1"
+}
+
+# _run_one NAME  --  run_test's immediate execution: the test subshell, the
+# unit marker, and the accounting. Extracted so test_done can flush a
+# reversed-registration probe (REVERSE_RUN=1) with the same body.
+#
+#   set +e: the design's fail-fast is fail() (controlled exit), not errexit.
+#   A shell that sourced a script running `set -e` (start_agent.sh does) must
+#   still let a test capture `out=$(cmd); rc=$?` where cmd fails, and the
+#   `|| rc=$?` below keeps the unit capture errexit-safe in the file shell.
+_run_one() {
   local name="$1" rc=0
   echo "[ $name ]"
-  # set +e: the design's fail-fast is fail() (controlled exit), not errexit.
-  # A shell that sourced a script running `set -e` (start_agent.sh does) must
-  # still let a test capture `out=$(cmd); rc=$?` where cmd fails, and the
-  # `|| rc=$?` below keeps the unit capture errexit-safe in the file shell.
   ( set +e
     _alloc_log="$(mktemp /tmp/tc_alloc_XXXXXX)"
     : > "$_alloc_log"
@@ -194,6 +212,14 @@ make_envfile() {
 #   markers by run_test; the list below is a human-friendly reprint.
 test_done() {
   local NAME="${1:-}"
+  if (( REVERSE_RUN )) && (( ${#_RUN_QUEUE[@]} > 0 )); then
+    # Order-independence probe: run the registrations in reverse, proving
+    # no test depends on a sibling's side effects (subshell per test).
+    local _i
+    for (( _i = ${#_RUN_QUEUE[@]} - 1; _i >= 0; _i-- )); do
+      _run_one "${_RUN_QUEUE[$_i]}"
+    done
+  fi
   if [[ -n "$NAME" ]]; then
     echo "=== $NAME ==="
     echo

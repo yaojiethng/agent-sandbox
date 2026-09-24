@@ -514,8 +514,4 @@ run_test test_missing_delivery_rejected
 run_test test_copy_delivery_default_merges_copy_overlay
 run_test test_mount_delivery_merges_mount_overlay
 run_test test_invalid_sandbox_type_rejected
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+test_done test_trace_start

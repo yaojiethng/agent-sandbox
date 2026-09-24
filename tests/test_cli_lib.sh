@@ -164,6 +164,4 @@ run_test test_collect_appends_to_predeclared_sink
 run_test test_collect_help_not_special
 run_test test_collect_bare_value_flag_consumed
 run_test test_collect_has_no_stale_registry
-
-echo "${PASS} passed, ${FAIL} failed"
-[[ "$FAIL" -eq 0 ]]
+test_done test_cli_lib
