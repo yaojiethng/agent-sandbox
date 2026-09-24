@@ -179,7 +179,7 @@ test_dry_run_mount_overlay_stacked_and_probe_hygiene() {
 
   # Probe hygiene: no probe writes into the delivery target (SANDBOX_DIR).
   # Allowed write roots are CHANGES_DIR, OUTPUT_DIR, INPUT_DIR (channel
-  # contract) and mktemp dirs. The one in-mount write, .git/SESSION_STATE,
+  # contract) and allocator dirs (get_fixture_dir). The one in-mount write, .git/SESSION_STATE,
   # belongs to the entrypoint, not the probes. Match write-shaped constructs
   # (redirection, touch/mkdir/tee/cp/mv/rm) referencing $SANDBOX_DIR; reads
   # (find/du/test/cat/session_state_read) are fine.

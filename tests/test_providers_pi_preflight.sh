@@ -43,7 +43,7 @@ _source_preflight() {
 # ---------------------------------------------------------------------------
 
 test_merge_adds_harness_keys() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -69,7 +69,7 @@ test_merge_adds_harness_keys() {
 }
 
 test_merge_preserves_existing_keys() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -94,7 +94,7 @@ test_merge_preserves_existing_keys() {
 }
 
 test_merge_deduplicates_paths() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -112,7 +112,7 @@ test_merge_deduplicates_paths() {
 }
 
 test_warn_on_missing_settings() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   # Deliberately NOT creating settings.json
@@ -130,7 +130,7 @@ test_warn_on_missing_settings() {
 }
 
 test_warn_on_missing_agents_md() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   # Deliberately NOT creating AGENTS.md
@@ -151,7 +151,7 @@ test_warn_on_missing_agents_md() {
 
 test_merge_does_not_fail_on_missing_agents_md() {
   # Even without AGENTS.md, the merge should still succeed
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"defaultModel":"test"}' > "$ah/agent/settings.json"
@@ -173,7 +173,7 @@ test_merge_does_not_fail_on_missing_agents_md() {
 # ---------------------------------------------------------------------------
 
 test_freshness_reset_zeroes_checked_at() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"},"opencode-go":{"checkedAt":1700000001000}}' > "$ah/agent/models-store.json"
@@ -193,7 +193,7 @@ test_freshness_reset_zeroes_checked_at() {
 }
 
 test_freshness_reset_preserves_etag_and_last_modified() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"}}' > "$ah/agent/models-store.json"
@@ -213,7 +213,7 @@ test_freshness_reset_preserves_etag_and_last_modified() {
 }
 
 test_freshness_reset_noop_when_store_missing() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -230,7 +230,7 @@ test_freshness_reset_noop_when_store_missing() {
 }
 
 test_freshness_reset_warns_on_invalid_json() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{broken' > "$ah/agent/models-store.json"
@@ -252,7 +252,7 @@ test_freshness_reset_warns_on_invalid_json() {
 # ---------------------------------------------------------------------------
 
 test_bind_mounts_ok_when_all_present() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
 
@@ -269,7 +269,7 @@ test_bind_mounts_ok_when_all_present() {
 }
 
 test_bind_mount_warns_on_missing_prompts() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/sessions" "$ah/agent/skills"
   # No prompts/
@@ -287,7 +287,7 @@ test_bind_mount_warns_on_missing_prompts() {
 }
 
 test_bind_mount_warns_on_missing_sessions() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/skills"
   # No sessions/
@@ -305,7 +305,7 @@ test_bind_mount_warns_on_missing_sessions() {
 }
 
 test_bind_mount_warns_on_not_writable() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
   chmod 000 "$ah/agent/skills"
@@ -324,7 +324,7 @@ test_bind_mount_warns_on_not_writable() {
 }
 
 test_bind_mount_messages_on_all_missing() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   # No bind-mounted dirs at all
 

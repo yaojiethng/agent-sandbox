@@ -57,7 +57,7 @@ test_session_id_sensitive_to_all_factors() {
 # canonicalization contract -- see ADR 20260831).
 test_session_id_converges_across_path_spellings() {
   local base
-  base="$(mktemp -d)"
+  base="$(get_fixture_dir)"
   mkdir -p "$base/sub"
   ln -sfn "$base/sub" "$base/link"
 

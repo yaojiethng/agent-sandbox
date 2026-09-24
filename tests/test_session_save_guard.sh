@@ -32,7 +32,7 @@ source "${REPO_ROOT}/src/libs/diff_export.sh"
 
 test_dirty_tree_always_saves() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   local baseline
@@ -64,7 +64,7 @@ test_dirty_tree_always_saves() {
 
 test_clean_tree_at_baseline_skips() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   local baseline
@@ -78,7 +78,7 @@ test_clean_tree_at_baseline_skips() {
 
 test_clean_tree_past_baseline_saves() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   local baseline
@@ -104,7 +104,7 @@ test_clean_tree_past_baseline_saves() {
 
 test_save_decision_skip_reports_and_returns_1() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   # No prior export dir: the baseline resolves to init_sha, so a clean tree at
@@ -121,7 +121,7 @@ test_save_decision_undeterminable_saves_and_warns() {
   # reported as "nothing to save". save_decision returns 0 (proceed) and says
   # why.
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   local out rc=0
   out=$(save_decision "$fix" "$fix/no-prior-export" "session-export" 2>&1) || rc=$?
   assert_eq "$rc" "0" "save_decision: undeterminable maps to 0 (save anyway)"
@@ -139,7 +139,7 @@ test_save_decision_undeterminable_saves_and_warns() {
 
 test_baseline_falls_back_to_init_sha() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   local expect
@@ -153,7 +153,7 @@ test_baseline_falls_back_to_init_sha() {
 
 test_baseline_reads_last_export_head() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
 
@@ -170,7 +170,7 @@ test_baseline_reads_last_export_head() {
 
 test_baseline_ignores_failed_export() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   local expect
@@ -190,7 +190,7 @@ test_baseline_ignores_failed_export() {
 
 test_export_status_stamps_head() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "init1234" "head5678"
   local _content
   _content=$(cat "$_tmpdir/.export-status")
@@ -201,7 +201,7 @@ test_export_status_stamps_head() {
 
 test_export_status_no_head_when_empty() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "init1234"
   local _content
   _content=$(cat "$_tmpdir/.export-status")
@@ -218,7 +218,7 @@ test_unreadable_repository_is_undeterminable() {
   # Returns 2 (undeterminable) so the caller saves or fails loudly instead of
   # reporting a clean tree.
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   local rc=0
   session_save_needed "$fix" "whatever" || rc=$?
   assert_eq "$rc" "2" "non-repository path: undeterminable, not skip"
@@ -235,7 +235,7 @@ test_unreadable_repository_is_undeterminable() {
 
 test_export_status_read_fields() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   _write_export_status "$fix" "SUCCESS" "20260622-120000" "0" "initsha" "headsha"
   assert_eq "$(export_status_read "$fix" STATUS)" "SUCCESS" "reader returns the STATUS field"
   assert_eq "$(export_status_read "$fix" HEAD)" "headsha" "reader returns the HEAD field"
@@ -247,7 +247,7 @@ test_export_status_read_fields() {
 
 test_export_status_is_success() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   _write_export_status "$fix" "SUCCESS" "20260622-120000" "0" "initsha" "headsha"
   if export_status_is_success "$fix"; then
     pass "is_success: true for a SUCCESS record"
@@ -270,7 +270,7 @@ test_export_status_is_success() {
 
 test_save_decision_save_arm_is_silent_and_returns_0() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
   echo "dirty" >> "$fix/file.txt"
@@ -286,7 +286,7 @@ test_save_decision_save_arm_is_silent_and_returns_0() {
 test_clean_tree_guard_is_three_valued() {
   source "$REPO_ROOT/scripts/guards.sh"
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
 
   # Unreadable: no repository at all.
   local rc=0
@@ -309,7 +309,7 @@ test_clean_tree_guard_is_three_valued() {
 
 test_session_export_runs_with_work_despite_committed_or_uncommitted() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
 
@@ -335,7 +335,7 @@ test_session_export_runs_with_work_despite_committed_or_uncommitted() {
 
 test_session_export_skips_clean_tree_at_branch_point() {
   local fix
-  fix=$(mktemp -d) || { fail "mktemp failed"; return; }
+  fix=$(get_fixture_dir)
   make_committed_repo "$fix"
   write_session_state "$fix"
 

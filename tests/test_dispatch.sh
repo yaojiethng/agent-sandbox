@@ -35,7 +35,9 @@ setup() {
 
 MOCK_SCRIPTS_DIR=""
 setup_mocks() {
-  MOCK_SCRIPTS_DIR=$(mktemp -d /tmp/test_dispatch_mocks_XXXXXX)
+  # File-scope shared mock tree, cleaned by test_setup's file EXIT trap.
+  MOCK_SCRIPTS_DIR="$FIXTURE_ROOT/mocks"
+  mkdir -p "$MOCK_SCRIPTS_DIR"
 
   # Create mock scripts for every subcommand that gets exec'd
   local scripts=(

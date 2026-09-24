@@ -129,7 +129,7 @@ test_stub_docker_config_preserves_structure() {
   # Verify the stub's compose config output doesn't have name: lines either
   # (the stub returns the first input file, which shouldn't have name: lines)
   local staging_dir
-  staging_dir=$(mktemp -d)
+  staging_dir=$(get_fixture_dir)
   cp "$REPO_ROOT/src/build/docker-compose.yml" "$staging_dir/00-test.yml"
 
   local out

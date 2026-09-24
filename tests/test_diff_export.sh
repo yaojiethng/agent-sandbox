@@ -26,7 +26,7 @@ source "${REPO_ROOT}/src/libs/diff_export.sh"
 
 test_export_status_writes_success() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123"
 
@@ -49,7 +49,7 @@ test_export_status_writes_success() {
 
 test_export_status_includes_init_sha() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123def456"
 
@@ -62,7 +62,7 @@ test_export_status_includes_init_sha() {
 
 test_export_status_omits_init_sha_when_empty() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" ""
 
@@ -79,7 +79,7 @@ test_export_status_omits_init_sha_when_empty() {
 
 test_export_status_writes_failure_with_exit_code() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_status "$_tmpdir" "FAIL" "20260622-120001" "1"
 
@@ -96,7 +96,7 @@ test_export_status_writes_failure_with_exit_code() {
 
 test_export_status_does_not_include_exit_code_on_success() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_status "$_tmpdir" "SUCCESS" "20260622-120002" "0"
 
@@ -117,7 +117,7 @@ test_export_status_does_not_include_exit_code_on_success() {
 
 test_export_error_log_creates_file() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_error_log "$_tmpdir" "20260622-120000" "" "1" "" "package_branch failed"
 
@@ -131,7 +131,7 @@ test_export_error_log_creates_file() {
 
 test_export_error_log_includes_session_id() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_error_log "$_tmpdir" "20260622-120000" "abc123" "2" "" "test error"
 
@@ -144,7 +144,7 @@ test_export_error_log_includes_session_id() {
 
 test_export_error_log_contains_error_details() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
 
   _write_export_error_log "$_tmpdir" "20260622-120000" "abc123" "2" "stderr line 1" "test error"
 
@@ -165,7 +165,7 @@ test_export_error_log_contains_error_details() {
 
 test_wait_git_lockfile_no_lockfile() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   mkdir -p "$_tmpdir/.git"
 
   if wait_git_lockfile "$_tmpdir"; then
@@ -178,7 +178,7 @@ test_wait_git_lockfile_no_lockfile() {
 
 test_wait_git_lockfile_lockfile_appears_and_disappears() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   mkdir -p "$_tmpdir/.git"
 
   # Create lockfile, then remove it after a short delay (simulating
@@ -200,7 +200,7 @@ test_wait_git_lockfile_lockfile_appears_and_disappears() {
 
 test_wait_git_lockfile_timeout() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   mkdir -p "$_tmpdir/.git"
 
   # Create lockfile that never disappears
@@ -217,7 +217,7 @@ test_wait_git_lockfile_timeout() {
 
 test_wait_git_lockfile_timeout_message() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   mkdir -p "$_tmpdir/.git"
 
   touch "$_tmpdir/.git/index.lock"
@@ -240,7 +240,7 @@ test_wait_git_lockfile_timeout_message() {
 # package_branch internal logic (which is covered by test_package_branch.sh).
 test_diff_export_failure_writes_export_status() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   local _outdir="$_tmpdir/out"
   mkdir -p "$_outdir"
 
@@ -269,7 +269,7 @@ test_diff_export_failure_writes_export_status() {
 
 test_diff_export_failure_writes_error_log() {
   local _tmpdir
-  _tmpdir=$(mktemp -d) || { fail "mktemp failed"; return; }
+  _tmpdir=$(get_fixture_dir)
   local _outdir="$_tmpdir/out"
   mkdir -p "$_outdir"
 
