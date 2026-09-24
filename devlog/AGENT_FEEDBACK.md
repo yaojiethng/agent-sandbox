@@ -149,10 +149,10 @@ Entries raised by the operator (tagged `[O]`), migrated from the former `devlog/
 
 ### [O] 2026-08-09  --  Set handover Status Closed before the final commit (close = the commit)
 
-state: mitigated
-scoped: none
-legacy: none
-mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker. Marked mitigated 2026-08-19 (P1): the durable policy fix landed in session `20260809-05` (P2)  --  `iteration_policy.md` Step 8 now reads "The close is the commit"  --  and practice held across the intervening sessions. Monitored through the next few closes; delete when confirmed durable.
+state: probation
+scoped: M3 -- iteration close one-commit rule (`docs/operations/git_policy.md` transient-commits; `docs/operations/iteration_policy.md` close-produces-one-commit)
+legacy: the original fix landed 2026-08-19 and held across the intervening sessions; the defect resurfaced 2026-09-24 as `docs: close` commits whose only change was the handover Status flip and roadmap write-back (recorded in handover `20260924-02`)
+mitigation: a commit whose only change is the handover Status flip or the roadmap write-back is a defect, not a delivery commit. The close edit belongs in the iteration's single delivery commit: set `Status: Closed` and apply the write-back, then commit or amend once. Within the iteration, commit the work when useful (`wip:` for in-progress snapshots); the close edit still folds into the delivery commit. The 2026-09-24 governance fix prescribes this in the transient-commits rule (git_policy) and close-produces-one-commit (iteration_policy). Probationary because the fixing iteration closed through a special case (a clean-tree-required rebase) and the unspecialised path has not yet shown the rule holds. Screen each subsequent close for a `docs: close`-shaped commit (only the Status flip or write-back); drop the entry when several closes in a row show none.
 
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 

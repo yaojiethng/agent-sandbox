@@ -11,7 +11,7 @@ The envisioned future state: a targeted workflow file for each current use case,
 | [`gm.md`](../gm.md) | Kickoff: check-in -- survey the project state, present a work inventory, wait for direction | Current, canonical (rewritten 2026-09-11) | Keep |
 | `prompts/new-iteration.md` | Kickoff: open an iteration with a known directive -- scope and acceptance gates | Current, canonical | Keep; candidate for workflow bundling per the M3 workflows-folder task |
 | `prompts/agent-sandbox.md` | Meta: redirect harness questions to `/opt/sandbox/docs/` | Current | Keep |
-| `prompts/wrapup.md` | Close: minor-loop Steps 7b-9 -- verify, reconcile, mark, seed | Current, canonical | Keep |
+| `prompts/` (wrapup removed) | Close: superseded by `iteration_policy.md` Steps 7-9 and the transient-commits rule in `git_policy.md` | Removed 2026-09-24 | -- |
 | `prompts/package-branch.md` | Export: package committed history as diffs for review (`/package-branch`) | Current, tool-backed | Keep |
 | `prompts/defer.md` | In-iteration: park an adjacent issue into the handover's Deferred items | Current, canonical | Keep |
 | `prompts/propagation-check.md` | In-iteration: verify a cross-file change reached every consumer | Current | Keep; AGENTS.md carries the checklist discipline, this file is the audit invocation |

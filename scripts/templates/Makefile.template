@@ -171,6 +171,8 @@ help:
 	@echo "  DRY_RUN=1         --  print the prune plan without acting (prune only)"
 	@echo "  FORCE=1           --  apply with --reject (draft/apply)"
 	@echo "  FROM=<channel>    --  resolution channel: session|autosave|bundles (draft only)"
+	@echo "  BRANCH_FROM=<sha> --  draft branch point; always name it, especially after a rebase (draft only)"
+	@echo "  BASELINE=<sha>    --  package-branch diff point; always name it, especially after a rebase"
 	@echo "  INTERACTIVE=1     --  interactive config wizard: pick provider + build policy, then start (make start)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."

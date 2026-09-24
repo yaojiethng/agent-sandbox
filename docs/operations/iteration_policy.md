@@ -234,7 +234,8 @@ Escalation of high blast-radius correctness work defers the sub-milestone close 
 
 After Gate 3 is released, these steps are mechanical -- the operator has already reviewed and approved the compaction text and AC status.
 
-- **Commit all changes** -- `git add -A && git commit`. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). The handover must be part of this commit. A handover marked `Closed` with uncommitted changes is not closed. **The close is the commit.** The agent sets the handover Status to `Closed` and then takes the final commit. There is no committed action after the final commit that changes the handover. If the Close marker is needed, set it before the commit so the committed handover already shows `Closed`.
+**Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it; the write-back and the Closed edit are made before the single commit. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). For the folding procedure, see the transient-commits rule in `git_policy.md`.
+
 - **Apply approved roadmap write-back** -- per [`roadmap_policy.md`](roadmap_policy.md#iteration-end-steps-8-9). The operator-reviewed write-back rows from Step 7 are applied mechanically: compaction summaries replace completed groups' checklists; generated tasks land as named roadmap entries or carry their recorded destination.
 - **Run roadmap maintenance** -- compaction cascading, summary table update, and top-level milestone close (if applicable). See [Roadmap maintenance](roadmap_policy.md#roadmap-maintenance).
 - The Completed table must be accurate. One row per file changed. If no files changed, write the canonical marker.

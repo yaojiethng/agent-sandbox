@@ -363,7 +363,7 @@ Usage: agent-sandbox draft --project=<path> --sandbox=<path> [options]
 
 Creates a draft branch and applies session patches.
 
-or, from a sandbox Makefile: make draft [FROM=<channel>] [BUNDLE=<name>]
+or, from a sandbox Makefile: make draft [FROM=<channel>] [BUNDLE=<name>] [--branch-from=<commit>]
 
 Required:
   --project=<path>    Path to the git repository
@@ -372,7 +372,7 @@ Required:
 Options:
   --bundle=<name>         Named bundle to apply (default: newest)
   --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
-  --branch-from=<commit>  Base commit for the draft branch (default: HEAD)
+  --branch-from=<commit>  Base commit for the draft branch; always name it, especially after a rebase (default: HEAD)
   --diffs=<start>..<end>  Range of patches to apply
   --branch-summary=<slug> Override branch name suffix
   --force                 Apply with --reject; .rej files for conflicts

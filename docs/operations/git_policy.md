@@ -181,6 +181,20 @@ The delivery commit at iteration end always carries a type prefix from the Activ
 
 ---
 
+## Transient commits fold into the delivery commit
+
+One delivery commit carries each iteration. Transient commits during the iteration fold into it. Three kinds exist:
+
+- `wip:` checkpoints -- in-progress snapshot that is never reviewable; squash into the delivery commit at iteration end.
+- Correction commits -- an amend or fixup that corrects a commit made earlier in the same iteration; fold into that commit via `git commit --fixup=<hash>` and `git rebase -i --autosquash`.
+- The close edit -- the `Status: Closed` flip and the roadmap write-back; they belong in the delivery commit.
+
+Each kind resolves to the single delivery commit; the delivery commit is the sole reviewable surface.
+
+**Stuck procedure.** When the iteration's history already holds the work commit and the close edit is still outstanding, fold the edit into the work commit: set `Status: Closed`, apply the write-back, then amend (`git commit --amend`) or, for a non-HEAD delivery commit, `git commit --fixup=<hash>` plus `git rebase -i --autosquash`. The end state is one commit per iteration.
+
+---
+
 ## Amending
 
 Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:

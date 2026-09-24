@@ -51,9 +51,11 @@ The `.msg` files are consumed by `make draft` to recreate commits with their ori
 On the host, invoke via:
 
 ```bash
-agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<text>]
-make package-branch [BUNDLE_SUMMARY=<text>]
+agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<text>] [--baseline=<sha>]
+make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]
 ```
+
+Name the baseline on every invocation: the command hints treat `--baseline` (package-branch) and `--branch-from` (make draft) as a default argument that must carry a commit. After a rebase, the recorded `init_sha` is stale; set the baseline to the commit the rebased branch diverges from so the diffs apply onto the same base on the host (see `/package-rebase`).
 
 After the script finishes, echo its final lines to the conversation. The script outputs three lines on stderr  --  repeat them so the operator sees the bundle path and the `make draft` command immediately. The last line is always the actionable next step; echo it, then write the guide.
 
