@@ -138,6 +138,16 @@ The parent finding (cost, throughput, and failure modes are invisible for subage
 
 ---
 
+#### T9 - Test-harness robustness
+
+Noncritical, harness-independent leftovers surfaced by the M3.1 harness comparison ([`devlog/discussions/20260922-design-settled-m3_1_test_harness_decision.md`](../devlog/discussions/20260922-design-settled-m3_1_test_harness_decision.md)). Each survives either harness choice; none is a bug class of the comparison.
+
+- [ ] **Replace the RETURN-trap cleanup in `compose_generate`** -- `src/build/compose.sh` cleans its staging dir with `trap 'rm -rf "$staging_dir"' RETURN`; under bats' functrace the trap fired across subprocess boundaries and deleted staged files early (branch-B finding). The keep-current runner never enables functrace, so the pattern is latent, not broken: restructure to an explicit cleanup so temp removal does not depend on shell-functrace semantics.
+- [ ] **Harden the entrypoint-signal tests with `exec` and a settle grace** -- `test_git_hook.sh` and `test_capability_entrypoint_mount.sh` background a copy of the entrypoint and send it SIGTERM; the signal can arrive before the TERM trap registers, so `wait` can return 143. The branch-B re-port verified the fix (`exec` inside the background subshell so the signal reaches the trap-bearing process, plus a short settle). The race is latent on the keep-current runner; adopt the verified fix.
+- [ ] **Report a reason on rc-driven test-file failures** -- the runner prints `FAIL <file>` when a file's subshell exits non-zero without a `fail()` marker (a crash or a trailing non-zero command); the `grep "^  FAIL:"` reason list is then empty, so the failure carries no accompanying reason in the summary. The suite-side guards (no-assertion, fail-fast) cover the passing side; this is the reporting side. Raised from the harness evaluation.
+
+---
+
 ## Notes
 
 - Future milestone detail: [`roadmap_future.md`](roadmap_future.md).
