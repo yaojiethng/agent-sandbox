@@ -171,7 +171,7 @@ mitigation: a perl one-liner intended to count matches in a test file was writte
 ### [O] 2026-09-22  --  Design documents record the final design, not the questionnaire
 
 state: open
-scoped: M3.1 -- documentation / design-document conventions (policy amendment queued)
+scoped: M3 T1 -- Workflow + Policy Organization (design-document policy amendment; not scheduled, roadmap row under T1)
 legacy: ties to [A] 2026-09-04 "Record-layer documents drafted as reasoning traces" and [A] 2026-08-18 "Multi-question turns during a grill-me design walk" -- the same records-state-not-session-history rule, applied to design-session capture
 mitigation: a grill-me or design walk must not be captured as an open-questions-and-replies transcript in the design document. Write the answers back into the design body; include a short "designs considered and rejected" section with each rejected option and why; put the completed final design at the forefront. A questionnaire log reads as a record of effort, not a record of reasoning, and adds length without an understanding benefit. Amend the design-document / documentation-policy conventions to prohibit the pattern at the root.
 
