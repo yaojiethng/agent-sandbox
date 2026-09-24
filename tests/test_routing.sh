@@ -277,11 +277,11 @@ test_autosave_swap_sequence() {
 }
 
 # The status-absorption mechanism, verified in a fresh shell. This runs bash
-# directly (not through `run_test`) because `run_test`'s `$1 || true` suppresses
-# `set -e` for everything the test function spawns, which is exactly the
-# condition the mechanism has to survive. A fixture script sources the shipped
-# library under `set -euo pipefail`, runs one tick whose export fails, and must
-# reach a second tick.
+# directly (not through `run_test`) because `run_test`'s test subshell runs
+# `set +e`, which suppresses `set -e` for everything the test function spawns
+# -- exactly the condition the mechanism has to survive. A fixture script
+# sources the shipped library under `set -euo pipefail`, runs one tick whose
+# export fails, and must reach a second tick.
 test_autosave_tick_absorbs_status_under_real_set_e() {
   local probe="$FIXTURE_DIR/loop_probe.sh"
   local SD="$FIXTURE_DIR/sandbox_probe"
@@ -315,13 +315,13 @@ EOF
 # must be reported rather than fatal.
 #
 # Mechanism is observed in a fresh bash process, not through `run_test`:
-# `run_test` invokes the test function as `$1 || true`, and bash suppresses
-# `set -e` for a command in a `||` list -- including nested function calls
-# and background subshells started from it. An unguarded call in
-# `autosave_loop` therefore does NOT abort here; the probe below runs the
-# shipped loop under a real `set -euo pipefail` shell, so removing the
-# `|| true` from `autosave_loop` aborts the probe on the first failing tick
-# and the marker file never appears.
+# `run_test`'s test subshell runs `set +e`, which suppresses `set -e` for
+# everything it spawns -- including nested function calls and background
+# subshells started from it. An unguarded call in `autosave_loop` therefore
+# does NOT abort here; the probe below runs the shipped loop under a real
+# `set -euo pipefail` shell, so removing the `|| true` from `autosave_loop`
+# aborts the probe on the first failing tick and the marker file never
+# appears.
 test_autosave_loop_survives_failing_ticks() {
   source "$REPO_ROOT/src/libs/routing.sh"
   local SD="$FIXTURE_DIR/sandbox_tickloop"

@@ -254,6 +254,8 @@ Each test runs in its own subshell, so a test's environment, cwd, globals, and t
 
 Run a command that must fail (or whose rc matters) with the capture-and-assert helper `assert_run EXPECTED_RC CMD [LABEL]`: it runs `CMD` in a subshell, asserts its exit status, and keeps the combined output in `RUN_OUT` so the test can assert on it next (`assert_contains "$RUN_OUT" ...`). A mismatch names the captured output, so the failure is not blind. This replaces the rc-only, output-discarding style.
 
+Some commands return non-zero as a signal, not an error, and `|| true` after them is load-bearing -- do not strip it as noise. `git diff` returns rc 1 when it finds differences (rc 0 means no changes), so `git diff --cached > x.diff || true` must tolerate rc 1 to capture a real diff; `grep -c` returns rc 1 when it finds no matches, so a count expression needs it; a whole-pipeline `grep -v | awk` chain signals "nothing matched" the same way; a sourced preflight script may legitimately exit; and under the strict per-test rule (a non-zero exit from the test subshell is a failed test) the last command of a test function is its return, so a trailing cleanup command (for example `git rebase --abort`) must be masked or restructured or it flips an otherwise-passing test to a failure. These masks are the explicit tolerance the "no reliance on benign non-zero intermediates" rule permits; a mask on a plain command whose rc 0 means success is the one to avoid -- prefer `assert_run` and an rc or output assertion.
+
 ---
 
 ## Debugging Test Failures
