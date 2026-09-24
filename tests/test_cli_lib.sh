@@ -165,5 +165,5 @@ run_test test_collect_help_not_special
 run_test test_collect_bare_value_flag_consumed
 run_test test_collect_has_no_stale_registry
 
-echo "${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
+echo "${PASS} passed, ${FAIL} failed"
 [[ "$FAIL" -eq 0 ]]

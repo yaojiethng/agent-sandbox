@@ -168,6 +168,13 @@ scoped: M3 T2 -- tool timeout / run-budget on the bash tool, tests, and lint
 legacy: none
 mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
 
+### [O] 2026-09-22  --  Design documents record the final design, not the questionnaire
+
+state: open
+scoped: M3.1 -- documentation / design-document conventions (policy amendment queued)
+legacy: ties to [A] 2026-09-04 "Record-layer documents drafted as reasoning traces" and [A] 2026-08-18 "Multi-question turns during a grill-me design walk" -- the same records-state-not-session-history rule, applied to design-session capture
+mitigation: a grill-me or design walk must not be captured as an open-questions-and-replies transcript in the design document. Write the answers back into the design body; include a short "designs considered and rejected" section with each rejected option and why; put the completed final design at the forefront. A questionnaire log reads as a record of effort, not a record of reasoning, and adds length without an understanding benefit. Amend the design-document / documentation-policy conventions to prohibit the pattern at the root.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work

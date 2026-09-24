@@ -149,8 +149,9 @@ test_subshell_rc_matches_expected() {
 }
 
 test_subshell_rc_mismatch_fails() {
-  # The probe's fail() emits a FAIL marker; run the probe in a subshell and
-  # capture its output so the marker never reaches the runner's grep.
+  # The probe's fail() emits a detail marker and increments the counter;
+  # run the probe in a bash -c subprocess so its fail-fast exit does not
+  # abort this test, then assert on the accumulated counter and marker.
   local OUT
   OUT=$(bash -c "
     source '$REPO_ROOT/tests/libs/test_common.sh'

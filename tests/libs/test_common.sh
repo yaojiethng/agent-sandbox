@@ -7,15 +7,80 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Per-test accounting  --  one unit per test, accumulated once per run_test
+# in the file's own shell.
+#   PASS -- passing test units
+#   FAIL -- failing test units
+#   FAILURES -- names of the failing tests, for the test_done summary
+# ---------------------------------------------------------------------------
 : "${PASS:=0}"
 : "${FAIL:=0}"
-: "${SKIP:=0}"
 FAILURES=()
-SKIPS=()
 
-pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); FAILURES+=("$1"); }
-skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); SKIPS+=("$1"); }
+# _IN_TEST marks the current test subshell. Inside it fail() exits the
+# subshell non-zero (fail-fast); outside it fail() accumulates so a stray
+# top-level assertion cannot kill the file mid-way.
+_IN_TEST=0
+
+# ---------------------------------------------------------------------------
+# Untyped per-test allocator.
+#   get_fixture_dir / get_test_dir  --  the same backend, a fresh directory
+#   on every call, never reused across tests. The current test's allocated
+#   directories are removed when that test's subshell exits (run_test's EXIT
+#   trap); nothing is guaranteed after that point.
+#
+# Allocations are journaled to a file, not an array: the allocator is called
+# inside command substitution, whose array writes are lost to a sub-subshell.
+# A file append survives it, and _cleanup_alloc reads one journal per test.
+# ---------------------------------------------------------------------------
+_alloc_log=""
+
+get_fixture_dir() {
+  local _d
+  _d="$(mktemp -d /tmp/XXXXXX)"
+  printf '%s\n' "$_d" >> "$_alloc_log" 2>/dev/null || true
+  printf '%s\n' "$_d"
+}
+get_test_dir() { get_fixture_dir; }
+
+# _cleanup_alloc  --  remove everything the current test allocated. Always
+# returns 0 so a removal hiccup cannot flip a passing test to a failure.
+_cleanup_alloc() {
+  [[ -s "${_alloc_log:-}" ]] || return 0
+  local _d
+  while IFS= read -r _d; do
+    rm -rf -- "$_d" 2>/dev/null || true
+  done < "$_alloc_log"
+  rm -f -- "$_alloc_log"
+  return 0
+}
+
+# pass LABEL / fail LABEL
+#   Emit an assertion result. Assertion detail lines use the "  ok: " /
+#   "  not ok: " prefixes; the runner-visible unit markers ("  PASS: " /
+#   "  FAIL: ") are emitted once per test by run_test. Inside a test,
+#   fail() exits the test subshell non-zero (fail-fast).
+pass() {
+  if (( _IN_TEST )); then
+    echo "  ok: $1"
+    _ANY=1
+  else
+    echo "  PASS: $1"
+    PASS=$((PASS + 1))
+  fi
+}
+fail() {
+  if (( _IN_TEST )); then
+    echo "  not ok: $1"
+    _ANY=1
+    exit 1
+  else
+    echo "  FAIL: $1"
+    FAIL=$((FAIL + 1))
+    FAILURES+=("$1")
+  fi
+}
 
 # ---------------------------------------------------------------------------
 # Docker-trace assertions  --  the standard way to assert on the recorded
@@ -39,27 +104,66 @@ trace_count() {
 trace_has() {
   grep -q "$1" "$DOCKER_TRACE_LOG" 2>/dev/null
 }
+
 # run_test NAME
-#   Invokes a test function. A test that returns without calling pass/fail/skip
-#   is counted as a failure: a silent test proves nothing.
+#   Runs the test function NAME in its own subshell: per-test isolation of
+#   environment, cwd, globals, and traps. A fresh FIXTURE_DIR is allocated
+#   for the test (its default root) and removed on exit; the test allocates
+#   extras via get_fixture_dir as needed.
+#
+#   Unit result: rc 0 + at least one assertion -> one PASS unit. rc non-zero
+#   (a fail() exit or a crash) or zero assertions -> one FAIL unit. The unit
+#   marker ("  PASS: NAME" / "  FAIL: NAME") is what scripts/run_tests.sh
+#   counts.
+# shellcheck disable=SC2034  # rc carries the subshell result to the unit branch
 run_test() {
-  local _bp=$PASS _bf=$FAIL _bs=$SKIP
-  echo "[ $1 ]"
-  $1 || true
-  if (( PASS + FAIL + SKIP == _bp + _bf + _bs )); then
-    echo "  NO-ASSERTION: $1 completed without calling pass/fail/skip" >&2
-    FAIL=$((FAIL + 1)); FAILURES+=("$1 (no assertion)")
+  local name="$1" rc=0
+  echo "[ $name ]"
+  # set +e: the design's fail-fast is fail() (controlled exit), not errexit.
+  # A shell that sourced a script running `set -e` (start_agent.sh does) must
+  # still let a test capture `out=$(cmd); rc=$?` where cmd fails, and the
+  # `|| rc=$?` below keeps the unit capture errexit-safe in the file shell.
+  ( set +e
+    _alloc_log="$(mktemp /tmp/tc_alloc_XXXXXX)"
+    : > "$_alloc_log"
+    # Preserve the would-be exit status: the EXIT trap's own final command
+    # otherwise overrides it (a fail() exit 1 becomes exit 0 and the unit
+    # flips to PASS). Save $? first, clean up, re-exit with it.
+    trap '_trap_rc=$?; _cleanup_alloc; exit "$_trap_rc"' EXIT
+    FIXTURE_DIR="$(get_fixture_dir)"
+    _IN_TEST=1
+    local _ANY=0
+    local _trap_rc=0
+    "$name"
+    rc=$?
+    if (( rc != 0 )); then
+      exit 1
+    fi
+    if (( _ANY == 0 )); then
+      echo "  not ok: $name completed without an assertion"
+      exit 1
+    fi
+    exit 0
+  ) || rc=$?
+  if (( rc == 0 )); then
+    PASS=$((PASS + 1))
+    echo "  PASS: $name"
+  else
+    FAIL=$((FAIL + 1))
+    FAILURES+=("$name")
+    echo "  FAIL: $name"
   fi
 }
 
 # ---------------------------------------------------------------------------
 # test_setup  --  call at file scope after source lines to get standard vars
-# and automatic temp-dir cleanup.
+# and the file-scope scaffold root.
 #
-# Sets: TEST_DIR, REPO_ROOT, FIXTURE_DIR (mktemp -d)
-# Registers: trap 'rm -rf "$FIXTURE_DIR"' EXIT
+# Sets: TEST_DIR, REPO_ROOT, FIXTURE_ROOT (file-scope scaffold root),
+#       FIXTURE_DIR (per-test default root; reallocated fresh by run_test)
+# Registers: trap 'rm -rf "$FIXTURE_ROOT"' EXIT
 # ---------------------------------------------------------------------------
-# shellcheck disable=SC2034  # REPO_ROOT is consumed by test files after they call test_setup
+# shellcheck disable=SC2034  # REPO_ROOT/SC, FIXTURE_DIR are consumed by test files
 test_setup() {
   if [[ -z "${BASH_SOURCE[1]:-}" ]]; then
     echo "Error: test_setup must be called from a sourced file, not interactively." >&2
@@ -67,8 +171,10 @@ test_setup() {
   fi
   TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
   REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
-  FIXTURE_DIR="$(mktemp -d /tmp/XXXXXX)"
-  trap 'rm -rf "$FIXTURE_DIR"' EXIT
+  FIXTURE_ROOT="$(mktemp -d /tmp/XXXXXX)"
+  FIXTURE_DIR="$FIXTURE_ROOT"
+  local _trap_rc=0
+  trap '_trap_rc=$?; rm -rf "$FIXTURE_ROOT"; exit "$_trap_rc"' EXIT
 }
 
 # make_envfile DIR [NAME] [PROJECT_DIR] [SANDBOX_DIR]
@@ -82,30 +188,28 @@ make_envfile() {
   printf 'PROJECT_NAME=%s\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$name" "$proj" "$sbx" > "$dir/.env"
 }
 
+# test_done NAME
+#   Prints the file's per-test-unit results and exits with the failing-unit
+#   count (0 on green). The failing names were already emitted as unit
+#   markers by run_test; the list below is a human-friendly reprint.
 test_done() {
   local NAME="${1:-}"
   if [[ -n "$NAME" ]]; then
     echo "=== $NAME ==="
     echo
   fi
-  echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+  echo "Results: $PASS passed, $FAIL failed"
   if [[ ${#FAILURES[@]} -gt 0 ]]; then
     echo "Failed:"
-    # FAIL: prefix  --  scripts/run_tests.sh counts failures by grepping this
-    # exact marker from captured output.
-    for f in "${FAILURES[@]}"; do echo "  FAIL: $f"; done
-  fi
-  if [[ ${#SKIPS[@]} -gt 0 ]]; then
-    echo "Skipped:"
-    for s in "${SKIPS[@]}"; do echo "  - $s"; done
+    for f in "${FAILURES[@]}"; do echo "  - $f"; done
   fi
   exit "$FAIL"
 }
 
 # ---------------------------------------------------------------------------
 # Assertion helpers  --  the standard way to assert inside a test function.
-# Each calls pass/fail itself, so a test body can be one to three lines and
-# can never be assertion-less.
+# Each calls pass or fail itself, so a test body can be one to three lines
+# and can never be assertion-less.
 #
 #   assert_eq ACTUAL EXPECTED [LABEL]       --  string equality
 #   assert_ne ACTUAL UNEXPECTED [LABEL]     --  string inequality

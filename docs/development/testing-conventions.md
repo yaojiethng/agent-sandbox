@@ -193,7 +193,7 @@ fi
 
 ## Test Structure Template
 
-**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.
+**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass` or `fail` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.
 
 Document untested branches in the function-header comment at the point of the code: every documented branch of a sourced lib function has either a test or a gap note naming why it is untested (expressibility limits, low risk). There is no central known-gaps file -- the comment travels with the code it describes.
 
@@ -210,8 +210,7 @@ TARGET_SCRIPT="$TEST_DIR/../scripts/example.sh"
 source "$TEST_DIR/libs/test_common.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
+test_setup
 
 # -------------------------
 # Local helpers (not shared across files)
@@ -251,21 +250,22 @@ test_done
 
 (`test_done` prints the report and exits non-zero on failure. Do not inline a `Results:` echo or a manual `[[ "$FAIL" -eq 0 ]]` -- the template's former inline tail predates `test_done` and is retired.)
 
+Each test runs in its own subshell, so a test's environment, cwd, globals, and traps cannot leak into the next test: the suite is order-independent by construction. `run_test` allocates a fresh per-test `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, on exit. A test allocates extras with `get_fixture_dir` (alias `get_test_dir`), never with a bare `mktemp -d`. `test_setup` also sets a file-scope `FIXTURE_ROOT` for scaffolding that a file's tests share; a test reaches it by that name because `FIXTURE_DIR` is shadowed per test. Accounting is one unit per test: `run_test` emits a single unit marker (`PASS` or `FAIL`, both indented two spaces) that `scripts/run_tests.sh` counts by grepping the indented prefix. fail-fast means the first failing assertion ends the test.
+
 ---
 
 ## Debugging Test Failures
 
 ### Symptom: Test Passes in Isolation, Fails in Sequence
 
-**Likely cause:** State pollution from previous test.
+**Likely cause:** The test reads state left by a file-scope scaffold or a sibling test. Each test already runs isolated in its own subshell, so env, cwd, globals, and traps cannot pollute; the remaining coupling is file-based.
 
 **Debug steps:**
 
 1. Run the full test suite and note which test fails
-2. Run only the failing test -- it should pass
-3. Run the test immediately before the failing test, then the failing test
-4. Check for: shared fixture paths, missing `rm -rf` in helpers, global state
-   not cleaned up
+2. Check for a `$FIXTURE_ROOT`-scoped scaffold that a test mutated, or a file one test wrote and another reads (`test.diff` is the recorded example)
+3. Make the failing test self-contained: build its own input under its own `$FIXTURE_DIR`, or rebuild the scaffold inside the test
+4. A test that depends on what a sibling test changed is a smell -- fix the test, do not restore the coupling
 
 ### Symptom: Test Fails on Re-run in Same Session
 
@@ -343,15 +343,13 @@ This pattern covers `exec` calls, subprocess scripts, and sourced function calls
 Before committing a new test:
 
 - [ ] **Placement decided per `testing_policy.md` Test Placement rule**: our maintained seam with an API -> `tests/test_*.sh` under `make test`; unmodifiable external seam / legacy mid-refactor -> `tests/knowledge/knowledge_*.sh`; still-not-runnable end-to-end flow -> `tests/integration/`
-- [ ] Uses `mktemp -d` for fixture directory
-- [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
+- [ ] Calls `test_setup` at file scope; `run_test` allocates the per-test `FIXTURE_DIR`; extras come from `get_fixture_dir`, never a bare `mktemp -d`
+- [ ] Relies on the allocator's unified teardown -- no manual `trap 'rm -rf "$FIXTURE_DIR"' EXIT`
 - [ ] All helper functions clean their inputs before creating state
-- [ ] No hardcoded paths outside fixture directory
+- [ ] No hardcoded paths outside the fixture directories
 - [ ] Sources shared fixtures from `tests/libs/` -- no sourcing of other test files
-- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()`
-- [ ] Test passes when run in isolation
-- [ ] Test passes when run after every other test in the file
-- [ ] Test passes when run twice in a row
+- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`run_test()`/`test_done()`
+- [ ] The test never depends on a sibling test's written files -- any cross-test fixture is a smell; make it self-contained
 - [ ] `make test` passes clean after the new test is added
 - [ ] **`make test` invariant held**: the unit suite reports `failed 0, skipped 0`; no `skip()` in a `tests/test_*.sh` file
 - [ ] Test failure message clearly describes what went wrong

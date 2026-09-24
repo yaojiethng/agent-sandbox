@@ -121,6 +121,6 @@ run_test test_lib_preflight_critical_exits
 run_test test_lib_preflight_warn_continues
 
 echo ""
-echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
 

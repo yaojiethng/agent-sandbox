@@ -14,10 +14,10 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/scripts/guards.sh"
 
 # lsof stubs: probe exit status decides whether a lock counts as held.
-mkdir -p "$FIXTURE_DIR/stub_lsof_fail" "$FIXTURE_DIR/stub_lsof_hold"
-printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_DIR/stub_lsof_fail/lsof"   # no holder
-printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/stub_lsof_hold/lsof"   # holder present
-chmod +x "$FIXTURE_DIR/stub_lsof_fail/lsof" "$FIXTURE_DIR/stub_lsof_hold/lsof"
+mkdir -p "$FIXTURE_ROOT/stub_lsof_fail" "$FIXTURE_ROOT/stub_lsof_hold"
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/stub_lsof_fail/lsof"   # no holder
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/stub_lsof_hold/lsof"   # holder present
+chmod +x "$FIXTURE_ROOT/stub_lsof_fail/lsof" "$FIXTURE_ROOT/stub_lsof_hold/lsof"
 
 
 # =============================================================================
@@ -69,7 +69,7 @@ test_clear_stale_lock_no_lsof_skips_check() {
   touch "$DIR/.git/index.lock"
 
   # (a) lsof present but probe fails (no process holds the lock)
-  if PATH="$FIXTURE_DIR/stub_lsof_fail:$PATH" draft_clear_stale_lock "$DIR" 2>/dev/null; then
+  if PATH="$FIXTURE_ROOT/stub_lsof_fail:$PATH" draft_clear_stale_lock "$DIR" 2>/dev/null; then
     if [[ ! -f "$DIR/.git/index.lock" ]]; then
       pass "draft_clear_stale_lock: failing lsof probe treated as not-held, lock removed"
     else
@@ -83,8 +83,8 @@ test_clear_stale_lock_no_lsof_skips_check() {
   # function needs for removal  --  rm is an external binary, not a builtin)
   make_committed_repo "$DIR"
   touch "$DIR/.git/index.lock"
-  ln -sf "$(command -v rm)" "$FIXTURE_DIR/stub_lsof_fail/rm"
-  if PATH="$FIXTURE_DIR/stub_lsof_fail" draft_clear_stale_lock "$DIR" 2>/dev/null; then
+  ln -sf "$(command -v rm)" "$FIXTURE_ROOT/stub_lsof_fail/rm"
+  if PATH="$FIXTURE_ROOT/stub_lsof_fail" draft_clear_stale_lock "$DIR" 2>/dev/null; then
     pass "draft_clear_stale_lock handles missing lsof gracefully"
   else
     fail "draft_clear_stale_lock should handle missing lsof"
@@ -100,7 +100,7 @@ test_clear_stale_lock_held_lock_fails_and_keeps_file() {
   touch "$DIR/.git/index.lock"
 
   local OUT RC=0
-  OUT=$(PATH="$FIXTURE_DIR/stub_lsof_hold:$PATH" \
+  OUT=$(PATH="$FIXTURE_ROOT/stub_lsof_hold:$PATH" \
     draft_clear_stale_lock "$DIR" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"held by another git process"* && -f "$DIR/.git/index.lock" ]]

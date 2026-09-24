@@ -19,14 +19,14 @@ source "$REPO_ROOT/scripts/install.sh"
 
 # Fake GNU tools detect the failed probes; symlinked real git/grep keep the
 # probes themselves working. The empty shim makes every probe fail.
-mkdir -p "$FIXTURE_DIR/gnu_shim" "$FIXTURE_DIR/empty_shim"
-printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/realpath"
-printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/sha256sum"
-printf '#!/bin/sh\nprintf "2026-09-17\\n"\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/date"
-printf '#!/bin/sh\necho "sed (GNU sed) 4.8.1"\nexit 0\n' > "$FIXTURE_DIR/gnu_shim/sed"
-chmod +x "$FIXTURE_DIR/gnu_shim"/{realpath,sha256sum,date,sed}
-ln -s "$(command -v git)" "$FIXTURE_DIR/gnu_shim/git"
-ln -s "$(command -v grep)" "$FIXTURE_DIR/gnu_shim/grep"
+mkdir -p "$FIXTURE_ROOT/gnu_shim" "$FIXTURE_ROOT/empty_shim"
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/realpath"
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/sha256sum"
+printf '#!/bin/sh\nprintf "2026-09-17\\n"\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/date"
+printf '#!/bin/sh\necho "sed (GNU sed) 4.8.1"\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/sed"
+chmod +x "$FIXTURE_ROOT/gnu_shim"/{realpath,sha256sum,date,sed}
+ln -s "$(command -v git)" "$FIXTURE_ROOT/gnu_shim/git"
+ln -s "$(command -v grep)" "$FIXTURE_ROOT/gnu_shim/grep"
 
 test_install_passes_on_linux_default() {
   local OUT RC=0
@@ -56,7 +56,7 @@ test_install_uninstall_removes_symlink() {
 
 test_install_detects_missing_gnu_tools_on_darwin() {
   local OUT RC=0
-  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_DIR/empty_shim" \
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/empty_shim" \
         INSTALL_DIR="$FIXTURE_DIR/bin_darwin_bad" \
         install_main 2>&1 </dev/null) || RC=$?
 
@@ -69,7 +69,7 @@ test_install_detects_missing_gnu_tools_on_darwin() {
 
 test_install_passes_on_darwin_with_gnu_shim() {
   local OUT RC=0
-  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_DIR/gnu_shim:$PATH" \
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/gnu_shim:$PATH" \
         INSTALL_DIR="$FIXTURE_DIR/bin_darwin_ok" \
         install_main 2>&1 </dev/null) || RC=$?
 
@@ -82,7 +82,7 @@ test_install_passes_on_darwin_with_gnu_shim() {
 
 test_install_detects_missing_git_on_linux() {
   local OUT RC=0
-  OUT=$(INSTALL_OS=Linux PATH="$FIXTURE_DIR/empty_shim" \
+  OUT=$(INSTALL_OS=Linux PATH="$FIXTURE_ROOT/empty_shim" \
         INSTALL_DIR="$FIXTURE_DIR/bin_linux_nogit" \
         install_main 2>&1 </dev/null) || RC=$?
 

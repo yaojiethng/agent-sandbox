@@ -97,5 +97,5 @@ run_test test_package_branch_default_detects_rename
 run_test test_diff_export_uses_no_renames_by_default
 
 echo ""
-echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
+echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

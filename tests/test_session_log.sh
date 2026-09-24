@@ -30,7 +30,7 @@ export SANDBOX_DIR="$FIX"
 # entirely (sibling temp file + mv); this shim fails any `-i` invocation so a
 # regression to in-place sed is caught. Other calls forward to real sed.
 REAL_SED="$(command -v sed)"
-mkdir -p "$FIXTURE_DIR/shim_noinplace"
+mkdir -p "$FIXTURE_ROOT/shim_noinplace"
 { printf '#!/usr/bin/env bash\nREAL_SED=%q\n' "$REAL_SED"; cat <<'SHIM'
 set -u
 if [[ $# -gt 0 && "$1" == "-i" ]]; then
@@ -39,8 +39,8 @@ if [[ $# -gt 0 && "$1" == "-i" ]]; then
 fi
 exec "$REAL_SED" "$@"
 SHIM
-} > "$FIXTURE_DIR/shim_noinplace/sed"
-chmod +x "$FIXTURE_DIR/shim_noinplace/sed"
+} > "$FIXTURE_ROOT/shim_noinplace/sed"
+chmod +x "$FIXTURE_ROOT/shim_noinplace/sed"
 
 test_session_log_set_read() {
   local sid="s1"
@@ -75,7 +75,7 @@ test_session_log_set_avoids_inplace_sed() {
   # invocation. Upsert works, and no in-place sed is exercised.
   local sid="bsdsed"
   (
-    export PATH="$FIXTURE_DIR/shim_noinplace:$PATH"
+    export PATH="$FIXTURE_ROOT/shim_noinplace:$PATH"
     session_log_set "$sid" last_stopped "20260828-120000"
     session_log_set "$sid" last_stopped "20260828-130000"
   )
@@ -89,7 +89,7 @@ test_inplace_sed_shim_rejects_dash_i() {
   # to in-place sed is caught instead of silently passing.
   local f="$FIX/gnu-form.log"
   echo "last_stopped=old" > "$f"
-  if ( export PATH="$FIXTURE_DIR/shim_noinplace:$PATH"
+  if ( export PATH="$FIXTURE_ROOT/shim_noinplace:$PATH"
        sed -i "s#^last_stopped=.*#last_stopped=new#" "$f" ) 2>/dev/null; then
     fail "shim accepted a -i invocation"
   else

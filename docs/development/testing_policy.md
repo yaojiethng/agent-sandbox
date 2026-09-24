@@ -14,15 +14,17 @@ Every test must be independent and reproducible. Tests must not depend on:
 - User's home directory or working directory
 - Any path outside the test's temporary fixture directory
 
-**Rule:** All test fixtures must live under a temporary directory created with `mktemp -d` and cleaned up on exit.
+**Rule:** All test fixtures must live under a temporary directory. `test_setup` at file scope and `run_test` allocate a fresh per-test `FIXTURE_DIR`; extras come from `get_fixture_dir`; the allocator cleans up on exit. A test must never use a bare `mktemp -d`.
 
 ```bash
-# ✓ Correct: isolated fixture directory
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
+# ✓ Correct: isolated per-test fixture directory
+test_setup   # file scope; also sets FIXTURE_ROOT for shared scaffolding
 
-P="$FIXTURE_DIR/test_project"
-S="$FIXTURE_DIR/test_sandbox"
+test_example() {
+  local P="$FIXTURE_DIR/test_project"
+  local S="$FIXTURE_DIR/test_sandbox"   # FIXTURE_DIR is fresh for this test
+  ...
+}
 ```
 
 ### 2. Fixtures Must Be Cleaned Before Use
@@ -99,7 +101,7 @@ Helpers used by more than one test file live in `tests/libs/` and are sourced ex
 
 | File | Contains |
 |---|---|
-| `tests/libs/test_common.sh` | Pass/fail/skip counters and reporting: `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
+| `tests/libs/test_common.sh` | Per-test unit accounting and isolation: `pass()`, `fail()`, `run_test()`, `test_done()`, `get_fixture_dir()` |
 | `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
 | `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` -- unified session directory creator with optional patches and uncommitted.diff |
 

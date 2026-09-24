@@ -81,7 +81,9 @@ test_apply_missing_diff_file() {
   fi
 }
 test_apply_missing_project_dir() {
-  if apply_run "/nonexistent" "$FIXTURE_DIR/test.diff" "" "false" 2>/dev/null; then
+  local DIFF="$FIXTURE_DIR/missing_proj.diff"
+  printf 'diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -0,0 +1 @@\n+new\n' > "$DIFF"
+  if apply_run "/nonexistent" "$DIFF" "" "false" 2>/dev/null; then
     fail "apply_run should fail with missing project dir"
   else
     pass "apply_run fails with missing project dir"

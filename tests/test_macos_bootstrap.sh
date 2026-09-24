@@ -18,10 +18,10 @@ source "$REPO_ROOT/scripts/macos_bootstrap.sh"
 
 # fake brew: mode from BOOTSTRAP_FAKE_BREW. "absent" -> list fails, install
 # logs the package. "present" -> list succeeds.
-mkdir -p "$FIXTURE_DIR/shim_brew" "$FIXTURE_DIR/empty_shim"
+mkdir -p "$FIXTURE_ROOT/shim_brew" "$FIXTURE_ROOT/empty_shim"
 printf '#!/bin/sh\nif [ "$1" = "list" ] && [ "${BOOTSTRAP_FAKE_BREW:-absent}" = "absent" ]; then exit 1; fi\nif [ "$1" = "install" ]; then echo "$2" >> "${BOOTSTRAP_LOG:-/dev/null}"; fi\nexit 0\n' \
-  > "$FIXTURE_DIR/shim_brew/brew"
-chmod +x "$FIXTURE_DIR/shim_brew/brew"
+  > "$FIXTURE_ROOT/shim_brew/brew"
+chmod +x "$FIXTURE_ROOT/shim_brew/brew"
 
 # homebrew-prefix fixture: brew bash + the gnubin binaries.
 make_prefix() {
@@ -54,7 +54,7 @@ test_bootstrap_aborts_on_non_macos() {
 
 test_bootstrap_aborts_without_homebrew() {
   local OUT RC=0
-  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_DIR/empty_shim" \
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/empty_shim" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"Homebrew is required"* && "$OUT" == *"install.sh"* ]]; then
@@ -68,7 +68,7 @@ test_bootstrap_installs_missing_packages() {
   make_prefix "$FIXTURE_DIR/hb_fresh" yes
   local LOG="$FIXTURE_DIR/brew.log" OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_fresh" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=absent BOOTSTRAP_LOG="$LOG" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
@@ -86,7 +86,7 @@ test_bootstrap_skips_present_packages() {
   make_prefix "$FIXTURE_DIR/hb_full" yes
   local LOG="$FIXTURE_DIR/brew2.log" OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_full" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=present BOOTSTRAP_LOG="$LOG" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
@@ -101,7 +101,7 @@ test_bootstrap_verification_flags_missing_gnubin() {
   make_prefix "$FIXTURE_DIR/hb_partial" no
   local OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_partial" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=present \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 

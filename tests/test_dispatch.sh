@@ -691,6 +691,6 @@ run_test test_make_form_in_usage_first_help_leaf
 rm -rf "$MOCK_SCRIPTS_DIR"
 
 echo ""
-echo "${PASS} passed, ${FAIL} failed, ${SKIP} skipped"
+echo "${PASS} passed, ${FAIL} failed"
 [[ "$FAIL" -eq 0 ]]
 
