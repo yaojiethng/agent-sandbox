@@ -37,5 +37,5 @@ The branch-A protocol record pre-registered the accept condition: the merging ag
 
 - The roadmap rows **Test suite duration** and **Individual per-test timeout** close; the harness-decision text replaces the deferred-comparison tail of the **Test-harness improvement (unified plan)** row.
 - Branch A is merged; branch B stays archived as the comparison record, not merged.
-- M3.1 now holds only closed rows and folds back into M3 with its close ceremony.
+- M3.1 holds three open harness-evaluation robustness rows (backpressure); the fold-back into M3 follows their close.
 - The branch-B report's measurement claims stand corrected by this record (units, self-test count, failing-test wall cost).
