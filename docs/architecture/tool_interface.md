@@ -128,7 +128,7 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only -- absolute paths rejected).
+Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
 
 **Channels:**
 
@@ -138,13 +138,20 @@ By default, resolves from the `session` channel (`session-diffs/session/`) using
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in; a non-interactive run requires an explicit `BUNDLE=<name>`.
 
 ---
 
-### `make confirm [TARGET_BRANCH=<branch>]`
+### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`
 
-Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch.
+Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
+
+`NEW=1` (flag `--new`) creates `TARGET_BRANCH` at the draft tip instead. `TARGET_BRANCH` must name a branch that does not exist yet; the command exits non-zero otherwise. It deletes the draft, leaves the source branch untouched, and prints -- does not run -- the direction that moves the source branch onto the rebased series:
+
+```text
+git switch <source-branch>
+git reset --soft <TARGET_BRANCH>
+```
 
 ---
 
@@ -158,7 +165,7 @@ Discards the current `draft/` branch, returns to the source branch. Artefacts un
 
 Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-[-<LABEL>-]<SESSION_ID>/`.
 
-`BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
+`BASELINE=<sha>` diffs against an explicit SHA. Without it, the baseline is `git merge-base <init_sha> HEAD`: `init_sha` without a rebase, and the branch point after one -- the commit the host still holds, so the exported diffs apply onto it.
 
 ---
 

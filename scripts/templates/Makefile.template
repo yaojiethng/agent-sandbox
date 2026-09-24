@@ -91,6 +91,7 @@ FROM         ?=
 INTERACTIVE  ?=
 DIFF         ?=
 TARGET_BRANCH ?=
+NEW          ?=
 BUNDLE       ?=
 BUNDLE_SUMMARY ?=
 BASELINE ?=
@@ -107,6 +108,10 @@ endif
 
 ifdef STALE_ONLY
 $(error STALE_ONLY is not a Make variable. Did you mean STALE? Example: make prune STALE=sandbox)
+endif
+
+ifdef NEW_BRANCH
+$(error NEW_BRANCH is not a Make variable. Did you mean TARGET_BRANCH=<new-branch> NEW=1? Example: make confirm TARGET_BRANCH=$(NEW_BRANCH) NEW=1)
 endif
 
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
@@ -150,6 +155,7 @@ help:
 	@echo "  make prune DRY_RUN=1             --  print what would be pruned without acting"
 	@echo "  make draft                         --  apply session patches to a draft branch"
 	@echo "  make confirm                       --  merge draft branch to source"
+	@echo "  make confirm TARGET_BRANCH=<b> NEW=1 --  create new branch <b> at the draft tip (no merge)"
 	@echo "  make reject                        --  discard draft branch"
 	@echo "  make apply                         --  apply uncommitted changes"
 	@echo "  make package-branch                --  export branch as numbered diffs"
@@ -173,6 +179,7 @@ help:
 	@echo "  FROM=<channel>    --  resolution channel: session|autosave|bundles (draft only)"
 	@echo "  BRANCH_FROM=<sha> --  draft branch point; always name it, especially after a rebase (draft only)"
 	@echo "  BASELINE=<sha>    --  package-branch diff point; always name it, especially after a rebase"
+	@echo "  NEW=1             --  confirm into a new TARGET_BRANCH instead of merging (confirm only)"
 	@echo "  INTERACTIVE=1     --  interactive config wizard: pick provider + build policy, then start (make start)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."
@@ -279,7 +286,7 @@ prune:
 #   make apply INTERACTIVE=1  ->  --interactive (preview + confirm)
 #
 # WORKFLOW:
-#   make draft                            --  apply session patches to a working branch for review
+#   make draft                            --  requires BUNDLE=<name>, or INTERACTIVE=1 for the picker
 #   make draft BUNDLE=<name>              --  apply from a named bundle under the channel directory
 #   make draft FROM=bundles               --  resolve from output/bundles/ instead of session/
 #   make draft FROM=autosave              --  resolve from session-diffs/autosave/ instead of session/
@@ -289,6 +296,7 @@ prune:
 #   git log -p HEAD~N..HEAD               --  review changes on the working branch
 #   make confirm                          --  rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x          --  merge to a different target branch
+#   make confirm TARGET_BRANCH=y NEW=1    --  create branch y at the draft tip (new history); prints the move-onto-series commands
 #   make reject                           --  discard draft branch, return to source branch
 #
 #   make apply DIFF=<path>                --  apply an exact diff file (required)
@@ -314,7 +322,8 @@ draft:
 confirm:
 	agent-sandbox confirm \
 	  --env=$(ENV_FILE) \
-	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),)
+	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),) \
+	  $(if $(NEW),--new,)
 
 reject:
 	agent-sandbox reject \

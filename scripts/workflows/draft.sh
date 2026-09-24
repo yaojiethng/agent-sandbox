@@ -363,14 +363,14 @@ Usage: agent-sandbox draft --project=<path> --sandbox=<path> [options]
 
 Creates a draft branch and applies session patches.
 
-or, from a sandbox Makefile: make draft [FROM=<channel>] [BUNDLE=<name>] [--branch-from=<commit>]
+or, from a sandbox Makefile: make draft [FROM=<channel>] BUNDLE=<name> [BRANCH_FROM=<commit>]
 
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory
 
 Options:
-  --bundle=<name>         Named bundle to apply (default: newest)
+  --bundle=<name>         Named bundle to apply (required; --interactive picks from a list)
   --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
   --branch-from=<commit>  Base commit for the draft branch; always name it, especially after a rebase (default: HEAD)
   --diffs=<start>..<end>  Range of patches to apply
@@ -524,9 +524,26 @@ _run_draft_workflow() {
 #   Resolves the session export source for a draft and sets SOURCE_DIR and
 #   BUNDLE_NAME in the caller's scope (deliberately not local -- main()'s
 #   three paths consume them). Returns 1 when resolution fails.
+#
+#   A non-interactive draft must name its bundle. Auto-picking the newest was
+#   the source of a stale-session draft, so an empty BUNDLE is an error here
+#   rather than a silent fallback; the picker (INTERACTIVE=1) is the guided
+#   path. The interactive paths always pass a resolved name, so only the
+#   non-interactive path reaches the guard.
 _resolve_draft_source() {
+  local SANDBOX_DIR="$1"
+  local CHANNEL="$2"
+  local BUNDLE="$3"
+
+  if [[ -z "$BUNDLE" ]]; then
+    echo "Error: no bundle named for a non-interactive draft." >&2
+    echo "  Name one:  make draft BUNDLE=<name>" >&2
+    echo "  Pick one:  make draft INTERACTIVE=1" >&2
+    return 1
+  fi
+
   local result
-  result=$(resolve_source_for_draft "$1" "$2" "$3") || return 1
+  result=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || return 1
   SOURCE_DIR=$(echo "$result" | cut -f1)
   BUNDLE_NAME=$(echo "$result" | cut -f2)
 }

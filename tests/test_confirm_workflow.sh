@@ -287,6 +287,59 @@ test_confirm_drop_step_failure_restores_savepoint() {
   git -C "$P" rebase --abort 2>/dev/null || true
 }
 
+test_confirm_new_branch_creates_and_prints_hint() {
+  make_draft_fixture confirm_new 2
+  local MAIN_BEFORE
+  MAIN_BEFORE=$(git -C "$P" rev-parse main)
+
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+
+  local OUT
+  OUT=$(confirm_run "$P" "$S" "rebased-series" "true" 2>&1) || true
+
+  local OK=true
+  git -C "$P" show-ref --verify --quiet refs/heads/rebased-series || OK=false
+  _branch_exists "$P" "$DRAFT_BRANCH" && OK=false
+  [[ "$(git -C "$P" rev-parse main)" == "$MAIN_BEFORE" ]] || OK=false
+  [[ "$OUT" == *"git reset --soft rebased-series"* ]] || OK=false
+  [[ "$OUT" == *"git switch main"* ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "confirm NEW creates the branch at the draft tip, deletes the draft, leaves the target, and prints the reset direction"
+  else
+    fail "confirm NEW state wrong (out=$OUT)"
+  fi
+}
+
+test_confirm_new_branch_rejects_existing() {
+  make_draft_fixture confirm_new_exists 2
+
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+
+  local OUT
+  OUT=$(confirm_run "$P" "$S" "main" "true" 2>&1) || true
+
+  if [[ "$OUT" == *"already exists"* ]] && _branch_exists "$P" "$DRAFT_BRANCH"; then
+    pass "confirm NEW rejects an existing branch and leaves the draft in place"
+  else
+    fail "confirm NEW should reject an existing branch; out=$OUT"
+  fi
+}
+
+test_confirm_new_branch_requires_target() {
+  make_draft_fixture confirm_new_notarget 2
+
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+
+  local OUT
+  OUT=$(confirm_run "$P" "$S" "" "true" 2>&1) || true
+  assert_contains "$OUT" "requires TARGET_BRANCH" "confirm NEW requires a target branch name"
+}
+
 # =============================================================================
 # Run all
 # =============================================================================
@@ -299,5 +352,8 @@ run_test test_confirm_conflict_recovery
 run_test test_confirm_conflict_no_savepoint_tag_aborts_cleanly
 run_test test_confirm_conflict_stale_savepoint_preserves_draft
 run_test test_confirm_drop_step_failure_restores_savepoint
+run_test test_confirm_new_branch_creates_and_prints_hint
+run_test test_confirm_new_branch_rejects_existing
+run_test test_confirm_new_branch_requires_target
 
 test_done

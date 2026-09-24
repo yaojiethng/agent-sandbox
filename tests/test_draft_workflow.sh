@@ -592,10 +592,22 @@ test_draft_fails_on_unreadable_working_tree() {
   fi
 }
 
+test_draft_requires_bundle() {
+  local OUT RC
+  OUT=$(_resolve_draft_source "$FIXTURE_DIR" session "" 2>&1)
+  RC=$?
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"INTERACTIVE=1"* ]]; then
+    pass "a non-interactive draft with no bundle errors and points at the picker"
+  else
+    fail "no-bundle guard wrong: rc=$RC out=$OUT"
+  fi
+}
+
 # =============================================================================
 # Run all
 # =============================================================================
 run_test test_draft_creates_branch
+run_test test_draft_requires_bundle
 run_test test_draft_applies_diffs
 run_test test_draft_applies_uncommitted_diff
 

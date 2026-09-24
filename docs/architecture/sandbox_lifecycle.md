@@ -33,7 +33,7 @@ Inside the seeder (`src/capability/seed_volume.sh`):
 1. **Guards (fail closed, readable errors):** repository tracks the `.agent-sandbox-seed/` sentinel (harness staging captured by a host commit), linked worktree (`.git` is a gitfile), no commits (unborn HEAD -- the session-env gate requires commits for every session before delivery dispatch), submodules (the gitlink would cross without its content).
 2. **Shared delivery dispatch** -- `snapshot_deliver` routes both modes through one primitives set: full (default) copies `.git` natively then syncs the worktree; flatten syncs the worktree then inits a fresh baseline.
 3. **Working tree copy** -- the shared enumeration (`snapshot_enumerate_worktree`) lists the working tree (tracked files still on disk plus untracked non-ignored files, all ignore sources honored, negation patterns included); an existence filter drops tracked paths absent from the disk, so unstaged deletions are visible in the volume. `rsync --from0 --files-from` streams the enumerated set into the volume; an empty enumeration is a no-op. The stream never touches an intermediate location, and no harness state is written into the operator's worktree (R7).
-4. **SESSION_STATE** -- the seeder writes `init_sha` (HEAD at seed time for full; the baseline root commit for flatten; the fixed lower boundary for `package-branch`), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory.
+4. **SESSION_STATE** -- the seeder writes `init_sha` (HEAD at seed time for full; the baseline root commit for flatten), `session_ts`, `session_id`, and `host_head_sha` into the volume's git directory. The `package-branch` baseline resolves to `git merge-base init_sha HEAD` -- `init_sha` without a rebase, the branch point after one -- and `--baseline` overrides it.
 5. **Self-verification** -- full: `git status --porcelain` is compared between `/src` and `/dest`, any divergence aborts the seed. Flatten: the committed file set must equal the source enumeration and the worktree must be clean.
 
 The seed guarantees the full working tree state matrix in the volume:
@@ -151,7 +151,7 @@ One autosave directory exists per session. Each cycle builds the next checkpoint
 
 On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve the appropriate diff file or source directory, then pass the resolved path to the workflow library:
 
-**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** -- resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute). Draft runs only on a clean working tree: uncommitted or untracked changes abort it with a stash-or-commit hint. The guard is never bypassed, not even by `--force` -- force tolerates apply conflicts only, never an unclean fork base.
+**`make draft [BUNDLE=<name>] [CHANNEL=<channel>]`** -- resolves a source directory via routing (`session`, `autosave`, or `bundles` channel), then applies `patches/*.diff` sequentially followed by `uncommitted.diff` if present. Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (session identity when set, session timestamp as fallback). `BUNDLE` is name-only (rejected if absolute) and required in non-interactive mode (`INTERACTIVE=1` opens the picker). Draft runs only on a clean working tree: uncommitted or untracked changes abort it with a stash-or-commit hint. The guard is never bypassed, not even by `--force` -- force tolerates apply conflicts only, never an unclean fork base.
 
 **`make draft FROM=bundles`** -- shorthand for `--channel=bundles`. Resolves from `output/bundles/`.
 
@@ -159,7 +159,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make draft INTERACTIVE=1`** -- interactive mode: guides the operator through a two-step numbered picker (channel then bundle) instead of requiring explicit `BUNDLE=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
 
-**`make confirm [TARGET_BRANCH=<branch>]`** -- cleans up the draft branch after the operator has rebased and merged.
+**`make confirm [TARGET_BRANCH=<branch>] [NEW=1]`** -- cleans up the draft branch after the operator has rebased and merged. `NEW=1` creates `TARGET_BRANCH` (a branch that must not exist yet) at the draft tip, leaves the source branch untouched, and prints the `git reset --soft` direction that moves it onto the rebased series.
 
 **`make reject`** -- discards the draft branch, returning to the source branch. Draft residue (uncommitted changes left by `uncommitted.diff` on the working tree) is discarded automatically, since once the draft commits are dropped the final working-tree changes carry no information. Artefacts unchanged.
 

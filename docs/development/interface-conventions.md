@@ -16,10 +16,11 @@ Error: --bundle-summary is required. Provide a concise snake_case label.
   Bad:  --bundle-summary=changes
   Bad:  --bundle-summary=snapshot
 
-Usage: package_branch.sh --to=<dir> --bundle-summary=<text>
+Usage: package_branch.sh --to=<dir> --bundle-summary=<text> [--baseline=<sha>]
 
   --to=<dir>           Required. Base output directory.
   --bundle-summary     Required. Snake_case label for the bundle directory.
+  --baseline=<sha>     Explicit diff baseline (default: the session branch point).
 ```
 
 The error must include:

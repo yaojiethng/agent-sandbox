@@ -464,6 +464,56 @@ test_dispatcher_refuses_unreadable_repository() {
   fi
 }
 
+test_baseline_explicit_override() {
+  local DIR="$FIXTURE_DIR/pb_base_arg"
+  local OUT="$FIXTURE_DIR/pb_base_arg_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR" >/dev/null
+  commit_file "$DIR" "a.txt"
+  local BASE
+  BASE=$(git -C "$DIR" rev-parse HEAD)
+  commit_file "$DIR" "b.txt"
+  commit_file "$DIR" "c.txt"
+
+  package_branch "$DIR" "$OUT" false "$BASE"
+
+  local COUNT RECORDED
+  COUNT=$(ls "$OUT/patches/"*.diff 2>/dev/null | wc -l)
+  RECORDED=$(export_status_read "$OUT" INIT_SHA)
+  if [[ "$COUNT" -eq 2 && "$RECORDED" == "$BASE" ]]; then
+    pass "package_branch honours an explicit baseline: 2 patches and INIT_SHA=$BASE"
+  else
+    fail "explicit baseline wrong: count=$COUNT recorded=$RECORDED expected=$BASE"
+  fi
+}
+
+test_baseline_defaults_to_branch_point() {
+  local DIR="$FIXTURE_DIR/pb_base_default"
+  make_sandbox_fixture "$DIR" >/dev/null
+  local BASE
+  BASE=$(git -C "$DIR" rev-parse HEAD)
+
+  commit_file "$DIR" "old.txt" "old"
+  local ORPHAN
+  ORPHAN=$(git -C "$DIR" rev-parse HEAD)
+
+  # Simulate a session whose recorded init_sha a rewrite orphaned.
+  : > "$DIR/.git/SESSION_STATE"
+  echo "init_sha=$ORPHAN" >> "$DIR/.git/SESSION_STATE"
+  echo "session_ts=20260501-120000" >> "$DIR/.git/SESSION_STATE"
+
+  git -C "$DIR" reset --hard "$BASE" --quiet
+  commit_file "$DIR" "new.txt" "new"
+
+  local RESOLVED
+  RESOLVED=$(package_branch_baseline "$DIR" "")
+  if [[ "$RESOLVED" == "$BASE" ]]; then
+    pass "package_branch defaults to the branch point after the recorded init_sha is orphaned"
+  else
+    fail "expected merge-base $BASE, got $RESOLVED"
+  fi
+}
+
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
 run_test test_dispatcher_refuses_unreadable_repository
@@ -473,6 +523,8 @@ run_test test_preflight_clean_tree_is_silent
 run_test test_preflight_flags_uncommitted_modifications
 run_test test_preflight_flags_cancelled_out_modification
 run_test test_preflight_skips_deleted_files_without_warning
+run_test test_baseline_explicit_override
+run_test test_baseline_defaults_to_branch_point
 
 test_done
 

@@ -55,7 +55,7 @@ agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<text>] [--basel
 make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]
 ```
 
-Name the baseline on every invocation: the command hints treat `--baseline` (package-branch) and `--branch-from` (make draft) as a default argument that must carry a commit. After a rebase, the recorded `init_sha` is stale; set the baseline to the commit the rebased branch diverges from so the diffs apply onto the same base on the host (see `/package-rebase`).
+The baseline defaults to `git merge-base <init_sha> HEAD`: `init_sha` without a rebase, and the branch point after one. Pass `--baseline=<sha>` (or `BASELINE=<sha>`) only to override it. In a `make draft` invocation the same commit is `BRANCH_FROM=<sha>`, never `--branch-from=<sha>`. See `/package-rebase` for the rebase case.
 
 After the script finishes, echo its final lines to the conversation. The script outputs three lines on stderr  --  repeat them so the operator sees the bundle path and the `make draft` command immediately. The last line is always the actionable next step; echo it, then write the guide.
 
@@ -88,4 +88,4 @@ Each section holds the following content:
 - `API breaking changes` -- list changes to function signatures, environment variables, file paths, or CLI flags that callers must update. If none, write "None."
 - `Changed files` -- table with columns File and Nature of change. Nature of change is one of added, modified, deleted, or renamed. No remarks column.
 - `Verification` -- state that the operator runs the unit test suite to confirm the change works. Add to this section only checks that only the operator can run on the host, such as `make dry-run`. Name the test file or the make target.
-- `How to apply` -- pure prose: how the operator applies the numbered diffs to a draft branch for structured review, how review completes (rebase and confirm) or the draft is discarded (reject), and how to apply a single diff without a branch. Name the commands inline.
+- `How to apply` -- pure prose: how the operator applies the numbered diffs to a draft branch for structured review, how review completes (rebase and confirm) or the draft is discarded (reject), and how to apply a single diff without a branch. Name the commands inline. When the export diffed from a rebased branch point, state the soft-reset path: `make confirm TARGET_BRANCH=<new-branch> NEW=1`, then the printed `git switch <original-branch>` and `git reset --soft <new-branch>` direction.

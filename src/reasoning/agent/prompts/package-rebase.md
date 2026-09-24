@@ -6,29 +6,55 @@ trigger: /package-rebase
 
 Export the commits that differ from an explicit baseline, so the operator can apply them onto the host branch after a rebase. Run this prompt when the iteration rewrote history (interactive rebase, fold, or amend) and the export-by-`init_sha` path no longer applies cleanly.
 
-## Why an explicit baseline
+## Baseline resolution
 
-The normal bundle is diffed from `init_sha` -- the branch point recorded in `SESSION_STATE` at session start. A rebase rewrites the commits after that point, so diffs against the recorded baseline no longer match the host checkout, or the branch topology changed and the recorded point is stale. The explicit baseline fixes the comparison: diff from the commit the rebased branch diverges from (for example the new base `M3_1` HEAD), so the exported diffs apply cleanly onto that same commit on the host.
+`package_branch.sh` defaults its baseline to `git merge-base <init_sha> HEAD`: the newest commit shared by the session baseline and HEAD. Without a rebase this equals `init_sha`. After a rebase it is the branch point, which is exactly the commit the host still holds, so the exported diffs apply onto the host branch.
+
+An explicit `--baseline=<sha>` override wins over the computed value. Use it only when the host target diverged from the recorded `init_sha`, for example when the operator advanced the host branch during the session.
 
 ## Procedure
 
-1. Identify the baseline SHA the rebased branch now diverges from -- the newest commit both the export source and the host target share. Name it `BRANCH_POINT`.
-2. Run the packaging script with that baseline:
+1. Confirm the branch point the export will use:
 
 ```bash
-bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=$BRANCH_POINT --bundle-summary=<summary>
+git merge-base "$(grep '^init_sha=' .git/SESSION_STATE | cut -d= -f2)" HEAD
 ```
 
-3. Report the bundle path and the `make draft` invocation to the operator. The generated command hint must carry the branch point; if the hint omits it, pass it explicitly as `--branch-from=$BRANCH_POINT` (or `agent-sandbox draft --branch-from=$BRANCH_POINT`, or `make draft ... --branch-from=$BRANCH_POINT`).
-4. The operator applies the bundle onto the host branch using that branch point, so the exported commits land on top of the same base they were diffed from.
+2. Run the packaging script. Pass `--baseline=<sha>` only to override the default:
 
-## Command hints always carry a branch point
+```bash
+bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --bundle-summary=<summary>
+```
 
-`package-branch` and `make draft` command hints specify a branch point by default, so a rebase-based workflow does not fall back on a stale `init_sha` silently. When the hint would omit the baseline, add `--baseline=<sha>` (package-branch) or `--branch-from=<commit>` (draft). The operator then applies with the recorded point rather than guessing.
+3. Report the bundle path and the `make draft` command to the operator. The script prints a concrete hint. In a make invocation the branch point is `BRANCH_FROM=<sha>`, never `--branch-from=<sha>`:
 
-## Relationship to make draft
+```text
+make draft FROM=bundles BUNDLE=<bundle> BRANCH_SUMMARY=<summary> BRANCH_FROM=<branch-point>
+```
 
-`make draft` recreates commits from the `.msg` files paired with each diff, applying them onto a draft branch. With a rebase, the diffs are derived from `--baseline=BRANCH_POINT`, and the draft branch is created from `--branch-from=BRANCH_POINT`. The two must name the same commit, or the patches resolve against the wrong parent.
+4. The operator drafts the bundle, then applies it to the host branch.
+
+## Applying a rebased package
+
+A rewritten target history cannot fast-forward, so `make confirm TARGET_BRANCH=<branch>` (the fast-forward path) does not fit. Use the soft-reset mode instead:
+
+```bash
+make draft FROM=bundles BUNDLE=<bundle> BRANCH_SUMMARY=<summary> BRANCH_FROM=<branch-point>
+make confirm TARGET_BRANCH=<new-branch> NEW=1
+```
+
+`NEW=1` requires a branch name that does not exist yet. It creates `<new-branch>` at the draft tip, deletes the draft, and leaves the original target untouched. It prints the operator-run direction that moves the original branch onto the rebased series:
+
+```text
+git switch <original-branch>
+git reset --soft <new-branch>
+```
+
+The reset moves the branch pointer to the rebased series without touching the working tree. When the rebase preserved content, the tree stays clean and no commit is needed.
+
+## Command hints carry a branch point
+
+`package-branch` and `make draft` command hints name a branch point by default, so a rebase-based workflow does not fall back on a stale `init_sha` silently. The operator applies with the recorded point rather than guessing.
 
 ## Verification
 

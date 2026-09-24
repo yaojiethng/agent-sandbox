@@ -15,7 +15,7 @@
 #   agent-sandbox prune    [identity] [--env=<path>] [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
 #   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
-#   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>]
+#   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>] [--new]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
 #   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]
 #
