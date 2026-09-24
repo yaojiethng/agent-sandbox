@@ -43,13 +43,14 @@ invoke_entrypoint_mount() {
     SESSION_TS="20260912-120000" SESSION_ID="mnt000" \
     HOST_HEAD_SHA="cafebabe" HOST_UID="$(id -u)" HOST_GID="$(id -g)" \
     AUTOSAVE_INTERVAL=0 \
-    bash "$dir/entrypoint.sh" ) >"$dir/log" 2>&1 &
+    exec bash "$dir/entrypoint.sh" ) >"$dir/log" 2>&1 &
   local pid=$!
   for _ in $(seq 1 100); do
     grep -q "ALL CHECKS PASSED" "$dir/log" 2>/dev/null && break
     kill -0 "$pid" 2>/dev/null || break
     sleep 0.1
   done
+  sleep 0.2
   kill -TERM "$pid" 2>/dev/null
   wait "$pid"
   EP_RC=$?

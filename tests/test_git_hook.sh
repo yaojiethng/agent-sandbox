@@ -85,13 +85,17 @@ invoke_entrypoint() {
     HOST_HEAD_SHA="cafebabe" HOST_UID="$(id -u)" HOST_GID="$(id -g)" \
     RESET_VOLUME="false" \
     AUTOSAVE_INTERVAL=0 \
-    bash "$dir/entrypoint.sh" ) >"$dir/log" 2>&1 &
+    exec bash "$dir/entrypoint.sh" ) >"$dir/log" 2>&1 &
   local pid=$!
   for _ in $(seq 1 100); do
     grep -q "Git hook installed\|ALL CHECKS PASSED" "$dir/log" 2>/dev/null && break
     kill -0 "$pid" 2>/dev/null || break
     sleep 0.1
   done
+  # Settle grace: the readiness marker prints before the TERM trap registers, so
+  # give the exec'd process time to reach `trap ... TERM` before the SIGTERM; a
+  # signal landing on the un-trapped script makes wait return 143.
+  sleep 0.2
   kill -TERM "$pid" 2>/dev/null
   wait "$pid"
   EP_RC=$?
