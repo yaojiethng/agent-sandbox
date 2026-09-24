@@ -1,5 +1,7 @@
 # Merge report -- branch B (bats-core), off-branch record of the M3.1 harness comparison
 
+**Status:** superseded by the harness decision (keep-current merged; bats rejected; branch archived). Its measurement claims are corrected in [`20260922-design-settled-m3_1_test_harness_decision.md`](20260922-design-settled-m3_1_test_harness_decision.md).
+
 **Date:** 2026-09-21
 **Branch:** `feat/M_3_1-backpressure-branch-B`
 **Base:** `56e33ff` (M3.1 study close)

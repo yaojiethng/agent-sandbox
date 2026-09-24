@@ -1,6 +1,6 @@
 # Study: Lint and Tests Duration
 
-**Status:** Lint recommendation adopted and landed (iteration `20260921-12`). This supplement (2026-09-21) records the test-suite-duration investigation: parallel execution measured about 5x, a per-test deadline is advised, no major busy-wait exists, and the bash-harness evaluation compares bats-core / shunit2 / shellspec per-option (bats-core is the credible adoption if we outsource; keep-current remains defensible; the decision is the operator's).
+**Status:** Lint recommendation adopted and landed (iteration `20260921-12`). This supplement (2026-09-21) records the test-suite-duration investigation: parallel execution measured about 5x, a per-test deadline is advised, no major busy-wait exists, and the bash-harness evaluation compares bats-core / shunit2 / shellspec per-option. The harness decision is settled: keep-current adopted, bats rejected - [`20260922-design-settled-m3_1_test_harness_decision.md`](20260922-design-settled-m3_1_test_harness_decision.md).
 
 ## Direction + Parent story
 
