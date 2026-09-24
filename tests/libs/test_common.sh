@@ -307,21 +307,23 @@ assert_eq_num() {
   fi
 }
 
-# assert_subshell_rc EXPECTED_RC COMMAND [LABEL]
-#   Runs COMMAND in a subshell, compares its exit status to EXPECTED_RC.
-#   For functions whose rc is the contract (CLI semantics, exit-on-error).
-#   COMMAND is a string evaluated inside the subshell; env assignments
-#   belong inside it. Output is discarded -- assert on the rc, not on
-#   what the function printed.
-assert_subshell_rc() {
+# assert_run EXPECTED_RC COMMAND [LABEL]
+#   Runs COMMAND in a subshell and asserts its exit status. Captures the
+#   combined output into RUN_OUT (never discarded) and names it on a
+#   mismatch, so a failing assertion shows what the command printed and a
+#   test can assert on the output next (assert_contains "$RUN_OUT" ...).
+#   The capture-and-assert pattern that replaces the rc-only, output-
+#   discarding style.
+RUN_OUT=""
+assert_run() {
   local EXPECTED="$1" CMD="$2"
-  local LABEL="${3:-subshell rc $EXPECTED}" RC
-  ( eval "$CMD" ) >/dev/null 2>&1
+  local LABEL="${3:-run (expected rc $EXPECTED)}" RC
+  RUN_OUT="$( ( eval "$CMD" ) 2>&1 )"
   RC=$?
   if [[ "$RC" == "$EXPECTED" ]]; then
-    pass "$LABEL"
+    pass "$LABEL (rc=$RC)"
   else
-    fail "$LABEL (got rc $RC)"
+    fail "$LABEL (expected rc=$EXPECTED, got rc=$RC); output: $RUN_OUT"
   fi
 }
 

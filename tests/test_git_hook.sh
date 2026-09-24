@@ -156,7 +156,7 @@ test_hook_passes_clean_staged_shell() {
   local rc=0
   (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add clean sh") || rc=$?
   assert_rc 0 "$rc" "hook allows the commit when ShellCheck passes"
-  assert_subshell_rc 1 "test -f '$dir/mdl-calls'" "a shell-only commit never invokes markdownlint"
+  assert_run 1 "test -f '$dir/mdl-calls'" "a shell-only commit never invokes markdownlint"
 }
 
 test_hook_ignores_non_shell_commit() {
@@ -170,7 +170,7 @@ test_hook_ignores_non_shell_commit() {
   local rc=0
   (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add notes") || rc=$?
   assert_rc 0 "$rc" "hook allows a commit with no staged shell"
-  assert_subshell_rc 1 "test -f '$dir/sc-calls'" "hook never invoked shellcheck for a non-shell commit"
+  assert_run 1 "test -f '$dir/sc-calls'" "hook never invoked shellcheck for a non-shell commit"
 }
 
 test_hook_runs_both_gates_on_mixed_commit() {
@@ -186,8 +186,8 @@ test_hook_runs_both_gates_on_mixed_commit() {
   local rc=0
   (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add both") || rc=$?
   assert_rc 0 "$rc" "hook allows a clean mixed Markdown + shell commit"
-  assert_subshell_rc 0 "test -f '$dir/mdl-calls'" "mixed commit invoked the Markdown gate"
-  assert_subshell_rc 0 "test -f '$dir/sc-calls'" "mixed commit invoked the ShellCheck gate"
+  assert_run 0 "test -f '$dir/mdl-calls'" "mixed commit invoked the Markdown gate"
+  assert_run 0 "test -f '$dir/sc-calls'" "mixed commit invoked the ShellCheck gate"
 }
 
 test_hook_ignores_non_markdown_commit() {
@@ -201,7 +201,7 @@ test_hook_ignores_non_markdown_commit() {
   local rc=0
   (cd "$dir/repo" && PATH="$dir/bin:$PATH" git commit -q -m "add notes") || rc=$?
   assert_rc 0 "$rc" "hook allows a commit with no staged Markdown"
-  assert_subshell_rc 1 "test -f '$dir/mdl-calls'" "hook never invoked the linter for a non-Markdown commit"
+  assert_run 1 "test -f '$dir/mdl-calls'" "hook never invoked the linter for a non-Markdown commit"
 }
 
 # ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ test_entrypoint_installs_hook_for_copy() {
   assert_rc 0 "$EP_RC" "copy entrypoint exits cleanly after the hook install"
   assert_contains "$EP_OUT" "Git hook installed" "copy entrypoint reports the hook install"
   assert_file_exists "$repo/.git/hooks/pre-commit" "copy delivery installs the pre-commit hook"
-  assert_subshell_rc 0 "test -x '$repo/.git/hooks/pre-commit'" "installed hook is executable"
+  assert_run 0 "test -x '$repo/.git/hooks/pre-commit'" "installed hook is executable"
 }
 
 test_entrypoint_skips_hook_for_mount() {
@@ -238,7 +238,7 @@ test_entrypoint_skips_hook_for_mount() {
 
   invoke_entrypoint "$dir" mount worktree
 
-  assert_subshell_rc 1 "test -f '$worktree/.git/hooks/pre-commit'" \
+  assert_run 1 "test -f '$worktree/.git/hooks/pre-commit'" \
     "mount delivery installs no hook (host-resident .git)"
 }
 

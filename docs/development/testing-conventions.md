@@ -252,6 +252,8 @@ test_done
 
 Each test runs in its own subshell, so a test's environment, cwd, globals, and traps cannot leak into the next test: the suite is order-independent by construction. `run_test` allocates a fresh per-test `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, on exit. A test allocates extras with `get_fixture_dir` (alias `get_test_dir`), never with a bare `mktemp -d`. `test_setup` also sets a file-scope `FIXTURE_ROOT` for scaffolding that a file's tests share; a test reaches it by that name because `FIXTURE_DIR` is shadowed per test. Accounting is one unit per test: `run_test` emits a single unit marker (`PASS` or `FAIL`, both indented two spaces) that `scripts/run_tests.sh` counts by grepping the indented prefix. fail-fast means the first failing assertion ends the test.
 
+Run a command that must fail (or whose rc matters) with the capture-and-assert helper `assert_run EXPECTED_RC CMD [LABEL]`: it runs `CMD` in a subshell, asserts its exit status, and keeps the combined output in `RUN_OUT` so the test can assert on it next (`assert_contains "$RUN_OUT" ...`). A mismatch names the captured output, so the failure is not blind. This replaces the rc-only, output-discarding style.
+
 ---
 
 ## Debugging Test Failures

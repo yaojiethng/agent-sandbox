@@ -139,13 +139,13 @@ test_interactive_max_entries_default() {
   fi
 }
 
-# -- assert_subshell_rc --
+# -- assert_run --
 
 _exit_zero() { exit 0; }
 _exit_three() { exit 3; }
 
 test_subshell_rc_matches_expected() {
-  assert_subshell_rc 0 _exit_zero "assert_subshell_rc passes on matching rc"
+  assert_run 0 _exit_zero "assert_run passes on matching rc"
 }
 
 test_subshell_rc_mismatch_fails() {
@@ -156,13 +156,13 @@ test_subshell_rc_mismatch_fails() {
   OUT=$(bash -c "
     source '$REPO_ROOT/tests/libs/test_common.sh'
     _exit_three() { exit 3; }
-    assert_subshell_rc 0 _exit_three probe
+    assert_run 0 _exit_three probe
     echo \"count=\$FAIL\"
   ")
-  if [[ "$OUT" == *"count=1"* && "$OUT" == *"FAIL: probe (got rc 3)"* ]]; then
-    pass "assert_subshell_rc fails on rc mismatch (marker + counter)"
+  if [[ "$OUT" == *"count=1"* && "$OUT" == *"FAIL: probe (expected rc=0"* ]]; then
+    pass "assert_run fails on rc mismatch (marker + counter)"
   else
-    fail "assert_subshell_rc did not fail on rc mismatch"
+    fail "assert_run did not fail on rc mismatch"
   fi
 }
 
