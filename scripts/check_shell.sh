@@ -78,6 +78,36 @@ for f in "${FILES[@]}"; do
 done
 wait
 
+# Directive prose-comment pass: a comment line whose first token after '#' is
+# the tool name is parsed as a shellcheck directive (SC1072/SC1073). A prose
+# line like `# shellcheck absent` silently becomes a directive the tool tries
+# to parse, so it is flagged on its own rather than left to the parse-error
+# wording. A real directive (`(disable|enable|source)=`) is allowed. One grep
+# per file in parallel, merged into per-file temp files like the shellcheck
+# workers.
+DIRECTIVE_GREP='^[[:space:]]*#[[:space:]]*shellcheck([[:space:]]|$)'
+DIRECTIVE_GREP_ALLOW='shellcheck[[:space:]]+(disable|enable|source)='
+DIR_PROSE=0
+j=0
+for f in "${FILES[@]}"; do
+  (
+    hits="$(grep -nE "$DIRECTIVE_GREP" "$f" 2>/dev/null | grep -vE "$DIRECTIVE_GREP_ALLOW")"; rc=$?
+    [[ -n "$hits" ]] && printf '%s\n' "$hits" > "$OUT_DIR/d.$j"
+    printf '%d' "$rc" > "$OUT_DIR/drc.$j"
+  ) &
+  j=$((j + 1))
+done
+wait
+for (( k = 0; k < ${#FILES[@]}; k++ )); do
+  [[ -s "$OUT_DIR/d.$k" ]] || continue
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    DIR_PROSE=$((DIR_PROSE + 1))
+    file=$(printf '%s' "${FILES[$k]}" | sed "s|$REPO_ROOT/||")
+    printf '%s:%s\n' "$file" "$line"
+  done < "$OUT_DIR/d.$k"
+done
+
 WARNINGS=0
 worst_rc=0
 directive=false
@@ -121,6 +151,15 @@ fi
 if $directive; then
   dump_output
   echo "ShellCheck gate: a comment starting with the word 'shellcheck' is parsed as a directive." >&2
+  echo "  Reword the line so the tool name is not the first token after '#'." >&2
+  exit 1
+fi
+# The prose-comment pass reports any comment whose first token is the tool name
+# unless it is a real disable= / enable= / source= directive. It is an
+# independent verdict from the shellcheck parse failure (a line the tool would
+# tolerate but an author meant as prose still trips the rule).
+if (( DIR_PROSE > 0 )); then
+  echo "shellcheck-directive: $DIR_PROSE prose comment(s) whose first token is 'shellcheck'." >&2
   echo "  Reword the line so the tool name is not the first token after '#'." >&2
   exit 1
 fi

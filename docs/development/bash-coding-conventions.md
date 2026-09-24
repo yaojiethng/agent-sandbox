@@ -345,6 +345,10 @@ A `while read` redirection inside a sourced-lib function -- `while IFS='=' read 
 
 `git -C "$REPO" rev-parse --git-path info/exclude` prints `.git/info/exclude` -- relative to the repo root, not the caller's cwd. Using the output directly in a `mkdir -p`/append sequence writes into the caller's cwd. Absolutize before filesystem use: `[[ $p == /* ]] || p="$REPO/$p"`.
 
+### 4.6 A prose comment must not start the token `shellcheck`
+
+ShellCheck parses any comment line whose first token after `#` is the word `shellcheck` as a directive. A prose line such as `# shellcheck absent -- rc 1` becomes a directive the tool tries to parse, failing the gate with SC1072/SC1073 that looks like a false positive until the directive rule is known. Word the line so the tool name is not the first token (for example "the shellcheck tool absent"). Real directives (`# shellcheck disable=SCxxxx`, `enable=`, `source=`) are exempt. The gate's prose-comment pass (`scripts/check_shell.sh`) enforces this rule.
+
 ---
 
 ## 5. Cross-References

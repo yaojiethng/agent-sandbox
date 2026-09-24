@@ -161,6 +161,39 @@ EOF
   assert_contains "$out" "parsed as a directive" "directive trap: the gate names the cause"
 }
 
+test_shellcheck_prose_comment_flagged() {
+  # Independent of the tool's parse-error wording: a comment whose first token
+  # after '#' is the tool name, but which is not a real directive, trips the
+  # prose-comment pass. A passing shellcheck stub isolates the pass.
+  local bin="$FIXTURE_DIR/bin_scprose"
+  make_shellcheck_stub "$bin" 0
+  local fake="$FIXTURE_DIR/fakeroot_prose"
+  mkdir -p "$fake/src" "$fake/scripts" "$fake/tests"
+  printf '#!/usr/bin/env bash\n# shellcheck absent -- rc 1\necho ok\n' \
+    > "$fake/scripts/demo.sh"
+  local rc=0 out
+  out=$(PATH="$bin:$PATH" SHELLCHECK_SCAN_ROOT="$fake" \
+        bash "$REPO_ROOT/scripts/check_shell.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "prose shellcheck comment: the gate fails"
+  assert_contains "$out" "prose comment(s) whose first token" \
+      "prose shellcheck comment: the gate names the cause"
+}
+
+test_shellcheck_real_directive_allowed() {
+  # A genuine disable= directive must NOT trip the prose-comment pass.
+  local bin="$FIXTURE_DIR/bin_scdir_ok"
+  make_shellcheck_stub "$bin" 0
+  local fake="$FIXTURE_DIR/fakeroot_dird"
+  mkdir -p "$fake/src" "$fake/scripts" "$fake/tests"
+  printf '#!/usr/bin/env bash\n# shellcheck disable=SC2034 reason\nlocal x\n' \
+    > "$fake/scripts/demo.sh"
+  local rc=0
+  PATH="$bin:$PATH" SHELLCHECK_SCAN_ROOT="$fake" \
+    bash "$REPO_ROOT/scripts/check_shell.sh" >/dev/null 2>&1 || rc=$?
+  assert_rc 0 "$rc" "real disable directive: the prose comment pass allows it"
+}
+
+
 test_shellcheck_plain_parse_error_is_not_the_directive_trap() {
   # An ordinary syntax error also reports SC1072/SC1073. It must fall through to
   # the generic findings message, not receive a remedy that cannot work.
@@ -281,6 +314,8 @@ run_test test_missing_shellcheck_fails_closed
 run_test test_shellcheck_tool_failure_fails_closed
 run_test test_shellcheck_directive_trap_is_named
 run_test test_shellcheck_plain_parse_error_is_not_the_directive_trap
+run_test test_shellcheck_prose_comment_flagged
+run_test test_shellcheck_real_directive_allowed
 run_test test_markdown_tool_absent_fails_closed
 run_test test_markdown_zero_lint_fails_closed
 run_test test_markdown_counts_linted_files
