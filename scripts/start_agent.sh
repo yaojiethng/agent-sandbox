@@ -212,8 +212,11 @@ main() {
   # Handle --help/-h before any mode or flag validation, so both
   #   start_agent.sh --help
   #   start_agent.sh standard --help
-  # print the full usage and exit cleanly. Reuses the canonical parse_help_flag.
-  parse_help_flag "$@"
+  # print the full usage and exit cleanly. Reuses the canonical parse_help_flag,
+  # which returns 0 when help was requested; the caller owns the exit.
+  if parse_help_flag "$@"; then
+    exit 0
+  fi
 
   MODE="${1:-}"
   shift || true

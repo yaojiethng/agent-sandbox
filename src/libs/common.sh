@@ -15,7 +15,9 @@
 # Provides:
 #   parse_base_flags()    --  parse --name, --project, --sandbox from "$@"
 #   check_base_flags()    --  validate PROJECT_NAME and SANDBOX_DIR are set
-#   parse_help_flag()     --  check for --help/-h, print usage and exit
+#   parse_help_flag()     --  check for --help/-h, print usage and return 0
+#                           when help was requested; the caller turns the
+#                           status into its exit
 #
 # Scripts should define their own usage() before sourcing this file.
 
@@ -54,9 +56,10 @@ sandbox_dir_canon() {
 parse_help_flag() {
   for _arg in "$@"; do
     case "$_arg" in
-      --help|-h) usage; exit 0 ;;
+      --help|-h) usage; return 0 ;;
     esac
   done
+  return 1
 }
 
 parse_base_flags() {

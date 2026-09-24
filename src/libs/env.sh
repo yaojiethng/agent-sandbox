@@ -19,6 +19,8 @@ _self_env_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 env_load() {
   local FILE="${1:?env_load requires a file path}"
 
+  [[ -f "$FILE" ]] || return 0
+
   while IFS='=' read -r KEY VALUE || [[ -n "$KEY" ]]; do
     KEY="${KEY//[$'\r\n\t ']/}"
     VALUE="${VALUE//[$'\r\n']/}"
