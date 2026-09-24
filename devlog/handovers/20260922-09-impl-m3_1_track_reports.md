@@ -3,7 +3,7 @@
 **Date:** 2026-09-22
 **Milestone:** M3.1 - Backpressure
 **Type:** Impl
-**Status:** Open
+**Status:** Closed
 
 ## Objective
 
@@ -41,6 +41,41 @@ Governing rule: the tests (content, authoring, accounting) come from main; the t
 
 Both tracks re-ported onto main's finished suite; equal-footing re-measurement of wall time, a harness-neutral isolation probe, and the final dependency count (Track A zero deps vs Track B bats + GNU parallel + procps); the harness decision recorded; then M3.1 close.
 
+All five criteria accepted at close (2026-09-22); the pre-close summary holds the verified evidence.
+
+## Decisions
+
+| Decision | Rationale | Where recorded |
+|---|---|---|
+| Keep-current runner (branch A) adopted; bats-core rejected | On equal footing branch B closes no bug class branch A lacks, and costs three runtime dependencies plus a slower suite | [`20260922-design-settled-m3_1_test_harness_decision.md`](../discussions/20260922-design-settled-m3_1_test_harness_decision.md); ADR [`docs/adr/test_harness.md`](../../docs/adr/test_harness.md) |
+| Branch A merged by squash; branch B archived | Git-policy squash for a session branch; the losing branch stays as the comparison record | commits `3859ef0`, `9b54339` |
+
+## Findings
+
+| Finding | Type | Impact | Triaged to |
+|---|---|---|---|
+| Branch A parallel ~4.7x (46s to 9.7s); branch B ~2.1x (65s to 31s at JOBS=8) | measurement | current iteration | decision record (class C) |
+| Branch-B report claims corrected: 710 units not 709; 14 self-test cases not 13; the failing-test-holds-the-deadline claim did not reproduce (0.09s fail-fast at 5s and 60s deadlines) | measurement | current iteration | decision record (class C) |
+| Branch B runs only after throwaway provisioning (bats, GNU parallel, procps are absent from the image); branch A runs dependency-free | measurement | recorded in the decision record | decision record (class C) |
+| The branch-A session handover `20260921-14-test_parallel_and_deadline` collides in sequence with the main-line `20260921-14`; kept branch-local, not merged | contradiction | current iteration | Deferred items |
+
+## Deferred items
+
+| Item | Reason | Destination |
+|---|---|---|
+| Branch-A session handover `20260921-14-impl-m3_1_test_parallel_and_deadline.md` | sequence collision with the main-line `20260921-14`; a branch-local session record | stays archived on the branch ref |
+| Branch-A comparison record under the capital name `...-branch_A.md` | branch-local naming; the main line keeps the established `_branch_a.md` name with refreshed content | stays archived on the branch ref |
+
+## Completed
+
+| File | Change |
+|---|---|
+| `scripts/run_tests.sh` | parallel dispatch and the pure-bash per-file deadline merged from branch A |
+| `tests/test_runner_selftest.sh` | reconciled with the unified harness; 16 units lock the parallel and deadline contracts |
+| `devlog/discussions/20260922-design-settled-m3_1_test_harness_decision.md` | new: the evaluation and the harness decision |
+| `docs/adr/test_harness.md` | new: ADR for the keep-current harness decision |
+| three comparison records | statuses settled or superseded, with pointers to the decision |
+
 ## What's Next
 
-The re-port iteration, one track per branch as identified above. On completion: re-measure both on equal footing, settle the harness decision, then the M3.1 close ceremony. The design-document policy amendment (queued `[O] 2026-09-22`) is a separate small iteration, order free.
+M3.1 fold-back ceremony: M3.1 holds only closed rows; fold it into M3, run the roadmap maintenance (summary-table status, changelog entry), and close. The design-document policy amendment (queued `[O] 2026-09-22`) is a separate small iteration, order free. The ADR name `test_harness.md` is recommended per `adr_policy.md`; the operator decides the final name.
