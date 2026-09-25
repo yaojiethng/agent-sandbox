@@ -281,6 +281,53 @@ test_serve_port_unset_serve_warns() {
   export SERVE_PORT="46553"
 }
 
+# Given: --help on the command line
+# When:  run_agent.sh parses its flags
+# Then:  it prints this script's usage, not the usage of a sourced sibling
+# Asserts: run_agent.sh owns its help surface
+test_help_prints_run_agent_usage() {
+  local out rc=0
+  out=$(bash "$REPO_ROOT/scripts/run_agent.sh" standard --help 2>&1) || rc=$?
+
+  if [[ "$out" == *"agent-sandbox run"* ]] \
+     && [[ "$out" == *"standard"* ]] \
+     && [[ "$out" != *"agent-sandbox build"* ]]; then
+    pass "run_agent --help prints its own usage, not build's"
+  else
+    fail "run_agent --help wrong usage (rc=$rc): $out"
+  fi
+}
+
+# Given: a fresh copy session whose seeder exceeds a one-millisecond timeout
+# When:  the seeder times out
+# Then:  the start aborts and attributes the failure to the timeout
+# Asserts: the timeout message, distinct from a seeder defect exit
+test_seeder_timeout_names_the_timeout() {
+  local FIX="$FIXTURE_DIR/seed_timeout"
+  make_run_agent_fixture "$FIX" pi
+  export PROJECT_DIR="$FIX/project"
+  mkdir -p "$PROJECT_DIR"
+
+  local out="$FIX/out.txt" rc=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    export SEED_TIMEOUT=0.001
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy \
+      --reset-volume < /dev/null
+  ) > "$out" 2>&1 || rc=$?
+
+  if [[ $rc -ne 0 ]] && grep -q "seeder timed out after 0.001s" "$out"; then
+    pass "seeder timeout: aborts with the timeout attribution"
+  else
+    fail "seeder timeout: expected the timeout message, got rc=$rc out='$(cat "$out")'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -289,6 +336,8 @@ run_test test_setup_hook_absent_is_noop
 run_test test_setup_hook_present_runs_and_proceeds
 run_test test_setup_hook_failure_aborts_with_attribution
 run_test test_flatten_flag_accepted
+run_test test_help_prints_run_agent_usage
+run_test test_seeder_timeout_names_the_timeout
 run_test test_serve_port_unset_standard_is_quiet
 run_test test_serve_port_unset_serve_warns
 run_test test_provider_overlay_reaches_compose_file_set

@@ -591,6 +591,46 @@ test_list_state_cell_from_log() {
   fi
 }
 
+# Resume recovers delivery from the record and warns when the operator's
+# ambient SANDBOX_TYPE differs  --  a stale habit must surface, not silently
+# change the resumed delivery.
+# Given: a record whose SANDBOX_TYPE is copy and an ambient SANDBOX_TYPE=mount
+# When:  resume_agent.sh resumes that record
+# Then:  it warns that the ambient value is ignored and names the record value
+# Asserts: the ambient-SANDBOX_TYPE warning on the resume path
+test_resume_warns_on_ambient_sandbox_type() {
+  local dir="$FIXTURE_DIR/ambient_type"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project/.git"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  cat > "$dir/sandbox/.compose/abc123.yml" <<'EOF'
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+  agent-sandbox.session-id: abc123
+services:
+  sandbox:
+    image: sandbox-test-project
+    environment:
+      - SANDBOX_TYPE=copy
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(SANDBOX_TYPE=mount timeout 60 bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --session-id=abc123 2>&1)"
+  if echo "$out" | grep -q "ambient SANDBOX_TYPE=mount ignored" \
+     && echo "$out" | grep -q "delivery recovered from the record: copy"; then
+    pass "resume warns when an ambient SANDBOX_TYPE is ignored"
+  else
+    fail "resume ambient SANDBOX_TYPE warning missing: $out"
+  fi
+}
+
 run_test test_list_renders_enriched
 run_test test_list_provider_filter
 run_test test_list_provider_no_match
@@ -607,6 +647,7 @@ run_test test_interactive_confirm_abort
 run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
+run_test test_resume_warns_on_ambient_sandbox_type
 run_test test_list_shows_sandbox_staleness
 run_test test_list_caps_at_page_size
 run_test test_interactive_paginates_at_page_size

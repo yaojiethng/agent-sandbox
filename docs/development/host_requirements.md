@@ -63,7 +63,7 @@ date -d '1 day ago'       # prints a date
 
 ## Enforcement
 
-`scripts/install.sh` runs the requirement checks, prints the failing checks with their Homebrew hints, and exits non-zero. `make install` runs it before creating the CLI symlink. The checks run unconditionally for bash and git; the GNU-tool checks run only on Darwin, where the BSD/GNU difference exists.
+`scripts/install.sh` runs the requirement checks, prints the failing checks with per-host install hints, and exits non-zero. `make install` runs it before creating the CLI symlink. The checks run unconditionally for bash and git; the GNU-tool checks run only on Darwin, where the BSD/GNU difference exists.
 
 The gate deliberately fails closed. A silent partial setup fails later in the session with an unclear error; the gate names the missing tool at install time.
 

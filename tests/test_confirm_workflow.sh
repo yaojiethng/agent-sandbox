@@ -46,13 +46,14 @@ test_confirm_deletes_draft_branch() {
 
 # Given: a draft branch carrying changes, and the source branch it was cut from
 # When:  confirm_run runs
-# Then:  the changes are on the source branch
-# Asserts: the fast-forward outcome (the closing message text is not asserted, row 249)
+# Then:  the changes are on the source branch and the closing message names it
+# Asserts: the fast-forward outcome and its operator-facing closing message
 test_confirm_merges_changes() {
   make_draft_fixture confirm_merge 2
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
-  confirm_run "$P" "$S" "" >/dev/null 2>&1
+  local OUT
+  OUT=$(confirm_run "$P" "$S" "" 2>&1)
 
   local COUNT
   COUNT=$(git -C "$P" rev-list --count main)
@@ -60,6 +61,11 @@ test_confirm_merges_changes() {
     pass "confirm merges changes into source branch"
   else
     fail "expected at least 3 commits on main, got $COUNT"
+  fi
+  if [[ "$OUT" == *"Done. Changes merged into main."* ]]; then
+    pass "confirm prints the closing merge message naming the target"
+  else
+    fail "confirm closing message missing: $OUT"
   fi
 }
 
@@ -146,7 +152,7 @@ test_confirm_after_draft_branch_advances() {
 # Given: a target branch that conflicts with the draft
 # When:  confirm_run runs
 # Then:  it fails, the draft is preserved at the savepoint, and the recovery direction is printed
-# Asserts: the rebase-failure rollback (the hint text itself is not asserted, row 249)
+# Asserts: the rebase-failure rollback and the recovery guidance it prints
 test_confirm_conflict_recovery() {
   make_draft_fixture confirm_conflict 1
 
@@ -168,6 +174,8 @@ test_confirm_conflict_recovery() {
   git -C "$P" branch -D "$DRAFT_BRANCH" 2>/dev/null || true
 
   assert_contains "$OUT" "Conflict rebasing" "confirm reports rebase conflict with recovery hints"
+  assert_contains "$OUT" "Resolve the divergence on the draft branch" "confirm prints the conflict recovery direction"
+  assert_contains "$OUT" "make reject" "confirm names the discard path"
 }
 
 _make_no_state_commit_conflict_draft() {
