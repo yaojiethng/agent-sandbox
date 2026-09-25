@@ -24,24 +24,18 @@
 # Intentionally no set -u: env vars are checked explicitly with guards.
 set -o pipefail
 
+# The two probes share one preamble: each locates the harness by its
+# conventional lib path, then dry_run_bootstrap resolves the paths the compose
+# template passes as absolute env vars, falling back to dirs.sh when a probe
+# runs without them.
 LIBS_DIR="${LIBS_DIR:-/opt/sandbox/lib}"
-ROOT="${ROOT:-/home/agentuser}"
-source "$LIBS_DIR/session_state.sh"
-source "$LIBS_DIR/diff_export.sh"
-source "$LIBS_DIR/routing.sh"
+# shellcheck source=/dev/null
 source "$LIBS_DIR/dry_run_harness.sh"
-
-# Paths are passed as absolute env vars from the compose template.
-# Fallback to dirs.sh only if unset (testing without compose).
-SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
-CHANGES_DIR="${CHANGES_DIR:-}"
-INPUT_DIR="${INPUT_DIR:-}"
-OUTPUT_DIR="${OUTPUT_DIR:-}"
-
-if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
-  source "$LIBS_DIR/dirs.sh"
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-fi
+dry_run_bootstrap
+# shellcheck source=/dev/null
+source "$LIBS_DIR/diff_export.sh"
+# shellcheck source=/dev/null
+source "$LIBS_DIR/routing.sh"
 
 # ---------------------------------------------------------------------------
 # docker_image - image

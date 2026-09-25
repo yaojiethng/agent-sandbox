@@ -365,3 +365,14 @@ The phase-4 `confirm.sh` pass probed `eval` on a `.draft-state` field, demonstra
 A second, purely mechanical form recurred during the `guards.sh` integration. Rows 275 to 283 were appended with an `edit` anchor copied from the previous round, `list \`--interactive\` on the two lines |`, which is row 266's tail rather than the tail of the row just added. The anchor still matched, so the new block landed after row 266 and duplicated row 274. The sorting check showed one extra row (`GAP 275` onward, 284 slots for 283 numbers), which is how it was caught. Anchor on the row you just inserted, not on the one you used last time, and run the contiguity check after every append. The report's Format section already states the rule.
 
 Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
+
+### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
+
+state: probation
+scoped: M3.1 - Backpressure
+legacy: none
+mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: <seconds>`) instead of raising `TEST_TIMEOUT` for every file. The runner reads the declaration and names it when the file expires.
+
+One 5s default is a single budget for test files whose honest runtimes differ by more than an order of magnitude. A harness file that spawns 20+ probe invocations (`tests/test_dry_run_probe.sh`, 3.4 to 5.4s) or runs the real umbrella gate repeatedly (`tests/test_lint_umbrella.sh`, 4.0 to 5.8s) sits on the deadline, so the 8-way parallel suite run expires it at random as the container loads up. The failure mode is worse than a red test: the file prints no `UNIT:` report, so the aggregate silently drops every unit in the file. `tests/test_dry_run_probe.sh` expired once during a mutation run and the suite read 764 units against a 783-unit baseline, with one timeout and no other sign - which also made the mutation's verdict unreadable, since a timeout is not a proof of anything. Two files now declare 10s (`tests/test_lint_umbrella.sh`, `tests/test_runner_selftest.sh`) and the third is added with this entry. Three more files measured above 5s standalone on a loaded container (`test_start_agent.sh`, `test_runner_selftest.sh`, `test_dry_run_probe.sh`), so the declaration is a pattern, not a one-off.
+
+Scope: `scripts/run_tests.sh` and every test file whose honest runtime is near the default. Cross-reference: [`docs/development/test_harness_mechanism.md`](../docs/development/test_harness_mechanism.md) (The gates, The selftest); the mutation-suite roadmap row, which reads the aggregate to judge a survivor.

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 10
+#   Budget rationale: this file runs 20+ probe invocations, so its honest
+#   runtime sits near the 5s default and the 8-way parallel suite run can push
+#   it over. A TIMEOUT here would also make a mutation's verdict unreadable.
 # tests/test_dry_run_probe.sh
 # Host-side unit harness for the dry-run bearer probes. Runs each probe with a
 # Pins cite: 20260828-design-settled-dry_run_phase_split.md;
@@ -41,12 +45,14 @@ make_repo() {  # $1 = dir; empty git repo with one root commit
 # -- probe runner (subshell-internal) ---------------------------------------
 # Runs a probe with the currently-exported env and writes result state to $2.
 PROBE_OUT="$FIXTURE_DIR/probe_out.txt"
-_run_probe() {  # $1 = probe script, $2 = state file (key=value)
-  local script="$1" state="$2"
+_run_probe() {  # $1 = probe script, $2 = state file (key=value) [, $3 = record path]
+  local script="$1" state="$2" rec="${3:-}"
   BASH_ENV="$STUB_ENV" bash "$script" >"$PROBE_OUT" 2>&1
   local rc=$?
-  local rec
-  rec="${OUTPUT_DIR}/dryrun.$(basename "$script" | sed 's/dry_run_//; s/\.sh//').record"
+  # The record path is derived from OUTPUT_DIR unless the caller names it -- a
+  # probe that resolves its own paths (the bootstrap fallback) needs the
+  # caller to name the record it is expected to write.
+  [[ -n "$rec" ]] || rec="${OUTPUT_DIR}/dryrun.$(basename "$script" | sed 's/dry_run_//; s/\.sh//').record"
   {
     echo "rc=$rc"
     echo "record=$rec"
@@ -101,6 +107,23 @@ test_cap_healthy_rc0_record_pass() {
   assert_all_layers_pass "$state"
 }
 run_test test_cap_healthy_rc0_record_pass
+
+# Given: a healthy capability fixture whose channel paths are NOT in the env
+# When:  the capability probe runs (it must resolve them from ROOT)
+# Then:  rc=0, the record lands in the resolved OUTPUT_DIR, every layer PASS
+# Asserts: the shared bootstrap's dirs_resolve fallback. The compose overlay
+# always injects the paths, so nothing else exercises the fallback branch.
+test_probe_bootstrap_resolves_channels_from_root() {
+  local fix="$FIXTURE_DIR/bootstrap-defaults" state="$FIXTURE_DIR/bootstrap_defaults.state"
+  local rec="$fix/workspace/output/dryrun.capability.record"
+  ( _healthy_cap_env "$fix"
+    unset CHANGES_DIR INPUT_DIR OUTPUT_DIR
+    _run_probe "$PROBE_CAP" "$state" "$rec" )
+  assert_rc 0 "$(kv "$state" rc)" "capability probe with no channel env vars"
+  assert_eq "$(kv "$state" status)" PASS "record status when the channels resolve from ROOT"
+  assert_all_layers_pass "$state"
+}
+run_test test_probe_bootstrap_resolves_channels_from_root
 
 # Given: a well-formed but nonexistent init_sha
 # When:  the capability probe runs
@@ -424,6 +447,31 @@ test_marker_round_trips_between_probes() {
     "the reasoning probe reads the marker from CHANGES_DIR"
 }
 run_test test_marker_round_trips_between_probes
+
+# Given: a healthy reasoning fixture, and one whose marker carries wrong content
+# When:  the reasoning probe runs over each
+# Then:  the marker is gone in the first case and still in place in the second
+# Asserts: the marker is a handshake token the reader consumes, so a leftover
+#          marker cannot let a later probe pass the cross-container check
+#          against a capability layer that never ran.
+test_marker_is_consumed_by_the_reader() {
+  local fix="$FIXTURE_DIR/marker-consumed" state="$FIXTURE_DIR/marker_consumed.state"
+  local marker="$fix/work/session-diffs/.dryrun_capability_marker"
+  ( _healthy_reas_env "$fix"
+    _run_probe "$PROBE_REAS" "$state" )
+  assert_rc 0 "$(kv "$state" rc)" "reasoning probe with the capability marker present"
+  assert_eq "$(test -f "$marker" && echo present || echo absent)" "absent" \
+    "the reasoning probe removes the capability marker it read"
+
+  local fix2="$FIXTURE_DIR/marker-kept" state2="$FIXTURE_DIR/marker_kept.state"
+  ( _healthy_reas_env "$fix2"
+    echo "WRONG_VALUE" > "$fix2/work/session-diffs/.dryrun_capability_marker"
+    _run_probe "$PROBE_REAS" "$state2" )
+  assert_ne "0" "$(kv "$state2" rc)" "a wrong marker fails the reasoning probe"
+  assert_eq "$(test -f "$fix2/work/session-diffs/.dryrun_capability_marker" && echo present || echo absent)" "present" \
+    "the failure branch leaves the marker in place for diagnosis"
+}
+run_test test_marker_is_consumed_by_the_reader
 
 # Given: no capability marker under CHANGES_DIR
 # When:  the reasoning probe runs

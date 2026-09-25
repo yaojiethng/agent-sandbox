@@ -20,22 +20,14 @@
 # Intentionally no set -u: env vars are checked explicitly with guards.
 set -o pipefail
 
+# The two probes share one preamble: each locates the harness by its
+# conventional lib path, then dry_run_bootstrap resolves the paths the compose
+# template passes as absolute env vars, falling back to dirs.sh when a probe
+# runs without them.
 LIBS_DIR="${LIBS_DIR:-/opt/sandbox/lib}"
-ROOT="${ROOT:-/home/agentuser}"
-source "$LIBS_DIR/session_state.sh"
+# shellcheck source=/dev/null
 source "$LIBS_DIR/dry_run_harness.sh"
-
-# Paths are passed as absolute env vars from the compose template.
-# Fallback to dirs.sh only if unset (testing without compose).
-SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
-CHANGES_DIR="${CHANGES_DIR:-}"
-INPUT_DIR="${INPUT_DIR:-}"
-OUTPUT_DIR="${OUTPUT_DIR:-}"
-
-if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
-  source "$LIBS_DIR/dirs.sh"
-  WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-fi
+dry_run_bootstrap
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -60,9 +52,8 @@ _agent_binary_for_provider() {
   esac
 }
 
-# Write the per-container diagnostics record. Orchestration consumes this
-# (not stdout) for the correct-container check.
-
+# Write the per-container diagnostics record: dry_run_write_record in
+# src/libs/dry_run_harness.sh.
 
 # ---------------------------------------------------------------------------
 # docker_image / workspace_mounts - link-up
@@ -116,6 +107,11 @@ if test -f "$_cap_marker"; then
   _content=$(cat "$_cap_marker" 2>/dev/null)
   if [[ "$_content" == "CAPABILITY_LAYER_OK" ]]; then
     _pass "capability layer marker: readable from reasoning layer"
+    # The marker is a handshake token, not channel content. The reader
+    # consumes it, so a later probe cannot read a stale marker and pass this
+    # check without a live capability layer in front of it. A wrong or
+    # unreadable marker stays in place for diagnosis.
+    rm -f "$_cap_marker"
   else
     _fail "capability layer marker: unexpected content: $_content"
   fi
