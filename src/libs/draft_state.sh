@@ -82,7 +82,7 @@ EOF
 # =============================================================================
 
 # Read .draft-state from the tip of the given branch.
-# Prints shell variable assignments to stdout for eval by caller.
+# Prints shell-escaped variable assignments to stdout for eval by caller.
 draft_read_state_from_branch() {
   local PROJECT_DIR="$1"
   local BRANCH_NAME="$2"
@@ -99,10 +99,10 @@ draft_read_state_from_branch() {
   }
 
   while IFS=':' read -r KEY VALUE; do
-    [[ -z "$KEY" ]] && continue
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
+    [[ "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || continue
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
-    printf '%s="%s"\n' "$KEY" "$VALUE"
+    printf '%s=%q\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
 }
 
@@ -143,11 +143,11 @@ draft_validate_branch() {
   local host_branch="" diff_count="" exported_at="" drafted_at="" session_id=""
 
   while IFS=':' read -r KEY VALUE; do
-    [[ -z "$KEY" ]] && continue
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
+    [[ "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || continue
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
     printf -v "$KEY" '%s' "$VALUE"
-    printf '%s="%s"\n' "$KEY" "$VALUE"
+    printf '%s=%q\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
 
   if [[ -z "$from_hash" ]]; then
@@ -164,12 +164,12 @@ draft_validate_branch() {
   if [[ -z "$DRAFT_STATE_COMMIT" ]]; then
     echo "Warning: .draft-state commit not found between ${from_hash:0:7}..${CURRENT_BRANCH}" >&2
     echo "  The commit may have been dropped during rebase. Skipping drop step." >&2
-    echo "DRAFT_STATE_COMMIT="
+    printf 'DRAFT_STATE_COMMIT=\n'
   else
-    echo "DRAFT_STATE_COMMIT=$DRAFT_STATE_COMMIT"
+    printf 'DRAFT_STATE_COMMIT=%q\n' "$DRAFT_STATE_COMMIT"
   fi
 
-  echo "CURRENT_BRANCH=$CURRENT_BRANCH"
+  printf 'CURRENT_BRANCH=%q\n' "$CURRENT_BRANCH"
 }
 
 # =============================================================================

@@ -166,7 +166,7 @@ test_write_state_with_session_id() {
 # Given: a draft branch whose tip commit carries .draft-state
 # When:  draft_read_state_from_branch runs and the output is eval'd
 # Then:  it returns 0 and source_branch is materialised
-# Asserts: the branch-scoped read and the eval contract (the emitted quoting is unescaped; see finding 38).
+# Asserts: the branch-scoped read and the eval contract (the emitted quoting is shell-escaped).
 test_read_state_success() {
   local DIR="$FIXTURE_DIR/read_ok"
   make_committed_repo "$DIR"
@@ -397,6 +397,87 @@ EOF
 }
 
 # =============================================================================
+# eval injection
+# =============================================================================
+
+# make_poisoned_state DIR BRANCH MARKER_SUBST MARKER_BT
+#   Commit .draft-state on BRANCH with a command substitution and a backtick in
+#   field values. The markers name the files those payloads would create.
+make_poisoned_state() {
+  local DIR="$1" BRANCH="$2" MARKER_SUBST="$3" MARKER_BT="$4"
+  make_committed_repo "$DIR"
+  local INIT_SHA
+  INIT_SHA=$(git -C "$DIR" rev-parse HEAD)
+  git -C "$DIR" checkout -b "$BRANCH" --quiet
+  {
+    printf 'source_branch: %s\n' "main"
+    printf 'from_hash: %s\n' "$INIT_SHA"
+    printf 'author: %s\n' "\$(touch $MARKER_SUBST)"
+    printf 'session_ts: %s\n' "20260420-120000"
+    printf 'host_branch: %s\n' "\`touch $MARKER_BT\`"
+    printf 'diff_count: %s\n' "1"
+    printf 'exported-at: %s\n' "20260420-120000"
+    printf 'drafted-at: %s\n' "20260420-130000"
+  } > "$DIR/.draft-state"
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+}
+
+# Given: a .draft-state whose field values carry a command substitution and a backtick
+# When:  draft_validate_branch emits assignments and the caller evals them
+# Then:  neither payload runs and each value survives as literal text
+# Asserts: field values are escaped at the eval boundary.
+test_validate_escapes_field_values() {
+  local DIR="$FIXTURE_DIR/validate_injection"
+  local MARKER_SUBST="$DIR/pwned_subst"
+  local MARKER_BT="$DIR/pwned_backtick"
+  make_poisoned_state "$DIR" "draft/injection" "$MARKER_SUBST" "$MARKER_BT"
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$DIR" 2>/dev/null) || true
+  eval "$OUTPUT" 2>/dev/null || true
+
+  if [[ -e "$MARKER_SUBST" || -e "$MARKER_BT" ]]; then
+    fail "draft_validate_branch output executed a field payload on eval"
+  else
+    pass "draft_validate_branch escapes field values so eval cannot execute them"
+  fi
+
+  if [[ "${author:-}" == "\$(touch $MARKER_SUBST)" ]]; then
+    pass "draft_validate_branch preserves a literal field value through eval"
+  else
+    fail "draft_validate_branch changed the field value: '${author:-}'"
+  fi
+}
+
+# Given: a .draft-state whose field values carry a command substitution and a backtick
+# When:  draft_read_state_from_branch emits assignments and the caller evals them
+# Then:  neither payload runs and each value survives as literal text
+# Asserts: field values are escaped at the eval boundary.
+test_read_state_escapes_field_values() {
+  local DIR="$FIXTURE_DIR/read_injection"
+  local MARKER_SUBST="$DIR/pwned_subst"
+  local MARKER_BT="$DIR/pwned_backtick"
+  make_poisoned_state "$DIR" "draft/read-injection" "$MARKER_SUBST" "$MARKER_BT"
+
+  local OUTPUT
+  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/read-injection") || true
+  eval "$OUTPUT" 2>/dev/null || true
+
+  if [[ -e "$MARKER_SUBST" || -e "$MARKER_BT" ]]; then
+    fail "draft_read_state_from_branch output executed a field payload on eval"
+  else
+    pass "draft_read_state_from_branch escapes field values so eval cannot execute them"
+  fi
+
+  if [[ "${author:-}" == "\$(touch $MARKER_SUBST)" ]]; then
+    pass "draft_read_state_from_branch preserves a literal field value through eval"
+  else
+    fail "draft_read_state_from_branch changed the field value: '${author:-}'"
+  fi
+}
+
+# =============================================================================
 # Run all
 # =============================================================================
 
@@ -415,6 +496,8 @@ run_test test_validate_missing_dot_draft_state
 run_test test_validate_success
 run_test test_validate_missing_from_hash
 run_test test_validate_dropped_state_commit_warns_and_continues
+run_test test_validate_escapes_field_values
+run_test test_read_state_escapes_field_values
 
 test_done
 
