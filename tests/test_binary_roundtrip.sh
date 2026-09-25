@@ -56,6 +56,11 @@ _init_repo_with_binary() {
 # Section 1: default git diff does NOT produce applyable patches
 # for binary files, even WITH the index line present.
 # ===============================================================
+# Given: a repo holding a binary file, and its diff with and without --binary
+# When:  each patch is applied to a fresh repo
+# Then:  the diff without the binary payload fails, the --binary one applies
+# Asserts: the default diff cannot carry a binary change; this is why strip_index_lines
+#          must keep the binary index line.
 test_default_diff_has_no_applyable_binary_payload() {
   make_repo "$FIXTURE_DIR/s1"
   make_binary "$FIXTURE_DIR/s1/file.bin"
@@ -84,6 +89,10 @@ test_default_diff_has_no_applyable_binary_payload() {
 # Section 2: index-line SHA mismatch does not prevent apply
 # (different git history, same file state)
 # ===============================================================
+# Given: two repos with identical file state but different HEAD SHAs
+# When:  a patch generated in one is applied to the other
+# Then:  it applies and both text and binary content arrive correctly
+# Asserts: stripping index lines is what makes cross-repo apply work at all.
 test_cross_repo_apply_tolerates_sha_mismatch() {
   # Repo A (simulates container)
   make_repo "$FIXTURE_DIR/repo_a"
@@ -137,6 +146,10 @@ test_cross_repo_apply_tolerates_sha_mismatch() {
 # Section 3: selective index stripping  --  exactly one index line
 # survives (the binary file's), and the patch applies cleanly.
 # ===============================================================
+# Given: a mixed text-and-binary patch processed by strip_index_lines
+# When:  the result is applied
+# Then:  exactly one index line (the binary's) survives and the patch applies
+# Asserts: the selective strip against the inclusive alternative.
 test_selective_strip_keeps_single_binary_index() {
   _init_repo_with_binary "$FIXTURE_DIR/s3"
   make_other_binary "$FIXTURE_DIR/s3/file.bin"
@@ -159,6 +172,10 @@ test_selective_strip_keeps_single_binary_index() {
 # ===============================================================
 # Section 4: binary deletion via --binary + selective strip
 # ===============================================================
+# Given: a patch deleting a binary file
+# When:  it is applied
+# Then:  the patch applies and the file is gone
+# Asserts: deletion handling in the binary path.
 test_binary_deletion_patch_applies() {
   _init_repo_with_binary "$FIXTURE_DIR/s4"
   git -C "$FIXTURE_DIR/s4" rm file.bin --quiet
@@ -183,6 +200,10 @@ test_binary_deletion_patch_applies() {
 # ===============================================================
 # Section 5: binary addition via --binary + selective strip
 # ===============================================================
+# Given: a patch adding a binary file
+# When:  it is applied
+# Then:  the patch applies and the file exists
+# Asserts: addition handling in the binary path.
 test_binary_addition_patch_applies() {
   make_repo "$FIXTURE_DIR/s5"
   echo "text" > "$FIXTURE_DIR/s5/file.txt"
@@ -216,6 +237,10 @@ test_binary_addition_patch_applies() {
 # the root cause of the patch-003 failure (20260504-03). The
 # selective filter must keep such patches applyable.
 # ===============================================================
+# Given: the same binary patch with index lines removed by `grep -v '^index '`
+# When:  it is applied
+# Then:  it fails, while the selective strip succeeds
+# Asserts: the counter-example that documents why the filter is selective.
 test_grep_v_index_destroys_binary_patches() {
   _init_repo_with_binary "$FIXTURE_DIR/s6_src"
   make_other_binary "$FIXTURE_DIR/s6_src/file.bin"
@@ -255,6 +280,10 @@ test_grep_v_index_destroys_binary_patches() {
 # Section 7: sequential mixed patches (text -> binary -> text+binary),
 # generated per-commit as package_commits would.
 # ===============================================================
+# Given: a text patch, a binary patch, and a text-plus-binary patch
+# When:  all three are applied in sequence
+# Then:  all apply and the final binary content is the last version
+# Asserts: the pipeline holds across repeated applies.
 test_sequential_mixed_patches_apply() {
   make_repo "$FIXTURE_DIR/s7"
   echo "init" > "$FIXTURE_DIR/s7/readme.txt"

@@ -30,6 +30,10 @@ _make_repo() {
   git -C "$dir" commit -qm init
 }
 
+# Given: a diff that touches one file
+# When:  apply_run runs
+# Then:  the report carries exactly one "Files changed: 1" line
+# Asserts: single emission - the hazard the count's `|| true` and `:-0` pair guards
 test_apply_run_single_file_diff_reports_one() {
   local repo="$FIXTURE_DIR/repo_one"
   _make_repo "$repo"
@@ -58,6 +62,10 @@ EOF
   fi
 }
 
+# Given: a diff that touches two files
+# When:  apply_run runs
+# Then:  the report carries exactly one "Files changed: 2" line
+# Asserts: the count's value as well as its multiplicity
 test_apply_run_multi_file_diff_reports_exact_count() {
   local repo="$FIXTURE_DIR/repo_two"
   _make_repo "$repo"
@@ -97,6 +105,10 @@ EOF
   fi
 }
 
+# Given: a zero-byte diff
+# When:  apply_run runs
+# Then:  rc 0, the skip warning, and HEAD unmoved
+# Asserts: the empty-diff rule - the count line on this path is not asserted
 test_apply_run_empty_diff_skips_with_warning() {
   local repo="$FIXTURE_DIR/repo_empty_apply"
   _make_repo "$repo"
@@ -118,6 +130,10 @@ test_apply_run_empty_diff_skips_with_warning() {
   fi
 }
 
+# Given: a member diff that is empty but has a commit message
+# When:  apply_and_commit runs
+# Then:  an empty commit lands carrying that message, and working-tree noise is not swept in
+# Asserts: the empty-member rule in the decided empty-diff behavior.
 test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit() {
   local repo="$FIXTURE_DIR/repo_empty_member"
   _make_repo "$repo"
@@ -147,6 +163,10 @@ test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit() {
   fi
 }
 
+# Given: a repo dirtied after the diff was taken
+# When:  apply_run runs with FORCE=false
+# Then:  it refuses and names the stash hint
+# Asserts: the clean-tree gate and its operator guidance
 test_apply_run_clean_tree_guard_blocks_unstaged_changes() {
   local repo="$FIXTURE_DIR/repo_clean_guard"
   _make_repo "$repo"
@@ -176,6 +196,10 @@ EOF
   fi
 }
 
+# Given: a repo with an untracked stray file, and a diff that still applies
+# When:  apply_run runs with FORCE=true
+# Then:  rc 0 with the tolerance warning, and no Error line on the path it continues
+# Asserts: a continued path warns rather than refuses (two assertions)
 test_apply_run_force_tolerates_dirty_tree_with_warning() {
   local repo="$FIXTURE_DIR/repo_force_dirty"
   _make_repo "$repo"
@@ -213,6 +237,10 @@ EOF
   fi
 }
 
+# Given: an empty uncommitted.diff in the source directory
+# When:  draft_apply_uncommitted runs
+# Then:  rc 0, the skip warning, and HEAD unmoved
+# Asserts: draft's empty-member rule (a draft.sh unit, kept with the apply count family)
 test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
   local repo="$FIXTURE_DIR/repo_empty_uncommitted"
   _make_repo "$repo"
@@ -234,6 +262,10 @@ test_draft_apply_uncommitted_empty_diff_skips_with_warning() {
   fi
 }
 
+# Given: a corrupt .git/index, so git status cannot read the tree while HEAD resolves
+# When:  apply_run runs
+# Then:  it refuses without the stash hint
+# Asserts: the unreadable-tree arm and its distinct guidance - a dirty tree and an unreadable tree are different states
 test_apply_run_unreadable_tree_refuses_without_stash_hint() {
   local repo="$FIXTURE_DIR/repo_unreadable"
   _make_repo "$repo"

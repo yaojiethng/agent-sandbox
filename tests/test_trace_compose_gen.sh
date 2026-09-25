@@ -73,6 +73,12 @@ run_compose_generate() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: the real file set (base + copy overlay + provider overlay) and the docker stub
+# When:  compose_generate runs
+# Then:  the output carries no top-level name: line
+# Asserts: the strip of the name: line Compose injects
+# Note:  no fixture input carries a name: key and the stub injects none, so this
+#        unit passes with the strip removed; finding 97
 test_no_name_lines_in_output() {
   local FIXTURE_DIR="$FIXTURE_DIR/nonames"
   mkdir -p "$FIXTURE_DIR"
@@ -97,6 +103,10 @@ test_no_name_lines_in_output() {
   fi
 }
 
+# Given: the real file set and the docker stub
+# When:  compose_generate runs
+# Then:  the output still carries services: and x-session-labels:
+# Asserts: the substitutions plus the stub's first-file echo keep the template shape
 test_output_is_valid_yaml() {
   local FIXTURE_DIR="$FIXTURE_DIR/validyaml"
   mkdir -p "$FIXTURE_DIR"
@@ -121,6 +131,10 @@ test_output_is_valid_yaml() {
   fi
 }
 
+# Given: a staged copy of the base template and the docker stub
+# When:  docker compose config runs with --no-interpolate
+# Then:  rc is 0 and the output carries no name: line, including no false match on container_name:
+# Asserts: the double's output shape that the surrounding units rely on
 test_stub_docker_config_preserves_structure() {
   local FIXTURE_DIR="$FIXTURE_DIR/configstruct"
   mkdir -p "$FIXTURE_DIR"
@@ -152,6 +166,10 @@ test_stub_docker_config_preserves_structure() {
 
 # The base template must not carry copy-only wiring: the named sandbox volume
 # lives in the copy overlay so bind-mount compose never inherits it.
+# Given: the base template src/build/docker-compose.yml
+# When:  it is grepped for SNAPSHOT_DIR, sandbox-data, and the snapshot path
+# Then:  none is present
+# Asserts: the base template carries no copy-only wiring (the named volume lives in the copy overlay)
 test_base_template_has_no_copy_only_wiring() {
   local base="$REPO_ROOT/src/build/docker-compose.yml"
   local copy_only=0
@@ -164,6 +182,10 @@ test_base_template_has_no_copy_only_wiring() {
 
 # The copy overlay carries the named volume and copy delivery type, and no
 # snapshot mount (content is host-side seeded by the helper-container seeder).
+# Given: the copy overlay docker-compose.copy.yml
+# When:  it is grepped for its delivery markers
+# Then:  sandbox-data, SANDBOX_TYPE=copy and {{FLATTEN}} are present, and the snapshot mount is absent
+# Asserts: the copy overlay owns the named volume and the copy delivery type
 test_copy_overlay_carries_volume_no_snapshot_mount() {
   local overlay="$REPO_ROOT/src/build/docker-compose.copy.yml"
 
@@ -179,6 +201,10 @@ test_copy_overlay_carries_volume_no_snapshot_mount() {
 }
 
 # The mount overlay carries the worktree bind mount and no copy wiring.
+# Given: the mount overlay docker-compose.mount.yml
+# When:  it is grepped for its delivery markers
+# Then:  WORKTREE_DIR, the container sandbox path, SANDBOX_TYPE=mount and {{FLATTEN}} are present, and copy wiring is absent
+# Asserts: the mount overlay owns the worktree bind mount and nothing copy-specific
 test_mount_overlay_carries_worktree_not_copy_wiring() {
   local overlay="$REPO_ROOT/src/build/docker-compose.mount.yml"
   local copy_only=0
@@ -198,6 +224,10 @@ test_mount_overlay_carries_worktree_not_copy_wiring() {
 # the FLATTEN stamping contract (the literal resume consumes), feed a mini
 # overlay as the FIRST input: compose_generate's sed substitutes {{FLATTEN}}
 # into every staged file, and the stub then cats the substituted first file.
+# Given: a mini overlay carrying FLATTEN={{FLATTEN}} as the first input, run once with FLATTEN=true and once with false
+# When:  compose_generate runs for each
+# Then:  each output carries its own stamped literal and no placeholder remains
+# Asserts: the sed stamp for the literal the resume path consumes
 test_compose_generate_stamps_flatten_literal() {
   local FIXTURE_DIR="$FIXTURE_DIR/flattenstamp"
   mkdir -p "$FIXTURE_DIR"
@@ -238,6 +268,10 @@ EOF
 }
 
 # The mount-mode merged output (stub-limited) still contains no copy wiring.
+# Given: the real file set with the mount overlay
+# When:  compose_generate runs
+# Then:  the merged output carries no SNAPSHOT_DIR and no sandbox-data
+# Asserts: mount mode inherits no copy-only wiring through the merge
 test_mount_output_has_no_snapshot_dir() {
   local FIXTURE_DIR="$FIXTURE_DIR/mountoutput"
   mkdir -p "$FIXTURE_DIR"
@@ -262,6 +296,10 @@ test_mount_output_has_no_snapshot_dir() {
 # `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`
 # labels (read via docker inspect post-build), which the dry-run roundtrip
 # gate and resume identity checks consume docker-free.
+# Given: a stub digest map carrying a digest for each of the two images
+# When:  compose_generate runs
+# Then:  both image-digest labels and the interface-contract version are stamped into the record
+# Asserts: the roundtrip gate and the resume identity check have a docker-free record source
 test_record_bakes_image_digests() {
   local FIXTURE_DIR="$FIXTURE_DIR/imagesig"
   mkdir -p "$FIXTURE_DIR"
@@ -293,6 +331,11 @@ test_record_bakes_image_digests() {
 # compose_file_from_args recovers the generated compose file path from
 # COMPOSE_ARGS (last -f value), so compose_dry_run can pass the generation-time
 # stamp source to the roundtrip gate.
+# Given: COMPOSE_ARGS carrying one -f flag
+# When:  compose_file_from_args runs
+# Then:  it prints that file path
+# Asserts: the -f value is recovered; with one flag the first-versus-last rule is not
+#        exercised, and neither is a trailing bare -f; finding 99
 test_compose_file_from_args_extracts_f_value() {
   (
     source "$REPO_ROOT/src/build/compose.sh"
@@ -306,6 +349,10 @@ test_compose_file_from_args_extracts_f_value() {
   fi
 }
 
+# Given: COMPOSE_ARGS carrying no -f flag
+# When:  compose_file_from_args runs
+# Then:  it prints nothing and returns 0
+# Asserts: an absent -f is an empty answer, not a failure
 test_compose_file_from_args_empty_without_f() {
   (
     source "$REPO_ROOT/src/build/compose.sh"

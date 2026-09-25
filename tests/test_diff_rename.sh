@@ -27,6 +27,10 @@ _commit_rename() {
   git -C "$REPO" commit -m "rename $OLD -> $NEW" --quiet
 }
 
+# Given: a committed rename and NO_RENAMES=true
+# When:  package_branch runs
+# Then:  the patch carries deleted-file and new-file modes and no rename header
+# Asserts: the no-renames argument reaches the per-commit diff
 test_package_branch_no_renames_true() {
   local REPO="$FIXTURE_DIR/rb_true_repo"
   local OUT="$FIXTURE_DIR/rb_true_out"
@@ -50,6 +54,10 @@ test_package_branch_no_renames_true() {
   fi
 }
 
+# Given: a committed rename and the default argument value
+# When:  package_branch runs
+# Then:  the patch carries a rename header
+# Asserts: the default keeps rename detection on
 test_package_branch_default_detects_rename() {
   local REPO="$FIXTURE_DIR/rb_default_repo"
   local OUT="$FIXTURE_DIR/rb_default_out"
@@ -71,6 +79,10 @@ test_package_branch_default_detects_rename() {
   fi
 }
 
+# Given: a committed rename
+# When:  diff_export runs
+# Then:  the patch carries no rename header
+# Asserts: the export path passes no-renames by default (finding 68, bite E6)
 test_diff_export_uses_no_renames_by_default() {
   local REPO="$FIXTURE_DIR/de_nr_repo"
   local OUT="$FIXTURE_DIR/de_nr_out"

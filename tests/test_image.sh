@@ -24,6 +24,12 @@ run_with_docker_stub() {
   )
 }
 
+# Given: the docker stub reports sha256:abc123 for img1
+# When:  image_digest runs
+# Then:  it prints that digest
+# Asserts: the stub value passes through the inspect call
+# Note:  the format string {{.Id}} is pinned only by the stub's literal routing on
+#        ".Id}"; finding 89
 test_image_digest_returns_stub_digest() {
   local OUT
   OUT=$(DOCKER_STUB_IMAGE_DIGEST="sha256:abc123" run_with_docker_stub \
@@ -31,6 +37,10 @@ test_image_digest_returns_stub_digest() {
   assert_eq "$OUT" "sha256:abc123" "image_digest returns the image ID digest"
 }
 
+# Given: a stub per-image map carrying a different digest for each of two images
+# When:  image_digest runs for each
+# Then:  each call prints its own image's digest
+# Asserts: the digest is read per image, not cached or shared
 test_image_digest_per_image_map() {
   local OUT_A OUT_B
   OUT_A=$(DOCKER_STUB_IMAGE_DIGESTS="imgA:sha256:aaa imgB:sha256:bbb" run_with_docker_stub \
@@ -44,6 +54,12 @@ test_image_digest_per_image_map() {
   fi
 }
 
+# Given: a stub whose digest fallback is empty and an image with no map entry
+# When:  image_digest runs
+# Then:  stdout is empty
+# Asserts: an absent digest yields empty, which compose_generate treats as a hard error
+# Note:  a docker that cannot run yields the same empty value; finding 88. The
+#        comment's "per-image map" describes a map this unit does not set
 test_image_digest_empty_for_missing_image() {
   local OUT
   # Per-image map with no entry AND empty fallback = missing image.

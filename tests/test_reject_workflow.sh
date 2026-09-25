@@ -23,6 +23,10 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/draft_fixtures.sh"
 
+# Given: a draft branch whose working tree carries a tracked-file edit that blocks the source checkout
+# When:  reject_run runs
+# Then:  rc 0, the source branch is current, the draft branch is gone, and the discard warning is printed
+# Asserts: the force-checkout fallback (bite R6); the untracked arm of the discard is not supplied, so `clean -fd` and the suppressed checkout stderr are unpinned (rows 253 and 249)
 test_reject_discards_uncommitted_draft_residue() {
   make_draft_fixture reject_residue 1
 
@@ -53,6 +57,10 @@ test_reject_discards_uncommitted_draft_residue() {
   fi
 }
 
+# Given: a draft branch with its work committed
+# When:  reject_run runs
+# Then:  the source branch is current
+# Asserts: the branch switch, and the record it reads through `eval` (bite R4)
 test_reject_returns_to_source() {
   make_draft_fixture reject_src 1
 
@@ -64,6 +72,10 @@ test_reject_returns_to_source() {
   assert_eq "$CURR" "main" "reject returns to source branch"
 }
 
+# Given: a draft branch with its work committed
+# When:  reject_run runs
+# Then:  the draft branch no longer exists
+# Asserts: the existence guard and the force delete (bites R8, R9)
 test_reject_deletes_draft_branch() {
   make_draft_fixture reject_del 1
 
@@ -80,6 +92,10 @@ test_reject_deletes_draft_branch() {
   fi
 }
 
+# Given: a repository on a non-draft branch
+# When:  reject_run runs
+# Then:  the output contains the refusal message
+# Asserts: the message the sub-function prints, not that reject honours the verdict: dropping the guard's `|| return 1` still passes this unit (bite R3, row 243)
 test_reject_rejects_non_draft() {
   local P="$FIXTURE_DIR/reject_nondraft_p"
   make_committed_repo "$P"

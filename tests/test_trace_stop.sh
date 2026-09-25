@@ -84,6 +84,10 @@ invoke_prune() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a sandbox fixture and the docker stub, with no docker failure knob set
+# When:  stop.sh runs
+# Then:  rc is 0 and no docker compose command is issued
+# Asserts: the label-based stop is independent of the compose path
 test_stop_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_nc"
   mkdir -p "$FIXTURE_DIR"
@@ -98,6 +102,10 @@ test_stop_no_compose() {
   fi
 }
 
+# Given: the stub returning no container ids
+# When:  stop.sh runs
+# Then:  it probes with ps and removes nothing
+# Asserts: an empty capture stops after the probe, so the normalisation holds
 test_stop_no_containers_does_not_teardown() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_none"
   mkdir -p "$FIXTURE_DIR"
@@ -113,6 +121,10 @@ test_stop_no_containers_does_not_teardown() {
   fi
 }
 
+# Given: the stub reporting two container ids
+# When:  stop.sh runs
+# Then:  each container is stopped and removed
+# Asserts: found containers are stopped and removed
 test_stop_removes_containers() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_rm"
   mkdir -p "$FIXTURE_DIR"
@@ -128,6 +140,10 @@ test_stop_removes_containers() {
   fi
 }
 
+# Given: the stub reporting two network ids
+# When:  stop.sh runs
+# Then:  the session networks are removed
+# Asserts: the network is addressed by the same labels as the containers
 test_stop_removes_networks() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_net"
   mkdir -p "$FIXTURE_DIR"
@@ -143,6 +159,10 @@ test_stop_removes_networks() {
   fi
 }
 
+# Given: the stub failing the ps probe
+# When:  stop.sh runs
+# Then:  the script aborts non-zero instead of reading the failure as "no containers"
+# Asserts: the command-substitution capture keeps the probe's status under set -e
 test_stop_docker_failure_aborts() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -169,6 +189,10 @@ test_stop_docker_failure_aborts() {
 # The `docker rm` "already in progress" race (run_agent EXIT-trap compose
 # down removing the same containers) must be tolerated -- stop completes with
 # rc 0 rather than aborting. `docker stop` stays fail-closed (tested above).
+# Given: the stub reporting one container and failing the removal
+# When:  stop.sh runs
+# Then:  rc is 0, because run_agent's EXIT trap may already be removing it
+# Asserts: the removal race is tolerated while the stop itself stays fail-closed
 test_stop_removal_race_is_tolerated() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_race"
   mkdir -p "$FIXTURE_DIR"
@@ -188,6 +212,10 @@ test_stop_removal_race_is_tolerated() {
   assert_eq_num "$rc" "0" "stop: docker rm 'already in progress' race is tolerated (rc 0)"
 }
 
+# Given: the same fixture and an empty stub
+# When:  stop.sh runs with --prune
+# Then:  rc is 0 and no compose command is issued
+# Asserts: the prune delegation keeps the label-based path
 test_stop_prune_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_nc"
   mkdir -p "$FIXTURE_DIR"
@@ -202,6 +230,10 @@ test_stop_prune_no_compose() {
   fi
 }
 
+# Given: the same fixture
+# When:  stop.sh runs with --prune
+# Then:  the trace shows the registry-based prune being reached
+# Asserts: --prune delegates to prune.sh rather than reimplementing a sweep
 test_stop_prune_has_registrybased_prune() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_sp"
   mkdir -p "$FIXTURE_DIR"
@@ -217,6 +249,10 @@ test_stop_prune_has_registrybased_prune() {
   fi
 }
 
+# Given: an empty .compose registry and no stub resources
+# When:  prune.sh runs standalone
+# Then:  it prints "Nothing to prune" and no compose command is issued
+# Asserts: an empty registry is a clean no-op
 test_prune_standalone_nothing_to_prune() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_sa_nc"
   mkdir -p "$FIXTURE_DIR"
@@ -233,6 +269,10 @@ test_prune_standalone_nothing_to_prune() {
   fi
 }
 
+# Given: a stale record and a fresh record
+# When:  prune.sh runs standalone
+# Then:  the stale record is removed and the fresh record survives
+# Asserts: Rule 1 staleness selection through the real script
 test_prune_rule1_removes_stale_records() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r1_stale"
   mkdir -p "$FIXTURE_DIR"
@@ -252,6 +292,10 @@ test_prune_rule1_removes_stale_records() {
   fi
 }
 
+# Given: an orphan container whose session has no record
+# When:  prune.sh runs standalone
+# Then:  the trace shows the container removal
+# Asserts: Rule 2 container removal against the real label filters
 test_prune_rule2_removes_orphan_container() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_orphan"
   mkdir -p "$FIXTURE_DIR"
@@ -268,6 +312,10 @@ test_prune_rule2_removes_orphan_container() {
   fi
 }
 
+# Given: a stale record
+# When:  prune.sh runs standalone with --dry-run
+# Then:  the report names the record and the record stays on disk
+# Asserts: --dry-run reports without acting
 test_prune_dry_run_removes_nothing() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_dryrun"
   mkdir -p "$FIXTURE_DIR"
@@ -288,6 +336,10 @@ test_prune_dry_run_removes_nothing() {
 # The `make stop` surface prints the same hint pair as `make start` end:
 # resume + draft, with the draft hint naming the exact session export.
 # The hint fires only when --session-id is given (unchanged rule).
+# Given: a session id and found containers
+# When:  stop.sh runs with --session-id
+# Then:  the shutdown hints are printed for that session
+# Asserts: the session-scoped stop names its resume and draft follow-ups
 test_stop_shutdown_hints() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_hints"
   mkdir -p "$FIXTURE_DIR"
@@ -310,6 +362,10 @@ test_stop_shutdown_hints() {
   assert_contains "$output" "Draft this session's changes: make draft BUNDLE=20260730-120000-test01" "stop: shutdown output names the exact session export for make draft"
 }
 
+# Given: a session with no exported bundle
+# When:  stop.sh runs with --session-id
+# Then:  the draft hint is absent from the output
+# Asserts: the hint family suppresses the draft line when there is nothing to draft
 test_stop_draft_hint_suppressed_without_export() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_draft_none"
   mkdir -p "$FIXTURE_DIR"

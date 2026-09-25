@@ -42,6 +42,10 @@ SHIM
 } > "$FIXTURE_ROOT/shim_noinplace/sed"
 chmod +x "$FIXTURE_ROOT/shim_noinplace/sed"
 
+# Given: an empty log for a session
+# When:  session_log_set writes a key, overwrites it, then adds a second key
+# Then:  reads return the latest values and each key has exactly one line
+# Asserts: set, upsert, and append, with idempotence.
 test_session_log_set_read() {
   local sid="s1"
   session_log_set "$sid" last_stopped "20260828-120000"
@@ -58,6 +62,10 @@ test_session_log_set_read() {
 }
 run_test test_session_log_set_read
 
+# Given: a session with no log file
+# When:  session_log_read runs
+# Then:  the value is empty and no file is created
+# Asserts: a read does not create state.
 test_session_log_missing() {
   local sid="nonexistent"
   assert_eq "$(session_log_read "$sid" last_stopped)" "" "absent log -> empty value"
@@ -65,11 +73,19 @@ test_session_log_missing() {
 }
 run_test test_session_log_missing
 
+# Given: SANDBOX_DIR set to the fixture
+# When:  session_log_path runs
+# Then:  the path is SANDBOX_DIR/.compose/<id>.log
+# Asserts: the path contract.
 test_session_log_path() {
   assert_eq "$(session_log_path "xyz")" "$FIX/.compose/xyz.log" "log path is SANDBOX_DIR/.compose/<id>.log"
 }
 run_test test_session_log_path
 
+# Given: a PATH shim that fails any sed -i invocation
+# When:  session_log_set writes and upserts a key
+# Then:  it succeeds with no in-place sed and one line per key
+# Asserts: the sibling-temp rewrite (the macOS teardown portability fix).
 test_session_log_set_avoids_inplace_sed() {
   # session_log_set must not use in-place sed at all; the shim fails any `-i`
   # invocation. Upsert works, and no in-place sed is exercised.
@@ -84,6 +100,10 @@ test_session_log_set_avoids_inplace_sed() {
 }
 run_test test_session_log_set_avoids_inplace_sed
 
+# Given: the no-in-place-sed shim
+# When:  sed -i is invoked directly
+# Then:  it fails
+# Asserts: the shim itself, so a regression is caught rather than silently passing.
 test_inplace_sed_shim_rejects_dash_i() {
   # Guard on the shim itself: any `-i` invocation must fail, so a regression
   # to in-place sed is caught instead of silently passing.
@@ -98,6 +118,10 @@ test_inplace_sed_shim_rejects_dash_i() {
 }
 run_test test_inplace_sed_shim_rejects_dash_i
 
+# Given: a well-formed, a malformed, and an empty timestamp
+# When:  ts_to_epoch runs
+# Then:  an integer for the well-formed one, empty for the others
+# Asserts: the format guard and the conversion.
 test_ts_to_epoch() {
   local ep
   ep="$(ts_to_epoch "20260828-120000")"
@@ -110,6 +134,10 @@ test_ts_to_epoch() {
 }
 run_test test_ts_to_epoch
 
+# Given: timestamps now, 125s ago, 2h ago, and 2d ago, plus empty and garbage
+# When:  relative_time runs
+# Then:  "just now", "2 minutes ago", "2 hours ago", "2 days ago", "---", "---"
+# Asserts: the verbose unit ladder.
 test_relative_time_units() {
   local now two_min two_hour two_day
   now=$(date -u +%Y%m%d-%H%M%S)
@@ -126,6 +154,10 @@ test_relative_time_units() {
 }
 run_test test_relative_time_units
 
+# Given: the same timestamps
+# When:  relative_time_compact runs
+# Then:  "just now", "2m ago", "2h ago", "2D ago", "---", "---"
+# Asserts: the compact form used in dense tables.
 test_relative_time_compact_units() {
   local now two_min two_hour two_day
   now=$(date -u +%Y%m%d-%H%M%S)

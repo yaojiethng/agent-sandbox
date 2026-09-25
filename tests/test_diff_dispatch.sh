@@ -20,6 +20,10 @@ FIXTURE="$FIXTURE_DIR"
 # diff_export  --  entrypoint dispatch proxy
 # ===================================================================
 
+# Given: a sandbox with changes and an output directory
+# When:  diff_export runs
+# Then:  .export-status exists in the output directory
+# Asserts: the success record is written.
 test_diff_export_creates_output() {
   local DIR="$FIXTURE_DIR/de_creates"
   mkdir -p "$DIR"
@@ -36,6 +40,10 @@ test_diff_export_creates_output() {
   fi
 }
 
+# Given: an uncommitted change
+# When:  diff_export runs
+# Then:  uncommitted.diff is non-empty
+# Asserts: the artifact is packaged through to the output directory.
 test_diff_export_writes_uncommitted_diff() {
   local DIR="$FIXTURE_DIR/de_uncommitted"
   mkdir -p "$DIR"
@@ -53,6 +61,10 @@ test_diff_export_writes_uncommitted_diff() {
   fi
 }
 
+# Given: a committed change since the baseline
+# When:  diff_export runs
+# Then:  all-changes.diff is non-empty
+# Asserts: the net-delta artifact is packaged.
 test_diff_export_writes_all_changes_diff() {
   local DIR="$FIXTURE_DIR/de_allchanges"
   mkdir -p "$DIR"
@@ -70,6 +82,10 @@ test_diff_export_writes_all_changes_diff() {
   fi
 }
 
+# Given: committed work since the baseline
+# When:  diff_export runs
+# Then:  patches/ holds one .diff per commit
+# Asserts: the per-commit series is packaged.
 test_diff_export_writes_patches() {
   local DIR="$FIXTURE_DIR/de_patches"
   mkdir -p "$DIR"
@@ -90,6 +106,10 @@ test_diff_export_writes_patches() {
   fi
 }
 
+# Given: a changed file
+# When:  diff_export runs
+# Then:  changed-files/ holds a copy
+# Asserts: the working-tree copies are packaged.
 test_diff_export_writes_changed_files() {
   local DIR="$FIXTURE/de_changedfiles"
   mkdir -p "$DIR"
@@ -107,6 +127,10 @@ test_diff_export_writes_changed_files() {
   fi
 }
 
+# Given: committed and uncommitted work
+# When:  diff_export runs
+# Then:  the worktree is still dirty: no sweep commit is made
+# Asserts: the export reads the repository and never writes history to it.
 test_diff_export_no_sweep_commit() {
   local DIR="$FIXTURE/de_nosweep"
   mkdir -p "$DIR"
@@ -125,6 +149,10 @@ test_diff_export_no_sweep_commit() {
   fi
 }
 
+# Given: no arguments
+# When:  diff_export runs
+# Then:  rc 1 with a diagnostic
+# Asserts: the argument guard (the OUTPUT_DIR clause is unpinned, finding 13).
 test_diff_export_missing_args_fails() {
   if diff_export "" "" 2>/dev/null; then
     fail "diff_export should fail with missing args"
@@ -133,6 +161,10 @@ test_diff_export_missing_args_fails() {
   fi
 }
 
+# Given: a sandbox with no SESSION_STATE record
+# When:  diff_export runs
+# Then:  rc 1 and no SUCCESS record
+# Asserts: the package_branch preflight refuses an unbounded export, so the orchestrator sees a failure.
 test_diff_export_missing_session_state() {
   local DIR="$FIXTURE/de_nostate"
   mkdir -p "$DIR"

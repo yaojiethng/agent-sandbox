@@ -17,6 +17,10 @@ source "$REPO_ROOT/src/libs/common.sh"
 # parse_help_flag
 # ---------------------------------------------------------------------------
 
+# Given: the argument --help
+# When:  parse_help_flag runs
+# Then:  usage is called
+# Asserts: long help flag dispatch.
 test_help_flag_detected() {
   # parse_help_flag calls usage() and exit  --  mock those to avoid aborting
   usage() { echo "usage called"; }
@@ -29,6 +33,10 @@ test_help_flag_detected() {
   fi
 }
 
+# Given: the argument -h
+# When:  parse_help_flag runs
+# Then:  usage is called
+# Asserts: short help flag dispatch.
 test_help_flag_short() {
   usage() { echo "usage called"; }
   local OUTPUT
@@ -40,6 +48,10 @@ test_help_flag_short() {
   fi
 }
 
+# Given: ordinary flags, no --help/-h
+# When:  parse_help_flag runs
+# Then:  it produces no output
+# Asserts: no false help trigger (the returned rc is not asserted).
 test_help_flag_not_triggered() {
   # No --help or -h in args  --  should be a no-op
   usage() { echo "usage called"; }
@@ -51,6 +63,10 @@ test_help_flag_not_triggered() {
 # parse_base_flags
 # ---------------------------------------------------------------------------
 
+# Given: --name/--project/--sandbox and an unknown flag
+# When:  parse_base_flags runs
+# Then:  the three vars are set and the unknown flag is ignored
+# Asserts: the three base flags parse; unknown args are tolerated.
 test_parse_base_flags_sets_vars() {
   PROJECT_NAME="" PROJECT_DIR="" SANDBOX_DIR=""
   parse_base_flags --name=my-project --project=/tmp/myproj --sandbox=/tmp/mysandbox --unknown-flag
@@ -60,6 +76,10 @@ test_parse_base_flags_sets_vars() {
   assert_eq "$SANDBOX_DIR" "/tmp/mysandbox" "parse_base_flags sets SANDBOX_DIR from --sandbox="
 }
 
+# Given: pre-set vars and no base flags
+# When:  parse_base_flags runs
+# Then:  all three vars are reset to empty
+# Asserts: parsing clears prior values.
 test_parse_base_flags_defaults_empty() {
   PROJECT_NAME="x" PROJECT_DIR="y" SANDBOX_DIR="z"
   parse_base_flags --other-flag
@@ -73,6 +93,10 @@ test_parse_base_flags_defaults_empty() {
 # check_base_flags
 # ---------------------------------------------------------------------------
 
+# Given: PROJECT_NAME and SANDBOX_DIR set
+# When:  check_base_flags runs
+# Then:  it passes
+# Asserts: the required pair passes.
 test_check_base_flags_valid() {
   PROJECT_NAME="test" SANDBOX_DIR="/tmp/valid"
   if check_base_flags 2>/dev/null; then
@@ -85,6 +109,10 @@ test_check_base_flags_valid() {
 # check_base_flags calls exit(1) on failure (it's designed for CLI scripts),
 # so these tests run in a subshell to avoid aborting the test runner.
 
+# Given: an empty PROJECT_NAME
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: --name is required.
 test_check_base_flags_missing_name() {
   if ( PROJECT_NAME="" SANDBOX_DIR="/tmp/valid" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should fail with missing --name"
@@ -93,6 +121,10 @@ test_check_base_flags_missing_name() {
   fi
 }
 
+# Given: an empty SANDBOX_DIR
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: --sandbox is required.
 test_check_base_flags_missing_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should fail with missing --sandbox"
@@ -101,6 +133,10 @@ test_check_base_flags_missing_sandbox() {
   fi
 }
 
+# Given: SANDBOX_DIR=/
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: root is rejected as a sandbox.
 test_check_base_flags_rejects_root_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="/" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should reject SANDBOX_DIR=/"
@@ -109,6 +145,10 @@ test_check_base_flags_rejects_root_sandbox() {
   fi
 }
 
+# Given: an empty SANDBOX_DIR and a set PROJECT_NAME
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: an empty sandbox is rejected.
 test_check_base_flags_rejects_empty_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should reject empty SANDBOX_DIR"
@@ -131,6 +171,10 @@ run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox
 run_test test_check_base_flags_rejects_root_sandbox
 run_test test_check_base_flags_rejects_empty_sandbox
+# Given: common.sh sourced with no override
+# When:  INTERACTIVE_MAX_ENTRIES is read
+# Then:  it is 10
+# Asserts: the single canonical picker cap.
 test_interactive_max_entries_default() {
   if [[ "${INTERACTIVE_MAX_ENTRIES:-}" == "10" ]]; then
     pass "common.sh: INTERACTIVE_MAX_ENTRIES defaults to 10"
@@ -144,10 +188,18 @@ test_interactive_max_entries_default() {
 _exit_zero() { exit 0; }
 _exit_three() { exit 3; }
 
+# Given: a command that exits 0
+# When:  assert_run 0 runs
+# Then:  it passes
+# Asserts: the harness assert_run pass side (test_common.sh helper; finding 4).
 test_subshell_rc_matches_expected() {
   assert_run 0 _exit_zero "assert_run passes on matching rc"
 }
 
+# Given: a command that exits 3
+# When:  assert_run 0 runs in a bash -c probe
+# Then:  it fails with the expected-rc marker and increments the counter
+# Asserts: the harness assert_run fail side, proven out-of-process (test_common.sh helper; finding 4).
 test_subshell_rc_mismatch_fails() {
   # The probe's fail() emits a detail marker and increments the counter;
   # run the probe in a bash -c subprocess so its fail-fast exit does not
@@ -168,6 +220,10 @@ test_subshell_rc_mismatch_fails() {
 
 # -- source_function_from --
 
+# Given: a source file with a named function
+# When:  source_function_from extracts it
+# Then:  the function is invocable
+# Asserts: function extraction works (test_common.sh helper; finding 4).
 test_source_function_from_extracts_and_defines() {
   local FIXTURE="$FIXTURE_DIR/extract_src.sh"
   printf 'unrelated() { :; }\nextracted_fn() { EXTRACTED_MARK=works; }\ntrailing() { :; }\n' > "$FIXTURE"
@@ -180,6 +236,10 @@ test_source_function_from_extracts_and_defines() {
   fi
 }
 
+# Given: a source file without the named function
+# When:  source_function_from runs
+# Then:  it fails
+# Asserts: extraction fails loudly on a miss (test_common.sh helper; finding 4).
 test_source_function_from_fails_when_pattern_missing() {
   local FIXTURE="$FIXTURE_DIR/extract_missing.sh"
   printf 'other() { :; }\n' > "$FIXTURE"
@@ -190,6 +250,10 @@ test_source_function_from_fails_when_pattern_missing() {
   fi
 }
 
+# Given: a fixture unit that calls skip
+# When:  the fixture runs
+# Then:  it exits 0, emits the SKIP marker, and counts one skipped
+# Asserts: a skip is a warning, not a failure (test_common.sh helper; finding 4).
 test_skip_counts_as_skipped_unit() {
   # skip() goes through the real _run_one in a fresh script, so the shared
   # counters here are unaffected and the suite keeps a committed skip count of

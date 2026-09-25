@@ -87,6 +87,10 @@ invoke_run_agent_rc() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a fixture sandbox with no session export directory
+# When:  a standard session ends
+# Then:  the shutdown output carries the make resume command for that session and no draft hint
+# Asserts: the post-session hint pair (resume always; draft suppressed on absent)
 test_start_standard_shutdown_resume_hint() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_shutdown_hint"
   mkdir -p "$FIXTURE_DIR"
@@ -117,6 +121,10 @@ test_start_standard_shutdown_resume_hint() {
   fi
 }
 
+# Given: a session export directory holding one patch
+# When:  a standard session ends
+# Then:  the shutdown output names that bundle in a make draft command
+# Asserts: the draft hint names the exact session export
 test_start_standard_shutdown_draft_hint() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_draft_hint"
   mkdir -p "$FIXTURE_DIR"
@@ -141,6 +149,10 @@ test_start_standard_shutdown_draft_hint() {
   assert_contains "$output" "Draft this session's changes: make draft BUNDLE=20260730-120000-test01" "start (standard): shutdown output names the exact session export for make draft"
 }
 
+# Given: a session export directory with no draftable content
+# When:  a standard session ends
+# Then:  no draft hint is printed
+# Asserts: the draft hint is suppressed for an empty export
 test_start_standard_shutdown_draft_hint_suppressed_for_empty_export() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_draft_empty"
   mkdir -p "$FIXTURE_DIR"
@@ -168,6 +180,10 @@ test_start_standard_shutdown_draft_hint_suppressed_for_empty_export() {
   fi
 }
 
+# Given: a standard session
+# When:  the compose trace is read
+# Then:  no 'compose down -v' ran
+# Asserts: a standard teardown keeps the named volumes
 test_start_standard_no_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_std"
   mkdir -p "$FIXTURE_DIR"
@@ -179,6 +195,10 @@ test_start_standard_no_v() {
   assert_eq_num "$count" "0" "start (standard): zero 'compose down -v' invocations"
 }
 
+# Given: a standard session
+# When:  the compose trace is read
+# Then:  'compose up -d sandbox' was issued
+# Asserts: the sandbox service is brought up by name
 test_start_standard_has_compose_up() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_up"
   mkdir -p "$FIXTURE_DIR"
@@ -192,6 +212,10 @@ test_start_standard_has_compose_up() {
   fi
 }
 
+# Given: a standard session
+# When:  the compose trace is read
+# Then:  'compose run' was issued for the agent
+# Asserts: the agent runs in the foreground of the session
 test_start_standard_has_compose_run_agent() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_run"
   mkdir -p "$FIXTURE_DIR"
@@ -205,6 +229,10 @@ test_start_standard_has_compose_run_agent() {
   fi
 }
 
+# Given: a standard session
+# When:  the compose trace is read
+# Then:  zero 'compose down -v' invocations
+# Asserts: the post-agent teardown preserves volumes (ordering is the teardown pair's subject)
 test_start_standard_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_post"
   mkdir -p "$FIXTURE_DIR"
@@ -221,6 +249,10 @@ test_start_standard_post_agent_uses_down() {
   assert_eq_num "$down_v_count" "0" "start (standard): zero 'compose down -v' (session_teardown keeps named volumes)"
 }
 
+# Given: a standard session started with --reset-volume
+# When:  the compose trace is read
+# Then:  zero 'compose down -v' invocations
+# Asserts: the reset path does not destroy the volume through compose
 test_start_refresh_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref"
   mkdir -p "$FIXTURE_DIR"
@@ -232,6 +264,10 @@ test_start_refresh_has_no_down_v() {
   assert_eq_num "$count" "0" "start --refresh: zero 'compose down -v' (volume removal via docker volume rm)"
 }
 
+# Given: a stale volume visible to the docker stub and --reset-volume
+# When:  the compose trace is read
+# Then:  no 'volume rm' was issued
+# Asserts: the reset is seed-based, not removal-based
 test_start_refresh_volume_rm() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_rm"
   mkdir -p "$FIXTURE_DIR"
@@ -247,6 +283,10 @@ test_start_refresh_volume_rm() {
   unset DOCKER_STUB_VOLUME_NAMES
 }
 
+# Given: a standard session started with --reset-volume
+# When:  the compose trace is read
+# Then:  zero 'compose down -v' and the post-agent teardown is a bare 'down'
+# Asserts: a refreshed session keeps its volume after the agent exits
 test_start_refresh_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_ref_post"
   mkdir -p "$FIXTURE_DIR"
@@ -262,6 +302,10 @@ test_start_refresh_post_agent_uses_down() {
   assert_eq_num "$down_v_count" "0" "start --refresh: zero compose down -v, post-agent down only (down=$down_count)"
 }
 
+# Given: a standard session started with --reset-volume (the --rebuild path)
+# When:  the compose trace is read
+# Then:  zero 'compose down -v' invocations
+# Asserts: the rebuild path preserves volumes
 test_start_rebuild_has_no_down_v() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_reb"
   mkdir -p "$FIXTURE_DIR"
@@ -273,6 +317,10 @@ test_start_rebuild_has_no_down_v() {
   assert_eq_num "$count" "0" "start --rebuild: zero 'compose down -v' (--reset-volume forwarded, volume rm used)"
 }
 
+# Given: a serve-mode session
+# When:  the compose trace is read
+# Then:  zero 'compose down -v' invocations
+# Asserts: a serve teardown keeps the named volumes
 test_serve_post_agent_uses_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/serve_post"
   mkdir -p "$FIXTURE_DIR"
@@ -304,14 +352,26 @@ assert_teardown_is_last_compose() {
   assert_contains "$last" "compose down" "$mode: last compose op is down (teardown is final dispatch)"
 }
 
+# Given: a standard session
+# When:  the compose trace is read
+# Then:  the last compose operation is 'down'
+# Asserts: teardown is the final compose dispatch, nothing runs after it
 test_standard_teardown_is_last_compose() {
   assert_teardown_is_last_compose standard
 }
 
+# Given: a serve-mode session
+# When:  the compose trace is read
+# Then:  the last compose operation is 'down'
+# Asserts: teardown is the final compose dispatch in serve mode
 test_serve_teardown_is_last_compose() {
   assert_teardown_is_last_compose serve
 }
 
+# Given: the docker stub failing the agent run with rc 42
+# When:  run_agent.sh runs a standard session
+# Then:  it exits 42 and a teardown ran
+# Asserts: no leak on agent failure, with the agent's rc propagated to the caller
 test_standard_agent_failure_still_tears_down_and_propagates_rc() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -336,6 +396,10 @@ test_standard_agent_failure_still_tears_down_and_propagates_rc() {
   unset DOCKER_STUB_RUN_RC
 }
 
+# Given: the docker stub failing 'compose up' in serve mode
+# When:  run_agent.sh aborts
+# Then:  the last compose operation is 'down'
+# Asserts: no container or network leak on an up failure
 test_serve_up_failure_still_tears_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/serve_up_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -352,6 +416,10 @@ test_serve_up_failure_still_tears_down() {
   assert_contains "$last" "compose down" "serve: up failure still tears down (last=$last)"
 }
 
+# Given: the docker stub failing 'compose up' in standard mode
+# When:  run_agent.sh aborts
+# Then:  the last compose operation is 'down'
+# Asserts: no leak on an up failure in standard mode
 test_standard_up_failure_still_tears_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_up_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -368,6 +436,10 @@ test_standard_up_failure_still_tears_down() {
   assert_contains "$last" "compose down" "standard: up failure still tears down (last=$last)"
 }
 
+# Given: a sandbox whose health stays 'starting' and a one-second wait budget
+# When:  run_agent.sh runs a standard session
+# Then:  the last compose operation is 'down'
+# Asserts: teardown after a failed health wait (the assertion does not distinguish whether the agent ran - see the read-through finding on this unit)
 test_standard_sandbox_unhealthy_still_tears_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_sb_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -385,6 +457,10 @@ test_standard_sandbox_unhealthy_still_tears_down() {
   assert_contains "$last" "compose down" "standard: sandbox unhealthy still tears down (last=$last)"
 }
 
+# Given: a standard session with SESSION_ID=test01
+# When:  the session ends
+# Then:  .compose/test01.yml exists, carries the baked container names, and the last compose invocation used it
+# Asserts: the merged compose record is persisted at an identity-derived path and reused
 test_compose_file_persisted() {
   local FIXTURE_DIR="$FIXTURE_DIR/compose_persist"
   mkdir -p "$FIXTURE_DIR"
@@ -419,6 +495,10 @@ test_compose_file_persisted() {
 
 # No --delivery: run_agent refuses -- the caller must state the delivery; the
 # copy default is computed once at ingestion (start_agent).
+# Given: no --delivery flag
+# When:  run_agent.sh runs
+# Then:  it exits non-zero
+# Asserts: the caller must state the delivery; run_agent never defaults it
 test_missing_delivery_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/no_delivery"
   mkdir -p "$FIXTURE_DIR"
@@ -437,6 +517,10 @@ test_missing_delivery_rejected() {
 # not. (run_agent itself never defaults --delivery; the copy default lives in
 # start_agent's ingestion and is exercised by every start-level test that
 # omits the flag.)
+# Given: --delivery=copy
+# When:  the session generates its compose file set
+# Then:  the copy overlay is present and the mount overlay is absent
+# Asserts: copy delivery selects the copy overlay
 test_copy_delivery_default_merges_copy_overlay() {
   local FIXTURE_DIR="$FIXTURE_DIR/copy_delivery"
   mkdir -p "$FIXTURE_DIR"
@@ -455,6 +539,10 @@ test_copy_delivery_default_merges_copy_overlay() {
 }
 
 # --delivery=mount: the mount overlay is merged, the copy overlay is not.
+# Given: --delivery=mount
+# When:  the session generates its compose file set
+# Then:  the mount overlay is present and the copy overlay is absent
+# Asserts: mount delivery selects the mount overlay
 test_mount_delivery_merges_mount_overlay() {
   local FIXTURE_DIR="$FIXTURE_DIR/mount_delivery"
   mkdir -p "$FIXTURE_DIR"
@@ -474,6 +562,10 @@ test_mount_delivery_merges_mount_overlay() {
 }
 
 # Unknown --delivery values are rejected before any compose invocation.
+# Given: --delivery=bogus
+# When:  run_agent.sh runs
+# Then:  it exits non-zero before any compose invocation
+# Asserts: an unknown delivery is refused
 test_invalid_sandbox_type_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/bad_delivery"
   mkdir -p "$FIXTURE_DIR"

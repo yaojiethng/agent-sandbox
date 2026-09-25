@@ -74,6 +74,10 @@ test_validate_project_dir_valid() {
 # session_state_read / session_state_write
 # =============================================================================
 
+# Given: a SESSION_STATE holding init_sha and session_ts
+# When:  session_state_read asks for init_sha
+# Then:  it returns the recorded value
+# Asserts: the key lookup.
 test_session_state_read_existing_key() {
   local DIR="$FIXTURE_DIR/state_existing"
   mkdir -p "$DIR/.git"
@@ -85,6 +89,10 @@ test_session_state_read_existing_key() {
   assert_eq "$RESULT" "abc123" "session_state_read returns value for existing key"
 }
 
+# Given: no SESSION_STATE file
+# When:  session_state_read asks for init_sha
+# Then:  it returns empty
+# Asserts: a missing record is not an error.
 test_session_state_read_missing_file() {
   local DIR="$FIXTURE_DIR/state_nofile"
   mkdir -p "$DIR/.git"
@@ -94,6 +102,10 @@ test_session_state_read_missing_file() {
   assert_empty "$RESULT" "session_state_read returns empty for missing file"
 }
 
+# Given: a SESSION_STATE without the requested key
+# When:  session_state_read asks for init_sha
+# Then:  it returns empty
+# Asserts: an absent key yields no value, not another key's.
 test_session_state_read_missing_key() {
   local DIR="$FIXTURE_DIR/state_nokey"
   mkdir -p "$DIR/.git"
@@ -104,6 +116,10 @@ test_session_state_read_missing_key() {
   assert_empty "$RESULT" "session_state_read returns empty for missing key"
 }
 
+# Given: a SESSION_STATE whose line is not key=value
+# When:  session_state_read asks for init_sha
+# Then:  it returns empty
+# Asserts: a malformed line is ignored (see finding 42).
 test_session_state_read_malformed() {
   local DIR="$FIXTURE_DIR/state_malformed"
   mkdir -p "$DIR/.git"

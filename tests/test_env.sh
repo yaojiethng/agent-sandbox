@@ -10,6 +10,10 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/env.sh"
 
+# Given: a .env file containing FOO=bar
+# When:  env_load is called on it
+# Then:  FOO holds bar
+# Asserts: the happy path - one simple assignment reaches the environment.
 test_env_load_exports_valid_line() {
   local F="$FIXTURE_DIR/v.env"
   printf 'FOO=bar\n' > "$F"
@@ -21,6 +25,10 @@ test_env_load_exports_valid_line() {
   fi
 }
 
+# Given: a file with a comment, blank and whitespace-only lines, a tab comment, and K=ok
+# When:  env_load runs
+# Then:  K is ok and no variable named c exists
+# Asserts: comment and blank lines are inert; comment text never becomes a variable.
 test_env_load_skips_comments_and_blanks() {
   local F="$FIXTURE_DIR/c.env"
   printf '# c\n\n  \n\t# tab\nK=ok\n' > "$F"
@@ -32,6 +40,10 @@ test_env_load_skips_comments_and_blanks() {
   fi
 }
 
+# Given: V= with a space-padded value
+# When:  env_load runs
+# Then:  V is exactly padded, with no surrounding spaces
+# Asserts: surrounding whitespace on the value is removed.
 test_env_load_trims_value_padding() {
   local F="$FIXTURE_DIR/t.env"
   printf 'V=  padded  \n' > "$F"
@@ -43,6 +55,10 @@ test_env_load_trims_value_padding() {
   fi
 }
 
+# Given: 1BAD=odd followed by GOOD=1
+# When:  env_load runs with stderr captured
+# Then:  the output contains "invalid variable name" and GOOD=1 was still applied
+# Asserts: a non-identifier key is skipped with a warning, and the loader continues.
 test_env_load_skips_invalid_key_with_warning() {
   local F="$FIXTURE_DIR/i.env"
   printf '1BAD=odd\nGOOD=1\n' > "$F"

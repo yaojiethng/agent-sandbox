@@ -82,6 +82,11 @@ make_rich_project() {
 # Guard tests (fail closed)
 # -------------------------
 
+# Given: a repo whose index carries a gitlink entry (160000)
+# When:  the seeder runs
+# Then:  it exits non-zero
+# Asserts: the submodule guard. The unit reads the exit status only, so the seed
+#          failing downstream satisfies it too; the guard itself is not isolated (finding 113)
 test_seeder_rejects_submodule() {
   local proj="$FIXTURE_DIR/sub_project"
   make_committed_repo "$proj"
@@ -97,6 +102,10 @@ test_seeder_rejects_submodule() {
   fi
 }
 
+# Given: a repo with no commits (unborn HEAD)
+# When:  the seeder runs
+# Then:  it exits non-zero
+# Asserts: the unborn-HEAD guard, stated as the delivery-layer form of the session-env gate
 test_seeder_rejects_unborn_head() {
   local proj="$FIXTURE_DIR/unborn_project"
   make_repo "$proj"
@@ -109,6 +118,11 @@ test_seeder_rejects_unborn_head() {
   fi
 }
 
+# Given: a linked worktree whose .git is a gitfile pointing at the host git dir
+# When:  the seeder runs
+# Then:  it exits non-zero
+# Asserts: the linked-worktree guard. Removing the guard leaves this unit passing, because
+#          the copy fails downstream; the guard's own message is never asserted (finding 113)
 test_seeder_rejects_linked_worktree() {
   local proj="$FIXTURE_DIR/wt_project"
   make_committed_repo "$proj"
@@ -122,6 +136,10 @@ test_seeder_rejects_linked_worktree() {
   fi
 }
 
+# Given: a repo whose index tracks .agent-sandbox-seed/ staged state
+# When:  the seeder runs
+# Then:  it exits non-zero
+# Asserts: the tracked-sentinel guard refuses harness staging state as project content
 test_seeder_rejects_tracked_sentinel() {
   local proj="$FIXTURE_DIR/sentinel_project"
   make_committed_repo "$proj"
@@ -144,6 +162,10 @@ test_seeder_rejects_tracked_sentinel() {
 
 # Flattened seed: no host history or staging state crosses; the volume is a
 # fresh single baseline commit.
+# Given: the rich fixture
+# When:  the seeder runs flattened
+# Then:  the volume has exactly one commit, a clean worktree, and init_sha equal to that root commit
+# Asserts: the flatten contract -- no host history, no staging state, one fresh baseline
 test_seeder_flat_single_baseline() {
   local proj="$FIXTURE_DIR/flat_project"
   local dest="$FIXTURE_DIR/flat_dest"
@@ -179,6 +201,11 @@ test_seeder_flat_single_baseline() {
 # equal the source enumeration (B1 -- coverage verification, not just a clean
 # worktree). Drive verify_baseline directly (sourced) against a seeded dest
 # whose source has since lost a file: the set comparison must fail.
+# Given: a flattened seed whose source loses a tracked file afterwards
+# When:  verify_baseline runs directly on the pair
+# Then:  it returns non-zero
+# Asserts: coverage is measured as a set comparison, so a dropped path fails even though the
+#          worktree is clean. That main calls it is not asserted (finding 114)
 test_seeder_flat_verification_detects_dropped_file() {
   local proj="$FIXTURE_DIR/flat_drop_project"
   local dest="$FIXTURE_DIR/flat_drop_dest"
@@ -203,6 +230,10 @@ test_seeder_flat_verification_detects_dropped_file() {
   fi
 }
 
+# Given: a rich fixture (staged edit, staged new file, unstaged edit, unstaged deletion, untracked content, negation patterns, ignored file, symlink, exec bit, unicode name)
+# When:  the seeder runs full mode
+# Then:  the volume is porcelain-identical to the source, the ignore rules hold, the symlink and exec bit survive, and SESSION_STATE carries init_sha equal to HEAD
+# Asserts: the full-seed parity contract end to end
 test_seeder_parity_preserves_everything() {
   local proj="$FIXTURE_DIR/rich_project"
   local dest="$FIXTURE_DIR/rich_dest"
@@ -278,6 +309,11 @@ test_seeder_parity_preserves_everything() {
 # Self-check: induced divergence is detected
 # -------------------------
 
+# Given: a seeded volume tampered with after the seed
+# When:  verify_parity runs directly on the pair
+# Then:  it returns non-zero
+# Asserts: the parity comparison detects divergence. That the seeder itself calls it is
+#          not asserted here, and removing the call from main survives (finding 114)
 test_seeder_parity_fail_detected() {
   local proj="$FIXTURE_DIR/corrupt_project"
   local dest="$FIXTURE_DIR/corrupt_dest"
@@ -299,6 +335,10 @@ test_seeder_parity_fail_detected() {
 # Empty enumeration: tracked file deleted, nothing untracked
 # -------------------------
 
+# Given: a repo whose only tracked file is deleted from the worktree
+# When:  the seeder runs
+# Then:  it succeeds and the volume shows the deletion
+# Asserts: an empty enumeration is a no-op for the transport, not a failure
 test_seeder_empty_enumeration() {
   local proj="$FIXTURE_DIR/empty_project"
   local dest="$FIXTURE_DIR/empty_dest"
@@ -321,6 +361,10 @@ test_seeder_empty_enumeration() {
 # Stash clear: host stash entries must not cross into the volume (ADR
 # sandbox_delivery_model.md, 2026-09-11 entry), and the host stack must be
 # untouched by the seeder.
+# Given: a repo carrying two host stash entries
+# When:  the seeder runs
+# Then:  the volume carries no stash entries and the host stack still holds both
+# Asserts: host session state does not cross into the volume, and the host is untouched
 test_seeder_clears_host_stash() {
   local proj="$FIXTURE_DIR/stashed_project"
   local dest="$FIXTURE_DIR/stashed_dest"
@@ -350,6 +394,10 @@ test_seeder_clears_host_stash() {
 # Object-store prune: stash objects, a dangling blob, and reflog-anchored
 # history must not survive into the volume (study
 # 20260911-study-seed_object_store_cleanliness.md); the host repo is untouched.
+# Given: a repo with a stash and a dangling blob written to its object store
+# When:  the seeder runs
+# Then:  the volume carries no unreachable objects and the blob is absent, while the host keeps both
+# Asserts: the object-store prune removes host archaeology without touching the host
 test_seeder_prunes_unreachable_objects() {
   local proj="$FIXTURE_DIR/dirty_objects_project"
   local dest="$FIXTURE_DIR/dirty_objects_dest"

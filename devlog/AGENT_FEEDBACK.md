@@ -137,6 +137,23 @@ ShellCheck parses any comment line whose first token after `#` is `shellcheck` a
 
 Scope: ShellCheck directive parsing. Cross-reference: `docs/development/bash-coding-conventions.md` states the suppression policy (targeted `# shellcheck disable=` with a rationale) but does not warn that a bare leading `shellcheck` word is parsed at all.
 
+### [A] 2026-09-25  --  `false` is a non-empty string inside `[[ ]]`, so a `&& false` mutation is not a mutation
+
+state: open
+scoped: none
+legacy: none
+mitigation: to disable a guard while testing, replace its condition line with `if false; then`, and confirm the mutant file differs from its backup before running the suite. `[[ "$x" && false ]]` evaluates true, because the right-hand operand is a string test on a non-empty literal; `[[ -z "$x" && -n /dev/null ]]` is true for the same reason. Both forms report a false survivor. When a mutation uses perl to substitute a literal that contains a shell variable, `\Q...\E` does not stop interpolation: pass the literal through the environment (`OLD=... perl -0777 -pi -e 's/\Q$ENV{OLD}\E/.../'`) and keep the backup comparison in probes as well as in bite scripts.
+
+A mutation is evidence only if it changes behaviour. Two forms that look like disablements do not: `&& false` and `-n /dev/null` inside `[[ ]]`, where the right-hand operand is a string test on a non-empty literal and therefore true. Both were used in the read-through's bite sweeps - a delivery guard, two resume guards, and a provider-recovery check - and each reported a survivor that was in fact an unchanged guard. The check that catches the whole family is cheap: verify the mutant differs from the backup before running the suite, and prefer a form with no operand at all.
+
+A second form of the same failure surfaced in the apply.sh pass, in a probe script rather than a bite script: `s/\QFILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)\E/` matched nothing, because perl interpolates `$DIFF_FILE` inside `\Q...\E`; the shell variable was unset in the perl process, so the pattern became a no-match and the probe reported the mutant's output as if the mutant had applied. Twenty of the first sweep's twenty-two bites no-op'd the same way for the same reason (the other two aborted with perl syntax errors on the interpolated quotes). The probe script had no backup comparison because the bite script already had one, which is why the check belongs in both.
+
+A third form belongs to the same entry, from the interactive.sh pass. `\Q...\E` also stops `\n` from being a newline: `OLD='---\n### '` passed through the environment matches the literal characters backslash and n, not a line break, so a two-line replacement against a markdown file no-op'd with no error. The environment idiom removes the interpolation hazard but not the escape hazard. When the literal spans lines, put a real newline in the variable (`OLD=$'---\n### '`) or use the `edit` tool, whose `oldText` carries the newline directly.
+
+A fourth false positive comes from outside the mutant. The Makefile-template pass's `start` `INTERACTIVE_FLAG` bite (M11) exited non-zero on its first run and a bite script that reads only the exit status recorded PROVEN; two re-runs gave 722/722 with the liveness gate reporting zero findings. The abort came from the liveness gate, which the read-through's row 135 records as observed once and unreproduced. A PROVEN verdict therefore needs the failing file's name and a re-run before it is trusted, not the exit status alone.
+
+Scope: bash conditional-expression semantics. Cross-reference: `docs/development/bash-coding-conventions.md`; the vacuity family is [A] 2026-09-22 "A condition on an always-true helper is a vacuous assertion", whose subject is an assertion rather than a mutation.
+
 ---
 
 Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): consolidation into the bash-scripting-traps skill is deferred to a future skill-maintenance session; per-entry coverage is noted in each entry's Cross-reference line.
@@ -305,7 +322,35 @@ mitigation: a sourced script's `set -euo pipefail` leaks into the test file's sh
 
 ### [A] 2026-09-22  --  A condition on an always-true helper is a vacuous assertion; a masked rc hides real defects
 
-state: probation
+state: open
 scoped: M3.1 -- final per-assertion sweep (U7)
-legacy: ties to [A] 2026-09-20 "A subagent review pass is expensive and unmeasured" -- the fresh-subagent sweep is the yield side of that entry
+legacy: ties to [A] 2026-09-20 "A subagent review pass is expensive and unmeasured" -- the fresh-subagent sweep is the yield side of that entry; resurfaced 2026-09-25 in a second form, a mutation that leaves its guard always true (see the `[[ ]]` entry in Bash)
 mitigation: `if trace_grep "..." > /dev/null` always took the pass branch because `trace_grep` ends in `|| true`; the traced operation was never gated. Any conditional on a helper that always returns 0 is a vacuous assertion -- use the `grep -q` variant. The sweep found six such assertions and one silent-green (an empty failed `docker compose config` satisfied its own grep). The reverse face: a masked invocation rc hid a real production defect (`scripts/prune.sh` committed without its exec bit, so `stop --prune` returned 126); the same masks that U4 documented as load-bearing also conceal genuine failures, so assert the rc of any success-expected command.
+
+---
+
+## Agent experience  --  session 20260924 (test-suite read-through, phase 4)
+
+### [A] 2026-09-25  --  The probe shell persists its exports between tool calls, so a probe can test the wrong environment
+
+state: open
+scoped: none
+legacy: none
+mitigation: `unset` every variable a probe assumes absent, and pass the environment the probe depends on explicitly instead of relying on the caller's state. When a mutant's result looks identical to the pristine run, check for ambient values before concluding equivalence.
+
+The bash tool keeps one shell across calls, so an `export` from an earlier fixture survived into a later probe: `PROVIDER_NAME=pi` from a run_agent fixture made a resume mutant - which passes `$PROVIDER_NAME` where the recovered value belongs - behave exactly like the pristine run, and the mutant looked equivalent. Its real behaviour is an abort under `set -u` at the point where the provider is consumed. The same risk applies to any probe that reads a variable it did not set, and the general form is worth keeping: an identical result is evidence of equivalence only if the environment was controlled.
+
+Scope: agent harness (the persistent tool shell). Cross-reference: [A] 2026-09-22 "Test subshells run `set +e`..." documents shell state leaking from a sourced script into its caller; this entry is the same family one level up, between tool invocations.
+
+### [A] 2026-09-25  --  A finding re-found by a later file pass was recorded as a second row instead of checked against the log
+
+state: open
+scoped: none
+legacy: none
+mitigation: before numbering a new finding row, grep the findings table for the finding itself, not for the class it belongs to. When the defect is already recorded, add the new pass's evidence to that row and name the new row as the same finding; do not give it a second disposition. The read-through's own Format section carries the rule.
+
+The phase-4 `confirm.sh` pass probed `eval` on a `.draft-state` field, demonstrated the execution, and filed it as row 242. The phase-2 `draft_state.sh` pass had already recorded the same defect as row 38, with both call sites and an end-to-end chain probe, and row 22's KV-family entry already named `.draft-state` as the family's colon-delimited member with eval'd readers. The duplicate was invisible to the per-file workflow because each pass greps the subject file, not the accumulated log, and the finding arrived from a different direction: a chain from the exporter in phase 2, a direct record in phase 4. A class-level grep would not have caught it either, since the class (persisted record formats) has 17 rows. The operator caught it by asking whether the `.draft-state` entry was consolidated with the KV entry.
+
+A second, purely mechanical form recurred during the `guards.sh` integration. Rows 275 to 283 were appended with an `edit` anchor copied from the previous round, `list \`--interactive\` on the two lines |`, which is row 266's tail rather than the tail of the row just added. The anchor still matched, so the new block landed after row 266 and duplicated row 274. The sorting check showed one extra row (`GAP 275` onward, 284 slots for 283 numbers), which is how it was caught. Anchor on the row you just inserted, not on the one you used last time, and run the contiguity check after every append. The report's Format section already states the rule.
+
+Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.

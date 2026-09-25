@@ -23,6 +23,10 @@ source "$REPO_ROOT/src/libs/draft_state.sh"
 # draft_parse_folder_name
 # =============================================================================
 
+# Given: a folder name in <session-ts>-<branch> shape, no session-id suffix
+# When:  draft_parse_folder_name runs
+# Then:  SESSION_TS and SANITIZED_HOST_BRANCH split at column 15, SESSION_ID stays empty
+# Asserts: the base split.
 test_parse_folder_name_basic() {
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch"
@@ -34,6 +38,10 @@ test_parse_folder_name_basic() {
   assert_empty "$SESSION_ID" "draft_parse_folder_name leaves SESSION_ID empty when no session-id present"
 }
 
+# Given: a folder name with a trailing 6-hex session-id
+# When:  draft_parse_folder_name runs
+# Then:  the suffix is SESSION_ID and the branch loses it
+# Asserts: session-id recovery by shape.
 test_parse_folder_name_with_session_id() {
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-feature-branch-a1b2c3"
@@ -45,6 +53,10 @@ test_parse_folder_name_with_session_id() {
   assert_eq "$SESSION_ID" "a1b2c3" "draft_parse_folder_name extracts SESSION_ID from trailing hex"
 }
 
+# Given: branch names with underscores, a 5-char suffix, and a non-hex suffix
+# When:  draft_parse_folder_name runs
+# Then:  underscores survive, and neither non-6-hex suffix becomes SESSION_ID
+# Asserts: the boundary of the session-id shape test (a branch that legitimately ends in six hex chars is not covered).
 test_parse_folder_name_edge_cases() {
   # Branch with underscores and numbers
   local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
@@ -67,6 +79,10 @@ test_parse_folder_name_edge_cases() {
 # draft_guard_no_collision
 # =============================================================================
 
+# Given: a repo with no draft branch of that name
+# When:  draft_guard_no_collision runs
+# Then:  it returns 0
+# Asserts: the absence side of the collision guard.
 test_guard_no_collision_no_branch() {
   local DIR="$FIXTURE_DIR/guard_none"
   make_committed_repo "$DIR"
@@ -78,6 +94,10 @@ test_guard_no_collision_no_branch() {
   fi
 }
 
+# Given: a repo holding the draft branch
+# When:  draft_guard_no_collision runs
+# Then:  it returns non-zero
+# Asserts: the collision is refused.
 test_guard_no_collision_detects_branch() {
   local DIR="$FIXTURE_DIR/guard_exists"
   make_committed_repo "$DIR"
@@ -94,6 +114,10 @@ test_guard_no_collision_detects_branch() {
 # draft_write_state
 # =============================================================================
 
+# Given: the eight required field values and no session id
+# When:  draft_write_state runs
+# Then:  source_branch, from_hash, and diff_count appear and session_id does not
+# Asserts: field emission and the optional session_id (author, session_ts, host_branch, exported-at, and drafted-at are not asserted).
 test_write_state_basic() {
   local OUTPUT
   OUTPUT=$(draft_write_state "main" "abc123" "Agent" "20260420-120000" "feat-x" "3" "20260420-120000" "20260420-130000")
@@ -120,6 +144,10 @@ test_write_state_basic() {
   fi
 }
 
+# Given: the eight fields plus a session id
+# When:  draft_write_state runs
+# Then:  session_id appears with its value
+# Asserts: the optional-field branch.
 test_write_state_with_session_id() {
   local OUTPUT
   OUTPUT=$(draft_write_state "main" "abc123" "Agent" "20260420-120000" "feat-x" "3" "20260420-120000" "20260420-130000" "a1b2c3")
@@ -135,6 +163,10 @@ test_write_state_with_session_id() {
 # draft_read_state_from_branch
 # =============================================================================
 
+# Given: a draft branch whose tip commit carries .draft-state
+# When:  draft_read_state_from_branch runs and the output is eval'd
+# Then:  it returns 0 and source_branch is materialised
+# Asserts: the branch-scoped read and the eval contract (the emitted quoting is unescaped; see finding 38).
 test_read_state_success() {
   local DIR="$FIXTURE_DIR/read_ok"
   make_committed_repo "$DIR"
@@ -170,6 +202,10 @@ EOF
   fi
 }
 
+# Given: a repo with no such branch
+# When:  draft_read_state_from_branch runs
+# Then:  it returns non-zero
+# Asserts: failure at rc level only - the 'branch does not exist' diagnostic is not asserted, and the guard is result-redundant.
 test_read_state_branch_nonexistent() {
   local DIR="$FIXTURE_DIR/read_missing_branch"
   make_committed_repo "$DIR"
@@ -181,6 +217,10 @@ test_read_state_branch_nonexistent() {
   fi
 }
 
+# Given: a draft branch whose commits hold no .draft-state
+# When:  draft_read_state_from_branch runs
+# Then:  it returns non-zero
+# Asserts: the missing-record path.
 test_read_state_missing_dot_draft_state() {
   local DIR="$FIXTURE_DIR/read_missing_state"
   make_committed_repo "$DIR"
@@ -201,6 +241,10 @@ test_read_state_missing_dot_draft_state() {
 # draft_validate_branch
 # =============================================================================
 
+# Given: a repo checked out on a non-draft branch
+# When:  draft_validate_branch runs
+# Then:  it reports 'not on a draft branch'
+# Asserts: the draft-prefix guard.
 test_validate_not_on_draft_branch() {
   local DIR="$FIXTURE_DIR/validate_not_draft"
   make_committed_repo "$DIR"
@@ -214,6 +258,10 @@ test_validate_not_on_draft_branch() {
   fi
 }
 
+# Given: a draft branch whose commits hold no .draft-state
+# When:  draft_validate_branch runs
+# Then:  it reports the missing record
+# Asserts: the record-presence guard.
 test_validate_missing_dot_draft_state() {
   local DIR="$FIXTURE_DIR/validate_missing_state"
   make_committed_repo "$DIR"
@@ -231,6 +279,10 @@ test_validate_missing_dot_draft_state() {
   fi
 }
 
+# Given: a valid draft branch with a from_hash and one later commit
+# When:  draft_validate_branch runs
+# Then:  it returns 0 and prints CURRENT_BRANCH and DRAFT_STATE_COMMIT
+# Asserts: the happy path and the state-commit lookup.
 test_validate_success() {
   local DIR="$FIXTURE_DIR/validate_ok"
   make_committed_repo "$DIR"
@@ -274,6 +326,10 @@ EOF
   fi
 }
 
+# Given: a .draft-state with no from_hash field, after a prior validate call in the same process
+# When:  draft_validate_branch runs
+# Then:  it reports the missing field
+# Asserts: the field invariant - and, because the pre-clear locals are load-bearing, that state cannot leak between calls.
 test_validate_missing_from_hash() {
   local DIR="$FIXTURE_DIR/validate_no_from"
   make_committed_repo "$DIR"
@@ -306,6 +362,10 @@ EOF
   fi
 }
 
+# Given: a .draft-state commit whose message no longer matches (reworded during rebase -i)
+# When:  draft_validate_branch runs
+# Then:  it warns, emits an empty DRAFT_STATE_COMMIT, and still returns 0 with CURRENT_BRANCH
+# Asserts: the dropped-commit path the confirm drop step relies on.
 test_validate_dropped_state_commit_warns_and_continues() {
   # If the '.draft-state' commit lost its message (e.g. rebase -i reword),
   # the lookup finds nothing: function must WARN, emit DRAFT_STATE_COMMIT=,

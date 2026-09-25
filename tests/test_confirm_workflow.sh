@@ -24,6 +24,10 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/draft_fixtures.sh"
 
+# Given: a draft branch with its work committed
+# When:  confirm_run runs
+# Then:  the draft branch is gone
+# Asserts: the final delete
 test_confirm_deletes_draft_branch() {
   make_draft_fixture confirm_del 2
 
@@ -40,6 +44,10 @@ test_confirm_deletes_draft_branch() {
   fi
 }
 
+# Given: a draft branch carrying changes, and the source branch it was cut from
+# When:  confirm_run runs
+# Then:  the changes are on the source branch
+# Asserts: the fast-forward outcome (the closing message text is not asserted, row 249)
 test_confirm_merges_changes() {
   make_draft_fixture confirm_merge 2
 
@@ -55,6 +63,10 @@ test_confirm_merges_changes() {
   fi
 }
 
+# Given: --target naming another branch
+# When:  confirm_run runs
+# Then:  the changes land there
+# Asserts: the target override - an unresolvable target has no unit (row 244)
 test_confirm_target_branch() {
   local P="$FIXTURE_DIR/confirm_target_p"
   local S="$FIXTURE_DIR/confirm_target_s"
@@ -83,6 +95,10 @@ test_confirm_target_branch() {
   fi
 }
 
+# Given: HEAD is not on a draft/* branch
+# When:  confirm_run runs
+# Then:  the output says so
+# Asserts: the message only - it comes from the sub-function, so the unit cannot tell whether confirm honoured the verdict (row 243)
 test_confirm_rejects_non_draft_branch() {
   local P="$FIXTURE_DIR/confirm_nondraft_p"
   make_committed_repo "$P"
@@ -93,6 +109,10 @@ test_confirm_rejects_non_draft_branch() {
   assert_contains "$OUT" "not on a draft branch" "confirm rejects when not on a draft branch"
 }
 
+# Given: commits added after the .draft-state commit, so the tip has moved past it
+# When:  confirm_run runs
+# Then:  the draft is deleted and the later commits merge with it
+# Asserts: the drop step tolerates a .draft-state commit that is no longer first (two assertions)
 test_confirm_after_draft_branch_advances() {
   make_draft_fixture confirm_advance 2
 
@@ -123,6 +143,10 @@ test_confirm_after_draft_branch_advances() {
   fi
 }
 
+# Given: a target branch that conflicts with the draft
+# When:  confirm_run runs
+# Then:  it fails, the draft is preserved at the savepoint, and the recovery direction is printed
+# Asserts: the rebase-failure rollback (the hint text itself is not asserted, row 249)
 test_confirm_conflict_recovery() {
   make_draft_fixture confirm_conflict 1
 
@@ -181,6 +205,10 @@ _make_no_state_commit_conflict_draft() {
   fi
 }
 
+# Given: a conflicting draft and no confirm-savepoint tag in the repository
+# When:  confirm_run runs
+# Then:  it fails cleanly, without git's own ambiguous-argument error, and the draft tip is preserved
+# Asserts: the absence of the removed tag design, not today's savepoint variable (row 248)
 test_confirm_conflict_no_savepoint_tag_aborts_cleanly() {
   local P="$FIXTURE_DIR/confirm_nosave_p"
   local S="$FIXTURE_DIR/confirm_nosave_s"
@@ -205,6 +233,10 @@ test_confirm_conflict_no_savepoint_tag_aborts_cleanly() {
   fi
 }
 
+# Given: a stale confirm-savepoint tag left by an older run
+# When:  the conflicting confirm runs
+# Then:  the tag is untouched and the draft is preserved
+# Asserts: the same regression guard on a removed design (row 248)
 test_confirm_conflict_stale_savepoint_preserves_draft() {
   local P="$FIXTURE_DIR/confirm_stale_p"
   local S="$FIXTURE_DIR/confirm_stale_s"
@@ -260,6 +292,10 @@ _make_state_commit_draft_with_dirty_tree() {
   echo "uncommitted edit" > "$P/file.txt"
 }
 
+# Given: a .draft-state commit whose drop step fails
+# When:  confirm_run runs
+# Then:  it fails and the draft tip is restored from the savepoint
+# Asserts: the drop-failure rollback
 test_confirm_drop_step_failure_restores_savepoint() {
   local P="$FIXTURE_DIR/confirm_dropstepp_p"
   local S="$FIXTURE_DIR/confirm_dropstepp_s"
@@ -287,6 +323,10 @@ test_confirm_drop_step_failure_restores_savepoint() {
   git -C "$P" rebase --abort 2>/dev/null || true
 }
 
+# Given: NEW mode with a target name no branch uses
+# When:  confirm_run runs
+# Then:  the new branch holds the draft tip, the draft is gone, the source branch is untouched, and the reset direction is printed
+# Asserts: the whole NEW contract in one unit
 test_confirm_new_branch_creates_and_prints_hint() {
   make_draft_fixture confirm_new 2
   local MAIN_BEFORE
@@ -313,6 +353,10 @@ test_confirm_new_branch_creates_and_prints_hint() {
   fi
 }
 
+# Given: NEW mode and a target name that already exists
+# When:  confirm_run runs
+# Then:  it refuses and leaves the draft in place
+# Asserts: the existence guard
 test_confirm_new_branch_rejects_existing() {
   make_draft_fixture confirm_new_exists 2
 
@@ -330,6 +374,10 @@ test_confirm_new_branch_rejects_existing() {
   fi
 }
 
+# Given: NEW mode and no target name
+# When:  confirm_run runs
+# Then:  the output requires TARGET_BRANCH
+# Asserts: the empty-target guard
 test_confirm_new_branch_requires_target() {
   make_draft_fixture confirm_new_notarget 2
 

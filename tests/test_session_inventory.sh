@@ -40,6 +40,10 @@ make_record() {
 # record_image / record_provider / record_label
 # =============================================================================
 
+# Given: a record with a sandbox block and an agent block, each with its own image
+# When:  record_image is called for each service
+# Then:  each call returns that service's image
+# Asserts: per-service extraction.
 test_record_image_extracts_service_image() {
   local f="$FIXTURE_DIR/rec1.yml"
   make_record "$f" "pi-agent-myproj" "myproj-sandbox"
@@ -53,6 +57,10 @@ test_record_image_extracts_service_image() {
   fi
 }
 
+# Given: an agent block followed by another service block
+# When:  record_image is called for agent
+# Then:  it returns the agent image, not the later service's
+# Asserts: the scan stops at the service boundary (asserted only for a block that has an image).
 test_record_image_stops_at_next_service() {
   local f="$FIXTURE_DIR/rec2.yml"
   cat > "$f" <<'EOF'
@@ -73,6 +81,10 @@ EOF
   fi
 }
 
+# Given: a record with no block for the requested service
+# When:  record_image is called
+# Then:  output is empty and rc is 0
+# Asserts: an absent service is not an error.
 test_record_image_missing_service_empty_rc0() {
   local f="$FIXTURE_DIR/rec3.yml"
   make_record "$f" "pi-agent-p" "sbx-p"
@@ -86,6 +98,10 @@ test_record_image_missing_service_empty_rc0() {
   fi
 }
 
+# Given: an agent image named <provider>-agent-<project>, then a non-canonical image
+# When:  record_provider runs on each
+# Then:  the canonical shape recovers the provider, the other yields empty
+# Asserts: the -agent- gate.
 test_record_provider_recovers_prefix_and_rejects_noncanonical() {
   local f="$FIXTURE_DIR/rec4.yml"
   make_record "$f" "opencode-agent-lowerproj" "sbx"
@@ -103,6 +119,10 @@ test_record_provider_recovers_prefix_and_rejects_noncanonical() {
   fi
 }
 
+# Given: a record with one label present and one absent, under set -o pipefail
+# When:  record_label is called for each
+# Then:  the absent label is empty at rc 0 and does not abort the caller
+# Asserts: pipefail safety, the lib's documented contract.
 test_record_label_pipefail_safe_on_no_match() {
   # The lib's own docstring promises a no-match grep must not abort a caller
   # under pipefail. Verify exactly that contract.
@@ -128,6 +148,10 @@ test_record_label_pipefail_safe_on_no_match() {
 # project_current_sha / session_stale
 # =============================================================================
 
+# Given: PROJECT_DIR unset, set to a non-git dir, and set to a git repo
+# When:  project_current_sha runs
+# Then:  empty, empty, and the repo HEAD respectively
+# Asserts: the three branches.
 test_project_current_sha_branches() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   local PROJ="$FIXTURE_DIR/sha_proj"
@@ -147,6 +171,10 @@ test_project_current_sha_branches() {
   fi
 }
 
+# Given: a record whose host-head-sha matches, differs from, or is absent against CURRENT_SHA
+# When:  session_stale runs
+# Then:  fresh, stale, unknown respectively
+# Asserts: registry-truth classification.
 test_session_stale_classification() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   local PROJ="$FIXTURE_DIR/st_proj"
@@ -174,6 +202,10 @@ test_session_stale_classification() {
   fi
 }
 
+# Given: a matching record and a PROJECT_DIR git repo
+# When:  session_stale runs without an explicit SHA
+# Then:  it derives the current SHA and reports fresh
+# Asserts: the PROJECT_DIR fallback.
 test_session_stale_derives_sha_from_project_dir() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   local PROJ="$FIXTURE_DIR/st_proj2"
@@ -193,6 +225,10 @@ test_session_stale_derives_sha_from_project_dir() {
 # enumerate_records
 # =============================================================================
 
+# Given: a registry with two recoverable records, one unrecoverable, and a dry-run record
+# When:  enumerate_records runs with and without PROVIDER_FILTER
+# Then:  it prints sid|provider|ts|branch, skips the unrecoverable record, honors the filter, and keeps dry-run records
+# Asserts: the shared, unfiltered enumeration core.
 test_enumerate_records_filters_and_skips() {
   local SBX="$FIXTURE_DIR/enumerate_sbx"
   mkdir -p "$SBX/.compose"
@@ -227,6 +263,10 @@ test_enumerate_records_filters_and_skips() {
   fi
 }
 
+# Given: a missing registry directory and an empty one
+# When:  enumerate_records runs
+# Then:  both are silent at rc 0
+# Asserts: the no-op edges.
 test_enumerate_records_no_dir_or_empty_is_silent_rc0() {
   local OUT RC=0
   OUT=$(SANDBOX_DIR="$FIXTURE_DIR/no_such_sbx" enumerate_records) || RC=$?

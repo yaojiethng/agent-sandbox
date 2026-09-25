@@ -24,6 +24,10 @@ source "${REPO_ROOT}/src/libs/diff_export.sh"
 # _write_export_status
 # ---------------------------------------------------------------------------
 
+# Given: a SUCCESS export with a timestamp and exit code 0
+# When:  _write_export_status runs
+# Then:  the file contains STATUS=SUCCESS and the timestamp
+# Asserts: the success content shape.
 test_export_status_writes_success() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -45,6 +49,10 @@ test_export_status_writes_success() {
   fi
 }
 
+# Given: a non-empty INIT_SHA
+# When:  _write_export_status runs
+# Then:  the file contains INIT_SHA
+# Asserts: INIT_SHA is stamped when provided.
 test_export_status_includes_init_sha() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -57,6 +65,10 @@ test_export_status_includes_init_sha() {
   assert_contains "$_content" "INIT_SHA=abc123def456" "_write_export_status includes INIT_SHA when provided"
 }
 
+# Given: an empty INIT_SHA
+# When:  _write_export_status runs
+# Then:  the file has no INIT_SHA line
+# Asserts: an empty INIT_SHA is omitted.
 test_export_status_omits_init_sha_when_empty() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -73,6 +85,10 @@ test_export_status_omits_init_sha_when_empty() {
   fi
 }
 
+# Given: a FAIL export with exit code 1
+# When:  _write_export_status runs
+# Then:  the file contains STATUS=FAIL and EXIT_CODE=1
+# Asserts: a failure records its exit code.
 test_export_status_writes_failure_with_exit_code() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -89,6 +105,10 @@ test_export_status_writes_failure_with_exit_code() {
   fi
 }
 
+# Given: a SUCCESS export with exit code 0
+# When:  _write_export_status runs
+# Then:  the file has no EXIT_CODE line
+# Asserts: exit code 0 is omitted.
 test_export_status_does_not_include_exit_code_on_success() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -109,6 +129,10 @@ test_export_status_does_not_include_exit_code_on_success() {
 # _write_export_error_log
 # ---------------------------------------------------------------------------
 
+# Given: an output directory and a timestamp
+# When:  _write_export_error_log runs
+# Then:  the log file exists in that directory
+# Asserts: the writer creates its file.
 test_export_error_log_creates_file() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -122,6 +146,10 @@ test_export_error_log_creates_file() {
   assert_contains "$_files" "20260622-120000-EXPORT-ERROR.log" "_write_export_error_log creates correctly named file"
 }
 
+# Given: a session id
+# When:  _write_export_error_log runs
+# Then:  the filename carries `-<SESSION_ID>` before `-EXPORT-ERROR.log`
+# Asserts: the filename contract that ties a failed export to its container.
 test_export_error_log_includes_session_id() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -134,6 +162,10 @@ test_export_error_log_includes_session_id() {
   assert_contains "$_files" "20260622-120000-abc123-EXPORT-ERROR.log" "_write_export_error_log embeds SESSION_ID in filename"
 }
 
+# Given: an exit code, a session id, and a captured stderr dump
+# When:  _write_export_error_log runs
+# Then:  the log carries EXIT_CODE, SESSION_ID, and a STDERR section
+# Asserts: the log's content contract. The SUMMARY line has no assertion (finding 71).
 test_export_error_log_contains_error_details() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -154,6 +186,10 @@ test_export_error_log_contains_error_details() {
 # wait_git_lockfile
 # ---------------------------------------------------------------------------
 
+# Given: no .git/index.lock
+# When:  wait_git_lockfile runs
+# Then:  rc 0, immediately
+# Asserts: the no-contention path.
 test_wait_git_lockfile_no_lockfile() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -166,6 +202,10 @@ test_wait_git_lockfile_no_lockfile() {
   fi
 }
 
+# Given: a lockfile that a background writer releases within the timeout
+# When:  wait_git_lockfile runs
+# Then:  rc 0 once the file is gone
+# Asserts: the poll loop observes the release.
 test_wait_git_lockfile_lockfile_appears_and_disappears() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -187,6 +227,10 @@ test_wait_git_lockfile_lockfile_appears_and_disappears() {
   fi
 }
 
+# Given: a lockfile that never clears
+# When:  wait_git_lockfile runs with a short timeout
+# Then:  rc 1
+# Asserts: the timeout verdict, but not the wall-clock budget (finding 70).
 test_wait_git_lockfile_timeout() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -202,6 +246,10 @@ test_wait_git_lockfile_timeout() {
   fi
 }
 
+# Given: a lockfile that never clears
+# When:  wait_git_lockfile runs
+# Then:  the timeout diagnostic names the timeout and says it proceeds anyway
+# Asserts: the operator-facing wording of the give-up path.
 test_wait_git_lockfile_timeout_message() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -224,6 +272,11 @@ test_wait_git_lockfile_timeout_message() {
 # cannot run (e.g., SANDBOX_DIR not a git repo, which is a common failure).
 # Note: this tests the error handling in diff_export itself, not the
 # package_branch internal logic (which is covered by test_package_branch.sh).
+# Given: a package_branch that fails
+# When:  diff_export runs
+# Then:  .export-status records FAIL with the exit code, and the call returns that code
+# Asserts: the failure record, which is the only machine-readable signal of a failed export.
+# Note: a failure that happens inside a successful-looking package_branch is not covered (finding 68).
 test_diff_export_failure_writes_export_status() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -250,6 +303,12 @@ test_diff_export_failure_writes_export_status() {
   assert_contains "$_content" "STATUS=FAIL" "diff_export failure writes FAIL export status"
 }
 
+# Given: a package_branch that fails, and an output directory that exists
+# When:  diff_export runs
+# Then:  a timestamped EXPORT-ERROR.log is written
+# Asserts: the diagnostic artifact exists.
+# Note: the unit's failure occurs before the callee wipes OUTPUT_DIR, so the log still carries the
+#       captured stderr; a post-wipe failure does not (finding 69).
 test_diff_export_failure_writes_error_log() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)

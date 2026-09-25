@@ -34,6 +34,10 @@ _run_check() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a record holding this image's interface_contract_version
+# When:  container_contract_check runs
+# Then:  it returns 0 and prints nothing
+# Asserts: an aligned container pair passes silently.
 test_agent_baked_equals_sandbox_recorded_silent() {
   local sandbox="$FIXTURE_DIR/sandbox"
   mkdir -p "$sandbox/.git"
@@ -44,6 +48,10 @@ test_agent_baked_equals_sandbox_recorded_silent() {
   assert_empty "$out" "aligned: container to container check stays silent"
 }
 
+# Given: a record holding a different version
+# When:  container_contract_check runs
+# Then:  it returns non-zero and prints the FATAL mismatch with the orchestration cause
+# Asserts: a definite mismatch is a hard stop.
 test_definite_mismatch_hard_stops() {
   local sandbox="$FIXTURE_DIR/sandbox"
   mkdir -p "$sandbox/.git"
@@ -57,6 +65,10 @@ test_definite_mismatch_hard_stops() {
       "mismatch names the orchestration cause"
 }
 
+# Given: a record without the interface_contract_version key
+# When:  container_contract_check runs
+# Then:  it returns 0 and warns that the image predates the check
+# Asserts: the upgrade path proceeds instead of aborting.
 test_missing_record_key_warns_not_aborts() {
   local sandbox="$FIXTURE_DIR/keyless/sandbox"
   mkdir -p "$sandbox/.git"
@@ -68,6 +80,10 @@ test_missing_record_key_warns_not_aborts() {
       "missing record key names the pre-record image cause"
 }
 
+# Given: no SESSION_STATE at all
+# When:  container_contract_check runs
+# Then:  it returns 0 and warns that no record exists
+# Asserts: the file guard warns rather than failing a redirection under set -e.
 test_missing_record_file_warns_not_aborts() {
   # Distinct from a missing key: no SESSION_STATE at all. The file guard must
   # prevent a redirection failure under `set -e` and warn instead.

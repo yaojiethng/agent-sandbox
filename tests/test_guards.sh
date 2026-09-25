@@ -24,6 +24,10 @@ chmod +x "$FIXTURE_ROOT/stub_lsof_fail/lsof" "$FIXTURE_ROOT/stub_lsof_hold/lsof"
 # draft_clear_stale_lock
 # =============================================================================
 
+# Given: a committed repository with no .git/index.lock
+# When:  draft_clear_stale_lock runs
+# Then:  it returns 0, prints nothing, and leaves the repository untouched
+# Asserts: the no-lock path is a silent no-op, not merely a successful one.
 test_clear_stale_lock_no_lock_file() {
   local DIR="$FIXTURE_DIR/stale_none"
   make_committed_repo "$DIR"
@@ -36,6 +40,10 @@ test_clear_stale_lock_no_lock_file() {
   fi
 }
 
+# Given: a committed repository whose .git/index.lock no process holds
+# When:  draft_clear_stale_lock runs
+# Then:  it returns 0 and the lock file is gone
+# Asserts: a stale lock is removed.
 test_clear_stale_lock_removes_stale_lock() {
   local DIR="$FIXTURE_DIR/stale_remove"
   make_committed_repo "$DIR"
@@ -56,6 +64,10 @@ test_clear_stale_lock_removes_stale_lock() {
   fi
 }
 
+# Given: a stub lsof whose probe reports no holder
+# When:  draft_clear_stale_lock runs on a repository with a lock file
+# Then:  it falls through to removal with rc 0
+# Asserts: a failing probe is not a holder; part (b) claims to cover an absent lsof but still finds the stub (finding 279).
 test_clear_stale_lock_no_lsof_skips_check() {
   # Simulate lsof not being available  --  should fall through to remove.
   # The stub dir contains an `lsof` that always fails (command -v still finds
@@ -91,6 +103,10 @@ test_clear_stale_lock_no_lsof_skips_check() {
   fi
 }
 
+# Given: a stub lsof whose probe reports a live holder
+# When:  draft_clear_stale_lock runs on a repository with a lock file
+# Then:  it returns non-zero, names the holder, and keeps the lock file
+# Asserts: a held lock is refused, not removed.
 test_clear_stale_lock_held_lock_fails_and_keeps_file() {
   # Lock held by a live process: stub lsof exits 0 (holder found) -> function
   # must refuse (rc!=0), explain, and NOT delete the lockfile.

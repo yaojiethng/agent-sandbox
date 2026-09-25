@@ -106,6 +106,11 @@ invoke_entrypoint() {
 # Hook behaviour
 # ---------------------------------------------------------------------------
 
+# Given: a repo with the installed hook, a markdownlint stub exiting 1, and a staged bad.md
+# When:  git commit runs
+# Then:  the commit is refused and the output names the --no-verify bypass
+# Asserts: a Markdown finding blocks the commit
+# Note:  the stub records only that it was called, so the file it was handed is not asserted (finding 101)
 test_hook_blocks_staged_markdown_finding() {
   local dir="$FIXTURE_DIR/hook_block"
   make_repo "$dir/repo"
@@ -120,6 +125,10 @@ test_hook_blocks_staged_markdown_finding() {
   assert_contains "$out" "no-verify" "hook output names the --no-verify bypass"
 }
 
+# Given: a repo with the installed hook, a markdownlint stub exiting 0, and a staged good.md
+# When:  git commit runs
+# Then:  the commit succeeds
+# Asserts: a clean Markdown file passes the gate
 test_hook_passes_clean_staged_markdown() {
   local dir="$FIXTURE_DIR/hook_pass"
   make_repo "$dir/repo"
@@ -133,6 +142,10 @@ test_hook_passes_clean_staged_markdown() {
   assert_rc 0 "$rc" "hook allows the commit when the linter passes"
 }
 
+# Given: a repo with the installed hook, a shellcheck stub exiting 1, and a staged bad.sh
+# When:  git commit runs
+# Then:  the commit is refused and the output names the ShellCheck gate and the bypass
+# Asserts: a ShellCheck finding blocks the commit
 test_hook_blocks_staged_shell_finding() {
   local dir="$FIXTURE_DIR/sc_block"
   make_repo "$dir/repo"
@@ -148,6 +161,10 @@ test_hook_blocks_staged_shell_finding() {
   assert_contains "$out" "no-verify" "hook output names the --no-verify bypass"
 }
 
+# Given: a repo with the installed hook, both stubs exiting 0, and a staged clean.sh
+# When:  git commit runs
+# Then:  the commit succeeds and markdownlint was never invoked
+# Asserts: the shell gate passes and the Markdown gate stays out of a shell-only commit
 test_hook_passes_clean_staged_shell() {
   local dir="$FIXTURE_DIR/sc_pass"
   make_repo "$dir/repo"
@@ -163,6 +180,10 @@ test_hook_passes_clean_staged_shell() {
   assert_run 1 "test -f '$dir/mdl-calls'" "a shell-only commit never invokes markdownlint"
 }
 
+# Given: a repo with the installed hook, a shellcheck stub exiting 1, and a staged notes.txt
+# When:  git commit runs
+# Then:  the commit succeeds and shellcheck was never invoked
+# Asserts: the shell gate reads only staged shell files
 test_hook_ignores_non_shell_commit() {
   local dir="$FIXTURE_DIR/sc_scope"
   make_repo "$dir/repo"
@@ -177,6 +198,11 @@ test_hook_ignores_non_shell_commit() {
   assert_run 1 "test -f '$dir/sc-calls'" "hook never invoked shellcheck for a non-shell commit"
 }
 
+# Given: a repo with the installed hook, both stubs exiting 0, and a staged good.md plus clean.sh
+# When:  git commit runs
+# Then:  the commit succeeds and both linters were invoked
+# Asserts: a mixed commit runs both gates
+# Note:  that each linter received its own staged file is not asserted (finding 101)
 test_hook_runs_both_gates_on_mixed_commit() {
   local dir="$FIXTURE_DIR/sc_mixed"
   make_repo "$dir/repo"
@@ -194,6 +220,10 @@ test_hook_runs_both_gates_on_mixed_commit() {
   assert_run 0 "test -f '$dir/sc-calls'" "mixed commit invoked the ShellCheck gate"
 }
 
+# Given: a repo with the installed hook, a markdownlint stub exiting 1, and a staged notes.txt
+# When:  git commit runs
+# Then:  the commit succeeds and the linter was never invoked
+# Asserts: the Markdown gate reads only staged Markdown files
 test_hook_ignores_non_markdown_commit() {
   local dir="$FIXTURE_DIR/hook_scope"
   make_repo "$dir/repo"
@@ -212,6 +242,11 @@ test_hook_ignores_non_markdown_commit() {
 # Entrypoint install / skip
 # ---------------------------------------------------------------------------
 
+# Given: a copy-delivery entrypoint copy and a repo carrying SESSION_STATE
+# When:  the entrypoint runs
+# Then:  it reports the hook install and leaves an executable .git/hooks/pre-commit
+# Asserts: copy delivery installs the hook
+# Note:  the tool-absent path is unasserted (finding 103)
 test_entrypoint_installs_hook_for_copy() {
   local dir="$FIXTURE_DIR/copy_install"
   local repo="$dir/sandbox"
@@ -230,6 +265,10 @@ test_entrypoint_installs_hook_for_copy() {
   assert_run 0 "test -x '$repo/.git/hooks/pre-commit'" "installed hook is executable"
 }
 
+# Given: a mount-delivery worktree carrying SESSION_STATE
+# When:  the entrypoint runs
+# Then:  no hook file exists in the worktree's .git/hooks
+# Asserts: mount delivery installs no hook, because the host owns that .git
 test_entrypoint_skips_hook_for_mount() {
   local dir="$FIXTURE_DIR/mount_skip"
   local worktree="$dir/worktree"

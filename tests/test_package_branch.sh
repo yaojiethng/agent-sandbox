@@ -60,6 +60,10 @@ commit_binary() {
 # package_branch produces the unified output layout
 # ===================================================================
 
+# Given: a sandbox with SESSION_STATE and two commits
+# When:  package_branch runs
+# Then:  patches/ holds 0001- and 0002-, uncommitted.diff and all-changes.diff exist, changed-files/ holds both copies plus a non-empty MANIFEST.txt, and .export-status is non-empty
+# Asserts: the six artefact types land; the .msg siblings are absent from this list (finding 82)
 test_dispatcher_creates_all_artefacts() {
   local DIR="$FIXTURE_DIR/pb_allartefacts"
   local OUT="$FIXTURE_DIR/pb_allartefacts_out"
@@ -88,6 +92,10 @@ test_dispatcher_creates_all_artefacts() {
   fi
 }
 
+# Given: three commits after the baseline
+# When:  package_branch runs
+# Then:  exactly three diffs, prefixed 0001-, 0002-, 0003-
+# Asserts: the per-commit numbering and zero padding
 test_dispatcher_diffs_numbered() {
   local DIR="$FIXTURE_DIR/pb_numbered"
   local OUT="$FIXTURE_DIR/pb_numbered_out"
@@ -111,6 +119,10 @@ test_dispatcher_diffs_numbered() {
   fi
 }
 
+# Given: one commit, then a second run after a further commit
+# When:  package_branch runs twice
+# Then:  the patch count is 1, then 2
+# Asserts: a second run replaces the first for patches/ only; stale copies elsewhere are not checked (finding 83)
 test_dispatcher_overwrites_output() {
   local DIR="$FIXTURE_DIR/pb_overwrite"
   local OUT="$FIXTURE_DIR/pb_overwrite_out"
@@ -136,6 +148,10 @@ test_dispatcher_overwrites_output() {
   fi
 }
 
+# Given: a committed modification to file.txt
+# When:  the produced patch is applied to a fresh repo holding the baseline
+# Then:  git apply --ignore-whitespace succeeds
+# Asserts: the stripped patch applies, so its context matches the baseline
 test_dispatcher_diff_is_applicable() {
   local DIR="$FIXTURE_DIR/pb_apply"
   local OUT="$FIXTURE_DIR/pb_apply_out"
@@ -165,6 +181,10 @@ test_dispatcher_diff_is_applicable() {
   fi
 }
 
+# Given: a commit adding a file whose content is the unique string unique-content
+# When:  package_branch runs
+# Then:  the patch text contains that string
+# Asserts: the patch carries the change body, not only the header
 test_dispatcher_diff_contains_content() {
   local DIR="$FIXTURE_DIR/pb_content"
   local OUT="$FIXTURE_DIR/pb_content_out"
@@ -181,6 +201,10 @@ test_dispatcher_diff_contains_content() {
   fi
 }
 
+# Given: a text commit and a binary commit
+# When:  package_branch runs
+# Then:  the text patch has zero index lines and the binary patch has one
+# Asserts: the binary arm of strip_index_lines, where the index line is required by the binary patch format
 test_dispatcher_strips_text_index_keeps_binary_index() {
   local DIR="$FIXTURE_DIR/pb_index"
   local OUT="$FIXTURE_DIR/pb_index_out"
@@ -206,6 +230,10 @@ test_dispatcher_strips_text_index_keeps_binary_index() {
   fi
 }
 
+# Given: a committed binary modification
+# When:  the patch is applied to a fresh repo after strip_index_lines
+# Then:  git apply succeeds
+# Asserts: the binary round trip, which needs --binary in the per-commit diff (bite B8)
 test_dispatcher_binary_patch_applies_to_fresh_repo() {
   local DIR="$FIXTURE_DIR/pb_binaryapply"
   local OUT="$FIXTURE_DIR/pb_binaryapply_out"
@@ -241,6 +269,10 @@ test_dispatcher_binary_patch_applies_to_fresh_repo() {
   fi
 }
 
+# Given: an untracked file in the sandbox
+# When:  package_branch runs
+# Then:  changed-files/ holds a copy of it
+# Asserts: untracked files reach the changed-files tree
 test_dispatcher_includes_untracked_in_changed_files() {
   local DIR="$FIXTURE_DIR/pb_untracked"
   local OUT="$FIXTURE_DIR/pb_untracked_out"
@@ -257,6 +289,10 @@ test_dispatcher_includes_untracked_in_changed_files() {
   fi
 }
 
+# Given: a sandbox whose HEAD is the baseline
+# When:  package_branch runs
+# Then:  zero patch files
+# Asserts: the empty-commit-range early return
 test_dispatcher_no_commits() {
   local DIR="$FIXTURE_DIR/pb_none"
   local OUT="$FIXTURE_DIR/pb_none_out"
@@ -270,6 +306,10 @@ test_dispatcher_no_commits() {
   assert_eq_num "$PATCH_COUNT" "0" "package_branch produces no diffs when no commits"
 }
 
+# Given: empty SANDBOX_DIR and OUTPUT_DIR
+# When:  package_branch runs
+# Then:  rc is non-zero
+# Asserts: the required-argument guard
 test_dispatcher_missing_args() {
   if package_branch "" "" 2>/dev/null; then
     fail "package_branch should fail with missing args"
@@ -278,6 +318,10 @@ test_dispatcher_missing_args() {
   fi
 }
 
+# Given: a committed repo with no SESSION_STATE
+# When:  package_branch runs
+# Then:  rc is non-zero, and neither patches/ nor the two repository diffs are written
+# Asserts: a baseline-resolution failure aborts before any artefact
 test_dispatcher_missing_session_state() {
   local DIR="$FIXTURE_DIR/pb_nostate"
   local OUT="$FIXTURE_DIR/pb_nostate_out"
@@ -303,6 +347,10 @@ test_dispatcher_missing_session_state() {
   fi
 }
 
+# Given: a sandbox with state and one commit
+# When:  package_branch runs
+# Then:  .export-status holds STATUS=SUCCESS, a TIMESTAMP and the resolved INIT_SHA, and no HEAD line
+# Asserts: the status-field split between package_branch and diff_export, pinned after the field list was wrong three times
 test_dispatcher_export_status_contents() {
   local DIR="$FIXTURE_DIR/pb_es_content"
   local OUT="$FIXTURE_DIR/pb_es_content_out"
@@ -339,6 +387,10 @@ test_dispatcher_export_status_contents() {
 # _package_preflight_check  --  warning-branch coverage
 # =============================================================================
 
+# Given: PACKAGE_BYPASS_PREFLIGHT=true and a nonexistent sandbox dir
+# When:  the preflight runs
+# Then:  rc 0 and no output
+# Asserts: silence on the bypass path; it does not prove the return precedes git (bite B4 survives, row 8)
 test_preflight_bypass_returns_before_any_git() {
   # Bypass must short-circuit BEFORE touching git: a nonexistent dir proves it.
   local OUT RC=0
@@ -351,6 +403,10 @@ test_preflight_bypass_returns_before_any_git() {
   fi
 }
 
+# Given: a repo with no changes since the baseline
+# When:  the preflight runs
+# Then:  rc 0 and no output
+# Asserts: the clean-tree case is silent
 test_preflight_clean_tree_is_silent() {
   local P="$FIXTURE_DIR/pf_clean"
   make_committed_repo "$P"
@@ -365,6 +421,10 @@ test_preflight_clean_tree_is_silent() {
   fi
 }
 
+# Given: a committed change plus a dirty working tree
+# When:  the preflight runs
+# Then:  the uncommitted-modification warning and the bypass hint appear, rc 0
+# Asserts: the advisory stays non-blocking while naming the remedy
 test_preflight_flags_uncommitted_modifications() {
   local P="$FIXTURE_DIR/pf_dirty"
   make_committed_repo "$P"
@@ -384,6 +444,10 @@ test_preflight_flags_uncommitted_modifications() {
   fi
 }
 
+# Given: a committed change reverted in the working tree
+# When:  the preflight runs
+# Then:  the identical-content advisory appears
+# Asserts: the worktree comparison; the unit's own comment records that the code comment says HEAD while the code reads the worktree (row 12)
 test_preflight_flags_cancelled_out_modification() {
   # Reachable path into the 'identical content' advisory: a committed change
   # whose working tree was reverted back to baseline content (uncommitted).
@@ -407,6 +471,10 @@ test_preflight_flags_cancelled_out_modification() {
   fi
 }
 
+# Given: a rename committed with rename detection off
+# When:  the preflight runs
+# Then:  no warning names the deleted old path
+# Asserts: the deleted-file skip; the skip is result-redundant because both checks already come out quiet (bite B6)
 test_preflight_skips_deleted_files_without_warning() {
   # With rename detection disabled the diff lists BOTH rename sides; the old
   # name is gone from HEAD and must be skipped silently (no uncommitted/
@@ -440,6 +508,10 @@ run_test test_dispatcher_strips_text_index_keeps_binary_index
 run_test test_dispatcher_binary_patch_applies_to_fresh_repo
 run_test test_dispatcher_includes_untracked_in_changed_files
 run_test test_dispatcher_no_commits
+# Given: a repository whose .git/index is garbage
+# When:  package_branch runs
+# Then:  rc is non-zero and no .export-status is written
+# Asserts: the refuse-state guard for the index case; the object-store half of its comment is unchecked (finding 84)
 test_dispatcher_refuses_unreadable_repository() {
   # A corrupt index degrades every git command below to empty output while this
   # function still reports success, so the caller would stamp a SUCCESS bundle
@@ -464,6 +536,10 @@ test_dispatcher_refuses_unreadable_repository() {
   fi
 }
 
+# Given: an explicit baseline two commits back
+# When:  package_branch runs
+# Then:  two patches and INIT_SHA equal to that baseline
+# Asserts: the explicit baseline wins; the cat-file validation of it is untested (finding 85)
 test_baseline_explicit_override() {
   local DIR="$FIXTURE_DIR/pb_base_arg"
   local OUT="$FIXTURE_DIR/pb_base_arg_out"
@@ -487,6 +563,10 @@ test_baseline_explicit_override() {
   fi
 }
 
+# Given: a recorded init_sha orphaned by a reset
+# When:  package_branch_baseline runs
+# Then:  the resolved baseline is the merge-base of init_sha and HEAD
+# Asserts: the branch-point fallback (bite B1)
 test_baseline_defaults_to_branch_point() {
   local DIR="$FIXTURE_DIR/pb_base_default"
   make_sandbox_fixture "$DIR" >/dev/null

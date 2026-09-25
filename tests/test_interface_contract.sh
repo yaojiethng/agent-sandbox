@@ -23,6 +23,10 @@ source "$REPO_ROOT/scripts/build.sh"
 # interface_contract_version
 # =============================================================================
 
+# Given: the interface_contract_version function
+# When:  it is called
+# Then:  it returns a positive integer
+# Asserts: the contract version is a well-formed constant (the value itself is not pinned).
 test_interface_contract_version_is_positive_integer() {
   local v
   v="$(interface_contract_version)"
@@ -37,6 +41,10 @@ test_interface_contract_version_is_positive_integer() {
 # image_contract_version  (docker label read, stubbed)
 # =============================================================================
 
+# Given: a stubbed image carrying the contract-version label
+# When:  image_contract_version runs
+# Then:  the label value is returned
+# Asserts: the baked label is the image-side version.
 test_image_contract_version_reads_baked_label() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="7" \
@@ -44,6 +52,10 @@ test_image_contract_version_reads_baked_label() {
   assert_eq "$got" "7" "image_contract_version reads the baked label via docker"
 }
 
+# Given: a per-image stub map (a:1 b:2)
+# When:  reading image b
+# Then:  2 is returned
+# Asserts: multiple images resolve independently.
 test_image_contract_version_per_image_map() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" \
@@ -52,6 +64,10 @@ test_image_contract_version_per_image_map() {
   assert_eq "$got" "2" "image_contract_version honors the per-image map"
 }
 
+# Given: an image with no contract label
+# When:  image_contract_version runs
+# Then:  the result is empty
+# Asserts: a pre-label image is distinguishable from an aligned one.
 test_image_contract_version_empty_for_unlabeled_image() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" \
@@ -63,6 +79,10 @@ test_image_contract_version_empty_for_unlabeled_image() {
 # _check_interface_contract  (authoritative)
 # =============================================================================
 
+# Given: source and image contract versions equal
+# When:  _check_interface_contract runs
+# Then:  rc is 0 and nothing is printed
+# Asserts: alignment is silent.
 test_check_interface_contract_silent_on_aligned() {
   local current out rc=0
   current="$(interface_contract_version)"
@@ -72,6 +92,10 @@ test_check_interface_contract_silent_on_aligned() {
   assert_empty "$out" "preflight: aligned contract version stays silent"
 }
 
+# Given: image version 2 differing from source
+# When:  _check_interface_contract runs
+# Then:  rc is 1 and the drift is named
+# Asserts: drift refuses, with the surface named.
 test_check_interface_contract_refuses_drift() {
   local rc=0 out
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="2" \
@@ -82,6 +106,10 @@ test_check_interface_contract_refuses_drift() {
       "preflight: refusal names the drifted surface"
 }
 
+# Given: an image with no contract label
+# When:  _check_interface_contract runs
+# Then:  rc is 1 and the rebuild remedy is named
+# Asserts: a pre-label image refuses preflight with the remedy.
 test_check_interface_contract_refuses_missing_label() {
   local rc=0 out
   out="$(PATH="$STUB_DIR:$PATH" \

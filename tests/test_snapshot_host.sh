@@ -23,6 +23,9 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 # snapshot_copy_worktree tests
 # -------------------------
 
+# Given: a committed repo
+# When:  snapshot_copy_worktree runs
+# Then:  the tracked file exists in the destination
 test_worktree_copies_tracked_files() {
   local SRC="$FIXTURE_DIR/wt_tracked_src"
   local DST="$FIXTURE_DIR/wt_tracked_dst"
@@ -37,6 +40,10 @@ test_worktree_copies_tracked_files() {
   fi
 }
 
+# Given: a repo ignoring secret.env
+# When:  snapshot_copy_worktree runs
+# Then:  secret.env is absent from the destination
+# Asserts: git's own ignore sources decide what crosses, and ignored content does not
 test_worktree_excludes_gitignored_files() {
   local SRC="$FIXTURE_DIR/wt_ignore_src"
   local DST="$FIXTURE_DIR/wt_ignore_dst"
@@ -57,6 +64,9 @@ test_worktree_excludes_gitignored_files() {
   fi
 }
 
+# Given: an untracked, non-ignored file
+# When:  snapshot_copy_worktree runs
+# Then:  the file exists in the destination
 test_worktree_includes_untracked_non_ignored_files() {
   local SRC="$FIXTURE_DIR/wt_untracked_src"
   local DST="$FIXTURE_DIR/wt_untracked_dst"
@@ -73,6 +83,9 @@ test_worktree_includes_untracked_non_ignored_files() {
   fi
 }
 
+# Given: a tracked file with an unstaged edit
+# When:  snapshot_copy_worktree runs
+# Then:  the destination holds the edited content, not the committed version
 test_worktree_copies_edited_version_of_tracked_file() {
   local SRC="$FIXTURE_DIR/wt_edited_src"
   local DST="$FIXTURE_DIR/wt_edited_dst"
@@ -89,6 +102,10 @@ test_worktree_copies_edited_version_of_tracked_file() {
   fi
 }
 
+# Given: a tracked file deleted from the worktree
+# When:  snapshot_copy_worktree runs
+# Then:  the copy succeeds and the path is absent from the destination
+# Asserts: the enumeration's existence filter, not an abort
 test_worktree_handles_unstaged_deletion() {
   local SRC="$FIXTURE_DIR/wt_deletion_src"
   local DST="$FIXTURE_DIR/wt_deletion_dst"
@@ -111,6 +128,10 @@ test_worktree_handles_unstaged_deletion() {
   fi
 }
 
+# Given: a tracked file renamed in the worktree with no git operation
+# When:  snapshot_copy_worktree runs
+# Then:  the old name is absent and the new name present
+# Asserts: the enumeration follows the disk, so an unstaged move lands as its own remove-and-add
 test_worktree_handles_unstaged_move() {
   local SRC="$FIXTURE_DIR/wt_move_src"
   local DST="$FIXTURE_DIR/wt_move_dst"
@@ -132,6 +153,10 @@ test_worktree_handles_unstaged_move() {
   fi
 }
 
+# Given: a committed repo
+# When:  snapshot_copy_worktree runs
+# Then:  the destination has no .git directory
+# Asserts: the worktree sync never carries repository metadata (the .git copy is the dispatcher's other arm)
 test_worktree_excludes_git_directory() {
   local SRC="$FIXTURE_DIR/wt_no_git_src"
   local DST="$FIXTURE_DIR/wt_no_git_dst"
@@ -146,6 +171,9 @@ test_worktree_excludes_git_directory() {
   fi
 }
 
+# Given: a destination path whose parents do not exist
+# When:  snapshot_copy_worktree runs
+# Then:  the destination directory is created
 test_worktree_creates_destination_if_absent() {
   local SRC="$FIXTURE_DIR/wt_mkdir_src"
   local DST="$FIXTURE_DIR/wt_mkdir_dst_new/nested"
@@ -156,6 +184,9 @@ test_worktree_creates_destination_if_absent() {
   assert_dir_exists "$DST" "worktree: destination directory created when absent"
 }
 
+# Given: a tracked path several directories deep
+# When:  snapshot_copy_worktree runs
+# Then:  the file exists at the same relative path in the destination
 test_worktree_preserves_directory_structure() {
   local SRC="$FIXTURE_DIR/wt_struct_src"
   local DST="$FIXTURE_DIR/wt_struct_dst"
@@ -175,6 +206,9 @@ test_worktree_preserves_directory_structure() {
   fi
 }
 
+# Given: a .gitignore carrying *.log and !keep.log
+# When:  snapshot_copy_worktree runs
+# Then:  keep.log crosses and drop.log does not
 test_worktree_honors_negation_patterns_local() {
   local SRC="$FIXTURE_DIR/wt_negation_local_src"
   local DST="$FIXTURE_DIR/wt_negation_local_dst"
@@ -199,6 +233,11 @@ test_worktree_honors_negation_patterns_local() {
 # Negation patterns in GLOBAL excludes and .git/info/exclude: the previous
 # rsync exclude-list approach silently ignored them and leaked the excluded
 # content (the R1 leak, ADR sandbox_delivery_model.md mount-path entry).
+# Given: a fixture global excludes file and a .git/info/exclude entry, with a negation rescuing one path
+# When:  snapshot_copy_worktree runs
+# Then:  the global and repository excludes hold and the rescued file crosses
+# Asserts: the R1 leak stays closed for the negating sources the old rsync exclude list dropped
+# Note:  the unit writes the operator's global git config to arrange this (finding 119)
 test_worktree_honors_negation_patterns_global_excludes() {
   local SRC="$FIXTURE_DIR/wt_negation_global_src"
   local DST="$FIXTURE_DIR/wt_negation_global_dst"
@@ -238,6 +277,10 @@ test_worktree_honors_negation_patterns_global_excludes() {
 }
 
 
+# Given: an index carrying a gitlink (160000) entry
+# When:  snapshot_copy_worktree runs
+# Then:  the copy aborts
+# Asserts: the pipeline's submodule pre-flight, which is the second guard on the seed path (finding 113)
 test_worktree_submodule_detected() {
   local SRC="$FIXTURE_DIR/wt_submod_src"
   local DST="$FIXTURE_DIR/wt_submod_dst"
@@ -260,6 +303,9 @@ test_worktree_submodule_detected() {
 
 # A full delivery copies .git, so the destination carries the host history and
 # the seeded HEAD becomes the destination HEAD.
+# Given: a committed repo
+# When:  snapshot_deliver runs in full mode
+# Then:  the destination carries .git with the same HEAD and at least one commit
 test_deliver_full_carries_history() {
   local SRC="$FIXTURE_DIR/dl_full_src"
   local DST="$FIXTURE_DIR/dl_full_dst"
@@ -283,6 +329,9 @@ test_deliver_full_carries_history() {
 }
 
 # A flatten delivery must not cross .git; it inits a fresh single baseline.
+# Given: a committed repo
+# When:  snapshot_deliver runs in flatten mode
+# Then:  the destination carries .git, the worktree file, and exactly one commit
 test_deliver_flatten_single_baseline() {
   local SRC="$FIXTURE_DIR/dl_flat_src"
   local DST="$FIXTURE_DIR/dl_flat_dst"
@@ -304,6 +353,10 @@ test_deliver_flatten_single_baseline() {
 }
 
 # Both modes must exclude gitignored content (R1 boundary integrity).
+# Given: a repo with a gitignored file
+# When:  snapshot_deliver runs in flatten mode
+# Then:  the ignored file is absent from the destination
+# Asserts: the ignore boundary holds on both dispatcher arms
 test_deliver_flatten_excludes_gitignored() {
   local SRC="$FIXTURE_DIR/dl_flat_ignore_src"
   local DST="$FIXTURE_DIR/dl_flat_ignore_dst"

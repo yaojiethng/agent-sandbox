@@ -23,6 +23,10 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 # interactive_confirm_or_abort tests
 # =============================================================================
 
+# Given: a confirmation prompt
+# When:  stdin answers y
+# Then:  the function returns 0
+# Asserts: the y|Y arm
 test_confirm_or_abort_yes_proceeds() {
   if echo "y" | interactive_confirm_or_abort "Apply:" "/path/to/diff" > /dev/null 2>&1; then
     pass "interactive_confirm_or_abort returns 0 on 'y'"
@@ -31,6 +35,10 @@ test_confirm_or_abort_yes_proceeds() {
   fi
 }
 
+# Given: a confirmation prompt
+# When:  stdin answers n
+# Then:  the function returns non-zero after printing "Aborted."
+# Asserts: the catch-all arm is not consent
 test_confirm_or_abort_no_aborts() {
   local RC=0
   echo "n" | interactive_confirm_or_abort "Apply:" "/path/to/diff" 2>/dev/null || RC=$?
@@ -41,6 +49,10 @@ test_confirm_or_abort_no_aborts() {
   fi
 }
 
+# Given: a confirmation prompt
+# When:  stdin is an empty line
+# Then:  the function returns non-zero
+# Asserts: empty Enter is not consent, because the default is No
 test_confirm_or_abort_empty_aborts() {
   local RC=0
   echo "" | interactive_confirm_or_abort "Apply:" "/path/to/diff" 2>/dev/null || RC=$?
@@ -51,6 +63,10 @@ test_confirm_or_abort_empty_aborts() {
   fi
 }
 
+# Given: a confirmation prompt
+# When:  stdin answers q
+# Then:  the function returns non-zero
+# Asserts: q is not consent
 test_confirm_or_abort_q_aborts() {
   local RC=0
   echo "q" | interactive_confirm_or_abort "Apply:" "/path/to/diff" 2>/dev/null || RC=$?
@@ -61,6 +77,10 @@ test_confirm_or_abort_q_aborts() {
   fi
 }
 
+# Given: a label and two items
+# When:  the operator confirms
+# Then:  the label and both items appear on stderr
+# Asserts: the item loop, one line per item
 test_confirm_or_abort_prints_items_to_stderr() {
   local STDERR
   STDERR=$(echo "y" | interactive_confirm_or_abort "Header:" "item1" "item2" 2>&1 >/dev/null)
@@ -71,12 +91,20 @@ test_confirm_or_abort_prints_items_to_stderr() {
   fi
 }
 
+# Given: a confirmation prompt
+# When:  stdin answers y
+# Then:  stdout is empty
+# Asserts: the stdout/stderr split the file header states
 test_confirm_or_abort_stdout_empty() {
   local STDOUT
   STDOUT=$(echo "y" | interactive_confirm_or_abort "Apply:" "item" 2>/dev/null)
   assert_empty "$STDOUT" "interactive_confirm_or_abort prints nothing to stdout"
 }
 
+# Given: an empty label and one item
+# When:  the operator confirms
+# Then:  stderr's first line is the item
+# Asserts: the label guard skips the header line
 test_confirm_or_abort_no_label() {
   # Empty label should not print a header line
   local STDERR
@@ -91,6 +119,10 @@ test_confirm_or_abort_no_label() {
 # interactive_select_channel tests
 # =============================================================================
 
+# Given: a workspace with entries in session, autosave, and bundles
+# When:  the channel picker receives 1
+# Then:  the first channel, session, is returned
+# Asserts: the draft channel list and its order (bite I3)
 test_select_channel_draft_lists_channels() {
   local SANDBOX="$FIXTURE_DIR/ch_draft"
   mkdir -p "$SANDBOX"
@@ -104,6 +136,10 @@ test_select_channel_draft_lists_channels() {
   assert_eq "$CHANNEL" "session" "interactive_select_channel draft picks first channel (session)"
 }
 
+# Given: autosave as the default and an autosave entry
+# When:  the operator presses Enter
+# Then:  autosave is returned
+# Asserts: the default-injection path; the default is returned even when it is absent from the list, so this unit does not pin the channel list
 test_select_channel_default_highlighted() {
   local SANDBOX="$FIXTURE_DIR/ch_default"
   mkdir -p "$SANDBOX"
@@ -116,6 +152,10 @@ test_select_channel_default_highlighted() {
   assert_eq "$CHANNEL" "autosave" "interactive_select_channel returns default on empty input"
 }
 
+# Given: a workspace with a session entry
+# When:  the channel picker receives q
+# Then:  it returns non-zero
+# Asserts: the picker's q arm through the channel selector
 test_select_channel_q_aborts() {
   local SANDBOX="$FIXTURE_DIR/ch_q"
   mkdir -p "$SANDBOX"
@@ -130,6 +170,10 @@ test_select_channel_q_aborts() {
   fi
 }
 
+# Given: a bundles channel with no entries
+# When:  the operator chooses 3
+# Then:  bundles is returned
+# Asserts: a zero-entry channel stays selectable
 test_select_channel_zero_entries_shows_count() {
   local SANDBOX="$FIXTURE_DIR/ch_zero"
   mkdir -p "$SANDBOX"
@@ -142,6 +186,10 @@ test_select_channel_zero_entries_shows_count() {
   assert_eq "$CHANNEL" "bundles" "interactive_select_channel allows selecting channel with 0 entries"
 }
 
+# Given: a workspace with a session entry
+# When:  the picker receives 99 then 1
+# Then:  session is returned
+# Asserts: an out-of-range number re-prompts rather than aborting
 test_select_channel_repeats_on_invalid() {
   local SANDBOX="$FIXTURE_DIR/ch_repeat"
   mkdir -p "$SANDBOX"
@@ -157,6 +205,10 @@ test_select_channel_repeats_on_invalid() {
 # interactive_select_bundle tests
 # =============================================================================
 
+# Given: two bundles, newest first
+# When:  the operator chooses 2
+# Then:  the older bundle is returned
+# Asserts: the number-to-entry mapping
 test_select_session_picks_by_number() {
   local SANDBOX="$FIXTURE_DIR/ss_pick"
   mkdir -p "$SANDBOX"
@@ -170,6 +222,10 @@ test_select_session_picks_by_number() {
   assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle picks second session by number"
 }
 
+# Given: a default that is on the displayed page
+# When:  the operator presses Enter
+# Then:  the default is returned
+# Asserts: the on-page default arm
 test_select_session_default_highlighted() {
   local SANDBOX="$FIXTURE_DIR/ss_default"
   mkdir -p "$SANDBOX"
@@ -183,6 +239,10 @@ test_select_session_default_highlighted() {
   assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle returns default on empty input"
 }
 
+# Given: three bundles whose contents differ (full, empty, patches only)
+# When:  the operator chooses 1
+# Then:  the newest bundle is returned
+# Asserts: entry order only; the availability markers its name claims are asserted nowhere (row 260, bite I4)
 test_select_session_availability_indicators() {
   local SANDBOX="$FIXTURE_DIR/ss_indicators"
   mkdir -p "$SANDBOX"
@@ -200,6 +260,10 @@ test_select_session_availability_indicators() {
   assert_eq "$BUNDLE" "20260504-120000-full" "interactive_select_bundle shows availability indicators (first entry)"
 }
 
+# Given: a five-patch bundle and a zero-patch bundle
+# When:  the operator quits
+# Then:  the PATCHES column reads 5 for one row and 0 for the other
+# Asserts: the patch count per row (bite I10)
 test_select_session_patch_count_shown() {
   local SANDBOX="$FIXTURE_DIR/ss_patchcount"
   mkdir -p "$SANDBOX"
@@ -225,6 +289,10 @@ test_select_session_patch_count_shown() {
   fi
 }
 
+# Given: a session channel with no bundle directories
+# When:  the picker receives 1
+# Then:  it returns non-zero
+# Asserts: the empty-list guard
 test_select_session_zero_entries() {
   local SANDBOX="$FIXTURE_DIR/ss_zero"
   mkdir -p "$SANDBOX"
@@ -241,6 +309,10 @@ test_select_session_zero_entries() {
   fi
 }
 
+# Given: twelve bundles
+# When:  the picker receives 10, then 11
+# Then:  entry 10 is the tenth newest and entry 11 is rejected
+# Asserts: the page cap derived from INTERACTIVE_MAX_ENTRIES (bite I9)
 test_select_session_cap_at_ten() {
   local SANDBOX="$FIXTURE_DIR/ss_cap"
   mkdir -p "$SANDBOX"
@@ -273,6 +345,10 @@ test_select_session_cap_at_ten() {
   fi
 }
 
+# Given: a bundle whose name is 81 characters
+# When:  the operator quits
+# Then:  the displayed name carries an ellipsis
+# Asserts: truncation happens, not the width it happens at; the 34-column literal is unpinned and the unit's stated 50 characters is stale (row 260, bite I5)
 test_select_session_name_truncation() {
   local SANDBOX="$FIXTURE_DIR/ss_trunc"
   mkdir -p "$SANDBOX"
@@ -299,6 +375,10 @@ test_select_session_name_truncation() {
 # interactive_select_bundle  --  option 0 injection tests
 # =============================================================================
 
+# Given: a default that is not in the list
+# When:  the operator presses Enter
+# Then:  the default is returned
+# Asserts: option 0 injection
 test_select_session_inject_option_zero() {
   local SANDBOX="$FIXTURE_DIR/ss_opt0"
   mkdir -p "$SANDBOX"
@@ -313,6 +393,10 @@ test_select_session_inject_option_zero() {
   assert_eq "$BUNDLE" "20260501-000000-remote" "interactive_select_bundle injects option 0 for outside-default, Enter selects it"
 }
 
+# Given: a default that is not in the list
+# When:  the operator types 0
+# Then:  the default is returned
+# Asserts: the literal-0 arm
 test_select_session_option_zero_by_number() {
   local SANDBOX="$FIXTURE_DIR/ss_opt0_num"
   mkdir -p "$SANDBOX"
@@ -327,6 +411,10 @@ test_select_session_option_zero_by_number() {
   assert_eq "$BUNDLE" "20260501-000000-remote" "interactive_select_bundle option 0 selectable by typing '0'"
 }
 
+# Given: a default that is on the displayed page
+# When:  the operator presses Enter
+# Then:  no option 0 is injected and the default is returned
+# Asserts: option 0 appears only for an off-page default
 test_select_session_no_option_zero_when_in_displayed() {
   local SANDBOX="$FIXTURE_DIR/ss_opt0_no"
   mkdir -p "$SANDBOX"
@@ -341,6 +429,10 @@ test_select_session_no_option_zero_when_in_displayed() {
   assert_eq "$BUNDLE" "20260503-090000-beta" "interactive_select_bundle does not inject option 0 when default is in displayed list"
 }
 
+# Given: a default that is not in the list
+# When:  the operator types 0
+# Then:  stderr shows the 0: row carrying the default's name
+# Asserts: the option-0 row render
 test_select_session_option_zero_stderr_shows_entry() {
   local SANDBOX="$FIXTURE_DIR/ss_opt0_stderr"
   mkdir -p "$SANDBOX"
@@ -358,6 +450,10 @@ test_select_session_option_zero_stderr_shows_entry() {
   fi
 }
 
+# Given: no default
+# When:  the picker receives 1
+# Then:  no 0: row appears
+# Asserts: option 0 is default-driven
 test_select_session_option_zero_not_present_without_default() {
   local SANDBOX="$FIXTURE_DIR/ss_opt0_nodef"
   mkdir -p "$SANDBOX"
@@ -390,6 +486,10 @@ create_n_sessions() {
   done
 }
 
+# Given: twelve bundles
+# When:  the picker receives n then 1
+# Then:  the first entry on page 2, session-2, is returned
+# Asserts: the page-2 offset (bite I9)
 test_select_session_pagination_next_page() {
   local SANDBOX="$FIXTURE_DIR/pg_next"
   mkdir -p "$SANDBOX"
@@ -410,6 +510,10 @@ test_select_session_pagination_next_page() {
   fi
 }
 
+# Given: twelve bundles
+# When:  the picker receives n, p, then 1
+# Then:  the first entry on page 1, session-12, is returned
+# Asserts: back-navigation
 test_select_session_pagination_previous_page() {
   local SANDBOX="$FIXTURE_DIR/pg_prev"
   mkdir -p "$SANDBOX"
@@ -427,6 +531,10 @@ test_select_session_pagination_previous_page() {
   fi
 }
 
+# Given: fifteen bundles
+# When:  the operator quits
+# Then:  stderr shows "page 1 of 2"
+# Asserts: the multi-page title
 test_select_session_pagination_page_header() {
   local SANDBOX="$FIXTURE_DIR/pg_header"
   mkdir -p "$SANDBOX"
@@ -444,6 +552,10 @@ test_select_session_pagination_page_header() {
   fi
 }
 
+# Given: three bundles
+# When:  the operator quits
+# Then:  stderr carries no page title
+# Asserts: the single-page title
 test_select_session_pagination_single_page() {
   local SANDBOX="$FIXTURE_DIR/pg_single"
   mkdir -p "$SANDBOX"
@@ -461,6 +573,10 @@ test_select_session_pagination_single_page() {
   fi
 }
 
+# Given: twelve bundles and a default that is not in the list
+# When:  the picker receives n then q
+# Then:  page 2 still shows option 0
+# Asserts: injection is recomputed per page
 test_select_session_pagination_option_zero_persists() {
   local SANDBOX="$FIXTURE_DIR/pg_opt0"
   mkdir -p "$SANDBOX"
@@ -478,6 +594,10 @@ test_select_session_pagination_option_zero_persists() {
   fi
 }
 
+# Given: twelve bundles
+# When:  the picker receives n, n, then 1
+# Then:  session-2 is returned
+# Asserts: the last-page clamp
 test_select_session_pagination_no_n_at_last_page() {
   local SANDBOX="$FIXTURE_DIR/pg_last"
   mkdir -p "$SANDBOX"
@@ -501,6 +621,10 @@ test_select_session_pagination_no_n_at_last_page() {
 # interactive_select_bundle  --  STATE / AGE columns + current-branch hint
 # =============================================================================
 
+# Given: a bundle fixture and no PROJECT_DIR
+# When:  the operator quits
+# Then:  the STATE and AGE headers and the "not in tree" cell are rendered
+# Asserts: the column header (bite I12) and the STATE cell (I11); the AGE cell's "exported " prefix is unpinned (I6, row 260)
 test_select_session_state_and_age_columns() {
   local SANDBOX="$FIXTURE_DIR/ss_stateage"
   mkdir -p "$SANDBOX"
@@ -523,6 +647,10 @@ test_select_session_state_and_age_columns() {
   fi
 }
 
+# Given: a project repository on feat/bundle-hint
+# When:  the operator quits
+# Then:  the picker title names that branch
+# Asserts: project_current_branch in the title
 test_select_session_current_branch_hint() {
   local SANDBOX="$FIXTURE_DIR/ss_branchhint"
   mkdir -p "$SANDBOX"

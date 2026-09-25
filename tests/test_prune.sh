@@ -73,6 +73,10 @@ record_exists() { [[ -f "$SANDBOX_DIR/.compose/$1.yml" ]]; }
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: two stale records, one `pi` and one `hermes`, both older than the cutoff
+# When:  prune runs with --provider=pi
+# Then:  only the pi record is removed and the hermes record survives
+# Asserts: --provider narrows Rule 1 selection
 test_rule1_provider_filter() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_provider"
   mkdir -p "$FIXTURE_DIR"
@@ -91,6 +95,10 @@ test_rule1_provider_filter() {
   [[ -n "$sha" ]] # keep shellcheck happy about unused
 }
 
+# Given: one stale record whose session-ts is today
+# When:  prune runs with the default 3-day cutoff
+# Then:  the record survives
+# Asserts: the age cutoff protects a recently-staled record
 test_rule1_age_filter_skips_recent() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_age"
   mkdir -p "$FIXTURE_DIR"
@@ -108,6 +116,10 @@ test_rule1_age_filter_skips_recent() {
   fi
 }
 
+# Given: one stale record whose session-ts is today
+# When:  prune runs with --age-days=0
+# Then:  the record is removed
+# Asserts: --age-days sets the staleness cutoff
 test_rule1_age_days_broadens() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_agedays"
   mkdir -p "$FIXTURE_DIR"
@@ -124,6 +136,10 @@ test_rule1_age_days_broadens() {
   fi
 }
 
+# Given: one record whose host-head-sha equals the current project HEAD
+# When:  prune runs
+# Then:  the record survives
+# Asserts: Rule 1 selects by sandbox staleness, not by age alone
 test_fresh_record_kept() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_fresh"
   mkdir -p "$FIXTURE_DIR"
@@ -140,6 +156,10 @@ test_fresh_record_kept() {
   fi
 }
 
+# Given: one stale record
+# When:  prune runs with --dry-run
+# Then:  the plan names Rule 1, the run is labelled a dry run, and the record stays on disk
+# Asserts: --dry-run reports and does not act
 test_dry_run_shows_rule1_rule2() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_dry"
   mkdir -p "$FIXTURE_DIR"
@@ -157,6 +177,10 @@ test_dry_run_shows_rule1_rule2() {
   fi
 }
 
+# Given: one stale record and an answer of `n` on stdin
+# When:  prune runs with --interactive
+# Then:  the record survives
+# Asserts: a declined confirmation stops the prune
 test_interactive_abort_keeps_records() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_int_abort"
   mkdir -p "$FIXTURE_DIR"
@@ -173,6 +197,10 @@ test_interactive_abort_keeps_records() {
   fi
 }
 
+# Given: one stale record and an answer of `n` on stdin
+# When:  prune runs with --interactive --provider=pi
+# Then:  the equivalent non-interactive command is printed and carries --provider=pi
+# Asserts: the confirmation gate discloses the command it would perform
 test_interactive_prints_command() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_int_cmd"
   mkdir -p "$FIXTURE_DIR"
@@ -192,6 +220,10 @@ test_interactive_prints_command() {
   fi
 }
 
+# Given: one stale record and a live container owned by that session
+# When:  prune runs
+# Then:  the record and the container are both removed
+# Asserts: Rule 1 then a fresh Rule 2 scan removes the newly orphaned resource
 test_complete_pass_removes_stale_session_resources() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_complete"
   mkdir -p "$FIXTURE_DIR"
@@ -211,6 +243,10 @@ test_complete_pass_removes_stale_session_resources() {
   fi
 }
 
+# Given: an orphan network and an orphan volume whose session has no record
+# When:  prune runs
+# Then:  both are removed
+# Asserts: the Rule 2 kind dispatcher reaches the network and volume branches
 test_rule2_removes_network_and_volume_orphans() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_sysnet"
   mkdir -p "$FIXTURE_DIR"
@@ -236,6 +272,10 @@ test_rule2_removes_network_and_volume_orphans() {
 # create time regardless of the `--sandbox` spelling. Here we invoke with a
 # non-canonical trailing-slash spelling and assert the `ps -aq` filter carries
 # the canonical (readlink-resolved) path.
+# Given: --sandbox spelled with a redundant `/.` suffix
+# When:  prune runs
+# Then:  the `docker ps -aq` label filter carries the canonical path
+# Asserts: Rule 2 canonicalises the spelling the label was baked with
 test_rule2_canonicalizes_sandbox_dir_spelling() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_canon"
   mkdir -p "$FIXTURE_DIR"
@@ -262,6 +302,10 @@ test_rule2_canonicalizes_sandbox_dir_spelling() {
   fi
 }
 
+# Given: two stale records (copy and mount), one fresh keeper, and a container owned by one stale session
+# When:  prune runs
+# Then:  both stale records go, the fresh record and its resource stay, and the stale session's container goes
+# Asserts: the partition invariant -- every session ends fully pruned or fully kept
 test_complete_pass_end_to_end() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_e2e"
   mkdir -p "$FIXTURE_DIR"
@@ -291,6 +335,10 @@ test_complete_pass_end_to_end() {
   fi
 }
 
+# Given: --stale=fresh
+# When:  prune runs
+# Then:  it fails and names the unknown kind
+# Asserts: the --stale validation rejects a retired kind
 test_unknown_args_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_badarg"
   mkdir -p "$FIXTURE_DIR"
@@ -306,6 +354,10 @@ test_unknown_args_rejected() {
   fi
 }
 
+# Given: no --project
+# When:  prune runs
+# Then:  it fails and names --project
+# Asserts: --project is required for the staleness comparison
 test_missing_project_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_noproj"
   mkdir -p "$FIXTURE_DIR"
@@ -349,6 +401,10 @@ run_test test_missing_project_rejected
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 
+# Given: a record carrying an `environment:` list
+# When:  env_field reads SANDBOX_TYPE
+# Then:  it prints `mount`
+# Asserts: the environment-block read
 test_env_field_reads_value_from_environment_block() {
   local f="$FIXTURE_DIR/envfield_record"
   printf '  environment:\n    - SANDBOX_TYPE=mount\n    - PROVIDER=pi\n' > "$f"
@@ -357,6 +413,10 @@ test_env_field_reads_value_from_environment_block() {
   assert_eq "$out" "mount" "env_field reads value from environment block"
 }
 
+# Given: NODE_PATH=/x and PATH=/bin in the environment block
+# When:  env_field reads PATH
+# Then:  it prints /bin
+# Asserts: the key match is anchored to the whole key
 test_env_field_no_substring_matches() {
   local f="$FIXTURE_DIR/envfield_substr"
   printf '    - NODE_PATH=/x\n    - PATH=/bin\n' > "$f"
@@ -365,6 +425,10 @@ test_env_field_no_substring_matches() {
   assert_eq "$out" "/bin" "env_field does not substring-match NODE_PATH when asked for PATH"
 }
 
+# Given: two A= lines in the environment block
+# When:  env_field reads A
+# Then:  it prints the first value
+# Asserts: first match wins
 test_env_field_first_match_wins() {
   local f="$FIXTURE_DIR/envfield_first"
   printf '    - A=1\n    - A=2\n' > "$f"
@@ -373,6 +437,10 @@ test_env_field_first_match_wins() {
   assert_eq "$out" "1" "env_field returns first match only"
 }
 
+# Given: a record with no ABSENT key
+# When:  env_field reads ABSENT
+# Then:  it prints nothing and exits 0
+# Asserts: a missing key is an empty read, not a failure
 test_env_field_missing_key_is_empty_and_clean() {
   local f="$FIXTURE_DIR/envfield_missing"
   printf '    - OTHER=x\n' > "$f"
@@ -385,6 +453,10 @@ test_env_field_missing_key_is_empty_and_clean() {
   fi
 }
 
+# Given: the environment line forms `- A=plain` and `  -   B=spaced`
+# When:  env_field reads each key
+# Then:  it prints `plain` and `spaced`
+# Asserts: the dash and spacing tolerance of the line form
 test_env_field_tolerates_dash_spacing_variants() {
   local f="$FIXTURE_DIR/envfield_spacing"
   printf -- '- A=plain\n  -   B=spaced\n' > "$f"

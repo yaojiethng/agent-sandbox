@@ -60,6 +60,10 @@ EOF
 
 # --list renders the enriched registry display (id | provider | ts | branch),
 # newest session first, and filters by PROVIDER (decisions I-2, I-3).
+# Given: a sandbox holding a pi record and a hermes record
+# When:  resume_agent.sh runs with --list
+# Then:  the enriched header and the abc123/pi row render, newest first
+# Asserts: the enriched registry display
 test_list_renders_enriched() {
   local sandbox
   sandbox="$(build_fixture "list")"
@@ -74,6 +78,10 @@ test_list_renders_enriched() {
 }
 
 # --list --provider=<n> filters the inventory to that provider (decision I-2).
+# Given: the same two records under --list
+# When:  --provider=pi and --provider=hermes each run
+# Then:  each listing carries only its own provider's row
+# Asserts: the provider filter on the inventory
 test_list_provider_filter() {
   local sandbox
   sandbox="$(build_fixture "filter")"
@@ -89,6 +97,10 @@ test_list_provider_filter() {
 }
 
 # --list --provider=<n> with no matching records -> clear error, non-zero.
+# Given: --list --provider=nope
+# When:  resume_agent.sh runs
+# Then:  it prints the no-match error and exits non-zero
+# Asserts: the empty-filter verdict
 test_list_provider_no_match() {
   local sandbox
   sandbox="$(build_fixture "nonnatch")"
@@ -102,6 +114,10 @@ test_list_provider_no_match() {
 }
 
 # Bare resume (no target flags) -> help hinting --list / --interactive, non-zero.
+# Given: no flags at all
+# When:  resume_agent.sh runs
+# Then:  it exits non-zero and prints usage naming --list and --interactive
+# Asserts: the bare-invocation help path (a later guard's usage also satisfies this - see the read-through finding)
 test_bare_resume_prints_help() {
   local out rc
   out="$(bash "$RESUME" 2>&1)"; rc=$?
@@ -115,6 +131,10 @@ test_bare_resume_prints_help() {
 }
 
 # Unknown flag -> help + non-zero (D2).
+# Given: an unknown flag
+# When:  resume_agent.sh runs
+# Then:  it exits non-zero and prints usage naming --list
+# Asserts: the unknown-flag path
 test_unknown_flag_prints_help() {
   local out rc
   out="$(bash "$RESUME" --bogus 2>&1)"; rc=$?
@@ -126,6 +146,10 @@ test_unknown_flag_prints_help() {
 }
 
 # --interactive presents the picker + confirm; 'n' at confirm aborts (I-1).
+# Given: a sandbox with one record, a picker choice, and 'n' at the confirm
+# When:  resume_agent.sh runs with --interactive
+# Then:  the picker renders, the confirm aborts, and the run exits non-zero
+# Asserts: the abort message (the non-zero rc also comes from the later preflight failure in this fixture - see the read-through finding)
 test_interactive_confirm_abort() {
   local sandbox
   sandbox="$(build_fixture "int_abort")"
@@ -142,6 +166,10 @@ test_interactive_confirm_abort() {
 }
 
 # --interactive with no records -> clear error, non-zero.
+# Given: a sandbox with no session records
+# When:  resume_agent.sh runs with --interactive
+# Then:  it prints "No resumable sessions found" and exits non-zero
+# Asserts: the empty-inventory verdict
 test_interactive_no_records() {
   local dir="$FIXTURE_DIR/int_none"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -159,6 +187,10 @@ EOF
 }
 
 # --provider alone (no --list / --interactive / --session-id) -> guidance, non-zero.
+# Given: --provider with no --list or --interactive
+# When:  resume_agent.sh runs
+# Then:  it explains that --provider is an inventory filter and exits non-zero
+# Asserts: the misuse guidance
 test_provider_alone_guidance() {
   local out rc
   out="$(bash "$RESUME" --provider=pi 2>&1)"; rc=$?
@@ -170,6 +202,10 @@ test_provider_alone_guidance() {
 }
 
 # --session-id with a missing record -> clear error, non-zero.
+# Given: --session-id=nope against a sandbox with no such record
+# When:  resume_agent.sh runs
+# Then:  it prints the no-session-record error and exits non-zero
+# Asserts: the missing-record verdict
 test_session_id_missing_record() {
   local dir="$FIXTURE_DIR/missing"
   mkdir -p "$dir/sandbox/.compose" "$dir/project/.git"
@@ -191,6 +227,10 @@ EOF
 # --list renders a sandbox-staleness WARNING label (registry-truth, D7): a
 # record whose host-head-sha matches the current HEAD shows no marker; a
 # differing one is flagged [SANDBOX_STALE].
+# Given: one record whose host-head-sha equals HEAD and one that differs
+# When:  --list runs
+# Then:  only the differing record carries the SANDBOX_STALE label
+# Asserts: the registry-truth staleness marker
 test_list_shows_sandbox_staleness() {
   local dir="$FIXTURE_DIR/staleness"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -255,6 +295,10 @@ EOF
 # The PROVIDER cell shows the bare provider name. The image-content signature
 # value was dropped from rows (operator-directed, 20260901-17) -- image
 # identity now travels in the record's digest labels, shown nowhere in rows.
+# Given: a record carrying an image-sig label
+# When:  --list runs
+# Then:  the PROVIDER cell shows the bare provider name
+# Asserts: the provider cell after the operator-directed removal of the sig value
 test_list_shows_provider_without_image_sig() {
   local dir="$FIXTURE_DIR/img_sig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -273,6 +317,10 @@ test_list_shows_provider_without_image_sig() {
 
 # A record with no image-sig field (legacy/before-this-field) renders `pi`
 # with no parenthetical -- graceful, no `pi (` shell-noise.
+# Given: a legacy record with no image-sig field
+# When:  --list runs
+# Then:  the bare provider renders with no parenthetical and no shell noise
+# Asserts: graceful degradation on the missing field
 test_list_no_sig_when_field_empty() {
   local dir="$FIXTURE_DIR/img_nosig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -300,6 +348,10 @@ EOF
 }
 
 # picker) and reports the remainder honestly.
+# Given: twelve session records
+# When:  --list runs
+# Then:  ten rows render with a "2 more session(s)" footer
+# Asserts: the page cap and the remainder report
 test_list_caps_at_page_size() {
   local dir="$FIXTURE_DIR/list_cap"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -321,6 +373,10 @@ test_list_caps_at_page_size() {
 }
 
 # The interactive picker paginates at the same page size (10): page nav via n/p.
+# Given: twelve session records
+# When:  the interactive picker pages forward with 'n'
+# Then:  it reports "page 2 of 2" and exits non-zero on the final quit
+# Asserts: picker pagination at the same page size as --list
 test_interactive_paginates_at_page_size() {
   local dir="$FIXTURE_DIR/img_page"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -342,6 +398,10 @@ test_interactive_paginates_at_page_size() {
 # HEAD is ahead of the session's recorded host-head sha ("N commits ago",
 # "0 commits ago"), and "not in tree" when the recorded sha is not resolvable
 # in the current project.
+# Given: records whose host-head sha is one commit behind HEAD, equal to HEAD, and unresolvable
+# When:  --list runs
+# Then:  the AGE column reads 1 commit ago, 0 commits ago, and not in tree
+# Asserts: the commit-distance column
 test_list_shows_branch_point_age() {
   local dir="$FIXTURE_DIR/branch_age"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -402,6 +462,10 @@ EOF
 
 # --interactive prints a hint naming the operator's current branch above the
 # picker, so the stale-session choice is made against a known reference.
+# Given: a checked-out branch, then a detached HEAD
+# When:  the picker runs
+# Then:  the hint names the branch, and on detached HEAD the short SHA plus (detached)
+# Asserts: the current-branch hint above the picker
 test_interactive_shows_current_branch_hint() {
   local dir="$FIXTURE_DIR/branch_hint"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -442,6 +506,10 @@ EOF
 
 # --interactive with a non-git project dir: the branch hint reads (absent)
 # rather than omitting the hint line (empty is never a valid return).
+# Given: a project dir that is not a git repository
+# When:  the picker runs
+# Then:  the hint reads (absent) rather than omitting the line
+# Asserts: the hint is never empty
 test_interactive_branch_hint_absent() {
   local dir="$FIXTURE_DIR/branch_absent"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -468,6 +536,10 @@ EOF
 # --interactive zero-pads the picker index to a fixed column width (01..10)
 # so the empty slot never shifts as the count crosses 10; 1-based numbering is
 # kept (0 is the injected-default slot, not a real index).
+# Given: twelve session records
+# When:  the picker renders its first page
+# Then:  the index is zero-padded to a fixed column width (01 to 10)
+# Asserts: the index width does not shift as the count crosses ten
 test_interactive_zero_pads_index() {
   local dir="$FIXTURE_DIR/index_pad"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -487,6 +559,10 @@ test_interactive_zero_pads_index() {
 # STATE cell is the LAST lifecycle event (start/stop) from the session log,
 # verb overridden by live docker state; stopped sessions show when they were
 # last active (operator-directed consolidation of STARTED/STATE/LAST_USED).
+# Given: a session log whose last event is a stop, then one whose last event is a start
+# When:  --list runs each time
+# Then:  the STATE cell shows the last event with its relative age
+# Asserts: the lifecycle cell reads the log, with the verb from the latest event
 test_list_state_cell_from_log() {
   local dir="$FIXTURE_DIR/state_cell"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"

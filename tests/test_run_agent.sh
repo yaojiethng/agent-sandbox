@@ -93,6 +93,10 @@ invoke_run_agent() {
 
 # A provider without src/reasoning/providers/<n>/setup.sh: the hook is a
 # no-op and the session must reach compose generation (rc 0, compose called).
+# Given: a provider directory with no setup.sh (the ghost fixture)
+# When:  run_agent.sh runs a standard session
+# Then:  the session reaches compose generation and prints no failure attribution
+# Asserts: the provider setup hook is a no-op when the file is absent
 test_setup_hook_absent_is_noop() {
   local FIX="$FIXTURE_DIR/hook_absent"
   make_run_agent_fixture "$FIX" ghost
@@ -114,6 +118,10 @@ test_setup_hook_absent_is_noop() {
 
 # The pi provider ships setup.sh (mkdir -p .pi). A run that reaches compose
 # proves the hook was sourced and exited 0 (a failing hook aborts first).
+# Given: the pi provider, which ships setup.sh
+# When:  run_agent.sh runs a standard session
+# Then:  the hook is sourced, exits 0, and the session reaches compose generation
+# Asserts: a present hook runs and its success is accepted
 test_setup_hook_present_runs_and_proceeds() {
   local FIX="$FIXTURE_DIR/hook_present"
   make_run_agent_fixture "$FIX" pi
@@ -132,6 +140,10 @@ test_setup_hook_present_runs_and_proceeds() {
 # naming the hook file, BEFORE any docker/compose invocation (documented
 # contract in run_agent.sh: "the session aborts with a clear error
 # attributing the failure to the provider setup hook").
+# Given: the pi setup hook forced to fail (the sandbox dir stripped of write permission)
+# When:  run_agent.sh runs a standard session
+# Then:  it aborts non-zero with a message naming providers/pi/setup.sh and calls no compose command
+# Asserts: the documented abort contract - a failing hook is attributed and aborts before any side effect
 test_setup_hook_failure_aborts_with_attribution() {
   local FIX="$FIXTURE_DIR/hook_fails"
   make_run_agent_fixture "$FIX" pi 1
@@ -155,6 +167,10 @@ test_setup_hook_failure_aborts_with_attribution() {
 
 # --flatten is accepted and the session proceeds to compose (default is full;
 # the flag is the flatten opt-out, so its acceptance is the contract).
+# Given: --flatten on the command line
+# When:  run_agent.sh runs a standard session
+# Then:  the flag is accepted and the session reaches compose generation
+# Asserts: the flatten opt-out is accepted (full history is the default)
 test_flatten_flag_accepted() {
   local FIX="$FIXTURE_DIR/flatten"
   make_run_agent_fixture "$FIX" pi
@@ -176,6 +192,10 @@ test_flatten_flag_accepted() {
 # be part of the compose file set: the docker-stub trace logs every -f argument
 # of `docker compose config`, and compose_generate preserves input basenames in
 # its staging filenames (01-docker-compose.pi.yml).
+# Given: the pi provider, which ships docker-compose.pi.yml
+# When:  the session generates its compose file set
+# Then:  docker-compose.pi.yml is among the -f arguments (the stub trace logs them)
+# Asserts: provider overlay inclusion in the compose file set
 test_provider_overlay_reaches_compose_file_set() {
   local FIX="$FIXTURE_DIR/overlay_merged"
   make_run_agent_fixture "$FIX" pi
@@ -196,6 +216,10 @@ test_provider_overlay_reaches_compose_file_set() {
 
 # A provider without an overlay file: the merge must still succeed (the
 # overlay is optional by contract) and no ghost overlay may appear.
+# Given: a provider with no overlay file
+# When:  the session generates its compose file set
+# Then:  the merge succeeds and no ghost overlay name appears in the trace
+# Asserts: the provider overlay is optional
 test_provider_overlay_absent_is_optional() {
   local FIX="$FIXTURE_DIR/overlay_absent"
   make_run_agent_fixture "$FIX" ghost
@@ -216,6 +240,10 @@ test_provider_overlay_absent_is_optional() {
 # serve-mode-only: in non-serve modes the port is irrelevant and would be
 # noise. Warning originally added for the unset case (handover 20260325-01);
 # mode gate pinned by handover 20260912-11.
+# Given: SERVE_PORT unset and a standard-mode session
+# When:  run_agent.sh resolves the port
+# Then:  no warning is printed and the session proceeds on the default
+# Asserts: the SERVE_PORT fallback warning is serve-mode-only
 test_serve_port_unset_standard_is_quiet() {
   local FIX="$FIXTURE_DIR/serve_port_unset_std"
   make_run_agent_fixture "$FIX" pi
@@ -232,6 +260,10 @@ test_serve_port_unset_standard_is_quiet() {
   export SERVE_PORT="46553"
 }
 
+# Given: SERVE_PORT unset and a serve-mode session
+# When:  run_agent.sh resolves the port
+# Then:  the fallback warning names the default port and the session proceeds
+# Asserts: the serve-mode fallback warning
 test_serve_port_unset_serve_warns() {
   local FIX="$FIXTURE_DIR/serve_port_unset_serve"
   make_run_agent_fixture "$FIX" pi

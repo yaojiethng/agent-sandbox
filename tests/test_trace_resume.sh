@@ -121,6 +121,10 @@ invoke_resume() {
 
 # Resume of a copy-delivery session preserves the named volume across all
 # execution paths (R1, R2, R3) and reuses the record SESSION_ID (R4).
+# Given: a copy-delivery record and no ambient SANDBOX_TYPE
+# When:  resume_agent.sh continues the session
+# Then:  rc 0, no volume destroy op, no --reset-volume, a teardown down and a sandbox re-attach
+# Asserts: the volume-preserving copy resume path
 test_resume_copy_keeps_named_volume() {
   local FIX="$FIXTURE_DIR/resume-copy"
   build_resume_fixture "$FIX" copy
@@ -148,6 +152,10 @@ run_test test_resume_copy_keeps_named_volume
 # mount overlay is merged at compose time (trace-observed; the stub's
 # `compose config` returns the first input unchanged, so composed-file content
 # cannot distinguish delivery).
+# Given: a mount-delivery record with an existing worktree
+# When:  resume_agent.sh continues the session
+# Then:  rc 0, no volume destroy op, the sandbox re-attaches, and the mount overlay is merged
+# Asserts: the mount resume path
 test_resume_mount_keeps_worktree_no_volume_ops() {
   local FIX="$FIXTURE_DIR/resume-mount"
   build_resume_fixture "$FIX" mount
@@ -178,6 +186,10 @@ run_test test_resume_mount_keeps_worktree_no_volume_ops
 # Resume cross-checks the record's FLATTEN against the worktree's recorded
 # mode. A mismatch (operator-level interference) warns and resume continues
 # with the record value -- it never fails and never re-materializes.
+# Given: a worktree recorded as flattened and a record that says full
+# When:  resume_agent.sh continues the session
+# Then:  rc 0 with the mismatch warning, and the record's value wins
+# Asserts: the cross-check warns and continues, it never fails or re-materializes
 test_resume_mount_warns_on_flatten_mismatch() {
   local FIX="$FIXTURE_DIR/resume-mount-mismatch"
   build_resume_fixture "$FIX" mount
@@ -205,6 +217,10 @@ run_test test_resume_mount_warns_on_flatten_mismatch
 # Delivery is recovered from the record with NO ambient SANDBOX_TYPE (the
 # regression for the live-run failure: resume defaulted to copy and the mount
 # session died against an unseeded volume).
+# Given: a mount record and no ambient SANDBOX_TYPE
+# When:  resume_agent.sh continues the session
+# Then:  the mount overlay is merged
+# Asserts: delivery is recovered from the record, never defaulted (the live-run regression)
 test_resume_recovers_delivery_from_record_no_ambient() {
   local FIX="$FIXTURE_DIR/resume-mount-record"
   build_resume_fixture "$FIX" mount
@@ -221,6 +237,10 @@ test_resume_recovers_delivery_from_record_no_ambient() {
 run_test test_resume_recovers_delivery_from_record_no_ambient
 
 # A record without the delivery literal is rejected (no silent default).
+# Given: a record with its environment block stripped
+# When:  resume_agent.sh runs
+# Then:  it reports "carries no delivery" and exits non-zero
+# Asserts: the fail-closed delivery rule
 test_resume_rejects_record_without_delivery() {
   local FIX="$FIXTURE_DIR/resume-no-delivery"
   build_resume_fixture "$FIX" copy
@@ -242,6 +262,10 @@ run_test test_resume_rejects_record_without_delivery
 
 # Resume reuses the RECORD's SESSION_ID (asserted via the regenerated compose
 # session-id label), which pins the compose namespace + volume name (R4).
+# Given: a resumable copy record
+# When:  resume_agent.sh regenerates the compose file
+# Then:  the regenerated record keeps the session-id label abc123
+# Asserts: the compose namespace and volume name are stable across a resume
 test_resume_reuses_record_session_id() {
   local FIX="$FIXTURE_DIR/resume-sid"
   build_resume_fixture "$FIX" copy
@@ -262,6 +286,10 @@ run_test test_resume_reuses_record_session_id
 
 # FLATTEN is recovered from the record (never ambient). An invalid FLATTEN
 # literal is rejected fail-closed (same rule as delivery).
+# Given: a record whose FLATTEN literal is "maybe"
+# When:  resume_agent.sh runs
+# Then:  it reports "invalid FLATTEN" and exits non-zero
+# Asserts: the fail-closed flatten rule
 test_resume_rejects_invalid_flatten() {
   local FIX="$FIXTURE_DIR/resume-bad-flatten"
   build_resume_fixture "$FIX" mount maybe
@@ -283,6 +311,10 @@ run_test test_resume_rejects_invalid_flatten
 # literal and forwards the flag (full run_agent forwarding is covered by the
 # run_agent flag test; here we assert the recovery does not reject a valid
 # flatten session).
+# Given: a record whose FLATTEN literal is true
+# When:  resume_agent.sh runs
+# Then:  rc 0
+# Asserts: a valid flatten literal is accepted (the forwarding to run_agent is the run_agent pass's subject)
 test_resume_accepts_flatten_record() {
   local FIX="$FIXTURE_DIR/resume-ok-flatten"
   build_resume_fixture "$FIX" mount true
@@ -296,6 +328,10 @@ run_test test_resume_accepts_flatten_record
 
 # Mount (worktree) delivery: resume must not destroy anything either -- the
 # worktree is a host bind mount preserved by construction; assert no destroy ops.
+# Given: a mount record
+# When:  resume_agent.sh continues the session
+# Then:  no volume destroy op and no --reset-volume
+# Asserts: the worktree survives a mount resume
 test_resume_mount_keeps_worktree() {
   local FIX="$FIXTURE_DIR/resume-mount"
   build_resume_fixture "$FIX" mount
@@ -317,6 +353,10 @@ run_test test_resume_mount_keeps_worktree
 # Resume (via run_agent) writes the unified per-session activity log: on start
 # it records last_started (and clears last_stopped); on teardown it records
 # last_stopped -- feeding the --list LAST_USED column.
+# Given: a resumable copy record
+# When:  the session resumes and then tears down
+# Then:  .compose/<sid>.log carries last_started and last_stopped stamps
+# Asserts: the unified per-session activity log feeds the --list LAST_USED column
 test_resume_writes_session_log() {
   local FIX="$FIXTURE_DIR/resume-log"
   build_resume_fixture "$FIX" copy

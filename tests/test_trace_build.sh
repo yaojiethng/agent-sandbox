@@ -73,6 +73,10 @@ invoke_build_err() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a populated build fixture and the docker stub
+# When:  build.sh runs with an explicit provider target
+# Then:  it inspects images before deciding to build
+# Asserts: the preflight probe runs on the explicit build path
 test_build_inspects_images() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_inspect"
   mkdir -p "$FIXTURE_DIR"
@@ -87,6 +91,10 @@ test_build_inspects_images() {
   fi
 }
 
+# Given: the same fixture and stub
+# When:  build.sh runs
+# Then:  no docker compose command is issued
+# Asserts: the build subcommand stays independent of the compose path
 test_build_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_noc"
   mkdir -p "$FIXTURE_DIR"
@@ -101,6 +109,10 @@ test_build_no_compose() {
   fi
 }
 
+# Given: the same fixture and stub
+# When:  build.sh runs
+# Then:  at least one docker build is issued
+# Asserts: the build actually reaches docker
 test_build_has_build_command() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_cmd"
   mkdir -p "$FIXTURE_DIR"
@@ -122,6 +134,12 @@ test_build_has_build_command() {
 # exercised. build.sh now self-enables `-e` on standalone invocation. Under a
 # failing docker build the result must be the descriptive `build_image: ERROR
 # build FAILED` message (the session-03 fix), not a silent bare `set -e` abort.
+# Given: a stub whose docker build exits 42
+# When:  build.sh runs standalone (its own set -euo pipefail is active)
+# Then:  the output carries the descriptive build_image failure line
+# Asserts: the failure surfaces a named message rather than a bare abort
+# Note:  the unit discards the exit code, so the failure propagation is unpinned;
+#        both the explicit exit and the set -e survive removal while it passes (finding 124)
 test_build_image_failure_surfaces_descriptive_error_under_e() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_fail_e"
   mkdir -p "$FIXTURE_DIR"
@@ -152,6 +170,10 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
 # provider with a base.dockerfile. Deterministic count in this repo (3
 # providers) locks the default-target routing (the behavior a dangling
 # test_dispatch run_test previously claimed to cover but never did).
+# Given: the same fixture, invoked with no --targets flag
+# When:  build.sh runs
+# Then:  the build count equals one sandbox build plus one per provider base.dockerfile
+# Asserts: the default-target resolution builds every discovered provider
 test_build_default_targets_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/bld_default"
   mkdir -p "$FIXTURE_DIR"
@@ -175,6 +197,10 @@ test_build_default_targets_all() {
 # agent-sandbox.interface-contract-version label is compared against the
 # current host-side constant; a mismatch refuses preflight, an aligned label
 # passes silently.
+# Given: a docker stub reporting a baked interface-contract version
+# When:  _check_interface_contract runs against an image
+# Then:  a differing version returns 1 and names the drifted surface; an aligned version returns 0 silently
+# Asserts: the authoritative contract gate refuses drift and passes alignment
 test_check_interface_contract_refuses_and_passes_via_stub() {
 
   local out rc=0
@@ -193,6 +219,10 @@ test_check_interface_contract_refuses_and_passes_via_stub() {
 }
 # shadow the service's own image, and the provider is recovered from the agent
 # image. Locks the one-parser contract (F2: no divergent -agent- grep).
+# Given: a compose record with several services, a shadowing comment, and an extra service
+# When:  record_image and record_provider run
+# Then:  each service's image is read by its own key and the provider is recovered from the agent image
+# Asserts: the service-scoped parser (this unit belongs to session_inventory.sh; it lives here because build.sh sources that library)
 test_record_image_service_scoped() {
   local dir="$FIXTURE_DIR/recimg"
   mkdir -p "$dir"

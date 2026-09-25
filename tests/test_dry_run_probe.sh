@@ -87,6 +87,10 @@ _healthy_cap_env() {
     SESSION_ID="cap-sess-01" DRY_RUN_IDENTITY="capability-test"
 }
 
+# Given: a healthy capability fixture (valid init_sha, mounts, autosave dir)
+# When:  the capability probe runs
+# Then:  rc=0, record status PASS, identity echoed, every layer PASS
+# Asserts: the healthy path of the check framework and the record writer.
 test_cap_healthy_rc0_record_pass() {
   local fix="$FIXTURE_DIR/cap-healthy" state="$FIXTURE_DIR/cap_healthy.state"
   ( _healthy_cap_env "$fix"; _run_probe "$PROBE_CAP" "$state" )
@@ -97,6 +101,10 @@ test_cap_healthy_rc0_record_pass() {
 }
 run_test test_cap_healthy_rc0_record_pass
 
+# Given: a well-formed but nonexistent init_sha
+# When:  the capability probe runs
+# Then:  rc=1, status FAIL, layer.session_state FAIL, session_data still PASS
+# Asserts: per-layer failure isolation in the record.
 test_cap_session_state_fail() {
   local fix="$FIXTURE_DIR/cap-ss" state="$FIXTURE_DIR/cap_ss.state"
   ( _healthy_cap_env "$fix"
@@ -112,6 +120,10 @@ test_cap_session_state_fail() {
 }
 run_test test_cap_session_state_fail
 
+# Given: a failing diff_export (STUB_DIFF_EXPORT_FAIL=1)
+# When:  the capability probe runs
+# Then:  rc=1, layer.session_data FAIL, session_state still PASS
+# Asserts: a data-plane failure stays in its layer.
 test_cap_session_data_fail() {
   local fix="$FIXTURE_DIR/cap-sd" state="$FIXTURE_DIR/cap_sd.state"
   ( _healthy_cap_env "$fix"
@@ -124,6 +136,10 @@ test_cap_session_data_fail() {
 }
 run_test test_cap_session_data_fail
 
+# Given: an unwritable CHANGES_DIR parent
+# When:  the capability probe runs
+# Then:  rc=1, layer.container_network FAIL, session_data still PASS
+# Asserts: a marker-write failure stays in its layer.
 test_cap_container_network_fail() {
   local fix="$FIXTURE_DIR/cap-net" state="$FIXTURE_DIR/cap_net.state"
   ( _healthy_cap_env "$fix"
@@ -162,6 +178,10 @@ _healthy_reas_env() {
     SESSION_ID="reas-sess-01" DRY_RUN_IDENTITY="reasoning-test"
 }
 
+# Given: a healthy reasoning fixture (marker, read-only input, non-root)
+# When:  the reasoning probe runs
+# Then:  rc=0, status PASS, identity echoed, every layer PASS
+# Asserts: the reasoning probe's healthy path.
 test_reas_healthy_rc0_record_pass() {
   local fix="$FIXTURE_DIR/reas-healthy" state="$FIXTURE_DIR/reas_healthy.state"
   ( _healthy_reas_env "$fix"; _run_probe "$PROBE_REAS" "$state" )
@@ -172,6 +192,10 @@ test_reas_healthy_rc0_record_pass() {
 }
 run_test test_reas_healthy_rc0_record_pass
 
+# Given: no SESSION_STATE file
+# When:  the reasoning probe runs
+# Then:  rc=1, layer.session_state FAIL, workspace_mounts still PASS
+# Asserts: identity failure isolation.
 test_reas_session_state_fail() {
   local fix="$FIXTURE_DIR/reas-ss" state="$FIXTURE_DIR/reas_ss.state"
   ( _healthy_reas_env "$fix"
@@ -184,6 +208,10 @@ test_reas_session_state_fail() {
 }
 run_test test_reas_session_state_fail
 
+# Given: AGENT_HOME unset
+# When:  the reasoning probe runs
+# Then:  rc=1, layer.workspace_mounts FAIL, session_state still PASS
+# Asserts: section maps a failing check to its layer name.
 test_reas_workspace_mounts_fail() {
   local fix="$FIXTURE_DIR/reas-ws" state="$FIXTURE_DIR/reas_ws.state"
   ( _healthy_reas_env "$fix"
@@ -196,6 +224,10 @@ test_reas_workspace_mounts_fail() {
 }
 run_test test_reas_workspace_mounts_fail
 
+# Given: AGENT_CMD points to a missing command
+# When:  the reasoning probe runs
+# Then:  rc=1, layer.agent_runtime FAIL, session_state still PASS
+# Asserts: runtime failure isolation.
 test_reas_agent_runtime_fail() {
   local fix="$FIXTURE_DIR/reas-rt" state="$FIXTURE_DIR/reas_rt.state"
   ( _healthy_reas_env "$fix"
@@ -208,6 +240,10 @@ test_reas_agent_runtime_fail() {
 }
 run_test test_reas_agent_runtime_fail
 
+# Given: CHANGES_DIR differs from EXPECTED_MOUNT_TARGET
+# When:  the reasoning probe runs
+# Then:  rc=1, layer.container_network FAIL, session_state still PASS
+# Asserts: a mount-target mismatch is critical.
 test_reas_container_network_fail() {
   local fix="$FIXTURE_DIR/reas-net" state="$FIXTURE_DIR/reas_net.state"
   ( _healthy_reas_env "$fix"
@@ -225,6 +261,10 @@ run_test test_reas_container_network_fail
 # Direct unit test of the shared lib function the probe + diagnostics now use.
 # dry_run_harness.sh (shared across both probes) is referenced by the probes
 # via LIBS_DIR; this literal reference keeps stub-lib liveness truthful.
+# Given: four sandboxes (valid commit, bogus hex, missing key, blob object)
+# When:  init_sha_is_valid runs on each
+# Then:  0, 1, 1, 1
+# Asserts: object existence and commit type are checked, not just hex shape.
 test_init_sha_is_valid_lib() {
   source "$REPO_ROOT/src/libs/session_state.sh"
   source "$REPO_ROOT/src/libs/dry_run_harness.sh"
@@ -255,6 +295,10 @@ run_test test_init_sha_is_valid_lib
 
 # There must be no docker-image layer assertion in the probes (CP-owned/dedup);
 # assert the probes don't emit one, guarding the readiness contract shape.
+# Given: healthy fixtures for both probes
+# When:  each probe runs
+# Then:  neither stdout contains a docker_image section
+# Asserts: docker_image is CP-owned and unasserted by the probes.
 test_no_docker_image_layer_assertion() {
   local fix="$FIXTURE_DIR/no-image-layer"
   local cap_out="$FIXTURE_DIR/cap_noimg.txt" reas_out="$FIXTURE_DIR/reas_noimg.txt"

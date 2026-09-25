@@ -30,6 +30,10 @@ source "${REPO_ROOT}/src/libs/diff_export.sh"
 
 # -- session_save_needed -----------------------------------------------------
 
+# Given: a sandbox with an uncommitted or untracked change
+# When:  session_save_needed runs
+# Then:  rc 0 (save)
+# Asserts: a dirty tree always saves, whatever the baseline.
 test_dirty_tree_always_saves() {
   local fix
   fix=$(get_fixture_dir)
@@ -61,6 +65,10 @@ test_dirty_tree_always_saves() {
 
 }
 
+# Given: a clean tree at the baseline
+# When:  session_save_needed runs
+# Then:  rc 1 (skip)
+# Asserts: no work since the last save.
 test_clean_tree_at_baseline_skips() {
   local fix
   fix=$(get_fixture_dir)
@@ -74,6 +82,10 @@ test_clean_tree_at_baseline_skips() {
   assert_eq "$rc" "1" "clean tree at baseline reports skip (1), not undeterminable"
 }
 
+# Given: a clean tree whose HEAD is past the baseline
+# When:  session_save_needed runs
+# Then:  rc 0 (save)
+# Asserts: new commits force a save even on a clean tree.
 test_clean_tree_past_baseline_saves() {
   local fix
   fix=$(get_fixture_dir)
@@ -99,6 +111,10 @@ test_clean_tree_past_baseline_saves() {
 
 # -- save_decision (the caller-facing dispatch) ------------------------------
 
+# Given: a clean tree at the baseline
+# When:  save_decision runs
+# Then:  rc 1 and the "nothing to save" diagnostic
+# Asserts: the operator-facing skip arm.
 test_save_decision_skip_reports_and_returns_1() {
   local fix
   fix=$(get_fixture_dir)
@@ -112,6 +128,10 @@ test_save_decision_skip_reports_and_returns_1() {
   assert_contains "$out" "session-export: nothing to save" "save_decision: skip prints the label"
 }
 
+# Given: an unreadable repository
+# When:  save_decision runs
+# Then:  rc 0 and the cannot-read warning
+# Asserts: the undeterminable arm saves loudly rather than skipping.
 test_save_decision_undeterminable_saves_and_warns() {
   # The defect this guards: a sandbox whose .git cannot be read must not be
   # reported as "nothing to save". save_decision returns 0 (proceed) and says
@@ -132,6 +152,10 @@ test_save_decision_undeterminable_saves_and_warns() {
 
 # -- _save_baseline ----------------------------------------------------------
 
+# Given: no successful export in the export directory
+# When:  _save_baseline runs
+# Then:  the recorded init_sha is the baseline
+# Asserts: the first-save level.
 test_baseline_falls_back_to_init_sha() {
   local fix
   fix=$(get_fixture_dir)
@@ -145,6 +169,10 @@ test_baseline_falls_back_to_init_sha() {
   assert_eq "$out" "$expect" "_save_baseline falls back to init_sha when no prior export"
 }
 
+# Given: a successful export whose record carries a HEAD line
+# When:  _save_baseline runs
+# Then:  that HEAD is the baseline
+# Asserts: the last-saved level.
 test_baseline_reads_last_export_head() {
   local fix
   fix=$(get_fixture_dir)
@@ -161,6 +189,10 @@ test_baseline_reads_last_export_head() {
   assert_eq "$out" "deadbeefcafe" "_save_baseline uses last saved HEAD over init_sha"
 }
 
+# Given: a failed export that nevertheless carries a HEAD line
+# When:  _save_baseline runs
+# Then:  the baseline falls back to init_sha
+# Asserts: only a successful export moves the baseline.
 test_baseline_ignores_failed_export() {
   local fix
   fix=$(get_fixture_dir)
@@ -180,6 +212,10 @@ test_baseline_ignores_failed_export() {
 
 # -- _write_export_status stamps HEAD ----------------------------------------
 
+# Given: an export with INIT_SHA and HEAD
+# When:  _write_export_status runs
+# Then:  the file has HEAD and INIT_SHA
+# Asserts: the next save's comparison point is stamped.
 test_export_status_stamps_head() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -190,6 +226,10 @@ test_export_status_stamps_head() {
   assert_contains "$_content" "INIT_SHA=init1234" "_write_export_status keeps INIT_SHA"
 }
 
+# Given: an export with no HEAD
+# When:  _write_export_status runs
+# Then:  the file has no HEAD line
+# Asserts: an absent HEAD is omitted.
 test_export_status_no_head_when_empty() {
   local _tmpdir
   _tmpdir=$(get_fixture_dir)
@@ -203,6 +243,10 @@ test_export_status_no_head_when_empty() {
   fi
 }
 
+# Given: a repository git cannot read
+# When:  session_save_needed runs
+# Then:  rc 2 (undeterminable), never the skip code
+# Asserts: a broken sandbox is not reported as nothing to save.
 test_unreadable_repository_is_undeterminable() {
   # A sandbox whose .git cannot be read must not look like "nothing to save".
   # Returns 2 (undeterminable) so the caller saves or fails loudly instead of
@@ -222,6 +266,10 @@ test_unreadable_repository_is_undeterminable() {
 
 # -- export_status_read / export_status_is_success ---------------------------
 
+# Given: a written .export-status
+# When:  export_status_read is called per key
+# Then:  STATUS/HEAD/TIMESTAMP return, and an absent key or file return empty
+# Asserts: the single reader for the file format.
 test_export_status_read_fields() {
   local fix
   fix=$(get_fixture_dir)
@@ -233,6 +281,10 @@ test_export_status_read_fields() {
   assert_eq "$(export_status_read "$fix/nonexistent" STATUS)" "" "reader returns empty for an absent file"
 }
 
+# Given: a SUCCESS record, then a FAIL record, then an absent file
+# When:  export_status_is_success runs
+# Then:  true, then false, then false
+# Asserts: success is exactly STATUS=SUCCESS.
 test_export_status_is_success() {
   local fix
   fix=$(get_fixture_dir)
@@ -255,6 +307,10 @@ test_export_status_is_success() {
   fi
 }
 
+# Given: a dirty tree
+# When:  save_decision runs
+# Then:  rc 0 and no diagnostic
+# Asserts: the save arm is silent.
 test_save_decision_save_arm_is_silent_and_returns_0() {
   local fix
   fix=$(get_fixture_dir)
@@ -269,6 +325,10 @@ test_save_decision_save_arm_is_silent_and_returns_0() {
 
 # -- require_clean_working_tree ---------------------------------------------
 
+# Given: a directory with no repository, a clean committed repository, and that repository made dirty
+# When:  require_clean_working_tree runs for each
+# Then:  it returns 2 for the unreadable tree, 0 for the clean one, and 1 for the dirty one, and prints nothing
+# Asserts: the three-valued verdict callers must not collapse, and the caller owns the message.
 test_clean_tree_guard_is_three_valued() {
   source "$REPO_ROOT/scripts/guards.sh"
   local fix
@@ -292,6 +352,10 @@ test_clean_tree_guard_is_three_valued() {
 
 # -- session_export_needed (exit-time durable-record decision) --------------
 
+# Given: work since the branch point, committed or uncommitted
+# When:  session_export_needed runs
+# Then:  rc 0 (run)
+# Asserts: an ephemeral autosave never suppresses the durable exit export.
 test_session_export_runs_with_work_despite_committed_or_uncommitted() {
   local fix
   fix=$(get_fixture_dir)
@@ -317,6 +381,10 @@ test_session_export_runs_with_work_despite_committed_or_uncommitted() {
   assert_eq "$rc" "0" "session export runs when an autosave already captured the state"
 }
 
+# Given: a clean tree at the branch point
+# When:  session_export_needed runs
+# Then:  rc 1 (skip)
+# Asserts: no work at all means no exit export.
 test_session_export_skips_clean_tree_at_branch_point() {
   local fix
   fix=$(get_fixture_dir)

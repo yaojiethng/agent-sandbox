@@ -51,6 +51,10 @@ run_full_onboard() {
 # ---------------------------------------------------------------------------
 # Test: fresh onboard creates the expected directory structure
 # ---------------------------------------------------------------------------
+# Given: a project dir and an empty sandbox dir, with "y" on stdin
+# When:  onboard runs with --name, --project, and --sandbox
+# Then:  the Makefile, .env, and the three .workspace directories exist
+# Asserts: the fresh-onboard output tree
 test_fresh_onboard_creates_structure() {
   local PROJECT_DIR="$FIXTURE_DIR/fresh_project"
   local SANDBOX_DIR="$FIXTURE_DIR/fresh_sandbox"
@@ -69,6 +73,10 @@ test_fresh_onboard_creates_structure() {
 # ---------------------------------------------------------------------------
 # Test: .env contains required keys
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the generated .env is read
+# Then:  it carries PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, MAKEFILE_VERSION, INSTALL_DIR, SERVE_PORT, AUTOSAVE_INTERVAL
+# Asserts: the .env schema
 test_fresh_onboard_env_has_required_keys() {
   local PROJECT_DIR="$FIXTURE_DIR/env_project"
   local SANDBOX_DIR="$FIXTURE_DIR/env_sandbox"
@@ -91,6 +99,10 @@ test_fresh_onboard_env_has_required_keys() {
 # ---------------------------------------------------------------------------
 # Test: the generated Makefile reads the identity from .env, not a baked literal
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the generated Makefile is read
+# Then:  it forwards --name=$(PROJECT_NAME) and bakes no literal name
+# Asserts: identity lives in .env, not in the Makefile
 test_fresh_onboard_makefile_reads_name_from_env() {
   local PROJECT_DIR="$FIXTURE_DIR/name_env_project"
   local SANDBOX_DIR="$FIXTURE_DIR/name_env_sandbox"
@@ -117,6 +129,10 @@ test_fresh_onboard_makefile_reads_name_from_env() {
 # ---------------------------------------------------------------------------
 # Test: refresh inserts PROJECT_NAME into a pre-P1 (no-name) .env
 # ---------------------------------------------------------------------------
+# Given: a sandbox whose .env predates the PROJECT_NAME line
+# When:  refresh runs
+# Then:  PROJECT_NAME is appended to .env
+# Asserts: the pre-P1 .env migration
 test_refresh_migrates_project_name_into_env() {
   local PROJECT_DIR="$FIXTURE_DIR/migrate_project"
   local SANDBOX_DIR="$FIXTURE_DIR/migrate_sandbox"
@@ -140,6 +156,10 @@ test_refresh_migrates_project_name_into_env() {
 # ---------------------------------------------------------------------------
 # Test: provider config directories are created
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the sandbox is compared against the provider tree
+# Then:  every provider with a non-empty config dir has its .<provider>/ directory
+# Asserts: provider config seeding reaches every provider
 test_fresh_onboard_creates_provider_configs() {
   local PROJECT_DIR="$FIXTURE_DIR/provider_project"
   local SANDBOX_DIR="$FIXTURE_DIR/provider_sandbox"
@@ -170,6 +190,10 @@ test_fresh_onboard_creates_provider_configs() {
 # ---------------------------------------------------------------------------
 # Test: fresh onboard aborts if SANDBOX_DIR already has outputs
 # ---------------------------------------------------------------------------
+# Given: a sandbox directory that already holds a Makefile
+# When:  onboard runs against it
+# Then:  it exits non-zero and reports "already contains"
+# Asserts: the clobber guard refuses an existing sandbox
 test_onboard_aborts_if_sandbox_exists() {
   local PROJECT_DIR="$FIXTURE_DIR/guard_project"
   local SANDBOX_DIR="$FIXTURE_DIR/guard_sandbox"
@@ -199,6 +223,10 @@ test_onboard_aborts_if_sandbox_exists() {
 # ---------------------------------------------------------------------------
 # Test: refresh mode updates Makefile
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose Makefile was deleted
+# When:  refresh runs
+# Then:  the Makefile is present again
+# Asserts: refresh restores the versioned template file
 test_refresh_updates_makefile() {
   local PROJECT_DIR="$FIXTURE_DIR/refresh_project"
   local SANDBOX_DIR="$FIXTURE_DIR/refresh_sandbox"
@@ -219,6 +247,10 @@ test_refresh_updates_makefile() {
 # ---------------------------------------------------------------------------
 # Test: refresh does not clobber .env operator values
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose SERVE_PORT was edited to 99999
+# When:  refresh runs
+# Then:  the edited value survives
+# Asserts: refresh does not clobber operator configuration
 test_refresh_preserves_env_values() {
   local PROJECT_DIR="$FIXTURE_DIR/preserve_project"
   local SANDBOX_DIR="$FIXTURE_DIR/preserve_sandbox"
@@ -240,6 +272,10 @@ test_refresh_preserves_env_values() {
 # ---------------------------------------------------------------------------
 # Test: refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR + SERVE_PORT
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose project moved and whose INSTALL_DIR and SERVE_PORT were edited
+# When:  refresh runs with the new --project
+# Then:  PROJECT_DIR and SANDBOX_DIR are synced and both operator values survive
+# Asserts: the refresh split between derived paths and operator configuration
 test_refresh_syncs_paths_preserves_config() {
   local PROJECT_DIR="$FIXTURE_DIR/sync_paths_project"
   local MOVED_DIR="$FIXTURE_DIR/sync_paths_project_moved"
@@ -272,6 +308,10 @@ test_refresh_syncs_paths_preserves_config() {
 # ---------------------------------------------------------------------------
 # Test: refresh requires --name and --sandbox
 # ---------------------------------------------------------------------------
+# Given: --refresh --sandbox with no --name and stdin at /dev/null
+# When:  onboard runs
+# Then:  it exits non-zero
+# Asserts: refresh requires its minimal arguments; the empty value arrives by EOF, not by a rejected flag
 test_refresh_aborts_without_minimal_args() {
   local SANDBOX_DIR="$FIXTURE_DIR/minargs_sandbox"
   mkdir -p "$SANDBOX_DIR"
@@ -311,6 +351,10 @@ run_test test_refresh_syncs_paths_preserves_config
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/onboard.sh"
 
+# Given: a file whose first line is "# agent-sandbox template version: 3"
+# When:  template_version reads it
+# Then:  it prints 3
+# Asserts: the version marker parse
 test_template_version_reads_marker_line() {
   local f="$FIXTURE_DIR/tpl_with_version"
   printf '# agent-sandbox template version: 3\nother: line\n' > "$f"
@@ -319,6 +363,10 @@ test_template_version_reads_marker_line() {
   assert_eq "$out" "3" "template_version extracts number from marker line"
 }
 
+# Given: a file with no version marker
+# When:  template_version reads it
+# Then:  it prints nothing and exits 0
+# Asserts: an absent marker is an expected empty result, not a failure
 test_template_version_absent_marker_is_empty_and_clean() {
   local f="$FIXTURE_DIR/tpl_no_version"
   printf '# no marker here\ncontent: yes\n' > "$f"
@@ -331,6 +379,10 @@ test_template_version_absent_marker_is_empty_and_clean() {
   fi
 }
 
+# Given: the shipped scripts/templates/Makefile.template
+# When:  template_version reads it
+# Then:  the result matches ^[0-9]+$
+# Asserts: the shipped template carries a parseable version
 test_template_version_real_makefile_template_parses() {
   # The actual shipped template must carry a parseable numeric version  -- 
   # refresh gating silently degrades to "unknown" otherwise.
@@ -344,6 +396,10 @@ test_template_version_real_makefile_template_parses() {
 # its project for the registry rule, but resolved by the dispatcher from .env.
 # The `refresh:` target is the exception: it passes identity flags to `onboard
 # --refresh`, which is exempt from resolution.
+# Given: the shipped template's stop target
+# When:  its block is extracted
+# Then:  it carries --env=$(ENV_FILE) and no --project/--sandbox/--name
+# Asserts: the thin-CLI contract for the run targets
 test_run_targets_are_thin() {
   local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
   local stop_block
@@ -359,6 +415,10 @@ test_run_targets_are_thin() {
   fi
 }
 
+# Given: the shipped template's start target
+# When:  its block is extracted
+# Then:  it carries --env=$(ENV_FILE) and no identity flags
+# Asserts: the thin-CLI contract for start
 test_start_target_is_thin() {
   local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
   local start_block

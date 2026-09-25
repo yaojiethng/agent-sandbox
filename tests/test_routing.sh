@@ -25,36 +25,60 @@ source "$REPO_ROOT/src/libs/session_save_policy.sh"
 # export_path
 # =============================================================================
 
+# Given: a parent, the session subdir, and a session id, with no label
+# When:  export_path runs
+# Then:  the path is <parent>/session/<EXPORT_TIME>-<id>
+# Asserts: the base path shape.
 test_export_path_session() {
   local RESULT
   RESULT=$(export_path "/changes" "session" "a1b2c3")
   assert_matches "$RESULT" '^/changes/session/[0-9]{8}-[0-9]{6}-a1b2c3$' "export_path constructs session path with EXPORT_TIME-SESSION_ID"
 }
 
+# Given: SUBDIR=autosave
+# When:  export_path runs
+# Then:  no EXPORT_TIME appears (one directory, overwritten)
+# Asserts: the autosave exception.
 test_export_path_autosave() {
   local RESULT
   RESULT=$(export_path "/changes" "autosave" "a1b2c3")
   assert_eq "$RESULT" "/changes/autosave/a1b2c3" "export_path constructs autosave path without EXPORT_TIME (single, overwritten)"
 }
 
+# Given: a label
+# When:  export_path runs for bundles
+# Then:  the label sits between EXPORT_TIME and the session id
+# Asserts: label position.
 test_export_path_bundles_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3" "my-feature")
   assert_matches "$RESULT" '^/output/bundles/[0-9]{8}-[0-9]{6}-my-feature-a1b2c3$' "export_path bundles: EXPORT_TIME-LABEL-SESSION_ID"
 }
 
+# Given: no label
+# When:  export_path runs for bundles
+# Then:  the path is <EXPORT_TIME>-<session-id>
+# Asserts: the no-label branch.
 test_export_path_bundles_no_label() {
   local RESULT
   RESULT=$(export_path "/output" "bundles" "a1b2c3")
   assert_matches "$RESULT" '^/output/bundles/[0-9]{8}-[0-9]{6}-a1b2c3$' "export_path bundles: EXPORT_TIME-SESSION_ID (no label)"
 }
 
+# Given: SUBDIR=diffs
+# When:  export_path runs
+# Then:  the same shape is produced
+# Asserts: the constructor does not special-case its subdir argument.
 test_export_path_diffs_with_label() {
   local RESULT
   RESULT=$(export_path "/output" "diffs" "a1b2c3" "snapshot")
   assert_matches "$RESULT" '^/output/diffs/[0-9]{8}-[0-9]{6}-snapshot-a1b2c3$' "export_path diffs: EXPORT_TIME-LABEL-SESSION_ID"
 }
 
+# Given: three empty required arguments
+# When:  export_path runs
+# Then:  rc is non-zero
+# Asserts: the required-argument guard.
 test_export_path_missing_args() {
   if export_path "" "" "" 2>/dev/null; then
     fail "export_path should fail with empty args"
@@ -63,6 +87,10 @@ test_export_path_missing_args() {
   fi
 }
 
+# Given: an empty session id
+# When:  export_path runs
+# Then:  rc is non-zero
+# Asserts: the guard through the id argument.
 test_export_path_missing_session_id() {
   if export_path "/changes" "session" "" 2>/dev/null; then
     fail "export_path should fail with empty SESSION_ID"
@@ -75,6 +103,10 @@ test_export_path_missing_session_id() {
 # resolve_source_for_draft
 # =============================================================================
 
+# Given: a session channel holding one export directory
+# When:  resolve_source_for_draft runs with the default channel
+# Then:  that directory resolves
+# Asserts: the default channel and auto-resolution.
 test_resolve_draft_default_channel() {
   # Setup: create a session dir under session/
   local SD="$FIXTURE_DIR/sandbox"
@@ -93,6 +125,10 @@ test_resolve_draft_default_channel() {
   fi
 }
 
+# Given: channel=autosave and a populated autosave base
+# When:  resolve_source_for_draft runs
+# Then:  the source comes from the autosave base
+# Asserts: the channel mapping.
 test_resolve_draft_explicit_channel_autosave() {
   local SD="$FIXTURE_DIR/sandbox2"
   mkdir -p "$SD/.workspace/session-diffs/autosave/20260408-120000-main/patches"
@@ -107,6 +143,10 @@ test_resolve_draft_explicit_channel_autosave() {
 
 # Autosave auto-resolution must follow the directory MTIME (last saved), not
 # the name: autosave dirs are named by SESSION_ID, so name order is meaningless.
+# Given: two autosave directories where the lexicographic maximum is the older one
+# When:  resolve_source_for_draft auto-resolves
+# Then:  the newest by mtime wins
+# Asserts: the mtime rule for the autosave channel.
 test_resolve_draft_autosave_newest_by_mtime() {
   local SD="$FIXTURE_DIR/sandbox_mtime"
   local BASE="$SD/.workspace/session-diffs/autosave"
@@ -128,6 +168,10 @@ test_resolve_draft_autosave_newest_by_mtime() {
 # the shipped autosave_cycle: an interrupted cycle leaves the staging path
 # outside autosave/, so the readers cannot pick it up. Guards the invariant
 # that the channel holds checkpoint directories only.
+# Given: an interrupted cycle leaves its staging path outside the channel
+# When:  the channel is resolved
+# Then:  the staging directory is never selectable
+# Asserts: the channel holds checkpoint directories only.
 test_staging_dir_is_not_selectable() {
   local SD="$FIXTURE_DIR/sandbox_staging"
   local CHANGES="$SD/.workspace/session-diffs"
@@ -159,6 +203,12 @@ test_staging_dir_is_not_selectable() {
 # detect the production code drifting). Two defects lived here: the staging
 # path inside the channel, and `mv` into a channel directory that was never
 # created, which failed outright on a fresh sandbox.
+# Given: a checkpoint directory and its channel
+# When:  autosave_cycle runs with a successful export
+# Then:  the checkpoint lands at the channel path, the staging path is cleared,
+#        nothing is nested inside the checkpoint, and no staging or aside path survives
+# Asserts: the swap sequence and its cleanup invariants (also covers the failed-export
+#          log rescue: the export's EXPORT-ERROR.log is moved beside the channel).
 test_autosave_swap_sequence() {
   local SD="$FIXTURE_DIR/sandbox_swap"
   local CHANGES="$SD/.workspace/session-diffs"
@@ -282,6 +332,10 @@ test_autosave_swap_sequence() {
 # -- exactly the condition the mechanism has to survive. A fixture script
 # sources the shipped library under `set -euo pipefail`, runs one tick whose
 # export fails, and must reach a second tick.
+# Given: a tick whose decision is undeterminable, under a real set -e shell
+# When:  the tick runs
+# Then:  it returns without aborting the cell
+# Asserts: every tick status is absorbed under set -e.
 test_autosave_tick_absorbs_status_under_real_set_e() {
   local probe="$FIXTURE_DIR/loop_probe.sh"
   local SD="$FIXTURE_DIR/sandbox_probe"
@@ -322,6 +376,10 @@ EOF
 # `set -euo pipefail` shell, so removing the `|| true` from `autosave_loop`
 # aborts the probe on the first failing tick and the marker file never
 # appears.
+# Given: a loop whose export command fails on every call
+# When:  autosave_loop runs until it is signalled
+# Then:  it keeps ticking, and an unset session id is reported rather than fatal
+# Asserts: no tick outcome ends the loop.
 test_autosave_loop_survives_failing_ticks() {
   source "$REPO_ROOT/src/libs/routing.sh"
   local SD="$FIXTURE_DIR/sandbox_tickloop"
@@ -379,6 +437,11 @@ EOF
 # entrypoint passes to diff_export. That gap shipped a production break: the
 # extracted tick dropped $SANDBOX_DIR, so every real tick called
 # diff_export <staging> <session-id> and autosave never wrote a checkpoint.
+# Given: the shipped call site's stub export
+# When:  autosave_cycle invokes it
+# Then:  arg 1 is the sandbox dir, arg 2 the staging path, arg 3 the session id
+# Asserts: the cycle supplies the export arguments, the regression that once broke
+#          every autosave in production while the suite stayed green.
 test_entrypoint_autosave_call_arguments() {
   source "$REPO_ROOT/src/libs/routing.sh"
   local SD="$FIXTURE_DIR/sandbox_callargs"
@@ -407,6 +470,11 @@ test_entrypoint_autosave_call_arguments() {
 # checkpoint byte-identical, not replace it with an empty SUCCESS bundle. Stub
 # export verbs cannot observe this, because they replace the layer that used to
 # swallow the failure.
+# Given: an unreadable repository and a healthy one
+# When:  autosave_cycle runs against each
+# Then:  the healthy cycle writes a non-empty checkpoint and the unreadable one
+#        saves anyway rather than reporting nothing to save
+# Asserts: the undeterminable path end to end.
 test_autosave_cycle_refuses_unreadable_repo_end_to_end() {
   source "$REPO_ROOT/src/libs/export_status.sh"
   source "$REPO_ROOT/src/libs/session_state.sh"
@@ -446,6 +514,10 @@ test_autosave_cycle_refuses_unreadable_repo_end_to_end() {
 }
 
 # The same mtime semantics for the raw helper (entrypoint autosave fallback).
+# Given: directories with distinct mtimes
+# When:  resolve_latest_dir_by_mtime runs
+# Then:  the newest directory path is printed
+# Asserts: the mtime read and the %T@ / path split.
 test_resolve_latest_dir_by_mtime() {
   local B="$FIXTURE_DIR/mtime_base"
   mkdir -p "$B/aaa" "$B/mmm" "$B/zzz"
@@ -462,6 +534,10 @@ test_resolve_latest_dir_by_mtime() {
   fi
 }
 
+# Given: a BUNDLE_ARG naming an existing directory
+# When:  resolve_source_for_draft runs
+# Then:  that directory resolves
+# Asserts: name-only resolution.
 test_resolve_draft_named_session() {
   local SD="$FIXTURE_DIR/sandbox3"
   mkdir -p "$SD/.workspace/session-diffs/session/my-session/patches"
@@ -475,6 +551,10 @@ test_resolve_draft_named_session() {
   assert_eq "$BUNDLE_NAME" "my-session" "resolve_source_for_draft: named session resolves correctly"
 }
 
+# Given: an absolute BUNDLE_ARG
+# When:  resolve_source_for_draft runs
+# Then:  rc is non-zero
+# Asserts: the rejection at return-code level only - the diagnostic is unpinned (finding 49).
 test_resolve_draft_absolute_path_rejected() {
   local SD="$FIXTURE_DIR/sandbox4"
   mkdir -p "$SD/.workspace/output/bundles"
@@ -486,6 +566,10 @@ test_resolve_draft_absolute_path_rejected() {
   fi
 }
 
+# Given: a BUNDLE_ARG that names nothing
+# When:  resolve_source_for_draft runs
+# Then:  rc is non-zero
+# Asserts: the existence check.
 test_resolve_draft_missing_session() {
   local SD="$FIXTURE_DIR/sandbox5"
   mkdir -p "$SD/.workspace/session-diffs/session"
@@ -497,6 +581,10 @@ test_resolve_draft_missing_session() {
   fi
 }
 
+# Given: channel=bundles and a populated bundles base
+# When:  resolve_source_for_draft runs
+# Then:  the source comes from OUTPUT_DIR/bundles
+# Asserts: the bundles mapping.
 test_resolve_draft_bundles_channel() {
   local SD="$FIXTURE_DIR/sandbox6"
   mkdir -p "$SD/.workspace/output/bundles/20260408-120000-my-bundle/patches"
@@ -509,6 +597,10 @@ test_resolve_draft_bundles_channel() {
   assert_eq "$BUNDLE_NAME" "20260408-120000-my-bundle" "resolve_source_for_draft: bundles channel resolves correctly"
 }
 
+# Given: an unknown channel
+# When:  resolve_channel_base_dir runs
+# Then:  rc 1 and the valid-channel list is printed
+# Asserts: rejection with guidance.
 test_resolve_draft_invalid_channel() {
   local SD="$FIXTURE_DIR/sandbox7"
   mkdir -p "$SD/.workspace"
@@ -524,6 +616,10 @@ test_resolve_draft_invalid_channel() {
 # resolve_channel_base_dir
 # =============================================================================
 
+# Given: channel=session
+# When:  resolve_channel_base_dir runs
+# Then:  it prints CHANGES_DIR/session
+# Asserts: the session mapping.
 test_resolve_channel_base_dir_session() {
   local SD="$FIXTURE_DIR/routing_c1"
   mkdir -p "$SD/.workspace"
@@ -533,6 +629,10 @@ test_resolve_channel_base_dir_session() {
   assert_eq "$RESULT" "${CHANGES_DIR}/session" "resolve_channel_base_dir: session -> CHANGES_DIR/session"
 }
 
+# Given: channel=autosave
+# When:  resolve_channel_base_dir runs
+# Then:  it prints CHANGES_DIR/autosave
+# Asserts: the autosave mapping.
 test_resolve_channel_base_dir_autosave() {
   local SD="$FIXTURE_DIR/routing_c2"
   mkdir -p "$SD/.workspace"
@@ -544,6 +644,10 @@ test_resolve_channel_base_dir_autosave() {
 
 
 
+# Given: channel=bundles
+# When:  resolve_channel_base_dir runs
+# Then:  it prints OUTPUT_DIR/bundles
+# Asserts: the bundles mapping.
 test_resolve_channel_base_dir_bundles() {
   local SD="$FIXTURE_DIR/routing_c4"
   mkdir -p "$SD/.workspace"
@@ -553,6 +657,10 @@ test_resolve_channel_base_dir_bundles() {
   assert_eq "$RESULT" "${OUTPUT_DIR}/bundles" "resolve_channel_base_dir: bundles -> OUTPUT_DIR/bundles"
 }
 
+# Given: an unknown channel
+# When:  resolve_channel_base_dir runs
+# Then:  rc 1 and the valid-channel list is printed
+# Asserts: rejection (same behaviour as test_resolve_draft_invalid_channel, different name; finding 52).
 test_resolve_channel_base_dir_invalid() {
   local SD="$FIXTURE_DIR/routing_c5"
   mkdir -p "$SD/.workspace"
@@ -569,6 +677,10 @@ test_resolve_channel_base_dir_invalid() {
 # resolve_channel_base_dir
 # =============================================================================
 
+# Given: all three channel names in one pass
+# When:  resolve_channel_base_dir runs for each
+# Then:  each maps to its resolved base
+# Asserts: the whole mapping table.
 test_channel_base_dir_all_channels() {
   local OUT
   OUT=$(CHANGES_DIR=/c OUTPUT_DIR=/o bash -c '
@@ -579,6 +691,10 @@ test_channel_base_dir_all_channels() {
   assert_eq "$OUT" "/c/session|/c/autosave|/o/bundles" "resolve_channel_base_dir: session/autosave under CHANGES_DIR, bundles under OUTPUT_DIR"
 }
 
+# Given: an unknown channel
+# When:  resolve_channel_base_dir runs
+# Then:  rc 1 and the valid-channel hint
+# Asserts: rejection with guidance (overlaps test_resolve_channel_base_dir_invalid).
 test_channel_base_dir_unknown_rejected() {
   local OUT RC=0
   OUT=$(resolve_channel_base_dir bogus 2>&1 </dev/null) || RC=$?
@@ -593,6 +709,10 @@ test_channel_base_dir_unknown_rejected() {
 # resolve_latest_dir
 # =============================================================================
 
+# Given: a base directory that does not exist
+# When:  resolve_latest_dir runs
+# Then:  rc is non-zero
+# Asserts: the missing-base guard (one of two units for this case; finding 52).
 test_latest_dir_missing_base_fails() {
   if resolve_latest_dir "$FIXTURE_DIR/no-such-base" 2>/dev/null; then
     fail "resolve_latest_dir should fail on missing base dir"
@@ -601,6 +721,10 @@ test_latest_dir_missing_base_fails() {
   fi
 }
 
+# Given: a base directory with no subdirectories
+# When:  resolve_latest_dir runs
+# Then:  rc is non-zero
+# Asserts: the no-subdirectory guard (one of two units for this case; finding 52).
 test_latest_dir_empty_base_fails() {
   mkdir -p "$FIXTURE_DIR/empty_base"
   if resolve_latest_dir "$FIXTURE_DIR/empty_base" 2>/dev/null; then
@@ -610,6 +734,10 @@ test_latest_dir_empty_base_fails() {
   fi
 }
 
+# Given: three directories whose mtimes oppose their names
+# When:  resolve_latest_dir runs
+# Then:  the lexicographic maximum wins
+# Asserts: name order, not mtime (one of two units for this case; finding 52).
 test_latest_dir_picks_lexicographically_last() {
   # Implementation is `find | sort | tail`  --  the contract is LEXICOGRAPHIC,
   # not mtime. Pin that so nobody 'fixes' it silently.
@@ -626,6 +754,10 @@ test_latest_dir_picks_lexicographically_last() {
 # _resolve_paths  --  SESSION_STATE overrides vs dirs_resolve fallback
 # =============================================================================
 
+# Given: a complete SESSION_STATE record
+# When:  _resolve_paths runs
+# Then:  all three recorded values are used
+# Asserts: state overrides the conventions.
 test_resolve_paths_state_overrides_win() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   source "$TEST_DIR/libs/session_fixtures.sh"
@@ -647,6 +779,10 @@ test_resolve_paths_state_overrides_win() {
   fi
 }
 
+# Given: no SESSION_STATE record
+# When:  _resolve_paths runs
+# Then:  the dirs_resolve conventions are used
+# Asserts: the fallback (the partial-state case is unasserted; finding 50).
 test_resolve_paths_falls_back_to_dirs_resolve() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   local SD="$FIXTURE_DIR/rp_fallback"
@@ -707,6 +843,10 @@ run_test test_resolve_channel_base_dir_bundles
 # =============================================================================
 
 # Missing base directory -> exit 1, no output.
+# Given: a base directory that does not exist
+# When:  resolve_latest_dir runs
+# Then:  rc is non-zero with no output
+# Asserts: the same case as test_latest_dir_missing_base_fails, under the other naming convention (finding 52).
 test_resolve_latest_dir_missing_base_fails() {
   local out rc
   out=$(resolve_latest_dir "$FIXTURE_DIR/does-not-exist" 2>/dev/null); rc=$?
@@ -718,6 +858,10 @@ test_resolve_latest_dir_missing_base_fails() {
 }
 
 # Empty base directory -> exit 1, no output.
+# Given: a base directory with no subdirectories
+# When:  resolve_latest_dir runs
+# Then:  rc is non-zero with no output
+# Asserts: the same case as test_latest_dir_empty_base_fails, under the other naming convention (finding 52).
 test_resolve_latest_dir_empty_base_fails() {
   mkdir -p "$FIXTURE_DIR/empty_base"
   local out rc
@@ -732,6 +876,10 @@ test_resolve_latest_dir_empty_base_fails() {
 # Files are ignored; lexicographic max wins. Session dirs are zero-padded
 # timestamps, so lexicographic order equals chronological order  --  pin that
 # assumption with realistic names.
+# Given: timestamped directories plus a stray file
+# When:  resolve_latest_dir runs
+# Then:  the lexicographic maximum directory wins and the file is ignored
+# Asserts: the files-ignored clause, extending test_latest_dir_picks_lexicographically_last (finding 52).
 test_resolve_latest_dir_picks_lexicographic_max_ignoring_files() {
   local B="$FIXTURE_DIR/latest_base_dated"
   mkdir -p "$B/20260501-120000" "$B/20260401-090000" "$B/20260601-010000"

@@ -12,6 +12,10 @@ test_setup
 source "$REPO_ROOT/src/libs/env_resolve.sh"
 
 
+# Given: a fixture .env, an explicit name flagName and dir /explicit, and AGENT_SANDBOX_PROJECT_NAME=envvar
+# When:  env_resolve_identity runs
+# Then:  PROJECT_NAME=flagName, PROJECT_DIR=/explicit, SANDBOX_DIR=<dir>
+# Asserts: the explicit level beats both the AGENT_SANDBOX_* env var and .env.
 test_resolve_explicit_wins_over_env_and_file() {
   local dir="$FIXTURE_DIR/explicit"; make_envfile "$dir" envname "$dir/envproj" "$dir"
   local OUT RC=0
@@ -25,6 +29,10 @@ test_resolve_explicit_wins_over_env_and_file() {
   fi
 }
 
+# Given: a fixture .env and AGENT_SANDBOX_PROJECT_NAME=fromenv
+# When:  env_resolve_identity runs
+# Then:  PROJECT_NAME=fromenv
+# Asserts: the AGENT_SANDBOX_* env var beats .env.
 test_resolve_env_var_wins_over_file() {
   local dir="$FIXTURE_DIR/envvar"; make_envfile "$dir" envname "$dir/envproj" "$dir"
   local OUT RC=0
@@ -38,6 +46,10 @@ test_resolve_env_var_wins_over_file() {
   fi
 }
 
+# Given: a fixture .env only
+# When:  env_resolve_identity runs
+# Then:  PROJECT_NAME=envname and PROJECT_DIR=<dir>/envproj
+# Asserts: .env supplies the identity when no flag and no AGENT_SANDBOX_* var.
 test_resolve_file_provides_value() {
   local dir="$FIXTURE_DIR/fileonly"; make_envfile "$dir" envname "$dir/envproj" "$dir"
   local OUT RC=0
@@ -50,6 +62,10 @@ test_resolve_file_provides_value() {
   fi
 }
 
+# Given: no value at any level and an absent .env
+# When:  env_resolve_identity runs
+# Then:  rc is non-zero and stderr names "not set" and "onboard"
+# Asserts: a missing value at every level is a hard error with the onboard remedy.
 test_resolve_missing_all_is_hard_error() {
   local OUT RC=0
   OUT=$(env_resolve_identity "" "" "" "$FIXTURE_DIR/absent.env" 2>&1) || RC=$?
@@ -60,6 +76,10 @@ test_resolve_missing_all_is_hard_error() {
   fi
 }
 
+# Given: an explicit sandbox dir and the CWD moved elsewhere
+# When:  env_resolve_identity runs
+# Then:  PROJECT_NAME=envname from that dir's .env
+# Asserts: the .env location derives from the provided sandbox dir, not the CWD.
 test_resolve_env_file_in_provided_sandbox_dir() {
   # Sandbox dir given (explicit); .env location derives from it, not the CWD.
   local dir="$FIXTURE_DIR/indir"; make_envfile "$dir" envname "$dir/envproj" "$dir"
@@ -73,6 +93,10 @@ test_resolve_env_file_in_provided_sandbox_dir() {
   fi
 }
 
+# Given: no sandbox dir and the CWD holding a .env
+# When:  env_resolve_identity runs
+# Then:  all three fields come from the CWD .env
+# Asserts: with no sandbox known, the .env comes from the invocation CWD.
 test_resolve_env_file_cwd_fallback() {
   # No sandbox dir known -> the resolver falls back to the invocation CWD's .env.
   local dir="$FIXTURE_DIR/cwdfb"; make_envfile "$dir" envname "$dir/envproj" "$dir"
@@ -86,6 +110,10 @@ test_resolve_env_file_cwd_fallback() {
   fi
 }
 
+# Given: a plain exported PROJECT_NAME=leaked, a fixture .env, and an explicit sandbox dir
+# When:  env_resolve_identity runs
+# Then:  PROJECT_NAME=envname
+# Asserts: only the AGENT_SANDBOX_* keys form the env level; a leaked plain name does not bypass .env.
 test_resolve_ignores_leaked_plain_export() {
   # A plain exported PROJECT_NAME (leaked by a sourced script) must NOT beat
   # .env: only the AGENT_SANDBOX_* keys are the env level.

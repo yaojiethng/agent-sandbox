@@ -22,6 +22,10 @@ source "$REPO_ROOT/src/libs/dirs.sh"
 
 # Each test runs dirs_resolve in a subshell so exported vars do not leak.
 
+# Given: an empty BASE_DIR
+# When:  dirs_resolve runs
+# Then:  it returns non-zero
+# Asserts: BASE_DIR is required.
 test_requires_base_dir() {
   if (dirs_resolve "" 2>/dev/null); then
     fail "dirs_resolve should fail without BASE_DIR"
@@ -30,6 +34,10 @@ test_requires_base_dir() {
   fi
 }
 
+# Given: the leaf env vars unset
+# When:  dirs_resolve /srv/sandbox runs
+# Then:  CHANGES/INPUT/OUTPUT sit under .workspace
+# Asserts: the host default layout.
 test_host_default_paths() {
   local OUT
   OUT=$(
@@ -41,6 +49,10 @@ test_host_default_paths() {
   assert_eq "$OUT" "$exp" "host default: CHANGES_DIR/INPUT/OUTPUT under .workspace"
 }
 
+# Given: WORKSPACE_DIR_NAME=workspace
+# When:  dirs_resolve /home/agentuser runs
+# Then:  CHANGES/INPUT/OUTPUT sit under workspace
+# Asserts: the container override of the workspace leaf.
 test_container_override() {
   local OUT
   OUT=$(
@@ -52,6 +64,10 @@ test_container_override() {
   assert_eq "$OUT" "$exp" "container override: WORKSPACE_DIR_NAME=workspace yields correct paths"
 }
 
+# Given: CHANGES_DIR_NAME=workspace/session-diffs (slash-bearing)
+# When:  dirs_resolve runs
+# Then:  the path doubles: /home/agentuser/workspace/workspace/session-diffs
+# Asserts: the current behaviour that a slash-bearing leaf doubles the subpath (documents, does not prevent).
 test_changes_dir_name_is_leaf() {
   # CHANGES_DIR_NAME is a leaf name; a slash-bearing value is a misconfiguration
   # that would double the subpath (the historical bug this suite guards against).
@@ -65,6 +81,10 @@ test_changes_dir_name_is_leaf() {
   assert_eq "$OUT" "/home/agentuser/workspace/workspace/session-diffs" "leaf-enforcement: slash-bearing CHANGES_DIR_NAME is caught as doubled path"
 }
 
+# Given: custom CHANGES_DIR_NAME/INPUT_DIR_NAME/OUTPUT_DIR_NAME
+# When:  dirs_resolve /base runs
+# Then:  the custom leaves appear in the paths
+# Asserts: custom leaf names override the defaults.
 test_custom_leaf_overrides() {
   local OUT
   OUT=$(
@@ -79,6 +99,10 @@ test_custom_leaf_overrides() {
 
 # lib_preflight: the shared loop both entrypoints call. Ordering and severity
 # behaviour are the contract.
+# Given: all listed libraries present
+# When:  lib_preflight runs
+# Then:  rc is 0 and nothing is printed
+# Asserts: a complete library set passes silently.
 test_lib_preflight_passes_when_all_present() {
   local d="$FIXTURE_DIR/libs_ok"
   mkdir -p "$d"
@@ -89,6 +113,10 @@ test_lib_preflight_passes_when_all_present() {
   assert_eq "$OUT" "" "lib_preflight: all present -> silent"
 }
 
+# Given: a missing CRITICAL library
+# When:  lib_preflight runs
+# Then:  rc is 1
+# Asserts: a missing CRITICAL library refuses (stale image).
 test_lib_preflight_critical_exits() {
   local d="$FIXTURE_DIR/libs_crit"
   mkdir -p "$d"
@@ -98,6 +126,10 @@ test_lib_preflight_critical_exits() {
   assert_eq "$RC" "1" "lib_preflight: a missing CRITICAL file returns 1"
 }
 
+# Given: a missing WARN library
+# When:  lib_preflight runs
+# Then:  rc is 0 and the output names the remedy
+# Asserts: a missing WARN library warns and continues.
 test_lib_preflight_warn_continues() {
   local d="$FIXTURE_DIR/libs_warn"
   mkdir -p "$d"

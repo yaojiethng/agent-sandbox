@@ -77,6 +77,10 @@ run_entrypoint() {
   invoke_entrypoint_mount "$dir"
 }
 
+# Given: a mount-delivery entrypoint copy and a worktree directory carrying no .git
+# When:  the entrypoint runs
+# Then:  it exits non-zero and the message names the missing .git
+# Asserts: a failed host materialization fails closed
 test_mount_fail_closed_no_git() {
   local dir="$FIXTURE_DIR/mount_nogit"
   mkdir -p "$dir/worktree" "$dir/.workspace/session-diffs" \
@@ -100,6 +104,12 @@ test_mount_fail_closed_no_git() {
   assert_contains "$EP_OUT" "no .git" "mount without .git: remediation message names the missing .git"
 }
 
+# Given: a mount-delivery worktree that is a git repo with no SESSION_STATE
+# When:  the entrypoint runs to its readiness marker and then receives SIGTERM
+# Then:  rc is 0 and SESSION_STATE carries init_sha (a real commit), the identity fields, and the workspace path fields
+# Asserts: the first mount run writes the init marker and the path fields
+# Note:  FLATTEN is unset, so only the non-flatten init_sha branch runs (finding 110);
+#        the preflight's SESSION_STATE checks read the container's hardcoded path, not this fixture (finding 105)
 test_mount_first_run_writes_init_marker() {
   local dir="$FIXTURE_DIR/mount_first"
   run_entrypoint "$dir"
@@ -133,6 +143,10 @@ test_mount_first_run_writes_init_marker() {
     || fail "first mount run: workspace path fields missing"
 }
 
+# Given: a worktree whose SESSION_STATE carries an earlier session's identity
+# When:  the entrypoint runs and receives SIGTERM
+# Then:  the existing session_id and session_ts survive and the workspace path fields are refreshed
+# Asserts: an attach preserves identity while it re-writes the paths
 test_mount_attach_preserves_existing_state() {
   local dir="$FIXTURE_DIR/mount_attach"
   mkdir -p "$dir/worktree" "$dir/.workspace/session-diffs" \
