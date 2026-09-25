@@ -283,6 +283,51 @@ The main risk is that the workflow becomes ceremony: a brief, a fan-out, a regis
 
 One consequence is deliberately left open: the six design notes stay draft. Settling them into ADRs is the design lane's work, and this note does not choose their order beyond the record's proposed order.
 
+## Resolution status (2026-09-25)
+
+The decision items and the record-integrity defects below were checked against the tree after the read-through's follow-on work. Counts are read from the register's findings data file, [`20260924-design-active-test_suite_readthrough.jsonl`](20260924-design-active-test_suite_readthrough.jsonl), never restated by hand.
+
+| Decision item | Status | Evidence |
+|---|---|---|
+| 1. The read-through as a standing workflow brief | landed | `workflow/coding-agent/prompts/read-through-run.md`, linked from the testing policy |
+| 2. Keep the review passes, add the mutation step, retire the reasoning-only assertion audit | open | logged as a T1 draft row: "Review-pass workflow: the mutation step, the churn pass, and the review-audit surface" |
+| 3. The churn survey as a second workflow | landed | `workflow/coding-agent/prompts/churn-analysis-run.md`, with the pinned command and window |
+| 4. The fan-out protocol | landed as draft | `workflow/coding-agent/prompts/fanout-run.md` |
+| 5. The bite identifier and the glossary | landed | the glossary and the `bite <row>.<n>` rule in the read-through brief |
+| 6. The register's table as the source of truth | superseded | the register is now JSON Lines with a computed-count rule |
+| 7. Three lanes, with the immediate lane landing in this branch | partly landed | 78 rows resolved; the gated lane and the design lane remain |
+| 8. Contain the branch | followed | the fix lanes changed no production rewrite |
+| 9. Split the close into four products | partly landed | the operator review and the fix-batch plan landed; the six design notes are now assigned to tracks rather than handovers of their own, and the churn workflow's adoption is a T1 draft row |
+
+### Record-integrity findings
+
+| Defect | Status |
+|---|---|
+| Findings table tail out of order | resolved |
+| Disposition count disagrees, 49 against 50 | resolved |
+| Cluster count disagrees, 16 against 31 | resolved |
+| Test-file count disagrees, 46 against 49 | resolved |
+| Proposed-order row counts are not reconstructible | resolved: the section now cites the data file's sector totals and the unresolved count beside each |
+| Consolidation map structure | resolved |
+| Twenty-seven rows with unescaped pipes and eighteen padded code spans | resolved, and impossible by construction in a line-oriented file |
+
+### Remaining work
+
+Of the 312 findings, 78 are resolved and 11 are accepted, so 223 remain: one is stale, and the other 222 are open work.
+
+| Group | Rows | Home after the digest |
+|---|---|---|
+| Test-class rows | 130 | M3.1, the rectification campaign: coverage, slicing, and the conventions edit |
+| Note rows feeding the design notes | 58 | by sector: A to T10, B to T11, C and I to M3.1, D to T7, F split between T9's image and container rows and T4's onboarding row, G to T1, H to T10, and J's six relational rows attached one by one |
+| Code rows | 33 | the track owning each file; 4 blocked on a file boundary and 2 awaiting a design decision |
+| Documentation row blocked on its owner | 1 | M3.1, with the campaign |
+
+The digest's product is the roadmap's T1, T4, T7, T8, T9, T10 and T11 rows and the M3.1 additions; every unresolved row now has a track, a campaign, or a named instance.
+
+Unresolved by sector: A 45, B 12, C 36, D 14, F 36, G 4, H 5, I 61, J 6, no sector 3.
+
+Two items outside the register also await a decision: the review-pass mutation step (decision item 2), and whether the churn workflow is adopted as a standing pass (decision item 9).
+
 ## Appendix - evidence and validated counts
 
 ### Validation methods
