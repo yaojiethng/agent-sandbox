@@ -171,6 +171,8 @@ fi
 
 **Rule:** Assert the meaning, not the string. Prefer "the provider cell shows the provider" over "the cell does not contain the old suffix". Freeze a user-visible format only after the operator accepts it, and record why the format is a contract. When a test pins an exact string or byte class, the test (or its header comment) must cite the record that decides the pin (roadmap item, ADR, or design discussion). An uncited pin is change-mirror risk: no reader can tell contract from convenience.
 
+**The removed-design form.** A unit that pins the removal of a design asserts a fact true of any implementation: that a name no code creates stays absent, or that a stale value stays untouched. Both hold however the code is written, so the unit cannot fail for a reason that matters, and its name still describes the retired design. Rewrite the unit against the guard the code provides today, and rename it to say what it now guards. Example: `test_confirm_conflict_no_savepoint_tag_aborts_cleanly` and `test_confirm_conflict_stale_savepoint_preserves_draft` in `tests/test_confirm_workflow.sh` assert that a `confirm-savepoint` tag no code creates stays absent and a stale one stays untouched; both hold for every implementation.
+
 ### Anti-Pattern 7: Test-the-Copy
 
 **Symptom:** A test file contains a verbatim copy of a production function (inlined in the test file) and tests that copy. The tests stay green while production changes; the copy silently diverges.
@@ -188,6 +190,14 @@ fi
 **Rule:** A unit test probes the rule with fixtures that carry the positive and negative cases it must handle. A whole-tree scan as an assertion is an anti-pattern when the corpus is incidental (the pass holds only because the current files happen not to vary) and when it is expensive enough to slow the suite; in that case the negative cases you care about are the fixtures, and asserting zero findings across the whole tree is the lint gate's responsibility, not a fixture test's. A whole-tree conformance smoke is acceptable when it is cheap and the scanned corpus is exactly the object the rule governs (so the corpus itself is the negative-case set) -- for example `test_lib_contract.sh` scans the sourced libraries the return-not-exit rule constrains in ~0.1s. Either way, a whole-tree scan must never substitute for the fixture tests that carry the rule's behaviour.
 
 **Example:** `test_doc_wrap_rule.sh`'s `test_real_tree_zero_findings` ran `markdownlint-cli2` over every `.md` file in the repository with the rule on. It added about 4 seconds of node time to the suite and could pass only as long as no project file ever hard-wrapped prose -- a fact unrelated to whether the rule rejects wrapped fixtures. Removed as Anti-Pattern 8 (iteration `20260921-13`); the fixture tests carry the rule's behaviour, and the whole-tree lint is `check_markdown.sh`'s job.
+
+### Anti-Pattern 9: The Duplicate Unit
+
+**Symptom:** Two units assert the same property, so both run and both pass while the suite grows. The second is usually an appended block from a merge, written under a divergent naming convention for behaviour the file already covers.
+
+**Example:** `tests/test_routing.sh` carries three near-duplicate pairs, among them `test_latest_dir_missing_base_fails` beside `test_resolve_latest_dir_missing_base_fails`, and `test_latest_dir_picks_lexicographically_last` beside `test_resolve_latest_dir_picks_lexicographic_max_ignoring_files`. The pairs do not differ in what they pin, and the second member of each sits in a block appended after the first `run_test` group.
+
+**Rule:** One unit per case. When two units assert the same property, keep one and fold any extra clause into the survivor: the files-ignored clause of the selection pair belongs in the surviving assertion, not in a second unit. A pair that genuinely differs differs in a named behaviour, and each name states its own. A unit that re-covers a rule the repo gate already owns is deleted rather than kept as a second opinion, because the gate is the authority for that rule.
 
 ---
 

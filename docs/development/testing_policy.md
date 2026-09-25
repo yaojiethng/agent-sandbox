@@ -152,6 +152,11 @@ Knowledge tests and integration tests are **not** run by `make test`. The runner
 
 **Do not treat the knowledge test as a primitive for testing our own code.** If the seam is our maintained code, it is testable by definition -- write a unit test under `tests/` and run it in `make test`. A knowledge test is a *last resort for unmodifiable seams*, not a home for internal behaviour.
 
+### The file and the unit
+
+A test file is named for its subject, and holds that subject's units: `tests/test_A.sh` tests `A.sh`, and the file name is the lookup for where that subject is covered.
+Do not keep a roster of which file covers what: it goes stale as soon as a subject moves, and it is one more thing to keep true.
+
 ### Promotions over time
 
 If a seam was previously untestable but becomes testable -- e.g. a docker mock now allows asserting the exact `docker ...` command we pass -- promote the coverage to a **unit test** (`tests/test_*.sh`) using that mock, rather than leaving it as a knowledge/integration note.
