@@ -10,6 +10,73 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/env.sh"
 
+# Given: a .env line of the form K=val # not-a-comment
+# When:  env_load runs
+# Then:  K holds the whole tail, comment text included
+# Asserts: there is no inline-comment rule - pinned so a reader does not assume otherwise
+test_env_load_keeps_inline_comment_text_as_value() {
+  local F="$FIXTURE_DIR/inline.env"
+  printf 'K=val # not-a-comment\n' > "$F"
+  env_load "$F"
+  if [[ "${K:-}" == "val # not-a-comment" ]]; then
+    pass "env_load keeps inline text after a value (no inline comments)  --  pinned"
+  else
+    fail "inline handling changed: K='[${K:-}]'  --  update this pin if intentional"
+  fi
+}
+
+# Given: a .env holding ' = ', '  =baz', a whitespace-only line, a bare CR, and a CRLF assignment, run under set -e
+# When:  env_load runs
+# Then:  rc 0, FOO=bar, baz unset, MYKEY=ok
+# Asserts: the regression where a whitespace-only key reached export '=' and aborted the caller under errexit
+test_env_load_skips_whitespace_only_key_lines() {
+  local F="$FIXTURE_DIR/ws_key.env"
+  printf 'FOO=bar\n = \n  =baz\n  \n\t\r\nMYKEY=ok\r\n' > "$F"
+
+  local OUT RC=0
+  OUT=$(set -e; env_load "$F" 2>&1 </dev/null \
+        && printf '%s|%s|%s|' "${FOO:-unset}" "${baz:-unset}" "${MYKEY:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "bar|unset|ok|" ]]; then
+    pass "env_load skips whitespace-only-key lines without error"
+  else
+    fail "whitespace-only-key line broke parsing: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a .env whose first line is an indented comment, run under set -e
+# When:  env_load runs
+# Then:  rc 0 and FOO=bar
+# Asserts: the regression where an indented comment exported a comment-derived name
+test_env_load_skips_indented_comments() {
+  local F="$FIXTURE_DIR/indented.env"
+  printf '  # indented comment\nFOO=bar\n' > "$F"
+
+  local OUT RC=0
+  OUT=$(set -e; env_load "$F" 2>&1 </dev/null && printf '%s|' "${FOO:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "bar|" ]]; then
+    pass "env_load skips indented comment lines"
+  else
+    fail "indented comment broke parsing: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a .env whose key carries a trailing TAB and a CRLF ending, and whose value is space-padded
+# When:  env_load runs
+# Then:  MYKEY holds the trimmed value
+# Asserts: key whitespace and CRLF endings are stripped, not folded into the name
+test_env_load_strips_key_whitespace_and_crlf() {
+  local F="$FIXTURE_DIR/crlf.env"
+  printf 'MYKEY\t\r=  padded value  \r\n' > "$F"
+  env_load "$F"
+  if [[ "${MYKEY:-}" == "padded value" ]]; then
+    pass "env_load strips key whitespace and CRLF line endings"
+  else
+    fail "whitespace handling broken: MYKEY='[${MYKEY:-}]'"
+  fi
+}
+
 # Given: a .env file containing FOO=bar
 # When:  env_load is called on it
 # Then:  FOO holds bar
@@ -108,5 +175,9 @@ run_test test_env_load_trims_value_padding
 run_test test_env_load_strips_export_prefix
 run_test test_env_load_skips_line_without_equals
 run_test test_env_load_skips_invalid_key_with_warning
+run_test test_env_load_keeps_inline_comment_text_as_value
+run_test test_env_load_skips_whitespace_only_key_lines
+run_test test_env_load_skips_indented_comments
+run_test test_env_load_strips_key_whitespace_and_crlf
 
 test_done test_env.sh

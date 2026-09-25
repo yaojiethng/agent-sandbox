@@ -229,6 +229,7 @@ test_check_interface_contract_refuses_and_passes_via_stub() {
   out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="9" \
         _check_interface_contract "pi-agent-test-project" 2>&1)" || rc=$?
   assert_eq "$rc" "1" "interface-contract: differing baked version refuses"
+  assert_contains "$out" "ERROR" "interface-contract: refusal is marked an error"
   assert_contains "$out" "interface-contract version 9 differs from current source" \
       "interface-contract: refusal names the drifted surface"
 
@@ -275,11 +276,27 @@ EOF
   fi
 }
 
+# Given: an image with no contract label
+# When:  _check_interface_contract runs
+# Then:  rc is 1 and the rebuild remedy is named
+# Asserts: a pre-label image refuses preflight with the remedy.
+test_check_interface_contract_refuses_missing_label() {
+  local rc=0 out
+  out="$(PATH="$STUB_DIR:$PATH" \
+        _check_interface_contract "pre-label-image" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "interface-contract: missing label refuses"
+  assert_contains "$out" "has no interface-contract-version label" \
+      "interface-contract: missing-label refusal names the cause"
+  assert_contains "$out" "predates the interface contract" \
+      "interface-contract: missing-label refusal names the rebuild remedy"
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_check_interface_contract_refuses_and_passes_via_stub
+run_test test_check_interface_contract_refuses_missing_label
 run_test test_record_image_service_scoped
 run_test test_build_inspects_images
 run_test test_build_no_compose

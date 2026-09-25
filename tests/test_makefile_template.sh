@@ -210,6 +210,48 @@ test_flag_translators_are_defined() {
   done
 }
 
+# The thin CLI (S3): the run targets pass `--env=$(ENV_FILE)` (the .env path next
+# to the Makefile) and carry no identity flags. `make stop PRUNE=1` still gets
+# its project for the registry rule, but resolved by the dispatcher from .env.
+# The `refresh:` target is the exception: it passes identity flags to `onboard
+# --refresh`, which is exempt from resolution.
+# Given: the shipped template's stop target
+# When:  its block is extracted
+# Then:  it carries --env=$(ENV_FILE) and no --project/--sandbox/--name
+# Asserts: the thin-CLI contract for the run targets
+test_run_targets_are_thin() {
+  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
+  local stop_block
+  stop_block=$(sed -n '/^stop:/,/PRUNE_FLAG)/p' "$tpl")
+
+  if [[ "$stop_block" == *"--env=\$(ENV_FILE)"* \
+        && "$stop_block" != *"--project=\$(PROJECT_DIR)"* \
+        && "$stop_block" != *"--sandbox=\$(SANDBOX_DIR)"* \
+        && "$stop_block" != *"--name=\$(PROJECT_NAME)"* ]]; then
+    pass "make stop carries --env and no identity flags (thin CLI)"
+  else
+    fail "make stop target not thin:\n$stop_block"
+  fi
+}
+
+# Given: the shipped template's start target
+# When:  its block is extracted
+# Then:  it carries --env=$(ENV_FILE) and no identity flags
+# Asserts: the thin-CLI contract for start
+test_start_target_is_thin() {
+  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
+  local start_block
+  start_block=$(sed -n '/^start:/,/ENV_FILE)$/p' "$tpl")
+
+  if [[ "$start_block" == *"--env=\$(ENV_FILE)"* \
+        && "$start_block" != *"--project="* \
+        && "$start_block" != *"--sandbox="* ]]; then
+    pass "make start carries --env and no identity flags (thin CLI)"
+  else
+    fail "make start target not thin:\n$start_block"
+  fi
+}
+
 run_test test_accepted_variables_are_declared
 run_test test_flag_translators_are_defined
 run_test test_target_scoped_guards
@@ -218,5 +260,7 @@ run_test test_targets_expand_their_flags
 run_test test_draft_channel_is_conditional
 run_test test_help_names_each_consumer
 run_test test_refresh_comment_appears_once
+run_test test_run_targets_are_thin
+run_test test_start_target_is_thin
 
 test_done "test_makefile_template"

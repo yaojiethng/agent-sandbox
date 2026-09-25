@@ -2,7 +2,7 @@
 set -u
 cd /home/agentuser/sandbox || exit 1
 src=src/libs/diff.sh; orig=/tmp/diff.orig; cp "$src" "$orig"
-FILES="test_diff_helpers test_diff_workflow test_binary_roundtrip test_apply_count test_package_branch test_diff_rename"
+FILES="test_diff_helpers test_diff_workflow test_binary_roundtrip test_apply_workflow test_package_branch test_diff_rename"
 run() { local label="$1"
   if cmp -s "$src" "$orig"; then printf '%-52s NO-OP\n' "$label"; cp "$orig" "$src"; return; fi
   local out f=""

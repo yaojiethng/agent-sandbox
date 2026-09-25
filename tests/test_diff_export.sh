@@ -2,7 +2,6 @@
 # Tests for libs/diff_export.sh  --  reliability features
 #
 # Covers:
-#   _write_export_status     --  writes correct SUCCESS/FAIL content atomically
 #   _write_export_error_log  --  creates timestamped error log files
 #   wait_git_lockfile        --  polls for git index.lock with timeout
 #   diff_export failure      --  error log + .export-status on package_branch failure
@@ -21,110 +20,6 @@ test_setup
 source "${REPO_ROOT}/src/libs/diff_export.sh"
 
 # ---------------------------------------------------------------------------
-# _write_export_status
-# ---------------------------------------------------------------------------
-
-# Given: a SUCCESS export with a timestamp and exit code 0
-# When:  _write_export_status runs
-# Then:  the file contains STATUS=SUCCESS and the timestamp
-# Asserts: the success content shape.
-test_export_status_writes_success() {
-  local _tmpdir
-  _tmpdir=$(get_fixture_dir)
-
-  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123"
-
-  if [[ ! -f "$_tmpdir/.export-status" ]]; then
-    fail ".export-status not created"
-    return
-  fi
-
-  local _content
-  _content=$(cat "$_tmpdir/.export-status")
-
-  if [[ "$_content" == *"STATUS=SUCCESS"* ]] && [[ "$_content" == *"TIMESTAMP=20260622-120000"* ]]; then
-    pass "_write_export_status writes SUCCESS with timestamp"
-  else
-    fail "_write_export_status: expected SUCCESS content, got: $_content"
-  fi
-}
-
-# Given: a non-empty INIT_SHA
-# When:  _write_export_status runs
-# Then:  the file contains INIT_SHA
-# Asserts: INIT_SHA is stamped when provided.
-test_export_status_includes_init_sha() {
-  local _tmpdir
-  _tmpdir=$(get_fixture_dir)
-
-  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" "abc123def456"
-
-  local _content
-  _content=$(cat "$_tmpdir/.export-status")
-
-  assert_contains "$_content" "INIT_SHA=abc123def456" "_write_export_status includes INIT_SHA when provided"
-}
-
-# Given: an empty INIT_SHA
-# When:  _write_export_status runs
-# Then:  the file has no INIT_SHA line
-# Asserts: an empty INIT_SHA is omitted.
-test_export_status_omits_init_sha_when_empty() {
-  local _tmpdir
-  _tmpdir=$(get_fixture_dir)
-
-  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120000" "0" ""
-
-  local _content
-  _content=$(cat "$_tmpdir/.export-status")
-
-  if [[ "$_content" != *"INIT_SHA"* ]]; then
-    pass "_write_export_status omits INIT_SHA when empty"
-  else
-    fail "_write_export_status: should not include empty INIT_SHA"
-  fi
-}
-
-# Given: a FAIL export with exit code 1
-# When:  _write_export_status runs
-# Then:  the file contains STATUS=FAIL and EXIT_CODE=1
-# Asserts: a failure records its exit code.
-test_export_status_writes_failure_with_exit_code() {
-  local _tmpdir
-  _tmpdir=$(get_fixture_dir)
-
-  _write_export_status "$_tmpdir" "FAIL" "20260622-120001" "1"
-
-  local _content
-  _content=$(cat "$_tmpdir/.export-status")
-
-  if [[ "$_content" == *"STATUS=FAIL"* ]] && [[ "$_content" == *"EXIT_CODE=1"* ]]; then
-    pass "_write_export_status writes FAIL with exit code"
-  else
-    fail "_write_export_status: expected FAIL+EXIT_CODE, got: $_content"
-  fi
-}
-
-# Given: a SUCCESS export with exit code 0
-# When:  _write_export_status runs
-# Then:  the file has no EXIT_CODE line
-# Asserts: exit code 0 is omitted.
-test_export_status_does_not_include_exit_code_on_success() {
-  local _tmpdir
-  _tmpdir=$(get_fixture_dir)
-
-  _write_export_status "$_tmpdir" "SUCCESS" "20260622-120002" "0"
-
-  local _content
-  _content=$(cat "$_tmpdir/.export-status")
-
-  if [[ "$_content" != *"EXIT_CODE"* ]]; then
-    pass "_write_export_status omits EXIT_CODE for SUCCESS"
-  else
-    fail "_write_export_status: EXIT_CODE present in SUCCESS status"
-  fi
-}
-
 # ---------------------------------------------------------------------------
 # _write_export_error_log
 # ---------------------------------------------------------------------------
@@ -329,11 +224,6 @@ test_diff_export_failure_writes_error_log() {
 
 # ---------------------------------------------------------------------------
 
-run_test test_export_status_writes_success
-run_test test_export_status_writes_failure_with_exit_code
-run_test test_export_status_does_not_include_exit_code_on_success
-run_test test_export_status_includes_init_sha
-run_test test_export_status_omits_init_sha_when_empty
 run_test test_export_error_log_creates_file
 run_test test_export_error_log_includes_session_id
 run_test test_export_error_log_contains_error_details

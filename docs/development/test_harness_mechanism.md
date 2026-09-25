@@ -93,6 +93,18 @@ The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pi
 - a file's own `# TEST_DEADLINE` declaration overrides the default, in both directions;
 - the liveness gate flags a dead registration.
 
+## What the harness cannot observe
+
+A unit test sees what the docker stub reproduces. The stub records every invocation's arguments and simulates failure through environment variables, so an argument is assertable. It does not present a TTY, prompt, progress table, or stdin, so a guard whose only job is to shape an interactive compose session cannot fail a unit.
+
+The following guards in `scripts/run_agent.sh` rest on live observation, not on a unit:
+
+- `-T` on the seeder invocation, which the script's comment cites to an attach that never closed.
+- the two `< /dev/null` redirections on compose invocations, which keep an attached session from reading the caller's stdin.
+- `--progress quiet` on two compose invocations, which keeps a progress table out of the operator's output.
+
+A green suite is not evidence that one of these guards still earns its place, and it is not evidence that removing it is safe. Change one against a live run.
+
 ## See also
 
 - [`testing-conventions.md`](testing-conventions.md) -- the authoring bar and the test structure template.

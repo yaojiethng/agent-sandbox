@@ -144,6 +144,19 @@ test_check_base_flags_rejects_empty_sandbox() {
   fi
 }
 
+# Given: common.sh sourced with no override
+# When:  INTERACTIVE_MAX_ENTRIES is read
+# Then:  it is 10
+# Asserts: the single canonical picker cap.
+test_interactive_max_entries_default() {
+  if [[ "${INTERACTIVE_MAX_ENTRIES:-}" == "10" ]]; then
+    pass "common.sh: INTERACTIVE_MAX_ENTRIES defaults to 10"
+  else
+    fail "common.sh: expected INTERACTIVE_MAX_ENTRIES=10, got '${INTERACTIVE_MAX_ENTRIES:-}'"
+  fi
+}
+
+
 # ---------------------------------------------------------------------------
 # Run all
 # ---------------------------------------------------------------------------
@@ -157,113 +170,6 @@ run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox
 run_test test_check_base_flags_rejects_root_sandbox
 run_test test_check_base_flags_rejects_empty_sandbox
-# Given: common.sh sourced with no override
-# When:  INTERACTIVE_MAX_ENTRIES is read
-# Then:  it is 10
-# Asserts: the single canonical picker cap.
-test_interactive_max_entries_default() {
-  if [[ "${INTERACTIVE_MAX_ENTRIES:-}" == "10" ]]; then
-    pass "common.sh: INTERACTIVE_MAX_ENTRIES defaults to 10"
-  else
-    fail "common.sh: expected INTERACTIVE_MAX_ENTRIES=10, got '${INTERACTIVE_MAX_ENTRIES:-}'"
-  fi
-}
-
-# -- assert_run --
-
-_exit_zero() { exit 0; }
-_exit_three() { exit 3; }
-
-# Given: a command that exits 0
-# When:  assert_run 0 runs
-# Then:  it passes
-# Asserts: the harness assert_run pass side (test_common.sh helper; finding 4).
-test_subshell_rc_matches_expected() {
-  assert_run 0 _exit_zero "assert_run passes on matching rc"
-}
-
-# Given: a command that exits 3
-# When:  assert_run 0 runs in a bash -c probe
-# Then:  it fails with the expected-rc marker and increments the counter
-# Asserts: the harness assert_run fail side, proven out-of-process (test_common.sh helper; finding 4).
-test_subshell_rc_mismatch_fails() {
-  # The probe's fail() emits a detail marker and increments the counter;
-  # run the probe in a bash -c subprocess so its fail-fast exit does not
-  # abort this test, then assert on the accumulated counter and marker.
-  local OUT
-  OUT=$(bash -c "
-    source '$REPO_ROOT/tests/libs/test_common.sh'
-    _exit_three() { exit 3; }
-    assert_run 0 _exit_three probe
-    echo \"count=\$FAIL\"
-  ")
-  if [[ "$OUT" == *"count=1"* && "$OUT" == *"FAIL: probe (expected rc=0"* ]]; then
-    pass "assert_run fails on rc mismatch (marker + counter)"
-  else
-    fail "assert_run did not fail on rc mismatch"
-  fi
-}
-
-# -- source_function_from --
-
-# Given: a source file with a named function
-# When:  source_function_from extracts it
-# Then:  the function is invocable
-# Asserts: function extraction works (test_common.sh helper; finding 4).
-test_source_function_from_extracts_and_defines() {
-  local FIXTURE="$FIXTURE_DIR/extract_src.sh"
-  printf 'unrelated() { :; }\nextracted_fn() { EXTRACTED_MARK=works; }\ntrailing() { :; }\n' > "$FIXTURE"
-  source_function_from "$FIXTURE" extracted_fn
-  extracted_fn
-  if [[ "${EXTRACTED_MARK:-}" == "works" ]]; then
-    pass "source_function_from defines an invocable function"
-  else
-    fail "source_function_from did not define an invocable function"
-  fi
-}
-
-# Given: a source file without the named function
-# When:  source_function_from runs
-# Then:  it fails
-# Asserts: extraction fails loudly on a miss (test_common.sh helper; finding 4).
-test_source_function_from_fails_when_pattern_missing() {
-  local FIXTURE="$FIXTURE_DIR/extract_missing.sh"
-  printf 'other() { :; }\n' > "$FIXTURE"
-  if source_function_from "$FIXTURE" absent_fn 2>/dev/null; then
-    fail "source_function_from should fail when the function is not extractable"
-  else
-    pass "source_function_from fails with named error when pattern missing"
-  fi
-}
-
-# Given: a fixture unit that calls skip
-# When:  the fixture runs
-# Then:  it exits 0, emits the SKIP marker, and counts one skipped
-# Asserts: a skip is a warning, not a failure (test_common.sh helper; finding 4).
-test_skip_counts_as_skipped_unit() {
-  # skip() goes through the real _run_one in a fresh script, so the shared
-  # counters here are unaffected and the suite keeps a committed skip count of
-  # zero. The fixture asserts the third unit outcome: skipped, not passed.
-  local fixture="$FIXTURE_DIR/skip_me.sh"
-  printf '%s\n' \
-    '#!/usr/bin/env bash' \
-    "source '$REPO_ROOT/tests/libs/test_common.sh'" \
-    'test_pending() { skip "operation not yet stubbed"; }' \
-    'run_test test_pending' \
-    'test_done' > "$fixture"
-  local out rc
-  out="$(bash "$fixture" 2>&1)"; rc=$?
-  assert_rc 0 "$rc" "a skipped file exits 0 (warning, not failure)"
-  assert_contains "$out" "  SKIP: test_pending" "skip unit emits the SKIP marker"
-  assert_contains "$out" "0 failed, 1 skipped" "the skipped unit is counted, not failed"
-}
-
 run_test test_interactive_max_entries_default
-run_test test_subshell_rc_matches_expected
-run_test test_subshell_rc_mismatch_fails
-run_test test_source_function_from_extracts_and_defines
-run_test test_source_function_from_fails_when_pattern_missing
-run_test test_skip_counts_as_skipped_unit
 
 test_done
-

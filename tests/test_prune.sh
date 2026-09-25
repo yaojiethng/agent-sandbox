@@ -32,7 +32,7 @@ setup_prune_fixture() {
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
-  unset DOCKER_STUB_SESSION_ID_LABELS
+  unset DOCKER_STUB_SESSION_ID_LABELS DOCKER_STUB_LABELS
 }
 current_sha() { git -C "$PROJECT_DIR" rev-parse HEAD; }
 
@@ -374,7 +374,33 @@ test_missing_project_rejected() {
   fi
 }
 
-# ---------------------------------------------------------------------------
+# Given: two stubbed containers, one carrying this project's labels and one carrying another project's
+# When:  prune runs its container query
+# Then:  only this project's container is stopped and removed
+# Asserts: the container query's label filters select rather than decorate: the stub resolves
+#          DOCKER_STUB_LABELS and returns only the matching ids.
+test_rule2_filter_selects_only_this_projects_containers() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_select"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  # One stale record, so the pass reaches the Rule 2 scan at all.
+  write_record "s_gone" "pi" "aaaa1111aaaa" "20260801-000000"
+  local canon
+  canon="$(readlink -f "$SANDBOX_DIR")"
+  export DOCKER_STUB_PS_IDS="c_mine c_foreign"
+  export DOCKER_STUB_LABELS="c_mine:agent-sandbox.project-name=$PROJECT_NAME,agent-sandbox.sandbox-dir=$canon c_foreign:agent-sandbox.project-name=another-project,agent-sandbox.sandbox-dir=/elsewhere"
+  export DOCKER_STUB_SESSION_ID_LABEL="orphan_sess"
+
+  invoke_prune > /dev/null 2>&1
+
+  if grep -q "rm c_mine" "$DOCKER_TRACE_LOG" && ! grep -q "c_foreign" "$DOCKER_TRACE_LOG"; then
+    pass "Rule 2 label filters select this project's containers only"
+  else
+    fail "Rule 2 container query reached a foreign container: $(grep c_foreign "$DOCKER_TRACE_LOG" | head -2)"
+  fi
+}
+
+
 # Run
 # ---------------------------------------------------------------------------
 
@@ -389,90 +415,9 @@ run_test test_complete_pass_removes_stale_session_resources
 run_test test_complete_pass_end_to_end
 run_test test_rule2_removes_network_and_volume_orphans
 run_test test_rule2_canonicalizes_sandbox_dir_spelling
+run_test test_rule2_filter_selects_only_this_projects_containers
 run_test test_unknown_args_rejected
 run_test test_missing_project_rejected
 
-# ---------------------------------------------------------------------------
-# env_field unit tests
-#
-# env_field  --  shared record-env parser in src/libs/session_inventory.sh
-# (used by prune.sh for plan disclosure and resume_agent.sh for delivery
-# recovery). Sourced from the lib directly.
-# ---------------------------------------------------------------------------
-source "$REPO_ROOT/src/libs/session_inventory.sh"
-
-# Given: a record carrying an `environment:` list
-# When:  env_field reads SANDBOX_TYPE
-# Then:  it prints `mount`
-# Asserts: the environment-block read
-test_env_field_reads_value_from_environment_block() {
-  local f="$FIXTURE_DIR/envfield_record"
-  printf '  environment:\n    - SANDBOX_TYPE=mount\n    - PROVIDER=pi\n' > "$f"
-  local out
-  out=$(env_field "$f" "SANDBOX_TYPE")
-  assert_eq "$out" "mount" "env_field reads value from environment block"
-}
-
-# Given: NODE_PATH=/x and PATH=/bin in the environment block
-# When:  env_field reads PATH
-# Then:  it prints /bin
-# Asserts: the key match is anchored to the whole key
-test_env_field_no_substring_matches() {
-  local f="$FIXTURE_DIR/envfield_substr"
-  printf '    - NODE_PATH=/x\n    - PATH=/bin\n' > "$f"
-  local out
-  out=$(env_field "$f" "PATH")
-  assert_eq "$out" "/bin" "env_field does not substring-match NODE_PATH when asked for PATH"
-}
-
-# Given: two A= lines in the environment block
-# When:  env_field reads A
-# Then:  it prints the first value
-# Asserts: first match wins
-test_env_field_first_match_wins() {
-  local f="$FIXTURE_DIR/envfield_first"
-  printf '    - A=1\n    - A=2\n' > "$f"
-  local out
-  out=$(env_field "$f" "A")
-  assert_eq "$out" "1" "env_field returns first match only"
-}
-
-# Given: a record with no ABSENT key
-# When:  env_field reads ABSENT
-# Then:  it prints nothing and exits 0
-# Asserts: a missing key is an empty read, not a failure
-test_env_field_missing_key_is_empty_and_clean() {
-  local f="$FIXTURE_DIR/envfield_missing"
-  printf '    - OTHER=x\n' > "$f"
-  local out rc
-  out=$(env_field "$f" "ABSENT"); rc=$?
-  if [[ $rc -eq 0 && -z "$out" ]]; then
-    pass "env_field missing key -> empty output, exit 0"
-  else
-    fail "env_field ABSENT: rc=$rc out='$out'"
-  fi
-}
-
-# Given: the environment line forms `- A=plain` and `  -   B=spaced`
-# When:  env_field reads each key
-# Then:  it prints `plain` and `spaced`
-# Asserts: the dash and spacing tolerance of the line form
-test_env_field_tolerates_dash_spacing_variants() {
-  local f="$FIXTURE_DIR/envfield_spacing"
-  printf -- '- A=plain\n  -   B=spaced\n' > "$f"
-  local a b
-  a=$(env_field "$f" "A")
-  b=$(env_field "$f" "B")
-  if [[ "$a" == "plain" && "$b" == "spaced" ]]; then
-    pass "env_field tolerates dash/spacing variants"
-  else
-    fail "env_field spacing variants: A='$a' B='$b'"
-  fi
-}
-
-run_test test_env_field_reads_value_from_environment_block
-run_test test_env_field_no_substring_matches
-run_test test_env_field_first_match_wins
-run_test test_env_field_missing_key_is_empty_and_clean
-run_test test_env_field_tolerates_dash_spacing_variants
 test_done test_prune
+

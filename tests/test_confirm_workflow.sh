@@ -180,7 +180,6 @@ test_confirm_conflict_recovery() {
 
 _make_no_state_commit_conflict_draft() {
   local P="$1"
-  local STALE="${2:-no}"
   make_committed_repo "$P"
 
   local BASE_SHA
@@ -207,20 +206,16 @@ _make_no_state_commit_conflict_draft() {
   git -C "$P" add file.txt
   git -C "$P" commit -m "main advance" --quiet
   git -C "$P" checkout draft/foo --quiet
-
-  if [[ "$STALE" == yes ]]; then
-    git -C "$P" tag confirm-savepoint "$BASE_SHA"
-  fi
 }
 
-# Given: a conflicting draft and no confirm-savepoint tag in the repository
+# Given: a draft that conflicts with its target and carries committed work
 # When:  confirm_run runs
-# Then:  it fails cleanly, without git's own ambiguous-argument error, and the draft tip is preserved
-# Asserts: the absence of the removed tag design, not today's savepoint variable (row 248)
-test_confirm_conflict_no_savepoint_tag_aborts_cleanly() {
-  local P="$FIXTURE_DIR/confirm_nosave_p"
-  local S="$FIXTURE_DIR/confirm_nosave_s"
-  _make_no_state_commit_conflict_draft "$P" no
+# Then:  it fails non-zero, names the savepoint restore, and leaves the draft at the savepoint with no rebase in progress
+# Asserts: the rebase-failure rollback: the branch tip, the draft's committed work, and the repository state the caller is left in.
+test_confirm_conflict_restores_the_draft_to_the_savepoint() {
+  local P="$FIXTURE_DIR/confirm_restore_p"
+  local S="$FIXTURE_DIR/confirm_restore_s"
+  _make_no_state_commit_conflict_draft "$P"
   local TIP_BEFORE
   TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
 
@@ -228,46 +223,22 @@ test_confirm_conflict_no_savepoint_tag_aborts_cleanly() {
   OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
   RC="${RC:-0}"
 
-  local STILL_NO_TAG
-  STILL_NO_TAG=$(git -C "$P" tag -l confirm-savepoint)
-
-  if [[ "$RC" -ne 0 \
-        && "$OUT" != *"fatal: ambiguous argument"* \
-        && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
-        && -z "$STILL_NO_TAG" ]]; then
-    pass "confirm conflict with no savepoint tag fails cleanly and restores draft"
-  else
-    fail "rc=$RC out=$OUT tip-preserved=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no)"
-  fi
-}
-
-# Given: a stale confirm-savepoint tag left by an older run
-# When:  the conflicting confirm runs
-# Then:  the tag is untouched and the draft is preserved
-# Asserts: the same regression guard on a removed design (row 248)
-test_confirm_conflict_stale_savepoint_preserves_draft() {
-  local P="$FIXTURE_DIR/confirm_stale_p"
-  local S="$FIXTURE_DIR/confirm_stale_s"
-  _make_no_state_commit_conflict_draft "$P" yes
-  local TIP_BEFORE
-  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
-
-  local OUT RC
-  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
-  RC="${RC:-0}"
-
-  local TAG_AFTER WORK_OK
-  TAG_AFTER=$(git -C "$P" tag -l confirm-savepoint)
+  local WORK_OK REBASE_LEFT
   WORK_OK=no
   git -C "$P" cat-file -e draft/foo:work.txt 2>/dev/null && WORK_OK=yes
+  REBASE_LEFT=no
+  if [[ -e "$P/.git/REBASE_HEAD" || -d "$P/.git/rebase-merge" || -d "$P/.git/rebase-apply" ]]; then
+    REBASE_LEFT=yes
+  fi
 
   if [[ "$RC" -ne 0 \
+        && "$OUT" == *"the draft branch is restored to the savepoint"* \
         && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
         && "$WORK_OK" == yes \
-        && -n "$TAG_AFTER" ]]; then
-    pass "confirm ignores a stale savepoint tag (draft preserved, tag untouched)"
+        && "$REBASE_LEFT" == no ]]; then
+    pass "confirm conflict restores the draft to the savepoint and leaves no rebase in progress"
   else
-    fail "rc=$RC tip-preserved=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no) work=$WORK_OK tag-kept=$([[ -n "$TAG_AFTER" ]] && echo yes || echo no)"
+    fail "rc=$RC tip-preserved=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no) work=$WORK_OK rebase-left=$REBASE_LEFT"
   fi
 }
 
@@ -405,8 +376,7 @@ run_test test_confirm_target_branch
 run_test test_confirm_rejects_non_draft_branch
 run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
-run_test test_confirm_conflict_no_savepoint_tag_aborts_cleanly
-run_test test_confirm_conflict_stale_savepoint_preserves_draft
+run_test test_confirm_conflict_restores_the_draft_to_the_savepoint
 run_test test_confirm_drop_step_failure_restores_savepoint
 run_test test_confirm_new_branch_creates_and_prints_hint
 run_test test_confirm_new_branch_rejects_existing

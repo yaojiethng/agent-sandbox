@@ -11,6 +11,12 @@
 #   wait             — returns immediately (exit 0)
 #   ps -aq           — returns nothing unless DOCKER_STUB_PS_IDS is set
 #   network ls -q    — returns nothing unless DOCKER_STUB_NETWORK_IDS is set
+#   volume ls        — returns DOCKER_STUB_VOLUME_NAMES
+#
+# `ps` and `volume ls` honour every `--filter label=key=value` argument against
+# DOCKER_STUB_LABELS (`id:key=value[,key=value]`, whitespace-separated entries).
+# With DOCKER_STUB_LABELS unset the stub cannot know the stubbed resources' labels,
+# so it returns every stubbed id or name, as it did before the filter existed.
 
 set -euo pipefail
 
@@ -59,6 +65,51 @@ _digest_for() {
     [[ "${pair%%:*}" == "$img" ]] && { echo "${pair#*:}"; return 0; }
   done
   echo "${DOCKER_STUB_IMAGE_DIGEST-sha256:stub}"
+}
+
+# _labels_for ID — resolve the label map reported for a resource, as a
+# comma-separated `key=value` list. Empty (unset) means the resource reports no
+# labels, which no `label=` filter matches.
+_labels_for() {
+  local id="$1" pair
+  for pair in ${DOCKER_STUB_LABELS:-}; do
+    [[ "${pair%%:*}" == "$id" ]] && { echo "${pair#*:}"; return 0; }
+  done
+  echo ""
+}
+
+# _label_filters ARG... — set LABEL_FILTERS to the `key=value` part of every
+# `--filter label=...` argument, in either the split or the `--filter=` form.
+_label_filters() {
+  LABEL_FILTERS=()
+  local a
+  for a in "$@"; do
+    case "$a" in
+      label=*)           LABEL_FILTERS+=("${a#label=}") ;;
+      --filter=label=*)  LABEL_FILTERS+=("${a#--filter=label=}") ;;
+    esac
+  done
+}
+
+# _filter_by_label FILTER... — read candidate ids or names on stdin and print the
+# ones whose label map satisfies every filter. An id that reports no labels fails
+# every filter, so a query never returns a resource with no label evidence.
+_filter_by_label() {
+  local -a filters=("$@")
+  if [[ -z "${DOCKER_STUB_LABELS:-}" || ${#filters[@]} -eq 0 ]]; then
+    cat
+    return 0
+  fi
+  local id labels keep f
+  while read -r id; do
+    [[ -n "$id" ]] || continue
+    labels="$(_labels_for "$id")"
+    keep=1
+    for f in "${filters[@]}"; do
+      [[ ",$labels," == *",$f,"* ]] || { keep=0; break; }
+    done
+    [[ "$keep" -eq 1 ]] && echo "$id"
+  done
 }
 
 # --- docker compose ---
@@ -163,7 +214,8 @@ if [[ "$CMD" == "docker" ]]; then
       fi
       if [[ -n "${DOCKER_STUB_PS_IDS:-}" ]]; then
         read -ra _ps_ids <<< "$DOCKER_STUB_PS_IDS"
-        printf '%s\n' "${_ps_ids[@]}"
+        _label_filters "$@"
+        printf '%s\n' "${_ps_ids[@]}" | _filter_by_label ${LABEL_FILTERS[@]+"${LABEL_FILTERS[@]}"}
       fi
       ;;
     network)
@@ -183,7 +235,8 @@ if [[ "$CMD" == "docker" ]]; then
           log "volume ls $*"
           # Return nothing by default; tests stub names via DOCKER_STUB_VOLUME_NAMES
           if [[ -n "${DOCKER_STUB_VOLUME_NAMES:-}" ]]; then
-            printf '%s\n' $DOCKER_STUB_VOLUME_NAMES
+            _label_filters "$@"
+            printf '%s\n' $DOCKER_STUB_VOLUME_NAMES | _filter_by_label ${LABEL_FILTERS[@]+"${LABEL_FILTERS[@]}"}
           fi
           ;;
         inspect)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_apply_count.sh
+# tests/test_apply_workflow.sh
 # Pins the reachable file-count reporting of scripts/workflows/apply.sh:
 # an applicable diff reports its header count exactly once
 # ("Files changed: N", single line).
@@ -309,4 +309,4 @@ run_test test_apply_run_unreadable_tree_refuses_without_stash_hint
 run_test test_apply_and_commit_empty_diff_lands_message_bearing_empty_commit
 run_test test_draft_apply_uncommitted_empty_diff_skips_with_warning
 
-test_done test_apply_count.sh
+test_done test_apply_workflow.sh

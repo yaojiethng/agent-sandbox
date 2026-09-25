@@ -3,8 +3,12 @@
 # Unit tests for scripts/guards.sh  --  git workflow guard functions.
 #
 # Covers:
-#   validate_project_dir     --  existence, git repo, commits (already tested in test_session.sh)
-#   draft_clear_stale_lock   --  stale lock detection and removal
+#   validate_project_dir      --  existence, git repo, commits, then the ready repo
+#   require_clean_working_tree  --  three-valued verdict (clean, dirty, unreadable), silent
+#   clean_tree_hint           --  the uncommitted-changes remedy text
+#   clean_tree_hint_unreadable  --  the unreadable-tree remedy text
+#   _lock_age                 --  lock-file age in seconds
+#   draft_clear_stale_lock    --  stale lock detection and removal
 
 set -uo pipefail
 
@@ -155,6 +159,14 @@ test_require_clean_working_tree_is_silent() {
   assert_rc 1 "$RC" "dirty tree: verdict 1"
   assert_empty "$OUT" "dirty tree: prints nothing"
 
+  # A tracked modification is the other shape of dirty; one code path reads both.
+  rm -f "$DIR/untracked.txt"
+  echo modified >> "$DIR/file.txt"
+  RC=0
+  OUT=$(require_clean_working_tree "$DIR" 2>&1) || RC=$?
+  assert_rc 1 "$RC" "modified tracked file: verdict 1"
+  assert_empty "$OUT" "modified tracked file: prints nothing"
+
   RC=0
   OUT=$(require_clean_working_tree "$FIXTURE_DIR/no_such_repo" 2>&1) || RC=$?
   assert_rc 2 "$RC" "unreadable tree: verdict 2"
@@ -191,6 +203,20 @@ test_validate_project_dir_refusal_messages() {
   assert_contains "$OUT" "has no commits" "validate: no-commits names the HEAD check"
 }
 
+# Given: a directory that is a git repository with at least one commit
+# When:  validate_project_dir runs
+# Then:  it returns 0 and prints nothing
+# Asserts: the accepting arm stays quiet, so a caller's message is its own.
+test_validate_project_dir_accepts_a_ready_repo() {
+  local READY="$FIXTURE_DIR/ready_repo"
+  make_committed_repo "$READY"
+
+  local RC=0 OUT
+  OUT=$(validate_project_dir "$READY" 2>&1) || RC=$?
+  assert_rc 0 "$RC" "validate: a ready repository is accepted"
+  assert_empty "$OUT" "validate: the accepting arm prints nothing"
+}
+
 # =============================================================================
 # clean_tree_hint / clean_tree_hint_unreadable
 # =============================================================================
@@ -220,6 +246,7 @@ run_test test_clear_stale_lock_no_lsof_skips_check
 run_test test_clear_stale_lock_held_lock_fails_and_keeps_file
 run_test test_require_clean_working_tree_is_silent
 run_test test_validate_project_dir_refusal_messages
+run_test test_validate_project_dir_accepts_a_ready_repo
 run_test test_clean_tree_hint_text
 
 test_done

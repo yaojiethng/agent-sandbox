@@ -7,12 +7,11 @@
 # bootstrap (.env loading, git validation, name/branch derivation).
 #
 # Covers:
-#   session_env_common_init  --  .env parse rules (comments, blanks, CR/LF/TAB in
-#                             keys, space-trimmed values, whitespace-only-key and
-#                             invalid-identifier lines skipped), missing-.env
-#                             failure, non-git and commit-less project rejection,
-#                             HOST_UID/GID + ENV_FILE exports, and the
-#                             explicit-identity-beats-.env precedence pin (flag-wins)
+#   session_env_common_init  --  missing-.env failure, non-git and commit-less
+#                             project rejection, HOST_UID/GID + ENV_FILE exports,
+#                             and the explicit-identity-beats-.env precedence pin
+#                             (flag-wins). The .env parse rules this loader calls
+#                             are pinned in tests/test_env.sh, with the parser.
 #   session_env_names        --  branch sanitisation, detached-HEAD fallback,
 #                             deterministic image/container naming, delivery
 #                             var defaults vs preserved overrides
@@ -49,134 +48,6 @@ test_env_missing_file_fails_with_onboard_hint() {
     pass "missing .env fails with onboard guidance"
   else
     fail "expected onboard-hint failure, rc=$RC out='$OUT'"
-  fi
-}
-
-# Given: a .env with a comment, a blank line, a whitespace-only line, a tab-comment, and one assignment
-# When:  session_env_common_init runs
-# Then:  FOO holds bar and no variable is created from the comment text
-# Asserts: env_load's comment and blank rules, through the session loader
-test_env_comments_and_blanks_skipped() {
-  local SBX="$FIXTURE_DIR/sbx_cmt" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '# a comment\n\n   \nFOO=bar\n\t# tab-comment\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${FOO:-}" == "bar" && -z "${a:-}" ]]; then
-    pass ".env parser skips comments and blank lines"
-  else
-    fail "comment/blank parsing broken: FOO='${FOO:-}' a='${a:-}'"
-  fi
-}
-
-# Given: a .env line with a TAB and CRLF inside the key and a space-padded value
-# When:  session_env_common_init runs
-# Then:  MYKEY holds the trimmed value
-# Asserts: key trimming (TAB and CR) and value trimming through the session loader
-test_env_key_whitespace_stripped_value_trimmed() {
-  # KEY with trailing TAB + CRLF line ending; VALUE padded with spaces.
-  local SBX="$FIXTURE_DIR/sbx_ws" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'MYKEY\t\r=  padded value  \r\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${MYKEY:-}" == "padded value" ]]; then
-    pass ".env parser strips key whitespace/CRLF and trims value padding"
-  else
-    fail "whitespace handling broken: MYKEY='[${MYKEY:-}]'"
-  fi
-}
-
-# Given: a .env line of the form K=val # not-a-comment
-# When:  session_env_common_init runs
-# Then:  K holds the whole tail, comment text included
-# Asserts: there is no inline-comment rule - pinned so a reader does not assume otherwise
-test_env_inline_comment_is_kept_as_value() {
-  # PINNED behavior: there is no inline-comment rule. `K=v # c` keeps the
-  # whole tail as the value (trimmed). Documented so nobody assumes otherwise.
-  local SBX="$FIXTURE_DIR/sbx_inline" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'K=val # not-a-comment\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${K:-}" == "val # not-a-comment" ]]; then
-    pass ".env parser keeps inline text after value (no inline comments)  --  pinned"
-  else
-    fail "inline handling changed: K='[${K:-}]'  --  update this pin if intentional"
-  fi
-}
-
-# Given: a .env holding ' = ', '  =baz', a whitespace-only line, a bare CR, and a CRLF assignment, run under set -e
-# When:  session_env_common_init runs
-# Then:  rc 0, FOO=bar, baz unset, MYKEY=ok
-# Asserts: the regression where a whitespace-only key reached export '=' and aborted the caller under errexit
-test_env_whitespace_only_key_line_skipped() {
-  # REGRESSION: a line of the form ` = ` (whitespace before '=', empty value)
-  # reached `export "="` and aborted the caller under errexit with
-  # `export: '=': not a valid identifier`. The same failure hits lines with no
-  # '=' at all: pure-whitespace lines and CRLF blank lines (a bare CR) -- the
-  # latter is how a CRLF .env crashes on its first blank line. All must be
-  # skipped as blanks.
-  local SBX="$FIXTURE_DIR/sbx_eq" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'FOO=bar\n = \n  =baz\n  \n\t\r\nMYKEY=ok\r\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|%s|%s|' "${FOO:-unset}" "${baz:-unset}" "${MYKEY:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "bar|unset|ok|" ]]; then
-    pass ".env parser skips whitespace-only-key lines without error"
-  else
-    fail "whitespace-only-key line broke parsing: rc=$RC out='$OUT'"
-  fi
-}
-
-# Given: a .env whose first line is an indented comment, run under set -e
-# When:  session_env_common_init runs
-# Then:  rc 0 and FOO=bar
-# Asserts: the regression where an indented comment exported a comment-derived name
-test_env_indented_comment_skipped() {
-  # REGRESSION: a comment with leading whitespace passed the raw-key guard and
-  # hit `export` with a comment-derived name (not a valid identifier). It must
-  # scan as a comment once the key is trimmed.
-  local SBX="$FIXTURE_DIR/sbx_lc" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '  # indented comment\nFOO=bar\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|' "${FOO:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "bar|" ]]; then
-    pass ".env parser skips indented comment lines"
-  else
-    fail "indented comment broke parsing: rc=$RC out='$OUT'"
-  fi
-}
-
-# Given: a .env with 1BAD=odd before GOOD=1, run under set -e
-# When:  session_env_common_init runs
-# Then:  rc 0, the warning "invalid variable name" is printed, GOOD=1
-# Asserts: a non-identifier key warns and is skipped instead of failing the call
-test_env_invalid_identifier_key_skipped_with_warning() {
-  # A non-identifier key (digit prefix, dash, and so on) can never be exported.
-  # The parser must skip it with a warning instead of failing the call.
-  local SBX="$FIXTURE_DIR/sbx_inv" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '1BAD=odd\nGOOD=1\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|' "${GOOD:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == *"invalid variable name"* && "$OUT" == *"1|" ]]; then
-    pass ".env parser skips non-identifier keys with a warning"
-  else
-    fail "non-identifier key not handled: rc=$RC out='$OUT'"
   fi
 }
 
@@ -509,12 +380,6 @@ test_names_worktree_var_defaults_and_overrides() {
 # =============================================================================
 
 run_test test_env_missing_file_fails_with_onboard_hint
-run_test test_env_comments_and_blanks_skipped
-run_test test_env_key_whitespace_stripped_value_trimmed
-run_test test_env_inline_comment_is_kept_as_value
-run_test test_env_whitespace_only_key_line_skipped
-run_test test_env_indented_comment_skipped
-run_test test_env_invalid_identifier_key_skipped_with_warning
 run_test test_common_init_rejects_non_git_project
 run_test test_common_init_rejects_commitless_repo
 run_test test_common_init_exports_identity_and_paths
