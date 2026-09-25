@@ -782,7 +782,7 @@ test_resolve_paths_state_overrides_win() {
 # Given: no SESSION_STATE record
 # When:  _resolve_paths runs
 # Then:  the dirs_resolve conventions are used
-# Asserts: the fallback (the partial-state case is unasserted; finding 50).
+# Asserts: the fallback.
 test_resolve_paths_falls_back_to_dirs_resolve() {
   source "$TEST_DIR/libs/git_fixtures.sh"
   local SD="$FIXTURE_DIR/rp_fallback"
@@ -818,6 +818,31 @@ run_test test_latest_dir_missing_base_fails
 run_test test_latest_dir_empty_base_fails
 run_test test_latest_dir_picks_lexicographically_last
 run_test test_resolve_latest_dir_by_mtime
+# Given: a SESSION_STATE record that sets only changes_dir
+# When:  _resolve_paths runs
+# Then:  changes_dir is honoured and only the missing keys take the defaults
+# Asserts: a partially populated record is not discarded wholesale.
+test_resolve_paths_keeps_partial_record() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local SD="$FIXTURE_DIR/rp_partial"
+  make_committed_repo "$SD"
+  printf 'changes_dir=/custom/changes\n' > "$SD/.git/SESSION_STATE"
+
+  (
+    unset CHANGES_DIR INPUT_DIR OUTPUT_DIR WORKSPACE_DIR_NAME CHANGES_DIR_NAME INPUT_DIR_NAME OUTPUT_DIR_NAME SNAPSHOT_DIR_NAME
+    _resolve_paths "$SD"
+    [[ "$CHANGES_DIR" == "/custom/changes" \
+       && "$INPUT_DIR" == "$SD/.workspace/input" \
+       && "$OUTPUT_DIR" == "$SD/.workspace/output" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "_resolve_paths: a partial record keeps its set key and fills the rest"
+  else
+    fail "partial-state resolution broken"
+  fi
+}
+run_test test_resolve_paths_keeps_partial_record
+
 run_test test_resolve_paths_state_overrides_win
 run_test test_resolve_paths_falls_back_to_dirs_resolve
 run_test test_export_path_missing_session_id

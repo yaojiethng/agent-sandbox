@@ -44,7 +44,13 @@ _resolve_paths() {
   _d=$(session_state_read "$SANDBOX_DIR" "input_dir" 2>/dev/null) && INPUT_DIR="$_d"
   _d=$(session_state_read "$SANDBOX_DIR" "output_dir" 2>/dev/null) && OUTPUT_DIR="$_d"
   if [[ -z "${CHANGES_DIR:-}" || -z "${INPUT_DIR:-}" || -z "${OUTPUT_DIR:-}" ]]; then
+    # Derive the conventions without discarding a recorded key: keep any value
+    # the record supplied and fill only the missing ones.
+    local _rec_c="${CHANGES_DIR:-}" _rec_i="${INPUT_DIR:-}" _rec_o="${OUTPUT_DIR:-}"
     dirs_resolve "$SANDBOX_DIR"
+    [[ -n "$_rec_c" ]] && CHANGES_DIR="$_rec_c"
+    [[ -n "$_rec_i" ]] && INPUT_DIR="$_rec_i"
+    [[ -n "$_rec_o" ]] && OUTPUT_DIR="$_rec_o"
   fi
 }
 

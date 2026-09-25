@@ -13,7 +13,6 @@
 #   SANDBOX_DIR   --  parsed from --sandbox flag
 #
 # Provides:
-#   parse_base_flags()    --  parse --name, --project, --sandbox from "$@"
 #   check_base_flags()    --  validate PROJECT_NAME and SANDBOX_DIR are set
 #   parse_help_flag()     --  check for --help/-h, print usage and return 0
 #                           when help was requested; the caller turns the
@@ -21,14 +20,11 @@
 #
 # Scripts should define their own usage() before sourcing this file.
 
-# PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR are parsed here for the sourcing scripts
-# (stop.sh, prune.sh, resume_agent.sh) that read them in their own scope; none
-# is consumed inside this library.
-# shellcheck disable=SC2034
 # Max entries per page for numbered pickers (draft bundle select, resume
 # session select) and for the resume --list cap. Single canonical value; both
 # scripts/workflows/interactive.sh and scripts/resume_agent.sh read it from
-# here. Overridable via environment.
+# here. Overridable via environment; not consumed inside this library.
+# shellcheck disable=SC2034
 : "${INTERACTIVE_MAX_ENTRIES:=10}"
 
 # canonical_sandbox_dir SANDBOX_DIR
@@ -44,7 +40,7 @@ sandbox_dir_canon() {
   local dir="$1"
   [[ -n "$dir" ]] || { echo "sandbox_dir_canon: SANDBOX_DIR is empty" >&2; return 1; }
   local expanded
-  expanded="${dir/#\~/\$HOME}"   # expand a leading ~ before realpath
+  expanded="${dir/#\~/$HOME}"   # expand a leading ~ before realpath
   local canon
   if ! canon="$(readlink -f "$expanded" 2>/dev/null)"; then
     echo "Error: cannot canonicalize SANDBOX_DIR: $dir" >&2
@@ -60,19 +56,6 @@ parse_help_flag() {
     esac
   done
   return 1
-}
-
-parse_base_flags() {
-  PROJECT_NAME=""
-  PROJECT_DIR=""
-  SANDBOX_DIR=""
-  for _arg in "$@"; do
-    case "$_arg" in
-      --name=*)    PROJECT_NAME="${_arg#--name=}" ;;
-      --project=*) PROJECT_DIR="${_arg#--project=}" ;;
-      --sandbox=*) SANDBOX_DIR="${_arg#--sandbox=}" ;;
-    esac
-  done
 }
 
 check_base_flags() {

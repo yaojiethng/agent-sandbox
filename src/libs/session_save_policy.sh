@@ -62,7 +62,6 @@ save_decision() {
     0) return 0 ;;
     1) echo "$_label: nothing to save  --  clean tree at last-saved HEAD" >&2; return 1 ;;
     2) echo "$_label: cannot read the sandbox repository; saving anyway" >&2; return 0 ;;
-    *) echo "$_label: unknown save status $_rc; saving anyway" >&2; return 0 ;;
   esac
 }
 
@@ -87,7 +86,6 @@ session_export_needed() {
     0) return 0 ;;
     1) echo "session-export: nothing to save  --  clean tree at the branch point" >&2; return 1 ;;
     2) echo "session-export: cannot read the sandbox repository; saving anyway" >&2; return 0 ;;
-    *) echo "session-export: unknown save status $_rc; saving anyway" >&2; return 0 ;;
   esac
 }
 

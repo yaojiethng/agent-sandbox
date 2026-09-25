@@ -2,7 +2,7 @@
 # libs/compose.sh
 #
 # Shared Docker Compose primitives for provider run scripts.
-# Source this file after containers.sh.
+# Source this file after image.sh.
 #
 # Functions:
 #   compose_generate      Merges one or more compose files via
@@ -21,6 +21,9 @@
 #
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a
 #                         single pre-generated compose file and project name.
+#
+#   compose_file_from_args  Prints the generated compose file path from
+#                         COMPOSE_ARGS (the last -f value set by compose_args).
 #
 #   compose_dry_run       Full dry-run sequence against COMPOSE_ARGS, in two
 #                         passes: up + verify (fresh), down (volume kept), up
@@ -75,7 +78,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 #   $3       provider_name     --  used to derive {{AGENT_IMAGE_NAME}}
 #   $4...$N  input_files       --  compose files to merge, in order
 #
-# Requires: containers.sh sourced (sandbox_image_name, agent_image_name)
+# Requires: image.sh sourced (sandbox_image_name, agent_image_name)
 # -------------------------
 compose_generate() {
   local output_file="$1"
@@ -425,12 +428,9 @@ session_destroy() {
 # Polls until the sandbox container reports healthy.
 # Fails fast if the container exits before becoming healthy.
 # Times out after SANDBOX_WAIT_TIMEOUT seconds (default: 120).
-#
-# Args:
-#   $1  project_name
+# The container is named by SANDBOX_CONTAINER_NAME, set by session_env.sh.
 # -------------------------
 compose_sandbox_wait() {
-  local project_name="$1"
   local container
   container="$SANDBOX_CONTAINER_NAME"
  

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_interactive_session_select.sh
-# Tests for libs/interactive_session_select.sh
+# Tests for scripts/workflows/interactive.sh
 # Pins cite: docs/architecture/tool_interface.md l.132-135 (channel table);
 #             devlog/discussions/design_apply_draft_workflow.md (channel directories).
 

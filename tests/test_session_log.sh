@@ -100,6 +100,35 @@ test_session_log_set_avoids_inplace_sed() {
 }
 run_test test_session_log_set_avoids_inplace_sed
 
+# Given: a log with the same key on two lines (hand-edited or appended)
+# When:  session_log_read runs
+# Then:  the first matching line wins
+# Asserts: the reader's documented rule against a duplicate key.
+test_session_log_read_first_match_wins() {
+  local sid="dupkey"
+  printf 'last_stopped=A\nlast_stopped=B\n' > "$FIX/.compose/$sid.log"
+  assert_eq "$(session_log_read "$sid" last_stopped)" "A" "duplicate key: first match wins"
+}
+run_test test_session_log_read_first_match_wins
+
+# Given: a value containing sed replacement syntax
+# When:  session_log_set upserts it over an existing line
+# Then:  the value round-trips literally and the log keeps its other keys
+# Asserts: KEY and VALUE reach sed without being interpreted.
+test_session_log_set_escapes_sed_metacharacters() {
+  local sid="metachars"
+  local v
+  for v in 'a&b' 'a#b' 'a\1b'; do
+    session_log_set "$sid" note "seed"
+    session_log_set "$sid" note "$v"
+    assert_eq "$(session_log_read "$sid" note)" "$v" "upsert stores '$v' literally"
+    assert_eq "$(grep -c '^note=' "$FIX/.compose/$sid.log")" 1 "upsert keeps one note line for '$v'"
+  done
+  session_log_set "$sid" other "kept"
+  assert_eq "$(session_log_read "$sid" other)" "kept" "a metacharacter value does not truncate the log"
+}
+run_test test_session_log_set_escapes_sed_metacharacters
+
 # Given: the no-in-place-sed shim
 # When:  sed -i is invoked directly
 # Then:  it fails

@@ -188,6 +188,30 @@ test_fresh_onboard_creates_provider_configs() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: provider config modes are 775 dirs / 664 files under a restrictive umask
+# ---------------------------------------------------------------------------
+# Given: a fresh onboard run under umask 077
+# When:  the seeded provider config tree is inspected
+# Then:  the directory is 775 and the file is 664 regardless of the umask
+# Asserts: rsync -p makes --chmod effective instead of the invoking umask.
+test_provider_config_modes_resist_umask() {
+  local PROJECT_DIR="$FIXTURE_DIR/mode_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/mode_sandbox"
+
+  local OLD_UMASK
+  OLD_UMASK="$(umask)"
+  umask 077
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR"
+  umask "$OLD_UMASK"
+
+  local DIR_MODE FILE_MODE
+  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes" 2>/dev/null)"
+  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes/config.yaml" 2>/dev/null)"
+  assert_eq "$DIR_MODE" "775" "provider config dir mode is 775 under umask 077"
+  assert_eq "$FILE_MODE" "664" "provider config file mode is 664 under umask 077"
+}
+
+# ---------------------------------------------------------------------------
 # Test: fresh onboard aborts if SANDBOX_DIR already has outputs
 # ---------------------------------------------------------------------------
 # Given: a sandbox directory that already holds a Makefile
@@ -340,6 +364,7 @@ run_test test_fresh_onboard_env_has_required_keys
 run_test test_fresh_onboard_makefile_reads_name_from_env
 run_test test_refresh_migrates_project_name_into_env
 run_test test_fresh_onboard_creates_provider_configs
+run_test test_provider_config_modes_resist_umask
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values

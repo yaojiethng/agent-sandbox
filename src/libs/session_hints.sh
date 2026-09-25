@@ -26,17 +26,20 @@ session_end_hints() {
 
   echo "Resume this session later: make resume SESSION_ID=$_session_id"
 
-  dirs_resolve "$_sandbox_dir"
+  # An unresolvable sandbox degrades the hint pair to resume-only instead of
+  # aborting the caller's teardown with a raw library error.
+  [[ -n "$_sandbox_dir" ]] || return 0
+  dirs_resolve "$_sandbox_dir" || return 0
 
   local _session_base="$CHANGES_DIR/session"
-  [[ -d "$_session_base" ]] || return 0
 
   # Newest export for the session: EXPORT_TIME sorts chronologically, so the
   # name-sort tail is the most recent (same ordering rule as resolve_latest_dir).
+  # `|| true` absorbs a failed pipeline so a missing base cannot abort the
+  # caller under `set -o pipefail`.
   local _export_dir
   _export_dir=$(find "$_session_base" -mindepth 1 -maxdepth 1 -type d \
-    -name "*-${_session_id}" 2>/dev/null | sort | tail -n 1) || return 0
-  [[ -n "$_export_dir" ]] || return 0
+    -name "*-${_session_id}" 2>/dev/null | sort | tail -n 1) || true
 
   # Draftability gate: an export dir can exist but hold nothing draftable
   # (failed export with no autosave fallback). A hint naming such a bundle

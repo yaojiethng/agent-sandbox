@@ -64,7 +64,7 @@ Registry-based prune: removes stale session records and orphaned resources
 for this project+sandbox. Always a complete pass (Rule 1 records + Rule 2
 resources). Simulation is --dry-run; confirmation is --interactive.
 
-or, from a sandbox Makefile: make prune [STALE=sandbox] [AGE_DAYS=<n>] [PROVIDER=<n>] [DRY_RUN=1]
+or, from a sandbox Makefile: make prune [STALE=sandbox] [AGE_DAYS=<n>] [PROVIDER=<n>] [DRY_RUN=1] [INTERACTIVE=1]
 
 Options:
   --stale=sandbox   Target sandbox-stale records only (host-head-sha !=

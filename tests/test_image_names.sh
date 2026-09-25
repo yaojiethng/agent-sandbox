@@ -3,9 +3,11 @@
 #
 # Pins cite: docs/architecture/tool_interface.md naming table (l.15, l.28).
 
-# These four functions are the docker tag contract. Prune, resume, build and
-# compose re-derive image names independently, so any drift here breaks
-# cross-layer resource addressing silently.
+# These four functions are the docker tag contract. Build and compose consume
+# the names directly, so any drift here breaks cross-layer resource addressing
+# silently. Prune addresses resources by label and never names an image; resume
+# parses the provider back out of the tag, consuming the shape rather than
+# re-deriving it.
 #
 # Run:
 #   bash tests/test_image_names.sh

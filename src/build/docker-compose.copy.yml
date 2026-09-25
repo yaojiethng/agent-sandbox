@@ -11,7 +11,7 @@
 #
 # Volume name incorporates SESSION_ID so each session gets its own volume.
 # Managed by compose lifecycle  --  preserved across `make stop` / `make start`;
-# destroyed by `docker compose down -v` or pruned via `make prune --volumes`.
+# destroyed by `docker compose down -v` or pruned via `make prune`.
 # Labels enable lifecycle tooling (prune, inspect, volume discovery) without
 # project-name prefix parsing.
 

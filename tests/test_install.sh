@@ -8,8 +8,9 @@
 #   uninstall               --  symlink removed
 #   Darwin missing tools    --  BSD-style PATH detected, brew hints printed,
 #                               install aborts
+#   Darwin probe isolation  --  one unit per GNU probe, only that probe failing
 #   Darwin GNU shim         --  GNU-style PATH detected, install proceeds
-#   Linux missing git       --  git check fails closed
+#   Linux missing git       --  git check fails closed, without a brew hint
 
 set -uo pipefail
 
@@ -27,6 +28,20 @@ printf '#!/bin/sh\necho "sed (GNU sed) 4.8.1"\nexit 0\n' > "$FIXTURE_ROOT/gnu_sh
 chmod +x "$FIXTURE_ROOT/gnu_shim"/{realpath,sha256sum,date,sed}
 ln -s "$(command -v git)" "$FIXTURE_ROOT/gnu_shim/git"
 ln -s "$(command -v grep)" "$FIXTURE_ROOT/gnu_shim/grep"
+
+# One isolation shim per GNU probe. Each dir shadows a single tool while
+# gnu_shim supplies the rest, so exactly one check fails and the printed hint
+# pins which requirement was detected. PATH carries the shim dirs only  --  a
+# host tool leaked in by the system PATH would mask the failure.
+mkdir -p "$FIXTURE_ROOT/iso_readlink" "$FIXTURE_ROOT/iso_date" \
+         "$FIXTURE_ROOT/iso_sed" "$FIXTURE_ROOT/gnu_shim_nosha"
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_readlink/realpath"
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_date/date"
+printf '#!/bin/sh\necho "sed: illegal option -- -"\nexit 1\n' > "$FIXTURE_ROOT/iso_sed/sed"
+chmod +x "$FIXTURE_ROOT/iso_readlink/realpath" "$FIXTURE_ROOT/iso_date/date" "$FIXTURE_ROOT/iso_sed/sed"
+for t in realpath date sed git grep; do
+  ln -s "$FIXTURE_ROOT/gnu_shim/$t" "$FIXTURE_ROOT/gnu_shim_nosha/$t"
+done
 
 # Given: INSTALL_OS=Linux and a fixture INSTALL_DIR
 # When:  install_main runs
@@ -66,7 +81,6 @@ test_install_uninstall_removes_symlink() {
 # When:  install_main runs
 # Then:  rc is non-zero and the output names coreutils and the requirements doc
 # Asserts: the Darwin branch refuses a host without the GNU toolchain
-# Note:  all four probes fail together, so the unit cannot tell which was detected (finding 127)
 test_install_detects_missing_gnu_tools_on_darwin() {
   local OUT RC=0
   OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/empty_shim" \
@@ -107,16 +121,88 @@ test_install_detects_missing_git_on_linux() {
         INSTALL_DIR="$FIXTURE_DIR/bin_linux_nogit" \
         install_main 2>&1 </dev/null) || RC=$?
 
-  if [[ $RC -ne 0 && "$OUT" == *"git: missing"* ]]; then
-    pass "Linux install aborts when git is missing"
+  if [[ $RC -ne 0 && "$OUT" == *"git: missing"* && "$OUT" != *"brew"* ]]; then
+    pass "Linux install aborts when git is missing, without a macOS hint"
   else
     fail "missing-git gate broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only realpath/readlink fails
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the realpath/readlink requirement
+# Asserts: the readlink probe is detected in isolation
+test_install_detects_missing_readlink_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/iso_readlink:$FIXTURE_ROOT/gnu_shim" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_readlink" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"realpath or readlink -f missing"* ]]; then
+    pass "Darwin install aborts when only realpath/readlink is missing"
+  else
+    fail "readlink probe not isolated: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only sha256sum is absent
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the sha256sum requirement
+# Asserts: the sha256sum probe is detected in isolation
+test_install_detects_missing_sha256sum_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/gnu_shim_nosha" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_nosha" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"sha256sum missing"* ]]; then
+    pass "Darwin install aborts when only sha256sum is missing"
+  else
+    fail "sha256sum probe not isolated: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only date rejects -d
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the GNU date requirement
+# Asserts: the GNU date probe is detected in isolation
+test_install_detects_missing_gnu_date_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/iso_date:$FIXTURE_ROOT/gnu_shim" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_date" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"GNU date (date -d) missing"* ]]; then
+    pass "Darwin install aborts when only GNU date is missing"
+  else
+    fail "GNU date probe not isolated: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only sed is non-GNU
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the GNU sed requirement
+# Asserts: the GNU sed probe is detected in isolation
+test_install_detects_missing_gnu_sed_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/iso_sed:$FIXTURE_ROOT/gnu_shim" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_sed" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"GNU sed missing"* ]]; then
+    pass "Darwin install aborts when only GNU sed is missing"
+  else
+    fail "GNU sed probe not isolated: rc=$RC out='$OUT'"
   fi
 }
 
 run_test test_install_passes_on_linux_default
 run_test test_install_uninstall_removes_symlink
 run_test test_install_detects_missing_gnu_tools_on_darwin
+run_test test_install_detects_missing_readlink_on_darwin
+run_test test_install_detects_missing_sha256sum_on_darwin
+run_test test_install_detects_missing_gnu_date_on_darwin
+run_test test_install_detects_missing_gnu_sed_on_darwin
 run_test test_install_passes_on_darwin_with_gnu_shim
 run_test test_install_detects_missing_git_on_linux
 

@@ -8,13 +8,13 @@
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--targets=<targets>] [identity] [--env=<path>]
-#   agent-sandbox start    [--serve] --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [flags]
+#   agent-sandbox start    [--serve] --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [--interactive] [flags]
 #   agent-sandbox dry-run  --provider=<n> [identity] [--env=<path>] [--fast] [flags]
 #   agent-sandbox resume   [identity] [--env=<path>] [--session-id=<id>] [--list] [--interactive]
 #   agent-sandbox stop     [identity] [--env=<path>] [--session-id=<id>] [--prune]
 #   agent-sandbox prune    [identity] [--env=<path>] [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
 #   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive]
+#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive] [--interactive]
 #   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>] [--new]
 #   agent-sandbox reject   --project=<path> --sandbox=<path>
 #   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]

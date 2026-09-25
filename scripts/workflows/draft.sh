@@ -142,7 +142,7 @@ draft_create_and_init_branch() {
 # draft_apply_patches  --  apply and commit diffs sequentially
 # =============================================================================
 
-# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE]
+# draft_apply_patches PROJECT_DIR AUTHOR [FORCE]
 #
 # Reads diff file paths from stdin (one per line), applies each via
 # apply_and_commit with the resolved commit message.
@@ -377,7 +377,6 @@ Options:
   --branch-summary=<slug> Override branch name suffix
   --force                 Apply with --reject; .rej files for conflicts
   --permissive            No-op: permissive apply is the default (kept for compatibility)
-  --strict                Disable --recount retry on apply failure
   --interactive           Interactive picker mode
 EOF
 }

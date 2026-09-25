@@ -71,6 +71,64 @@ test_parse_args_tolerant_drops_unknown() {
   fi
 }
 
+# Given: _CLI_TOLERANT=1 and an unknown flag
+# When:  parse_args runs with stderr captured
+# Then:  rc 0 and a warning names the ignored argument
+# Asserts: drop mode is not silent (the fail-open it once was).
+test_parse_args_tolerant_warns_on_unknown() {
+  _CLI_TOLERANT=1
+  local OUT
+  OUT=$(parse_args _test_usage --known -- --dry-runn 2>&1)
+  local rc=$?
+  unset _CLI_TOLERANT
+  assert_rc 0 "$rc" "tolerant mode keeps rc 0 on an unknown flag"
+  assert_contains "$OUT" "--dry-runn" "tolerant mode warns about the ignored argument"
+}
+
+# Given: a value flag with no `=value`
+# When:  parse_args runs
+# Then:  rc 1 and the target var is not poisoned with the flag name
+# Asserts: a bare value flag is rejected, not consumed as its own value.
+test_parse_args_bare_value_flag_rejected() {
+  PROJECT_NAME=""
+  parse_args _test_usage --name=PROJECT_NAME -- --name >/dev/null 2>&1
+  local rc=$?
+  if [[ "$rc" == 1 && "$PROJECT_NAME" == "" ]]; then
+    pass "parse_args: a bare value flag is rejected (rc 1)"
+  else
+    fail "parse_args: bare value flag rc=$rc PROJECT_NAME='$PROJECT_NAME', expected rc 1 and empty"
+  fi
+}
+
+# Given: a boolean flag given an explicit value
+# When:  parse_args runs
+# Then:  rc 1
+# Asserts: a boolean flag does not silently accept a value.
+test_parse_args_boolean_with_value_rejected() {
+  FORCE=""
+  parse_args _test_usage --force -- --force=0 >/dev/null 2>&1
+  local rc=$?
+  if [[ "$rc" == 1 ]]; then
+    pass "parse_args: a boolean flag with a value is rejected (rc 1)"
+  else
+    fail "parse_args: boolean with value rc=$rc, expected 1"
+  fi
+}
+
+# Given: `--help` after a `--` terminator
+# When:  parse_args runs
+# Then:  help is not triggered (the arg is treated as a positional)
+# Asserts: a positional that spells --help can be passed.
+test_parse_args_help_after_separator_not_special() {
+  local RC=0
+  parse_args _test_usage --known -- -- --help >/dev/null 2>&1 || RC=$?
+  if [[ "$RC" != 2 ]]; then
+    pass 'parse_args: --help after -- does not trigger help'
+  else
+    fail 'parse_args: --help after -- still triggered help'
+  fi
+}
+
 # Given: --help among the args
 # When:  parse_args runs
 # Then:  usage is printed and rc 2
@@ -175,10 +233,22 @@ test_collect_help_not_special() {
       "collect: help flags pass through; help routing stays with the caller"
 }
 
+# Given: a value spec and a bare `--env` flag with no value
+# When:  parse_args_collect runs
+# Then:  the bare flag is forwarded to the sink, not assigned to its var
+# Asserts: collect mode forwards a missing value for the leaf to reject.
+test_collect_bare_value_flag_forwarded() {
+  PASSTHROUGH=()
+  ENV_REL=""
+  parse_args_collect PASSTHROUGH --env=ENV_REL -- --env --other
+  assert_eq "$ENV_REL" "" "collect: bare value flag does not poison its var"
+  assert_eq "${PASSTHROUGH[*]}" "--env --other" "collect: bare value flag is forwarded"
+}
+
 # Given: a value spec and the arg bar
 # When:  parse_args_collect runs
 # Then:  ENV_REL stays empty and bar is collected
-# Asserts: the empty-value case only - no bare flag is present in the args, so the missing-value path is not exercised (finding 41).
+# Asserts: a positional arg after the separator is collected, not assigned.
 test_collect_bare_value_flag_consumed() {
   PASSTHROUGH=()
   ENV_REL=""
@@ -210,6 +280,10 @@ run_test test_parse_args_value_flag
 run_test test_parse_args_boolean_flag
 run_test test_parse_args_unknown_strict_fails
 run_test test_parse_args_tolerant_drops_unknown
+run_test test_parse_args_tolerant_warns_on_unknown
+run_test test_parse_args_bare_value_flag_rejected
+run_test test_parse_args_boolean_with_value_rejected
+run_test test_parse_args_help_after_separator_not_special
 run_test test_parse_args_help_exits_2
 run_test test_collect_routes_specs_and_appends_rest
 run_test test_collect_never_errors_on_unknown
@@ -218,6 +292,7 @@ run_test test_collect_boolean_spec_not_sinked
 run_test test_collect_literal_spec_not_sinked
 run_test test_collect_appends_to_predeclared_sink
 run_test test_collect_help_not_special
+run_test test_collect_bare_value_flag_forwarded
 run_test test_collect_bare_value_flag_consumed
 run_test test_collect_has_no_stale_registry
 test_done test_cli_lib

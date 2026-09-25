@@ -34,7 +34,9 @@ STUB_LIB_DIR="$TEST_DIR/stubs/libs"
 #   EP_OUT.
 invoke_entrypoint_mount() {
   local dir="$1"
-  ( cd "$dir" && SANDBOX_LIB_DIR="$STUB_LIB_DIR" \
+  ( cd "$dir" && HOME="${EP_HOME:-$HOME}" \
+    AGENT_HOME='' \
+    SANDBOX_LIB_DIR="$STUB_LIB_DIR" \
     SANDBOX_TYPE=mount \
     SANDBOX_DIR_NAME=worktree \
     CHANGES_DIR="$dir/.workspace/session-diffs" \
@@ -178,6 +180,21 @@ test_mount_attach_preserves_existing_state() {
   fi
 }
 
+# Given: an unset AGENT_HOME and a HOME whose .pi holds AGENTS.md
+# When:  the entrypoint preflight runs
+# Then:  the AGENT_HOME check resolves through HOME and passes
+# Asserts: the tilde default is resolved, not tested as a literal path.
+test_agents_md_default_expands_home() {
+  local dir="$FIXTURE_DIR/mount_agenthome"
+  local home="$dir/home"
+  mkdir -p "$home/.pi"
+  : > "$home/.pi/AGENTS.md"
+
+  EP_HOME="$home" run_entrypoint "$dir"
+  assert_contains "$EP_OUT" "PREFLIGHT PASS: AGENTS.md present at AGENT_HOME" \
+    "AGENT_HOME default expands HOME before testing AGENTS.md"
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -185,6 +202,7 @@ test_mount_attach_preserves_existing_state() {
 run_test test_mount_fail_closed_no_git
 run_test test_mount_first_run_writes_init_marker
 run_test test_mount_attach_preserves_existing_state
+run_test test_agents_md_default_expands_home
 
 test_done
 

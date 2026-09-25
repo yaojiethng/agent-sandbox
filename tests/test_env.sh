@@ -55,6 +55,37 @@ test_env_load_trims_value_padding() {
   fi
 }
 
+# Given: a line written with an `export` prefix
+# When:  env_load runs
+# Then:  the named variable is set and no prefixed name exists
+# Asserts: an optional export keyword is stripped, not folded into the name.
+test_env_load_strips_export_prefix() {
+  local F="$FIXTURE_DIR/export.env"
+  printf 'export EXPORTED=yes\n' > "$F"
+  env_load "$F"
+  if [[ "${EXPORTED:-unset}" == "yes" && -z "${exportEXPORTED:-}" ]]; then
+    pass "env_load strips an export prefix"
+  else
+    fail "export prefix mishandled: EXPORTED='${EXPORTED:-unset}'"
+  fi
+}
+
+# Given: a non-comment line with no equals sign, followed by a valid line
+# When:  env_load runs with stderr captured
+# Then:  the stray name is unset, a warning is printed, and loading continues
+# Asserts: a line without `=` is rejected, not defined as empty.
+test_env_load_skips_line_without_equals() {
+  local F="$FIXTURE_DIR/noeq.env"
+  printf 'NOEQ\nAFTER=1\n' > "$F"
+  local OUT
+  OUT=$(env_load "$F" 2>&1; printf '|%s|%s' "${NOEQ:-unset}" "${AFTER:-unset}")
+  if [[ "$OUT" == *"without '='"* && "$OUT" == *"|unset|1" ]]; then
+    pass "env_load skips a line without '=' and continues"
+  else
+    fail "no-equals line mishandled: out='$OUT'"
+  fi
+}
+
 # Given: 1BAD=odd followed by GOOD=1
 # When:  env_load runs with stderr captured
 # Then:  the output contains "invalid variable name" and GOOD=1 was still applied
@@ -74,6 +105,8 @@ test_env_load_skips_invalid_key_with_warning() {
 run_test test_env_load_exports_valid_line
 run_test test_env_load_skips_comments_and_blanks
 run_test test_env_load_trims_value_padding
+run_test test_env_load_strips_export_prefix
+run_test test_env_load_skips_line_without_equals
 run_test test_env_load_skips_invalid_key_with_warning
 
 test_done test_env.sh

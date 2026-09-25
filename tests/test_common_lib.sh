@@ -4,7 +4,7 @@
 #
 # Covers:
 #   parse_help_flag     --  detects --help and -h; passes through other args
-#   parse_base_flags    --  extracts --name and --sandbox from arg list
+#   sandbox_dir_canon   --  resolves a sandbox path spelling to its canonical form
 #   check_base_flags    --  validates required flags, rejects empty/slash paths
 
 set -uo pipefail
@@ -60,33 +60,21 @@ test_help_flag_not_triggered() {
 }
 
 # ---------------------------------------------------------------------------
-# parse_base_flags
+# sandbox_dir_canon
 # ---------------------------------------------------------------------------
 
-# Given: --name/--project/--sandbox and an unknown flag
-# When:  parse_base_flags runs
-# Then:  the three vars are set and the unknown flag is ignored
-# Asserts: the three base flags parse; unknown args are tolerated.
-test_parse_base_flags_sets_vars() {
-  PROJECT_NAME="" PROJECT_DIR="" SANDBOX_DIR=""
-  parse_base_flags --name=my-project --project=/tmp/myproj --sandbox=/tmp/mysandbox --unknown-flag
-
-  assert_eq "$PROJECT_NAME" "my-project" "parse_base_flags sets PROJECT_NAME from --name="
-  assert_eq "$PROJECT_DIR" "/tmp/myproj" "parse_base_flags sets PROJECT_DIR from --project="
-  assert_eq "$SANDBOX_DIR" "/tmp/mysandbox" "parse_base_flags sets SANDBOX_DIR from --sandbox="
-}
-
-# Given: pre-set vars and no base flags
-# When:  parse_base_flags runs
-# Then:  all three vars are reset to empty
-# Asserts: parsing clears prior values.
-test_parse_base_flags_defaults_empty() {
-  PROJECT_NAME="x" PROJECT_DIR="y" SANDBOX_DIR="z"
-  parse_base_flags --other-flag
-
-  assert_empty "$PROJECT_NAME" "parse_base_flags leaves PROJECT_NAME empty when --name= absent"
-  assert_empty "$PROJECT_DIR" "parse_base_flags leaves PROJECT_DIR empty when --project= absent"
-  assert_empty "$SANDBOX_DIR" "parse_base_flags leaves SANDBOX_DIR empty when --sandbox= absent"
+# Given: a sandbox path written with a leading ~
+# When:  sandbox_dir_canon runs
+# Then:  it prints the canonical path under HOME
+# Asserts: the tilde expands before readlink resolves the path.
+test_sandbox_dir_canon_expands_tilde() {
+  local home="$FIXTURE_DIR/tilde_home"
+  mkdir -p "$home/sub"
+  local out expected tilde
+  tilde='~'
+  out="$(HOME="$home" sandbox_dir_canon "$tilde/sub")"
+  expected="$(readlink -f "$home/sub")"
+  assert_eq "$out" "$expected" "sandbox_dir_canon expands a leading ~"
 }
 
 # ---------------------------------------------------------------------------
@@ -98,8 +86,7 @@ test_parse_base_flags_defaults_empty() {
 # Then:  it passes
 # Asserts: the required pair passes.
 test_check_base_flags_valid() {
-  PROJECT_NAME="test" SANDBOX_DIR="/tmp/valid"
-  if check_base_flags 2>/dev/null; then
+  if ( PROJECT_NAME="test" SANDBOX_DIR="/tmp/valid" check_base_flags 2>/dev/null ); then
     pass "check_base_flags passes when both flags set"
   else
     fail "check_base_flags should pass with valid flags"
@@ -164,8 +151,7 @@ test_check_base_flags_rejects_empty_sandbox() {
 run_test test_help_flag_detected
 run_test test_help_flag_short
 run_test test_help_flag_not_triggered
-run_test test_parse_base_flags_sets_vars
-run_test test_parse_base_flags_defaults_empty
+run_test test_sandbox_dir_canon_expands_tilde
 run_test test_check_base_flags_valid
 run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox

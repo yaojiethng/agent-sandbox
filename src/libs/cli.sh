@@ -33,6 +33,8 @@
 #
 # parse_args returns 0 on success, 1 on unknown argument (usage printed),
 # and 2 when --help/-h was given (usage printed, caller decides to exit).
+# A value flag with no `=value` and a boolean flag with a value do not match
+# their spec shape; the mode's unknown-argument policy decides their fate.
 # Boolean vars default to "false" in the caller's scope before parsing,
 # value vars to "".
 
@@ -43,12 +45,14 @@
 #
 #   MODE:
 #     error     unmatched args print usage and return 1 (strict, default)
-#     drop      unmatched args are silently ignored (_CLI_TOLERANT=1 surface)
+#     drop      unmatched args warn on stderr and are ignored (_CLI_TOLERANT=1)
 #     collect   unmatched args append, in order, to the array named SINK_VAR;
 #               never errors. In collect mode --help/-h is not special: the
 #               caller owns help routing (the dispatcher scans its args).
 #
 #   --help/-h (MODE error|drop): prints usage via USAGE_FN and returns 2.
+#   The help scan stops at a `--` in the args so a positional `--help` can be
+#   passed through.
 #
 #   The only escaping state is intentional: matched value/boolean vars are
 #   written with declare -g so the caller reads them after the call.
@@ -74,8 +78,13 @@ _cli_parse() {
   # --help/-h anywhere wins (the pre-existing raw-scan behavior). Collect
   # mode leaves help routing to the caller.
   if [[ "$mode" != "collect" ]]; then
-    local a
+    local a scan_done=false
     for a in "${CALL_ARGS[@]-}"; do
+      [[ "$scan_done" == true ]] && break
+      if [[ "$a" == "--" ]]; then
+        scan_done=true
+        continue
+      fi
       [[ "$a" == "--help" || "$a" == "-h" ]] && { "$usage_fn"; return 2; }
     done
   fi
@@ -129,6 +138,14 @@ _cli_parse() {
   for a in "${CALL_ARGS[@]-}"; do
     [[ -n "$a" ]] || continue
     entry="${REG[${a%%=*}]:-}"
+    if [[ -n "$entry" ]]; then
+      kind="${entry%%|*}"
+      # A value flag requires `=value`; a boolean flag takes no value. A
+      # mismatched shape is not a usable match, so the mode's unknown-argument
+      # policy decides its fate (reject, warn and drop, or forward).
+      if [[ "$kind" == "value" && "$a" != *=* ]]; then entry=""; fi
+      if [[ "$kind" == "boolean" && "$a" == *=* ]]; then entry=""; fi
+    fi
     if [[ -z "$entry" ]]; then
       case "$mode" in
         error)
@@ -138,7 +155,10 @@ _cli_parse() {
           "$usage_fn" >&2
           return 1
           ;;
-        drop) continue ;;
+        drop)
+          echo "Warning: ignoring unrecognised argument: $a" >&2
+          continue
+          ;;
         collect) SINK+=( "$a" ); continue ;;
       esac
     fi

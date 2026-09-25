@@ -11,8 +11,8 @@
 # Filter logic:
 #   Default: agent-sandbox.project-name + agent-sandbox.sandbox-dir labels
 #   --session-id: additionally filter by agent-sandbox.session-id label (stop specific session only)
-#   --prune:  after stopping, remove aged containers, images, and networks
-#             for this project+sandbox instance older than PRUNE_AGE_DAYS
+#   --prune:  after stopping, run the registry-based prune (prune.sh);
+#             removes containers, networks, and volumes for stale sessions
 
 set -euo pipefail
 

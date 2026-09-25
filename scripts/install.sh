@@ -37,7 +37,11 @@ check_bash_version() {
   if (( BASH_VERSINFO[0] < 4 )); then
     echo "  - bash 4.0+ required (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})" >&2
     echo "    The harness uses mapfile and associative arrays (bash 4.0+)." >&2
-    echo "    macOS: brew install bash; then run bash scripts/install.sh with /opt/homebrew/bin first in PATH." >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "    macOS: brew install bash; then run bash scripts/install.sh with /opt/homebrew/bin first in PATH." >&2
+    else
+      echo "    Install bash 4.0+ with your package manager." >&2
+    fi
     return 1
   fi
 }
@@ -45,7 +49,11 @@ check_bash_version() {
 check_git() {
   if ! command -v git >/dev/null 2>&1; then
     echo "  - git: missing" >&2
-    echo "    macOS: brew install git" >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "    macOS: brew install git" >&2
+    else
+      echo "    Install git with your package manager." >&2
+    fi
     return 1
   fi
 }
@@ -135,7 +143,11 @@ install_main() {
 
   if (( failures > 0 )); then
     echo "Install aborted: $failures requirement(s) missing." >&2
-    echo "See docs/development/host_requirements.md (macOS setup section)." >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "See docs/development/host_requirements.md (macOS setup section)." >&2
+    else
+      echo "See docs/development/host_requirements.md." >&2
+    fi
     return 1
   fi
 

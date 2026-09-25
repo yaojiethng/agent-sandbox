@@ -139,7 +139,7 @@ Required:
 Options:
   --branch=<name>     Check out or create a branch before applying
   --force             Apply with --reject for conflicts
-  --permissive        Retry with --recount on failure
+  --permissive        No-op: permissive apply is the default (kept for compatibility)
   --interactive       Preview the changes, then ask for confirmation
 EOF
 }
@@ -210,7 +210,10 @@ main() {
     echo "Preview of $(basename "$DIFF_FILE"):" >&2
     apply_preview "$DIFF_FILE" >&2
     interactive_confirm_or_abort "Apply:" "$DIFF_FILE" || exit 1
-    echo "Running: make apply DIFF=${DIFF_FILE}"
+    APPLY_ECHO="Running: make apply DIFF=${DIFF_FILE}"
+    [[ -n "$APPLY_BRANCH" ]] && APPLY_ECHO+=" BRANCH=${APPLY_BRANCH}"
+    [[ "$FORCE" == true ]] && APPLY_ECHO+=" FORCE=1"
+    echo "$APPLY_ECHO"
     apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
     exit $?
   fi

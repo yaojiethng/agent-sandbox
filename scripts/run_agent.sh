@@ -55,6 +55,35 @@ source "$REPO_ROOT/src/libs/session_hints.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 
 # -------------------------
+# Usage
+# -------------------------
+usage() {
+  cat <<EOF
+Usage: agent-sandbox run <mode> --name=<name> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount [options]
+
+Owns the provider container lifecycle for one session. Called by
+start_agent.sh (new session) and resume_agent.sh (existing session).
+
+Modes:
+  standard    Agent TUI attached to terminal
+  serve       Provider serve mode, companion services started
+  dry-run     End-to-end check: rebuild, fresh + resume passes, verify, teardown
+  headless    Reserved; not yet implemented
+
+Required:
+  --name=<name>          Project name
+  --sandbox=<path>       Path to the sandbox directory
+  --env=<path>           Session .env file
+  --provider=<n>         Provider name
+  --delivery=copy|mount  Delivery type
+
+Options:
+  --reset-volume         Seed the session volume before starting
+  --flatten              Flattened history: git-init baseline, no host history
+EOF
+}
+
+# -------------------------
 # Args
 # -------------------------
 MODE="${1:-}"
@@ -433,7 +462,7 @@ else
   # so no stdout filter is needed here.
   docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d sandbox < /dev/null
 
-  compose_sandbox_wait "$PROJECT_NAME"
+  compose_sandbox_wait
 
   echo "+ attaching to agent..."
   # Capture the agent's exit code instead of letting set -e abort: teardown

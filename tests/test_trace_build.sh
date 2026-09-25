@@ -192,6 +192,28 @@ test_build_default_targets_all() {
   fi
 }
 
+# Given: a fixture with --name and --project but no --sandbox
+# When:  build.sh runs
+# Then:  it succeeds instead of demanding the unused flag
+# Asserts: the --sandbox requirement is dropped.
+test_build_does_not_require_sandbox() {
+  local FIXTURE_DIR="$FIXTURE_DIR/bld_nosandbox"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  local out rc=0
+  out=$( ( export PATH="$STUB_DIR:$PATH"
+    unset SANDBOX_DIR
+    bash "$REPO_ROOT/scripts/build.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --targets="$PROVIDER_NAME"
+  ) 2>&1 ) || rc=$?
+  assert_rc 0 "$rc" "build.sh succeeds without --sandbox"
+  if [[ "$out" == *"Usage: agent-sandbox build"* ]]; then
+    fail "build.sh still demands --sandbox"
+  else
+    pass "build.sh does not require --sandbox"
+  fi
+}
+
 # Interface-contract preflight check (build.sh -> _check_interface_contract,
 # ADR interface_contract_compatibility.md): the image's baked
 # agent-sandbox.interface-contract-version label is compared against the
@@ -264,4 +286,5 @@ run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
+run_test test_build_does_not_require_sandbox
 test_done test_trace_build

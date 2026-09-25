@@ -143,8 +143,8 @@ _resume_state_map() {
              --format '{{.Label "agent-sandbox.session-id"}} {{.State}}' 2>/dev/null || true)
 }
 
-# _resume_state_cell SID CREATION_TS  --  the merged STATE cell: last event
-# (start/stop) from the activity log, verb overridden by live docker state.
+# _resume_state_cell SID  --  the merged STATE cell: last event (start/stop)
+# from the activity log, verb overridden by live docker state.
 _resume_state_cell() {
   local sid="$1"
   local started stopped docker_verb t
@@ -208,7 +208,7 @@ _resume_render_rows() {
     # convention as the draft bundle table.
     _state_val="$branch_age"
     work="${_WORK_MAP[$sid]:---}"
-    _wall_val=$(_resume_state_cell "$sid" "$ts")
+    _wall_val=$(_resume_state_cell "$sid")
     local row
     row=$(printf '%-7s %-9s %-14s %-14s %-6s %-13s' \
       "$sid" "$provider" "$_br" "$_wall_val" "$work" "$_state_val")

@@ -259,11 +259,10 @@ ENVEOF
 # ===========================================================================
 # Provider provisioning  --  shared by _run_onboard
 # ===========================================================================
-# Single loop: appends .env.example stubs, seeds config directories with
-# ACL permissions, renames env.stub, and runs provider-specific hooks.
+# Single loop: seeds config directories with ACL permissions, renames
+# env.stub, and runs provider-specific hooks.
 # Must be defined before _run_onboard which calls it.
 _provision_providers() {
-  local ENV_FILE="$SANDBOX_DIR/.env"
   echo "  Seeding provider configs..."
 
   for PROVIDER_DIR in "$REPO_ROOT/src/reasoning/providers/"*/; do
@@ -271,20 +270,14 @@ _provision_providers() {
     local PROVIDER_NAME
     PROVIDER_NAME="$(basename "$PROVIDER_DIR")"
 
-    # Append .env.example stubs
-    local PROVIDER_ENV="$PROVIDER_DIR/.env.example"
-    if [[ -f "$PROVIDER_ENV" ]]; then
-      cat "$PROVIDER_ENV" >> "$ENV_FILE"
-    fi
-
     # Seed config directory
     local PROVIDER_CONFIG_DIR="$PROVIDER_DIR/config"
     if [[ -d "$PROVIDER_CONFIG_DIR" ]] && [[ -n "$(ls -A "$PROVIDER_CONFIG_DIR" 2>/dev/null)" ]]; then
       local PROVIDER_SANDBOX_DIR="$SANDBOX_DIR/.$PROVIDER_NAME"
       mkdir -p "$PROVIDER_SANDBOX_DIR"
-      # chmod forces dirs=775, files=664 at write time, avoiding umask
-      # overshadoing that cp -r would cause.
-      rsync -rt --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
+      # -p plus --chmod forces dirs=775, files=664 at write time; without -p
+      # rsync ignores --chmod and the invoking umask wins.
+      rsync -rtp --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
         "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
 
       # UID Mapping handles permissions  --  no ACL fix needed

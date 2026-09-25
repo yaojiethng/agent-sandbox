@@ -176,8 +176,8 @@ session_log_path() {
   echo "${SANDBOX_DIR:-}/.compose/${1}.log"
 }
 
-# session_log_read SESSION_ID KEY  --  print the value of KEY (last set wins);
-# empty if the log is absent or the key is not present.
+# session_log_read SESSION_ID KEY  --  print the value of KEY (the first
+# matching line wins); empty if the log is absent or the key is not present.
 session_log_read() {
   local sid="$1" key="$2" f
   f="$(session_log_path "$1")"
@@ -195,7 +195,17 @@ session_log_set() {
     # In-place `sed -i` is not portable: GNU and BSD sed parse its argument
     # differently (macOS teardown bug - the GNU-only form misparses the file
     # path as the script under BSD sed). Rewrite via a sibling temp file.
-    sed "s#^${key}=.*#${key}=${value}#" "$f" > "$f.tmp"
+    # Escape the sed replacement so `&`, `\`, and the delimiter reach the
+    # file literally instead of being interpreted as sed syntax.
+    local esc_key esc_value
+    esc_key="${key//\\/\\\\}"
+    esc_value="${value//\\/\\\\}"
+    esc_value="${esc_value//&/\\&}"
+    esc_value="${esc_value//#/\\#}"
+    if ! sed "s#^${esc_key}=.*#${esc_key}=${esc_value}#" "$f" > "$f.tmp"; then
+      rm -f "$f.tmp"
+      return 1
+    fi
     mv "$f.tmp" "$f"
   else
     echo "${key}=${value}" >> "$f"
@@ -220,7 +230,7 @@ relative_time() {
   ep="$(ts_to_epoch "$ts")"
   [[ -n "$ep" ]] || { echo "---"; return 0; }
   now="$(date -u +%s)"
-  diff=$(( now - ep )); [[ $diff -lt 0 ]] && diff=0
+  diff=$(( now - ep ))
   if   (( diff < 60 )); then
     echo "just now"
   elif (( diff < 3600 )); then
@@ -240,7 +250,7 @@ relative_time_compact() {
   ep="$(ts_to_epoch "$ts")"
   [[ -n "$ep" ]] || { echo "---"; return 0; }
   now="$(date -u +%s)"
-  diff=$(( now - ep )); [[ $diff -lt 0 ]] && diff=0
+  diff=$(( now - ep ))
   if   (( diff < 60 )); then
     echo "just now"
   elif (( diff < 3600 )); then

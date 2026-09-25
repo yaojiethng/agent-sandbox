@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
-# libs/interactive_session_select.sh
+# scripts/workflows/interactive.sh
 #
-# Interactive session selection helpers for agent-sandbox apply and draft.
+# Interactive session selection helpers for agent-sandbox draft.
 # All output (prompts, tables, errors) goes to stderr. Only the selected
 # value (channel name, session name, or diff type) is printed to stdout.
 #
 # Dependencies:
-#   libs/routing.sh  --  for dirs_resolve (path derivation)
+#   src/libs/routing.sh            --  for dirs_resolve (path derivation)
+#   src/libs/common.sh             --  for INTERACTIVE_MAX_ENTRIES (picker page cap)
+#   src/libs/session_inventory.sh  --  for relative_time (autosave last-saved column)
+#   src/libs/export_status.sh      --  for export_status_read (bundle metadata)
 #
 # Usage:
-#   source /path/to/interactive_session_select.sh
+#   source /path/to/interactive.sh
 #   CHANNEL=$(interactive_select_channel "draft" "$SANDBOX_DIR") || exit 1
 #   BUNDLE=$(interactive_select_bundle "$SANDBOX_DIR" "$CHANNEL") || exit 1
 #
 # Functions:
 #   interactive_confirm_or_abort    --  print items + y/N prompt
-#   interactive_select_channel      --  pick a channel (draft or apply)
+#   interactive_pick               --  generic numbered picker
+#   interactive_select_channel      --  pick a channel (draft only)
 #   interactive_select_bundle      --  pick a bundle entry within a channel
 
 # No set -euo pipefail here  --  this file is always sourced, never executed directly.
@@ -37,8 +41,8 @@ source "$AGENT_SANDBOX_REPO/src/libs/export_status.sh"      # export_status_read
 # =============================================================================
 
 # _resolve_channel_dir CHANNEL
-#   Prints the base directory for the given channel name.
-#   Sets OUTPUT_DIR and CHANGES_DIR via dirs_resolve first (caller must do it).
+#   Prints the base directory for the given channel name by forwarding to
+#   resolve_channel_base_dir. Callers run dirs_resolve first.
 _resolve_channel_dir() {
   local CHANNEL="$1"
   resolve_channel_base_dir "$CHANNEL"
@@ -48,7 +52,7 @@ _resolve_channel_dir() {
 # interactive_pick  --  generic numbered picker
 # =============================================================================
 
-# interactive_pick LABEL ENTRIES_VAR [DEFAULT] [PAGE_SIZE] [AUTO_SELECT]
+# interactive_pick LABEL ENTRIES_VAR [DEFAULT] [PAGE_SIZE] [HEADER]
 #
 # Generic numbered picker. Displays a list of entries, lets the user pick one.
 # All display output goes to stderr. The selected entry value goes to stdout.
@@ -277,12 +281,12 @@ interactive_confirm_or_abort() {
 # picker. Each channel shows entry count and newest session timestamp.
 #
 # Args:
-#   SUBCOMMAND       --  "apply" or "draft" (determines which channels are shown)
+#   SUBCOMMAND       --  "draft" (determines which channels are shown)
 #   SANDBOX_DIR      --  path to sandbox directory (for dirs_resolve)
 #   DEFAULT_CHANNEL  --  optional; highlighted as default, empty enter selects it
 #
 # Output:
-#   stdout  --  selected channel name (e.g. "session", "autosave", "bundles", "diffs")
+#   stdout  --  selected channel name (e.g. "session", "autosave", "bundles")
 #
 # Returns:
 #   0 on selection, 1 on abort (q/Q or EOF)
@@ -350,7 +354,7 @@ interactive_select_channel() {
 #
 # Args:
 #   SANDBOX_DIR       --  path to sandbox directory (for dirs_resolve)
-#   CHANNEL           --  channel name (diffs, session, autosave, bundles)
+#   CHANNEL           --  channel name (session, autosave, bundles)
 #   DEFAULT_BUNDLE    --  optional bundle name to highlight as default
 #
 # Output:

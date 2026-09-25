@@ -45,14 +45,13 @@ default_env_file() {
   fi
 }
 
-# env_resolve_one EXPLICIT ENVVAR KEY ENV_FILE
-#   Resolves one identifier by precedence: explicit, then the named env var,
-#   then the KEY value from ENV_FILE, else a hard error. Prints the value.
+# env_resolve_one ENVVAR KEY ENV_FILE
+#   Resolves one identifier by precedence: the named env var, then the KEY
+#   value from ENV_FILE, else a hard error. Prints the value.
 #   This is the single resolution primitive; the identity triple is a sequence
 #   of the same rule.
 env_resolve_one() {
-  local explicit="$1" envvar="$2" key="$3" env_file="$4" value
-  if [[ -n "$explicit" ]]; then printf '%s' "$explicit"; return 0; fi
+  local envvar="$1" key="$2" env_file="$3" value
   if [[ -n "${!envvar:-}" ]]; then printf '%s' "${!envvar}"; return 0; fi
   if [[ -n "$env_file" && -f "$env_file" ]]; then
     value="$(_env_value "$env_file" "$key")"
@@ -94,7 +93,7 @@ env_resolve_identity() {
     # Chicken-and-egg: a relative ENV_REF needs a sandbox that may itself live
     # in the .env, so bootstrap SANDBOX from the CWD fallback first.
     ep="$(default_env_file "$env_ref" "")"
-    SANDBOX_DIR="$(env_resolve_one "" AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep")" || return 1
+    SANDBOX_DIR="$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep")" || return 1
   else
     SANDBOX_DIR="$expl_sandbox"
   fi
@@ -105,14 +104,14 @@ env_resolve_identity() {
     if [[ -n "$expl_name" ]]; then
       export PROJECT_NAME="$expl_name"
     else
-      PROJECT_NAME="$(env_resolve_one "" AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep")" || return 1
+      PROJECT_NAME="$(env_resolve_one AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep")" || return 1
     fi
   fi
   if $need_dir; then
     if [[ -n "$expl_dir" ]]; then
       export PROJECT_DIR="$expl_dir"
     else
-      PROJECT_DIR="$(env_resolve_one "" AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep")" || return 1
+      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep")" || return 1
     fi
   fi
   export PROJECT_NAME PROJECT_DIR SANDBOX_DIR

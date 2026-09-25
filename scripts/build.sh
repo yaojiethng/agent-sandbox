@@ -258,7 +258,7 @@ _check_interface_contract() {
 # =============================================================================
 
 # Parses operator-facing flags and calls build_sandbox/build_agent as needed.
-# Expected flags: --name=<n> --project=<p> --sandbox=<s> [--targets=<t,...>] [--rebuild]
+# Expected flags: --name=<n> --project=<p> [--targets=<t,...>] [--rebuild]
 #
 # --targets defaults to "all" if omitted. Use comma-separated values:
 #   all                --  sandbox + all providers
@@ -268,7 +268,7 @@ _check_interface_contract() {
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [options]
+Usage: agent-sandbox build --name=<name> --project=<path> [options]
 
 Builds Docker images for the sandbox and/or agent providers.
 
@@ -277,9 +277,9 @@ or, from a sandbox Makefile: make build [TARGET=<p>] [REBUILD=1]
 Required:
   --name=<name>       Project name (used for image tags)
   --project=<path>    Path to the project directory
-  --sandbox=<path>    Path to the sandbox directory
 
 Options:
+  --sandbox=<path>    Accepted for CLI uniformity; build does not read it
   --targets=<list>    Comma-separated targets: all, sandbox, <provider>[,<provider>] (default: all)
   --rebuild           Force a full rebuild from scratch
 EOF
@@ -299,7 +299,7 @@ main() {
   local REBUILD_FLAG=""
   [[ "$REBUILD" == true ]] && REBUILD_FLAG="--no-cache"
 
-  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
     usage >&2
     exit 1
   fi

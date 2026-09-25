@@ -3,7 +3,7 @@
 # Reject workflow: checkout source branch, delete draft branch.
 # Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
 # sourced, so test suites may source this file for its functions.
-# Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
+# Sources draft_state.sh for draft-state helpers, cli.sh for flag parsing, and guards.sh for git guard functions.
 
 set -euo pipefail
 
