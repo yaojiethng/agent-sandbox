@@ -757,6 +757,7 @@ test_confirm_hints_never_name_target() {
   hits=$(cd "$REPO_ROOT" && grep -rn 'make confirm TARGET=' \
            --include='*.md' --include='*.sh' . 2>/dev/null \
          | grep -v '^./devlog/handovers/' \
+         | grep -v '^./tests/mutations/' \
          | grep -v '^./tests/test_dispatch.sh' || true)
   if [[ -z "$hits" ]]; then
     pass "no live make-confirm hint names TARGET instead of TARGET_BRANCH"

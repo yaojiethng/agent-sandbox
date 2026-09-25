@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 10
+#   Budget rationale: this file spawns the runner once per case, so its honest
+#   runtime is about 4s and the 5s default leaves no headroom under parallel
+#   dispatch.
 # tests/test_runner_selftest.sh
 #
 # Pins cite: code-owner -- tests/libs/test_common.sh run_test unit-marker
@@ -27,6 +31,8 @@
 #   11. A broken prerequisite is reported once, by name
 #   12. run_test registered after test_done is dead code; the liveness gate
 #      flags it
+#   13. a file's own TEST_DEADLINE declaration overrides the global default,
+#      in both directions
 #
 # Uses RUN_TESTS_DIR to point the runner at synthetic files. Each case runs
 # in its own isolated test with its own fixture directory.
@@ -316,6 +322,35 @@ printf "UNIT: pass=1 fail=0 skip=0\n"'
     "runner: parallel dispatch counts every file exactly"
 }
 
+# ---------------------------------------------------------------
+# Case 15: a file that declares its own deadline in its header uses it, both
+# when the declaration is shorter than TEST_TIMEOUT and when it is longer (the
+# reason the declaration exists: a heavy harness file).
+# ---------------------------------------------------------------
+test_runner_per_file_deadline_declaration() {
+  local dir="$FIXTURE_DIR/deadline_short_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_declared_hang.sh" '#!/usr/bin/env bash
+# TEST_DEADLINE: 1
+sleep 30'
+  local OUTRC
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=9 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  local rc=$?
+  assert_ne "0" "$rc" "runner: a file beating its declared deadline fails"
+  assert_contains "$OUTRC" "TIMEOUT test_declared_hang.sh (exceeded 1s deadline)" \
+    "runner: the declared deadline, not the global one, is named on expiry"
+
+  dir="$FIXTURE_DIR/deadline_long_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_declared_slow.sh" '#!/usr/bin/env bash
+# TEST_DEADLINE: 3
+sleep 1.5
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  rc=$?
+  assert_rc 0 "$rc" "runner: a declaration longer than the global deadline lets a slow file pass"
+}
+
 run_test test_runner_passing_file
 run_test test_runner_failing_file
 run_test test_runner_crash_no_markers
@@ -333,5 +368,6 @@ run_test test_runner_satisfied_prerequisite
 run_test test_runner_dead_registration
 run_test test_runner_deadline_expiry
 run_test test_runner_parallel_dispatch_integrity
+run_test test_runner_per_file_deadline_declaration
 
 test_done test_runner_selftest.sh

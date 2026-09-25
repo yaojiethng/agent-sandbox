@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # tests/test_lint_umbrella.sh
+# TEST_DEADLINE: 10
+#   This file runs the real umbrella gate many times over, so its honest
+#   runtime is about 4s and the 5s default leaves no headroom under parallel
+#   dispatch. The declaration is a budget, not a licence: the file must stay
+#   near this cost.
 # Behavioural tests for scripts/lint.sh -- the umbrella static-check gate.
 #
 # Covers:

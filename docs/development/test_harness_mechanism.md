@@ -18,7 +18,7 @@ The registration liveness gate runs before dispatch (see The gates). It is skipp
 
 Dispatch runs every file through a child copy of the runner: `printf '%s\n' "$TEST_FILES" | xargs -P"$TEST_PARALLEL" -I{} bash "$0" --worker "{}"`. Each worker handles one file. Workers always exit 0 so `xargs` schedules every file regardless of any single failure; failure state rides the record the worker writes (see The result protocol). `TEST_PARALLEL` defaults to 8.
 
-The deadline is pure bash: `run_with_deadline DEADLINE OUT FILE` backgrounds the file, polls it at 0.1 second, kills it on expiry with SIGTERM, and returns 124. No external `timeout` binary is needed, which keeps the runner safe on the GNU and BSD `sleep` variants.
+The deadline is pure bash: `run_with_deadline DEADLINE OUT FILE` backgrounds the file, polls it at 0.1 second, kills it on expiry with SIGTERM, and returns 124. No external `timeout` binary is needed, which keeps the runner safe on the GNU and BSD `sleep` variants. The deadline is `TEST_TIMEOUT` (default 5 seconds), and a file may declare its own with a `# TEST_DEADLINE: <seconds>` line in its first ten lines; the declaration overrides the default for that file only, so a heavy harness file states its own budget instead of raising the deadline for every file. The declaration is a budget, not a licence: the file must stay near the cost it declares.
 
 The parent summarizes the workers' records, prints the aggregate line, and exits 1 when any unit failed or timed out.
 
@@ -74,7 +74,7 @@ The gate accepts a directory argument (defaulting to the real suite) so the runn
 
 `scripts/check_test_coverage.sh` is an ad hoc helper: given changed file paths, it prints which test files reference each. It is not a gate.
 
-The runner's deadline and the result protocol are also gates: a hanging file times out at `TEST_TIMEOUT` (default 5 seconds), a crash or missing report fails loudly, and a skip is reported as a warning.
+The runner's deadline and the result protocol are also gates: a hanging file times out at `TEST_TIMEOUT` (default 5 seconds, or the file's own `# TEST_DEADLINE` declaration), a crash or missing report fails loudly, and a skip is reported as a warning.
 
 ## The selftest (`tests/test_runner_selftest.sh`)
 
@@ -90,6 +90,7 @@ The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pi
 - an empty discovery warns and exits non-zero;
 - a broken prerequisite is reported once, by name;
 - a deadline-beating file is reported as `TIMEOUT`;
+- a file's own `# TEST_DEADLINE` declaration overrides the default, in both directions;
 - the liveness gate flags a dead registration.
 
 ## See also

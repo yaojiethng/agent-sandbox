@@ -19,7 +19,8 @@ LIVENESS_GATE="${LIVENESS_GATE:-$REAL_TESTS_DIR/../scripts/check_test_liveness.s
 VERBOSE="${VERBOSE:-0}"
 # TEST_PARALLEL controls the xargs job count (default 8; 1 for serial runs).
 TEST_PARALLEL="${TEST_PARALLEL:-8}"
-# TEST_TIMEOUT is the per-file deadline in seconds (default 5).
+# TEST_TIMEOUT is the default per-file deadline in seconds (default 5). A file
+# overrides it with a `# TEST_DEADLINE: <seconds>` line in its first ten lines.
 TEST_TIMEOUT="${TEST_TIMEOUT:-5}"
 
 TOTAL_PASS=0
@@ -114,11 +115,18 @@ worker() {
   local FILE="$1"
   local BASENAME
   BASENAME="$(basename "$FILE")"
-  local TMPFILE RECORD RC FILE_PASS FILE_FAIL FILE_SKIP UNIT special
+  local TMPFILE RECORD RC FILE_PASS FILE_FAIL FILE_SKIP UNIT special FILE_DEADLINE
   TMPFILE=$(mktemp)
   RECORD="$RESULTS_DIR/$BASENAME.record"
 
-  run_with_deadline "$TEST_TIMEOUT" "$TMPFILE" "$FILE"
+  # A file may declare its own deadline in its first ten lines
+  # (`# TEST_DEADLINE: <seconds>`). The declaration overrides TEST_TIMEOUT for
+  # that file only: a harness file whose honest runtime is above the default
+  # states its own budget instead of raising the deadline for every file.
+  FILE_DEADLINE="$(sed -n '1,10s/^# TEST_DEADLINE: *\([0-9][0-9]*\) *$/\1/p' "$FILE" | head -1)"
+  [[ "$FILE_DEADLINE" =~ ^[0-9]+$ ]] || FILE_DEADLINE="$TEST_TIMEOUT"
+
+  run_with_deadline "$FILE_DEADLINE" "$TMPFILE" "$FILE"
   RC=$?
 
   UNIT="$(grep '^UNIT: pass=' "$TMPFILE" 2>/dev/null | tail -1)"
@@ -141,7 +149,7 @@ worker() {
   # A deadline expiry is a failure even when the file managed to print a
   # UNIT report before it hung; the timeout count is named in the summary.
   if [[ "$RC" -eq 124 ]]; then
-    special="TIMEOUT $BASENAME (exceeded ${TEST_TIMEOUT}s deadline)"
+    special="TIMEOUT $BASENAME (exceeded ${FILE_DEADLINE}s deadline)"
     (( FILE_FAIL > 0 )) || FILE_FAIL=1
   fi
 
