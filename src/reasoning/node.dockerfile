@@ -2,7 +2,7 @@ FROM node:22.22.3-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git \
-        rsync fd-find ripgrep shellcheck \
+        rsync fd-find ripgrep shellcheck jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Install hadolint (Dockerfile linter)

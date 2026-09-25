@@ -43,7 +43,7 @@ TODO: add sandbox enforcement
 TODO: implement agent queue
 ```
 
-Move TODO items to `roadmap.md` or the issue tracker. Architecture documents must stay stable and authoritative.
+Move TODO items to `roadmap.md`, which is the only task list. Architecture documents must stay stable and authoritative.
 
 ### PR gate
 

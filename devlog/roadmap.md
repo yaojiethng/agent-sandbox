@@ -128,8 +128,10 @@ The parent finding (cost, throughput, and failure modes are invisible for subage
 #### T5 - Archival
 
 - [ ] **Roadmap mechanism: linear-style task tracking** -- full linear/management-app redesign. The handover next-session trim and always-push-to-roadmap behavior are scoped for immediate implementation outside M3; only the linear format remains.
-- [ ] **Roadmap-mechanism rewrite study** -- study the roadmap/management mechanism against OpenAI's Symphony spec and evaluate which features to borrow; the linear-style design above is the fold point for agreed borrowings.
-- [ ] **Next-task placement** -- move the next-session seed out of the handover into a next-task subheader in the sub-milestone (handover next-session trim is immediate; the subheader placement rides on the linear format)
+- [ ] **Roadmap-mechanism rewrite study** -- study the roadmap and management mechanism and decide what to borrow; the linear-style design above is the fold point for agreed borrowings. This task is the home for issue-tracker adoption: the read-through register's machine-readable findings file (`devlog/discussions/20260924-design-active-test_suite_readthrough.jsonl`) is the first step toward it, because labelled data is one step short of a tracker.
+  - [ ] Symphony-spec study -- evaluate which features of OpenAI's Symphony spec to borrow; feeds the linear-style design above.
+  - [ ] Next-task placement -- move the next-session seed out of the handover into a next-task subheader in the sub-milestone (the handover next-session trim is immediate; the subheader placement rides on the linear format).
+  - [ ] `.workspace/metadata.json` -- a suggestion, not a scheduled task: if the mechanism adopts a labelled task record, this is the shape it would take (`agent_id`, `task_id`, allowed files, instructions). Carried down from `roadmap_future.md` M4.
 - [ ] **Rotate out stale handovers and discussions** -- completed-milestone handovers and graduated stories are archived to a git tag or branch and removed from `HEAD`; the roadmap, architecture docs, and changelog remain the permanent record.
 - [ ] **Session (chat) log + generated-artifact archival** -- define storage rules for chat logs and any generated artifacts (perf logs, metrics) the pipeline starts producing; see `20260428-story-active-sequencing_and_knowledge_persistence.md`.
 

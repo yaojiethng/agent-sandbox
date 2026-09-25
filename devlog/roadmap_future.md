@@ -34,8 +34,8 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ### M4 -- Metadata Seeding
 
-- [ ] Define `.workspace/metadata.json` format:
-  - `agent_id`, `task_id`, allowed files, instructions
+Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite study in `roadmap.md`): if a labelled task record is adopted, its shape carries `agent_id`, `task_id`, allowed files, and instructions.
+
 - [ ] Ensure agent reads metadata to guide task execution
 - [ ] Ensure agent respects allowed file constraints
 

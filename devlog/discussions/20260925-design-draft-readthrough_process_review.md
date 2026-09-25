@@ -271,6 +271,8 @@ Adopt Option B in every option area.
 8. Contain the branch: M3.1 keeps the instrument fixes and the test-organisation policy; the production rewrites are successors with their own handovers and ADRs.
 9. Split the pending close into the operator review, the fix-batch plan, one handover stub per design note, and the churn-workflow decision.
 
+**Register format (2026-09-25).** The register is now paired with a JSON Lines findings file and the labels live there, not in tables. This supersedes item 6's table-as-source-of-truth rule and its sector-split threshold, and it closes the stated-count defect class: counts are computed from the data file and never asserted. Decision and schema: [`20260925-design-draft-findings_register_format.md`](20260925-design-draft-findings_register_format.md).
+
 ## Consequences
 
 This makes the read-through repeatable and its yield independent of one unusually long session; it fixes the three mutation-verdict failure families by rule; and it removes the reasoning-only assertion audit that the pass showed is weaker than measurement. The diff gate survives, so a regression still gets caught in the iteration that introduces it.

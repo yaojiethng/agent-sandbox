@@ -42,15 +42,15 @@ Negotiating the format per subagent is what the primary spends its time on inste
 
 ## The findings block
 
-Each subagent emits a machine-readable findings block beside its prose, using the register's exact column shape -- the `## Output contract` columns in [`read-through-run.md`](read-through-run.md): `#`, `Finding`, `File`, `Class`, `Disposition`, with the triage table later adding `Sector` and `Action`. The `#` cell holds a provisional key of the subject file plus a one-line title, never an invented number.
+Each subagent emits a machine-readable findings block beside its prose: one JSON Lines object per finding, in the register's schema (`id` or provisional key, `title`, `sector`, `class`, `action`, `action_kind`, `files`, `status`, `refs`). The `id` holds a provisional key of the subject file plus a one-line title, never an invented number. The schema table and its query commands live in the register-format design note; [`read-through-run.md`](read-through-run.md) is the companion brief.
 
 Beside the block, the subagent supplies its own `## Verification` section: the commands run, the baseline suite count, the number of mutations, and one line confirming every mutated file was restored byte-identical. The primary maps the provisional keys to row numbers in one pass with a script and appends the rows with a script. Never append a row by an `edit` anchor copied from a previous round: an anchor that matches the wrong row duplicates it.
 
 ## The integrity check
 
-After every batch, run one scripted check with the register as its input. The check confirms three things: every row number appears exactly once and ascends in the table's order; every provisional key from the batch is mapped to a row number; and every expected test file carries a BDD block, with the number of files carrying a block equal to the number the report states.
+After every batch, check the data file in one scripted pass: every `id` appears exactly once, the ids ascend, and every provisional key from the batch is mapped to a number. Check separately that every expected test file carries a BDD block, and that the number of files carrying a block equals the number the report states, because that one is a stated count and stated counts drift.
 
-Running the check only at the close is what let the register accumulate defects: a duplicated row reached the operator's read, the table tail sat out of order while the row set stayed contiguous, and a fragmented table hid the unescaped pipes and code-span defects from the lint gate. A table that is not one table is not linted, so the register's lint result was vacuous. Run the check after the batch, while the batch's author can still fix its rows.
+Running the check only at the close is what let the register accumulate defects: a duplicated row reached the operator's read, the table tail sat out of order while the row set stayed contiguous, and a fragmented table hid the unescaped pipes and code-span defects from the lint gate. The data file removes the last of those by construction, because it has no table to fragment and no prose to interleave. Run the check after the batch, while the batch's author can still fix its rows.
 
 ## Overlapping the batches
 

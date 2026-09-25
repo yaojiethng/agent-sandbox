@@ -107,7 +107,9 @@ A finding row is a stable identifier and is never renumbered once another docume
 
 ### Register integrity
 
-Keep the findings table contiguous: no blank line and no prose inside a table. Run a scripted integrity check after every batch, not at the close. The check confirms that every row number appears exactly once, that the numbers ascend in the table's order, and that every provisional key has been mapped to a row number. Split a sector into its own file once it passes about one hundred rows.
+The findings are recorded twice: the prose in this document, and one line per row in the JSON Lines file beside it. The data file takes this document's name with the `.jsonl` extension, so the pair is found from the report rather than by scanning for data files. The data file is the record of labels (`id`, `title`, `sector`, `class`, `action`, `action_kind`, `files`, `status`, `refs`); the prose is the record of reasoning, and a label is written in one place only. Write the data line when the row is created, with `status` set to one of the fixed values (`open`, `resolved`, `accepted`, `blocked`, `needs-decision`, `stale`). Counts are read from the data file and never asserted, because a stated count drifts from the thing it counts.
+
+After every batch, run one scripted pass over the data file: every `id` appears exactly once, the ids ascend, and every provisional key from the batch is mapped to a number. Also confirm that every expected test file carries a BDD block, and that the number of files carrying a block equals any number the report states. The schema table and the query commands live in the register-format design note.
 
 ## Glossary
 
