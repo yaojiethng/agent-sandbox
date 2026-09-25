@@ -192,6 +192,15 @@ scoped: M3 T1 -- Workflow + Policy Organization (design-document policy amendmen
 legacy: ties to [A] 2026-09-04 "Record-layer documents drafted as reasoning traces" and [A] 2026-08-18 "Multi-question turns during a grill-me design walk" -- the same records-state-not-session-history rule, applied to design-session capture
 mitigation: a grill-me or design walk must not be captured as an open-questions-and-replies transcript in the design document. Write the answers back into the design body; include a short "designs considered and rejected" section with each rejected option and why; put the completed final design at the forefront. A questionnaire log reads as a record of effort, not a record of reasoning, and adds length without an understanding benefit. Amend the design-document / documentation-policy conventions to prohibit the pattern at the root.
 
+### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
+
+state: open
+scoped: M3 T1 -- Workflow + Policy Organization (iteration and handover policy; roadmap row under T1)
+legacy: recurring form of [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline"; that rule covered scope and acceptance criteria but not the commit decomposition of a multi-lane autonomous iteration.
+mitigation: for an autonomous iteration, the scope proposal carries a work-unit table naming each unit, its commit type, its file ownership, and its own handover, and the operator confirms that table at Gate 1 before any file is written. One commit per unit. A batch of four fix lanes is four commits, not one.
+
+The read-through close was released as "follow through everything autonomously", and the agent then landed three workflow briefs, a 661-line lesson plan, the register repair, and 87 fix rows across four lanes as a single commit with one handover. Each sampled change reviewed fine; the aggregate was unreviewable as a unit of work. The operator expected six commits - one per workstream and one per fix lane, each with its own handover - which is the decomposition the scope proposal should have offered and awaited release on. The gate asked what would be delivered and named the lanes, but it never bound the lanes to commits, so autonomy collapsed them.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work
