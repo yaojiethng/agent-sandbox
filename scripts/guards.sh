@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # scripts/guards.sh
 # Git workflow guard functions  --  validate repo state and clear stale locks.
-# Sourced by host-side workflow files (draft, apply) and agent-sandbox.sh.
+# Sourced by host-side workflow files (apply, draft, confirm, reject).
+#
+# Requires lsof on the host: draft_clear_stale_lock uses it to tell a held
+# .git/index.lock from a stale one.
 #
 # Provides:
 #   validate_project_dir     --  check PROJECT_DIR exists, is git repo, has commits
@@ -64,25 +67,48 @@ clean_tree_hint_unreadable() {
   echo "  Check 'git status' in the project directory, then retry." >&2
 }
 
+# _lock_age LABEL_PATH
+#   Prints a human age label for a lock file, or "unknown" when the host tools
+#   are unavailable. Portable GNU/BSD stat.
+_lock_age() {
+  local f="$1" mtime now
+  mtime=$(stat -c %Y "$f" 2>/dev/null) || mtime=$(stat -f %m "$f" 2>/dev/null) || { echo "unknown"; return; }
+  now=$(date +%s 2>/dev/null) || { echo "unknown"; return; }
+  echo "$(( now - mtime ))s"
+}
+
 # draft_clear_stale_lock PROJECT_DIR
-# Check for and remove a stale .git/index.lock.
+#   Removes a stale .git/index.lock. A lock is stale only when no live process
+#   holds it; the holder probe uses lsof. When lsof is unavailable the function
+#   refuses, because removing a lock that is still held corrupts the index.
+#   Returns 1 when a holder exists or the probe is unavailable, 0 when a lock
+#   with no holder was removed.
 draft_clear_stale_lock() {
   local PROJECT_DIR="$1"
   local LOCKFILE="$PROJECT_DIR/.git/index.lock"
-  if [[ -f "$LOCKFILE" ]]; then
-    local LOCK_HELD=false
-    if command -v lsof >/dev/null 2>&1; then
-      if lsof "$LOCKFILE" >/dev/null 2>&1; then
-        LOCK_HELD=true
-      fi
-    fi
-    if [[ "$LOCK_HELD" == true ]]; then
-      echo "Error: .git/index.lock is held by another git process" >&2
-      echo "  File: $LOCKFILE" >&2
-      echo "  Ensure no other git process is running and retry." >&2
-      return 1
-    fi
-    echo "Warning: removing stale .git/index.lock" >&2
-    rm -f "$LOCKFILE"
+  [[ -f "$LOCKFILE" ]] || return 0
+
+  local lock_age
+  lock_age="$(_lock_age "$LOCKFILE")"
+
+  if ! command -v lsof >/dev/null 2>&1; then
+    echo "Error: cannot tell whether .git/index.lock is held: lsof is not installed." >&2
+    echo "  File: $LOCKFILE (age $lock_age)" >&2
+    echo "  Install lsof, or remove the lock once no git process is running:" >&2
+    echo "    rm -f '$LOCKFILE'" >&2
+    return 1
   fi
+
+  local HOLDER
+  if HOLDER="$(lsof "$LOCKFILE" 2>/dev/null)"; then
+    echo "Error: .git/index.lock is held by another process:" >&2
+    printf '%s\n' "$HOLDER" | sed 's/^/  /' >&2
+    echo "  File: $LOCKFILE (age $lock_age)" >&2
+    echo "  Wait for the holder to finish, or remove the lock once no git process is running:" >&2
+    echo "    rm -f '$LOCKFILE'" >&2
+    return 1
+  fi
+
+  echo "Warning: removing stale .git/index.lock (age $lock_age, no holder)" >&2
+  rm -f "$LOCKFILE"
 }

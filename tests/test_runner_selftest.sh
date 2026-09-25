@@ -120,8 +120,9 @@ test_runner_skip_is_warning() {
 printf "UNIT: pass=1 fail=0 skip=1\n"'
   run_runner "$dir"
   assert_rc 0 "$RC" "runner: skip is a warning, not a failure"
-  assert_contains "$OUT" "1 passed, 0 failed, 1 skipped" "runner: skip counted in the aggregate"
-  assert_contains "$OUT" "WARN" "runner: skip surfaces a WARN"
+  assert_contains "$OUT" "2 tests across 1 files, 1 passed, 0 failed, 1 skipped" \
+    "runner: skip counted in the aggregate total"
+  assert_contains "$OUT" "WARN test_skippy.sh (1 skipped)" "runner: skip surfaces the per-file WARN"
 }
 
 # ---------------------------------------------------------------

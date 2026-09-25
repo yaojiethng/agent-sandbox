@@ -41,10 +41,6 @@ fi
 # Helpers
 # ---------------------------------------------------------------------------
 
-_is_readonly() {
-  _is_writable "$1" && return 1 || return 0
-}
-
 # True iff this process is running as the bash interpreter on the probe script
 # (not as a bare argument handed to the provider agent). Guards the invocation
 # interface: `command:` must run `bash <script>`, never feed the script to the
@@ -111,17 +107,20 @@ section "container_network cross-component"
 critical "SANDBOX_DIR exists (volumes-from)"     test -d "$SANDBOX_DIR"
 
 # Capability-layer marker written in Phase 1 (dry_run_capability.sh) must be
-# visible from the reasoning layer via the shared volume.
-_cap_marker="$SANDBOX_DIR/../workspace/session-diffs/.dryrun_capability_marker"
+# visible from the reasoning layer. Both probes resolve the marker from
+# CHANGES_DIR, the shared mount, so the check tests the contract rather than a
+# coincidence of two separately derived paths. An absent or wrong marker is a
+# critical failure: the cross-container channel is dead.
+_cap_marker="$CHANGES_DIR/.dryrun_capability_marker"
 if test -f "$_cap_marker"; then
   _content=$(cat "$_cap_marker" 2>/dev/null)
   if [[ "$_content" == "CAPABILITY_LAYER_OK" ]]; then
     _pass "capability layer marker: readable from reasoning layer"
   else
-    _warn "capability layer marker: unexpected content: $_content"
+    _fail "capability layer marker: unexpected content: $_content"
   fi
 else
-  _warn "capability layer marker: not found (Phase 1 may not have run)"
+  _fail "capability layer marker: not found under CHANGES_DIR (Phase 1 may not have run)"
 fi
 
 section "container_network session-diffs round-trip"
@@ -165,7 +164,7 @@ if [[ -n "$_agent_command" ]] && command -v "$_agent_command" >/dev/null 2>&1; t
   _pass "agent binary present and executable ($_agent_command)"
 else
   if [[ -z "$_agent_command" ]]; then
-    _warn "agent binary unknown for provider '$PROVIDER_NAME' (set AGENT_CMD)"
+    _fail "agent binary unknown for provider '$PROVIDER_NAME' (set AGENT_CMD)"
   else
     _fail "agent binary not executable: $_agent_command"
   fi

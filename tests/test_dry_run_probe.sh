@@ -80,6 +80,7 @@ _healthy_cap_env() {
     echo "session_ts=$(date -u +%s)"
   } > "$fix/sandbox/.git/SESSION_STATE"
   mkdir -p "$fix/workspace/input" "$fix/workspace/output" "$fix/workspace/session-diffs/autosave"
+  chmod 555 "$fix/workspace/input"
   export LIBS_DIR="$STUB_LIBS" ROOT="$fix" \
     INPUT_DIR="$fix/workspace/input" \
     OUTPUT_DIR="$fix/workspace/output" \
@@ -168,9 +169,8 @@ _healthy_reas_env() {
   } > "$fix/sandbox/.git/SESSION_STATE"
   mkdir -p "$fix/agent-home" "$fix/work/input" "$fix/work/output" "$fix/work/session-diffs"
   chmod 555 "$fix/work/input"
-  # capability-layer marker at the SANDBOX_DIR-derived shared path (a warn check)
-  mkdir -p "$fix/workspace/session-diffs"
-  echo "CAPABILITY_LAYER_OK" > "$fix/workspace/session-diffs/.dryrun_capability_marker"
+  # capability-layer marker at CHANGES_DIR, the shared mount both probes resolve
+  echo "CAPABILITY_LAYER_OK" > "$fix/work/session-diffs/.dryrun_capability_marker"
   export LIBS_DIR="$STUB_LIBS" ROOT="$fix" \
     AGENT_HOME="$fix/agent-home" PROVIDER_NAME="custom" AGENT_CMD="sh" \
     INPUT_DIR="$fix/work/input" OUTPUT_DIR="$fix/work/output" \
@@ -312,5 +312,171 @@ test_no_docker_image_layer_assertion() {
   fi
 }
 run_test test_no_docker_image_layer_assertion
+
+# Given: a capability fixture whose INPUT_DIR is absent (a warning-only failure)
+# When:  the capability probe runs
+# Then:  rc=0, status PASS, zero critical failures, and the warning summary
+# Asserts: a warning never flips the layer verdict or the exit status.
+test_cap_warning_only_run() {
+  local fix="$FIXTURE_DIR/cap-warn" state="$FIXTURE_DIR/cap_warn.state"
+  ( _healthy_cap_env "$fix"
+    export INPUT_DIR="$fix/workspace/absent-input"
+    _run_probe "$PROBE_CAP" "$state" )
+  assert_rc 0 "$(kv "$state" rc)" "warning-only run exits 0"
+  assert_eq "$(kv "$state" status)" PASS "warning-only record status stays PASS"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "critical failures: 0" "warning-only run reports zero critical failures"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "Review warnings before production use" \
+    "warning-only run prints the warning summary"
+}
+run_test test_cap_warning_only_run
+
+# Given: a healthy capability fixture
+# When:  the capability probe runs
+# Then:  the export_path check passes in the probe's own shell
+# Asserts: export_path is called without a bash -c child (which inherits no
+#          function definitions and so could never pass in production).
+test_cap_export_path_check_passes() {
+  local fix="$FIXTURE_DIR/cap-exportpath" state="$FIXTURE_DIR/cap_exportpath.state"
+  ( _healthy_cap_env "$fix"; _run_probe "$PROBE_CAP" "$state" )
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "PASS  export_path: resolves with available env vars" \
+    "export_path resolves when called directly"
+}
+run_test test_cap_export_path_check_passes
+
+# Given: an input-directory mode that breaks each half of the mount contract
+# When:  the capability probe runs
+# Then:  the readability check warns for a missing dir and the read-only check
+#        warns for a writable one
+# Asserts: both halves of the input-mount semantics are asserted, not existence alone.
+test_cap_input_mount_semantics() {
+  local fix="$FIXTURE_DIR/cap-input-rw" state="$FIXTURE_DIR/cap_input_rw.state"
+  ( _healthy_cap_env "$fix"
+    chmod 755 "$fix/workspace/input"
+    _run_probe "$PROBE_CAP" "$state" )
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "WARN  INPUT_DIR is read-only" \
+    "a writable input mount warns"
+
+  local fix2="$FIXTURE_DIR/cap-input-missing" state2="$FIXTURE_DIR/cap_input_missing.state"
+  ( _healthy_cap_env "$fix2"
+    export INPUT_DIR="$fix2/workspace/absent-input"
+    _run_probe "$PROBE_CAP" "$state2" )
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "WARN  INPUT_DIR readable" \
+    "a missing input dir warns on the readability check"
+}
+run_test test_cap_input_mount_semantics
+
+# Given: an invalid TMPDIR, so the probe's mktemp preconditions fail
+# When:  the capability probe runs
+# Then:  rc=1, both subsections end at their precondition, no raw mkdir error
+#        escapes, and the diagnostics record is still written
+# Asserts: a failed precondition does not run the subsection with an empty path.
+test_cap_failed_tempdir_precondition() {
+  local fix="$FIXTURE_DIR/cap-tmpdir" state="$FIXTURE_DIR/cap_tmpdir.state"
+  ( _healthy_cap_env "$fix"
+    export TMPDIR="$fix/no-such-tmpdir"
+    _run_probe "$PROBE_CAP" "$state" )
+  assert_ne "0" "$(kv "$state" rc)" "a failed mktemp precondition fails the probe"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "could not create temp directory" \
+    "the data-plane precondition names the cause"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "could not create fixture directory" \
+    "the session-export precondition names the cause"
+  assert_not_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "mkdir: cannot create directory" \
+    "no raw mkdir error escapes from an empty fixture path"
+  assert_file_exists "${OUTPUT_DIR:-$fix/workspace/output}/dryrun.capability.record" \
+    "the diagnostics record is still written"
+}
+run_test test_cap_failed_tempdir_precondition
+
+# Given: an unwritable OUTPUT_DIR, so the record cannot be written
+# When:  the capability probe runs
+# Then:  rc=1 and the missing record is named as a critical failure
+# Asserts: a missing record does not surface later as an orchestration timeout.
+test_cap_missing_record_is_critical() {
+  local fix="$FIXTURE_DIR/cap-norecord" state="$FIXTURE_DIR/cap_norecord.state"
+  ( _healthy_cap_env "$fix"
+    mkdir -p "$fix/nowrite"
+    chmod 555 "$fix/nowrite"
+    export OUTPUT_DIR="$fix/nowrite"
+    _run_probe "$PROBE_CAP" "$state" )
+  assert_ne "0" "$(kv "$state" rc)" "a missing diagnostics record fails the probe"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "diagnostics record not written" \
+    "the missing record is named as a critical failure"
+}
+run_test test_cap_missing_record_is_critical
+
+# Given: the capability probe's marker file
+# When:  the reasoning probe runs over the same CHANGES_DIR
+# Then:  the marker literal written by one probe is the literal read by the other
+# Asserts: the cross-container marker name and value are one contract, not two copies.
+test_marker_round_trips_between_probes() {
+  local fix="$FIXTURE_DIR/marker-roundtrip"
+  local cstate="$FIXTURE_DIR/marker_cap.state" rstate="$FIXTURE_DIR/marker_reas.state"
+  ( _healthy_cap_env "$fix"; _run_probe "$PROBE_CAP" "$cstate" )
+  local marker="$fix/workspace/session-diffs/.dryrun_capability_marker"
+  assert_file_exists "$marker" "the capability probe writes the cross-container marker"
+  assert_eq "$(cat "$marker")" "CAPABILITY_LAYER_OK" \
+    "the marker carries the literal the reasoning probe expects"
+  ( _healthy_reas_env "$fix"
+    export CHANGES_DIR="$fix/workspace/session-diffs" \
+           EXPECTED_MOUNT_TARGET="$fix/workspace/session-diffs"
+    _run_probe "$PROBE_REAS" "$rstate" )
+  assert_eq "$(layer_status "$rstate" container_network)" PASS \
+    "the reasoning probe reads the marker from CHANGES_DIR"
+}
+run_test test_marker_round_trips_between_probes
+
+# Given: no capability marker under CHANGES_DIR
+# When:  the reasoning probe runs
+# Then:  rc=1 and layer.container_network FAILs
+# Asserts: the cross-container check is critical, not a warning.
+test_reas_absent_marker_is_critical() {
+  local fix="$FIXTURE_DIR/reas-nomarker" state="$FIXTURE_DIR/reas_nomarker.state"
+  ( _healthy_reas_env "$fix"
+    rm -f "$fix/work/session-diffs/.dryrun_capability_marker"
+    _run_probe "$PROBE_REAS" "$state" )
+  assert_ne "0" "$(kv "$state" rc)" "an absent marker fails the reasoning probe"
+  assert_eq "$(layer_status "$state" container_network)" FAIL \
+    "layer.container_network = FAIL when the marker is absent"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "capability layer marker: not found under CHANGES_DIR" \
+    "the absent marker is named"
+}
+run_test test_reas_absent_marker_is_critical
+
+# Given: an unknown provider and no AGENT_CMD
+# When:  the reasoning probe runs
+# Then:  rc=1 and layer.agent_runtime FAILs
+# Asserts: an unknown provider fails closed rather than downgrading to a warning.
+test_reas_unknown_provider_fails_closed() {
+  local fix="$FIXTURE_DIR/reas-unknown" state="$FIXTURE_DIR/reas_unknown.state"
+  ( _healthy_reas_env "$fix"
+    unset AGENT_CMD
+    export PROVIDER_NAME="custom"
+    _run_probe "$PROBE_REAS" "$state" )
+  assert_ne "0" "$(kv "$state" rc)" "an unknown provider fails the reasoning probe"
+  assert_eq "$(layer_status "$state" agent_runtime)" FAIL \
+    "layer.agent_runtime = FAIL for an unknown provider"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "agent binary unknown for provider" \
+    "the unknown provider is named"
+}
+run_test test_reas_unknown_provider_fails_closed
+
+# Given: a SESSION_STATE file that is present but carries an empty init_sha
+# When:  the reasoning probe runs
+# Then:  the presence check passes and the readable check is the refusal
+# Asserts: the two session_state criticals are individually observable.
+test_reas_empty_init_sha_is_distinguishable() {
+  local fix="$FIXTURE_DIR/reas-empty-sha" state="$FIXTURE_DIR/reas_empty_sha.state"
+  ( _healthy_reas_env "$fix"
+    printf 'init_sha=\nsession_ts=%s\n' "$(date -u +%s)" > "$fix/sandbox/.git/SESSION_STATE"
+    _run_probe "$PROBE_REAS" "$state" )
+  assert_ne "0" "$(kv "$state" rc)" "an empty init_sha fails the reasoning probe"
+  assert_eq "$(layer_status "$state" session_state)" FAIL \
+    "layer.session_state = FAIL for an empty init_sha"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "PASS  sandbox/.git/SESSION_STATE exists" \
+    "the presence check passes when the file is present"
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "FAIL  SESSION_STATE.init_sha readable" \
+    "the readable check is the refusal"
+}
+run_test test_reas_empty_init_sha_is_distinguishable
 
 test_done "test_dry_run_probe"

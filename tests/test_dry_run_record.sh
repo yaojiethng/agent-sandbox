@@ -108,20 +108,18 @@ test_verify_fails_on_missing_record() {
   assert_contains "$output" "record missing" "missing-record reported"
 }
 
-# Given: an all-PASS record
-# When:  dry_run_record_verify runs in a subshell
-# Then:  it returns 0
-# Asserts: as written, it re-runs the healthy case; it does not exercise the
-#          mixed case its comment names (finding 28).
-test_verify_passes_record_within_container() {
-  # Regression: identity echo-back equal, one layer FAIL but status PASS is
-  # inconsistent -- a correct record must not mix; here all PASS must pass.
+# Given: a record whose status is PASS but one layer reports FAIL
+# When:  dry_run_record_verify runs
+# Then:  it returns non-zero and names the failed layer
+# Asserts: a mixed record is rejected; the overall status alone is not trusted.
+test_verify_rejects_layer_fail_with_status_pass() {
   local record="$FIXTURE_DIR/r5.record"
-  write_record "$record" "img:tag" PASS PASS PASS PASS PASS PASS PASS
-  local rc
-  (dry_run_record_verify "sandbox(capability)" "img:tag" "$record" >/dev/null 2>&1)
+  write_record "$record" "img:tag" PASS PASS PASS PASS FAIL PASS PASS
+  local output rc
+  output=$(dry_run_record_verify "sandbox(capability)" "img:tag" "$record" 2>&1)
   rc=$?
-  assert_rc 0 "$rc" "clean record verifies cleanly"
+  assert_ne "$rc" "0" "mixed record (layer FAIL, status PASS) is rejected"
+  assert_contains "$output" "layer.container_network = FAIL" "mixed record names the failed layer"
 }
 
 # --- image-signature (option c) gate ---------------------------------------
@@ -214,7 +212,7 @@ run_test test_verify_passes_on_healthy_record
 run_test test_verify_fails_on_identity_mismatch
 run_test test_verify_fails_on_layer_fail
 run_test test_verify_fails_on_missing_record
-run_test test_verify_passes_record_within_container
+run_test test_verify_rejects_layer_fail_with_status_pass
 run_test test_digest_gate_passes_when_digests_match
 run_test test_digest_gate_fails_when_digest_diverges
 run_test test_digest_gate_fails_on_missing_record_label

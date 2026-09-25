@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # scripts/check_markdown.sh
-# markdownlint-cli2 gate over all tracked Markdown files.
+# markdownlint-cli2 gate over all Markdown files in the working tree
+# (tracked and untracked), except node_modules.
 # BLOCKING: exits 1 on any finding or when the gate cannot run.
 #
 # Exit codes: 0 = no findings, 1 = findings OR the gate could not run. The

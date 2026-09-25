@@ -8,10 +8,11 @@
 # then write a per-container diagnostics record to the output mount for
 # orchestration to validate (correct-container check). Checks are listed in
 # readiness-layer order: docker_image -> workspace_mounts -> session_state ->
-# session_data -> container_network -> agent_runtime. Checks the container
-# preflight guarantees on every start (baked-lib presence, mount presence,
-# SESSION_STATE presence) are NOT re-asserted here -- this probe owns the
-# readiness DEPTH (session_state validity, session_data data plane,
+# session_data -> container_network -> agent_runtime. A closing sandbox_init
+# section reports seed diagnostics; it is not a readiness layer. Checks the
+# container preflight guarantees on every start (baked-lib presence, mount
+# presence, SESSION_STATE presence) are NOT re-asserted here -- this probe owns
+# the readiness DEPTH (session_state validity, session_data data plane,
 # container_network cross-component) plus the workspace_mounts ro/rw semantics the
 # container preflight deliberately leaves out.
 #
@@ -54,7 +55,12 @@ fi
 # ---------------------------------------------------------------------------
 
 section "workspace_mounts link-up"
-warn_check "INPUT_DIR readable"  test -d "$INPUT_DIR"
+# Readability is an access check, not an existence check: a mode-000 input
+# directory is present but unusable. The input mount is read-only, so the probe
+# asserts that half of the ro/rw contract too.
+_dir_readable() { [[ -d "$1" && -r "$1" ]]; }
+warn_check "INPUT_DIR readable" _dir_readable "$INPUT_DIR"
+warn_check "INPUT_DIR is read-only" _is_readonly "$INPUT_DIR"
 warn_check "OUTPUT_DIR writable" _is_writable "$OUTPUT_DIR"
 
 # ---------------------------------------------------------------------------
@@ -71,32 +77,48 @@ critical "SESSION_STATE.init_sha is a valid commit" init_sha_is_valid "$SANDBOX_
 section "session_data data plane"
 # Verify the diff pipeline can be invoked without error.
 # Uses a temp directory so no artifacts pollute the session.
-_diff_test_dir=$(mktemp -d) || {
-  _fail "diff_export: could not create temp directory"
-}
-if diff_export "$SANDBOX_DIR" "$_diff_test_dir" 2>/dev/null; then
-  _pass "diff_export: completed without error"
-  _diff_files=$(find "$_diff_test_dir" -name "*.diff" -type f 2>/dev/null | wc -l)
-  if [[ "$_diff_files" -gt 0 ]]; then
-    _pass "diff_export: produced $_diff_files diff file(s)"
+# A failed precondition ends this subsection; the probe still writes the
+# record below, so the failure is reported rather than masked by a downstream
+# error against an empty directory.
+run_diff_export_check() {
+  local _diff_test_dir
+  _diff_test_dir=$(mktemp -d 2>/dev/null) || {
+    _fail "diff_export: could not create temp directory"
+    return 0
+  }
+  if diff_export "$SANDBOX_DIR" "$_diff_test_dir" 2>/dev/null; then
+    _pass "diff_export: completed without error"
+    local _diff_files
+    _diff_files=$(find "$_diff_test_dir" -name "*.diff" -type f 2>/dev/null | wc -l)
+    if [[ "$_diff_files" -gt 0 ]]; then
+      _pass "diff_export: produced $_diff_files diff file(s)"
+    else
+      _warn "diff_export: no .diff files produced (baseline may be empty)"
+    fi
   else
-    _warn "diff_export: no .diff files produced (baseline may be empty)"
+    _fail "diff_export: command failed"
   fi
-else
-  _fail "diff_export: command failed"
-fi
 
-warn_check "diff_export: .export-status exists after successful export" \
-  test -f "$_diff_test_dir/.export-status"
-warn_check "diff_export: .export-status reports SUCCESS" \
-  export_status_is_success "$_diff_test_dir"
-rm -rf "$_diff_test_dir"
+  warn_check "diff_export: .export-status exists after successful export" \
+    test -f "$_diff_test_dir/.export-status"
+  warn_check "diff_export: .export-status reports SUCCESS" \
+    export_status_is_success "$_diff_test_dir"
+  rm -rf "$_diff_test_dir"
+}
+run_diff_export_check
+
+# export_path is called in this shell, not through bash -c: a child bash
+# inherits no function definitions, so the previous form could never pass in
+# production.
+_export_path_resolves() {
+  local p
+  p=$(export_path "$CHANGES_DIR" session "${SESSION_ID:-}" 2>/dev/null)
+  [[ -n "$p" ]]
+}
 
 section "session_data autosave"
 warn_check "CHANGES_DIR/autosave/ exists" test -d "${CHANGES_DIR}/autosave"
-warn_check "export_path: resolves with available env vars" \
-  bash -c 'p=$(export_path "$1" session "${2:-}" 2>/dev/null); [[ -n "$p" ]]' \
-  _ "$CHANGES_DIR" "${SESSION_ID:-}"
+warn_check "export_path: resolves with available env vars" _export_path_resolves
 warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
   wait_git_lockfile "$SANDBOX_DIR"
 
@@ -105,55 +127,63 @@ warn_check "wait_git_lockfile: returns 0 when no lockfile present" \
 # the decision runs against real git state; the live CHANGES_DIR is never
 # touched. The fixture seeds a branch point, makes a committed and an
 # uncommitted change, and leaves a current autosave dir in place, then asserts
-# the session export still runs.
+# the session export still runs. A failed fixture precondition ends the
+# subsection and still writes the record.
 section "session_data session-export decision"
-_fixture_dir=$(mktemp -d 2>/dev/null) || {
-  _fail "session-export: could not create fixture directory"
+run_session_export_decision() {
+  local _fixture_dir
+  _fixture_dir=$(mktemp -d 2>/dev/null) || {
+    _fail "session-export: could not create fixture directory"
+    return 0
+  }
+  local _fx="$_fixture_dir/sandbox"
+  mkdir -p "$_fx"
+  if git -C "$_fx" init -q 2>/dev/null; then
+    git -C "$_fx" config user.email dryrun@agent-sandbox 2>/dev/null
+    git -C "$_fx" config user.name dryrun 2>/dev/null
+    echo base > "$_fx/base.txt"
+    git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm base 2>/dev/null
+    local _init
+    _init=$(git -C "$_fx" rev-parse HEAD 2>/dev/null)
+    session_state_write_set "$_fx" "$_init"
+    # real work: one committed change, one uncommitted change
+    echo c2 >> "$_fx/base.txt"
+    git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm c2 2>/dev/null
+    echo dirty >> "$_fx/base.txt"
+    # a current autosave dir that already carries the state
+    mkdir -p "$_fixture_dir/changes/autosave/s-x"
+    echo base > "$_fixture_dir/changes/autosave/s-x/change.diff"
+    local _fx_rc=0
+    session_export_needed "$_fx" || _fx_rc=$?
+    if [[ "$_fx_rc" -eq 0 ]]; then
+      _pass "session-export: runs when work exists relative to the branch point (committed + uncommitted, autosave present)"
+    else
+      _fail "session-export: suppressed despite real work (rc=$_fx_rc)"
+    fi
+    # inverse: a clean tree at the branch point must skip
+    local _fx2="$_fixture_dir/clean"
+    mkdir -p "$_fx2"
+    git -C "$_fx2" init -q 2>/dev/null
+    git -C "$_fx2" config user.email dryrun@agent-sandbox 2>/dev/null
+    git -C "$_fx2" config user.name dryrun 2>/dev/null
+    echo base > "$_fx2/base.txt"
+    git -C "$_fx2" add -A 2>/dev/null && git -C "$_fx2" commit -qm base 2>/dev/null
+    local _init2
+    _init2=$(git -C "$_fx2" rev-parse HEAD 2>/dev/null)
+    session_state_write_set "$_fx2" "$_init2"
+    _fx_rc=0
+    session_export_needed "$_fx2" || _fx_rc=$?
+    if [[ "$_fx_rc" -eq 1 ]]; then
+      _pass "session-export: skips a clean tree at the branch point"
+    else
+      _fail "session-export: should skip a clean tree at the branch point (rc=$_fx_rc)"
+    fi
+  else
+    _fail "session-export: could not init fixture repository"
+  fi
+  rm -rf "$_fixture_dir"
 }
-_fx="$_fixture_dir/sandbox"
-mkdir -p "$_fx"
-if git -C "$_fx" init -q 2>/dev/null; then
-  git -C "$_fx" config user.email dryrun@agent-sandbox 2>/dev/null
-  git -C "$_fx" config user.name dryrun 2>/dev/null
-  echo base > "$_fx/base.txt"
-  git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm base 2>/dev/null
-  _init=$(git -C "$_fx" rev-parse HEAD 2>/dev/null)
-  session_state_write_set "$_fx" "$_init"
-  # real work: one committed change, one uncommitted change
-  echo c2 >> "$_fx/base.txt"
-  git -C "$_fx" add -A 2>/dev/null && git -C "$_fx" commit -qm c2 2>/dev/null
-  echo dirty >> "$_fx/base.txt"
-  # a current autosave dir that already carries the state
-  mkdir -p "$_fixture_dir/changes/autosave/s-x"
-  echo base > "$_fixture_dir/changes/autosave/s-x/change.diff"
-  _fx_rc=0
-  session_export_needed "$_fx" || _fx_rc=$?
-  if [[ "$_fx_rc" -eq 0 ]]; then
-    _pass "session-export: runs when work exists relative to the branch point (committed + uncommitted, autosave present)"
-  else
-    _fail "session-export: suppressed despite real work (rc=$_fx_rc)"
-  fi
-  # inverse: a clean tree at the branch point must skip
-  _fx2="$_fixture_dir/clean"
-  mkdir -p "$_fx2"
-  git -C "$_fx2" init -q 2>/dev/null
-  git -C "$_fx2" config user.email dryrun@agent-sandbox 2>/dev/null
-  git -C "$_fx2" config user.name dryrun 2>/dev/null
-  echo base > "$_fx2/base.txt"
-  git -C "$_fx2" add -A 2>/dev/null && git -C "$_fx2" commit -qm base 2>/dev/null
-  _init2=$(git -C "$_fx2" rev-parse HEAD 2>/dev/null)
-  session_state_write_set "$_fx2" "$_init2"
-  _fx_rc=0
-  session_export_needed "$_fx2" || _fx_rc=$?
-  if [[ "$_fx_rc" -eq 1 ]]; then
-    _pass "session-export: skips a clean tree at the branch point"
-  else
-    _fail "session-export: should skip a clean tree at the branch point (rc=$_fx_rc)"
-  fi
-else
-  _fail "session-export: could not init fixture repository"
-fi
-rm -rf "$_fixture_dir"
+run_session_export_decision
 
 # ---------------------------------------------------------------------------
 # container_network - cross-component (capability half of the marker round-trip)
@@ -211,6 +241,11 @@ dry_run_write_record "${OUTPUT_DIR}/dryrun.capability.record" \
   "sandbox_init.path=${SANDBOX_INIT_PATH:-}" \
   "sandbox_init.files=${SANDBOX_INIT_FILES:-}" \
   "sandbox_init.bytes=${SANDBOX_INIT_BYTES:-}"
+# A missing record makes orchestration wait out its timeout and then report a
+# timeout, which hides the real cause. It is a critical failure here instead.
+if [[ ! -f "${OUTPUT_DIR}/dryrun.capability.record" ]]; then
+  _fail "diagnostics record not written to ${OUTPUT_DIR}"
+fi
 dry_run_summary
 
 [[ $CRITICAL_FAILS -eq 0 ]]

@@ -29,6 +29,7 @@ test_setup
 LINT="$REPO_ROOT/scripts/lint.sh"
 
 LINT_RC=0
+LINT_OUT=""
 
 # make_shellcheck_stub COUNT [RC]  --  prints COUNT warning markers, exits RC
 # (default 0). RC 2 models a tool that could not run.
@@ -69,7 +70,7 @@ run_lint() {
   make_mdl_stub "$bin" "$mdl_rc"
   rm -f "$bin/mdl.log"
   LINT_RC=0
-  PATH="$bin:$PATH" bash "$LINT" >/dev/null 2>&1 || LINT_RC=$?
+  LINT_OUT=$(PATH="$bin:$PATH" bash "$LINT" 2>&1) || LINT_RC=$?
 }
 
 # Given: both tool stubs are on PATH and report success
@@ -388,5 +389,83 @@ run_test test_markdown_tool_absent_fails_closed
 run_test test_markdown_zero_lint_fails_closed
 run_test test_markdown_counts_linted_files
 run_test test_markdown_singular_lint_count_passes
+
+# Given: the umbrella's GATES list
+# When:  the declared gates and the scripts/check_*.sh set are compared
+# Then:  every gating gate is listed, and every other check script is classified
+# Asserts: a new check script cannot be silently absent from the umbrella.
+test_lint_gate_set_is_complete() {
+  local gates g base f
+  gates=$(sed -n 's/^GATES=(\(.*\))$/\1/p' "$LINT")
+  for g in check_shell.sh check_lib_contract.sh check_markdown.sh; do
+    assert_contains "$gates" "$g" "GATES includes $g"
+  done
+  # check_*.sh invoked by other entry points (the repo Makefile), never by the
+  # lint umbrella.
+  local non_umbrella="check_lib_liveness.sh check_test_coverage.sh check_test_liveness.sh check_test_smoke.sh"
+  for f in "$REPO_ROOT"/scripts/check_*.sh; do
+    base=$(basename "$f")
+    if [[ " $gates " == *" $base "* || " $non_umbrella " == *" $base "* ]]; then
+      pass "check script classified: $base"
+    else
+      fail "$base is neither a GATES member nor classified as non-umbrella"
+    fi
+  done
+}
+
+# Given: a failing shell gate and a passing Markdown gate
+# When:  the umbrella runs
+# Then:  the failing gate's findings and the umbrella summary both reach output
+# Asserts: the umbrella forwards each gate's report; it does not swallow it.
+test_lint_forwards_gate_output() {
+  run_lint 2 0
+  assert_contains "$LINT_OUT" "SC0000" "umbrella forwards the failing gate's findings"
+  assert_contains "$LINT_OUT" "Lint: one or more gates failed" "umbrella prints its failure summary"
+  run_lint 0 0
+  assert_contains "$LINT_OUT" "Lint: clean in" "umbrella prints its clean summary"
+  assert_contains "$LINT_OUT" "across 3 gates" "clean summary names the gate count"
+}
+
+# Given: a markdownlint stub that prints a finding line and exits 0
+# When:  check_markdown.sh runs
+# Then:  rc is 1 and the finding count is printed
+# Asserts: a finding reported with a zero tool status still fails the gate.
+test_markdown_finding_with_zero_status_fails() {
+  local bin="$FIXTURE_DIR/bin_mdfinding"
+  mkdir -p "$bin"
+  cat > "$bin/markdownlint-cli2" <<'EOF'
+#!/usr/bin/env bash
+printf 'Linting: 2 files\nSummary: 1 issue in 2 files\nfake.md:1 error MD000/test\n'
+exit 0
+EOF
+  chmod +x "$bin/markdownlint-cli2"
+  local out rc=0
+  out=$(PATH="$bin:$PATH" bash "$REPO_ROOT/scripts/check_markdown.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a finding with tool status 0 fails the gate"
+  assert_contains "$out" "markdownlint: 1 finding(s)" "the printed finding count reaches the operator"
+}
+
+# Given: a recording markdownlint stub and a caller in a sibling directory
+# When:  check_markdown.sh runs
+# Then:  the stub is invoked with the repository root as its working directory
+# Asserts: the **/*.md glob is evaluated at the repository root.
+test_markdown_gate_runs_at_repo_root() {
+  local bin="$FIXTURE_DIR/bin_mdcwd"
+  mkdir -p "$bin"
+  cat > "$bin/markdownlint-cli2" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$PWD" > "$bin/mdl.cwd"
+printf 'Linting: 1 file\nSummary: 0 issues in 0 files\n'
+exit 0
+EOF
+  chmod +x "$bin/markdownlint-cli2"
+  ( cd "$FIXTURE_DIR" && PATH="$bin:$PATH" bash "$REPO_ROOT/scripts/check_markdown.sh" >/dev/null 2>&1 ) || true
+  assert_eq "$(cat "$bin/mdl.cwd")" "$REPO_ROOT" "markdownlint runs from the repository root"
+}
+
+run_test test_lint_gate_set_is_complete
+run_test test_lint_forwards_gate_output
+run_test test_markdown_finding_with_zero_status_fails
+run_test test_markdown_gate_runs_at_repo_root
 
 test_done
