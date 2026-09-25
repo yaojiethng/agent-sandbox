@@ -35,7 +35,7 @@ set -euo pipefail
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
+# Shared flag-parsing helpers (parse_help_flag, check_base_flags).
 # common.sh does not touch script-dir variables  --  this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/cli.sh"

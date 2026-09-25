@@ -47,7 +47,7 @@ Clients keep all behavior not owned by flag routing:
 - **Validation**: value validation (e.g. `--delivery` must be `copy` or `mount`) runs in the owning script after `parse_args`, with the exact historical error message.
 - **Help and wording**: each script calls its own `usage()` (passed as `USAGE_FN`); the unknown-flag opening word is overridable via `_CLI_UNKNOWN_WORD` so scripts that historically said `Unknown flag` keep that exact output.
 - **Leniency**: `_CLI_TOLERANT=1` restores a script's historical silent-ignore of unknown flags (prune), for surfaces where leniency was the contract.
-- **Identity**: `--name`/`--project`/`--sandbox` resolve through the shared `parse_base_flags`/`check_base_flags` in `common.sh` (R3); `cli.sh` does not re-implement identity semantics, it forwards them through its spec.
+- **Identity**: `--name`/`--project`/`--sandbox` resolve through the shared `check_base_flags` in `common.sh` (R3); `cli.sh` does not re-implement identity semantics, it forwards them through its spec.
 
 The `agent-sandbox.sh` dispatcher is the one deliberate exception: its loop builds a `PASSTHROUGH` array (every non-identity arg forwarded to the leaf) rather than routing into variables. That is a collection loop, not a parse loop; converting it would force a collect-mode into the parser for no routing gain (R5).
 

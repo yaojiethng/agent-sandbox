@@ -44,7 +44,7 @@ No new file. `session_hints.sh` is the hint vocabulary; the usage surface is hel
 
 ## Consequences
 
-What this changes. The hint set becomes enumerable, and the emitters pass values instead of prose. Rows 138, 151, 218, 221, 266, 271 and 272 close when the gate lands, because the comparison is mechanical. Row 34 becomes a unit against the vocabulary rather than a fixture accident. Row 37 closes by construction, since a hint written at a call site is exactly what the gate now rejects.
+What this changes. The hint set becomes enumerable, and the emitters pass values instead of prose. Rows 138, 151, 218, 221, 266, 271 and 272 close when the gate lands, because the comparison is mechanical. Row 34's unit belongs to the rectification campaign, written against the vocabulary this design creates. Row 37 closes by construction, since a hint written at a call site is exactly what the gate now rejects.
 
 What this enables. An operator-surface test that answers a situation by name, which is the form rows 34 and 276 have been reaching for. A second reader of the vocabulary: the operations and development documents can name a hint instead of restating it, so guidance drift stops being possible between them and the tool.
 
