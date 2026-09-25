@@ -65,7 +65,7 @@ These items make the suite use bats as intended without changing the assertion m
 - **Branch-A** keeps the bespoke harness and adds dependency-free `xargs -P8` cross-file parallelism plus a pure-bash deadline.
 - **Branch-B** (this branch) is pure bats-core with `--jobs` under GNU parallel. Its dependency cost is bats-core plus GNU parallel in the runtime image; its structural cost is the one-time test-tree migration (now done on this branch).
 
-The study that frames this comparison, with the per-option framework matrix and the four harness-bug classes it addresses, is in `devlog/discussions/20260921-study-active-lint_and_tests_duration.md` (Test-suite duration and Bash unit-test framework evaluation sections).
+The study that frames this comparison, with the per-option framework matrix and the four harness-bug classes it addresses, is in `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md` (Test-suite duration and Bash unit-test framework evaluation sections).
 
 ## What the merger must do to adopt Branch-B
 

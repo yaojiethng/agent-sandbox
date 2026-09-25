@@ -1,12 +1,14 @@
 # Design: unified test-harness improvement plan (M3.1)
 
+**Status:** settled -- the plan landed (U1-U7); the harness comparison it enabled is settled in [`20260922-design-settled-m3_1_test_harness_decision.md`](20260922-design-settled-m3_1_test_harness_decision.md).
+
 ## Purpose and scope
 
 This plan brings the keep-current test suite to a trustworthy authoring baseline and places both comparison branches on that baseline. It is one task, owned on the main line.
 
 The suite now runs each file's tests in-process in one shared shell. A test's `export`, `cd`, global writes, and `trap` persist into the next test. This makes the suite order-dependent: a green verdict means green in this order, not green. An order-dependent suite cannot underwrite blind claims or regression reads, and asserting failing cases is unreliable because a test's inputs can depend on what an earlier test left in the shell. The plan fixes the cause, not the symptom.
 
-The two-branch harness comparison (keep-current `xargs -P8` vs bats-core) stays deferred. Its branch suites are re-ported onto the finished harness later.
+The two-branch harness comparison (keep-current `xargs -P8` vs bats-core) was settled after this plan landed: keep-current was adopted and bats-core was rejected.
 
 ## Design decisions
 
@@ -44,7 +46,7 @@ The implementation addresses the checklist at the model-and-measured-violations 
 
 ### Order-independence is a verification probe
 
-With per-test subshells, order cannot matter. A reversed-run gate proves isolation instead of racing to find leaks. Item 7 stops being a sweep and becomes a probe.
+With per-test subshells, order cannot matter. A reversed-run gate proves isolation instead of racing to find leaks. Item 7 stops being a sweep and becomes a probe. The gate was later retired as unowned (it was never invoked); order independence holds by construction.
 
 ### Commit style
 
@@ -71,8 +73,10 @@ Work lands as clean, readable units; a final squash happens only if the back-and
 - U6  Order-independence verification probe (reversed-run gate).
 - U7  Final full per-assertion sweep (fresh-subagent review).
 
-## Deferred to the comparison
+## Harness comparison outcome
 
-- Re-port branch A and branch B onto the finished harness. The mechanic, a rebase or a complete re-branch, is open.
-- Re-measure both suites on equal footing: wall time, an isolation probe, final dependency count (branch A: zero dependencies; branch B: bats-core, GNU parallel, procps).
-- Settle the harness decision.
+The three deferred items completed after this plan landed:
+
+- Both branches were re-ported onto the finished harness.
+- Both suites were re-measured on equal footing: wall time, an isolation probe, and dependency count.
+- The harness decision settled: keep-current (branch A) adopted; bats-core rejected.

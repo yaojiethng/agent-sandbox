@@ -5,7 +5,7 @@
 
 ## Context
 
-The M3.1 harness line compares two test-runner approaches on parallel branches: branch A keeps the bespoke harness and adds dependency-free parallel plus a pure-bash deadline; branch B migrates the suite to bats-core. The comparison records are the framework study ([`20260921-study-active-lint_and_tests_duration.md`](20260921-study-active-lint_and_tests_duration.md)), the branch-A protocol record ([`20260921-design-active-m3_1_test_runner_merge_comparison_branch_a.md`](20260921-design-active-m3_1_test_runner_merge_comparison_branch_a.md)), and the branch-B report ([`20260921-study-settled-m3_1_bats_harness_merge_branch_b.md`](20260921-study-settled-m3_1_bats_harness_merge_branch_b.md)).
+The M3.1 harness line compares two test-runner approaches on parallel branches: branch A keeps the bespoke harness and adds dependency-free parallel plus a pure-bash deadline; branch B migrates the suite to bats-core. The comparison records are the framework study ([`20260921-study-settled-lint_and_tests_duration.md`](20260921-study-settled-lint_and_tests_duration.md)), the branch-A protocol record ([`20260921-design-settled-m3_1_test_runner_merge_comparison_branch_a.md`](20260921-design-settled-m3_1_test_runner_merge_comparison_branch_a.md)), and the branch-B report ([`20260921-study-superseded-m3_1_bats_harness_merge_branch_b.md`](20260921-study-superseded-m3_1_bats_harness_merge_branch_b.md)).
 
 The earlier comparison was rejected for lack of a common basis: branch A ran tests in-process with PASS-marker accounting while branch B ran isolated `@test` subshells with unit accounting, so the harness choice was confounded with the authoring model. The unified test-harness improvement (U1-U7) remedied that. Both branches were re-ported onto the finished suite: an identical 696-unit name set on both (verified by set diff; the only count difference is the runner self-test, 16 units on branch A vs 14 on branch B). The operator released this session to record the evaluation and merge the winning branch.
 
@@ -37,5 +37,5 @@ The branch-A protocol record pre-registered the accept condition: the merging ag
 
 - The roadmap rows **Test suite duration** and **Individual per-test timeout** close; the harness-decision text replaces the deferred-comparison tail of the **Test-harness improvement (unified plan)** row.
 - Branch A is merged; branch B stays archived as the comparison record, not merged.
-- M3.1 holds three open harness-evaluation robustness rows (backpressure); the fold-back into M3 follows their close.
+- The three harness-evaluation robustness rows landed (iterations `20260922-10` to `20260922-12`); M3.1 now holds the open test-suite read-through task, and the fold-back into M3 follows its close.
 - The branch-B report's measurement claims stand corrected by this record (units, self-test count, failing-test wall cost).

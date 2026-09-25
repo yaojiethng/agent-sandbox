@@ -82,6 +82,6 @@ None.
 
 M3.1 - Backpressure.
 
-Next iteration (`20260921-09`): the lint-and-tests-duration study (`devlog/discussions/20260921-study-active-lint_and_tests_duration.md`) - measure the 30s `scripts/lint.sh` run, confirm the staged-file hook scope, present approaches; no fix without operator input.
+Next iteration (`20260921-09`): the lint-and-tests-duration study (`devlog/discussions/20260921-study-settled-lint_and_tests_duration.md`) - measure the 30s `scripts/lint.sh` run, confirm the staged-file hook scope, present approaches; no fix without operator input.
 
 Watch-outs: (1) the pre-commit hook from iteration `20260921-07` now gates staged shell files - a lint-speed fix that touches `check_shell.sh` affects both the gate and the hook; (2) the study must time `check_shell.sh`, `check_markdown.sh`, and the new `check_lib_contract.sh` separately.

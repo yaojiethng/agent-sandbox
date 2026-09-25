@@ -11,7 +11,7 @@ M3.1 subsumes three tasks from the lint-and-tests-duration line: **Test suite du
 
 The main line landed the **Test-harness improvement (unified plan)** task (roadmap row, U1-U7). It applies the harness-independent authoring checklist to the bespoke suite and supersedes the earlier two-branch parity framing. The roadmap flags the re-port mechanic (rebase or re-branch) as open. The harness decision and the two-branch comparison stay deferred pending the unified harness.
 
-The feature study holds the measurements and the framework matrix: [`20260921-study-active-lint_and_tests_duration.md`](20260921-study-active-lint_and_tests_duration.md). It records the four harness-bug classes, the per-option axis matrix (bats-core / shunit2 / shellspec), and that bats-core alone solves the timeout class natively (`BATS_TEST_TIMEOUT`). The ~16.8k-line test tree is not absorbed by any framework.
+The feature study holds the measurements and the framework matrix: [`20260921-study-settled-lint_and_tests_duration.md`](20260921-study-settled-lint_and_tests_duration.md). It records the four harness-bug classes, the per-option axis matrix (bats-core / shunit2 / shellspec), and that bats-core alone solves the timeout class natively (`BATS_TEST_TIMEOUT`). The ~16.8k-line test tree is not absorbed by any framework.
 
 ## Rebase reconciliation
 
@@ -80,5 +80,5 @@ The default ~5s deadline carries a parity note: under parallel contention the wa
 - Whichever lands, close the two roadmap rows **Test suite duration** and **Individual per-test timeout**, and close the **Bash test-harness migration** row as accepted or rejected.
 - A bats accept means branch B supersedes branch A; a keep-current accept means the bats option is rejected and branch A supplies the test-runner change.
 - The losing branch is archived as the comparison record, not merged.
-- With the rows closed, M3.1 holds only closed rows and the sub-milestone folds back into M3 with its close ceremony.
+- With the harness rows closed, M3.1 holds the open test-suite read-through task; the fold-back into M3 follows its close.
 - Record the decision as an ADR per the decision policy when the operator settles it.

@@ -11,9 +11,9 @@ Create both comparison branches for the M3.1 harness-migration decision, each fo
 
 ## Scope
 
-- Branch A (`feat/M_3_1-backpressure-branch-A`): `scripts/run_tests.sh` parallel dispatch plus the pure-bash deadline; the runner self-test extended. Report: `devlog/discussions/20260921-design-active-m3_1_test_runner_merge_comparison_branch_a.md`.
-- Branch B (`feat/M_3_1-backpressure-branch-B`): bats-core conversion of the 58-file suite, launcher, liveness removal, docs, runtime dependencies. Report: `devlog/discussions/20260921-study-settled-m3_1_bats_harness_merge_branch_b.md`.
-- The comparison between the branch points: the counting-model and isolation asymmetries recorded in the study `devlog/discussions/20260921-study-active-lint_and_tests_duration.md`.
+- Branch A (`feat/M_3_1-backpressure-branch-A`): `scripts/run_tests.sh` parallel dispatch plus the pure-bash deadline; the runner self-test extended. Report: `devlog/discussions/20260921-design-settled-m3_1_test_runner_merge_comparison_branch_a.md`.
+- Branch B (`feat/M_3_1-backpressure-branch-B`): bats-core conversion of the 58-file suite, launcher, liveness removal, docs, runtime dependencies. Report: `devlog/discussions/20260921-study-superseded-m3_1_bats_harness_merge_branch_b.md`.
+- The comparison between the branch points: the counting-model and isolation asymmetries recorded in the study `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md`.
 
 ## Completed
 

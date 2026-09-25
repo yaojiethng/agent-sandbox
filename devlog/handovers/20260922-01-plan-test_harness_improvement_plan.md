@@ -27,7 +27,7 @@ Not yet defined.
 
 | File | Why in scope |
 |---|---|
-| [`devlog/discussions/20260922-design-active-test_harness_improvements.md`](../discussions/20260922-design-active-test_harness_improvements.md) | The unified plan deliverable. |
+| [`devlog/discussions/20260922-design-settled-test_harness_improvements.md`](../discussions/20260922-design-settled-test_harness_improvements.md) | The unified plan deliverable. |
 | [`devlog/roadmap.md`](../roadmap.md) | Test-authoring-parity row superseded by the unified scope. |
 
 ## Decisions
@@ -53,7 +53,7 @@ Not yet defined.
 
 | File | One-line change summary |
 |---|---|
-| `devlog/discussions/20260922-design-active-test_harness_improvements.md` | Drafted the unified harness-improvement design. |
+| `devlog/discussions/20260922-design-settled-test_harness_improvements.md` | Drafted the unified harness-improvement design. |
 | `devlog/roadmap.md` | Test-authoring-parity row superseded by the unified scope (pending). |
 
 ## Deferred items

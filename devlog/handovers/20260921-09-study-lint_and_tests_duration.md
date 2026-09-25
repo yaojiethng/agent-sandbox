@@ -14,7 +14,7 @@ Deliver the lint-and-tests-duration investigation as a study discussion: measure
 - Measure the three lint gates separately and the test suite wall time on the 16-core host.
 - Confirm the copy-delivery hook lints only staged files, not the repository.
 - Investigate why `check_shell.sh` dominates; probe batch vs per-file ShellCheck behavior.
-- Write `devlog/discussions/20260921-study-active-lint_and_tests_duration.md` with findings, open questions, and constraints.
+- Write `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md` with findings, open questions, and constraints.
 - Roadmap write-back: record the investigation delivery on the "Lint and tests take forever" row, keeping the row open for the operator's approach selection.
 
 **Deferred:** any improvement to the gate or test runner (per the operator's direction, no fix without input). The 8-file strict-mode reconciliation is part of the future fix task.
@@ -29,7 +29,7 @@ None.
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
-| 1 | The study measures every lint gate and the test suite separately | read `devlog/discussions/20260921-study-active-lint_and_tests_duration.md` | Agent [x] -- table in Findings: shell ~30s, markdown ~3s, lib-contract ~0.04s, tests ~37s |
+| 1 | The study measures every lint gate and the test suite separately | read `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md` | Agent [x] -- table in Findings: shell ~30s, markdown ~3s, lib-contract ~0.04s, tests ~37s |
 | 2 | The study states whether the staged-file hook re-lints the repository | read the study; live hook evidence in this session's commits | Agent [x] -- confirmed staged-only; hook printed `Linting: 2 files` on the last commit |
 | 3 | The study reports the batch-vs-per-file ShellCheck discrepancy with the affected file count | read the study | Agent [x] -- batch ~30s lenient; per-file ~9s serial, ~1.1s `-P16`, 8 files affected |
 | 4 | The study presents approaches and open questions and implements nothing | `git diff` shows only the study, the roadmap row, and this handover | Agent [x] -- `git status` shows exactly the three files |
@@ -39,7 +39,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`devlog/discussions/20260921-study-active-lint_and_tests_duration.md`](devlog/discussions/20260921-study-active-lint_and_tests_duration.md) | the study: measurements, approaches, open questions |
+| [`devlog/discussions/20260921-study-settled-lint_and_tests_duration.md`](devlog/discussions/20260921-study-settled-lint_and_tests_duration.md) | the study: measurements, approaches, open questions |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | investigation delivery recorded on the open row |
 
 ## Decisions
@@ -62,7 +62,7 @@ None.
 | File | Change | Status |
 |---|---|---|
 | `devlog/handovers/20260921-09-study-lint_and_tests_duration.md` | opened this handover | done |
-| `devlog/discussions/20260921-study-active-lint_and_tests_duration.md` | new study: timed gates, batch-vs-per-file finding, hook-scope confirmation, approaches, open questions | done |
+| `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md` | new study: timed gates, batch-vs-per-file finding, hook-scope confirmation, approaches, open questions | done |
 | `devlog/roadmap.md` | "Lint and tests take forever" row records the study delivery, stays open | done |
 
 ## Deferred items

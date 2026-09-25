@@ -11,7 +11,7 @@ Close the "Test suite duration" investigation and perform the "Official bash uni
 
 ## Scope
 
-- `devlog/discussions/20260921-study-active-lint_and_tests_duration.md`: lint resolution status; fresh suite measurement; per-option framework comparison; open questions.
+- `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md`: lint resolution status; fresh suite measurement; per-option framework comparison; open questions.
 - `devlog/roadmap.md`: move the harness-migration and per-test-timeout tasks into M3.1; record the operator's decisions and the two-branch plan.
 - `tests/test_doc_wrap_rule.sh` + `docs/development/testing-conventions.md`: correct a bad testing direction the study exposed (whole-project lint as a unit assertion); audit for other instances.
 
@@ -40,7 +40,7 @@ Close the "Test suite duration" investigation and perform the "Official bash uni
 
 | File | Change | Status |
 |---|---|---|
-| `devlog/discussions/20260921-study-active-lint_and_tests_duration.md` | lint status; suite measurement; per-option comparison; open questions | done |
+| `devlog/discussions/20260921-study-settled-lint_and_tests_duration.md` | lint status; suite measurement; per-option comparison; open questions | done |
 | `devlog/roadmap.md` | moved harness-migration + per-test-timeout into M3.1; recorded decisions and two-branch plan | done |
 | `tests/test_doc_wrap_rule.sh` | removed the whole-tree `test_real_tree_zero_findings`; fixture tests remain; ~4.7s to ~1s | done |
 | `docs/development/testing-conventions.md` | added Anti-Pattern 8 (whole-project scan as a unit assertion) | done |

@@ -44,7 +44,7 @@ None.
 | scripts/start_agent.sh, scripts/workflows/reject.sh | strict-mode patches (directive: cross-source / eval) |
 | tests/test_confirm_workflow.sh, test_dispatch.sh, test_draft_workflow.sh, test_interactive_session_select.sh, test_reject_workflow.sh, test_trace_compose_gen.sh | strict-mode patches (export preset / remove dead / directive) |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | row split into lint (closed) and suite (open) |
-| devlog/discussions/20260921-study-active-lint_and_tests_duration.md | resolution recorded |
+| devlog/discussions/20260921-study-settled-lint_and_tests_duration.md | resolution recorded |
 
 ## Decisions
 
@@ -80,7 +80,7 @@ None.
 | `tests/test_draft_workflow.sh` | removed dead `PROJECT_DIR`; exported `AGENT_SANDBOX_REPO` | done |
 | `tests/test_trace_compose_gen.sh` | SC2034 directive for `COMPOSE_ARGS` | done |
 | `devlog/roadmap.md` | row split: Lint gate duration `[x]`, Test suite duration `[ ]` | done |
-| devlog/discussions/20260921-study-active-lint_and_tests_duration.md | resolutions recorded | done |
+| devlog/discussions/20260921-study-settled-lint_and_tests_duration.md | resolutions recorded | done |
 
 ## Deferred items
 
