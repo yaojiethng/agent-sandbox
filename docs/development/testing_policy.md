@@ -267,3 +267,9 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 ## See Also
 
 [`testing-conventions.md`](testing-conventions.md) -- fixture patterns, anti-patterns, templates, checklists, and debug steps.
+
+[`read-through-run.md`](../../workflow/coding-agent/prompts/read-through-run.md) -- the brief for a periodic whole-tree read-through pass: pair each production file with its covering tests, mutate the behaviour, and record the findings.
+
+[`churn-analysis-run.md`](../../workflow/coding-agent/prompts/churn-analysis-run.md) -- the brief for the churn-analysis pass: rank the tracked files by commit count with a pinned command and window, separate mechanical churn from functional churn, and cross-reference the read-through register.
+
+[`fanout-run.md`](../../workflow/coding-agent/prompts/fanout-run.md) -- the draft brief for fanning a large pass out to parallel subagents: a frozen snapshot per batch, one owner per file, a serialized test suite, and a scripted register integrity check.
