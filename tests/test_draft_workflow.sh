@@ -9,13 +9,8 @@
 #   main           --  script entry point, non-interactive and interactive paths
 #   draft_run      --  creates branch, applies patches, .draft-state, guards
 #   draft_collect_patches / draft_apply_patches / _run_draft_workflow
-<<<<<<< HEAD
 #   _ingest_export_metadata  --  --branch-from, refusals (non-commit, unresolvable), INIT_SHA defaults
-#   draft_resolve_commit_message  --  .msg file, filename subject, fallback
-=======
-#   _ingest_export_metadata  --  --branch-from, refusals, INIT_SHA defaults
 #   draft_resolve_commit_message  --  non-empty .msg file, empty .msg, filename subject, fallback
->>>>>>> dde9860 (test: pin the diff pipeline rules)
 #
 # Uses make_session_fixture for synthetic session exports; for
 # author-rewrite and commit-message tests, which need make_real_session.

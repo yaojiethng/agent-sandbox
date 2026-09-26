@@ -360,6 +360,85 @@ test_removed_serve_subcommand_is_unknown() {
   fi
 }
 
+# Given: --env naming a file, and no identity flags
+# When:  main dispatches dry-run
+# Then:  identity resolves from that file and --env is forwarded to the leaf
+# Asserts: dry-run's --env forwarding mirrors start's arm
+test_dry_run_forwards_env_to_leaf() {
+  setup
+  local ENVDIR="$FIXTURE_DIR/dispatch_env_dryrun"
+  make_envfile "$ENVDIR"
+
+  dispatch_and_capture dry-run --env="$ENVDIR/.env" --provider=hermes
+
+  local found=false c
+  for c in "${CAPTURED[@]}"; do
+    [[ "$c" == "exec"*"start_agent.sh"* ]] \
+      && [[ "$c" == *"dry-run"* ]] \
+      && [[ "$c" == *"--env=$ENVDIR/.env"* ]] && found=true
+  done
+
+  if [[ "$found" == true ]]; then
+    pass "dry-run: resolves identity from --env and forwards --env to the leaf"
+  else
+    fail "dry-run --env not resolved+forwarded: ${CAPTURED[*]}"
+  fi
+}
+
+# Each dispatch branch declares the identity fields its leaf needs. A widened
+# set makes a branch require a field it never reads; a narrowed set makes it
+# accept a call whose leaf needs more. These fixtures supply only the fields
+# the branch must not require, so the declared subset is observable.
+# Given: resume with only --sandbox (no name or project anywhere)
+# When:  main dispatches resume
+# Then:  it routes to resume_agent.sh without demanding name or project
+# Asserts: resume's identity subset is sandbox alone
+test_identity_subset_resume_requires_only_sandbox() {
+  setup
+  unset AGENT_SANDBOX_PROJECT_NAME AGENT_SANDBOX_PROJECT_DIR AGENT_SANDBOX_SANDBOX_DIR
+  local output
+  output=$(main resume --sandbox=/tmp/only-sandbox --list 2>&1) || true
+  if [[ "$output" == *"resume_agent.sh"* ]] && [[ "$output" != *"is not set"* ]]; then
+    pass "resume: resolves with sandbox alone (name and project not required)"
+  else
+    fail "resume: expected routing with sandbox alone, got: $output"
+  fi
+}
+
+# Given: apply with only --sandbox and no project
+# When:  main dispatches apply
+# Then:  the resolver refuses before any leaf exec
+# Asserts: apply's identity subset is dir+sandbox, not sandbox alone
+test_identity_subset_apply_requires_dir() {
+  setup
+  unset AGENT_SANDBOX_PROJECT_NAME AGENT_SANDBOX_PROJECT_DIR AGENT_SANDBOX_SANDBOX_DIR
+  local output
+  output=$(main apply --sandbox=/tmp/only-sandbox 2>&1) || true
+  if [[ "$output" != *"apply.sh"* ]] && [[ "$output" == *"PROJECT_DIR is not set"* ]]; then
+    pass "apply: refuses without a project dir (dir+sandbox subset)"
+  else
+    fail "apply: expected a PROJECT_DIR resolution refusal, got: $output"
+  fi
+}
+
+# Given: the full identity present in AGENT_SANDBOX_* env vars
+# When:  main dispatches onboard with no flags
+# Then:  onboard still requires the base flags and refuses
+# Asserts: onboard's hard base-arg requirement is not replaced by resolution
+test_identity_subset_onboard_requires_base_args() {
+  setup
+  export AGENT_SANDBOX_PROJECT_NAME=envname
+  export AGENT_SANDBOX_PROJECT_DIR=/tmp/envproj
+  export AGENT_SANDBOX_SANDBOX_DIR=/tmp/envsbx
+  local output
+  output=$(main onboard 2>&1) || true
+  if [[ "$output" == *"are required"* ]] && [[ "$output" != *"onboard.sh"* ]]; then
+    pass "onboard: refuses without the base flags even when the env supplies identity"
+  else
+    fail "onboard: expected the base-arg requirement, got: $output"
+  fi
+}
+
 # Given: the identity flags and a provider
 # When:  main dispatches dry-run
 # Then:  it execs start_agent.sh in dry-run mode
@@ -564,10 +643,10 @@ test_help_start_subcommand() {
 # <sub> --help must route to the child's own help for EVERY subcommand, and it
 # must do so WITHOUT requiring the subcommand's required args (the latent
 # Finding-A bug: required-arg validation used to run before help delegation).
-# Given: every subcommand except resume and help, with --help and no base args
+# Given: every subcommand except help, with --help and no base args
 # When:  main dispatches
 # Then:  each routes to its own script's --help
-# Asserts: the uniform help path (the table omits resume, whose arm is a different file name)
+# Asserts: the uniform help path, including resume whose arm names a differently named file
 test_help_every_subcommand_no_base_args() {
   # subcommand -> the marker that appears in the captured exec path
   local -A expected=(
@@ -575,6 +654,7 @@ test_help_every_subcommand_no_base_args() {
     [build]="build.sh --help"
     [start]="start_agent.sh --help"
     [dry-run]="start_agent.sh --help"
+    [resume]="resume_agent.sh --help"
     [stop]="stop.sh --help"
     [prune]="prune.sh --help"
     [apply]="apply.sh --help"
@@ -604,6 +684,57 @@ test_help_every_subcommand_no_base_args() {
 
 # help is itself a subcommand; its --help shows the subcommand list (not a
 # routed child script). No recursion.
+# The declared subcommand list is the interface's contract with the dispatch
+# case: a name in one and not the other is a silent drift. Every other help
+# unit asserts the "Valid subcommands" header only, so the content is pinned
+# here against the dispatch set.
+# Given: the dispatcher's help page
+# When:  print_subcommand_list output is read
+# Then:  the declared set equals the dispatch case's set exactly
+# Asserts: the subcommand list's content (it cannot drift from the dispatch arms)
+test_subcommand_list_matches_dispatch_set() {
+  setup
+  local output actual declared
+  declared="Valid subcommands: onboard, build, start, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
+  output=$(main help 2>&1) || true
+  actual=$(printf '%s\n' "$output" | grep '^Valid subcommands:')
+  assert_eq "$actual" "$declared" "help: the declared subcommand list matches the dispatch set exactly"
+}
+
+# -h is the documented short alias; it must reach the same route as --help.
+# Given: `start -h` and `dry-run -h` with no identity flags
+# When:  main dispatches
+# Then:  each routes to start_agent.sh --help
+# Asserts: the -h alias reaches the help route
+test_help_short_flag_routes_to_leaf_help() {
+  local mode
+  for mode in start dry-run; do
+    setup
+    dispatch_and_capture "$mode" -h
+    if captured_has "exec bash" "start_agent.sh --help"; then
+      pass "$mode -h: routes to start_agent.sh --help"
+    else
+      fail "$mode -h: expected exec bash start_agent.sh --help, got: ${CAPTURED[*]}"
+    fi
+  done
+}
+
+# The help scan reads the whole argument vector, not only the first argument:
+# a leaf-style invocation may place --help after the flags.
+# Given: `start` with identity flags and --help after them
+# When:  main dispatches
+# Then:  it routes to start_agent.sh --help before the per-case checks
+# Asserts: the help scan's generality over every argument
+test_help_flag_after_other_flags_routes() {
+  setup
+  dispatch_and_capture start --name=test --project=/tmp/p --sandbox=/tmp/s --provider=hermes --help
+  if captured_has "exec bash" "start_agent.sh --help"; then
+    pass "start --help after flags: routes to start_agent.sh --help"
+  else
+    fail "start --help after flags: expected the help route, got: ${CAPTURED[*]}"
+  fi
+}
+
 # Given: `help --help`
 # When:  main dispatches
 # Then:  it prints the subcommand list rather than recursing
@@ -799,6 +930,10 @@ run_test test_start_forwards_env_to_leaf
 run_test test_resume_sandbox_and_env_forwarded
 run_test test_serve_mode
 run_test test_removed_serve_subcommand_is_unknown
+run_test test_dry_run_forwards_env_to_leaf
+run_test test_identity_subset_resume_requires_only_sandbox
+run_test test_identity_subset_apply_requires_dir
+run_test test_identity_subset_onboard_requires_base_args
 run_test test_dry_run_mode
 run_test test_start_with_passthrough
 run_test test_start_passthrough_order_and_unknown_forms
@@ -811,6 +946,9 @@ run_test test_help_unknown
 run_test test_help_flag_routes_run_modes_to_start_agent
 run_test test_help_start_subcommand
 run_test test_help_every_subcommand_no_base_args
+run_test test_subcommand_list_matches_dispatch_set
+run_test test_help_short_flag_routes_to_leaf_help
+run_test test_help_flag_after_other_flags_routes
 run_test test_help_flag_shows_list
 run_test test_unknown_subcommand
 run_test test_missing_subcommand

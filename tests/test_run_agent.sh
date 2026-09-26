@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 20
 # tests/test_run_agent.sh  --  Behavioural tests for scripts/run_agent.sh
 # provider hook + provider overlay selection.
 # Pins cite: docs/architecture/tool_interface.md l.41, l.225 (SERVE_PORT contract);
@@ -33,6 +34,18 @@
 #      export; the hints are asserted on stdout alone). These units moved
 #      here from tests/test_trace_start.sh, whose name named a verb its
 #      helpers never ran: both of them invoke run_agent.sh.
+#   4. The provider config directory: run_agent pre-creates
+#      $SANDBOX_DIR/.<provider> so Docker never creates the bind-mount source
+#      as root (asserted with a hookless provider, where the mkdir is the only
+#      creator).
+#   5. The seeder invocation: the volume seeder runs with -T and closed stdin,
+#      asserted on the docker-stub trace (the only observable of the no-TTY
+#      guard).
+#   6. The repository-integrity guards: a missing compose template or dry-run
+#      overlay is refused in the clear, naming the missing file. A repo mirror
+#      of symlinks omits one file so the guard fires without touching the tree.
+#   7. The serve wait swallow: a non-zero `docker wait` status is not a session
+#      result, so serve still exits 0.
 #
 # The provider setup hook is a documented contract (run_agent.sh header: "If
 # setup.sh exits non-zero, the session aborts with a clear error attributing
@@ -344,6 +357,143 @@ test_seeder_timeout_names_the_timeout() {
   fi
 }
 
+# The provider config directory is pre-created before the bind mount is used,
+# so Docker never creates the mount source as root. opencode ships no setup
+# hook, so the mkdir is the only creator on this path.
+# Given: a provider with no setup hook
+# When:  run_agent.sh runs a standard session
+# Then:  $SANDBOX_DIR/.opencode exists after the run
+# Asserts: the provider config directory is pre-created
+test_provider_config_dir_precreated() {
+  local FIX="$FIXTURE_DIR/provider_config_dir"
+  make_run_agent_fixture "$FIX" opencode
+
+  local out="$FIX/out.txt" rc=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy < /dev/null
+  ) > "$out" 2>&1 || rc=$?
+
+  if [[ $rc -eq 0 ]] && [[ -d "$SANDBOX_DIR/.opencode" ]]; then
+    pass "provider config dir: \$SANDBOX_DIR/.opencode pre-created for a hookless provider"
+  else
+    fail "provider config dir: missing after rc=$rc (out=$(cat "$out"))"
+  fi
+}
+
+# The seeder uses `compose run --rm -T` with stdin closed. The -T is required:
+# without it compose attaches a TTY that never closes (handover 20260904-05).
+# The docker stub trace records the invocation, which is the only observable.
+# Given: a fresh copy-delivery session
+# When:  the volume seeder runs
+# Then:  the trace records `run --rm -T seeder`
+# Asserts: the seeder's -T guard (the no-TTY invocation)
+test_seeder_invocation_has_no_tty() {
+  local FIX="$FIXTURE_DIR/seeder_no_tty"
+  make_run_agent_fixture "$FIX" opencode
+  export PROJECT_DIR="$FIX/project"
+  mkdir -p "$PROJECT_DIR"
+
+  local out="$FIX/out.txt" rc=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy \
+      --reset-volume < /dev/null
+  ) > "$out" 2>&1 || rc=$?
+
+  if trace_has "run --rm -T seeder"; then
+    pass "seeder: invocation carries -T (no TTY attach)"
+  else
+    fail "seeder: -T missing from trace (rc=$rc, out=$(cat "$out"))"
+  fi
+}
+
+# make_repo_mirror HIDE_BASENAME
+#   Builds a repo mirror whose run_agent.sh and sourced files are symlinks to
+#   the real ones, except the src/build file named HIDE_BASENAME. run_agent.sh
+#   derives REPO_ROOT from its own path, so the mirror root is the repo root it
+#   reads; omitting a file triggers a repository-integrity guard without
+#   touching the working tree. Echoes the mirror root.
+make_repo_mirror() {
+  local hide="$1"
+  local mirror="$FIXTURE_DIR/repo_mirror"
+  mkdir -p "$mirror/scripts" "$mirror/src/build"
+  ln -s "$REPO_ROOT/scripts/run_agent.sh" "$mirror/scripts/run_agent.sh"
+  ln -s "$REPO_ROOT/scripts/build.sh" "$mirror/scripts/build.sh"
+  ln -s "$REPO_ROOT/src/libs" "$mirror/src/libs"
+  ln -s "$REPO_ROOT/src/capability" "$mirror/src/capability"
+  ln -s "$REPO_ROOT/src/reasoning" "$mirror/src/reasoning"
+  local f b
+  for f in "$REPO_ROOT"/src/build/*; do
+    b="$(basename "$f")"
+    [[ "$b" == "$hide" ]] && continue
+    ln -s "$f" "$mirror/src/build/$b"
+  done
+  printf '%s' "$mirror"
+}
+
+# run_mirror_guard MIRROR MODE
+#   Runs the mirror's run_agent.sh under the docker stub and captures the
+#   combined output and rc in MIRROR_OUT / MIRROR_RC.
+run_mirror_guard() {
+  local mirror="$1" mode="$2"
+  local fix="$FIXTURE_DIR/mirror_fix"
+  mkdir -p "$fix/sandbox"
+  MIRROR_OUT="$(PATH="$STUB_DIR:$PATH" bash "$mirror/scripts/run_agent.sh" "$mode" \
+    --name=test-project \
+    --sandbox="$fix/sandbox" \
+    --env="$fix/sandbox/.env" \
+    --provider=ghost \
+    --delivery=copy 2>&1)"
+  MIRROR_RC=$?
+}
+
+# The compose template is a repository file: when it is missing the dispatcher
+# must refuse and name it rather than proceed with a broken file set.
+# Given: a repo mirror with src/build/docker-compose.yml omitted
+# When:  run_agent.sh runs
+# Then:  it exits non-zero and names the missing template
+# Asserts: the compose template's repository-integrity guard
+test_compose_template_missing_refused() {
+  local mirror
+  mirror="$(make_repo_mirror docker-compose.yml)"
+  run_mirror_guard "$mirror" standard
+
+  if [[ "$MIRROR_RC" -ne 0 ]] && [[ "$MIRROR_OUT" == *"compose template not found"* ]]; then
+    pass "missing compose template: refused with the missing-file message"
+  else
+    fail "missing compose template: rc=$MIRROR_RC out=$MIRROR_OUT"
+  fi
+}
+
+# The dry-run overlay is likewise a repository file. Hiding it must refuse at
+# the overlay check, not fail later inside compose generation.
+# Given: a repo mirror with src/build/docker-compose.dry-run.yml omitted
+# When:  run_agent.sh runs a dry-run
+# Then:  it exits non-zero and names the missing overlay
+# Asserts: the dry-run overlay's repository-integrity guard
+test_dry_run_overlay_missing_refused() {
+  local mirror
+  mirror="$(make_repo_mirror docker-compose.dry-run.yml)"
+  run_mirror_guard "$mirror" dry-run
+
+  if [[ "$MIRROR_RC" -ne 0 ]] && [[ "$MIRROR_OUT" == *"dry-run overlay not found"* ]]; then
+    pass "missing dry-run overlay: refused with the missing-file message"
+  else
+    fail "missing dry-run overlay: rc=$MIRROR_RC out=$MIRROR_OUT"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -354,6 +504,10 @@ run_test test_setup_hook_failure_aborts_with_attribution
 run_test test_flatten_flag_accepted
 run_test test_help_prints_run_agent_usage
 run_test test_seeder_timeout_names_the_timeout
+run_test test_provider_config_dir_precreated
+run_test test_seeder_invocation_has_no_tty
+run_test test_compose_template_missing_refused
+run_test test_dry_run_overlay_missing_refused
 run_test test_serve_port_unset_standard_is_quiet
 run_test test_serve_port_unset_serve_warns
 run_test test_provider_overlay_reaches_compose_file_set
@@ -1054,6 +1208,46 @@ test_invalid_sandbox_type_rejected() {
   unset SANDBOX_TYPE
 }
 
+# serve mode waits for the agent container to exit after `make stop`; the
+# container's 137/143 status is not a session result, so the wait status is
+# swallowed and serve exits 0. A per-test PATH shim gives the shared docker
+# stub the failing-wait knob it lacks, without editing the shared stub.
+# Given: a serve session whose docker wait returns 137
+# When:  run_agent.sh runs serve mode
+# Then:  the run exits 0
+# Asserts: the serve path's docker wait swallow
+test_serve_docker_wait_status_swallowed() {
+  local FIXTURE_DIR="$FIXTURE_DIR/serve_wait_swallow"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  local shim="$FIXTURE_DIR/shim"
+  mkdir -p "$shim"
+  cat > "$shim/docker" <<SHIM
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "wait" ]]; then
+  printf '[%s] wait %s\n' "\$(date +%s)" "\$*" >> "\${DOCKER_TRACE_LOG:-/tmp/docker-trace.log}"
+  exit "\${DOCKER_STUB_WAIT_RC:-0}"
+fi
+exec "$STUB_DIR/docker" "\$@"
+SHIM
+  chmod +x "$shim/docker"
+
+  local rc=0
+  (
+    export PATH="$shim:$STUB_DIR:$PATH"
+    export DOCKER_STUB_WAIT_RC=137
+    bash "$REPO_ROOT/scripts/run_agent.sh" serve \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy
+  ) > "$FIXTURE_DIR/out.txt" 2>&1 || rc=$?
+
+  assert_rc 0 "$rc" "serve: a non-zero docker wait status is swallowed"
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -1077,6 +1271,7 @@ run_test test_standard_teardown_is_last_compose
 run_test test_serve_teardown_is_last_compose
 run_test test_standard_agent_failure_still_tears_down_and_propagates_rc
 run_test test_serve_up_failure_still_tears_down
+run_test test_serve_docker_wait_status_swallowed
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
 run_test test_compose_file_persisted

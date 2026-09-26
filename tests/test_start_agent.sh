@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 15
 # -------------------------
 # Host-side start_agent.sh behavioral tests  --  start policy flags
 # Pins cite: docs/concepts/sandbox_identity.md (labels, naming);
@@ -358,6 +359,77 @@ test_missing_provider_fails_fast_with_clear_error() {
   fi
 }
 
+# When --sandbox is absent, start derives <dirname project>/<basename project>-sandbox.
+# The convention is load-bearing for direct invocation (the CLI always passes
+# --sandbox explicitly), so the derived directory is the only one the run can use.
+# Given: a project at <dir>/project and the conventional sandbox at <dir>/project-sandbox
+# When:  start runs without --sandbox
+# Then:  the session starts from the derived sandbox and persists its compose record there
+# Asserts: the -sandbox suffix derivation
+test_derived_sandbox_dir_uses_sandbox_suffix() {
+  local dir="$FIXTURE_DIR/derive_sandbox"
+  local sbx="$dir/project-sandbox"
+  mkdir -p "$sbx/.workspace/session-diffs" "$sbx/.workspace/input" "$sbx/.workspace/output"
+  cat > "$sbx/.env" <<EOF
+SANDBOX_DIR=$sbx
+PROJECT_DIR=$dir/project
+EOF
+  make_committed_repo "$dir/project"
+
+  local trace="$dir/docker-trace.log"
+  : > "$trace"
+  local out rc=0
+  out="$(cd "$dir" && PATH="$REPO_ROOT/tests/stubs:$PATH" \
+    DOCKER_TRACE_LOG="$trace" \
+    DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+      --name=stest --project="$dir/project" --provider=pi 2>&1)" || rc=$?
+
+  if [[ "$rc" -eq 0 ]] && ls "$sbx/.compose"/*.yml >/dev/null 2>&1; then
+    pass "start without --sandbox: derived <project>-sandbox is the session sandbox"
+  else
+    fail "start without --sandbox: expected the derived sandbox to be used, rc=$rc out=$(head -2 <<<"$out")"
+  fi
+}
+
+# Given: --sandbox naming a path whose parent does not exist, and a valid project
+# When:  start runs
+# Then:  it exits 1 at the canonicalisation and never reaches the identity resolver
+# Asserts: the canonicalisation failure is fatal at its own layer
+test_unresolvable_sandbox_reports_canonicalisation() {
+  local dir="$FIXTURE_DIR/unresolvable_sandbox"
+  mkdir -p "$dir/project"
+  local out rc=0
+  out="$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+    --name=ctest --project="$dir/project" \
+    --sandbox="$dir/no-such-parent-xyz/sandbox" --provider=pi 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"cannot canonicalize SANDBOX_DIR"* \
+     && "$out" != *"SANDBOX_DIR is not set"* ]]; then
+    pass "unresolvable --sandbox: refused at the canonicalisation, not the resolver"
+  else
+    fail "unresolvable --sandbox: expected the canonicalisation refusal, rc=$rc out=$out"
+  fi
+}
+
+# --interactive is standard-mode only; the deferral names the roadmap item for
+# serve/dry-run support.
+# Given: dry-run --interactive
+# When:  start runs
+# Then:  it exits non-zero with the standard-mode-only message
+# Asserts: the wizard's standard-mode restriction
+test_wizard_rejects_non_standard_mode() {
+  local dir="$FIXTURE_DIR/wizard_mode_gate"
+  mkdir -p "$dir/project" "$dir/sandbox"
+  local out rc=0
+  out="$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --interactive \
+    --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"only available for standard mode"* ]]; then
+    pass "dry-run --interactive: refused with the standard-mode restriction"
+  else
+    fail "dry-run --interactive: expected the mode restriction, rc=$rc out=$out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # WSL path validation
 # ---------------------------------------------------------------------------
@@ -657,16 +729,15 @@ EOF
   fi
 }
 
-# Unborn-HEAD host repo: refused for both modes. The session-env gate
-# rejects an empty repository before delivery dispatch (this test exercises
-# that gate in the stub flow); the materialization guard is defense-in-depth
-# for direct invocation, firing for both full and flatten.
+# Unborn-HEAD host repo: the session-env gate rejects an empty repository
+# before delivery dispatch, so the mount materialization guard is
+# defense-in-depth for direct invocation and is unreachable on this path. The
+# unit names and asserts the gate that actually refuses.
 # Given: a project repository with no commits
 # When:  a mount start runs
-# Then:  it exits non-zero with a message naming the missing commits
-# Asserts: an unborn HEAD cannot be delivered. The message text is shared with the earlier
-#          session-env gate, so the unit cannot show which guard refused (finding 171).
-test_mount_full_refuses_unborn_head() {
+# Then:  it exits non-zero with the session-env gate's message naming the repository
+# Asserts: the session-env unborn-HEAD gate (the guard that refuses first)
+test_mount_unborn_head_refused_by_session_env_gate() {
   local dir="$FIXTURE_DIR/mount_unborn"
   mkdir -p "$dir/project" "$dir/sandbox/.workspace/session-diffs" \
            "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
@@ -680,8 +751,8 @@ EOF
     bash "$REPO_ROOT/scripts/start_agent.sh" standard --delivery=mount \
     --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)"
   START_RC=$?
-  if [[ "$START_RC" -ne 0 ]] && grep -q "has no commits" <<<"$START_OUT"; then
-    pass "mount full: unborn-HEAD project refused"
+  if [[ "$START_RC" -ne 0 ]] && grep -q "git repository has no commits" <<<"$START_OUT"; then
+    pass "mount full: unborn-HEAD project refused by the session-env gate"
   else
     fail "mount full: expected refusal rc!=0 naming no commits, rc=$START_RC"
   fi
@@ -729,6 +800,9 @@ run_test test_removed_rebuild_base_flag_is_rejected
 run_test test_help_flag_prints_full_usage
 run_test test_help_short_flag_prints_usage
 run_test test_missing_provider_fails_fast_with_clear_error
+run_test test_derived_sandbox_dir_uses_sandbox_suffix
+run_test test_unresolvable_sandbox_reports_canonicalisation
+run_test test_wizard_rejects_non_standard_mode
 run_test test_wsl_path_accepts_linux_paths
 run_test test_wsl_path_rejects_windows_drive_paths
 run_test test_wizard_help_describes_interactive
@@ -740,7 +814,7 @@ run_test test_mount_second_start_attaches
 run_test test_mount_reuse_refuses_mode_mismatch
 run_test test_mount_reuse_refuses_unknown_legacy_worktree
 run_test test_mount_reuse_refuses_corrupt_recorded_mode
-run_test test_mount_full_refuses_unborn_head
+run_test test_mount_unborn_head_refused_by_session_env_gate
 run_test test_mount_flatten_single_baseline
 
 test_done
