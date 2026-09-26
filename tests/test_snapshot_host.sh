@@ -4,8 +4,12 @@
 #
 # Covers:
 #   snapshot_copy_worktree    --  mount-delivery worktree materialization (git-enumerated)
+#   snapshot_check_case_mismatch --  warning text, mismatch detection, fix hint, quiet early returns
+#   snapshot_baseline_init    --  core.fileMode per exec-bit branch
+#   snapshot_copy_git         --  cp -a mode and timestamp preservation
+#   snapshot_deliver          --  two-argument default is full delivery
 #   (snapshot_validate removed with the RO-mount pipeline; snapshot_archive_head
-#    removed with the legacy seed transport — its guarantee lives in
+#    removed with the legacy seed transport - its guarantee lives in
 #    test_seed_volume.sh now)
 #
 # All fixtures created under a temp dir  --  no repos created inside the harness repo.
@@ -20,6 +24,18 @@ source "$TEST_DIR/libs/git_fixtures.sh"
 # -------------------------
 # Fixture builder
 # -------------------------
+
+# make_case_mismatch_repo DIR  --  a committed repo whose tree records
+# CaseName.txt while the filesystem carries casename.txt (a case-only rename).
+make_case_mismatch_repo() {
+  local DIR="$1"
+  make_committed_repo "$DIR"
+  echo "payload" > "$DIR/CaseName.txt"
+  git -C "$DIR" add CaseName.txt
+  git -C "$DIR" commit -q -m "add CaseName.txt"
+  mv "$DIR/CaseName.txt" "$DIR/casename.txt"
+}
+
 # snapshot_copy_worktree tests
 # -------------------------
 
@@ -237,7 +253,7 @@ test_worktree_honors_negation_patterns_local() {
 # When:  snapshot_copy_worktree runs
 # Then:  the global and repository excludes hold and the rescued file crosses
 # Asserts: the R1 leak stays closed for the negating sources the old rsync exclude list dropped
-# Note:  the unit writes the operator's global git config to arrange this (finding 119)
+# Note:  the unit points GIT_CONFIG_GLOBAL at a fixture file, so the operator's global git config is never written
 test_worktree_honors_negation_patterns_global_excludes() {
   local SRC="$FIXTURE_DIR/wt_negation_global_src"
   local DST="$FIXTURE_DIR/wt_negation_global_dst"
@@ -252,20 +268,12 @@ test_worktree_honors_negation_patterns_global_excludes() {
   git -C "$SRC" add tracked.txt
   git -C "$SRC" commit -m "initial" --quiet
 
-  # Point core.excludesFile at the fixture global ignore
-  local old_global
-  old_global=$(git -C "$SRC" config --global core.excludesFile || true)
-  git -C "$SRC" config --global core.excludesFile "$SRC/.gitignore.global"
+  # Point the fixture's global excludes file at the fixture ignore via
+  # GIT_CONFIG_GLOBAL; the operator's real global config is never touched.
+  git config --file "$SRC/.gitconfig.global" core.excludesFile "$SRC/.gitignore.global"
 
-  snapshot_copy_worktree "$SRC" "$DST"
+  GIT_CONFIG_GLOBAL="$SRC/.gitconfig.global" snapshot_copy_worktree "$SRC" "$DST"
   local rc=$?
-
-  # Restore the operator's global excludesFile before asserting
-  if [[ -n "$old_global" ]]; then
-    git -C "$SRC" config --global core.excludesFile "$old_global"
-  else
-    git -C "$SRC" config --global --unset core.excludesFile
-  fi
 
   if [[ $rc -ne 0 ]]; then
     fail "worktree: global-exclude negation test errored (copy failed)"
@@ -280,7 +288,7 @@ test_worktree_honors_negation_patterns_global_excludes() {
 # Given: an index carrying a gitlink (160000) entry
 # When:  snapshot_copy_worktree runs
 # Then:  the copy aborts
-# Asserts: the pipeline's submodule pre-flight, which is the second guard on the seed path (finding 113)
+# Asserts: the pipeline's submodule pre-flight, which is the second guard on the seed path
 test_worktree_submodule_detected() {
   local SRC="$FIXTURE_DIR/wt_submod_src"
   local DST="$FIXTURE_DIR/wt_submod_dst"
@@ -374,6 +382,116 @@ test_deliver_flatten_excludes_gitignored() {
     fail "deliver flatten: gitignored file leaked into destination"
   fi
 }
+# Given: a committed repo whose tree path casing differs from the filesystem and the blob matches
+# When:  snapshot_check_case_mismatch runs
+# Then:  it warns, names the pair, and prints the git mv fix hint
+# Asserts: the case-collision detection, its warning text, and its remediation
+test_case_mismatch_warns_and_names_fix() {
+  local SRC="$FIXTURE_DIR/cm_src"
+  make_case_mismatch_repo "$SRC"
+  local out rc=0
+  out="$(snapshot_check_case_mismatch "$SRC" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" "case mismatch check is non-blocking"
+  assert_contains "$out" "WARNING: case mismatch detected" "case mismatch check warns"
+  assert_contains "$out" "CaseName.txt -> ./casename.txt" "case mismatch check names the tree/filesystem pair"
+  assert_contains "$out" "git mv CaseName.txt" "case mismatch check prints the fix hint"
+}
+
+# Given: a repo whose tree and filesystem casing agree
+# When:  snapshot_check_case_mismatch runs
+# Then:  it returns 0 with no output
+# Asserts: the no-mismatch quiet return
+test_case_mismatch_quiet_when_clean() {
+  local SRC="$FIXTURE_DIR/cm_clean"
+  make_committed_repo "$SRC"
+  local out rc=0
+  out="$(snapshot_check_case_mismatch "$SRC" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" "case mismatch check returns 0 on a match"
+  assert_empty "$out" "case mismatch check stays quiet on a match"
+}
+
+# Given: a source directory that does not exist
+# When:  snapshot_check_case_mismatch runs
+# Then:  it returns 0 with no output
+# Asserts: the missing-source early return
+test_case_mismatch_quiet_when_source_missing() {
+  local out rc=0
+  out="$(snapshot_check_case_mismatch "$FIXTURE_DIR/cm_missing" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" "case mismatch check returns 0 for a missing source"
+  assert_empty "$out" "case mismatch check stays quiet for a missing source"
+}
+
+# Given: a destination directory
+# When:  snapshot_baseline_init runs with exec-bit tracking available
+# Then:  core.fileMode is true
+# Asserts: the tracked-exec-bits branch of the mode policy
+test_baseline_filemode_true_when_exec_bits_tracked() {
+  local DST="$FIXTURE_DIR/fm_true"
+  mkdir -p "$DST"
+  (
+    filesystem_tracks_exec_bits() { return 0; }
+    snapshot_baseline_init "$DST" >/dev/null 2>&1
+    [[ "$(git -C "$DST" config core.fileMode)" == "true" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "baseline init: core.fileMode true when exec bits are tracked"
+  else
+    fail "baseline init: core.fileMode not true when exec bits are tracked"
+  fi
+}
+
+# Given: a destination directory
+# When:  snapshot_baseline_init runs with exec-bit tracking unreliable
+# Then:  core.fileMode is false
+# Asserts: the untracked-exec-bits branch of the mode policy
+test_baseline_filemode_false_when_exec_bits_unreliable() {
+  local DST="$FIXTURE_DIR/fm_false"
+  mkdir -p "$DST"
+  (
+    filesystem_tracks_exec_bits() { return 1; }
+    snapshot_baseline_init "$DST" >/dev/null 2>&1
+    [[ "$(git -C "$DST" config core.fileMode)" == "false" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "baseline init: core.fileMode false when exec bits are unreliable"
+  else
+    fail "baseline init: core.fileMode not false when exec bits are unreliable"
+  fi
+}
+
+# Given: a source repo whose .git/config carries an old mtime
+# When:  snapshot_copy_git runs
+# Then:  the destination .git/config preserves that mtime
+# Asserts: cp -a preservation, not a plain recursive copy
+test_copy_git_preserves_timestamps() {
+  local SRC="$FIXTURE_DIR/cp_src"
+  local DST="$FIXTURE_DIR/cp_dst"
+  make_committed_repo "$SRC"
+  touch -d '2001-01-01 00:00:00' "$SRC/.git/config"
+  local before
+  before="$(stat -c %Y "$SRC/.git/config")"
+  mkdir -p "$DST"
+  snapshot_copy_git "$SRC" "$DST"
+  assert_eq "$(stat -c %Y "$DST/.git/config")" "$before" "snapshot_copy_git preserves file timestamps"
+}
+
+# Given: a committed repo with two commits
+# When:  snapshot_deliver runs with only a source and destination
+# Then:  full delivery is the default and the history crosses
+# Asserts: the documented two-argument default
+test_deliver_defaults_to_full() {
+  local SRC="$FIXTURE_DIR/dl_default_src"
+  local DST="$FIXTURE_DIR/dl_default_dst"
+  make_committed_repo "$SRC"
+  echo second > "$SRC/second.txt"
+  git -C "$SRC" add second.txt
+  git -C "$SRC" commit -q -m second
+  local count
+  count="$(git -C "$SRC" rev-list --count HEAD)"
+  snapshot_deliver "$SRC" "$DST"
+  assert_eq "$(git -C "$DST" rev-list --count HEAD)" "$count" \
+    "snapshot_deliver with two arguments defaults to full delivery"
+}
 
 
 # -------------------------
@@ -393,6 +511,13 @@ run_test     test_worktree_preserves_directory_structure
 run_test               test_worktree_submodule_detected
 run_test       test_worktree_honors_negation_patterns_local
 run_test test_worktree_honors_negation_patterns_global_excludes
+run_test                     test_case_mismatch_warns_and_names_fix
+run_test                     test_case_mismatch_quiet_when_clean
+run_test            test_case_mismatch_quiet_when_source_missing
+run_test           test_baseline_filemode_true_when_exec_bits_tracked
+run_test        test_baseline_filemode_false_when_exec_bits_unreliable
+run_test                          test_copy_git_preserves_timestamps
+run_test                                 test_deliver_defaults_to_full
 
 # snapshot_deliver (delivery dispatcher)
 run_test                test_deliver_full_carries_history

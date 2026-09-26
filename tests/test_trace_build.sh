@@ -137,17 +137,15 @@ test_build_has_build_command() {
 # Given: a stub whose docker build exits 42
 # When:  build.sh runs standalone (its own set -euo pipefail is active)
 # Then:  the output carries the descriptive build_image failure line
-# Asserts: the failure surfaces a named message rather than a bare abort
-# Note:  the unit discards the exit code, so the failure propagation is unpinned;
-#        both the explicit exit and the set -e survive removal while it passes (finding 124)
+# Asserts: the failure surfaces a named message and the invocation exits non-zero
 test_build_image_failure_surfaces_descriptive_error_under_e() {
   local FIXTURE_DIR="$FIXTURE_DIR/build_fail_e"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
   export DOCKER_STUB_BUILD_RC="42"
 
-  local out
-  out=$(invoke_build_err) || true
+  local out rc=0
+  out=$(invoke_build_err) || rc=$?
 
   unset DOCKER_STUB_BUILD_RC
 
@@ -156,6 +154,7 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
   else
     fail "build: expected descriptive build_image ERROR under set -e; got: $(echo "$out" | tail -3)"
   fi
+  assert_ne "$rc" "0" "build: a failed image build propagates a non-zero exit"
 }
 
 # The (string-as-list -> array) refactor is behavior-preserving at the LIST

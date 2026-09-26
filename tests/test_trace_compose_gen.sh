@@ -69,23 +69,49 @@ run_compose_generate() {
   ) > /dev/null 2>&1 || true
 }
 
+# run_compose_generate_with_docker OUTPUT [INPUT...]
+#   Sources the build libs and runs compose_generate in a subshell. The caller
+#   defines a `docker` shell function before calling; the subshell inherits it
+#   and it shadows the PATH stub. Returns compose_generate's status.
+run_compose_generate_with_docker() {
+  local out="$1"; shift
+  (
+    source "$REPO_ROOT/src/build/image.sh"
+    source "$REPO_ROOT/scripts/build.sh"
+    source "$REPO_ROOT/src/build/compose.sh"
+    compose_generate "$out" "$PROJECT_NAME" "$PROVIDER_NAME" "$@"
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 
-# Given: the real file set (base + copy overlay + provider overlay) and the docker stub
+# Given: a docker double whose compose config emits a top-level name: line, as real Compose does
 # When:  compose_generate runs
-# Then:  the output carries no top-level name: line
-# Asserts: the strip of the name: line Compose injects
-# Note:  no fixture input carries a name: key and the stub injects none, so this
-#        unit passes with the strip removed; finding 97
+# Then:  the injected name: line is absent from the generated file
+# Asserts: the strip of the name: line Compose injects from the staging directory
 test_no_name_lines_in_output() {
   local FIXTURE_DIR="$FIXTURE_DIR/nonames"
   mkdir -p "$FIXTURE_DIR"
   setup_fixture "$FIXTURE_DIR"
 
   local out="$FIXTURE_DIR/compose-output.yml"
-  run_compose_generate "$out"
+  docker() {
+    if [[ "${1:-}" == "compose" ]]; then
+      local prev="" a
+      for a in "$@"; do
+        [[ "$prev" == "-f" ]] && { cat "$a"; break; }
+        prev="$a"
+      done
+      echo "name: injected-by-compose"
+    elif [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+      echo "sha256:stub"
+    fi
+  }
+  run_compose_generate_with_docker "$out" \
+    "$REPO_ROOT/src/build/docker-compose.yml" \
+    "$REPO_ROOT/src/build/docker-compose.copy.yml"
 
   if [[ ! -f "$out" ]]; then
     fail "compose_generate did not produce output file"
@@ -328,14 +354,176 @@ test_record_bakes_image_digests() {
   fi
 }
 
+# Given: a docker double whose compose config interpolates ${VAR} unless --no-interpolate is passed
+# When:  compose_generate runs on an input carrying ${SERVE_PORT}
+# Then:  the output keeps the literal reference for runtime resolution
+# Asserts: the flag's property -- generation does not resolve operator-set variables
+test_compose_generate_preserves_runtime_var() {
+  local FIXTURE_DIR="$FIXTURE_DIR/runtimevar"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+
+  cat > "$FIXTURE_DIR/mini.yml" <<'EOF'
+services:
+  sandbox:
+    image: mini
+    environment:
+      - SERVE_PORT=${SERVE_PORT}
+EOF
+
+  local out="$FIXTURE_DIR/compose-output.yml"
+  docker() {
+    if [[ "${1:-}" == "compose" ]]; then
+      local prev="" a f="" no_interp=0 seen_f=0
+      for a in "$@"; do
+        [[ "$a" == "--no-interpolate" ]] && no_interp=1
+        if [[ "$prev" == "-f" && "$seen_f" -eq 0 ]]; then f="$a"; seen_f=1; fi
+        prev="$a"
+      done
+      if (( no_interp == 1 )); then
+        cat "$f"
+      else
+        sed "s|\${SERVE_PORT}|${SERVE_PORT:-}|g" "$f"
+      fi
+    elif [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+      echo "sha256:stub"
+    fi
+  }
+  export SERVE_PORT=9999
+  run_compose_generate_with_docker "$out" "$FIXTURE_DIR/mini.yml"
+
+  if [[ -f "$out" ]] && grep -q 'SERVE_PORT=${SERVE_PORT}' "$out" && ! grep -q 'SERVE_PORT=9999' "$out"; then
+    pass "compose_generate preserves the \${VAR} reference for runtime resolution"
+  else
+    fail "compose_generate did not preserve the runtime variable; got: $(grep SERVE_PORT "$out" 2>/dev/null)"
+  fi
+}
+
+# Given: an input set with no input files
+# When:  compose_generate runs
+# Then:  it returns non-zero and names the required input
+test_compose_generate_rejects_no_inputs() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_noinput"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+  local out="$FIXTURE_DIR/out.yml" rc=0
+  (
+    source "$REPO_ROOT/src/build/image.sh"
+    source "$REPO_ROOT/scripts/build.sh"
+    source "$REPO_ROOT/src/build/compose.sh"
+    compose_generate "$out" "$PROJECT_NAME" "$PROVIDER_NAME"
+  ) > "$FIXTURE_DIR/log" 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate rejects an empty input set"
+  assert_contains "$(cat "$FIXTURE_DIR/log")" "at least one input file is required" \
+    "compose_generate names the required input"
+}
+
+# Given: a PATH without a docker command
+# When:  compose_generate runs
+# Then:  it returns non-zero and names the missing docker dependency
+test_compose_generate_rejects_absent_docker() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_nodocker"
+  mkdir -p "$FIXTURE_DIR/minbin"
+  setup_fixture "$FIXTURE_DIR"
+  ln -s "$(command -v tr)" "$FIXTURE_DIR/minbin/tr"
+  ln -s "$(command -v dirname)" "$FIXTURE_DIR/minbin/dirname"
+  echo "services: {}" > "$FIXTURE_DIR/mini.yml"
+  local out="$FIXTURE_DIR/out.yml" rc=0
+  (
+    # PATH is intentionally narrowed to a bin without docker; the unit asserts
+    # compose_generate refuses to run without the dependency.
+    # shellcheck disable=SC2123
+    PATH="$FIXTURE_DIR/minbin"
+    source "$REPO_ROOT/src/build/image.sh"
+    source "$REPO_ROOT/scripts/build.sh"
+    source "$REPO_ROOT/src/build/compose.sh"
+    compose_generate "$out" "$PROJECT_NAME" "$PROVIDER_NAME" "$FIXTURE_DIR/mini.yml"
+  ) > "$FIXTURE_DIR/log" 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate refuses to run without docker"
+  assert_contains "$(cat "$FIXTURE_DIR/log")" "docker is required" \
+    "compose_generate names the missing docker dependency"
+}
+
+# Given: a docker double that reports no digest for the images
+# When:  compose_generate runs
+# Then:  it returns non-zero and reports the missing digest
+# Asserts: the ADR's hard error with no unknown-fallback for image identity
+test_compose_generate_rejects_missing_digest() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_nodigest"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+  echo "services: {}" > "$FIXTURE_DIR/mini.yml"
+  docker() { return 0; }
+  local out="$FIXTURE_DIR/out.yml" rc=0
+  run_compose_generate_with_docker "$out" "$FIXTURE_DIR/mini.yml" > "$FIXTURE_DIR/log" 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate refuses an empty image digest"
+  assert_contains "$(cat "$FIXTURE_DIR/log")" "image digest unavailable" \
+    "compose_generate names the missing image digest"
+}
+
+# Given: an input set naming a file that does not exist
+# When:  compose_generate runs
+# Then:  it returns non-zero, names the missing file, and removes its staging dir
+# Asserts: the input-not-found failure return and the staging cleanup it owns
+test_compose_generate_rejects_missing_input_file() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_missinginput"
+  mkdir -p "$FIXTURE_DIR/tmp"
+  setup_fixture "$FIXTURE_DIR"
+  echo "services: {}" > "$FIXTURE_DIR/real.yml"
+  docker() {
+    if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+      echo "sha256:stub"
+    fi
+  }
+  local out="$FIXTURE_DIR/out.yml" rc=0
+  TMPDIR="$FIXTURE_DIR/tmp" run_compose_generate_with_docker "$out" \
+    "$FIXTURE_DIR/real.yml" "$FIXTURE_DIR/absent.yml" > "$FIXTURE_DIR/log" 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate rejects a missing input file"
+  assert_contains "$(cat "$FIXTURE_DIR/log")" "input file not found" \
+    "compose_generate names the missing input file"
+  assert_empty "$(ls -A "$FIXTURE_DIR/tmp")" "compose_generate removes its staging dir on the input-not-found return"
+}
+
+# Given: a docker double whose compose config merge fails
+# When:  compose_generate runs
+# Then:  it returns non-zero and removes its staging dir
+# Asserts: the merge failure return propagates under the suite's pipefail and the staging dir does not leak
+test_compose_generate_propagates_merge_failure() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_mergefail"
+  mkdir -p "$FIXTURE_DIR/tmp"
+  setup_fixture "$FIXTURE_DIR"
+  echo "services: {}" > "$FIXTURE_DIR/real.yml"
+  docker() {
+    if [[ "${1:-}" == "image" ]]; then echo "sha256:stub"; return 0; fi
+    if [[ "${1:-}" == "compose" ]]; then return 3; fi
+  }
+  local out="$FIXTURE_DIR/out.yml" rc=0
+  TMPDIR="$FIXTURE_DIR/tmp" run_compose_generate_with_docker "$out" \
+    "$FIXTURE_DIR/real.yml" > /dev/null 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate propagates a failed merge"
+  assert_empty "$(ls -A "$FIXTURE_DIR/tmp")" "compose_generate removes its staging dir on the merge-failure return"
+}
+
+# Given: a successful compose_generate run and a fixture TMPDIR
+# When:  compose_generate returns
+# Then:  its staging dir is removed
+# Asserts: the final staging cleanup runs on the success path
+test_compose_generate_cleans_staging_on_success() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_cleanup"
+  mkdir -p "$FIXTURE_DIR/tmp"
+  setup_fixture "$FIXTURE_DIR"
+  export TMPDIR="$FIXTURE_DIR/tmp"
+  run_compose_generate "$FIXTURE_DIR/out.yml"
+  assert_empty "$(ls -A "$FIXTURE_DIR/tmp")" "compose_generate removes its staging dir on success"
+}
+
 # compose_file_from_args recovers the generated compose file path from
 # COMPOSE_ARGS (last -f value), so compose_dry_run can pass the generation-time
 # stamp source to the roundtrip gate.
 # Given: COMPOSE_ARGS carrying one -f flag
 # When:  compose_file_from_args runs
 # Then:  it prints that file path
-# Asserts: the -f value is recovered; with one flag the first-versus-last rule is not
-#        exercised, and neither is a trailing bare -f; finding 99
+# Asserts: the -f value is recovered
 test_compose_file_from_args_extracts_f_value() {
   (
     source "$REPO_ROOT/src/build/compose.sh"
@@ -346,6 +534,40 @@ test_compose_file_from_args_extracts_f_value() {
     pass "compose_file_from_args extracts the -f value"
   else
     fail "compose_file_from_args did not extract the -f value"
+  fi
+}
+
+# Given: COMPOSE_ARGS carrying two -f flags
+# When:  compose_file_from_args runs
+# Then:  it prints the last -f value
+# Asserts: the generated record is the last file, which the digest roundtrip reads
+test_compose_file_from_args_returns_last_f() {
+  (
+    source "$REPO_ROOT/src/build/compose.sh"
+    COMPOSE_ARGS=(--project-name p --project-directory /tmp -f /gen/first.yml -f /gen/last.yml)
+    [[ "$(compose_file_from_args)" == "/gen/last.yml" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_file_from_args returns the last -f value"
+  else
+    fail "compose_file_from_args did not return the last -f value"
+  fi
+}
+
+# Given: COMPOSE_ARGS whose final element is a bare -f with no value
+# When:  compose_file_from_args runs
+# Then:  it returns the earlier -f value without reading past the array
+# Asserts: the bounds guard keeps a trailing bare -f from an out-of-range read
+test_compose_file_from_args_handles_trailing_bare_f() {
+  (
+    source "$REPO_ROOT/src/build/compose.sh"
+    COMPOSE_ARGS=(--project-name p -f /gen/first.yml -f)
+    [[ "$(compose_file_from_args)" == "/gen/first.yml" ]]
+  )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_file_from_args ignores a trailing bare -f"
+  else
+    fail "compose_file_from_args mishandled a trailing bare -f"
   fi
 }
 
@@ -382,6 +604,15 @@ run_test test_mount_overlay_carries_worktree_not_copy_wiring
 run_test test_compose_generate_stamps_flatten_literal
 run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_digests
+run_test test_compose_generate_preserves_runtime_var
+run_test test_compose_generate_rejects_no_inputs
+run_test test_compose_generate_rejects_absent_docker
+run_test test_compose_generate_rejects_missing_digest
+run_test test_compose_generate_rejects_missing_input_file
+run_test test_compose_generate_propagates_merge_failure
+run_test test_compose_generate_cleans_staging_on_success
 run_test test_compose_file_from_args_extracts_f_value
+run_test test_compose_file_from_args_returns_last_f
+run_test test_compose_file_from_args_handles_trailing_bare_f
 run_test test_compose_file_from_args_empty_without_f
 test_done test_trace_compose_gen

@@ -5,6 +5,8 @@
 # Covers:
 #   compose_sandbox_wait  --  healthy success, the exited/dead fast-fail, and
 #                             the container name it polls.
+#   compose_args          --  project-name lowercasing, character sanitation,
+#                             the session-id suffix, and the sandbox-dir hash fallback.
 
 set -uo pipefail
 
@@ -90,9 +92,76 @@ test_compose_sandbox_wait_timeout() {
   assert_contains "$out" "did not become healthy within 1s" "compose_sandbox_wait reports the timeout"
 }
 
+# Given: a project name, sandbox dir, generated file, and session id
+# When:  compose_args runs
+# Then:  COMPOSE_ARGS carries the lowercased, session-scoped project name, the project directory, and the -f file
+# Asserts: the compose namespace a session's volume, network, and containers are addressed by
+test_compose_args_builds_session_namespace() {
+  ( compose_args "proj" "/tmp/sbx" "/gen/session.yml" "abc123"
+    [[ "${COMPOSE_ARGS[0]}" == "--project-name" \
+       && "${COMPOSE_ARGS[1]}" == "proj-abc123" \
+       && "${COMPOSE_ARGS[2]}" == "--project-directory" \
+       && "${COMPOSE_ARGS[3]}" == "/tmp/sbx" \
+       && "${COMPOSE_ARGS[4]}" == "-f" \
+       && "${COMPOSE_ARGS[5]}" == "/gen/session.yml" ]] )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_args builds the session-scoped namespace and -f args"
+  else
+    fail "compose_args namespace wrong: ${COMPOSE_ARGS[*]:-unset}"
+  fi
+}
+
+# Given: an upper-case project name
+# When:  compose_args runs
+# Then:  the project-name value is lowercased
+# Asserts: docker resource names stay lower case
+test_compose_args_lowercases_project() {
+  ( compose_args "UPPER" "/tmp/sbx" "/gen/s.yml" "sid"
+    [[ "${COMPOSE_ARGS[1]}" == "upper-sid" ]] )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_args lowercases the project name"
+  else
+    fail "compose_args did not lowercase the project name"
+  fi
+}
+
+# Given: a project name carrying characters outside [a-z0-9-]
+# When:  compose_args runs
+# Then:  each offending character becomes a hyphen
+# Asserts: a project name cannot inject an invalid docker name character
+test_compose_args_sanitises_project() {
+  ( compose_args "a_b.c" "/tmp/sbx" "/gen/s.yml" "sid"
+    [[ "${COMPOSE_ARGS[1]}" == "a-b-c-sid" ]] )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_args sanitises non-alphanumeric project-name characters"
+  else
+    fail "compose_args sanitation wrong: ${COMPOSE_ARGS[1]:-unset}"
+  fi
+}
+
+# Given: no session id
+# When:  compose_args runs
+# Then:  the project name ends with the first six hex of the sandbox dir's sha256
+# Asserts: the documented hash fallback keeps two sessions on one project apart
+test_compose_args_hash_fallback_without_session() {
+  local expected
+  expected="proj-$(echo "/tmp/sbx" | sha256sum | cut -c1-6)"
+  ( compose_args "proj" "/tmp/sbx" "/gen/s.yml"
+    [[ "${COMPOSE_ARGS[1]}" == "$expected" ]] )
+  if [[ $? -eq 0 ]]; then
+    pass "compose_args falls back to the sandbox-dir hash without a session id"
+  else
+    fail "compose_args hash fallback wrong: ${COMPOSE_ARGS[1]:-unset} expected $expected"
+  fi
+}
+
 run_test test_compose_sandbox_wait_healthy
 run_test test_compose_sandbox_wait_exited_fails_fast
 run_test test_compose_sandbox_wait_dead_fails_fast
 run_test test_compose_sandbox_wait_timeout
+run_test test_compose_args_builds_session_namespace
+run_test test_compose_args_lowercases_project
+run_test test_compose_args_sanitises_project
+run_test test_compose_args_hash_fallback_without_session
 
 test_done test_compose_wait
