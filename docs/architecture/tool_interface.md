@@ -77,7 +77,7 @@ The check set and the bearer/orchestration responsibility split are defined in [
 
 Builds images. Safe to run at any time; does not start or stop any containers.
 
-`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`. `TARGET` (singular) is also accepted as a legacy alias.
+`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`.
 
 | TARGETS value | Builds |
 |---|---|

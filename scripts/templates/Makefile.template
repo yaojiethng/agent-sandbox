@@ -67,7 +67,6 @@
 #   make build TARGETS=all             --  explicit alias for build-all
 #   make build TARGETS=hermes          --  builds hermes provider only
 #   make build TARGETS=hermes,sandbox  --  builds hermes and sandbox
-#   make build TARGET=<p>              --  legacy alias for TARGETS=<p>
 #   make build REBUILD=1               --  forces full rebuild including base images
 #
 # STOP
@@ -92,7 +91,6 @@ SERVE        ?=
 REFRESH      ?=
 REBUILD      ?=
 FAST         ?=
-TARGET       ?=
 TARGETS      ?=
 FROM         ?=
 INTERACTIVE  ?=
@@ -133,6 +131,10 @@ ifdef NEW_BRANCH
 $(error NEW_BRANCH is not a Make variable. Did you mean TARGET_BRANCH=<new-branch> NEW=1? Example: make confirm TARGET_BRANCH=$(NEW_BRANCH) NEW=1)
 endif
 
+ifdef TARGET
+$(error TARGET is not a Make variable. Build targets use TARGETS. Example: make build TARGETS=pi,sandbox)
+endif
+
 # Guard: target-scoped variables used on the wrong target. Each names the flag
 # the target actually reads. MAKECMDGOALS is the make invocation's target list.
 ifneq ($(filter dry-run,$(MAKECMDGOALS)),)
@@ -158,7 +160,7 @@ REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
-TARGET_FLAG       = --targets=$(if $(TARGETS),$(TARGETS),$(if $(TARGET),$(TARGET),all))
+TARGETS_FLAG      = --targets=$(if $(TARGETS),$(TARGETS),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
 RESUME_LIST_FLAG        = $(if $(LIST),--list,)
 RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
@@ -181,7 +183,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  make build                         --  build sandbox + all provider images"
-	@echo "  make build TARGETS=<p>             --  build specific provider(s) (legacy: TARGET=<p>)"
+	@echo "  make build TARGETS=<p>             --  build specific provider(s)"
 	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
 	@echo "  make dry-run PROVIDER=<p>          --  e2e check: rebuild current source, verify, tear down"
 	@echo "  make dry-run PROVIDER=<p> FAST=1   --  skip the rebuild, run existing images"
@@ -231,7 +233,7 @@ help:
 
 build:
 	agent-sandbox build \
-	  $(TARGET_FLAG) \
+	  $(TARGETS_FLAG) \
 	  $(REBUILD_FLAG) \
 	  --env=$(ENV_FILE)
 

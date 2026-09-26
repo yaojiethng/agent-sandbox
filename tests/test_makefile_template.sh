@@ -58,7 +58,7 @@ test_accepted_variables_are_declared() {
     pass "the unused ALL variable is not declared"
   fi
 
-  local accepted="PROVIDER SERVE REFRESH REBUILD FAST TARGET TARGETS FROM INTERACTIVE"
+  local accepted="PROVIDER SERVE REFRESH REBUILD FAST TARGETS FROM INTERACTIVE"
   accepted+=" BRANCH DIFF TARGET_BRANCH NEW BUNDLE BUNDLE_SUMMARY BASELINE"
   accepted+=" BRANCH_FROM DIFFS BRANCH_SUMMARY NO_RENAMES PERMISSIVE FORCE LIST"
   accepted+=" PRUNE SESSION_ID SANDBOX_TYPE FLATTEN WORKTREE_DIR STALE AGE_DAYS DRY_RUN"
@@ -110,7 +110,7 @@ test_every_target_is_phony() {
 # Asserts: deleting a translator from a target breaks its unit.
 test_targets_expand_their_flags() {
   local -a spec=(
-    'build|$(TARGET_FLAG) $(REBUILD_FLAG) --env=$(ENV_FILE)'
+    'build|$(TARGETS_FLAG) $(REBUILD_FLAG) --env=$(ENV_FILE)'
     'start|$(PROVIDER_FLAG) $(SERVE_FLAG) $(REFRESH_FLAG) $(REBUILD_FLAG) $(INTERACTIVE_FLAG) $(DELIVERY_FLAG) $(FLATTEN_FLAG) --env=$(ENV_FILE)'
     'dry-run|$(PROVIDER_FLAG) --fast $(DELIVERY_FLAG) $(FLATTEN_FLAG) --env=$(ENV_FILE)'
     'stop|--env=$(ENV_FILE) $(SESSION_ID_FLAG) $(PRUNE_FLAG)'
@@ -253,23 +253,36 @@ test_start_target_is_thin() {
 }
 
 # Given: the shipped template
-# When:  the build target's flag translator is read
-# Then:  it emits the CLI flag --targets=, never the deprecated --target=
+# When:  the build target's flag translator, its variable declarations, and the
+#        misspelled-variable guards are read
+# Then:  the build target is TARGETS only: the CLI flag --targets=, no legacy
+#        TARGET alias, and a loud refusal when TARGET is still passed
 # Asserts: the make->CLI flag contract for build stays aligned. The CLI rejects
 #          --target for target selection (parse_args unknown-argument error),
-#          so a template emitting --target= breaks every make build invocation.
-test_build_target_flag_spells_targets() {
+#          and make ignores a stray undeclared TARGET silently, so the flag
+#          spelling and the refusal are pinned together.
+test_build_target_flag_is_targets_only() {
   local line
-  line="$(grep -m1 '^TARGET_FLAG' "$TPL")"
+  line="$(grep -m1 '^TARGETS_FLAG' "$TPL")"
   if [[ "$line" == *'--targets='* && "$line" != *'--target='* ]]; then
-    pass "TARGET_FLAG emits --targets= and never --target="
+    pass "TARGETS_FLAG emits --targets= and never --target="
   else
-    fail "TARGET_FLAG does not spell the CLI flag --targets=: $line"
+    fail "TARGETS_FLAG does not spell the CLI flag --targets=: $line"
+  fi
+  if grep -qE '^TARGET[[:space:]]*\?=' "$TPL"; then
+    fail "the legacy TARGET build variable is still declared"
+  else
+    pass "no legacy TARGET build variable is declared"
+  fi
+  if grep -q 'TARGET is not a Make variable' "$TPL"; then
+    pass "a stray TARGET= is refused loudly with a TARGETS hint"
+  else
+    fail "no error guard catches a stray TARGET= (make would silently build all)"
   fi
 }
 
 run_test test_accepted_variables_are_declared
-run_test test_build_target_flag_spells_targets
+run_test test_build_target_flag_is_targets_only
 run_test test_flag_translators_are_defined
 run_test test_target_scoped_guards
 run_test test_every_target_is_phony

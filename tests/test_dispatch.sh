@@ -879,7 +879,7 @@ test_make_form_in_usage_first_help_leaf() {
   # subcommand -> <script>|<make-form needle>
   # The needle pins the make variable name too, where the command has one: a
   # hint naming a variable the target ignores is worse than no hint. `confirm`
-  # takes TARGET_BRANCH, not TARGET (TARGET drives the build target).
+  # takes TARGET_BRANCH, not TARGETS (TARGETS drives the build target).
   local row script needle
   local rows=(
     'build|scripts/build.sh|make build'
@@ -900,8 +900,8 @@ test_make_form_in_usage_first_help_leaf() {
 
 # The same variable rule applies everywhere a make-confirm hint appears -- in
 # docs, prompts, and discussion records, not just the help text. A hint that
-# names TARGET sends the operator to the build variable the confirm target
-# ignores. This guards the whole tree so the drift cannot come back.
+# names TARGETS (or the retired TARGET) sends the operator to the build target
+# the confirm target ignores. This guards the whole tree so the drift cannot come back.
 # Given: the whole tree
 # When:  a make-confirm hint is grepped for TARGET instead of TARGET_BRANCH
 # Then:  no live hint names the build variable
