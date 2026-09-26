@@ -215,7 +215,9 @@ main() {
     [[ "$FORCE" == true ]] && APPLY_ECHO+=" FORCE=1"
     echo "$APPLY_ECHO"
     apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"
-    exit $?
+    # Terminal: without this exit the non-interactive apply below runs a
+    # second time on an already-applied tree.
+    exit
   fi
 
   apply_run "$PROJECT_DIR" "$DIFF_FILE" "$APPLY_BRANCH" "$FORCE"

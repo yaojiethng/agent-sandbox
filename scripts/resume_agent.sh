@@ -148,7 +148,9 @@ if [[ "$INTERACTIVE_FLAG" == true ]]; then
   _resume_render_rows "interactive"
   _label="Resume which session?"
   _label="$_label  --  current branch: $(project_current_branch)"
-  chosen="$(interactive_pick "$_label" PICKER "" "$RESUME_LIST_PAGE_SIZE" "$_RESUME_HEADER")" || exit 1
+  # The picker returns only 0 or 1, and the script runs with `set -e`, so its
+  # failure already exits non-zero: a `|| exit 1` guard would decide nothing.
+  chosen="$(interactive_pick "$_label" PICKER "" "$RESUME_LIST_PAGE_SIZE" "$_RESUME_HEADER")"
 
   # Confirm display re-reads the chosen entry's fields from the in-memory
   # inventory (build_inventory already parsed the record) rather than

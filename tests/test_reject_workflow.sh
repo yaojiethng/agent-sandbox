@@ -163,22 +163,28 @@ test_reject_rejects_held_index_lock() {
   fi
 }
 
-# Given: a draft whose .draft-state names a branch that does not exist
+# Given: a draft whose .draft-state carries a CURRENT_BRANCH key naming another
+#        branch (a key outside the field contract)
 # When:  reject_run runs
-# Then:  the deletion block is skipped, the draft branch survives, and the closing message still prints
-# Asserts: the show-ref false arm
-test_reject_skips_deletion_when_branch_absent() {
-  local P="$FIXTURE_DIR/reject_absent_p"
-  local S="$FIXTURE_DIR/reject_absent_s"
+# Then:  the key is ignored: the checked-out draft branch is deleted, the named
+#        branch survives, and the caller returns to the source branch
+# Asserts: the field allowlist - before it, a crafted key replaced the validated
+#          branch and reject deleted a ref named by the record instead.
+test_reject_ignores_unknown_state_key() {
+  local P="$FIXTURE_DIR/reject_poisoned_p"
+  local S="$FIXTURE_DIR/reject_poisoned_s"
   make_committed_repo "$P"
   local BASE
   BASE=$(get_init_sha "$P")
+
+  # A bystander branch stands in for any ref a crafted key could name.
+  git -C "$P" branch bystander
 
   git -C "$P" checkout -qb draft/foo
   {
     printf 'source_branch: main\n'
     printf 'from_hash: %s\n' "$BASE"
-    printf 'CURRENT_BRANCH: ghost-branch\n'
+    printf 'CURRENT_BRANCH: bystander\n'
     printf 'author: test@fixture\n'
   } > "$P/.draft-state"
   git -C "$P" add .draft-state
@@ -188,12 +194,13 @@ test_reject_skips_deletion_when_branch_absent() {
   OUT=$(reject_run "$P" "$S" 2>&1) || RC=$?
 
   if [[ "$RC" -eq 0 && "$(_current_branch "$P")" == "main" ]] \
-     && [[ "$OUT" == *"Draft rejected. PROJECT_DIR restored to main."* ]] \
-     && [[ "$OUT" != *"Deleted draft branch:"* ]] \
-     && _branch_exists "$P" "draft/foo"; then
-    pass "reject skips the deletion block when the named branch is absent"
+     && [[ "$OUT" == *"Deleted draft branch: draft/foo"* ]] \
+     && [[ "$OUT" != *"bystander"* ]] \
+     && _branch_exists "$P" "bystander" \
+     && ! _branch_exists "$P" "draft/foo"; then
+    pass "a crafted CURRENT_BRANCH key cannot redirect the deletion"
   else
-    fail "absent-branch arm wrong: rc=$RC curr=$(_current_branch "$P") out=$OUT"
+    fail "poisoned key redirected reject: rc=$RC curr=$(_current_branch "$P") out=$OUT"
   fi
 }
 
@@ -248,7 +255,7 @@ run_test test_reject_discards_uncommitted_draft_residue
 run_test test_reject_rejects_non_draft
 run_test test_reject_rejects_missing_project_dir
 run_test test_reject_rejects_held_index_lock
-run_test test_reject_skips_deletion_when_branch_absent
+run_test test_reject_ignores_unknown_state_key
 run_test test_reject_script_entry_requires_identity
 run_test test_reject_script_entry_discards_draft
 

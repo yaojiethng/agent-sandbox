@@ -84,6 +84,8 @@ The corpus labels its mutations with per-pass letter series: A1 to A22, R1 to R1
 
 Two forms in the record are not mutations and must not be replayed as they stand. Appending `&& false` inside `[[ ]]` is a no-op, because the right-hand operand is a string test on a non-empty literal; the corpus uses that form at A2, A3, A4, and A6 in `bite_resume.sh` and at R3 in `bite_ra.sh`. An `-n /dev/null` probe has the same defect; the record carries it as a probe rather than as a captured bite. One bite was redone: R3 in `bite_ra.sh` is superseded by R3c in `bite_ra2.sh` and `bite_ra3.sh`. The corrected resume bites are A2b, A3b, and A4b in `bite_resume2.sh`.
 
+Two captures now report NO-OP because their subject lines moved. D38 in `bite_draft.sh` mutated `local CHANNEL="${CHANNEL_ARG:-session}"` in `draft.sh`; that default was removed because `resolve_source_for_draft` already applies it, so the surviving replacement belongs in `bite_routing.sh` against `${2:-session}`. A18 in `bite_apply.sh` changed `exit $?` to `exit 0` at a point where the status is always zero, so it could never change behaviour; the provable replacement deletes the terminal `exit`, and `test_apply_script_interactive_confirms_and_applies` in `tests/test_diff_workflow.sh` is the unit that fails on it.
+
 ## Cost
 
 The corpus holds 318 `bite`/`run_bite` call sites by count, 256 of which parse as literal triples. Each run executes the full suite, so a full sweep is roughly an hour serial.

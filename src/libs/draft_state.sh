@@ -13,6 +13,19 @@
 #   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
 
 # =============================================================================
+# .draft-state field contract  --  the keys both readers accept
+# =============================================================================
+
+# Field names as written by draft_write_state. Both readers accept these keys
+# and skip every other, so a crafted .draft-state cannot assign to a variable
+# of the caller's choosing (CURRENT_BRANCH, PROJECT_DIR, PATH).
+_DRAFT_STATE_FIELDS="source_branch from_hash author session_ts host_branch diff_count exported_at drafted_at session_id"
+
+_draft_state_field_allowed() {
+  [[ " $_DRAFT_STATE_FIELDS " == *" $1 "* ]]
+}
+
+# =============================================================================
 # draft_parse_folder_name  --  parse session identity from folder name
 # =============================================================================
 
@@ -83,6 +96,7 @@ EOF
 
 # Read .draft-state from the tip of the given branch.
 # Prints shell-escaped variable assignments to stdout for eval by caller.
+# Emits only the fields in _DRAFT_STATE_FIELDS; other keys are skipped.
 draft_read_state_from_branch() {
   local PROJECT_DIR="$1"
   local BRANCH_NAME="$2"
@@ -100,7 +114,7 @@ draft_read_state_from_branch() {
 
   while IFS=':' read -r KEY VALUE; do
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
-    [[ "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || continue
+    _draft_state_field_allowed "$KEY" || continue
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
     printf '%s=%q\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
@@ -112,6 +126,8 @@ draft_read_state_from_branch() {
 
 # Validate current branch is a proper draft branch.
 # On success: prints variable assignments (including CURRENT_BRANCH) and returns 0.
+# Only the keys in _DRAFT_STATE_FIELDS are parsed: a crafted key such as
+# CURRENT_BRANCH is skipped, so it cannot override the validated branch.
 # On failure: prints error to stderr and returns 1.
 draft_validate_branch() {
   local PROJECT_DIR="$1"
@@ -144,7 +160,7 @@ draft_validate_branch() {
 
   while IFS=':' read -r KEY VALUE; do
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
-    [[ "$KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || continue
+    _draft_state_field_allowed "$KEY" || continue
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
     printf -v "$KEY" '%s' "$VALUE"
     printf '%s=%q\n' "$KEY" "$VALUE"

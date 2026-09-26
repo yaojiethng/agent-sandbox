@@ -594,6 +594,109 @@ test_read_state_escapes_field_values() {
 }
 
 # =============================================================================
+# field allowlist
+# =============================================================================
+
+# make_unknown_key_state DIR BRANCH
+#   Commit .draft-state on BRANCH with two keys outside the field contract:
+#   CURRENT_BRANCH, which a reader would assign into the caller's own scope,
+#   and PATH, which would corrupt the caller's command lookup.
+make_unknown_key_state() {
+  local DIR="$1" BRANCH="$2"
+  make_committed_repo "$DIR"
+  local INIT_SHA
+  INIT_SHA=$(git -C "$DIR" rev-parse HEAD)
+  git -C "$DIR" checkout -b "$BRANCH" --quiet
+  {
+    printf 'source_branch: main\n'
+    printf 'from_hash: %s\n' "$INIT_SHA"
+    printf 'author: test@fixture\n'
+    printf 'CURRENT_BRANCH: ghost\n'
+    printf 'PATH: /tmp/poisoned\n'
+  } > "$DIR/.draft-state"
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+}
+
+# Given: a .draft-state carrying keys outside the field contract
+# When:  draft_validate_branch emits assignments
+# Then:  no unknown key is emitted, and CURRENT_BRANCH stays the checked-out branch
+# Asserts: the field allowlist - the identifier regex alone accepted any name
+#          and printed it for the caller to eval.
+test_validate_skips_unknown_keys() {
+  local DIR="$FIXTURE_DIR/validate_unknown_key"
+  make_unknown_key_state "$DIR" "draft/unknown-key"
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$DIR" 2>/dev/null) || true
+
+  if [[ "$OUTPUT" == *"CURRENT_BRANCH=draft/unknown-key"* ]]; then
+    pass "draft_validate_branch reports the checked-out branch, not the crafted key"
+  else
+    fail "draft_validate_branch CURRENT_BRANCH line wrong: $OUTPUT"
+  fi
+
+  if [[ "$OUTPUT" != *"ghost"* && "$OUTPUT" != *"PATH="* ]]; then
+    pass "draft_validate_branch emits no key outside the field contract"
+  else
+    fail "draft_validate_branch emitted a crafted key: $OUTPUT"
+  fi
+}
+
+# Given: the same .draft-state
+# When:  draft_read_state_from_branch emits assignments
+# Then:  the contract fields appear and the crafted keys do not
+# Asserts: the same allowlist on the second reader.
+test_read_state_skips_unknown_keys() {
+  local DIR="$FIXTURE_DIR/read_unknown_key"
+  make_unknown_key_state "$DIR" "draft/unknown-key"
+
+  local OUTPUT
+  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/unknown-key") || true
+
+  if [[ "$OUTPUT" == *"author=test@fixture"* && "$OUTPUT" != *"ghost"* && "$OUTPUT" != *"PATH="* ]]; then
+    pass "draft_read_state_from_branch emits contract fields only"
+  else
+    fail "draft_read_state_from_branch output wrong: $OUTPUT"
+  fi
+}
+
+# Given: a .draft-state written by draft_write_state with every field populated
+# When:  both readers emit assignments
+# Then:  every written field appears
+# Asserts: the allowlist is not narrower than the writer.
+test_readers_emit_every_written_field() {
+  local DIR="$FIXTURE_DIR/field_contract"
+  make_committed_repo "$DIR"
+  local INIT_SHA
+  INIT_SHA=$(git -C "$DIR" rev-parse HEAD)
+  git -C "$DIR" checkout -b "draft/all-fields" --quiet
+  draft_write_state "main" "$INIT_SHA" "test@fixture" "20260420-120000" \
+    "main" "2" "20260420-120000" "20260420-130000" "abc123" > "$DIR/.draft-state"
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+
+  local READ_OUT VAL_OUT MISSING="" FIELD WRITTEN
+  READ_OUT=$(draft_read_state_from_branch "$DIR" "draft/all-fields") || true
+  VAL_OUT=$(draft_validate_branch "$DIR" 2>/dev/null) || true
+  # The expected list comes from the writer's own output, not from a literal
+  # list in this test: a field added to the writer and missed by the allowlist
+  # fails here.
+  WRITTEN=$(cut -d: -f1 "$DIR/.draft-state" | tr -d ' ' | tr '-' '_')
+  local EXPECTED_COUNT
+  EXPECTED_COUNT=$(printf '%s\n' $WRITTEN | grep -c .)
+  for FIELD in $WRITTEN; do
+    [[ "$READ_OUT" == *"$FIELD="* ]] || MISSING+=" read:$FIELD"
+    [[ "$VAL_OUT" == *"$FIELD="* ]] || MISSING+=" validate:$FIELD"
+  done
+  if [[ -z "$MISSING" && "$EXPECTED_COUNT" -eq 9 ]]; then
+    pass "both readers emit every field draft_write_state writes"
+  else
+    fail "field contract gap:$MISSING (writer emitted $EXPECTED_COUNT fields)"
+  fi
+}
+
+# =============================================================================
 # Run all
 # =============================================================================
 
@@ -618,6 +721,9 @@ run_test test_validate_missing_from_hash
 run_test test_validate_dropped_state_commit_warns_and_continues
 run_test test_validate_escapes_field_values
 run_test test_read_state_escapes_field_values
+run_test test_validate_skips_unknown_keys
+run_test test_read_state_skips_unknown_keys
+run_test test_readers_emit_every_written_field
 
 test_done
 

@@ -612,7 +612,8 @@ main() {
       echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
       _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
         "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PATCH_LIST"
-      exit $?
+      # Terminal: the interactive arms below would run a second draft.
+      exit
     fi
 
     # Step 1: pick channel
@@ -624,12 +625,13 @@ main() {
     echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
     _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
       "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
-    exit $?
+    # Terminal: the non-interactive path below would run a second draft.
+    exit
   fi
 
-  # Non-interactive path
-  local CHANNEL="${CHANNEL_ARG:-session}"
-  _resolve_draft_source "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE_ARG" || exit 1
+  # Non-interactive path. resolve_source_for_draft applies the channel default
+  # ("session") to an empty value, so main does not repeat it.
+  _resolve_draft_source "$SANDBOX_DIR" "${CHANNEL_ARG:-}" "$BUNDLE_ARG" || exit 1
   _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
 }
