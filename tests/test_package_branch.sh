@@ -3,7 +3,9 @@
 #
 # Expected output layout (under OUTPUT_DIR/):
 #   patches/0001-<sha>.diff
+#   patches/0001-<sha>.msg
 #   patches/0002-<sha>.diff
+#   patches/0002-<sha>.msg
 #   ...
 #   uncommitted.diff
 #   all-changes.diff
@@ -119,6 +121,37 @@ test_dispatcher_diffs_numbered() {
   fi
 }
 
+# Given: two commits after the baseline
+# When:  package_branch runs
+# Then:  each patch has a non-empty sibling .msg holding that commit's message
+# Asserts: the host-consumed .msg artefact, which the bundle layout documents but no unit covered.
+test_dispatcher_writes_msg_per_patch() {
+  local DIR="$FIXTURE_DIR/pb_msg"
+  local OUT="$FIXTURE_DIR/pb_msg_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "alpha.txt" "alpha content"
+  commit_file "$DIR" "beta.txt" "beta content"
+
+  package_branch "$DIR" "$OUT"
+
+  local MSG_COUNT MISSING ALL_OK=true
+  MSG_COUNT=$(ls "$OUT/patches/"*.msg 2>/dev/null | wc -l)
+  MISSING=0
+  local PATCH
+  for PATCH in "$OUT/patches/"*.diff; do
+    [[ -s "${PATCH%.diff}.msg" ]] || MISSING=$((MISSING + 1))
+  done
+  [[ "$MSG_COUNT" -eq 2 && "$MISSING" -eq 0 ]] || ALL_OK=false
+  grep -q "add alpha.txt" "$OUT/patches/0001-"*.msg 2>/dev/null || ALL_OK=false
+
+  if [[ "$ALL_OK" == true ]]; then
+    pass "package_branch writes one non-empty .msg per patch with the commit message"
+  else
+    fail "package_branch .msg artefacts wrong: count=$MSG_COUNT missing=$MISSING"
+  fi
+}
+
 # Given: one commit, then a second run after a further commit
 # When:  package_branch runs twice
 # Then:  the patch count is 1, then 2
@@ -145,6 +178,81 @@ test_dispatcher_overwrites_output() {
     pass "package_branch overwrites: 1 diff first run, 2 diffs second run"
   else
     fail "package_branch should overwrite output, got $FIRST_COUNT then $SECOND_COUNT"
+  fi
+}
+
+# Given: two changed files packaged once, then the second change dropped
+# When:  package_branch runs again with a smaller change set
+# Then:  changed-files/ no longer holds the dropped file's stale copy
+# Asserts: the dispatcher's OUTPUT_DIR wipe owns the changed-files/ directory.
+test_dispatcher_overwrite_clears_stale_changed_files() {
+  local DIR="$FIXTURE_DIR/pb_stale"
+  local OUT="$FIXTURE_DIR/pb_stale_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+  commit_file "$DIR" "b.txt"
+
+  package_branch "$DIR" "$OUT"
+  if [[ ! -f "$OUT/changed-files/b.txt" ]]; then
+    fail "setup: first run did not copy b.txt into changed-files/"
+    return
+  fi
+
+  git -C "$DIR" reset --hard HEAD~1 --quiet
+  package_branch "$DIR" "$OUT"
+
+  if [[ -f "$OUT/changed-files/a.txt" && ! -e "$OUT/changed-files/b.txt" ]]; then
+    pass "a second package_branch run drops the stale changed-files copy"
+  else
+    fail "stale changed-files copy survived the second run"
+  fi
+}
+
+# Given: a committed change whose working tree is modified further
+# When:  package_branch runs
+# Then:  stderr carries the preflight divergence warning
+# Asserts: the dispatcher wires the advisory preflight into its run.
+test_dispatcher_runs_preflight_check() {
+  local DIR="$FIXTURE_DIR/pb_preflight"
+  local OUT="$FIXTURE_DIR/pb_preflight_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  commit_file "$DIR" "a.txt"
+  echo "dirty working tree" >> "$DIR/a.txt"
+
+  local ERR="$FIXTURE_DIR/pb_preflight.err"
+  package_branch "$DIR" "$OUT" 2>"$ERR"
+
+  if grep -q "uncommitted modifications" "$ERR" 2>/dev/null; then
+    pass "package_branch runs the preflight and reports the divergence warning"
+  else
+    fail "package_branch did not run the preflight check"
+  fi
+}
+
+# Given: a commit whose subject carries whitespace
+# When:  package_branch runs
+# Then:  the patch filename replaces the whitespace with underscores
+# Asserts: the subject sanitisation that keeps the filename a single path token.
+test_dispatcher_sanitises_commit_subject_filename() {
+  local DIR="$FIXTURE_DIR/pb_subject"
+  local OUT="$FIXTURE_DIR/pb_subject_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR"
+  echo "content" > "$DIR/a.txt"
+  git -C "$DIR" add a.txt
+  git -C "$DIR" commit -m "feat: add spaced subject" --quiet
+
+  package_branch "$DIR" "$OUT"
+
+  local PATCH BASE
+  PATCH=$(ls "$OUT/patches/"*.diff 2>/dev/null | head -1)
+  BASE=$(basename "$PATCH")
+  if [[ -n "$PATCH" && "$BASE" != *" "* && "$BASE" == *"add_spaced_subject"* ]]; then
+    pass "package_branch sanitises the commit subject into the patch filename"
+  else
+    fail "patch filename not sanitised: '$BASE'"
   fi
 }
 
@@ -501,7 +609,11 @@ test_preflight_skips_deleted_files_without_warning() {
 # =============================================================================
 run_test test_dispatcher_creates_all_artefacts
 run_test test_dispatcher_diffs_numbered
+run_test test_dispatcher_writes_msg_per_patch
+run_test test_dispatcher_sanitises_commit_subject_filename
 run_test test_dispatcher_overwrites_output
+run_test test_dispatcher_overwrite_clears_stale_changed_files
+run_test test_dispatcher_runs_preflight_check
 run_test test_dispatcher_diff_is_applicable
 run_test test_dispatcher_diff_contains_content
 run_test test_dispatcher_strips_text_index_keeps_binary_index
@@ -594,6 +706,24 @@ test_baseline_defaults_to_branch_point() {
   fi
 }
 
+# Given: an explicit baseline that resolves to no commit
+# When:  package_branch_baseline runs
+# Then:  rc 1 with the unresolved-baseline diagnostic
+# Asserts: the explicit-baseline validation, which the valid-override unit cannot exercise.
+test_baseline_rejects_unresolvable_explicit() {
+  local DIR="$FIXTURE_DIR/pb_bad_base"
+  make_sandbox_with_state "$DIR" >/dev/null
+
+  local OUT RC=0
+  OUT=$(package_branch_baseline "$DIR" "not-a-real-sha" 2>&1) || RC=$?
+
+  if [[ $RC -eq 1 && "$OUT" == *"does not resolve to a commit"* ]]; then
+    pass "package_branch_baseline rejects an explicit baseline that resolves to no commit"
+  else
+    fail "explicit-baseline validation broken: rc=$RC out='$OUT'"
+  fi
+}
+
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
 run_test test_dispatcher_refuses_unreadable_repository
@@ -604,6 +734,7 @@ run_test test_preflight_flags_uncommitted_modifications
 run_test test_preflight_flags_cancelled_out_modification
 run_test test_preflight_skips_deleted_files_without_warning
 run_test test_baseline_explicit_override
+run_test test_baseline_rejects_unresolvable_explicit
 run_test test_baseline_defaults_to_branch_point
 
 test_done

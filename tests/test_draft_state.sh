@@ -5,11 +5,11 @@
 
 #
 # Covers:
-#   draft_parse_folder_name         --  3 parsing sub-cases (no session-id, with session-id, edge)
+#   draft_parse_folder_name         --  4 parsing sub-cases (no session-id, with session-id, edge, legit hex suffix)
 #   draft_guard_no_collision        --  collision detection
-#   draft_write_state               --  field ordering and optional session_id
-#   draft_read_state_from_branch    --  key-value parsing from committed .draft-state
-#   draft_validate_branch           --  branch shape, missing .draft-state, field invariants
+#   draft_write_state               --  all eight fields and the optional session_id
+#   draft_read_state_from_branch    --  key-value parsing, hyphen-to-underscore normalisation
+#   draft_validate_branch           --  branch shape, missing .draft-state, field invariants, state-commit lookup
 
 set -uo pipefail
 
@@ -73,6 +73,19 @@ test_parse_folder_name_edge_cases() {
   SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
   draft_parse_folder_name "20260420-120000-branch-xyz789"
   assert_eq "$SESSION_ID" "" "draft_parse_folder_name does not treat non-hex suffix as SESSION_ID"
+}
+
+# Given: a branch name that ends in exactly six hex characters
+# When:  draft_parse_folder_name runs
+# Then:  the shape rule reads the suffix as SESSION_ID and strips it from the branch
+# Asserts: the shape rule claims any trailing six-hex run, whatever the branch name meant.
+test_parse_folder_name_hex_suffix_claimed() {
+  local SESSION_TS="" SANITIZED_HOST_BRANCH="" SESSION_ID=""
+  draft_parse_folder_name "20260420-120000-branch-abcdef"
+
+  assert_eq "$SESSION_ID" "abcdef" "draft_parse_folder_name claims a trailing six-hex branch suffix"
+
+  assert_eq "$SANITIZED_HOST_BRANCH" "branch" "draft_parse_folder_name removes the claimed suffix"
 }
 
 # =============================================================================
@@ -144,6 +157,34 @@ test_write_state_basic() {
   fi
 }
 
+# Given: the eight required field values and no session id
+# When:  draft_write_state runs
+# Then:  every field line appears exactly, including the two hyphenated timestamps
+# Asserts: the full writer field set; dropping any field line fails the matching check.
+test_write_state_emits_all_fields() {
+  local OUTPUT
+  OUTPUT=$(draft_write_state "main" "abc123" "Agent" "20260420-120000" "feat-x" "3" "20260420-120100" "20260420-130000")
+
+  local FIELD ALL_OK=true
+  for FIELD in \
+    "source_branch: main" \
+    "from_hash: abc123" \
+    "author: Agent" \
+    "session_ts: 20260420-120000" \
+    "host_branch: feat-x" \
+    "diff_count: 3" \
+    "exported-at: 20260420-120100" \
+    "drafted-at: 20260420-130000"; do
+    echo "$OUTPUT" | grep -qxF "$FIELD" || ALL_OK=false
+  done
+
+  if [[ "$ALL_OK" == true ]]; then
+    pass "draft_write_state emits all eight fields with their values"
+  else
+    fail "draft_write_state dropped a field: '$OUTPUT'"
+  fi
+}
+
 # Given: the eight fields plus a session id
 # When:  draft_write_state runs
 # Then:  session_id appears with its value
@@ -200,6 +241,40 @@ EOF
   else
     fail "draft_read_state_from_branch: expected source_branch=main after eval, got '${source_branch:-}'"
   fi
+}
+
+# Given: a committed .draft-state whose hyphenated keys carry values
+# When:  draft_read_state_from_branch emits assignments and the caller eval's them
+# Then:  the hyphenated keys materialise as underscore variable names
+# Asserts: the reader's key normalisation, without which the hyphen keys are skipped.
+test_read_state_normalises_hyphenated_keys() {
+  local DIR="$FIXTURE_DIR/read_hyphen"
+  make_committed_repo "$DIR"
+  git -C "$DIR" checkout -b "draft/hyphen" --quiet
+
+  cat > "$DIR/.draft-state" <<'EOF'
+source_branch: main
+from_hash: abc123
+author: Agent
+session_ts: 20260420-120000
+host_branch: feat-x
+diff_count: 3
+exported-at: 20260420-120100
+drafted-at: 20260420-130000
+EOF
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+
+  local OUTPUT
+  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/hyphen") || {
+    fail "draft_read_state_from_branch should succeed"
+    return
+  }
+  eval "$OUTPUT" 2>/dev/null || true
+
+  assert_eq "${exported_at:-}" "20260420-120100" "draft_read_state_from_branch normalises exported-at to exported_at"
+
+  assert_eq "${drafted_at:-}" "20260420-130000" "draft_read_state_from_branch normalises drafted-at to drafted_at"
 }
 
 # Given: a repo with no such branch
@@ -324,6 +399,47 @@ EOF
   else
     fail "draft_validate_branch should print DRAFT_STATE_COMMIT"
   fi
+}
+
+# Given: a draft branch with two .draft-state commits
+# When:  draft_validate_branch runs
+# Then:  the reported state commit is the earliest one in the range
+# Asserts: the head-of-match selection that the one-state-commit fixtures cannot tell from its reverse.
+test_validate_reports_oldest_state_commit() {
+  local DIR="$FIXTURE_DIR/validate_two_state"
+  make_committed_repo "$DIR"
+  local INIT_SHA
+  INIT_SHA=$(git -C "$DIR" rev-parse HEAD)
+
+  git -C "$DIR" checkout -b "draft/two-state" --quiet
+  cat > "$DIR/.draft-state" <<EOF
+source_branch: main
+from_hash: $INIT_SHA
+author: Agent
+session_ts: 20260420-120000
+host_branch: two-state
+diff_count: 1
+exported-at: 20260420-120000
+drafted-at: 20260420-130000
+EOF
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+  local FIRST_STATE
+  FIRST_STATE=$(git -C "$DIR" rev-parse HEAD)
+
+  echo "second record" >> "$DIR/.draft-state"
+  git -C "$DIR" add .draft-state
+  git -C "$DIR" commit -m ".draft-state" --quiet
+  echo "change" > "$DIR/file2.txt"
+  git -C "$DIR" add file2.txt
+  git -C "$DIR" commit -m "feat: change" --quiet
+
+  local OUTPUT
+  OUTPUT=$(draft_validate_branch "$DIR" 2>&1) || true
+  local REPORTED
+  REPORTED=$(echo "$OUTPUT" | grep '^DRAFT_STATE_COMMIT=' | cut -d= -f2)
+
+  assert_eq "$REPORTED" "$FIRST_STATE" "draft_validate_branch reports the earliest .draft-state commit"
 }
 
 # Given: a .draft-state with no from_hash field, after a prior validate call in the same process
@@ -484,16 +600,20 @@ test_read_state_escapes_field_values() {
 run_test test_parse_folder_name_basic
 run_test test_parse_folder_name_with_session_id
 run_test test_parse_folder_name_edge_cases
+run_test test_parse_folder_name_hex_suffix_claimed
 run_test test_guard_no_collision_no_branch
 run_test test_guard_no_collision_detects_branch
 run_test test_write_state_basic
+run_test test_write_state_emits_all_fields
 run_test test_write_state_with_session_id
 run_test test_read_state_success
+run_test test_read_state_normalises_hyphenated_keys
 run_test test_read_state_branch_nonexistent
 run_test test_read_state_missing_dot_draft_state
 run_test test_validate_not_on_draft_branch
 run_test test_validate_missing_dot_draft_state
 run_test test_validate_success
+run_test test_validate_reports_oldest_state_commit
 run_test test_validate_missing_from_hash
 run_test test_validate_dropped_state_commit_warns_and_continues
 run_test test_validate_escapes_field_values

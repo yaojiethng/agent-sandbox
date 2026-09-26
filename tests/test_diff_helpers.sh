@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 12
 # Tests for libs/diff.sh: write_uncommitted_diff, write_all_changes_diff, write_changed_files
+#   write_uncommitted_diff  --  write, empty, untracked inclusion, staging restore, strip, round-trip
+#   write_all_changes_diff  --  explicit and state baselines, both change classes, guards
+#   write_changed_files     --  copies, untracked, deleted, manifest, structure, dedup, guard
 #
 # Sources libs/diff.sh directly for function access.
 
@@ -72,6 +76,30 @@ test_uncommitted_includes_untracked() {
     pass "write_uncommitted_diff includes untracked file in diff"
   else
     fail "write_uncommitted_diff should include untracked file in diff"
+  fi
+}
+
+# Given: an untracked file in a sandbox with a committed baseline
+# When:  write_uncommitted_diff runs
+# Then:  the file keeps its bytes and the index carries no staged entry
+# Asserts: the intent-to-add staging is undone, so the sandbox worktree survives the call.
+test_uncommitted_restores_untracked_worktree() {
+  local DIR="$FIXTURE_DIR/uw_restore"
+  local OUT="$FIXTURE_DIR/uw_restore_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR"
+
+  printf 'untracked payload\n' > "$DIR/untracked.txt"
+
+  write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff"
+
+  local CONTENT STAGED
+  CONTENT=$(cat "$DIR/untracked.txt" 2>/dev/null)
+  STAGED=$(git -C "$DIR" diff --cached --name-only)
+  if [[ "$CONTENT" == "untracked payload" && -z "$STAGED" ]]; then
+    pass "write_uncommitted_diff restores the untracked file and leaves the index clean"
+  else
+    fail "write_uncommitted_diff damaged the sandbox: content='$CONTENT' staged='$STAGED'"
   fi
 }
 
@@ -488,6 +516,32 @@ test_changed_files_deduplicates() {
   assert_eq_num "$COUNT" "1" "write_changed_files deduplicates file appearing in both diff and untracked"
 }
 
+# Given: a deletion and an untracked addition since the baseline
+# When:  write_changed_files runs
+# Then:  the copy tree holds only the addition and the manifest names both paths
+# Asserts: the manifest is the changed-path list, deletions included, not the copied set.
+test_changed_files_manifest_includes_deletions() {
+  local DIR="$FIXTURE_DIR/cf_manifest_del"
+  local OUT="$FIXTURE_DIR/cf_manifest_del_out"
+  mkdir -p "$OUT"
+  local SHA
+  SHA=$(make_sandbox_fixture "$DIR")
+
+  echo "new file" > "$DIR/new.txt"
+  rm "$DIR/file.txt"
+
+  write_changed_files "$DIR" "$SHA" "$OUT"
+
+  local MANIFEST="$OUT/changed-files/MANIFEST.txt"
+  if [[ -f "$OUT/changed-files/new.txt" && ! -e "$OUT/changed-files/file.txt" ]] \
+     && grep -qx 'file.txt' "$MANIFEST" 2>/dev/null \
+     && grep -qx 'new.txt' "$MANIFEST" 2>/dev/null; then
+    pass "write_changed_files names the deleted path and the copied path in MANIFEST.txt"
+  else
+    fail "write_changed_files manifest/copy split wrong: manifest='$(cat "$MANIFEST" 2>/dev/null)'"
+  fi
+}
+
 # Given: no arguments
 # When:  write_changed_files runs
 # Then:  rc 1 with a diagnostic
@@ -617,6 +671,7 @@ test_strip_index_passthrough_no_index() {
 run_test test_uncommitted_writes_diff
 run_test test_uncommitted_empty_on_clean
 run_test test_uncommitted_includes_untracked
+run_test test_uncommitted_restores_untracked_worktree
 run_test test_uncommitted_strips_index_lines
 run_test test_uncommitted_missing_args
 run_test test_uncommitted_preserves_content_whitespace
@@ -633,6 +688,7 @@ run_test test_changed_files_skips_deleted
 run_test test_changed_files_writes_manifest
 run_test test_changed_files_preserves_directory_structure
 run_test test_changed_files_deduplicates
+run_test test_changed_files_manifest_includes_deletions
 run_test test_changed_files_missing_args
 run_test test_strip_index_removes_text_index
 run_test test_strip_index_preserves_binary_index

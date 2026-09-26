@@ -9,8 +9,13 @@
 #   main           --  script entry point, non-interactive and interactive paths
 #   draft_run      --  creates branch, applies patches, .draft-state, guards
 #   draft_collect_patches / draft_apply_patches / _run_draft_workflow
+<<<<<<< HEAD
 #   _ingest_export_metadata  --  --branch-from, refusals (non-commit, unresolvable), INIT_SHA defaults
 #   draft_resolve_commit_message  --  .msg file, filename subject, fallback
+=======
+#   _ingest_export_metadata  --  --branch-from, refusals, INIT_SHA defaults
+#   draft_resolve_commit_message  --  non-empty .msg file, empty .msg, filename subject, fallback
+>>>>>>> dde9860 (test: pin the diff pipeline rules)
 #
 # Uses make_session_fixture for synthetic session exports; for
 # author-rewrite and commit-message tests, which need make_real_session.
@@ -619,6 +624,21 @@ test_resolve_msg_file_used() {
   fi
 }
 
+# Given: a diff with an empty .msg sibling and a subject in its filename
+# When:  draft_resolve_commit_message runs
+# Then:  the empty .msg is skipped and the filename subject is returned
+# Asserts: the non-empty gate on the .msg priority.
+test_resolve_empty_msg_falls_through_to_filename() {
+  local TMP="$FIXTURE_DIR/resolve_empty_msg"
+  mkdir -p "$TMP"
+  echo "dummy" > "$TMP/0001-abc1234-fix_widget.diff"
+  : > "$TMP/0001-abc1234-fix_widget.msg"
+
+  local MSG
+  MSG=$(draft_resolve_commit_message "$TMP/0001-abc1234-fix_widget.diff")
+  assert_eq "$MSG" "fix widget" "draft_resolve_commit_message skips an empty .msg and uses the filename subject"
+}
+
 # Given: a diff named NNNN-<sha>-<subject>.diff with no .msg
 # When:  draft_resolve_commit_message runs
 # Then:  the subject is returned with underscores as spaces
@@ -1144,6 +1164,7 @@ run_test test_draft_resets_author_to_operator
 run_test test_draft_commit_messages
 
 run_test test_resolve_msg_file_used
+run_test test_resolve_empty_msg_falls_through_to_filename
 run_test test_resolve_filename_subject_cleaned
 run_test test_resolve_filename_subject_trim_underscores
 run_test test_resolve_fallback_no_subject

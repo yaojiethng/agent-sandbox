@@ -6,6 +6,7 @@
 #   apply_run  --  applies a diff file, guards, branch checkout, force mode
 #   main       --  script entry point: flag forwarding, interactive branch
 #   apply_preview  --  per-file summary and its empty and binary arms
+#   _apply_patch_file  --  normal, whitespace-drift, recount retry, force, missing input
 #
 # apply_run now takes a file path directly (no internal resolution).
 set -uo pipefail
@@ -238,6 +239,36 @@ test_apply_patch_file_normal() {
     pass "_apply_patch_file normal mode applies diff"
   else
     fail "_apply_patch_file normal mode should create new.txt"
+  fi
+}
+# Given: a patch whose context line carries one internal space, and a target whose context carries two
+# When:  _apply_patch_file runs in normal mode
+# Then:  rc 0 and the changed line lands, the drifted context intact
+# Asserts: the --ignore-whitespace policy that lets a patch cross a whitespace drift.
+test_apply_patch_file_tolerates_context_whitespace_drift() {
+  local SRC="$FIXTURE_DIR/apf_ws_src"
+  local TGT="$FIXTURE_DIR/apf_ws_tgt"
+  make_committed_repo "$SRC"
+  make_committed_repo "$TGT"
+
+  printf 'alpha\nbeta line\ngamma\n' > "$SRC/file.txt"
+  git -C "$SRC" add file.txt
+  git -C "$SRC" commit -m "context" --quiet
+  printf 'alpha\nbeta line\ngamma2\n' > "$SRC/file.txt"
+  git -C "$SRC" diff > "$FIXTURE_DIR/apf_ws.diff"
+  git -C "$SRC" checkout -- file.txt
+
+  printf 'alpha\nbeta  line\ngamma\n' > "$TGT/file.txt"
+  git -C "$TGT" add file.txt
+  git -C "$TGT" commit -m "context" --quiet
+
+  local OUT RC=0
+  OUT=$(_apply_patch_file "$TGT" "$FIXTURE_DIR/apf_ws.diff" false 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 && "$(cat "$TGT/file.txt")" == "alpha"$'\n'"beta  line"$'\n'"gamma2" ]]; then
+    pass "_apply_patch_file tolerates a whitespace-drifted context line"
+  else
+    fail "whitespace-drift apply broken: rc=$RC out='$OUT' file='$(cat "$TGT/file.txt" 2>/dev/null)'"
   fi
 }
 # Given: a valid patch
@@ -622,6 +653,7 @@ run_test test_apply_empty_diff_rejected_without_touching_repo
 run_test test_apply_no_resolution_logic
 run_test test_apply_requires_diff_flag
 run_test test_apply_patch_file_normal
+run_test test_apply_patch_file_tolerates_context_whitespace_drift
 run_test test_apply_patch_file_force
 run_test test_apply_patch_file_missing_diff
 run_test test_apply_and_commit_applies_and_commits
