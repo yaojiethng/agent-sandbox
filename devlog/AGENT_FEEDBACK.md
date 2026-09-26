@@ -205,6 +205,15 @@ The read-through close was released as "follow through everything autonomously",
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
 
+### [O] 2026-09-26  --  A render feature must respect its command's identity-resolution contract
+
+state: probation
+scoped: none
+legacy: none
+mitigation: the durable fix landed in iteration `20260926-01`: `resume_agent.sh` enriches `PROJECT_DIR` from the sandbox `.env` before rendering the resume table, degrading to the `not in tree` / `(absent)` cells only when the project dir is truly unavailable. The lesson for next time: before adding a render column to a command's output, check what identity the column reads and whether the command's dispatcher resolves it under the standard (make) invocation, and add a test that omits the identity flags rather than only passing them explicitly.
+
+The resume picker's STATE (commit distance) and current-branch columns landed after the resume dispatcher became sandbox-only (ADR `env_resolution.md`), so under the standard `make resume LIST=1` / `INTERACTIVE=1` contract the columns silently degraded: every session read `not in tree` and the branch hint read `(absent)`, even for a session started minutes earlier on the current branch at the current HEAD. The operator caught it at runtime with `make resume INTERACTIVE=1` (2026-09-26). Every resume test passed `--project` explicitly, so the make-contract path - identity from the sandbox `.env` only - was never exercised.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work

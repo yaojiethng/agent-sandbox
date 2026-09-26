@@ -533,6 +533,111 @@ EOF
   fi
 }
 
+# resume --list with only --sandbox: the STATE column resolves PROJECT_DIR
+# from the sandbox .env (the make resume LIST=1 contract -- the dispatcher
+# resolves resume sandbox-only). A record at the current HEAD reads
+# "0 commits ago"; an unresolvable sha still reads "not in tree".
+# Given: a sandbox .env carrying PROJECT_DIR for a repository, records at HEAD and at a dead sha
+# When:  --list runs with only --sandbox
+# Then:  STATE reads 0 commits ago and not in tree like the explicit --project path
+# Asserts: .env-derived project identity drives the STATE column
+# Asserts: the sandbox-only contract (no identity flags needed to list)
+test_list_env_resolves_project_dir_when_sandbox_only() {
+  local dir="$FIXTURE_DIR/env_list"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  local head
+  head="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.env" <<EOF
+PROJECT_NAME=test
+PROJECT_DIR=$dir/project
+SANDBOX_DIR=$dir/sandbox
+EOF
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260930-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  write_minimal_record "$dir" "bbb" "pi-agent-test-project"
+  local out
+  out="$(bash "$RESUME" --sandbox="$dir/sandbox" --list 2>&1)"
+  if echo "$out" | grep -qE "aaa.*0 commits ago" \
+     && echo "$out" | grep -qE "bbb.*not in tree"; then
+    pass "resume --list: PROJECT_DIR from the sandbox .env drives STATE (0 commits ago / not in tree)"
+  else
+    fail "resume --list: expected .env-derived STATE cells, got: $out"
+  fi
+}
+
+# resume --interactive with only --sandbox: the current-branch hint and STATE
+# column read PROJECT_DIR from the sandbox .env (the make resume INTERACTIVE=1
+# contract). The hint names the .env project's checked-out branch rather than
+# degrading to "(absent)".
+# Given: a sandbox .env carrying PROJECT_DIR for a repo on feat/env-hint
+# When:  the interactive picker runs with only --sandbox
+# Then:  the title names feat/env-hint and the fresh record reads 0 commits ago
+# Asserts: .env-derived project identity drives the current-branch hint
+test_interactive_env_resolved_branch_hint() {
+  local dir="$FIXTURE_DIR/env_hint"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  git -C "$dir/project" checkout -q -b feat/env-hint >/dev/null 2>&1
+  local head
+  head="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.env" <<EOF
+PROJECT_NAME=test
+PROJECT_DIR=$dir/project
+SANDBOX_DIR=$dir/sandbox
+EOF
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260930-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(printf 'q\n' | bash "$RESUME" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "current branch: feat/env-hint" \
+     && echo "$out" | grep -qE "0 commits ago"; then
+    pass "resume --interactive: .env-derived PROJECT_DIR names the branch and the commit distance"
+  else
+    fail "resume --interactive: expected .env-derived branch hint, got: $out"
+  fi
+}
+
+# resume --list with only --sandbox and no .env still enumerates the registry:
+# PROJECT_DIR enrichment is optional and degrades the STATE column, never fails
+# the listing (the resume listing is a sandbox-only registry diagnostic).
+# Given: a sandbox dir with a record but no .env
+# When:  --list runs with only --sandbox
+# Then:  the record is listed and its STATE reads not in tree
+# Asserts: .env absence degrades rather than breaks the listing
+test_list_sandbox_only_without_env_degrades() {
+  local dir="$FIXTURE_DIR/env_absent"
+  mkdir -p "$dir/sandbox/.compose"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+  local out
+  out="$(bash "$RESUME" --sandbox="$dir/sandbox" --list 2>&1)"
+  if echo "$out" | grep -qE "aaa" && echo "$out" | grep -qE "not in tree"; then
+    pass "resume --list: no .env degrades STATE to not in tree, listing still works"
+  else
+    fail "resume --list: expected degraded listing without .env, got: $out"
+  fi
+}
+
 # --interactive zero-pads the picker index to a fixed column width (01..10)
 # so the empty slot never shifts as the count crosses 10; 1-based numbering is
 # kept (0 is the injected-default slot, not a real index).
@@ -640,6 +745,9 @@ run_test test_list_state_cell_from_log
 run_test test_list_shows_branch_point_age
 run_test test_interactive_shows_current_branch_hint
 run_test test_interactive_branch_hint_absent
+run_test test_list_env_resolves_project_dir_when_sandbox_only
+run_test test_interactive_env_resolved_branch_hint
+run_test test_list_sandbox_only_without_env_degrades
 run_test test_interactive_zero_pads_index
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help
