@@ -2,6 +2,18 @@
 # tests/test_resume.sh
 # Command-shape tests for scripts/resume_agent.sh  --  the split-out resume command
 # (F2 two-command design, design session `20260821-02`, impl `20260821-03`).
+#
+# Covers:
+#   --list / --interactive display  --  enriched rows, provider filter, staleness,
+#                                      page cap, commit-distance column, picker hints
+#   inventory filter                --  dry-run records are not resumable
+#   guard verdicts                  --  no-target and no-sandbox messages
+#   --interactive abort             --  picker quit and confirm decline stop before
+#                                      the resume banner
+#   record-to-identity recovery     --  provider from the agent image, session-ts label
+#   forwarded arguments             --  --env path and --flatten reach run_agent
+#   build-layer contract            --  preflight build_missing=false, and the three
+#                                      workspace directories resume creates
 
 set -uo pipefail
 
@@ -10,6 +22,10 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
+
+# interface_contract_version bakes the stub image's contract label, so resume's
+# preflight passes in the execution-path units below.
+source "$REPO_ROOT/src/libs/interface_contract.sh"
 
 RESUME="$REPO_ROOT/scripts/resume_agent.sh"
 
@@ -56,6 +72,53 @@ services:
 EOF
 
   echo "$dir/sandbox"
+}
+
+# Build a resumable fixture that reaches the run_agent exec: a registry record
+# with the delivery and FLATTEN literals, an env file, and a committed project.
+# build_exec_fixture DIR [SANDBOX_TYPE] [FLATTEN] [ENV_NAME]
+#   Args after DIR are optional positional slots; pass an explicit ENV_NAME to
+#   override the default .env.
+build_exec_fixture() {
+  local dir="$1" sandbox_type="${2:-copy}" flatten="${3:-false}" env_name="${4:-.env}"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  printf 'SANDBOX_DIR=%s\nPROJECT_DIR=%s\n' "$dir/sandbox" "$dir/project" > "$dir/sandbox/$env_name"
+  cat > "$dir/sandbox/.compose/abc123.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+  agent-sandbox.session-id: abc123
+services:
+  sandbox:
+    image: agent-sandbox-abc123
+    environment:
+      - SANDBOX_TYPE=$sandbox_type
+      - FLATTEN=$flatten
+  agent:
+    image: pi-agent-test-project
+EOF
+  echo "$dir/sandbox"
+}
+
+# resume_trace DIR TRACE ENV_NAME [EXTRA_ARGS...]
+#   Runs the real resume under bash -x with the docker stub on PATH. The exec
+#   and preflight calls appear in the trace as expanded argv, so the units below
+#   read what resume actually handed downstream. PROVIDER_NAME is unset so the
+#   record recovery is the only provider source.
+resume_trace() {
+  local dir="$1" trace="$2" env_name="$3"; shift 3
+  (
+    export PATH="$TEST_DIR/stubs:$PATH"
+    local contract_version
+    contract_version="$(interface_contract_version)"
+    export DOCKER_STUB_IMAGE_CONTRACT_VERSION="$contract_version"
+    unset PROVIDER_NAME SANDBOX_TYPE
+    bash -x "$RESUME" --name=test --project="$dir/project" \
+      --sandbox="$dir/sandbox" --env="$env_name" --session-id=abc123 "$@" </dev/null
+  ) > "$trace" 2>&1
 }
 
 # --list renders the enriched registry display (id | provider | ts | branch),
@@ -736,6 +799,231 @@ EOF
   fi
 }
 
+# --list skips dry-run records: their volume is destroyed at teardown, so they
+# are not resumable (they stay visible to prune, which reclaims stale ones).
+# Given: one live record and one dry-run record
+# When:  --list runs
+# Then:  only the live record renders
+# Asserts: the consumer-side effect of session_is_dry_run.
+test_list_skips_dry_run_records() {
+  local dir="$FIXTURE_DIR/list_dryrun"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "live123" "pi-agent-test-project"
+  write_minimal_record "$dir" "dryrun-abc123" "pi-agent-test-project"
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list 2>&1)"
+  if [[ "$out" == *"live123"* && "$out" != *"dryrun-abc123"* ]]; then
+    pass "resume --list: dry-run records are not resumable and are skipped"
+  else
+    fail "resume --list: a dry-run record reached the listing: $out"
+  fi
+}
+
+# The no-target and no-sandbox guards name different remedies; the bare-path
+# unit cannot tell which one refused because both print the usage block.
+# Given: no target flag, then a target with no --sandbox
+# When:  resume runs each way
+# Then:  each guard prints its own message
+# Asserts: the no-target guard and the no-sandbox guard, separately.
+test_resume_guards_name_their_remedy() {
+  local out rc=0
+  out="$(bash "$RESUME" --name=test --project=/x --sandbox=/y 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"no resume target given"* ]]; then
+    pass "resume: a missing target prints the no-target message"
+  else
+    fail "no-target guard wrong: rc=$rc out='$out'"
+  fi
+
+  rc=0
+  out="$(bash "$RESUME" --name=test --project=/x --session-id=abc123 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--sandbox is required"* ]]; then
+    pass "resume: a missing --sandbox prints the sandbox-required message"
+  else
+    fail "no-sandbox guard wrong: rc=$rc out='$out'"
+  fi
+}
+
+# An unresolvable --sandbox must fail at the canonicalisation guard. Tolerating
+# the failure empties SANDBOX_DIR and the run later misreports the input.
+# Given: a --sandbox path whose parent is a regular file
+# When:  resume runs
+# Then:  rc 1 with the canonicalisation error, not the sandbox-required message
+# Asserts: the canonicalisation guard's failure path.
+test_resume_unresolvable_sandbox_fails_at_canonicalisation() {
+  local file="$FIXTURE_DIR/not_a_dir"
+  : > "$file"
+
+  local out rc=0
+  out="$(bash "$RESUME" --sandbox="$file/sub" 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"cannot canonicalize SANDBOX_DIR"* && "$out" != *"--sandbox is required"* ]]; then
+    pass "resume: an unresolvable --sandbox fails at the canonicalisation guard"
+  else
+    fail "canonicalisation guard degraded: rc=$rc out='$out'"
+  fi
+}
+
+# A declined confirmation must abort at the gate, before the resume banner.
+# Given: one record and 'n' at the confirm
+# When:  resume runs with --interactive
+# Then:  it reports the abort and never reaches the resume banner
+# Asserts: the confirm gate (an inverted gate proceeds to "Resuming session").
+test_interactive_confirm_decline_aborts_before_resume() {
+  local dir="$FIXTURE_DIR/int_decline"
+  build_exec_fixture "$dir" copy false
+
+  local out
+  out="$(printf '1\nn\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if [[ "$out" == *"Aborted."* && "$out" != *"Resuming session"* ]]; then
+    pass "resume --interactive: a declined confirm aborts before the resume banner"
+  else
+    fail "confirm decline reached the resume path: $out"
+  fi
+}
+
+# Quitting the picker must abort there, not fall through to a later guard.
+# Given: one record and 'q' at the picker
+# When:  resume runs with --interactive
+# Then:  it reports the abort and prints neither the resume banner nor a later guard's message
+# Asserts: the picker's abort path.
+test_interactive_picker_quit_aborts_before_later_guards() {
+  local dir="$FIXTURE_DIR/int_picker_quit"
+  build_exec_fixture "$dir" copy false
+
+  local out rc=0
+  out="$(printf 'q\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"Aborted."* && "$out" != *"no resume target"* && "$out" != *"Resuming session"* ]]; then
+    pass "resume --interactive: quitting the picker aborts without falling through"
+  else
+    fail "picker quit fell through: rc=$rc out=$out"
+  fi
+}
+
+# The provider is recovered from the record's agent image line and handed to
+# session_env_names; resume never sets PROVIDER_NAME itself.
+# Given: a record whose agent image is pi-agent-test-project
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv carries --provider=pi
+# Asserts: the record-to-identity provider recovery.
+test_resume_forwards_provider_recovered_from_record() {
+  local dir="$FIXTURE_DIR/exec_provider"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--provider=pi"* ]]; then
+    pass "resume: the exec argv carries --provider=pi recovered from the record"
+  else
+    fail "provider not recovered from the record: exec='$line'"
+  fi
+}
+
+# The --env file path is forwarded to run_agent, so a caller whose env file has
+# another name does not silently fall back to the default .env.
+# Given: a session whose env file is custom.env
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv names that file
+# Asserts: the --env forwarding surface.
+test_resume_forwards_env_file_argument() {
+  local dir="$FIXTURE_DIR/exec_env"
+  build_exec_fixture "$dir" copy false "custom.env"
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" "custom.env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--env=$dir/sandbox/custom.env"* ]]; then
+    pass "resume: the exec argv forwards the --env file path"
+  else
+    fail "env path not forwarded: exec='$line'"
+  fi
+}
+
+# A flatten record's flag is forwarded to run_agent, so a flattened session does
+# not resume as a full-history one.
+# Given: a record whose FLATTEN literal is true
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv carries --flatten
+# Asserts: the flatten forwarding surface.
+test_resume_forwards_flatten_for_flatten_record() {
+  local dir="$FIXTURE_DIR/exec_flatten"
+  build_exec_fixture "$dir" copy true
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--flatten"* ]]; then
+    pass "resume: a flatten record's --flatten is forwarded to run_agent"
+  else
+    fail "flatten flag not forwarded: exec='$line'"
+  fi
+}
+
+# Resume never rebuilds missing images: the preflight call carries
+# build_missing=false.
+# Given: a resumable fixture
+# When:  resume reaches preflight
+# Then:  the preflight call's build_missing argument is false
+# Asserts: the resume build-layer contract.
+test_resume_preflight_does_not_build_missing_images() {
+  local dir="$FIXTURE_DIR/exec_build_missing"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ preflight ' "$trace" | tail -1)"
+  if [[ "$line" == *" false" ]]; then
+    pass "resume: preflight is called with build_missing=false"
+  else
+    fail "preflight build_missing wrong: '$line'"
+  fi
+}
+
+# Resume creates the three workspace directories its downstream consumers read.
+# Given: a resumable fixture whose workspace directories do not exist yet
+# When:  resume runs
+# Then:  session-diffs, input, and output all exist
+# Asserts: the workspace directory creation.
+test_resume_creates_workspace_directories() {
+  local dir="$FIXTURE_DIR/exec_workspace"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local missing=""
+  [[ -d "$dir/sandbox/.workspace/session-diffs" ]] || missing+=" session-diffs"
+  [[ -d "$dir/sandbox/.workspace/input" ]] || missing+=" input"
+  [[ -d "$dir/sandbox/.workspace/output" ]] || missing+=" output"
+  if [[ -z "$missing" ]]; then
+    pass "resume creates the three workspace directories"
+  else
+    fail "workspace directories missing:$missing"
+  fi
+}
+
+# The timestamp recovered from the record survives into the regenerated record.
+# Given: a record whose session-ts label is 20260821-120000
+# When:  resume regenerates the compose record
+# Then:  the regenerated record keeps that session-ts label
+# Asserts: the regenerated record's session-ts label.
+test_resume_regenerated_record_keeps_session_ts() {
+  local dir="$FIXTURE_DIR/exec_session_ts"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local rec="$dir/sandbox/.compose/abc123.yml"
+  if grep -q 'agent-sandbox.session-ts: 20260821-120000' "$rec"; then
+    pass "resume regenerated record keeps the session-ts label"
+  else
+    fail "session-ts label lost in the regenerated record"
+  fi
+}
+
 run_test test_list_renders_enriched
 run_test test_list_provider_filter
 run_test test_list_provider_no_match
@@ -743,6 +1031,7 @@ run_test test_list_shows_provider_without_image_sig
 run_test test_list_no_sig_when_field_empty
 run_test test_list_state_cell_from_log
 run_test test_list_shows_branch_point_age
+run_test test_list_skips_dry_run_records
 run_test test_interactive_shows_current_branch_hint
 run_test test_interactive_branch_hint_absent
 run_test test_list_env_resolves_project_dir_when_sandbox_only
@@ -752,9 +1041,19 @@ run_test test_interactive_zero_pads_index
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help
 run_test test_interactive_confirm_abort
+run_test test_interactive_confirm_decline_aborts_before_resume
+run_test test_interactive_picker_quit_aborts_before_later_guards
 run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
+run_test test_resume_guards_name_their_remedy
+run_test test_resume_unresolvable_sandbox_fails_at_canonicalisation
+run_test test_resume_forwards_provider_recovered_from_record
+run_test test_resume_forwards_env_file_argument
+run_test test_resume_forwards_flatten_for_flatten_record
+run_test test_resume_preflight_does_not_build_missing_images
+run_test test_resume_creates_workspace_directories
+run_test test_resume_regenerated_record_keeps_session_ts
 run_test test_resume_warns_on_ambient_sandbox_type
 run_test test_list_shows_sandbox_staleness
 run_test test_list_caps_at_page_size

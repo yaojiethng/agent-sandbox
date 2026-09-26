@@ -7,7 +7,10 @@
 
 # Covers:
 #   export_path                --  unified path construction
-#   resolve_source_for_draft   --  session resolution for draft operations
+#   resolve_latest_dir_by_mtime --  numeric mtime order and the equal-mtime tie
+#   resolve_source_for_draft   --  session resolution for draft operations,
+#                               the name-only rejection diagnostic, and the
+#                               patches/ or uncommitted.diff draftability guard
 
 set -uo pipefail
 
@@ -219,6 +222,26 @@ test_resolve_latest_dir_by_mtime() {
   fi
 }
 
+# Given: directories whose numeric mtime order disagrees with name order, and dirs sharing one mtime
+# When:  resolve_latest_dir_by_mtime runs on each base
+# Then:  the larger numeric mtime wins and an equal-mtime tie breaks to the lexicographically last path
+# Asserts: the numeric sort (a plain sort picks the wrong directory) and the tie outcome.
+test_resolve_latest_dir_by_mtime_numeric_and_tie() {
+  local B="$FIXTURE_DIR/mtime_numeric"
+  mkdir -p "$B/aaa" "$B/zzz"
+  touch -d "@999999999" "$B/aaa"
+  touch -d "@1000000000" "$B/zzz"
+  local OUT
+  OUT=$(resolve_latest_dir_by_mtime "$B")
+  assert_eq "$OUT" "$B/zzz" "resolve_latest_dir_by_mtime: larger numeric mtime wins when lexicographically smaller"
+
+  local T="$FIXTURE_DIR/mtime_tie"
+  mkdir -p "$T/aaa" "$T/zzz"
+  touch -d "@1500000000" "$T/aaa" "$T/zzz"
+  OUT=$(resolve_latest_dir_by_mtime "$T")
+  assert_eq "$OUT" "$T/zzz" "resolve_latest_dir_by_mtime: equal mtimes break to the lexicographically last path"
+}
+
 # Given: a BUNDLE_ARG naming an existing directory
 # When:  resolve_source_for_draft runs
 # Then:  that directory resolves
@@ -238,16 +261,35 @@ test_resolve_draft_named_session() {
 
 # Given: an absolute BUNDLE_ARG
 # When:  resolve_source_for_draft runs
-# Then:  rc is non-zero
-# Asserts: the rejection at return-code level only - the diagnostic is unpinned (finding 49).
+# Then:  rc is 1 and the name-only diagnostic is printed
+# Asserts: the rejection's diagnostic; the return code alone cannot tell it from an accidental miss.
 test_resolve_draft_absolute_path_rejected() {
   local SD="$FIXTURE_DIR/sandbox4"
   mkdir -p "$SD/.workspace/output/bundles"
 
-  if resolve_source_for_draft "$SD" "session" "/absolute/path" 2>/dev/null; then
-    fail "resolve_source_for_draft should reject absolute paths"
+  local out rc=0
+  out=$(resolve_source_for_draft "$SD" "session" "/absolute/path" 2>&1) || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"name-only"* ]]; then
+    pass "resolve_source_for_draft rejects absolute paths with the name-only diagnostic"
   else
-    pass "resolve_source_for_draft rejects absolute paths"
+    fail "expected name-only rejection, rc=$rc out='$out'"
+  fi
+}
+
+# Given: a session base holding a directory with neither patches/ nor uncommitted.diff
+# When:  resolve_source_for_draft names that directory
+# Then:  rc is 1 and the draftability error names the rule
+# Asserts: the draftability guard, the rule that keeps a draft target from being un-draftable.
+test_resolve_draft_rejects_non_bundle_directory() {
+  local SD="$FIXTURE_DIR/sandbox_nondraftable"
+  mkdir -p "$SD/.workspace/session-diffs/session/plaindir"
+
+  local out rc=0
+  out=$(resolve_source_for_draft "$SD" "session" "plaindir" 2>&1) || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"no patches/ or uncommitted.diff"* ]]; then
+    pass "resolve_source_for_draft rejects a directory with no patches/ or uncommitted.diff"
+  else
+    fail "expected draftability rejection, rc=$rc out='$out'"
   fi
 }
 
@@ -508,6 +550,7 @@ run_test test_resolve_latest_dir_missing_base_fails
 run_test test_resolve_latest_dir_empty_base_fails
 run_test test_resolve_latest_dir_picks_lexicographic_max_ignoring_mtime_and_files
 run_test test_resolve_latest_dir_by_mtime
+run_test test_resolve_latest_dir_by_mtime_numeric_and_tie
 # Given: a SESSION_STATE record that sets only changes_dir
 # When:  _resolve_paths runs
 # Then:  changes_dir is honoured and only the missing keys take the defaults
@@ -542,6 +585,7 @@ run_test test_resolve_draft_autosave_newest_by_mtime
 run_test test_staging_dir_is_not_selectable
 run_test test_resolve_draft_named_session
 run_test test_resolve_draft_absolute_path_rejected
+run_test test_resolve_draft_rejects_non_bundle_directory
 run_test test_resolve_draft_missing_session
 run_test test_resolve_draft_bundles_channel
 run_test test_resolve_draft_invalid_channel

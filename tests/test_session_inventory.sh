@@ -18,7 +18,9 @@
 #   project_current_ref  --  branch-or-short-SHA-or-empty derivation
 #   project_commits_since --  commit-distance phrase and edge cases
 #   enumerate_records    --  registry enumeration, provider filter, skip rules
+#   session_is_dry_run   --  the dryrun- prefix predicate
 #   session_stale        --  registry-truth staleness vs explicit/derived SHA
+#   ts_to_epoch          --  shape guard rejects trailing garbage
 
 set -uo pipefail
 
@@ -83,6 +85,32 @@ EOF
     pass "record_image terminates at the next service boundary"
   else
     fail "service-boundary handling broken: '$(record_image "$f" agent)'"
+  fi
+}
+
+# Given: an agent block with no image and a later block that has one
+# When:  record_image is called for agent
+# Then:  the scan stops at the next service boundary and prints nothing
+# Asserts: the service-boundary reset, so a block with no image cannot leak the next block's.
+test_record_image_stops_at_boundary_without_image() {
+  local f="$FIXTURE_DIR/rec_boundary.yml"
+  cat > "$f" <<'EOF'
+services:
+  sandbox:
+    image: sbx-img
+  agent:
+    extra: x
+  other:
+    image: LEAK
+EOF
+
+  local img prov
+  img="$(record_image "$f" agent)"
+  prov="$(record_provider "$f")"
+  if [[ -z "$img" && -z "$prov" ]]; then
+    pass "record_image: a service block with no image leaks nothing from the next block"
+  else
+    fail "service-boundary reset broken: image='$img' provider='$prov'"
   fi
 }
 
@@ -207,6 +235,38 @@ test_session_stale_classification() {
   fi
 }
 
+# =============================================================================
+# session_is_dry_run / ts_to_epoch
+# =============================================================================
+
+# Given: a dry-run id, a normal id, and the bare prefix
+# When:  session_is_dry_run runs on each
+# Then:  only the dryrun- prefixed id is a dry run
+# Asserts: the prefix predicate (inverting it is invisible without this unit).
+test_session_is_dry_run_predicate() {
+  local dry=0 plain=0 prefix=0
+  session_is_dry_run "dryrun-abc123" && dry=1
+  session_is_dry_run "abc123" && plain=1
+  session_is_dry_run "dryrun" && prefix=1
+
+  if [[ $dry -eq 1 && $plain -eq 0 && $prefix -eq 0 ]]; then
+    pass "session_is_dry_run: true only for the dryrun- prefix"
+  else
+    fail "session_is_dry_run wrong: dryrun-=$dry abc123=$plain bare-prefix=$prefix"
+  fi
+}
+
+# Given: a well-formed stamp and the same stamp with trailing garbage
+# When:  ts_to_epoch runs on each
+# Then:  the exact shape parses and the garbage is rejected
+# Asserts: the shape guard, whose only real effect is on inputs GNU date would accept.
+test_ts_to_epoch_rejects_trailing_garbage() {
+  local good bad
+  good="$(ts_to_epoch "20260828-120000")"
+  bad="$(ts_to_epoch "20260828-120000junk")"
+  assert_eq "$good" "$(date -u -d '2026-08-28 12:00:00' +%s)" "ts_to_epoch parses the exact YYYYMMDD-HHMMSS shape"
+  assert_eq "$bad" "" "ts_to_epoch rejects a stamp with trailing garbage"
+}
 # Given: a matching record and a PROJECT_DIR git repo
 # When:  session_stale runs without an explicit SHA
 # Then:  it derives the current SHA and reports fresh
@@ -500,6 +560,7 @@ test_env_field_tolerates_dash_spacing_variants() {
 
 run_test test_record_image_extracts_service_image
 run_test test_record_image_stops_at_next_service
+run_test test_record_image_stops_at_boundary_without_image
 run_test test_record_image_missing_service_empty_rc0
 run_test test_record_provider_recovers_prefix_and_rejects_noncanonical
 run_test test_record_label_pipefail_safe_on_no_match
@@ -511,6 +572,8 @@ run_test test_git_commit_distance_counts_commits
 run_test test_git_head_resolvable_three_cases
 run_test test_project_current_ref_branches
 run_test test_project_commits_since_phrases_and_edges
+run_test test_session_is_dry_run_predicate
+run_test test_ts_to_epoch_rejects_trailing_garbage
 run_test test_enumerate_records_filters_and_skips
 run_test test_enumerate_records_no_dir_or_empty_is_silent_rc0
 run_test test_env_field_reads_value_from_environment_block

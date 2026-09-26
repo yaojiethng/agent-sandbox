@@ -9,12 +9,16 @@
 # Covers:
 #   session_env_common_init  --  missing-.env failure, non-git and commit-less
 #                             project rejection, HOST_UID/GID + ENV_FILE exports,
-#                             and the explicit-identity-beats-.env precedence pin
+#                             the derived dirs_resolve paths, the SANDBOX_DIR
+#                             re-assert after .env load, and the
+#                             explicit-identity-beats-.env precedence pin
 #                             (flag-wins). The .env parse rules this loader calls
 #                             are pinned in tests/test_env.sh, with the parser.
 #   session_env_names        --  branch sanitisation, detached-HEAD fallback,
 #                             deterministic image/container naming, delivery
-#                             var defaults vs preserved overrides
+#                             var defaults vs preserved overrides, the
+#                             required-argument guards, PROVIDER_NAME and
+#                             SESSION_ID exports
 
 set -uo pipefail
 
@@ -93,9 +97,9 @@ test_common_init_rejects_commitless_repo() {
   fi
 }
 
-# Given: a .env holding DELIVERABLE_MODE=all
+# Given: a .env with DELIVERABLE_MODE=all
 # When:  session_env_common_init runs with an explicit name
-# Then:  PROJECT_NAME, PROJECT_DIR, ENV_FILE and HOST_UID/GID match the inputs and DELIVERABLE_MODE is loaded
+# Then:  PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, ENV_FILE and HOST_UID/GID match the inputs and DELIVERABLE_MODE is loaded
 # Asserts: the phase 1 export contract (bite V15: a hardcoded HOST_UID fails it)
 test_common_init_exports_identity_and_paths() {
   local SBX="$FIXTURE_DIR/sbx_ok" PROJ="$FIXTURE_DIR/proj_exports"
@@ -105,11 +109,14 @@ test_common_init_exports_identity_and_paths() {
   if session_env_common_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
     if [[ "$PROJECT_NAME" == "myproj" && "$PROJECT_DIR" == "$PROJ" \
        && "$ENV_FILE" == "$SBX/.env" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" \
-       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" ]]
+       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" \
+       && "${CHANGES_DIR:-}" == "$SBX/.workspace/session-diffs" \
+       && "${INPUT_DIR:-}" == "$SBX/.workspace/input" \
+       && "${OUTPUT_DIR:-}" == "$SBX/.workspace/output" ]]
     then
-      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID and .env vars"
+      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID, .env vars and the dirs_resolve paths"
     else
-      fail "export contract incomplete: PN=$PROJECT_NAME PD=$PROJECT_DIR EF=$ENV_FILE UID=${HOST_UID:-unset} ENVV=${DELIVERABLE_MODE:-unset}"
+      fail "export contract incomplete: PN=$PROJECT_NAME PD=$PROJECT_DIR EF=$ENV_FILE UID=${HOST_UID:-unset} ENVV=${DELIVERABLE_MODE:-unset} CD=${CHANGES_DIR:-unset}"
     fi
   else
     fail "common_init failed on valid inputs"
@@ -159,6 +166,28 @@ test_env_project_dir_explicit_arg_beats_env() {
     pass "explicit directory argument beats a conflicting .env PROJECT_DIR (flag-wins)"
   else
     fail "expected explicit dir to win, rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a .env whose SANDBOX_DIR points at a second directory
+# When:  session_env_common_init runs with an explicit sandbox dir
+# Then:  SANDBOX_DIR is the explicit directory
+# Asserts: flag-wins at the sandbox dir level, the post-.env re-assert.
+test_env_sandbox_dir_explicit_arg_beats_env() {
+  local SBX="$FIXTURE_DIR/sbx_sandbox_wins" PROJ="$FIXTURE_DIR/proj_sandbox_wins"
+  local ENVSBX="$FIXTURE_DIR/env_sandbox_loser"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  mkdir -p "$ENVSBX"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$ENVSBX" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
+        && printf '%s|' "${SANDBOX_DIR:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "$SBX|" ]]; then
+    pass "explicit sandbox dir argument beats a conflicting .env SANDBOX_DIR (flag-wins)"
+  else
+    fail "expected explicit sandbox dir to win, rc=$RC out='$OUT'"
   fi
 }
 
@@ -327,7 +356,7 @@ test_names_detached_head_falls_back_to_short_sha() {
 
 # Given: mixed-case project and provider names plus a session id
 # When:  session_env_names runs
-# Then:  the container names embed the raw case and the image names embed the lowercased project
+# Then:  the container names embed the raw case, the image names embed the lowercased project, and PROVIDER_NAME/SESSION_ID are exported
 # Asserts: name derivation from the four inputs (bites V8 and V18 proven); the sandbox image name is asserted by substring only
 test_names_deterministic_container_and_image_names() {
   setup_named_project
@@ -337,11 +366,34 @@ test_names_deterministic_container_and_image_names() {
 
   if [[ "${SANDBOX_CONTAINER_NAME:-}" == "sandbox-MyProj-20260821-120000-abcdef" \
      && "${AGENT_CONTAINER_NAME:-}" == "PI-MyProj-20260821-120000-abcdef" \
-     && "${SANDBOX_IMAGE_NAME:-}" == *myproj* && "${AGENT_IMAGE_NAME:-}" == "PI-agent-myproj" ]]
+     && "${SANDBOX_IMAGE_NAME:-}" == *myproj* && "${AGENT_IMAGE_NAME:-}" == "PI-agent-myproj" \
+     && "${PROVIDER_NAME:-}" == "PI" && "${SESSION_ID:-}" == "20260821-120000-abcdef" ]]
   then
-    pass "container/image names derive deterministically from inputs (project lowercased in images)"
+    pass "container/image names derive deterministically from inputs (project lowercased in images), PROVIDER_NAME/SESSION_ID exported"
   else
-    fail "name derivation wrong: SBX='${SANDBOX_CONTAINER_NAME:-}' AGT='${AGENT_CONTAINER_NAME:-}' IMG='${SANDBOX_IMAGE_NAME:-}' AIMG='${AGENT_IMAGE_NAME:-}'"
+    fail "name derivation wrong: SBX='${SANDBOX_CONTAINER_NAME:-}' AGT='${AGENT_CONTAINER_NAME:-}' IMG='${SANDBOX_IMAGE_NAME:-}' AIMG='${AGENT_IMAGE_NAME:-}' PROVIDER='${PROVIDER_NAME:-}' SID='${SESSION_ID:-}'"
+  fi
+}
+
+# Given: one empty argument in each of the four positions in turn
+# When:  session_env_names runs
+# Then:  every call fails instead of deriving a degenerate name
+# Asserts: the four ${N:?} required-argument guards.
+test_names_requires_all_four_args() {
+  local proj="$FIXTURE_DIR/guard_proj"
+  mkdir -p "$proj"
+  PROJECT_DIR="$proj"
+
+  local r1 r2 r3 r4
+  ( session_env_names "" pi "$FIXTURE_DIR/sbx_g1" s1 ) >/dev/null 2>&1; r1=$?
+  ( session_env_names p "" "$FIXTURE_DIR/sbx_g1" s1 ) >/dev/null 2>&1; r2=$?
+  ( session_env_names p pi "" s1 ) >/dev/null 2>&1; r3=$?
+  ( session_env_names p pi "$FIXTURE_DIR/sbx_g1" "" ) >/dev/null 2>&1; r4=$?
+
+  if [[ $r1 -ne 0 && $r2 -ne 0 && $r3 -ne 0 && $r4 -ne 0 ]]; then
+    pass "session_env_names refuses an empty argument in every position"
+  else
+    fail "required-argument guards missing: rc=$r1/$r2/$r3/$r4"
   fi
 }
 
@@ -385,6 +437,7 @@ run_test test_common_init_rejects_commitless_repo
 run_test test_common_init_exports_identity_and_paths
 run_test test_env_project_name_explicit_arg_beats_env_and_envvar
 run_test test_env_project_dir_explicit_arg_beats_env
+run_test test_env_sandbox_dir_explicit_arg_beats_env
 run_test test_env_identity_explicit_args_beat_env
 run_test test_env_resolves_identity_from_env_when_args_empty
 run_test test_env_ag_sandbox_envvar_beats_env
@@ -393,6 +446,7 @@ run_test test_env_resolves_with_relative_env_pointer
 run_test test_names_sanitises_host_branch
 run_test test_names_detached_head_falls_back_to_short_sha
 run_test test_names_deterministic_container_and_image_names
+run_test test_names_requires_all_four_args
 run_test test_names_worktree_var_defaults_and_overrides
 
 test_done test_session_env.sh

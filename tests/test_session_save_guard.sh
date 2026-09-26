@@ -14,9 +14,12 @@
 #   _save_baseline       --  resolves the comparison point (last .export-status
 #                            HEAD, else init_sha)
 #   autosave_cycle       --  the checkpoint swap, its staging path, and the
-#                            failed-export and mid-swap-orphan recoveries
-#   autosave_tick / autosave_loop  --  status absorption under a real set -e shell,
-#                            driven through a fixture script rather than run_test
+#                            failed-export and mid-swap-orphan recoveries, and
+#                            the nothing-to-save status (2, not 1)
+#   autosave_tick        --  the channel directory the tick hands the cycle
+#   autosave_loop        --  status absorption under a real set -e shell and
+#                            the interval the loop waits before its first tick
+#                            (driven through a fixture script rather than run_test)
 #
 # The `.export-status` record's writer and readers are covered in
 # tests/test_export_status.sh, with the library that defines them.
@@ -620,6 +623,93 @@ test_autosave_cycle_refuses_unreadable_repo_end_to_end() {
       "end-to-end: the surviving checkpoint keeps its SUCCESS status"
 }
 
+# -- autosave_tick channel ----------------------------------------------------
+
+# Given: a fresh changes dir with no channel directory and a successful export
+# When:  autosave_tick runs with the real export_path
+# Then:  the checkpoint lands under <changes>/autosave/<sid> and no other channel is created
+# Asserts: autosave_tick's hardcoded channel copy matches the autosave channel.
+test_autosave_tick_uses_autosave_channel() {
+  source "$REPO_ROOT/src/libs/routing.sh"
+  local SD="$FIXTURE_DIR/sandbox_tick_channel"
+  local CHANGES="$SD/.workspace/session-diffs"
+  local SID="tickchan"
+  mkdir -p "$CHANGES"
+
+  stub_export_ok_channel() { echo content > "$2/marker"; return 0; }
+  local rc=0
+  autosave_tick export_path "$CHANGES" "$SD" "$SID" stub_export_ok_channel >/dev/null 2>&1 || rc=$?
+
+  local landed="$CHANGES/autosave/$SID/marker"
+  if [[ $rc -eq 0 && -f "$landed" && ! -d "$CHANGES/session" ]]; then
+    pass "autosave_tick: the checkpoint lands under the autosave channel"
+  else
+    fail "autosave_tick channel wrong: rc=$rc landed=$([[ -f "$landed" ]] && echo yes || echo no) session=$([[ -d "$CHANGES/session" ]] && echo yes || echo no)"
+  fi
+  unset -f stub_export_ok_channel
+}
+
+# Given: a clean repo at the baseline with a live checkpoint present
+# When:  autosave_cycle runs
+# Then:  it returns 2 (nothing to save) and leaves the live checkpoint untouched
+# Asserts: nothing-to-save is distinct from a failed cycle (both would be 1 otherwise).
+test_autosave_cycle_nothing_to_save_returns_2() {
+  local fix
+  fix=$(get_fixture_dir)
+  make_committed_repo "$fix"
+  # The checkpoint lives under the sandbox repo; ignore the workspace so the
+  # tree stays clean at the baseline and the cycle reaches its skip arm.
+  echo ".workspace/" > "$fix/.gitignore"
+  git -C "$fix" add .gitignore && git -C "$fix" commit -qm ignore-workspace
+  local head
+  head=$(git -C "$fix" rev-parse HEAD)
+  mkdir -p "$fix/.git"
+  printf 'init_sha=%s\n' "$head" > "$fix/.git/SESSION_STATE"
+  local CHANGES="$fix/.workspace/session-diffs"
+  local as_dir="$CHANGES/autosave/nts"
+  mkdir -p "$as_dir" && echo keep > "$as_dir/marker"
+
+  stub_export_should_not_run() { return 0; }
+  local rc=0
+  autosave_cycle "$as_dir" "$CHANGES/autosave" "$fix" stub_export_should_not_run >/dev/null 2>&1 || rc=$?
+
+  if [[ $rc -eq 2 && "$(cat "$as_dir/marker" 2>/dev/null)" == "keep" ]]; then
+    pass "autosave cycle: nothing to save returns 2 and keeps the live checkpoint"
+  else
+    fail "nothing-to-save mapped wrong: rc=$rc marker='$(cat "$as_dir/marker" 2>/dev/null)'"
+  fi
+  unset -f stub_export_should_not_run
+}
+
+# Given: a two-second interval and no tick yet run
+# When:  autosave_loop runs for less than one interval
+# Then:  the tick stub is not called
+# Asserts: the loop waits its interval before the first tick (deleting sleep spins hot).
+test_autosave_loop_honours_interval() {
+  source "$REPO_ROOT/src/libs/routing.sh"
+  local SD="$FIXTURE_DIR/sandbox_interval"
+  local CHANGES="$SD/.workspace/session-diffs"
+  mkdir -p "$CHANGES"
+  local calls="$SD/calls"; : > "$calls"
+
+  stub_count() { echo x >> "$calls"; return 1; }
+
+  autosave_loop 2 export_path "$CHANGES" "$SD" "sid" stub_count >/dev/null 2>&1 &
+  local pid=$!
+  sleep 0.6
+  kill -TERM "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+
+  local n
+  n=$(wc -l < "$calls" 2>/dev/null || echo 0)
+  if [[ "$n" -eq 0 ]]; then
+    pass "autosave loop: no tick before the first interval elapses"
+  else
+    fail "autosave loop ignored its interval ($n tick(s) in 0.6s with a 2s interval)"
+  fi
+  unset -f stub_count
+}
+
 # -- run ---------------------------------------------------------------------
 
 run_test test_dirty_tree_always_saves
@@ -636,6 +726,9 @@ run_test test_session_export_runs_with_work_despite_committed_or_uncommitted
 run_test test_session_export_skips_clean_tree_at_branch_point
 
 run_test test_autosave_swap_sequence
+run_test test_autosave_cycle_nothing_to_save_returns_2
+run_test test_autosave_tick_uses_autosave_channel
+run_test test_autosave_loop_honours_interval
 run_test test_autosave_tick_absorbs_status_under_real_set_e
 run_test test_autosave_loop_survives_failing_ticks
 run_test test_entrypoint_autosave_call_arguments
