@@ -47,6 +47,7 @@ The operator-invoked entry points, per use: when to use each, what it produces, 
 |---|---|---|---|
 | [`prompts/gm.md`](../prompts/gm.md) (`/gm`) | A check-in: no task chosen yet. Survey the state, present a work inventory, recommend a direction, wait. | Survey findings and an inventory in chat. No files written. | Chat only; the next step is a new iteration with a handover. |
 | [`prompts/new-iteration.md`](../../../src/reasoning/agent/prompts/new-iteration.md) | A directive is known: open an iteration properly. Gates on scope confirmation and acceptance before close. | One handover in `devlog/handovers/`, scoped work, one delivery commit. | Handover file + commit. |
+| [`prompts/auto.md`](../prompts/auto.md) (`/auto`) | A confirmed plan names its units: run them one at a time through fresh subagents, verifying each return before the next dispatch. | One commit and one handover per unit, with the verification evidence in chat. | Repository records and commits; the subagent's report stays in chat. |
 | `audits/*.skill.md`, `audits/test-quality-campaign.md` | A specific review target: code, bash, handover, roadmap, docs, tests. | Findings or a fix proposal, per the audit's contract. Some audits fix (campaign); most are read-only. | Report in chat or the output mount; accepted findings become iteration work. |
 
 ## Deployment boundary
