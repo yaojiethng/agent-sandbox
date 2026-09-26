@@ -91,10 +91,10 @@ mitigation: one failure family across the `edit` tool, resolved from the T2 meas
 
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 
-state: probation
+state: mitigated
 scoped: M3.1 -- doc-format lint rules
 legacy: none
-mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure).
+mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`.
 
 ### [A] 2026-09-21  --  Install and staleness family (T4)
 
@@ -118,9 +118,9 @@ Bash friction entries migrated from `devlog/discussions/20260809-story-active-ba
 
 ### [A] 2026-08-09  --  Circular sourcing between `diff_export.sh` and `package_branch.sh`
 
-state: open
+state: mitigated
 scoped: M3 T7 -- skill-maintenance backlog triage (pending circular-sourcing ADR)
-mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators.
+mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators. Both libs source it on disk.
 
 `diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
 
@@ -128,10 +128,10 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
-state: probation
+state: mitigated
 scoped: M3.1 -- ShellCheck gate (directive-parse warning)
 legacy: none
-mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent").
+mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent"). The shell gate now flags a prose directive rather than dropping it silently.
 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
@@ -175,10 +175,10 @@ mitigation: a commit whose only change is the handover Status flip or the roadma
 
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 
-state: probation
+state: mitigated
 scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
-mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1.
+mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1. Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
 
 ### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout
 
@@ -225,7 +225,7 @@ mitigation: negative-test mutation was reverted with `git restore scripts/stop.s
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
 mutation check itself passed: the test failed as expected; only the revert was wrong).
 The generalized form surfaced the same session: a `git stash` + `git checkout
-tests/test_trace_start.sh` (a) normalized the stub"s working-tree exec mode to the index
+tests/test_trace_start.sh`, since merged into `tests/test_run_agent.sh`, (a) normalized the stub"s working-tree exec mode to the index
 mode  --  16 tests failed with "Permission denied"  --  and (b) reverted the test file"s
 uncommitted session edits. Root cause of the mode churn was a host/container
 `core.fileMode` mismatch (host `false` vs container `true`), not a repo defect; resolved
@@ -379,10 +379,10 @@ Scope: the read-through's findings log and any long-running review whose rows ar
 
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 
-state: probation
+state: mitigated
 scoped: M3.1 - Backpressure
 legacy: none
-mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: <seconds>`) instead of raising `TEST_TIMEOUT` for every file. The runner reads the declaration and names it when the file expires.
+mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: <seconds>`) instead of raising `TEST_TIMEOUT` for every file. The runner reads the declaration and names it when the file expires. The runner reads `TEST_DEADLINE`, and three test files declare one.
 
 One 5s default is a single budget for test files whose honest runtimes differ by more than an order of magnitude. A harness file that spawns 20+ probe invocations (`tests/test_dry_run_probe.sh`, 3.4 to 5.4s) or runs the real umbrella gate repeatedly (`tests/test_lint_umbrella.sh`, 4.0 to 5.8s) sits on the deadline, so the 8-way parallel suite run expires it at random as the container loads up. The failure mode is worse than a red test: the file prints no `UNIT:` report, so the aggregate silently drops every unit in the file. `tests/test_dry_run_probe.sh` expired once during a mutation run and the suite read 764 units against a 783-unit baseline, with one timeout and no other sign - which also made the mutation's verdict unreadable, since a timeout is not a proof of anything. Two files now declare 10s (`tests/test_lint_umbrella.sh`, `tests/test_runner_selftest.sh`) and the third is added with this entry. Three more files measured above 5s standalone on a loaded container (`test_start_agent.sh`, `test_runner_selftest.sh`, `test_dry_run_probe.sh`), so the declaration is a pattern, not a one-off.
 

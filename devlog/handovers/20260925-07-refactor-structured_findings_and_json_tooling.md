@@ -30,7 +30,7 @@ The read-through close's post-processing, first decision, as one unit: the regis
 | The register declares the companion file, the naming convention and the computed-count rule | the register's Format section | Agent [x] |
 | The two workflow briefs' register rules match the data design | the briefs' register and fan-out sections | Agent [x] |
 | The issue-tracker question has a roadmap home, and the three named items are subsumed | `devlog/roadmap.md` T5 and `devlog/roadmap_future.md` M4 | Agent [x] |
-| `jq` is installed by the shared reasoning layer | reading the apt list | Agent [x] |
+| `jq` is installed by the shared reasoning layer | `jq --version` in the reasoning container | Agent [x] (`jq-1.6` at `/usr/bin/jq`) |
 | The documentation policy names only a destination that exists | the TODO destination clause | Agent [x] |
 | Lint clean | `bash scripts/lint.sh` | Agent [x] |
 
