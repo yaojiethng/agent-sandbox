@@ -162,6 +162,21 @@ Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): c
 
 ---
 
+### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
+
+state: open
+scoped: M3.1 T1 -- the read-through brief's disposition rule for a surviving bite
+legacy: none
+mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
+
+Three instances, filed as coverage gaps (`action_kind: test`), each with a different mechanism. `scripts/workflows/apply.sh` ends `apply_run` with `exit $?`: unreachable when the preceding command failed, because errexit exits first, and a no-op when it succeeded. `scripts/resume_agent.sh` guards the picker call with `chosen="$(picker)" || exit 1`: the arm does run (`bash -c 'set -e; x="$(false)" || { echo ARM; exit 1; }; echo after'` prints ARM and exits 1), and the line is redundant only because errexit produces the same exit status without it. `scripts/workflows/draft.sh`'s `main` sets `CHANNEL_ARG="${CHANNEL_ARG:-session}"` and no reader uses the value, because `resolve_source_for_draft` applies the same default.
+
+No unit can fail on any of the three, so the mutation survives by construction. The brief's earlier text, "a surviving mutation is a coverage finding", would have pushed the next agent to write a source-text assertion, which the suite's anti-patterns forbid because it pins the text and not the behaviour.
+
+Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
+
+Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
+
 ## Gotchas  --  operator-raised entries
 
 Entries raised by the operator (tagged `[O]`), migrated from the former `devlog/GOTCHAS.md` (deleted in the unification).

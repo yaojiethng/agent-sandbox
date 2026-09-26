@@ -57,7 +57,10 @@ One line per seam, stating what crosses it, is worth more to the reader than the
 Every unit that claims to pin a behaviour gets at least one mutation of that behaviour. A mutation edits the production file, runs the full suite, and names the units that turn red.
 
 - **Proven** requires a named failing test file and a re-run to exclude the liveness gate. A single non-zero suite exit is not proof: a flaky gate can abort the suite for a reason unrelated to the mutation.
-- **A surviving mutation is a coverage finding, not a pass.** Record it as a finding row; do not quietly accept it.
+- **A surviving mutation is a row, not a pass.** Record it, then classify it by running the deletion and comparing the outcome for the code's callers:
+  - output or exit status changes for some input: a coverage gap, and the row stays `action_kind: test`;
+  - nothing changes for any exercised input: a code row, `action_kind: code`, and no unit is owed, because the fix is the deletion.
+  Decide the second case by running the deletion, never by argument: `bash -c 'set -e; f() { false; echo REACHED; exit $?; }; f'` prints nothing and exits 1, so the `exit $?` is unreachable with a failure and a no-op on success.
 - **A mutation that cannot change behaviour is not a mutation.** Replace it with one that can.
 - **Back up the subject before the mutation and byte-compare the restored file after it.** A mutation that is not restored contaminates every later unit.
 - **Run one test suite at a time.** Two suites in flight make every baseline unsafe.
@@ -117,7 +120,7 @@ After every batch, run one scripted pass over the data file: every `id` appears 
 |---|---|
 | bite | A mutation of the production file, run against the full suite, used to test whether a named unit's claim is real. |
 | proven | A mutation was run and the named unit failed. The same observation as a pinned behaviour, stated from the mutation's side. |
-| survived | A mutation was run and no unit failed. This is a coverage finding. |
+| survived | A mutation was run and no unit failed. Classify it per the bite requirement: a coverage finding when the outcome changed for some input, a code row when it did not. |
 | read-assessed | No mutation was run and the claim was judged from source. State why. |
 | probe-verified | No unit exists for the behaviour, so it was observed directly in a throwaway harness. The behaviour is documented but unguarded, and the observation is itself a coverage finding. |
 | pinned | A behaviour is pinned when a unit fails if that behaviour is changed. Pinning an intended contract is a regression guard; pinning an accident forces a later correct fix to break the test first. Pinning is neither good nor bad by itself. |
