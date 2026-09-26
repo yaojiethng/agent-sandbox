@@ -3,6 +3,13 @@
 # provider hook + provider overlay selection.
 # Pins cite: docs/architecture/tool_interface.md l.41, l.225 (SERVE_PORT contract);
 #             code-owner: scripts/run_agent.sh SERVE_PORT_DEFAULT.
+# TEST_DEADLINE: 10
+#   This file absorbed the trace-start family and now runs 33 units, most of
+#   them spawning a real run_agent.sh invocation, so its honest runtime is
+#   about 3.4s and peaks near 6.7s. The 5s default leaves no headroom under
+#   parallel dispatch, and a TIMEOUT also hides the file's whole unit count.
+#   The declaration is a budget, not a licence: the file must stay near this
+#   cost.
 
 #
 # Replaces the former source-grep suite (extract_path_expr string checks +
