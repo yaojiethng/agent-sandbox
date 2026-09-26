@@ -25,9 +25,13 @@
 #      compose file set passed to `docker compose config` (asserted on the
 #      docker-stub trace, which logs every -f argument).
 #   3. The session trace family: the teardown verb per mode, teardown-is-last,
-#      the failure paths that must still tear down, the persisted compose file,
-#      the three delivery selections, and the shutdown hint pair. These units
-#      moved here from tests/test_trace_start.sh, whose name named a verb its
+#      the failure paths that must still tear down, the unhealthy-sandbox health
+#      gate (the agent never starts and the refusal names the sandbox container
+#      on stderr), the persisted compose file, the three delivery selections,
+#      and the shutdown hint pair (the newest session export wins, other
+#      sessions are excluded, and the draftability gate reads the selected
+#      export; the hints are asserted on stdout alone). These units moved
+#      here from tests/test_trace_start.sh, whose name named a verb its
 #      helpers never ran: both of them invoke run_agent.sh.
 #
 # The provider setup hook is a documented contract (run_agent.sh header: "If
@@ -409,6 +413,24 @@ invoke_run_agent() {
   ) > /dev/null 2>&1
 }
 
+# invoke_run_agent_streams OUT_FILE ERR_FILE MODE [ARGS...]
+#   Runs run_agent.sh with stdout and stderr captured to separate files, so a
+#   unit can assert a hint on the stdout stream alone. Returns run_agent.sh's rc.
+invoke_run_agent_streams() {
+  local out_file="$1" err_file="$2" mode="$3"
+  shift 3
+
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/run_agent.sh" "$mode" \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      "$@"
+  ) > "$out_file" 2> "$err_file"
+}
+
 # invoke_run_agent_rc  --  like invoke_run_agent but captures run_agent.sh's exit
 # code instead of discarding it. Prints the rc to stdout (callers capture it).
 invoke_run_agent_rc() {
@@ -521,6 +543,95 @@ test_start_standard_shutdown_draft_hint_suppressed_for_empty_export() {
     pass "start (standard): draft hint suppressed for empty session export"
   else
     fail "start (standard): draft hint printed for empty session export"
+  fi
+}
+
+# Given: two draftable exports for one session with different EXPORT_TIME prefixes
+# When:  a standard session ends
+# Then:  the shutdown output names the newer export in the make draft command
+# Asserts: the name-sort tail picks the newest *-SESSION_ID export
+#          (the hints are read from stdout alone)
+test_start_standard_shutdown_draft_hint_newest_export_wins() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_draft_newest"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  # EXPORT_TIME prefixes sort chronologically: the tail of the name sort is
+  # the newer export, and the draft hint must name it.
+  mkdir -p "$CHANGES_DIR/session/20260730-100000-test01/patches"
+  : > "$CHANGES_DIR/session/20260730-100000-test01/patches/0001-old.patch"
+  mkdir -p "$CHANGES_DIR/session/20260730-120000-test01/patches"
+  : > "$CHANGES_DIR/session/20260730-120000-test01/patches/0001-new.patch"
+
+  local out="$FIXTURE_DIR/stdout.txt" err="$FIXTURE_DIR/stderr.txt" rc=0
+  invoke_run_agent_streams "$out" "$err" "standard" --delivery=copy || rc=$?
+
+  # The hints are stdout records: assert them on the stdout stream alone.
+  local stdout
+  stdout="$(cat "$out")"
+  assert_contains "$stdout" "Resume this session later: make resume SESSION_ID=test01" "start (standard): resume hint on stdout"
+  assert_contains "$stdout" "make draft BUNDLE=20260730-120000-test01" "start (standard): newest session export wins the draft hint"
+  if [[ "$stdout" != *"make draft BUNDLE=20260730-100000-test01"* ]]; then
+    pass "start (standard): older session export is not named"
+  else
+    fail "start (standard): older session export named in the draft hint"
+  fi
+}
+
+# Given: a draftable export for another session that sorts newer than this session's
+# When:  a standard session ends
+# Then:  the shutdown output names this session's export, never the other session's
+# Asserts: the *-SESSION_ID session filter excludes other sessions' exports
+#          (the hints are read from stdout alone)
+test_start_standard_shutdown_draft_hint_ignores_other_session_export() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_draft_other_session"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  mkdir -p "$CHANGES_DIR/session/20260730-100000-test01/patches"
+  : > "$CHANGES_DIR/session/20260730-100000-test01/patches/0001-own.patch"
+  # Sorts newer than this session's export: without the session filter the
+  # name-sort tail selects it.
+  mkdir -p "$CHANGES_DIR/session/20260730-130000-other99/patches"
+  : > "$CHANGES_DIR/session/20260730-130000-other99/patches/0001-other.patch"
+
+  local out="$FIXTURE_DIR/stdout.txt" err="$FIXTURE_DIR/stderr.txt" rc=0
+  invoke_run_agent_streams "$out" "$err" "standard" --delivery=copy || rc=$?
+
+  local stdout
+  stdout="$(cat "$out")"
+  assert_contains "$stdout" "make draft BUNDLE=20260730-100000-test01" "start (standard): session filter selects this session's export"
+  if [[ "$stdout" != *"20260730-130000-other99"* ]]; then
+    pass "start (standard): other session's export never named"
+  else
+    fail "start (standard): other session's export named in the draft hint"
+  fi
+}
+
+# Given: this session's newest export is not draftable and an older one is
+# When:  a standard session ends
+# Then:  no draft hint is printed
+# Asserts: the draftability gate reads the selected (newest) export, not any export
+#          (the hints are read from stdout alone)
+test_start_standard_shutdown_draft_hint_suppressed_for_non_draftable_newest() {
+  local FIXTURE_DIR="$FIXTURE_DIR/start_draft_newest_empty"
+  mkdir -p "$FIXTURE_DIR"
+  setup_start_fixture "$FIXTURE_DIR"
+
+  mkdir -p "$CHANGES_DIR/session/20260730-100000-test01/patches"
+  : > "$CHANGES_DIR/session/20260730-100000-test01/patches/0001-old.patch"
+  mkdir -p "$CHANGES_DIR/session/20260730-120000-test01"
+
+  local out="$FIXTURE_DIR/stdout.txt" err="$FIXTURE_DIR/stderr.txt" rc=0
+  invoke_run_agent_streams "$out" "$err" "standard" --delivery=copy || rc=$?
+
+  local stdout
+  stdout="$(cat "$out")"
+  assert_contains "$stdout" "Resume this session later: make resume SESSION_ID=test01" "start (standard): resume hint on stdout"
+  if [[ "$stdout" != *"make draft BUNDLE="* ]]; then
+    pass "start (standard): draft hint suppressed for a non-draftable newest export"
+  else
+    fail "start (standard): draft hint printed for a non-draftable newest export"
   fi
 }
 
@@ -782,8 +893,9 @@ test_standard_up_failure_still_tears_down() {
 
 # Given: a sandbox whose health stays 'starting' and a one-second wait budget
 # When:  run_agent.sh runs a standard session
-# Then:  the last compose operation is 'down'
-# Asserts: teardown after a failed health wait (the assertion does not distinguish whether the agent ran - see the read-through finding on this unit)
+# Then:  the agent never runs, the refusal names the sandbox container on stderr,
+#        and the last compose operation is 'down'
+# Asserts: the health gate refuses to start the agent and teardown still runs
 test_standard_sandbox_unhealthy_still_tears_down() {
   local FIXTURE_DIR="$FIXTURE_DIR/start_sb_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -793,8 +905,24 @@ test_standard_sandbox_unhealthy_still_tears_down() {
 
   # compose_sandbox_wait exits 1 (never healthy) before the agent runs; the
   # EXIT trap must still tear down the sandbox container + network.
-  local rc
-  rc=$(invoke_run_agent_rc "standard" --delivery=copy)
+  local out="$FIXTURE_DIR/stdout.txt" err="$FIXTURE_DIR/stderr.txt" rc=0
+  invoke_run_agent_streams "$out" "$err" "standard" --delivery=copy || rc=$?
+
+  # The agent must never be dispatched while the sandbox is unhealthy.
+  local agent_runs
+  agent_runs=$(trace_count "compose run --rm --name $AGENT_CONTAINER_NAME")
+  if [[ "$agent_runs" -eq 0 ]]; then
+    pass "standard: unhealthy sandbox never runs the agent"
+  else
+    fail "standard: agent ran despite an unhealthy sandbox (agent_runs=$agent_runs)"
+  fi
+
+  # The refusal must be attributable to the sandbox container, on stderr alone.
+  if grep -q "did not become healthy" "$err" && grep -q "$SANDBOX_CONTAINER_NAME" "$err"; then
+    pass "standard: unhealthy refusal names $SANDBOX_CONTAINER_NAME on stderr"
+  else
+    fail "standard: unhealthy refusal missing from stderr (stderr=$(cat "$err"))"
+  fi
 
   local last
   last=$(trace_grep "compose " | tail -1)
@@ -933,6 +1061,9 @@ test_invalid_sandbox_type_rejected() {
 run_test test_start_standard_shutdown_resume_hint
 run_test test_start_standard_shutdown_draft_hint
 run_test test_start_standard_shutdown_draft_hint_suppressed_for_empty_export
+run_test test_start_standard_shutdown_draft_hint_newest_export_wins
+run_test test_start_standard_shutdown_draft_hint_ignores_other_session_export
+run_test test_start_standard_shutdown_draft_hint_suppressed_for_non_draftable_newest
 run_test test_start_standard_no_v
 run_test test_start_standard_has_compose_up
 run_test test_start_standard_has_compose_run_agent
