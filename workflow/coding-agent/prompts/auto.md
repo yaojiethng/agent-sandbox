@@ -1,70 +1,71 @@
 ---
-description: Run an operator-confirmed unit plan by delegating one unit at a time to a fresh subagent, verifying every return against the tree before the next dispatch, and landing one commit per unit.
-argument-hint: "[plan reference - roadmap row, register selection, or the confirmed unit table - optional]"
+description: Draft: run an operator-released unit plan by delegating one unit at a time to a fresh subagent, verifying every return against the tree before the next dispatch, and landing one commit per unit.
+argument-hint: "[plan reference - a roadmap task, a row list, or the unit table - optional]"
 ---
 
 > $@
 
 # Autonomous Run - Unit Dispatch (Main-Agent Template)
 
-**Scope:** how the primary agent runs a confirmed multi-unit plan: the unit split and its row list, the subagent brief, the dispatch line, the verification of the return, the records the primary keeps, and the failure modes the run must avoid.
+**Scope:** how the primary agent runs a released multi-unit plan: the well-specifiedness test, the unit split, the subagent brief, the blocking dispatch, the evaluation of each stop, the records, and the run review.
 
 ## Purpose
 
-One plan, one unit at a time. The primary dispatches a unit to a fresh subagent, verifies the return against the tree, writes the records, and commits. The split is by context: the primary holds the plan, the register, and the accumulated evidence at once, while a subagent holds one unit's source and its mutations.
+One plan, one unit at a time. The primary dispatches a unit to a fresh subagent, verifies the return against the tree, writes the records, and commits. A subagent is a context device: the primary holds the plan, the records and the accumulated evidence at once, while the subagent holds one unit's source and its checks.
 
-Dispatch a new subagent per unit. A subagent that has already worked one unit carries its assumptions into the next, so a decision taken for unit 3 silently scopes unit 4. Never continue one unit's session into another.
+Dispatch a fresh subagent per unit. A subagent that has already worked one unit carries its assumptions into the next, so never continue a unit's session into another one; the resume path in Step 4 is the single exception, and it resumes the same unit.
 
-The primary owns the unit split, the row list, the owned-file sets, the brief, the dispatch, the verification, the register rows, the roadmap write-back, the handover, and the commit. A subagent owns its unit's work and its report. A subagent never commits and never edits a record.
+The primary owns the run plan, the well-specifiedness test, the unit split, the owned-file sets, the briefs, the dispatch, the verification, the records and every commit. A subagent owns its unit's work and its report. A subagent never commits, never stages, and never edits a record.
 
 ## When to run this way
 
-Run this way when the operator has confirmed a plan whose units are named (unit, commit type, file ownership, own handover) and the units are independent. Independent means one unit's work does not depend on another unit's result. Two units that must change one file are one unit.
+Run this way when the plan names its units and the units are independent. Independent means one unit's work does not depend on another unit's result; two units that must change one file are one unit.
 
-Do not use this template to fan out one large pass across concurrent subagents on a frozen snapshot; that is [`fanout-run.md`](fanout-run.md). Do not use it to hand a whole campaign to one subagent; that is [`test-quality-campaign-run.md`](test-quality-campaign-run.md). This template covers the middle case: several units, one at a time, each verified before the next.
+Not this template: one large pass fanned out to concurrent subagents on a frozen snapshot (see [`fanout-run.md`](fanout-run.md)), or a whole campaign handed to a single subagent (see [`test-quality-campaign-run.md`](test-quality-campaign-run.md)).
 
-## Step 1 - Cut the unit and its row list
+## Step 1 - Build the run plan
 
-Filter the row list by the kind of change the unit can make, not by the subject file. A `test:` unit takes the rows whose `action_kind` is `test`; rows filed against the same files as `code` or `none` belong to another unit. Filtering by subject file alone overstated one campaign by half - 7 of the 21 rows in the diff-pipeline group were test rows, while the entry-point group held 13 of 14. Select with the register query, then recompute the unit size from the filtered count:
+Build the plan from the roadmap task list, or from the list the operator names. It names every unit and the order they run in.
 
-```bash
-rowlist() {  # rowlist <action_kind> <register.jsonl>
-  perl -ne 'BEGIN{$k=shift} next unless /"status":"open"/;
-    my ($a)=/"action_kind":"([a-z-]*)"/; next unless $a eq $k;
-    my ($f)=/"files":\[([^\]]*)\]/; my @f=($f=~/"([^"]*)"/g);
-    my ($i)=/"id":(\d+)/; print "$i\t$f[0]\n"' "$1" "$2"
-}
-```
+**The well-specifiedness test.** A row enters the plan only when a scope confirmation would raise no open question: the design or spec is clear, the acceptance criteria are clear, and nothing is left to decide. Write the answer sheet for each candidate row - the type, what is in scope, what is deferred, the acceptance criteria with their checks, and the unit split - then read it back. Any line that would be a question parks the row. The parked rows and their questions are presented with the plan. A row that needs a decision is design work, not run work.
 
-Give each unit a disjoint owned-file set, and check it for collisions against every other unit before dispatch. Two units must never own one file.
+**The unit rule.** A unit is one commit and one handover. It fails the rule if any of these fail:
 
-Name the production files the unit must leave byte-identical, and list them in the brief. A `test:` unit edits production code to prove a bite and restores it; a unit boundary whose diff holds a production change is a dispatch error.
+- **One commit.** The smallest change that lands as one commit with one handover. If the commit subject cannot be written from the diff, it is more than one unit.
+- **One context.** The source, the tests and the evidence fit one subagent context with room to spare. A unit that needs two contexts splits. A unit that needs no fresh context is not worth dispatching.
+- **One verification.** Its acceptance criteria are checkable without another unit landing first.
+- **Disjoint files.** No two units own one file, checked across the whole run.
+
+Split vertically, never by layer: a unit is one feature end to end, across the files it touches, and a feature too large for one context splits into sub-features that are each a working increment. Work phrased horizontally ("harden every gate") is a sequence of vertical slices or a design task, not a unit.
+
+**Present the plan and wait for the release.** The plan carries, per unit: the subject, the commit type, the owned files, the handover, and the acceptance criteria. Present it with the parked rows, and dispatch nothing before the operator releases it. After the release the run is unattended: the split changes only by stopping and reporting, because a different split is a different plan.
 
 ## Step 2 - Write the brief
 
-Write one brief per unit to a file outside the tree. The brief carries:
+One brief per unit, written to a file outside the tree. The brief carries:
 
 - the unit's subject, and the commit type the diff will get;
 - the owned files, and the prohibition on every other tree edit;
-- the row list: id, title, and the file each row names;
-- the acceptance criteria, stated so each one can be checked;
-- the exact commands the primary will run to verify (`bash scripts/run_tests.sh`, `bash scripts/lint.sh`);
+- the acceptance criteria, each with the command that checks it;
+- the evidence the unit owes: for every criterion that pins production behaviour, a mutation check that names the test file it must fail and restores the file byte-identical;
 - the report format, with its machine-readable tail;
-- the prohibitions: no commit, no record edit, no restored-by-hand mutation left behind.
+- the prohibitions: do not commit, do not stage, do not edit a record, leave no mutated file unrestored.
 
-Fix the report vocabulary in the brief, one line per row:
+Fix the report vocabulary in the brief:
 
 ```text
-ROW <id> <verdict>    verdict: pinned | partial | survived
+FILE <path> <one-line change>
+AC <n> <pass|fail>
 BITE <n> <file> <restored byte-identical: yes|no>
 SUITE <passed>/<total> <files>
+STOP <unit> <done|partial|stuck|needs-decision> <one line>
 ```
 
-The tail is what the primary collects; the prose above it is a claim to check. A report format left open costs the primary the script that would have collected the unit in one pass.
+The tail is what the primary collects; the prose above it is a claim to check. The `STOP` line is mandatory. A subagent that cannot finish inside its budget returns a coherent partial rather than being killed, because a killed run cannot report at all.
 
-Keep one brief template per campaign and substitute per unit: the template that ran a nine-unit campaign carried three placeholders - the row list, the owned files, and the subject.
+The brief also states its budget, its model and its thinking level: the subagent cannot see its own invocation flags, and the report needs the attribution.
 
-## Step 3 - Dispatch in the foreground
+## Step 3 - Dispatch, blocking
 
 ```bash
 timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh \
@@ -72,67 +73,85 @@ timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhig
 echo "pi rc=$?"
 ```
 
-Run the dispatch in the foreground. A background subagent is killed when the tool call that started it returns, and it leaves the tree half-changed: a register repaired in part, a mutation unrestored.
+The dispatch blocks, and while it runs the primary does not touch the tree: that is what makes the subagent the only writer. Dispatch in the foreground, never in the background - a background subagent is killed when the tool call that started it returns, and it leaves the tree half-changed.
 
-Log to a file, not through a pipe. A pipe drops the unflushed output when the run is interrupted, and it returns the status of the last pipe stage rather than the status of the subagent. Read the report's tail from the log:
+Log to a file, never through a pipe: a pipe drops the unflushed output when the run is interrupted, and it returns the status of the last pipe stage instead of the status of the subagent. Read the report's tail with `tail -26 <log>`.
+
+No frozen snapshot is needed, because there is no sibling writer. The live tree is the input and the output, and the parked primary is the isolation.
+
+## Step 4 - Evaluate the stop, then verify
+
+The report is a claim about the tree. Check the tree:
+
+- `git status --porcelain` lists exactly the owned files, with no scratch file and no registered worktree;
+- read the diff, do not count it;
+- run the suite yourself and read its counts (`bash scripts/run_tests.sh`);
+- re-run each claimed mutation check, or confirm the failing file it names;
+- compare each mutated file with its backup (`cmp`);
+- collect the report's tail with a script.
+
+A green suite that the subagent reports is not evidence; the primary's own run is, and the suite is cheap. Correct in the primary's own turn only a defect the primary can fix as a line - a stale call-site arity, a unit the destination suite already covers - and record the correction.
+
+Then route by the observed stop, with at most one additional attempt in every branch:
+
+| Observed | Move |
+|---|---|
+| `rc=0`, `done` | verify, approve, land |
+| `rc=0`, `partial` | resume once: re-brief as a continuation and keep the tree |
+| `rc=124` (timeout) with progress | resume once: `pi --session <path> "Continue and give your final report."` |
+| `rc=124` with no progress, or a tree that cannot be verified | file the work, reset the owned paths, dispatch a fresh attempt |
+| `rc=0`, `needs-decision` | surface the question in chat; answered, resume once; unanswered, park with no further attempt |
+| `rc=0` with no `STOP` line | treat as `stuck` |
+
+File the work before any reset:
 
 ```bash
-tail -26 /tmp/auto/<unit>.log
+bash /opt/sandbox/lib/package_branch.sh --to="$HOME/workspace/output" \
+  --bundle-summary=partial_<unit>_<slug>
+git checkout -- <owned files>
+git clean -fd <owned paths>
 ```
 
-Give the run a generous timeout and state it in the brief. Name the model and the thinking level in the brief as well, because the subagent cannot see its own invocation flags and a report needs the attribution.
+The export runs while the tree still holds the work, so the bundle carries the landed units' patches beside the partial attempt as `uncommitted.diff`; the run's earlier history travels with the partial, and the partial can be applied later. Reset only the owned paths, never the whole tree.
 
-Resume an interrupted run with an explicit continuation prompt: `pi --session <path> "Continue and give your final report."` An opened session does not continue on its own.
-
-## Step 4 - Verify the return
-
-The subagent's summary is a claim about the tree. Check the tree:
-
-- `git status --porcelain` lists exactly the owned files, and no scratch file or registered worktree;
-- read the diff, do not count it;
-- run the suite yourself: the pass count, the fail count, and the file count;
-- re-run each claimed bite, or confirm the failing file it names;
-- compare each mutated file with its backup (`cmp`);
-- collect the report's row block with a script.
-
-A green suite that the subagent reports is not evidence; the primary's own run is, and it is cheap - the full suite runs in about twelve seconds. A surviving mutation is recorded where it was found. A bite that cannot fail because the target line changes nothing is not a coverage gap: its disposition rule is in the bite requirement of [`read-through-run.md`](read-through-run.md).
-
-Fix what the return got wrong in the primary's own turn, and note the fix in the unit's handover. A unit that repeats an existing unit is removed, not merged: read the destination suite before accepting a new unit, and check that the two units fail the same mutation rather than assume it.
+A parked unit does not stop the run unless a later unit depends on it. A `needs-decision` stop is evidence that the well-specifiedness test failed, and a timeout usually means the unit was too big; both go into the parked list with the fix they need.
 
 ## Step 5 - Land the unit
 
 Write the records after the verification, never before:
 
-- flip each row's `status` in the register with a line-based edit on `"id":<n>,`, and append a new row for a finding the unit produced;
-- write the roadmap note for the completed work;
-- write the unit's handover, with the verification evidence and the corrections;
+- add or update the roadmap row, and flip a task's checkbox only when its last unit has landed;
+- write the unit's handover, carrying the verification evidence and the corrections;
 - commit once, with the commit type taken from the diff.
 
-Then confirm the boundary: the suite is green, lint is clean, and the tree holds no uncommitted change. An interrupted run stops cleanly at the last boundary, and the landed units stand.
+Then confirm the boundary: suite green, lint clean, tree clean. An interrupted run stops cleanly at the last boundary, and the landed units stand.
+
+## Step 6 - Review the run
+
+The run's work is committed, so the review range is a fixed `git diff <run-base>..HEAD` and the tree is clean.
+
+1. Sweep the cheap classes over the run's changes: documents that pin strings, commands, exit semantics or counts the run changed, and any term or count that drifted across records.
+2. Run the bounded review loop in [`review-loop-run.md`](review-loop-run.md), with a reviewer of the operator's choice.
+3. Present the run: the units and their commits, the review verdict, the parked units with their files, the bundle directories filed, and the rows that stay open.
 
 ## Failure modes observed
 
-Each mode below occurred in a real run. Treat each as a warning and carry its rule into the brief.
+Carry each rule into the brief.
 
-(a) **A background dispatch.** The subagent was killed when the tool call returned, halfway through the register repair. The rule: dispatch in the foreground, in the same tool call that reads the result.
-
-(b) **A pipe instead of a log.** The output was lost when the run was interrupted, and the exit status read as the pipe's, not the subagent's. The rule: redirect to a log file and read `pi`'s own status.
-
-(c) **A duplicate unit.** Two units written into a destination suite that already pinned the case failed the same mutation, and neither bit. The rule: read the destination suite first, and delete the duplicate rather than keep both.
-
-(d) **A wrong call site.** A unit called a helper with the argument count it had before a rename, and only the suite caught it. The rule: run the suite, and read the diff for the call sites the unit touched.
-
-(e) **A row list taken from the subject file.** The unit named 97 rows where 52 were its kind. The rule: filter by `action_kind`, then recompute the size.
-
-(f) **A tree that never returned to clean.** A worktree stayed registered after a bite run, and a scratch file stayed in the tree. The rule: `git worktree prune`, and check `git status --porcelain` at the boundary.
-
-(g) **A tool that is not in the image.** `pgrep`, `jq`, `python3`, `make` and `docker` are absent, so a brief that calls one fails at its first command. The rule: use the repository's own scripts (`bash scripts/run_tests.sh`, `bash scripts/lint.sh`) and verify a tool exists before a brief depends on it.
+(a) **A background dispatch.** The subagent was killed with the tool call, halfway through a record repair. Dispatch blocking.
+(b) **A pipe instead of a log file.** The output and the exit status were lost. Redirect to a file and read `pi`'s own status.
+(c) **A duplicate unit.** The destination suite already pinned the case, and the new unit failed the same mutation. Read the destination suite first, and delete the duplicate rather than keep both.
+(d) **A stale call site.** The unit called a helper with the arity it had before a rename. Run the suite, and read the diff for the call sites the unit touched.
+(e) **A work list taken from a shared data file.** The unit named rows that belonged to another kind of work. Take the list from the unit's own deliverable.
+(f) **A tree that never returned to clean.** A worktree stayed registered and a scratch file stayed in the tree. Prune, and check `git status --porcelain` at every boundary.
+(g) **A tool that is not in the image.** `pgrep`, `jq`, `python3`, `make` and `docker` are absent, so a brief that calls one fails at its first command. Use the repository's own scripts, and check that a tool exists before a brief depends on it.
 
 ## Invariants
 
-- One unit per dispatch, and one fresh subagent per unit.
-- No subagent commits, and no subagent edits the register, the roadmap, or a handover.
-- One suite runs at a time; a verdict measured under another suite's load is not a verdict.
-- The tree is clean at every unit boundary, with no production change left behind.
-- A proven bite names a failing file and a byte-identical restore.
-- The register is the source of truth; the chat presentation is a digest, and records state, not session history.
+- One unit per dispatch, and one fresh subagent per unit, except a resume of the same unit.
+- No subagent commits, stages, or edits a record.
+- One suite runs at a time; with a blocking dispatch that is automatic.
+- The tree is clean at every unit boundary, and no partial attempt is ever committed.
+- A mutation check that counts as evidence names a failing file and a byte-identical restore.
+- Records are written after verification, and one unit is one commit.
+- The roadmap is the task list; the chat presentation is a digest.
