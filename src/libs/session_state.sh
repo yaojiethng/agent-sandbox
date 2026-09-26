@@ -12,6 +12,7 @@
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/interface_contract.sh"
+source "$_self_dir/session_inventory.sh"
 
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
@@ -71,16 +72,15 @@ session_state_write_set() {
 # init_sha_is_valid SANDBOX_DIR
 #   Returns 0 iff SESSION_STATE's init_sha is present AND a real COMMIT object
 #   in the sandbox repo. Returns 1 if the key is absent/empty or the value is
-#   not a commit (bogus hex, or a ref to a non-commit object).
-#   Uses `git cat-file -e ...^{commit}`, which verifies object existence and
-#   type -- `rev-parse --verify` alone would accept any well-formed full-length
-#   hex id without checking the object database.
+#   not a commit (bogus hex, or a ref to a non-commit object). The strong
+#   check lives in git_commit_exists (session_inventory.sh); `rev-parse
+#   --verify` alone would accept any well-formed full-length hex id.
 init_sha_is_valid() {
   local SANDBOX_DIR="$1"
   local sha
   sha=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null) || return 1
   [[ -z "$sha" ]] && return 1
-  git -C "$SANDBOX_DIR" cat-file -e "$sha^{commit}" >/dev/null 2>&1
+  git_commit_exists "$SANDBOX_DIR" "$sha"
 }
 
 # container_contract_check SANDBOX_DIR

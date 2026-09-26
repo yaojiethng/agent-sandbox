@@ -28,7 +28,7 @@ build_inventory() {
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     last_used="$(session_log_read "$sid" last_stopped)"
     host_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)"
-    branch_age="$(project_branch_age "$host_sha")"
+    branch_age="$(project_commits_since "$host_sha")"
     RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$host_sha|$branch_age" )
   done < <(enumerate_records)
   # Newest first by session-ts.

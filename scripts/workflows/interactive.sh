@@ -405,7 +405,7 @@ interactive_select_bundle() {
   # under the title, indented to the same column origin as the numbered rows.
   # By language, STATE names the bundle's branch state now vs its baseline
   # (how many commits the current HEAD is ahead of INIT_SHA on .export-status,
-  # via the shared project_branch_age), and AGE names how long ago the bundle
+  # via the shared project_commits_since), and AGE names how long ago the bundle
   # was EXPORTED (the .export-status TIMESTAMP -- the export moment, NOT the
   # session/container start that the resume table tracks). Autosave dirs carry
   # no embedded time, so they fall back to the dir mtime.
@@ -437,7 +437,7 @@ interactive_select_bundle() {
     local init_sha
     init_sha=$(export_status_read "$ENTRY_DIR" INIT_SHA)
     local state
-    state="$(project_branch_age "$init_sha")"
+    state="$(project_commits_since "$init_sha")"
 
     # AGE: how old the bundle is in wall-clock  --  time since it was
     # EXPORTED (the .export-status TIMESTAMP, written at export time). This is

@@ -260,7 +260,7 @@ _ingest_export_metadata() {
   local _base="$_branch_from"
   [[ -n "$_base" ]] || _base="HEAD"
 
-  if ! git -C "$_project_dir" rev-parse --verify "$_base" >/dev/null 2>&1; then
+  if ! git_commit_exists "$_project_dir" "$_base"; then
     echo "Error: BASE_COMMIT '$_base' does not resolve to a valid commit" >&2
     echo "  Set --branch-from to a valid ref" >&2
     return 1
@@ -334,8 +334,7 @@ draft_run() {
   _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
     BASE_COMMIT EXPORT_TIME _dummy_init || return 1
 
-  local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  local SOURCE_BRANCH; SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
   local IDENTITY="${SESSION_ID:-$SESSION_TS}"
@@ -472,8 +471,7 @@ _run_draft_workflow() {
   # Capture the branch current before draft_run checks out the draft branch, so
   # a failed apply can return the operator to it (and never leave them on draft/*).
   local SOURCE_BRANCH
-  SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
 
   # Resolve author once for both branch creation and apply+commit
   local AUTHOR

@@ -77,7 +77,7 @@ confirm_run() {
     fi
   else
     MERGE_TARGET="${TARGET_BRANCH:-$source_branch}"
-    if ! git -C "$PROJECT_DIR" rev-parse --verify "$MERGE_TARGET" >/dev/null 2>&1; then
+    if ! git_commit_exists "$PROJECT_DIR" "$MERGE_TARGET"; then
       echo "Error: target branch does not exist: $MERGE_TARGET" >&2
       echo "  Specify a different target: make confirm TARGET_BRANCH=<branch>" >&2
       return 1

@@ -13,6 +13,9 @@
 #   clean_tree_hint          --  print the shared dirty-tree remedy
 #   clean_tree_hint_unreadable --  print the remedy for an unreadable tree
 
+_guards_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_guards_dir/../src/libs/session_inventory.sh"
+
 # validate_project_dir PROJECT_DIR
 #   Checks PROJECT_DIR exists, is a git repository, and has at least one commit.
 #   Returns 1 with error message to stderr on failure.
@@ -29,7 +32,7 @@ validate_project_dir() {
     return 1
   fi
 
-  if ! git -C "$PROJECT_DIR" rev-parse HEAD >/dev/null 2>&1; then
+  if ! git_head_resolvable "$PROJECT_DIR"; then
     echo "Error: $PROJECT_DIR has no commits - cannot apply patch" >&2
     return 1
   fi

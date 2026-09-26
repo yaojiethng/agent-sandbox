@@ -410,7 +410,7 @@ main() {
       # invocation; the harness session-env gate already rejected an empty
       # repository before delivery dispatch. The seed path fires the same
       # guard (matching invariant, both deliveries).
-      if ! git -C "$PROJECT_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
+      if ! git_head_resolvable "$PROJECT_DIR"; then
         echo "Error: repository at $PROJECT_DIR has no commits. Make an initial commit before starting a session." >&2
         exit 1
       fi

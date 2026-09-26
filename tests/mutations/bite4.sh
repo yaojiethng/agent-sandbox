@@ -25,6 +25,6 @@ awk -v n="$n_ref" 'NR==n{print "    echo \"WRONG\"; return 0"; next}{print}' "$o
 run "M14 project_current_branch: wrong branch name" tests/test_resume.sh tests/test_interactive_session_select.sh
 
 awk -v n="$n_age" 'NR==n{print "  :"; next}{print}' "$orig" > "$src"
-run "M15 project_branch_age: drop empty-sha '-' branch" tests/test_resume.sh tests/test_interactive_session_select.sh
+run "M15 project_commits_since: drop empty-sha '-' branch" tests/test_resume.sh tests/test_interactive_session_select.sh
 
 echo "--- restored: $(cmp -s "$src" "$orig" && echo identical || echo MISMATCH) ---"

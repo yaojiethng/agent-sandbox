@@ -33,7 +33,7 @@ run_case I8  '      echo "Error: unknown subcommand: $SUBCOMMAND" >&2
       return 0'
 run_case I9  'PAGE_OFFSET=$((PAGE_OFFSET + 1))'               'PAGE_OFFSET=$((PAGE_OFFSET + 2))'
 run_case I10 'PATCH_COUNT=$(find "$ENTRY_DIR/patches" -maxdepth 1 -name "*.diff" 2>/dev/null | wc -l | tr -d " ")' 'PATCH_COUNT=0'
-run_case I11 'state="$(project_branch_age "$init_sha")"'      'state="fixed"'
+run_case I11 'state="$(project_commits_since "$init_sha")"'      'state="fixed"'
 run_case I12 '    if [[ -n "$HEADER" ]]; then
       printf "%*s%s\n" "$((2 + INDEX_W + 2))" "" "$HEADER" >&2
     fi

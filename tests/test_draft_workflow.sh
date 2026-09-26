@@ -7,7 +7,7 @@
 # Covers:
 #   draft_run      --  creates branch, applies patches, .draft-state, guards
 #   draft_collect_patches / draft_apply_patches / _run_draft_workflow
-#   _ingest_export_metadata  --  --branch-from, INIT_SHA defaults
+#   _ingest_export_metadata  --  --branch-from, INIT_SHA defaults, non-commit refusal
 #   draft_resolve_commit_message  --  .msg file, filename subject, fallback
 #
 # Uses make_session_fixture for synthetic session exports; for
@@ -474,6 +474,25 @@ test_branch_from_skips_missing_export_status() {
   fi
 }
 
+# Given: --branch-from is a well-formed 40-hex id that is not a commit object
+# When:  metadata is ingested
+# Then:  the call refuses
+# Asserts: the strong commit check; `rev-parse --verify` would accept the hex.
+test_branch_from_rejects_non_commit_hex() {
+  local P="$FIXTURE_DIR/ingest_badhex_p"
+  local S="$FIXTURE_DIR/ingest_badhex_s"
+  make_committed_repo "$P"
+  mkdir -p "$S/export/patches"
+
+  local BASE TIME INIT
+  if _ingest_export_metadata "$S/export" "0000000000000000000000000000000000000000" \
+       "$P" BASE TIME INIT 2>/dev/null; then
+    fail "a non-commit hex should be refused as --branch-from"
+  else
+    pass "a non-commit hex is refused as --branch-from"
+  fi
+}
+
 # Given: no .export-status and no --branch-from
 # When:  metadata is ingested
 # Then:  the call errors
@@ -732,6 +751,7 @@ run_test test_draft_applies_diffs
 run_test test_draft_applies_uncommitted_diff
 
 run_test test_branch_from_skips_missing_export_status
+run_test test_branch_from_rejects_non_commit_hex
 run_test test_no_branch_from_errors_without_export_status
 run_test test_missing_init_sha_defaults_to_head
 run_test test_init_sha_warns_on_divergence_but_proceeds

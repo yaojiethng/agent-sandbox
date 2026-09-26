@@ -12,6 +12,11 @@
 #   record_label         --  label extraction incl. pipefail-safety on no-match
 #   (record_image_stale retired with the staleness signal -- ADR harness_versioning.md)
 #   project_current_sha  --  empty/non-git/git branches
+#   git_commit_exists    --  strong commit check (rejects well-formed non-commits)
+#   git_commit_distance  --  commit count from a SHA to HEAD
+#   git_head_resolvable  --  HEAD-resolvability verdict
+#   project_current_ref  --  branch-or-short-SHA-or-empty derivation
+#   project_commits_since --  commit-distance phrase and edge cases
 #   enumerate_records    --  registry enumeration, provider filter, skip rules
 #   session_stale        --  registry-truth staleness vs explicit/derived SHA
 
@@ -222,6 +227,136 @@ test_session_stale_derives_sha_from_project_dir() {
 }
 
 # =============================================================================
+# Git position helpers
+# =============================================================================
+
+# Given: a commit, a bogus 40-hex, and a tree object
+# When:  git_commit_exists tests each
+# Then:  only the real commit passes
+# Asserts: the strong check rejects a well-formed hex id and a non-commit object.
+test_git_commit_exists_rejects_wellformed_noncommit() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local PROJ="$FIXTURE_DIR/exists_proj"
+  make_committed_repo "$PROJ"
+  local HEAD_SHA TREE_SHA
+  HEAD_SHA=$(git -C "$PROJ" rev-parse HEAD)
+  TREE_SHA=$(git -C "$PROJ" rev-parse 'HEAD^{tree}')
+
+  local RC_HEAD=0 RC_HEX RC_TREE
+  git_commit_exists "$PROJ" "$HEAD_SHA" || RC_HEAD=$?
+  git_commit_exists "$PROJ" "0000000000000000000000000000000000000000" && RC_HEX=0 || RC_HEX=$?
+  git_commit_exists "$PROJ" "$TREE_SHA" && RC_TREE=0 || RC_TREE=$?
+
+  if [[ $RC_HEAD -eq 0 && $RC_HEX -ne 0 && $RC_TREE -ne 0 ]]; then
+    pass "git_commit_exists: commit passes, bogus hex and tree object refused"
+  else
+    fail "git_commit_exists verdicts wrong: head=$RC_HEAD hex=$RC_HEX tree=$RC_TREE"
+  fi
+}
+
+# Given: a repo with three commits
+# When:  git_commit_distance counts from the root and from HEAD
+# Then:  2 and 0 respectively
+# Asserts: the shared commit-count primitive.
+test_git_commit_distance_counts_commits() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local PROJ="$FIXTURE_DIR/distance_proj"
+  make_committed_repo "$PROJ"
+  commit_change "$PROJ" second
+  commit_change "$PROJ" third
+
+  local FROM_ROOT FROM_HEAD
+  FROM_ROOT=$(git_commit_distance "$PROJ" "$(get_init_sha "$PROJ")")
+  FROM_HEAD=$(git_commit_distance "$PROJ" HEAD)
+
+  if [[ "$FROM_ROOT" == "2" && "$FROM_HEAD" == "0" ]]; then
+    pass "git_commit_distance: root->2 commits, HEAD->0"
+  else
+    fail "git_commit_distance wrong: root='$FROM_ROOT' head='$FROM_HEAD'"
+  fi
+}
+
+# Given: a committed repo, an unborn repo, and a non-git directory
+# When:  git_head_resolvable tests each
+# Then:  only the committed repo resolves
+# Asserts: the shared HEAD-resolvability verdict.
+test_git_head_resolvable_three_cases() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local PROJ="$FIXTURE_DIR/head_proj" UNBORN="$FIXTURE_DIR/head_unborn"
+  local NOGIT="$FIXTURE_DIR/head_nogit"
+  make_committed_repo "$PROJ"
+  make_repo "$UNBORN"
+  mkdir -p "$NOGIT"
+
+  local RC_OK=0 RC_UNBORN RC_NOGIT
+  git_head_resolvable "$PROJ" || RC_OK=$?
+  git_head_resolvable "$UNBORN" && RC_UNBORN=0 || RC_UNBORN=$?
+  git_head_resolvable "$NOGIT" && RC_NOGIT=0 || RC_NOGIT=$?
+
+  if [[ $RC_OK -eq 0 && $RC_UNBORN -ne 0 && $RC_NOGIT -ne 0 ]]; then
+    pass "git_head_resolvable: repo passes, unborn and non-git fail"
+  else
+    fail "git_head_resolvable wrong: repo=$RC_OK unborn=$RC_UNBORN nogit=$RC_NOGIT"
+  fi
+}
+
+# Given: a repo on a branch, then a detached HEAD, and a non-git directory
+# When:  project_current_ref runs for each
+# Then:  the branch name, the short SHA, and empty respectively
+# Asserts: the single branch-or-SHA derivation.
+test_project_current_ref_branches() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local PROJ="$FIXTURE_DIR/ref_proj"
+  make_committed_repo "$PROJ"
+
+  local ON_BRANCH DETACHED ABSENT
+  ON_BRANCH=$(project_current_ref "$PROJ")
+  git -C "$PROJ" checkout --detach --quiet
+  DETACHED=$(project_current_ref "$PROJ")
+  mkdir -p "$FIXTURE_DIR/ref_notgit"
+  ABSENT=$(project_current_ref "$FIXTURE_DIR/ref_notgit")
+
+  if [[ "$ON_BRANCH" == "main" \
+     && "$DETACHED" == "$(git -C "$PROJ" rev-parse --short HEAD)" \
+     && -z "$ABSENT" ]]; then
+    pass "project_current_ref: branch->name, detached->short SHA, non-git->empty"
+  else
+    fail "project_current_ref branches wrong: branch='$ON_BRANCH' detached='$DETACHED' absent='$ABSENT'"
+  fi
+}
+
+# Given: a project HEAD N commits ahead of a baseline, plus empty and non-commit baselines
+# When:  project_commits_since runs
+# Then:  the singular/plural/zero phrases, the empty "-", and "not in tree"
+# Asserts: the direct unit for the renamed commit-distance metric.
+test_project_commits_since_phrases_and_edges() {
+  source "$TEST_DIR/libs/git_fixtures.sh"
+  local PROJ="$FIXTURE_DIR/since_proj"
+  make_committed_repo "$PROJ"
+  local ROOT
+  ROOT=$(get_init_sha "$PROJ")
+  commit_change "$PROJ" second
+  local ONE
+  ONE=$(PROJECT_DIR="$PROJ" project_commits_since "$ROOT")
+  commit_change "$PROJ" third
+  local TWO ZERO EMPTY BAD NOTGIT
+  TWO=$(PROJECT_DIR="$PROJ" project_commits_since "$ROOT")
+  ZERO=$(PROJECT_DIR="$PROJ" project_commits_since HEAD)
+  EMPTY=$(PROJECT_DIR="$PROJ" project_commits_since "")
+  BAD=$(PROJECT_DIR="$PROJ" project_commits_since "0000000000000000000000000000000000000000")
+  mkdir -p "$FIXTURE_DIR/since_notgit"
+  NOTGIT=$(PROJECT_DIR="$FIXTURE_DIR/since_notgit" project_commits_since "$ROOT")
+
+  if [[ "$ONE" == "1 commit ago" && "$TWO" == "2 commits ago" \
+     && "$ZERO" == "0 commits ago" && "$EMPTY" == "-" \
+     && "$BAD" == "not in tree" && "$NOTGIT" == "not in tree" ]]; then
+    pass "project_commits_since: singular/plural/zero phrases, empty '-', not-in-tree"
+  else
+    fail "project_commits_since wrong: one='$ONE' two='$TWO' zero='$ZERO' empty='$EMPTY' bad='$BAD' notgit='$NOTGIT'"
+  fi
+}
+
+# =============================================================================
 # enumerate_records
 # =============================================================================
 
@@ -371,6 +506,11 @@ run_test test_record_label_pipefail_safe_on_no_match
 run_test test_project_current_sha_branches
 run_test test_session_stale_classification
 run_test test_session_stale_derives_sha_from_project_dir
+run_test test_git_commit_exists_rejects_wellformed_noncommit
+run_test test_git_commit_distance_counts_commits
+run_test test_git_head_resolvable_three_cases
+run_test test_project_current_ref_branches
+run_test test_project_commits_since_phrases_and_edges
 run_test test_enumerate_records_filters_and_skips
 run_test test_enumerate_records_no_dir_or_empty_is_silent_rc0
 run_test test_env_field_reads_value_from_environment_block

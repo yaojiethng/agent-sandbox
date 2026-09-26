@@ -280,7 +280,7 @@ package_branch_baseline() {
   local EXPLICIT="${2:-}"
 
   if [[ -n "$EXPLICIT" ]]; then
-    if ! git -C "$SANDBOX_DIR" cat-file -e "${EXPLICIT}^{commit}" 2>/dev/null; then
+    if ! git_commit_exists "$SANDBOX_DIR" "$EXPLICIT"; then
       echo "package_branch: baseline does not resolve to a commit: $EXPLICIT" >&2
       return 1
     fi

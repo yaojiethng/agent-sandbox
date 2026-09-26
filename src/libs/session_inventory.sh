@@ -70,6 +70,28 @@ env_field() {
     | sed -E "s/.*[[:space:]]-*[[:space:]]*${var}=([^[:space:]]+).*/\1/" | head -1 || true
 }
 
+# git_commit_exists DIR SHA  --  return 0 iff SHA names a commit object in the
+# repository at DIR. The `^{commit}` peel checks object existence and type;
+# `rev-parse --verify` alone would accept any well-formed full-length hex id
+# without consulting the object database.
+git_commit_exists() {
+  git -C "$1" cat-file -e "${2}^{commit}" >/dev/null 2>&1
+}
+
+# git_commit_distance DIR SHA  --  print the number of commits between SHA and
+# HEAD in DIR, or nothing when the range cannot be walked. The single shared
+# commit-count primitive.
+git_commit_distance() {
+  git -C "$1" rev-list --count "${2}..HEAD" 2>/dev/null || true
+}
+
+# git_head_resolvable DIR  --  return 0 iff DIR is a git repository whose HEAD
+# resolves to a commit (an unborn HEAD fails). The single shared
+# HEAD-resolvability test.
+git_head_resolvable() {
+  git -C "$1" rev-parse --verify --quiet HEAD >/dev/null 2>&1
+}
+
 # project_current_sha  --  print the current HEAD SHA of the caller's project
 # (PROJECT_DIR), or empty when unset or not a git repo. The single shared
 # derivation of the current project HEAD for staleness.
@@ -79,37 +101,49 @@ project_current_sha() {
   git -C "$dir" rev-parse HEAD 2>/dev/null || true
 }
 
-# project_current_branch  --  print the caller's current git position
-# (PROJECT_DIR): the branch name when on a branch, `<short-sha> (detached)` when
-# HEAD is a detached commit, or `(absent)` when PROJECT_DIR is unset or not a
-# git repository. The single shared derivation for the "current branch" display
-# hint; empty is never a valid return (absent is spelled explicitly).
-project_current_branch() {
-  local dir="${PROJECT_DIR:-}"
+# project_current_ref [DIR]  --  print the caller's git position as a bare ref:
+# the branch name when HEAD is on a branch, the short commit SHA when HEAD is
+# detached, or nothing when DIR is unset, not a repo, or has no resolvable HEAD.
+# The single derivation behind the current-branch display and every
+# branch-or-SHA caller.
+project_current_ref() {
+  local dir="${1:-${PROJECT_DIR:-}}"
   local ref sha
   if [[ -n "$dir" ]] && ref="$(git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null)" && [[ -n "$ref" ]]; then
     echo "$ref"; return 0
   fi
   if [[ -n "$dir" ]] \
      && sha="$(git -C "$dir" rev-parse --short HEAD 2>/dev/null)" && [[ -n "$sha" ]]; then
-    echo "$sha (detached)"; return 0
+    echo "$sha"; return 0
   fi
-  echo "(absent)"
 }
 
-# project_branch_age SHA  --  print how far the current project HEAD is ahead
-# of the given commit SHA: "N commit[s] ago", "0 commits ago", "not in
-# tree" when SHA is not a resolvable commit in the current project (PROJECT_DIR
-# git), or "-" when SHA is empty. Shared by the resume session table and the
-# draft bundle table AGE columns.
-project_branch_age() {
+# project_current_branch  --  print the caller's current git position
+# (PROJECT_DIR) for display: project_current_ref, suffixed ` (detached)` when the
+# ref is a short SHA, or `(absent)` when the ref is empty. Empty is never a valid
+# return (absent is spelled explicitly).
+project_current_branch() {
+  local dir="${PROJECT_DIR:-}" ref
+  ref="$(project_current_ref "$dir")"
+  if [[ -z "$ref" ]]; then echo "(absent)"; return 0; fi
+  if [[ -n "$dir" ]] && [[ "$(git -C "$dir" symbolic-ref --quiet HEAD 2>/dev/null)" == "refs/heads/$ref" ]]; then
+    echo "$ref"
+  else
+    echo "$ref (detached)"
+  fi
+}
+
+# project_commits_since SHA  --  print how many commits the current project HEAD
+# is ahead of SHA: "N commit[s] ago", "0 commits ago", "not in tree" when SHA is
+# not a commit in the current project (PROJECT_DIR git), or "-" when SHA is
+# empty. Shared by the resume session table and the draft bundle table STATE
+# columns (the commit distance; the AGE columns hold wall-clock time).
+project_commits_since() {
   local sha="$1" n
   [[ -n "$sha" ]] || { echo "-"; return 0; }
   [[ -n "${PROJECT_DIR:-}" && -d "$PROJECT_DIR/.git" ]] || { echo "not in tree"; return 0; }
-  if ! git -C "$PROJECT_DIR" cat-file -e "$sha^{commit}" >/dev/null 2>&1; then
-    echo "not in tree"; return 0
-  fi
-  n="$(git -C "$PROJECT_DIR" rev-list --count "$sha"..HEAD 2>/dev/null || true)"
+  git_commit_exists "$PROJECT_DIR" "$sha" || { echo "not in tree"; return 0; }
+  n="$(git_commit_distance "$PROJECT_DIR" "$sha")"
   if [[ -z "$n" ]]; then echo "not in tree"; return 0; fi
   if [[ "$n" -eq 0 ]]; then echo "0 commits ago"; return 0; fi
   echo "$n commit$([[ "$n" -eq 1 ]] && echo '' || echo 's') ago"

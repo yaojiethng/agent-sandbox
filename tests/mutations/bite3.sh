@@ -46,9 +46,9 @@ echo "== Original-file probes for untested surfaces =="
   session_log_set val 'k' 'a&b'; echo "P-B session_log_set value 'a&b' -> file: '$(cat "$d/.compose/val.log")'"
   rm -f "$d/.compose/val.log"
   session_log_set val2 'k' 'a#b' 2>/tmp/err; echo "P-C session_log_set value 'a#b' -> file: '$(cat "$d/.compose/val2.log" 2>/dev/null)'  stderr: $(tr '\n' ' ' < /tmp/err)"
-  # P: project_branch_age "-" for empty sha and N>1
+  # P: project_commits_since "-" for empty sha and N>1
   export PROJECT_DIR="$d"; git -C "$d" init -q 2>/dev/null
-  echo "P-D project_branch_age '' -> '$(project_branch_age '')'"
+  echo "P-D project_commits_since '' -> '$(project_commits_since '')'"
   echo "P-E project_current_branch in a git repo with no commit -> '$(project_current_branch)'"
   rm -rf "$d" )
 echo "--- restored: $(cmp -s "$src" "$orig" && echo identical || echo MISMATCH) ---"

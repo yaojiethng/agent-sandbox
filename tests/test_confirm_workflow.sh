@@ -6,7 +6,7 @@
 
 #
 # Covers:
-#   confirm_run   --  rebases, merges, deletes draft branch
+#   confirm_run   --  rebases, merges, deletes draft branch; refuses a non-commit target
 #   savepoint rollback  --  no-savepoint-tag, stale-tag, drop-step failures
 #
 # Uses make_draft_fixture for synthetic session exports and the conflict
@@ -99,6 +99,19 @@ test_confirm_target_branch() {
   else
     fail "not on feature-branch after confirm: $CURR"
   fi
+}
+
+# Given: a well-formed 40-hex id that is not a commit object as TARGET_BRANCH
+# When:  confirm_run runs
+# Then:  it refuses before touching the draft
+# Asserts: the strong commit check; `rev-parse --verify` would accept the hex.
+test_confirm_rejects_non_commit_target() {
+  make_draft_fixture confirm_badhex 1
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+
+  local OUT
+  OUT=$(confirm_run "$P" "$S" "0000000000000000000000000000000000000000" 2>&1) || true
+  assert_contains "$OUT" "target branch does not exist" "confirm refuses a non-commit target"
 }
 
 # Given: HEAD is not on a draft/* branch
@@ -373,6 +386,7 @@ test_confirm_new_branch_requires_target() {
 run_test test_confirm_deletes_draft_branch
 run_test test_confirm_merges_changes
 run_test test_confirm_target_branch
+run_test test_confirm_rejects_non_commit_target
 run_test test_confirm_rejects_non_draft_branch
 run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
