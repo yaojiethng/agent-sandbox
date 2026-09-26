@@ -7,7 +7,10 @@
 #
 # Covers:
 #   confirm_run   --  rebases, merges, deletes draft branch; refuses a non-commit target
+#   confirm_run guards  --  missing project, held index lock, non-draft verdict,
+#                       unresolvable target, NEW-mode branch-creation failure
 #   savepoint rollback  --  no-savepoint-tag, stale-tag, drop-step failures
+#   confirm.sh entry point  --  identity-argument guard and confirm_run forwarding
 #
 # Uses make_draft_fixture for synthetic session exports and the conflict
 # fixture builders at the bottom of this file.
@@ -23,6 +26,12 @@ source "$REPO_ROOT/scripts/guards.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/draft_fixtures.sh"
+
+# lsof stub: a probe that exits 0 reports a live holder, so
+# draft_clear_stale_lock refuses a planted lock deterministically.
+mkdir -p "$FIXTURE_ROOT/stub_lsof_hold"
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/stub_lsof_hold/lsof"
+chmod +x "$FIXTURE_ROOT/stub_lsof_hold/lsof"
 
 # Given: a draft branch with its work committed
 # When:  confirm_run runs
@@ -116,16 +125,87 @@ test_confirm_rejects_non_commit_target() {
 
 # Given: HEAD is not on a draft/* branch
 # When:  confirm_run runs
-# Then:  the output says so
-# Asserts: the message only - it comes from the sub-function, so the unit cannot tell whether confirm honoured the verdict (row 243)
+# Then:  it refuses at the branch validation and never evaluates the unset state
+# Asserts: draft_validate_branch's verdict is honoured - a caller that continues
+#          reaches the unbound source_branch and reports it (bite C3)
 test_confirm_rejects_non_draft_branch() {
   local P="$FIXTURE_DIR/confirm_nondraft_p"
   make_committed_repo "$P"
   local S="$FIXTURE_DIR/confirm_nondraft_s"
 
-  local OUT
-  OUT=$(confirm_run "$P" "$S" "" 2>&1) || true
-  assert_contains "$OUT" "not on a draft branch" "confirm rejects when not on a draft branch"
+  local OUT RC=0
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  if [[ "$RC" -ne 0 && "$OUT" == *"not on a draft branch"* \
+     && "$OUT" != *"unbound variable"* ]]; then
+    pass "confirm rejects when not on a draft branch and stops at the verdict"
+  else
+    fail "confirm continued past the draft-validation verdict: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a PROJECT_DIR that does not exist
+# When:  confirm_run runs
+# Then:  it refuses at the project guard and does not reach draft validation
+# Asserts: validate_project_dir's verdict is honoured (bite C1)
+test_confirm_rejects_missing_project_dir() {
+  local P="$FIXTURE_DIR/confirm_missing_p"
+  local S="$FIXTURE_DIR/confirm_missing_s"
+
+  local OUT RC=0
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"PROJECT_DIR does not exist"* \
+     && "$OUT" != *"not in a git repository"* ]]; then
+    pass "confirm refuses a missing PROJECT_DIR before draft validation"
+  else
+    fail "confirm should stop at the missing-project guard: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a valid draft and a .git/index.lock the holder probe reports as held
+# When:  confirm_run runs
+# Then:  it refuses at the stale-lock guard and does not start the drop step
+# Asserts: draft_clear_stale_lock's verdict is honoured (bite C2)
+test_confirm_rejects_held_index_lock() {
+  make_draft_fixture confirm_heldlock 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+
+  touch "$P/.git/index.lock"
+
+  local OUT RC=0
+  OUT=$(PATH="$FIXTURE_ROOT/stub_lsof_hold:$PATH" confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  rm -f "$P/.git/index.lock"
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"index.lock is held"* \
+     && "$OUT" != *"Dropping .draft-state commit"* && -n "$DRAFT_BRANCH" ]]; then
+    pass "confirm refuses a held index lock before the drop step"
+  else
+    fail "confirm should stop at the held-lock guard: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: --target naming a branch that does not exist
+# When:  confirm_run runs
+# Then:  it refuses and names the remedy
+# Asserts: the target-exists check and its operator direction (bite C7)
+test_confirm_rejects_nonexistent_target() {
+  make_draft_fixture confirm_badtarget 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+
+  local OUT RC=0
+  OUT=$(confirm_run "$P" "$S" "no-such-target" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"target branch does not exist"* \
+     && "$OUT" == *"make confirm TARGET_BRANCH=<branch>"* ]] \
+     && _branch_exists "$P" "$DRAFT_BRANCH"; then
+    pass "confirm refuses an unresolvable target and points at the remedy"
+  else
+    fail "confirm should refuse an unresolvable target: rc=$RC out=$OUT"
+  fi
 }
 
 # Given: commits added after the .draft-state commit, so the tip has moved past it
@@ -315,6 +395,31 @@ test_confirm_drop_step_failure_restores_savepoint() {
   git -C "$P" rebase --abort 2>/dev/null || true
 }
 
+# Given: NEW mode and a target name git cannot create as a branch
+# When:  confirm_run runs
+# Then:  it fails, rolls the draft back to the savepoint, and does not reach the rebase phase
+# Asserts: the branch-creation failure rollback and its verdict (bites C13, C14)
+test_confirm_new_branch_creation_failure_rolls_back() {
+  make_draft_fixture confirm_newfail 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH TIP_BEFORE
+  DRAFT_BRANCH=$(draft_branch "$P")
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+
+  local OUT RC=0
+  OUT=$(confirm_run "$P" "$S" "bad..name" "true" 2>&1) || RC=$?
+
+  local TIP_AFTER
+  TIP_AFTER=$(git -C "$P" rev-parse HEAD)
+  if [[ "$RC" -ne 0 && "$OUT" == *"failed to create branch"* \
+     && "$OUT" != *"Conflict rebasing"* && "$TIP_AFTER" == "$TIP_BEFORE" ]] \
+     && _branch_exists "$P" "$DRAFT_BRANCH"; then
+    pass "confirm NEW rolls back to the savepoint when branch creation fails"
+  else
+    fail "confirm NEW creation-failure arm wrong: rc=$RC tip=$([[ "$TIP_AFTER" == "$TIP_BEFORE" ]] && echo restored || echo moved) out=$OUT"
+  fi
+}
+
 # Given: NEW mode with a target name no branch uses
 # When:  confirm_run runs
 # Then:  the new branch holds the draft tip, the draft is gone, the source branch is untouched, and the reset direction is printed
@@ -380,6 +485,50 @@ test_confirm_new_branch_requires_target() {
   assert_contains "$OUT" "requires TARGET_BRANCH" "confirm NEW requires a target branch name"
 }
 
+# Given: a valid draft and a script invocation that names only the project
+# When:  confirm.sh runs as a script
+# Then:  it refuses and prints the usage, without calling confirm_run
+# Asserts: main's identity-argument guard (bite C23)
+test_confirm_script_entry_requires_identity() {
+  local P="$FIXTURE_DIR/confirm_entry_missing_p"
+  make_committed_repo "$P"
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"Usage: agent-sandbox confirm"* ]]; then
+    pass "confirm.sh entry point refuses to run without --sandbox"
+  else
+    fail "confirm.sh entry point identity guard broken: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a valid draft and a script invocation with both identity flags
+# When:  confirm.sh runs as a script
+# Then:  the draft is merged and deleted
+# Asserts: main forwards to confirm_run and carries its verdict (bite C24)
+test_confirm_script_entry_merges_draft() {
+  make_draft_fixture confirm_entry 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH BEFORE
+  DRAFT_BRANCH=$(draft_branch "$P")
+  BEFORE=$(git -C "$P" rev-list --count main)
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
+    --project="$P" --sandbox="$S" 2>&1) || RC=$?
+
+  local AFTER DRAFT_LEFT
+  AFTER=$(git -C "$P" rev-list --count main)
+  DRAFT_LEFT=$(draft_branch "$P")
+  if [[ "$RC" -eq 0 && -z "$DRAFT_LEFT" && "$AFTER" -gt "$BEFORE" ]] \
+     && [[ "$OUT" == *"Done. Changes merged into main."* ]]; then
+    pass "confirm.sh entry point merges the draft through confirm_run"
+  else
+    fail "confirm.sh entry point broken: rc=$RC before=$BEFORE after=$AFTER draft='$DRAFT_LEFT' out=$OUT"
+  fi
+}
+
 # =============================================================================
 # Run all
 # =============================================================================
@@ -395,5 +544,11 @@ run_test test_confirm_drop_step_failure_restores_savepoint
 run_test test_confirm_new_branch_creates_and_prints_hint
 run_test test_confirm_new_branch_rejects_existing
 run_test test_confirm_new_branch_requires_target
+run_test test_confirm_rejects_missing_project_dir
+run_test test_confirm_rejects_held_index_lock
+run_test test_confirm_rejects_nonexistent_target
+run_test test_confirm_new_branch_creation_failure_rolls_back
+run_test test_confirm_script_entry_requires_identity
+run_test test_confirm_script_entry_merges_draft
 
 test_done

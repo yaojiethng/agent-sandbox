@@ -6,9 +6,9 @@
 
 #
 # Covers:
-#   interactive_confirm_or_abort    --  y/N prompt, return codes
-#   interactive_select_channel      --  channel picker, entry counts
-#   interactive_select_bundle      --  session picker, indicators, cap
+#   interactive_confirm_or_abort    --  y/N prompt, return codes, non-tty warning
+#   interactive_select_channel      --  channel picker, entry counts, autosave newest cell
+#   interactive_select_bundle      --  session picker, display contract, autosave order, cap
 
 set -uo pipefail
 
@@ -113,6 +113,16 @@ test_confirm_or_abort_no_label() {
   local FIRST_LINE
   FIRST_LINE=$(echo "$STDERR" | head -1)
   assert_eq "$FIRST_LINE" "  item" "interactive_confirm_or_abort with empty label skips header"
+}
+
+# Given: a confirmation prompt
+# When:  stdin is piped, not a terminal
+# Then:  stderr carries the non-tty warning
+# Asserts: the documented non-tty warning (bite I7)
+test_confirm_or_abort_warns_on_non_tty() {
+  local STDERR
+  STDERR=$(echo "y" | interactive_confirm_or_abort "Apply:" "/path/to/diff" 2>&1 >/dev/null)
+  assert_contains "$STDERR" "Warning: stdin is not a terminal" "interactive_confirm_or_abort warns on a non-tty stdin"
 }
 
 # =============================================================================
@@ -242,7 +252,7 @@ test_select_session_default_highlighted() {
 # Given: three bundles whose contents differ (full, empty, patches only)
 # When:  the operator chooses 1
 # Then:  the newest bundle is returned
-# Asserts: entry order only; the availability markers its name claims are asserted nowhere (row 260, bite I4)
+# Asserts: entry order only; the availability markers are pinned separately
 test_select_session_availability_indicators() {
   local SANDBOX="$FIXTURE_DIR/ss_indicators"
   mkdir -p "$SANDBOX"
@@ -345,30 +355,56 @@ test_select_session_cap_at_ten() {
   fi
 }
 
-# Given: a bundle whose name is 81 characters
+# Given: a bundle whose name exceeds the 34-character BUNDLE column
 # When:  the operator quits
-# Then:  the displayed name carries an ellipsis
-# Asserts: truncation happens, not the width it happens at; the 34-column literal is unpinned and the unit's stated 50 characters is stale (row 260, bite I5)
+# Then:  the displayed name is the first 31 characters plus an ellipsis
+# Asserts: the truncation happens at the 34-column width, not just that some ellipsis appears (bite I5)
 test_select_session_name_truncation() {
   local SANDBOX="$FIXTURE_DIR/ss_trunc"
   mkdir -p "$SANDBOX"
   local BASE="$SANDBOX/.workspace/session-diffs/session"
   mkdir -p "$BASE"
 
-  # Create a session with a name > 50 chars
   local LONG_NAME="20260504-120000-this-is-a-very-long-branch-name-that-exceeds-fifty-characters"
   make_session_fixture "$BASE/$LONG_NAME" 1
 
   local STDERR
   STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
-  # The displayed name should be truncated (contains "...")
-  # The fixture name exceeds 50 chars, so truncation must happen: a missing
-  # "..." is a regression, not an acceptable alternative.
-  if echo "$STDERR" | grep -q "\.\.\."; then
-    pass "interactive_select_bundle truncates names longer than 50 chars"
-  else
-    fail "expected truncated name with '...', got: $STDERR"
-  fi
+  # The column is 34 wide, so a longer name is cut to 31 characters plus "...".
+  local EXPECTED="${LONG_NAME:0:31}..."
+  assert_contains "$STDERR" "$EXPECTED" "interactive_select_bundle truncates to the 34-column width"
+}
+
+# Given: a bundle carrying a non-empty uncommitted.diff
+# When:  the operator quits
+# Then:  the UNCOMMITTED cell reads [x]
+# Asserts: the uncommitted marker spelling (bite I4)
+test_select_session_uncommitted_marker() {
+  local SANDBOX="$FIXTURE_DIR/ss_marker"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-dirty" 1 content
+
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  assert_contains "$STDERR" "[x]" "interactive_select_bundle marks an uncommitted diff with [x]"
+}
+
+# Given: a bundle carrying an export TIMESTAMP
+# When:  the operator quits
+# Then:  the AGE cell reads an "exported <age>" value
+# Asserts: the AGE cell's exported prefix (bite I6)
+test_select_session_age_cell_exported_prefix() {
+  local SANDBOX="$FIXTURE_DIR/ss_ageprefix"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/session"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/20260504-120000-aged" 1
+
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_bundle "$SANDBOX" "session" 2>&1 >/dev/null) || true
+  assert_contains "$STDERR" "exported " "interactive_select_bundle prefixes the AGE cell with 'exported'"
 }
 
 # =============================================================================
@@ -677,6 +713,47 @@ test_select_session_current_branch_hint() {
 }
 
 # =============================================================================
+# interactive_select_bundle  --  autosave channel
+# =============================================================================
+
+# Given: two autosave dirs whose name order is the reverse of their mtime order
+# When:  the operator chooses 1
+# Then:  the most-recently-saved dir is returned
+# Asserts: the autosave branch orders by directory mtime, newest first (bite I13)
+test_select_autosave_bundle_mtime_order() {
+  local SANDBOX="$FIXTURE_DIR/ss_autosave_order"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/autosave"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/aaa-newest" 1
+  make_session_fixture "$BASE/zzz-oldest" 1
+  # Name order (zzz first) disagrees with mtime order (aaa first).
+  touch -d "10 days ago" "$BASE/zzz-oldest"
+
+  local BUNDLE
+  BUNDLE=$(echo "1" | interactive_select_bundle "$SANDBOX" "autosave" 2>/dev/null)
+  assert_eq "$BUNDLE" "aaa-newest" "interactive_select_bundle orders autosave dirs by mtime, newest first"
+}
+
+# Given: two autosave dirs whose name order is the reverse of their mtime order
+# When:  the channel picker lists the autosave channel
+# Then:  its newest cell reports the most-recently-saved dir
+# Asserts: the autosave newest-saved relative-time cell (bite I14)
+test_select_autosave_channel_newest_saved_cell() {
+  local SANDBOX="$FIXTURE_DIR/ss_autosave_cell"
+  mkdir -p "$SANDBOX"
+  local BASE="$SANDBOX/.workspace/session-diffs/autosave"
+  mkdir -p "$BASE"
+  make_session_fixture "$BASE/aaa-newest" 1
+  make_session_fixture "$BASE/zzz-oldest" 1
+  touch -d "10 days ago" "$BASE/zzz-oldest"
+
+  local STDERR
+  STDERR=$(echo "q" | interactive_select_channel "draft" "$SANDBOX" 2>&1 >/dev/null) || true
+  assert_contains "$STDERR" "newest: just now" "interactive_select_channel reports the autosave newest-saved time"
+}
+
+# =============================================================================
 # Run all
 # =============================================================================
 
@@ -687,6 +764,7 @@ run_test test_confirm_or_abort_q_aborts
 run_test test_confirm_or_abort_prints_items_to_stderr
 run_test test_confirm_or_abort_stdout_empty
 run_test test_confirm_or_abort_no_label
+run_test test_confirm_or_abort_warns_on_non_tty
 
 run_test test_select_channel_draft_lists_channels
 run_test test_select_channel_default_highlighted
@@ -701,6 +779,8 @@ run_test test_select_session_patch_count_shown
 run_test test_select_session_zero_entries
 run_test test_select_session_cap_at_ten
 run_test test_select_session_name_truncation
+run_test test_select_session_uncommitted_marker
+run_test test_select_session_age_cell_exported_prefix
 
 run_test test_select_session_inject_option_zero
 run_test test_select_session_option_zero_by_number
@@ -716,6 +796,8 @@ run_test test_select_session_pagination_option_zero_persists
 run_test test_select_session_pagination_no_n_at_last_page
 run_test test_select_session_state_and_age_columns
 run_test test_select_session_current_branch_hint
+run_test test_select_autosave_bundle_mtime_order
+run_test test_select_autosave_channel_newest_saved_cell
 
 test_done
 
