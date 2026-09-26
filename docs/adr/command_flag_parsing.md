@@ -1,11 +1,25 @@
 # Command Flag Ingestion
 
-**Current:** 2026-09-19
+**Current:** 2026-09-25
 
 > This ADR records the design as it stands and is expected to evolve. The
 > per-command flag surface centralization landed in one pass across all leaf
 > scripts; a later change supersedes the current entry by adding a dated
 > entry, per the ADR policy. It is not a locked contract.
+
+## 2026-09-25 -- A flag's shape must match its spec: a bare value flag is a rejected input
+
+**Decision:** A spec entry's kind and the argument's shape must agree. `_cli_parse` treats a value flag written without `=` (`--env`) and a boolean flag written with one (`--yes=true`) as *not a match*: it clears the entry and lets the mode's unknown-argument policy decide the argument's fate. `parse_args` therefore rejects a bare value flag with `Unknown argument: --env` and rc 1, leaving the target variable unset; `parse_args_collect` forwards it to the sink unchanged for the leaf to reject; tolerant mode warns and drops it.
+
+**Why it supersedes the 2026-09-19 edge case:** the 2026-09-19 entry recorded that a bare value flag "is consumed with an empty value, the same final leaf state as before". The implementation did neither: `${a#*=}` on an argument with no `=` returns the whole string, so `declare -g "$var=${a#*=}"` assigned the flag's own name as the value. The path is reachable and fail-open. `parse_args u --name=PROJECT_NAME -- --name` set `PROJECT_NAME=--name` and returned 0, and in `prune.sh` a missing `--age-days` value reached `date -d "--age-days days ago"`, failed, produced an empty cutoff, skipped the age filter, and selected every stale record instead of only those older than the default. Rejecting an unusable shape is both the smaller contract and the fail-closed one.
+
+**Rationale:** a flag's shape is a contract, not a hint. Reading an absent value as the flag's name is a silent misconfiguration in every caller, and the thirteen `parse_args` callers cannot each defend against it. Deciding the fate of a mismatched shape in the mode's existing unknown-argument policy keeps one rule rather than three: the parser says "not a match", and strict, tolerant and collect each answer as they already do for an unknown word.
+
+**Rejected alternatives:** assign an empty value, the recorded intent - rejected: a bare `--age-days` would still yield an empty cutoff and the same fail-open selection of every record, so it silences the misconfiguration instead of reporting it. Consume the following argument as the value, the GNU long-option convention - rejected: it steals the next positional token, which in collect mode is forwarded verbatim, and it makes a trailing bare flag undetectable. Validate in each caller - rejected: thirteen callers would re-implement a rule the parser already holds in the spec's kind.
+
+**Edge cases / drivers:** R2's exact-surface requirement still holds and the suite pins it: `tests/test_cli_lib.sh` covers a rejected bare value flag, a forwarded one in collect mode, and a boolean flag carrying a value. A leaf that accepted a bare value flag as empty now rejects it; no caller relies on the old form. The `prune.sh` half of the original finding, numeric validation of `AGE_DAYS`, is a separate fail-closed item and is not part of this entry.
+
+Implementation: `src/libs/cli.sh` (`_cli_parse`), tests `tests/test_cli_lib.sh`.
 
 ## 2026-09-19 -- Collect mode: the dispatcher joins the canonical parser
 
@@ -15,7 +29,7 @@
 
 **Rationale:** one parser semantics across all entry points; the dispatcher spec line reads as a table of the front door's own flags (identity + `--env`); future flag shapes added to the parser apply to the front door as well. Operator behavior is byte-identical (parity contract; the dispatch oracle suite pins it - unchanged `tests/test_dispatch.sh` cases remain green, plus a new order/passthrough case).
 
-**Edge cases / drivers:** a bare value flag (`--env` without `=`) is consumed with an empty value, the same final leaf state as before. Unknown flags and positional tokens pass through in order. `SINK_VAR` must exist at call time (the dispatcher resets `PASSTHROUGH=()` before parsing). Identity validation is unchanged: `resolve_identity` and `check_base_flags` semantics untouched (R3) - parsing now happens in the spec, validation stays shared.
+**Edge cases / drivers:** a bare value flag (`--env` without `=`) is consumed with an empty value, the same final leaf state as before. **Superseded 2026-09-25:** the parser assigned the flag's own name instead of an empty value, and a mismatched shape is now rejected rather than consumed. Unknown flags and positional tokens pass through in order. `SINK_VAR` must exist at call time (the dispatcher resets `PASSTHROUGH=()` before parsing). Identity validation is unchanged: `resolve_identity` and `check_base_flags` semantics untouched (R3) - parsing now happens in the spec, validation stays shared.
 
 **Rejected alternatives:** keep the exception - rejected, the operator directed closure and the front door was the last non-canonical entry point. A tolerance knob on `parse_args` (`_CLI_TOLERANT` drops unknowns, it does not collect them) - rejected: dropping and collecting are different contracts; the collector needs the ordered remainder. Module-level parse state (a registry shared between entry points) - rejected: it forces `declare -g`, per-parse resets, and cross-parse contamination; a per-call local registry avoids all three.
 
@@ -30,6 +44,7 @@ Implementation: `src/libs/cli.sh` (`_cli_parse`, `parse_args`, `parse_args_colle
 | R3 | Identity stays shared | `--name`/`--project`/`--sandbox` parse through the shared base-flag helper, never re-implemented per script |
 | R4 | Validation stays explicit | Flag-specific validation (e.g. `--delivery` allowed values) runs after parse, at the owning script, not inside the parser |
 | R5 | Forwarding is explicit | The dispatcher collects passthrough args and forwards them to the leaf; no env-var smuggling of command input |
+| R6 | A flag's shape matches its spec | A value flag with no `=` and a boolean flag with one are not matches; the mode's unknown-argument policy decides their fate (2026-09-25) |
 
 ## 2026-09-18 -- Shared declarative parser: one flag-routing path
 
