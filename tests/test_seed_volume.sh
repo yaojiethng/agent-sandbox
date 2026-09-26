@@ -594,6 +594,33 @@ test_seeder_prunes_unreachable_objects() {
   fi
 }
 
+# Given: a flattened seed whose volume worktree is dirtied afterwards
+# When:  verify_baseline runs directly on the pair
+# Then:  it returns non-zero and names the unclean worktree
+# Asserts: the worktree-clean assertion, distinct from the file-set comparison.
+test_seeder_flat_verification_detects_dirty_worktree() {
+  local proj="$FIXTURE_DIR/flat_dirty_project"
+  local dest="$FIXTURE_DIR/flat_dirty_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten dirty: rich project flattens successfully"; return 0
+  fi
+  pass "flatten dirty: rich project flattens successfully"
+
+  echo "residue" > "$dest/untracked_residue.txt"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+  # shellcheck disable=SC1090
+  SEED_LIB_DIR="$LIBS_DIR" SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"
+  local OUT RC=0
+  OUT=$(verify_baseline "$proj" "$dest" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"the volume worktree is not clean"* ]]; then
+    pass "flatten dirty: verify_baseline fails on an unclean volume worktree"
+  else
+    fail "flatten dirty: expected unclean-worktree refusal, rc=$RC out='$OUT'"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -615,6 +642,7 @@ run_test test_seeder_clears_host_stash
 run_test test_seeder_prunes_unreachable_objects
 run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
+run_test test_seeder_flat_verification_detects_dirty_worktree
 
 test_done
 

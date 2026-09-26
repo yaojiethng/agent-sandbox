@@ -129,6 +129,24 @@ test_resolve_ignores_leaked_plain_export() {
   fi
 }
 
+# Given: a fixture .env whose SANDBOX_DIR differs from AGENT_SANDBOX_SANDBOX_DIR
+# When:  env_resolve_identity resolves only the sandbox field
+# Then:  SANDBOX_DIR holds the env-var value
+# Asserts: the AGENT_SANDBOX_SANDBOX_DIR level is read, and beats the .env.
+test_resolve_sandbox_env_var_wins_over_file() {
+  local dir="$FIXTURE_DIR/sandboxenv"
+  make_envfile "$dir" envname "$dir/envproj" "$dir/fromfile"
+  local OUT RC=0
+  OUT=$(set -e; AGENT_SANDBOX_SANDBOX_DIR="$dir/fromenv" \
+        env_resolve_identity "" "" "" "$dir/.env" sandbox \
+        && printf '%s' "$SANDBOX_DIR") || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == "$dir/fromenv" ]]; then
+    pass "AGENT_SANDBOX_SANDBOX_DIR env var beats .env for the sandbox field"
+  else
+    fail "sandbox env level broken: rc=$RC out='$OUT'"
+  fi
+}
+
 run_test test_resolve_explicit_wins_over_env_and_file
 run_test test_resolve_env_var_wins_over_file
 run_test test_resolve_file_provides_value
@@ -136,5 +154,6 @@ run_test test_resolve_missing_all_is_hard_error
 run_test test_resolve_env_file_in_provided_sandbox_dir
 run_test test_resolve_env_file_cwd_fallback
 run_test test_resolve_ignores_leaked_plain_export
+run_test test_resolve_sandbox_env_var_wins_over_file
 
 test_done test_env_resolve.sh

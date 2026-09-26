@@ -21,7 +21,47 @@ _test_usage() { echo "usage: test" >&2; }
 # parse_args
 # ---------------------------------------------------------------------------
 
-# Given: a spec --delivery=DELIVERY and the arg --delivery=copy
+# Given: a value spec written as --flag= (empty target name)
+# When:  parse_args runs
+# Then:  the value lands in the derived UPPER_SNAKE variable
+# Asserts: the empty-var value form writes into <UPPER_SNAKE(flag)>.
+test_parse_args_derived_name_value_flag() {
+  unset BRANCH_FROM 2>/dev/null || true
+  parse_args _test_usage --branch-from= -- --branch-from=abc123 >/dev/null 2>&1
+  assert_eq "${BRANCH_FROM:-}" "abc123" "parse_args: --flag= writes the derived variable name"
+}
+
+# Given: a predeclared DELIVERY=copy and a spec whose flag never fires
+# When:  parse_args runs
+# Then:  DELIVERY keeps its predeclared value
+# Asserts: the unset-only default rule a caller relies on.
+test_parse_args_preserves_predeclared_default() {
+  DELIVERY="copy"
+  parse_args _test_usage --delivery=DELIVERY >/dev/null 2>&1
+  assert_eq "$DELIVERY" "copy" "parse_args: a predeclared default survives an unfired spec"
+}
+
+# Given: _CLI_UNKNOWN_WORD set to a custom opening word and an unknown argument
+# When:  parse_args runs in strict mode
+# Then:  stderr opens with the custom word
+# Asserts: the unknown-word override used by leaf scripts.
+test_parse_args_unknown_word_override() {
+  local OUT
+  OUT=$( _CLI_UNKNOWN_WORD="Unknown flag"; parse_args _test_usage --known -- --bogus 2>&1 ) || true
+  assert_contains "$OUT" "Unknown flag: --bogus" "parse_args: _CLI_UNKNOWN_WORD overrides the unknown-argument word"
+}
+
+# Given: a value argument containing '='
+# When:  parse_args runs
+# Then:  the whole value is assigned, with its later '=' segments
+# Asserts: the value keeps every segment after the first '='.
+test_parse_args_value_keeps_equals_segments() {
+  PROJECT_NAME=""
+  parse_args _test_usage --name=PROJECT_NAME -- --name=a=b=c >/dev/null 2>&1
+  assert_eq "$PROJECT_NAME" "a=b=c" "parse_args: a value containing '=' is preserved"
+}
+
+# Given: a value spec and the arg --delivery=copy
 # When:  parse_args runs
 # Then:  DELIVERY is copy
 # Asserts: the value-flag route.
@@ -202,14 +242,16 @@ test_collect_boolean_spec_not_sinked() {
   assert_eq "${PASSTHROUGH[*]}" "v1" "collect: boolean flag not collected"
 }
 
-# Given: a --permissive spec and two positional args
+# Given: a non-dashed literal spec, its matching argument, and two positionals
 # When:  parse_args_collect runs
-# Then:  both args are collected
-# Asserts: sink contents only - the spec is registered as a boolean because the dashed arm precedes the literal arm, so this does not exercise the literal kind (finding 42).
-test_collect_literal_spec_not_sinked() {
+# Then:  the literal is consumed, the positionals are collected, and no variable is set
+# Asserts: the literal spec kind is reachable for a name that does not start with --.
+test_collect_true_literal_spec_not_sinked() {
   PASSTHROUGH=()
-  parse_args_collect PASSTHROUGH --permissive -- p1 p2
+  unset PERMISSIVE 2>/dev/null || true
+  parse_args_collect PASSTHROUGH permissive -- permissive p1 p2
   assert_eq "${PASSTHROUGH[*]}" "p1 p2" "collect: literal spec consumed, rest collected"
+  assert_empty "${PERMISSIVE:-}" "collect: a literal spec sets no variable"
 }
 
 # Given: a caller-owned sink pre-seeded with one entry
@@ -277,6 +319,10 @@ test_collect_has_no_stale_registry() {
 # ---------------------------------------------------------------------------
 
 run_test test_parse_args_value_flag
+run_test test_parse_args_derived_name_value_flag
+run_test test_parse_args_preserves_predeclared_default
+run_test test_parse_args_unknown_word_override
+run_test test_parse_args_value_keeps_equals_segments
 run_test test_parse_args_boolean_flag
 run_test test_parse_args_unknown_strict_fails
 run_test test_parse_args_tolerant_drops_unknown
@@ -289,7 +335,7 @@ run_test test_collect_routes_specs_and_appends_rest
 run_test test_collect_never_errors_on_unknown
 run_test test_collect_empty_args
 run_test test_collect_boolean_spec_not_sinked
-run_test test_collect_literal_spec_not_sinked
+run_test test_collect_true_literal_spec_not_sinked
 run_test test_collect_appends_to_predeclared_sink
 run_test test_collect_help_not_special
 run_test test_collect_bare_value_flag_forwarded

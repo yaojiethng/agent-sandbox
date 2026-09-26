@@ -320,10 +320,35 @@ test_draft_diffs_range() {
   assert_eq_num "$COUNT" "4" "draft DIFFS range applies only selected diffs"
 }
 
+# Given: an export directory whose name carries no <ts>-<branch> shape
+# When:  the draft runs through the production orchestration
+# Then:  the raw folder name becomes the branch identity segment
+# Asserts: the folder name is not validated; the identity falls back to the raw name
+#          and the slug segment is left empty.
+test_draft_unparseable_export_name_still_drafts() {
+  local P="$FIXTURE_DIR/draft_unparsed_p"
+  local S="$FIXTURE_DIR/draft_unparsed_s"
+  local EXPORT="$S/.workspace/session-diffs/session/weird"
+  make_committed_repo "$P"
+  mkdir -p "$S/.workspace"
+  make_session_fixture "$EXPORT" 1
+
+  local RC=0
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1 || RC=$?
+
+  local BRANCH
+  BRANCH=$(draft_branch "$P")
+  if [[ $RC -eq 0 && "$BRANCH" == draft/weird--* ]]; then
+    pass "an unparseable export name drafts with the raw name as identity (empty slug)"
+  else
+    fail "unparseable export name: rc=$RC branch='$BRANCH'"
+  fi
+}
+
 # Given: an export with no patches and no uncommitted changes
-# When:  the draft runs
+# When:  the draft runs through the production orchestration
 # Then:  it errors
-# Asserts: the missing-source refusal, reached in practice through the test-side replica (row 223)
+# Asserts: the missing-source refusal.
 test_draft_no_diffs_error() {
   local P="$FIXTURE_DIR/draft_nodiff_p"
   local S="$FIXTURE_DIR/draft_nodiff_s"
@@ -1139,6 +1164,7 @@ run_test test_draft_allows_parallel_drafts
 run_test test_draft_branch_from
 run_test test_draft_forks_from_named_base
 run_test test_draft_diffs_range
+run_test test_draft_unparseable_export_name_still_drafts
 run_test test_collect_patches_invalid_range_errors
 run_test test_collect_patches_empty_range_errors
 run_test test_draft_no_diffs_error

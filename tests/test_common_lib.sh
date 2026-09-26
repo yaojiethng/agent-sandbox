@@ -77,6 +77,53 @@ test_sandbox_dir_canon_expands_tilde() {
   assert_eq "$out" "$expected" "sandbox_dir_canon expands a leading ~"
 }
 
+# Given: an empty argument
+# When:  sandbox_dir_canon runs
+# Then:  rc is non-zero and the error names the empty value
+# Asserts: the empty-input guard.
+test_sandbox_dir_canon_rejects_empty() {
+  local OUT RC=0
+  OUT=$(sandbox_dir_canon "" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"SANDBOX_DIR is empty"* ]]; then
+    pass "sandbox_dir_canon rejects an empty path"
+  else
+    fail "empty guard broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a path that does not exist
+# When:  sandbox_dir_canon runs
+# Then:  rc is non-zero and the error names the unresolvable path
+# Asserts: the readlink failure path.
+test_sandbox_dir_canon_rejects_unresolvable() {
+  local OUT RC=0
+  OUT=$(sandbox_dir_canon "$FIXTURE_DIR/no-such-parent/child" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"cannot canonicalize"* ]]; then
+    pass "sandbox_dir_canon reports an unresolvable path"
+  else
+    fail "unresolvable path not reported: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a real directory reached through a symlink and a relative spelling
+# When:  sandbox_dir_canon runs on each spelling
+# Then:  both print the same canonical path
+# Asserts: symlink and relative spellings converge on one canonical value.
+test_sandbox_dir_canon_converges_spellings() {
+  local base="$FIXTURE_DIR/canon_base" link="$FIXTURE_DIR/canon_link"
+  mkdir -p "$base/sub"
+  ln -sfn "$base" "$link"
+  local expected out_rel out_link
+  expected="$(readlink -f "$base/sub")"
+  out_link="$(sandbox_dir_canon "$link/sub")"
+  out_rel="$(cd "$base" && sandbox_dir_canon "./sub")"
+  if [[ "$out_link" == "$expected" && "$out_rel" == "$expected" ]]; then
+    pass "sandbox_dir_canon converges symlink and relative spellings"
+  else
+    fail "spelling convergence broken: link='$out_link' rel='$out_rel' expected='$expected'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # check_base_flags
 # ---------------------------------------------------------------------------
@@ -165,6 +212,9 @@ run_test test_help_flag_detected
 run_test test_help_flag_short
 run_test test_help_flag_not_triggered
 run_test test_sandbox_dir_canon_expands_tilde
+run_test test_sandbox_dir_canon_rejects_empty
+run_test test_sandbox_dir_canon_rejects_unresolvable
+run_test test_sandbox_dir_canon_converges_spellings
 run_test test_check_base_flags_valid
 run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox

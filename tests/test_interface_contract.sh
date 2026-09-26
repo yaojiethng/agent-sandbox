@@ -73,6 +73,20 @@ test_image_contract_version_empty_for_unlabeled_image() {
   assert_empty "$got" "image_contract_version is empty when the label is absent"
 }
 
+# Given: no image name argument
+# When:  image_contract_version runs in a subshell
+# Then:  it aborts non-zero naming the required argument
+# Asserts: the required-argument guard.
+test_image_contract_version_requires_image_name() {
+  local OUT RC=0
+  OUT=$( (image_contract_version) 2>&1 ) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"image_contract_version requires an image name"* ]]; then
+    pass "image_contract_version hard-fails without an image name"
+  else
+    fail "missing-argument guard broken: rc=$RC out='$OUT'"
+  fi
+}
+
 # =============================================================================
 # Runner
 # =============================================================================
@@ -81,4 +95,5 @@ run_test test_interface_contract_version_is_positive_integer
 run_test test_image_contract_version_reads_baked_label
 run_test test_image_contract_version_per_image_map
 run_test test_image_contract_version_empty_for_unlabeled_image
+run_test test_image_contract_version_requires_image_name
 test_done test_interface_contract

@@ -90,6 +90,7 @@ SCRIPT
 }
 
 source_harness() {
+  local _pre_opts="$-"
   # The dispatcher self-locates AGENT_SANDBOX_REPO only when it is unset; preset
   # it here so its top-level `source $AGENT_SANDBOX_REPO/src/libs/...` resolves
   # the real common.sh and env_resolve.sh. Source the real dispatcher directly
@@ -100,6 +101,13 @@ source_harness() {
   exec() { mock_exec "$@"; }
 
   source "$REPO_ROOT/scripts/agent-sandbox.sh"
+
+  # The dispatcher enables errexit at its own top; the suite chose -uo pipefail.
+  # Restore the file's options so errexit does not leak into the later units.
+  case "$_pre_opts" in
+    *e*) : ;;
+    *) set +e ;;
+  esac
 }
 
 # =============================================================================

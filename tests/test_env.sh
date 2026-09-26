@@ -169,6 +169,42 @@ test_env_load_skips_invalid_key_with_warning() {
   fi
 }
 
+# Given: a .env with a comment line and a valid assignment
+# When:  env_load runs with stderr captured
+# Then:  stderr is empty and the assignment lands
+# Asserts: a comment line is recognised and skipped silently, not warned about as a malformed line.
+test_env_load_comment_lines_are_warning_free() {
+  local F="$FIXTURE_DIR/comment_free.env"
+  printf '# a comment\nK=ok\n' > "$F"
+  local errfile="$FIXTURE_DIR/comment_free.err"
+  local RC=0
+  env_load "$F" 2>"$errfile" || RC=$?
+  local ERR
+  ERR="$(cat "$errfile")"
+  if [[ $RC -eq 0 && -z "$ERR" && "${K:-}" == "ok" ]]; then
+    pass "env_load treats a comment line as inert, with no warning"
+  else
+    fail "comment line produced output: rc=$RC err='$ERR'"
+  fi
+}
+
+# Given: a .env with FOO=bar
+# When:  env_load runs and a child process reads FOO
+# Then:  the child sees bar
+# Asserts: a loaded value is exported, not only set in the current shell.
+test_env_load_exports_to_child_process() {
+  local F="$FIXTURE_DIR/child.env"
+  printf 'FOO=bar\n' > "$F"
+  env_load "$F"
+  local OUT
+  OUT=$(bash -c 'printf "%s" "${FOO:-}"')
+  if [[ "$OUT" == "bar" ]]; then
+    pass "env_load exports a loaded value to a child process"
+  else
+    fail "loaded value not exported: child saw '${OUT:-}'"
+  fi
+}
+
 run_test test_env_load_exports_valid_line
 run_test test_env_load_skips_comments_and_blanks
 run_test test_env_load_trims_value_padding
@@ -179,5 +215,7 @@ run_test test_env_load_keeps_inline_comment_text_as_value
 run_test test_env_load_skips_whitespace_only_key_lines
 run_test test_env_load_skips_indented_comments
 run_test test_env_load_strips_key_whitespace_and_crlf
+run_test test_env_load_comment_lines_are_warning_free
+run_test test_env_load_exports_to_child_process
 
 test_done test_env.sh

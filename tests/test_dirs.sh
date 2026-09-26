@@ -139,6 +139,34 @@ test_lib_preflight_warn_continues() {
   assert_contains "$OUT" "image may be stale" "lib_preflight: the WARN names the remedy"
 }
 
+# Given: a source file defining a function
+# When:  _source_lib sources it
+# Then:  the function is callable in this shell
+# Asserts: the source path of _source_lib.
+test_source_lib_sources_existing_file() {
+  local lib="$FIXTURE_DIR/source_lib_ok.sh"
+  printf 'source_lib_probe() { echo sourced-ok; }\n' > "$lib"
+  _source_lib "$lib" || { fail "_source_lib refused an existing file"; return; }
+  local OUT
+  OUT="$(source_lib_probe)"
+  assert_eq "$OUT" "sourced-ok" "_source_lib sources an existing library"
+}
+
+# Given: a file path that does not exist
+# When:  _source_lib runs
+# Then:  rc is non-zero and the error names the file and the rebuild remedy
+# Asserts: the missing-file path and its stale-image diagnostic.
+test_source_lib_missing_file_fails_loudly() {
+  local lib="$FIXTURE_DIR/absent_lib.sh"
+  local OUT RC=0
+  OUT=$(_source_lib "$lib" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"$lib is missing"* && "$OUT" == *"make build"* ]]; then
+    pass "_source_lib refuses a missing library with the rebuild remedy"
+  else
+    fail "missing-library diagnostic broken: rc=$RC out='$OUT'"
+  fi
+}
+
 # -------------------------
 # Run all tests
 # -------------------------
@@ -151,4 +179,6 @@ run_test test_custom_leaf_overrides
 run_test test_lib_preflight_passes_when_all_present
 run_test test_lib_preflight_critical_exits
 run_test test_lib_preflight_warn_continues
+run_test test_source_lib_sources_existing_file
+run_test test_source_lib_missing_file_fails_loudly
 test_done test_dirs

@@ -199,6 +199,12 @@ if [[ "$CMD" == "docker" ]]; then
       ;;
     stop|rm)
       log "$sub $*"
+      # DOCKER_STUB_STOP_FAIL simulates a failing docker stop, which stop.sh
+      # treats as fail-closed (a non-zero stop aborts the run).
+      if [[ "$sub" == "stop" && -n "${DOCKER_STUB_STOP_FAIL:-}" ]]; then
+        echo "error: failed to stop container" >&2
+        exit 1
+      fi
       # DOCKER_STUB_RM_FAIL simulates the "already in progress" removal race.
       if [[ "$sub" == "rm" && -n "${DOCKER_STUB_RM_FAIL:-}" ]]; then
         echo "error: removal of container ... already in progress" >&2
@@ -278,7 +284,7 @@ STUBEOF
         # interface-contract-version reads the baked label via --format; stub it
         # via a per-image map or single fallback (empty = no label / missing
         # image). image_digest reads the image ID via {{.Id}}.
-        if [[ "$*" == *"interface-contract-version"* ]]; then
+        if [[ "$*" == *'agent-sandbox.interface-contract-version"'* ]]; then
           _contract_version_for "${@: -1}"
         elif [[ "$*" == *".Id}"* ]]; then
           _digest_for "${@: -1}"

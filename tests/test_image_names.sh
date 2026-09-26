@@ -44,20 +44,16 @@ test_agent_base_image_name_lowercases_provider() {
 }
 
 # agent_image_name lowercases the PROJECT position only. The provider is used
-# verbatim: providers come from directory names under src/reasoning/providers/
-# and are lowercase by construction. An uppercase provider would leak into a
-# docker tag (invalid)  --  pinned here so a future change to that behavior is a
-# deliberate decision, not an accident.
-# Given: provider "pi" and project "MyProject"
+# verbatim inside the tag, so the unit passes an uppercase provider and
+# asserts that it survives. The project is lowercased.
+# Given: provider "Pi" and project "MyProject"
 # When:  agent_image_name runs
-# Then:  it prints pi-agent-myproject
-# Asserts: the project is lowercased
-# Note:  the provider is already lowercase, so the verbatim half of the rule this
-#        comment states is not exercised here
+# Then:  it prints Pi-agent-myproject
+# Asserts: the provider is kept verbatim while the project is lowercased.
 test_agent_image_name_lowercases_project_only() {
   local out
-  out=$(agent_image_name "pi" "MyProject")
-  assert_eq "$out" "pi-agent-myproject" "agent_image_name lowercases project, keeps provider verbatim"
+  out=$(agent_image_name "Pi" "MyProject")
+  assert_eq "$out" "Pi-agent-myproject" "agent_image_name lowercases project, keeps provider verbatim"
 }
 
 # Given: project "TeSt-Prj"
@@ -112,6 +108,29 @@ test_image_digest_suppresses_stderr() {
   assert_empty "$(cat "$err")" "image_digest suppresses the docker stderr diagnostic"
 }
 
+# Given: a docker double that records its arguments
+# When:  image_digest runs
+# Then:  the inspect call carries the documented {{.Id}} format
+# Asserts: the digest format string is named directly, not inferred from the stub's routing.
+test_image_digest_uses_documented_format() {
+  local args_file="$FIXTURE_DIR/docker-args"
+  docker() {
+    if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+      printf '%s\n' "$*" > "$args_file"
+      echo "sha256:stubid"
+      return 0
+    fi
+    return 0
+  }
+  : > "$args_file"
+  image_digest "some-image" >/dev/null 2>&1
+  if grep -qF -- "--format {{.Id}} some-image" "$args_file"; then
+    pass "image_digest asks docker for the image ID with {{.Id}}"
+  else
+    fail "image_digest format changed: $(cat "$args_file")"
+  fi
+}
+
 echo "=== image name derivation tests ==="
 echo
 
@@ -121,6 +140,7 @@ run_test test_sandbox_image_name_lowercases_project
 run_test test_shared_base_image_name_is_constant
 run_test test_missing_args_are_hard_errors
 run_test test_image_digest_suppresses_stderr
+run_test test_image_digest_uses_documented_format
 
 test_done
 
