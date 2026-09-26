@@ -224,9 +224,15 @@ If the file cannot be split by hunk boundaries (interleaved changes to the same 
 
 ## Merge Policy
 
+Two integration forms exist, and they keep separate commit disciplines. A live session branch that the agent still works on lands by squash merge, per the section below. A `draft/`-prefixed export of a reviewed session lands by one-for-one replay, per the draft section.
+
 ### Session branch -> integration branch
 
 **Squash merge.** Each session branch becomes a single commit on the integration branch. The squash message uses the appropriate commit type and summarises the session's contribution. Individual session commits are implementation detail -- the integration branch reads as a sequence of coherent steps.
+
+### Draft branch -> feature branch
+
+**One-for-one replay.** A `draft/`-prefixed export of a reviewed session lands on the feature branch as its own commits. The operator replays the export's commits one-for-one in export order, oldest draft first; each replayed commit keeps its message, author, and handover, so the branch history reads as original work. No merge commit and no squash describes the operation. The `.draft-state` commit that opens every export is never replayed: it records export state, which is false once the work lands on the branch. The operation is defined in the `/merge` workflow template under `workflow/coding-agent/prompts/`. A stale branch whose work must be re-derived against a changed target follows the `/rebase` template instead.
 
 ### Session branch -> `main` (simple case)
 
@@ -292,5 +298,7 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
 | [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
+| [`/merge` template](../../workflow/coding-agent/prompts/merge.md) | Draft-export merging operation |
+| [`/rebase` template](../../workflow/coding-agent/prompts/rebase.md) | Stale-branch porting operation |
 
 ---
