@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 15
+#   Budget rationale: the confirmation-gate units drive onboard under a pty
+#   (script), and the file runs more than twenty onboarding invocations, so its
+#   honest runtime sits near the 5s default and the parallel suite run can push
+#   it over.
 # scripts/onboard.sh end-to-end behavioural tests.
 #
 # Pins cite: docs/operations/provider_onboarding_guide.md (.env schema).
@@ -376,6 +381,10 @@ run_test test_refresh_syncs_paths_preserves_config
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/onboard.sh"
 
+# Restore the file's declared shell options: onboarding's own top-level
+# `set -euo pipefail` must not leak into the units below.
+set +e
+
 # Given: a file whose first line is "# agent-sandbox template version: 3"
 # When:  template_version reads it
 # Then:  it prints 3
@@ -416,10 +425,168 @@ test_template_version_real_makefile_template_parses() {
   assert_matches "$out" '^[0-9]+$' "shipped Makefile.template carries numeric template version ($out)"
 }
 
+# Given: a project dir and an --sandbox spelled relative whose parent is absent
+# When:  onboard runs from the fixture directory
+# Then:  it rejects the path before creating anything
+# Asserts: the absolute-path guard keeps a relative sandbox out of .env
+test_onboard_rejects_unresolvable_relative_sandbox() {
+  local PROJECT_DIR="$FIXTURE_DIR/relpath_project"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT RC=0
+  OUT="$( cd "$FIXTURE_DIR" && bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="./no-such-parent/sandbox" --yes 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"must be an absolute or resolvable path"* ]] \
+     && [[ ! -f "$FIXTURE_DIR/no-such-parent/sandbox/.env" ]]; then
+    pass "onboard rejects an unresolvable relative --sandbox without creating it"
+  else
+    fail "onboard: expected relative --sandbox rejected (rc=$RC out=$OUT)"
+  fi
+}
+
+# Given: a completed fresh onboard
+# When:  refresh runs with --name and --sandbox only
+# Then:  PROJECT_DIR in .env survives, derived from the file
+# Asserts: refresh derives PROJECT_DIR from .env when --project is omitted
+test_refresh_derives_project_dir_from_env() {
+  local PROJECT_DIR="$FIXTURE_DIR/derive_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/derive_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  echo y | bash "$ONBOARD_SCRIPT" --refresh --name="testproj" --sandbox="$SANDBOX_DIR" 2>&1
+
+  if grep -q "^PROJECT_DIR=$PROJECT_DIR$" "$SANDBOX_DIR/.env"; then
+    pass "refresh without --project preserves PROJECT_DIR from .env"
+  else
+    fail "refresh without --project lost PROJECT_DIR: $(grep '^PROJECT_DIR=' "$SANDBOX_DIR/.env")"
+  fi
+}
+
+# Given: a completed fresh onboard
+# When:  the provider config directory is inspected
+# Then:  the shipped env.stub is promoted to .env
+# Asserts: the provider secret file the summary instructs the operator to fill exists
+test_fresh_onboard_promotes_provider_env_stub() {
+  local PROJECT_DIR="$FIXTURE_DIR/stub_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/stub_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  if [[ -f "$SANDBOX_DIR/.hermes/.env" && ! -e "$SANDBOX_DIR/.hermes/env.stub" ]]; then
+    pass "fresh onboard promotes provider env.stub to .env"
+  else
+    fail "fresh onboard left env.stub unpromoted: $(ls -A "$SANDBOX_DIR/.hermes" 2>/dev/null | tr '\n' ' ')"
+  fi
+}
+
+# Given: a completed fresh onboard
+# When:  the pi agent home is inspected
+# Then:  the provider setup hook's four directories exist
+# Asserts: the provider setup hook runs
+test_fresh_onboard_runs_provider_setup_hook() {
+  local PROJECT_DIR="$FIXTURE_DIR/hook_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/hook_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  if [[ -d "$SANDBOX_DIR/.pi/agent/sessions" && -d "$SANDBOX_DIR/.pi/agent/prompts" \
+     && -d "$SANDBOX_DIR/.pi/agent/skills" && -d "$SANDBOX_DIR/.pi/agent/extensions" ]]; then
+    pass "fresh onboard runs the provider setup hook (pi agent-home dirs created)"
+  else
+    fail "provider setup hook effect missing under $SANDBOX_DIR/.pi/agent"
+  fi
+}
+
+# Given: a provider whose onboard.sh hook fails
+# When:  _provision_providers runs against that provider tree
+# Then:  it aborts non-zero naming the failed hook
+# Asserts: a failing provider setup hook is not swallowed
+test_provider_setup_hook_failure_aborts() {
+  local FI="$FIXTURE_DIR/hookfail"
+  mkdir -p "$FI/src/reasoning/providers/fake/config"
+  printf 'seed: 1\n' > "$FI/src/reasoning/providers/fake/config/config.yaml"
+  printf 'return 1\n' > "$FI/src/reasoning/providers/fake/onboard.sh"
+
+  local OUT RC=0
+  OUT="$( SANDBOX_DIR="$FIXTURE_DIR/hookfail_sandbox" \
+          bash -c 'source "'"$ONBOARD_SCRIPT"'"; REPO_ROOT="'"$FI"'"; _provision_providers' 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"provider setup hook failed"* ]]; then
+    pass "provider setup hook failure aborts onboarding"
+  else
+    fail "provider setup hook failure: expected abort (rc=$RC out=$OUT)"
+  fi
+}
+
+# Given: piped stdin carrying a declined answer and no --yes
+# When:  onboard runs
+# Then:  the non-tty detection proceeds without consuming the line
+# Asserts: a non-tty run is non-interactive
+test_onboard_non_tty_proceeds_without_prompt() {
+  local PROJECT_DIR="$FIXTURE_DIR/nontty_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/nontty_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( echo n | bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" 2>&1 )"
+
+  if [[ "$OUT" == *"Non-interactive mode"* && -f "$SANDBOX_DIR/.env" ]]; then
+    pass "non-tty onboard proceeds without prompting"
+  else
+    fail "non-tty onboard did not proceed: $OUT"
+  fi
+}
+
+# Given: an interactive pty run with a declined answer and no --yes
+# When:  onboard runs
+# Then:  the onboarding is cancelled and no files are created
+# Asserts: a declined confirmation stops before file creation
+test_onboard_interactive_decline_cancels() {
+  local PROJECT_DIR="$FIXTURE_DIR/decline_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/decline_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( printf 'n\n' | script -q -c "bash $ONBOARD_SCRIPT --name=testproj --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR" /dev/null 2>&1 )"
+
+  if [[ "$OUT" == *"Onboarding cancelled."* && ! -f "$SANDBOX_DIR/.env" ]]; then
+    pass "interactive decline cancels onboarding before file creation"
+  else
+    fail "interactive decline did not cancel: $OUT"
+  fi
+}
+
+# Given: an interactive pty run with --yes and a declined answer
+# When:  onboard runs
+# Then:  --yes forces non-interactive and the run completes
+# Asserts: --yes bypasses the confirmation gate even under a tty
+test_onboard_yes_forces_non_interactive_under_tty() {
+  local PROJECT_DIR="$FIXTURE_DIR/yes_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/yes_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( printf 'n\n' | script -q -c "bash $ONBOARD_SCRIPT --name=testproj --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR --yes" /dev/null 2>&1 )"
+
+  if [[ "$OUT" == *"Onboarding complete."* && -f "$SANDBOX_DIR/.env" ]]; then
+    pass "--yes forces non-interactive onboarding under a tty"
+  else
+    fail "--yes did not bypass the prompt under a tty: $OUT"
+  fi
+}
+
 run_test test_refresh_aborts_without_minimal_args
 run_test test_template_version_reads_marker_line
 run_test test_template_version_absent_marker_is_empty_and_clean
 run_test test_template_version_real_makefile_template_parses
+run_test test_onboard_rejects_unresolvable_relative_sandbox
+run_test test_refresh_derives_project_dir_from_env
+run_test test_fresh_onboard_promotes_provider_env_stub
+run_test test_fresh_onboard_runs_provider_setup_hook
+run_test test_provider_setup_hook_failure_aborts
+run_test test_onboard_non_tty_proceeds_without_prompt
+run_test test_onboard_interactive_decline_cancels
+run_test test_onboard_yes_forces_non_interactive_under_tty
 
 test_done "scripts/onboard.sh"
 

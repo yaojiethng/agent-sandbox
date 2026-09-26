@@ -681,14 +681,29 @@ test_unknown_subcommand() {
 
 # Given: no arguments at all
 # When:  main dispatches
-# Then:  it prints the usage line
-# Asserts: the missing-subcommand guidance (the unit does not assert the exit status)
+# Then:  it prints the usage line and exits 1
+# Asserts: the empty-subcommand verdict is a failure, not a silent success
 test_missing_subcommand() {
   setup
-  local output
-  output=$(main 2>&1) || true
+  local output rc=0
+  output=$(main 2>&1) || rc=$?
 
   assert_contains "$output" "Usage: agent-sandbox" "missing subcommand: prints usage"
+  assert_rc 1 "$rc" "missing subcommand: exits 1"
+}
+
+# Given: the dispatcher sourced in a shell with AGENT_SANDBOX_REPO unset
+# When:  its top-level self-location runs
+# Then:  it resolves AGENT_SANDBOX_REPO to this working tree's repo root
+# Asserts: the installed CLI resolves to the working tree's copy (ADR harness_versioning.md)
+test_self_locates_repo_when_env_unset() {
+  setup
+  local output rc=0
+  output=$( unset AGENT_SANDBOX_REPO; \
+            bash -c 'source "'"$REPO_ROOT"'/scripts/agent-sandbox.sh"; printf "%s\n" "$AGENT_SANDBOX_REPO"' 2>&1 ) || rc=$?
+
+  assert_rc 0 "$rc" "dispatcher sources without a preset AGENT_SANDBOX_REPO"
+  assert_eq "$output" "$REPO_ROOT" "self-located AGENT_SANDBOX_REPO is the repo root"
 }
 
 # Given: `build` with no identity flags and no resolvable .env
@@ -799,6 +814,7 @@ run_test test_help_every_subcommand_no_base_args
 run_test test_help_flag_shows_list
 run_test test_unknown_subcommand
 run_test test_missing_subcommand
+run_test test_self_locates_repo_when_env_unset
 run_test test_build_missing_args
 run_test test_make_form_in_usage_first_help_leaf
 test_done test_dispatch

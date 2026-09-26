@@ -291,6 +291,100 @@ test_check_interface_contract_refuses_missing_label() {
       "interface-contract: missing-label refusal names the rebuild remedy"
 }
 
+# A shim that reports every `docker image inspect` as missing while accepting
+# `docker build`. It logs to DOCKER_TRACE_LOG in the stub's shape.
+make_missing_image_shim() {
+  local DIR="$1"
+  mkdir -p "$DIR"
+  cat > "$DIR/docker" <<'EOF'
+#!/usr/bin/env bash
+printf '%s: %s\n' "$DOCKER_TRACE_LOG" "$*" >> "$DOCKER_TRACE_LOG"
+case "${1:-}" in
+  image) [[ "${2:-}" == "inspect" ]] && exit 1 ;;
+esac
+exit 0
+EOF
+  chmod +x "$DIR/docker"
+}
+
+# Given: a docker that reports both images missing
+# When:  preflight runs with build_missing=true
+# Then:  it builds the sandbox image and the provider's agent image
+# Asserts: preflight's build-on-missing branch
+test_preflight_builds_when_images_missing() {
+  local FIXTURE_DIR="$FIXTURE_DIR/preflight_build"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  make_missing_image_shim "$FIXTURE_DIR/shim"
+
+  local OUT RC=0
+  OUT="$( PATH="$FIXTURE_DIR/shim:$STUB_DIR:$PATH" preflight pi test-project "$REPO_ROOT" true 2>&1 )" || RC=$?
+
+  if [[ $RC -eq 0 ]] \
+     && grep -q -- "-t sandbox-test-project" "$DOCKER_TRACE_LOG" \
+     && grep -q -- "-t pi-agent-test-project" "$DOCKER_TRACE_LOG"; then
+    pass "preflight: builds sandbox and agent images when both are missing"
+  else
+    fail "preflight build-on-missing: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a docker that reports both images missing
+# When:  preflight runs with build_missing=false (a resume)
+# Then:  it refuses without building
+# Asserts: preflight's refuse path, which stops a resume from rebuilding
+test_preflight_refuses_missing_images_when_resume() {
+  local FIXTURE_DIR="$FIXTURE_DIR/preflight_refuse"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  make_missing_image_shim "$FIXTURE_DIR/shim"
+
+  local OUT RC=0
+  OUT="$( PATH="$FIXTURE_DIR/shim:$STUB_DIR:$PATH" preflight pi test-project "$REPO_ROOT" false 2>&1 )" || RC=$?
+
+  if [[ $RC -ne 0 ]] && [[ "$OUT" == *"resume does not build"* ]] \
+     && ! grep -q -- "-t sandbox-test-project" "$DOCKER_TRACE_LOG"; then
+    pass "preflight: refuses missing images when resume must not build"
+  else
+    fail "preflight refuse path: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a build.sh invocation with --name but no --project
+# When:  build.sh's main runs
+# Then:  it prints usage and exits non-zero
+# Asserts: main's required-flag check
+test_build_main_requires_project() {
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/build.sh" --name=test) 2>&1 )" || RC=$?
+
+  if [[ $RC -ne 0 ]] && echo "$OUT" | grep -q "Usage: agent-sandbox build"; then
+    pass "build main: missing --project refused with usage"
+  else
+    fail "build main: expected usage on missing --project (rc=$RC)"
+  fi
+}
+
+# Given: a provider tree with a base.dockerfile but no provider.dockerfile
+# When:  build_agent runs
+# Then:  it refuses and names the missing provider Dockerfile
+# Asserts: build_agent's provider-Dockerfile validation
+test_build_agent_missing_provider_dockerfile() {
+  local FI="$FIXTURE_DIR/fake_agent_repo"
+  mkdir -p "$FI/src/reasoning/providers/fake"
+  : > "$FI/src/reasoning/node.dockerfile"
+  : > "$FI/src/reasoning/providers/fake/base.dockerfile"
+
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; build_agent fake test-project "$FI") 2>&1 )" || RC=$?
+
+  if [[ $RC -ne 0 ]] && echo "$OUT" | grep -q "provider Dockerfile not found"; then
+    pass "build_agent: missing provider Dockerfile refused"
+  else
+    fail "build_agent: expected provider Dockerfile validation (rc=$RC out='$OUT')"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -304,4 +398,8 @@ run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
 run_test test_build_does_not_require_sandbox
+run_test test_preflight_builds_when_images_missing
+run_test test_preflight_refuses_missing_images_when_resume
+run_test test_build_main_requires_project
+run_test test_build_agent_missing_provider_dockerfile
 test_done test_trace_build

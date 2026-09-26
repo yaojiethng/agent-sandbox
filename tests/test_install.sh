@@ -11,6 +11,9 @@
 #   Darwin probe isolation  --  one unit per GNU probe, only that probe failing
 #   Darwin GNU shim         --  GNU-style PATH detected, install proceeds
 #   Linux missing git       --  git check fails closed, without a brew hint
+#   INSTALL_DIR resolution  --  env override, <repo>/.env fallback, ~ expansion
+#   re-install              --  force-replaces an existing entry at the CLI path
+#   standalone entry point  --  the guard runs install_main and uninstall as a subprocess
 
 set -uo pipefail
 
@@ -196,6 +199,89 @@ test_install_detects_missing_gnu_sed_on_darwin() {
   fi
 }
 
+# Given: a fixture repo whose .env records INSTALL_DIR
+# When:  install_dir resolves with no INSTALL_DIR in the environment
+# Then:  the value comes from <repo>/.env
+# Asserts: the .env fallback of the INSTALL_DIR resolution tail
+test_install_dir_reads_repo_env() {
+  local FAKE="$FIXTURE_DIR/fake_repo_env"
+  mkdir -p "$FAKE"
+  printf 'INSTALL_DIR=%s\n' "$FIXTURE_DIR/from_env_bin" > "$FAKE/.env"
+
+  local OUT
+  OUT="$( unset INSTALL_DIR; REPO_ROOT="$FAKE"; install_dir )"
+
+  assert_eq "$OUT" "$FIXTURE_DIR/from_env_bin" "install_dir reads <repo>/.env INSTALL_DIR"
+}
+
+# Given: no INSTALL_DIR in the environment and no <repo>/.env
+# When:  install_dir resolves
+# Then:  the default ~/.local/bin is expanded to $HOME/.local/bin
+# Asserts: the default and the leading-~ expansion of the resolution tail
+test_install_dir_default_expands_tilde() {
+  local NODOTENV="$FIXTURE_DIR/no_env_repo"
+  mkdir -p "$NODOTENV"
+
+  local OUT
+  OUT="$( unset INSTALL_DIR; REPO_ROOT="$NODOTENV"; install_dir )"
+
+  assert_eq "$OUT" "$HOME/.local/bin" "install_dir expands the default ~/.local/bin to HOME"
+}
+
+# Given: a non-symlink file already occupies the CLI entry path
+# When:  install_main runs
+# Then:  the entry is force-replaced with the CLI symlink
+# Asserts: a re-install forces past an existing destination (-f)
+test_install_replaces_existing_entry() {
+  local DIR="$FIXTURE_DIR/bin_replace"
+  mkdir -p "$DIR"
+  printf 'stale\n' > "$DIR/agent-sandbox"
+
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Linux INSTALL_DIR="$DIR" install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 && -L "$DIR/agent-sandbox" ]]; then
+    pass "install force-replaces an existing entry at the CLI path"
+  else
+    fail "install did not replace the existing entry: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: the install script run as a standalone process
+# When:  install.sh runs with no subcommand
+# Then:  the entry-point guard sets REPO_ROOT and installs the symlink
+# Asserts: the path make install actually runs
+test_install_standalone_entry_point_installs() {
+  local DIR="$FIXTURE_DIR/bin_standalone"
+
+  local OUT RC=0
+  OUT="$( INSTALL_OS=Linux INSTALL_DIR="$DIR" bash "$REPO_ROOT/scripts/install.sh" 2>&1 </dev/null )" || RC=$?
+
+  if [[ $RC -eq 0 && -L "$DIR/agent-sandbox" ]]; then
+    pass "the standalone entry point installs the CLI symlink"
+  else
+    fail "standalone install broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a completed standalone install
+# When:  install.sh --uninstall runs as a standalone process
+# Then:  the symlink is removed and rc is 0
+# Asserts: the standalone uninstall path behind the entry-point guard
+test_install_standalone_entry_point_uninstalls() {
+  local DIR="$FIXTURE_DIR/bin_standalone_rm"
+  INSTALL_OS=Linux INSTALL_DIR="$DIR" bash "$REPO_ROOT/scripts/install.sh" > /dev/null 2>&1 </dev/null
+
+  local OUT RC=0
+  OUT="$( INSTALL_DIR="$DIR" bash "$REPO_ROOT/scripts/install.sh" --uninstall 2>&1 </dev/null )" || RC=$?
+
+  if [[ $RC -eq 0 && ! -e "$DIR/agent-sandbox" ]]; then
+    pass "the standalone entry point uninstalls the CLI symlink"
+  else
+    fail "standalone uninstall broken: rc=$RC out='$OUT'"
+  fi
+}
+
 run_test test_install_passes_on_linux_default
 run_test test_install_uninstall_removes_symlink
 run_test test_install_detects_missing_gnu_tools_on_darwin
@@ -205,5 +291,10 @@ run_test test_install_detects_missing_gnu_date_on_darwin
 run_test test_install_detects_missing_gnu_sed_on_darwin
 run_test test_install_passes_on_darwin_with_gnu_shim
 run_test test_install_detects_missing_git_on_linux
+run_test test_install_dir_reads_repo_env
+run_test test_install_dir_default_expands_tilde
+run_test test_install_replaces_existing_entry
+run_test test_install_standalone_entry_point_installs
+run_test test_install_standalone_entry_point_uninstalls
 
 test_done test_install.sh

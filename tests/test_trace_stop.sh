@@ -392,6 +392,107 @@ test_stop_draft_hint_suppressed_without_export() {
 
 # ---------------------------------------------------------------------------
 
+# Given: a sandbox fixture and a stubbed container
+# When:  stop.sh runs
+# Then:  the ps filter carries this project's name and the canonical sandbox-dir
+# Asserts: the label set is the script's addressing contract
+# Note:  the sandbox-dir filter value is the canonical spelling baked at create time
+test_stop_ps_filter_carries_project_and_canonical_sandbox() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_filters"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  local canon
+  canon="$(readlink -f "$SANDBOX_DIR")"
+
+  invoke_stop "$FIXTURE_DIR" > /dev/null 2>&1
+
+  if grep -q "label=agent-sandbox.project-name=$PROJECT_NAME" "$DOCKER_TRACE_LOG" \
+     && grep -q "label=agent-sandbox.sandbox-dir=$canon" "$DOCKER_TRACE_LOG"; then
+    pass "stop: ps filter carries the project-name and canonical sandbox-dir labels"
+  else
+    fail "stop: label filter missing or misspelled; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture
+# When:  stop.sh runs with --session-id
+# Then:  the ps filter carries that session-id value
+# Asserts: --session-id narrows the label-addressing to one session
+test_stop_session_id_filter_is_forwarded() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_session_filter"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+
+  invoke_stop "$FIXTURE_DIR" --session-id=test01 > /dev/null 2>&1
+
+  if grep -q "label=agent-sandbox.session-id=test01" "$DOCKER_TRACE_LOG"; then
+    pass "stop: --session-id is forwarded as the session-id label filter"
+  else
+    fail "stop: session-id filter missing; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture
+# When:  stop.sh probes containers
+# Then:  the probe asks for all containers (-a), not only running ones
+# Asserts: the -a scope so a stopped leftover container is still found
+test_stop_ps_scope_is_all_containers() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_ps_scope"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+
+  invoke_stop "$FIXTURE_DIR" > /dev/null 2>&1
+
+  if grep -q "ps -aq " "$DOCKER_TRACE_LOG"; then
+    pass "stop: the container probe uses ps -aq (all containers)"
+  else
+    fail "stop: expected ps -aq; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture with no containers
+# When:  stop.sh runs with --prune but no --project
+# Then:  it refuses non-zero and names the missing staleness input
+# Asserts: the --prune guard requires --project
+test_stop_prune_requires_project() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_prune_noproj"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/stop.sh" \
+            --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --prune 2>&1) )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q -- "--prune requires --project"; then
+    pass "stop: --prune without --project refused"
+  else
+    fail "stop: expected the --prune --project guard (rc=$RC out='$OUT')"
+  fi
+}
+
+# Given: a --sandbox whose parent directory does not exist
+# When:  stop.sh runs
+# Then:  it fails non-zero and names the canonicalisation failure
+# Asserts: the canonicalisation guard is loud, so the filter cannot silently miss
+test_stop_canon_failure_is_loud() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_canon_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/stop.sh" \
+            --name="$PROJECT_NAME" --sandbox="$FIXTURE_DIR/no-such-parent/sandbox" 2>&1) )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q "cannot canonicalize SANDBOX_DIR"; then
+    pass "stop: an unresolvable --sandbox fails loudly (rc=$RC)"
+  else
+    fail "stop: expected a loud canonicalisation failure (rc=$RC out='$OUT')"
+  fi
+}
+
 run_test test_stop_no_compose
 run_test test_stop_no_containers_does_not_teardown
 run_test test_stop_removes_containers
@@ -406,4 +507,9 @@ run_test test_prune_rule2_removes_orphan_container
 run_test test_prune_dry_run_removes_nothing
 run_test test_stop_shutdown_hints
 run_test test_stop_draft_hint_suppressed_without_export
+run_test test_stop_ps_filter_carries_project_and_canonical_sandbox
+run_test test_stop_session_id_filter_is_forwarded
+run_test test_stop_ps_scope_is_all_containers
+run_test test_stop_prune_requires_project
+run_test test_stop_canon_failure_is_loud
 test_done test_trace_stop

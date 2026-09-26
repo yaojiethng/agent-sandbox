@@ -401,12 +401,163 @@ test_rule2_filter_selects_only_this_projects_containers() {
 }
 
 
+# Given: a stale record dated today and a `date` that cannot derive the cutoff
+# When:  prune runs
+# Then:  the empty cutoff skips the age narrowing, so the stale record is removed
+# Asserts: the empty-cutoff branch is the age filter's bypass, not a fail-closed stop
+test_rule1_empty_cutoff_skips_age_filter() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_empty_cutoff"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
+
+  # Force the cutoff derivation to fail while leaving every other `date` call
+  # working: the stub fails only the `${AGE_DAYS} days ago` form.
+  local BINDIR="$FIXTURE_DIR/bin_fail_date"
+  mkdir -p "$BINDIR"
+  cat > "$BINDIR/date" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "-d" && "\${2:-}" == *"days ago"* ]]; then
+  exit 1
+fi
+exec "$(command -v date)" "\$@"
+EOF
+  chmod +x "$BINDIR/date"
+
+  ( export PATH="$BINDIR:$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/prune.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
+  ) > /dev/null 2>&1
+
+  if ! record_exists "s_recent"; then
+    pass "Rule 1 empty cutoff: a failed age derivation skips the narrowing (record removed)"
+  else
+    fail "Rule 1 empty cutoff: expected the stale record removed when the cutoff cannot be derived"
+  fi
+}
+
+# Given: a stale record dated today and a non-numeric --age-days value
+# When:  prune runs with --age-days=abc
+# Then:  the run aborts non-zero naming the integer requirement, and the record survives
+# Asserts: --age-days is validated before it can widen the deletion
+test_rule1_age_days_non_numeric_rejected() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_badage"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
+
+  local OUT RC
+  OUT="$(invoke_prune --age-days=abc 2>&1)"; RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q -- "--age-days must be a non-negative integer" \
+     && record_exists "s_recent"; then
+    pass "Rule 1 --age-days: non-numeric value rejected and the record kept (rc=$RC)"
+  else
+    fail "Rule 1 --age-days: expected --age-days=abc rejected with the record kept (rc=$RC)"
+  fi
+}
+
+# Given: a stale record whose session owns container c1, run with --dry-run
+# When:  prune builds the preview
+# Then:  the plan names the Rule-2 orphan of the Rule-1-selected session, and the record stays
+# Asserts: the plan the operator confirms is the predictive preview, not Rule 1 alone
+test_dry_run_preview_names_rule2_orphans_of_removed_records() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_dry_orphan"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  export DOCKER_STUB_SESSION_ID_LABEL="s_stale"
+  write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
+
+  local OUT
+  OUT="$(invoke_prune --dry-run)"
+
+  if echo "$OUT" | grep -q "Rule 2" && echo "$OUT" | grep -q "c1" && record_exists "s_stale"; then
+    pass "dry-run preview: names the Rule-2 orphan of a Rule-1-selected session, record kept"
+  else
+    fail "dry-run preview: expected the plan to name container c1 as a Rule-2 orphan"
+  fi
+}
+
+# Given: a container with the project and sandbox labels but no session-id label
+# When:  prune runs
+# Then:  the unnameable resource is kept
+# Asserts: _sid_is_orphaned's empty-session-id guard protects a resource whose session cannot be named
+test_rule2_unnameable_resource_kept() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_unnameable"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c_nolabel"
+  # No DOCKER_STUB_SESSION_ID_LABEL: the resource reports an empty session id.
+
+  invoke_prune > /dev/null 2>&1
+
+  if ! grep -q "rm c_nolabel" "$DOCKER_TRACE_LOG"; then
+    pass "Rule 2: a resource with no session-id label is not treated as an orphan"
+  else
+    fail "Rule 2: expected a resource with no session-id label to be kept"
+  fi
+}
+
+# Given: a --sandbox whose parent directory does not exist, so it cannot be canonicalised
+# When:  prune runs
+# Then:  it fails non-zero and names the canonicalisation failure
+# Asserts: the canonicalisation failure is loud, not a silent degrade to an empty filter
+test_sandbox_canon_failure_is_loud() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_canon_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+
+  local OUT RC
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/prune.sh" \
+            --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+            --sandbox="$FIXTURE_DIR/no-such-parent/sandbox" 2>&1) )"; RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q "cannot canonicalize SANDBOX_DIR"; then
+    pass "prune: an unresolvable --sandbox fails loudly (rc=$RC)"
+  else
+    fail "prune: expected a loud canonicalisation failure (rc=$RC, out=$OUT)"
+  fi
+}
+
+# Given: a stale record whose orphaned container c1 is found by the Rule-2 scan
+# When:  prune runs
+# Then:  the container is stopped before it is removed
+# Asserts: the stop-before-rm order that makes the removal succeed
+test_rule2_stops_container_before_removing() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_order"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  export DOCKER_STUB_SESSION_ID_LABEL="s_stale"
+  write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
+
+  invoke_prune > /dev/null 2>&1
+
+  local stop_line rm_line
+  stop_line="$(grep -n "stop c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
+  rm_line="$(grep -n "rm c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
+  if [[ -n "$stop_line" && -n "$rm_line" && "$stop_line" -lt "$rm_line" ]]; then
+    pass "Rule 2: the container is stopped before it is removed"
+  else
+    fail "Rule 2: expected stop c1 before rm c1 (stop=$stop_line rm=$rm_line)"
+  fi
+}
+
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_rule1_provider_filter
 run_test test_rule1_age_filter_skips_recent
 run_test test_rule1_age_days_broadens
+run_test test_rule1_empty_cutoff_skips_age_filter
+run_test test_rule1_age_days_non_numeric_rejected
+run_test test_dry_run_preview_names_rule2_orphans_of_removed_records
+run_test test_rule2_unnameable_resource_kept
+run_test test_sandbox_canon_failure_is_loud
+run_test test_rule2_stops_container_before_removing
 run_test test_fresh_record_kept
 run_test test_dry_run_shows_rule1_rule2
 run_test test_interactive_abort_keeps_records
