@@ -55,12 +55,12 @@ Fix the resume session table: under the standard `make resume LIST=1` / `INTERAC
 | `scripts/resume_agent.sh` | `source env_resolve.sh`; `PROJECT_DIR` enrichment from the sandbox `.env` before the dispatch (list + interactive render), tolerant of a missing `.env` |
 | `tests/test_resume.sh` | three units: `test_list_env_resolves_project_dir_when_sandbox_only`, `test_interactive_env_resolved_branch_hint`, `test_list_sandbox_only_without_env_degrades` |
 | `devlog/AGENT_FEEDBACK.md` | `[O] 2026-09-26` entry: a render feature must respect its command's identity-resolution contract |
+| `docs/architecture/tool_interface.md`, `sandbox_lifecycle.md`, `execution_model.md`, `docs/development/quickstart.md` | the resume-table column set and the `AGE`/`WORK`/`STATE` semantics brought up to date (the `docs:` commit), plus the resume-runs-in-standard-mode fact in `tool_interface.md` |
 
 ## Deferred items
 
 | Item | Reason | Where it goes |
 |---|---|---|
-| `docs/architecture/tool_interface.md` resume-table column drift | unrelated to this defect; the table was already stale before this fix | a docs lane |
 
 ## What's Next
 
