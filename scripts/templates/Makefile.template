@@ -64,9 +64,10 @@
 #
 # BUILD TARGETS
 #   make build                         --  builds sandbox + all providers
-#   make build TARGET=all              --  explicit alias for build-all
-#   make build TARGET=hermes           --  builds hermes provider only
-#   make build TARGET=hermes,sandbox   --  builds hermes and sandbox
+#   make build TARGETS=all             --  explicit alias for build-all
+#   make build TARGETS=hermes          --  builds hermes provider only
+#   make build TARGETS=hermes,sandbox  --  builds hermes and sandbox
+#   make build TARGET=<p>              --  legacy alias for TARGETS=<p>
 #   make build REBUILD=1               --  forces full rebuild including base images
 #
 # STOP
@@ -92,6 +93,7 @@ REFRESH      ?=
 REBUILD      ?=
 FAST         ?=
 TARGET       ?=
+TARGETS      ?=
 FROM         ?=
 INTERACTIVE  ?=
 BRANCH       ?=
@@ -156,7 +158,7 @@ REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
-TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
+TARGET_FLAG       = --targets=$(if $(TARGETS),$(TARGETS),$(if $(TARGET),$(TARGET),all))
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
 RESUME_LIST_FLAG        = $(if $(LIST),--list,)
 RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
@@ -179,7 +181,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  make build                         --  build sandbox + all provider images"
-	@echo "  make build TARGET=<p>              --  build specific provider (e.g. TARGET=pi)"
+	@echo "  make build TARGETS=<p>             --  build specific provider(s) (legacy: TARGET=<p>)"
 	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
 	@echo "  make dry-run PROVIDER=<p>          --  e2e check: rebuild current source, verify, tear down"
 	@echo "  make dry-run PROVIDER=<p> FAST=1   --  skip the rebuild, run existing images"

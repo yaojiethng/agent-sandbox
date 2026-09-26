@@ -78,7 +78,7 @@ make build
 Builds the capability layer image and all provider images. To build a single provider:
 
 ```sh
-make build TARGET=<provider>
+make build TARGETS=<provider>
 ```
 
 ---

@@ -272,7 +272,7 @@ Usage: agent-sandbox build --name=<name> --project=<path> [options]
 
 Builds Docker images for the sandbox and/or agent providers.
 
-or, from a sandbox Makefile: make build [TARGET=<p>] [REBUILD=1]
+or, from a sandbox Makefile: make build [TARGETS=<p>] [REBUILD=1]  (legacy variable: TARGET=<p>)
 
 Required:
   --name=<name>       Project name (used for image tags)

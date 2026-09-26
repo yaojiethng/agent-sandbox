@@ -58,7 +58,7 @@ test_accepted_variables_are_declared() {
     pass "the unused ALL variable is not declared"
   fi
 
-  local accepted="PROVIDER SERVE REFRESH REBUILD FAST TARGET FROM INTERACTIVE"
+  local accepted="PROVIDER SERVE REFRESH REBUILD FAST TARGET TARGETS FROM INTERACTIVE"
   accepted+=" BRANCH DIFF TARGET_BRANCH NEW BUNDLE BUNDLE_SUMMARY BASELINE"
   accepted+=" BRANCH_FROM DIFFS BRANCH_SUMMARY NO_RENAMES PERMISSIVE FORCE LIST"
   accepted+=" PRUNE SESSION_ID SANDBOX_TYPE FLATTEN WORKTREE_DIR STALE AGE_DAYS DRY_RUN"
@@ -252,7 +252,24 @@ test_start_target_is_thin() {
   fi
 }
 
+# Given: the shipped template
+# When:  the build target's flag translator is read
+# Then:  it emits the CLI flag --targets=, never the deprecated --target=
+# Asserts: the make->CLI flag contract for build stays aligned. The CLI rejects
+#          --target for target selection (parse_args unknown-argument error),
+#          so a template emitting --target= breaks every make build invocation.
+test_build_target_flag_spells_targets() {
+  local line
+  line="$(grep -m1 '^TARGET_FLAG' "$TPL")"
+  if [[ "$line" == *'--targets='* && "$line" != *'--target='* ]]; then
+    pass "TARGET_FLAG emits --targets= and never --target="
+  else
+    fail "TARGET_FLAG does not spell the CLI flag --targets=: $line"
+  fi
+}
+
 run_test test_accepted_variables_are_declared
+run_test test_build_target_flag_spells_targets
 run_test test_flag_translators_are_defined
 run_test test_target_scoped_guards
 run_test test_every_target_is_phony

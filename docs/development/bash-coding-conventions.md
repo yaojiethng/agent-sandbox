@@ -182,7 +182,7 @@ Each subcommand gets a clean process boundary. Dispatch branches should be `exec
 ```bash
 build)
   parse_flags "$@"
-  exec bash "$SCRIPTS/build.sh" --target="$TARGET"
+  exec bash "$SCRIPTS/build.sh" --targets="$TARGETS"
   ;;
 ```
 

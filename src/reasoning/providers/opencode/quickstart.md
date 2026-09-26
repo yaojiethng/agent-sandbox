@@ -11,7 +11,7 @@ Day-to-day command reference and troubleshooting for the OpenCode provider. All 
 make build
 
 # Build OpenCode provider image only
-make build TARGET=opencode
+make build TARGETS=opencode
 
 # Start agent (interactive)
 make start PROVIDER=opencode
