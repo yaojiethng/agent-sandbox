@@ -38,6 +38,7 @@ Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite s
 
 - [ ] Ensure agent reads metadata to guide task execution
 - [ ] Ensure agent respects allowed file constraints
+- [ ] Decide the regular mutation-run frequency (recorded from roadmap row 87, 2026-09-26: the M3.1 mutation tier is operator-triggered only until this row sets a cadence)
 
 ---
 

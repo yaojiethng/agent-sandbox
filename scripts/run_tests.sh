@@ -310,6 +310,21 @@ main() {
     echo "WARN: $TOTAL_SKIP test(s) skipped -- a temporary absence (unstubbed or missing subject); resolve the cause so skips trend back to zero." >&2
   fi
 
+  # MUTATION=1 layers the mutation tier on top of the standard run: the
+  # catalog is replayed against the tree and survivors collect into a dated
+  # register. The tier is operator-triggered, never a hook. The runner
+  # self-test's discovery override (RUN_TESTS_DIR) suppresses it, so the
+  # self-test keeps exercising the standard path only.
+  if [[ "${MUTATION:-0}" == "1" ]]; then
+    if [[ -n "${RUN_TESTS_DIR:-}" ]]; then
+      echo "MUTATION=1 ignored under RUN_TESTS_DIR (runner self-test)" >&2
+    else
+      echo ""
+      echo "== Mutation tier =="
+      bash "$(dirname "${BASH_SOURCE[0]}")/mutations_run.sh"
+    fi
+  fi
+
   if [[ "$ANY_FAILED" -eq 1 ]]; then
     exit 1
   fi
