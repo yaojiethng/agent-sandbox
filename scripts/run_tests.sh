@@ -19,8 +19,11 @@ LIVENESS_GATE="${LIVENESS_GATE:-$REAL_TESTS_DIR/../scripts/check_test_liveness.s
 VERBOSE="${VERBOSE:-0}"
 # TEST_PARALLEL controls the xargs job count (default 8; 1 for serial runs).
 TEST_PARALLEL="${TEST_PARALLEL:-8}"
-# TEST_TIMEOUT is the default per-file deadline in seconds (default 5). A file
-# overrides it with a `# TEST_DEADLINE: <seconds>` line in its first ten lines.
+# TEST_TIMEOUT is the default per-file deadline in seconds (default 5). A
+# file overrides it with a `# TEST_DEADLINE: <seconds>` line in its first ten
+# lines. The registration liveness gate now runs against the real suite on
+# every invocation, so a file that spawns the runner more than once states
+# its own budget instead of raising the default for every file.
 TEST_TIMEOUT="${TEST_TIMEOUT:-5}"
 
 TOTAL_PASS=0
@@ -58,6 +61,35 @@ discover_tests() {
     return 1
   fi
   printf '%s\n' "${FILES[@]}" | sort
+}
+
+# select_files PATHS...
+#   Builds the run list for an explicit selection (positional arguments or
+#   the TEST_FILES environment variable). A file path is used as given; a
+#   directory contributes its own test_*.sh files, without recursion. The
+#   selection keeps argument order and drops repeated paths. A path that is
+#   neither a regular file nor a directory is a named error. Exit 1 with the
+#   same warning empty discovery prints when the selection yields no files.
+select_files() {
+  local FILES=() P F
+  for P in "$@"; do
+    if [[ -f "$P" ]]; then
+      FILES+=("$P")
+    elif [[ -d "$P" ]]; then
+      for F in "$P"/test_*.sh; do
+        [[ -f "$F" ]] || continue
+        FILES+=("$F")
+      done
+    else
+      echo "ERROR: no such test file: $P" >&2
+      return 1
+    fi
+  done
+  if [[ ${#FILES[@]} -eq 0 ]]; then
+    echo "Warning: no test files found in $1" >&2
+    return 1
+  fi
+  printf '%s\n' "${FILES[@]}" | awk '!seen[$0]++'
 }
 
 # run_with_deadline DEADLINE OUT FILE
@@ -212,11 +244,47 @@ if [[ "${1:-}" == "--worker" ]]; then
   exit 0
 fi
 
+# usage
+#   Prints the invocation contract: the flags, the selectors, and the
+#   environment knobs the runner honors. Exit 0: the user asked for it.
+usage() {
+  cat <<'EOF'
+Usage: bash scripts/run_tests.sh [OPTIONS] [FILE|DIR...]
+
+Runs the unit test suite. Without FILE or DIR arguments the runner
+discovers every tests/test_*.sh file.
+
+Selectors (first match wins):
+  FILE|DIR   a test file, or a directory whose test_*.sh files run
+             (no recursion; repeated paths run once)
+  TEST_FILES whitespace-separated file or directory paths; used only
+             when no FILE or DIR arguments are given
+
+Options:
+  -v         per-file pass/fail lines
+  -vv        full worker output
+  -h, --help print this usage and exit
+
+Environment:
+  VERBOSE          verbose level (0-2); same as -v/-vv
+  RUN_TESTS_DIR    discovery directory override (default: tests/)
+  TEST_PARALLEL    worker job count (default: 8)
+  TEST_TIMEOUT     per-file deadline in seconds (default: 5)
+  MUTATION         run the mutation tier when set to 1
+  RUN_TESTS_SELFTEST  skip the registration liveness gate when non-empty
+EOF
+}
+
+SELECTORS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -v)  VERBOSE=1; shift ;;
-    -vv) VERBOSE=2; shift ;;
-    *)   echo "Unknown option: $1" >&2; exit 1 ;;
+    -v)       VERBOSE=1; shift ;;
+    -vv)      VERBOSE=2; shift ;;
+    -h|--help) usage; exit 0 ;;
+    -*)       echo "Unknown option: $1" >&2
+              echo "See --help for usage." >&2
+              exit 1 ;;
+    *)        SELECTORS+=("$1"); shift ;;
   esac
 done
 
@@ -225,19 +293,34 @@ main() {
 
   # Registration liveness gate (mandatory, runs before any test): the gate
   # owns the registration contract -- unregistered tests, dangling
-  # registrations, and a run_test after test_done. The gate scans the same
-  # directory the runner discovered, so the RUN_TESTS_DIR override points it
-  # at the self-test's fixtures. A gate failure is reported and carried into
-  # the final verdict; the suite still runs, so one bad finding cannot hide
-  # every result behind a single abort.
-  local gate_tests_dir="${RUN_TESTS_DIR:-$REAL_TESTS_DIR}"
-  if ! bash "$LIVENESS_GATE" "$gate_tests_dir"; then
+  # registrations, and a run_test after test_done. It scans the real suite
+  # directory on every run, selected or not, so a subset selection cannot
+  # drop the whole-suite check. RUN_TESTS_SELFTEST (any non-empty value) is
+  # the explicit self-test bypass: the runner self-test feeds synthetic
+  # files that are not part of the registration contract. A gate failure is
+  # reported and carried into the final verdict; the suite still runs, so
+  # one bad finding cannot hide every result behind a single abort.
+  if [[ -n "${RUN_TESTS_SELFTEST:-}" ]]; then
+    echo "NOTE: registration liveness gate skipped (RUN_TESTS_SELFTEST=1)" >&2
+  elif ! bash "$LIVENESS_GATE" "$REAL_TESTS_DIR"; then
     echo "ERROR: test liveness gate failed -- fix the findings above before trusting the suite." >&2
     ANY_FAILED=1
   fi
 
-  local TEST_FILES
-  TEST_FILES=$(discover_tests) || exit 1
+  # Selection: positional arguments beat the TEST_FILES environment
+  # variable, and both beat discovery. TEST_FILES is whitespace-separated
+  # paths with the same contract as the arguments. With no selector,
+  # discovery globs $TEST_DIR/test_*.sh and sorts, unchanged.
+  local TEST_FILES="${TEST_FILES:-}"
+  if [[ ${#SELECTORS[@]} -gt 0 ]]; then
+    TEST_FILES=$(select_files "${SELECTORS[@]}") || exit 1
+  elif [[ -n "$TEST_FILES" ]]; then
+    local -a ENV_SELECTORS=()
+    read -r -a ENV_SELECTORS <<< "$TEST_FILES"
+    TEST_FILES=$(select_files "${ENV_SELECTORS[@]}") || exit 1
+  else
+    TEST_FILES=$(discover_tests) || exit 1
+  fi
 
   # Dispatch every file in parallel. Each worker is a child copy of this script
   # (`bash "$0" --worker`), inheriting VERBOSE / RESULTS_DIR / TEST_TIMEOUT by
@@ -313,11 +396,12 @@ main() {
   # MUTATION=1 layers the mutation tier on top of the standard run: the
   # catalog is replayed against the tree and survivors collect into a dated
   # register. The tier is operator-triggered, never a hook. The runner
-  # self-test's discovery override (RUN_TESTS_DIR) suppresses it, so the
-  # self-test keeps exercising the standard path only.
+  # self-test suppresses it via RUN_TESTS_SELFTEST, so the self-test keeps
+  # exercising the standard path only. The suppression names the self-test,
+  # not the selection: a selected production run still gets the tier.
   if [[ "${MUTATION:-0}" == "1" ]]; then
-    if [[ -n "${RUN_TESTS_DIR:-}" ]]; then
-      echo "MUTATION=1 ignored under RUN_TESTS_DIR (runner self-test)" >&2
+    if [[ -n "${RUN_TESTS_SELFTEST:-}" ]]; then
+      echo "MUTATION=1 ignored under RUN_TESTS_SELFTEST (runner self-test)" >&2
     else
       echo ""
       echo "== Mutation tier =="

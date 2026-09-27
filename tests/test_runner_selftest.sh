@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # TEST_DEADLINE: 10
-#   Budget rationale: this file spawns the runner once per case, so its honest
-#   runtime is about 4s and the 5s default leaves no headroom under parallel
-#   dispatch.
+#   Budget rationale: this file spawns the runner once per case, so its
+#   honest runtime is about 7s; the declaration states that budget instead
+#   of raising the default deadline for every file.
 # tests/test_runner_selftest.sh
 #
 # Pins cite: code-owner -- tests/libs/test_common.sh run_test unit-marker
@@ -10,37 +10,15 @@
 
 # Self-test of scripts/run_tests.sh  --  the runner is load-bearing
 # infrastructure (every other suite's green/red signal passes through it),
-# so its counting contract is locked here under the per-test-unit accounting
-# model:
+# so its counting and reporting contract is locked here. Each pinned
+# contract lives next to its code under a numbered `# Case` banner; the
+# banners are the index, so no separate enumeration is kept here.
 #
-#   1. A file whose tests all pass                 -> counted, RC 0
-#   2. A file with a failing unit                  -> FAIL marker counted, RC non-zero
-#   3. A file that exits non-zero without a UNIT: report (crash / silent
-#      zombie)                                          -> flagged as failed
-#   4. A file emitting a SKIP: marker              -> reported as a warning; the
-#                                                  run still exits 0 (a temporary
-#                                                  skip is not a failure)
-#   5. Aggregate line reflects per-file unit counts
-#   6. run_test without assertions fails; test_done emits no spurious FAIL marker
-#   7. The zombie patterns: `cmd && pass` (fails at end-of-file) and an
-#      undefined function (exit 127)
-#   8. Multiple FAIL unit markers are counted exactly
-#   9. A fail count with RC 0 still counts as failure (the fail count rides
-#      the UNIT: report, not the exit code)
-#   10. Empty discovery warns and exits non-zero without an unbound crash
-#   11. A broken prerequisite is reported once, by name
-#   12. run_test registered after test_done is dead code; the liveness gate
-#      flags it
-#   13. a file's own TEST_DEADLINE declaration overrides the global default,
-#      in both directions
-#   14. the shared helpers' own contracts: assert_run passes on a match and fails
-#      on a mismatch, source_function_from extracts a named function and fails
-#      loudly on a miss, and skip counts as a warning rather than a failure.
-#      These units moved here from tests/test_common_lib.sh, whose subject is
-#      src/libs/common.sh.
-#
-# Uses RUN_TESTS_DIR to point the runner at synthetic files. Each case runs
-# in its own isolated test with its own fixture directory.
+# Uses RUN_TESTS_DIR to point the runner at synthetic files and
+# RUN_TESTS_SELFTEST to skip the registration liveness gate (the gate scans
+# the real suite on every run; the fixtures are not part of the registration
+# contract). Each case runs in its own isolated test with its own fixture
+# directory.
 
 set -uo pipefail
 
@@ -54,7 +32,7 @@ RUNNER="$REPO_ROOT/scripts/run_tests.sh"
 
 # run_runner DIR  --  executes the runner against DIR; sets OUT and RC.
 run_runner() {
-  OUT=$(RUN_TESTS_DIR="$1" bash "$RUNNER" 2>&1)
+  OUT=$(RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$1" bash "$RUNNER" 2>&1)
   RC=$?
 }
 
@@ -244,7 +222,7 @@ test_runner_empty_discovery() {
 test_runner_broken_prerequisite() {
   mkdir -p "$FIXTURE_DIR/prereq_dir"
   local OUTRC
-  OUTRC=$(PREREQ_STUB="/nonexistent/docker-stub" RUN_TESTS_DIR="$FIXTURE_DIR/prereq_dir" bash "$RUNNER" 2>&1)
+  OUTRC=$(PREREQ_STUB="/nonexistent/docker-stub" RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$FIXTURE_DIR/prereq_dir" bash "$RUNNER" 2>&1)
   local rc=$?
   assert_ne "0" "$rc" "runner: broken prerequisite exits non-zero"
   assert_contains "$OUTRC" "prerequisite missing or not executable" "runner: prerequisite error names the cause"
@@ -258,7 +236,7 @@ test_runner_satisfied_prerequisite() {
   printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/good_stub"
   chmod +x "$FIXTURE_DIR/good_stub"
   local OUTRC
-  OUTRC=$(PREREQ_STUB="$FIXTURE_DIR/good_stub" RUN_TESTS_DIR="$FIXTURE_DIR/good_stub_dir" bash "$RUNNER" 2>&1)
+  OUTRC=$(PREREQ_STUB="$FIXTURE_DIR/good_stub" RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$FIXTURE_DIR/good_stub_dir" bash "$RUNNER" 2>&1)
   assert_contains "$OUTRC" "Warning: no test files found" "runner: satisfied prerequisite proceeds to discovery"
   assert_not_contains "$OUTRC" "prerequisite missing" "runner: satisfied prerequisite emits no error"
 }
@@ -303,7 +281,7 @@ test_runner_deadline_expiry() {
     '#!/usr/bin/env bash
 sleep 30'
   local OUTRC
-  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
   local rc=$?
   assert_ne "0" "$rc" "runner: a deadline-beating file fails the run"
   assert_contains "$OUTRC" "TIMEOUT test_hang.sh" "runner: deadline expiry reported by name"
@@ -339,7 +317,7 @@ test_runner_per_file_deadline_declaration() {
 # TEST_DEADLINE: 1
 sleep 30'
   local OUTRC
-  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=9 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=9 RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
   local rc=$?
   assert_ne "0" "$rc" "runner: a file beating its declared deadline fails"
   assert_contains "$OUTRC" "TIMEOUT test_declared_hang.sh (exceeded 1s deadline)" \
@@ -351,9 +329,171 @@ sleep 30'
 # TEST_DEADLINE: 3
 sleep 1.5
 printf "UNIT: pass=1 fail=0 skip=0\n"'
-  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
+  OUTRC=$(TEST_PARALLEL=4 TEST_TIMEOUT=1 RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" 2>&1)
   rc=$?
   assert_rc 0 "$rc" "runner: a declaration longer than the global deadline lets a slow file pass"
+}
+
+# ---------------------------------------------------------------
+# Case 16: an explicit file argument runs exactly that file. A missing file
+# is a named error. Repeated paths run once (a selection is an order, not
+# a set). RUN_TESTS_DIR is present in the first runs so a regression that
+# drops the arguments fails fast on the fixtures instead of discovering
+# the real suite.
+# ---------------------------------------------------------------
+test_runner_file_argument_selects_one_file() {
+  local dir="$FIXTURE_DIR/file_arg_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_a.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_b.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local OUT RC
+  OUT=$(RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" "$dir/test_a.sh" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: a single file argument runs green"
+  assert_contains "$OUT" "1 tests across 1 files, 1 passed, 0 failed, 0 skipped" \
+    "runner: a single file argument runs exactly that file"
+
+  OUT=$(RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" bash "$RUNNER" "$dir/test_a.sh" "$dir/test_a.sh" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: repeated file arguments run green"
+  assert_contains "$OUT" "1 tests across 1 files, 1 passed, 0 failed, 0 skipped" \
+    "runner: repeated paths run once"
+
+  OUT=$(RUN_TESTS_SELFTEST=1 bash "$RUNNER" "$dir/missing.sh" 2>&1)
+  RC=$?
+  assert_ne "0" "$RC" "runner: a missing file argument exits non-zero"
+  assert_contains "$OUT" "ERROR: no such test file: $dir/missing.sh" \
+    "runner: a missing file argument is a named error"
+}
+
+# ---------------------------------------------------------------
+# Case 17: a directory argument runs its test_*.sh files and ignores every
+# other file in the directory.
+# ---------------------------------------------------------------
+test_runner_directory_argument() {
+  local dir="$FIXTURE_DIR/dir_arg_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_a.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_b.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  # A non-test_ file in the same directory must not be picked up: without a
+  # UNIT: report it would fail the run if it were.
+  write_test "$dir/helper.sh" 'echo "not a test file"'
+  local OUT RC
+  OUT=$(RUN_TESTS_SELFTEST=1 bash "$RUNNER" "$dir" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: a directory argument runs green"
+  assert_contains "$OUT" "2 tests across 2 files, 2 passed, 0 failed, 0 skipped" \
+    "runner: a directory argument runs its test_*.sh files only"
+}
+
+# ---------------------------------------------------------------
+# Case 18: the TEST_FILES environment variable selects the named files when
+# no file or directory arguments are given. A third file in the same
+# directory stays out of the run.
+# ---------------------------------------------------------------
+test_runner_test_files_env() {
+  local dir="$FIXTURE_DIR/testfiles_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_x.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_y.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_z.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local OUT RC
+  OUT=$(RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" TEST_FILES="$dir/test_x.sh $dir/test_y.sh" bash "$RUNNER" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: a TEST_FILES selection runs green"
+  assert_contains "$OUT" "2 tests across 2 files, 2 passed, 0 failed, 0 skipped" \
+    "runner: TEST_FILES runs exactly the named files"
+}
+
+# ---------------------------------------------------------------
+# Case 19: --help and -h print the usage block and exit 0; an unknown
+# option still names itself, hints at --help, and exits non-zero.
+# ---------------------------------------------------------------
+test_runner_help_and_unknown_option() {
+  local OUT RC
+  OUT=$(RUN_TESTS_SELFTEST=1 bash "$RUNNER" --help 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: --help exits 0"
+  assert_contains "$OUT" "Usage" "runner: --help prints the usage block"
+  assert_contains "$OUT" "TEST_FILES" "runner: --help names the TEST_FILES selector"
+
+  OUT=$(RUN_TESTS_SELFTEST=1 bash "$RUNNER" -h 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: -h exits 0"
+
+  OUT=$(RUN_TESTS_SELFTEST=1 bash "$RUNNER" --bogus 2>&1)
+  RC=$?
+  assert_ne "0" "$RC" "runner: an unknown option exits non-zero"
+  assert_contains "$OUT" "Unknown option: --bogus" "runner: an unknown option names itself"
+}
+
+# ---------------------------------------------------------------
+# Case 20: the registration liveness gate runs on every run, selected or
+# not; only RUN_TESTS_SELFTEST=1 skips it. The gate stub records the
+# directory it was asked to scan instead of scanning anything, so the marker
+# exists only when the runner points the gate at the real suite.
+# ---------------------------------------------------------------
+test_runner_gate_attribution() {
+  local dir="$FIXTURE_DIR/attr_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_a.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local marker="$FIXTURE_DIR/gate_ran.marker"
+  local gate="$FIXTURE_DIR/marker_gate.sh"
+  printf '#!/usr/bin/env bash\n[[ "$1" == "%s" ]] && touch "%s"\nexit 0\n' \
+    "$REPO_ROOT/tests" "$marker" > "$gate"
+  chmod +x "$gate"
+
+  local OUT RC
+  rm -f "$marker"
+  # A subset run (a file argument, with the discovery override present too)
+  # still gates the whole suite: the marker must appear.
+  OUT=$(LIVENESS_GATE="$gate" RUN_TESTS_DIR="$dir" bash "$RUNNER" "$dir/test_a.sh" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: a selected run with the gate passes"
+  assert_file_exists "$marker" "runner: the whole-suite gate ran under a subset selection"
+  assert_contains "$OUT" "1 tests across 1 files, 1 passed, 0 failed, 0 skipped" \
+    "runner: the file argument defined the run"
+
+  rm -f "$marker"
+  OUT=$(RUN_TESTS_SELFTEST=1 LIVENESS_GATE="$gate" bash "$RUNNER" "$dir/test_a.sh" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: a self-test run passes"
+  if [[ -e "$marker" ]]; then
+    fail "runner: the gate ran despite RUN_TESTS_SELFTEST=1"
+  else
+    pass "runner: only RUN_TESTS_SELFTEST=1 skips the gate"
+  fi
+  assert_contains "$OUT" "NOTE: registration liveness gate skipped (RUN_TESTS_SELFTEST=1)" \
+    "runner: the self-test skip is announced on stderr"
+}
+
+# ---------------------------------------------------------------
+# Case 21: positional file arguments beat the TEST_FILES environment
+# variable: both given, the arguments define the run.
+# ---------------------------------------------------------------
+test_runner_arguments_override_test_files() {
+  local dir="$FIXTURE_DIR/override_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_a.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_b.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  write_test "$dir/test_c.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local OUT RC
+  OUT=$(RUN_TESTS_SELFTEST=1 RUN_TESTS_DIR="$dir" TEST_FILES="$dir/test_c.sh" bash "$RUNNER" "$dir/test_a.sh" "$dir/test_b.sh" 2>&1)
+  RC=$?
+  assert_rc 0 "$RC" "runner: arguments and TEST_FILES together run green"
+  assert_contains "$OUT" "2 tests across 2 files, 2 passed, 0 failed, 0 skipped" \
+    "runner: positional arguments beat TEST_FILES"
 }
 
 # -- shared helper contracts ---------------------------------------------------
@@ -465,6 +605,12 @@ run_test test_runner_dead_registration
 run_test test_runner_deadline_expiry
 run_test test_runner_parallel_dispatch_integrity
 run_test test_runner_per_file_deadline_declaration
+run_test test_runner_file_argument_selects_one_file
+run_test test_runner_directory_argument
+run_test test_runner_test_files_env
+run_test test_runner_help_and_unknown_option
+run_test test_runner_gate_attribution
+run_test test_runner_arguments_override_test_files
 
 run_test test_subshell_rc_matches_expected
 run_test test_subshell_rc_mismatch_fails

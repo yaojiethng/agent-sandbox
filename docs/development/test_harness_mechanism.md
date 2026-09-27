@@ -8,13 +8,15 @@ The harness guarantees one invariant: a trustworthy green or red signal. Every u
 
 ## The runner (`scripts/run_tests.sh`)
 
-`run_tests.sh` discovers every `tests/test_*.sh` file, checks the suite prerequisites, gates the registration contract, and dispatches the files in parallel.
+`run_tests.sh` runs the `tests/test_*.sh` files, checks the suite prerequisites, gates the registration contract, and dispatches the files in parallel.
 
-Discovery globs `$TEST_DIR/test_*.sh`, sorts the names, and warns when it finds none. `TEST_DIR` defaults to `tests/`; `RUN_TESTS_DIR` overrides it for the runner self-test.
+Discovery globs `$TEST_DIR/test_*.sh`, sorts the names, and warns when it finds none. `TEST_DIR` defaults to `tests/`; `RUN_TESTS_DIR` overrides it. `RUN_TESTS_DIR` stays the discovery seam for the runner self-test and for callers that want a different suite root.
+
+A run may select files instead of discovering them. Selection precedence: positional file or directory arguments, then the `TEST_FILES` environment variable, then discovery. A file path is used as given; a missing file is a named error. A directory contributes its own `test_*.sh` files, without recursion. A selection keeps argument order and drops repeated paths. A selection that yields no files warns and exits non-zero, exactly as empty discovery does.
 
 The prerequisite gate checks that the docker stub (`tests/stubs/docker`) exists and is executable. A broken stub otherwise fails dozens of tests with unrelated exit 126 or 127 errors.
 
-The registration liveness gate runs before dispatch (see The gates). It is skipped under a `RUN_TESTS_DIR` override because the self-test feeds synthetic files.
+The registration liveness gate runs before dispatch (see The gates). It scans the real suite directory on every run, selected or not: a subset run must not drop the whole-suite registration check. `RUN_TESTS_SELFTEST=1` is the explicit self-test bypass. The runner self-test feeds synthetic files that are not part of the registration contract, so it sets the flag, and the runner skips the gate with a NOTE. `RUN_TESTS_DIR` only overrides discovery; it never changes what the gate scans.
 
 Dispatch runs every file through a child copy of the runner: `printf '%s\n' "$TEST_FILES" | xargs -P"$TEST_PARALLEL" -I{} bash "$0" --worker "{}"`. Each worker handles one file. Workers always exit 0 so `xargs` schedules every file regardless of any single failure; failure state rides the record the worker writes (see The result protocol). `TEST_PARALLEL` defaults to 8.
 
@@ -68,7 +70,7 @@ Why drift is loud by construction: the failure count rides the file's real exit 
 - DANGLING: a `run_test` target with no matching function definition.
 - DEAD-REGISTRATION: a `run_test` after `test_done`; `test_done` exits the process, so the registration never runs.
 
-The gate accepts a directory argument (defaulting to the real suite) so the runner self-test can point it at a fixture. The runner calls it before dispatch and the self-test calls it directly.
+The gate accepts a directory argument, defaulting to the real suite. The runner calls it before dispatch with the real suite directory on every run. The self-test calls it directly against a fixture for the dead-registration case; its runner invocations skip the gate with `RUN_TESTS_SELFTEST=1`.
 
 `scripts/check_test_smoke.sh` syntax-checks the excluded `tests/knowledge/`, `tests/integration/`, and `tests/eval/` scripts with `bash -n`, so excluded scripts cannot rot silently. It is non-gating.
 
@@ -78,7 +80,7 @@ The runner's deadline and the result protocol are also gates: a hanging file tim
 
 ## The selftest (`tests/test_runner_selftest.sh`)
 
-The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pins its contracts. It feeds synthetic files through the runner under a `RUN_TESTS_DIR` override and asserts:
+The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pins its contracts. It feeds synthetic files through the runner under a `RUN_TESTS_DIR` override and with `RUN_TESTS_SELFTEST=1` (the gate would otherwise scan the real suite on every run), and asserts:
 
 - a passing file is counted and exits 0;
 - a failing file is counted and exits non-zero;
@@ -91,6 +93,11 @@ The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pi
 - a broken prerequisite is reported once, by name;
 - a deadline-beating file is reported as `TIMEOUT`;
 - a file's own `# TEST_DEADLINE` declaration overrides the default, in both directions;
+- a file argument runs exactly that file, and a missing file is a named error;
+- a directory argument runs its `test_*.sh` files and nothing else;
+- `TEST_FILES` selects the named files, and positional arguments beat it;
+- `--help` and `-h` print the usage block, and an unknown option names itself;
+- the registration liveness gate runs against the real suite on every run, and only `RUN_TESTS_SELFTEST=1` skips it;
 - the liveness gate flags a dead registration.
 
 ## What the harness cannot observe
