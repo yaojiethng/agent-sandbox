@@ -335,6 +335,26 @@ test_complete_pass_end_to_end() {
   fi
 }
 
+# Given: a stale record and an unknown flag
+# When:  prune runs with --bogus
+# Then:  it fails non-zero and the record survives
+# Asserts: the parser rejects unknown flags before any prune action runs
+test_unknown_flag_rejected_before_prune() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_unknown_flag"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
+
+  local OUT RC
+  OUT="$(invoke_prune --bogus 2>&1)"; RC=$?
+
+  if [[ "$RC" -ne 0 ]] && record_exists "s_stale"; then
+    pass "prune: an unknown flag is rejected before any record is removed (rc=$RC)"
+  else
+    fail "prune: expected unknown flag rejection with the record kept (rc=$RC)"
+  fi
+}
+
 # Given: --stale=fresh
 # When:  prune runs
 # Then:  it fails and names the unknown kind
@@ -595,6 +615,7 @@ run_test test_complete_pass_end_to_end
 run_test test_rule2_removes_network_and_volume_orphans
 run_test test_rule2_canonicalizes_sandbox_dir_spelling
 run_test test_rule2_filter_selects_only_this_projects_containers
+run_test test_unknown_flag_rejected_before_prune
 run_test test_unknown_args_rejected
 run_test test_missing_project_rejected
 

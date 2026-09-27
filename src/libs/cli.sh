@@ -42,7 +42,6 @@
 #
 #   MODE:
 #     error     unmatched args print usage and return 1 (strict, default)
-#     drop      unmatched args warn on stderr and are ignored (_CLI_TOLERANT=1)
 #     collect   unmatched args append, in order, to the array named SINK_VAR;
 #               never errors. In collect mode --help/-h is not special: the
 #               caller owns help routing (the dispatcher scans its args).
@@ -146,10 +145,6 @@ _cli_parse() {
           "$usage_fn" >&2
           return 1
           ;;
-        drop)
-          echo "Warning: ignoring unrecognised argument: $a" >&2
-          continue
-          ;;
         collect) SINK+=( "$a" ); continue ;;
       esac
     fi
@@ -164,13 +159,11 @@ _cli_parse() {
 }
 
 # parse_args USAGE_FN spec... -- args...
-#   Strict or tolerant leaf parse (MODE error/drop per _CLI_TOLERANT).
+#   Strict leaf parse (MODE error).
 parse_args() {
   local usage_fn="$1"
   shift
-  local mode=error
-  [[ "${_CLI_TOLERANT:-}" == "1" ]] && mode=drop
-  _cli_parse "$mode" "$usage_fn" "" "$@"
+  _cli_parse error "$usage_fn" "" "$@"
 }
 
 # parse_args_collect SINK_VAR spec... -- args...

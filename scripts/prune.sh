@@ -235,7 +235,6 @@ main() {
   source "$REPO_ROOT/src/libs/common.sh"
   source "$REPO_ROOT/src/libs/session_inventory.sh"
   source "$REPO_ROOT/src/libs/cli.sh"
-  _CLI_TOLERANT=1
 
   parse_args usage \
     --stale=STALE_KIND \

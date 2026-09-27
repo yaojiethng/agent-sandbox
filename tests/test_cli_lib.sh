@@ -85,34 +85,17 @@ test_parse_args_unknown_strict_fails() {
   fi
 }
 
-# Given: _CLI_TOLERANT=1 and an unknown flag
-# When:  parse_args runs
-# Then:  rc 0
-# Asserts: drop mode (the surface prune.sh uses).
-test_parse_args_tolerant_drops_unknown() {
-  _CLI_TOLERANT=1
-  parse_args _test_usage --known -- --bogus >/dev/null 2>&1
-  local rc=$?
-  unset _CLI_TOLERANT
-  if [[ "$rc" == 0 ]]; then
-    pass "parse_args: tolerant mode ignores an unknown flag (rc 0)"
-  else
-    fail "parse_args: tolerant mode rc=$rc, expected 0"
-  fi
-}
-
-# Given: _CLI_TOLERANT=1 and an unknown flag
+# Given: an unknown flag and no tolerance knob
 # When:  parse_args runs with stderr captured
-# Then:  rc 0 and a warning names the ignored argument
-# Asserts: drop mode is not silent (the fail-open it once was).
-test_parse_args_tolerant_warns_on_unknown() {
-  _CLI_TOLERANT=1
+# Then:  rc 1 and usage is printed
+# Asserts: strict mode is not silent and names the rejected argument.
+test_parse_args_unknown_strict_prints_usage() {
   local OUT
   OUT=$(parse_args _test_usage --known -- --dry-runn 2>&1)
   local rc=$?
-  unset _CLI_TOLERANT
-  assert_rc 0 "$rc" "tolerant mode keeps rc 0 on an unknown flag"
-  assert_contains "$OUT" "--dry-runn" "tolerant mode warns about the ignored argument"
+  assert_rc 1 "$rc" "strict mode returns rc 1 on an unknown flag"
+  assert_contains "$OUT" "usage" "strict mode prints usage on an unknown flag"
+  assert_contains "$OUT" "--dry-runn" "strict mode names the rejected argument"
 }
 
 # Given: a value flag with no `=value`
@@ -302,8 +285,7 @@ run_test test_parse_args_unknown_word_override
 run_test test_parse_args_value_keeps_equals_segments
 run_test test_parse_args_boolean_flag
 run_test test_parse_args_unknown_strict_fails
-run_test test_parse_args_tolerant_drops_unknown
-run_test test_parse_args_tolerant_warns_on_unknown
+run_test test_parse_args_unknown_strict_prints_usage
 run_test test_parse_args_bare_value_flag_rejected
 run_test test_parse_args_boolean_with_value_rejected
 run_test test_parse_args_help_after_separator_not_special
