@@ -19,6 +19,16 @@ Decisions made (confirmed against the tree, stated in the plan and released):
 | `RUN_TESTS_DIR` | stays as the discovery override seam (back-compat); it no longer changes what the gate scans |
 | Heavy harness file | `tests/test_runner_contract.sh` declares `# TEST_DEADLINE: 10` rather than raising the runner default |
 
+## Carried forward
+
+None.
+
+---
+
+[CORRECTION -- 2026-09-27: section added with the canonical `None.` marker; the record was closed without it. Flagged in handover `20260927-01`.]
+
+---
+
 ## Acceptance criteria
 
 | # | Criterion | Checked by | Status |
@@ -57,6 +67,16 @@ Decisions made (confirmed against the tree, stated in the plan and released):
 - `tests/test_runner_selftest.sh`
 - `tests/test_runner_contract.sh`
 - `docs/development/test_harness_mechanism.md`
+
+## Deferred items
+
+None.
+
+---
+
+[CORRECTION -- 2026-09-27: section added with the canonical `None.` marker; the record was closed without it. Flagged in handover `20260927-01`.]
+
+---
 
 ## What's Next
 

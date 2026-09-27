@@ -118,4 +118,4 @@ The risks. A converged path is only converged if it is the only path; a leaf tha
 
 Out of scope, with the series in mind: the picker's rendering, the dispatcher boundary, the declaration surface, the diff state contract, and the Make translation of the flag. The series and its index line are recorded in the read-through's Design notes section.
 
-Evidence and disposition live in [`20260924-design-active-test_suite_readthrough.md`](20260924-design-active-test_suite_readthrough.md): rows 148 and 256 through 266, and the interactive pass's unit table and bite sweep.
+Evidence and disposition live in [`20260927-report-settled-test_suite_readthrough.md`](20260927-report-settled-test_suite_readthrough.md): rows 148 and 256 through 266, and the interactive pass's unit table and bite sweep.

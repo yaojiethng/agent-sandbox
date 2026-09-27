@@ -4,7 +4,7 @@
 
 Find refactor and rewrite targets by change frequency. A churn number alone never justifies a rewrite. The signal is the join: a file that changes often and carries read-through findings in its sector is the priority; a file that changes often with no findings is stable-but-evolving and needs no action.
 
-This brief is the companion to [`read-through-run.md`](read-through-run.md). The read-through produces the findings register and measures whether the tests pin behaviour; this pass produces the change-frequency ranking and measures where the tree moves. Join the two before you propose any rewrite. The register this pass joins against lives in [`20260924-design-active-test_suite_readthrough.md`](../../../devlog/discussions/20260924-design-active-test_suite_readthrough.md); reach for the register version that is current at run time, because row numbers are stable and the file grows.
+This brief is the companion to [`read-through-run.md`](read-through-run.md). The read-through produces the findings register and measures whether the tests pin behaviour; this pass produces the change-frequency ranking and measures where the tree moves. Join the two before you propose any rewrite. The register this pass joins against lives in [`20260927-report-settled-test_suite_readthrough.md`](../../../devlog/discussions/20260927-report-settled-test_suite_readthrough.md); reach for the register version that is current at run time, because row numbers are stable and the file grows.
 
 ## The pinned measurement
 

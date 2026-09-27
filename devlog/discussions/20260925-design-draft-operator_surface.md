@@ -54,4 +54,4 @@ What it does not do. It does not change the command vocabulary (T10), the record
 
 Landing. A design that settles into an ADR (or into the existing interface-contract ADR), then an implementation handover: the vocabulary module, the usage gate, the emitter rewrite, and the units.
 
-Related rows: 34, 37, 81, 198, 264, 266, 271, 272 and 284, the usage-drift rows 138, 151, 218 and 221, and row 290, which rides the M3.1 gate rows. The evidence base is sector H of [`20260924-design-active-test_suite_readthrough.md`](20260924-design-active-test_suite_readthrough.md).
+Related rows: 34, 37, 81, 198, 264, 266, 271, 272 and 284, the usage-drift rows 138, 151, 218 and 221, and row 290, which rides the M3.1 gate rows. The evidence base is sector H of [`20260927-report-settled-test_suite_readthrough.md`](20260927-report-settled-test_suite_readthrough.md).

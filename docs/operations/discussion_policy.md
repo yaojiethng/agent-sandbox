@@ -19,8 +19,11 @@ Hyphens as section delimiters. Underscores as word separators in the description
 | `story` | Problem framing -- what does the operator need? |
 | `study` | Feasibility -- can we do X? |
 | `design` | Decision exploration -- should we, and how? |
+| `report` | Post-action record -- what an operation did, what it produced, what the operator and the agent learned from it |
 
 ### Statuses
+
+A report starts at draft, is reviewed, and transitions directly to settled; it never passes through active. A report that is rejected is deleted or archived at the operator's direction.
 
 | Status | Meaning | Valid next states |
 |---|---|---|
@@ -71,3 +74,22 @@ Design docs follow this section order:
 #### Lifecycle
 
 Design docs use the standard discussion statuses (draft, active, settled, superseded). When a design settles with an implementation decision, record the decision as an ADR per [`adr_policy.md`](adr_policy.md) and update the design doc's status to `settled`. The design doc remains as the exploration record; the ADR is the authoritative decision record.
+
+### Reports (`report`)
+
+Records a completed operation: what was attempted, what was produced, what was learned. Composed after the fact; never a working record. A report starts at draft and transitions directly to settled.
+
+#### Required sections
+
+| Section | Purpose |
+|---|---|
+| **Context** | what the operation was, why it ran, its scope and exclusions |
+| **The brief** | what the operation set out to do, and the contract it ran against |
+| **Compact log of actions** | what was done, phase by phase, with measured counts |
+| **Mid-run adjustments** | the method changes made during the operation, each with why |
+| **Findings summary** | the register link plus numbers computed from the data file, never asserted |
+| **Resolution methods** | how the findings were handled, and the lanes they were split into |
+| **Post-review learnings and process adjustments** | the reflection on the operation and the process changes that follow |
+| **Final output artifacts** | the durable outputs the operation produced, each with its home |
+| **Resolution status** | what is closed vs open, and the follow-ups by track |
+| **Records this supersedes** | the documents the report replaces, their fate, and where each piece of their content now lives |

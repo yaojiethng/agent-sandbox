@@ -88,4 +88,4 @@ The `.env` dual role stays open, so the re-assert discipline stays in place unti
 
 The main risk is a generalisation that reads as a no-op refactor while changing behaviour. Whether a missing setting fails or falls back depends on whether its level list contains a default, so each adoption must state that list explicitly and must pin it with a unit, or a silent default returns through the new front door.
 
-Evidence and disposition live in [`20260924-design-active-test_suite_readthrough.md`](20260924-design-active-test_suite_readthrough.md): rows 7 and 22 (the reader families), rows 38 through 48 (parsing and declaration), row 72 (the two-phase interface), and row 78 (the bypassed primitive).
+Evidence and disposition live in [`20260927-report-settled-test_suite_readthrough.md`](20260927-report-settled-test_suite_readthrough.md): rows 7 and 22 (the reader families), rows 38 through 48 (parsing and declaration), row 72 (the two-phase interface), and row 78 (the bypassed primitive).

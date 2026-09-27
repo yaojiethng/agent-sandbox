@@ -34,12 +34,13 @@ Constraints measured in this image: perl's core `JSON::PP` and node both parse J
 
 Adopt Option D.
 
-The register keeps its prose and gains a companion data file, `20260924-design-active-test_suite_readthrough.jsonl`, with one object per finding row and these fields.
+The register keeps its prose and gains a companion data file, `20260927-report-settled-test_suite_readthrough.jsonl`, with one object per finding row and these fields.
 
 | Field | Type | Meaning |
 |---|---|---|
 | `id` | integer | the row's stable identifier; never renumbered |
 | `title` | string | the one-line machine label, taken from the finding's lead sentence |
+| `evidence` | string | the bite/probe evidence the title references: the failing unit, the probe, the verdict, the measured consequence; present only where measurement exists |
 | `sector` | string | the triage sector letter, or `-` |
 | `class` | string | the finding class |
 | `action` | string | one of `fix`, `note`, `docs`, `observe`, `other` |
@@ -52,7 +53,7 @@ The register keeps its prose and gains a companion data file, `20260924-design-a
 
 The split is by kind of content, not by audience: the data holds what a query needs, and the prose holds the reasoning. A label appears in exactly one place, so the two records cannot disagree about it.
 
-The file's name is the report's name with a different extension: `20260924-design-active-test_suite_readthrough.md` pairs with `20260924-design-active-test_suite_readthrough.jsonl`. A register's data file is therefore found from its report, never by scanning a directory for data files.
+The file's name is the report's name with a different extension: `20260927-report-settled-test_suite_readthrough.md` pairs with `20260927-report-settled-test_suite_readthrough.jsonl`. A register's data file is therefore found from its report, never by scanning a directory for data files.
 
 The `status` field is how a finding is checked off, and it holds one of seven values. `open` means no action taken yet. `resolved` means the fix landed and its unit passes. `accepted` means the disposition is to leave the behaviour as it is, with the reason on the row. `blocked` means the row could not be worked where it landed, usually because its file belongs to another owner. `needs-decision` means a design choice comes first. `stale` means the finding no longer matches the tree. `assigned` means the row is not closed, but a concrete roadmap row owns it; the `assigned_to` field names that roadmap row, and the row transitions to `resolved`, `accepted` or `blocked` when the roadmap row is worked. The field is a plain string, and its values are fixed; a new value is a change to this table, not a free choice at write time.
 
@@ -61,17 +62,17 @@ Counts are read from the data file and never asserted in prose. A stated count i
 Query examples. With `jq`, once the dependency lands:
 
 ```bash
-jq -s 'length' 20260924-design-active-test_suite_readthrough.jsonl
-jq -c 'select(.status=="open" and .action=="fix")' 20260924-design-active-test_suite_readthrough.jsonl
-jq -r 'select(.sector=="I") | .id' 20260924-design-active-test_suite_readthrough.jsonl | wc -l
-jq -s 'group_by(.class) | map({class: .[0].class, n: length}) | sort_by(-.n)' 20260924-design-active-test_suite_readthrough.jsonl
+jq -s 'length' 20260927-report-settled-test_suite_readthrough.jsonl
+jq -c 'select(.status=="open" and .action=="fix")' 20260927-report-settled-test_suite_readthrough.jsonl
+jq -r 'select(.sector=="I") | .id' 20260927-report-settled-test_suite_readthrough.jsonl | wc -l
+jq -s 'group_by(.class) | map({class: .[0].class, n: length}) | sort_by(-.n)' 20260927-report-settled-test_suite_readthrough.jsonl
 ```
 
 With the perl core module, which is present today:
 
 ```bash
-perl -MJSON::PP -ne '$j=decode_json($_); $st{$j->{state}}++; END{print "$_=$st{$_}\n" for sort keys %st}' 20260924-design-active-test_suite_readthrough.jsonl
-perl -MJSON::PP -ne '$j=decode_json($_); print "$j->{id} $j->{title}\n" if $j->{sector} eq "I" && $j->{state} eq "open"' 20260924-design-active-test_suite_readthrough.jsonl
+perl -MJSON::PP -ne '$j=decode_json($_); $st{$j->{state}}++; END{print "$_=$st{$_}\n" for sort keys %st}' 20260927-report-settled-test_suite_readthrough.jsonl
+perl -MJSON::PP -ne '$j=decode_json($_); print "$j->{id} $j->{title}\n" if $j->{sector} eq "I" && $j->{state} eq "open"' 20260927-report-settled-test_suite_readthrough.jsonl
 ```
 
 No reader script and no new lint gate. The data file is a log, and the queries above are its whole interface. The operator's direction was explicit: this is a cleaner way to record the findings, not a new tool to maintain, and live counts are no longer needed inside a pass.
@@ -92,10 +93,10 @@ Propagation checklist for this decision:
 
 | File | Change | Status |
 |---|---|---|
-| `devlog/discussions/20260924-design-active-test_suite_readthrough.jsonl` | new: 312 findings as JSON Lines | done |
-| `devlog/discussions/20260924-design-active-test_suite_readthrough.md` | Format section declares the companion file and the computed-count rule | done |
+| `devlog/discussions/20260927-report-settled-test_suite_readthrough.jsonl` | new: 319 findings as JSON Lines, with the optional `evidence` field | done |
+| `devlog/discussions/20260927-report-settled-test_suite_readthrough.md` | the compacted report; declares the companion file and the computed-count rule | done |
 | `workflow/coding-agent/prompts/read-through-run.md` | register-integrity rules replaced by the schema and the data check | done |
 | `workflow/coding-agent/prompts/fanout-run.md` | findings block and integrity check point at the schema | done |
-| `devlog/discussions/20260925-design-draft-readthrough_process_review.md` | item 6 superseded; the register format now has its own decision record | done |
-| `devlog/roadmap.md` | the roadmap-mechanism rewrite study names the register file as its first step | done |
+| `devlog/discussions/20260925-design-draft-readthrough_process_review.md` | item 6 superseded; the register format now has its own decision record | superseded by the report, deleted |
+| `devlog/roadmap.md` | the roadmap-mechanism rewrite study names the register file as its first step | done; the register link now names the report pair |
 | `docs/operations/documentation_policy.md` | its "issue tracker" reference needs a target (proposed, awaiting release) | pending |
