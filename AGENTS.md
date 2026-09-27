@@ -155,7 +155,7 @@ The minor loop -- handover first, scope confirmation, design, implementation, pr
 
 Run the Markdown lint gate documented in [`documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate) before the pre-close gate; the repository holds zero findings.
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- triggers Step 1 (Open handover) before any further output. Open the handover file and pass the Step 2 scope gate before implementation. A green test suite and correctly typed commits do not close an iteration by themselves: the close commit must carry the handover with Status Closed. An iteration that lands commits with no open handover is a missing record, not a fast close, unless the operator explicitly requires a chore commit to land with no handover.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- triggers Step 1 (Open handover) before any further output. Open the handover file and pass the Step 2 scope gate before implementation. A green test suite and correctly typed commits do not close an iteration by themselves: the close commit must carry the handover with Status Closed. An iteration that lands commits with no open handover is a missing record, not a fast close, unless the operator explicitly requires a chore commit to land with no handover. The iteration is one delivery commit: intermediate commits are `wip:` checkpoints or corrections, never delivery-typed (eg. `fix:`/`docs:`/`feat:`/`chore:`), and a pile of commits at HEAD with no open handover is a missing-record signal to squash now, not progress.
 
 ## Iteration Start
 

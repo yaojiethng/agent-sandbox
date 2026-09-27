@@ -18,7 +18,7 @@ Body and footer are optional. Use a body when the "why" is not obvious from the 
 
 The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body -- that is the diff's job.
 
-Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
+Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule, but a delivery type is reserved for the delivery commit: do not give an intermediate commit a prefix other than `wip:`, because a typed commit reads as a closed deliverable. Delivery commits without a valid prefix are rejected at review gate.
 
 ---
 
@@ -159,7 +159,7 @@ An iteration that ends with uncommitted work is a risk -- the handover records i
 
 - At iteration end, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
 - `wip` is not a commit type -- it is a prefix that signals the commit is not reviewable. The next iteration amends or follows up.
-- Intermediate commits (wip, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end.
+- Intermediate commits (wip, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end. A delivery prefix is still reserved for the delivery commit; type an intermediate as `wip:` or as an amend of a prior `wip:`.
 - Do not leave uncommitted changes across iteration boundaries -- this includes stashes. If work is incomplete at iteration end, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
@@ -170,6 +170,8 @@ This is the git-level equivalent of the `autosave.diff` pattern in the execution
 ## WIP Commits
 
 `wip:` is an accepted commit prefix for intermediate checkpoints. A `wip:` commit is a checkpoint, not a deliverable. It is never reviewable and never reaches `main` as-is. Squash every `wip:` commit into the typed delivery commit at iteration end.
+
+Intermediates are `wip:` or amends, never delivery-typed. A mid-iteration `fix:`/`feat:`/`docs:`/`chore:` commit reads as a closed deliverable that later folds away -- a false delivery surface that misleads the reviewer. When a discrete task group goes in, land it as `wip:` and squash it into the delivery commit at the same close that owns it, or amend an existing `wip:`. Type the delivery prefix only once, on the delivery commit.
 
 Use `wip:` when:
 
