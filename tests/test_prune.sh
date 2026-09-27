@@ -403,9 +403,9 @@ test_rule2_filter_selects_only_this_projects_containers() {
 
 # Given: a stale record dated today and a `date` that cannot derive the cutoff
 # When:  prune runs
-# Then:  the empty cutoff skips the age narrowing, so the stale record is removed
-# Asserts: the empty-cutoff branch is the age filter's bypass, not a fail-closed stop
-test_rule1_empty_cutoff_skips_age_filter() {
+# Then:  prune refuses (non-zero) and the record is kept
+# Asserts: an underivable age cutoff fails closed instead of pruning everything
+test_rule1_empty_cutoff_refuses_instead_of_pruning_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_empty_cutoff"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
@@ -425,15 +425,42 @@ exec "$(command -v date)" "\$@"
 EOF
   chmod +x "$BINDIR/date"
 
+  local RC=0
   ( export PATH="$BINDIR:$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/prune.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
+  ) > /dev/null 2>&1 || RC=$?
+
+  if [[ $RC -ne 0 ]] && record_exists "s_recent"; then
+    pass "Rule 1 empty cutoff: a failed age derivation refuses and keeps the record"
+  else
+    fail "Rule 1 empty cutoff: expected a fail-closed refusal that keeps the record (rc=$RC)"
+  fi
+}
+
+# Given: a stale record with no readable session-ts
+# When:  prune runs
+# Then:  the record is kept, not pruned
+# Asserts: an unreadable timestamp keeps the record instead of treating it as oldest
+test_rule1_unreadable_ts_keeps_record() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_unreadable_ts"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  local recent="$(( today - 1 ))"
+  write_record "s_no_ts" "pi" "aaaa1111aaaa" "$recent-000000"
+  # Unreadable: no session-ts label on the record's compose file.
+  sed -i 's/agent-sandbox.session-ts: [0-9-]*$//' "$FIXTURE_DIR/.compose/s_no_ts.yml"
+
+  ( export PATH="$STUB_DIR:$PATH"
     bash "$REPO_ROOT/scripts/prune.sh" \
       --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
   ) > /dev/null 2>&1
 
-  if ! record_exists "s_recent"; then
-    pass "Rule 1 empty cutoff: a failed age derivation skips the narrowing (record removed)"
+  if record_exists "s_no_ts"; then
+    pass "Rule 1 unreadable ts: a record that cannot vouch for its age is kept"
   else
-    fail "Rule 1 empty cutoff: expected the stale record removed when the cutoff cannot be derived"
+    fail "Rule 1 unreadable ts: expected the unreadable-timestamp record kept, not pruned"
   fi
 }
 
@@ -552,7 +579,8 @@ test_rule2_stops_container_before_removing() {
 run_test test_rule1_provider_filter
 run_test test_rule1_age_filter_skips_recent
 run_test test_rule1_age_days_broadens
-run_test test_rule1_empty_cutoff_skips_age_filter
+run_test test_rule1_empty_cutoff_refuses_instead_of_pruning_all
+run_test test_rule1_unreadable_ts_keeps_record
 run_test test_rule1_age_days_non_numeric_rejected
 run_test test_dry_run_preview_names_rule2_orphans_of_removed_records
 run_test test_rule2_unnameable_resource_kept

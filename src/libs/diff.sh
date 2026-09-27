@@ -72,15 +72,21 @@ _diff_restore_untracked() {
 #   guaranteed trailing newline. Writes an empty file when there are no
 #   changes vs BASE. Single source of truth for the verbatim-diff contract
 #   shared by write_uncommitted_diff and write_all_changes_diff.
+#   Fails closed: if git could not run (a broken repo), the function prints an
+#   error naming the refusing check and returns non-zero instead of writing
+#   an empty file that would read as "no changes".
 _write_git_diff() {
   local dir="$1" base="$2" out="$3"
-  if git -C "$dir" diff --quiet "$base" 2>/dev/null; then
-    : > "$out"
-  else
-    git -C "$dir" diff "$base" \
-      | strip_index_lines \
-      | sed -e '$a\\' \
+  local git_pipe_rc
+  git -C "$dir" diff "$base" \
+    | strip_index_lines \
+    | sed -e '$a\\' \
       > "$out"
+  git_pipe_rc=${PIPESTATUS[0]}
+  if [[ $git_pipe_rc -ne 0 ]]; then
+    rm -f "$out"
+    echo "_write_git_diff: git diff failed against base $base in $dir" >&2
+    return 1
   fi
 }
 
@@ -222,7 +228,9 @@ write_uncommitted_diff() {
   # without content, so diff shows them). Restore staged state after.
   _diff_stage_untracked "$SANDBOX_DIR"
   _write_git_diff "$SANDBOX_DIR" HEAD "$OUTPUT_FILE"
+  local write_rc=$?
   _diff_restore_untracked "$SANDBOX_DIR"
+  return "$write_rc"
 }
 
 # -------------------------
@@ -265,7 +273,9 @@ write_all_changes_diff() {
   # Stage untracked files so they appear in the diff
   _diff_stage_untracked "$SANDBOX_DIR"
   _write_git_diff "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_FILE"
+  local write_rc=$?
   _diff_restore_untracked "$SANDBOX_DIR"
+  return "$write_rc"
 }
 
 # -------------------------

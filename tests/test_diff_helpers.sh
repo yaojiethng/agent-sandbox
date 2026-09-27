@@ -39,6 +39,38 @@ test_uncommitted_writes_diff() {
   fi
 }
 
+# Given: a git repository whose index is corrupt (git diff cannot run)
+# When:  write_uncommitted_diff runs
+# Then:  it returns non-zero, prints a refusal, and leaves no diff file
+# Asserts: a broken repository fails closed instead of writing an empty diff
+#          that reads as "no changes"
+test_uncommitted_refuses_broken_repo() {
+  local DIR="$FIXTURE_DIR/uw_broken"
+  local OUT="$FIXTURE_DIR/uw_broken_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR"
+  printf 'garbage' > "$DIR/.git/index"
+
+  local RC=0 ERR=""
+  ERR=$(write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff" 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 ]]; then
+    pass "write_uncommitted_diff fails closed on a broken repository"
+  else
+    fail "write_uncommitted_diff should refuse a broken repository (rc=0)"
+  fi
+  if [[ "$ERR" == *"git diff failed"* ]]; then
+    pass "the refusal names the failing check"
+  else
+    fail "the refusal should name the failing check: '$ERR'"
+  fi
+  if [[ ! -e "$OUT/uncommitted.diff" ]]; then
+    pass "no partial diff file is left behind on refusal"
+  else
+    fail "a partial diff file should not remain after refusal"
+  fi
+}
+
 # Given: a clean tree at HEAD
 # When:  write_uncommitted_diff runs
 # Then:  an empty file, not a missing one
@@ -669,6 +701,7 @@ test_strip_index_passthrough_no_index() {
 # Run
 # =============================================================================
 run_test test_uncommitted_writes_diff
+run_test test_uncommitted_refuses_broken_repo
 run_test test_uncommitted_empty_on_clean
 run_test test_uncommitted_includes_untracked
 run_test test_uncommitted_restores_untracked_worktree

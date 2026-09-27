@@ -305,6 +305,17 @@ Files in `src/libs/` may export functions (for sourcing) and also run standalone
 
 Do not add boolean/string mode parameters to a function unless at least one production call site passes a value that changes behaviour. A flag "for later" is dead API surface: it widens every signature it threads through, invites untested branches, and its eventual removal touches every file in between (`STRICT` and `AUTO_SELECT` were both removed for exactly this  --  see the 2026-08-21 loc-reduction campaign). When a mode is genuinely needed, add the parameter and the call-site change in the same commit.
 
+### 3.5 Checks fail closed, name their failure key, and never presume a predecessor succeeded
+
+A **check** is a call that reads an external capability (a tool, a daemon, a git repository, an environment) and returns a verdict. Its verdict is **pass** or **fail**. A run where the capability could not produce the answer is not a third state: it is a **fail** whose distinguishing key ("docker could not run", "no such image", "cannot derive the cutoff") the caller must be able to read. The whole family rests on one obligation: **a silent failure must never be readable as a success.**
+
+- **Fail closed by default.** When a check cannot determine its answer, refuse and stop. The refusal names the failing check on stderr. Treating an undeterminable result as success is how a broken input becomes a benign one (see rule 3.2).
+- **Never a bare `|| true` to absorb a check's status.** `foo || true` discards the very distinction the check exists to make. When proceeding is genuinely safe on a specific failure, say so: a named, opt-in override that prints a warning naming what was bypassed. A bare absorb is the silent-collapse bug.
+- **Never presume a predecessor succeeded.** `cmd1 | cmd2` and `if cmd; then : > out; else ...` must not read the pipe or the branch as proof that the earlier command ran. Break the pipe and validate its status explicitly (`PIPESTATUS[0]` for the stage you care about, or a split pipeline). A collection that feeds on one failed stage writes a trustworthy-looking partial or empty result.
+- **A check may not alias "the capability could not run" to "nothing to report."** Empty output is a legitimate answer only when the empty really is "no such thing"; when the capability itself could have failed, the check must distinguish the two (row 88) so the caller is not given wrong advice.
+
+Why the family is small and deliberate: bash's `$( )` captures stdout only, so a probe that wants to return both a value and a status has no ergonomic channel and falls back to empty-output-as-sentinel. That sentinel is honestly used most of the time, which is why the defects cluster at a handful of `$( )`/pipe boundaries rather than everywhere. This restraint is a data point for the bash-as-implementation-language boundary review (roadmap rows 135 and 168), not a mandate to retrofit every `|| true`; a `|| true` that absorbs a status that genuinely does not matter is still fine. Each check that can read a silent failure as a success owes a unit for its failed path and, where the capability can be absent, its cannot-run path.
+
 ---
 
 ## 4. Common Pitfalls

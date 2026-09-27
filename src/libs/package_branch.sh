@@ -324,9 +324,16 @@ package_branch() {
   # degrade to empty or partial while this function still reports success, so the
   # caller stamps a SUCCESS bundle over the last good one. Refuse the state here:
   # the save decision routes its undeterminable case into this function, and the
-  # callers' failure paths keep the previous artefact and write FAIL.
+  # callers' failure paths keep the previous artefact and write FAIL. Two probes:
+  # `git status --porcelain` reads the index; `git fsck --no-dangling` reads
+  # every reachable object, so a truncated blob is refused before the per-commit
+  # diff degrades.
   if ! git -C "$SANDBOX_DIR" status --porcelain >/dev/null 2>&1; then
-    echo "package_branch: cannot read the repository state at $SANDBOX_DIR; refusing to export" >&2
+    echo "package_branch: cannot read the repository index at $SANDBOX_DIR; refusing to export" >&2
+    return 1
+  fi
+  if ! git -C "$SANDBOX_DIR" fsck --no-dangling >/dev/null 2>&1; then
+    echo "package_branch: cannot read the object store at $SANDBOX_DIR; refusing to export" >&2
     return 1
   fi
 

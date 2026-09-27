@@ -172,7 +172,10 @@ compose_generate() {
   docker compose "${staged_files[@]}" config --no-interpolate \
     | grep -v '^[[:space:]]*name:' \
     > "$output_file"
-  merge_rc=$?
+  merge_rc=${PIPESTATUS[0]}
+  if [[ "$merge_rc" -ne 0 ]]; then
+    rm -f "$output_file"
+  fi
   rm -rf "$staging_dir"
   return "$merge_rc"
 }

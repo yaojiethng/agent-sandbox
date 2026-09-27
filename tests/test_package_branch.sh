@@ -623,7 +623,40 @@ run_test test_dispatcher_no_commits
 # Given: a repository whose .git/index is garbage
 # When:  package_branch runs
 # Then:  rc is non-zero and no .export-status is written
-# Asserts: the refuse-state guard for the index case; the object-store half of its comment is unchecked (finding 84)
+# Asserts: the refuse-state guard catches an unreadable object store
+test_dispatcher_refuses_unreadable_object_store() {
+  # A truncated blob is an unreadable object store the index probe passes:
+  # `git status --porcelain` returns 0 while the per-commit diff would return
+  # 128, so the run would proceed and degrade to a partial-artifact SUCCESS.
+  # The guard's `git fsck --no-dangling` probe must refuse it.
+  local DIR="$FIXTURE_DIR/pb_blob"
+  local OUT="$FIXTURE_DIR/pb_blob_out"
+  mkdir -p "$OUT"
+  make_committed_repo "$DIR"
+  write_session_state "$DIR"
+
+  local blob
+  blob="$(git -C "$DIR" rev-parse HEAD:file.txt)"
+  local d="${blob:0:2}" f="${blob:2}"
+  local obj="$DIR/.git/objects/$d/$f"
+  # Loose objects are read-only (0444); make it writable so the truncation
+  # actually lands, then rewrite it short so git fsck reports it corrupt.
+  chmod u+w "$obj"
+  printf 'truncated' > "$obj"
+
+  if package_branch "$DIR" "$OUT" 2>/dev/null; then
+    fail "package_branch should refuse a repository whose object store is unreadable"
+  else
+    pass "package_branch refuses an unreadable object store"
+  fi
+  if [[ -f "$OUT/.export-status" ]]; then
+    fail "package_branch wrote export metadata for a refused object store"
+  else
+    pass "package_branch writes no metadata when the object store is unreadable"
+  fi
+}
+
+# Asserts: the refuse-state guard for the index case
 test_dispatcher_refuses_unreadable_repository() {
   # A corrupt index degrades every git command below to empty output while this
   # function still reports success, so the caller would stamp a SUCCESS bundle
@@ -727,6 +760,7 @@ test_baseline_rejects_unresolvable_explicit() {
 run_test test_dispatcher_missing_args
 run_test test_dispatcher_missing_session_state
 run_test test_dispatcher_refuses_unreadable_repository
+run_test test_dispatcher_refuses_unreadable_object_store
 run_test test_dispatcher_export_status_contents
 run_test test_preflight_bypass_returns_before_any_git
 run_test test_preflight_clean_tree_is_silent

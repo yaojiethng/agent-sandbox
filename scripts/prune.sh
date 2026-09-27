@@ -95,7 +95,13 @@ rule1_selected_records() {
   [[ -d "$SANDBOX_DIR/.compose" ]] || return 0
   local current_sha cutoff_ts
   current_sha="$(project_current_sha)"
-  cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null || true)"
+  # Fail closed on an underivable cutoff: if the age threshold cannot be
+  # computed, pruning on an empty cutoff would select every stale record of
+  # every age. Refuse instead.
+  cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null)" || {
+    echo "rule1_selected_records: cannot derive the age cutoff from AGE_DAYS=${AGE_DAYS}; refusing to select" >&2
+    return 1
+  }
 
   local line sid provider ts branch delivery rec_day
   # Enumeration (glob -> provider recovery -> PROVIDER_FILTER) is the shared
@@ -111,11 +117,15 @@ rule1_selected_records() {
         ;;
     esac
     # Age narrowing (applies to every selected record regardless of kind).
-    ts="${ts:-00000000-000000}"
-    if [[ -n "$cutoff_ts" ]]; then
-      rec_day="${ts:0:8}"
-      [[ -z "$rec_day" || "$rec_day" > "$cutoff_ts" ]] && continue
+    # A record that cannot vouch for its age (empty or unreadable session-ts)
+    # is kept, not pruned: pruning it would treat an unprovable timestamp as
+    # the oldest. cutoff_ts is guaranteed non-empty here, because a
+    # failed derivation refused at the top of the function.
+    if [[ -z "$ts" ]]; then
+      continue
     fi
+    rec_day="${ts:0:8}"
+    [[ "$rec_day" > "$cutoff_ts" ]] && continue
     # Delivery lives in the sandbox-service env (`SANDBOX_TYPE`, set by the
     # delivery overlay). Disclosure in the plan only  --  it gates neither rule.
     delivery="$(env_field "$file" SANDBOX_TYPE)"
@@ -275,7 +285,13 @@ main() {
   # the genuine registry.
   TREATED_REMOVED_SIDS=()
 
-  mapfile -t RULE1_RECS < <(rule1_selected_records)
+  RULE1_TMP=$(mktemp)
+  if ! rule1_selected_records > "$RULE1_TMP"; then
+    rm -f "$RULE1_TMP"
+    exit 1
+  fi
+  mapfile -t RULE1_RECS < "$RULE1_TMP"
+  rm -f "$RULE1_TMP"
   # SIDS_PRUNED  --  the list of SIDs Rule 1 will remove (its "removal result").
   SIDS_PRUNED=( "${RULE1_RECS[@]%%|*}" )
   

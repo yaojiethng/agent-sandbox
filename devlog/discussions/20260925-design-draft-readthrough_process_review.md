@@ -273,6 +273,8 @@ Adopt Option B in every option area.
 
 **Register format (2026-09-25).** The register is now paired with a JSON Lines findings file and the labels live there, not in tables. This supersedes item 6's table-as-source-of-truth rule and its sector-split threshold, and it closes the stated-count defect class: counts are computed from the data file and never asserted. Decision and schema: [`20260925-design-draft-findings_register_format.md`](20260925-design-draft-findings_register_format.md).
 
+**Terminology note (2026-09-26).** The word **probe** in this document's glossary item 5 is the read-through's method term (`probe-verified`), which is kept. The latest read-through distinguishes three senses - the method term, the dry-run-probes proper noun (a docker term), and the retired production-check sense - and changed only the last; see the read-through design document's terminology note.
+
 ## Consequences
 
 This makes the read-through repeatable and its yield independent of one unusually long session; it fixes the three mutation-verdict failure families by rule; and it removes the reasoning-only assertion audit that the pass showed is weaker than measurement. The diff gate survives, so a regression still gets caught in the iteration that introduces it.
