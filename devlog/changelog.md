@@ -171,3 +171,17 @@ Generic pre-flight in shared entrypoint: all 7 lib files checked, AGENT_HOME val
 - Harness-sig -- self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
 - Autosave/session-save reliability -- moved to M2.6.
 - Process improvements (fast-track criteria, decision recording, stale skill reference) -- not milestone-scoped.
+
+---
+
+## M3.1 - Backpressure
+
+*Every commit now gets immediate gate feedback: a host-side `pre-commit` hook gates staged Markdown and shell files, the full lint gate is cheap enough to run on every commit, and the test suite runs files in parallel under a per-file deadline that reports a reason on failure.*
+
+The sub-milestone owns the backpressure mechanisms and their cost. A host-initiated install model gives the host checkout a staged Markdown + ShellCheck commit hook (the rejected host-exposure posture of mount delivery is preserved; see [`docs/adr/git_hooks.md`](../docs/adr/git_hooks.md)). The lint gate runs shell, lib-contract, and markdown checks concurrently -- ShellCheck once per file in parallel, the sourced-lib return-not-exit and guarded-read rules, and the doc-wrap and doc-ascii rules for prose. The test suite dispatches files in parallel under a pure-bash per-file deadline, with a reason on rc-driven failures; a per-file `# TEST_DEADLINE:` declaration lets a heavy harness file name its own budget.
+
+The harness itself was hardened: subshell-per-test isolation with fail-fast, per-test-unit accounting, an untyped fixture allocator, and the capture-and-assert helper (see [`docs/adr/test_harness.md`](../docs/adr/test_harness.md)). The whole suite was then read through against a fixed inventory frame -- what each test asserts, why it matters, and whether the assertion bites -- into a 319-row JSON register with bite checks and BDD write-backs, closed by a findings-to-tasks plan session and a rectification campaign that moved units to their subject files and pinned the coverage gaps (`20260925-01` through `20260925-23`; record [`devlog/discussions/20260927-report-settled-test_suite_readthrough.md`](../devlog/discussions/20260927-report-settled-test_suite_readthrough.md)).
+
+Failure signalling was settled as a family of conventions (rule 3.5 plus reason-key fixes), the dry-run harness moved to one probe and one channel, the mutation tier landed operator-triggered behind `MUTATION=1` (catalog and replayable runner; its cadence is an M4 decision), and the runner accepts subset selection without dropping the whole-suite gate. The read-through record itself compacted into the settled report with its evidence folded into the register (iteration `20260927-01`). Suite 998/0 across 66 files; lint clean at close.
+
+---

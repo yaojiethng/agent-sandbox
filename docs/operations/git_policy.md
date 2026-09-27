@@ -31,7 +31,8 @@ These types are adopted now. The commit type is decided from the nature of the c
 | `feat` | New capability or behaviour |
 | `fix` | Bug fix -- corrects broken behaviour |
 | `refactor` | Code restructuring with no behaviour change; large sweeping cleanups |
-| `docs` | Documentation-only changes -- descriptive prose, decision records, plans, reports |
+| `docs` | Documentation-only changes -- descriptive prose, decision records, reports |
+| `plan` | Roadmap and milestone planning -- scoping, task assignment, compaction, close and promotion bookkeeping |
 | `chore` | Inert maintenance -- stale refs, index cleanup, linting, formatting |
 | `workflow` | Policy changes, CI/CD rules, governance -- skill files under `src/reasoning/agent/` count as governance |
 | `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) |
@@ -48,6 +49,8 @@ A commit that changes both code and documentation uses the type of the primary c
 `chore` vs `workflow`: a chore is inert -- it does not change how work is done, only tidies what exists. A workflow commit changes the rules: a new policy, a CI/CD gate, a linter configuration, a branch protection change. If merging the commit would require other contributors to change their behaviour, it is `workflow`, not `chore`.
 
 `chore` vs `docs`: if the change fixes stale links, updates an index, or cleans up formatting without changing the substance of what a document says, it is a chore. If the change updates the documented system reality, it is `docs`.
+
+`plan` vs `docs`: a plan commit performs roadmap and milestone bookkeeping -- scoping a milestone, assigning work to iterations, compacting a completed task list, closing a milestone. A docs commit records the system or its decisions. `plan` was an iteration type in `handover_policy.md` before the 2026-09-20 taxonomy reframe dropped it from the type table; commit `1c11267` (`plan: close M2.7 and collapse sub milestones`) is the historical precedent.
 
 ---
 

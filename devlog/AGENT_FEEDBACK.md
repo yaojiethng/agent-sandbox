@@ -61,13 +61,6 @@ scoped: M3 T1 -- evidence-validation (verification) discipline
 legacy: none
 mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) Treat reviewer remedies as hypotheses; verify each with a repro before applying (a proposed `cmd | mapfile` was worse than the bug). (2) After a negative-test mutation, check syntax (`bash -n`) and that it fails for the intended reason, not a side effect. (3) A filtered summary that gates a conclusion must be validated against unfiltered output (`diff -rq` bare). (4) An in-place suite-claim correction carries a certified rerun recorded beside it.
 
-### [A] 2026-09-21  --  Record write-back gate (T1)
-
-state: probation
-scoped: M3 T1 -- record write-back gate
-legacy: none
-mitigation: a claimed record must be verified to have landed. When announcing a write-back (findings row, decision, task), grep the row key / content in the same turn. Keep findings rows as candidate records consolidated at review/publish, not one row per observation; run throwaway verification in `/tmp`, never in the repo tree; a feedback follow-up note is an observation, not a task assignment (the roadmap is the sole task list).
-
 ### [A] 2026-09-21  --  Close-milestone and iteration record discipline (T1)
 
 state: open
@@ -220,24 +213,6 @@ The read-through close was released as "follow through everything autonomously",
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
 
-### [O] 2026-09-26  --  A render feature must respect its command's identity-resolution contract
-
-state: probation
-scoped: none
-legacy: none
-mitigation: the durable fix landed in iteration `20260926-01`: `resume_agent.sh` enriches `PROJECT_DIR` from the sandbox `.env` before rendering the resume table, degrading to the `not in tree` / `(absent)` cells only when the project dir is truly unavailable. The lesson for next time: before adding a render column to a command's output, check what identity the column reads and whether the command's dispatcher resolves it under the standard (make) invocation, and add a test that omits the identity flags rather than only passing them explicitly.
-
-The resume picker's STATE (commit distance) and current-branch columns landed after the resume dispatcher became sandbox-only (ADR `env_resolution.md`), so under the standard `make resume LIST=1` / `INTERACTIVE=1` contract the columns silently degraded: every session read `not in tree` and the branch hint read `(absent)`, even for a session started minutes earlier on the current branch at the current HEAD. The operator caught it at runtime with `make resume INTERACTIVE=1` (2026-09-26). Every resume test passed `--project` explicitly, so the make-contract path - identity from the sandbox `.env` only - was never exercised.
-
-### [O] 2026-09-26  --  A generated-sandbox shim must follow a CLI flag rename
-
-state: probation
-scoped: none
-legacy: none
-mitigation: the durable fix landed in iterations `20260926-03` and `20260926-04`: `scripts/templates/Makefile.template` now translates the make build target to the CLI flag `--targets=` only, the legacy `TARGET` alias is gone (a stray `TARGET=` is refused loudly instead of silently building all), and `tests/test_makefile_template.sh` pins the spelling so a flag rename cannot silently strand the template again. The lesson for next time: when a CLI surface renames a flag, grep the templates, the usage hints, and the quickstarts for the old spelling, and verify the make-contract invocation paths (`make -n` expansion), not only the direct CLI tests.
-
-The `agent-sandbox build` command reads the `--targets=` flag; `--target` for build is deprecated and errors. The flag was renamed when argument parsing centralized (`b5d455a`), but the generated-sandbox template still emitted `--target=`, so every `make build` invocation failed - the default, `TARGET=`, and `REBUILD=1` alike. The operator caught all three at runtime (2026-09-26). The dispatch and trace tests passed `--targets=` directly, so the make-contract path was never exercised.
-
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work
@@ -310,17 +285,6 @@ mitigation: 2026-09-04 -- both `discovery_tar_*` probes were deleted with the le
 
 The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`, a prefix the testing policy does not list. Their content (external-tool behaviour) is the knowledge category, so the defect is the name, not the placement. Cleanup: rename to `knowledge_tar_*.sh`. Cross-reference: the same change introduced the rename-without-grep pattern -- a `run_test` registration was renamed by `sed` and briefly went missing before the suite caught it.
 
-### [A] 2026-09-02  --  Campaign prompt scope contradicted its own success criteria
-
-state: probation
-scoped: M3 T1 -- prompt-scope discipline
-legacy: none
-mitigation: none
-
-The test-quality-campaign prompt said "tests only - never change production source", but success criterion #3 (the prerequisite gate) can only be met by changing scripts/run_tests.sh, which is not a tests/ file. At run time the subagent touched the runner to satisfy the criterion and reported "no production source was touched" - inaccurate. The ambiguity: "tests only" was read as the tests/ directory, while the testing_policy prerequisite rule mandates a runner behaviour that lives outside it. Fix: name the test runner as in-scope in the campaign prompt, or make criterion #3 flag-only.
-
-Same session, same prompt: the deliverable contract was iterated three times in chat (commit, then branch-and-merge, then uncommitted proposal) because the first draft pinned "commit one delivery commit" while the operator's model was "subagent proposes, main agent commits at iteration close". Pin the deliverable ("leave uncommitted, never commit") before writing a subagent prompt.
-
 ## Agent experience  --  session 20260904-01 (seed transport redesign)
 
 ### [A] 2026-09-04  --  Record-layer documents drafted as reasoning traces needed a full rewrite
@@ -344,27 +308,6 @@ The thermo-nuclear review pass over this iteration ran two models per round acro
 Scope: harness-wide measurement gap, not a bash or skill trap. Cross-reference: the consolidated `edit`-tool failure entry in the `## Consolidated (M3 cleanup 2026-09-21)` section routes to the same M3 `perf`/T2 task, which instruments failed tool calls by cause.
 
 ## Agent experience  --  session 20260922 (test-harness isolation, M3.1 U1-U7)
-
-### [A] 2026-09-22  --  Command substitution loses array writes: journal allocated state to a file
-
-state: probation
-scoped: M3.1 -- test-harness execution model (U1)
-legacy: none
-mitigation: `get_fixture_dir()` is called inside command substitution, so its `_ALLOC_DIRS+=()` append wrote to a lost sub-subshell copy and the allocator's teardown never removed the directories. A helper that registers state while called via `$( )` must persist it to a file (append on allocate, read on cleanup), not to a shell array.
-
-### [A] 2026-09-22  --  An EXIT trap's final command overrides the shell exit status
-
-state: probation
-scoped: M3.1 -- test-harness execution model (U1)
-legacy: none
-mitigation: the per-test subshell's cleanup trap ended in `return 0`, flipping `fail()`'s exit 1 to exit 0: a failing test reported PASS. A cleanup EXIT trap must capture `$?` before cleaning and re-exit with it (`trap '_trap_rc=$?; cleanup; exit "$_trap_rc"' EXIT`).
-
-### [A] 2026-09-22  --  Test subshells run `set +e`; capture-and-assert needs it
-
-state: probation
-scoped: M3.1 -- test-harness execution model (U1)
-legacy: none
-mitigation: a sourced script's `set -euo pipefail` leaks into the test file's shell, and `out=$(cmd); rc=$?` with a failing cmd aborts under errexit. The per-test subshell runs `set +e` so capture-and-assert works; the verdict is fail()/pass(), never the shell's errexit. Related capture trap: `( ... ) || rc=$?` only assigns rc on the failure arm, so initialize `rc=0` or a passing subshell leaves it unbound under `set -u`.
 
 ### [A] 2026-09-22  --  A condition on an always-true helper is a vacuous assertion; a masked rc hides real defects
 
