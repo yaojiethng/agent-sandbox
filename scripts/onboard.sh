@@ -383,6 +383,10 @@ main() {
   # If set to true after the first mkdir, the ERR trap prints a cleanup
   # warning so the user knows SANDBOX_DIR has partial state.
   _HAS_SIDE_EFFECTS=false
+  # errtrace: without it, bash does not propagate the ERR trap into
+  # _run_onboard/_run_refresh, so mid-onboard failures never warn. Scoped to
+  # the direct-run path: the sourced path must not inherit changed options.
+  set -E
   trap '_maybe_cleanup' ERR
 
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

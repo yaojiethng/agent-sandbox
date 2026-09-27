@@ -517,6 +517,29 @@ test_provider_setup_hook_failure_aborts() {
   fi
 }
 
+# Given: a sandbox dir whose .workspace is a regular file
+# When:  onboard runs with --yes and the second mkdir fails
+# Then:  it exits non-zero and prints the partial-state warning
+# Asserts: the ERR trap fires inside _run_onboard, not just in main
+# (errtrace; the warning names SANDBOX_DIR so the operator can clean up)
+test_onboard_warns_partial_state_on_failure_after_first_mkdir() {
+  local PROJECT_DIR="$FIXTURE_DIR/midfail_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/midfail_sandbox"
+  make_project_dir "$PROJECT_DIR"
+  mkdir -p "$SANDBOX_DIR"
+  touch "$SANDBOX_DIR/.workspace"
+
+  local OUT RC=0
+  OUT="$( bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" --yes 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"Warning: onboard.sh failed after creating files in SANDBOX_DIR."* ]]; then
+    pass "mid-onboard failure prints the partial-state warning"
+  else
+    fail "mid-onboard failure: expected partial-state warning (rc=$RC out=$OUT)"
+  fi
+}
+
 # Given: piped stdin carrying a declined answer and no --yes
 # When:  onboard runs
 # Then:  the non-tty detection proceeds without consuming the line
@@ -584,6 +607,7 @@ run_test test_refresh_derives_project_dir_from_env
 run_test test_fresh_onboard_promotes_provider_env_stub
 run_test test_fresh_onboard_runs_provider_setup_hook
 run_test test_provider_setup_hook_failure_aborts
+run_test test_onboard_warns_partial_state_on_failure_after_first_mkdir
 run_test test_onboard_non_tty_proceeds_without_prompt
 run_test test_onboard_interactive_decline_cancels
 run_test test_onboard_yes_forces_non_interactive_under_tty
