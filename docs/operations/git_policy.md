@@ -14,9 +14,9 @@ Lower-case type prefix, colon, space, imperative summary. No scope field for now
 
 The short description completes the sentence "this commit will..." -- e.g. `feat: add snapshot validation gate`, not `feat: added snapshot validation gate`.
 
-Body and footer are optional. Use a body when the "why" is not obvious from the summary. Use a footer for references (`Closes #12`, `See roadmap M2.1`).
+Body and footer are optional. Use a body when the "why" is not obvious from the summary. The body carries the reason for the change, not a restatement of the diff; the diff already says what changed. Remove a body sentence that restates the diff. The body does not repeat the handover; the handover is the iteration record, and duplicating it in the commit body creates a second copy that rots when the record moves. Use a footer only for references that earn their place. A reference names a file, a record, or a decision a reader would otherwise have to hunt for. Drop a reference added for completeness, or a reference to a transient identifier such as a session id.
 
-The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body -- that is the diff's job.
+The short description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the description -- that is the diff's job.
 
 Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule, but a delivery type is reserved for the delivery commit: do not give an intermediate commit a prefix other than `wip:`, because a typed commit reads as a closed deliverable. Delivery commits without a valid prefix are rejected at review gate.
 

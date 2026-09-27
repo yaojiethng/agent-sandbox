@@ -226,6 +226,8 @@ Before writing an ADR, concept doc, or architecture doc, propose the skeleton in
 
 A durable record (ADR, concept, architecture, policy) describes the current state of its subject. It does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
 
+A design document records the completed design, not the open-questions-and-replies transcript that produced it. When a question is answered during the design, write the answer into the body of the document at the place the answer belongs; do not keep it as a reply. Keep a short section of the designs that were considered and rejected, and why each was rejected. Put the final design at the forefront of the document.
+
 ### Document header format
 
 All documents in `docs/` open with a consistent header block, so status and scope are visible without reading the body and `grep -n "^##"` returns a usable section map.
