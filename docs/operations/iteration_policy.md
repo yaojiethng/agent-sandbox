@@ -36,11 +36,11 @@ Read this document at the start of any iteration. Read the relevant child docume
 
 **Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents -- it does not reproduce their content.
 
-**Confirm the spec before writing code.** The implementation spec -- files, interfaces, naming -- is confirmed by the operator before any code is produced. It is the agreement, not a starting point.
+**Confirm the scope before writing code.** The implementation details -- files, interfaces, naming -- are confirmed by the operator before any code is produced. They are the agreement, not a starting point.
 
-**Scope is fixed at spec time.** Adjacent issues discovered during implementation are recorded in Findings and deferred. They do not enter the current iteration silently.
+**Scope is fixed at confirmation.** Adjacent issues discovered during implementation are recorded in Findings and deferred. They do not enter the current iteration silently.
 
-**Documentation is part of the task, not a cleanup step.** Architecture and concepts documents are updated before implementation begins -- they describe the agreed design the code is written against. If implementation reveals a divergence from the spec, correct the document before the iteration ends; do not defer it. A sub-milestone cannot close if any in-scope architecture or concepts document contradicts the system as built.
+**Documentation is part of the task, not a cleanup step.** Architecture and concepts documents are updated before implementation begins -- they describe the agreed design the code is written against. If implementation reveals a divergence from the agreed design, correct the document before the iteration ends; do not defer it. A sub-milestone cannot close if any in-scope architecture or concepts document contradicts the system as built.
 
 **All outputs are proposals.** The operator reviews, approves, and commits. The agent does not decide what is final.
 
@@ -58,7 +58,7 @@ Development operates at two cadences:
 
 **Major loop** -- triggered when a major milestone closes (e.g. M1 -> M2). Plans the next major milestone: defines sub-milestones, opens stories, commissions investigations, and produces scoped roadmap entries. Operator-heavy. Output is a planned milestone ready for execution.
 
-**Minor loop** -- a single iteration targeting one sub-milestone (e.g. M2.1). Assumes the sub-milestone is scoped. Proceeds through design, spec, implementation, and documentation in sequence. Output is working software and updated documents, closed in a handover.
+**Minor loop** -- a single iteration targeting one sub-milestone (e.g. M2.1). Assumes the sub-milestone is scoped. Proceeds through scope, design, implementation, and documentation in sequence. Output is working software and updated documents, closed in a handover.
 
 The loops are sequential at the major level -- a major milestone must be planned before iterating on sub-milestones -- but the minor loop repeats for each sub-milestone within the major milestone.
 
@@ -85,18 +85,18 @@ Triggered after a major milestone closes. Performed once per major milestone bef
 
 An exchange is a conversation with the operator whose result is not yet resolved: an interview, a design discussion or a scope negotiation. Write an open exchange's results to a record before the next commit. Use the iteration's handover when the exchange resolves inside the iteration, and a `devlog/discussions/` record when it opens its own question. Move the decisions to the handover's Decisions, the actions to Roadmap rows, and the deferred items to Deferred items when the iteration closes. Until then, the record is provisional. Use `wip:` for its commits, per [`git_policy.md`](git_policy.md#transient-commits-fold-into-the-delivery-commit).
 
-The information gathering pass (step 4) reads in order: design decisions, conceptual docs, spec, architecture docs. Lapses are accumulated across all four documents and surfaced together before Gate 2 -- related lapses grouped for easy review. Tags: `(always)` runs without exception; `(confirmed)` requires explicit operator release; `(assessed)` check runs, skip allowed when not applicable to iteration type.
+The information gathering pass (step 4) reads in order: the roadmap task, design decisions, conceptual docs, architecture docs. Lapses are accumulated across all four documents and surfaced together before Gate 2 -- related lapses grouped for easy review. Tags: `(always)` runs without exception; `(confirmed)` requires explicit operator release; `(assessed)` check runs, skip allowed when not applicable to iteration type.
 
 | Step | Tag | Entry condition | Action | Exit condition |
 |---|---|---|---|---|
 | **1 -- Open handover** | always | Iteration begins | Run the roadmap maintenance check (verify roadmap against prior handover; if roadmap maintenance is pending, run it after creating handover but before scope). Create handover: new file with date and sequential index, read prior handover for Carried forward, reset Completed table, populate Hot files and Type, write canonical markers for nullable sections. Per [Step 1 Details](#step-1----open-handover). | Handover draft complete. |
-| **2 -- Confirm scope** | always | Handover draft complete | Present scope proposal including iteration type and justification. Cover: what is in scope and why, what is deferred and why, any unresolved questions. If context insufficient, ask one question at a time. For multi-iteration sessions, write the spec for the active iteration only. Wait for explicit release before any output. Per [Step 2 Details](#step-2----confirm-scope). | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
+| **2 -- Confirm scope** | always | Handover draft complete | Present scope proposal including iteration type and justification. Cover: what is in scope and why, what is deferred and why, any unresolved questions. If context insufficient, ask one question at a time. For multi-iteration sessions, write the implementation plan for the active iteration only. Wait for explicit release before any output. Per [Step 2 Details](#step-2----confirm-scope). | Operator confirmed scope and sent explicit release. A confirmation without a clear forward signal does not satisfy this condition. |
 | **Gate 1** | always | Scope confirmed | No output until operator releases. Agent must present type with justification in the scope proposal -- operator confirms the type alongside scope. | Explicit release received. Type confirmed. |
 | **3 -- Design** | confirmed | Gate 1 released. Skip if roadmap entry already has resolved decisions with recorded rationale -- task list alone does not satisfy skip. | Open a design doc in `devlog/discussions/` per [`discussion_policy.md`](discussion_policy.md#designs). Gather requirements; resolve any deferred story that depends on this sub-milestone; record decisions in roadmap and handover per [`roadmap_policy.md`](roadmap_policy.md#structure-and-filing-rules). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](adr_policy.md)). | All design questions resolved, recorded, ADR created if applicable, and operator confirmed. |
-| **4 -- Information gathering pass** | assessed | Design confirmed | Read in order: design decisions, conceptual docs, spec, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
+| **4 -- Information gathering pass** | assessed | Design confirmed | Read in order: the roadmap task, design decisions, conceptual docs, architecture docs; accumulate lapses across all four, group by document boundary, surface together before Gate 2. Per [`documentation_policy.md`](documentation_policy.md). | All lapses surfaced and resolved. No open questions. |
 | **5 -- Acceptance criteria** | confirmed | Information gathering pass complete | Define criteria in a four-column table: `\| # \| Criterion \| Verifiable by \| Verified by \|`. Pre-verify every verifiable criterion -- for commands the agent can run, show output and mark`Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`. Every iteration touching architecture must include: *"Architecture documents in scope describe the system as built."* Replace`Not yet defined.` before exiting. Per [Step 5 Details](#step-5----acceptance-criteria). | Operator confirmed acceptance criteria. |
-| **Gate 2** | always | Acceptance criteria confirmed | Before releasing: present the acceptance criteria table to the operator -- every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug -- resolve it now, not at pre-close. No implementation until operator releases. | Operator confirmed criteria are satisfiable. Explicit release received. |
-| **6 -- Implementation** | confirmed | Gate 2 released | Produce code against the confirmed spec; tests alongside per [`testing_policy.md`](../development/testing_policy.md). On spec divergence: correct architecture doc before continuing. Record all other adjacent issues in Findings; defer by default. Per [During the iteration](#during-the-iteration). | All tasks complete. Tests pass. Architecture docs reflect system as built. |
+| **Gate 2** | always | Acceptance criteria confirmed | Before releasing: present the acceptance criteria table to the operator -- every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close. No implementation until operator releases. | Operator confirmed criteria are satisfiable. Explicit release received. |
+| **6 -- Implementation** | confirmed | Gate 2 released | Produce code against the confirmed scope; tests alongside per [`testing_policy.md`](../development/testing_policy.md). On design divergence: correct the architecture doc before continuing. Record all other adjacent issues in Findings; defer by default. Per [During the iteration](#during-the-iteration). | All tasks complete. Tests pass. Architecture docs reflect system as built. |
 | **7 -- Pre-close verification** | confirmed | Implementation complete | Present pre-close summary in a four-column AC status table. Mark each criterion as accepted or pushed. Run verifiable checks and show output. Propose compaction entries for fully-completed task groups. For multi-file changes under a shared rule, include a propagation replay table. Packaging does not release this gate. Wait for explicit release. Per [Step 7 Details](#step-7----pre-close-verification). | Operator confirmed against AC and compaction text. |
 | **Gate 3** | always | Pre-close verified | The AC status table must be visible -- every criterion shown, every status populated. No close until operator releases. | Explicit release received. |
 | **8-9 -- Close and seed** | always | Gate 3 released | Apply approved roadmap write-back -- compaction summaries for completed task groups, destinations for generated tasks. Run roadmap maintenance per [`roadmap_policy.md`](roadmap_policy.md#roadmap-maintenance). Run scope reconciliation, carry-forward resolution gate, and the findings review/publish step. Mark each AC accepted or pushed. Update Hot files. Seed What's Next. Per [Steps 8-9 Details](#steps-8-9----close-and-seed). | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. What's Next actionable. |
@@ -149,7 +149,7 @@ For housekeeping iterations, the scope proposal may simply be the target file li
 
 **Rule:** Purpose reconciliation. Before presenting the scope proposal  --  and again when presenting acceptance criteria (Step 5)  --  check the expressed purpose of the iteration against the current tree: a purpose may already be silently resolved by landed work (fixes, tests, skills, docs) that no record claims. If so, surface it in the proposal; the scope becomes recording or retiring the existing resolution, not re-implementing it, and the acceptance criteria are phrased against the tree as it is.
 
-**Rule:** When a session contains multiple iterations, write the detailed per-step spec only for the active iteration. The handover may list all iterations for orientation. Do not write iteration N+1's spec or its dependencies until iteration N's output is confirmed.
+**Rule:** When a session contains multiple iterations, write the detailed per-step implementation plan only for the active iteration. The handover may list all iterations for orientation. Do not write iteration N+1's plan or its dependencies until iteration N's output is confirmed.
 
 ### Gate 1
 
@@ -164,7 +164,7 @@ Per [`handover_policy.md`](handover_policy.md#acceptance-criteria) for AC format
 
 ### Gate 2
 
-Before releasing: present the acceptance criteria table to the operator -- every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed spec. A criterion that would fail on a correct implementation is a spec bug -- resolve it now, not at pre-close. No implementation until operator releases.
+Before releasing: present the acceptance criteria table to the operator -- every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close. No implementation until operator releases.
 
 Exit condition: Operator confirmed criteria are satisfiable. Explicit release received.
 
@@ -176,7 +176,7 @@ Implementation iterations order their tasks in the handover task list. Tasks in 
 
 **On discovery:** When a bug, contradiction, design gap, blocker, or new file enters scope, write it to Findings immediately. Do not continue to the next task until the finding is recorded. If the finding changes the current approach, surface it in chat before proceeding.
 
-**On steering received:** When the operator provides instruction that modifies the scope of a current or future iteration, write it to Findings before resuming work. If the steering affects a future iteration's spec, write it to Deferred items or What's Next as well. Do not resume until this is done.
+**On steering received:** When the operator provides instruction that modifies the scope of a current or future iteration, write it to Findings before resuming work. If the steering affects a future iteration's scope, write it to Deferred items or What's Next as well. Do not resume until this is done.
 
 Findings is the shared agent-managed recording surface for the agent-feedback and gotchas records. Entries are classified at the review/publish step at iteration end, not at the moment of writing. Attribution is operator-owned; the agent proposes a class and the operator confirms it.
 
@@ -205,7 +205,7 @@ Every row must have a status. A row with status `deferred` or `not started` must
 **A propagation replay is required when any of the following apply:**
 
 - The iteration applied a naming rule, structural rule, or interface change across more than two files
-- The spec produced an explicit file table at Step 4 (information gathering pass)
+- The scope produced an explicit file table at Step 4 (information gathering pass)
 - The task description used language like "all", "every", "throughout", or "wherever X appears"
 
 **When a propagation replay is not required**, the pre-close summary covers: what was built, tests produced, AC status per criterion, and recommended manual checks.
@@ -261,7 +261,7 @@ After Gate 3 is released, these steps are mechanical -- the operator has already
 
 **Findings review/publish step -- do this after the carry-forward resolution gate.** It performs the triage responsibilities and routes each entry to its destination. For each entry in Findings, route it: to the Decisions table, to Deferred items, to What's Next (via Carried forward), to `roadmap.md` (via a named task entry), or to the feedback record [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry: the agent (`[A]`) or the operator (`[O]`). **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. An entry cannot remain in Findings unless it has been explicitly marked as triaged with its destination noted. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
 
-**Spec amendment:** if any implementation gap discovered this iteration affects the spec -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the spec before closing. Do not leave spec gaps for the next iteration to re-derive.
+**Scope amendment:** if any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
 
 #### Seed next iteration
 

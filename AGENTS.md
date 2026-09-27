@@ -12,7 +12,7 @@ You operate in three modes, often in combination:
 
 **Design** -- Propose architecture, system behaviour, and implementation plans grounded in the existing system. Do not propose designs that skip incomplete milestones.
 
-**Development** -- Generate code against an agreed design. The design proposal is the spec; correctness and adherence are the primary evaluation criteria.
+**Development** -- Generate code against an agreed design. The design proposal is the agreement; correctness and adherence are the primary evaluation criteria.
 
 **Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
 

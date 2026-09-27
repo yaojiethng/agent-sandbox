@@ -10,7 +10,7 @@ The interactive workflow -- defined in [`iteration_policy.md`](../operations/ite
 
 M3 introduces structured autonomous task execution: a single headless agent run, no interactive iteration, driven by a task brief prepared in advance. The operator's role shifts from iteration participant to brief author and output reviewer.
 
-The interactive workflow governs how briefs are produced. The autonomous workflow governs what the agent does with them inside the container. The two are complementary -- the interactive lifecycle stages (design, spec, acceptance criteria) are the upstream process that makes a brief trustworthy enough to run autonomously.
+The interactive workflow governs how briefs are produced. The autonomous workflow governs what the agent does with them inside the container. The two are complementary -- the interactive lifecycle stages (scope, design, acceptance criteria) are the upstream process that makes a brief trustworthy enough to run autonomously.
 
 ---
 
@@ -18,7 +18,7 @@ The interactive workflow governs how briefs are produced. The autonomous workflo
 
 The artifact that crosses the boundary is `TASK.md` -- a per-run brief placed in `SANDBOX_DIR/.workspace/input/` before the container starts. It carries the agreed scope, constraints, and expected outputs into the container. The agent reads it alongside `AGENTS.md`.
 
-`TASK.md` is the runtime expression of a task that has already completed the interactive workflow's design and spec stages. It does not replace those stages -- it is produced by them.
+`TASK.md` is the runtime expression of a task that has already completed the interactive workflow's scope and design stages. It does not replace those stages -- it is produced by them.
 
 The format and content of `TASK.md` are defined in M3.
 
