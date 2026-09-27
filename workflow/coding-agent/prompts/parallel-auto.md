@@ -59,6 +59,21 @@ A linked worktree, not a copy. A copy has its own object store, so the tracks ha
 
 Keep the primary's tree clean for the whole run. The primary does not edit files while tracks are live, because a dirty primary tree moves the merge base under the tracks.
 
+**A track's commits are reachable only from this repository, and the container does not outlive the session.** Nothing pushes, and a branch cut in the container is not on the host. So a track has exactly two safe fates: its commits land in the session's own history, or they are exported as a bundle. A third fate - a branch left standing at the end of the session - loses the work, and a worktree left registered is not the worktree's own backup.
+
+The merge is the ordinary route: cut the tracks into the session branch and the session's own export carries them. When the operator defers the merge past the session, export each track before the session ends.
+
+`package_branch` requires a real `.git` directory and refuses a linked worktree, whose `.git` is a file. Package a clone of the track's repository instead, one bundle directory per track, because the tool overwrites its output directory on every run:
+
+```bash
+git clone -q --no-hardlinks "$REPO_ROOT" "/tmp/port-<track>"
+git -C "/tmp/port-<track>" checkout -q "<track-branch>"
+source /opt/sandbox/lib/package_branch.sh
+package_branch "/tmp/port-<track>" "$HOME/workspace/output/bundles/<bundle>" false "<baseline>"
+```
+
+The baseline is the run's baseline commit, so the exported patches apply on top of whatever the session itself lands. Check the bundle's `.export-status` reads `SUCCESS` and that its patch count matches the track's commit count, then say in the run presentation that the tracks are exported and where.
+
 ## Step 3 - Dispatch the tracks concurrently
 
 One fresh subagent per track, all dispatched before any of them returns. The tracks are the unit of context here: a subagent that has worked one track's files carries its assumptions into the next, so one subagent per track, never one subagent for several tracks.
@@ -136,6 +151,8 @@ The run's own review is the bounded loop in [`review-loop-run.md`](review-loop-r
 
 (h) **A worktree or probe branch left registered after the run.** Prune at the boundary and check `git worktree list` and `git branch --list` before the run is called clean.
 
+(i) **A track left standing when the session ends.** The branch was never merged and never exported, and the container is gone, so the work is unrecoverable. Export the tracks in Step 2, before the run reaches its end; a registered worktree is not a backup.
+
 ## Invariants
 
 - One track per worktree, one branch per track, one baseline commit for all tracks, and a branch rather than a detached HEAD.
@@ -145,4 +162,5 @@ The run's own review is the bounded loop in [`review-loop-run.md`](review-loop-r
 - The primary verifies every return in that track's worktree, with its own suite run and its own diff read, and accounts for every unit of count growth.
 - A rejected return goes back to its track as a repair brief, never into the primary's tree as a quiet correction.
 - Merges happen in a fixed order, after the tracks are verified, and the merged tree is verified again.
+- Every track's commits are either in the session's history or in an exported bundle before the session ends.
 - Records are written after the merge, by the primary, from verified evidence.

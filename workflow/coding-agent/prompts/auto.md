@@ -90,13 +90,14 @@ The report is a claim about the tree. Check the tree:
 - compare each mutated file with its backup (`cmp`);
 - collect the report's tail with a script.
 
-A green suite that the subagent reports is not evidence; the primary's own run is, and the suite is cheap. Correct in the primary's own turn only a defect the primary can fix as a line - a stale call-site arity, a unit the destination suite already covers - and record the correction.
+A green suite that the subagent reports is not evidence; the primary's own run is, and the suite is cheap. Correct in the primary's own turn only a defect the primary can fix as a line - a stale call-site arity, a unit the destination suite already covers - and record the correction. A defect beyond a line does not come back to the primary's tree: it goes back to the unit's own tree as a repair brief, so the unit's history stays whole and the repairs fold into it rather than landing beside it.
 
 Then route by the observed stop, with at most one additional attempt in every branch:
 
 | Observed | Move |
 |---|---|
-| `rc=0`, `done` | verify, approve, land |
+| `rc=0`, `done` | verify, then approve and land; a rejected verification is not a stop-state change and routes on the row below |
+| verification rejected a `done` return | one repair brief to that unit, carrying the defect, the evidence and the file the unit now owns; the repair runs in the unit's tree on the unit's branch, and gets one attempt before the file-and-park route |
 | `rc=0`, `partial` | resume once: re-brief as a continuation and keep the tree |
 | `rc=124` (timeout) with progress | resume once: `pi --session <path> "Continue and give your final report."` |
 | `rc=124` with no progress, or a tree that cannot be verified | file the work, reset the owned paths, dispatch a fresh attempt |
@@ -154,4 +155,5 @@ Carry each rule into the brief.
 - The tree is clean at every unit boundary, and no partial attempt is ever committed.
 - A mutation check that counts as evidence names a failing file and a byte-identical restore.
 - Records are written after verification, and one unit is one commit.
+- A return the primary's verification rejects goes back to its own unit as a repair brief, never into the primary's tree as a quiet correction.
 - The roadmap is the task list; the chat presentation is a digest.
