@@ -4,7 +4,7 @@
 # parse_args_collect (the agent-sandbox dispatcher entry point).
 #
 # Covers:
-#   parse_args          --  value/boolean/literal specs; strict vs tolerant;
+#   parse_args          --  value/boolean specs; strict vs tolerant;
 #                           --help exit code
 #   parse_args_collect  --  spec flags route into vars, unmatched args are
 #                           appended in order to the sink array, never error
@@ -20,16 +20,6 @@ _test_usage() { echo "usage: test" >&2; }
 # ---------------------------------------------------------------------------
 # parse_args
 # ---------------------------------------------------------------------------
-
-# Given: a value spec written as --flag= (empty target name)
-# When:  parse_args runs
-# Then:  the value lands in the derived UPPER_SNAKE variable
-# Asserts: the empty-var value form writes into <UPPER_SNAKE(flag)>.
-test_parse_args_derived_name_value_flag() {
-  unset BRANCH_FROM 2>/dev/null || true
-  parse_args _test_usage --branch-from= -- --branch-from=abc123 >/dev/null 2>&1
-  assert_eq "${BRANCH_FROM:-}" "abc123" "parse_args: --flag= writes the derived variable name"
-}
 
 # Given: a predeclared DELIVERY=copy and a spec whose flag never fires
 # When:  parse_args runs
@@ -242,18 +232,6 @@ test_collect_boolean_spec_not_sinked() {
   assert_eq "${PASSTHROUGH[*]}" "v1" "collect: boolean flag not collected"
 }
 
-# Given: a non-dashed literal spec, its matching argument, and two positionals
-# When:  parse_args_collect runs
-# Then:  the literal is consumed, the positionals are collected, and no variable is set
-# Asserts: the literal spec kind is reachable for a name that does not start with --.
-test_collect_true_literal_spec_not_sinked() {
-  PASSTHROUGH=()
-  unset PERMISSIVE 2>/dev/null || true
-  parse_args_collect PASSTHROUGH permissive -- permissive p1 p2
-  assert_eq "${PASSTHROUGH[*]}" "p1 p2" "collect: literal spec consumed, rest collected"
-  assert_empty "${PERMISSIVE:-}" "collect: a literal spec sets no variable"
-}
-
 # Given: a caller-owned sink pre-seeded with one entry
 # When:  parse_args_collect runs
 # Then:  the new args append after the seed
@@ -319,7 +297,6 @@ test_collect_has_no_stale_registry() {
 # ---------------------------------------------------------------------------
 
 run_test test_parse_args_value_flag
-run_test test_parse_args_derived_name_value_flag
 run_test test_parse_args_preserves_predeclared_default
 run_test test_parse_args_unknown_word_override
 run_test test_parse_args_value_keeps_equals_segments
@@ -335,7 +312,6 @@ run_test test_collect_routes_specs_and_appends_rest
 run_test test_collect_never_errors_on_unknown
 run_test test_collect_empty_args
 run_test test_collect_boolean_spec_not_sinked
-run_test test_collect_true_literal_spec_not_sinked
 run_test test_collect_appends_to_predeclared_sink
 run_test test_collect_help_not_special
 run_test test_collect_bare_value_flag_forwarded

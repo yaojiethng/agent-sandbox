@@ -26,10 +26,7 @@
 # Spec entries (order-insensitive, before the `--` separator):
 #   --flag=VAR      value flag: sets VAR to the flag's value
 #   --flag          boolean flag: sets <UPPER_SNAKE(flag)> to "true"
-#   --flag=         value flag writing into a caller-predeclared VAR named
-#                   <UPPER_SNAKE(flag)> (--branch-from writes BRANCH_FROM)
 #   --flag:VAR      boolean flag writing to a specific VAR (--yes:YES_FLAG)
-#   <literal>       accepted and ignored (compat toggles such as --permissive)
 #
 # parse_args returns 0 on success, 1 on unknown argument (usage printed),
 # and 2 when --help/-h was given (usage printed, caller decides to exit).
@@ -100,7 +97,6 @@ _cli_parse() {
       --*=*)
         flag="${spec%%=*}"
         var="${spec#*=}"
-        [[ -n "$var" ]] || var="$(printf '%s' "${flag#--}" | tr 'a-z-' 'A-Z_')"
         kind="value"
         ;;
       --*:*)
@@ -112,11 +108,6 @@ _cli_parse() {
         flag="$spec"
         var="$(printf '%s' "${spec#--}" | tr 'a-z-' 'A-Z_')"
         kind="boolean"
-        ;;
-      *)
-        flag="$spec"
-        var=""
-        kind="literal"
         ;;
     esac
     REG["$flag"]="$kind|$var"
@@ -167,7 +158,6 @@ _cli_parse() {
     case "$kind" in
       value) declare -g "$var=${a#*=}" ;;
       boolean) declare -g "$var=true" ;;
-      literal) : ;;
     esac
   done
   return 0
