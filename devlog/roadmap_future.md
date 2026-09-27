@@ -176,9 +176,9 @@ Described in Harness Packaging and Versioning above.
 
 **Deferred decision `20260818-02` (keep RO-mount-at-start); dependency landed; discovery validated `20260901-13`; implemented `20260901-14` -- entry retained as record.** Seed the volume host-side before the sandbox container starts (one-shot `docker compose create` + `docker cp` through the volume mount), no snapshot mount, fresh and resume compose files identical, staging exists only during the seed step. Serialization: git-enumerated tar under the `.agent-sandbox-seed/` sentinel; container-side init reconstructs index=HEAD/worktree=disk. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md). All three subtasks below are resolved: compose template carries no SNAPSHOT_DIR mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir`/SNAPSHOT_DIR env + session-state writes are retired repo-wide (incl. dirs.sh and the knowledge diagnostics).
 
-- [ ] Drop the always-mounted `SNAPSHOT_DIR` from the compose template -- no conditional mount needed once seeding is host-side
-- [ ] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only -- vestigial on resume, where the volume's git state is authoritative
-- [ ] Re-examine `snapshot_dir`/SNAPSHOT_DIR env + session_state writes once the mount disappears
+- [x] Drop the always-mounted `SNAPSHOT_DIR` from the compose template -- no conditional mount needed once seeding is host-side
+- [x] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only -- vestigial on resume, where the volume's git state is authoritative
+- [x] Re-examine `snapshot_dir`/SNAPSHOT_DIR env + session_state writes once the mount disappears
 
 Records: design record `20260730-design-settled-mount_model.md`, handover `20260818-02` (copy-in mechanism decision). The entrypoint branch inversion (if `! -d .git` -> init; else -> resume bookkeeping) is not filed here -- it belongs to the M2.6.6 delivery implementation scope.
 
