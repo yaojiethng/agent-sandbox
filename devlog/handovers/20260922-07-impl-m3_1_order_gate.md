@@ -3,7 +3,7 @@
 **Date:** 2026-09-22
 **Milestone:** M3.1 - Backpressure
 **Type:** Impl
-**Status:** Open
+**Status:** Closed
 
 ## Objective
 
